@@ -1,3 +1,3 @@
-CREATE TABLE servidor (
-  endereco ?
-);
+--CREATE TABLE servidor (
+  --endereco ?
+--);

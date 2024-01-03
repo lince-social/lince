@@ -4,7 +4,7 @@ CREATE TABLE cadastro (
   titulo VARCHAR(50) NOT NULL,
   descricao TEXT NOT NULL,
   quantidade INTEGER NOT NULL,
-  tipo_cadastro VARCHAR(12) CHECK (tipoCadastro IN ('Necessidade', 'Contribuicao'),
+  tipo_cadastro VARCHAR(12) CHECK (tipo_cadastro IN ('Necessidade', 'Contribuicao')),
   horario_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   estado BOOLEAN NOT NULL
 );

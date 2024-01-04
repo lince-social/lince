@@ -1,4 +1,0 @@
-CREATE TABLE conta (
-  usuario VARCHAR(255) PRIMARY KEY,
-  senha VARCHAR(255) NOT NULL
-);

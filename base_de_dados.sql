@@ -17,19 +17,20 @@ CREATE TABLE cadastro (
 
 CREATE TABLE condicao_transferencia (
   cadastro_enviante_id INT REFERENCES cadastro(id) ON DELETE CASCADE,
-  custo_float REAL NOT NULL,
+  valor_condicao_transferencia REAL NOT NULL,
   cadastro_id_a_transferir INT REFERENCES cadastro(id) ON DELETE CASCADE,
   PRIMARY KEY (cadastro_id, cadastro_id_transferido)
 );
 
 CREATE TABLE transferencia (
-  id SERIAL PRIMARY KEY,
+  horario_transferencia TIMESTAMPZ DEFAULT CURRENT_TIMESTAMP,
+
+  id SERIAL,
 
   cadastro_enviante_id REFERENCES cadastro(id) ON DELETE CASCADE,
   valor_transferido REAL NOT NULL,
-  oferta_cadastro_receptor_id REFERENCES cadastro(id) ON DELETE CASCADE
-
-  cadastro_receptor_id REFERENCES cadastro(id) ON DELETE CASCADE
+  cadastro_receptor_id REFERENCES cadastro(id) ON DELETE CASCADE,
+  PRIMARY KEY (id, cadastro_enviante_id)
 );
 
 CREATE TABLE periodicidade (
@@ -49,6 +50,3 @@ INSERT INTO conta (usuario, senha) VALUES
 INSERT INTO cadastro (conta_id, necessidade_ou_contribuicao, titulo, descricao, quantidade) VALUES
 (1, 'C', 'par de chinelo', 'par de chinelos tamanho 34 branco seminovo', 1),
 (2, 'N', 'chinelo 34/35', 'olá, busco por um chinelo tamanho 34/35 pra cima, mas não muito mior que isso', 1);
-
---INSERT INTO periodicidade()
-

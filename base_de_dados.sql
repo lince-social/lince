@@ -1,33 +1,43 @@
 CREATE TABLE conta (
   id SERIAL PRIMARY KEY,
   horario_criacao_conta TIMESTAMPZ DEFAULT CURRENT_TIMESTAMP,
-
-  usuario VARCHAR(255) NOT NULL,
+  usuario VARCHAR(30) NOT NULL,
   senha VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE cadastro (
   id SERIAL PRIMARY KEY,
-  conta_id INTEGER REFERENCES conta(id) ON DELETE CASCADE,
+  conta_id INT REFERENCES conta(id) ON DELETE CASCADE,
   horario_criacao_cadastro TIMESTAMPZ DEFAULT CURRENT_TIMESTAMP,
-
-  necessidade_ou_contribuicao CHAR(1) CHECK (necessidade_ou_contribuicao IN ('N', 'C')),
   titulo VARCHAR(50) NOT NULL,
   descricao TEXT NOT NULL,
-  quantidade INTEGER NOT NULL,
-  custo
-  localizacao VARCHAR(255)
+  localizacao VARCHAR(255), 
+  quantidade INT NOT NULL
+);
+
+CREATE TABLE condicao_transferencia (
+  cadastro_id INT REFERENCES cadastro(id) ON DELETE CASCADE,
+  custo_float REAL NOT NULL,
+  cadastro_id_a_transferir INT REFERENCES cadastro(id) ON DELETE CASCADE,
+  PRIMARY KEY (cadastro_id, cadastro_id_transferido)
+);
+
+CREATE TABLE transferencia (
+  id SERIAL PRIMARY KEY,
+
+  cadastro_enviante_id REFERENCES cadastro(id) ON DELETE CASCADE,
+  valor_transferido REAL NOT NULL,
+  cadastro_receptor_id REFERENCES cadastro(id) ON DELETE CASCADE
 );
 
 CREATE TABLE periodicidade (
   id SERIAL PRIMARY KEY,
-  cadastro_id INTEGER REFERENCES cadastro(id) ON DELETE CASCADE,
-  
-  periodicidade SMALLINT DEFAULT 0 NOT NULL CHECK (periodicidade >= 0), --backend por favor: se periocidicidade == 0 então periodicidade do cadastro ta desativada.
+  cadastro_id INT REFERENCES cadastro(id) ON DELETE CASCADE,
+  periodicidade SMALLINT DEFAULT 0 NOT NULL CHECK (periodicidade >= 0), 
   periodos_desde_criacao SMALLINT DEFAULT 0 NOT NULL,
-  tipo_periodicidade VARCHAR(6) CHECK (tipo_periodicidade IN ('Dia', 'Semana', 'Mês')),
+  tipo_periodicidade VARCHAR(6) NOT NULL CHECK (tipo_periodicidade IN ('Dia', 'Semana', 'Mês')),
   data_inicio TIMESTAMPZ NOT NULL,
-  cadastro_aumento INT DEFAULT 1 NOT NULL CHECK (cadastro_aumento >= 1)
+  cadastro_quantidade_mudanca INT DEFAULT 1 NOT NULL
 );
 
 INSERT INTO conta (usuario, senha) VALUES

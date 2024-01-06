@@ -16,7 +16,7 @@ CREATE TABLE cadastro (
 );
 
 CREATE TABLE condicao_transferencia (
-  cadastro_id INT REFERENCES cadastro(id) ON DELETE CASCADE,
+  cadastro_enviante_id INT REFERENCES cadastro(id) ON DELETE CASCADE,
   custo_float REAL NOT NULL,
   cadastro_id_a_transferir INT REFERENCES cadastro(id) ON DELETE CASCADE,
   PRIMARY KEY (cadastro_id, cadastro_id_transferido)
@@ -27,6 +27,8 @@ CREATE TABLE transferencia (
 
   cadastro_enviante_id REFERENCES cadastro(id) ON DELETE CASCADE,
   valor_transferido REAL NOT NULL,
+  oferta_cadastro_receptor_id REFERENCES cadastro(id) ON DELETE CASCADE
+
   cadastro_receptor_id REFERENCES cadastro(id) ON DELETE CASCADE
 );
 

@@ -10,7 +10,7 @@ CREATE TABLE cadastro (
   conta_id INT REFERENCES conta(id) ON DELETE CASCADE,
   horario_criacao_cadastro TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   titulo VARCHAR(50) NOT NULL,
-  descricao TEXT NOT NULL,
+  descricao TEXT,
   localizacao VARCHAR(255), 
   quantidade INT NOT NULL
 );

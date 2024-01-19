@@ -15,9 +15,9 @@ CREATE TABLE cadastro (
   quantidade INT DEFAULT 0 NOT NULL
 );
 
-CREATE TABLE condicao_transferencia (
+CREATE TABLE proposta_transferencia (
   cadastro_enviante_id INT REFERENCES cadastro(id) ON DELETE CASCADE,
-  valor_condicao_transferencia REAL NOT NULL,
+  valor_proposto_transferencia REAL NOT NULL,
   cadastro_id_a_transferir INT REFERENCES cadastro(id) ON DELETE CASCADE,
   PRIMARY KEY (cadastro_enviante_id, cadastro_id_a_transferir)
 );
@@ -29,6 +29,13 @@ CREATE TABLE transferencia (
   valor_transferido REAL NOT NULL,
   cadastro_receptor_id INT REFERENCES cadastro(id) ON DELETE CASCADE,
   PRIMARY KEY (id, cadastro_enviante_id)
+);
+
+CREATE TABLE condicao (
+  id SERIAL PRIMARY KEY,
+  cadastro_id INT REFERENCES cadastro(id) ON DELETE CASCADE,
+  condicao_quantidade INT NOT NULL,
+  condicao_quantidade_mudanca INT NOT NULL
 );
 
 CREATE TABLE periodicidade (

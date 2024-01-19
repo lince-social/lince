@@ -12,7 +12,7 @@ CREATE TABLE cadastro (
   titulo VARCHAR(50) NOT NULL,
   descricao TEXT,
   localizacao VARCHAR(255), 
-  quantidade INT NOT NULL
+  quantidade INT DEFAULT 0 NOT NULL
 );
 
 CREATE TABLE condicao_transferencia (

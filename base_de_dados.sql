@@ -44,12 +44,3 @@ CREATE TABLE proposta_transferencia (
   PRIMARY KEY (cadastro_enviante_id, cadastro_receptor_id)
 );
 
-/*CREATE TABLE transferencia (
-  horario_transferencia TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  id SERIAL,
-  cadastro_enviante_id INT REFERENCES cadastro(id) ON DELETE CASCADE,
-  valor_transferido REAL NOT NULL,
-  cadastro_receptor_id INT REFERENCES cadastro(id) ON DELETE CASCADE,
-  PRIMARY KEY (id, cadastro_enviante_id)
-);*/
-

@@ -14,24 +14,32 @@ CREATE TABLE cadastro (
   titulo VARCHAR(50) NOT NULL,
   descricao TEXT,
   localizacao VARCHAR(255), 
-  quantidade INT DEFAULT 0 NOT NULL,
+  quantidade REAL DEFAULT 0 NOT NULL,
 );
 
 CREATE TABLE condicao (
-  id SERIAL PRIMARY KEY,
-  cadastro_id INT REFERENCES cadastro(id) ON DELETE CASCADE,
-  condicao_quantidade INT NOT NULL,
-  condicao_quantidade_mudanca INT NOT NULL
+  id SERIAL,
+  cadastro_id UUID REFERENCES cadastro(id) ON DELETE CASCADE,
+
+  certa_quantidade_cadastro REAL NOT NULL,
+
+  delta_quantidade_cadastro REAL NOT NULL,
+
+  PRIMARY KEY (cadastro_id, id)
 );
 
 CREATE TABLE periodicidade (
-  id SERIAL PRIMARY KEY,
-  cadastro_id INT REFERENCES cadastro(id) ON DELETE CASCADE,
-  periodicidade SMALLINT DEFAULT 0 NOT NULL CHECK (periodicidade >= 0), 
-  periodos_desde_criacao SMALLINT DEFAULT 0 NOT NULL,
+  id SERIAL,
+  cadastro_id UUID REFERENCES cadastro(id) ON DELETE CASCADE,
+
+  periodicidade SMALLINT DEFAULT 1 NOT NULL CHECK (periodicidade > 0), 
+  periodos_desde_criacao SMALLINT DEFAULT 0 NOT NULL CHECK (periodos_desde_criacao >= 0),
   tipo_periodicidade VARCHAR(6) NOT NULL CHECK (tipo_periodicidade IN ('Dia', 'Semana', 'Mês')),
   data_inicio TIMESTAMP WITH TIME ZONE NOT NULL,
-  periodicidade_quantidade_mudanca INT DEFAULT 1 NOT NULL
+
+  delta_quantidade_cadastro REAL DEFAULT 1 NOT NULL,
+
+  PRIMARY KEY (cadastro_id, id)
 );
 
 CREATE TABLE proposta_transferencia (

@@ -14,7 +14,7 @@ CREATE TABLE cadastro (
   titulo VARCHAR(50) NOT NULL,
   descricao TEXT,
   localizacao VARCHAR(255), 
-  quantidade REAL DEFAULT 0 NOT NULL,
+  quantidade REAL DEFAULT 0 NOT NULL
 );
 
 CREATE TABLE proposta_transferencia (
@@ -34,7 +34,7 @@ CREATE TABLE sentinela (
   id_cadastro_alterado UUID REFERENCES cadastro(id) ON DELETE CASCADE,
   alteracao_quantidade_cadastro REAL NOT NULL,
 
-  PRIMARY KEY (cadastro_id, certa_quantidade_cadastro)
+  PRIMARY KEY (id_cadastro_observado, certa_quantidade_cadastro)
 );
 
 CREATE TABLE periodicidade (

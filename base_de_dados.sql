@@ -31,7 +31,7 @@ CREATE TABLE sentinela (
   id_cadastro_observado UUID REFERENCES cadastro(id) ON DELETE CASCADE,
   certa_quantidade_cadastro REAL NOT NULL,
 
-  id_cadastro_modificado UUID REFERENCES cadastro(id) ON DELETE CASCADE,
+  id_cadastro_alterado UUID REFERENCES cadastro(id) ON DELETE CASCADE,
   alteracao_quantidade_cadastro REAL NOT NULL,
 
   PRIMARY KEY (cadastro_id, certa_quantidade_cadastro)
@@ -40,12 +40,12 @@ CREATE TABLE sentinela (
 CREATE TABLE periodicidade (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
 
-  p+eriodos_desde_alteracao SMALLINT DEFAULT 0 NOT NULL CHECK (periodos_desde_criacao >= 0),
-  periodicidade SMALLINT DEFAULT 1 NOT NULL CHECK (periodicidade > 0), 
-  tipo_periodo_dia_true_mes_false BOOLEAN NOT NULL,
+  periodos_desde_alteracao SMALLINT DEFAULT 0 NOT NULL CHECK (periodos_desde_alteracao >= 0),
+  periodicidade SMALLINT DEFAULT 1 NOT NULL CHECK (periodicidade > 0),
+  tipo_periodicidade_dia_true_mes_false BOOLEAN NOT NULL,
   data_inicio TIMESTAMP WITH TIME ZONE NOT NULL,
 
-  id_cadastro_modificado UUID REFERENCES cadastro(id) ON DELETE CASCADE,
-  delta_quantidade_cadastro REAL NOT NULL
+  id_cadastro_alterado UUID REFERENCES cadastro(id) ON DELETE CASCADE,
+  alteracao_quantidade_cadastro REAL NOT NULL
 );
 

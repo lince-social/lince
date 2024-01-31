@@ -1,5 +1,6 @@
 import psycopg2
 
+<<<<<<< HEAD
 def insert_data():
     try:
         connection = psycopg2.connect(user="postgres",
@@ -128,3 +129,4 @@ while True:
         break
     else:
         print("Invalid Choice")
+

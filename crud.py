@@ -1,132 +1,140 @@
+# Import the required libraries
+import streamlit as st
 import psycopg2
+import pandas as pd
 
-<<<<<<< HEAD
-def insert_data():
-    try:
-        connection = psycopg2.connect(user="postgres",
-                                      password="1234",
-                                      host="localhost",
-                                      database="your_database_name")
-        cursor = connection.cursor()
-        postgres_insert_query = """ INSERT INTO cadastro (id_conta, titulo, descricao, localizacao, quantidade) VALUES (%s,%s,%s,%s,%s)"""
-        id_conta = input("Enter ID Conta: ")
-        titulo = input("Enter Titulo: ")
-        descricao = input("Enter Descricao: ")
-        localizacao = input("Enter Localizacao: ")
-        quantidade = float(input("Enter Quantidade: "))
-        record_to_insert = (id_conta, titulo, descricao, localizacao, quantidade)
-        cursor.execute(postgres_insert_query, record_to_insert)
-        connection.commit()
-        print("Record inserted successfully into cadastro table")
+# Connect to the PostgreSQL database
+conn = psycopg2.connect(
+    host="localhost",
+    port="5432",
+    database="your_database_name",
+    user="your_user_name",
+    password="your_password"
+)
 
-    except (Exception, psycopg2.Error) as error:
-        print("Failed to insert record into cadastro table", error)
+# Create a cursor object
+cursor = conn.cursor()
 
-    finally:
-        # closing database connection.
-        if connection:
-            cursor.close()
-            connection.close()
-            print("PostgreSQL connection is closed")
+# Define a function to execute SQL queries and return the results as a dataframe
+def execute_query(query):
+    cursor.execute(query)
+    result = cursor.fetchall()
+    columns = [desc[0] for desc in cursor.description]
+    df = pd.DataFrame(result, columns=columns)
+    return df
 
-def update_data():
-    try:
-        connection = psycopg2.connect(user="postgres",
-                                      password="1234",
-                                      host="localhost",
-                                      database="your_database_name")
-        cursor = connection.cursor()
-        cadastro_id = input("Enter Cadastro ID to update: ")
-        new_titulo = input("Enter new Titulo: ")
-        new_descricao = input("Enter new Descricao: ")
-        new_localizacao = input("Enter new Localizacao: ")
-        new_quantidade = float(input("Enter new Quantidade: "))
-        postgres_update_query = """UPDATE cadastro SET titulo = %s, descricao = %s, localizacao = %s, quantidade = %s WHERE id = %s"""
-        record_to_update = (new_titulo, new_descricao, new_localizacao, new_quantidade, cadastro_id)
-        cursor.execute(postgres_update_query, record_to_update)
-        connection.commit()
-        print("Record updated successfully in cadastro table")
+# Define a function to display a table and its data
+def display_table(table_name):
+    st.subheader(f"Table: {table_name}")
+    query = f"SELECT * FROM {table_name}"
+    df = execute_query(query)
+    st.dataframe(df)
 
-    except (Exception, psycopg2.Error) as error:
-        print("Failed to update record in cadastro table", error)
+# Define a function to insert a new record into a table
+def insert_record(table_name, values):
+    query = f"INSERT INTO {table_name} VALUES {values}"
+    cursor.execute(query)
+    conn.commit()
+    st.success(f"Record inserted into {table_name}")
 
-    finally:
-        # closing database connection.
-        if connection:
-            cursor.close()
-            connection.close()
-            print("PostgreSQL connection is closed")
+# Define a function to update an existing record in a table
+def update_record(table_name, set_clause, where_clause):
+    query = f"UPDATE {table_name} SET {set_clause} WHERE {where_clause}"
+    cursor.execute(query)
+    conn.commit()
+    st.success(f"Record updated in {table_name}")
 
-def delete_data():
-    try:
-        connection = psycopg2.connect(user="postgres",
-                                      password="1234",
-                                      host="localhost",
-                                      database="your_database_name")
-        cursor = connection.cursor()
-        cadastro_id = input("Enter Cadastro ID to delete: ")
-        postgres_delete_query = """DELETE FROM cadastro WHERE id = %s"""
-        cursor.execute(postgres_delete_query, (cadastro_id,))
-        connection.commit()
-        print("Record deleted successfully from cadastro table")
+# Define a function to delete an existing record from a table
+def delete_record(table_name, where_clause):
+    query = f"DELETE FROM {table_name} WHERE {where_clause}"
+    cursor.execute(query)
+    conn.commit()
+    st.success(f"Record deleted from {table_name}")
 
-    except (Exception, psycopg2.Error) as error:
-        print("Failed to delete record from cadastro table", error)
+# Define a list of table names
+table_names = ["conta", "cadastro", "proposta_transferencia", "sentinela", "periodicidade"]
 
-    finally:
-        # closing database connection.
-        if connection:
-            cursor.close()
-            connection.close()
-            print("PostgreSQL connection is closed")
+# Create a sidebar with a selectbox to choose a table
+st.sidebar.title("CRUD App")
+table = st.sidebar.selectbox("Select a table", table_names)
 
-def show_data():
-    try:
-        connection = psycopg2.connect(user="postgres",
-                                      password="1234",
-                                      host="localhost",
-                                      database="your_database_name")
-        cursor = connection.cursor()
-        postgres_select_query = """SELECT * FROM cadastro"""
-        cursor.execute(postgres_select_query)
-        records = cursor.fetchall()
+# Display the selected table and its data
+display_table(table)
 
-        for row in records:
-            print("ID = ", row[0])
-            print("ID Conta = ", row[1])
-            print("Titulo = ", row[2])
-            print("Descricao = ", row[3])
-            print("Localizacao = ", row[4])
-            print("Quantidade = ", row[5], "\n")
+# Create a sidebar with a radio button to choose an operation
+operation = st.sidebar.radio("Select an operation", ["Insert", "Update", "Delete"])
 
-    except (Exception, psycopg2.Error) as error:
-        print("Failed to fetch records from cadastro table", error)
-
-    finally:
-        # closing database connection.
-        if connection:
-            cursor.close()
-            connection.close()
-            print("PostgreSQL connection is closed")
-
-
-while True:
-    print("1. Insert Data")
-    print("2. Update Data")
-    print("3. Delete Data")
-    print("4. Show Data")
-    print("5. Exit")
-    choice = int(input("Enter your choice: "))
-    if choice == 1:
-        insert_data()
-    elif choice == 2:
-        update_data()
-    elif choice == 3:
-        delete_data()
-    elif choice == 4:
-        show_data()
-    elif choice == 5:
-        break
-    else:
-        print("Invalid Choice")
-
+# Create a sidebar with input fields to enter the values for the operation
+st.sidebar.subheader(f"{operation} record")
+if operation == "Insert":
+    # Get the column names and types for the selected table
+    query = f"SELECT column_name, data_type FROM information_schema.columns WHERE table_name = '{table}'"
+    df = execute_query(query)
+    # Create a dictionary to store the values for each column
+    values = {}
+    # Loop through the columns and create input fields
+    for i, row in df.iterrows():
+        col_name = row["column_name"]
+        col_type = row["data_type"]
+        # If the column is a UUID, generate a default value
+        if col_type == "uuid":
+            value = "uuid_generate_v4()"
+        # If the column is a boolean, create a checkbox
+        elif col_type == "boolean":
+            value = st.sidebar.checkbox(col_name)
+        # Otherwise, create a text input
+        else:
+            value = st.sidebar.text_input(col_name)
+        # Store the value in the dictionary
+        values[col_name] = value
+    # Format the values as a tuple
+    values = tuple(values.values())
+    # Create a button to execute the insert operation
+    if st.sidebar.button("Insert"):
+        insert_record(table, values)
+elif operation == "Update":
+    # Get the primary key column for the selected table
+    query = f"SELECT a.attname FROM pg_index i JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey) WHERE i.indrelid = '{table}'::regclass AND i.indisprimary"
+    df = execute_query(query)
+    pk = df.iloc[0, 0]
+    # Create an input field to enter the primary key value of the record to be updated
+    pk_value = st.sidebar.text_input(f"Enter the {pk} of the record to be updated")
+    # Get the column names and types for the selected table
+    query = f"SELECT column_name, data_type FROM information_schema.columns WHERE table_name = '{table}'"
+    df = execute_query(query)
+    # Create a dictionary to store the values for each column
+    values = {}
+    # Loop through the columns and create input fields
+    for i, row in df.iterrows():
+        col_name = row["column_name"]
+        col_type = row["data_type"]
+        # If the column is the primary key, skip it
+        if col_name == pk:
+            continue
+        # If the column is a boolean, create a checkbox
+        elif col_type == "boolean":
+            value = st.sidebar.checkbox(col_name)
+        # Otherwise, create a text input
+        else:
+            value = st.sidebar.text_input(col_name)
+        # Store the value in the dictionary
+        values[col_name] = value
+    # Format the values as a set clause
+    set_clause = ", ".join([f"{k} = '{v}'" for k, v in values.items() if v != ""])
+    # Format the where clause
+    where_clause = f"{pk} = '{pk_value}'"
+    # Create a button to execute the update operation
+    if st.sidebar.button("Update"):
+        update_record(table, set_clause, where_clause)
+elif operation == "Delete":
+    # Get the primary key column for the selected table
+    query = f"SELECT a.attname FROM pg_index i JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey) WHERE i.indrelid = '{table}'::regclass AND i.indisprimary"
+    df = execute_query(query)
+    pk = df.iloc[0, 0]
+    # Create an input field to enter the primary key value of the record to be deleted
+    pk_value = st.sidebar.text_input(f"Enter the {pk} of the record to be deleted")
+    # Format the where clause
+    where_clause = f"{pk} = '{pk_value}'"
+    # Create a button to execute the delete operation
+    if st.sidebar.button("Delete"):
+        delete_record(table, where_clause)

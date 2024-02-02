@@ -39,8 +39,8 @@ def delete_record(table_name, where_clause):
     conn.commit()
 
 
-def execute_sql_file(file_contents):
-    queries = file_contents.split(';')
+def execute_sql_file(file):
+    queries = file.split(';')
     for query in queries:
         query = query.strip()
         if query:
@@ -48,20 +48,16 @@ def execute_sql_file(file_contents):
     conn.commit()
 
 
-tables= ["conta", "cadastro", "proposta_transferencia", "sentinela", "periodicidade"]
+table = st.sidebar.radio('Select a table', ['conta', 'cadastro', 'proposta_transferencia', 'sentinela', 'periodicidade'])
 
-st.sidebar.title("CRUD App")
-table = st.sidebar.selectbox("Select a table", tables)
 
 display_table(table)
 
-operation = st.sidebar.radio("Select an operation", ["Insert", "Update", "Delete",'Custom Query'])
+operation = st.sidebar.radio("Select an operation", ["Insert", "Update", "Delete",'Custom Query','SQL File'])
 
-st.sidebar.subheader(f"{operation} record")
 if operation == "Insert":
-    query = f"SELECT column_name, data_type FROM information_schema.columns WHERE table_name = '{table}'"
-    df = execute_query(query)
     values = {}
+    df = execute_query(f"SELECT column_name, data_type FROM information_schema.columns WHERE table_name = '{table}'")
     for i, row in df.iterrows():
         col_name = row["column_name"]
         col_type = row["data_type"]
@@ -77,13 +73,12 @@ if operation == "Insert":
         insert_record(table, values)
 
 elif operation == "Update":
-    query = f"SELECT a.attname FROM pg_index i JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey) WHERE i.indrelid = '{table}'::regclass AND i.indisprimary"
-    df = execute_query(query)
+    values = {}
+    df = execute_query(f"SELECT a.attname FROM pg_index i JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey) WHERE i.indrelid = '{table}'::regclass AND i.indisprimary")
     pk = df.iloc[0, 0]
     pk_value = st.sidebar.text_input(f"Enter the {pk} of the record to be updated")
     query = f"SELECT column_name, data_type FROM information_schema.columns WHERE table_name = '{table}'"
     df = execute_query(query)
-    values = {}
     for i, row in df.iterrows():
         col_name = row["column_name"]
         col_type = row["data_type"]
@@ -100,20 +95,19 @@ elif operation == "Update":
         update_record(table, set_clause, where_clause)
 
 elif operation == "Delete":
-    query = f"SELECT a.attname FROM pg_index i JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey) WHERE i.indrelid = '{table}'::regclass AND i.indisprimary"
-    df = execute_query(query)
+    df = execute_query(f"SELECT a.attname FROM pg_index i JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey) WHERE i.indrelid = '{table}'::regclass AND i.indisprimary")
     pk = df.iloc[0, 0]
     pk_value = st.sidebar.text_input(f"Enter the {pk} of the record to be deleted")
     where_clause = f"{pk} = '{pk_value}'"
+
     if st.sidebar.button("Delete"):
         delete_record(table, where_clause)
 
 elif operation == "Custom Query":
-    sql_script = st.sidebar.text_area("Enter your SQL script:")
+    text = st.sidebar.text_area("Enter your SQL script:") 
     if st.sidebar.button("Execute Query"):
-        result = execute_query(sql_script)
+        result = execute_query(text)
         if result is not None:
-            st.sidebar.text("Query executed successfully!")
             st.sidebar.dataframe(result)
 
 elif operation == "Upload SQL File":

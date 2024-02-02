@@ -1,15 +1,20 @@
 # Import the required libraries
 import streamlit as st
 import psycopg2
+from uuid import uuid4
 import pandas as pd
+
+#database = input("DATABASE: ")
+#user = input("USER: ")
+#password = input("PASSWORD: ")
 
 # Connect to the PostgreSQL database
 conn = psycopg2.connect(
     host="localhost",
     port="5432",
-    database="your_database_name",
-    user="your_user_name",
-    password="your_password"
+    database="personallince",
+    user="postgres",
+    password="atencao"
 )
 
 # Create a cursor object
@@ -78,7 +83,7 @@ if operation == "Insert":
         col_type = row["data_type"]
         # If the column is a UUID, generate a default value
         if col_type == "uuid":
-            value = "uuid_generate_v4()"
+            value = uuid4()
         # If the column is a boolean, create a checkbox
         elif col_type == "boolean":
             value = st.sidebar.checkbox(col_name)

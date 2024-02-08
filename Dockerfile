@@ -1,15 +1,15 @@
-FROM python:3.9-alpine
+FROM alpine:latest
 
 WORKDIR /app
 
-COPY python_requirements.txt /app
-
-RUN apk --no-cache add build-base libffi-dev postgresql-dev && \
-        pip install --upgrade pip && \
-        pip install -r python_requirements.txt
-
 COPY . /app
 
-EXPOSE 8080
+RUN apk add --no-cache \
+        build-base libffi-dev postgresql-dev && \
+        pip install --upgrade pip && \
+        pip install -r python_requirements.txt && \
+        npm install orbit-db pump.io
 
-CMD ["python", "crud.py"]
+EXPOSE 8501
+
+CMD ["python", "streamlit_crud.py"]

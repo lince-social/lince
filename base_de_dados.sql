@@ -2,7 +2,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE conta (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-
+  
   usuario VARCHAR(30) NOT NULL,
   senha VARCHAR(255) NOT NULL
 );
@@ -18,13 +18,15 @@ CREATE TABLE cadastro (
 );
 
 CREATE TABLE proposta_transferencia (
-  quantidade_cadastro_enviante REAL NOT NULL,
-  id_cadastro_enviante UUID REFERENCES cadastro(id) ON DELETE CASCADE,
-
-  quantidade_cadastro_receptor REAL NOT NULL,
-  id_cadastro_receptor UUID REFERENCES cadastro(id) ON DELETE CASCADE,
-
-  PRIMARY KEY (id_cadastro_enviante, id_cadastro_receptor)
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  
+  id_cadastro_necessidade UUID REFERENCES cadastro(id) ON DELETE CASCADE,
+  quantidade_contribuida REAL NOT NULL,
+  id_cadastro_contribuicao UUID REFERENCES cadastro(id) ON DELETE CASCADE,
+  
+  id_cadastro_retribuicao UUID references cadastro(id) ON DELETE CASCADE,
+  quantidade_retribuida REAL NOT NULL,
+  id_cadastro_retribuido UUID references cadastro(id) ON DELETE CASCADE
 );
 
 CREATE TABLE sentinela (

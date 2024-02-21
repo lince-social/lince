@@ -1,19 +1,28 @@
-# Lince
+### Documentação:
 
-# o que é a lince?
+Navegue pelo documento clicando nos links abaixo:
 
-a lince é uma ferramenta para cadastro e conexão entre necessidades e contribuições de escopo livre.
+- [O que é a Lince?](#o-que-é-a-lince)
+- [Necessidades](#necessidades-ns)
+- [Contribuições](#contribuicoes-cs)
+- [Estrutura](#estrutura)
+- [Imaginação](#imaginacao)
+- [Instalação](#instalacao)
 
-você pode acessar a base de código no repositório <a href="https://github.com/lince-social/lince">lince</a>, a documentação em <a href="https://github.com/lince-social/.github/tree/main/docs/pt_br/documenta%c3%a7%c3%a3o">.github</a>, e as tarefas no <a href="https://github.com/orgs/lince-social/projects/6/views/1">kanban</a>. 
+# [O que é a Lince?](#documentação)
 
-## Necessidades (Ns):
+A lince é uma ferramenta para cadastro e conexão entre necessidades e contribuições de escopo livre.
+
+A documentação é este README.me. As tarefas estão no <a href="https://github.com/users/zaviduds/projects/2">Kanban</a>.
+
+## [Necessidades (Ns):](#documentação)
 Temos necessidades diferentes, podendo ser:
 
 - Básicas e pessoais, como: água, luz, saneamento, saúde, educação, habitação, alimentação, roupas, hábitos, natureza, comunidade, etc.
 - Serviços, como: transporte, apoio técnico, enfermagem, jardinagem, cultura, entretenimento, turismo, etc.
 - Outros bens de consumo, como: eletrodomésticos, ferramentas de trabalho, internet, computação, máquinas e matéria prima, etc.
 
-## Contribuições (Cs):
+## [Contribuições (Cs):](#documentação)
 Assim como diversas formas de saciar tais necessidades, de forma individual ou através de organizações, contribuindo com:
 
  - Produtos.
@@ -22,21 +31,15 @@ Assim como diversas formas de saciar tais necessidades, de forma individual ou a
  - Informação, infraestrutura, financiamento, presença, etc.
  - Trabalho em geral.
 
-## Estrutura:
+## [Estrutura:](#documentação) 
 
-a lince é uma iniciativa sem fins lucrativos.
+A lince é uma iniciativa sem fins lucrativos.
 
-com o intuito de remunerar desenvolvedores, utiliza-se de financiamento popular, através de: [apoia.se/lince](https://www.apoia.se/lince), [github sponsors](https://github.com/sponsors/lince-social) e [patreon](https://www.patreon.com/lince_social).
+Com o intuito de remunerar desenvolvedores, utiliza-se de financiamento popular, através de: [apoia.se/lince](https://www.apoia.se/lince), [github sponsors](https://github.com/sponsors/lince-social) e [patreon](https://www.patreon.com/lince_social).
 
-e-mail para contato: [xaviduds@gmail.com](mailto:xaviduds@gmail.com).
+E-mail para contato: [xaviduds@gmail.com](mailto:xaviduds@gmail.com).
 
-
-Ferramenta para cadastro e conexão entre necessidades e contribuições de escopo livre.
-
-Repositório para todo o código, a documentação geral e tecnológica pode ser acessada nesse 
-[link](https://github.com/lince-social).
-
-## Imaginação:
+## [Imaginação:](#documentação)  
 pessoas podem colocar suas ideias de desenvolvimento (backlog) como CIs e empresas clientes selecionarem quais vão ser desenvolvidas na sprint tal
 A Lince permite a criação de uma tabela para coordenar Necessidades Internas (NIs). Com o aumento do número de pessoas uma rede de apoio é formada através de Contribuições Externas (CEs). Também possibilitando Contribuições Internas (CIs) para atender às Necessidades Externas (NEs).
 
@@ -56,7 +59,8 @@ A plataforma busca unificar as interações econômicas e as trocas de recursos 
 
 Ao digitalizar as informações, a Lince possibilita o uso de algoritmos de otimização e aprendizado de máquina para um planejamento mais efetivo das contribuições. No entanto, é necessário considerar os vieses humanos presentes nos algoritmos e garantir transparência, consentimento e democracia ao implementar qualquer inteligência artificial tomadora de decisão. A distribuição dos recursos deve ser avaliada cuidadosamente, levando em consideração critérios como proximidade, necessidade absoluta ou potencial de mudança social ao recebê-los.
 
-## Instalação (ainda nao dockerizada, utilizando arch linux):
+## [Instalação:](#documentação) 
+(ainda nao dockerizada, utilizando arch linux):
 1. Instalar postgresql
 2. Criar um banco de dados chamado personallince (não é necessário, mas o streamlit_crud.py tem esse nome de banco de dados como alvo de alterações então esse nome é pra dar match)
 3. Rodar o script base_de_dados.sql enquanto no banco de dados personallince (\i [caminho pro script {no meu caso o comando é \i ~/lince/lince/base_de_dados.sql}])

@@ -4,10 +4,10 @@ Navegue pelo documento clicando nos links abaixo:
 
 - [O que é a Lince?](#o-que-é-a-lince)
 - [Necessidades](#necessidades-ns)
-- [Contribuições](#contribuicoes-cs)
+- [Contribuições](#contribuições-cs)
 - [Estrutura](#estrutura)
-- [Imaginação](#imaginacao)
-- [Instalação](#instalacao)
+- [Imaginação](#imaginação)
+- [Instalação](#instalação)
 
 # [O que é a Lince?](#documentação)
 

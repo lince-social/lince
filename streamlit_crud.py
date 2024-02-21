@@ -1,52 +1,6 @@
 import streamlit as st
-import psycopg2
-from uuid import uuid4
 import pandas as pd
-
-conn = psycopg2.connect(
-    host='localhost',
-    port='5432',
-    database='personallince',
-    user='postgres',
-    password='atencao')
-
-cursor = conn.cursor()
-
-def execute_query(query):
-    cursor.execute(query)
-    if query.strip().upper().startswith('SELECT'):
-        return pd.DataFrame(cursor.fetchall(), columns=[desc[0] for desc in cursor.description])
-    else:
-        return None
-
-def display_table(table):
-    st.subheader(f'Table: {table}')
-    st.dataframe(execute_query(f'SELECT * FROM {table}'))
-
-
-def insert_record(table, values):
-    execute_query(f'INSERT INTO {table} VALUES {values}')
-    conn.commit()
-
-
-def update_record(table, set_clause, where_clause):
-    execute_query(f'UPDATE {table} SET {set_clause} WHERE {where_clause}')
-    conn.commit()
-
-
-def delete_record(table_name, where_clause):
-    execute_query(f'DELETE FROM {table} WHERE {where_clause}')
-    conn.commit()
-
-
-def execute_sql_file(file):
-    queries = file.split(';')
-    for query in queries:
-        query = query.strip()
-        if query:
-            execute_query(query)
-    conn.commit()
-
+import condition_changer as cc
 
 table = st.sidebar.radio('Select a table', ['conta', 'cadastro', 'proposta_transferencia', 'sentinela', 'periodicidade'])
 operation = st.sidebar.radio('Select an operation', ['Insert', 'Update', 'Delete', 'Custom Query', 'SQL File'])

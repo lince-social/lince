@@ -51,3 +51,9 @@ CREATE TABLE periodicidade (
   alteracao_quantidade_cadastro REAL NOT NULL
 );
 
+CREATE TABLE trigger_script (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  cadastro_id UUID REFERENCES cadastro(id) ON DELETE CASCADE, 
+  certa_quantidade_cadastro,
+  script_name VARCHAR(255) NOT NULL
+);

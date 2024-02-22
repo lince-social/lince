@@ -7,6 +7,13 @@ CREATE TABLE conta (
   senha VARCHAR(255) NOT NULL
 );
 
+CREATE TABLE circulo (
+  id UUID DEFAULT uuid_generate_v4(),
+  id_conta UUID REFERENCES conda(id) ON DELETE CASCADE
+  
+  PRIMARY KEY (id_circulo, id_conta)
+);
+
 CREATE TABLE cadastro (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   id_conta UUID REFERENCES conta(id) ON DELETE CASCADE,
@@ -26,15 +33,29 @@ CREATE TABLE proposta_transferencia (
   
   id_cadastro_retribuicao UUID references cadastro(id) ON DELETE CASCADE,
   quantidade_retribuida REAL NOT NULL,
-  id_cadastro_retribuido UUID references cadastro(id) ON DELETE CASCADE
+  id_cadastro_retribuido UUID references cadastro(id) ON DELETE CASCADE,
+
+  momento_acordo TIMESTAMPZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE sentinela (
+CREATE TABLE observacao_ponto (
   id_cadastro_observado UUID REFERENCES cadastro(id) ON DELETE CASCADE,
   certa_quantidade_cadastro REAL NOT NULL,
 
   id_cadastro_alterado UUID REFERENCES cadastro(id) ON DELETE CASCADE,
   alteracao_quantidade_cadastro REAL NOT NULL,
+
+  PRIMARY KEY (id_cadastro_observado, certa_quantidade_cadastro)
+);
+
+CREATE TABLE observacao_anicca (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  
+  id_cadastro_observado UUID REFERENCES cadastro(id) ON DELETE CASCADE,
+  mudanca_quantidade_cadastro_observado REAL NOT NULL,
+
+  id_cadastro_alterado UUID REFERENCES cadastro(id) ON DELETE CASCADE,
+  mudanca_quantidade_cadastro_alterado REAL NOT NULL,
 
   PRIMARY KEY (id_cadastro_observado, certa_quantidade_cadastro)
 );
@@ -51,9 +72,9 @@ CREATE TABLE periodicidade (
   alteracao_quantidade_cadastro REAL NOT NULL
 );
 
-CREATE TABLE trigger_script (
+CREATE TABLE disparador_script_ponto (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   cadastro_id UUID REFERENCES cadastro(id) ON DELETE CASCADE, 
-  certa_quantidade_cadastro,
+  certa_quantidade_cadastro REAL NOT NULL,
   script_name VARCHAR(255) NOT NULL
 );

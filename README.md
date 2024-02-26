@@ -16,19 +16,19 @@ E-mail para contato: [xaviduds@gmail.com](mailto:xaviduds@gmail.com).
 # [Instalação:](#documentação) 
 (ainda nao dockerizada, utilizando arch linux):
 
-1. Instalar postgresql
+1. Instalar postgresql.
 
-2. Criar um banco de dados chamado personallince (não é necessário, mas o streamlit_crud.py tem esse nome de banco de dados como alvo de alterações então esse nome é pra dar match)
+2. Criar um banco de dados chamado personallince, o frontend.py tem esse nome de banco de dados como alvo de alterações então esse nome é pra dar match.
 
-3. Rodar o script base_de_dados.sql enquanto no banco de dados personallince (\i [caminho pro script {no meu caso o comando é \i ~/lince/lince/base_de_dados.sql}])
-    
-4. Criar um ambiente virtual (boas práticas) (ex: conda create --name lince) e ativá-lo (conda activate lince)
-    
-5. Instalar, preferivelmente dentro do ambiente virtual, os pacotes de python pra rodar o streamlit_crud.py: pip install streamlit psycopg2 pandas uuid
-    
-6. Terminal: python streamlit_crud.py && streamlit run streamlit_crud.py
-    
-7. Provavelmente uma aba será aberta no broswer no localhost port 8501
+3. Rodar o script base_de_dados.sql enquanto no banco de dados personallince (\i [caminho pro script {no meu caso o comando é \i ~/lince/base_de_dados.sql}]).
+
+4. Criar um ambiente virtual (boas práticas) (ex: conda create --name lince) e ativá-lo (conda activate lince).
+
+5. Instalar, preferivelmente dentro do ambiente virtual, os pacotes de python pra rodar o frontend.py: pip install streamlit psycopg2 pandas uuid.
+
+6. Terminal: python frontend.py && streamlit run frontend.py.
+
+7. Provavelmente uma aba será aberta no broswer no localhost port 8501.
 
 # [Teoria](#documentação)
 

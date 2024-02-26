@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import condition_changer as cc
+from backend import *
 
 table = st.sidebar.radio('Select a table', ['conta', 'cadastro', 'proposta_transferencia', 'sentinela', 'periodicidade'])
 operation = st.sidebar.radio('Select an operation', ['Insert', 'Update', 'Delete', 'Custom Query', 'SQL File'])

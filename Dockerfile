@@ -4,12 +4,8 @@ WORKDIR /app
 
 COPY . /app
 
-RUN apk add --no-cache \
-        build-base libffi-dev postgresql-dev && \
-        pip install --upgrade pip && \
-        pip install -r python_requirements.txt && \
-        npm install orbit-db pump.io
+RUN apk add --no-cache build-base libffi-dev postgresql-dev
+RUN pip install --upgrade pip
+RUN pip install psycopg2 uuid pandas streamlit
 
-EXPOSE 8501
-
-CMD ["python", "streamlit_crud.py"]
+CMD ["python", "frontend.py"]

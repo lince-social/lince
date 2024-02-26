@@ -1,6 +1,7 @@
-import datetime
+from datetime import datetime
 import psycopg2
 from uuid import uuid4
+import pandas as pd
 
 conn = psycopg2.connect(
     host='localhost',
@@ -15,8 +16,7 @@ def execute_query(query):
     cursor.execute(query)
     if query.strip().upper().startswith('SELECT'):
         return pd.DataFrame(cursor.fetchall(), columns=[desc[0] for desc in cursor.description])
-    else:
-        return None
+    return None
 
 def display_table(table):
     st.subheader(f'Table: {table}')
@@ -55,8 +55,8 @@ def check_and_update_cadastro():
         id_cadastro = row['id']
         quantidade_cadastro = row['quantidade']
 
+
         observacao_ponto_df = execute_query(f'SELECT * FROM observacao_ponto WHERE id_cadastro_observado = \'{id_cadastro}\'')
-        
         if not observacao_ponto_df.empty:
             certa_quantidade_cadastro = observacao_ponto_df.iloc[0]['certa_quantidade_cadastro']
             alteracao_quantidade_cadastro = observacao_ponto_df.iloc[0]['alteracao_quantidade_cadastro']
@@ -64,9 +64,9 @@ def check_and_update_cadastro():
             if quantidade_cadastro == certa_quantidade_cadastro:
                 new_quantidade_cadastro = quantidade_cadastro + alteracao_quantidade_cadastro
                 update_record('cadastro', f'quantidade = {new_quantidade_cadastro}', f'id = \'{id_cadastro}\'')
-# meu deus como vou fazer isso aqui sem ter um log de todas as mudanças de quantidade
+
+
         observacao_anicca_df = execute_query(f'SELECT * FROM observacao_anicca WHERE id_cadastro_observado = \'{id_cadastro}\'')
-        
         if not observacao_anicca_df.empty:
             certa_quantidade_cadastro = observacao_anicca_df.iloc[0]['certa_quantidade_cadastro']
             alteracao_quantidade_cadastro = observacao_anicca_df.iloc[0]['alteracao_quantidade_cadastro']
@@ -77,7 +77,6 @@ def check_and_update_cadastro():
 
 
         periodicidade_df = execute_query(f'SELECT * FROM periodicidade WHERE id_cadastro_alterado = \'{id_cadastro}\'')
-
         if not periodicidade_df.empty:
             periodos_desde_alteracao = periodicidade_df.iloc[0]['periodos_desde_alteracao']
             periodicidade = periodicidade_df.iloc[0]['periodicidade']

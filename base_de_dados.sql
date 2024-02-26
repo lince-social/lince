@@ -24,7 +24,7 @@ CREATE TABLE cadastro (
   quantidade REAL DEFAULT 0 NOT NULL
 );
 
-CREATE TABLE proposta_transferencia (
+CREATE TABLE transferencia (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   
   id_cadastro_necessidade UUID REFERENCES cadastro(id) ON DELETE CASCADE,

@@ -14,11 +14,17 @@ A lince é uma iniciativa sem fins lucrativos. Com o intuito de remunerar desenv
 E-mail para contato: [xaviduds@gmail.com](mailto:xaviduds@gmail.com).
 
 # [Instalação:](#documentação) 
-Com postgresql e nix instalado:
+Com postgresql e nix instalado, inicie o ambiente:
 
 ```bash
 nix flake update
 nix develop
+```
+
+Para rodar, dentro do diretório lince:
+
+```bash
+streamlit run src/lince.py
 ```
 
 # [Teoria](#documentação)

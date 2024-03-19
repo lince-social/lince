@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 from backend import *
+import psycopg2
+
 
 table = st.sidebar.radio('Select a table', ['conta', 'cadastro', 'proposta_transferencia', 'sentinela', 'periodicidade'])
 operation = st.sidebar.radio('Select an operation', ['Insert', 'Update', 'Delete', 'Custom Query', 'SQL File'])

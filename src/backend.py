@@ -6,7 +6,7 @@ import pandas as pd
 conn = psycopg2.connect(
     host='localhost',
     port='5432',
-    database='personallince',
+    database='lince',
     user='postgres',
     password='atencao')
 

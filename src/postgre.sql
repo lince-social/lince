@@ -1,3 +1,8 @@
+DROP DATABASE lince;
+CREATE DATABASE lince;
+
+\c lince;
+
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE conta (
@@ -9,9 +14,9 @@ CREATE TABLE conta (
 
 CREATE TABLE circulo (
   id UUID DEFAULT uuid_generate_v4(),
-  id_conta UUID REFERENCES conda(id) ON DELETE CASCADE
+  id_conta UUID REFERENCES conta(id) ON DELETE CASCADE,
   
-  PRIMARY KEY (id_circulo, id_conta)
+  PRIMARY KEY (id, id_conta)
 );
 
 CREATE TABLE cadastro (
@@ -35,7 +40,7 @@ CREATE TABLE transferencia (
   quantidade_retribuida REAL NOT NULL,
   id_cadastro_retribuido UUID references cadastro(id) ON DELETE CASCADE,
 
-  momento_acordo TIMESTAMPZ NOT NULL DEFAULT now()
+  momento_acordo TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
 CREATE TABLE observacao_ponto (
@@ -55,9 +60,7 @@ CREATE TABLE observacao_anicca (
   mudanca_quantidade_cadastro_observado REAL NOT NULL,
 
   id_cadastro_alterado UUID REFERENCES cadastro(id) ON DELETE CASCADE,
-  mudanca_quantidade_cadastro_alterado REAL NOT NULL,
-
-  PRIMARY KEY (id_cadastro_observado, certa_quantidade_cadastro)
+  mudanca_quantidade_cadastro_alterado REAL NOT NULL
 );
 
 CREATE TABLE periodicidade (

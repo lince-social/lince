@@ -2,7 +2,7 @@ import pandas as pd
 from uuid import uuid4
 from os.path import exists
 from datetime import datetime
-from psycopg2 import connect, OperationalError
+import psycopg2 as pg
 
 
 def check_db_and_populate():
@@ -136,12 +136,13 @@ def check_and_update_cadastro():
                 update_record('periodicidade', f'periodos_desde_alteracao = {new_periodos_desde_alteracao}', f'id = \'{id_cadastro}\'')
 
 
-host='localhost'
-port='5432'):
+host ='localhost'
+port ='5432'
 database_name = 'lince'
 user = 'postgres'
 password = 'password'
 
-conn = psycopg2.connect( host=host, port=port, database=database_name, user=user, password=password)
+conn = None
+conn = psycopg2.connect(host=host, port=port, database=database_name, user=user, password=password)
 
 cursor = conn.cursor()

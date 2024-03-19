@@ -4,6 +4,13 @@ from os.path import exists
 from datetime import datetime
 import psycopg2
 import streamlit as st
+import subprocess
+
+host = 'localhost'
+port = '5432'
+database_name = 'lince'
+user = 'postgres'
+password = 'atencao'
 
 def check_db_and_populate():
     conn = None
@@ -12,8 +19,7 @@ def check_db_and_populate():
             host=host,
             port=port,
             user=user,
-            password=password
-        )
+            password=password)
         cur = conn.cursor()
         
         cur.execute(f"SELECT datname FROM pg_database WHERE datname = '{database_name}'")
@@ -41,14 +47,20 @@ def check_db_and_populate():
                 print(f"Database '{database_name}' populated successfully.")
             else:
                 print(f"SQL file '{sql_file_path}' not found.")
-        else:
-            print(f"Database '{database_name}' already exists.")
-            
     except OperationalError as e:
         print(f"The error '{e}' occurred")
     finally:
         if conn is not None:
             conn.close()
+
+
+def generate_unique_filename(base_filename):
+    counter = 0
+    filename = base_filename
+    while os.path.exists(filename):
+        counter += 1
+        filename = f"{base_filename}{counter}.sql"
+    return filename
 
 
 def execute_query(query):
@@ -136,19 +148,107 @@ def check_and_update_cadastro():
                 update_record('periodicidade', f'periodos_desde_alteracao = {new_periodos_desde_alteracao}', f'id = \'{id_cadastro}\'')
 
 
-host ='localhost'
-port ='5432'
-database_name = 'lince'
-user = 'postgres'
-password = 'password'
 
-conn = None
+check_db_and_populate()
 conn = psycopg2.connect(
     host=host,
     port=port,
     database=database_name,
     user=user,
-    password=password
-)
+    password=password)
 
 cursor = conn.cursor()
+
+table = st.sidebar.radio('Select a table', ['conta', 'cadastro', 'proposta_transferencia', 'sentinela', 'periodicidade'])
+operation = st.sidebar.radio('Select an operation', ['Insert', 'Update', 'Delete', 'Custom Query', 'SQL File', 'Database to .sql file'])
+
+display_table(table)
+
+if operation == 'Insert':
+    df = execute_query(f"SELECT column_name, data_type FROM information_schema.columns WHERE table_name = '{table}'")
+    values = {}
+    
+    for i, row in df.iterrows():
+        col_name = row['column_name']
+        col_type = row['data_type']
+        if col_type == 'uuid':
+            value = uuid4()
+        elif col_type == 'boolean':
+            value = st.sidebar.checkbox(col_name)
+        else:
+            value = st.sidebar.text_input(col_name)
+        values[col_name] = value
+    
+    values = tuple(values.values())
+    
+    if st.sidebar.button('Insert'):
+        insert_record(table, values)
+
+elif operation == 'Update':
+
+    df = execute_query(f"SELECT a.attname FROM pg_index i JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey) WHERE i.indrelid = '{table}'::regclass AND i.indisprimary")
+
+    pk = df.iloc[0, 0]
+    pk_value = st.sidebar.text_input(f"Enter the {pk} of the record to be updated")
+    
+    df = execute_query(f"SELECT column_name, data_type FROM information_schema.columns WHERE table_name = '{table}'")
+    
+    for i, row in df.iterrows():
+        col_name = row["column_name"]
+        col_type = row["data_type"]
+        if col_name == pk:
+            continue
+        elif col_type == "boolean":
+            value = st.sidebar.checkbox(col_name)
+        else:
+            value = st.sidebar.text_input(col_name)
+        values[col_name] = value
+    
+    set_clause = ", ".join([f"{k} = '{v}'" for k, v in values.items() if v != ""])
+    where_clause = f"{pk} = '{pk_value}'"
+    
+    if st.sidebar.button("Update"):
+        update_record(table, set_clause, where_clause)
+
+elif operation == "Delete":
+    df = execute_query(f"SELECT a.attname FROM pg_index i JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey) WHERE i.indrelid = '{table}'::regclass AND i.indisprimary")
+
+    pk = df.iloc[0, 0]
+    pk_value = st.sidebar.text_input(f"Enter the {pk} of the record to be deleted")
+    
+    where_clause = f"{pk} = '{pk_value}'"
+
+    if st.sidebar.button("Delete"):
+        delete_record(table, where_clause)
+
+elif operation == "Custom Query":
+    text = st.sidebar.text_area("Enter your SQL script:") 
+    
+    if st.sidebar.button("Execute Query"):
+        result = execute_query(text)
+        if result is not None:
+            st.sidebar.dataframe(result)
+
+elif operation == "SQL File":
+    uploaded_file = st.sidebar.file_uploader("Choose a .sql file", type="sql")
+    
+    if uploaded_file is not None:
+        file_contents = uploaded_file.read().decode("utf-8")
+        if st.sidebar.button("Execute SQL File"):
+            execute_sql_file(file_contents)
+            st.sidebar.text("SQL file executed successfully!")
+
+elif operation == 'Database to .sql file':
+    base_filename = 'lincedb'
+    unique_filename = generate_unique_filename(base_filename)
+    pg_dump_command = [ 'pg_dump', '-U', user, '-W', '-F', 'plain', '-f', unique_filename, database ]
+
+    result = subprocess.run(pg_dump_command, text=True, input=f'{password}\n')
+
+    if result.returncode == 0:
+        print(f"Database dump successful. File saved as {unique_filename}.")
+    else:
+        print(f"Database dump failed with error code {result.returncode}.")    
+
+else:
+    st.sidebar.text("Select a valid operation.")

@@ -14,8 +14,12 @@ A lince é uma iniciativa sem fins lucrativos. Com o intuito de remunerar desenv
 E-mail para contato: [xaviduds@gmail.com](mailto:xaviduds@gmail.com).
 
 # [Instalação:](#documentação) 
+Com postgresql e nix instalado:
 
-Descubra!
+```bash
+nix flake update
+nix develop
+```
 
 # [Teoria](#documentação)
 

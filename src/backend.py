@@ -1,16 +1,55 @@
-from datetime import datetime
-import psycopg2
-from uuid import uuid4
 import pandas as pd
+from uuid import uuid4
+from os.path import exists
+from datetime import datetime
+from psycopg2 import connect, OperationalError
 
-conn = psycopg2.connect(
-    host='localhost',
-    port='5432',
-    database='lince',
-    user='postgres',
-    password='atencao')
 
-cursor = conn.cursor()
+def check_db_and_populate():
+    conn = None
+    try:
+        conn = psycopg2.connect(
+            host=host,
+            port=port,
+            user=user,
+            password=password
+        )
+        cur = conn.cursor()
+        
+        cur.execute(f"SELECT datname FROM pg_database WHERE datname = '{database_name}'")
+        result = cur.fetchone()
+        
+        if result is None:
+            cur.execute(f"CREATE DATABASE {database_name}")
+            print(f"Database '{database_name}' created successfully.")
+            
+            conn.close()
+            conn = psycopg2.connect(
+                host=host,
+                port=port,
+                database=database_name,
+                user=user,
+                password=password
+            )
+            
+            sql_file_path = 'postgre.sql'
+            if os.path.exists(sql_file_path):
+                with open(sql_file_path, 'r') as file:
+                    sql_commands = file.read()
+                cur.execute(sql_commands)
+                conn.commit()
+                print(f"Database '{database_name}' populated successfully.")
+            else:
+                print(f"SQL file '{sql_file_path}' not found.")
+        else:
+            print(f"Database '{database_name}' already exists.")
+            
+    except OperationalError as e:
+        print(f"The error '{e}' occurred")
+    finally:
+        if conn is not None:
+            conn.close()
+
 
 def execute_query(query):
     cursor.execute(query)
@@ -96,5 +135,13 @@ def check_and_update_cadastro():
                 new_periodos_desde_alteracao = periodos_desde_alteracao + 1
                 update_record('periodicidade', f'periodos_desde_alteracao = {new_periodos_desde_alteracao}', f'id = \'{id_cadastro}\'')
 
-check_and_update_cadastro()
 
+host='localhost'
+port='5432'):
+database_name = 'lince'
+user = 'postgres'
+password = 'password'
+
+conn = psycopg2.connect( host=host, port=port, database=database_name, user=user, password=password)
+
+cursor = conn.cursor()

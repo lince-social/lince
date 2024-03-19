@@ -2,8 +2,8 @@ import pandas as pd
 from uuid import uuid4
 from os.path import exists
 from datetime import datetime
-import psycopg2 as pg
-
+import psycopg2
+import streamlit as st
 
 def check_db_and_populate():
     conn = None
@@ -143,6 +143,12 @@ user = 'postgres'
 password = 'password'
 
 conn = None
-conn = psycopg2.connect(host=host, port=port, database=database_name, user=user, password=password)
+conn = psycopg2.connect(
+    host=host,
+    port=port,
+    database=database_name,
+    user=user,
+    password=password
+)
 
 cursor = conn.cursor()

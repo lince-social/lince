@@ -84,7 +84,7 @@ def update_record(table, set_clause, where_clause):
     conn.commit()
 
 
-def delete_record(table_name, where_clause):
+def delete_record(table, where_clause):
     execute_query(f'DELETE FROM {table} WHERE {where_clause}')
     conn.commit()
 
@@ -241,14 +241,14 @@ elif operation == "SQL File":
 elif operation == 'Database to .sql file':
     base_filename = 'lincedb'
     unique_filename = generate_unique_filename(base_filename)
-    pg_dump_command = [ 'pg_dump', '-U', user, '-W', '-F', 'plain', '-f', unique_filename, database ]
+    pg_dump_command = [ 'pg_dump', '-U', user, '-W', '-F', 'plain', '-f', unique_filename, database_name ]
 
-    result = subprocess.run(pg_dump_command, text=True, input=f'{password}\n')
-
-    if result.returncode == 0:
-        print(f"Database dump successful. File saved as {unique_filename}.")
-    else:
-        print(f"Database dump failed with error code {result.returncode}.")    
+    if st.sidebar.button('Pg_dump database'):
+        result = subprocess.run(pg_dump_command, text=True, input=f'{password}\n')
+        if result.returncode == 0:
+            print(f"Database dump successful. File saved as {unique_filename}.")
+        else:
+            print(f"Database dump failed with error code {result.returncode}.")    
 
 else:
     st.sidebar.text("Select a valid operation.")

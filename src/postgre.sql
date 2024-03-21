@@ -29,7 +29,7 @@ CREATE TABLE cadastro (
   quantidade REAL DEFAULT 0 NOT NULL
 );
 
-CREATE TABLE transferencia (
+CREATE TABLE movimento (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   
   id_cadastro_necessidade UUID REFERENCES cadastro(id) ON DELETE CASCADE,
@@ -40,7 +40,7 @@ CREATE TABLE transferencia (
   quantidade_retribuida REAL NOT NULL,
   id_cadastro_retribuido UUID references cadastro(id) ON DELETE CASCADE,
 
-  momento_acordo TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+  momento_movimento TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
 CREATE TABLE observacao_ponto (

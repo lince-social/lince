@@ -148,7 +148,6 @@ def check_and_update_cadastro():
                 update_record('periodicidade', f'periodos_desde_alteracao = {new_periodos_desde_alteracao}', f'id = \'{id_cadastro}\'')
 
 
-
 check_db_and_populate()
 conn = psycopg2.connect(
     host=host,

@@ -7,29 +7,29 @@ Navegue pelo documento clicando nos links abaixo:
 # [O que é a Lince?](#documentação)
 A lince é uma ferramenta para cadastro e conexão entre necessidades e contribuições de escopo livre.
 
-A documentação é este README.md. As tarefas estão no <a href="https://github.com/users/zaviduds/projects/2">Kanban</a>.
+A documentação é este README.md. As tarefas estão no <a href="https://github.com/orgs/lince-social/projects/6">Kanban</a>.
 
 A lince é uma iniciativa sem fins lucrativos. Com o intuito de remunerar desenvolvedores, utiliza-se de financiamento popular, através de: [apoia.se/lince](https://www.apoia.se/lince), [github sponsors](https://github.com/sponsors/lince-social) e [patreon](https://www.patreon.com/lince_social).
 
 E-mail para contato: [xaviduds@gmail.com](mailto:xaviduds@gmail.com).
 
-# [Instalação:](#documentação) 
-Com postgresql e nix instalado, inicie o ambiente:
+# [Instalação:](#documentação)
+Utiliza-se PostgreSQL e <a href="https://nix.dev/install-nix.html">Nix</a> para criar os ambientes de execução de código. Verifique que estão instalados.
 
 ```bash
-nix flake update
-nix develop
-```
+# Clone e entre no repositório:
+git clone git@github.com:lince-social/lince.git && cd lince
 
-Para rodar, dentro do diretório lince:
+# Inicie o ambiente:
+nix flake update && nix develop
 
-```bash
+# Rode a Lince:
 streamlit run src/lince.py
 ```
 
 # [Teoria](#documentação)
 
-Pode ser perspicaz acompanhar essa parte com o código da <a href="https://github.com/zaviduds/lince/blob/main/base_de_dados.sql">base_de_dados.sql</a> ao lado.
+Pode ser perspicaz acompanhar essa parte com o código da <a href="https://github.com/lince-social/lince/blob/main/base_de_dados.sql">base_de_dados.sql</a> ao lado.
 
 A lince é focada em cadastros e operações sobre esses cadastros, para começar a explicar tal mecanismo entraremos em um consenso do significante de Necessidades e Contribuições:
 

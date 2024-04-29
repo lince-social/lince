@@ -1,19 +1,11 @@
-# Documentação:
-Navegue pelo documento clicando nos links abaixo:
-- [O que é a Lince?](#o-que-é-a-lince)
-- [Instalação](#instalação)
-- [Teoria](#teoria)
-
-# [O que é a Lince?](#documentação)
+# O que é a Lince?
 A lince é uma ferramenta para cadastro e conexão entre necessidades e contribuições de escopo livre.
 
-A documentação é este README.md. As tarefas estão no <a href="https://github.com/orgs/lince-social/projects/6">Kanban</a>.
+A documentação é este README.md. As tarefas estão no <a href="https://github.com/orgs/lince-social/projects/6">Kanban</a>. E-mail para contato: [xaviduds@gmail.com](mailto:xaviduds@gmail.com).
 
 A lince é uma iniciativa sem fins lucrativos. Com o intuito de remunerar desenvolvedores, utiliza-se de financiamento popular, através de: [apoia.se/lince](https://www.apoia.se/lince), [github sponsors](https://github.com/sponsors/lince-social) e [patreon](https://www.patreon.com/lince_social).
 
-E-mail para contato: [xaviduds@gmail.com](mailto:xaviduds@gmail.com).
-
-# [Instalação:](#documentação)
+# Instalação:
 Utiliza-se PostgreSQL e <a href="https://nix.dev/install-nix.html">Nix</a> para criar os ambientes de execução de código. Verifique que estão instalados.
 
 ```bash
@@ -27,31 +19,20 @@ nix flake update && nix develop
 streamlit run src/lince.py
 ```
 
-# [Teoria](#documentação)
+# Teoria:
 
-Pode ser perspicaz acompanhar essa parte com o código da <a href="https://github.com/lince-social/lince/blob/main/base_de_dados.sql">base_de_dados.sql</a> ao lado.
+Pode ser perspicaz acompanhar essa parte com o código da <a href="https://github.com/lince-social/lince/blob/main/src/postgre.sql">base_de_dados.sql</a> ao lado.
 
-A lince é focada em cadastros e operações sobre esses cadastros, para começar a explicar tal mecanismo entraremos em um consenso do significante de Necessidades e Contribuições:
+A lince é focada em cadastros e operações sobre esses cadastros, para começar a explicar tal mecanismo entraremos em um consenso do significante de Necessidades e Contribuições. Após isso será comentado sobre como imagina-se a tecnologia de uma Lince funcional. E por final o impacto imaginado com tal tecnologia.
 
-- [Necessidades](#necessidades)
-- [Contribuições](#contribuições)
-
-Após isso será comentado sobre como imagina-se a tecnologia de uma Lince funcional:
-
-- [Tecnologia](#tecnologia)
-
-E por final o impacto imaginado com tal tecnologia:
-
-- [Impacto](#impacto)
-
-# [Necessidades:](#teoria)
+# Necessidades:
 Temos necessidades diferentes, podendo ser:
 
 - Básicas e pessoais, como: água, luz, saneamento, saúde, educação, habitação, alimentação, roupas, hábitos, natureza, comunidade, etc.
 - Serviços, como: transporte, apoio técnico, enfermagem, jardinagem, cultura, entretenimento, turismo, automatização, etc.
 - Outros bens de consumo, como: eletrodomésticos, ferramentas de trabalho, internet, computação, máquinas e matéria prima, etc.
 
-# [Contribuições:](#teoria)
+# Contribuições:
 Assim como diversas formas de saciar tais necessidades, de forma individual ou através de organizações, contribuindo com:
 
  - Produtos.
@@ -60,7 +41,7 @@ Assim como diversas formas de saciar tais necessidades, de forma individual ou a
  - Informação, infraestrutura, financiamento, presença, etc.
  - Trabalho em geral.
 
-# [Tecnologia:](#teoria)  
+# Tecnologia:
 ### Possibilidades:
 Começa-se com software livre (FLOSS). Qualquer pessoa pode usar a Lince com o  código padrão ou criar sua versão, como customizações que ainda conseguem trocar informações. Estudam-se formas de autenticar identidades e transferir dados de forma descentralizada, com protocolos pub/sub, Merkle-CRDTs, bases de dados eventualmente consistentes e possívelmente blockchain, mas nada de cripto! 
 
@@ -76,7 +57,7 @@ Com o intuito de automatizar trabalho manual de modificar quantidade, é possív
 
 No momento, utiliza-se Python pra a lógica e browser frontend e postgresql para o banco de dados.
 
-# [Impacto:](#teoria)
+# Impacto:
 É importante destacar que a Lince é responsável por facilitar a conexão entre pessoas e recursos, transformando necessidades e contribuições em dados. Os custos relacionados à interação, como transporte, produção e serviços em si, continuam sendo responsabilidade das partes envolvidas.
 
 Visando a maior flexibilidade de uso, a Lince consegue mapear e organizar diversas interações. Desde o fornecimento de apoio após desastres naturais até o planejamento de eventos, tarefas de organizações e pessoais, venda de produtos, etc. Queremos minimizar necessidades não atendidas, alinhar demandas e distribuições, e entender em que devemos trabalhar.

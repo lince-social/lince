@@ -1,6 +1,6 @@
 <!-- Remover código inútil pra uma versão de terminal -->
 
-Criar banco de dados com arquivo de schema e data
+Criar banco de dados com arquivo de schema e dados
 
 extrair db e salvar com nome unico
 fazendo com que esses dados possam repopular o banco de dados

@@ -1,7 +1,4 @@
 import pandas as pd
-from uuid import uuid4
-from os.path import exists
-from datetime import datetime
 import psycopg2
 import subprocess
 

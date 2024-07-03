@@ -1,12 +1,12 @@
-DROP DATABASE lince;
-CREATE DATABASE lince;
+-- DROP DATABASE lince;
+-- CREATE DATABASE lince;
 
-\c lince;
+-- \c lince;
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE cadastro (
-	id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+	id SERIAL PRIMARY KEY,
 	titulo VARCHAR(50) NOT NULL,
 	descricao TEXT,
 	localizacao VARCHAR(255), 

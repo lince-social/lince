@@ -1,6 +1,6 @@
 import pandas as pd
 import psycopg2
-from os.path import exists
+import os
 import subprocess
 
 
@@ -15,49 +15,149 @@ def create_connection_object(host = 'localhost', user = 'postgres', database = '
     connection.autocommit = True
 
     return connection
+
+
+def exists_db():
+    connection = create_connection_object(database=None)
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT datname FROM pg_database WHERE datname = 'lince'")
+
+    return cursor.fetchone()
+
+
+def dump_db():
+    print("Database lince exists, dumping...")
+
+    connection = create_connection_object()
+
+    subprocess.run(['pg_dump', '-U' 'postgres', '-W', '-F', 'plain', '-f', '/home/eduardo/lince/src/db/versions/db_dump.sql', 'lince'], text=True, input='1\n')
+
+    connection.close()
+
+    return True
+
+
+def drop_db():
+    print('Dump complete, dropping lince database')
+
+    connection = create_connection_object(database=None)
+    cursor = connection.cursor()
+
+    cursor.execute('DROP DATABASE lince')
+
+    connection.close()
+
+    return True
+
+
+def create_db():
+    print("Creating Database Lince")
+
+    connection = create_connection_object(database=None)
+
+    cursor.execute('CREATE DATABASE lince')
+
+    connection.close()
+
+    return True
+
+
+def fill_db_file_path():
+    match int(input("[0] Dumped DB.\n[1] Specific .sql file.\nChoose a fill method: ")):
+        case 0:
+            return '/home/eduardo/lince/src/db/postgre.sql'
+        case 1:
+            return input("Type the .sql file Path: ")
+
+    return None
+
+
+def fill_db():
+    sql_file_path = choose_fill_db_method()
+
+    if os.path.exists(sql_file_path):
+        with open(sql_file_path, 'r') as file:
+            sql_commands = file.read()
+
+        cursor.execute(sql_commands)
+        print(f"Database '{database_name}' populated successfully.")
+
+    else:
+        print(f"SQL file '{sql_file_path}' not found.")
+
+
+def create_and_populate_db_if_not_already_created_or_populated():
+    if exists_db() is not None:
+        dump_db()
+        drop_db()
+
+    create_db()
+    fill_db()
+
+    return True
+   
+
+def app_mode():
+    answer = int(input('''Select mode:\n[0] Auto saver/dumper\n[1]Save when called for'''))
+
+    if isinstance(answer, int) and answer in [0, 1]:
+        return answer
+
+    print("Wrong type, please type an Integer (int), i.e: 1, 42, 80")
+    app_mode()
+
+
+def read_lines(table, lines_number):
+    return execute_query('SELECT * FROM {table} LIMIT {lines_number}')
     
 
-def create_db_if_not_exists():
-    connection = None
-    try:
-        connection = create_connection_object(database=None)
-        cursor = connection.cursor()
+def print_head_cadastro():
+    return read_lines(table='cadastro', lines_number=5)
 
-        cursor.execute("SELECT datname FROM pg_database WHERE datname = 'lince'")
 
-        result = cursor.fetchone()
+def table_chooser():
+    table = int(input('Select table:\n[0] Exit\n[1] Save\n[2] Cadastro'))
 
-        if result is not None:
-            connection = create_connection_object()
-            print("Database lince exists, dumping...")
-            subprocess.run(['pg_dump', '-U' 'postgres', '-W', '-F', 'plain', '-f', 'db_versions/db_dump.sql', 'lince'], text=True, input='1\n')
-            connection.close()
+    if isinstance(table, int) and table in [0, 1, 2]:
+        return table
 
-            connection = create_connection_object(database=None)
-            print('Dump complete, dropping lince database')
-            cursor.execute('DROP DATABASE lince')
-            connection.close()
+    print('Wrong type or option selected, please enter an Integer (int) from 0 to 2')
+    table_chooser()
+    
 
-        connection = create_connection_object(database=None)
-        cursor.execute('CREATE DATABASE lince')
-        connection.close()
+def operation_chooser():
+    choice = int(input('Select table:\n[0] Exit.\n[1] Save.\n[2] Select.'))
 
-        connection = create_connection_object()
-        sql_file_path = 'src/postgre.sql'
+    if isinstance(choice, int) and choice in [0, 1, 2]:
+        return choice
 
-        if exists(sql_file_path):
-            with open(sql_file_path, 'r') as file:
-                sql_commands = file.read()
+    print('Wrong type or option, please enter an Integer from 0 to 2')
+    operation_chooser()
+    
 
-            cursor.execute(sql_commands)
-            print(f"Database '{database_name}' populated successfully.")
+def execute_operation():
+    print_head_cadastro()
 
-        else:
-            print(f"SQL file '{sql_file_path}' not found.")
-   
-    finally:
-        if connection is not None:
-            connection.close()
+    table = table_chooser()
+    operation = operation_chooser()
+
+
+    return True
+
+
+def main():
+    match app_mode():
+        case 0:
+            while True:
+                create_and_populate_db_if_not_already_created_or_populated()
+                execute_operation()
+        case 1:
+            create_and_populate_db_if_not_already_created_or_populated()
+            while True:
+                execute_operation()
+
+    return False
 
 
 # def execute_query(query):
@@ -73,15 +173,11 @@ def create_db_if_not_exists():
 #     return None
 
 
-# def read_lines(table):
-#     return (execute_query(f'SELECT * FROM {table}'))
-
-
 # def add_line(table):
 #     values = input('Add line: ')
 
 #     execute_query(f'INSERT INTO {table} VALUES {values}')
-#     return None
+#     retos.urn None
 
 
 # def delete_line(table):
@@ -98,51 +194,6 @@ def create_db_if_not_exists():
 #     execute_query(f'UPDATE {table} SET {set_clause} WHERE {where_clause}')
 #     execute_query(f'')
 #     return None
-
-
-# def table_selection():
-#      return int(input('''
-# Select a Table:
-
-# [0] Menu.
-# [1] Cadastros.
-# [*] Exit.
-
-# Which table: '''))
-
-
-# def operation_selection():
-#     return int(input('''
-# Select an operation:
-
-# [0] Menu
-# [1] Add
-# [2] Delete
-# [3] Uptade
-# [*] Exit
-
-# Which operation: '''))
-
-
-def main():
-    create_db_if_not_exists()
-    # read_lines("cadastro").head()
-
-    # table = table_selection()
-    # read_lines(table).head()
-
-    # match operation_selection():
-    #     case 0:
-    #         main()
-    #     case 1:
-    #         add_line(table)
-    #     case 2:
-    #         delete_line(table)
-    #     case 3:
-    #         update_line(table)
-    #     case _:
-    #         pass
-    # main()
 
 
 if __name__ == "__main__":

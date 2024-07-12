@@ -1,17 +1,12 @@
-import psycopg2
+# options_header = ['[S] Save.', '[E] Exit.'] 
+# operation_options = ['[C] Create.','[R] Read.', '[U] Update.', '[D] Delete.']
+# table_options = ['[1] Cadastro']
 
-def create_connection_object(host = 'localhost', user = 'postgres', database = 'lince', password = '1', port = '5432'):
-    return psycopg2.connect(
-        host = host
-        user = user,
-        database = database,
-        password = password,
-        port = port)
+options_header = ['[S] Save.', '[E] Exit.'] 
+operation_options = ['[C] Create.','[R] Read.', '[U] Update.', '[D] Delete3333333331.']
+table_options = ['[1] Cadastro']
 
-# def other():
-#     thingy = testing()
+# Create a list of lengths for each list
+# lengths = [len(item) for item in options_header + operation_options + table_options]
 
-#     print(thingy.database)
-
-# print("dicn")
-# other()
+print(max([len(item) for item in options_header + operation_options + table_options]))

@@ -6,17 +6,9 @@ A documentação é este README.md. As tarefas estão no <a href="https://github
 A lince é uma iniciativa sem fins lucrativos. Com o intuito de remunerar desenvolvedores, utiliza-se de financiamento popular, através de: [apoia.se/lince](https://www.apoia.se/lince), [github sponsors](https://github.com/sponsors/lince-social) e [patreon](https://www.patreon.com/lince_social).
 
 # Instalação:
-Utiliza-se PostgreSQL e <a href="https://nix.dev/install-nix.html">Nix</a> para criar os ambientes de execução de código. Verifique que estão instalados.
-
+Utiliza-se <a href="https://nix.dev/install-nix.html">Nix</a> para criar os ambientes de execução de código. Para rodar a lince  clone o repositório, entre nele, e digite:
 ```bash
-# Clone e entre no repositório:
-git clone git@github.com:lince-social/lince.git && cd lince
-
-# Inicie o ambiente:
-nix flake update && nix develop
-
-# Rode a Lince:
-streamlit run src/lince.py
+nix-shell
 ```
 
 # Teoria:

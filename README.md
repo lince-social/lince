@@ -3,9 +3,10 @@
 Tool for registry and connection between Needs and Contributions with free scope.
 
 # Showcase
-[!](media/showcase/current_version.mp4)
+<video controls src="media/showcase/current_version.mp4"></video>
 
 # Table of Contents
+- [Showcase](#showcase)
 - [Installation](#installation)
 - [Organization](#organization)
 - [About](#about)

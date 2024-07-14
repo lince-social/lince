@@ -1,4 +1,4 @@
-<img align="center" width=300px src="./media/logo/preto_no_branco.png">
+<h1 align="center"><img width=300px src="./media/logo/preto_no_branco.png"></h1>
 
 Tool for registry and connection between Needs and Contributions with free scope.
 

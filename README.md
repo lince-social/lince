@@ -2,7 +2,7 @@
 
 Tool for registry and connection between Needs and Contributions with free scope.
 
-# Showcase
+<!-- # Showcase -->
 <video controls src="media/showcase/current_version.mp4"></video>
 
 # Table of Contents

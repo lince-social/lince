@@ -55,35 +55,23 @@ It is important to highlight that Lince is responsible for facilitating the conn
 # License
 This project is licensed under the GNU GPLv3 license. See the [LICENSE](LICENSE) file for details.
 
-- [X] Parent 1
-    - [X] Child - 1
-    - [X] Child - 2
-    - [X] Child - 3
-    - [X] Child - 4
-- [ ] Parent 2
-    - [ ] Child - 1
-    - [ ] Child - 2
-    - [ ] Child - 3
-    - [ ] Child - 4
-
-
 # Roadmap
-## Database
 - [ ] Decentralization
     - [ ] Eventually consistent databases
     - [ ] pub/sub protocols
     - [ ] Merkle-CRDTs implementation
     - [ ] Authentication. # Check gajim for login inspiration.
-### Conditions
-The objective is to have generalized conditions and consequences, so anything can trigger anything else. A periodicity can run a script, a checkpoint can change a quantity through a proportion, etc.
-- [ ] Periodicity, i.e. "Every two months and 4 weeks on a Thursday"
-- [ ] Checkpoint, i.e. "When a quantity reaches 4"
-- [ ] Rate, i.e. "When a quantity changes in a certain rate (change/time)"
-- [ ] Proportion, i.e. "When a quantity changes a certain number"
-### Consequences
-- [ ] Command, i.e. "Shell command, being able to trigger any script in any language, easy to do with nix-shells for dev envs"
-### UI/UX
+- [ ] Conditions (The objective is to have generalized conditions and consequences, so anything can trigger anything else. A periodicity can run a script, a checkpoint can change a quantity through a proportion, etc.)
+    - [ ] Periodicity, i.e. "Every two months and 4 weeks on a Thursday"
+    - [ ] Checkpoint, i.e. "When a quantity reaches 4"
+    - [ ] Rate, i.e. "When a quantity changes in a certain rate (change/time)"
+    - [ ] Proportion, i.e. "When a quantity changes a certain number"
+- [ ] Consequences
+    - [ ] Checkpoint, i.e "Set a quantity to a specific number"
+    - [ ] Delta, i.e. "Set a quantity to more or less a number, -1, +4, etc."
+    - [ ] Command, i.e. "Shell command, being able to trigger any script in any language, easy to do with nix-shells for dev envs"
+UI/UX
 - [ ] The registration can be done by typing, voice, photo or video, making it accessible and easy to use. For those without access to technology, it is possible to add their needs and contributions through any device or party.
 - [ ] Transfer proposal and connection, i.e "A proposal of transfering a quantity from A to B, in return (or not) C receives some from D" "If you transfer an amount of apples to my apple registration, I will transfer so much money from my registration to yours. Contribution and Retribution (optional if it is a donation)."
-### Simulation
+Simulation
 - [ ] Algorithm and/or ML for optimization of transfer quotas and cost-efficient connections. By digitizing the information, Lince enables the use of optimization algorithms and machine learning for more effective planning of contributions. However, it is necessary to consider the human biases present in the algorithms and ensure transparency, consent and democracy when implementing any decision-making artificial intelligence.

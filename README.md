@@ -1,9 +1,9 @@
-<img class="center" width=300px src="./media/logo/preto_no_branco.png">
-# Lince
+<img align="center" width=300px src="./media/logo/preto_no_branco.png">
+
 Tool for registry and connection between Needs and Contributions with free scope.
 
 # Showcase
-![](media/showcase/current_version.mp4)
+[!](media/showcase/current_version.mp4)
 
 # Table of Contents
 - [Installation](#installation)

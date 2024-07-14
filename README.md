@@ -58,9 +58,9 @@ This project is licensed under the GNU GPLv3 license. See the [LICENSE](LICENSE)
 ## Database
 - [ ] Decentralization
  - [ ] Eventually consistent databases
- - [ ] pub/sub protocols
- - [ ] Merkle-CRDTs implementation
- - [ ] Authentication. # Check gajim for login inspiration.
+  - [ ] pub/sub protocols
+   - [ ] Merkle-CRDTs implementation
+    - [ ] Authentication. # Check gajim for login inspiration.
 ### Conditions
 The objective is to have generalized conditions and consequences, so anything can trigger anything else. A periodicity can run a script, a checkpoint can change a quantity through a proportion, etc.
 - [ ] Periodicity, i.e. "Every two months and 4 weeks on a Thursday"

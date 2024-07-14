@@ -18,18 +18,17 @@ def check_exists_db():
     connection.autocommit = True
     cursor = connection.cursor()
     cursor.execute("SELECT datname FROM pg_database WHERE datname = 'lince'")
-    return cursor.fetchone()
-
+    result = cursor.fetchone()
+    connection.close()
+    return result
 def inform_db_dumping():
     return print("\nDatabase lince exists, dumping...")
 def dump_db():
     return subprocess.run(['pg_dump', '-U' 'postgres', '-W', '-F', 'plain', '-f', '/home/eduardo/lince/src/db/versions/db_dump.sql', 'lince'], text=True, input='1\n')
-
 def inform_db_dropping():
     return print('\nDump complete, dropping lince database...')
 def drop_db(quiet=False):
     return execute_sql_command(command='DROP DATABASE lince', database=None)
-
 def inform_db_creation():
     return print("\nCreating Database Lince...")
 def create_db():
@@ -37,8 +36,8 @@ def create_db():
     connection.autocommit = True
     cursor = connection.cursor()
     cursor.execute('CREATE DATABASE lince')
+    connection.close()
     return True
-
 def inform_db_filling():
     return('\nLince Database created. Starting filling process...')
 def fill_db():
@@ -78,13 +77,13 @@ def read_rows(table, rows = 0):
 
    
 def create_row(table):
-    return execute_sql_command(f'INSERT INTO {table} VALUES {input('Add line: ')}')
+    return execute_sql_command(f'INSERT INTO {table} VALUES {input("Add line: ")}')
 
 def delete_row(table):
-    return execute_sql_command(f'DELETE FROM {table} WHERE {input('Where clause: ')}')
+    return execute_sql_command(f'DELETE FROM {table} WHERE {input("Where clause: ")}')
 
 def update_row(table):
-    return execute_sql_command(f'UPDATE {table} SET {input('Set clause: ')} WHERE {input('Where clause: ')}')
+    return execute_sql_command(f'UPDATE {table} SET {input("Set clause: ")} WHERE {input("Where clause: ")}')
 
 
 def print_operation_options():
@@ -108,18 +107,25 @@ def print_operation_options():
     return True
 
 def collect_operation_chosen():
-    return input('Your Choice: ')
+    return input('Your choice: ')
 
 def execute_operation(operation):
-    if 'e' or 'E' in operation: sys.exit()
-    if 's' or 'S' in operation: dump_db()
+    if 'e' or 'E' in operation:
+        sys.exit()
+    if 's' or 'S' in operation:
+        dump_db()
 
-    if '1' in operation: table = 'cadastro'
+    if '1' in operation:
+        table = 'cadastro'
 
-    if 'c' or 'C' in operation: add_line(table)
-    if 'r' or 'R' in operation: read_rows(table)
-    if 'u' or 'U' in operation: update_rows(table)
-    if 'd' or 'D' in operation: delete_rows(table)
+    if 'c' or 'C' in operation:
+        add_line(table)
+    if 'r' or 'R' in operation:
+        read_rows(table)
+    if 'u' or 'U' in operation:
+        update_rows(table)
+    if 'd' or 'D' in operation:
+        delete_rows(table)
 
 
 def main():

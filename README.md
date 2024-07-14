@@ -15,13 +15,8 @@ Tool for registry and connection between Needs and Contributions with free scope
 - [Roadmap](#roadmap)
 
 # Installation
-With <a href="https://nixos.org/download/">Nix</a> installed:
+Have <a href="https://nixos.org/download/">Nix</a> installed. After cloning the repo, to run Lince, just enter it and type:
 ```bash
-# Clone the repo:
-git clone git@github.com:lince-social/lince.git
-```
-```bash
-# To run the app, enter the repo and type:
 nix-shell
 ```
 # Organization

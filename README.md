@@ -1,11 +1,17 @@
 <img class="center" width=300px src="./media/logo/preto_no_branco.png">
 # Lince
 Tool for registry and connection between Needs and Contributions with free scope.
+
 # Showcase
-video
+![](media/showcase/current_version.mp4)
 
 # Table of Contents
-[TOC]
+- [Installation](#installation)
+- [Organization](#organization)
+- [About](#about)
+- [Disclamer](#disclamer)
+- [License](#license)
+- [Roadmap](#roadmap)
 
 # Installation
 With <a href="https://nixos.org/download/">Nix</a> installed:

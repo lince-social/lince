@@ -6,7 +6,7 @@ Tool for registry and connection between Needs and Contributions with free scope
 <video controls src="media/showcase/current_version.mp4"></video>
 
 # Table of Contents
-- [Showcase](#showcase)
+<!-- - [Showcase](#showcase) -->
 - [Installation](#installation)
 - [Organization](#organization)
 - [About](#about)
@@ -55,12 +55,24 @@ It is important to highlight that Lince is responsible for facilitating the conn
 # License
 This project is licensed under the GNU GPLv3 license. See the [LICENSE](LICENSE) file for details.
 
+- [X] Parent 1
+    - [X] Child - 1
+    - [X] Child - 2
+    - [X] Child - 3
+    - [X] Child - 4
+- [ ] Parent 2
+    - [ ] Child - 1
+    - [ ] Child - 2
+    - [ ] Child - 3
+    - [ ] Child - 4
+
+
 # Roadmap
 ## Database
 - [ ] Decentralization
- - [ ] Eventually consistent databases
-  - [ ] pub/sub protocols
-   - [ ] Merkle-CRDTs implementation
+    - [ ] Eventually consistent databases
+    - [ ] pub/sub protocols
+    - [ ] Merkle-CRDTs implementation
     - [ ] Authentication. # Check gajim for login inspiration.
 ### Conditions
 The objective is to have generalized conditions and consequences, so anything can trigger anything else. A periodicity can run a script, a checkpoint can change a quantity through a proportion, etc.

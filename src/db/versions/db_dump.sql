@@ -180,7 +180,9 @@ COPY public.frequency (id, periods_since_alteration, periods, days, months, star
 --
 
 COPY public.record (id, title, description, location, quantity) FROM stdin;
-1	lavar louça	\N	\N	-1
+4	teste	\N	\N	10
+5	te	\N	\N	2
+6	haha	\N	\N	3
 \.
 
 
@@ -203,7 +205,7 @@ SELECT pg_catalog.setval('public.frequency_id_seq', 1, false);
 -- Name: record_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.record_id_seq', 1, true);
+SELECT pg_catalog.setval('public.record_id_seq', 6, true);
 
 
 --

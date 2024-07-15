@@ -19,7 +19,7 @@ def execute_sql_command(command=None, database='lince'):
     if command.startswith("SELECT"):
         df = pd.DataFrame(cursor.fetchall(), columns=[desc[0] for desc in cursor.description])
         connection.close()
-        return df.to_string(index=False)
+        return df
 
     connection.close()
     return True
@@ -70,7 +70,7 @@ def choose_operation():
         '[S] Save DB',
         '[Q] Specific Query',
         '[L] Load DB',
-        '[I] Insert .sql File'
+        '[I] Execute .sql File'
     ]
     max_len_options = max(len(item) for item in (options_header))
 
@@ -83,14 +83,14 @@ def choose_operation():
     max_len_operations = max(len(item) for item in (operation_options))
 
     table_options = [
-        '[1] Record',
-        '[2] Transfer',
-        '[3] Frequency',
-        '[4] Checkpoint',
-        '[5] Delta',
-        '[6] Rate',
-        '[7] Proportion',
-        '[8] Shell Command',
+        '[1] Record'
+        # '[2] Transfer',
+        # '[3] Frequency',
+        # '[4] Checkpoint',
+        # '[5] Delta',
+        # '[6] Rate',
+        # '[7] Proportion',
+        # '[8] Shell Command',
     ]
     max_len_table = max(len(item) for item in (table_options))
 
@@ -120,12 +120,12 @@ def execute_operation(operation):
     if ('l' or 'L') in operation:
         restore_db()
     if ('i' or 'I') in operation:
-        insert_file()
+        execute_sql_command_from_file()
 
     if '1' in operation:
         table = 'record'
-    if '2' in operation:
-        table = 'frequency'
+    # if '2' in operation:
+    #     table = 'frequency'
 
     if ('c' or 'C') in operation:
         create_row(table)
@@ -135,6 +135,13 @@ def execute_operation(operation):
         update_rows(table)
     if ('d' or 'D') in operation:
         delete_rows(table)
+
+
+def execute_sql_command_from_file():
+    file_path = os.path.realpath(os.path.join(__file__, '..', '..', '..', input('File path starting from the lince dir: ')))
+
+    with open(file_path, 'r') as file:
+        return execute_sql_command(command = file.read())
 
 
 def create_row(table):
@@ -169,21 +176,39 @@ def create_row(table):
 
 
 def read_rows(table, rows = 0):
-    if rows <= 0:
-        rows = input(f'Number of rows to fetch from {table}: ')
-        if not isinstance(rows, int): rows = 10
+    command = f'SELECT * FROM {table}'
 
-    print(execute_sql_command(command=f'SELECT * FROM {table} LIMIT {rows}'))
+    if rows <= 0: rows = input(f'Number of rows to fetch from {table} (no input fetches all): ')
 
+    if (isinstance(rows, int) or isinstance(rows, float)):
+        rows = int(rows)
+        command += f" LIMIT {rows}"
+
+    print(execute_sql_command(command=command))
     return print()
 
 
 def update_rows(table):
-    return execute_sql_command(command=f'UPDATE {table} SET {input("Set clause: ")} WHERE {input("Where clause: ")}')
+    command=f'UPDATE {table} SET {input("Set clause: ")}'
+
+    where_clause = input("Where clause: ")
+
+    if where_clause != "":
+        command += f' WHERE {where_clause}'
+
+    return execute_sql_command(command=command)
 
 
 def delete_rows(table):
-    return execute_sql_command(command=f'DELETE FROM {table} WHERE {input("Where clause: ")}')
+    command = f'DELETE FROM {table}'
+
+    where_clause = input("Where clause (no input deletes all): ")
+
+    if where_clause != "":
+        command += f' WHERE {where_clause}'
+
+    return execute_sql_command(command=command)
+
 
 def main():
     if check_exists_db() is not None:

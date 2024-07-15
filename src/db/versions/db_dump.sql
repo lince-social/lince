@@ -83,6 +83,8 @@ ALTER TABLE ONLY public.cadastro ALTER COLUMN id SET DEFAULT nextval('public.cad
 --
 
 COPY public.cadastro (id, titulo, descricao, localizacao, quantidade) FROM stdin;
+1	maçã	\N	\N	10
+2	osmpx	\N	\N	23
 \.
 
 
@@ -90,7 +92,7 @@ COPY public.cadastro (id, titulo, descricao, localizacao, quantidade) FROM stdin
 -- Name: cadastro_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.cadastro_id_seq', 1, false);
+SELECT pg_catalog.setval('public.cadastro_id_seq', 2, true);
 
 
 --

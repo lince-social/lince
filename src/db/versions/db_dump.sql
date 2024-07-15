@@ -35,25 +35,30 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: cadastro; Type: TABLE; Schema: public; Owner: postgres
+-- Name: frequency; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.cadastro (
+CREATE TABLE public.frequency (
     id integer NOT NULL,
-    titulo character varying(50) NOT NULL,
-    descricao text,
-    localizacao character varying(255),
-    quantidade real DEFAULT 0 NOT NULL
+    periods_since_alteration smallint DEFAULT 0 NOT NULL,
+    periods smallint DEFAULT 1 NOT NULL,
+    days real DEFAULT 0 NOT NULL,
+    months real DEFAULT 0 NOT NULL,
+    starting_date_with_timezone timestamp with time zone NOT NULL,
+    CONSTRAINT frequency_days_check CHECK ((days > (0)::double precision)),
+    CONSTRAINT frequency_months_check CHECK ((months > (0)::double precision)),
+    CONSTRAINT frequency_periods_check CHECK ((periods > 0)),
+    CONSTRAINT frequency_periods_since_alteration_check CHECK ((periods_since_alteration >= 0))
 );
 
 
-ALTER TABLE public.cadastro OWNER TO postgres;
+ALTER TABLE public.frequency OWNER TO postgres;
 
 --
--- Name: cadastro_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: frequency_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE public.cadastro_id_seq
+CREATE SEQUENCE public.frequency_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
@@ -62,45 +67,174 @@ CREATE SEQUENCE public.cadastro_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.cadastro_id_seq OWNER TO postgres;
+ALTER TABLE public.frequency_id_seq OWNER TO postgres;
 
 --
--- Name: cadastro_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: frequency_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE public.cadastro_id_seq OWNED BY public.cadastro.id;
-
-
---
--- Name: cadastro id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.cadastro ALTER COLUMN id SET DEFAULT nextval('public.cadastro_id_seq'::regclass);
+ALTER SEQUENCE public.frequency_id_seq OWNED BY public.frequency.id;
 
 
 --
--- Data for Name: cadastro; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Name: record; Type: TABLE; Schema: public; Owner: postgres
 --
 
-COPY public.cadastro (id, titulo, descricao, localizacao, quantidade) FROM stdin;
-1	maçã	\N	\N	10
-2	osmpx	\N	\N	23
+CREATE TABLE public.record (
+    id integer NOT NULL,
+    title character varying(50) NOT NULL,
+    description text,
+    location character varying(255),
+    quantity real DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.record OWNER TO postgres;
+
+--
+-- Name: record_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.record_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.record_id_seq OWNER TO postgres;
+
+--
+-- Name: record_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.record_id_seq OWNED BY public.record.id;
+
+
+--
+-- Name: test; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.test (
+    id integer NOT NULL
+);
+
+
+ALTER TABLE public.test OWNER TO postgres;
+
+--
+-- Name: test_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.test_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.test_id_seq OWNER TO postgres;
+
+--
+-- Name: test_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.test_id_seq OWNED BY public.test.id;
+
+
+--
+-- Name: frequency id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.frequency ALTER COLUMN id SET DEFAULT nextval('public.frequency_id_seq'::regclass);
+
+
+--
+-- Name: record id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.record ALTER COLUMN id SET DEFAULT nextval('public.record_id_seq'::regclass);
+
+
+--
+-- Name: test id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.test ALTER COLUMN id SET DEFAULT nextval('public.test_id_seq'::regclass);
+
+
+--
+-- Data for Name: frequency; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.frequency (id, periods_since_alteration, periods, days, months, starting_date_with_timezone) FROM stdin;
 \.
 
 
 --
--- Name: cadastro_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+-- Data for Name: record; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.cadastro_id_seq', 2, true);
+COPY public.record (id, title, description, location, quantity) FROM stdin;
+1	lavar louça	\N	\N	-1
+\.
 
 
 --
--- Name: cadastro cadastro_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Data for Name: test; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.cadastro
-    ADD CONSTRAINT cadastro_pkey PRIMARY KEY (id);
+COPY public.test (id) FROM stdin;
+\.
+
+
+--
+-- Name: frequency_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.frequency_id_seq', 1, false);
+
+
+--
+-- Name: record_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.record_id_seq', 1, true);
+
+
+--
+-- Name: test_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.test_id_seq', 1, false);
+
+
+--
+-- Name: frequency frequency_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.frequency
+    ADD CONSTRAINT frequency_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: record record_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.record
+    ADD CONSTRAINT record_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: test test_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.test
+    ADD CONSTRAINT test_pkey PRIMARY KEY (id);
 
 
 --

@@ -69,6 +69,7 @@ This project is licensed under the GNU GPLv3 license. See the [LICENSE](LICENSE)
     - [ ] Delta, i.e. "Set a quantity to more or less a number, -1, +4, etc."
     - [ ] Command, i.e. "Shell command, being able to trigger any script in any language, easy to do with nix-shells for dev envs"
 UI/UX
+- [ ] Add string concatenation on query answerage so only filled things are added on the query, so like select * from table + if answered where 'where cause', else its just select * from table, with all operations
 - [ ] The registration can be done by typing, voice, photo or video, making it accessible and easy to use. For those without access to technology, it is possible to add their needs and contributions through any device or party.
 - [ ] Transfer proposal and connection, i.e "A proposal of transfering a quantity from A to B, in return (or not) C receives some from D" "If you transfer an amount of apples to my apple registration, I will transfer so much money from my registration to yours. Contribution and Retribution (optional if it is a donation)."
     - [ ] Transferência múltipla, i.e "Entregar diversos itens por um só. Para comprar essa bota eu ofereço 20 reais e um candelabro".

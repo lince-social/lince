@@ -10,6 +10,7 @@ def create_connection_object(host = 'localhost', user = 'postgres', database = '
     connection.autocommit = True
     return connection
 
+
 def execute_sql_command(command=None, database='lince'):
     connection = create_connection_object(database=database)
     cursor = connection.cursor()
@@ -41,56 +42,46 @@ def create_db():
     cursor.execute('CREATE DATABASE lince')
     connection.close()
     return True
-def fill_db():
+def scheme_db():
     with open(os.path.abspath(os.path.join(__file__,"..", "..", "..", "src", "db", "postgre.sql")), 'r') as file: return execute_sql_command(command = file.read())
+def restore_db():
+    p = subprocess.Popen("psql -h 'localhost' -d 'lince' -U postgres < src/db/versions/db_dump.sql", shell=True, stdin=subprocess.PIPE)
+    p.communicate(b"1\n")
+    return True
 
 
-def clear_print_lince_header():
+def print_clear_header():
     os.system('clear')
     return print('- Lince -')
 
-def print_operation_options():
-    options_header = ['[E] Exit.', '[S] Save.', '[I] Insert .sql File'] 
-    operation_options = ['[C] Create.','[R] Read.', '[U] Update.', '[D] Delete.' ]
-    table_options = ['[1] Cadastro']
 
+def choose_operation():
+    options_header = ['[E] Exit', '[S] Save', '[L] Load', '[I] Insert .sql File'] 
+    operation_options = ['[C] Create','[R] Read', '[U] Update', '[D] Delete' ]
+    table_options = ['[1] Cadastro']
     max_length = max(len(item) for item in (options_header + operation_options + table_options))
     max_len_list = max(len(operation_options), len(options_header), len(table_options))
-
+    mloptions = max(len(item) for item in (options_header))
+    mloperations = max(len(item) for item in (operation_options))
+    mltable = max(len(item) for item in (table_options))
     options_header += [''] * (max_len_list - len(options_header))
     operation_options += [''] * (max_len_list - len(operation_options))
     table_options += [''] * (max_len_list - len(table_options))
-
-    print('-' * (3 * max_length + 10))
-
+    print('-' * (mloptions + mloperations + mltable + 10))
     for h, o, t in zip(options_header, operation_options, table_options):
-        print(f"| {h:{max_length}} | {o:{max_length}} | {t:{max_length}} |")
-
-    print('-' * (3 * max_length + 10))
-    return True
-
-def collect_operation_chosen():
+        print(f"| {h:{mloptions}} | {o:{mloperations}} | {t:{mltable}} |")
+    print('-' * (mloptions + mloperations + mltable + 10))
     return input('Your choice: ')
 
-
-def read_rows(table, rows = 0):
-    if rows <= 0: rows = int(input(f'How many rows to fetch from "{table}"? '))
-    return execute_sql_command(f'SELECT * FROM {table} LIMIT {rows}')
-
-def create_row(table):
-    return execute_sql_command(f'INSERT INTO {table} VALUES {input("Add line: ")}')
-
-def delete_row(table):
-    return execute_sql_command(f'DELETE FROM {table} WHERE {input("Where clause: ")}')
-
-def update_row(table):
-    return execute_sql_command(f'UPDATE {table} SET {input("Set clause: ")} WHERE {input("Where clause: ")}')
 
 def execute_operation(operation):
     if ('e' or 'E') in operation:
         sys.exit()
     if ('s' or 'S') in operation:
         dump_db()
+    if ('l' or 'L') in operation:
+        restore_db()
+        
 
     if '1' in operation:
         table = 'cadastro'
@@ -98,11 +89,59 @@ def execute_operation(operation):
     if ('c' or 'C') in operation:
         create_row(table)
     if ('r' or 'R') in operation:
-        read_row(table)
+        read_rows(table)
     if ('u' or 'U') in operation:
-        update_row(table)
+        update_rows(table)
     if ('d' or 'D') in operation:
-        delete_row(table)
+        delete_rows(table)
+
+
+def create_row(table):
+    tablecolumns = execute_sql_command(command=f"SELECT * FROM {table} WHERE false")
+
+    columns = "("
+    row = "("
+
+    n = 0
+
+    for column in tablecolumns:
+        value = input(f'Value for {column} (if wanted): ')
+
+        if value != "":
+
+            if n != 0:
+                row += ', '
+                columns += ', '
+
+            n = 1
+
+            if column == 'quantidade':
+                row += value
+            else:
+                row += "'" + value + "'"
+            columns += column
+
+    row += ')'
+    columns += ')'
+
+    return execute_sql_command(f'INSERT INTO {table} {columns} VALUES {row}')
+
+
+def read_rows(table, rows = 0):
+    if rows <= 0:
+        rows = int(input(f'Number of rows to fetch from {table}: '))
+
+    print()
+    print(execute_sql_command(command=f'SELECT * FROM {table} LIMIT {rows}'))
+    return print()
+
+
+def update_rows(table):
+    return execute_sql_command(command=f'UPDATE {table} SET {input("Set clause: ")} WHERE {input("Where clause: ")}')
+
+
+def delete_rows(table):
+    return execute_sql_command(command=f'DELETE FROM {table} WHERE {input("Where clause: ")}')
 
 
 def main():
@@ -110,21 +149,18 @@ def main():
         dump_db()
         drop_db()
     create_db()
-    fill_db()
+    # scheme_db()
+    restore_db()
 
-    clear_print_lince_header()
+    print_clear_header()
     read_rows(table='cadastro', rows=5)
-
-    print_operation_options()
-    operation = collect_operation_chosen()
-
+    operation = choose_operation()
     while True:
         execute_operation(operation)
-        print_operation_options()
-        operation = collect_operation_chosen()
-        clear_print_lince_header()
-        read_rows(table='cadastro', rows=5)
+        operation = choose_operation()
 
+        print_clear_header()
+        read_rows(table='cadastro', rows=5)
     return False
 
 

@@ -15,10 +15,12 @@ def execute_sql_command(command=None, database='lince'):
     connection = create_connection_object(database=database)
     cursor = connection.cursor()
     cursor.execute(command)    
+
     if command.startswith("SELECT"):
         df = pd.DataFrame(cursor.fetchall(), columns=[desc[0] for desc in cursor.description])
         connection.close()
         return df
+
     connection.close()
     return True
 
@@ -28,49 +30,63 @@ def check_exists_db():
     connection.autocommit = True
     cursor = connection.cursor()
     cursor.execute("SELECT datname FROM pg_database WHERE datname = 'lince'")
+
     result = cursor.fetchone()
     connection.close()
     return result
+
 def dump_db():
     return subprocess.run(['pg_dump', '-U' 'postgres', '-W', '-F', 'plain', '-f', 'src/db/versions/db_dump.sql', 'lince'], text=True, input='1\n')
+
 def drop_db():
     return execute_sql_command(command='DROP DATABASE lince', database=None)
+
 def create_db():
     connection = psycopg2.connect( host = 'localhost', user = 'postgres', password = '1', port = '5432')
     connection.autocommit = True
     cursor = connection.cursor()
     cursor.execute('CREATE DATABASE lince')
+
     connection.close()
     return True
+
 def scheme_db():
     with open(os.path.abspath(os.path.join(__file__,"..", "..", "..", "src", "db", "postgre.sql")), 'r') as file: return execute_sql_command(command = file.read())
+
 def restore_db():
     p = subprocess.Popen("psql -h 'localhost' -d 'lince' -U postgres < src/db/versions/db_dump.sql", shell=True, stdin=subprocess.PIPE)
     p.communicate(b"1\n")
     return True
 
 
-def print_clear_header():
+def clear_and_print_header():
     os.system('clear')
-    return print('- Lince -')
+    print('- Lince -')
+    return print()
 
 
 def choose_operation():
     options_header = ['[E] Exit', '[S] Save', '[L] Load', '[I] Insert .sql File'] 
     operation_options = ['[C] Create','[R] Read', '[U] Update', '[D] Delete' ]
     table_options = ['[1] Cadastro']
-    max_length = max(len(item) for item in (options_header + operation_options + table_options))
+
     max_len_list = max(len(operation_options), len(options_header), len(table_options))
-    mloptions = max(len(item) for item in (options_header))
-    mloperations = max(len(item) for item in (operation_options))
-    mltable = max(len(item) for item in (table_options))
+
     options_header += [''] * (max_len_list - len(options_header))
     operation_options += [''] * (max_len_list - len(operation_options))
     table_options += [''] * (max_len_list - len(table_options))
+
+    mloptions = max(len(item) for item in (options_header))
+    mloperations = max(len(item) for item in (operation_options))
+    mltable = max(len(item) for item in (table_options))
+
     print('-' * (mloptions + mloperations + mltable + 10))
+
     for h, o, t in zip(options_header, operation_options, table_options):
         print(f"| {h:{mloptions}} | {o:{mloperations}} | {t:{mltable}} |")
+
     print('-' * (mloptions + mloperations + mltable + 10))
+
     return input('Your choice: ')
 
 
@@ -81,7 +97,6 @@ def execute_operation(operation):
         dump_db()
     if ('l' or 'L') in operation:
         restore_db()
-        
 
     if '1' in operation:
         table = 'cadastro'
@@ -131,8 +146,8 @@ def read_rows(table, rows = 0):
     if rows <= 0:
         rows = int(input(f'Number of rows to fetch from {table}: '))
 
-    print()
     print(execute_sql_command(command=f'SELECT * FROM {table} LIMIT {rows}'))
+
     return print()
 
 
@@ -152,15 +167,17 @@ def main():
     # scheme_db()
     restore_db()
 
-    print_clear_header()
-    read_rows(table='cadastro', rows=5)
+    clear_and_print_header()
+    read_rows(table='cadastro', rows=10)
+
     operation = choose_operation()
+
     while True:
         execute_operation(operation)
         operation = choose_operation()
 
-        print_clear_header()
-        read_rows(table='cadastro', rows=5)
+        clear_and_print_header()
+        read_rows(table='cadastro', rows=10)
     return False
 
 

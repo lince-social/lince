@@ -1,18 +1,12 @@
 <h1 align="center"><img width=300px src="./media/logo/preto_no_branco.png"></h1>
-
+# Lince
 Tool for registry and connection between Needs and Contributions with free scope.
 
-<!-- # Showcase -->
-<video controls src="media/showcase/current_version.mp4"></video>
-
 # Table of Contents
-<!-- - [Showcase](#showcase) -->
 - [Installation](#installation)
-- [Organization](#organization)
-- [About](#about)
 - [Disclamer](#disclamer)
+- [About](#about)
 - [License](#license)
-- [Roadmap](#roadmap)
 
 # Installation
 Have <a href="https://nixos.org/download/">Nix</a> installed. After cloning the repo, to run Lince, just enter it and type:

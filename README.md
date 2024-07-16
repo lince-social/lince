@@ -1,8 +1,10 @@
-<h1 align="center"><img width=300px src="./media/logo/preto_no_branco.png"></h1>
+<div align="center">
+  
+<img width=300px src="./media/logo/preto_no_branco.png">
 
-# Lince
+<h3><i>Tool for registry and connection between Needs and Contributions with free scope.</i></h3>
 
-Tool for registry and connection between Needs and Contributions with free scope.
+</div>
 
 # Table of Contents
 - [Installation](#installation)

@@ -1,5 +1,7 @@
 <h1 align="center"><img width=300px src="./media/logo/preto_no_branco.png"></h1>
+
 # Lince
+
 Tool for registry and connection between Needs and Contributions with free scope.
 
 # Table of Contents

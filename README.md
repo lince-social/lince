@@ -21,6 +21,7 @@ nix-shell
 ```
 # Disclamer
 This is a non-profit project. Crowd funding is the source of development compensation: [apoia.se/lince](https://www.apoia.se/lince), [GitHub Sponsors](https://github.com/sponsors/lince-social) and [Patreon](https://www.patreon.com/lince_social). The tasks are inside the app, run it and you shall see them.
+
 It is important to highlight that Lince is responsible for facilitating the connection between people and resources, transforming needs and contributions into data. The gains and losses related to the interaction, such as transportation, production and services themselves, remain the responsibility of the parties involved.
 
 # About

@@ -180,9 +180,34 @@ COPY public.frequency (id, periods_since_alteration, periods, days, months, star
 --
 
 COPY public.record (id, title, description, location, quantity) FROM stdin;
-4	teste	\N	\N	10
-5	te	\N	\N	2
-6	haha	\N	\N	3
+9	task	Eventually consistent	\N	-1
+10	task	Decentralization	\N	-1
+11	task	Eventually consistent databases	\N	-1
+12	task	pub/sub protocols, i.e. "Pessoas podem se inscrever com pub/sub com cada cadastro, referente ao assunto escolhido."	\N	-1
+13	task	Merkle-CRDTs implementation	\N	-1
+14	task	Authentication. # Check gajim for login inspiration.	\N	-1
+15	task	Fazer com que as pessoas possam utilizar máquinas que tem controle para aliviar o tráfego em certos pontos da rede e permitir mais em geral. Não necessariamente as que elas possuem.	\N	-1
+16	task	É possível utilizar IPFS e libp2p, diversos outras ferramentas pra auxiliar no processo de compartilhamento de cadastros, condições e transferências	\N	-1
+17	task	Conditions (The objective is to have generalized conditions and consequences, so anything can trigger anything else. A periodicity can run a script, a checkpoint can change a quantity through a proportion, etc.)	\N	-1
+18	task	Periodicity, i.e. "Every two months and 4 weeks on a Thursday"	\N	-1
+19	task	Alem de rodar pra sempre, ter a possibilidade de acabar depois de tantos períodos ou tempo.	\N	-1
+20	task	Checkpoint, i.e. "When a quantity reaches 4"	\N	-1
+21	task	Rate, i.e. "When a quantity changes in a certain rate (change/time)"	\N	-1
+22	task	Proportion, i.e. "When a quantity changes a certain number"	\N	-1
+23	task	Consequences	\N	-1
+24	task	Checkpoint, i.e "Set a quantity to a specific number"	\N	-1
+25	task	Delta, i.e. "Set a quantity to more or less a number, -1, +4, etc."	\N	-1
+26	task	Command, i.e. "Shell command, being able to trigger any script in any language, easy to do with nix-shells for dev envs"	\N	-1
+27	task	Add string concatenation on query answerage so only filled things are added on the query, so like select * from table + if answered where "where cause", else its just select * from table, with all operations	\N	-1
+28	task	The registration can be done by typing, voice, photo or video, making it accessible and easy to use. For those without access to technology, it is possible to add their needs and contributions through any device or party.	\N	-1
+29	task	Transfer proposal and connection, i.e "A proposal of transfering a quantity from A to B, in return (or not) C receives some from D" "If you transfer an amount of apples to my apple registration, I will transfer so much money from my registration to yours. Contribution and Retribution (optional if it is a donation)."	\N	-1
+30	task	Transferência múltipla, i.e "Entregar diversos itens por um só. Para comprar essa bota eu ofereço 20 reais e um candelabro".	\N	-1
+31	task	Algorithm and/or ML for optimization of transfer quotas and cost-efficient connections. By digitizing the information, Lince enables the use of optimization algorithms and machine learning for more effective planning of contributions. However, it is necessary to consider the human biases present in the algorithms and ensure transparency, consent and democracy when implementing any decision-making artificial intelligence. Lince Modelo/Template.	\N	-1
+32	task	Sugestão de Enriquecimento de cards, a pessoa coloca um prompt/foto do NI/CE e um MMLLM adiciona metadata, dps a pessoa confirma.	\N	-1
+33	task	Copiar cadastro, seja seu ou de outrem	\N	-1
+34	task	Simulção do efeito do tempo nos cadastros, se possível a partir dos cadastros de todos, coletar esses dados e rodar uma função de pesquisa operacional de simulação	\N	-1
+35	task	Pensar sobre templates, provavelmente seria uma manifestação de mecanismos disponíveis. E não uma feature em si, se da pra copiar cadastros, é possivel que existam blueprints pra produção de certas coisas, com todas as partes documentadas, com todas as partes com tarefas pra produzir aquilo, o resto é colocar a simulação no tempo depois de copiado, fazer alterações, salvar como bases de dados diferentes em arquivos diferentes. Criações de Ns e Cs automáticas, segundo certas boas práticas de grupos ou preferências. Se entende como produzir algo, ou algo sobre produção e se modela qual a melhor maneira de fazer isso. Quais recursos precisam estar em qual lugar. Quem precisa contribuir com o que. Esses templates podem ser disponibilizados como arquiteturas. Pessoas se voluntariam a preencher certos campos e pegam parte dessa arquitetura como responsabilidade. Quanto todas as partes tiverem sido pegas e feitas aquela Grande Necessidade estará completa. Algo que se precisa mas faz parte de um esforço coletivo para conseguí-la.	\N	-1
+36	task	É preciso aprender como funcionam diversas engrenagens e variáveis de processos produtivos e fazer com que a Lince consiga melhor organizar essa produção de forma ótima, a melhor, não importa o escopo. O desenvolvimento é alavancado por ouvir certos trabalhadores de diversas áreas e adaptar o aplicativo pra ficar mais intuitivo	\N	-1
 \.
 
 
@@ -205,7 +230,7 @@ SELECT pg_catalog.setval('public.frequency_id_seq', 1, false);
 -- Name: record_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.record_id_seq', 6, true);
+SELECT pg_catalog.setval('public.record_id_seq', 36, true);
 
 
 --

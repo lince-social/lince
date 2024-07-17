@@ -3,6 +3,7 @@ import sys
 import subprocess
 import psycopg2
 import pandas as pd
+from datetime import datetime, timedelta
 
 
 def create_connection_object(host = 'localhost', user = 'postgres', database = 'lince', password = '1', port = '5432'):
@@ -36,7 +37,7 @@ def check_exists_db():
     return result
 
 def dump_db():
-    return subprocess.run(['pg_dump', '-U' 'postgres', '-W', '-F', 'plain', '-f', 'src/db/versions/db_dump.sql', 'lince'], text=True, input='1\n')
+    return subprocess.run(['pg_dump', '-U', 'postgres', '--no-password', '-F', 'plain', '-f', 'src/db/versions/db_dump.sql', 'lince'], text=True, input='1\n')
 
 def drop_db():
     return execute_sql_command(command='DROP DATABASE lince', database=None)
@@ -83,9 +84,9 @@ def choose_operation():
     max_len_operations = max(len(item) for item in (operation_options))
 
     table_options = [
-        '[1] Record'
-        # '[2] Transfer',
-        # '[3] Frequency',
+        '[1] Record',
+        '[2] Frequency'
+        # '[3] Transfer',
         # '[4] Checkpoint',
         # '[5] Delta',
         # '[6] Rate',
@@ -124,17 +125,38 @@ def execute_operation(operation):
 
     if '1' in operation:
         table = 'record'
-    # if '2' in operation:
-    #     table = 'frequency'
+    if '2' in operation:
+        table = 'frequency'
 
     if ('c' or 'C') in operation:
         create_row(table)
     if ('r' or 'R') in operation:
-        read_rows(table)
+        print(read_rows(table))
     if ('u' or 'U') in operation:
         update_rows(table)
     if ('d' or 'D') in operation:
         delete_rows(table)
+
+
+def execute_frequency_job():
+    record_df = read_rows('record', limit=False)
+    frequency_df = read_rows('frequency', limit=False)
+    frequency_df['next_period'] = pd.to_datetime(frequency_df['next_period'])
+
+    for index, frequency_row in frequency_df.iterrows():
+
+        if frequency_row['next_period'].date() == datetime.today().date():
+            frequency_record_id_reference = frequency_row['record_id']
+
+            record_df_quantity = record_df.loc[record_df['id'] == frequency_record_id_reference, 'quantity']
+            record_df_quantity += frequency_row['delta']
+            record_df_quantity = record_df_quantity.iloc[0]
+            
+            update_rows(table='record', set_clause=f'quantity = {record_df_quantity}', where_clause=f'id = {frequency_record_id_reference}')
+
+            new_date = frequency_row['next_period'] + timedelta(days=frequency_row['days'])
+            update_rows('frequency', set_clause=f"next_period = '{new_date}'", where_clause=f'id = {frequency_row["id"]}')
+    return True
 
 
 def execute_sql_command_from_file():
@@ -175,26 +197,28 @@ def create_row(table):
     return execute_sql_command(f'INSERT INTO {table} {columns} VALUES {row}')
 
 
-def read_rows(table, rows = 0):
+def read_rows(table, limit = 0):
     command = f'SELECT * FROM {table}'
 
-    if rows <= 0: rows = input(f'Number of rows to fetch from {table} (no input fetches all): ')
+    if limit == False:
+        return execute_sql_command(command=command)
 
-    if (isinstance(rows, int) or isinstance(rows, float)):
-        rows = int(rows)
+    if limit <= 0: limit = input(f'Number of rows to fetch from {table} (no input fetches all): ')
+
+    if (isinstance(limit, int) or isinstance(limit, float)):
+        rows = int(limit)
         command += f" LIMIT {rows}"
 
-    print(execute_sql_command(command=command))
-    return print()
+    print(table)
+    return execute_sql_command(command=command)
 
 
-def update_rows(table):
-    command=f'UPDATE {table} SET {input("Set clause: ")}'
+def update_rows(table, set_clause=None, where_clause=None):
+    if set_clause == None: set_clause = input("Set clause: ")
+    if set_clause != "": command=f'UPDATE {table} SET {set_clause}'
 
-    where_clause = input("Where clause: ")
-
-    if where_clause != "":
-        command += f' WHERE {where_clause}'
+    if where_clause == None: where_clause = input("Where clause: ")
+    if where_clause != "": command += f' WHERE {where_clause}'
 
     return execute_sql_command(command=command)
 
@@ -217,18 +241,26 @@ def main():
     create_db()
     scheme_db()
     restore_db()
-
+    restore_db()
+    
     clear_and_print_header()
-    read_rows(table='record', rows=10)
+    print(read_rows(table='record', limit=10))
+    print(read_rows(table='frequency', limit=10))
+    print('S1')
+    execute_frequency_job()
 
     operation = choose_operation()
 
     while True:
         execute_operation(operation)
+        execute_frequency_job()
+        dump_db()
+
         operation = choose_operation()
 
         clear_and_print_header()
-        read_rows(table='record', rows=10)
+        print(read_rows(table='record', limit=10))
+        print(read_rows(table='frequency', limit=10))
     return False
 
 

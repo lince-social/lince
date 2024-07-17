@@ -10,11 +10,11 @@ CREATE TABLE record (
 
 CREATE TABLE frequency (
 	id SERIAL PRIMARY KEY,
-	periods_since_alteration SMALLINT DEFAULT 0 NOT NULL CHECK (periods_since_alteration >= 0),
-	periods SMALLINT DEFAULT 1 NOT NULL CHECK (periods > 0),
 	days REAL DEFAULT 0 NOT NULL CHECK (days > 0),
-	months REAL DEFAULT 0 NOT NULL CHECK (months > 0),
-	starting_date_with_timezone TIMESTAMP WITH TIME ZONE NOT NULL
+	-- months REAL DEFAULT 0 NOT NULL CHECK (months > 0),
+	next_period TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+	record_id INTEGER REFERENCES record(id) ON DELETE CASCADE,
+	delta REAL DEFAULT 0 NOT NULL
 );
 
 ---

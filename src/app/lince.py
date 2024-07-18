@@ -1,9 +1,12 @@
+from tabulate import tabulate
 import os
 import sys
 import subprocess
+from dateutil.relativedelta import relativedelta
+
+from datetime import datetime, timedelta
 import psycopg2
 import pandas as pd
-from datetime import datetime, timedelta
 
 
 def create_connection_object(host = 'localhost', user = 'postgres', database = 'lince', password = '1', port = '5432'):
@@ -63,107 +66,6 @@ def clear_and_print_header():
     os.system('clear')
     print('- Lince -')
     return print()
-
-
-def choose_operation():
-    options_header = [
-        '[E] Exit',
-        '[S] Save DB',
-        '[Q] Specific Query',
-        '[L] Load DB',
-        '[I] Execute .sql File'
-    ]
-    max_len_options = max(len(item) for item in (options_header))
-
-    operation_options = [
-        '[C] Create',
-        '[R] Read',
-        '[U] Update',
-        '[D] Delete'
-    ]
-    max_len_operations = max(len(item) for item in (operation_options))
-
-    table_options = [
-        '[1] Record',
-        '[2] Frequency'
-        # '[3] Transfer',
-        # '[4] Checkpoint',
-        # '[5] Delta',
-        # '[6] Rate',
-        # '[7] Proportion',
-        # '[8] Shell Command',
-    ]
-    max_len_table = max(len(item) for item in (table_options))
-
-    max_len_list = max(len(operation_options), len(options_header), len(table_options))
-
-    options_header += [''] * (max_len_list - len(options_header))
-    operation_options += [''] * (max_len_list - len(operation_options))
-    table_options += [''] * (max_len_list - len(table_options))
-
-    print('-' * (max_len_options + max_len_operations + max_len_table + 10))
-
-    for h, o, t in zip(options_header, operation_options, table_options):
-        print(f"| {h:{max_len_options}} | {o:{max_len_operations }} | {t:{max_len_table }} |")
-
-    print('-' * (max_len_options + max_len_operations + max_len_table + 10))
-
-    return input('Your choice: ')
-
-
-def execute_operation(operation):
-    if ('e' or 'E') in operation:
-        sys.exit()
-    if ('s' or 'S') in operation:
-        dump_db()
-    if ('q' or 'Q') in operation:
-        execute_sql_command(command=input('SQL command: '))
-    if ('l' or 'L') in operation:
-        restore_db()
-    if ('i' or 'I') in operation:
-        execute_sql_command_from_file()
-
-    if '1' in operation:
-        table = 'record'
-    if '2' in operation:
-        table = 'frequency'
-
-    if ('c' or 'C') in operation:
-        create_row(table)
-    if ('r' or 'R') in operation:
-        print(read_rows(table))
-    if ('u' or 'U') in operation:
-        update_rows(table)
-    if ('d' or 'D') in operation:
-        delete_rows(table)
-
-
-def execute_frequency_job():
-    record_df = read_rows('record', limit=False)
-    frequency_df = read_rows('frequency', limit=False)
-    frequency_df['next_period'] = pd.to_datetime(frequency_df['next_period'])
-
-    for index, frequency_row in frequency_df.iterrows():
-
-        if frequency_row['next_period'].date() == datetime.today().date():
-            frequency_record_id_reference = frequency_row['record_id']
-
-            record_df_quantity = record_df.loc[record_df['id'] == frequency_record_id_reference, 'quantity']
-            record_df_quantity += frequency_row['delta']
-            record_df_quantity = record_df_quantity.iloc[0]
-            
-            update_rows(table='record', set_clause=f'quantity = {record_df_quantity}', where_clause=f'id = {frequency_record_id_reference}')
-
-            new_date = frequency_row['next_period'] + timedelta(days=frequency_row['days'])
-            update_rows('frequency', set_clause=f"next_period = '{new_date}'", where_clause=f'id = {frequency_row["id"]}')
-    return True
-
-
-def execute_sql_command_from_file():
-    file_path = os.path.realpath(os.path.join(__file__, '..', '..', '..', input('File path starting from the lince dir: ')))
-
-    with open(file_path, 'r') as file:
-        return execute_sql_command(command = file.read())
 
 
 def create_row(table):
@@ -234,6 +136,136 @@ def delete_rows(table):
     return execute_sql_command(command=command)
 
 
+def execute_sql_command_from_file():
+    file_path = os.path.realpath(os.path.join(__file__, '..', '..', '..', input('File path starting from the lince dir: ')))
+
+    with open(file_path, 'r') as file:
+        return execute_sql_command(command = file.read())
+
+
+def execute_frequency_job():
+    record_df = read_rows('record', limit=False)
+
+    frequency_df = read_rows('frequency', limit=False)
+    frequency_df['next_date'] = pd.to_datetime(frequency_df['next_date'])
+
+    today = datetime.today().date()
+
+    for index, frequency_row in frequency_df.iterrows():
+        if frequency_row['times'] == 0:
+            continue
+        elif frequency_row['times'] < 0:
+            times = frequency_row['times'] + 1
+            update_rows('frequency', set_clause=f"times = {times}", where_clause=f"id = {frequency_row['id']}")
+
+        finish_date = frequency_row['finish_date']
+
+        if finish_date == None:
+            pass
+        else:
+            if today <= finish_date:
+                continue
+        frequency_record_id_reference = frequency_row['record_id']
+        record_df_quantity = record_df.loc[record_df['id'] == frequency_record_id_reference, 'quantity']
+        record_df_quantity = record_df_quantity.iloc[0]
+
+        next_date = False
+        if frequency_row['when_done'] == True and record_df_quantity >= 0:
+            next_date = frequency_row['next_date']
+            next_date = pd.to_datetime(today)
+            # str(next_date[:10]) = today
+
+        elif frequency_row['when_done'] == False and frequency_row['next_date'].date() <= today:
+            next_date = frequency_row['next_date']
+
+        if next_date == False:
+            continue
+        next_date += relativedelta(months=frequency_row['months']) + timedelta(days=frequency_row['days'], seconds=frequency_row['seconds'])
+
+        while datetime.date(next_date).isoweekday() not in [int(i) for i in str(frequency_row['day_week'])]:
+            next_date += timedelta(days=1)
+
+        record_df_quantity += frequency_row['delta']
+
+        update_rows('frequency', set_clause=f"next_date = '{next_date}'", where_clause=f'id = {frequency_row["id"]}')
+        update_rows(table='record', set_clause=f'quantity = {record_df_quantity}', where_clause=f'id = {frequency_record_id_reference}')
+
+    return True
+
+
+def choose_operation():
+    options_header = [
+        '[E] Exit',
+        '[S] Save DB',
+        '[L] Load DB',
+        '[Q] Query',
+        '[F] SQL File',
+        # '[H] Help'
+    ]
+    max_len_options = max(len(item) for item in (options_header))
+
+    operation_options = [
+        '[C] Create',
+        '[R] Read',
+        '[U] Update',
+        '[D] Delete'
+    ]
+    max_len_operations = max(len(item) for item in (operation_options))
+
+    table_options = [
+        '[1] Record',
+        '[2] Frequency'
+        # '[3] Transfer',
+        # '[4] Checkpoint',
+        # '[5] Delta',
+        # '[6] Rate',
+        # '[7] Proportion',
+        # '[8] Shell Command',
+    ]
+    max_len_table = max(len(item) for item in (table_options))
+
+    max_len_list = max(len(operation_options), len(options_header), len(table_options))
+
+    options_header += [''] * (max_len_list - len(options_header))
+    operation_options += [''] * (max_len_list - len(operation_options))
+    table_options += [''] * (max_len_list - len(table_options))
+
+    print('-' * (max_len_options + max_len_operations + max_len_table + 10))
+
+    for h, o, t in zip(options_header, operation_options, table_options):
+        print(f"| {h:{max_len_options}} | {o:{max_len_operations }} | {t:{max_len_table }} |")
+
+    print('-' * (max_len_options + max_len_operations + max_len_table + 10))
+
+    return input('Your choice: ')
+
+
+def execute_operation(operation):
+    if ('e' or 'E') in operation:
+        sys.exit()
+    if ('s' or 'S') in operation:
+        dump_db()
+    if ('q' or 'Q') in operation:
+        execute_sql_command(command=input('SQL command: '))
+    if ('l' or 'L') in operation:
+        restore_db()
+    if ('i' or 'I') in operation:
+        execute_sql_command_from_file()
+
+    if '1' in operation:
+        table = 'record'
+    if '2' in operation:
+        table = 'frequency'
+
+    if ('c' or 'C') in operation:
+        create_row(table)
+    if ('r' or 'R') in operation:
+        print(read_rows(table))
+    if ('u' or 'U') in operation:
+        update_rows(table)
+    if ('d' or 'D') in operation:
+        delete_rows(table)
+
 def main():
     if check_exists_db() is not None:
         dump_db()
@@ -244,9 +276,10 @@ def main():
     restore_db()
     
     clear_and_print_header()
-    print(read_rows(table='record', limit=10))
-    print(read_rows(table='frequency', limit=10))
-    print('S1')
+    print(tabulate(read_rows(table='record', limit=3), headers='keys', tablefmt='psql'))
+    print()
+    print(tabulate(read_rows(table='frequency', limit=3), headers='keys', tablefmt='psql'))
+    print()
     execute_frequency_job()
 
     operation = choose_operation()
@@ -259,8 +292,10 @@ def main():
         operation = choose_operation()
 
         clear_and_print_header()
-        print(read_rows(table='record', limit=10))
-        print(read_rows(table='frequency', limit=10))
+        print(tabulate(read_rows(table='record', limit=3), headers='keys', tablefmt='psql'))
+        print()
+        print(tabulate(read_rows(table='frequency', limit=3), headers='keys', tablefmt='psql'))
+        print()
     return False
 
 

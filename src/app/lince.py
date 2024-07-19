@@ -152,38 +152,37 @@ def execute_frequency_job():
     today = datetime.today().date()
 
     for index, frequency_row in frequency_df.iterrows():
-        if frequency_row['times'] == 0:
+
+        frequency_record_id_reference = frequency_row['record_id']
+        record_df_quantity = record_df.loc[record_df['id'] == frequency_record_id_reference, 'quantity']
+        record_df_quantity = record_df_quantity.iloc[0]
+        next_date = frequency_row['next_date'].date()
+        today_datetime = pd.to_datetime(today).date()
+
+        if frequency_row['finish_date'] == None:
+            None
+        elif today > frequency_row['finish_date']:
+            continue
+        if next_date > today_datetime:
+            continue
+        elif frequency_row['when_done'] == True and record_df_quantity < 0:
+            continue
+        elif frequency_row['times'] == 0:
             continue
         elif frequency_row['times'] < 0:
             times = frequency_row['times'] + 1
             update_rows('frequency', set_clause=f"times = {times}", where_clause=f"id = {frequency_row['id']}")
 
-        finish_date = frequency_row['finish_date']
-
-        if finish_date == None:
-            pass
-        else:
-            if today <= finish_date:
-                continue
-        frequency_record_id_reference = frequency_row['record_id']
-        record_df_quantity = record_df.loc[record_df['id'] == frequency_record_id_reference, 'quantity']
-        record_df_quantity = record_df_quantity.iloc[0]
-
-        next_date = False
-        if frequency_row['when_done'] == True and record_df_quantity >= 0:
-            next_date = frequency_row['next_date']
-            next_date = pd.to_datetime(today)
-            # str(next_date[:10]) = today
-
-        elif frequency_row['when_done'] == False and frequency_row['next_date'].date() <= today:
-            next_date = frequency_row['next_date']
-
-        if next_date == False:
-            continue
         next_date += relativedelta(months=frequency_row['months']) + timedelta(days=frequency_row['days'], seconds=frequency_row['seconds'])
 
-        while datetime.date(next_date).isoweekday() not in [int(i) for i in str(frequency_row['day_week'])]:
+        if today == next_date:
             next_date += timedelta(days=1)
+
+        if pd.isna(frequency_row['day_week']):
+            pass
+        else:
+            while next_date.isoweekday() not in [int(i) for i in str(int(frequency_row['day_week']))]:
+                next_date += timedelta(days=1)
 
         record_df_quantity += frequency_row['delta']
 
@@ -276,9 +275,9 @@ def main():
     restore_db()
     
     clear_and_print_header()
-    print(tabulate(read_rows(table='record', limit=3), headers='keys', tablefmt='psql'))
+    print(tabulate(read_rows(table='record', limit=10), headers='keys', tablefmt='psql'))
     print()
-    print(tabulate(read_rows(table='frequency', limit=3), headers='keys', tablefmt='psql'))
+    print(tabulate(read_rows(table='frequency', limit=10), headers='keys', tablefmt='psql'))
     print()
     execute_frequency_job()
 
@@ -292,9 +291,9 @@ def main():
         operation = choose_operation()
 
         clear_and_print_header()
-        print(tabulate(read_rows(table='record', limit=3), headers='keys', tablefmt='psql'))
+        print(tabulate(read_rows(table='record', limit=10), headers='keys', tablefmt='psql'))
         print()
-        print(tabulate(read_rows(table='frequency', limit=3), headers='keys', tablefmt='psql'))
+        print(tabulate(read_rows(table='frequency', limit=10), headers='keys', tablefmt='psql'))
         print()
     return False
 

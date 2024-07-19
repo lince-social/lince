@@ -10,18 +10,56 @@ CREATE TABLE record (
 
 CREATE TABLE frequency (
 	id SERIAL PRIMARY KEY,
-	days REAL DEFAULT 0 NOT NULL CHECK (days > 0),
-	-- months REAL DEFAULT 0 NOT NULL CHECK (months > 0),
-	next_period TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+	day_week INTEGER,
+	months REAL DEFAULT 0 NOT NULL,
+	days REAL DEFAULT 0 NOT NULL,
+	seconds REAL DEFAULT 0 NOT NULL,
+	next_date TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
 	record_id INTEGER REFERENCES record(id) ON DELETE CASCADE,
-	delta REAL DEFAULT 0 NOT NULL
+	delta REAL DEFAULT 0 NOT NULL,
+	times INTEGER DEFAULT 1,
+	finish_date DATE,
+	when_done BOOLEAN DEFAULT false -- this is actually a checkpoint, when becomes 0 update the days counting from today, not the next_period
 );
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- CREATE TABLE consequence (
+-- 	id SERIAL PRIMARY KEY,
+-- 	record_id INTEGER REFERENCES record(id) ON DELETE CASCADE	
+-- );
+
+-- CREATE TABLE delta ( delta REAL DEFAULT 0 NOT NULL ) INHERITS consequence;
+
+-- CREATE TABLE checkpoint ( 
+-- inferior_limit_is_open BOOLEAN NOT NULL DEFAULT true
+-- inferior_limit REAL DEFAULT 0 NOT NULL 
+-- upper_limit_is_open BOOLEAN NOT NULL DEFAULT true
+-- upper_limit REAL DEFAULT 0 NOT NULL
+-- ) INHERITS consequence;
+
+-- create history on each table
+
+-- CREATE TABLE app_mode ( make every app configuration through an sql table, to be sent like any old data, to be copied like any data. reproducibility. customization. the user can change a frontend link variable that uses another frontend, through a self made window. and its integrated on the app
+-- create diferent modes for saving autosave etc
+-- table view, side by side or on top of menu, on the bottom, just menu, just table rows, what tables, how many rows from each table
+-- 	menu_expansion BOOLEAN
+-- );
 ---
 -- when condition_id
 -- do consequence_id to table(id)
 ---
-
 -- CREATE TABLE condition (
 	-- id SERIAL PRIMARY KEY,
 

@@ -40,11 +40,16 @@ SET default_table_access_method = heap;
 
 CREATE TABLE public.frequency (
     id integer NOT NULL,
+    day_week integer,
+    months real DEFAULT 0 NOT NULL,
     days real DEFAULT 0 NOT NULL,
-    next_period timestamp with time zone DEFAULT now() NOT NULL,
+    seconds real DEFAULT 0 NOT NULL,
+    next_date timestamp with time zone DEFAULT now() NOT NULL,
     record_id integer,
     delta real DEFAULT 0 NOT NULL,
-    CONSTRAINT frequency_days_check CHECK ((days > (0)::double precision))
+    times integer DEFAULT 1,
+    finish_date date,
+    when_done boolean DEFAULT true
 );
 
 
@@ -127,9 +132,8 @@ ALTER TABLE ONLY public.record ALTER COLUMN id SET DEFAULT nextval('public.recor
 -- Data for Name: frequency; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.frequency (id, days, next_period, record_id, delta) FROM stdin;
-9	1	2024-07-17 19:41:10.950985+00	2	-1
-10	2	2024-07-18 21:12:26.537126+00	1	1
+COPY public.frequency (id, day_week, months, days, seconds, next_date, record_id, delta, times, finish_date, when_done) FROM stdin;
+1	6	0	0	0	2024-07-20 00:00:00+00	2	-3	1	\N	f
 \.
 
 
@@ -138,9 +142,7 @@ COPY public.frequency (id, days, next_period, record_id, delta) FROM stdin;
 --
 
 COPY public.record (id, title, description, location, quantity) FROM stdin;
-3	aha	\N	\N	-3
-2	cantar	\N	\N	-1
-1	dançar	\N	\N	0
+2	ir no super	\N	\N	-84
 \.
 
 
@@ -148,14 +150,14 @@ COPY public.record (id, title, description, location, quantity) FROM stdin;
 -- Name: frequency_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.frequency_id_seq', 10, true);
+SELECT pg_catalog.setval('public.frequency_id_seq', 1, true);
 
 
 --
 -- Name: record_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.record_id_seq', 3, true);
+SELECT pg_catalog.setval('public.record_id_seq', 2, true);
 
 
 --

@@ -1,12 +1,11 @@
-from tabulate import tabulate
-import os
-import sys
-import subprocess
 from dateutil.relativedelta import relativedelta
-
+import subprocess
+import sys
+import os
 from datetime import datetime, timedelta
-import psycopg2
+from tabulate import tabulate
 import pandas as pd
+import psycopg2
 
 
 def create_connection_object(host = 'localhost', user = 'postgres', database = 'lince', password = '1', port = '5432'):
@@ -60,12 +59,13 @@ def scheme_db():
 def restore_db():
     p = subprocess.Popen("psql -h 'localhost' -d 'lince' -U postgres < src/db/versions/db_dump.sql", shell=True, stdin=subprocess.PIPE)
     return p.communicate(b"1\n")
+def print_help():
+    pass
 
 
 def clear_and_print_header():
     os.system('clear')
-    print('- Lince -')
-    return print()
+    return print('- Lince -')
 
 
 def create_row(table):
@@ -99,20 +99,40 @@ def create_row(table):
     return execute_sql_command(f'INSERT INTO {table} {columns} VALUES {row}')
 
 
-def read_rows(table, limit = 0):
+def truncate_description(desc, max_length=150):
+    if len(desc) > max_length:
+        return desc[:max_length] + '...'
+    return desc
+
+def read_rows(table, limit = 0, order=False):
     command = f'SELECT * FROM {table}'
 
-    if limit == False:
+    if table == 'record':
+        command += f" ORDER BY title ASC"
+
+    if limit is False:
         return execute_sql_command(command=command)
 
-    if limit <= 0: limit = input(f'Number of rows to fetch from {table} (no input fetches all): ')
-
-    if (isinstance(limit, int) or isinstance(limit, float)):
+    if limit <= 0:
+        limit = input(f'Number of rows to fetch from {table} (no input fetches all): ')
+    
+    if isinstance(limit, int) or isinstance(limit, float):
         rows = int(limit)
         command += f" LIMIT {rows}"
 
+    print()
     print(table)
-    return execute_sql_command(command=command)
+    rows = execute_sql_command(command=command)
+
+    if isinstance(rows, pd.DataFrame):
+        if 'description' in rows.columns:
+            rows['description'] = rows['description'].apply(truncate_description)
+    elif rows and isinstance(rows, list):
+        for row in rows:
+            if 'description' in row:
+                row['description'] = truncate_description(row['description'])
+
+    return rows
 
 
 def update_rows(table, set_clause=None, where_clause=None):
@@ -193,48 +213,19 @@ def execute_frequency_job():
 
 
 def choose_operation():
-    options_header = [
-        '[E] Exit',
-        '[S] Save DB',
-        '[L] Load DB',
-        '[Q] Query',
-        '[F] SQL File',
-        # '[H] Help'
+    options = [
+        [ 'App', 'Operations', 'Tables' ],
+        [ '[E] Exit', '[C] Create', '[1] Record' ],
+        [ '[S] Save DB', '[R] Read', '[2] Frequency' ],
+        [ '[L] Load DB', '[U] Update', '' ],
+        [ '[H] Help', '[D] Delete', '' ],
+        [ '', '[Q] Query', '' ],
+        [ '', '[F] SQL File','' ]
     ]
-    max_len_options = max(len(item) for item in (options_header))
 
-    operation_options = [
-        '[C] Create',
-        '[R] Read',
-        '[U] Update',
-        '[D] Delete'
-    ]
-    max_len_operations = max(len(item) for item in (operation_options))
-
-    table_options = [
-        '[1] Record',
-        '[2] Frequency'
-        # '[3] Transfer',
-        # '[4] Checkpoint',
-        # '[5] Delta',
-        # '[6] Rate',
-        # '[7] Proportion',
-        # '[8] Shell Command',
-    ]
-    max_len_table = max(len(item) for item in (table_options))
-
-    max_len_list = max(len(operation_options), len(options_header), len(table_options))
-
-    options_header += [''] * (max_len_list - len(options_header))
-    operation_options += [''] * (max_len_list - len(operation_options))
-    table_options += [''] * (max_len_list - len(table_options))
-
-    print('-' * (max_len_options + max_len_operations + max_len_table + 10))
-
-    for h, o, t in zip(options_header, operation_options, table_options):
-        print(f"| {h:{max_len_options}} | {o:{max_len_operations }} | {t:{max_len_table }} |")
-
-    print('-' * (max_len_options + max_len_operations + max_len_table + 10))
+    print()
+    print('Menu')
+    print(tabulate(options, headers='firstrow', tablefmt='psql'))
 
     return input('Your choice: ')
 
@@ -244,12 +235,10 @@ def execute_operation(operation):
         sys.exit()
     if ('s' or 'S') in operation:
         dump_db()
-    if ('q' or 'Q') in operation:
-        execute_sql_command(command=input('SQL command: '))
     if ('l' or 'L') in operation:
         restore_db()
-    if ('i' or 'I') in operation:
-        execute_sql_command_from_file()
+    if ('h' or 'H') in operation:
+        print_help()
 
     if '1' in operation:
         table = 'record'
@@ -259,11 +248,17 @@ def execute_operation(operation):
     if ('c' or 'C') in operation:
         create_row(table)
     if ('r' or 'R') in operation:
-        print(read_rows(table))
+        clear_and_print_header()
+        print(table)
+        print(tabulate(read_rows(table), headers='keys', tablefmt='psql'))
     if ('u' or 'U') in operation:
         update_rows(table)
     if ('d' or 'D') in operation:
         delete_rows(table)
+    if ('q' or 'Q') in operation:
+        execute_sql_command(command=input('SQL command: '))
+    if ('f' or 'F') in operation:
+        execute_sql_command_from_file()
 
 def main():
     if check_exists_db() is not None:
@@ -275,10 +270,7 @@ def main():
     restore_db()
     
     clear_and_print_header()
-    print(tabulate(read_rows(table='record', limit=10), headers='keys', tablefmt='psql'))
-    print()
-    print(tabulate(read_rows(table='frequency', limit=10), headers='keys', tablefmt='psql'))
-    print()
+    print(tabulate(read_rows(table='record', limit=20), headers='keys', tablefmt='psql'))
     execute_frequency_job()
 
     operation = choose_operation()
@@ -291,10 +283,7 @@ def main():
         operation = choose_operation()
 
         clear_and_print_header()
-        print(tabulate(read_rows(table='record', limit=10), headers='keys', tablefmt='psql'))
-        print()
-        print(tabulate(read_rows(table='frequency', limit=10), headers='keys', tablefmt='psql'))
-        print()
+        print(tabulate(read_rows(table='record', limit=20, order='title'), headers='keys', tablefmt='psql'))
     return False
 
 

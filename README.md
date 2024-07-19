@@ -7,9 +7,8 @@
 </div>
 
 # Showcase
-<div align="center">
 <img src="./media/showcase/current_version.png">
-</div>
+![Current Version](./media/showcase/current_version.png)
 
 # Table of Contents
 - [Installation](#installation)

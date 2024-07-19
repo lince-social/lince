@@ -49,7 +49,7 @@ CREATE TABLE public.frequency (
     delta real DEFAULT 0 NOT NULL,
     times integer DEFAULT 1,
     finish_date date,
-    when_done boolean DEFAULT true
+    when_done boolean DEFAULT false
 );
 
 
@@ -133,7 +133,14 @@ ALTER TABLE ONLY public.record ALTER COLUMN id SET DEFAULT nextval('public.recor
 --
 
 COPY public.frequency (id, day_week, months, days, seconds, next_date, record_id, delta, times, finish_date, when_done) FROM stdin;
-1	6	0	0	0	2024-07-20 00:00:00+00	2	-3	1	\N	f
+2	1	0	0	0	2024-07-22 00:00:00+00	2	-1	1	\N	t
+3	2	0	0	0	2024-07-23 00:00:00+00	2	-2	1	\N	t
+4	3	0	0	0	2024-07-24 00:00:00+00	2	-10	1	\N	f
+5	\N	0	1	0	2024-08-15 00:00:00+00	2	-100	1	\N	f
+6	\N	0	1	0	2024-07-20 00:00:00+00	2	200	1	2024-07-19	f
+7	\N	0	10	0	2024-07-29 00:00:00+00	2	-1	1	2024-07-19	f
+8	\N	0	1	0	2024-07-19 14:16:30.913672+00	2	100	1	2024-07-10	f
+9	\N	0	-1	0	2024-07-18 00:00:00+00	2	-1	1	\N	t
 \.
 
 
@@ -142,7 +149,7 @@ COPY public.frequency (id, day_week, months, days, seconds, next_date, record_id
 --
 
 COPY public.record (id, title, description, location, quantity) FROM stdin;
-2	ir no super	\N	\N	-84
+2	ir no super	\N	\N	-1
 \.
 
 
@@ -150,7 +157,7 @@ COPY public.record (id, title, description, location, quantity) FROM stdin;
 -- Name: frequency_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.frequency_id_seq', 1, true);
+SELECT pg_catalog.setval('public.frequency_id_seq', 9, true);
 
 
 --

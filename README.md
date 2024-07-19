@@ -7,8 +7,8 @@
 </div>
 
 # Showcase
-<img src="./media/showcase/current_version.png">
-![Current Version](./media/showcase/current_version.png)
+<img src="media/showcase/current_version.png">
+<i>Colors shown are subjected to the commiter's terminal color config.</i>
 
 # Table of Contents
 - [Installation](#installation)

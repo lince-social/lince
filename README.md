@@ -6,6 +6,11 @@
 
 </div>
 
+# Showcase
+<div align="center">
+<img src="./media/showcase/current_version.png">
+</div>
+
 # Table of Contents
 - [Installation](#installation)
 - [Disclamer](#disclamer)

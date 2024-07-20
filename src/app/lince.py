@@ -100,8 +100,9 @@ def create_row(table):
 
 
 def truncate_description(desc, max_length=150):
-    if len(desc) > max_length:
-        return desc[:max_length] + '...'
+    if desc != None:
+        if len(desc) > max_length:
+            return desc[:max_length] + '...'
     return desc
 
 def read_rows(table, limit = 0, order=False):

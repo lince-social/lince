@@ -263,7 +263,7 @@ def execute_operation(operation):
 
 def main():
     if check_exists_db() is not None:
-        dump_db()
+        # dump_db()
         drop_db()
     create_db()
     scheme_db()

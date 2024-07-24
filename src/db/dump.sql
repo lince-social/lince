@@ -40,14 +40,15 @@ SET default_table_access_method = heap;
 
 CREATE TABLE public.configuration (
     id integer NOT NULL,
+    name text NOT NULL,
     quantity real DEFAULT 1 NOT NULL,
-    save_mode text DEFAULT 'automatic'::text NOT NULL,
+    save_mode text DEFAULT 'Automatic'::text NOT NULL,
     view text DEFAULT 'CREATE VIEW default_view AS SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC'::text NOT NULL,
-    column_information text DEFAULT 'verbose'::text NOT NULL,
+    column_information text DEFAULT 'Verbose'::text NOT NULL,
     keymap jsonb DEFAULT '{}'::jsonb NOT NULL,
     truncation jsonb DEFAULT '{"record": {"description": 150}}'::jsonb NOT NULL,
-    CONSTRAINT configuration_save_mode_check CHECK ((save_mode = ANY (ARRAY['automatic'::text, 'manual'::text]))),
-    CONSTRAINT configuration_save_mode_check1 CHECK ((save_mode = ANY (ARRAY['verbose'::text, 'short'::text, 'silent'::text])))
+    CONSTRAINT configuration_column_information_check CHECK ((column_information = ANY (ARRAY['Verbose'::text, 'Short'::text, 'Silent'::text]))),
+    CONSTRAINT configuration_save_mode_check CHECK ((save_mode = ANY (ARRAY['Automatic'::text, 'Manual'::text])))
 );
 
 
@@ -180,7 +181,8 @@ ALTER TABLE ONLY public.record ALTER COLUMN id SET DEFAULT nextval('public.recor
 -- Data for Name: configuration; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.configuration (id, quantity, save_mode, view, column_information, keymap, truncation) FROM stdin;
+COPY public.configuration (id, name, quantity, save_mode, view, column_information, keymap, truncation) FROM stdin;
+1	Default	1	Automatic	CREATE VIEW default_view AS SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC	Verbose	{}	{"record": {"description": 150}}
 \.
 
 
@@ -197,21 +199,9 @@ COPY public.frequency (id, quantity, day_week, months, days, seconds, next_date,
 --
 
 COPY public.record (id, title, description, location, quantity) FROM stdin;
-78	v0.3.0	Bug: when query select * from table <table> not returning rows	\N	-1
-52	v0.3.0	Templates: prov uma manifestação de uso. Pessoas vão modelar sua cadeia produtiva e mostrar ou não, as que mostrarem vão deixar pessoas copiar tudo. Depois o que sobra são trabalhadores se colocando nas tarefas pra levantar tal empreitada.	\N	-1
 53	v0.3.0	Copiar cadastro, seja seu ou de outrem: selecione a opção copiar coisa, e de qual table ai tu digita o where pra puxar o que tu quer editar, se resposta é sim em editar 1 por 1 abre 1 por 1 e passa por todas as colunas de todas as coisas, se é editar com where ele faz um bulk editing	\N	-1
-54	v0.3.0	Criar table config, vai conter as configurações do aplicativo, quando o aplicativo começar ele vai olhar todas as colunas e se comportar conforme as informações, cada linha dessa table é um perfil, sempre há o perfil atual, com quantidade tal, e outros com outra quantidade. essa table sempre tem uma linha com as configs padrão.	\N	-1
-55	v0.3.0	config save mode	\N	-1
-56	v0.3.0	config tables show at main view	\N	-1
 57	v0.3.0	config views	\N	-1
-58	v0.3.0	config menu options shown and their disposition on the screen and columns..	\N	-1
-59	v0.3.0	config sort	\N	-1
-60	v0.3.0	config filter on what tables	\N	-1
-61	v0.3.0	config view selected config options	\N	-1
-62	v0.3.0	config change architecture main. reads from config table and passes info as argument to functions	\N	-1
 77	v0.3.0	config truncation of certain columns in certain tables	\N	-1
-79	v0.3.0	Bug: capital F not activating SQL File option	\N	-1
-80	v0.3.0	Fix order of main functions so startup isnt janky, things look different after you go to the while loop, menu & stuff	\N	-1
 42	v0.4.0	Checkpoint, i.e. "When a quantity reaches 4"	\N	0
 44	v0.4.0	Proportion, i.e. "When a quantity changes a certain number"	\N	0
 63	v0.5.0	Transfer proposal and connection, i.e "A proposal of transfering a quantity from A to B, in return (or not) C receives some from D" "If you transfer an amount of apples to my apple registration, I will transfer so much money from my registration to yours. Contribution and Retribution (optional if it is a donation)."	\N	0
@@ -237,6 +227,18 @@ COPY public.record (id, title, description, location, quantity) FROM stdin;
 49	v0.4.0	Simulção do efeito do tempo nos cadastros, se possível a partir dos cadastros de todos, coletar esses dados e rodar uma função de pesquisa operacional de simulação, também funciona quando uma transferência foi confirmada mas não efetivada no mundo material, só prometida, aí vai ter o valor atual da quantidade -1 e o previsto caso tudo continue como setado.	\N	0
 50	v0.4.0	make quantity zero with minimum types of keyboard	\N	0
 51	v0.4.0	add help option with explanation of all options and columns info and defaults	\N	0
+78	v0.3.0	Bug: when query select * from table <table> not returning rows	\N	0
+60	v0.3.0	config filter on what tables	\N	0
+55	v0.3.0	config save mode	\N	0
+59	v0.3.0	config sort	\N	0
+58	v0.3.0	config menu options shown and their disposition on the screen and columns..	\N	0
+56	v0.3.0	config tables show at main view	\N	0
+54	v0.3.0	Criar table config, vai conter as configurações do aplicativo, quando o aplicativo começar ele vai olhar todas as colunas e se comportar conforme as informações, cada linha dessa table é um perfil, sempre há o perfil atual, com quantidade tal, e outros com outra quantidade. essa table sempre tem uma linha com as configs padrão.	\N	0
+80	v0.3.0	Fix order of main functions so startup isnt janky, things look different after you go to the while loop, menu & stuff	\N	0
+52	v0.3.0	Templates: prov uma manifestação de uso. Pessoas vão modelar sua cadeia produtiva e mostrar ou não, as que mostrarem vão deixar pessoas copiar tudo. Depois o que sobra são trabalhadores se colocando nas tarefas pra levantar tal empreitada.	\N	0
+79	v0.3.0	Bug: capital F not activating SQL File option	\N	0
+62	v0.3.0	config change architecture main. reads from config table and passes info as argument to functions	\N	0
+61	v0.3.0	config view selected config options	\N	0
 \.
 
 

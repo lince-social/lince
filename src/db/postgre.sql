@@ -1,14 +1,15 @@
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 CREATE TABLE configuration (
 	id SERIAL PRIMARY KEY,
+	name TEXT NOT NULL,
 	quantity REAL NOT NULL DEFAULT 1,
-	save_mode TEXT NOT NULL DEFAULT 'automatic' CHECK (save_mode in ('automatic', 'manual')),
-	view TEXT NOT NULL DEFAULT 'CREATE VIEW default_view AS SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC',
-	column_information TEXT NOT NULL DEFAULT 'verbose' CHECK (save_mode in ('verbose', 'short', 'silent')),
+	save_mode TEXT NOT NULL DEFAULT 'Automatic' CHECK (save_mode in ('Automatic', 'Manual')),
+ 	view TEXT NOT NULL DEFAULT 'CREATE VIEW default_view AS SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC',
+	column_information TEXT NOT NULL DEFAULT 'Verbose' CHECK (column_information in ('Verbose', 'Short', 'Silent')),
 	keymap jsonb NOT NULL DEFAULT '{}',
 	truncation jsonb NOT NULL DEFAULT '{"record": {"description": 150}}'
 );
+
+INSERT INTO configuration (name) values ('Default');
 
 CREATE TABLE record (
 	id SERIAL PRIMARY KEY,

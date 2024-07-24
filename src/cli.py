@@ -2,9 +2,9 @@ from backend.main import *
 from tabulate import tabulate
 
 
-def clear_and_print_header():
+def clear_and_print_header(conf_name, conf_save_mode):
     os.system('clear')
-    return print('- Lince -')
+    return print(f'- Lince - Configuration: {conf_name} | Save Mode: {conf_save_mode}')
 
 
 def print_operation_options():
@@ -35,13 +35,20 @@ def main():
     restore_db()
     restore_db()
 
-    # configuration_df = blabla
-    # save_mode = configuration_df['save_mode']
+    configuration_df = read_rows('configuration')
+    max_quantity_row = configuration_df[configuration_df['quantity'] == configuration_df['quantity'].max()].iloc[0]
 
+    conf_name = max_quantity_row['name']
+    conf_save_mode = max_quantity_row['save_mode']
+    # view = max_quantity_row['view']
+    # column_information = max_quantity_row['column_information']
+    # keymap = max_quantity_row['keymap']
+    # truncation = max_quantity_row['truncation']
+    
     while True:
         execute_frequency_job()
 
-        clear_and_print_header()
+        clear_and_print_header(conf_name, conf_save_mode)
         print()
         print('Record')
         print(tabulate(read_rows('record'), headers='keys', tablefmt='psql'))
@@ -52,11 +59,11 @@ def main():
         result = execute_operation(operation)
 
         if isinstance(result, pd.DataFrame):
-            print(tabulate(result, headers='keys', tablefmt='psql')) 
+            print(tabulate(result, headers='keys', tablefmt='psql', stralign='left')) 
             input('(Press anything to continue) ')
 
-        # if save_mode == 'automatic':
-        dump_db()
+        if conf_save_mode == 'Automatic':
+            dump_db()
 
     return None
 

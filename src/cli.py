@@ -41,16 +41,21 @@ def main():
         execute_frequency_job()
 
         clear_and_print_header()
+        print()
+        print('Record')
         print(tabulate(read_rows('record'), headers='keys', tablefmt='psql'))
 
         print_operation_options()
         operation = choose_operation()
 
-        print(tabulate(execute_operation(operation), headers='keys', tablefmt='psql')) if ('r' or 'R' or 'a' or 'A') in operation else execute_operation(operation)
+        if ('r' or 'R' or 'a' or 'A') in operation:
+            print(tabulate(execute_operation(operation), headers='keys', tablefmt='psql')) 
+            input('(Press anything to continue) ')
+        else:
+            execute_operation(operation)
         dump_db()
 
     return None
 
 if __name__ == "__main__":
     main()
-        # print(tabulate(execute_sql_command(command='SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, title ASC'), headers='keys', tablefmt='psql' ))

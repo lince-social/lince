@@ -3,7 +3,6 @@ import subprocess
 import sys
 import os
 from datetime import datetime, timedelta
-from tabulate import tabulate
 import pandas as pd
 import psycopg2
 
@@ -39,7 +38,7 @@ def check_exists_db():
     return result
 
 def dump_db():
-    return subprocess.run(['pg_dump', '-U', 'postgres', '--no-password', '-F', 'plain', '-f', 'src/db/versions/db_dump.sql', 'lince'], text=True, input='1\n')
+    return subprocess.run(['pg_dump', '-U', 'postgres', '--no-password', '-F', 'plain', '-f', 'db/dump.sql', 'lince'], text=True, input='1\n')
 
 def drop_db():
     return execute_sql_command(command='DROP DATABASE lince', database=None)
@@ -54,18 +53,11 @@ def create_db():
     return True
 
 def scheme_db():
-    with open(os.path.abspath(os.path.join(__file__,"..", "..", "..", "src", "db", "postgre.sql")), 'r') as file: return execute_sql_command(command = file.read())
+    with open(os.path.abspath(os.path.join(__file__,'..','..',  "db", "postgre.sql")), 'r') as file: return execute_sql_command(command = file.read())
 
 def restore_db():
-    p = subprocess.Popen("psql -h 'localhost' -d 'lince' -U postgres < src/db/versions/db_dump.sql", shell=True, stdin=subprocess.PIPE)
+    p = subprocess.Popen("psql -h 'localhost' -d 'lince' -U postgres < db/dump.sql", shell=True, stdin=subprocess.PIPE)
     return p.communicate(b"1\n")
-def print_help():
-    pass
-
-
-def clear_and_print_header():
-    os.system('clear')
-    return print('- Lince -')
 
 
 def create_row(table):
@@ -109,20 +101,13 @@ def read_rows(table, limit = 0, order=False):
     command = f'SELECT * FROM {table}'
 
     if table == 'record':
-        command += f" ORDER BY title ASC"
+        command += f" ORDER BY quantity ASC, title ASC"
+    if table == 'frequency':
+        command += f" ORDER BY record_id ASC"
 
-    if limit is False:
-        return execute_sql_command(command=command)
+    if limit > 0:
+        command += f" LIMIT {limit}"
 
-    if limit <= 0:
-        limit = input(f'Number of rows to fetch from {table} (no input fetches all): ')
-    
-    if isinstance(limit, int) or isinstance(limit, float):
-        rows = int(limit)
-        command += f" LIMIT {rows}"
-
-    print()
-    print(table)
     rows = execute_sql_command(command=command)
 
     if isinstance(rows, pd.DataFrame):
@@ -213,24 +198,6 @@ def execute_frequency_job():
     return True
 
 
-def choose_operation():
-    options = [
-        [ 'App', 'Operations', 'Tables' ],
-        [ '[E] Exit', '[C] Create', '[1] Record' ],
-        [ '[S] Save DB', '[R] Read', '[2] Frequency' ],
-        [ '[L] Load DB', '[U] Update', '' ],
-        [ '[H] Help', '[D] Delete', '' ],
-        [ '', '[Q] Query', '' ],
-        [ '', '[F] SQL File','' ]
-    ]
-
-    print()
-    print('Menu')
-    print(tabulate(options, headers='firstrow', tablefmt='psql'))
-
-    return input('Your choice: ')
-
-
 def execute_operation(operation):
     if ('e' or 'E') in operation:
         sys.exit()
@@ -249,9 +216,7 @@ def execute_operation(operation):
     if ('c' or 'C') in operation:
         create_row(table)
     if ('r' or 'R') in operation:
-        clear_and_print_header()
-        print(table)
-        print(tabulate(read_rows(table), headers='keys', tablefmt='psql'))
+        return read_rows(table)
     if ('u' or 'U') in operation:
         update_rows(table)
     if ('d' or 'D') in operation:
@@ -260,33 +225,7 @@ def execute_operation(operation):
         execute_sql_command(command=input('SQL command: '))
     if ('f' or 'F') in operation:
         execute_sql_command_from_file()
+    if ('z' or 'Z') in operation:
+        execute_sql_command(command=f'UPDATE record SET quantity = 0 WHERE ID = {operation[1:]}')
 
-def main():
-    if check_exists_db() is not None:
-        # dump_db()
-        drop_db()
-    create_db()
-    scheme_db()
-    restore_db()
-    restore_db()
-    
-    clear_and_print_header()
-    print(tabulate(read_rows(table='record', limit=20), headers='keys', tablefmt='psql'))
-    execute_frequency_job()
-
-    operation = choose_operation()
-
-    while True:
-        execute_operation(operation)
-        execute_frequency_job()
-        dump_db()
-
-        operation = choose_operation()
-
-        clear_and_print_header()
-        print(tabulate(read_rows(table='record', limit=20, order='title'), headers='keys', tablefmt='psql'))
-    return False
-
-
-if __name__ == "__main__":
-    main()
+    return True

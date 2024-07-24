@@ -20,6 +20,6 @@ pkgs.mkShell {
 
     [ ! -d $PGDATA ] && pg_ctl initdb -o "-U postgres"
     pg_ctl -o "-p 5432 -k $PGDATA" start
-    python src/app/lince.py
+    python src/cli.py
   '';
 }

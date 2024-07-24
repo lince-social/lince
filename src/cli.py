@@ -10,13 +10,12 @@ def clear_and_print_header():
 def print_operation_options():
     options = [
         [ 'App', 'Operations', 'Tables' ],
-        [ '[E] Exit', '[C] Create', '[1] Record' ],
-        [ '[S] Save DB', '[R] Read', '[2] Frequency' ],
-        [ '[L] Load DB', '[U] Update', '' ],
+        [ '[E] Exit', '[C] Create', '[T0] Configuration' ],
+        [ '[S] Save DB', '[R] Read', '[T1] Record' ],
+        [ '[L] Load DB', '[U] Update', '[T2] Frequency' ],
         [ '[H] Help', '[D] Delete', '' ],
         [ '', '[Q] Query', '' ],
-        [ '', '[F] SQL File','' ],
-        ['','[Z] Zero Quantity', '']
+        [ '', '[F] SQL File','' ]
     ]
 
     print()
@@ -30,12 +29,14 @@ def choose_operation():
 
 def main():
     if check_exists_db() is not None:
-        dump_db()
         drop_db()
     create_db()
     scheme_db()
     restore_db()
     restore_db()
+
+    # configuration_df = blabla
+    # save_mode = configuration_df['save_mode']
 
     while True:
         execute_frequency_job()
@@ -48,11 +49,13 @@ def main():
         print_operation_options()
         operation = choose_operation()
 
-        if ('r' or 'R' or 'a' or 'A') in operation:
-            print(tabulate(execute_operation(operation), headers='keys', tablefmt='psql')) 
+        result = execute_operation(operation)
+
+        if isinstance(result, pd.DataFrame):
+            print(tabulate(result, headers='keys', tablefmt='psql')) 
             input('(Press anything to continue) ')
-        else:
-            execute_operation(operation)
+
+        # if save_mode == 'automatic':
         dump_db()
 
     return None

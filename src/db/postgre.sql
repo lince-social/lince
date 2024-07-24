@@ -1,17 +1,14 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- CREATE TABLE configuration (
--- 	id SERIAL PRIMARY KEY,
--- 	quantity REAL DEFAULT 0 NOT NULL,
--- 	order TEXT NOT NULL DEFAULT,
--- 	filter TEXT NOT NULL DEFAULT,
--- 	view TEXT NOT NULL DEFAULT,
--- 	truncation TEXT NOT NULL DEFAULT,
--- 	menu_options TEXT NOT NULL DEFAULT,
--- 	column_filling_info TEXT NOT NULL DEFAULT,
--- 	keymap TEXT NOT NULL DEFAULT,
--- 	save_mode TEXT NOT NULL DEFAULT,
--- );
+CREATE TABLE configuration (
+	id SERIAL PRIMARY KEY,
+	quantity REAL NOT NULL DEFAULT 1,
+	save_mode TEXT NOT NULL DEFAULT 'automatic' CHECK (save_mode in ('automatic', 'manual')),
+	view TEXT NOT NULL DEFAULT 'CREATE VIEW default_view AS SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC',
+	column_information TEXT NOT NULL DEFAULT 'verbose' CHECK (save_mode in ('verbose', 'short', 'silent')),
+	keymap jsonb NOT NULL DEFAULT '{}',
+	truncation jsonb NOT NULL DEFAULT '{"record": {"description": 150}}'
+);
 
 CREATE TABLE record (
 	id SERIAL PRIMARY KEY,
@@ -23,6 +20,7 @@ CREATE TABLE record (
 
 CREATE TABLE frequency (
 	id SERIAL PRIMARY KEY,
+	quantity INTEGER DEFAULT 1,
 	day_week INTEGER,
 	months REAL DEFAULT 0 NOT NULL,
 	days REAL DEFAULT 0 NOT NULL,
@@ -30,7 +28,6 @@ CREATE TABLE frequency (
 	next_date TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
 	record_id INTEGER REFERENCES record(id) ON DELETE CASCADE NOT NULL,
 	delta REAL DEFAULT 0 NOT NULL,
-	times INTEGER DEFAULT 1,
 	finish_date DATE,
 	when_done BOOLEAN DEFAULT false -- this is actually a checkpoint, when becomes 0 update the days counting from today, not the next_period
 );

@@ -18,7 +18,7 @@ def execute_sql_command(command=None, database='lince'):
     cursor = connection.cursor()
     cursor.execute(command)    
 
-    if command.startswith("SELECT"):
+    if command.strip().upper().startswith("SELECT"):
         df = pd.DataFrame(cursor.fetchall(), columns=[desc[0] for desc in cursor.description])
         connection.close()
         return df
@@ -101,7 +101,7 @@ def read_rows(table, limit = 0, order=False):
     command = f'SELECT * FROM {table}'
 
     if table == 'record':
-        command += f" ORDER BY quantity ASC, title ASC"
+        command += f" WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC"
     if table == 'frequency':
         command += f" ORDER BY record_id ASC"
 
@@ -173,11 +173,11 @@ def execute_frequency_job():
             continue
         elif frequency_row['when_done'] == True and record_df_quantity < 0:
             continue
-        elif frequency_row['times'] == 0:
+        elif frequency_row['quantity'] == 0:
             continue
-        elif frequency_row['times'] < 0:
-            times = frequency_row['times'] + 1
-            update_rows('frequency', set_clause=f"times = {times}", where_clause=f"id = {frequency_row['id']}")
+        elif frequency_row['quantity'] < 0:
+            quantity = frequency_row['quantity'] + 1
+            update_rows('frequency', set_clause=f"quantity = {quantity}", where_clause=f"id = {frequency_row['id']}")
 
         next_date += relativedelta(months=frequency_row['months']) + timedelta(days=frequency_row['days'], seconds=frequency_row['seconds'])
 
@@ -199,33 +199,36 @@ def execute_frequency_job():
 
 
 def execute_operation(operation):
-    if ('e' or 'E') in operation:
+    if 'e' in operation or 'E' in operation:
         sys.exit()
-    if ('s' or 'S') in operation:
+    if 's' in operation or 'S' in operation:
         dump_db()
-    if ('l' or 'L') in operation:
+    if 'l' in operation or 'L' in operation:
         restore_db()
-    if ('h' or 'H') in operation:
+    if 'h' in operation or 'H' in operation:
         print_help()
 
-    if '1' in operation:
+    if 't0' in operation or 'T0' in operation:
+        table = 'configuration'
+    elif 't1' in operation or 'T1' in operation:
         table = 'record'
-    if '2' in operation:
+    elif 't2' in operation or 'T2' in operation:
         table = 'frequency'
 
-    if ('c' or 'C') in operation:
+    if 'c' in operation or 'C' in operation:
         create_row(table)
-    if ('r' or 'R') in operation:
+    elif 'r' in operation or 'R' in operation:
         return read_rows(table)
-    if ('u' or 'U') in operation:
+    elif 'u' in operation or 'U' in operation:
         update_rows(table)
-    if ('d' or 'D') in operation:
+    elif 'd' in operation or 'D' in operation:
         delete_rows(table)
-    if ('q' or 'Q') in operation:
-        execute_sql_command(command=input('SQL command: '))
-    if ('f' or 'F') in operation:
+    elif 'q' in operation or 'Q' in operation:
+        return execute_sql_command(command=input('SQL command: '))
+    elif 'f' in operation or 'F' in operation:
         execute_sql_command_from_file()
-    if ('z' or 'Z') in operation:
-        execute_sql_command(command=f'UPDATE record SET quantity = 0 WHERE ID = {operation[1:]}')
+
+    elif isdigit(operation):
+        execute_sql_command(command=f'UPDATE record SET quantity = 0 WHERE ID = {operation}')
 
     return True

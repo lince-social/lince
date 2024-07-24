@@ -91,13 +91,47 @@ def create_row(table):
     return execute_sql_command(f'INSERT INTO {table} {columns} VALUES {row}')
 
 
+# def truncate_description(desc, max_length=150):
+#     if desc != None:
+#         if len(desc) > max_length:
+#             return desc[:max_length] + '...'
+#     return desc
+
+# def read_rows(table, limit = 0, order=False):
+#     command = f'SELECT * FROM {table}'
+
+#     if table == 'record':
+#         command += f" WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC"
+#     if table == 'frequency':
+#         command += f" ORDER BY record_id ASC"
+
+#     if limit > 0:
+#         command += f" LIMIT {limit}"
+
+#     rows = execute_sql_command(command=command)
+
+#     if isinstance(rows, pd.DataFrame):
+#         if 'description' in rows.columns:
+#             rows['description'] = rows['description'].apply(truncate_description)
+#     elif rows and isinstance(rows, list):
+#         for row in rows:
+#             if 'description' in row:
+#                 row['description'] = truncate_description(row['description'])
+
+#     return rows
+
+
 def truncate_description(desc, max_length=150):
-    if desc != None:
-        if len(desc) > max_length:
-            return desc[:max_length] + '...'
+    if desc is not None:
+        lines = []
+        while len(desc) > max_length:
+            lines.append(desc[:max_length])
+            desc = desc[max_length:]
+        lines.append(desc)
+        return '\n'.join(lines)
     return desc
 
-def read_rows(table, limit = 0, order=False):
+def read_rows(table, limit=0, order=False):
     command = f'SELECT * FROM {table}'
 
     if table == 'record':
@@ -119,7 +153,6 @@ def read_rows(table, limit = 0, order=False):
                 row['description'] = truncate_description(row['description'])
 
     return rows
-
 
 def update_rows(table, set_clause=None, where_clause=None):
     if set_clause == None: set_clause = input("Set clause: ")
@@ -150,9 +183,9 @@ def execute_sql_command_from_file():
 
 
 def execute_frequency_job():
-    record_df = read_rows('record', limit=False)
+    record_df = read_rows('record')
 
-    frequency_df = read_rows('frequency', limit=False)
+    frequency_df = read_rows('frequency')
     frequency_df['next_date'] = pd.to_datetime(frequency_df['next_date'])
 
     today = datetime.today().date()
@@ -227,8 +260,7 @@ def execute_operation(operation):
         return execute_sql_command(command=input('SQL command: '))
     elif 'f' in operation or 'F' in operation:
         execute_sql_command_from_file()
-
-    elif isdigit(operation):
+    elif operation.isdigit():
         execute_sql_command(command=f'UPDATE record SET quantity = 0 WHERE ID = {operation}')
 
     return True

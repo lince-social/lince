@@ -1,2 +1,5 @@
 logfile
 .pg/
+*.pyc
+__pycache__/
+src/db/dump.sql

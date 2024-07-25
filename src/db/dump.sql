@@ -43,7 +43,7 @@ CREATE TABLE public.configuration (
     name text NOT NULL,
     quantity real DEFAULT 1 NOT NULL,
     save_mode text DEFAULT 'Automatic'::text NOT NULL,
-    view text DEFAULT 'CREATE VIEW default_view AS SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC'::text NOT NULL,
+    view text DEFAULT 'SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC | SELECT * FROM configuration'::text NOT NULL,
     column_information text DEFAULT 'Verbose'::text NOT NULL,
     keymap jsonb DEFAULT '{}'::jsonb NOT NULL,
     truncation jsonb DEFAULT '{"record": {"description": 150}}'::jsonb NOT NULL,
@@ -75,6 +75,38 @@ ALTER TABLE public.configuration_id_seq OWNER TO postgres;
 
 ALTER SEQUENCE public.configuration_id_seq OWNED BY public.configuration.id;
 
+
+--
+-- Name: record; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.record (
+    id integer NOT NULL,
+    title character varying(50) NOT NULL,
+    description text,
+    location character varying(255),
+    quantity real DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.record OWNER TO postgres;
+
+--
+-- Name: default_view; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.default_view AS
+ SELECT record.id,
+    record.title,
+    record.description,
+    record.location,
+    record.quantity
+   FROM public.record
+  WHERE (record.quantity < (0)::double precision)
+  ORDER BY record.quantity, record.title, record.description;
+
+
+ALTER TABLE public.default_view OWNER TO postgres;
 
 --
 -- Name: frequency; Type: TABLE; Schema: public; Owner: postgres
@@ -118,21 +150,6 @@ ALTER TABLE public.frequency_id_seq OWNER TO postgres;
 
 ALTER SEQUENCE public.frequency_id_seq OWNED BY public.frequency.id;
 
-
---
--- Name: record; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.record (
-    id integer NOT NULL,
-    title character varying(50) NOT NULL,
-    description text,
-    location character varying(255),
-    quantity real DEFAULT 0 NOT NULL
-);
-
-
-ALTER TABLE public.record OWNER TO postgres;
 
 --
 -- Name: record_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -182,7 +199,7 @@ ALTER TABLE ONLY public.record ALTER COLUMN id SET DEFAULT nextval('public.recor
 --
 
 COPY public.configuration (id, name, quantity, save_mode, view, column_information, keymap, truncation) FROM stdin;
-1	Default	1	Automatic	CREATE VIEW default_view AS SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC	Verbose	{}	{"record": {"description": 150}}
+1	Default	1	Automatic	SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC	Verbose	{}	{"record": {"description": 150}}
 \.
 
 
@@ -199,9 +216,6 @@ COPY public.frequency (id, quantity, day_week, months, days, seconds, next_date,
 --
 
 COPY public.record (id, title, description, location, quantity) FROM stdin;
-53	v0.3.0	Copiar cadastro, seja seu ou de outrem: selecione a opção copiar coisa, e de qual table ai tu digita o where pra puxar o que tu quer editar, se resposta é sim em editar 1 por 1 abre 1 por 1 e passa por todas as colunas de todas as coisas, se é editar com where ele faz um bulk editing	\N	-1
-57	v0.3.0	config views	\N	-1
-77	v0.3.0	config truncation of certain columns in certain tables	\N	-1
 42	v0.4.0	Checkpoint, i.e. "When a quantity reaches 4"	\N	0
 44	v0.4.0	Proportion, i.e. "When a quantity changes a certain number"	\N	0
 63	v0.5.0	Transfer proposal and connection, i.e "A proposal of transfering a quantity from A to B, in return (or not) C receives some from D" "If you transfer an amount of apples to my apple registration, I will transfer so much money from my registration to yours. Contribution and Retribution (optional if it is a donation)."	\N	0
@@ -225,8 +239,6 @@ COPY public.record (id, title, description, location, quantity) FROM stdin;
 47	v0.4.0	Arquitetura de condições e consequências	\N	0
 48	v0.4.0	Transform frequency into a building block, to be used just like any condition/consequence	\N	0
 49	v0.4.0	Simulção do efeito do tempo nos cadastros, se possível a partir dos cadastros de todos, coletar esses dados e rodar uma função de pesquisa operacional de simulação, também funciona quando uma transferência foi confirmada mas não efetivada no mundo material, só prometida, aí vai ter o valor atual da quantidade -1 e o previsto caso tudo continue como setado.	\N	0
-50	v0.4.0	make quantity zero with minimum types of keyboard	\N	0
-51	v0.4.0	add help option with explanation of all options and columns info and defaults	\N	0
 78	v0.3.0	Bug: when query select * from table <table> not returning rows	\N	0
 60	v0.3.0	config filter on what tables	\N	0
 55	v0.3.0	config save mode	\N	0
@@ -239,6 +251,15 @@ COPY public.record (id, title, description, location, quantity) FROM stdin;
 79	v0.3.0	Bug: capital F not activating SQL File option	\N	0
 62	v0.3.0	config change architecture main. reads from config table and passes info as argument to functions	\N	0
 61	v0.3.0	config view selected config options	\N	0
+57	v0.3.0	config views	\N	0
+50	v0.3.0	make quantity zero with minimum types of keyboard	\N	0
+53	v0.3.0	Feature | Copy easily any row or group of rows. Be able to edit row per row, in bulk or not at all.	\N	-1
+77	v0.3.0	Feature | Configuration: truncate certain columns in certain tables in accordance with truncate column in configuration table.	\N	-1
+51	v0.3.0	Feature | Add help in the format of a complete text as an operation	\N	-1
+82	v0.3.0	Feature | Make all consequences have quantity, inheriting id+quantity table. Make a pack of consequences have multiple possibilities for retiring. Different bottlenecks, more limitations for something to happen, more precision on modeling Ns & Cs.	\N	-1
+83	v0.3.0	Feature | Configuration: add information in different quantities, may be nothing at all, to columns when filling them. Read from configuration table active row. Also to operations when performing them in any way.	\N	-1
+84	Backlog	Bug | When starting two different instances of lince the server has problems, no pg_dump, weird messages.	\N	0
+81	v0.3.0	Enhancement | Make all tables that should have quantity inherit a id and quantity table.	\N	0
 \.
 
 
@@ -260,7 +281,7 @@ SELECT pg_catalog.setval('public.frequency_id_seq', 9, true);
 -- Name: record_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.record_id_seq', 80, true);
+SELECT pg_catalog.setval('public.record_id_seq', 84, true);
 
 
 --

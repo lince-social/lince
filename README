@@ -3,16 +3,19 @@ Lince: Tool for registry, interconnection and automation of anything.
 =====================================================================
 
 # Usage:
-Have Nix installed, possibly through:
+Tags/releases are the stable version with a clean database. The dev tasks are on the app at the main branch. 
+
+To use Lince, have Nix installed, possibly through:
 https://nixos.org/download
 
-Then, after cloning the repo, to run Lince, just enter it and type:
+Then, after cloning the repo, to run Lince, just enter it and type on the terminal:
 nix-shell
 
 # Disclamer
-This is a non-profit FOSS project. Crowd funding is the source of development compensation: https://www.apoia.se/lince, https://github.com/sponsors/lince-social and patreon.com/lince_social. The tasks are on the app at the main branch, to get a more stable version with a clean db check the releases/tags.
+This is a non-profit FOSS project. Crowdfunding is the source of development compensation:
+https://github.com/sponsors/lince-social | https://www.patreon.com/lince_social | https://www.apoia.se/lince 
 
-It is important to highlight that Lince is responsible for facilitating the connection between people and resources, transforming needs and contributions into data. The gains and losses related to the interaction, such as transportation, production and services themselves, remain the responsibility of the parties involved.
+Lince is tries to facilitate and automate the connection between people and resources, transforming needs and contributions into data. The gains and losses related to the interaction, such as transportation, production and services themselves, remain the responsibility of the parties involved.
 
 # About
 Lince models anything and everything with a Quantity, if it is below zero, it is a Need (N), if higher than zero, it is a Contribution (C). After the modeling is complete, it is possible to change the Quantity, be it through human trades or donations. Alternativelly the user can also automate it, with the app's several functionalities, to get the most value out of the technology. Below are a few examples of what can be modeled:
@@ -28,9 +31,7 @@ Lince models anything and everything with a Quantity, if it is below zero, it is
 - Social assistance, community work, donation items, etc.
 - Information, infrastructure, financing, presence, etc.
 
-Today many apps are developed with a specific segment of human interaction in mind. This project's goal is to allow any type of human interaction to exist without an extra need of app development. Many hours of human work are saved with the technological development concentrated in a single system. Such concentration is possible with the flexibility and decentralization of the application.
-
-The vision is a descentralized network of nodes that carry eventually consistent databases, possibly Merkle-CRDTs, with pub/sub protocols for minimum network usage.
+Today many apps are developed with a specific segment of human interaction in mind. This project's goal is to allow any type of human interaction to exist without an extra need of app development. Many hours of human work are saved with the technological development concentrated in a single system. The vision is a descentralized network of nodes that carry eventually consistent databases, possibly Merkle-CRDTs, with pub/sub protocols for minimum network usage.
 
 # License
 This project is licensed under the GNU GPLv3 license.

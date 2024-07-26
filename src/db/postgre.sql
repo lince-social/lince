@@ -7,7 +7,8 @@ CREATE TABLE configuration (
 	keymap jsonb NOT NULL DEFAULT '{}',
 	truncation jsonb NOT NULL DEFAULT '{"description": 150, "view": 100}'
 );
-INSERT INTO configuration (save_mode) values ('Automatic');
+
+INSERT INTO configuration (save_mode) VALUES ('Automatic') ON CONFLICT (id) DO NOTHING;
 
 CREATE TABLE record (
 	id SERIAL PRIMARY KEY,

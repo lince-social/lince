@@ -39,7 +39,7 @@ def check_exists_db():
     return result
 
 def dump_db():
-    return subprocess.run(['pg_dump', '-U', 'postgres', '--no-password', '-F', 'plain', '-f', f'{os.path.abspath(os.path.join(__file__,'..','..',  "db", "dump.sql"))}', 'lince'], text=True, input='1\n')
+    return subprocess.run(['pg_dump', '--data-only','--inserts', '--no-owner', '--no-privileges', '-U', 'postgres', '--no-password', '-F', 'plain', '-f', f'{os.path.abspath(os.path.join(__file__,'..','..',  "db", "dump.sql"))}', 'lince'], text=True, input='1\n')
 
 def drop_db():
     return execute_sql_command(command='DROP DATABASE lince', database=None)
@@ -56,8 +56,13 @@ def create_db():
 def scheme_db():
     with open(os.path.abspath(os.path.join(__file__,'..','..',  "db", "postgre.sql")), 'r') as file: return execute_sql_command(command = file.read())
 
+# def restore_db():
+#     p = subprocess.Popen(f"psql -h 'localhost' -d 'lince' -U postgres < {os.path.abspath(os.path.join(__file__,'..','..','..', "src", "db", "dump.sql"))}", shell=True, stdin=subprocess.PIPE)
+#     return p.communicate(b"1\n")
+
 def restore_db():
-    p = subprocess.Popen(f"psql -h 'localhost' -d 'lince' -U postgres < {os.path.abspath(os.path.join(__file__,'..','..','..', "src", "db", "dump.sql"))}", shell=True, stdin=subprocess.PIPE)
+    command = f"psql -h 'localhost' -d 'lince' -U postgres < {os.path.abspath(os.path.join(__file__, '..', '..', '..', 'src', 'db', 'dump.sql'))}"
+    p = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
     return p.communicate(b"1\n")
 
 def print_help():

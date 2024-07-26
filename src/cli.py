@@ -27,22 +27,19 @@ def main():
     create_db()
     scheme_db()
     restore_db()
-    restore_db()
 
     configuration_df = read_rows('SELECT * FROM configuration')
-    print(configuration_df)
     max_quantity_row = configuration_df[configuration_df['quantity'] == configuration_df['quantity'].max()].iloc[0]
 
     save_mode = max_quantity_row['save_mode']
     view_list = [v.strip() for v in max_quantity_row['view'].split('|')]
     column_information_mode = max_quantity_row['column_information_mode']
-    # truncation = max_quantity_row['truncation']
 
     while True:
-        bring_consequences()
-
         clear_screen()
 
+        bring_consequences()
+        
         for command in view_list:
             print(tabulate(read_rows(command), headers='keys', tablefmt='psql'))
             print()
@@ -57,6 +54,7 @@ def main():
 
         if save_mode == 'Automatic':
             dump_db()
+
 
     return None
 

@@ -1,5 +1,6 @@
 from dateutil.relativedelta import relativedelta
 import subprocess
+import json
 import sys
 import os
 from datetime import datetime, timedelta
@@ -74,6 +75,13 @@ def create_row(table):
     n = 0
 
     for column in tablecolumns:
+        if column == 'id':
+            continue
+
+        print()
+        print()
+        print(return_column_information(column), end='')
+        print()
         value = input(f'Value for {column} (if wanted): ')
 
         if value != "":
@@ -96,26 +104,37 @@ def create_row(table):
     return execute_sql_command(f'INSERT INTO {table} {columns} VALUES {row}')
 
 
-def truncate_description(desc, max_length=150):
-    if desc is not None:
-        lines = []
-        while len(desc) > max_length:
-            lines.append(desc[:max_length])
-            desc = desc[max_length:]
-        lines.append(desc)
-        return '\n'.join(lines)
-    return desc
+
+
+def truncate_column(column, truncation_size):
+    if column == None:
+        return column
+
+    lines = []
+    while len(column) > truncation_size:
+        lines.append(column[:truncation_size])
+        column = column[truncation_size:]
+    lines.append(column)
+    return '\n'.join(lines)
 
 def read_rows(command):
+    configuration_df = execute_sql_command('select truncation from configuration order by quantity DESC limit 1')
+
+    for index, configuration_row in configuration_df.iterrows():
+        truncation = configuration_row['truncation']
+
+    if isinstance(truncation, str):
+        truncation = json.loads(configuration_row['truncation'])
+
+
     rows = execute_sql_command(command=command)
 
-    if isinstance(rows, pd.DataFrame):
-        if 'description' in rows.columns:
-            rows['description'] = rows['description'].apply(truncate_description)
-    elif rows and isinstance(rows, list):
-        for row in rows:
-            if 'description' in row:
-                row['description'] = truncate_description(row['description'])
+    if not isinstance(rows, pd.DataFrame): return None
+
+    for column in rows.columns:
+        if column in truncation:
+            truncation_size = truncation[column]
+            rows[column] = rows[column].apply(lambda x: truncate_column(x, truncation_size))
 
     return rows
 
@@ -147,10 +166,97 @@ def execute_sql_command_from_file():
         return execute_sql_command(command = file.read())
 
 
-def execute_frequency_job():
-    record_df = read_rows('record')
+def return_column_information(column):
+    configuration_df = read_rows('select * from configuration')
+    max_quantity_config = configuration_df[configuration_df['quantity'] == configuration_df['quantity'].max()].iloc[0]
+    column_information_mode = max_quantity_config['column_information_mode']
 
-    frequency_df = read_rows('frequency')
+    if column_information_mode != 'silent':
+        info = 'Column: '
+
+    if column_information_mode == 'verbose':
+        match column:
+            case "quantity":
+                info += '"quantity REAL NOT NULL DEFAULT 1". Responsible for quantifying the availability of the phenomenon. It saves the information of how much. Positive numbers make it run or available. Negative numbers make it a need, in the case of frequency it will run untill it turns to 0. If zero, it is as good as not existing.'
+            case "save_mode":
+                info += '"save_mode VARCHAR(9) NOT NULL DEFAULT "Automatic" CHECK (save_mode in ("Automatic", "Manual"))". Responsible for determining the save mode, either Automatic or Manual. After each operation the system can save or let the database be saved when s or S is typed on the menu.'
+            case "view":
+                info += '"view TEXT NOT NULL DEFAULT "SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC". Responsible for configuring what tables will be shown on the main page..'
+            case "column_information_mode":
+                info += '"column_information_mode VARCHAR(7) NOT NULL DEFAULT "verbose" CHECK (column_information_mode in ("verbose", "short", "silent"))". Responsible for determining the amount of information shown after every column is queried, so the user can understand the details and restrictions of it.'
+            case "keymap":
+                info += '"keymap jsonb NOT NULL DEFAULT ""{}". Responsible for storing the keymap configuration, for personalized operations.'
+            case "truncation":
+                info += '"truncation jsonb NOT NULL DEFAULT "{"record": {"description": 150}}". Responsible for defining the truncation for each column. When a table is being printed, it will follow the instructions in this configuration, so every so and so characters (i.e. 50) a newline is added to occupy space vertically.'
+            case "title":
+                info += '"title VARCHAR(50) NOT NULL". Responsible for storing the title of the record. It is one of the possible ways to search and identify a record..'
+            case "description":
+                info += '"description TEXT". Responsible for storing the description of the record.'
+            case "location":
+                info += '"location VARCHAR(255)". Responsible for storing the location of the record.'
+            case "day_week":
+                info += '"day_week INTEGER". Responsible for storing the day of the week for the frequency.'
+            case "months":
+                info += '"months REAL DEFAULT 0 NOT NULL". Responsible for storing the months component of the frequency.'
+            case "days":
+                info += '"days REAL DEFAULT 0 NOT NULL". Responsible for storing the days component of the frequency.'
+            case "seconds":
+                info += '"seconds REAL DEFAULT 0 NOT NULL". Responsible for storing the seconds component of the frequency.'
+            case "next_date":
+                info += '"next_date TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL". Responsible for storing the next date of the frequency.'
+            case "record_id":
+                info += '"record_id INTEGER REFERENCES record(id) ON DELETE CASCADE NOT NULL". Responsible for linking the frequency to the corresponding record.'
+            case "delta":
+                info += '"delta REAL DEFAULT 0 NOT NULL". Responsible for storing the delta value of the frequency.'
+            case "finish_date":
+                info += '"finish_date DATE". Responsible for storing the finish date of the frequency.'
+            case "when_done":
+                info += '"when_done BOOLEAN DEFAULT false". Responsible for storing the status of the frequency (done or not).'
+    elif column_information_mode == "short":
+        match column:
+            case "quantity":
+                info += '"quantity REAL NOT NULL DEFAULT 1"'
+            case "save_mode":
+                info += '"save_mode VARCHAR(9) NOT NULL DEFAULT "Automatic" CHECK (save_mode in ("Automatic", "Manual"))".'
+            case "view":
+                info += '"view TEXT NOT NULL DEFAULT "SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC".'
+            case "column_information_mode":
+                info += '"column_information_mode VARCHAR(7) NOT NULL DEFAULT "verbose" CHECK (column_information_mode in ("verbose", "short", "silent"))".'
+            case "keymap":
+                info += '"keymap jsonb NOT NULL DEFAULT ""{}".'
+            case "truncation":
+                info += '"truncation jsonb NOT NULL DEFAULT ""{"record": {"description": 150}}".'
+            case "title":
+                info += '"title VARCHAR(50) NOT NULL".'
+            case "description":
+                info += '"description TEXT".'
+            case "location":
+                info += '"location VARCHAR(255)".'
+            case "day_week":
+                info += '"day_week INTEGER"'
+            case "months":
+                info += '"months REAL DEFAULT 0 NOT NULL"'
+            case "days":
+                info += '"days REAL DEFAULT 0 NOT NULL"'
+            case "seconds":
+                info += '"seconds REAL DEFAULT 0 NOT NULL"'
+            case "next_date":
+                info += '"next_date TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL"'
+            case "record_id":
+                info += '"record_id INTEGER REFERENCES record(id) ON DELETE CASCADE NOT NULL"'
+            case "delta":
+                info += '"delta REAL DEFAULT 0 NOT NULL"'
+            case "finish_date":
+                info += '"finish_date DATE"'
+            case "when_done":
+                info += '"when_done BOOLEAN DEFAULT false"'
+
+    return info
+
+def bring_consequences():
+    record_df = read_rows('SELECT * FROM record')
+
+    frequency_df = read_rows('select * from frequency')
     frequency_df['next_date'] = pd.to_datetime(frequency_df['next_date'])
 
     today = datetime.today().date()

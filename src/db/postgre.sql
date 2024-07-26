@@ -1,26 +1,25 @@
-CREATE TABLE basic (	
-	id SERIAL PRIMARY KEY,
-	quantity REAL NOT NULL DEFAULT 1
-);
-
 CREATE TABLE configuration (
+	id SERIAL PRIMARY KEY,
+	quantity REAL NOT NULL DEFAULT 1,
 	save_mode VARCHAR(9) NOT NULL DEFAULT 'Automatic' CHECK (save_mode in ('Automatic', 'Manual')),
- 	view TEXT NOT NULL DEFAULT 'SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC | SELECT * FROM configuration',
-	column_information_mode VARCHAR(7) NOT NULL DEFAULT 'verbose' CHECK (column_information in ('verbose', 'short', 'silent')),
+ 	view TEXT NOT NULL DEFAULT 'SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC',
+	column_information_mode VARCHAR(7) NOT NULL DEFAULT 'verbose' CHECK (column_information_mode in ('verbose', 'short', 'silent')),
 	keymap jsonb NOT NULL DEFAULT '{}',
-	truncation jsonb NOT NULL DEFAULT '{"record": {"description": 150}}'
-) INHERITS (basic);
-
-INSERT INTO configuration ('save_mode') values ('Automatic');
+	truncation jsonb NOT NULL DEFAULT '{"description": 150, "view": 100}'
+);
+INSERT INTO configuration (save_mode) values ('Automatic');
 
 CREATE TABLE record (
 	id SERIAL PRIMARY KEY,
+	quantity REAL NOT NULL DEFAULT 1,
 	title VARCHAR(50) NOT NULL,
 	description TEXT,
 	location VARCHAR(255)
-) INHERITS (basic);
+);
 
 CREATE TABLE frequency (
+	id SERIAL PRIMARY KEY,
+	quantity REAL NOT NULL DEFAULT 1,
 	day_week INTEGER,
 	months REAL DEFAULT 0 NOT NULL,
 	days REAL DEFAULT 0 NOT NULL,
@@ -30,12 +29,13 @@ CREATE TABLE frequency (
 	delta REAL DEFAULT 0 NOT NULL,
 	finish_date DATE,
 	when_done BOOLEAN DEFAULT false
-) INHERITS (basic);
-
+);
 
 -- CREATE TABLE consequence (
+	-- id SERIAL PRIMARY KEY,
+	-- quantity REAL NOT NULL DEFAULT 1,
 -- 	record_id INTEGER REFERENCES record(id) ON DELETE CASCADE	
--- ) INHERITS (basic);
+-- );
 
 -- CREATE TABLE delta ( delta REAL DEFAULT 0 NOT NULL ) INHERITS consequence;
 

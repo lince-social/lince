@@ -73,16 +73,16 @@ ALTER SEQUENCE public.basic_id_seq OWNED BY public.basic.id;
 --
 
 CREATE TABLE public.configuration (
-    name text NOT NULL,
-    save_mode text DEFAULT 'Automatic'::text NOT NULL,
-    view text DEFAULT 'SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC | SELECT * FROM configuration'::text NOT NULL,
-    column_information text DEFAULT 'Verbose'::text NOT NULL,
+    id integer NOT NULL,
+    quantity real DEFAULT 1 NOT NULL,
+    save_mode character varying(9) DEFAULT 'Automatic'::character varying NOT NULL,
+    view text DEFAULT 'SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC'::text NOT NULL,
+    column_information_mode character varying(7) DEFAULT 'verbose'::character varying NOT NULL,
     keymap jsonb DEFAULT '{}'::jsonb NOT NULL,
-    truncation jsonb DEFAULT '{"record": {"description": 150}}'::jsonb NOT NULL,
-    CONSTRAINT configuration_column_information_check CHECK ((column_information = ANY (ARRAY['Verbose'::text, 'Short'::text, 'Silent'::text]))),
-    CONSTRAINT configuration_save_mode_check CHECK ((save_mode = ANY (ARRAY['Automatic'::text, 'Manual'::text])))
-)
-INHERITS (public.basic);
+    truncation jsonb DEFAULT '{"view": 100, "description": 150}'::jsonb NOT NULL,
+    CONSTRAINT configuration_column_information_mode_check CHECK (((column_information_mode)::text = ANY ((ARRAY['verbose'::character varying, 'short'::character varying, 'silent'::character varying])::text[]))),
+    CONSTRAINT configuration_save_mode_check CHECK (((save_mode)::text = ANY ((ARRAY['Automatic'::character varying, 'Manual'::character varying])::text[])))
+);
 
 
 ALTER TABLE public.configuration OWNER TO postgres;
@@ -114,12 +114,12 @@ ALTER SEQUENCE public.configuration_id_seq OWNED BY public.configuration.id;
 --
 
 CREATE TABLE public.record (
-    id integer,
+    id integer NOT NULL,
+    quantity real DEFAULT 1 NOT NULL,
     title character varying(50) NOT NULL,
     description text,
     location character varying(255)
-)
-INHERITS (public.basic);
+);
 
 
 ALTER TABLE public.record OWNER TO postgres;
@@ -146,6 +146,8 @@ ALTER TABLE public.default_view OWNER TO postgres;
 --
 
 CREATE TABLE public.frequency (
+    id integer NOT NULL,
+    quantity real DEFAULT 1 NOT NULL,
     day_week integer,
     months real DEFAULT 0 NOT NULL,
     days real DEFAULT 0 NOT NULL,
@@ -155,8 +157,7 @@ CREATE TABLE public.frequency (
     delta real DEFAULT 0 NOT NULL,
     finish_date date,
     when_done boolean DEFAULT false
-)
-INHERITS (public.basic);
+);
 
 
 ALTER TABLE public.frequency OWNER TO postgres;
@@ -220,13 +221,6 @@ ALTER TABLE ONLY public.configuration ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
--- Name: configuration quantity; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.configuration ALTER COLUMN quantity SET DEFAULT 1;
-
-
---
 -- Name: frequency id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -234,24 +228,10 @@ ALTER TABLE ONLY public.frequency ALTER COLUMN id SET DEFAULT nextval('public.fr
 
 
 --
--- Name: frequency quantity; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.frequency ALTER COLUMN quantity SET DEFAULT 1;
-
-
---
 -- Name: record id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.record ALTER COLUMN id SET DEFAULT nextval('public.record_id_seq'::regclass);
-
-
---
--- Name: record quantity; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.record ALTER COLUMN quantity SET DEFAULT 1;
 
 
 --
@@ -266,8 +246,8 @@ COPY public.basic (id, quantity) FROM stdin;
 -- Data for Name: configuration; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.configuration (id, quantity, name, save_mode, view, column_information, keymap, truncation) FROM stdin;
-1	1	Default	Automatic	SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC	Verbose	{}	{"record": {"description": 150}}
+COPY public.configuration (id, quantity, save_mode, view, column_information_mode, keymap, truncation) FROM stdin;
+1	1	Automatic	SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC	verbose	{}	{"view": 100, "description": 150}
 \.
 
 
@@ -285,7 +265,6 @@ COPY public.frequency (id, quantity, day_week, months, days, seconds, next_date,
 
 COPY public.record (id, quantity, title, description, location) FROM stdin;
 42	0	v0.4.0	Checkpoint, i.e. "When a quantity reaches 4"	\N
-44	0	v0.4.0	Proportion, i.e. "When a quantity changes a certain number"	\N
 63	0	v0.5.0	Transfer proposal and connection, i.e "A proposal of transfering a quantity from A to B, in return (or not) C receives some from D" "If you transfer an amount of apples to my apple registration, I will transfer so much money from my registration to yours. Contribution and Retribution (optional if it is a donation)."	\N
 64	0	v0.5.0	Transferência múltipla, i.e "Entregar diversos itens por um só. Para comprar essa bota eu ofereço 20 reais e um candelabro".	\N
 65	0	v0.5.0	Eventually consistent	\N
@@ -322,13 +301,14 @@ COPY public.record (id, quantity, title, description, location) FROM stdin;
 57	0	v0.3.0	config views	\N
 50	0	v0.3.0	make quantity zero with minimum types of keyboard	\N
 53	-1	v0.3.0	Feature | Copy easily any row or group of rows. Be able to edit row per row, in bulk or not at all.	\N
-77	-1	v0.3.0	Feature | Configuration: truncate certain columns in certain tables in accordance with truncate column in configuration table.	\N
-83	-1	v0.3.0	Feature | Configuration: add information in different quantities, may be nothing at all, to columns when filling them. Read from configuration table active row. Also to operations when performing them in any way.	\N
 84	0	Backlog	Bug | When starting two different instances of lince the server has problems, no pg_dump, weird messages.	\N
 81	0	v0.3.0	Enhancement | Make all tables that should have quantity inherit a id and quantity table.	\N
 82	0	v0.3.0	Feature | Make all consequences have quantity, inheriting id+quantity table. Make a pack of consequences have multiple possibilities for retiring. Different bottlenecks, more limitations for something to happen, more precision on modeling Ns & Cs.	\N
 51	0	v0.3.0	Feature | Add help in the format of a complete text as an operation	\N
 86	0	v.4.0	Feature | When creating checkpoint, remove when_done from frequency, it is a checkpoint.	\N
+83	0	v0.3.0	Feature | Configuration: add information in different quantities, may be nothing at all, to columns when filling them. Read from configuration table active row. Also to operations when performing them in any way.	\N
+44	0	v0.4.0	Proportion, i.e. "When a quantity changes a certain number"	\N
+77	0	v0.3.0	Feature | Configuration: truncate certain columns in certain tables in accordance with truncate column in configuration table.	\N
 \.
 
 

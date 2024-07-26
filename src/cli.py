@@ -2,12 +2,12 @@ from backend.main import *
 from tabulate import tabulate
 
 
-def clear_and_print_header(conf_name, conf_save_mode):
-    os.system('clear')
-    return print(f'- Lince - Configuration: {conf_name} | Save Mode: {conf_save_mode}')
+def clear_screen():
+    # return print(f'- Lince - Configuration {conf_id}')
+    return os.system('clear')
 
 
-def print_operation_options():
+def choose_operation():
     options = [
         [ 'App', 'Operations', 'Tables' ],
         [ '[E] Exit', '[C] Create', '[T0] Configuration' ],
@@ -18,12 +18,7 @@ def print_operation_options():
         [ '', '[F] SQL File','' ]
     ]
 
-    print()
-    print('Menu')
-    return print(tabulate(options, headers='firstrow', tablefmt='psql'))
-
-
-def choose_operation():
+    print(tabulate(options, headers='firstrow', tablefmt='psql'))
     return input('Your choice: ')
 
 
@@ -35,25 +30,26 @@ def main():
     restore_db()
     restore_db()
 
-    configuration_df = read_rows('configuration')
+    configuration_df = read_rows('SELECT * FROM configuration')
     max_quantity_row = configuration_df[configuration_df['quantity'] == configuration_df['quantity'].max()].iloc[0]
 
-    conf_name = max_quantity_row['name']
+    conf_id = max_quantity_row['id']
     conf_save_mode = max_quantity_row['save_mode']
-    # view = max_quantity_row['view']
-    # column_information = max_quantity_row['column_information']
-    # keymap = max_quantity_row['keymap']
+    conf_view = max_quantity_row['view']
+    conf_view_list = conf_view.split('|')
+
+    column_information_mode = max_quantity_row['column_information_mode']
     # truncation = max_quantity_row['truncation']
-    
+
     while True:
-        execute_frequency_job()
+        bring_consequences()
 
-        clear_and_print_header(conf_name, conf_save_mode)
-        print()
-        print('Record')
-        print(tabulate(read_rows('record'), headers='keys', tablefmt='psql'))
+        clear_screen()
 
-        print_operation_options()
+        for command in conf_view_list:
+            print(tabulate(read_rows(command.strip()), headers='keys', tablefmt='psql'))
+            print()
+
         operation = choose_operation()
 
         result = execute_operation(operation)

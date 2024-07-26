@@ -59,6 +59,11 @@ def restore_db():
     p = subprocess.Popen(f"psql -h 'localhost' -d 'lince' -U postgres < {os.path.abspath(os.path.join(__file__,'..','..','..', "src", "db", "dump.sql"))}", shell=True, stdin=subprocess.PIPE)
     return p.communicate(b"1\n")
 
+def print_help():
+    with open(os.path.abspath(os.path.join(__file__,'..','..','..',  "README")), 'r') as file:
+        print(file.read())
+        return input('(Press any button to continue)')
+
 
 def create_row(table):
     tablecolumns = execute_sql_command(command=f"SELECT * FROM {table} WHERE false")

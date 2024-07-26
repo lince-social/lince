@@ -96,36 +96,6 @@ def create_row(table):
     return execute_sql_command(f'INSERT INTO {table} {columns} VALUES {row}')
 
 
-# def truncate_description(desc, max_length=150):
-#     if desc != None:
-#         if len(desc) > max_length:
-#             return desc[:max_length] + '...'
-#     return desc
-
-# def read_rows(table, limit = 0, order=False):
-#     command = f'SELECT * FROM {table}'
-
-#     if table == 'record':
-#         command += f" WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC"
-#     if table == 'frequency':
-#         command += f" ORDER BY record_id ASC"
-
-#     if limit > 0:
-#         command += f" LIMIT {limit}"
-
-#     rows = execute_sql_command(command=command)
-
-#     if isinstance(rows, pd.DataFrame):
-#         if 'description' in rows.columns:
-#             rows['description'] = rows['description'].apply(truncate_description)
-#     elif rows and isinstance(rows, list):
-#         for row in rows:
-#             if 'description' in row:
-#                 row['description'] = truncate_description(row['description'])
-
-#     return rows
-
-
 def truncate_description(desc, max_length=150):
     if desc is not None:
         lines = []
@@ -136,17 +106,7 @@ def truncate_description(desc, max_length=150):
         return '\n'.join(lines)
     return desc
 
-def read_rows(table, limit=0, order=False):
-    command = f'SELECT * FROM {table}'
-
-    if table == 'record':
-        command += f" WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC"
-    if table == 'frequency':
-        command += f" ORDER BY record_id ASC"
-
-    if limit > 0:
-        command += f" LIMIT {limit}"
-
+def read_rows(command):
     rows = execute_sql_command(command=command)
 
     if isinstance(rows, pd.DataFrame):
@@ -256,7 +216,7 @@ def execute_operation(operation):
     if 'c' in operation or 'C' in operation:
         create_row(table)
     elif 'r' in operation or 'R' in operation:
-        return read_rows(table)
+        return read_rows(f'select * from {table}')
     elif 'u' in operation or 'U' in operation:
         update_rows(table)
     elif 'd' in operation or 'D' in operation:

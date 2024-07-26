@@ -1,27 +1,26 @@
-CREATE TABLE configuration (
+CREATE TABLE basic (	
 	id SERIAL PRIMARY KEY,
-	name TEXT NOT NULL,
-	quantity REAL NOT NULL DEFAULT 1,
-	save_mode TEXT NOT NULL DEFAULT 'Automatic' CHECK (save_mode in ('Automatic', 'Manual')),
- 	view TEXT NOT NULL DEFAULT 'CREATE VIEW default_view AS SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC',
-	column_information TEXT NOT NULL DEFAULT 'Verbose' CHECK (column_information in ('Verbose', 'Short', 'Silent')),
-	keymap jsonb NOT NULL DEFAULT '{}',
-	truncation jsonb NOT NULL DEFAULT '{"record": {"description": 150}}'
+	quantity REAL NOT NULL DEFAULT 1
 );
 
-INSERT INTO configuration (name) values ('Default');
+CREATE TABLE configuration (
+	save_mode VARCHAR(9) NOT NULL DEFAULT 'Automatic' CHECK (save_mode in ('Automatic', 'Manual')),
+ 	view TEXT NOT NULL DEFAULT 'SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC | SELECT * FROM configuration',
+	column_information_mode VARCHAR(7) NOT NULL DEFAULT 'verbose' CHECK (column_information in ('verbose', 'short', 'silent')),
+	keymap jsonb NOT NULL DEFAULT '{}',
+	truncation jsonb NOT NULL DEFAULT '{"record": {"description": 150}}'
+) INHERITS (basic);
+
+INSERT INTO configuration ('save_mode') values ('Automatic');
 
 CREATE TABLE record (
 	id SERIAL PRIMARY KEY,
 	title VARCHAR(50) NOT NULL,
 	description TEXT,
-	location VARCHAR(255), 
-	quantity REAL DEFAULT 0 NOT NULL
-);
+	location VARCHAR(255)
+) INHERITS (basic);
 
 CREATE TABLE frequency (
-	id SERIAL PRIMARY KEY,
-	quantity INTEGER DEFAULT 1,
 	day_week INTEGER,
 	months REAL DEFAULT 0 NOT NULL,
 	days REAL DEFAULT 0 NOT NULL,
@@ -30,28 +29,13 @@ CREATE TABLE frequency (
 	record_id INTEGER REFERENCES record(id) ON DELETE CASCADE NOT NULL,
 	delta REAL DEFAULT 0 NOT NULL,
 	finish_date DATE,
-	when_done BOOLEAN DEFAULT false -- this is actually a checkpoint, when becomes 0 update the days counting from today, not the next_period
-);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	when_done BOOLEAN DEFAULT false
+) INHERITS (basic);
 
 
 -- CREATE TABLE consequence (
--- 	id SERIAL PRIMARY KEY,
 -- 	record_id INTEGER REFERENCES record(id) ON DELETE CASCADE	
--- );
+-- ) INHERITS (basic);
 
 -- CREATE TABLE delta ( delta REAL DEFAULT 0 NOT NULL ) INHERITS consequence;
 
@@ -80,11 +64,6 @@ CREATE TABLE frequency (
 
 -- )
 
-
-
-
-
-
 -- CREATE TABLE uuid_table (
 -- 	id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
 -- );
@@ -109,7 +88,6 @@ CREATE TABLE frequency (
 -- CREATE TABLE cadastro_foco_e_alterado (
 -- 	id_cadastro_alterado UUID REFERENCES cadastro(id) ON DELETE CASCADE
 -- ); INHERITS (uuid_e_cadastro_foco);
-
 
 -- CREATE TABLE ponto (
 -- 	quantidade_ponto UUID REFERENCES cadastro(id) ON DELETE CASCADE,

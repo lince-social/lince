@@ -27,6 +27,7 @@ def main():
     create_db()
     scheme_db()
     restore_db()
+    restore_db()
 
     configuration_df = read_rows('SELECT * FROM configuration')
     max_quantity_row = configuration_df[configuration_df['quantity'] == configuration_df['quantity'].max()].iloc[0]

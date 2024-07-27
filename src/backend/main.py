@@ -327,6 +327,8 @@ def execute_operation(operation):
     if 'c' in operation or 'C' in operation:
         create_row(table)
     elif 'r' in operation or 'R' in operation:
+        if talbe == 'record':
+            return read_rows(f'select * from {table} ORDER BY quantity ASC, title ASC, description ASC')
         return read_rows(f'select * from {table}')
     elif 'u' in operation or 'U' in operation:
         update_rows(table)

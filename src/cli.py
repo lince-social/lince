@@ -9,12 +9,13 @@ def clear_screen():
 def choose_operation():
     options = [
         [ 'App', 'Operations', 'Tables' ],
-        [ '[E] Exit', '[C] Create', '[T0] Configuration' ],
-        [ '[S] Save DB', '[R] Read', '[T1] Record' ],
-        [ '[L] Load DB', '[U] Update', '[T2] Frequency' ],
-        [ '[H] Help', '[D] Delete', '' ],
-        [ '', '[Q] Query', '' ],
-        [ '', '[F] SQL File','' ]
+        [ '[E] Exit', '[C] Create', '[0] Configuration' ],
+        [ '[S] Save DB', '[R] Read', '[1] History' ],
+        [ '[L] Load DB', '[U] Update', '[2] Record' ],
+        [ '[H] Help', '[D] Delete', '[3] Karma' ],
+        [ '', '[Q] Query', '[4] Frequency' ],
+        [ '', '[F] SQL File','[5] Command' ],
+        [ '', '','[6] Transfer' ]
     ]
 
     print(tabulate(options, headers='firstrow', tablefmt='psql'))
@@ -24,10 +25,7 @@ def choose_operation():
 def main():
     if check_exists_db() is not None:
         drop_db()
-    create_db()
-    scheme_db()
-    restore_db()
-    restore_db()
+    create_db(); scheme_db(); restore_db(); restore_db()
 
     configuration_df = read_rows('SELECT * FROM configuration')
     max_quantity_row = configuration_df[configuration_df['quantity'] == configuration_df['quantity'].max()].iloc[0]
@@ -39,15 +37,12 @@ def main():
     while True:
         clear_screen()
 
-        bring_consequences()
+        karma()
         
         for command in view_list:
             print(tabulate(read_rows(command), headers='keys', tablefmt='psql'))
             print()
-
-        operation = choose_operation()
-
-        result = execute_operation(operation)
+        result = execute_operation(choose_operation())
 
         if isinstance(result, pd.DataFrame):
             print(tabulate(result, headers='keys', tablefmt='psql', stralign='left')) 
@@ -55,7 +50,6 @@ def main():
 
         if save_mode == 'Automatic':
             dump_db()
-
 
     return None
 

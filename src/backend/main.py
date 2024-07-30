@@ -3,6 +3,7 @@ import subprocess
 import json
 import sys
 import os
+import re
 from datetime import datetime, timedelta
 import pandas as pd
 import psycopg2
@@ -109,16 +110,16 @@ def create_row(table):
     return execute_sql_command(f'INSERT INTO {table} {columns} VALUES {row}')
 
 
-
-
 def truncate_column(column, truncation_size):
     if column == None:
         return column
 
     lines = []
+
     while len(column) > truncation_size:
         lines.append(column[:truncation_size])
         column = column[truncation_size:]
+
     lines.append(column)
     return '\n'.join(lines)
 
@@ -299,11 +300,55 @@ def bring_consequences():
             while next_date.isoweekday() not in [int(i) for i in str(int(frequency_row['day_week']))]:
                 next_date += timedelta(days=1)
 
-        record_df_quantity += frequency_row['delta']
 
-        update_rows('frequency', set_clause=f"next_date = '{next_date}'", where_clause=f'id = {frequency_row["id"]}')
-        update_rows(table='record', set_clause=f'quantity = {record_df_quantity}', where_clause=f'id = {frequency_record_id_reference}')
+def karma():
+    karma_df = read_rows('SELECT * FROM karma')
 
+    for index, karma_row in karma_df.iterrows():
+        karma = karma_row['karma']
+        karma = [item.strip() for item in karma.split('=')]
+
+        karma_one_record_quantities = re.findall('rq[0-9]+', karma[1])
+
+        for id in karma_one_record_quantities:
+            try:
+                quantity = execute_sql_command(f"SELECT quantity FROM record WHERE id = {id[2:]}")['quantity'].iloc[0]
+                karma[1] = karma[1].replace(id, str(quantity))
+            except Exception as e:
+                print(e)
+
+        karma_one_frequencies = re.findall('f[0-9]+', karma[1])
+
+        for frequency in karma_one_frequencies:
+            frequency_return = check_update_frequency(id=frequency[1:])
+            karma[1] = karma[1].replace(frequency, str(frequency_return))
+
+        # rodar todos os scripts e inserir o retorno deles
+        karma_one_commands = re.findall('c[0-9]+', karma[1])
+        # print(karma_one_commands)
+
+        print(karma)
+        
+        try:
+            result = eval(karma[1])
+        except:
+            print(f'There was an error, check karma(id) = {karma_row['id']}')
+            continue
+
+        if result != 0:
+            if 'c' in karma[0]:
+                print(karma[0][1:])
+                execute_shell_command(karma[0][1])
+                continue
+
+            if 'rq' in karma[0]:
+                table = 'record'
+                set_column = 'quantity'
+                set_value = result
+                where_column = 'id'
+                where_value = f'{karma[0][2:]}'
+                execute_sql_command(f'UPDATE {table} SET {set_column} = {set_value} WHERE {where_column} = {where_value}')
+              # update_rows('record', set_clause=f'{set_column} = {set_value}', where_clause=f'{where_column} = {where_value}')
     return True
 
 

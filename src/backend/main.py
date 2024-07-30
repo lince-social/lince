@@ -176,12 +176,14 @@ def return_column_information(column):
     column_information_mode = max_quantity_config['column_information_mode']
 
     if column_information_mode != 'silent':
-        info = 'Column: '
+        info = ''
 
     if column_information_mode == 'verbose':
         match column:
             case "quantity":
                 info += '"quantity REAL NOT NULL DEFAULT 1". Responsible for quantifying the availability of the phenomenon. It saves the information of how much. Positive numbers make it run or available. Negative numbers make it a need, in the case of frequency it will run untill it turns to 0. If zero, it is as good as not existing.'
+            case "text":
+                info += '"text TEXT". Responsible for.'
             case "save_mode":
                 info += '"save_mode VARCHAR(9) NOT NULL DEFAULT "Automatic" CHECK (save_mode in ("Automatic", "Manual"))". Responsible for determining the save mode, either Automatic or Manual. After each operation the system can save or let the database be saved when s or S is typed on the menu.'
             case "view":
@@ -192,10 +194,6 @@ def return_column_information(column):
                 info += '"keymap jsonb NOT NULL DEFAULT ""{}". Responsible for storing the keymap configuration, for personalized operations.'
             case "truncation":
                 info += '"truncation jsonb NOT NULL DEFAULT "{"record": {"description": 150}}". Responsible for defining the truncation for each column. When a table is being printed, it will follow the instructions in this configuration, so every so and so characters (i.e. 50) a newline is added to occupy space vertically.'
-            case "title":
-                info += '"title VARCHAR(50) NOT NULL". Responsible for storing the title of the record. It is one of the possible ways to search and identify a record..'
-            case "description":
-                info += '"description TEXT". Responsible for storing the description of the record.'
             case "location":
                 info += '"location VARCHAR(255)". Responsible for storing the location of the record.'
             case "day_week":

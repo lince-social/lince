@@ -85,9 +85,7 @@ def create_row(table):
             continue
 
         print()
-        print()
-        print(return_column_information(column), end='')
-        print()
+        print(return_column_information(column))
         value = input(f'Value for {column} (if wanted): ')
 
         if value != "":

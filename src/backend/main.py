@@ -352,38 +352,46 @@ def karma():
     return True
 
 
-def execute_operation(operation):
-    if 'e' in operation or 'E' in operation:
-        sys.exit()
-    if 's' in operation or 'S' in operation:
-        dump_db()
-    if 'l' in operation or 'L' in operation:
-        restore_db()
-    if 'h' in operation or 'H' in operation:
-        print_help()
 
-    if 't0' in operation or 'T0' in operation:
+def execute_operation(operation):
+    if operation.isdigit():
+        return execute_sql_command(command=f'UPDATE record SET quantity = 0 WHERE ID = {operation}')
+    elif '0' in operation:
         table = 'configuration'
-    elif 't1' in operation or 'T1' in operation:
+    elif '1' in operation:
+        table = 'history'
+    elif '2' in operation:
         table = 'record'
-    elif 't2' in operation or 'T2' in operation:
+    elif '3' in operation:
+        table = 'karma'
+    elif '4' in operation:
         table = 'frequency'
+    elif '5' in operation:
+        table = 'command'
+    elif '6' in operation:
+        table = 'transfer'
+    else:
+        table = 'record'
 
     if 'c' in operation or 'C' in operation:
         create_row(table)
     elif 'r' in operation or 'R' in operation:
-        if table == 'record':
-            return read_rows(f'select * from {table} ORDER BY quantity ASC, title ASC, description ASC')
         return read_rows(f'select * from {table}')
     elif 'u' in operation or 'U' in operation:
         update_rows(table)
     elif 'd' in operation or 'D' in operation:
         delete_rows(table)
-    elif 'q' in operation or 'Q' in operation:
-        return execute_sql_command(command=input('SQL command: '))
     elif 'f' in operation or 'F' in operation:
         execute_sql_command_from_file()
-    elif operation.isdigit():
-        execute_sql_command(command=f'UPDATE record SET quantity = 0 WHERE ID = {operation}')
+    elif 'e' in operation or 'E' in operation:
+        sys.exit()
+    elif 's' in operation or 'S' in operation:
+        dump_db()
+    elif 'l' in operation or 'L' in operation:
+        restore_db()
+    elif 'h' in operation or 'H' in operation:
+        print_help()
+    elif 'q' in operation or 'Q' in operation:
+        return execute_sql_command(command=input('Type the SQL command: '))
 
     return True

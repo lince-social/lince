@@ -130,7 +130,7 @@ def read_rows(command):
     if isinstance(truncation, str):
         truncation = json.loads(configuration_row['truncation'])
 
-
+    # execute_sql_command('SELECT  schemaname,  tablename FROM  pg_catalog.pg_tables WHERE  schemaname NOT IN ("pg_catalog", "information_schema", "pg_toast") AND tablename NOT LIKE "pg_%"" AND tablename NOT LIKE "sql_%"";')
     rows = execute_sql_command(command=command)
 
     if not isinstance(rows, pd.DataFrame): return None

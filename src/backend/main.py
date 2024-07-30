@@ -259,46 +259,46 @@ def return_column_information(column):
 
     return info
 
-def bring_consequences():
-    record_df = read_rows('SELECT * FROM record')
 
-    frequency_df = read_rows('select * from frequency')
-    frequency_df['next_date'] = pd.to_datetime(frequency_df['next_date'])
 
+def check_update_frequency(id):
     today = datetime.today().date()
+    # today_datetime = pd.to_datetime(today).date()
 
-    for index, frequency_row in frequency_df.iterrows():
+    frequency_row = read_rows(f'SELECT * FROM frequency WHERE id={id}').iloc[0]
+    if frequency_row.empty:
+        print('No such frequency row')
+        return 0
 
-        frequency_record_id_reference = frequency_row['record_id']
-        record_df_quantity = record_df.loc[record_df['id'] == frequency_record_id_reference, 'quantity']
-        record_df_quantity = record_df_quantity.iloc[0]
-        next_date = frequency_row['next_date'].date()
-        today_datetime = pd.to_datetime(today).date()
+    frequency_row['next_date'] = pd.to_datetime(frequency_row['next_date'])
+    print(frequency_row['next_date'])
+    
+    next_date = frequency_row['next_date']
+    next_date = next_date.date()
 
-        if frequency_row['finish_date'] == None:
-            None
-        elif today > frequency_row['finish_date']:
-            continue
-        if next_date > today_datetime:
-            continue
-        elif frequency_row['when_done'] == True and record_df_quantity < 0:
-            continue
-        elif frequency_row['quantity'] == 0:
-            continue
-        elif frequency_row['quantity'] < 0:
-            quantity = frequency_row['quantity'] + 1
-            update_rows('frequency', set_clause=f"quantity = {quantity}", where_clause=f"id = {frequency_row['id']}")
+    print(next_date)
 
-        next_date += relativedelta(months=frequency_row['months']) + timedelta(days=frequency_row['days'], seconds=frequency_row['seconds'])
+    if frequency_row['finish_date'] == None:
+        None
+    elif today > frequency_row['finish_date']:
+        return 0
+    if next_date > pd.to_datetime(today).date() or frequency_row['quantity'] == 0:
+        return 0
+    elif frequency_row['quantity'] < 0:
+        quantity = frequency_row['quantity'] + 1
+        update_rows('frequency', set_clause=f"quantity = {quantity}", where_clause=f"id = {frequency_row['id']}")
 
-        if today == next_date:
+    next_date += relativedelta(months=frequency_row['months']) + timedelta(days=frequency_row['days'], seconds=frequency_row['seconds'])
+    if today >= next_date: next_date += timedelta(days=1)
+    
+    if not pd.isna(frequency_row['day_week']):
+        while next_date.isoweekday() not in [int(i) for i in str(int(frequency_row['day_week']))]:
             next_date += timedelta(days=1)
 
-        if pd.isna(frequency_row['day_week']):
-            pass
-        else:
-            while next_date.isoweekday() not in [int(i) for i in str(int(frequency_row['day_week']))]:
-                next_date += timedelta(days=1)
+    update_rows('frequency', set_clause=f"next_date = '{next_date}'", where_clause=f'id = {frequency_row["id"]}')
+
+    return True
+
 
 
 def karma():

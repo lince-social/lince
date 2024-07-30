@@ -352,6 +352,26 @@ def karma():
     return True
 
 
+def execute_shell_command(id):
+    command_row = read_rows(f'SELECT * FROM command WHERE id={id}')
+    command_row = command_row.iloc[0]
+
+    quantity = command_row['quantity']
+
+    if quantity == 0: return 0
+    if quantity < 0: update_rows('command', set_clause=f"quantity = {quantity + 1}", where_clause=f"id = {command_row['id']}")
+
+    # return os.system(command_row['command'])
+    result = subprocess.run(command_row['command'].split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    try:
+        print(result.stderr)
+        return result.stdout
+    except Exception as e:
+        print(e)
+
+    return False
+
 
 def execute_operation(operation):
     if operation.isdigit():

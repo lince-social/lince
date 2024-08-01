@@ -22,9 +22,10 @@ CREATE TABLE record (
 
 CREATE TABLE history (
     id SERIAL PRIMARY KEY,
-    record_quantity REAL NOT NULL DEFAULT 1,
     record_id INTEGER NOT NULL REFERENCES record(id) ON DELETE CASCADE,
-    change_time TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    change_time TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    old_quantity REAL NOT NULL,
+    new_quantity REAL NOT NULL
 );
 
 CREATE TABLE karma (
@@ -78,19 +79,19 @@ CREATE TABLE transfer (
 	transfer_time TIMESTAMP WITH TIME ZONE
 );
 
-CREATE OR REPLACE FUNCTION update_history_on_record_change()
+CREATE OR REPLACE FUNCTION record_quantity_change()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF NEW.quantity <> OLD.quantity THEN
-        INSERT INTO history (record_id, record_quantity, change_time)
-        VALUES (NEW.id, NEW.quantity, NOW());
+    IF NEW.quantity IS DISTINCT FROM OLD.quantity THEN
+        INSERT INTO history (record_id, old_quantity, new_quantity)
+        VALUES (OLD.id, OLD.quantity, NEW.quantity);
     END IF;
     RETURN NEW;
 END;
 $$
  LANGUAGE plpgsql;
 
-CREATE TRIGGER update_history
+CREATE TRIGGER record_quantity_update
 AFTER UPDATE OF quantity ON record
 FOR EACH ROW
-EXECUTE FUNCTION update_history_on_record_change();
+EXECUTE FUNCTION record_quantity_change();

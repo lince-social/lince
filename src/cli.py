@@ -15,10 +15,11 @@ def choose_operation():
         [ '[H] Help', '[D] Delete', '[3] Karma' ],
         [ '', '[Q] Query', '[4] Frequency' ],
         [ '', '[F] SQL File','[5] Command' ],
-        [ '', '','[6] Transfer' ]
+        [ '', '','[6] Sum' ],
+        [ '', '','[7] Transfer' ]
     ]
 
-    print(tabulate(options, headers='firstrow', tablefmt='psql'))
+    print(tabulate(options, headers='firstrow', tablefmt='rounded_grid'))
     return input('Your choice: ')
 
 
@@ -40,12 +41,12 @@ def main():
         karma()
         
         for command in view_list:
-            print(tabulate(read_rows(command), headers='keys', tablefmt='psql'))
+            print(tabulate(read_rows(command), headers='keys', tablefmt='rounded_grid'))
             print()
         result = execute_operation(choose_operation())
 
         if isinstance(result, pd.DataFrame):
-            print(tabulate(result, headers='keys', tablefmt='psql', stralign='left')) 
+            print(tabulate(result, headers='keys', tablefmt='rounded_grid', stralign='left')) 
             input('(Press anything to continue) ')
 
         if save_mode == 'Automatic':

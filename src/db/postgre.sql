@@ -6,7 +6,9 @@ CREATE TABLE configuration (
 	column_information_mode VARCHAR(7) NOT NULL DEFAULT 'verbose' CHECK (column_information_mode in ('verbose', 'short', 'silent')),
 	keymap jsonb NOT NULL DEFAULT '{}',
 	truncation jsonb NOT NULL DEFAULT '{"text": 150, "view": 100}',
-	table_query jsonb NOT NULL DEFAULT '{"record": "SELECT * FROM RECORD ORDER BY quantity ASC, text ASC, id ASC", "frequency": "SELECT * FROM frequency ORDER BY record_id ASC"}'
+	table_query jsonb NOT NULL DEFAULT '{"record": "SELECT * FROM RECORD ORDER BY quantity ASC, text ASC, id ASC", "frequency": "SELECT * FROM frequency ORDER BY id ASC"}',
+	language VARCHAR(15) NOT NULL DEFAULT 'en-US',
+	timezone VARCHAR(3) NOT NULL DEFAULT '-3'
 );
 
 INSERT INTO configuration (save_mode) VALUES ('Automatic') ON CONFLICT (id) DO NOTHING;
@@ -19,15 +21,16 @@ CREATE TABLE record (
 );
 
 CREATE TABLE history (
-	id SERIAL PRIMARY KEY,
-	record_quantity REAL NOT NULL DEFAULT 1,
-	record_id INTEGER NOT NULL REFERENCES record(id) ON DELETE CASCADE
+    id SERIAL PRIMARY KEY,
+    record_quantity REAL NOT NULL DEFAULT 1,
+    record_id INTEGER NOT NULL REFERENCES record(id) ON DELETE CASCADE,
+    change_time TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE karma (
 	id SERIAL PRIMARY KEY,
 	quantity INTEGER NOT NULL DEFAULT 1,
-	karma TEXT
+	expression TEXT
 );
 
 CREATE TABLE frequency (
@@ -39,6 +42,19 @@ CREATE TABLE frequency (
 	seconds REAL DEFAULT 0 NOT NULL,
 	next_date TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
 	finish_date DATE
+);
+
+CREATE TABLE sum (
+	id SERIAL PRIMARY KEY,
+	quantity INTEGER NOT NULL DEFAULT 1,
+	record_id INTEGER NOT NULL,
+
+	sum_mode INTEGER NOT NULL DEFAULT 0 CHECK (sum_mode in (-1,0,1)),
+    interval_mode VARCHAR(10) NOT NULL  DEFAULT 'relative' CHECK (interval_mode IN ('fixed', 'relative')),
+
+    interval_length INTERVAL NOT NULL,
+	end_lag interval,
+    end_date TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
 CREATE TABLE command (
@@ -61,3 +77,20 @@ CREATE TABLE transfer (
 	contributing_transfer_confirmation BOOL,
 	transfer_time TIMESTAMP WITH TIME ZONE
 );
+
+CREATE OR REPLACE FUNCTION update_history_on_record_change()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.quantity <> OLD.quantity THEN
+        INSERT INTO history (record_id, record_quantity, change_time)
+        VALUES (NEW.id, NEW.quantity, NOW());
+    END IF;
+    RETURN NEW;
+END;
+$$
+ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_history
+AFTER UPDATE OF quantity ON record
+FOR EACH ROW
+EXECUTE FUNCTION update_history_on_record_change();

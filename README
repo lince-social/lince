@@ -2,7 +2,7 @@
 Lince: Tool for registry, interconnection and automation of Needs and Contributions with open scope.
 ====================================================================================================
 
-# Usage:
+# Installation:
 To download the most stable versions, with a clean database, you can go to the tags/releases. The dev tasks are on the app at the main branch. To use Lince, have Nix installed, possibly through https://nixos.org/download. After cloning the repo, to run Lince, just enter it and type on the terminal:
 nix-shell
 
@@ -11,3 +11,12 @@ This project is licensed under the GNU GPLv3 license. Crowdfunding is the source
 https://github.com/sponsors/lince-social | https://www.patreon.com/lince_social | https://www.apoia.se/lince 
 
 Lince is tries to facilitate and automate the connection between people and resources, transforming needs and contributions into data. The gains and losses related to the interaction, such as transportation, production and services themselves, remain the responsibility of the parties involved.
+
+# Usage
+You have the menu, and an input. The app's configuration is based on the configuration table. The selected configuration is the one where the quantity column is the highest. Based on your config you can change the save mode, be it automatic or only when specified, the view, to alter what tables you see on the main view, default is 'record'. It is also possible to alter the amount of information you see when you fill each column at creation, and how many characters it takes in each column to add a newline. Still TODOING keymapping.
+
+With your configuration settled it is time to use the app. You can use however you like, make changes to the code, etc. Some personal favorites are modeling all habits and items you need to have/do in the 'record' and then create 'frequencies' at which those things should be revisited, then you create a 'karma', that changes the record quantity based on the frequency. Example: record: id=1, quantity=-1, text='exercise'. The frequency will be days=2, record_id=1 (referencing record exercise), and then a 'karma': expression='rq1 = rq1 -1 * f1'; that means that Lince will to a karma check, if the condition is met, and two days have passed as modeled in frequency with id 1, the quantity in record with id 1 is changed to -1.
+The expression column in karma table is evaluated as python code after the replacing of references such as frequency in f1 or record quantity in rq1. So feel free to create detailed expressions do precisely map your changing of quantity in a record.
+You can also run a shell command with karma, write it down in table command: command='touch lince.py' and then make a condition like karma='c1 = 1', the command will be run after every operation or ENTER button press. Alternatively you could run it with a frequency, karma='c1 = f1', or karma='c1 = f1*rq1' so only if both are 1 the command runs. Or make the command return something like 'python lince.py', which contains inside code that checks for a number on the internet, then a karma='rq1 = ((c2 + 2 // 3) > 1) * f1 * rq2' will run the command with id 2, and if the int remainder of the script's returned value + 2 divided by 3 is bigger than 1, and the two days of frequency have passed, then the record with id 1 gains the quantity of record with id 2. if there is a * before the = on the expression, i.e. "rq1 *= rq2 -1" then if rq2 is 1, the quantity in record id 1 is 0, if the * is not present then the left part of the operation is not changed or executed in case of 0 on the right side.
+Expressions can be really simple or complex to suit your modeling. The sky and computational power is the limit which is kinda low because it's still written in python.
+Every change to the quantity of records is stored in history.

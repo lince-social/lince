@@ -324,200 +324,6 @@ def execute_shell_command(id):
     return False
 
 
-# def return_sum_delta_record(id):
-#     sum_row = read_rows(f'SELECT * FROM sum WHERE id={id} and quantity != 0')
-    
-#     if sum_row.empty:
-#         print(f'No such sum row with id {id}')
-#         return 0
-#     else:
-#         sum_row = sum_row.iloc[0]
-    
-#     if sum_row['quantity'] < 0:
-#         quantity = sum_row['quantity'] + 1
-#         update_rows('sum', set_clause=f"quantity = {quantity}", where_clause=f"id = {sum_row['id']}")
-    
-#     if sum_row['interval_mode'] == 'relative':
-#         if sum_row['end_lag'] != None:ljkj
-#             end_lag = sum_row['end_lag']
-#             end_date = datetime.time().now() - timeshift(end_lag)
-#         else:
-#             end_date = datetime.time().now()
-#     else:
-#         end_date = sum_row['end_date']
-
-#     start_date = end_date.timeshift( - sum_row['interval_length'])
-
-#     match sum_row['sum_mode']:
-#         case -1:
-#             operand = 'all negative changes'
-#         case 0:
-#             operand = 'all changes, delta basically'
-#         case 1:
-#             operand = 'all positive changes'
-    
-#     return execute_sql_command(f'select {operand} from history  WHERE change_time is between {start_date} and {end_date} and record_id = {sum_row['record_id']}')
-
-
-#     print('record')
-#     print(record_id)
-#     # print(type(record_id))
-#     # <class 'numpy.int64'>
-
-#     print('summode')
-#     print(sum_mode)
-#     # print(type(sum_mode))
-#     # <class 'numpy.int64'>
-
-#     print('interval_mode')
-#     print(interval_mode)
-#     # print(type(interval_mode))
-#     # <class 'str'>
-
-#     print('end_date')
-#     print(end_date)
-#     # print(type(end_date))
-#     # <class 'pandas._libs.tslibs.timestamps.Timestamp'>
-
-#     print('end lag')
-#     print(end_lag)
-#     # print(type(end_lag))
-#     # <class 'numpy.int64'>
-
-#     print('interval lenght')
-#     print(interval_length)
-#     # print(type(interval_length))
-#     # <class 'pandas._libs.tslibs.timedeltas.Timedelta'>
-
-
-#     return sum
-
-def return_sum_delta_record(id):
-    sum_row = read_rows(f'SELECT * FROM sum WHERE id={id} AND quantity != 0')
-    
-    if sum_row.empty:
-        print(f'No such sum row with id {id}')
-        return 0
-    else:
-        sum_row = sum_row.iloc[0]
-    
-    if sum_row['quantity'] < 0:
-        quantity = sum_row['quantity'] + 1
-        update_rows('sum', set_clause=f"quantity = {quantity}", where_clause=f"id = {sum_row['id']}")
-    
-    if sum_row['interval_mode'] == 'relative':
-        if sum_row['end_lag'] is not None:
-            end_lag = sum_row['end_lag']
-            end_date = datetime.datetime.now() - timeshift(end_lag)
-        else:
-            end_date = datetime.datetime.now()
-    else:
-        end_date = sum_row['end_date']
-
-    start_date = end_date - sum_row['interval_length']
-
-    match sum_row['sum_mode']:
-        case -1:
-            changes = read_rows(f'''
-                SELECT SUM(record_quantity) AS total_changes
-                FROM history
-                WHERE change_time BETWEEN '{start_date}' AND '{end_date}'
-                AND record_id = {sum_row['record_id']}
-                AND record_quantity < 0
-            ''')
-            return changes['total_changes'].iloc[0] if not changes.empty else 0
-
-        case 0:
-            changes = read_rows(f'''
-                SELECT record_quantity
-                FROM history
-                WHERE change_time BETWEEN '{start_date}' AND '{end_date}'
-                AND record_id = {sum_row['record_id']}
-                ORDER BY change_time
-            ''')
-            if changes.empty:
-                return 0
-            delta = changes['record_quantity'].iloc[-1] - changes['record_quantity'].iloc[0]
-            return delta
-
-        case 1:
-            changes = read_rows(f'''
-                SELECT SUM(record_quantity) AS total_changes
-                FROM history
-                WHERE change_time BETWEEN '{start_date}' AND '{end_date}'
-                AND record_id = {sum_row['record_id']}
-                AND record_quantity > 0
-            ''')
-            return changes['total_changes'].iloc[0] if not changes.empty else 0
-
-def return_sum_delta_record(id):
-    sum_row = read_rows(f'SELECT * FROM sum WHERE id={id} AND quantity != 0')
-    
-    if sum_row.empty:
-        print(f'No such sum row with id {id}')
-        return 0
-    else:
-        sum_row = sum_row.iloc[0]
-    
-    # Adjust quantity if it's negative
-    if sum_row['quantity'] < 0:
-        quantity = sum_row['quantity'] + 1
-        update_rows('sum', set_clause=f"quantity = {quantity}", where_clause=f"id = {sum_row['id']}")
-    
-    # Determine end_date based on interval_mode
-    if sum_row['interval_mode'] == 'relative':
-        if sum_row['end_lag'] is not None:
-            end_lag = sum_row['end_lag']
-            end_date = datetime.datetime.now() - timeshift(end_lag)
-        else:
-            end_date = datetime.datetime.now()
-    else:
-        end_date = sum_row['end_date']
-
-    # Calculate start_date based on interval_length
-    start_date = end_date - sum_row['interval_length']
-
-    # Determine the operand based on sum_mode
-    match sum_row['sum_mode']:
-        case -1:
-            # Sum all negative changes
-            changes = read_rows(f'''
-                SELECT SUM(record_quantity) AS total_changes
-                FROM history
-                WHERE change_time BETWEEN '{start_date}' AND '{end_date}'
-                AND record_id = {sum_row['record_id']}
-                AND record_quantity < 0
-            ''')
-            return changes['total_changes'].iloc[0] if not changes.empty else 0
-
-        case 0:
-            # Calculate delta (difference between first and last change)
-            changes = read_rows(f'''
-                SELECT record_quantity
-                FROM history
-                WHERE change_time BETWEEN '{start_date}' AND '{end_date}'
-                AND record_id = {sum_row['record_id']}
-                ORDER BY change_time
-            ''')
-            if changes.empty:
-                return 0
-            # Calculate delta: last change - first change
-            delta = changes['record_quantity'].iloc[-1] - changes['record_quantity'].iloc[0]
-            return delta
-
-        case 1:
-            # Sum all positive changes
-            changes = read_rows(f'''
-                SELECT SUM(record_quantity) AS total_changes
-                FROM history
-                WHERE change_time BETWEEN '{start_date}' AND '{end_date}'
-                AND record_id = {sum_row['record_id']}
-                AND record_quantity > 0
-            ''')
-            return changes['total_changes'].iloc[0] if not changes.empty else 0
-
-    # SELECT SUM(record_quantity) AS total_changes FROM history WHERE change_time BETWEEN '2024-07-30' AND '2024-08-01 00:00:00' AND record_id = 92 AND record_quantity < 0
-
 def karma():
     karma_df = read_rows('SELECT * FROM karma')
 
@@ -555,18 +361,20 @@ def karma():
         if result != 0 or (result == 0 and expression[0].endswith('*')):
             expression[0] = expression[0].replace('*', '')
             expression[0] = expression[0].strip()
+            left_expression = expression[0].split(',')
 
-            if 'c' in expression[0]:
-                execute_shell_command(expression[0][1])
-                continue
+            for consequence in left_expression:
+                if 'c' in consequence:
+                    execute_shell_command(consequence[1])
+                    continue
 
-            if 'rq' in expression[0]:
-                table = 'record'
-                set_column = 'quantity'
-                set_value = result
-                where_column = 'id'
-                where_value = f'{expression[0][2:]}'
-                execute_sql_command(f'UPDATE {table} SET {set_column} = {set_value} WHERE {where_column} = {where_value}')
+                if 'rq' in consequence:
+                    table = 'record'
+                    set_column = 'quantity'
+                    set_value = result
+                    where_column = 'id'
+                    where_value = f'{consequence[2:]}'
+                    execute_sql_command(f'UPDATE {table} SET {set_column} = {set_value} WHERE {where_column} = {where_value}')
     return True
 
 

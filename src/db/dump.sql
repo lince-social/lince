@@ -54,8 +54,9 @@ INSERT INTO public.record VALUES (63, -1, 'v0.5.0 | Feature | Transfer: 1. Multi
 INSERT INTO public.record VALUES (65, -1, 'v0.5.0 | Feature | Eventually Consistent Databases.', NULL);
 INSERT INTO public.record VALUES (66, -1, 'v0.5.0 | Feature | Decentralization: have different nodes of Lince that can communicate.', NULL);
 INSERT INTO public.record VALUES (68, -1, 'v0.5.0 | Feature | Communication: between nodes, maybe use pub/sub protocol, IPFS, libp2p, Merkle-CRDTs.', NULL);
-INSERT INTO public.record VALUES (70, -1, 'v0.5.0 | Feature | Authentication. Tip: Check gajim for possible login inspiration.', NULL);
 INSERT INTO public.record VALUES (72, -1, 'v0.5.0 | Feature | Computing Donation: Give the agent the option to make the machine use its resources for network traffic optimization. Whatever that means.', NULL);
+INSERT INTO public.record VALUES (101, -5, 'test', NULL);
+INSERT INTO public.record VALUES (70, -5, 'v0.5.0 | Feature | Authentication. Tip: Check gajim for possible login inspiration.', NULL);
 
 
 --
@@ -69,20 +70,27 @@ INSERT INTO public.history VALUES (121, 66, '2024-08-01 04:34:54.530641+00', 0, 
 INSERT INTO public.history VALUES (122, 68, '2024-08-01 04:34:54.530641+00', 0, -1);
 INSERT INTO public.history VALUES (123, 70, '2024-08-01 04:34:54.530641+00', 0, -1);
 INSERT INTO public.history VALUES (124, 72, '2024-08-01 04:34:54.530641+00', 0, -1);
+INSERT INTO public.history VALUES (125, 101, '2024-08-02 13:34:04.749157+00', -1, -2);
+INSERT INTO public.history VALUES (126, 70, '2024-08-02 13:34:04.757129+00', -1, -2);
+INSERT INTO public.history VALUES (127, 101, '2024-08-02 13:34:08.198245+00', -2, -3);
+INSERT INTO public.history VALUES (128, 70, '2024-08-02 13:34:08.206153+00', -2, -3);
+INSERT INTO public.history VALUES (129, 101, '2024-08-02 13:34:08.693548+00', -3, -4);
+INSERT INTO public.history VALUES (130, 70, '2024-08-02 13:34:08.703126+00', -3, -4);
+INSERT INTO public.history VALUES (131, 101, '2024-08-02 13:34:08.925948+00', -4, -5);
+INSERT INTO public.history VALUES (132, 70, '2024-08-02 13:34:08.935131+00', -4, -5);
 
 
 --
 -- Data for Name: karma; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.karma VALUES (29, 1, 'rq100=s2');
+INSERT INTO public.karma VALUES (30, 1, 'rq101,rq70=rq101-1');
 
 
 --
 -- Data for Name: sum; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.sum VALUES (2, 1, 98, -1, 'relative', '2 days', NULL, '2024-08-01 02:05:39.143753+00');
 
 
 --
@@ -116,21 +124,21 @@ SELECT pg_catalog.setval('public.frequency_id_seq', 18, true);
 -- Name: history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.history_id_seq', 124, true);
+SELECT pg_catalog.setval('public.history_id_seq', 132, true);
 
 
 --
 -- Name: karma_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.karma_id_seq', 29, true);
+SELECT pg_catalog.setval('public.karma_id_seq', 30, true);
 
 
 --
 -- Name: record_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.record_id_seq', 100, true);
+SELECT pg_catalog.setval('public.record_id_seq', 101, true);
 
 
 --

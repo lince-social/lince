@@ -39,7 +39,10 @@ def check_exists_db():
     return result
 
 def dump_db():
-    return subprocess.run(['pg_dump', '--data-only', '--inserts', '--no-owner', '--no-privileges', '-U', 'postgres', '--no-password', '-F', 'plain', '-f', f'{os.path.abspath(os.path.join(__file__, '..', '..', "db", "dump.sql"))}', 'lince', '-h', 'localhost', '-p', '5432'], text=True, input='1\n')
+    configuration_row = execute_sql_command('select last_db from configuration order by quantity DESC limit 1').iloc[0]
+    db = configuration_row['last_db']
+    db='dev'
+    return subprocess.run(['pg_dump', '--data-only', '--inserts', '--no-owner', '--no-privileges', '-U', 'postgres', '--no-password', '-F', 'plain', '-f', f'{os.path.abspath(os.path.join(__file__, '..', '..', "db","versions", f"{db}.sql"))}', 'lince', '-h', 'localhost', '-p', '5432'], text=True, input='1\n')
 
 def drop_db():
     return execute_sql_command(command='DROP DATABASE lince', database=None)
@@ -54,10 +57,35 @@ def create_db():
     return True
 
 def scheme_db():
-    with open(os.path.abspath(os.path.join(__file__,'..','..',  "db", "postgre.sql")), 'r') as file: return execute_sql_command(command = file.read())
+    with open(os.path.abspath(os.path.join(__file__,'..','..',  "db", "schema.sql")), 'r') as file: return execute_sql_command(command = file.read())
 
-def restore_db():
-    command = f"psql -h 'localhost' -d 'lince' -U postgres < {os.path.abspath(os.path.join(__file__, '..', '..', '..', 'src', 'db', 'dump.sql'))}"
+def restore_db(db=None):
+    # current_dir = os.path.dirname(os.path.abspath(__file__))
+    # target_dir = os.path.abspath(os.path.join(current_dir, '..', '..', 'db', 'versions'))
+
+    # configuration_row = execute_sql_command('select id, startup_db, last_db from configuration order by quantity DESC limit 1').iloc[0]
+    # startup_db = configuration_row['startup_db']
+    # last_db = configuration_row['last_db']
+    # id = configuration_row['id']
+
+    # if db != None:
+    #     os.system(f'touch {target_dir}/{db}.sql')
+    # elif startup_db != None and os.path.isfile(os.path.join(target_dir, f'{startup_db}.sql')):
+    #     db = startup_db
+    # elif last_db != None and os.path.isfile(os.path.join(target_dir, f'{last_db}.sql')):
+    #     input(last_db)
+    #     db = last_db
+    # else:
+    #     input('dioindcis')
+    #     files = [f for f in target_dir if os.path.isfile(os.path.join(target_dir, f))]
+    #     if files:
+    #         db = sorted(files)[0][:-4]
+
+    # execute_sql_command(f"UPDATE configuration SET last_db='{db}' WHERE id={id}")
+
+    # command = f"psql -h 'localhost' -d 'lince' -U postgres < {os.path.abspath(os.path.join(__file__, '..', '..', 'db','versions', 'default.sql'))}"
+    db_path = os.path.abspath(os.path.join(__file__, '..', '..', 'db','versions', 'default.sql'))
+    command = f"psql -h 'localhost' -d 'lince' -U postgres < {db_path}"
     p = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
     return p.communicate(b"1\n")
 
@@ -479,6 +507,9 @@ def execute_operation(operation):
         dump_db()
     elif 'l' in operation or 'L' in operation:
         restore_db()
+    # elif 'o' in operation or 'O' in operation:
+    #     db=input('DB name at src/db/versions/ (without .sql): ')
+    #     restore_db(db=db)
     elif 'h' in operation or 'H' in operation:
         print_help()
     elif 'q' in operation or 'Q' in operation:

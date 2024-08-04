@@ -11,7 +11,6 @@ pkgs.mkShell {
     python312Packages.datetime
     python312Packages.psycopg2
     python312Packages.tabulate
-
   ];
   PGDATA = "${toString ./.}/.pg";
   shellHook = ''

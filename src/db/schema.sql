@@ -8,7 +8,9 @@ CREATE TABLE configuration (
 	truncation jsonb NOT NULL DEFAULT '{"text": 150, "view": 100}',
 	table_query jsonb NOT NULL DEFAULT '{"record": "SELECT * FROM RECORD ORDER BY quantity ASC, text ASC, id ASC", "frequency": "SELECT * FROM frequency ORDER BY id ASC"}',
 	language VARCHAR(15) NOT NULL DEFAULT 'en-US',
-	timezone VARCHAR(3) NOT NULL DEFAULT '-3'
+	timezone VARCHAR(3) NOT NULL DEFAULT '-3',
+	startup_db VARCHAR(50) DEFAULT 'default',
+	last_db VARCHAR(50) NOT NULL DEFAULT 'default'
 );
 
 INSERT INTO configuration (save_mode) VALUES ('Automatic') ON CONFLICT (id) DO NOTHING;

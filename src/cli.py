@@ -36,7 +36,7 @@ def main():
     column_information_mode = max_quantity_row['column_information_mode']
 
     while True:
-        # clear_screen()
+        clear_screen()
 
         karma()
         

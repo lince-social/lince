@@ -323,6 +323,7 @@ def check_update_frequency(id):
     next_date += relativedelta(months=int(frequency_row['months'])) + timedelta(days=int(frequency_row['days']), seconds=int(frequency_row['seconds']))
 
     if not pd.isna(frequency_row['day_week']):
+        next_date += timedelta(days=1)
         while next_date.isoweekday() not in [int(i) for i in str(int(frequency_row['day_week']))]:
             next_date += timedelta(days=1)
 
@@ -333,21 +334,18 @@ def check_update_frequency(id):
 
 def execute_shell_command(id):
     command_row = read_rows(f'SELECT * FROM command WHERE id={id}')
-    command_row = command_row.iloc[0]
+    if command_row.empty: return False
 
+    command_row = command_row.iloc[0]
     quantity = command_row['quantity']
 
     if quantity == 0: return 0
     if quantity < 0: update_rows('command', set_clause=f"quantity = {quantity + 1}", where_clause=f"id = {command_row['id']}")
 
-    # return os.system(command_row['command'])
-    result = subprocess.run(command_row['command'].split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    result = subprocess.Popen(command_row['command'].split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-    try:
-        print(result.stderr)
-        return result.stdout
-    except Exception as e:
-        print(e)
+    try: return result.stdout
+    except Exception as e: print(e)
 
     return False
 
@@ -392,8 +390,10 @@ def karma():
             left_expression = expression[0].split(',')
 
             for consequence in left_expression:
+                consequence = consequence.strip()
+
                 if 'c' in consequence:
-                    execute_shell_command(consequence[1])
+                    execute_shell_command(consequence[1:])
                     continue
 
                 if 'rq' in consequence:

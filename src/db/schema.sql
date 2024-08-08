@@ -2,11 +2,11 @@ CREATE TABLE configuration (
 	id SERIAL PRIMARY KEY,
 	quantity REAL NOT NULL DEFAULT 1,
 	save_mode VARCHAR(9) NOT NULL DEFAULT 'Automatic' CHECK (save_mode in ('Automatic', 'Manual')),
- 	view TEXT NOT NULL DEFAULT 'SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, text ASC, id ASC',
+ 	view TEXT NOT NULL DEFAULT 'SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, head ASC, body ASC, id ASC',
 	column_information_mode VARCHAR(7) NOT NULL DEFAULT 'verbose' CHECK (column_information_mode in ('verbose', 'short', 'silent')),
 	keymap jsonb NOT NULL DEFAULT '{}',
-	truncation jsonb NOT NULL DEFAULT '{"text": 150, "view": 100}',
-	table_query jsonb NOT NULL DEFAULT '{"record": "SELECT * FROM RECORD ORDER BY quantity ASC, text ASC, id ASC", "frequency": "SELECT * FROM frequency ORDER BY id ASC"}',
+	truncation jsonb NOT NULL DEFAULT '{"body": 150, "view": 100}',
+	table_query jsonb NOT NULL DEFAULT '{"record": "SELECT * FROM RECORD ORDER BY quantity ASC, head ASC, body ASC, id ASC", "frequency": "SELECT * FROM frequency ORDER BY id ASC"}',
 	language VARCHAR(15) NOT NULL DEFAULT 'en-US',
 	timezone VARCHAR(3) NOT NULL DEFAULT '-3',
 	startup_db VARCHAR(50) DEFAULT 'default',
@@ -18,7 +18,8 @@ INSERT INTO configuration (save_mode) VALUES ('Automatic') ON CONFLICT (id) DO N
 CREATE TABLE record (
 	id SERIAL PRIMARY KEY,
 	quantity REAL NOT NULL DEFAULT 1,
-	text TEXT,
+	head TEXT,
+	body TEXT,
 	location POINT -- example DEFAULT '(59.880220, -43.732561)'
 );
 

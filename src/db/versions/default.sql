@@ -30,7 +30,7 @@ INSERT INTO public.command VALUES (4, 1, 'python test.py');
 -- Data for Name: configuration; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.configuration VALUES (1, 1, 'Automatic', 'SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, text ASC, id ASC', 'verbose', '{}', '{"text": 150, "view": 100}', '{"record": "SELECT * FROM RECORD ORDER BY quantity ASC, text ASC, id ASC", "frequency": "SELECT * FROM frequency ORDER BY id ASC"}', 'en-US', '-3', 'default', 'default');
+INSERT INTO public.configuration VALUES (1, 1, 'Automatic', 'SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, head ASC, body ASC, id ASC', 'verbose', '{}', '{"body": 150, "view": 100}', '{"record": "SELECT * FROM RECORD ORDER BY quantity ASC, head ASC, body ASC, id ASC", "frequency": "SELECT * FROM frequency ORDER BY id ASC"}', 'en-US', '-3', 'default', 'default');
 
 
 --
@@ -45,21 +45,21 @@ INSERT INTO public.frequency VALUES (18, 1, NULL, 0, 0, 2, '2024-08-01 04:06:18.
 -- Data for Name: record; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.record VALUES (73, 0, 'v0.6.0 | Feature | Browser Version: 1. Dropdowns to choose. 2. Buttons. 3. Pages...', NULL);
-INSERT INTO public.record VALUES (74, 0, 'v0.8.0 | Feature | Maximization of Value Architecture: Create an architecture that allows for any amount of receptables of models and rules that alter the functioning of the app.', NULL);
-INSERT INTO public.record VALUES (75, 0, 'v0.9.0 | Feature | Acessibility: Get information through any medium and turn them into any operation (Any language, verbal, sign, whistled..).', NULL);
-INSERT INTO public.record VALUES (76, 0, 'v0.10.0 | Feature | Optimization: get recommendations or automatically optimize all tables and execute actions. Make the text pretty and formated. The transfer proposals in accordance with social quotas, and cost/benefit, automatic transfer with highest one, Lince agent. Correct frequencies for records and commands. Script correction...', NULL);
-INSERT INTO public.record VALUES (49, -1, 'v0.5.0 | Feature | Wheel of Time: simulate passage of time, to see the quantities changing. Be able see the result of a transfer. Tip: study Operational Research.', NULL);
-INSERT INTO public.record VALUES (63, -1, 'v0.5.0 | Feature | Transfer: 1. Multiple parties make their proposal. Each part can receive and contribute many things to any party. 2. Every proposal is accepted. 3. Every party marks deal as uphold. Tip: study smart contracts.', NULL);
-INSERT INTO public.record VALUES (65, -1, 'v0.5.0 | Feature | Eventually Consistent Databases.', NULL);
-INSERT INTO public.record VALUES (66, -1, 'v0.5.0 | Feature | Decentralization: have different nodes of Lince that can communicate.', NULL);
-INSERT INTO public.record VALUES (68, -1, 'v0.5.0 | Feature | Communication: between nodes, maybe use pub/sub protocol, IPFS, libp2p, Merkle-CRDTs.', NULL);
-INSERT INTO public.record VALUES (72, -1, 'v0.5.0 | Feature | Computing Donation: Give the agent the option to make the machine use its resources for network traffic optimization. Whatever that means.', NULL);
-INSERT INTO public.record VALUES (70, -1, 'v0.5.0 | Feature | Authentication. Tip: Check gajim for possible login inspiration.', NULL);
-INSERT INTO public.record VALUES (102, -1, 'v0.4.1 | Enhancement| DB Versions: have different DBs, in a dir inside db, i.e. db/versions/, change postgre.sql to schema.sql, have an option to change loaded db or load default.sql', NULL);
-INSERT INTO public.record VALUES (103, -1, 'v0.4.1 | Enhancement | Be able to change quantity of a record with a simple command, like 1q70 makes rq70 = 1, typying on the Your Choice:', NULL);
-INSERT INTO public.record VALUES (104, 1, 'v0.7.0 | Feature | Streaming: be able to stream video and/or audio through a p2p connection. Be part of a karma expression.', NULL);
-INSERT INTO public.record VALUES (105, -1, 'v0.4.1 | Enhancement | Karma Expression: crud any table/column.', NULL);
+INSERT INTO public.record VALUES (73, 0, 'v0.6.0', 'Feature | Browser Version: 1. Dropdowns to choose. 2. Buttons. 3. Pages...', NULL);
+INSERT INTO public.record VALUES (74, 0, 'v0.8.0', 'Feature | Maximization of Value Architecture: Create an architecture that allows for any amount of receptables of models and rules that alter the functioning of the app.', NULL);
+INSERT INTO public.record VALUES (75, 0, 'v0.9.0', 'Feature | Acessibility: Get information through any medium and turn them into any operation (Any language, verbal, sign, whistled..).', NULL);
+INSERT INTO public.record VALUES (76, 0, 'v0.10.0', 'Feature | Optimization: get recommendations or automatically optimize all tables and execute actions. Make the text pretty and formated. The transfer proposals in accordance with social quotas, and cost/benefit, automatic transfer with highest one, Lince agent. Correct frequencies for records and commands. Script correction...', NULL);
+INSERT INTO public.record VALUES (49, -1, 'v0.5.0', 'Feature | Wheel of Time: simulate passage of time, to see the quantities changing. Be able see the result of a transfer. Tip: study Operational Research.', NULL);
+INSERT INTO public.record VALUES (63, -1, 'v0.5.0', 'Feature | Transfer: 1. Multiple parties make their proposal. Each part can receive and contribute many things to any party. 2. Every proposal is accepted. 3. Every party marks deal as uphold. Tip: study smart contracts.', NULL);
+INSERT INTO public.record VALUES (65, -1, 'v0.5.0', 'Feature | Eventually Consistent Databases.', NULL);
+INSERT INTO public.record VALUES (66, -1, 'v0.5.0', 'Feature | Decentralization: have different nodes of Lince that can communicate.', NULL);
+INSERT INTO public.record VALUES (68, -1, 'v0.5.0', 'Feature | Communication: between nodes, maybe use pub/sub protocol, IPFS, libp2p, Merkle-CRDTs.', NULL);
+INSERT INTO public.record VALUES (72, -1, 'v0.5.0', 'Feature | Computing Donation: Give the agent the option to make the machine use its resources for network traffic optimization. Whatever that means.', NULL);
+INSERT INTO public.record VALUES (70, -1, 'v0.5.0', 'Feature | Authentication. Tip: Check gajim for possible login inspiration.', NULL);
+INSERT INTO public.record VALUES (102, -1, 'v0.4.1', 'Enhancement| DB Versions: have different DBs, in a dir inside db, i.e. db/versions/, change postgre.sql to schema.sql, have an option to change loaded db or load default.sql', NULL);
+INSERT INTO public.record VALUES (103, -1, 'v0.4.1', 'Enhancement | Be able to change quantity of a record with a simple command, like 1q70 makes rq70 = 1, typying on the Your Choice:', NULL);
+INSERT INTO public.record VALUES (104, 1, 'v0.7.0', 'Feature | Streaming: be able to stream video and/or audio through a p2p connection. Be part of a karma expression.', NULL);
+INSERT INTO public.record VALUES (105, -1, 'v0.4.1', 'Enhancement | Karma Expression: crud any table/column.', NULL);
 
 
 --

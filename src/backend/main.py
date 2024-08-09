@@ -84,10 +84,16 @@ def restore_db(db=None):
     # execute_sql_command(f"UPDATE configuration SET last_db='{db}' WHERE id={id}")
 
     # command = f"psql -h 'localhost' -d 'lince' -U postgres < {os.path.abspath(os.path.join(__file__, '..', '..', 'db','versions', 'default.sql'))}"
-    db_path = os.path.abspath(os.path.join(__file__, '..', '..', 'db','versions', 'default.sql'))
-    command = f"psql -h 'localhost' -d 'lince' -U postgres < {db_path}"
-    p = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
-    return p.communicate(b"1\n")
+    try:
+        db_path = os.path.abspath(os.path.join(__file__, '..', '..', 'db','versions', 'default.sql'))
+        command = f"psql -h 'localhost' -d 'lince' -U postgres < {db_path}"
+        p = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
+        return p.communicate(b"1\n")
+    except Exception as e:
+        print(e)
+
+def check_config_db():
+    with open(os.path.abspath(os.path.join(__file__,'..','..',  "db", "config_ifnot.sql")), 'r') as file: return execute_sql_command(command = file.read())
 
 def print_help():
     with open(os.path.abspath(os.path.join(__file__,'..','..','..',  "README")), 'r') as file:

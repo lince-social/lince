@@ -291,6 +291,10 @@ def delete_rows(table):
     return execute_sql_command(command=command)
 
 
+def activate_configuration(id):
+    return execute_sql_command(f'UPDATE configuration SET quantity = CASE WHEN id = {id} THEN 1 ELSE 0 END')
+
+
 def execute_sql_command_from_file():
     file_path = os.path.realpath(os.path.join(__file__, '..', '..', '..', input('File path starting from the lince dir: ')))
 
@@ -477,6 +481,7 @@ def return_sum_delta_record(id):
 def execute_operation(operation):
     if operation.isdigit():
         return execute_sql_command(command=f'UPDATE record SET quantity = 0 WHERE ID = {operation}')
+
     elif '0' in operation:
         table = 'configuration'
     elif '1' in operation:
@@ -493,10 +498,14 @@ def execute_operation(operation):
         table = 'sum'
     elif '7' in operation:
         table = 'transfer'
+    elif '8' in operation:
+        table = 'views'
     else:
         table = 'record'
 
-    if 'c' in operation or 'C' in operation:
+    if 'ac' in operation or 'AC' in operation:
+        activate_configuration(operation[2:])
+    elif 'c' in operation or 'C' in operation:
         create_row(table)
     elif 'r' in operation or 'R' in operation:
         return read_rows(f'SELECT * FROM {table}')

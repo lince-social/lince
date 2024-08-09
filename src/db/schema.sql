@@ -1,8 +1,15 @@
+-- view TEXT NOT NULL DEFAULT 'SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, head ASC, body ASC, id ASC'
+
+CREATE TABLE views (
+	id SERIAL PRIMARY KEY,
+ 	view TEXT NOT NULL DEFAULT 'SELECT * FROM record'
+);
+
 CREATE TABLE configuration (
 	id SERIAL PRIMARY KEY,
 	quantity REAL NOT NULL DEFAULT 1,
 	save_mode VARCHAR(9) NOT NULL DEFAULT 'Automatic' CHECK (save_mode in ('Automatic', 'Manual')),
- 	view TEXT NOT NULL DEFAULT 'SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, head ASC, body ASC, id ASC',
+ 	view_id INTEGER NOT NULL DEFAULT 1,
 	column_information_mode VARCHAR(7) NOT NULL DEFAULT 'verbose' CHECK (column_information_mode in ('verbose', 'short', 'silent')),
 	keymap jsonb NOT NULL DEFAULT '{}',
 	truncation jsonb NOT NULL DEFAULT '{"body": 150, "view": 100}',
@@ -18,7 +25,7 @@ CREATE TABLE record (
 	quantity REAL NOT NULL DEFAULT 1,
 	head TEXT,
 	body TEXT,
-	location POINT -- example DEFAULT '(59.880220, -43.732561)'
+	location POINT
 );
 
 CREATE TABLE history (

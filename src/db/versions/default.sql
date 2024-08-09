@@ -26,7 +26,8 @@ SET row_security = off;
 -- Data for Name: configuration; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.configuration VALUES (1, 1, 'Automatic', 'SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, head ASC, body ASC, id ASC', 'verbose', '{}', '{"body": 150, "view": 100}', '{"record": "SELECT * FROM RECORD ORDER BY quantity ASC, head ASC, body ASC, id ASC", "frequency": "SELECT * FROM frequency ORDER BY id ASC"}', 'en-US', '-3', 'default', 'default');
+INSERT INTO public.configuration VALUES (4, 0, 'Automatic', 1, 'verbose', '{}', '{"body": 150, "view": 100}', '{"record": "SELECT * FROM RECORD ORDER BY quantity ASC, head ASC, body ASC, id ASC", "frequency": "SELECT * FROM frequency ORDER BY id ASC"}', 'en-US', '-3', 'default', 'default');
+INSERT INTO public.configuration VALUES (5, 1, 'Automatic', 2, 'verbose', '{}', '{"body": 150, "view": 100}', '{"record": "SELECT * FROM RECORD ORDER BY quantity ASC, head ASC, body ASC, id ASC", "frequency": "SELECT * FROM frequency ORDER BY id ASC"}', 'en-US', '-3', 'default', 'default');
 
 
 --
@@ -53,11 +54,12 @@ INSERT INTO public.record VALUES (72, 0, '', 'Feature | Computing Donation: Give
 INSERT INTO public.record VALUES (70, 0, '', 'Feature | Authentication. Tip: Check gajim for possible login inspiration.', NULL);
 INSERT INTO public.record VALUES (102, 0, '', 'Enhancement| DB Versions: have different DBs, in a dir inside db, i.e. db/versions/, change postgre.sql to schema.sql, have an option to change loaded db or load default.sql', NULL);
 INSERT INTO public.record VALUES (104, 0, '', 'Feature | Streaming: be able to stream video and/or audio through a p2p connection. Be part of a karma expression.', NULL);
-INSERT INTO public.record VALUES (107, 0, '', 'Feature | Have the app know where your machine is located on the world', NULL);
+INSERT INTO public.record VALUES (107, 0, '', 'Feature | Have the app know where your machine is located on the world. Datatype: DEFAULT (59.880220, -43.732561)', NULL);
 INSERT INTO public.record VALUES (108, 0, '', 'Feature | Default Location: When doing transfers the default location is where the machine is at the moment, only not when the location is filled with a coordinate.', NULL);
 INSERT INTO public.record VALUES (109, 1, '', 'Feature | Graph View: See dependent records and their triggers through karma, with its dependencies like commands and frequencies. Also view dependencies with other records from other nodes, see the chain, sypply chain.', NULL);
-INSERT INTO public.record VALUES (110, -1, 'v0.4.1', 'Feature | Views: select one or multiple views to see in one view', NULL);
 INSERT INTO public.record VALUES (105, -1, 'v0.4.1', 'Enhancement | Easy CRUD: be able to perform crud operations on any table through karma expressions and menu typying.', NULL);
+INSERT INTO public.record VALUES (111, -1, 'v0.4.1', 'Enhancement | Expression Append Records: Be able to append records to save the repetition of creation, if there is shoe, computer, buy shoe and clean computer why not just buy, clean, shoe and computer so you can append actions to subjects and more. use on karma expression a * sign so rh10 for record header 10 * (rh12, rh34) * q = -1 * f2 creates the child of r10+r12 and r10+r34 and sets its quantity to -1 every f2, might not need q, dunno. Then if not exists the child create it.', NULL);
+INSERT INTO public.record VALUES (110, 0, 'v0.4.1', 'Feature | Views: select one or multiple views to see in one view', NULL);
 
 
 --
@@ -98,6 +100,7 @@ INSERT INTO public.history VALUES (159, 105, '2024-08-09 02:10:20.704595+00', -1
 INSERT INTO public.history VALUES (160, 106, '2024-08-09 02:10:20.704595+00', -1, 0);
 INSERT INTO public.history VALUES (162, 105, '2024-08-09 02:10:34.914652+00', 0, -1);
 INSERT INTO public.history VALUES (163, 106, '2024-08-09 02:10:34.914652+00', 0, -1);
+INSERT INTO public.history VALUES (164, 110, '2024-08-09 16:28:47.972775+00', -1, 0);
 
 
 --
@@ -119,6 +122,14 @@ INSERT INTO public.history VALUES (163, 106, '2024-08-09 02:10:34.914652+00', 0,
 
 
 --
+-- Data for Name: views; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+INSERT INTO public.views VALUES (1, 'SELECT * FROM record');
+INSERT INTO public.views VALUES (2, 'SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, head ASC, body ASC');
+
+
+--
 -- Name: command_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
@@ -129,7 +140,7 @@ SELECT pg_catalog.setval('public.command_id_seq', 4, true);
 -- Name: configuration_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.configuration_id_seq', 3, true);
+SELECT pg_catalog.setval('public.configuration_id_seq', 5, true);
 
 
 --
@@ -143,7 +154,7 @@ SELECT pg_catalog.setval('public.frequency_id_seq', 18, true);
 -- Name: history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.history_id_seq', 163, true);
+SELECT pg_catalog.setval('public.history_id_seq', 164, true);
 
 
 --
@@ -157,7 +168,7 @@ SELECT pg_catalog.setval('public.karma_id_seq', 30, true);
 -- Name: record_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.record_id_seq', 110, true);
+SELECT pg_catalog.setval('public.record_id_seq', 111, true);
 
 
 --
@@ -172,6 +183,13 @@ SELECT pg_catalog.setval('public.sum_id_seq', 2, true);
 --
 
 SELECT pg_catalog.setval('public.transfer_id_seq', 1, false);
+
+
+--
+-- Name: views_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.views_id_seq', 2, true);
 
 
 --

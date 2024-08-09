@@ -13,10 +13,11 @@ def choose_operation():
         [ '[H] Help', '[R] Read', '[1] History' ],
         [ '[S] Save DB', '[U] Update', '[2] Record' ],
         [ '[L] Load DB', '[D] Delete', '[3] Karma' ],
-        [ '[V] View', '[Q] Query', '[4] Frequency' ],
+        [ '[AC] Activate Config', '[Q] Query', '[4] Frequency' ],
         [ '', '[F] SQL File','[5] Command' ],
         [ '', '','[6] Sum' ],
-        [ '', '','[7] Transfer' ]
+        [ '', '','[7] Transfer' ],
+        [ '', '','[8] View' ]
     ]
 
     print(tabulate(options, headers='firstrow', tablefmt='rounded_grid'))
@@ -28,19 +29,22 @@ def main():
         drop_db()
     create_db(); scheme_db(); restore_db(); restore_db(); check_config_db()
 
-    configuration_df = read_rows('SELECT * FROM configuration')
-    max_quantity_row = configuration_df[configuration_df['quantity'] == configuration_df['quantity'].max()].iloc[0]
-
-    save_mode = max_quantity_row['save_mode']
-    view_list = [v.strip() for v in max_quantity_row['view'].split('|')]
-    column_information_mode = max_quantity_row['column_information_mode']
 
     while True:
+        configuration_df = read_rows('SELECT * FROM configuration')
+        configuration_row = configuration_df[configuration_df['quantity'] == configuration_df['quantity'].max()].iloc[0]
+        save_mode = configuration_row['save_mode']
+        column_information_mode = configuration_row['column_information_mode']
+        view = read_rows(f'SELECT view FROM views WHERE id = {configuration_row['view_id']}')
+        view = view['view'].iloc[0]
+        view_list = view.split('|')
+
         clear_screen()
 
         karma()
         
         for command in view_list:
+            command = command.strip()
             print(tabulate(read_rows(command), headers='keys', tablefmt='rounded_grid'))
             print()
         result = execute_operation(choose_operation())

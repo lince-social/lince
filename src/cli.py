@@ -26,7 +26,7 @@ def choose_operation():
 def main():
     if check_exists_db() is not None:
         drop_db()
-    create_db(); scheme_db(); restore_db(); restore_db()
+    create_db(); scheme_db(); restore_db(); restore_db(); check_config_db()
 
     configuration_df = read_rows('SELECT * FROM configuration')
     max_quantity_row = configuration_df[configuration_df['quantity'] == configuration_df['quantity'].max()].iloc[0]

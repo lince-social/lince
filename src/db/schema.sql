@@ -13,8 +13,6 @@ CREATE TABLE configuration (
 	last_db VARCHAR(50) NOT NULL DEFAULT 'default'
 );
 
-INSERT INTO configuration (save_mode) VALUES ('Automatic') ON CONFLICT (id) DO NOTHING;
-
 CREATE TABLE record (
 	id SERIAL PRIMARY KEY,
 	quantity REAL NOT NULL DEFAULT 1,

@@ -106,8 +106,7 @@ def return_column_information(column):
     max_quantity_config = configuration_df[configuration_df['quantity'] == configuration_df['quantity'].max()].iloc[0]
     column_information_mode = max_quantity_config['column_information_mode']
 
-    if column_information_mode != 'silent':
-        info = ''
+    info = ''
 
     if column_information_mode == 'verbose':
         match column:

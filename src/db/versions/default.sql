@@ -37,6 +37,18 @@ INSERT INTO public.configuration VALUES (5, 1, 'Automatic', 2, 'verbose', '{}', 
 
 
 --
+-- Data for Name: history; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+
+
+--
+-- Data for Name: karma; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+
+
+--
 -- Data for Name: record; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -60,53 +72,8 @@ INSERT INTO public.record VALUES (109, 1, '', 'Feature | Graph View: See depende
 INSERT INTO public.record VALUES (105, -1, 'v0.4.1', 'Enhancement | Easy CRUD: be able to perform crud operations on any table through karma expressions and menu typying.', NULL);
 INSERT INTO public.record VALUES (111, -1, 'v0.4.1', 'Enhancement | Expression Append Records: Be able to append records to save the repetition of creation, if there is shoe, computer, buy shoe and clean computer why not just buy, clean, shoe and computer so you can append actions to subjects and more. use on karma expression a * sign so rh10 for record header 10 * (rh12, rh34) * q = -1 * f2 creates the child of r10+r12 and r10+r34 and sets its quantity to -1 every f2, might not need q, dunno. Then if not exists the child create it.', NULL);
 INSERT INTO public.record VALUES (110, 0, 'v0.4.1', 'Feature | Views: select one or multiple views to see in one view', NULL);
-
-
---
--- Data for Name: history; Type: TABLE DATA; Schema: public; Owner: -
---
-
-INSERT INTO public.history VALUES (118, 49, '2024-08-01 04:34:54.530641+00', 0, -1);
-INSERT INTO public.history VALUES (119, 63, '2024-08-01 04:34:54.530641+00', 0, -1);
-INSERT INTO public.history VALUES (120, 65, '2024-08-01 04:34:54.530641+00', 0, -1);
-INSERT INTO public.history VALUES (121, 66, '2024-08-01 04:34:54.530641+00', 0, -1);
-INSERT INTO public.history VALUES (122, 68, '2024-08-01 04:34:54.530641+00', 0, -1);
-INSERT INTO public.history VALUES (123, 70, '2024-08-01 04:34:54.530641+00', 0, -1);
-INSERT INTO public.history VALUES (124, 72, '2024-08-01 04:34:54.530641+00', 0, -1);
-INSERT INTO public.history VALUES (126, 70, '2024-08-02 13:34:04.757129+00', -1, -2);
-INSERT INTO public.history VALUES (128, 70, '2024-08-02 13:34:08.206153+00', -2, -3);
-INSERT INTO public.history VALUES (130, 70, '2024-08-02 13:34:08.703126+00', -3, -4);
-INSERT INTO public.history VALUES (132, 70, '2024-08-02 13:34:08.935131+00', -4, -5);
-INSERT INTO public.history VALUES (134, 70, '2024-08-02 13:39:32.880783+00', -5, -6);
-INSERT INTO public.history VALUES (136, 70, '2024-08-02 13:39:35.80497+00', -6, -7);
-INSERT INTO public.history VALUES (138, 70, '2024-08-02 13:39:35.990641+00', -7, -8);
-INSERT INTO public.history VALUES (140, 70, '2024-08-02 13:39:36.16883+00', -8, -9);
-INSERT INTO public.history VALUES (142, 70, '2024-08-02 13:40:12.332949+00', -9, -10);
-INSERT INTO public.history VALUES (144, 70, '2024-08-02 13:40:13.380425+00', -10, -11);
-INSERT INTO public.history VALUES (145, 70, '2024-08-02 13:40:45.751341+00', -11, -1);
-INSERT INTO public.history VALUES (146, 105, '2024-08-06 23:41:27.063145+00', 1, -1);
-INSERT INTO public.history VALUES (147, 49, '2024-08-09 02:10:20.704595+00', -1, 0);
-INSERT INTO public.history VALUES (148, 63, '2024-08-09 02:10:20.704595+00', -1, 0);
-INSERT INTO public.history VALUES (149, 65, '2024-08-09 02:10:20.704595+00', -1, 0);
-INSERT INTO public.history VALUES (150, 66, '2024-08-09 02:10:20.704595+00', -1, 0);
-INSERT INTO public.history VALUES (151, 68, '2024-08-09 02:10:20.704595+00', -1, 0);
-INSERT INTO public.history VALUES (152, 72, '2024-08-09 02:10:20.704595+00', -1, 0);
-INSERT INTO public.history VALUES (153, 70, '2024-08-09 02:10:20.704595+00', -1, 0);
-INSERT INTO public.history VALUES (154, 102, '2024-08-09 02:10:20.704595+00', -1, 0);
-INSERT INTO public.history VALUES (155, 104, '2024-08-09 02:10:20.704595+00', 1, 0);
-INSERT INTO public.history VALUES (156, 107, '2024-08-09 02:10:20.704595+00', 1, 0);
-INSERT INTO public.history VALUES (157, 108, '2024-08-09 02:10:20.704595+00', 1, 0);
-INSERT INTO public.history VALUES (159, 105, '2024-08-09 02:10:20.704595+00', -1, 0);
-INSERT INTO public.history VALUES (160, 106, '2024-08-09 02:10:20.704595+00', -1, 0);
-INSERT INTO public.history VALUES (162, 105, '2024-08-09 02:10:34.914652+00', 0, -1);
-INSERT INTO public.history VALUES (163, 106, '2024-08-09 02:10:34.914652+00', 0, -1);
-INSERT INTO public.history VALUES (164, 110, '2024-08-09 16:28:47.972775+00', -1, 0);
-
-
---
--- Data for Name: karma; Type: TABLE DATA; Schema: public; Owner: -
---
-
+INSERT INTO public.record VALUES (112, 0, 'idsnosidnc', NULL, NULL);
+INSERT INTO public.record VALUES (113, -1, 'idsmxoism', NULL, NULL);
 
 
 --
@@ -154,7 +121,7 @@ SELECT pg_catalog.setval('public.frequency_id_seq', 18, true);
 -- Name: history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.history_id_seq', 164, true);
+SELECT pg_catalog.setval('public.history_id_seq', 165, true);
 
 
 --
@@ -168,7 +135,7 @@ SELECT pg_catalog.setval('public.karma_id_seq', 30, true);
 -- Name: record_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.record_id_seq', 111, true);
+SELECT pg_catalog.setval('public.record_id_seq', 113, true);
 
 
 --

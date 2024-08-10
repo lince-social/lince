@@ -11,6 +11,7 @@ pkgs.mkShell {
     python312Packages.datetime
     python312Packages.psycopg2
     python312Packages.tabulate
+    python312Packages.urwid
   ];
   PGDATA = "${toString ./.}/.pg";
   shellHook = ''
@@ -24,6 +25,6 @@ pkgs.mkShell {
     echo "log_checkpoints = off" >> $PGDATA/postgresql.conf
     # pg_ctl restart
 
-    python src/cli.py
+    python src/terminal.py
   '';
 }

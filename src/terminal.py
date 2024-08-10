@@ -4,6 +4,7 @@ from tabulate import tabulate
 
 def clear_screen():
     return os.system('clear')
+    return None
 
 
 def choose_operation():
@@ -27,8 +28,7 @@ def choose_operation():
 def main():
     if check_exists_db() is not None:
         drop_db()
-    create_db(); scheme_db(); restore_db(); restore_db(); check_config_db()
-
+    create_db(); scheme_db(); restore_db(); restore_db(); insert_ifnot_db()
 
     while True:
         configuration_df = read_rows('SELECT * FROM configuration')

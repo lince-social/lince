@@ -1,5 +1,3 @@
--- view TEXT NOT NULL DEFAULT 'SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, head ASC, body ASC, id ASC'
-
 CREATE TABLE views (
 	id SERIAL PRIMARY KEY,
  	view TEXT NOT NULL DEFAULT 'SELECT * FROM record'
@@ -30,7 +28,7 @@ CREATE TABLE record (
 
 CREATE TABLE history (
     id SERIAL PRIMARY KEY,
-    record_id INTEGER NOT NULL REFERENCES record(id) ON DELETE CASCADE,
+    record_id INTEGER NOT NULL,
     change_time TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     old_quantity REAL NOT NULL,
     new_quantity REAL NOT NULL
@@ -59,7 +57,7 @@ CREATE TABLE sum (
 	record_id INTEGER NOT NULL,
 
 	sum_mode INTEGER NOT NULL DEFAULT 0 CHECK (sum_mode in (-1,0,1)),
-    interval_mode VARCHAR(10) NOT NULL  DEFAULT 'relative' CHECK (interval_mode IN ('fixed', 'relative')),
+    interval_mode VARCHAR(10) NOT NULL DEFAULT 'relative' CHECK (interval_mode IN ('fixed', 'relative')),
 
     interval_length INTERVAL NOT NULL,
 	end_lag interval,

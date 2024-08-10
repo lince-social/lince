@@ -92,8 +92,8 @@ def restore_db(db=None):
     except Exception as e:
         print(e)
 
-def check_config_db():
-    with open(os.path.abspath(os.path.join(__file__,'..','..',  "db", "config_ifnot.sql")), 'r') as file: return execute_sql_command(command = file.read())
+def insert_ifnot_db():
+    with open(os.path.abspath(os.path.join(__file__,'..','..',  "db", "insert_ifnot.sql")), 'r') as file: return execute_sql_command(command = file.read())
 
 def print_help():
     with open(os.path.abspath(os.path.join(__file__,'..','..','..',  "README")), 'r') as file:
@@ -245,7 +245,7 @@ def truncate_column(column, truncation_size):
     lines.append(column)
     return '\n'.join(lines)
 
-def read_rows(command):
+def read_rows(command, where_id_in=None):
     configuration_row = execute_sql_command('select truncation, table_query from configuration order by quantity DESC limit 1').iloc[0]
 
     table_query = configuration_row['table_query']
@@ -255,6 +255,7 @@ def read_rows(command):
         if command == f'SELECT * FROM {key}':
             command = value
 
+    if where_id_in != None: command += where_id_in
     rows = execute_sql_command(command=command)
 
     if not isinstance(rows, pd.DataFrame): return None
@@ -266,11 +267,13 @@ def read_rows(command):
 
     return rows
 
-def update_rows(table, set_clause=None, where_clause=None):
+def update_rows(table, set_clause=None, where_clause=None, where_id_in=None):
     if set_clause == None:
         print(f'UPDATE {table}')
         set_clause = input("SET ")
     if set_clause != "": command=f'UPDATE {table} SET {set_clause}'
+
+    if where_id_in != None: command += where_id_in
 
     if where_clause == None:
         where_clause = input("WHERE ")
@@ -279,13 +282,16 @@ def update_rows(table, set_clause=None, where_clause=None):
     return execute_sql_command(command=command)
 
 
-def delete_rows(table):
+def delete_rows(table, where_id_in=None):
     command = f'DELETE FROM {table}'
     print(command + ' (no WHERE CAUSE deletes all)')
 
     where_clause = input("WHERE ")
 
-    if where_clause != "":
+    if where_id_in != None:
+        command += where_id_in
+        command += f'AND {where_clause}'
+    elif where_clause != "":
         command += f' WHERE {where_clause}'
 
     return execute_sql_command(command=command)
@@ -424,12 +430,10 @@ def return_sum_delta_record(id):
     else:
         sum_row = sum_row.iloc[0]
     
-    # Adjust quantity if it's negative
     if sum_row['quantity'] < 0:
         quantity = sum_row['quantity'] + 1
         update_rows('sum', set_clause=f"quantity = {quantity}", where_clause=f"id = {sum_row['id']}")
     
-    # Determine end_date based on interval_mode
     if sum_row['interval_mode'] == 'relative':
         if sum_row['end_lag'] is not None:
             end_lag = sum_row['end_lag']
@@ -438,95 +442,66 @@ def return_sum_delta_record(id):
             end_date = datetime.now()
     else:
         end_date = sum_row['end_date']
-    # Calculate start_date based on interval_length
+    
     start_date = end_date - sum_row['interval_length']
-
-    # Determine the sum based on sum_mode
+    
     match sum_row['sum_mode']:
         case -1:
-            # Sum all negative changes
-            changes = read_rows(f'''
-                SELECT SUM(new_quantity - old_quantity) AS total_changes
-                FROM history
-                WHERE change_time BETWEEN '{start_date}' AND '{end_date}'
-                AND record_id = {sum_row['record_id']}
-                AND new_quantity - old_quantity < 0
-            ''')
+            changes = read_rows(f'''SELECT SUM(new_quantity - old_quantity) AS total_changes FROM history
+                WHERE change_time BETWEEN '{start_date}' AND '{end_date}' AND record_id = {sum_row['record_id']} AND new_quantity - old_quantity < 0 ''')
             return changes['total_changes'].iloc[0] if not changes.empty else 0
 
         case 0:
-            # Sum all changes (positive and negative)
-            changes = read_rows(f'''
-                SELECT SUM(new_quantity - old_quantity) AS total_changes
-                FROM history
-                WHERE change_time BETWEEN '{start_date}' AND '{end_date}'
-                AND record_id = {sum_row['record_id']}
-            ''')
+            changes = read_rows(f'''SELECT SUM(new_quantity - old_quantity) AS total_changes FROM history
+                WHERE change_time BETWEEN '{start_date}' AND '{end_date}' AND record_id = {sum_row['record_id']} ''')
             return changes['total_changes'].iloc[0] if not changes.empty else 0
 
         case 1:
-            # Sum all positive changes
-            changes = read_rows(f'''
-                SELECT SUM(new_quantity - old_quantity) AS total_changes
-                FROM history
-                WHERE change_time BETWEEN '{start_date}' AND '{end_date}'
-                AND record_id = {sum_row['record_id']}
-                AND new_quantity - old_quantity > 0
-            ''')
+            changes = read_rows(f'''SELECT SUM(new_quantity - old_quantity) AS total_changes FROM history
+                WHERE change_time BETWEEN '{start_date}' AND '{end_date}' AND record_id = {sum_row['record_id']} AND new_quantity - old_quantity > 0 ''')
             return changes['total_changes'].iloc[0] if not changes.empty else 0
 
-    return 0  # Fallback return
+    return 0
 
 
 def execute_operation(operation):
-    if operation.isdigit():
-        return execute_sql_command(command=f'UPDATE record SET quantity = 0 WHERE ID = {operation}')
+    # operation = re.findall(r'\d+|[a-zA-Z]', operation)
+    operation = re.findall(r'\d+|[a-zA-Z]', operation)
+    operation = [int(x) if x.isdigit() else x for x in operation]
 
-    elif '0' in operation:
-        table = 'configuration'
-    elif '1' in operation:
-        table = 'history'
-    elif '2' in operation:
-        table = 'record'
-    elif '3' in operation:
-        table = 'karma'
-    elif '4' in operation:
-        table = 'frequency'
-    elif '5' in operation:
-        table = 'command'
-    elif '6' in operation:
-        table = 'sum'
-    elif '7' in operation:
-        table = 'transfer'
-    elif '8' in operation:
-        table = 'views'
-    else:
-        table = 'record'
+    if len(operation) == 1 and operation[0].isdigit(): return execute_sql_command(command=f'UPDATE record SET quantity = 0 WHERE ID = {operation}')
 
-    if 'ac' in operation or 'AC' in operation:
-        activate_configuration(operation[2:])
-    elif 'c' in operation or 'C' in operation:
-        create_row(table)
-    elif 'r' in operation or 'R' in operation:
-        return read_rows(f'SELECT * FROM {table}')
-    elif 'u' in operation or 'U' in operation:
-        update_rows(table)
-    elif 'd' in operation or 'D' in operation:
-        delete_rows(table)
-    elif 'f' in operation or 'F' in operation:
-        execute_sql_command_from_file()
-    elif 'e' in operation or 'E' in operation:
-        sys.exit()
-    elif 's' in operation or 'S' in operation:
-        dump_db()
-    elif 'l' in operation or 'L' in operation:
-        restore_db()
-    # elif 'o' in operation or 'O' in operation:
-    #     db=input('DB name at src/db/versions/ (without .sql): ')
-    #     restore_db(db=db)
-    elif 'h' in operation or 'H' in operation:
-        print_help()
-    elif 'q' in operation or 'Q' in operation:
-        return execute_sql_command(command=input('Type the SQL command: '))
+    where_id_in = None
+
+    if len(operation) > 2:
+        where_id_in = 'WHERE id in ('
+        for item in operation[2:]: where_id_in += f'{item},'
+        where_id_in = where_id_in[:-1] + ')'
+
+    table = 'record'
+    for item in operation:
+        match item:
+            case 0: table = 'configuration'
+            case 1: table = 'history'
+            case 2: table = 'record'
+            case 3: table = 'karma'
+            case 4: table = 'frequency'
+            case 5: table = 'command'
+            case 6: table = 'sum'
+            case 7: table = 'transfer'
+            case 8: table = 'views'
+            case 'e' | 'E': return sys.exit()
+            case 'h' | 'H': return print_help()
+            case 's' | 'S': return dump_db()
+            case 'l' | 'L': return restore_db()
+            case 'a' | 'A': return activate_configuration(operation[3])
+            case 'c' | 'C': return create_row(table)
+            case 'r' | 'R': return read_rows(f'SELECT * FROM {table}', where_id_in)
+            case 'u' | 'U': return update_rows(table, where_id_in)
+            case 'd' | 'D': return delete_rows(table, where_id_in)
+            case 'f' | 'F': return execute_sql_command_from_file()
+            case 'ac' | 'aC' | 'Ac' | 'AC': return activate_configuration()
+            case 'q' | 'Q': return execute_sql_command(command=input('Type the SQL command: '))
+            #case 'o' | 'O': db=input('DB name at src/db/versions/ (without .sql): '); restore_db(db=db)
 
     return True

@@ -40,6 +40,7 @@ INSERT INTO public.configuration VALUES (5, 1, 'Automatic', 2, 'verbose', '{}', 
 -- Data for Name: history; Type: TABLE DATA; Schema: public; Owner: -
 --
 
+INSERT INTO public.history VALUES (166, 109, '2024-08-11 23:32:08.231529+00', 1, 0);
 
 
 --
@@ -52,7 +53,6 @@ INSERT INTO public.configuration VALUES (5, 1, 'Automatic', 2, 'verbose', '{}', 
 -- Data for Name: record; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.record VALUES (106, -1, 'v0.4.1', 'Enhancement | LIKE Expression: alter the quantity of any record that has body or header LIKE some part of the string, regex? postgres LIKE?', NULL);
 INSERT INTO public.record VALUES (73, 0, '', 'Feature | Browser Version: 1. Dropdowns to choose. 2. Buttons. 3. Pages...', NULL);
 INSERT INTO public.record VALUES (74, 0, '', 'Feature | Maximization of Value Architecture: Create an architecture that allows for any amount of receptables of models and rules that alter the functioning of the app.', NULL);
 INSERT INTO public.record VALUES (75, 0, '', 'Feature | Acessibility: Get information through any medium and turn them into any operation (Any language, verbal, sign, whistled..).', NULL);
@@ -68,12 +68,7 @@ INSERT INTO public.record VALUES (102, 0, '', 'Enhancement| DB Versions: have di
 INSERT INTO public.record VALUES (104, 0, '', 'Feature | Streaming: be able to stream video and/or audio through a p2p connection. Be part of a karma expression.', NULL);
 INSERT INTO public.record VALUES (107, 0, '', 'Feature | Have the app know where your machine is located on the world. Datatype: DEFAULT (59.880220, -43.732561)', NULL);
 INSERT INTO public.record VALUES (108, 0, '', 'Feature | Default Location: When doing transfers the default location is where the machine is at the moment, only not when the location is filled with a coordinate.', NULL);
-INSERT INTO public.record VALUES (109, 1, '', 'Feature | Graph View: See dependent records and their triggers through karma, with its dependencies like commands and frequencies. Also view dependencies with other records from other nodes, see the chain, sypply chain.', NULL);
-INSERT INTO public.record VALUES (105, -1, 'v0.4.1', 'Enhancement | Easy CRUD: be able to perform crud operations on any table through karma expressions and menu typying.', NULL);
-INSERT INTO public.record VALUES (111, -1, 'v0.4.1', 'Enhancement | Expression Append Records: Be able to append records to save the repetition of creation, if there is shoe, computer, buy shoe and clean computer why not just buy, clean, shoe and computer so you can append actions to subjects and more. use on karma expression a * sign so rh10 for record header 10 * (rh12, rh34) * q = -1 * f2 creates the child of r10+r12 and r10+r34 and sets its quantity to -1 every f2, might not need q, dunno. Then if not exists the child create it.', NULL);
-INSERT INTO public.record VALUES (110, 0, 'v0.4.1', 'Feature | Views: select one or multiple views to see in one view', NULL);
-INSERT INTO public.record VALUES (112, 0, 'idsnosidnc', NULL, NULL);
-INSERT INTO public.record VALUES (113, -1, 'idsmxoism', NULL, NULL);
+INSERT INTO public.record VALUES (109, 0, '', 'Feature | Graph View: See dependent records and their triggers through karma, with its dependencies like commands and frequencies. Also view dependencies with other records from other nodes, see the chain, sypply chain.', NULL);
 
 
 --
@@ -121,7 +116,7 @@ SELECT pg_catalog.setval('public.frequency_id_seq', 18, true);
 -- Name: history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.history_id_seq', 165, true);
+SELECT pg_catalog.setval('public.history_id_seq', 166, true);
 
 
 --

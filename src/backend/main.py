@@ -251,11 +251,12 @@ def read_rows(command, where_id_in=None):
     table_query = configuration_row['table_query']
     truncation = configuration_row['truncation']
 
-    for key, value in table_query.items():
-        if command == f'SELECT * FROM {key}':
-            command = value
-
     if where_id_in != None: command += where_id_in
+    else:
+        for key, value in table_query.items():
+            if command == f'SELECT * FROM {key}':
+                command = value
+
     rows = execute_sql_command(command=command)
 
     if not isinstance(rows, pd.DataFrame): return None
@@ -282,15 +283,18 @@ def update_rows(table, set_clause=None, where_clause=None, where_id_in=None):
     return execute_sql_command(command=command)
 
 
-def delete_rows(table, where_id_in=None):
+def delete_rows(table, where_clause=None, where_id_in=None):
     command = f'DELETE FROM {table}'
-    print(command + ' (no WHERE CAUSE deletes all)')
+    print(command, end='')
 
-    where_clause = input("WHERE ")
+    if where_clause == None:
+        print('no WHERE CAUSE deletes all')
+        where_clause = input("WHERE ")
 
     if where_id_in != None:
         command += where_id_in
-        command += f'AND {where_clause}'
+        if where_clause != "":
+            command += f' AND {where_clause}'
     elif where_clause != "":
         command += f' WHERE {where_clause}'
 
@@ -465,16 +469,17 @@ def return_sum_delta_record(id):
 
 
 def execute_operation(operation):
-    # operation = re.findall(r'\d+|[a-zA-Z]', operation)
-    operation = re.findall(r'\d+|[a-zA-Z]', operation)
+    if operation == None: return False
+
+    operation = re.findall(r'\d+|[a-zA-Z]+', operation)
     operation = [int(x) if x.isdigit() else x for x in operation]
 
-    if len(operation) == 1 and operation[0].isdigit(): return execute_sql_command(command=f'UPDATE record SET quantity = 0 WHERE ID = {operation}')
+    if len(operation) == 1 and isinstance(operation[0], int): return execute_sql_command(command=f'UPDATE record SET quantity = 0 WHERE ID = {operation[0]}')
 
     where_id_in = None
 
     if len(operation) > 2:
-        where_id_in = 'WHERE id in ('
+        where_id_in = ' WHERE id in ('
         for item in operation[2:]: where_id_in += f'{item},'
         where_id_in = where_id_in[:-1] + ')'
 
@@ -494,13 +499,13 @@ def execute_operation(operation):
             case 'h' | 'H': return print_help()
             case 's' | 'S': return dump_db()
             case 'l' | 'L': return restore_db()
-            case 'a' | 'A': return activate_configuration(operation[3])
+            # case 'a' | 'A': return activate_configuration(operation[3])
             case 'c' | 'C': return create_row(table)
             case 'r' | 'R': return read_rows(f'SELECT * FROM {table}', where_id_in)
-            case 'u' | 'U': return update_rows(table, where_id_in)
-            case 'd' | 'D': return delete_rows(table, where_id_in)
+            case 'u' | 'U': return update_rows(table, set_clause=None, where_clause=None, where_id_in=where_id_in)
+            case 'd' | 'D': return delete_rows(table, where_clause=None, where_id_in=where_id_in)
             case 'f' | 'F': return execute_sql_command_from_file()
-            case 'ac' | 'aC' | 'Ac' | 'AC': return activate_configuration()
+            case 'ac' | 'aC' | 'Ac' | 'AC': return activate_configuration(operation[1])
             case 'q' | 'Q': return execute_sql_command(command=input('Type the SQL command: '))
             #case 'o' | 'O': db=input('DB name at src/db/versions/ (without .sql): '); restore_db(db=db)
 

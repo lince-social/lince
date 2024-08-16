@@ -499,7 +499,6 @@ def execute_operation(operation):
             case 'h' | 'H': return print_help()
             case 's' | 'S': return dump_db()
             case 'l' | 'L': return restore_db()
-            # case 'a' | 'A': return activate_configuration(operation[3])
             case 'c' | 'C': return create_row(table)
             case 'r' | 'R': return read_rows(f'SELECT * FROM {table}', where_id_in)
             case 'u' | 'U': return update_rows(table, set_clause=None, where_clause=None, where_id_in=where_id_in)

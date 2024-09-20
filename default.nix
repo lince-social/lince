@@ -14,6 +14,7 @@ pkgs.mkShell {
     python312Packages.psycopg2
     python312Packages.tabulate
     python312Packages.urwid
+    python312Packages.streamlit
 
     # nodePackages.nodejs
     nodejs_22
@@ -29,6 +30,6 @@ pkgs.mkShell {
 
     # npm i @orbitdb/core helia @orbitdb/quickstart
 
-    python src/terminal.py
+    streamlit run ${toString ./src/streamlit.py}
   '';
 }

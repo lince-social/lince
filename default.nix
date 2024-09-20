@@ -27,7 +27,7 @@ pkgs.mkShell {
     echo "log_min_messages = warning" >> $PGDATA/postgresql.conf
     echo "log_checkpoints = off" >> $PGDATA/postgresql.conf
 
-    npm i @orbitdb/core helia @orbitdb/quickstart
+    # npm i @orbitdb/core helia @orbitdb/quickstart
 
     python src/terminal.py
   '';

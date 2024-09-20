@@ -1,7 +1,0 @@
-{
-  "dependencies": {
-    "@orbitdb/core": "^2.2.0",
-    "@orbitdb/quickstart": "^1.0.0",
-    "helia": "^4.2.5"
-  }
-}

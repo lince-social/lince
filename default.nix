@@ -30,6 +30,7 @@ pkgs.mkShell {
 
     # npm i @orbitdb/core helia @orbitdb/quickstart
 
-    streamlit run ${toString ./src/streamlit.py}
+    python src/terminal.py
+    # streamlit run ${toString ./src/streamlit.py}
   '';
 }

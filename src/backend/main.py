@@ -504,7 +504,7 @@ def execute_operation(operation):
             case 'u' | 'U': return update_rows(table, set_clause=None, where_clause=None, where_id_in=where_id_in)
             case 'd' | 'D': return delete_rows(table, where_clause=None, where_id_in=where_id_in)
             case 'f' | 'F': return execute_sql_command_from_file()
-            case 'ac' | 'aC' | 'Ac' | 'AC': return activate_configuration(operation[1])
+            case 'a' | 'A': return activate_configuration(operation[1])
             case 'q' | 'Q': return execute_sql_command(command=input('Type the SQL command: '))
             #case 'o' | 'O': db=input('DB name at src/db/versions/ (without .sql): '); restore_db(db=db)
 

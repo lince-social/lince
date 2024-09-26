@@ -361,10 +361,11 @@ def execute_shell_command(id):
     if quantity == 0: return 0
     if quantity < 0: update_rows('command', set_clause=f"quantity = {quantity + 1}", where_clause=f"id = {command_row['id']}")
 
-    result = subprocess.Popen(command_row['command'].split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    # result = subprocess.Popen(command_row['command'].split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    os.system(command_row['command'])
 
-    try: return result.stdout
-    except Exception as e: print(e)
+    # try: return result.stdout
+    # except Exception as e: print(e)
 
     return False
 

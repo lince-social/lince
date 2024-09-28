@@ -27,48 +27,25 @@ SET row_security = off;
 --
 
 INSERT INTO public.configuration VALUES (4, 0, 'Automatic', 1, 'verbose', '{}', '{"body": 150, "view": 100}', '{"record": "SELECT * FROM RECORD ORDER BY quantity ASC, head ASC, body ASC, id ASC", "frequency": "SELECT * FROM frequency ORDER BY id ASC"}', 'en-US', '-3', 'default', 'default');
-INSERT INTO public.configuration VALUES (5, 1, 'Automatic', 2, 'verbose', '{}', '{"body": 150, "view": 100}', '{"record": "SELECT * FROM RECORD ORDER BY quantity ASC, head ASC, body ASC, id ASC", "frequency": "SELECT * FROM frequency ORDER BY id ASC"}', 'en-US', '-3', 'default', 'default');
+INSERT INTO public.configuration VALUES (5, 1, 'Automatic', 2, 'verbose', '{}', '{"body": 100, "view": 100}', '{"record": "SELECT * FROM RECORD ORDER BY quantity ASC, head ASC, body ASC, id ASC", "frequency": "SELECT * FROM frequency ORDER BY id ASC"}', 'en-US', '-3', 'default', 'default');
 
 
 --
 -- Data for Name: frequency; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.frequency VALUES (20, 1, NULL, 0, 0, 4, '2024-09-21 04:09:29.450765+00', NULL);
 
 
 --
 -- Data for Name: history; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.history VALUES (244, 70, '2024-09-20 03:54:55.08483+00', -4, -3);
-INSERT INTO public.history VALUES (245, 70, '2024-09-20 03:54:55.100008+00', -3, -4);
-INSERT INTO public.history VALUES (246, 70, '2024-09-20 03:55:01.309186+00', -4, -3);
-INSERT INTO public.history VALUES (247, 70, '2024-09-20 03:55:01.324707+00', -3, -4);
-INSERT INTO public.history VALUES (248, 70, '2024-09-20 03:55:05.076501+00', -4, -3);
-INSERT INTO public.history VALUES (249, 70, '2024-09-20 03:55:05.092277+00', -3, -4);
-INSERT INTO public.history VALUES (250, 115, '2024-09-21 04:09:16.721497+00', -1, -2);
-INSERT INTO public.history VALUES (251, 115, '2024-09-21 04:09:19.182162+00', -2, -3);
-INSERT INTO public.history VALUES (252, 115, '2024-09-21 04:09:19.412024+00', -3, -4);
-INSERT INTO public.history VALUES (253, 115, '2024-09-21 04:09:19.639852+00', -4, -5);
-INSERT INTO public.history VALUES (254, 115, '2024-09-21 04:09:19.864265+00', -5, -6);
-INSERT INTO public.history VALUES (255, 115, '2024-09-21 04:09:20.099772+00', -6, -7);
-INSERT INTO public.history VALUES (256, 115, '2024-09-21 04:09:20.325096+00', -7, -8);
-INSERT INTO public.history VALUES (257, 115, '2024-09-21 04:09:20.553954+00', -8, -9);
-INSERT INTO public.history VALUES (258, 115, '2024-09-21 04:09:20.780844+00', -9, -10);
-INSERT INTO public.history VALUES (259, 115, '2024-09-21 04:09:21.004902+00', -10, -11);
-INSERT INTO public.history VALUES (260, 115, '2024-09-21 04:09:21.160572+00', -11, -12);
-INSERT INTO public.history VALUES (261, 115, '2024-09-21 04:09:21.345553+00', -12, -13);
-INSERT INTO public.history VALUES (262, 115, '2024-09-21 04:09:21.564839+00', -13, -14);
-INSERT INTO public.history VALUES (263, 115, '2024-09-21 04:09:21.796723+00', -14, -15);
-INSERT INTO public.history VALUES (264, 115, '2024-09-21 04:09:25.532616+00', -15, -16);
 
 
 --
 -- Data for Name: karma; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.karma VALUES (36, 1, 'rq115 = rq115 -1 * f20');
 
 
 --
@@ -88,9 +65,8 @@ INSERT INTO public.record VALUES (107, 0, '', 'Feature | Have the app know where
 INSERT INTO public.record VALUES (108, 0, '', 'Feature | Default Location: When doing transfers the default location is where the machine is at the moment, only not when the location is filled with a coordinate.', NULL);
 INSERT INTO public.record VALUES (109, 0, '', 'Feature | Graph View: See dependent records and their triggers through karma, with its dependencies like commands and frequencies. Also view dependencies with other records from other nodes, see the chain, sypply chain.', NULL);
 INSERT INTO public.record VALUES (68, -1, '', 'Feature | Communication: between nodes, maybe use pub/sub protocol, IPFS, libp2p, Merkle-CRDTs.', NULL);
-INSERT INTO public.record VALUES (70, -4, '', 'Feature | Authentication. Tip: Check gajim for possible login inspiration.', NULL);
 INSERT INTO public.record VALUES (65, -58, '', 'Feature | Eventually Consistent Databases.', NULL);
-INSERT INTO public.record VALUES (115, -16, 'pidscnm', NULL, NULL);
+INSERT INTO public.record VALUES (116, -1, 'Stop command execution at startup', 'Bugfix | Steps: 1. Open Lince. Tip: bug seems to not happen if you do a change in the db that doesnt cause a code execution, like zeroing a commandless record', NULL);
 
 
 --
@@ -138,7 +114,7 @@ SELECT pg_catalog.setval('public.frequency_id_seq', 20, true);
 -- Name: history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.history_id_seq', 264, true);
+SELECT pg_catalog.setval('public.history_id_seq', 265, true);
 
 
 --
@@ -152,7 +128,7 @@ SELECT pg_catalog.setval('public.karma_id_seq', 36, true);
 -- Name: record_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.record_id_seq', 115, true);
+SELECT pg_catalog.setval('public.record_id_seq', 116, true);
 
 
 --

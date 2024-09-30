@@ -7,7 +7,7 @@ def clear_screen():
     return None
 
 
-def choose_operation():
+def print_operations():
     options = [
         [ 'App', 'Operations', 'Tables' ],
         [ '[E] Exit', '[C] Create', '[0] Configuration' ],
@@ -21,10 +21,11 @@ def choose_operation():
         [ '', '','[8] View' ]
     ]
 
-    print(tabulate(options, headers='firstrow', tablefmt='rounded_grid'))
+    return print(tabulate(options, headers='firstrow', tablefmt='rounded_grid'))
+
+def choose_operation():
     return input('Your choice: ')
-
-
+    
 def main():
     if check_exists_db() is not None:
         drop_db()
@@ -42,11 +43,14 @@ def main():
         clear_screen()
 
         karma()
+
+        print_operations()
         
         for command in view_list:
             command = command.strip()
             print(tabulate(read_rows(command), headers='keys', tablefmt='rounded_grid'))
             print()
+
         result = execute_operation(choose_operation())
 
         if isinstance(result, pd.DataFrame):

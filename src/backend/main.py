@@ -39,8 +39,6 @@ def check_exists_db():
     return result
 
 def dump_db():
-    configuration_row = execute_sql_command('select last_db from configuration order by quantity DESC limit 1').iloc[0]
-    db = configuration_row['last_db']
     db='default'
     return subprocess.run(['pg_dump', '--data-only', '--inserts', '--no-owner', '--no-privileges', '-U', 'postgres', '--no-password', '-F', 'plain', '-f', f'{os.path.abspath(os.path.join(__file__, '..', '..', "db","versions", f"{db}.sql"))}', 'lince', '-h', 'localhost', '-p', '5432'], text=True, input='1\n')
 

@@ -20,6 +20,7 @@ SET row_security = off;
 -- Data for Name: command; Type: TABLE DATA; Schema: public; Owner: -
 --
 
+INSERT INTO public.command VALUES (7, 1, 'xterm -e nmtui');
 
 
 --
@@ -34,13 +35,28 @@ INSERT INTO public.configuration VALUES (5, 1, 'Automatic', 2, 'verbose', '{}', 
 -- Data for Name: frequency; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.frequency VALUES (21, 1, 1, 0, 0, 0, '2024-10-08 03:45:29.523624+00', NULL);
+INSERT INTO public.frequency VALUES (21, 1, 1, 0, 0, 0, '2024-10-21 03:45:29.523624+00', NULL);
 
 
 --
 -- Data for Name: history; Type: TABLE DATA; Schema: public; Owner: -
 --
 
+INSERT INTO public.history VALUES (266, 119, '2024-10-19 14:36:08.683133+00', 1, 0);
+INSERT INTO public.history VALUES (267, 119, '2024-10-19 14:36:21.916675+00', 0, 1);
+INSERT INTO public.history VALUES (268, 119, '2024-10-19 14:37:57.449454+00', 1, 0);
+INSERT INTO public.history VALUES (269, 119, '2024-10-19 14:41:51.23635+00', 0, 1);
+INSERT INTO public.history VALUES (270, 119, '2024-10-19 14:42:02.476993+00', 1, 0);
+INSERT INTO public.history VALUES (271, 119, '2024-10-19 14:42:02.687655+00', 0, 1);
+INSERT INTO public.history VALUES (272, 119, '2024-10-19 14:42:25.808329+00', 1, 0);
+INSERT INTO public.history VALUES (273, 119, '2024-10-19 14:42:31.170267+00', 0, 1);
+INSERT INTO public.history VALUES (274, 119, '2024-10-19 14:42:49.207153+00', 1, 0);
+INSERT INTO public.history VALUES (275, 119, '2024-10-19 14:43:32.606656+00', 0, 1);
+INSERT INTO public.history VALUES (276, 119, '2024-10-19 14:43:36.706065+00', 1, 0);
+INSERT INTO public.history VALUES (277, 119, '2024-10-19 14:43:52.511692+00', 0, 1);
+INSERT INTO public.history VALUES (278, 119, '2024-10-19 14:44:04.274655+00', 1, 0);
+INSERT INTO public.history VALUES (279, 119, '2024-10-19 14:44:59.567926+00', 0, 1);
+INSERT INTO public.history VALUES (280, 119, '2024-10-19 14:57:02.942306+00', 1, 0);
 
 
 --
@@ -48,6 +64,7 @@ INSERT INTO public.frequency VALUES (21, 1, 1, 0, 0, 0, '2024-10-08 03:45:29.523
 --
 
 INSERT INTO public.karma VALUES (37, 1, 'rq118 = f21 * -1');
+INSERT INTO public.karma VALUES (38, 1, 'rq119,c7 = (rq119 == 0) * 1');
 
 
 --
@@ -71,6 +88,7 @@ INSERT INTO public.record VALUES (65, -58, '', 'Feature | Eventually Consistent 
 INSERT INTO public.record VALUES (116, -1, 'Stop command execution at startup', 'Bugfix | Steps: 1. Open Lince. Tip: bug seems to not happen if you do a change in the db that doesnt cause a code execution, like zeroing a commandless record', NULL);
 INSERT INTO public.record VALUES (117, -1, 'Command be able to use both os.sys and Output', NULL, NULL);
 INSERT INTO public.record VALUES (118, -1, 'fix timezone', NULL, NULL);
+INSERT INTO public.record VALUES (119, 0, 'wifi', NULL, NULL);
 
 
 --
@@ -97,7 +115,7 @@ INSERT INTO public.views VALUES (2, 'SELECT * FROM record WHERE quantity < 0 ORD
 -- Name: command_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.command_id_seq', 6, true);
+SELECT pg_catalog.setval('public.command_id_seq', 7, true);
 
 
 --
@@ -118,21 +136,21 @@ SELECT pg_catalog.setval('public.frequency_id_seq', 21, true);
 -- Name: history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.history_id_seq', 265, true);
+SELECT pg_catalog.setval('public.history_id_seq', 280, true);
 
 
 --
 -- Name: karma_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.karma_id_seq', 37, true);
+SELECT pg_catalog.setval('public.karma_id_seq', 38, true);
 
 
 --
 -- Name: record_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.record_id_seq', 118, true);
+SELECT pg_catalog.setval('public.record_id_seq', 119, true);
 
 
 --

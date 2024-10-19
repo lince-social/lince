@@ -54,8 +54,6 @@ def main():
 
         result = execute_operation(choose_operation())
 
-        karma()
-
         if isinstance(result, pd.DataFrame):
             print(tabulate(result, headers='keys', tablefmt='rounded_grid', stralign='left')) 
             input('(Press enter to continue) ')

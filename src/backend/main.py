@@ -416,10 +416,6 @@ def karma():
             for consequence in left_expression:
                 consequence = consequence.strip()
 
-                if 'c' in consequence:
-                    execute_shell_command(consequence[1:])
-                    continue
-
                 if 'rq' in consequence:
                     table = 'record'
                     set_column = 'quantity'
@@ -427,6 +423,12 @@ def karma():
                     where_column = 'id'
                     where_value = f'{consequence[2:]}'
                     execute_sql_command(f'UPDATE {table} SET {set_column} = {set_value} WHERE {where_column} = {where_value}')
+                    dump_db()
+
+                if 'c' in consequence:
+                    execute_shell_command(consequence[1:])
+                    continue
+
     return True
 
 

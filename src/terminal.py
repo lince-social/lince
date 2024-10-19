@@ -51,6 +51,7 @@ def main():
             print(tabulate(read_rows(command), headers='keys', tablefmt='rounded_grid'))
             print()
 
+
         result = execute_operation(choose_operation())
 
         if isinstance(result, pd.DataFrame):

@@ -34,6 +34,7 @@ INSERT INTO public.configuration VALUES (5, 1, 'Automatic', 2, 'verbose', '{}', 
 -- Data for Name: frequency; Type: TABLE DATA; Schema: public; Owner: -
 --
 
+INSERT INTO public.frequency VALUES (21, 1, 1, 0, 0, 0, '2024-10-08 03:45:29.523624+00', NULL);
 
 
 --
@@ -46,6 +47,7 @@ INSERT INTO public.configuration VALUES (5, 1, 'Automatic', 2, 'verbose', '{}', 
 -- Data for Name: karma; Type: TABLE DATA; Schema: public; Owner: -
 --
 
+INSERT INTO public.karma VALUES (37, 1, 'rq118 = f21 * -1');
 
 
 --
@@ -67,6 +69,8 @@ INSERT INTO public.record VALUES (109, 0, '', 'Feature | Graph View: See depende
 INSERT INTO public.record VALUES (68, -1, '', 'Feature | Communication: between nodes, maybe use pub/sub protocol, IPFS, libp2p, Merkle-CRDTs.', NULL);
 INSERT INTO public.record VALUES (65, -58, '', 'Feature | Eventually Consistent Databases.', NULL);
 INSERT INTO public.record VALUES (116, -1, 'Stop command execution at startup', 'Bugfix | Steps: 1. Open Lince. Tip: bug seems to not happen if you do a change in the db that doesnt cause a code execution, like zeroing a commandless record', NULL);
+INSERT INTO public.record VALUES (117, -1, 'Command be able to use both os.sys and Output', NULL, NULL);
+INSERT INTO public.record VALUES (118, -1, 'fix timezone', NULL, NULL);
 
 
 --
@@ -107,7 +111,7 @@ SELECT pg_catalog.setval('public.configuration_id_seq', 5, true);
 -- Name: frequency_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.frequency_id_seq', 20, true);
+SELECT pg_catalog.setval('public.frequency_id_seq', 21, true);
 
 
 --
@@ -121,14 +125,14 @@ SELECT pg_catalog.setval('public.history_id_seq', 265, true);
 -- Name: karma_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.karma_id_seq', 36, true);
+SELECT pg_catalog.setval('public.karma_id_seq', 37, true);
 
 
 --
 -- Name: record_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.record_id_seq', 116, true);
+SELECT pg_catalog.setval('public.record_id_seq', 118, true);
 
 
 --

@@ -35,7 +35,7 @@ INSERT INTO public.configuration VALUES (5, 1, 'Automatic', 2, 'verbose', '{}', 
 -- Data for Name: frequency; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.frequency VALUES (21, 1, 1, 0, 0, 0, '2024-10-21 03:45:29.523624+00', NULL);
+INSERT INTO public.frequency VALUES (21, 1, 1, 0, 0, 0, '2024-10-28 03:45:29.523624+00', NULL);
 
 
 --
@@ -57,6 +57,15 @@ INSERT INTO public.history VALUES (277, 119, '2024-10-19 14:43:52.511692+00', 0,
 INSERT INTO public.history VALUES (278, 119, '2024-10-19 14:44:04.274655+00', 1, 0);
 INSERT INTO public.history VALUES (279, 119, '2024-10-19 14:44:59.567926+00', 0, 1);
 INSERT INTO public.history VALUES (280, 119, '2024-10-19 14:57:02.942306+00', 1, 0);
+INSERT INTO public.history VALUES (281, 119, '2024-10-19 14:58:28.641788+00', 0, 1);
+INSERT INTO public.history VALUES (282, 119, '2024-10-19 15:19:44.16797+00', 1, 0);
+INSERT INTO public.history VALUES (283, 119, '2024-10-19 15:20:07.729849+00', 0, 1);
+INSERT INTO public.history VALUES (284, 119, '2024-10-19 15:20:18.936495+00', 1, 0);
+INSERT INTO public.history VALUES (285, 119, '2024-10-19 16:28:45.037847+00', 0, 1);
+INSERT INTO public.history VALUES (286, 119, '2024-10-19 16:28:48.628483+00', 1, 0);
+INSERT INTO public.history VALUES (287, 119, '2024-10-19 16:28:48.671942+00', 0, 1);
+INSERT INTO public.history VALUES (288, 119, '2024-10-19 16:33:20.93119+00', 1, 0);
+INSERT INTO public.history VALUES (289, 119, '2024-10-19 16:33:21.205472+00', 0, 1);
 
 
 --
@@ -87,8 +96,11 @@ INSERT INTO public.record VALUES (68, -1, '', 'Feature | Communication: between 
 INSERT INTO public.record VALUES (65, -58, '', 'Feature | Eventually Consistent Databases.', NULL);
 INSERT INTO public.record VALUES (116, -1, 'Stop command execution at startup', 'Bugfix | Steps: 1. Open Lince. Tip: bug seems to not happen if you do a change in the db that doesnt cause a code execution, like zeroing a commandless record', NULL);
 INSERT INTO public.record VALUES (117, -1, 'Command be able to use both os.sys and Output', NULL, NULL);
+INSERT INTO public.record VALUES (119, 1, 'wifi', NULL, NULL);
 INSERT INTO public.record VALUES (118, -1, 'fix timezone', NULL, NULL);
-INSERT INTO public.record VALUES (119, 0, 'wifi', NULL, NULL);
+INSERT INTO public.record VALUES (120, -1, 'Modificar base de dados de forma fácil, colocar multiline', NULL, NULL);
+INSERT INTO public.record VALUES (121, -1, 'poder mudar o id de qualquer item, com todas as referencias a esse item mudando tmbm', NULL, NULL);
+INSERT INTO public.record VALUES (122, -1, 'mudar automaticamente o id de itens de uma table pra o mais baixo possivel, entao o 18 vai pro 17 se o 17 for excluido, nao o 19 pro 17 e o 18 fica igual, poder sinalizar se nao quer que mude o id', NULL, NULL);
 
 
 --
@@ -136,7 +148,7 @@ SELECT pg_catalog.setval('public.frequency_id_seq', 21, true);
 -- Name: history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.history_id_seq', 280, true);
+SELECT pg_catalog.setval('public.history_id_seq', 289, true);
 
 
 --
@@ -150,7 +162,7 @@ SELECT pg_catalog.setval('public.karma_id_seq', 38, true);
 -- Name: record_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.record_id_seq', 119, true);
+SELECT pg_catalog.setval('public.record_id_seq', 122, true);
 
 
 --

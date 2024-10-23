@@ -48,7 +48,7 @@ def main():
         
         for command in view_list:
             command = command.strip()
-            print(tabulate(read_rows(command), headers='keys', tablefmt='rounded_grid'))
+            print(tabulate(read_rows(command, view_mode=True), headers='keys', tablefmt='rounded_grid', maxcolwidths=30))
             print()
 
 

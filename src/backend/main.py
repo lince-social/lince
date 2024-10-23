@@ -243,7 +243,7 @@ def truncate_column(column, truncation_size):
     lines.append(column)
     return '\n'.join(lines)
 
-def read_rows(command, where_id_in=None):
+def read_rows(command, where_id_in=None, view_mode=None):
     configuration_row = execute_sql_command('select truncation, table_query from configuration order by quantity DESC limit 1').iloc[0]
 
     table_query = configuration_row['table_query']
@@ -259,10 +259,11 @@ def read_rows(command, where_id_in=None):
 
     if not isinstance(rows, pd.DataFrame): return None
 
-    for column in rows.columns:
-        if column in truncation:
-            truncation_size = truncation[column]
-            rows[column] = rows[column].apply(lambda x: truncate_column(x, truncation_size))
+    if view_mode != None:
+        for column in rows.columns:
+            if column in truncation:
+                truncation_size = truncation[column]
+                rows[column] = rows[column].apply(lambda x: truncate_column(x, truncation_size))
 
     return rows
 
@@ -507,7 +508,7 @@ def execute_operation(operation):
             case 's' | 'S': return dump_db()
             case 'l' | 'L': return restore_db()
             case 'c' | 'C': return create_row(table)
-            case 'r' | 'R': return read_rows(f'SELECT * FROM {table}', where_id_in)
+            case 'r' | 'R': return read_rows(f'SELECT * FROM {table}', where_id_in, view_mode=True)
             case 'u' | 'U': return update_rows(table, set_clause=None, where_clause=None, where_id_in=where_id_in)
             case 'd' | 'D': return delete_rows(table, where_clause=None, where_id_in=where_id_in)
             case 'f' | 'F': return execute_sql_command_from_file()

@@ -10,7 +10,7 @@ CREATE TABLE configuration (
  	view_id INTEGER NOT NULL DEFAULT 1,
 	column_information_mode VARCHAR(7) NOT NULL DEFAULT 'verbose' CHECK (column_information_mode in ('verbose', 'short', 'silent')),
 	keymap jsonb NOT NULL DEFAULT '{}',
-	truncation jsonb NOT NULL DEFAULT '{"body": 150, "view": 100}',
+	truncation jsonb NOT NULL DEFAULT '{"body": 150, "view": 100, "command": 150}',
 	table_query jsonb NOT NULL DEFAULT '{"record": "SELECT * FROM RECORD ORDER BY quantity ASC, head ASC, body ASC, id ASC", "frequency": "SELECT * FROM frequency ORDER BY id ASC"}',
 	language VARCHAR(15) NOT NULL DEFAULT 'en-US',
 	timezone VARCHAR(3) NOT NULL DEFAULT '-3',

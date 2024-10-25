@@ -13,9 +13,7 @@ CREATE TABLE configuration (
 	truncation jsonb NOT NULL DEFAULT '{"head": 150, "body": 150, "view": 100, "command": 150}',
 	table_query jsonb NOT NULL DEFAULT '{"record": "SELECT * FROM RECORD ORDER BY quantity ASC, head ASC, body ASC, id ASC", "frequency": "SELECT * FROM frequency ORDER BY id ASC", "command": "SELECT * FROM command ORDER BY id ASC"}',
 	language VARCHAR(15) NOT NULL DEFAULT 'en-US',
-	timezone VARCHAR(3) NOT NULL DEFAULT '-3',
-	startup_db VARCHAR(50) DEFAULT 'default',
-	last_db VARCHAR(50) NOT NULL DEFAULT 'default'
+	timezone VARCHAR(3) NOT NULL DEFAULT '-3'
 );
 
 CREATE TABLE record (

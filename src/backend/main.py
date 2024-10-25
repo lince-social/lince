@@ -57,31 +57,7 @@ def create_db():
 def scheme_db():
     with open(os.path.abspath(os.path.join(__file__,'..','..',  "db", "schema.sql")), 'r') as file: return execute_sql_command(command = file.read())
 
-def restore_db(db=None):
-    # current_dir = os.path.dirname(os.path.abspath(__file__))
-    # target_dir = os.path.abspath(os.path.join(current_dir, '..', '..', 'db', 'versions'))
-
-    # configuration_row = execute_sql_command('select id, startup_db, last_db from configuration order by quantity DESC limit 1').iloc[0]
-    # startup_db = configuration_row['startup_db']
-    # last_db = configuration_row['last_db']
-    # id = configuration_row['id']
-
-    # if db != None:
-    #     os.system(f'touch {target_dir}/{db}.sql')
-    # elif startup_db != None and os.path.isfile(os.path.join(target_dir, f'{startup_db}.sql')):
-    #     db = startup_db
-    # elif last_db != None and os.path.isfile(os.path.join(target_dir, f'{last_db}.sql')):
-    #     input(last_db)
-    #     db = last_db
-    # else:
-    #     input('dioindcis')
-    #     files = [f for f in target_dir if os.path.isfile(os.path.join(target_dir, f))]
-    #     if files:
-    #         db = sorted(files)[0][:-4]
-
-    # execute_sql_command(f"UPDATE configuration SET last_db='{db}' WHERE id={id}")
-
-    # command = f"psql -h 'localhost' -d 'lince' -U postgres < {os.path.abspath(os.path.join(__file__, '..', '..', 'db','versions', 'default.sql'))}"
+def restore_db():
     try:
         db_path = os.path.abspath(os.path.join(__file__, '..', '..', 'db','versions', 'default.sql'))
         command = f"psql -h 'localhost' -d 'lince' -U postgres < {db_path}"

@@ -263,7 +263,7 @@ def delete_rows(table, where_clause=None, where_id_in=None):
     print(command, end='')
 
     if where_clause == None:
-        print('no WHERE CAUSE deletes all')
+        print(' no WHERE CAUSE deletes all')
         where_clause = input("WHERE ")
 
     if where_id_in != None:

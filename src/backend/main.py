@@ -82,7 +82,7 @@ def return_column_information(column):
 
     info = ''
 
-    if column_information_mode == 'short or column_information_mode == 'verbose':
+    if column_information_mode == 'short' or column_information_mode == 'verbose':
         match column:
             case "id":
                 info += '"".'

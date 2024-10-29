@@ -140,28 +140,28 @@ def return_column_information(column):
                 info += '"".'
             case "interval_length":
                 info += '"".'
-        	case "end_lag":
-        	    info += '"".'
+            case "end_lag":
+                info += '"".'
             case "end_date":
                 info += '"".'
-        	case "command":
-            	info += '"".'
-        	case "records_received":
-            	info += '"".'
-        	case "records_contributed":
-            	info += '"".'
-        	case "receiving_agreement":
-            	info += '"".'
-        	case "contributing_agreement":
-            	info += '"".'
-        	case "agreement_time":
-            	info += '"".'
-        	case "receiving_transfer_confirmation":
-            	info += '"".'
-        	case "contributing_transfer_confirmation":
-            	info += '"".'
-        	case "transfer_time":
-            	info += '"".'
+            case "command":
+                info += '"".'
+            case "records_received":
+                info += '"".'
+            case "records_contributed":
+                info += '"".'
+            case "receiving_agreement":
+                info += '"".'
+            case "contributing_agreement":
+                info += '"".'
+            case "agreement_time":
+                info += '"".'
+            case "receiving_transfer_confirmation":
+                info += '"".'
+            case "contributing_transfer_confirmation":
+                info += '"".'
+            case "transfer_time":
+                info += '"".'
 
     if column_information_mode == 'verbose':
         match column:
@@ -221,28 +221,28 @@ def return_column_information(column):
                 info += ' .'
             case "interval_length":
                 info += ' .'
-        	case "end_lag":
-        	    info += ' .'
+            case "end_lag":
+                info += ' .'
             case "end_date":
                 info += ' .'
-        	case "command":
-            	info += ' .'
-        	case "records_received":
-            	info += ' .'
-        	case "records_contributed":
-            	info += ' .'
-        	case "receiving_agreement":
-            	info += ' .'
-        	case "contributing_agreement":
-            	info += ' .'
-        	case "agreement_time":
-            	info += ' .'
-        	case "receiving_transfer_confirmation":
-            	info += ' .'
-        	case "contributing_transfer_confirmation":
-            	info += ' .'
-        	case "transfer_time":
-            	info += ' .'
+            case "command":
+                info += ' .'
+            case "records_received":
+                info += ' .'
+            case "records_contributed":
+                info += ' .'
+            case "receiving_agreement":
+                info += ' .'
+            case "contributing_agreement":
+                info += ' .'
+            case "agreement_time":
+                info += ' .'
+            case "receiving_transfer_confirmation":
+                info += ' .'
+            case "contributing_transfer_confirmation":
+                info += ' .'
+            case "transfer_time":
+                info += ' .'
 
     return info
 

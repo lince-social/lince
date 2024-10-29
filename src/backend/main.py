@@ -82,91 +82,167 @@ def return_column_information(column):
 
     info = ''
 
+    if column_information_mode == 'short or column_information_mode == 'verbose':
+        match column:
+            case "id":
+                info += '"".'
+            case "view":
+                info += '"".'
+            case "quantity":
+                info += '"".'
+            case "save_mode":
+                info += '"".'
+            case "view_id":
+                info += '"".'
+            case "column_information_mode":
+                info += '"".'
+            case "keymap":
+                info += '"".'
+            case "truncation":
+                info += '"".'
+            case "table_query":
+                info += '"".'
+            case "language":
+                info += '"".'
+            case "timezone":
+                info += '"".'
+            case "head":
+                info += '"".'
+            case "body":
+                info += '"".'
+            case "location":
+                info += '"".'
+            case "record_id":
+                info += '"".'
+            case "change_time":
+                info += '"".'
+            case "old_quantity":
+                info += '"".'
+            case "new_quantity":
+                info += '"".'
+            case "expression":
+                info += '"".'
+            case "day_week":
+                info += '"".'
+            case "months":
+                info += '"".'
+            case "days":
+                info += '"".'
+            case "seconds":
+                info += '"".'
+            case "next_date":
+                info += '"".'
+            case "finish_date":
+                info += '"".'
+            case "sum_mode":
+                info += '"".'
+            case "interval_mode":
+                info += '"".'
+            case "interval_length":
+                info += '"".'
+        	case "end_lag":
+        	    info += '"".'
+            case "end_date":
+                info += '"".'
+        	case "command":
+            	info += '"".'
+        	case "records_received":
+            	info += '"".'
+        	case "records_contributed":
+            	info += '"".'
+        	case "receiving_agreement":
+            	info += '"".'
+        	case "contributing_agreement":
+            	info += '"".'
+        	case "agreement_time":
+            	info += '"".'
+        	case "receiving_transfer_confirmation":
+            	info += '"".'
+        	case "contributing_transfer_confirmation":
+            	info += '"".'
+        	case "transfer_time":
+            	info += '"".'
+
     if column_information_mode == 'verbose':
         match column:
-            case "quantity":
-                info += '"quantity REAL NOT NULL DEFAULT 1". Responsible for quantifying the availability of the phenomenon. It saves the information of how much. Positive numbers make it run or available. Negative numbers make it a need, in the case of frequency it will run untill it turns to 0. If zero, it is as good as not existing.'
-            case "text":
-                info += '"text TEXT". Responsible for.'
-            case "save_mode":
-                info += '"save_mode VARCHAR(9) NOT NULL DEFAULT "Automatic" CHECK (save_mode in ("Automatic", "Manual"))". Responsible for determining the save mode, either Automatic or Manual. After each operation the system can save or let the database be saved when s or S is typed on the menu.'
+            case "id":
+                info += ' .'
             case "view":
-                info += '"view TEXT NOT NULL DEFAULT "SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC". Responsible for configuring what tables will be shown on the main page..'
+                info += ' .'
+            case "quantity":
+                info += ' .'
+            case "save_mode":
+                info += ' .'
+            case "view_id":
+                info += ' .'
             case "column_information_mode":
-                info += '"column_information_mode VARCHAR(7) NOT NULL DEFAULT "verbose" CHECK (column_information_mode in ("verbose", "short", "silent"))". Responsible for determining the amount of information shown after every column is queried, so the user can understand the details and restrictions of it.'
+                info += ' .'
             case "keymap":
-                info += '"keymap jsonb NOT NULL DEFAULT ""{}". Responsible for storing the keymap configuration, for personalized operations.'
+                info += ' .'
             case "truncation":
-                info += '"truncation jsonb NOT NULL DEFAULT "{"record": {"description": 150}}". Responsible for defining the truncation for each column. When a table is being printed, it will follow the instructions in this configuration, so every so and so characters (i.e. 50) a newline is added to occupy space vertically.'
+                info += ' .'
+            case "table_query":
+                info += ' .'
+            case "language":
+                info += ' .'
+            case "timezone":
+                info += ' .'
+            case "head":
+                info += ' .'
+            case "body":
+                info += ' .'
             case "location":
-                info += '"location VARCHAR(255)". Responsible for storing the location of the record.'
-            case "day_week":
-                info += '"day_week INTEGER". Responsible for storing the day of the week for the frequency.'
-            case "months":
-                info += '"months REAL DEFAULT 0 NOT NULL". Responsible for storing the months component of the frequency.'
-            case "days":
-                info += '"days REAL DEFAULT 0 NOT NULL". Responsible for storing the days component of the frequency.'
-            case "seconds":
-                info += '"seconds REAL DEFAULT 0 NOT NULL". Responsible for storing the seconds component of the frequency.'
-            case "next_date":
-                info += '"next_date TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL". Responsible for storing the next date of the frequency.'
+                info += ' .'
             case "record_id":
-                info += '"record_id INTEGER". Responsible for linking with the corresponding record.'
-            case "delta":
-                info += '"delta REAL DEFAULT 0 NOT NULL". Responsible for storing the delta value of the frequency.'
+                info += ' .'
+            case "change_time":
+                info += ' .'
+            case "old_quantity":
+                info += ' .'
+            case "new_quantity":
+                info += ' .'
+            case "expression":
+                info += ' .'
+            case "day_week":
+                info += ' .'
+            case "months":
+                info += ' .'
+            case "days":
+                info += ' .'
+            case "seconds":
+                info += ' .'
+            case "next_date":
+                info += ' .'
             case "finish_date":
-                info += '"finish_date DATE". Responsible for storing the finish date of the frequency.'
-            case "when_done":
-                info += '"when_done BOOLEAN DEFAULT false". Responsible for storing the status of the frequency (done or not).'
-            case "interval_mode":
-                info +='interval_mode VARCHAR(10) NOT NULL  DEFAULT "fixed" CHECK (interval_mode IN ("fixed", "relative"))'
+                info += ' .'
             case "sum_mode":
-                info += 'sum_mode INTEGER NOT NULL DEFAULT 0 CHECK (sum_mode in (-1,0,1))'
+                info += ' .'
+            case "interval_mode":
+                info += ' .'
+            case "interval_length":
+                info += ' .'
+        	case "end_lag":
+        	    info += ' .'
             case "end_date":
-                info += 'end_date TIMESTAMP WITH TIME ZONE DEFAULT now()'
-            case "interval_lenght":
-                info += 'interval_length INTERVAL NOT NULL'
-            case "end_lag":
-                info += 'end_lag interval NOT NULL'
-
-    elif column_information_mode == "short":
-        match column:
-            case "quantity":
-                info += '"quantity REAL NOT NULL DEFAULT 1"'
-            case "save_mode":
-                info += '"save_mode VARCHAR(9) NOT NULL DEFAULT "Automatic" CHECK (save_mode in ("Automatic", "Manual"))".'
-            case "view":
-                info += '"view TEXT NOT NULL DEFAULT "SELECT * FROM record WHERE quantity < 0 ORDER BY quantity ASC, title ASC, description ASC".'
-            case "column_information_mode":
-                info += '"column_information_mode VARCHAR(7) NOT NULL DEFAULT "verbose" CHECK (column_information_mode in ("verbose", "short", "silent"))".'
-            case "keymap":
-                info += '"keymap jsonb NOT NULL DEFAULT ""{}".'
-            case "truncation":
-                info += '"truncation jsonb NOT NULL DEFAULT ""{"record": {"description": 150}}".'
-            case "title":
-                info += '"title VARCHAR(50) NOT NULL".'
-            case "description":
-                info += '"description TEXT".'
-            case "location":
-                info += '"location VARCHAR(255)".'
-            case "day_week":
-                info += '"day_week INTEGER"'
-            case "months":
-                info += '"months REAL DEFAULT 0 NOT NULL"'
-            case "days":
-                info += '"days REAL DEFAULT 0 NOT NULL"'
-            case "seconds":
-                info += '"seconds REAL DEFAULT 0 NOT NULL"'
-            case "next_date":
-                info += '"next_date TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL"'
-            case "record_id":
-                info += '"record_id INTEGER REFERENCES record(id) ON DELETE CASCADE NOT NULL"'
-            case "delta":
-                info += '"delta REAL DEFAULT 0 NOT NULL"'
-            case "finish_date":
-                info += '"finish_date DATE"'
-            case "when_done":
-                info += '"when_done BOOLEAN DEFAULT false"'
+                info += ' .'
+        	case "command":
+            	info += ' .'
+        	case "records_received":
+            	info += ' .'
+        	case "records_contributed":
+            	info += ' .'
+        	case "receiving_agreement":
+            	info += ' .'
+        	case "contributing_agreement":
+            	info += ' .'
+        	case "agreement_time":
+            	info += ' .'
+        	case "receiving_transfer_confirmation":
+            	info += ' .'
+        	case "contributing_transfer_confirmation":
+            	info += ' .'
+        	case "transfer_time":
+            	info += ' .'
 
     return info
 

@@ -85,83 +85,83 @@ def return_column_information(column):
     if column_information_mode == 'short' or column_information_mode == 'verbose':
         match column:
             case "id":
-                info += '"".'
+                info += '"SERIAL PRIMARY KEY,".'"
             case "view":
-                info += '"".'
+                info += '"TEXT NOT NULL DEFAULT 'SELECT * FROM record'".'"
             case "quantity":
-                info += '"".'
+                info += '"REAL NOT NULL DEFAULT 1,".'"
             case "save_mode":
-                info += '"".'
+                info += '"VARCHAR(9) NOT NULL DEFAULT 'Automatic' CHECK (save_mode in ('Automatic', 'Manual')),".'"
             case "view_id":
-                info += '"".'
+                info += '"INTEGER NOT NULL DEFAULT 1,".'"
             case "column_information_mode":
-                info += '"".'
+                info += '"VARCHAR(7) NOT NULL DEFAULT 'verbose' CHECK (column_information_mode in ('verbose', 'short', 'silent')),".'"
             case "keymap":
-                info += '"".'
+                info += '"jsonb NOT NULL DEFAULT '{}',".'"
             case "truncation":
-                info += '"".'
+                info += '"jsonb NOT NULL DEFAULT '{"head": 150, "body": 150, "view": 100, "command": 150}',".'"
             case "table_query":
-                info += '"".'
+                info += '"jsonb NOT NULL DEFAULT '{"record": "SELECT * FROM RECORD ORDER BY quantity ASC, head ASC, body ASC, id ASC", "frequency": "SELECT * FROM frequency ORDER BY id ASC", "command": "SELECT * FROM command ORDER BY id ASC"}',".'"
             case "language":
-                info += '"".'
+                info += '"VARCHAR(15) NOT NULL DEFAULT 'en-US',".'"
             case "timezone":
-                info += '"".'
+                info += '"VARCHAR(3) NOT NULL DEFAULT '-3'".'"
             case "head":
-                info += '"".'
+                info += '"TEXT,".'"
             case "body":
-                info += '"".'
+                info += '"TEXT,".'"
             case "location":
-                info += '"".'
+                info += '"POINT".'
             case "record_id":
-                info += '"".'
+                info += '"INTEGER NOT NULL,".'"
             case "change_time":
-                info += '"".'
+                info += '"TIMESTAMP WITH TIME ZONE DEFAULT NOW(),".'"
             case "old_quantity":
-                info += '"".'
+                info += '"REAL NOT NULL,".'"
             case "new_quantity":
-                info += '"".'
+                info += '"REAL NOT NULL".'
             case "expression":
-                info += '"".'
+                info += '"TEXT".'
             case "day_week":
-                info += '"".'
+                info += '"INTEGER,".'"
             case "months":
-                info += '"".'
+                info += '"REAL DEFAULT 0 NOT NULL,".'"
             case "days":
-                info += '"".'
+                info += '"REAL DEFAULT 0 NOT NULL,".'"
             case "seconds":
-                info += '"".'
+                info += '"REAL DEFAULT 0 NOT NULL,".'"
             case "next_date":
-                info += '"".'
+                info += '"TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,".'"
             case "finish_date":
-                info += '"".'
+                info += '"DATE".'
             case "sum_mode":
-                info += '"".'
+                info += '"INTEGER NOT NULL DEFAULT 0 CHECK (sum_mode in (-1,0,1)),".'"
             case "interval_mode":
-                info += '"".'
+                info += '"VARCHAR(10) NOT NULL DEFAULT 'relative' CHECK (interval_mode IN ('fixed', 'relative')),".'"
             case "interval_length":
-                info += '"".'
+                info += '"INTERVAL NOT NULL,".'"
             case "end_lag":
-                info += '"".'
+                info += '"interval,".'"
             case "end_date":
-                info += '"".'
+                info += '"TIMESTAMP WITH TIME ZONE DEFAULT now()".'"
             case "command":
-                info += '"".'
+                info += '"TEXT NOT NULL".'
             case "records_received":
-                info += '"".'
+                info += '"json,".'"
             case "records_contributed":
-                info += '"".'
+                info += '"json,".'"
             case "receiving_agreement":
-                info += '"".'
+                info += '"BOOL,".'"
             case "contributing_agreement":
-                info += '"".'
+                info += '"BOOL,".'"
             case "agreement_time":
-                info += '"".'
+                info += '"TIMESTAMP WITH TIME ZONE,".'"
             case "receiving_transfer_confirmation":
-                info += '"".'
+                info += '"BOOL,".'"
             case "contributing_transfer_confirmation":
-                info += '"".'
+                info += '"BOOL,".'"
             case "transfer_time":
-                info += '"".'
+                info += '"TIMESTAMP WITH TIME ZONE".'
 
     if column_information_mode == 'verbose':
         match column:

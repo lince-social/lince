@@ -87,79 +87,79 @@ def return_column_information(column):
             case "id":
                 info += '"SERIAL PRIMARY KEY,".'"
             case "view":
-                info += '"TEXT NOT NULL DEFAULT 'SELECT * FROM record'".'"
+                info += '"TEXT NOT NULL DEFAULT 'SELECT * FROM record'".'
             case "quantity":
-                info += '"REAL NOT NULL DEFAULT 1,".'"
+                info += '"REAL NOT NULL DEFAULT 1,".'
             case "save_mode":
-                info += '"VARCHAR(9) NOT NULL DEFAULT 'Automatic' CHECK (save_mode in ('Automatic', 'Manual')),".'"
+                info += '"VARCHAR(9) NOT NULL DEFAULT 'Automatic' CHECK (save_mode in ('Automatic', 'Manual')),".'
             case "view_id":
-                info += '"INTEGER NOT NULL DEFAULT 1,".'"
+                info += '"INTEGER NOT NULL DEFAULT 1,".'
             case "column_information_mode":
-                info += '"VARCHAR(7) NOT NULL DEFAULT 'verbose' CHECK (column_information_mode in ('verbose', 'short', 'silent')),".'"
+                info += '"VARCHAR(7) NOT NULL DEFAULT 'verbose' CHECK (column_information_mode in ('verbose', 'short', 'silent')),".'
             case "keymap":
-                info += '"jsonb NOT NULL DEFAULT '{}',".'"
+                info += '"jsonb NOT NULL DEFAULT '{}',".'
             case "truncation":
-                info += '"jsonb NOT NULL DEFAULT '{"head": 150, "body": 150, "view": 100, "command": 150}',".'"
+                info += '"jsonb NOT NULL DEFAULT '{"head": 150, "body": 150, "view": 100, "command": 150}',".'
             case "table_query":
-                info += '"jsonb NOT NULL DEFAULT '{"record": "SELECT * FROM RECORD ORDER BY quantity ASC, head ASC, body ASC, id ASC", "frequency": "SELECT * FROM frequency ORDER BY id ASC", "command": "SELECT * FROM command ORDER BY id ASC"}',".'"
+                info += '"jsonb NOT NULL DEFAULT '{"record": "SELECT * FROM RECORD ORDER BY quantity ASC, head ASC, body ASC, id ASC", "frequency": "SELECT * FROM frequency ORDER BY id ASC", "command": "SELECT * FROM command ORDER BY id ASC"}',".'
             case "language":
-                info += '"VARCHAR(15) NOT NULL DEFAULT 'en-US',".'"
+                info += '"VARCHAR(15) NOT NULL DEFAULT 'en-US',".'
             case "timezone":
-                info += '"VARCHAR(3) NOT NULL DEFAULT '-3'".'"
+                info += '"VARCHAR(3) NOT NULL DEFAULT '-3'".'
             case "head":
-                info += '"TEXT,".'"
+                info += '"TEXT,".'
             case "body":
-                info += '"TEXT,".'"
+                info += '"TEXT,".'
             case "location":
                 info += '"POINT".'
             case "record_id":
-                info += '"INTEGER NOT NULL,".'"
+                info += '"INTEGER NOT NULL,".'
             case "change_time":
-                info += '"TIMESTAMP WITH TIME ZONE DEFAULT NOW(),".'"
+                info += '"TIMESTAMP WITH TIME ZONE DEFAULT NOW(),".'
             case "old_quantity":
-                info += '"REAL NOT NULL,".'"
+                info += '"REAL NOT NULL,".'
             case "new_quantity":
                 info += '"REAL NOT NULL".'
             case "expression":
                 info += '"TEXT".'
             case "day_week":
-                info += '"INTEGER,".'"
+                info += '"INTEGER,".'
             case "months":
-                info += '"REAL DEFAULT 0 NOT NULL,".'"
+                info += '"REAL DEFAULT 0 NOT NULL,".'
             case "days":
-                info += '"REAL DEFAULT 0 NOT NULL,".'"
+                info += '"REAL DEFAULT 0 NOT NULL,".'
             case "seconds":
-                info += '"REAL DEFAULT 0 NOT NULL,".'"
+               info += '"REAL DEFAULT 0 NOT NULL,".'
             case "next_date":
-                info += '"TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,".'"
+                info += '"TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,".'
             case "finish_date":
                 info += '"DATE".'
             case "sum_mode":
-                info += '"INTEGER NOT NULL DEFAULT 0 CHECK (sum_mode in (-1,0,1)),".'"
+                info += '"INTEGER NOT NULL DEFAULT 0 CHECK (sum_mode in (-1,0,1)),".'
             case "interval_mode":
-                info += '"VARCHAR(10) NOT NULL DEFAULT 'relative' CHECK (interval_mode IN ('fixed', 'relative')),".'"
+                info += '"VARCHAR(10) NOT NULL DEFAULT 'relative' CHECK (interval_mode IN ('fixed', 'relative')),".'
             case "interval_length":
-                info += '"INTERVAL NOT NULL,".'"
+                info += '"INTERVAL NOT NULL,".'
             case "end_lag":
-                info += '"interval,".'"
+                info += '"interval,".'
             case "end_date":
-                info += '"TIMESTAMP WITH TIME ZONE DEFAULT now()".'"
+                info += '"TIMESTAMP WITH TIME ZONE DEFAULT now()".'
             case "command":
                 info += '"TEXT NOT NULL".'
             case "records_received":
-                info += '"json,".'"
+                info += '"json,".'
             case "records_contributed":
-                info += '"json,".'"
+                info += '"json,".'
             case "receiving_agreement":
-                info += '"BOOL,".'"
+                info += '"BOOL,".'
             case "contributing_agreement":
-                info += '"BOOL,".'"
+                info += '"BOOL,".'
             case "agreement_time":
-                info += '"TIMESTAMP WITH TIME ZONE,".'"
+                info += '"TIMESTAMP WITH TIME ZONE,".'
             case "receiving_transfer_confirmation":
-                info += '"BOOL,".'"
+                info += '"BOOL,".'
             case "contributing_transfer_confirmation":
-                info += '"BOOL,".'"
+                info += '"BOOL,".'
             case "transfer_time":
                 info += '"TIMESTAMP WITH TIME ZONE".'
 

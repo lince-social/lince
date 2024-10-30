@@ -190,15 +190,15 @@ def return_column_information(column):
             case "truncation":
                 info += 'Responsible for making content appear on the screen with line breaks after a certain amount of characters.'
             case "table_query":
-                info += 'Responsible for .'
+                info += 'Responsible for setting how tables will be shown when queried through [N]r.'
             case "language":
-                info += 'Responsible for .'
+                info += 'Responsible for setting the language.'
             case "timezone":
                 info += 'Responsible for setting timezone correctly for frequency table and date shown.'
             case "head":
-                info += 'Responsible for .'
+                info += 'Responsible for setting a head text information to the record.'
             case "body":
-                info += 'Responsible for .'
+                info += 'Responsible for setting a body text information to the record.'
             case "location":
                 info += 'Responsible for setting a location something is supposed to be at.'
             case "record_id":
@@ -224,33 +224,33 @@ def return_column_information(column):
             case "finish_date":
                 info += 'Responsible for setting a finish date so the frequency does not activate anymore.'
             case "sum_mode":
-                info += 'Responsible for .'
+                info += 'Responsible for setting the sum of negative changes, positive ones, or all (delta).'
             case "interval_mode":
-                info += 'Responsible for .'
+                info += 'Responsible for setting a sum mode that has a fixed period, from day 1 to now or day 24, or a relative one, from today to 6 months from today, and if end_lag exists, then the sum will be from 6 months+ end_lag ago, till today + end_lag. Example: 6 months + 1 month lag untill 1 month ago (lag).'
             case "interval_length":
-                info += 'Responsible for .'
+                info += 'Responsible for setting the amount of time the sum period will count on.'
             case "end_lag":
-                info += 'Responsible for .'
+                info += 'Responsible for shifting the end date to a certain time backwards, if the interval_mode is "relative" and end_date is to the present moment, setting this will shift not only the end date but the starting date a certain amount, while still keeping the "relative" property.'
             case "end_date":
-                info += 'Responsible for .'
+                info += 'Responsible for setting the end of the sum period.'
             case "command":
-                info += 'Responsible for .'
+                info += 'Responsible for executing shell commands.'
             case "records_received":
-                info += 'Responsible for .'
+                info += 'Responsible for saving information of records being received during the transfer.'
             case "records_contributed":
-                info += 'Responsible for .'
+                info += 'Responsible for saving information of records being contributed during the transfer.'
             case "receiving_agreement":
-                info += 'Responsible for .'
+                info += 'Responsible for saving information that transfer conditions for the receivement have been agreed upon.'
             case "contributing_agreement":
-                info += 'Responsible for .'
+                info += 'Responsible for saving information that transfer conditions for the contribution have been agreed upon.'
             case "agreement_time":
-                info += 'Responsible for .'
+                info += 'Responsible for saving informatino on the time of agreement of receivement and contribution.'
             case "receiving_transfer_confirmation":
-                info += 'Responsible for .'
+                info += 'Responsible for saving information that the receivement was successful.'
             case "contributing_transfer_confirmation":
-                info += 'Responsible for .'
+                info += 'Responsible for saving information that the contribution was successful.'
             case "transfer_time":
-                info += 'Responsible for .'
+                info += 'Responsible for saving information that the transfer was successful.'
 
     return info
 

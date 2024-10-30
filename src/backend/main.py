@@ -85,39 +85,39 @@ def return_column_information(column):
     if column_information_mode == 'short' or column_information_mode == 'verbose':
         match column:
             case "id":
-                info += '"SERIAL PRIMARY KEY,".'"
+                info += '"SERIAL PRIMARY KEY,".'
             case "view":
-                info += '"TEXT NOT NULL DEFAULT 'SELECT * FROM record'".'
+                info += '"TEXT NOT NULL DEFAULT "SELECT * FROM record"".'
             case "quantity":
-                info += '"REAL NOT NULL DEFAULT 1,".'
+                info += '"REAL NOT NULL DEFAULT 1".'
             case "save_mode":
-                info += '"VARCHAR(9) NOT NULL DEFAULT 'Automatic' CHECK (save_mode in ('Automatic', 'Manual')),".'
+                info += '"VARCHAR(9) NOT NULL DEFAULT "Automatic" CHECK (save_mode in ("Automatic", "Manual")),".'
             case "view_id":
-                info += '"INTEGER NOT NULL DEFAULT 1,".'
+                info += '"INTEGER NOT NULL DEFAULT 1".'
             case "column_information_mode":
-                info += '"VARCHAR(7) NOT NULL DEFAULT 'verbose' CHECK (column_information_mode in ('verbose', 'short', 'silent')),".'
+                info += '"VARCHAR(7) NOT NULL DEFAULT "verbose" CHECK (column_information_mode in ("verbose", "short", "silent")),".'
             case "keymap":
-                info += '"jsonb NOT NULL DEFAULT '{}',".'
+                info += '"jsonb NOT NULL DEFAULT "{}"".'
             case "truncation":
-                info += '"jsonb NOT NULL DEFAULT '{"head": 150, "body": 150, "view": 100, "command": 150}',".'
+                info += '"jsonb NOT NULL DEFAULT "{"head": 150, "body": 150, "view": 100, "command": 150}"".'
             case "table_query":
-                info += '"jsonb NOT NULL DEFAULT '{"record": "SELECT * FROM RECORD ORDER BY quantity ASC, head ASC, body ASC, id ASC", "frequency": "SELECT * FROM frequency ORDER BY id ASC", "command": "SELECT * FROM command ORDER BY id ASC"}',".'
+                info += '"jsonb NOT NULL DEFAULT "{"record": "SELECT * FROM RECORD ORDER BY quantity ASC, head ASC, body ASC, id ASC", "frequency": "SELECT * FROM frequency ORDER BY id ASC", "command": "SELECT * FROM command ORDER BY id ASC"}"".'
             case "language":
-                info += '"VARCHAR(15) NOT NULL DEFAULT 'en-US',".'
+                info += '"VARCHAR(15) NOT NULL DEFAULT "en-US"".'
             case "timezone":
-                info += '"VARCHAR(3) NOT NULL DEFAULT '-3'".'
+                info += '"VARCHAR(3) NOT NULL DEFAULT "-3"".'
             case "head":
-                info += '"TEXT,".'
+                info += '"TEXT".'
             case "body":
-                info += '"TEXT,".'
+                info += '"TEXT".'
             case "location":
                 info += '"POINT".'
             case "record_id":
-                info += '"INTEGER NOT NULL,".'
+                info += '"INTEGER NOT NULL".'
             case "change_time":
-                info += '"TIMESTAMP WITH TIME ZONE DEFAULT NOW(),".'
+                info += '"TIMESTAMP WITH TIME ZONE DEFAULT NOW()".'
             case "old_quantity":
-                info += '"REAL NOT NULL,".'
+                info += '"REAL NOT NULL".'
             case "new_quantity":
                 info += '"REAL NOT NULL".'
             case "expression":
@@ -137,11 +137,11 @@ def return_column_information(column):
             case "sum_mode":
                 info += '"INTEGER NOT NULL DEFAULT 0 CHECK (sum_mode in (-1,0,1)),".'
             case "interval_mode":
-                info += '"VARCHAR(10) NOT NULL DEFAULT 'relative' CHECK (interval_mode IN ('fixed', 'relative')),".'
+                info += '"VARCHAR(10) NOT NULL DEFAULT "relative" CHECK (interval_mode IN ("fixed", "relative")),".'
             case "interval_length":
                 info += '"INTERVAL NOT NULL,".'
             case "end_lag":
-                info += '"interval,".'
+                info += '"INTERVAL".'
             case "end_date":
                 info += '"TIMESTAMP WITH TIME ZONE DEFAULT now()".'
             case "command":
@@ -166,83 +166,83 @@ def return_column_information(column):
     if column_information_mode == 'verbose':
         match column:
             case "id":
-                info += ' .'
+                info += 'Responsible for giving an unique idendifier to some row on a table.'
             case "view":
-                info += ' .'
+                info += 'Responsible for setting the data shown.'
             case "quantity":
-                info += ' .'
+                info += 'Responsible for controlling the availability or activeness of something.'
             case "save_mode":
-                info += ' .'
+                info += 'Responsible for saving the database after operations in an automatic way, or when manually done.'
             case "view_id":
-                info += ' .'
+                info += 'Responsible for referencing the view that goes into configuration.'
             case "column_information_mode":
-                info += ' .'
+                info += 'Responsible for selecting different quantities of information about columns when you fill them at row creation.'
             case "keymap":
-                info += ' .'
+                info += 'Responsible for i dunno.'
             case "truncation":
-                info += ' .'
+                info += 'Responsible for making content appear on the screen with line breaks after a certain amount of characters.'
             case "table_query":
-                info += ' .'
+                info += 'Responsible for .'
             case "language":
-                info += ' .'
+                info += 'Responsible for .'
             case "timezone":
-                info += ' .'
+                info += 'Responsible for setting timezone correctly for frequency table and date shown.'
             case "head":
-                info += ' .'
+                info += 'Responsible for .'
             case "body":
-                info += ' .'
+                info += 'Responsible for .'
             case "location":
-                info += ' .'
+                info += 'Responsible for setting a location something is supposed to be at.'
             case "record_id":
-                info += ' .'
+                info += 'Responsible for setting a reference to a record.'
             case "change_time":
-                info += ' .'
+                info += 'Responsible for saving when a change of a record quantity happened.'
             case "old_quantity":
-                info += ' .'
+                info += 'Responsible for saving an old quantity of a record.'
             case "new_quantity":
-                info += ' .'
+                info += 'Responsible for saving a new quantity of a record.'
             case "expression":
-                info += ' .'
+                info += 'Responsible for creating a Lince function for consequences if some conditions are met.'
             case "day_week":
-                info += ' .'
+                info += 'Responsible for setting in what day of the week this frequency will activate. Monday is 1.'
             case "months":
-                info += ' .'
+                info += 'Responsible for setting how many months will pass before this frequency activates.'
             case "days":
-                info += ' .'
+                info += 'Responsible for setting how many days will pass before this frequency activates.'
             case "seconds":
-                info += ' .'
+                info += 'Responsible for setting how many seconds will pass before this frequency activates.'
             case "next_date":
-                info += ' .'
+                info += 'Responsible for showing when will the next ocurrence of a frequency will happen.'
             case "finish_date":
-                info += ' .'
+                info += 'Responsible for setting a finish date so the frequency does not activate anymore.'
             case "sum_mode":
-                info += ' .'
+                info += 'Responsible for .'
             case "interval_mode":
-                info += ' .'
+                info += 'Responsible for .'
             case "interval_length":
-                info += ' .'
+                info += 'Responsible for .'
             case "end_lag":
-                info += ' .'
+                info += 'Responsible for .'
             case "end_date":
-                info += ' .'
+                info += 'Responsible for .'
             case "command":
-                info += ' .'
+                info += 'Responsible for .'
             case "records_received":
-                info += ' .'
+                info += 'Responsible for .'
             case "records_contributed":
-                info += ' .'
+                info += 'Responsible for .'
             case "receiving_agreement":
-                info += ' .'
+                info += 'Responsible for .'
             case "contributing_agreement":
-                info += ' .'
+                info += 'Responsible for .'
             case "agreement_time":
-                info += ' .'
+                info += 'Responsible for .'
             case "receiving_transfer_confirmation":
-                info += ' .'
+                info += 'Responsible for .'
             case "contributing_transfer_confirmation":
-                info += ' .'
+                info += 'Responsible for .'
             case "transfer_time":
-                info += ' .'
+                info += 'Responsible for .'
 
     return info
 

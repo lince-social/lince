@@ -39,6 +39,7 @@ def main():
         view = read_rows(f'SELECT view FROM views WHERE id = {configuration_row['view_id']}')
         view = view['view'].iloc[0]
         view_list = view.split('|')
+        tz = configuration_row['timezone']
 
         clear_screen()
 
@@ -51,7 +52,7 @@ def main():
             print(tabulate(read_rows(command, view_mode=True), headers='keys', tablefmt='rounded_grid'))
             print()
 
-
+        print(datetime.now(timezone(timedelta(hours=int(tz)))).strftime("%Y-%m-%d %H:%M:%S"), end=' | ')
         result = execute_operation(choose_operation())
 
         if isinstance(result, pd.DataFrame):

@@ -5,17 +5,17 @@ pkgs.mkShell {
   buildInputs = with pkgs; [
     git
 
-    postgresql
+    postgresql_16
 
-    python312
-    python312Packages.python-lsp-server
-    python312Packages.pandas
-    python312Packages.datetime
-    python312Packages.psycopg2
-    python312Packages.tabulate
-    python312Packages.urwid
-    python312Packages.flask
-    python312Packages.streamlit
+    python311
+    python311Packages.python-lsp-server
+    python311Packages.pandas
+    python311Packages.datetime
+    python311Packages.psycopg2
+    python311Packages.tabulate
+    python311Packages.urwid
+    python311Packages.flask
+    python311Packages.streamlit
 
     # nodePackages.nodejs
     nodejs_22

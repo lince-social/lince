@@ -36,7 +36,7 @@ def main():
         configuration_row = configuration_df[configuration_df['quantity'] == configuration_df['quantity'].max()].iloc[0]
         save_mode = configuration_row['save_mode']
         column_information_mode = configuration_row['column_information_mode']
-        view = read_rows(f'SELECT view FROM views WHERE id = {configuration_row['view_id']}')
+        view = read_rows(f'SELECT view FROM views WHERE id = {configuration_row["view_id"]}')
         view = view['view'].iloc[0]
         view_list = view.split('|')
         tz = configuration_row['timezone']

@@ -403,7 +403,6 @@ def check_update_frequency(id):
         quantity = frequency_row['quantity'] + 1
         update_rows('frequency', set_clause=f"quantity = {quantity}", where_clause=f"id = {frequency_row['id']}")
 
-    # print(f": {}")
     next_date += relativedelta(months=int(frequency_row['months'])) + timedelta(days=int(frequency_row['days']), seconds=int(frequency_row['seconds']))
 
     if not pd.isna(frequency_row['day_week']):

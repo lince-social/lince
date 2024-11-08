@@ -415,7 +415,7 @@ def check_update_frequency(id):
     return True
 
 
-def execute_shell_command(id):
+def execute_shell_command(id, output):
     command_row = read_rows(f'SELECT * FROM command WHERE id={id}')
     if command_row.empty: return False
 
@@ -425,14 +425,15 @@ def execute_shell_command(id):
     if quantity == 0: return 0
     if quantity < 0: update_rows('command', set_clause=f"quantity = {quantity + 1}", where_clause=f"id = {command_row['id']}")
 
-    # result = subprocess.Popen(command_row['command'].split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if output:
+        subprocess.run(command_row['command'], text=True, shell=True, capture_output=True).stdout.strip()
+        with open('/tmp/lince') as file:
+            contents = file.read()
+        os.remove('/tmp/lince')
+        return contents
+
     os.system(command_row['command'])
-
-    # try: return result.stdout
-    # except Exception as e: print(e)
-
     return False
-
 
 def karma():
     karma_df = read_rows('SELECT * FROM karma')
@@ -452,9 +453,12 @@ def karma():
                 frequency_return = check_update_frequency(id=frequency[1:])
                 expression[1] = expression[1].replace(frequency, str(frequency_return))
 
-            expression_one_commands = re.findall('c[0-9]+', expression[1])
+            expression_one_commands = re.findall('co?[0-9]+', expression[1])
             for command in expression_one_commands:
-                command_return = execute_shell_command(id=command[1:])
+                if 'o' in command:
+                    command_return = execute_shell_command(id=command[2:], output=True)
+                else:
+                    command_return = execute_shell_command(id=command[1:], output=False)
                 expression[1] = expression[1].replace(command, str(command_return))
 
             expression_one_sums = re.findall('s[0-9]+', expression[1])
@@ -485,8 +489,12 @@ def karma():
                     execute_sql_command(f'UPDATE {table} SET {set_column} = {set_value} WHERE {where_column} = {where_value}')
                     dump_db()
 
+                if 'co' in consequence:
+                    execute_shell_command(consequence[2:], output=True)
+                    continue
+
                 if 'c' in consequence:
-                    execute_shell_command(consequence[1:])
+                    execute_shell_command(consequence[1:], output=False)
                     continue
 
     return True

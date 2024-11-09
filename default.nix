@@ -29,6 +29,6 @@ pkgs.mkShell {
     echo "log_min_messages = warning" >> $PGDATA/postgresql.conf
     echo "log_checkpoints = off" >> $PGDATA/postgresql.conf
 
-    python ${toString ./src/terminal.py}
+    [ $SCRIPT == 2 ] && ( python ${toString ./src/flask_app.py}; python ${toString ./src/terminal.py}) || [ $SCRIPT == 1 ] && python ${toString ./src/flask_app.py} || python ${toString ./src/terminal.py} 
   '';
 }

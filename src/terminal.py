@@ -36,7 +36,8 @@ def main():
         configuration_row = configuration_df[configuration_df['quantity'] == configuration_df['quantity'].max()].iloc[0]
         save_mode = configuration_row['save_mode']
         column_information_mode = configuration_row['column_information_mode']
-        view = read_rows(f'SELECT view FROM views WHERE id = {configuration_row["view_id"]}')
+        view = read_rows(f'SELECT view, view_name FROM views WHERE id = {configuration_row["view_id"]}')
+        view_name = view['view_name'].iloc[0]
         view = view['view'].iloc[0]
         view_list = view.split('|')
         tz = configuration_row['timezone']
@@ -49,8 +50,8 @@ def main():
         
         for command in view_list:
             command = command.strip()
+            print(f'- {view_name} -')
             print(tabulate(read_rows(command, view_mode=True), headers='keys', tablefmt='rounded_grid'))
-            print()
 
         print(datetime.now(timezone(timedelta(hours=int(tz)))).strftime("%Y-%m-%d %H:%M:%S"), end=' | ')
         result = execute_operation(choose_operation())

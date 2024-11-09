@@ -1,6 +1,7 @@
 CREATE TABLE views (
 	id SERIAL PRIMARY KEY,
- 	view TEXT NOT NULL DEFAULT 'SELECT * FROM record'
+ 	view TEXT NOT NULL DEFAULT 'SELECT * FROM record',
+	view_name TEXT
 );
 
 CREATE TABLE configuration (
@@ -46,7 +47,8 @@ CREATE TABLE frequency (
 	days REAL DEFAULT 0 NOT NULL,
 	seconds REAL DEFAULT 0 NOT NULL,
 	next_date TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
-	finish_date DATE
+	finish_date DATE,
+	when_done INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE sum (

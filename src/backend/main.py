@@ -576,11 +576,10 @@ def execute_operation(operation):
             case 'l' | 'L': return restore_db()
             case 'c' | 'C': return create_row(table)
             case 'r' | 'R': return read_rows(f'SELECT * FROM {table}', where_id_in, view_mode=True)
-            case 'u' | 'U': return update_rows(table, set_clause=None, where_clause=None, where_id_in=where_id_in)
+            case 'u' | 'U': update_rows(table, set_clause=None, where_clause=None, where_id_in=where_id_in); return karma()
             case 'd' | 'D': return delete_rows(table, where_clause=None, where_id_in=where_id_in)
-            case 'f' | 'F': return execute_sql_command_from_file()
+            case 'f' | 'F': execute_sql_command_from_file(); return karma()
             case 'a' | 'A': return activate_configuration(operation[1])
-            case 'q' | 'Q': return execute_sql_command(command=input('Type the SQL command: '))
-            #case 'o' | 'O': db=input('DB name at src/db/versions/ (without .sql): '); restore_db(db=db)
+            case 'q' | 'Q': execute_sql_command(command=input('Type the SQL command: ')); return karma()
 
     return True

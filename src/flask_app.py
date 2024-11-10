@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect, url_for
+from flask import Flask, request, redirect, url_for, render_template
 import pandas as pd
 from time import sleep
 from datetime import datetime, timezone, timedelta
@@ -14,9 +14,28 @@ def karma_scheduler():
     while True:
         karma()
         dump_db()
-        sleep(5)
+        sleep(60)
+
+def table_recognizer(command):
+    command_parts = command.upper().split()
+    try:
+        return command_parts[command_parts.index('FROM') + 1]
+    except Exception:
+        return None 
 
 app = Flask(__name__)
+
+@app.route('/edit_table', methods=['POST'])
+def edit_table():
+    table_name = request.form['table_name']
+    
+    for key, new_value in request.form.items():
+        if key not in ['table_name']:
+            column, row_id = key.split('_')
+            update_rows(table_name, set_clause=f"{column} = '{new_value}'", where_clause=f"id = {row_id}")
+            dump_db()
+    
+    return redirect(url_for('show_lince'))
 
 @app.get('/')
 def show_lince():
@@ -26,51 +45,36 @@ def show_lince():
         [ '[H] Help', '[R] Read', '[1] History' ],
         [ '[S] Save DB', '[U] Update', '[2] Record' ],
         [ '[L] Load DB', '[D] Delete', '[3] Karma' ],
-        [ '[AC] Activate Config', '[Q] Query', '[4] Frequency' ],
+        [ '[A] Activate Config', '[Q] Query', '[4] Frequency' ],
         [ '', '[F] SQL File','[5] Command' ],
         [ '', '','[6] Sum' ],
         [ '', '','[7] Transfer' ],
         [ '', '','[8] View' ]
     ]
-    options_df = pd.DataFrame(options).to_html(header=True, table_id='table')
+    options_df = pd.DataFrame(options).to_html(header=False, index=False, table_id='table')
 
-    # Fetch configuration details
     configuration_df = read_rows('SELECT * FROM configuration')
     configuration_row = configuration_df[configuration_df['quantity'] == configuration_df['quantity'].max()].iloc[0]
-    tz = configuration_row['timezone']
 
-    # Display view details
+    tz = configuration_row['timezone']
+    current_date = datetime.now(timezone(timedelta(hours=int(tz)))).strftime("%Y-%m-%d %H:%M:%S")
+
     view = read_rows(f'SELECT view, view_name FROM views WHERE id = {configuration_row["view_id"]}')
     view_name = view['view_name'].iloc[0]
     view = view['view'].iloc[0]
     records_df = read_rows(view, view_mode=True)
-    records_df = records_df.to_html()
 
-    # Render HTML with form
-    return f"""
-     <html>
-        <head>
-            <link rel="stylesheet" href="{url_for('static', filename='css/style.css')}">
-        </head>
-        <body>
-            {options_df}
-            <h3>{view_name}</h3>
-            {records_df}
-            <p>{datetime.now(timezone(timedelta(hours=int(tz)))).strftime("%Y-%m-%d %H:%M:%S")}</p>
-            <form action="/" method="post">
-                <label for="operation_of_choice">Enter an operation:</label>
-                <input type="text" id="operation_of_choice" name="operation_of_choice" required>
-                <button type="submit">Submit</button>
-            </form>
-        </body>
-    </html>
-    """
+    table_name = table_recognizer(view)
+
+    return render_template('index.html', options_table=options_df, table_data=records_df.to_dict(orient='records'), table_name=table_name, view_name=view_name, current_date=current_date)
+
 
 @app.post('/')
 def submit_operation():
     operation = request.form.get('operation_of_choice')
     if operation:
-        execute_operation(operation)  # Call the backend function with the user's input
+        execute_operation(operation)
+        karma()
     return redirect(url_for('show_lince'))
 
 if __name__ == '__main__':

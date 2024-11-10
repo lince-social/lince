@@ -3,7 +3,7 @@ from tabulate import tabulate
 
 
 def clear_screen():
-    return os.system('clear')
+    # return os.system('clear')
     return None
 
 
@@ -14,7 +14,7 @@ def print_operations():
         [ '[H] Help', '[R] Read', '[1] History' ],
         [ '[S] Save DB', '[U] Update', '[2] Record' ],
         [ '[L] Load DB', '[D] Delete', '[3] Karma' ],
-        [ '[AC] Activate Config', '[Q] Query', '[4] Frequency' ],
+        [ '[A] Activate Config', '[Q] Query', '[4] Frequency' ],
         [ '', '[F] SQL File','[5] Command' ],
         [ '', '','[6] Sum' ],
         [ '', '','[7] Transfer' ],

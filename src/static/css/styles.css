@@ -1,0 +1,66 @@
+* {
+  padding: 5px 5px;
+}
+
+body {
+  font-family: 'Arial', sans-serif;
+  background-color: #ffffff;
+  color: #000000;
+  display: flex;
+  justify-content: left;
+  align-items: left;
+  flex-direction: column;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+  /* Allow table cells to expand based on content */
+}
+
+th,
+td {
+  padding: 0;
+  text-align: left;
+  white-space: normal;
+  /* Allow content to wrap if necessary */
+}
+
+th {
+  text-align: center;
+}
+
+.tables-container {
+  display: flex;
+  justify-content: flex-start;
+  /* Align tables to the left */
+  align-items: flex-start;
+  width: 100%;
+  flex-wrap: wrap;
+  /* Allow tables to wrap vertically if necessary */
+}
+
+.table-container {
+  flex: 1 1 auto;
+  /* Allow the table container to grow and shrink */
+  min-width: 0;
+  /* Ensure it can shrink */
+}
+
+.tables-container input {
+  border: 0;
+  width: 100%;
+  /* Allow input fields to grow and fill the cell */
+  box-sizing: border-box;
+  /* Prevent input fields from overflowing */
+}
+
+.option-container {
+  padding: 20px;
+}
+
+.option-container td,
+th {
+  padding: 5px 5px;
+}

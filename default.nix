@@ -19,6 +19,9 @@ pkgs.mkShell {
 
     # nodePackages.nodejs
     nodejs_22
+
+    graph-easy
+    slides
   ];
   PGDATA = "${toString ./.}/.pg";
   shellHook = ''
@@ -29,6 +32,6 @@ pkgs.mkShell {
     echo "log_min_messages = warning" >> $PGDATA/postgresql.conf
     echo "log_checkpoints = off" >> $PGDATA/postgresql.conf
 
-    [ $SCRIPT == 1 ] && python ${toString ./src/terminal.py} || python ${toString ./src/flask_app.py}
+    [ $SCRIPT == 1 ] && slides ${toString ./documentation.md} || python ${toString ./src/flask_app.py}
   '';
 }

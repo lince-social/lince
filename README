@@ -3,7 +3,28 @@ Lince: Tool for registry, interconnection and automation of Needs and Contributi
 ====================================================================================================
 
 # Installation:
-Install nix, possibly through https://nixos.org/download. After cloning the repo, to run Lince, type 'nix-shell' on the terminal, or if you are not on it's directory, 'nix-shell /path/to/lince'.
+Install nix:
+https://nixos.org/download
+
+After cloning the repo:
+https://github.com/lince-social/lince/archive/refs/heads/main.zip or
+git clone https://github.com/lince-social/lince.git or
+git clone git@github.com:lince-social/lince.git
+
+To run lince, type on the directory you cloned it:
+nix-shell
+
+Or anywhere on your system:
+nix-shell /path/to/lince
+
+Then open your browser on the adress:
+localhost:5000
+
+To run the documentation do the same: but add SCRIPT=1 before it:
+SCRIPT=1 nix-shell
+
+Or anywhere on your system:
+SCRIPT=1 nix-shell /path/to/lince
 
 # Disclamer
 This project is licensed under the GNU GPLv3 license. Crowdfunding is the source of development compensation:

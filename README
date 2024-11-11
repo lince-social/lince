@@ -20,7 +20,7 @@ nix-shell /path/to/lince
 Then open your browser on the adress:
 localhost:5000
 
-To run the documentation do the same: but add SCRIPT=1 before it:
+To run the documentation do the same, but add SCRIPT=1 before it:
 SCRIPT=1 nix-shell
 
 Or anywhere on your system:

@@ -28,13 +28,21 @@ app = Flask(__name__)
 @app.route('/edit_table', methods=['POST'])
 def edit_table():
     table_name = request.form['table_name']
-    
+    print(request.form.items())
+
     for key, new_value in request.form.items():
+        print('----')
+        print(key)
+        print(new_value)
         if key not in ['table_name']:
-            column, row_id = key.split('_')
-            update_rows(table_name, set_clause=f"{column} = '{new_value}'", where_clause=f"id = {row_id}")
+            column, row_id = key.split('-')
+            print(column)
+            print(row_id)
+            if new_value == 'None':
+                update_rows(table_name, set_clause=f"{column} = NULL", where_clause=f"id = {row_id}")
+            else:
+                update_rows(table_name, set_clause=f"{column} = '{new_value}'", where_clause=f"id = {row_id}")
             dump_db()
-    
     return redirect(url_for('show_lince'))
 
 @app.get('/')
@@ -52,7 +60,6 @@ def show_lince():
         [ '', '','[8] View' ]
     ]
     options_df = pd.DataFrame(options).to_html(header=False, index=False, table_id='table')
-
     configuration_df = read_rows('SELECT * FROM configuration')
     configuration_row = configuration_df[configuration_df['quantity'] == configuration_df['quantity'].max()].iloc[0]
 
@@ -67,6 +74,7 @@ def show_lince():
     table_name = table_recognizer(view)
 
     return render_template('index.html', options_table=options_df, table_data=records_df.to_dict(orient='records'), table_name=table_name, view_name=view_name, current_date=current_date)
+    # return render_template('index.html', options_table=options_df, table_data=records_df.to_dict(orient='records'), table_name=table_name, view_name=view_name )
 
 
 @app.post('/')
@@ -77,6 +85,16 @@ def submit_operation():
         karma()
     return redirect(url_for('show_lince'))
 
+
+# @app.route('/current_time')
+# def get_current_time():
+#     configuration_df = read_rows('SELECT * FROM configuration')
+#     configuration_row = configuration_df[configuration_df['quantity'] == configuration_df['quantity'].max()].iloc[0]
+
+#     tz = configuration_row['timezone']
+#     current_time = datetime.now(timezone(timedelta(hours=int(tz)))).strftime("%Y-%m-%d %H:%M:%S")
+#     return {'current_time': current_time}
+ 
 if __name__ == '__main__':
     startup()
     

@@ -45,7 +45,7 @@ def dump_db():
     
     output_path = config_path if os.path.exists(config_path) else default_path
 
-    return subprocess.run( ['pg_dump', '--data-only', '--inserts', '--no-owner', '--no-privileges', '-U', 'postgres',  '--no-password', '-F', 'plain', '-f', output_path, 'lince', '-h', 'localhost', '-p', '5432'],  text=True, input='1\n' )
+    return subprocess.run( ['pg_dump', '--data-only', '--no-comments', '--no-owner', '--no-privileges', '-U', 'postgres',  '--no-password', '-F', 'plain', '-f', output_path, 'lince', '-h', 'localhost', '-p', '5432'],  text=True, input='1\n' )
 
 def drop_db():
     return execute_sql_command(command='DROP DATABASE lince', database=None)
@@ -549,7 +549,9 @@ def execute_operation(operation):
     operation = re.findall(r'\d+|[a-zA-Z]+', operation)
     operation = [int(x) if x.isdigit() else x for x in operation]
 
-    if len(operation) == 1 and isinstance(operation[0], int): return execute_sql_command(command=f'UPDATE record SET quantity = 0 WHERE ID = {operation[0]}')
+    if len(operation) == 1 and isinstance(operation[0], int):
+        execute_sql_command(command=f'UPDATE record SET quantity = 0 WHERE ID = {operation[0]}')
+        return dump_db()
 
     where_id_in = None
 

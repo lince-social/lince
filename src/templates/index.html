@@ -4,59 +4,91 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lince Dashboard</title>
+  <title>Lince</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="icon" type="image/x-icon" href="{{url_for('static', filename='media/preto_no_branco.png')}}">
 </head>
 
 <body>
-  <form action="/" method="post">
-    <label for="operation_of_choice">Enter an operation:</label>
-    <input type="text" id="operation_of_choice" name="operation_of_choice" required>
-    <button type="submit" hidden>Submit</button>
-  </form>
-  <div class='tables-container'>
-    <div class='table-container'>
-      <!-- Wrap the table in a single form for proper submission -->
-      <form action="{{ url_for('edit_table') }}" method="post">
-        <!-- Hidden input to include the table name -->
-        <input type="hidden" name="table_name" value="{{ table_name }}">
-
-        <table border="1">
-          <thead>
-            <tr>
-              {% if table_data and table_data[0] %}
-              {% for column in table_data[0].keys() %}
-              <th>{{ column }}</th>
-              {% endfor %}
-              {% else %}
-              <th>No data available</th>
-              {% endif %}
-            </tr>
-          </thead>
-          <tbody>
-            {% for row in table_data %}
-            <tr>
-              {% for column, value in row.items() %}
-              <td>
-                <input type="text" name="{{ column }}_{{ row['id'] }}" value="{{ value }}" class="table-input">
-              </td>
-              {% endfor %}
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        <button type="submit" hidden>Submit Changes</button>
-      </form>
+  <nav>
+    <form action="/" method="post">
+      <label for="operation_of_choice">Enter an operation:</label>
+      <input type="text" id="operation_of_choice" name="operation_of_choice" required>
+      <button type="submit" hidden>Submit</button>
+    </form>
+    <div style="position: absolute; left: 50%; transform: translateX(-50%); transform: translateX(-50%);">
+      <a href="https://github.com/lince-social/lince" style="display: inline-block;">
+        <img src="static/media/preto.png" style="width: 70px; display: block;">
+      </a>
     </div>
+    <p style='margin-left:auto;'>{{ current_date }}</p>
+  </nav>
+  <button id="toggle-sidebar" class="sidebar-button"><i class="fa fa-arrow-left" id="arrow"></i></button>
 
-    <div class="option-container">
-      <h3>Options</h3>
+  <div class="main-container">
+    <div class="sidebar option-container" id="sidebar">
       {{ options_table | safe }}
     </div>
+
+    <div class="tables-container">
+      <div class="table-container">
+        <form action="{{ url_for('edit_table') }}" method="post">
+          <input type="hidden" name="table_name" value="{{ table_name }}">
+
+          <table border="1">
+            <thead>
+              <tr>
+                {% if table_data and table_data[0] %}
+                {% for column in table_data[0].keys() %}
+                <th>{{ column }}</th>
+                {% endfor %}
+                {% else %}
+                <th>No data available</th>
+                {% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in table_data %}
+              <tr>
+                {% for column, value in row.items() %}
+                <td>
+                  <input type="text" name="{{ column }}-{{ row['id'] }}" value="{{ value }}" class="table-input">
+                </td>
+                {% endfor %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <button type="submit" hidden>Submit Changes</button>
+        </form>
+      </div>
+    </div>
   </div>
+  <script>
+    document.getElementById('toggle-sidebar').addEventListener('click', () => {
+      const sidebar = document.getElementById('sidebar');
+      const button = document.getElementById('toggle-sidebar');
 
-  <p>{{ current_date }}</p>
+      sidebar.classList.toggle('hidden');  // Toggle sidebar visibility
+      button.classList.toggle('rotate');  // Toggle arrow rotation
+    });
+  </script>
+  <!-- <script src="https://unpkg.com/react@17/umd/react.development.js"></script> -->
+  <!-- <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script> -->
+  <!-- <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script> -->
 
+  <!-- <script type="text/babel"> -->
+  <!-- const initialTime = "{{ current_date }}"; -->
+
+  <!-- // Assuming TimeDisplay component is in static/js/TimeDisplay.js -->
+  <!-- import TimeDisplay from '/static/js/TimeDisplay.js'; -->
+
+  <!-- ReactDOM.render( -->
+  <!-- <TimeDisplay initialTime={initialTime} />, -->
+  <!-- document.getElementById('time-container') -->
+  <!-- ); -->
+  <!-- </script> -->
 </body>
 
 </html>

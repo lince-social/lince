@@ -148,6 +148,13 @@ The user likes to center it's filtering through the body column, seeing all acti
 We've spoken so much about views, let's dive into them. They are essentially SQL queries, allowing you to select what columns you want to see, filtered, ordered and much more, just the way you want it.
 
 ---
+
+# Lince Documentation
+
+Documentation development in progress, if you think you can help with it, submit a Pull Request (PR). ;)
+
+---
+
 <!-- ``` -->
 <!-- ~~~graph-easy --as=boxart -->
 <!-- [ record ] - to -> [ B ] -->

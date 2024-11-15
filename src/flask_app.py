@@ -32,12 +32,11 @@ def edit_table():
 
     for key, new_value in request.form.items():
         print('----')
-        print(key)
-        print(new_value)
+        print(f'key: {key}')
+        print(f'new_value: {new_value}')
         if key not in ['table_name']:
             column, row_id = key.split('-')
-            print(column)
-            print(row_id)
+            print(f'editing {column} on row_id {row_id}')
             if new_value == 'None':
                 update_rows(table_name, set_clause=f"{column} = NULL", where_clause=f"id = {row_id}")
             else:

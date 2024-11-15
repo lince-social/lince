@@ -48,7 +48,7 @@ CREATE TABLE frequency (
 	seconds REAL DEFAULT 0 NOT NULL,
 	next_date TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
 	finish_date DATE,
-	when_done INTEGER NOT NULL DEFAULT 0
+	catch_up_sum INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE sum (

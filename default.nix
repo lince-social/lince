@@ -32,6 +32,15 @@ pkgs.mkShell {
     echo "log_min_messages = warning" >> $PGDATA/postgresql.conf
     echo "log_checkpoints = off" >> $PGDATA/postgresql.conf
 
-    [ $SCRIPT == 1 ] && slides ${toString ./documentation.md} || python ${toString ./src/flask_app.py}
+    # [ $SCRIPT == 1 ] && slides ${toString ./documentation.md} || python ${toString ./src/flask_app.py}
+    if [ -z "$SCRIPT" ]; then
+        python ${toString ./src/flask_app.py}
+    elif [ "$SCRIPT" -eq 1 ]; then
+        python ${toString ./src/terminal.py}
+    elif [ "$SCRIPT" -eq 2 ]; then
+        slides ${toString ./documentation.md}
+    else
+        echo "Invalid SCRIPT value. Please use 1 for terminal.py, 2 for slides, or unset for flask_app.py."
+    fi
   '';
 }

@@ -381,18 +381,13 @@ def check_update_frequency(id):
 
     configuration_row = execute_sql_command('SELECT timezone FROM configuration ORDER BY quantity DESC LIMIT 1').iloc[0]
     configuration_timezone = configuration_row['timezone']
-    # print("timezone: " + configuration_timezone)
 
     tz_offset = timedelta(hours=int(configuration_timezone))
-    # print(f'tzoffset: {tz_offset}')
     tzinfo = timezone(tz_offset)
-    # print(f"tzinfo: {tzinfo}")
 
     next_date = frequency_row['next_date'].astimezone(tzinfo)
-    # next_date = frequency_row['next_date']
     time_now = datetime.now(tzinfo)
 
-    # print(f"1: {next_date} 2: {time_now}")
     if frequency_row['finish_date'] is not None and time_now.date() > frequency_row['finish_date']:
         return 0
 

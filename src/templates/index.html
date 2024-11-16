@@ -6,7 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lince</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <link rel="icon" type="image/x-icon" href="{{url_for('static', filename='media/preto_no_branco.png')}}">
 </head>
 
@@ -17,15 +16,8 @@
       <input type="text" id="operation_of_choice" name="operation_of_choice" required>
       <button type="submit" hidden>Submit</button>
     </form>
-    <div style="position: absolute; left: 50%; transform: translateX(-50%); transform: translateX(-50%);">
-      <a href="https://github.com/lince-social/lince" style="display: inline-block;">
-        <img src="static/media/preto.png" style="width: 70px; display: block;">
-      </a>
-    </div>
     <p style='margin-left:auto;'>{{ current_date }}</p>
   </nav>
-  <button id="toggle-sidebar" class="sidebar-button"><i class="fa fa-arrow-left" id="arrow"></i></button>
-
   <div class="main-container">
     <div class="sidebar option-container" id="sidebar">
       {{ options_table | safe }}
@@ -65,30 +57,6 @@
       </div>
     </div>
   </div>
-  <script>
-    document.getElementById('toggle-sidebar').addEventListener('click', () => {
-      const sidebar = document.getElementById('sidebar');
-      const button = document.getElementById('toggle-sidebar');
-
-      sidebar.classList.toggle('hidden');  // Toggle sidebar visibility
-      button.classList.toggle('rotate');  // Toggle arrow rotation
-    });
-  </script>
-  <!-- <script src="https://unpkg.com/react@17/umd/react.development.js"></script> -->
-  <!-- <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script> -->
-  <!-- <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script> -->
-
-  <!-- <script type="text/babel"> -->
-  <!-- const initialTime = "{{ current_date }}"; -->
-
-  <!-- // Assuming TimeDisplay component is in static/js/TimeDisplay.js -->
-  <!-- import TimeDisplay from '/static/js/TimeDisplay.js'; -->
-
-  <!-- ReactDOM.render( -->
-  <!-- <TimeDisplay initialTime={initialTime} />, -->
-  <!-- document.getElementById('time-container') -->
-  <!-- ); -->
-  <!-- </script> -->
 </body>
 
 </html>

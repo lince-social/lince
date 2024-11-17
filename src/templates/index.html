@@ -10,15 +10,18 @@
 </head>
 
 <body>
+
   <nav>
     <form action="/" method="post">
       <label for="operation_of_choice">Enter an operation:</label>
-      <input type="text" id="operation_of_choice" name="operation_of_choice" required>
+      <input type="text" id="operation_of_choice" name="operation_of_choice" required autofocus>
       <button type="submit" hidden>Submit</button>
     </form>
     <p style='margin-left:auto;'>{{ current_date }}</p>
   </nav>
+
   <div class="main-container">
+
     <div class="sidebar option-container" id="sidebar">
       {{ options_table | safe }}
     </div>

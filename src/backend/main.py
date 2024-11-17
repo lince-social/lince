@@ -63,25 +63,20 @@ def scheme_db():
     with open(os.path.abspath(os.path.join(__file__,'..','..',  "db", "schema.sql")), 'r') as file: return execute_sql_command(command = file.read())
 
 def restore_db():
-    try:
-        default_path = os.path.abspath(os.path.join(__file__, '..', '..', "db", "versions", "default.sql"))
-        config_path = os.path.expanduser("~/.config/lince/default.sql")
-        input_path = config_path if os.path.exists(config_path) else default_path
+    default_path = os.path.abspath(os.path.join(__file__, '..', '..', "db", "versions", "default.sql"))
+    config_path = os.path.expanduser("~/.config/lince/default.sql")
+    input_path = config_path if os.path.exists(config_path) else default_path
 
-        command = f"psql -h 'localhost' -d 'lince' -U postgres < {input_path}"
-        p = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
-        return p.communicate(b"1\n")
-    except Exception as e:
-        print(e)
+    command = f"psql -h 'localhost' -d 'lince' -U postgres < {input_path}"
+    p = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
+    return p.communicate(b"1\n")
 
 def insert_ifnot_db():
     with open(os.path.abspath(os.path.join(__file__,'..','..',  "db", "insert_ifnot.sql")), 'r') as file: return execute_sql_command(command = file.read())
 
-def print_help():
+def return_help():
     with open(os.path.abspath(os.path.join(__file__,'..','..','..',  "README")), 'r') as file:
-        print(file.read())
-        return input('(Press any button to continue)')
-
+        return file.read()
 
 def return_column_information(column):
     configuration_df = read_rows('select * from configuration')
@@ -266,7 +261,6 @@ def create_row(table):
         if column == 'id':
             continue
 
-        print()
         print(return_column_information(column))
         value = input(f'Value for {column} (if wanted): ')
 
@@ -576,7 +570,7 @@ def execute_operation(operation):
             case 7: table = 'transfer'
             case 8: table = 'views'
             case 'e' | 'E': return sys.exit()
-            case 'h' | 'H': return print_help()
+            case 'h' | 'H': return return_help()
             case 's' | 'S': return dump_db()
             case 'l' | 'L': return restore_db()
             case 'c' | 'C': return create_row(table)

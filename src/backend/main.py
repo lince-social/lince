@@ -393,9 +393,9 @@ def check_update_frequency(id):
     occurence = 0
 
     if frequency_row['months'] is not None or frequency_row['days'] is not None or frequency_row['seconds'] is not None:
-        while next_date <= time_now:
-            next_date += relativedelta(months=int(frequency_row['months'])) + timedelta(days=int(frequency_row['days']), seconds=int(frequency_row['seconds']))
-            occurence += 1
+        # while next_date <= time_now:
+        next_date += relativedelta(months=int(frequency_row['months'])) + timedelta(days=int(frequency_row['days']), seconds=int(frequency_row['seconds']))
+        occurence += 1
 
     if not pd.isna(frequency_row['day_week']):
         next_date += timedelta(days=1)

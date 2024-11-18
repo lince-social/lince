@@ -58,13 +58,13 @@ Let's assume this is Lince's sun, it is the most capable one on the task of givi
 
 ---
 
-| record   | DATA STRUCTURE          |
-| ---------| ------------------------|
-| id       | SERIAL PRIMARY KEY      |
-| quantity | REAL NOT NULL DEFAULT 1 |
-| head     | TEXT                    |
-| body     | TEXT                    |
-| location | POINT                   |
+| record   | DATA STRUCTURE |
+| ---------|----------------|
+| id       | SERIAL         |
+| quantity | REAL           |
+| head     | TEXT           |
+| body     | TEXT           |
+| location | POINT          |
 
 'id's are automatically generated.
 
@@ -76,13 +76,13 @@ Let's assume this is Lince's sun, it is the most capable one on the task of givi
 
 ---
 
-| record   | DATA STRUCTURE          | USER INPUT |
------------|-------------------------|------------|
-| id       | SERIAL PRIMARY KEY      |            |
-| quantity | REAL NOT NULL DEFAULT 1 | -1         |
-| head     | TEXT                    | Eat Apple  |
-| body     | TEXT                    |            |
-| location | POINT                   |            |
+| record   | DATA STRUCTURE | USER INPUT |
+| ---------|----------------|------------|
+| id       | SERIAL         |            |
+| quantity | REAL           | -1         |
+| head     | TEXT           | Eat Apple  |
+| body     | TEXT           |            |
+| location | POINT          |            |
 
 So for an example imagine that you like apples and you want to create a task to eat it today.
 
@@ -90,13 +90,13 @@ You create a 'record', giving it '-1' to the 'quantity', for that action is a Ne
 
 ---
 
-| record   | DATA STRUCTURE          | USER INPUT | ACTUAL RECORD |
-| ---------| ------------------------| -----------| --------------|
-| id       | SERIAL PRIMARY KEY      |            | 1             |
-| quantity | REAL NOT NULL DEFAULT 1 | -1         | -1            |
-| head     | TEXT                    | Eat Apple  | Eat Apple     |
-| body     | TEXT                    |            | NULL          |
-| location | POINT                   |            | NULL          |
+| record   | DATA STRUCTURE | USER INPUT | ACTUAL RECORD |
+| ---------|----------------| -----------| --------------|
+| id       | SERIAL         |            | 1             |
+| quantity | REAL           | -1         | -1            |
+| head     | TEXT           | Eat Apple  | Eat Apple     |
+| body     | TEXT           |            | NULL          |
+| location | POINT          |            | NULL          |
 
 The end result, on the PostgreSQL database, is this record. In summary, fields with 'NOT NULL' that have defaults don't need to be filled, as it happens automatically.
 
@@ -132,332 +132,110 @@ The user likes to center it's filtering through the body column, seeing all acti
 
 ## Table: views
 
-| views     | DATA STRUCTURE                                    |
-|-----------|---------------------------------------------------|
-| id        | id SERIAL PRIMARY KEY                             |
-| view      | view TEXT NOT NULL DEFAULT 'SELECT * FROM record' |
-| view_name | view_name TEXT                                    |
+| views     | DATA STRUCTURE |
+|-----------|----------------|
+| id        | SERIAL         |
+| view      | TEXT           |
+| view_name | TEXT           |
 
 We've spoken so much about views, let's dive into them. They are essentially SQL queries, allowing you to select what columns you want to see, filtered, ordered and much more, just the way you want it.
-
----
-
-| views                                             |
-|---------------------------------------------------|
-| id SERIAL PRIMARY KEY                             |
-| view TEXT NOT NULL DEFAULT 'SELECT * FROM record' |
-| view_name TEXT                                    |
-
- | `configuration`       | -->
- |-----------------------| -->
- | id SERIAL PRIMARY KEY | -->
- | quantity REAL NOT NULL DEFAULT 1 | -->
- | save_mode VARCHAR(9) NOT NULL DEFAULT 'Automatic' CHECK (save_mode in ('Automatic', 'Manual')) | -->
- | view_id INTEGER NOT NULL DEFAULT 1 | -->
- | column_information_mode VARCHAR(7) NOT NULL DEFAULT 'verbose' CHECK (column_information_mode in ('verbose', 'short', 'silent')) | -->
- | keymap jsonb NOT NULL DEFAULT '{}' | -->
- | truncation jsonb NOT NULL DEFAULT '{"head": 150, "body": 150, "view": 100, "command": 150}' | -->
- | table_query jsonb NOT NULL DEFAULT '{"record": "SELECT * FROM RECORD ORDER BY quantity ASC, head ASC, body ASC, id ASC", "frequency": "SELECT * FROM frequency ORDER BY id ASC", "command": "SELECT * FROM command ORDER BY id ASC"}' | -->
- | language VARCHAR(15) NOT NULL DEFAULT 'en-US' | -->
- | timezone VARCHAR(3) NOT NULL DEFAULT '-3' | -->
-
- | `record`              | -->
- |-----------------------| -->
- | id SERIAL PRIMARY KEY | -->
- | quantity REAL NOT NULL DEFAULT 1 | -->
- | head TEXT             | -->
- | body TEXT             | -->
- | location POINT        | -->
-
- | `history`             | -->
- |-----------------------| -->
- | id SERIAL PRIMARY KEY | -->
- | record_id INTEGER NOT NULL | -->
- | change_time TIMESTAMP WITH TIME ZONE DEFAULT NOW() | -->
- | old_quantity REAL NOT NULL | -->
- | new_quantity REAL NOT NULL | -->
-
- | `karma`               | -->
- |-----------------------| -->
- | id SERIAL PRIMARY KEY | -->
- | quantity INTEGER NOT NULL DEFAULT 1 | -->
- | expression TEXT       | -->
-
- | `frequency`           | -->
- |-----------------------| -->
- | id SERIAL PRIMARY KEY | -->
- | quantity INTEGER NOT NULL DEFAULT 1 | -->
- | day_week REAL         | -->
- | months REAL DEFAULT 0 NOT NULL | -->
- | days REAL DEFAULT 0 NOT NULL | -->
- | seconds REAL DEFAULT 0 NOT NULL | -->
- | next_date TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL | -->
- | finish_date DATE      | -->
- | when_done INTEGER NOT NULL DEFAULT 0 | -->
-
- | `sum`                 | -->
- |-----------------------| -->
- | id SERIAL PRIMARY KEY | -->
- | quantity INTEGER NOT NULL DEFAULT 1 | -->
- | record_id INTEGER NOT NULL | -->
- | sum_mode INTEGER NOT NULL DEFAULT 0 CHECK (sum_mode in (-1, 0, 1)) | -->
- | interval_mode VARCHAR(10) NOT NULL DEFAULT 'relative' CHECK (interval_mode IN ('fixed', 'relative')) | -->
- | interval_length INTERVAL NOT NULL | -->
- | end_lag INTERVAL       | -->
- | end_date TIMESTAMP WITH TIME ZONE DEFAULT now() | -->
-
- | `command`             | -->
- |-----------------------| -->
- | id SERIAL PRIMARY KEY | -->
- | quantity INTEGER NOT NULL DEFAULT 1 | -->
- | command TEXT NOT NULL | -->
-
- | `transfer`            | -->
- |-----------------------| -->
- | id SERIAL PRIMARY KEY | -->
- | records_received json | -->
- | records_contributed json | -->
- | receiving_agreement BOOL | -->
- | contributing_agreement BOOL | -->
- | agreement_time TIMESTAMP WITH TIME ZONE | -->
- | receiving_transfer_confirmation BOOL | -->
- | contributing_transfer_confirmation BOOL | -->
- | transfer_time TIMESTAMP WITH TIME ZONE | -->
-
- ### Table Columns Only -->
-
-
- | `configuration`       | -->
- |-----------------------| -->
- | id                    | -->
- | quantity              | -->
- | save_mode             | -->
- | view_id               | -->
- | column_information_mode| -->
- | keymap                | -->
- | truncation            | -->
- | table_query           | -->
- | language              | -->
- | timezone              | -->
-
- | `record`              | -->
- |-----------------------| -->
- | id                    | -->
- | quantity              | -->
- | head                  | -->
- | body                  | -->
- | location              | -->
-
- | `history`             | -->
- |-----------------------| -->
- | id                    | -->
- | record_id             | -->
- | change_time           | -->
- | old_quantity          | -->
- | new_quantity          | -->
-
- | `karma`               | -->
- |-----------------------| -->
- | id                    | -->
- | quantity              | -->
- | expression            | -->
-
- | `frequency`           | -->
- |-----------------------| -->
- | id                    | -->
- | quantity              | -->
- | day_week              | -->
- | months                | -->
- | days                  | -->
- | seconds               | -->
- | next_date             | -->
- | finish_date           | -->
- | when_done             | -->
-
- | `sum`                 | -->
- |-----------------------| -->
- | id                    | -->
- | quantity              | -->
- | record_id             | -->
- | sum_mode              | -->
- | interval_mode         | -->
- | interval_length       | -->
- | end_lag               | -->
- | end_date              | -->
-
- | `command`             | -->
- |-----------------------| -->
- | id                    | -->
- | quantity              | -->
- | command               | -->
-
- | `transfer`            | -->
- |-----------------------| -->
- | id                    | -->
- | records_received      | -->
- | records_contributed   | -->
- | receiving_agreement   | -->
- | contributing_agreement| -->
- | agreement_time        | -->
- | receiving_transfer_confirmation | -->
- | contributing_transfer_confirmation | -->
- | transfer_time         | -->
-
-Documentation development in progress, if you think you can help with it, submit a Pull Request (PR). ;)
-
-Certainly! Here's the plain text version:
-Lince Documentation
-
-Tool for Registry, Interconnection, and Automation of Needs and Contributions
-Introduction
-
-What is Lince?
-Lince is a versatile tool designed to model, track, and automate interactions between Needs and Contributions. Whether you're managing personal tasks, trading goods, or automating digital workflows, Lince offers flexibility to tailor it to your needs.
-
-Think of it as a universal registry where everything is a "record," and you decide how to connect and utilize them.
-Installation
-
-    Install Nix
-    Download and install Nix from the official website:
-    https://nixos.org/download
-
-
-General Functioning
-The Record Table
-
-Lince is centered around the record table, which acts as the core component of the system. Think of it as the "sun" in Lince’s universe, around which everything revolves.
-Structure:
-Column	Data Type	Description
-id	SERIAL PRIMARY KEY	Unique identifier for each record.
-quantity	REAL NOT NULL DEFAULT 1	Represents availability: positive for Contributions, negative for Needs.
-head	TEXT	A short summary or title of the record.
-body	TEXT	A more detailed description or tags for filtering records.
-location	POINT	Geographical location related to the record (if applicable).
-
-====================================================================================================
-                                         COMPLETE DOCUMENTATION
-====================================================================================================
-
-# Database Tables Overview
-This document describes the structure of all database tables in the Lince app.
-
----
-
-## Table: `record`
-
-|----------|-------------------------|
-| Column   | Data Type               |
-| id       | SERIAL PRIMARY KEY      |
-| quantity | REAL NOT NULL DEFAULT 1 |
-| head     | TEXT                    |
-| body     | TEXT                    |
-| location | POINT                   |
-
----
-
-## Table: `views`
-
-| Column    | Data Type                                   |
-|-----------|---------------------------------------------|
-| id        | SERIAL PRIMARY KEY                          |
-| view      | TEXT NOT NULL DEFAULT 'SELECT * FROM record'|
-| view_name | TEXT                                        |
+The view column has the SQL query, the view_name has the view's name. Simple, right?
 
 ---
 
 ## Table: `configuration`
 
-| Column                | Data Type                                                                                       |
-|-----------------------|-------------------------------------------------------------------------------------------------|
-| id                    | SERIAL PRIMARY KEY                                                                              |
-| quantity              | REAL NOT NULL DEFAULT 1                                                                         |
-| save_mode             | VARCHAR(9) NOT NULL DEFAULT 'Automatic' CHECK (save_mode IN ('Automatic', 'Manual'))            |
-| view_id               | INTEGER NOT NULL DEFAULT 1                                                                      |
-| column_information_mode | VARCHAR(7) NOT NULL DEFAULT 'verbose' CHECK (column_information_mode IN ('verbose', 'short', 'silent')) |
-| keymap                | JSONB NOT NULL DEFAULT '{}'                                                                     |
-| truncation            | JSONB NOT NULL DEFAULT '{"head": 150, "body": 150, "view": 100, "command": 150}'                |
-| table_query           | JSONB NOT NULL DEFAULT '{"record": "SELECT * FROM record ORDER BY quantity                      |
-						| ASC, head ASC, body ASC, id ASC", "frequency": "SELECT * FROM frequency                         |
-						| ORDER BY id ASC"}'                                                                              |
-| language              | VARCHAR(15) NOT NULL DEFAULT 'en-US'                                                            |
-| timezone              | VARCHAR(3) NOT NULL DEFAULT '-3'                                                                |
+| Column                  | DATA STRUCTURE |
+|-------------------------|----------------|
+| id                      | SERIAL         |
+| quantity                | REAL           |
+| save_mode               | VARCHAR        |
+| view_id                 | INTEGER        |
+| column_information_mode | VARCHAR        |
+| keymap                  | JSONB          |
+| truncation              | JSONB          |
+| table_query             | JSONB          |
+| language                | VARCHAR        |
+| timezone                | VARCHAR        |
+
+This table is responsible for changing the behavior of Lince. The 'quantity' sets the active configuration, with the value of 1, the other rows have it 0. 'save_mode' can be automatic or manual. 'view_id' 
 
 ---
 
 ## Table: `history`
 
-| Column      | Data Type                       |
-|-------------|---------------------------------|
-| id          | SERIAL PRIMARY KEY              |
-| record_id   | INTEGER NOT NULL                |
-| change_time | TIMESTAMP WITH TIME ZONE DEFAULT NOW() |
-| old_quantity| REAL NOT NULL                   |
-| new_quantity| REAL NOT NULL                   |
+| Column      | DATA STRUCTURE |
+|-------------|----------------|
+| id          | SERIAL         |
+| record_id   | INTEGER        |
+| change_time | TIMESTAMP      |
+| old_quantity| REAL           |
+| new_quantity| REAL           |
 
 ---
 
 ## Table: `karma`
 
-| Column     | Data Type                  |
-|------------|----------------------------|
-| id         | SERIAL PRIMARY KEY         |
-| quantity   | INTEGER NOT NULL DEFAULT 1 |
-| expression | TEXT                       |
+| Column     | DATA STRUCTURE |
+|------------|----------------|
+| id         | SERIAL         |
+| quantity   | INTEGER        |
+| expression | TEXT           |
 
 ---
 
 ## Table: `frequency`
 
-| Column       | Data Type                                      |
-|--------------|-----------------------------------------------|
-| id           | SERIAL PRIMARY KEY                            |
-| quantity     | INTEGER NOT NULL DEFAULT 1                    |
-| day_week     | REAL                                           |
-| months       | REAL DEFAULT 0 NOT NULL                       |
-| days         | REAL DEFAULT 0 NOT NULL                       |
-| seconds      | REAL DEFAULT 0 NOT NULL                       |
-| next_date    | TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL |
-| finish_date  | DATE                                          |
-| when_done    | INTEGER NOT NULL DEFAULT 0                    |
+| Column       | DATA STRUCTURE |
+|--------------|----------------|
+| id           | SERIAL         |
+| quantity     | INTEGER        |
+| day_week     | REAL           |
+| months       | REAL           |
+| days         | REAL           |
+| seconds      | REAL           |
+| next_date    | TIMESTAMP      |
+| finish_date  | DATE           |
+| when_done    | INTEGER        |
 
 ---
 
 ## Table: `sum`
 
-| Column         | Data Type                                                                                   |
-|----------------|---------------------------------------------------------------------------------------------|
-| id             | SERIAL PRIMARY KEY                                                                         |
-| quantity       | INTEGER NOT NULL DEFAULT 1                                                                 |
-| record_id      | INTEGER NOT NULL                                                                           |
-| sum_mode       | INTEGER NOT NULL DEFAULT 0 CHECK (sum_mode IN (-1, 0, 1))                                  |
-| interval_mode  | VARCHAR(10) NOT NULL DEFAULT 'relative' CHECK (interval_mode IN ('fixed', 'relative'))     |
-| interval_length| INTERVAL NOT NULL                                                                          |
-| end_lag        | INTERVAL                                                                                   |
-| end_date       | TIMESTAMP WITH TIME ZONE DEFAULT now()                                                     |
+| Column         | DATA STRUCTURE |
+|----------------|----------------|
+| id             | SERIAL         |
+| quantity       | INTEGER        |
+| record_id      | INTEGER        |
+| sum_mode       | INTEGER        |
+| interval_mode  | VARCHAR        |
+| interval_length| INTERVAL       |
+| end_lag        | INTERVAL       |
+| end_date       | TIMESTAMP      |
 
 ---
 
 ## Table: `command`
 
-| Column   | Data Type                  |
-|----------|----------------------------|
-| id       | SERIAL PRIMARY KEY         |
-| quantity | INTEGER NOT NULL DEFAULT 1 |
-| command  | TEXT NOT NULL              |
+| Column   | DATA STRUCTURE |
+|----------|----------------|
+| id       | SERIAL         |
+| quantity | INTEGER        |
+| command  | TEXT           |
 
 ---
 
 ## Table: `transfer`
 
-| Column                            | Data Type                         |
-|--------------------------------   |-----------------------------------|
-| id                                | SERIAL PRIMARY KEY                |
-| records_received                  | JSON                              |
-| records_contributed               | JSON                              |
-| receiving_agreement               | BOOL                              |
-| contributing_agreement            | BOOL                              |
-| agreement_time                    | TIMESTAMP WITH TIME ZONE          |
-| receiving_transfer_confirmation   | BOOL                              |
-| contributing_transfer_confirmation| BOOL                              |
-| transfer_time                     | TIMESTAMP WITH TIME ZONE          |
+| Column                            | DATA STRUCTURE |
+|-----------------------------------|----------------|
+| id                                | SERIAL         |
+| records_received                  | JSON           |
+| records_contributed               | JSON           |
+| receiving_agreement               | BOOL           |
+| contributing_agreement            | BOOL           |
+| agreement_time                    | TIMESTAMP      |
+| receiving_transfer_confirmation   | BOOL           |
+| contributing_transfer_confirmation| BOOL           |
+| transfer_time                     | TIMESTAMP      |
 

@@ -1,6 +1,6 @@
-====================================================================================================
-Lince: Tool for registry, interconnection and automation of Needs and Contributions with open scope.
-====================================================================================================
+===================================================================================================================
+       Lince: Tool for registry, interconnection and automation of Needs and Contributions with open scope.        
+===================================================================================================================
 
 # Installation:
 Install nix:
@@ -50,11 +50,11 @@ It is tempting to say TCITD, or 'The code is the documentation', because documen
 Firstly the tables of the database will be explained, then the ways in which they can interact with themselves and/or your/other computers:
 
 ===================================================================================================================
-                                                  TABLES
+                                                     TABLES
 ===================================================================================================================
 
 
-## Table: record
+# Table: record
 
 | record   |
 | ---------|
@@ -140,9 +140,9 @@ As you can see, there are records with different quantities, heads, and bodies. 
 
 The user likes to center it's filtering through the body column, seeing all actions, or all items of a certain area of their lives, like Hygiene, each in different created views.
 
----
+------------------------------------------------------------------------------------------------------------------
 
-## Table: views
+# Table: views
 
 | views     | DATA STRUCTURE |
 |-----------|----------------|
@@ -153,9 +153,9 @@ The user likes to center it's filtering through the body column, seeing all acti
 We've spoken so much about views, let's dive into them. They are essentially SQL queries, allowing you to select what columns you want to see, filtered, ordered and much more, just the way you want it.
 The view column has the SQL query, the view_name has the view's name. Simple, right?
 
----
+------------------------------------------------------------------------------------------------------------------
 
-## Table: `configuration`
+# Table: `configuration`
 
 | Column                  | DATA STRUCTURE |
 |-------------------------|----------------|
@@ -172,9 +172,9 @@ The view column has the SQL query, the view_name has the view's name. Simple, ri
 
 This table is responsible for changing the behavior of Lince. The 'quantity' sets the active configuration, with the value of 1, the other rows have it 0. 'save_mode' can be automatic or manual, happening only when the user demands it, or after every database change. 'view_id' sets the rows you will see, this is a reference to the id of a row in view. 'column_information_mode' can be 'quiet', 'verbose'
 
----
+------------------------------------------------------------------------------------------------------------------
 
-## Table: `history`
+# Table: `history`
 
 | Column      | DATA STRUCTURE |
 |-------------|----------------|
@@ -184,9 +184,9 @@ This table is responsible for changing the behavior of Lince. The 'quantity' set
 | old_quantity| REAL           |
 | new_quantity| REAL           |
 
----
+------------------------------------------------------------------------------------------------------------------
 
-## Table: `karma`
+# Table: `karma`
 
 | Column     | DATA STRUCTURE |
 |------------|----------------|
@@ -194,9 +194,9 @@ This table is responsible for changing the behavior of Lince. The 'quantity' set
 | quantity   | INTEGER        |
 | expression | TEXT           |
 
----
+------------------------------------------------------------------------------------------------------------------
 
-## Table: `frequency`
+# Table: `frequency`
 
 | Column       | DATA STRUCTURE |
 |--------------|----------------|
@@ -210,9 +210,9 @@ This table is responsible for changing the behavior of Lince. The 'quantity' set
 | finish_date  | DATE           |
 | when_done    | INTEGER        |
 
----
+------------------------------------------------------------------------------------------------------------------
 
-## Table: `sum`
+# Table: `sum`
 
 | Column         | DATA STRUCTURE |
 |----------------|----------------|
@@ -225,9 +225,9 @@ This table is responsible for changing the behavior of Lince. The 'quantity' set
 | end_lag        | INTERVAL       |
 | end_date       | TIMESTAMP      |
 
----
+------------------------------------------------------------------------------------------------------------------
 
-## Table: `command`
+# Table: `command`
 
 | Column   | DATA STRUCTURE |
 |----------|----------------|
@@ -235,9 +235,9 @@ This table is responsible for changing the behavior of Lince. The 'quantity' set
 | quantity | INTEGER        |
 | command  | TEXT           |
 
----
+------------------------------------------------------------------------------------------------------------------
 
-## Table: `transfer`
+# Table: `transfer`
 
 | Column                            | DATA STRUCTURE |
 |-----------------------------------|----------------|
@@ -253,139 +253,173 @@ This table is responsible for changing the behavior of Lince. The 'quantity' set
 
 
 ===================================================================================================================
-                                                  KARMA
+                                                      KARMA
 ===================================================================================================================
 
+The 'expression' column in 'karma' table is like Lince's brain.
+
+It is divided into two parts left and right, separated by a '='. The right side firstly has it's information changed, then it is evaluated, and passed to the left side. (What?)
+
+Let's look at an example.
+
+You have a record:
+
+| COLUMN   | VALUE        |
+|----------|--------------|
+| id       | 1            |
+| quantity | 0            |
+| head     | Eat Apple    |
+| body     | Action, Food |
+| location |              |
+
+If we pull the Record Quantity (rq) of this record we get zero (0). If we pull the rq1, the Record Quantity of the record with ID 1, we get zero (0).
+
+Our karma expression can be a simple:
+
+rq1 = -1
+
+When the karma() function is called, every row will have it's consequence if needed. In this case the consequence is that the quantity in the record with ID 1 is now -1.
+
+How does that happen really?
+
+The right side of the expression, in this case '-1' is evaluated, a python eval(). The right side is now literal python, you can declare classes, pull libraries, write everything, including writing just -1. The left side of the expression, since it has only the mention of a record quantity will receive that number without problems, the quantity in the record with ID 1 is now -1.
+
+---
+
+# Simple Example:
+
+Now let's say that the rq1 is still zero (0), another karma expression could be:
+
+rq1 = rq1 -1
+
+So now everytime karma() is called, it will diminish the quantity by one, insead of always setting it to -1.
+
+The process is like this:
+
+rq1 = rq1 -1
+
+Then the rq1 is searched and replaced with it's actual value.
+
+rq1 = 0 -1
+
+ |
+ V
+
+rq1 = -1
+
+---
+
+# The Zero Case:
+
+And what if the rq1 was 1?
+In that case, it would still be one, why? Because when the right side is zero, nothing changes on the left side. That is not a bug, but a feature, that way, expressions can be ignored if they dont meet certain conditions:
+
+rq1 = -1 * (rq1 == 10)
+
+In this case the '(rq1 == 10)' in python will be set to False, because '(1 == 10)' is False, and when '-1 * False' is read by python it returns zero. So the record quantity will remain 1.
+
+But what if I want it to be 0? Then you add '*' before the '=':
+
+rq1 *= -1 * (rq1 == 10)
+
+If rq1 is ten (10), it turns into one (1), if it is not ten (10), then it turns into zero (0).
+
+---
+
+# How it works, really:
+
+A karma expression is a mix of python and regex for searching and replacing, but that is not all it can do. One of the features is to be able to run commands located in the command table.
+
+Let's say you have a command:
+
+| Column   | VALUE           |
+|----------|-----------------|
+| id       | 3               |
+| quantity | 1               |
+| command  | touch grass.txt | <-- touch <file> in Linux creates the file.
+
+This command with ID 3 can be referenced in a karma expression with 'c3'.
+
+If we have a record:
+
+| COLUMN   | VALUE            |
+|----------|------------------|
+| id       | 2                |
+| quantity | 1                |
+| head     | Create grass.txt |
+| body     | Action, Command  |
+| location |                  |
+
+We can create a semi-automation, reducing the steps, the clicks, the button presses, the time it takes to do that job:
+
+rq2,c3 = (rq2 == 0) * 1
+
+When the quantity in record with ID 2 is 0, the command with ID 3 is run through the computer's shell and the grass.txt is created.
+
+---
+
+# Automation, real automation:
+
+But what if we want to automate everything? Like literally everything.
+
+For that, a general enough system needs to exist. When we talk automation we talk about labor automation, time that does not need to be spent doing something. Automation is a tool, not an end, and it can be a tool for the benefit of everyone, by reducing the labor needed to satiate human needs.
+
+Lince aims to be a tool that can model human needs and contributions to meet those needs, automating as much as possible for that goal. And the biggest source of automation in Lince, is not shortening the time it takes to give the computer an instruction, but removing the need to do it, satiating that need.
+
+The 'frequency' table allows for rows with different frequencies to return 1 to a karma expression, activating scripts changing the values in certain cells in certain tables, let's see it in action:
+
+| Column       | VALUE                     |
+|--------------|------------               |
+| id           | 6                         |
+| quantity     | 1                         |
+| day_week     |                           |
+| months       |                           |
+| days         | 1                         |
+| seconds      |                           |
+| next_date    | 2024-01-01 22:00:00+00:00 |
+| finish_date  |                           |
+| when_done    |                           |
+
+Let's say that we are in 2024-01-01 living in a place with a +0 timezone and have a karma expression:
+
+c3 = f6
+
+   |
+   V
+
+c3 = 0
+
+In that same day, when ten (10) P.M. rolls around, the time is exactly '2024-01-02 22:00:00+00:00' or after, the karma() function will receive not zero (0), but one (1) from the frequency with ID 6:
+
+c3 = 1
+
+The command will receive one, it will be run, the 'touch grass.tx' will be executed, the grass.txt file will be created. It achieves that by updating the date in next_date by one day, as set by the day column with value one (1) in this case.
+
+In the TODO list, ignore if you want: make all the expressions that use a certain frequency be checked and run if needed before updating next_date. Right now one activation of a frequency negates all other expressions that need to return 1 at that frequency, because it will already have been activated and updated.
+
+---
+
+Until now the command was only at the left side, as something that was run because of a consequence on the right side. But, it can also be run and it's output passed as a value from the right side to the left one:
+
+| Column   | VALUE           |
+|----------|-----------------|
+| id       | 7               |
+| quantity | 1               |
+| command  | python temperature_getter.py |
+
+| COLUMN   | VALUE            |
+|----------|------------------|
+| id       | 10               |
+| quantity | 0                |
+| head     | Get a sweater    |
+| body     | Action, Clothes  |
+| location |                  |
 
 
+This pseudo python script uses a weather API to get the tomorrow's lowest temperature (in Celsius, obviously) in a certain city, it then prints it to the terminal, very UNIX-like. If we have that, we can ask Lince to put that temperature inside a karma expression and use it.
 
+rq10 = -f6 * (c7 <= 15)
 
+Reusing a previously created frequency, we can create an expression that makes the quantity of the record with ID 10 be -1 at 22h of everyday, if the command with ID 7 returns tommorow's lowest temperature as a value equal to or less then 15. If we have a view that shows only records with a negative quantity, a person will only see the necessity of packing a sweater when tomorrow is 'cold' enough.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-CREATE TABLE views (
-	id SERIAL PRIMARY KEY,
- 	view TEXT NOT NULL DEFAULT 'SELECT * FROM record',
-	view_name TEXT
-);
-
-CREATE TABLE configuration (
-	id SERIAL PRIMARY KEY,
-	quantity REAL NOT NULL DEFAULT 1,
-	save_mode VARCHAR(9) NOT NULL DEFAULT 'Automatic' CHECK (save_mode in ('Automatic', 'Manual')),
- 	view_id INTEGER NOT NULL DEFAULT 1,
-	column_information_mode VARCHAR(7) NOT NULL DEFAULT 'verbose' CHECK (column_information_mode in ('verbose', 'short', 'silent')),
-	keymap jsonb NOT NULL DEFAULT '{}',
-	truncation jsonb NOT NULL DEFAULT '{"head": 150, "body": 150, "view": 100, "command": 150}',
-	table_query jsonb NOT NULL DEFAULT '{"record": "SELECT * FROM RECORD ORDER BY quantity ASC, head ASC, body ASC, id ASC", "frequency": "SELECT * FROM frequency ORDER BY id ASC", "command": "SELECT * FROM command ORDER BY id ASC"}',
-	language VARCHAR(15) NOT NULL DEFAULT 'en-US',
-	timezone VARCHAR(3) NOT NULL DEFAULT '-3'
-);
-
-CREATE TABLE record (
-	id SERIAL PRIMARY KEY,
-	quantity REAL NOT NULL DEFAULT 1,
-	head TEXT,
-	body TEXT,
-	location POINT
-);
-
-CREATE TABLE history (
-    id SERIAL PRIMARY KEY,
-    record_id INTEGER NOT NULL,
-    change_time TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    old_quantity REAL NOT NULL,
-    new_quantity REAL NOT NULL
-);
-
-CREATE TABLE karma (
-	id SERIAL PRIMARY KEY,
-	quantity INTEGER NOT NULL DEFAULT 1,
-	expression TEXT
-);
-
-CREATE TABLE frequency (
-	id SERIAL PRIMARY KEY,
-	quantity INTEGER NOT NULL DEFAULT 1,
-	day_week REAL,
-	months REAL DEFAULT 0 NOT NULL,
-	days REAL DEFAULT 0 NOT NULL,
-	seconds REAL DEFAULT 0 NOT NULL,
-	next_date TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
-	finish_date DATE,
-	catch_up_sum INTEGER NOT NULL DEFAULT 0
-);
-
-CREATE TABLE sum (
-	id SERIAL PRIMARY KEY,
-	quantity INTEGER NOT NULL DEFAULT 1,
-	record_id INTEGER NOT NULL,
-
-	sum_mode INTEGER NOT NULL DEFAULT 0 CHECK (sum_mode in (-1,0,1)),
-    interval_mode VARCHAR(10) NOT NULL DEFAULT 'relative' CHECK (interval_mode IN ('fixed', 'relative')),
-
-    interval_length INTERVAL NOT NULL,
-	end_lag interval,
-    end_date TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
-CREATE TABLE command (
-	id SERIAL PRIMARY KEY,
-	quantity INTEGER NOT NULL DEFAULT 1,
-	command TEXT NOT NULL
-);
-
-CREATE TABLE transfer (
-	id SERIAL PRIMARY KEY,
-
-	records_received json,
-	records_contributed json,
-
-	receiving_agreement BOOL,
-	contributing_agreement BOOL,
-	agreement_time TIMESTAMP WITH TIME ZONE,
-
-	receiving_transfer_confirmation BOOL,
-	contributing_transfer_confirmation BOOL,
-	transfer_time TIMESTAMP WITH TIME ZONE
-);
-
-CREATE OR REPLACE FUNCTION record_quantity_change()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF NEW.quantity IS DISTINCT FROM OLD.quantity THEN
-        INSERT INTO history (record_id, old_quantity, new_quantity)
-        VALUES (OLD.id, OLD.quantity, NEW.quantity);
-    END IF;
-    RETURN NEW;
-END;
-$$
- LANGUAGE plpgsql;
-
-CREATE TRIGGER record_quantity_update
-AFTER UPDATE OF quantity ON record
-FOR EACH ROW
-EXECUTE FUNCTION record_quantity_change();
+The possibilites are vast, limited by one's domain of computers and imagination, when combined wizardry skills arise.

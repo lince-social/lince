@@ -7,15 +7,13 @@ pkgs.mkShell {
 
     postgresql_16
 
-    python311
-    python311Packages.python-lsp-server
-    python311Packages.pandas
-    python311Packages.datetime
-    python311Packages.psycopg2
-    python311Packages.tabulate
-    python311Packages.urwid
-    python311Packages.flask
-    python311Packages.streamlit
+    python312
+    python312Packages.python-lsp-server
+    python312Packages.pandas
+    python312Packages.datetime
+    python312Packages.psycopg2
+    python312Packages.tabulate
+    python312Packages.flask
 
     # nodePackages.nodejs
     nodejs_22

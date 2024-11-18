@@ -39,9 +39,9 @@ def check_exists_db():
     return result
 
 def dump_db():
-    default_path = os.path.abspath(os.path.join(__file__, '..', '..', "db", "versions", "default.sql"))
+    default_path = os.path.abspath(os.path.join(__file__, '..', '..', "db", "versions", "lince.sql"))
     
-    config_path = os.path.expanduser("~/.config/lince/default.sql")
+    config_path = os.path.expanduser("~/.config/lince/lince.sql")
     
     output_path = config_path if os.path.exists(config_path) else default_path
 
@@ -63,8 +63,8 @@ def scheme_db():
     with open(os.path.abspath(os.path.join(__file__,'..','..',  "db", "schema.sql")), 'r') as file: return execute_sql_command(command = file.read())
 
 def restore_db():
-    default_path = os.path.abspath(os.path.join(__file__, '..', '..', "db", "versions", "default.sql"))
-    config_path = os.path.expanduser("~/.config/lince/default.sql")
+    default_path = os.path.abspath(os.path.join(__file__, '..', '..', "db", "versions", "lince.sql"))
+    config_path = os.path.expanduser("~/.config/lince/lince.sql")
     input_path = config_path if os.path.exists(config_path) else default_path
 
     command = f"psql -h 'localhost' -d 'lince' -U postgres < {input_path}"

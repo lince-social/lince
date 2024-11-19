@@ -1,4 +1,4 @@
-===================================================================================================================
+==================================================================================================================
        Lince: Tool for registry, interconnection and automation of Needs and Contributions with open scope.        
 ===================================================================================================================
 
@@ -17,14 +17,14 @@ nix-shell
 Or anywhere on your system:
 nix-shell /path/to/lince
 
-Then open your browser on the adress:
+Then open your browser on the address:
 localhost:5000
 
 # Disclamer
 This project is licensed under the GNU GPLv3 license. Crowdfunding is the source of development compensation:
 https://github.com/sponsors/lince-social | https://www.patreon.com/lince_social | https://www.apoia.se/lince 
 
-Lince is tries to facilitate and automate the connection between people and resources, transforming needs and contributions into data. The gains and losses related to the interaction, such as transportation, production and services themselves, remain the responsibility of the parties involved.
+Lince tries to facilitate and automate the connection between people and resources, by transforming needs and contributions into data. The gains and losses related to the interaction, such as transportation, production and services themselves, remain the responsibility of the parties involved.
 
 ===================================================================================================================
                                                   DOCUMENTATION
@@ -37,15 +37,13 @@ Lince is tries to facilitate and automate the connection between people and reso
 #: Lince is an app that can be used to model and/or automate personal tasks, items, computer actions, economic trades between parties... The limit is your imagination (and your wizard skills with computers). 
 
 @: Sure...
-#: I'll explain everything in detail, so follow me. I promisse the journey is worth the end, traveler.
+#: I'll explain everything in detail, so follow me. I promise the journey is worth the end, traveler.
 
+---
 
-# General Functioning
+Lince works with a PostgreSQL database, some answers about data types can be found there, lince searches for it's data in .config/lince/lince.sql, if not found there, it defaults to the directory lince was cloned to, in src/db/versions/lince.sql. It is recomended to frequently backup the lince.sql file, if some error or mistake happens, your information is safe.
 
-## Database:
-Lince works with a database, it searches for it in .config/lince/lince.sql, if not found there, it defaults to the directory lince was cloned to, in src/db/versions/lince.sql. It is recomended to frequently backup the lince.sql file, if some error or mistake happens, your information is safe.
-
-It is tempting to say TCITD, or 'The code is the documentation', because documentations are often not up to date and that is the best way of seeing the truth about the program. But that is not best for everyone, so this documentation in text was made. With that said, if you want to learn more about lince by reading the documentation, it is advised to also have the database declaration open: https://github.com/lince-social/lince/blob/main/src/db/schema.sql.
+It is tempting to say TCITD, or 'The code is the documentation', because documentations are often not up to date and that is the best way of seeing the truth about the program. But that is not best for everyone, so this documentation in text was made. With that said, if you want to learn more about lince by reading the documentation, it is advised to also have the database declaration open: https://github.com/lince-social/lince/blob/main/src/db/schema.sql, for the documentation below has the name and data type of the tables, but not it's constraints.
 
 Firstly the tables of the database will be explained, then the ways in which they can interact with themselves and/or your/other computers:
 
@@ -82,7 +80,7 @@ Let's assume this is Lince's sun, it is the most capable one on the task of givi
 
 'quantity' represents the availability of the record, if negative it is a Necessity, if positive, a Contribution, zero makes it not mean much, sometimes.
 
-'head' and 'body' are meant to be parts of a whole, where one can be used for a short summary and the other a description, or one has all the information and the other holds tags for filtering through views. With a pubsub protocol, one can send a short information of the record, in this case it can be the head, and put the rest in the body. Only those interested in the head will ask for the body of the record. That way the minimum amount of information is sent over the network, making it faster and stuff, I think.
+'head' and 'body' are meant to be parts of a whole, where one can be used for a short summary and the other a description, or one has all the information and the other holds tags for filtering through views. With a pubsub protocol, one can send a short information of the record, in this case it can be the head, and put the rest in the body. Only those interested in the head will ask for the body of the record. That way the minimum amount of information is sent over the network, making it faster and stuff, I think. 
 
 'location' is an important information for interactions outside of computers (they exist, it's insane) or any other use you want to give it.
 
@@ -170,19 +168,21 @@ The view column has the SQL query, the view_name has the view's name. Simple, ri
 | language                | VARCHAR        |
 | timezone                | VARCHAR        |
 
-This table is responsible for changing the behavior of Lince. The 'quantity' sets the active configuration, with the value of 1, the other rows have it 0. 'save_mode' can be automatic or manual, happening only when the user demands it, or after every database change. 'view_id' sets the rows you will see, this is a reference to the id of a row in view. 'column_information_mode' can be 'quiet', 'verbose'
+This table is responsible for changing the behavior of Lince. The 'quantity' sets the active configuration, with the value of 1, the other rows have it 0. 'save_mode' can be automatic or manual, happening only when the user demands it, or after every database change. 'view_id' sets the rows you will see, this is a reference to the id of a row in view. 'column_information_mode' can be 'silent for no information, 'short', for the data types and constraints or 'verbose' for the previous information plus a description of the functionality/usage of the column. Keymap is for changing the commands sent manually (TODO) so 'd' is not for deleting records but for 'd'escribing lince, printing it's documentation. 'truncation' is somewhat deprecated, used for truncating cells's contents. 'table_query' is too deprecated, somewhat, from the terminal days, but essentially it changes how a table is queried. 'language' and 'timezone' are for the language and timezone :).
 
 ------------------------------------------------------------------------------------------------------------------
 
 # Table: `history`
 
-| Column      | DATA STRUCTURE |
-|-------------|----------------|
-| id          | SERIAL         |
-| record_id   | INTEGER        |
-| change_time | TIMESTAMP      |
-| old_quantity| REAL           |
-| new_quantity| REAL           |
+| Column       | DATA STRUCTURE |
+|--------------|----------------|
+| id           | SERIAL         |
+| record_id    | INTEGER        |
+| change_time  | TIMESTAMP      |
+| old_quantity | REAL           |
+| new_quantity | REAL           |
+
+History is a table that automatically logs the change of a record's quantity, to use the 'sum' table.
 
 ------------------------------------------------------------------------------------------------------------------
 
@@ -193,6 +193,8 @@ This table is responsible for changing the behavior of Lince. The 'quantity' set
 | id         | SERIAL         |
 | quantity   | INTEGER        |
 | expression | TEXT           |
+
+Karma has it's own section further below for a deeper understanding, it's a way of combining data and taking actions automatically. The 'expression' column contains lince-python-like logic.
 
 ------------------------------------------------------------------------------------------------------------------
 
@@ -208,22 +210,30 @@ This table is responsible for changing the behavior of Lince. The 'quantity' set
 | seconds      | REAL           |
 | next_date    | TIMESTAMP      |
 | finish_date  | DATE           |
-| when_done    | INTEGER        |
+| catch_up_sum | INTEGER        |
+
+'frequency' contains a plethora of ways for modeling a frequency, this is a table that makes more sense when one understands karma. If one wants to automate something that happens, changes every 4 days 9 hours and 53 seconds, finishing at 2029, it can be done so. 'day_week' is the day of the week, monday is 1. 'months', 'days' and 'seconds' are what they seem, 'next_date' is the column that changes when the time comes, advancing to a next date in accordance with the previous columns. 'finish_date' asserts that it will only run before a certain date, 'catch_up_sum' is a value that when negative and the 'next_date' is way behind the current date, the returned value will be of a certain amount, so instead of returning one, it will return the absolute value of this column. Example:
+
+There is one frequency for every 60 seconds, starting now, but I have activated it with karma 10 minutes from now. With a 'catch_up_sum' of -2 it will return 2, it should return 10, for it's been 10 minutes stopped, and then return 1 every 1 minute, but with a 'catch_up_sum' of -2 it returns 2. If the 'catch_up_sum' is more than zero, it will multiply the value returned, so if instead of -2 it's '2.5, after 10 minutes from being stopped it will return 25, and 2.5 every subsequent minute.
 
 ------------------------------------------------------------------------------------------------------------------
 
 # Table: `sum`
 
-| Column         | DATA STRUCTURE |
-|----------------|----------------|
-| id             | SERIAL         |
-| quantity       | INTEGER        |
-| record_id      | INTEGER        |
-| sum_mode       | INTEGER        |
-| interval_mode  | VARCHAR        |
-| interval_length| INTERVAL       |
-| end_lag        | INTERVAL       |
-| end_date       | TIMESTAMP      |
+| Column            | DATA STRUCTURE |
+|-------------------|----------------|
+| id                | SERIAL         |
+| quantity          | INTEGER        |
+| record_id         | INTEGER        |
+| interval_relative | BOOL           |
+| interval_length   | INTERVAL       |
+| sum_mode          | INTEGER        |
+| end_lag           | INTERVAL       |
+| end_date          | TIMESTAMP      |
+
+This table is responsible for returning a sum of change. Change of a record's quantity over time. You have the 'record_id' to know what record to look for.
+'interval_length' is a period, can be 1 day, 8 months, etc. If 'interval_relative' is TRUE, will sum all the changes ending now, starting at the past based on the 'interval_length' (ex: 'interval_length' of 8 months and 'interval_relative' is TRUE will make it look at the past 8 months). If FALSE an 'end_date' will need to be supplied. so the past 8 months ending in a certain date. 'end_lag' will give a space between now and the end point of a relative interval. So if the 'interval_length' is 8 months and 'interval_relative' is TRUE, an 'end_lag' of 2 months will make the sum look at the 2 months back to 10 months back, starting 10 months ago, ending 2 months ago. 'sum_mode' tells Lince what to sum, if 0 it's a delta, essentially doing a quantity now - quantity earlier. If it's negative, it sums all negative changes, positive, idem.
+
 
 ------------------------------------------------------------------------------------------------------------------
 
@@ -235,6 +245,8 @@ This table is responsible for changing the behavior of Lince. The 'quantity' set
 | quantity | INTEGER        |
 | command  | TEXT           |
 
+'command' is a command you can run in through a shell, like 'python app.py' or 'touch grass.txt'.
+
 ------------------------------------------------------------------------------------------------------------------
 
 # Table: `transfer`
@@ -244,13 +256,13 @@ This table is responsible for changing the behavior of Lince. The 'quantity' set
 | id                                | SERIAL         |
 | records_received                  | JSON           |
 | records_contributed               | JSON           |
-| receiving_agreement               | BOOL           |
-| contributing_agreement            | BOOL           |
+| agreement                         | JSON           |
 | agreement_time                    | TIMESTAMP      |
-| receiving_transfer_confirmation   | BOOL           |
-| contributing_transfer_confirmation| BOOL           |
+| transfer_confirmation             | JSON           |
 | transfer_time                     | TIMESTAMP      |
 
+WORK IN PROGRESS
+'records_received' is a collection of records and their quantities that will interact with our records, things you will receive. 'records_contributed' are the records you will contribute and their quantities, to the records of other parties, can be more than one party. So you can receive 5 moneys and an apple for driving someone from A to B. You don't work with it, but you have a car and their destination was on the way of yours. 'agreement' is a collection of agreement by all parties involved. 'agreement_time' is the moment every party agreed for the conditions of the trade, who will receive what. 'transfer_confirmation' is also a collection but with a confirmation from all parties that the transfer was successful, and 'transfer_time' for saving the event's moment.
 
 ===================================================================================================================
                                                       KARMA
@@ -278,13 +290,17 @@ Our karma expression can be a simple:
 
 rq1 = -1
 
-When the karma() function is called, every row will have it's consequence if needed. In this case the consequence is that the quantity in the record with ID 1 is now -1.
+| Column     | VALUE    |
+|------------|----------|
+| id         | 1        |
+| quantity   | 1        |
+| expression | rq1 = -1 |
 
-How does that happen really?
+When the karma() function is called, every row will have it's consequence if eeded. In this case the consequence is that the quantity in the record with ID 1 is now -1.
 
-The right side of the expression, in this case '-1' is evaluated, a python eval(). The right side is now literal python, you can declare classes, pull libraries, write everything, including writing just -1. The left side of the expression, since it has only the mention of a record quantity will receive that number without problems, the quantity in the record with ID 1 is now -1.
+How does that happen? The right side of the expression, in this case '-1' is evaluated, a python eval(). The right side is now literal python, you can declare classes, pull libraries, write everything, including writing just -1. The left side of the expression, since it has only the mention of a record quantity will receive that number without problems, the quantity in the record with ID 1 is now -1.
 
----
+------------------------------------------------------------------------------------------------------------------
 
 # Simple Example:
 
@@ -302,12 +318,22 @@ Then the rq1 is searched and replaced with it's actual value.
 
 rq1 = 0 -1
 
- |
- V
+       |
+       V
 
 rq1 = -1
 
----
+Now your rq1 is -1:
+
+| COLUMN   | VALUE        |
+|----------|--------------|
+| id       | 1            |
+| quantity | -1           |
+| head     | Eat Apple    |
+| body     | Action, Food |
+| location |              |
+
+------------------------------------------------------------------------------------------------------------------
 
 # The Zero Case:
 
@@ -324,7 +350,7 @@ rq1 *= -1 * (rq1 == 10)
 
 If rq1 is ten (10), it turns into one (1), if it is not ten (10), then it turns into zero (0).
 
----
+------------------------------------------------------------------------------------------------------------------
 
 # How it works, really:
 
@@ -356,7 +382,7 @@ rq2,c3 = (rq2 == 0) * 1
 
 When the quantity in record with ID 2 is 0, the command with ID 3 is run through the computer's shell and the grass.txt is created.
 
----
+------------------------------------------------------------------------------------------------------------------
 
 # Automation, real automation:
 
@@ -369,7 +395,7 @@ Lince aims to be a tool that can model human needs and contributions to meet tho
 The 'frequency' table allows for rows with different frequencies to return 1 to a karma expression, activating scripts changing the values in certain cells in certain tables, let's see it in action:
 
 | Column       | VALUE                     |
-|--------------|------------               |
+|--------------|---------------------------|
 | id           | 6                         |
 | quantity     | 1                         |
 | day_week     |                           |
@@ -384,8 +410,8 @@ Let's say that we are in 2024-01-01 living in a place with a +0 timezone and hav
 
 c3 = f6
 
-   |
-   V
+     |
+     V
 
 c3 = 0
 
@@ -401,10 +427,10 @@ In the TODO list, ignore if you want: make all the expressions that use a certai
 
 Until now the command was only at the left side, as something that was run because of a consequence on the right side. But, it can also be run and it's output passed as a value from the right side to the left one:
 
-| Column   | VALUE           |
-|----------|-----------------|
-| id       | 7               |
-| quantity | 1               |
+| Column   | VALUE                        |
+|----------|------------------------------|
+| id       | 7                            |
+| quantity | 1                            |
 | command  | python temperature_getter.py |
 
 | COLUMN   | VALUE            |
@@ -418,8 +444,12 @@ Until now the command was only at the left side, as something that was run becau
 
 This pseudo python script uses a weather API to get the tomorrow's lowest temperature (in Celsius, obviously) in a certain city, it then prints it to the terminal, very UNIX-like. If we have that, we can ask Lince to put that temperature inside a karma expression and use it.
 
-rq10 = -f6 * (c7 <= 15)
+rq10 = -f6 * (co7 <= 15)
 
-Reusing a previously created frequency, we can create an expression that makes the quantity of the record with ID 10 be -1 at 22h of everyday, if the command with ID 7 returns tommorow's lowest temperature as a value equal to or less then 15. If we have a view that shows only records with a negative quantity, a person will only see the necessity of packing a sweater when tomorrow is 'cold' enough.
+Notice it says 'co7', there is a letter 'o' because it's supposed to be run a command that outputs the result to a file, so lince can read it. After that, by reusing a previously created frequency, we can create an expression that makes the quantity of the record with ID 10 be -1 at 22h of everyday, if the command with ID 7 returns tommorow's lowest temperature as a value equal to or less then 15. If we have a view that shows only records with a negative quantity, a person will only see the necessity of packing a sweater when tomorrow is 'cold' enough.
 
-The possibilites are vast, limited by one's domain of computers and imagination, when combined wizardry skills arise.
+If we combine several parenteses and multiply them, make sums and output the right side's computation to the left one, we basically have with the right parameters a trained machine learning model in a single karma expression line, not ergonomic at all, but cool; better to put it in a file.
+
+------------------------------------------------------------------------------------------------------------------
+
+Personal note: modeling all items and actions to perform takes a while. Making a Lince instance, understanding the possibilities is to me a long term effort, ever increasing the value you get from computers. The possibilites are vast, limited by one's domain of computers and imagination, when combined, wizardry skills arise.

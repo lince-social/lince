@@ -139,8 +139,8 @@ def return_column_information(column):
                 info += '"DATE".'
             case "sum_mode":
                 info += '"INTEGER NOT NULL DEFAULT 0 CHECK (sum_mode in (-1,0,1)),".'
-            case "interval_mode":
-                info += '"VARCHAR(10) NOT NULL DEFAULT "relative" CHECK (interval_mode IN ("fixed", "relative")),".'
+            case "interval_relative":
+                info += '"VARCHAR(10) NOT NULL DEFAULT "relative" CHECK (interval_relative IN ("fixed", "relative")),".'
             case "interval_length":
                 info += '"INTERVAL NOT NULL,".'
             case "end_lag":
@@ -153,16 +153,12 @@ def return_column_information(column):
                 info += '"json,".'
             case "records_contributed":
                 info += '"json,".'
-            case "receiving_agreement":
-                info += '"BOOL,".'
-            case "contributing_agreement":
-                info += '"BOOL,".'
+            case "agreement":
+                info += '"JSON,".'
             case "agreement_time":
                 info += '"TIMESTAMP WITH TIME ZONE,".'
-            case "receiving_transfer_confirmation":
-                info += '"BOOL,".'
-            case "contributing_transfer_confirmation":
-                info += '"BOOL,".'
+            case "transfer_confirmation":
+                info += '"JSON,".'
             case "transfer_time":
                 info += '"TIMESTAMP WITH TIME ZONE".'
 
@@ -220,12 +216,12 @@ def return_column_information(column):
                 info += 'Responsible for setting a finish date so the frequency does not activate anymore.'
             case "sum_mode":
                 info += 'Responsible for setting the sum of negative changes, positive ones, or all (delta).'
-            case "interval_mode":
+            case "interval_relative":
                 info += 'Responsible for setting a sum mode that has a fixed period, from day 1 to now or day 24, or a relative one, from today to 6 months from today, and if end_lag exists, then the sum will be from 6 months+ end_lag ago, till today + end_lag. Example: 6 months + 1 month lag untill 1 month ago (lag).'
             case "interval_length":
                 info += 'Responsible for setting the amount of time the sum period will count on.'
             case "end_lag":
-                info += 'Responsible for shifting the end date to a certain time backwards, if the interval_mode is "relative" and end_date is to the present moment, setting this will shift not only the end date but the starting date a certain amount, while still keeping the "relative" property.'
+                info += 'Responsible for shifting the end date to a certain time backwards, if the interval_relative is "relative" and end_date is to the present moment, setting this will shift not only the end date but the starting date a certain amount, while still keeping the "relative" property.'
             case "end_date":
                 info += 'Responsible for setting the end of the sum period.'
             case "command":
@@ -234,18 +230,14 @@ def return_column_information(column):
                 info += 'Responsible for saving information of records being received during the transfer.'
             case "records_contributed":
                 info += 'Responsible for saving information of records being contributed during the transfer.'
-            case "receiving_agreement":
-                info += 'Responsible for saving information that transfer conditions for the receivement have been agreed upon.'
-            case "contributing_agreement":
-                info += 'Responsible for saving information that transfer conditions for the contribution have been agreed upon.'
+            case "agreement":
+                info += 'Responsible for saving information that transfer conditions for have been agreed upon.'
             case "agreement_time":
                 info += 'Responsible for saving informatino on the time of agreement of receivement and contribution.'
-            case "receiving_transfer_confirmation":
-                info += 'Responsible for saving information that the receivement was successful.'
-            case "contributing_transfer_confirmation":
-                info += 'Responsible for saving information that the contribution was successful.'
-            case "transfer_time":
+            case "transfer_confirmation":
                 info += 'Responsible for saving information that the transfer was successful.'
+            case "transfer_time":
+                info += 'Responsible for saving information about the moment of the transfer.'
 
     return info
 
@@ -496,7 +488,6 @@ def karma():
 
     return True
 
-
 def return_sum_delta_record(id):
     sum_row = read_rows(f'SELECT * FROM sum WHERE id={id} AND quantity != 0')
     
@@ -510,7 +501,7 @@ def return_sum_delta_record(id):
         quantity = sum_row['quantity'] + 1
         update_rows('sum', set_clause=f"quantity = {quantity}", where_clause=f"id = {sum_row['id']}")
     
-    if sum_row['interval_mode'] == 'relative':
+    if sum_row['interval_relative'] == True:
         if sum_row['end_lag'] is not None:
             end_lag = sum_row['end_lag']
             end_date = datetime.datetime.now() - timeshift(end_lag)
@@ -525,20 +516,14 @@ def return_sum_delta_record(id):
         case -1:
             changes = read_rows(f'''SELECT SUM(new_quantity - old_quantity) AS total_changes FROM history
                 WHERE change_time BETWEEN '{start_date}' AND '{end_date}' AND record_id = {sum_row['record_id']} AND new_quantity - old_quantity < 0 ''')
-            return changes['total_changes'].iloc[0] if not changes.empty else 0
-
         case 0:
             changes = read_rows(f'''SELECT SUM(new_quantity - old_quantity) AS total_changes FROM history
                 WHERE change_time BETWEEN '{start_date}' AND '{end_date}' AND record_id = {sum_row['record_id']} ''')
-            return changes['total_changes'].iloc[0] if not changes.empty else 0
-
         case 1:
             changes = read_rows(f'''SELECT SUM(new_quantity - old_quantity) AS total_changes FROM history
                 WHERE change_time BETWEEN '{start_date}' AND '{end_date}' AND record_id = {sum_row['record_id']} AND new_quantity - old_quantity > 0 ''')
-            return changes['total_changes'].iloc[0] if not changes.empty else 0
 
-    return 0
-
+    return changes['total_changes'].iloc[0] if not changes.empty else 0
 
 def execute_operation(operation):
     if operation == None: return False

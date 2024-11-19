@@ -57,9 +57,9 @@ CREATE TABLE sum (
 	record_id INTEGER NOT NULL,
 
 	sum_mode INTEGER NOT NULL DEFAULT 0 CHECK (sum_mode in (-1,0,1)),
-    interval_mode VARCHAR(10) NOT NULL DEFAULT 'relative' CHECK (interval_mode IN ('fixed', 'relative')),
-
     interval_length INTERVAL NOT NULL,
+    interval_relative BOOL NOT NULL DEFAULT TRUE,
+
 	end_lag interval,
     end_date TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
@@ -73,15 +73,13 @@ CREATE TABLE command (
 CREATE TABLE transfer (
 	id SERIAL PRIMARY KEY,
 
-	records_received json,
-	records_contributed json,
+	records_received JSON,
+	records_contributed JSON,
 
-	receiving_agreement BOOL,
-	contributing_agreement BOOL,
+	agreement JSON,
 	agreement_time TIMESTAMP WITH TIME ZONE,
 
-	receiving_transfer_confirmation BOOL,
-	contributing_transfer_confirmation BOOL,
+	transfer_confirmation JSON,
 	transfer_time TIMESTAMP WITH TIME ZONE
 );
 

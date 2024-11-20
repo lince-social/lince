@@ -6,15 +6,17 @@
 body {
   margin: 0;
   padding: 0;
-  background: linear-gradient(0deg, hsl(0, 100%, 75%), #ffffff);
+  /* background: linear-gradient(0deg, hsl(0, 100%, 75%), #ffffff); */
+  background: #000000;
   font-family: 'Arial', sans-serif;
-  color: #000000;
+  color: #ffffff;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
 }
 
 .main-container {
+  color: #000000;
   display: flex;
   width: 100%;
   flex-grow: 1;

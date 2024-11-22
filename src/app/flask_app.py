@@ -73,7 +73,6 @@ def show_lince():
     table_name = table_recognizer(view)
 
     return render_template('index.html', options_table=options_df, table_data=records_df.to_dict(orient='records'), table_name=table_name, view_name=view_name, current_date=current_date)
-    # return render_template('index.html', options_table=options_df, table_data=records_df.to_dict(orient='records'), table_name=table_name, view_name=view_name )
 
 
 @app.post('/')

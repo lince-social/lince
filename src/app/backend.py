@@ -39,13 +39,14 @@ def check_exists_db():
     return result
 
 def dump_db():
-    default_path = os.path.abspath(os.path.join(__file__, '..', '..', "db", "versions", "lince.sql"))
+    default_path = os.path.abspath(os.path.join(__file__, '..', '..', "db", "lince.sql"))
     
     config_path = os.path.expanduser("~/.config/lince/lince.sql")
     
     output_path = config_path if os.path.exists(config_path) else default_path
 
     return subprocess.run( ['pg_dump', '--data-only', '--no-comments', '--no-owner', '--no-privileges', '-U', 'postgres',  '--no-password', '-F', 'plain', '-f', output_path, 'lince', '-h', 'localhost', '-p', '5432'],  text=True, input='1\n' )
+    # return subprocess.run( ['pg_dump', '--data-only', '--no-comments', '--no-owner', '--no-privileges', '-U', 'postgres',  '--no-password', '--column-inserts', '-F', 'plain', '-f', output_path, 'lince', '-h', 'localhost', '-p', '5432'],  text=True, input='1\n' )
 
 def drop_db():
     return execute_sql_command(command='DROP DATABASE lince', database=None)
@@ -63,7 +64,7 @@ def scheme_db():
     with open(os.path.abspath(os.path.join(__file__,'..','..',  "db", "schema.sql")), 'r') as file: return execute_sql_command(command = file.read())
 
 def restore_db():
-    default_path = os.path.abspath(os.path.join(__file__, '..', '..', "db", "versions", "lince.sql"))
+    default_path = os.path.abspath(os.path.join(__file__, '..', '..', "db", "lince.sql"))
     config_path = os.path.expanduser("~/.config/lince/lince.sql")
     input_path = config_path if os.path.exists(config_path) else default_path
 

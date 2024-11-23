@@ -1,13 +1,18 @@
 {
   pkgs ? import <nixpkgs> { },
 }:
+
 pkgs.mkShell {
   buildInputs = with pkgs; [
     postgresql_16
     nodejs_23
   ];
+
   PGDATA = "${toString ./.}/.pg";
+
   shellHook = ''
+
+    # POSTGRES STUFF
     pg_ctl stop
     export PGHOST="$PGDATA"
     [ ! -d $PGDATA ] && pg_ctl initdb -o "-U postgres"
@@ -15,7 +20,9 @@ pkgs.mkShell {
     echo "log_min_messages = warning" >> $PGDATA/postgresql.conf
     echo "log_checkpoints = off" >> $PGDATA/postgresql.conf
 
+    # NPM STUFF
     cd ${toString ./.}
+    npm i --save-dev @types/pg
     npm run dev
   '';
 }

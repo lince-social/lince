@@ -12,7 +12,7 @@ export default function Home() {
       try {
         const response = await fetch('/api/query');
         const result = await response.json();
-        setData(result); // Assuming API returns an array of records
+        setData(result);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -20,7 +20,7 @@ export default function Home() {
     }
 
     fetchData(); // Initial fetch
-    interval = setInterval(fetchData, 7000); // Poll every 5 seconds
+    interval = setInterval(fetchData, 10000);
 
     return () => clearInterval(interval); // Clean up polling on component unmount
   }, []);
@@ -42,58 +42,6 @@ export default function Home() {
     </div>
   );
 }
-
-
-// 'use client'
-
-// import { Pool } from 'pg';
-// import { useEffect, useState } from 'react'
-
-// const pool = new Pool({
-//   user: 'postgres',
-//   host: 'localhost',
-//   database: 'lince',
-//   password: '1',
-//   port: 5432,
-// });
-
-// async function makeQuery(passedQuery: string): Promise<void> {
-//   try {
-//     const client = await pool.connect();
-//     const result = await client.query(passedQuery);
-//     console.log(result.rows);
-//     client.release();
-//   } catch (err) {
-//     console.error('Error querying database:', err);
-//   }
-// }
-
-// export default function Home() {
-//   const [data, setData] = useState<any[]>([]);
-
-//   useEffect(() => {
-//     async function fetchData() {
-//       try {
-//         const response = await makeQuery('SELECT * FROM record');
-//         setData(response);
-//       } catch (err) {
-//         console.error('Error fetching data:', err);
-//       }
-//     }
-
-//     fetchData();
-//   }, []);
-  
-//   return (
-//     <main className="">
-//     <ul>
-//       {data.map((item, index) => (
-//         <li key={index}>{JSON.stringify(item)}</li>
-//       ))}
-//       </ul>
-//     </main>
-//   );
-// }
 
 // import { Client } from "pg";
 // import fs from "fs";
@@ -204,15 +152,3 @@ export default function Home() {
 
 //   return executeSqlCommand(insertSQL);
 // };
-
-// // Helper to execute shell commands
-// const execShellCommand = (command: string): Promise<void> => {
-//   return new Promise((resolve, reject) => {
-//     const { exec } = require("child_process");
-//     exec(command, { input: "1\n" }, (error: Error | null) => {
-//       if (error) reject(error);
-//       resolve();
-//     });
-//   });
-// };
-

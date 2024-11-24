@@ -22,7 +22,8 @@ pkgs.mkShell {
 
     # NPM STUFF
     cd ${toString ./.}
-    npm i --save-dev @types/pg
+    npm install pg ws
+    npm install --save-dev @types/ws @types/pg
     npm run dev
   '';
 }

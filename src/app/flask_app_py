@@ -82,16 +82,6 @@ def submit_operation():
         execute_operation(operation)
         karma()
     return redirect(url_for('show_lince'))
-
-
-# @app.route('/current_time')
-# def get_current_time():
-#     configuration_df = read_rows('SELECT * FROM configuration')
-#     configuration_row = configuration_df[configuration_df['quantity'] == configuration_df['quantity'].max()].iloc[0]
-
-#     tz = configuration_row['timezone']
-#     current_time = datetime.now(timezone(timedelta(hours=int(tz)))).strftime("%Y-%m-%d %H:%M:%S")
-#     return {'current_time': current_time}
  
 if __name__ == '__main__':
     startup()

@@ -10,10 +10,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.2.0",
     "next": "15.0.3",
     "pg": "^8.13.1",
-    "react": "19.0.0-rc-66855b96-20241106",
-    "react-dom": "19.0.0-rc-66855b96-20241106",
+    "react": "^18.3.1",
+    "react-beautiful-dnd": "^13.1.1",
+    "react-dom": "^18.3.1",
+    "react-masonry-css": "^1.0.16",
     "ws": "^8.18.0"
   },
   "devDependencies": {

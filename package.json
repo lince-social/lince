@@ -6,17 +6,17 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db-seed": "tsc prisma/seed.ts && cat prisma/seed.js | node --input-type=\"commonjs\" && rm prisma/seed.js"
+  },
+  "prisma": {
+    "seed": "npm run db-seed"
   },
   "dependencies": {
-    "@tailwindcss/language-server": "^0.0.27",
-    "drizzle-orm": "^0.16.1",
-    "drizzle-orm-pg": "^0.16.3",
+    "@prisma/client": "^6.0.1",
     "next": "15.1.2",
-    "pg": "^8.13.1",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "sql-language-server": "^1.7.1"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -26,6 +26,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.1.2",
     "postcss": "^8",
+    "prisma": "^6.0.1",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
   }

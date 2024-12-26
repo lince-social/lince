@@ -4,11 +4,12 @@ import { prisma } from "@lib/prisma";
 export async function GET() {
   try {
     const views = await prisma.views.findMany({
-      select: { view: true },
+      select: { viewName: true },
     });
-    const view = views.map((view) => view.view);
 
-    return NextResponse.json(view);
+    const viewNames = views.map((view) => view.viewName);
+
+    return NextResponse.json(viewNames);
   } catch (error) {
     console.error("Error in API:", error);
     return NextResponse.json(

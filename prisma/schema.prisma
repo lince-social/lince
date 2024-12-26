@@ -7,9 +7,22 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
+model views {
 id Int @id @default(autoincrement()) 
-email String
-password String
-name String?
+viewName String @default("View")
+view String @default("SELECT * FROM record")
+}
+
+model configuration {
+id Int @id @default(autoincrement())
+configurationName String @default("Configuration")
+viewIds Int []
+columnInformation String @default("Short")
+}
+
+model record {
+id Int @id @default(autoincrement())
+quantity Int @default(1)
+head String
+body String?
 }

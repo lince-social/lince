@@ -1,10 +1,3 @@
-from flask import Flask, request, redirect, url_for, render_template
-import pandas as pd
-from time import sleep
-from datetime import datetime, timezone, timedelta
-from threading import Thread
-from backend.main import *
-
 def startup():
     if check_exists_db() is not None:
         drop_db()
@@ -46,18 +39,6 @@ def edit_table():
 
 @app.get('/')
 def show_lince():
-    options = [
-        [ 'App', 'Operations', 'Tables' ],
-        [ '[E] Exit', '[C] Create', '[0] Configuration' ],
-        [ '[H] Help', '[R] Read', '[1] History' ],
-        [ '[S] Save DB', '[U] Update', '[2] Record' ],
-        [ '[L] Load DB', '[D] Delete', '[3] Karma' ],
-        [ '[A] Activate Config', '[Q] Query', '[4] Frequency' ],
-        [ '', '[F] SQL File','[5] Command' ],
-        [ '', '','[6] Sum' ],
-        [ '', '','[7] Transfer' ],
-        [ '', '','[8] View' ]
-    ]
     options_df = pd.DataFrame(options).to_html(header=False, index=False, table_id='table')
     configuration_df = read_rows('SELECT * FROM configuration')
     configuration_row = configuration_df[configuration_df['quantity'] == configuration_df['quantity'].max()].iloc[0]
@@ -71,9 +52,6 @@ def show_lince():
     records_df = read_rows(view, view_mode=True)
 
     table_name = table_recognizer(view)
-
-    return render_template('index.html', options_table=options_df, table_data=records_df.to_dict(orient='records'), table_name=table_name, view_name=view_name, current_date=current_date)
-
 
 @app.post('/')
 def submit_operation():

@@ -7,7 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model views {
+model dna {
+
+path String
+}
+
+model view {
 id Int @id @default(autoincrement()) 
 viewName String @default("View")
 view String @default("SELECT * FROM record")
@@ -15,8 +20,9 @@ view String @default("SELECT * FROM record")
 
 model configuration {
 id Int @id @default(autoincrement())
+quantity Int @default(0)
 configurationName String @default("Configuration")
-viewIds Int []
+views Json
 columnInformation String @default("Short")
 }
 

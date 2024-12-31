@@ -12,7 +12,7 @@ export default function ConfigurationBar({
   const handleClick = async (id: number) => {
     try {
       const response = await fetch(
-        "http://localhost:3000/api/configurations/updateQuantity",
+        "http://localhost:3000/api/configurations/quantities",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -37,7 +37,7 @@ export default function ConfigurationBar({
   };
 
   return (
-    <div className="rounded flex w-min space-x-1 p-1 m-3 bg-red-800">
+    <div className="rounded flex w-min space-x-1 p-2 m-3 bg-red-800">
       {configurations.map((config) => (
         <button
           key={config.id}

@@ -11,13 +11,13 @@ async function main() {
           quantity: 0,
           configurationName: "Initial Configuration",
           columnInformation: "Short",
-          views: { "1": true, "2": false },
+          views: { "Initial View": true, "Second View": false },
         },
         {
           quantity: 1,
           configurationName: "Second Configuration",
           columnInformation: "Verbose",
-          views: { "3": true, "2": false },
+          views: { "Third View": true, "Second View": false },
         },
       ],
     });

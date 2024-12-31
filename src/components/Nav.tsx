@@ -7,13 +7,15 @@ export default async function Nav() {
   );
   const myConfigurations = await configurationNamesResponse.json();
 
-  const viewNamesResponse = await fetch("http://localhost:3000/api/views");
+  const viewNamesResponse = await fetch(
+    "http://localhost:3000/api/configurations?onlyActive=true&onlyViews=true",
+  );
   const myViews = await viewNamesResponse.json();
 
   return (
     <div className="space-y-1 m-2">
       <Configurations initialConfigurations={myConfigurations} />
-      <Views views={myViews} />
+      <Views initialViews={myViews} />
     </div>
   );
 }

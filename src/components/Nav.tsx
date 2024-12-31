@@ -1,15 +1,19 @@
-import Bar from "./Bar";
+import Configurations from "./Configurations";
+import Views from "./Views";
 
 export default async function Nav() {
-  const myConfigurations: string[] = ["config1", "config2"];
-  const viewNamesResponse = await fetch(
-    "http://localhost:3000/api/views/names",
+  const configurationNamesResponse = await fetch(
+    "http://localhost:3000/api/configurations",
   );
-  const viewNames = await viewNamesResponse.json();
+  const myConfigurations = await configurationNamesResponse.json();
+
+  const viewNamesResponse = await fetch("http://localhost:3000/api/views");
+  const myViews = await viewNamesResponse.json();
+
   return (
     <div className="space-y-1 m-2">
-      <Bar barList={myConfigurations} barType="configuration" />
-      <Bar barList={viewNames} barType="view" />
+      <Configurations initialConfigurations={myConfigurations} />
+      <Views views={myViews} />
     </div>
   );
 }

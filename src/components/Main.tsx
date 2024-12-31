@@ -1,3 +1,9 @@
-export default function Main(data) {
-  let key: number = 0;
+import Grid from "./Grid";
+
+export default function Main() {
+  return (
+    <>
+      <Grid />
+    </>
+  );
 }

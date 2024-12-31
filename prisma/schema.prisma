@@ -8,14 +8,15 @@ datasource db {
 }
 
 model dna {
-
+id Int @id @default(autoincrement())
+quantity Int
 path String
 }
 
 model view {
 id Int @id @default(autoincrement()) 
 viewName String @default("View")
-view String @default("SELECT * FROM record")
+viewQuery String @default("SELECT * FROM record")
 }
 
 model configuration {
@@ -24,11 +25,12 @@ quantity Int @default(0)
 configurationName String @default("Configuration")
 views Json
 columnInformation String @default("Short")
+// style
 }
 
 model record {
 id Int @id @default(autoincrement())
 quantity Int @default(1)
-head String
+head String?
 body String?
 }

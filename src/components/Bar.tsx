@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface BarItems {
   itemStyle: string;
@@ -18,7 +18,7 @@ interface BarItem {
 
 interface BarProps {
   barList: BarItem[];
-  barType;
+  barType: "Configuration" | "View";
 }
 
 function AddBarItemButton({ onAdd }: { onAdd: () => void }) {
@@ -32,21 +32,35 @@ function AddBarItemButton({ onAdd }: { onAdd: () => void }) {
   );
 }
 
-function BarItems({ barList, itemStyle }: BarItems) {
+function Item({
+  itemContent,
+  itemStyle,
+}: {
+  itemContent: string;
+  itemStyle: string;
+}) {
   const [itemActive, setItemActive] = useState(false);
-  let key: number = 0;
+
+  if (itemActive) {
+    itemStyle = itemStyle + " border-2";
+  }
+
   return (
-    <div className="flex flex-1">
-      {barList.map((item) => (
-        <p className={itemStyle} key={key++}>
-          {item}
-        </p>
-      ))}
-    </div>
+    <>
+      <button className={itemStyle} onClick={() => setItemActive(!itemActive)}>
+        {itemContent}
+      </button>
+    </>
   );
 }
 
+function BarItems({ barList, itemStyle }: BarItems) {
+  return <div className="flex flex-1"></div>;
+}
+
 export default function Bar({ barList, barType }: Bar) {
+  let key: number = 0;
+
   let barStyle: string = "flex flex-1 max-w-min p-1 rounded items-center ";
   barStyle += barType === "configuration" ? "bg-red-700" : "bg-blue-700";
 
@@ -60,7 +74,9 @@ export default function Bar({ barList, barType }: Bar) {
     <>
       <div className="flex flex-1 items-center">
         <div className={barStyle}>
-          <BarItems barList={barList} itemStyle={itemStyle} />
+          {barList.map((item) => (
+            <Item itemStyle={itemStyle} itemContent={item} key={key++} />
+          ))}
           <AddBarItemButton barType={barType} onAdd={() => alert(barType)} />
         </div>
       </div>

@@ -5,34 +5,46 @@ const prisma = new PrismaClient();
 async function main() {
   const countConfiguration = await prisma.configuration.count();
   if (countConfiguration === 0) {
-    const configuration = await prisma.configuration.create({
-      data: {
-        configurationName: "Initial Configuration",
-        columnInformation: "Short",
-      },
-    });
-    console.log({ configuration });
-  }
-
-  const countViews = await prisma.views.count();
-  if (countViews === 0) {
-    const view = await prisma.views.createMany({
+    const configurations = await prisma.configuration.createMany({
       data: [
         {
-          viewName: "Initial View",
+          quantity: 0,
+          configurationName: "Initial Configuration",
+          columnInformation: "Short",
+          views: { "1": true, "2": false },
         },
-        { viewName: "Second View" },
+        {
+          quantity: 1,
+          configurationName: "Second Configuration",
+          columnInformation: "Verbose",
+          views: { "3": true, "2": false },
+        },
       ],
     });
-    console.log({ view });
+    console.log({ configurations });
+  }
+
+  const countViews = await prisma.view.count();
+  if (countViews === 0) {
+    const views = await prisma.view.createMany({
+      data: [
+        { viewName: "Initial View", viewQuery: "SELECT * FROM record" },
+        { viewName: "Second View", viewQuery: "SELECT head FROM record" },
+        {
+          viewName: "Third View",
+          viewQuery: "SELECT id, quantity FROM record",
+        },
+      ],
+    });
+    console.log({ views });
   }
 
   const countRecord = await prisma.record.count();
   if (countRecord === 0) {
-    const view = await prisma.record.create({
-      data: { head: "Maçã" },
+    const records = await prisma.record.createMany({
+      data: [{ head: "Apple" }, { head: "Lemon" }],
     });
-    console.log({ view });
+    console.log({ records });
   }
 }
 main()

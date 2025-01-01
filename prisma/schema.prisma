@@ -25,7 +25,7 @@ quantity Int @default(0)
 configurationName String @default("Configuration")
 views Json
 columnInformation String @default("Short")
-// style
+style String @default("default")
 }
 
 model record {

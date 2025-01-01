@@ -4,8 +4,9 @@ import { prisma } from "@lib/prisma";
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
-    const onlyActive = url.searchParams.get("onlyActive");
-    const onlyViews = url.searchParams.get("onlyViews");
+    const onlyActive = url.searchParams.get("active");
+    const onlyViews = url.searchParams.get("views");
+    const onlyStyle = url.searchParams.get("style");
 
     const configResponse = onlyActive
       ? await prisma.configuration.findFirst({ where: { quantity: 1 } })

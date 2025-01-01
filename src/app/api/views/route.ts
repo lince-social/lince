@@ -4,7 +4,7 @@ import { prisma } from "@lib/prisma";
 export async function GET() {
   try {
     const response = await fetch(
-      "http://localhost:3000/api/configurations?onlyActive=true&onlyViews=true",
+      "http://localhost:3000/api/configurations?active=true&views=true",
     );
     const activeConfiguration = await response.json();
     if (!activeConfiguration) {

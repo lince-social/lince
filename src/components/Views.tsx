@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-export default function Views({ initialViews }) {
+export default function Views({ initialViews /* , onViewsChange  */ }) {
   const [views, setViews] = useState(initialViews);
 
   async function handleClick(viewName) {
@@ -25,6 +25,7 @@ export default function Views({ initialViews }) {
         console.error("Failed to update view state");
       } else {
         setViews(updatedViews);
+        // onViewsChange(updatedViews); // Notify parent component about changes
       }
     } catch (error) {
       console.log("Error: ", error);
@@ -32,16 +33,15 @@ export default function Views({ initialViews }) {
   }
 
   return (
-    <div className="rounded flex w-min space-x-1 p-2 m-3 bg-blue-800">
+    <div className="rounded flex w-min space-x-1">
       {Object.keys(views).map((viewName, index) => (
         <button
           onClick={() => handleClick(viewName)}
           key={index}
-          className={`rounded bg-blue-600 hover:bg-blue-500 p-1 text-nowrap ${
-            views[viewName]
-              ? "border-2 border-gray-400"
-              : "border-2 border-blue-800"
-          }`}
+          className={`rounded p-1 text-nowrap ${views[viewName]
+              ? "bg-blue-700 hover:bg-blue-900 "
+              : "bg-blue-900 hover:bg-blue-800 "
+            }`}
         >
           {viewName}
         </button>

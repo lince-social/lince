@@ -4,8 +4,10 @@ import Main from "@/components/Main";
 export default function Home() {
   return (
     <>
-      <Header />
-      <Main />
+      <div className="p-2 space-y-2">
+        <Header />
+        <Main />
+      </div>
     </>
   );
 }

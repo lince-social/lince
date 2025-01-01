@@ -37,16 +37,15 @@ export default function ConfigurationBar({
   };
 
   return (
-    <div className="rounded flex w-min space-x-1 p-2 m-3 bg-red-800">
+    <div className="rounded flex w-min space-x-1 bg-base-theme">
       {configurations.map((config) => (
         <button
           key={config.id}
           onClick={() => handleClick(config.id)}
-          className={`rounded bg-red-600 hover:bg-red-500 p-1 text-nowrap ${
-            config.quantity === 1
-              ? "border-2 border-gray-400"
-              : "border-2 border-red-800"
-          }`}
+          className={`rounded text-text p-1 text-nowrap ${config.quantity === 1
+              ? "bg-red-700 hover:bg-red-900 "
+              : "bg-red-900 hover:bg-red-800 "
+            }`}
         >
           {config.configurationName}
         </button>

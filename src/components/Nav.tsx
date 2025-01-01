@@ -1,4 +1,6 @@
 import Configurations from "./Configurations";
+import Style from "./Style";
+import TopInput from "./TopInput";
 import Views from "./Views";
 
 export default async function Nav() {
@@ -8,13 +10,17 @@ export default async function Nav() {
   const myConfigurations = await configurationNamesResponse.json();
 
   const viewNamesResponse = await fetch(
-    "http://localhost:3000/api/configurations?onlyActive=true&onlyViews=true",
+    "http://localhost:3000/api/configurations?active=true&views=true",
   );
   const myViews = await viewNamesResponse.json();
 
   return (
-    <div className="space-y-1 m-2">
-      <Configurations initialConfigurations={myConfigurations} />
+    <div className="space-y-2">
+      <TopInput />
+      <div className="flex">
+        <Configurations initialConfigurations={myConfigurations} />
+        <Style />
+      </div>
       <Views initialViews={myViews} />
     </div>
   );

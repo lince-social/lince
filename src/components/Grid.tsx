@@ -6,7 +6,7 @@ export default async function Grid() {
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="flex space-x-1">
         {queryList.map((tableData, index) => (
           <Table key={index} data={tableData} />
         ))}

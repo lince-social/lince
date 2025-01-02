@@ -16,13 +16,14 @@ export default function Views({ initialViews /* , onViewsChange  */ }) {
         `http://localhost:3000/api/configurations/views`,
         {
           method: "POST",
+          mode: "no-cors",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ updatedViews }),
         },
       );
 
       if (!response.ok) {
-        console.error("Failed to update view state");
+        console.log("Failed to update view state");
       } else {
         setViews(updatedViews);
         // onViewsChange(updatedViews); // Notify parent component about changes
@@ -38,10 +39,11 @@ export default function Views({ initialViews /* , onViewsChange  */ }) {
         <button
           onClick={() => handleClick(viewName)}
           key={index}
-          className={`rounded p-1 text-nowrap ${views[viewName]
+          className={`rounded p-1 text-nowrap ${
+            views[viewName]
               ? "bg-blue-700 hover:bg-blue-900 "
               : "bg-blue-900 hover:bg-blue-800 "
-            }`}
+          }`}
         >
           {viewName}
         </button>

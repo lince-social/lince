@@ -20,10 +20,13 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json({
-      message: "Views updated successfully.",
-      updatedConfig,
-    });
+    return NextResponse.json(
+      {
+        message: "Views updated successfully.",
+        updatedConfig,
+      },
+      { status: 200 },
+    );
   } catch (error) {
     console.log("Error updating quantities:", error);
     return NextResponse.json(

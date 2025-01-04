@@ -5,6 +5,7 @@ export default async function Header() {
   return (
     <>
       <Nav />
+      <TopInput />
     </>
   );
 }

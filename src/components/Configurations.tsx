@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-export default function ConfigurationBar({
+export default function Configurations({
   initialConfigurations,
 }: {
   initialConfigurations: any[];

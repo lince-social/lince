@@ -17,12 +17,6 @@ If you have PostgreSQL and Node.js installed, run:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 If you don't, you can install [Nix](https://nixos.org/download), then type on the directory you cloned it:

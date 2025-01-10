@@ -1,6 +1,5 @@
 import Configurations from "./Configurations";
 import Style from "./Style";
-import TopInput from "./TopInput";
 import Views from "./Views";
 
 export default async function Nav() {
@@ -16,7 +15,6 @@ export default async function Nav() {
 
   return (
     <div className="space-y-2">
-      <TopInput />
       <div className="flex">
         <Configurations initialConfigurations={myConfigurations} />
         <Style />

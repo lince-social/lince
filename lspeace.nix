@@ -6,6 +6,7 @@ pkgs.mkShell {
     nodejs_23
     postgresql_17
     lua
+    jq
   ];
   shellHook = ''
     cd ${toString ./.}

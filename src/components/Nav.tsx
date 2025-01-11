@@ -1,25 +1,18 @@
-import Configurations from "./Configurations";
-import Style from "./Style";
-import Views from "./Views";
+import ConfigurationsBar from "./Configurations";
+import Profile from "./Profile";
+import Options from "./Options";
 
-export default async function Nav() {
-  const configurationNamesResponse = await fetch(
-    "http://localhost:3000/api/configurations",
-  );
-  const myConfigurations = await configurationNamesResponse.json();
-
-  const viewNamesResponse = await fetch(
-    "http://localhost:3000/api/configurations?active=true&views=true",
-  );
-  const myViews = await viewNamesResponse.json();
-
+export default function Nav({ activeConfig, inactiveConfigs }) {
   return (
-    <div className="space-y-2">
-      <div className="flex">
-        <Configurations initialConfigurations={myConfigurations} />
-        <Style />
+    <div className="flex space-x-2 justify-between items-center bg-base-theme rounded m-2 p-2">
+      <ConfigurationsBar
+        activeConfig={activeConfig}
+        inactiveConfigs={inactiveConfigs}
+      />
+      <div className="flex space-x-2">
+        <Profile />
+        <Options />
       </div>
-      <Views initialViews={myViews} />
     </div>
   );
 }

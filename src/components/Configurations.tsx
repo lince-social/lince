@@ -1,55 +1,73 @@
 "use client";
-
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
 import { useState } from "react";
 
-export default function Configurations({
-  initialConfigurations,
-}: {
-  initialConfigurations: any[];
-}) {
-  const [configurations, setConfigurations] = useState(initialConfigurations);
+async function handleConfigurationClick(configurationItem) {
+  alert(configurationItem.configurationName);
+  // await prisma.configuration.updateMany({
+  //    data: { quantity: 0 },
+  //  });
+  //
+  //  await prisma.configuration.update({
+  //    where: { id: Number(updateQuantityId) },
+  //    data: { quantity: 1 },
+  //  });
+}
 
-  const handleClick = async (id: number) => {
-    try {
-      const response = await fetch(
-        "http://localhost:3000/api/configurations/quantities",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id }),
-        },
-      );
-
-      if (response.ok) {
-        setConfigurations((prevConfigurations) =>
-          prevConfigurations.map((config) =>
-            config.id === id
-              ? { ...config, quantity: 1 }
-              : { ...config, quantity: 0 },
-          ),
-        );
-      } else {
-        console.log("Failed to update quantity");
-      }
-    } catch (error) {
-      console.log("Error updating quantity:", error);
-    }
-  };
-
+function ConfigurationRow({ configurationItem }) {
   return (
-    <div className="rounded flex w-min space-x-1 bg-base-theme">
-      {configurations.map((config) => (
+    <div className={`space space-x-1 p-2`}>
+      <button
+        onClick={() => handleConfigurationClick(configurationItem)}
+        className={`p-1 rounded ${
+          configurationItem.quantity === 1
+            ? "bg-red-800 hover:bg-red-900"
+            : "hover:bg-blue-900 bg-blue-950"
+        }`}
+      >
+        {configurationItem.configurationName}
+      </button>
+      {Object.entries(configurationItem.views).map(([viewName, isActive]) => (
         <button
-          key={config.id}
-          onClick={() => handleClick(config.id)}
-          className={`rounded text-text p-1 text-nowrap ${config.quantity === 1
-              ? "bg-red-700 hover:bg-red-900 "
-              : "bg-red-900 hover:bg-red-800 "
-            }`}
+          key={viewName}
+          className={`rounded p-1 ${isActive ? "bg-slate-700 hover:bg-slate-800" : "bg-slate-800 hover:bg-slate-700 "}`}
         >
-          {config.configurationName}
+          {viewName}
         </button>
       ))}
+    </div>
+  );
+}
+
+export default function ConfigurationsBar({ activeConfig, inactiveConfigs }) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <div
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="flex bg-crust-theme w-full items-center rounded-t rounded-b hover:rounded-b-none"
+    >
+      <FontAwesomeIcon icon={faChevronDown} className="pt-2 pb-2 pl-2" />
+      <div className="w-full relative flex flex-col">
+        <ConfigurationRow
+          key={activeConfig.id}
+          configurationItem={activeConfig}
+        />
+        <div
+          className={`absolute bg-crust-theme top-full left-0 w-full overflow-hidden rounded-b ${
+            isHovered ? "max-h-screen" : "max-h-0"
+          }`}
+        >
+          {inactiveConfigs.map((inactiveConfig) => (
+            <ConfigurationRow
+              key={inactiveConfig.id}
+              configurationItem={inactiveConfig}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

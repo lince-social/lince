@@ -4,7 +4,7 @@
 @tailwind utilities;
 
 :root {
-  --background: var(--base);
+  --background: var(--mantle);
   --foreground: var(--text);
 }
 

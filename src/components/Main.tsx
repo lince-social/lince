@@ -1,11 +1,11 @@
-import Grid from "./Grid";
+"use client";
 
-export default function Main() {
+import { useState } from "react";
+
+export default function Main({ data }) {
   return (
     <>
-      <div>
-        <Grid />
-      </div>
+      <div>{JSON.stringify(data)}</div>
     </>
   );
 }

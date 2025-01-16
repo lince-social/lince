@@ -26,6 +26,7 @@ configurationName String @default("Configuration")
 views Json
 columnInformation String @default("Short")
 style String @default("default")
+deleteConfirmation Boolean @default(true)
 }
 
 model record {

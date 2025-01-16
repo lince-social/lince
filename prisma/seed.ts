@@ -14,6 +14,17 @@ async function main() {
           views: { "Initial View": true, "Second View": false },
         },
         {
+          quantity: 0,
+          configurationName: "Third Configuration",
+          columnInformation: "Short",
+          views: {
+            "Initial View": true,
+            "Second View": true,
+            "Third View": false,
+          },
+        },
+
+        {
           quantity: 1,
           configurationName: "Second Configuration",
           columnInformation: "Verbose",

@@ -1,10 +1,38 @@
-import Nav from "./Nav";
+"use client";
+import Link from "next/link";
 import TopInput from "./TopInput";
+import { usePathname } from "next/navigation";
 
-export default async function Header({ activeConfig, inactiveConfigs }) {
+export default function Header() {
+  const pathName = usePathname();
+
   return (
     <>
-      <Nav activeConfig={activeConfig} inactiveConfigs={inactiveConfigs} />
+      <div className="space-y-2">
+        <div className="flex justify-between m-4">
+          <TopInput />
+          <div className="flex space-x-2 text-gray-500">
+            <Link
+              className={`${pathName === "/" ? "text-white" : ""}`}
+              href={"/"}
+            >
+              Home
+            </Link>
+            <Link
+              className={`${pathName === "/options" ? "text-white" : ""}`}
+              href={"/options"}
+            >
+              Options
+            </Link>
+            <Link
+              className={`${pathName === "/profile" ? "text-white" : ""}`}
+              href={"/profile"}
+            >
+              Profile
+            </Link>
+          </div>
+        </div>
+      </div>
     </>
   );
 }

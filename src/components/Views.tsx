@@ -1,52 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import handleViewChange from "@/scripts/handleViewChange";
+import ViewButtton from "./ViewButton";
 
-export default function Views({ initialViews /* , onViewsChange  */ }) {
-  const [views, setViews] = useState(initialViews);
-
-  async function handleClick(viewName) {
-    try {
-      const updatedViews = {
-        ...views,
-        [viewName]: !views[viewName],
-      };
-
-      const response = await fetch(
-        `http://localhost:3000/api/configurations/views`,
-        {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ updatedViews }),
-        },
-      );
-
-      if (!response.ok) {
-        console.log("Failed to update view state");
-      } else {
-        setViews(updatedViews);
-        // onViewsChange(updatedViews); // Notify parent component about changes
-      }
-    } catch (error) {
-      console.log("Error: ", error);
-    }
-  }
-
+export default function Views({ views }) {
   return (
-    <div className="rounded flex w-min space-x-1">
-      {Object.keys(views).map((viewName, index) => (
-        <button
-          onClick={() => handleClick(viewName)}
-          key={index}
-          className={`rounded p-1 text-nowrap ${
-            views[viewName]
-              ? "bg-blue-700 hover:bg-blue-900 "
-              : "bg-blue-900 hover:bg-blue-800 "
-          }`}
+    <div className="flex w-min space-x-1">
+      {views.map((view, index) => (
+        <form
+          action={() => handleViewChange(views, view, index)}
+          key={view[0]}
+          className={`rounded p-1 text-nowrap ${view[1] ? "bg-slate-700 hover:bg-slate-900 " : "bg-slate-900 hover:bg-slate-800 "}`}
         >
-          {viewName}
-        </button>
+          <ViewButtton>{view[0]}</ViewButtton>
+        </form>
       ))}
     </div>
   );

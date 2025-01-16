@@ -1,4 +1,0 @@
-GET http://localhost:3000/api/configurations
-GET http://localhost:3000/api/data
-GET http://localhost:3000/api/test
-

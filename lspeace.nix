@@ -10,6 +10,6 @@ pkgs.mkShell {
   ];
   shellHook = ''
     cd ${toString ./.}
-    nvim ${toString ./.}
+    nvim
   '';
 }

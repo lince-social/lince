@@ -26,7 +26,9 @@ export default function RootLayout({
   // <script src="https://unpkg.com/react-scan/dist/auto.global.js" async />
   return (
     <html lang="en">
-      <head></head>
+      <head>
+        <title>Lince</title>
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

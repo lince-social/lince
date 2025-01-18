@@ -1,4 +1,7 @@
+"use client";
 import { useState } from "react";
+import { handleDeleteData } from "@/scripts/handleDataDelete";
+import { useFormStatus } from "react-dom";
 
 interface TableProps {
   data: Array<Record<string, any>>;
@@ -9,6 +12,8 @@ interface TableProps {
 export default function Table({ data, tableName }: TableProps) {
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
 
+  const status = useFormStatus();
+
   if (!data || data.length === 0) {
     return (
       <p className="text-center">No data available on table: {tableName}</p>
@@ -16,23 +21,6 @@ export default function Table({ data, tableName }: TableProps) {
   }
 
   const headers = Object.keys(data[0]);
-
-  async function handleDelete(id: string, tableName: string) {
-    try {
-      const response = await fetch(
-        `http://localhost:3000/api/data?id=${id}&tableName=${tableName}`,
-        {
-          method: "DELETE",
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to delete row");
-      }
-    } catch (error) {
-      console.error("Error deleting row:", error);
-    }
-  }
 
   return (
     <div className="rounded overflow-x-auto">
@@ -63,12 +51,14 @@ export default function Table({ data, tableName }: TableProps) {
                 onMouseEnter={() => setHoveredRow(rowIndex)}
                 onMouseLeave={() => setHoveredRow(null)}
               >
-                <button
-                  onClick={() => handleDelete(row.id, tableName)}
-                  className="hover:text-red-700 focus:outline-none"
-                >
-                  {hoveredRow === rowIndex ? "X" : row.id}
-                </button>
+                <form action={() => handleDeleteData(row.id, tableName)}>
+                  <button
+                    disabled={status.pending}
+                    className="hover:text-red-700 focus:outline-none"
+                  >
+                    {hoveredRow === rowIndex ? "X" : row.id}
+                  </button>
+                </form>
               </td>
 
               {headers.slice(1).map((header) => (

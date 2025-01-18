@@ -8,6 +8,7 @@ pkgs.mkShell {
     nodejs_23
     prisma-engines
     prisma
+    typescript
   ];
 
   PGDATA = "${toString ./.}/.pg";

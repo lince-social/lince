@@ -1,17 +1,18 @@
 CREATE TABLE dna (
 id SERIAL PRIMARY KEY,
+quantity INTEGER NOT NULL DEFAULT 0,
 origin TEXT NOT NULL DEFAULT "lince.sql"
 );
 
 CREATE TABLE view (
 	id SERIAL PRIMARY KEY,
- 	query TEXT NOT NULL DEFAULT 'SELECT * FROM record',
 	name TEXT
+ 	query TEXT NOT NULL DEFAULT 'SELECT * FROM record',
 );
 
 CREATE TABLE configuration (
 	id SERIAL PRIMARY KEY,
-	name VARCHAR(50),
+	configurationName VARCHAR(50),
 	quantity REAL NOT NULL DEFAULT 1,
  	views jsonb NOT NULL DEFAULT '{}',
 	language VARCHAR(20),

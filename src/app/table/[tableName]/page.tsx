@@ -1,9 +1,13 @@
-"use client";
+"use server";
+import SingleTable from "@/components/SingleTable";
+import { prisma } from "@lib/prisma";
 
-import SingleTableServer from "@/components/SingleTableServer";
-import { useParams } from "next/navigation";
+export default async function Page({ params }) {
+  const awaitedParams = await params;
+  const tableName = await awaitedParams.tableName;
+  // return <pre>{JSON.stringify(tableName)}</pre>;
 
-export default function Page() {
-  const params = useParams();
-  return <SingleTableServer tableName={params.tableName} />;
+  // const tableName = awaitedParams.tableName;
+  const data = await prisma.$queryRawUnsafe(`SELECT * FROM ${tableName}`);
+  return <SingleTable data={data} tableName={tableName} />;
 }

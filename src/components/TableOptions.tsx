@@ -1,4 +1,5 @@
 "use client";
+
 import { useRouter } from "next/navigation";
 
 interface TableOption {
@@ -24,6 +25,7 @@ export default function TableOptions({ tableNames }: TableOptionsProps) {
       <select
         className="text-gray-400 hover:text-white bg-mantle-theme rounded"
         onChange={handleChange}
+        defaultValue="Tables"
       >
         <option value="Tables" disabled>
           Tables

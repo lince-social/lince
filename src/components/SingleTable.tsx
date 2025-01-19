@@ -1,15 +1,14 @@
 "use client";
 import { useState } from "react";
-import { handleDeleteData } from "@/scripts/handleDataDelete";
+import { handleDataDelete } from "@/scripts/handleData";
 import { useFormStatus } from "react-dom";
 
 interface TableProps {
   data: Array<Record<string, any>>;
   tableName: string;
-  onDelete: (id: string) => void;
 }
 
-export default function Table({ data, tableName }: TableProps) {
+export default function SingleTable({ data, tableName }: TableProps) {
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
 
   const status = useFormStatus();
@@ -51,7 +50,7 @@ export default function Table({ data, tableName }: TableProps) {
                 onMouseEnter={() => setHoveredRow(rowIndex)}
                 onMouseLeave={() => setHoveredRow(null)}
               >
-                <form action={() => handleDeleteData(row.id, tableName)}>
+                <form action={() => handleDataDelete([row.id], tableName)}>
                   <button
                     disabled={status.pending}
                     className="hover:text-red-700 focus:outline-none"

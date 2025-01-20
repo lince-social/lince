@@ -23,7 +23,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // <script src="https://unpkg.com/react-scan/dist/auto.global.js" async />
+  // <script src="https://unpkg.com/react-scan/dist/auto.global.js" async />;
   return (
     <html lang="en">
       <head>

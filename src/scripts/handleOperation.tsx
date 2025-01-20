@@ -1,11 +1,15 @@
+"use client";
 import {
   handleDataCreate,
   handleDataRead,
   handleDataUpdate,
   handleDataDelete,
 } from "./handleData";
+import handleRedirect from "./handleRedirect";
+import { useRouter } from "next/navigation";
 
-export default async function handleOperation(event) {
+export default function handleOperation(event) {
+  const router = useRouter();
   event.preventDefault();
   const form = event.currentTarget;
   const formData = new FormData(form);
@@ -79,15 +83,12 @@ export default async function handleOperation(event) {
       action = "read";
       break;
   }
-  executeOperation(action, table);
-}
 
-async function executeOperation(action: string, table: string) {
-  console.log(action, table);
   switch (true) {
     case action === "read":
-      const data = await handleDataRead(table);
-      console.log(data);
+      // const data = await handleDataRead(table);
+      // console.log(data);
+      router.push(`/table/${table}`);
       break;
     default:
       console.log("No operation");

@@ -1,4 +1,5 @@
 "use server";
+
 import { prisma } from "@lib/prisma";
 import { revalidatePath } from "next/cache";
 
@@ -25,8 +26,10 @@ export async function handleViewToggle(views, view, index) {
 
 export async function handleViewRemove(views, view, configurationId) {
   try {
-    const newViews = views.filter((v) => v !== view));
-    const viewsObject = Object.fromEntries(newViews.map((key) => [key[0], key[1]]))
+    const newViews = views.filter((v) => v !== view);
+    const viewsObject = Object.fromEntries(
+      newViews.map((key) => [key[0], key[1]]),
+    );
 
     await prisma.configuration.updateMany({
       where: { id: configurationId },
@@ -42,12 +45,12 @@ export async function handleViewRemove(views, view, configurationId) {
 
 export async function handleViewAdd(views, configurationId) {
   try {
-    console.log(views, configurationId)
+    console.log(views, configurationId);
 
-    const queriedViews = await prisma.view.findMany()
+    const queriedViews = await prisma.view.findMany();
 
     if (queriedViews) {
-      console.log(queriedViews)
+      console.log(queriedViews);
     }
 
     revalidatePath("/");
@@ -57,4 +60,3 @@ export async function handleViewAdd(views, configurationId) {
     );
   }
 }
-

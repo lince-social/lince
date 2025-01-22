@@ -1,5 +1,5 @@
 "use server";
-import SingleTable from "@/components/SingleTable";
+import Table from "@/components/table/Table";
 import { prisma } from "@lib/prisma";
 
 export default async function Page({ params }) {
@@ -10,7 +10,7 @@ export default async function Page({ params }) {
   return (
     <>
       <div className="m-4">
-        <SingleTable data={data} tableName={tableName} />
+        <Table data={data} tableName={tableName} />
       </div>
     </>
   );

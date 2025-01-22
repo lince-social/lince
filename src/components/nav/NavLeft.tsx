@@ -1,4 +1,4 @@
-import TopInput from "./TopInput";
+import TopInput from "@/components/operation/OperationInput";
 
 export default function NavLeft() {
   return <TopInput />;

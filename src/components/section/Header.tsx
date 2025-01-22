@@ -1,6 +1,6 @@
-import NavCenter from "./NavCenter";
-import NavLeft from "./NavLeft";
-import NavRight from "./NavRight";
+import NavLeft from "@/components/nav/NavLeft";
+import NavCenter from "@/components/nav/NavCenter";
+import NavRight from "@/components/nav/NavRight";
 
 export default function Header() {
   return (

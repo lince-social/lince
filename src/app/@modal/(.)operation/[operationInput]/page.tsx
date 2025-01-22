@@ -1,15 +1,12 @@
-"use client";
-
-import { useRouter } from "next/navigation";
-
-export default function TopInput() {
-  const router = useRouter();
+export default async function OperationFormModal(params) {
+  const awaited = await params;
+  const operationInput = awaited.operationInput;
   function handleOperation(event) {
     event.preventDefault();
     const form = event.currentTarget;
     const formData = new FormData(form);
     form.reset();
-    const data = formData.get("operationInput");
+    const data: string = formData.get("operationInput");
 
     let table;
     switch (true) {
@@ -47,7 +44,7 @@ export default function TopInput() {
 
     let action;
     switch (true) {
-      case /c/gim.test(data):
+      case /c/.test(data):
         action = "create";
         break;
       case /r/.test(data):
@@ -81,9 +78,6 @@ export default function TopInput() {
 
     switch (true) {
       case action === "read":
-        // console.log(action, table);
-        // const data = await handleDataRead(table);
-        // console.log(data);
         router.push(`/table/${table}`);
         break;
       default:
@@ -91,25 +85,11 @@ export default function TopInput() {
         break;
     }
   }
-
   return (
     <>
-      <div className="">
-        <form onSubmit={handleOperation} className="space-x-2">
-          <input
-            type="text"
-            name="operationInput"
-            placeholder="Operation"
-            className="rounded"
-            required
-          />
-          <button
-            className="bg-gray-600 hover:bg-gray-500 rounded pl-1 pr-1"
-            type="submit"
-          >
-            Send
-          </button>
-        </form>
+      <div>
+        <p>Operation Page Modal</p>
+        <p>{operationInput}</p>
       </div>
     </>
   );

@@ -8,7 +8,7 @@ interface TableProps {
   tableName: string;
 }
 
-export default function SingleTable({ data, tableName }: TableProps) {
+export default function Table({ data, tableName }: TableProps) {
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
 
   const status = useFormStatus();

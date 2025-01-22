@@ -1,4 +1,4 @@
-import ConfigurationRow from "./ConfigurationRow";
+import ConfigurationRow from "@/components/configuration/ConfigurationRow";
 
 export default function Configurations({ activeConfig, inactiveConfigs }) {
   return (

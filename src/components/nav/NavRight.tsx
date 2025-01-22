@@ -9,6 +9,12 @@ export default function NavRight() {
     <>
       <div className="flex space-x-2 text-gray-500">
         <Link
+          className={`hover:text-gray-300 ${pathName === "/operation" ? "text-white" : ""}`}
+          href={"/operation"}
+        >
+          Operation
+        </Link>
+        <Link
           className={`hover:text-gray-300 ${pathName === "/" ? "text-white" : ""}`}
           href={"/"}
         >

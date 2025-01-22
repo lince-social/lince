@@ -1,5 +1,11 @@
-import Home from "@/components/Home";
+import Home from "@/components/section/Home";
 
-export default function App() {
-  return <Home />;
+export default function Page() {
+  return (
+    <>
+      <div>
+        <Home />
+      </div>
+    </>
+  );
 }

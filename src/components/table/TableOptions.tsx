@@ -29,7 +29,6 @@ export default function TableOptions({ tableNames }: TableOptionsProps) {
 
   return (
     <div className="relative">
-      {/* Dropdown Trigger */}
       <button
         className="w-full flex items-center justify-between bg-crust-theme text-gray-400 hover:text-white px-4 py-2 rounded"
         onClick={() => setIsOpen(!isOpen)}
@@ -41,8 +40,9 @@ export default function TableOptions({ tableNames }: TableOptionsProps) {
           viewBox="0 0 24 24"
           strokeWidth={1.5}
           stroke="currentColor"
-          className={`w-5 h-5 transition-transform ${isOpen ? "rotate-180" : "rotate-0"
-            }`}
+          className={`w-5 h-5 transition-transform ${
+            isOpen ? "rotate-180" : "rotate-0"
+          }`}
         >
           <path
             strokeLinecap="round"
@@ -51,13 +51,11 @@ export default function TableOptions({ tableNames }: TableOptionsProps) {
           />
         </svg>
       </button>
-
       {isOpen && (
         <div
           className="absolute z-50 left-0 mt-2 bg-crust-theme rounded shadow-lg min-w-[max-content]"
-          onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+          onClick={(e) => e.stopPropagation()}
         >
-          {/* Search Input */}
           <div className="p-2">
             <input
               type="text"
@@ -67,8 +65,6 @@ export default function TableOptions({ tableNames }: TableOptionsProps) {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-
-          {/* Dropdown Options */}
           <ul className="max-h-48 overflow-y-auto">
             {filteredTableNames.length > 0 ? (
               filteredTableNames.map((option) => (

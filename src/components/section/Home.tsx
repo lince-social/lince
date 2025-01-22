@@ -1,6 +1,6 @@
-import Configurations from "@/components/Configurations";
-import Main from "@/components/Main";
+import Configurations from "@/components/configuration/Configurations";
 import { prisma } from "@lib/prisma";
+import Main from "@/components/section/Main";
 
 export default async function Home() {
   const inactiveConfigs = await prisma.configuration.findMany({

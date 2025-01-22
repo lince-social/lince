@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import SingleTable from "./SingleTable";
+import Table from "@/components/table/Table";
 
 interface MainProps {
   data: Array<Record<string, any>[]>;
@@ -18,7 +18,7 @@ export default function Main({
     <div className="flex m-4 space-x-4">
       {data.map((tableData, index: number) => (
         <div key={index} className="space-y-2">
-          <SingleTable data={tableData} tableName={tableNames[index]} />
+          <Table data={tableData} tableName={tableNames[index]} />
         </div>
       ))}
     </div>

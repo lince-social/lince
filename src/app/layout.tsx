@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
+import Header from "@/components/section/Header";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,8 +20,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
+  modal,
 }: Readonly<{
   children: React.ReactNode;
+  modal: React.ReactNode;
 }>) {
   // <script src="https://unpkg.com/react-scan/dist/auto.global.js" async />;
   return (
@@ -34,6 +36,7 @@ export default function RootLayout({
       >
         <Header />
         {children}
+        {modal}
       </body>
     </html>
   );

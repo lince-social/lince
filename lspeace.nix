@@ -3,10 +3,12 @@
 }:
 pkgs.mkShell {
   buildInputs = with pkgs; [
-    nodejs_23
     postgresql_17
-    lua
-    jq
+    sqls
+    tailwindcss-language-server
+    vscode-langservers-extracted
+    typescript-language-server
+    nil
   ];
   shellHook = ''
     cd ${toString ./.}

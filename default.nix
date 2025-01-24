@@ -18,6 +18,6 @@ pkgs.mkShell { buildInputs = with pkgs; [ postgresql_17 ];
     [[ ! -d "$HOME/.bun" ]] && curl -fsSL https://bun.sh/install | bash && export BUN_INSTALL="$HOME/.bun" && export PATH="$BUN_INSTALL/bin:$PATH"
 
     cd ${toString ./.}
-    bun run src/scripts/startup.ts
+    bun run src/utils/startup.ts
   '';
 }

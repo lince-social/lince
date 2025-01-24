@@ -9,6 +9,9 @@ pkgs.mkShell {
     vscode-langservers-extracted
     typescript-language-server
     nil
+    lazygit
+    eslint
+    nixfmt-rfc-style
   ];
   shellHook = ''
     cd ${toString ./.}

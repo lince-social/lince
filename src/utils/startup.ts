@@ -33,7 +33,7 @@ export async function saveDatabase() {
   await $`pg_dump -U postgres -h localhost -p 2000 -d newlince --no-owner --no-privileges --no-password --no-comments --data-only -F plain -f ~/.config/lince/newlince.sql`;
 }
 
-export async function main() {
+export async function startup() {
   await deleteDatabaseIfExists();
   await createDatabase();
   await schemaDatabase();
@@ -45,4 +45,4 @@ export async function main() {
   }
 }
 
-main();
+startup();

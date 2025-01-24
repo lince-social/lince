@@ -2,6 +2,10 @@
   "name": "Lince",
   "module": "index.ts",
   "type": "module",
+  "scripts": {
+    "dev": "bun run src/app.tsx",
+    "startup": "bun run db/startup.ts"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "typed-html": "^3.0.1"

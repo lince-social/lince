@@ -1,28 +1,16 @@
 {
-  "name": "dev",
-  "version": "1.0.0",
-  "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "dbRebuild": "bun run src/scripts/startup.ts"
+  "name": "Lince",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typed-html": "^3.0.1"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
   },
   "dependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "next": "^15.1.6"
-  },
-  "devDependencies": {
-    "@eslint/eslintrc": "^3.2.0",
-    "@types/bun": "^1.2.0",
-    "@types/node": "^20.17.16",
-    "@types/react": "^19.0.8",
-    "@types/react-dom": "^19.0.3",
-    "eslint": "^9.18.0",
-    "eslint-config-next": "^15.1.6",
-    "postcss": "^8.5.1",
-    "tailwindcss": "^4.0.0",
-    "typescript": "^5.7.3"
+    "@elysiajs/html": "^1.2.0",
+    "elysia": "^1.2.10"
   }
 }

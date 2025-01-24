@@ -6,7 +6,7 @@ origin TEXT NOT NULL DEFAULT 'lince.sql'
 
 CREATE TABLE view (
 	id SERIAL PRIMARY KEY,
-	name TEXT,
+	viewName TEXT,
  	query TEXT NOT NULL DEFAULT 'SELECT * FROM record'
 );
 

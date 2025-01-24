@@ -2,10 +2,11 @@
 
 import { sql } from "bun";
 
-export default function Page() {
+export default async function Page() {
+  const data = await sql`SELECT * FROM configuration`;
   return (
     <>
-      <div></div>
+      <pre>{JSON.stringify(data)}</pre>
     </>
   );
 }

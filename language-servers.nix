@@ -8,6 +8,7 @@ pkgs.mkShell {
     tailwindcss-language-server
     vscode-langservers-extracted
     typescript-language-server
+    nodePackages_latest.prettier
     nil
     lazygit
     eslint

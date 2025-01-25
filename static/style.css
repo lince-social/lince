@@ -1,0 +1,15 @@
+@import "active.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* :root { */
+/*   --background: var(--l); */
+/*   --foreground: var(--light-text); */
+/* } */
+
+body {
+  color: var(--theme-text);
+  background: var(--theme-background);
+  font-family: Arial, Helvetica, sans-serif;
+}

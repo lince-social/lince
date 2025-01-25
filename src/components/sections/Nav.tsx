@@ -1,18 +1,17 @@
-import NavLeft from "@/components/nav/NavLeft";
-import NavCenter from "@/components/nav/NavCenter";
-import NavRight from "@/components/nav/NavRight";
+import * as elements from "typed-html";
 
-export default function Header() {
+
+export default function Nav() {
+  //   <div className="m-4 flex justify-between items-center">
+  //   <NavLeft />
+  //   <div className="flex space-x-2 items-center">
+  //     <NavCenter />
+  //     <NavRight />
+  //   </div>
+  // </div>
+
   return (
-    <>
-      <div className="m-4 flex justify-between items-center">
-        <NavLeft />
-        <div className="flex space-x-2 items-center">
-          <NavCenter />
-          <NavRight />
-        </div>
-      </div>
-    </>
+    <div>Nav</div>
   );
 }
 

@@ -3,7 +3,7 @@
   "module": "index.ts",
   "type": "module",
   "scripts": {
-    "dev": "bun run --hot src/app.tsx",
+    "dev": "bun run --watch src/app.tsx",
     "startup": "bun run db/startup.ts"
   },
   "devDependencies": {

@@ -9,8 +9,5 @@ export default async function Main() {
   //   ))}
   // </div>
 
-  return (
-    <div>Main</div>
-  );
+  return <main>Main</main>;
 }
-

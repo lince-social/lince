@@ -1,6 +1,6 @@
 import * as elements from "typed-html";
 
-export default function Page({ children }: elements.Children) {
+export default async function Page({ children }: elements.Children) {
   return `<!DOCTYPE html>
     <html lang="en">
       <head>

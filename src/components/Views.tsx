@@ -3,16 +3,23 @@ import * as elements from "typed-html";
 export default function Views({ views, configurationId }) {
   return (
     <div class="flex w-min space-x-1">
-      {views.map((view) => (
+      {Object.entries(views).map(([viewName, isActive]) => (
         <div
-          key={view[0]}
+          key={viewName}
           class={`group flex space-x-1 rounded p-1 text-nowrap ${
-            view[1]
+            isActive
               ? "bg-slate-700 hover:bg-slate-900"
               : "bg-slate-900 hover:bg-slate-800"
           }`}
         >
-          <button>{view[0]}</button>
+          <button
+            hx-post="/view"
+            hx-target="#main"
+            hx-vals={`js:{ views: ${JSON.stringify(views)}, view: { "${viewName}": ${isActive} }, configurationId: ${configurationId} }`}
+            hx-trigger="click"
+          >
+            {viewName}
+          </button>
           <button class="w-0 overflow-hidden opacity-0 bg-red-600 hover:bg-red-500 rounded text-white items-center justify-center transition-all duration-200 group-hover:w-6 group-hover:opacity-100 text-transparent group-hover:text-red">
             x
           </button>

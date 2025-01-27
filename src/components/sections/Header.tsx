@@ -1,7 +1,11 @@
 import * as elements from "typed-html";
-import Configurations from "../Configurations";
+import Nav from "../Nav";
 
 export default async function Header() {
-  const configurations = await (<Configurations />);
-  return <header>{configurations}</header>;
+  const nav = await (<Nav />);
+  return (
+    <header>
+      <div>{nav}</div>
+    </header>
+  );
 }

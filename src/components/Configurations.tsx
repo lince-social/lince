@@ -5,7 +5,7 @@ import Views from "./Views";
 export async function ConfigurationRow({ configurationItem }) {
   const views = await (
     <Views
-      views={Object.entries(configurationItem.views)}
+      views={configurationItem.views}
       configurationId={configurationItem.id}
     />
   );
@@ -14,6 +14,9 @@ export async function ConfigurationRow({ configurationItem }) {
     <div class="flex space space-x-1 p-2">
       <button
         class={`p-1 rounded ${configurationItem.quantity === 1 ? "bg-red-800 hover:bg-red-900" : "hover:bg-blue-900 bg-blue-950"}`}
+        hx-post={`/configurationclick/${configurationItem.id}`}
+        hx-target="#main"
+        hx-trigger="click"
       >
         {configurationItem.configuration_name}
       </button>
@@ -22,7 +25,44 @@ export async function ConfigurationRow({ configurationItem }) {
   );
 }
 
-export default async function Configurations() {
+export default async function ConfigurationsUnhovered() {
+  const activeConfiguration =
+    await sql`SELECT id, configuration_name, quantity, views FROM configuration WHERE quantity = 1`;
+  const activeConfigurationRow = await (
+    <ConfigurationRow
+      key={activeConfiguration[0].id}
+      configurationItem={activeConfiguration[0]}
+    />
+  );
+
+  return (
+    <div
+      id="configuration"
+      hx-post="/configurationhovered"
+      hx-trigger="mouseenter"
+      hx-swap="outerHTML"
+      class="group flex bg-slate-800/80 w-full rounded items-center text-white"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
+        class="ml-2 size-6 group-hover:rotate-180 transition ease-in-out duration-300"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="m19.5 8.25-7.5 7.5-7.5-7.5"
+        />
+      </svg>
+      <div class="w-full">{activeConfigurationRow}</div>
+    </div>
+  );
+}
+
+export async function ConfigurationsHovered() {
   const activeConfiguration =
     await sql`SELECT id, configuration_name, quantity, views FROM configuration WHERE quantity = 1`;
   const activeConfigurationRow = await (
@@ -34,24 +74,32 @@ export default async function Configurations() {
 
   const inactiveConfigurations =
     await sql`SELECT id, configuration_name, quantity, views  FROM configuration WHERE quantity <> 1`;
-  const inactiveConfigurationsRows = inactiveConfigurations.map(
-    (inactiveConfiguration) => (
-      <ConfigurationRow
-        key={inactiveConfiguration.id}
-        configurationItem={inactiveConfiguration}
-      />
-    ),
+  const inactiveConfigurationsRows = await Promise.all(
+    inactiveConfigurations.map(async (inactiveConfiguration) => {
+      return await (
+        <ConfigurationRow
+          key={inactiveConfiguration.id}
+          configurationItem={inactiveConfiguration}
+        />
+      );
+    }),
   );
 
   return (
-    <div class="group flex bg-slate-950/80 w-full items-center rounded-t hover:rounded-b-none relative text-white">
+    <div
+      id="configuration"
+      hx-post="/configurationunhovered"
+      hx-trigger="mouseleave"
+      hx-swap="outerHTML"
+      class="flex bg-slate-800/80 rounded-t w-full items-center text-white relative"
+    >
       <svg
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"
         strokeWidth={1.5}
         stroke="currentColor"
-        class="size-6 group-hover:rotate-180 transition ease-in-out duration-300"
+        class="ml-2 size-6 rotate-180"
       >
         <path
           strokeLinecap="round"
@@ -59,9 +107,11 @@ export default async function Configurations() {
           d="m19.5 8.25-7.5 7.5-7.5-7.5"
         />
       </svg>
-      <div class="w-full">{activeConfigurationRow}</div>
-      <div class="pl-6 absolute top-full left-0 w-full bg-slate-950/80 rounded-b shadow-lg max-h-0 overflow-hidden transition-all duration-300 group-hover:max-h-screen">
-        {inactiveConfigurationsRows}
+      <div class="flex flex-col w-full">
+        <div>{activeConfigurationRow}</div>
+        <div class="absolute mt-12 inset-x-0 bg-slate-800/80 rounded-b">
+          {inactiveConfigurationsRows}
+        </div>
       </div>
     </div>
   );

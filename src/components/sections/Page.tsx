@@ -10,6 +10,12 @@ export default async function Page({ children }: elements.Children) {
         <title>Lince</title>
         <script src="https://unpkg.com/htmx.org@2.0.4"></script>
         <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+          body {
+            background-color: #000000;
+            color: #ffffff;
+          }
+        </style
       </head>
         ${children}
     </html>`;

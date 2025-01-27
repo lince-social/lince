@@ -13,7 +13,7 @@ CREATE TABLE view (
 CREATE TABLE configuration (
 	id SERIAL PRIMARY KEY,
 	configuration_name VARCHAR(50),
-	quantity REAL NOT NULL DEFAULT 1,
+	quantity REAL NOT NULL DEFAULT 0,
  	views jsonb NOT NULL DEFAULT '{}',
 	language VARCHAR(20),
 	timezone VARCHAR(3) NOT NULL DEFAULT '0',

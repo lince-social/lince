@@ -22,24 +22,24 @@ export async function checkEmptyDatabase() {
 }
 
 export async function getOrigin() {
-  const path = import.meta.dir + "/origin.txt"
-  const origin = file(path)
-  const text = await origin.text()
-  return text
+  const path = import.meta.dir + "/origin.txt";
+  const origin = file(path);
+  const text = await origin.text();
+  return text;
 }
 
 export async function changeOrigin(newOrigin: string) {
-  const path = import.meta.dir + "/origin.txt"
-  write(path, newOrigin)
+  const path = import.meta.dir + "/origin.txt";
+  write(path, newOrigin);
 }
 
 export async function createDatabaseFile() {
-  const origin = await getOrigin()
-  await $`find ${origin} || touch ${origin}`
+  const origin = await getOrigin();
+  await $`find ${origin} || touch ${origin}`;
 }
 
 export async function loadDatabase() {
-  const origin = await getOrigin()
+  const origin = await getOrigin();
   await $`psql -U postgres -h localhost -p 2000 -d lince < ${origin}`;
 }
 
@@ -48,7 +48,7 @@ export async function seedDatabase() {
 }
 
 export async function saveDatabase() {
-  const origin = await getOrigin()
+  const origin = await getOrigin();
   await $`pg_dump -U postgres -h localhost -p 2000 -d lince --no-owner --no-privileges --no-password --no-comments --data-only -F plain -f ${origin}`;
 }
 
@@ -57,11 +57,12 @@ export async function startup() {
   await createDatabase();
   await schemaDatabase();
   await grantPermissions();
-  await createDatabaseFile()
+  await createDatabaseFile();
   await loadDatabase();
   const databaseIsEmpty = await checkEmptyDatabase();
   if (databaseIsEmpty) {
     await seedDatabase();
+    await saveDatabase();
   }
 }
 

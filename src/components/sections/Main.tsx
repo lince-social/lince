@@ -1,13 +1,30 @@
 import * as elements from "typed-html";
 
-export default async function Main() {
-  //   <div className="flex m-4 space-x-4">
-  //   {data.map((tableData, index: number) => (
-  //     <div key={index} className="space-y-2">
-  //       <Table data={tableData} tableName={tableNames[index]} />
-  //     </div>
-  //   ))}
-  // </div>
+import ConfigurationsUnhovered, {
+  ConfigurationsHovered,
+} from "../Configurations";
+import Tables from "../Tables";
 
-  return <main>Main</main>;
+export default async function UnhoveredMain() {
+  const configurations = await (<ConfigurationsUnhovered />);
+  const tables = await (<Tables />);
+
+  return (
+    <main id="main">
+      <div>{configurations}</div>
+      <div>{tables}</div>
+    </main>
+  );
+}
+
+export async function HoveredMain() {
+  const configurations = await (<ConfigurationsHovered />);
+  const tables = await (<Tables />);
+
+  return (
+    <main id="main">
+      <div>{configurations}</div>
+      <div>{tables}</div>
+    </main>
+  );
 }

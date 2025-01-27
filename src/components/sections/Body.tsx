@@ -3,12 +3,12 @@ import Header from "./Header";
 import Main from "./Main";
 
 export default async function Body() {
-  const header = await <Header />
-  const main = await <Main />
+  const header = await (<Header />);
+  const main = await (<Main />);
   return (
-    <div>
+    <div class="m-4">
       {header}
       {main}
     </div>
-  )
+  );
 }

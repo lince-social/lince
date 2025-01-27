@@ -1,26 +1,19 @@
-"use server";
+import { sql } from "bun";
 
-import { prisma } from "@lib/prisma";
-import { revalidatePath } from "next/cache";
-
-export async function handleViewToggle(views, view, index) {
+export async function handleViewToggle(views, view, configurationId) {
   try {
-    const updatedView = [view[0], !view[1]];
-    const updatedViews = views.map((v, i) => (i === index ? updatedView : v));
-    const viewsObject = updatedViews.reduce((acc, [viewName, state]) => {
-      acc[viewName] = state;
-      return acc;
-    }, {});
+    const jsonviews = JSON.parse(views);
+    const jsonview = JSON.parse(view);
 
-    await prisma.configuration.updateMany({
-      where: { quantity: 1 },
-      data: {
-        views: viewsObject,
-      },
+    Object.keys(jsonview).forEach((viewName) => {
+      jsonviews[viewName] = !jsonview[viewName];
     });
-    revalidatePath("/");
+
+    await sql`UPDATE configuration SET views = ${jsonviews} WHERE id = ${configurationId};`;
   } catch (error) {
-    console.log("Error in updating views: ", error);
+    console.log(
+      `Error: ${error}, when updating view: ${view}, in configuration with id: ${configurationId}. Views received: ${views}`,
+    );
   }
 }
 
@@ -35,7 +28,6 @@ export async function handleViewRemove(views, view, configurationId) {
       where: { id: configurationId },
       data: { views: viewsObject },
     });
-    revalidatePath("/");
   } catch (error) {
     console.log(
       `Error: ${error}, when updating view: ${view}, in configuration with id: ${configurationId}. Views received: ${views}`,
@@ -52,8 +44,6 @@ export async function handleViewAdd(views, configurationId) {
     if (queriedViews) {
       console.log(queriedViews);
     }
-
-    revalidatePath("/");
   } catch (error) {
     console.log(
       `Error: ${error}, when creating new view in configuration with id: ${configurationId}. Views received: ${views}`,

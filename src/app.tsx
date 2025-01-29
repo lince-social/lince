@@ -26,7 +26,7 @@ export default async function app() {
     .use(html())
     .get("/", async ({ html }) => {
       const body = await Body();
-      return html(
+      return await html(
         <Page>
           <body class="m-4">
             <div>{body}</div>
@@ -78,8 +78,8 @@ export default async function app() {
       const { table, where } = query;
       return await RunQuery(`DELETE FROM ${table} WHERE ${where}`);
     })
-    .get("/openedtableoptions", await OpenedTableOptions())
-    .get("/closedtableoptions", await ClosedTableOptions())
+    .get("/openedtableoptions", async () => await OpenedTableOptions())
+    .get("/closedtableoptions", async () => await ClosedTableOptions())
     .listen(3000);
 
   console.log(`Serving at ${app.server?.hostname}:${app.server?.port}`);

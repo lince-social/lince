@@ -28,7 +28,7 @@ export async function ConfigurationRow({ configurationItem }) {
 export default async function ConfigurationsUnhovered() {
   const activeConfiguration =
     await sql`SELECT id, configuration_name, quantity, views FROM configuration WHERE quantity = 1`;
-  const activeConfigurationRow = (
+  const activeConfigurationRow = await (
     <ConfigurationRow
       key={activeConfiguration[0].id}
       configurationItem={activeConfiguration[0]}

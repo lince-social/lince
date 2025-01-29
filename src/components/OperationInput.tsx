@@ -9,7 +9,7 @@ export default function OperationInput() {
         placeholder="Operation here..."
         hx-post="/operation"
         hx-target="#body"
-        class="rounded text-black mb-2"
+        class="rounded text-black"
       />
     </div>
   );

@@ -14,7 +14,7 @@ export async function ConfigurationRow({ configurationItem }) {
     <div class="flex space space-x-1 p-2">
       <button
         class={`p-1 rounded ${configurationItem.quantity === 1 ? "bg-red-800 hover:bg-red-900" : "hover:bg-blue-900 bg-blue-950"}`}
-        hx-post={`/configurationclick/${configurationItem.id}`}
+        hx-get={`/configurationclick/${configurationItem.id}`}
         hx-target="#main"
         hx-trigger="click"
       >
@@ -28,7 +28,7 @@ export async function ConfigurationRow({ configurationItem }) {
 export default async function ConfigurationsUnhovered() {
   const activeConfiguration =
     await sql`SELECT id, configuration_name, quantity, views FROM configuration WHERE quantity = 1`;
-  const activeConfigurationRow = await (
+  const activeConfigurationRow = (
     <ConfigurationRow
       key={activeConfiguration[0].id}
       configurationItem={activeConfiguration[0]}
@@ -38,7 +38,7 @@ export default async function ConfigurationsUnhovered() {
   return (
     <div
       id="configuration"
-      hx-post="/configurationhovered"
+      hx-get="/configurationhovered"
       hx-trigger="mouseenter"
       hx-swap="outerHTML"
       class="group flex bg-slate-800/80 w-full rounded items-center text-white"
@@ -76,7 +76,7 @@ export async function ConfigurationsHovered() {
     await sql`SELECT id, configuration_name, quantity, views  FROM configuration WHERE quantity <> 1`;
   const inactiveConfigurationsRows = await Promise.all(
     inactiveConfigurations.map(async (inactiveConfiguration) => {
-      return await (
+      return (
         <ConfigurationRow
           key={inactiveConfiguration.id}
           configurationItem={inactiveConfiguration}
@@ -88,7 +88,7 @@ export async function ConfigurationsHovered() {
   return (
     <div
       id="configuration"
-      hx-post="/configurationunhovered"
+      hx-get="/configurationunhovered"
       hx-trigger="mouseleave"
       hx-swap="outerHTML"
       class="flex bg-slate-800/80 rounded-t w-full items-center text-white relative"

@@ -6,10 +6,11 @@ export default function Views({ views, configurationId }) {
       {Object.entries(views).map(([viewName, isActive]) => (
         <div
           key={viewName}
-          class={`group flex space-x-1 rounded p-1 text-nowrap ${isActive
+          class={`group flex space-x-1 rounded p-1 text-nowrap ${
+            isActive
               ? "bg-slate-700 hover:bg-slate-900"
               : "bg-slate-900 hover:bg-slate-800"
-            }`}
+          }`}
         >
           <button
             hx-post="/view"
@@ -24,7 +25,7 @@ export default function Views({ views, configurationId }) {
             hx-trigger="click"
             hx-delete="/view"
             hx-target="#main"
-            hx-vals={`js:{viewName: ${viewName}, configurationId: ${configurationId}}`}
+            hx-vals={`js:{viewName: "${viewName}", configurationId: ${configurationId}}`}
           >
             x
           </button>

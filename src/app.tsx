@@ -8,8 +8,11 @@ import ConfigurationsUnhovered, {
   ConfigurationsHovered,
 } from "./components/Configurations";
 import Tables from "./components/Tables";
-import handleConfigurationClick from "./utils/handleConfiguration";
+import handleConfigurationChange from "./utils/handleConfiguration";
 import { handleViewToggle } from "./utils/handleView";
+import HandleOperationInput from "./utils/handleOperation";
+import { sql } from "bun";
+import { RunQuery } from "./utils/crud";
 
 export default async function app() {
   const app = new Elysia()
@@ -18,14 +21,14 @@ export default async function app() {
       const body = await Body();
       return html(
         <Page>
-          <body>
+          <body class="m-4">
             <div>{body}</div>
           </body>
         </Page>,
       );
     })
     .post("/configurationclick/:id", async ({ params: { id } }) => {
-      await handleConfigurationClick(id);
+      await handleConfigurationChange(id);
       return await (
         <main id="main">
           <div>{await ConfigurationsHovered()}</div>
@@ -50,7 +53,30 @@ export default async function app() {
         </main>
       );
     })
-    .get("/tables", Tables())
+    .delete("/view", async (context) => {
+      const body = await context.body;
+      console.log(body);
+      return (
+        <main id="main">
+          <div>{await ConfigurationsHovered()}</div>
+          <div>{await Tables()}</div>
+        </main>
+      );
+    })
+
+    .post("/operation", async ({ body }) => {
+      const { operation } = await body;
+      return await HandleOperationInput(operation);
+    })
+    .post("/query", async ({ body }) => {
+      const { query } = await body;
+      await sql(query);
+    })
+    .put("/data", async ({ body }) => {
+      const { table, set, where } = await body;
+      await RunQuery(`UPDATE ${table} SET ${set} WHERE ${where}`);
+      return Body();
+    })
     .listen(3000);
 
   console.log(`Serving at ${app.server?.hostname}:${app.server?.port}`);

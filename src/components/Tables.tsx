@@ -11,7 +11,7 @@ export function Table({ data, tableName }) {
   );
 
   return (
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto mt-2">
       <h2 class="font-bold mb-4">
         {tableName[0].toUpperCase() + tableName.slice(1)}
       </h2>

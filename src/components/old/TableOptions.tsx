@@ -1,8 +1,3 @@
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-
 interface TableOption {
   table_name: string;
 }
@@ -40,9 +35,8 @@ export default function TableOptions({ tableNames }: TableOptionsProps) {
           viewBox="0 0 24 24"
           strokeWidth={1.5}
           stroke="currentColor"
-          className={`w-5 h-5 transition-transform ${
-            isOpen ? "rotate-180" : "rotate-0"
-          }`}
+          className={`w-5 h-5 transition-transform ${isOpen ? "rotate-180" : "rotate-0"
+            }`}
         >
           <path
             strokeLinecap="round"

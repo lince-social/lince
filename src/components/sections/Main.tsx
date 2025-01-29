@@ -22,7 +22,7 @@ export async function HoveredMain() {
   const tables = await (<Tables />);
 
   return (
-    <main id="main">
+    <main id="main" class="">
       <div>{configurations}</div>
       <div>{tables}</div>
     </main>

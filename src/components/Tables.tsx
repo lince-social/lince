@@ -1,5 +1,5 @@
 import * as elements from "typed-html";
-import { getTableData } from "../utils/crud";
+import { getTableData } from "./Crud";
 
 export function Table({ data, tableName }) {
   if (!Array.isArray(data) || data.length === 0) {

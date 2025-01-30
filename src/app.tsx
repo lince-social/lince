@@ -17,9 +17,6 @@ import {
   UpdateData,
 } from "./components//Crud";
 import OperationComponent from "./components/Operation";
-import ClosedTableOptions, {
-  OpenedTableOptions,
-} from "./components/TableOptions";
 
 export default async function app() {
   const app = new Elysia()
@@ -36,6 +33,9 @@ export default async function app() {
     })
     .post("/configurationclick/:id", async ({ params: { id } }) => {
       await ConfigurationChange(id);
+    })
+    .get("/test", async () => {
+      return Body();
     })
     .get("/configurationhovered", async () => {
       return await ConfigurationsHovered();
@@ -78,8 +78,6 @@ export default async function app() {
       const { table, where } = query;
       return await RunQuery(`DELETE FROM ${table} WHERE ${where}`);
     })
-    .get("/openedtableoptions", async () => await OpenedTableOptions())
-    .get("/closedtableoptions", async () => await ClosedTableOptions())
     .listen(3000);
 
   console.log(`Serving at ${app.server?.hostname}:${app.server?.port}`);

@@ -14,7 +14,7 @@ export async function ConfigurationRow({ configurationItem }) {
     <div class="flex space space-x-1 p-2">
       <button
         class={`p-1 rounded ${configurationItem.quantity === 1 ? "bg-red-800 hover:bg-red-900" : "hover:bg-blue-900 bg-blue-950"}`}
-        hx-get={`/configurationclick/${configurationItem.id}`}
+        hx-post={`/configurationclick/${configurationItem.id}`}
         hx-target="#main"
         hx-trigger="click"
       >

@@ -126,7 +126,7 @@ export async function UpdateDataComponent(table: string) {
   return (
     <form
       class="flex flex-col border border-white m-4 p-4 rounded space-y-1"
-      hx-put="/data"
+      hx-put="/dataform"
       hx-trigger="keyup[event.key === 'Enter']"
       hx-target="#body"
     >
@@ -218,7 +218,7 @@ export async function ConfigurationChange(id: string) {
   }
 }
 
-export async function handleViewToggle(views, view, configurationId) {
+export async function ToggleView(views, view, configurationId) {
   const jsonviews = JSON.parse(views);
   const jsonview = JSON.parse(view);
 
@@ -227,6 +227,13 @@ export async function handleViewToggle(views, view, configurationId) {
   });
 
   await sql`UPDATE configuration SET views = ${jsonviews} WHERE id = ${configurationId};`;
+
+  return (
+    <main id="main">
+      <div>{await ConfigurationsHovered()}</div>
+      <div>{await Tables()}</div>
+    </main>
+  );
 }
 
 export async function DeleteView(viewName, configurationId) {
@@ -243,6 +250,17 @@ export async function DeleteView(viewName, configurationId) {
 
 export async function CreateViewComponent() {
   return <p>osidnodicn</p>;
+}
+
+export async function EditableRow(table, id) {
+  const row = await sql`SELECT * FROM ${table} WHERE id = ${id}`;
+  return (
+    <form
+      hx-put={`/data`}
+      hx-target="#body"
+      hx-trigger="keydown[key === 'Enter'] from:body"
+    ></form>
+  );
 }
 
 export async function CreateView(view, configurationId) {

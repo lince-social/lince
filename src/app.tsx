@@ -12,8 +12,9 @@ import {
   ConfigurationChange,
   CreateData,
   DeleteView,
-  handleViewToggle,
+  EditableRow,
   RunQuery,
+  ToggleView,
   UpdateData,
 } from "./components//Crud";
 import OperationComponent from "./components/Operation";
@@ -32,10 +33,7 @@ export default async function app() {
       );
     })
     .post("/configurationclick/:id", async ({ params: { id } }) => {
-      await ConfigurationChange(id);
-    })
-    .get("/test", async () => {
-      return Body();
+      return await ConfigurationChange(id);
     })
     .get("/configurationhovered", async () => {
       return await ConfigurationsHovered();
@@ -46,13 +44,7 @@ export default async function app() {
     .post("/view", async (context) => {
       const body = await context.body;
       const { views, view, configurationId } = body;
-      await handleViewToggle(views, view, configurationId);
-      return (
-        <main id="main">
-          <div>{await ConfigurationsHovered()}</div>
-          <div>{await Tables()}</div>
-        </main>
-      );
+      return await ToggleView(views, view, configurationId);
     })
     .delete("/view", async ({ query }) => {
       const { viewName, configurationId } = query;
@@ -70,14 +62,52 @@ export default async function app() {
     .post("/data", async ({ body }) => {
       return await CreateData(body);
     })
-    .put("/data", async ({ body }) => {
+    .put("/dataform", async ({ body }) => {
       const { table, set, where } = await body;
       return await UpdateData(table, set, where);
     })
+    // .put(
+    //   "/datanotform/:table/:set/:where",
+    //   async ({ params: { table, set, where } }) => {
+    //     console.log(table, set, where);
+    //     return await UpdateData(table, set, where);
+    //   },
+    // )
+    .put(
+      "/datanotform/:table/:key/:id",
+      async ({ params: { table, key, id }, body }) => {
+        const { value } = body; // Extract value from request body
+        console.log(table, key, id, value);
+        return await UpdateData(table, `${key}='${value}'`, `id=${id}`);
+      },
+    )
+
     .delete("/data", async ({ query }) => {
       const { table, where } = query;
       return await RunQuery(`DELETE FROM ${table} WHERE ${where}`);
     })
+    .get("/editablerow/:table/:id", async ({ params: { table, id } }) => {
+      return await EditableRow(table, id);
+    })
+    .get(
+      "/inputcell/:table/:id/:key/:value",
+      async ({ params: { table, id, key, value } }) => {
+        return (
+          <td>
+            <form
+              hx-put={`/datanotform/${table}/${key}/${id}`}
+              hx-target="#body"
+            >
+              <input
+                name="value"
+                value={decodeURIComponent(value)}
+                class="text-white bg-black"
+              />
+            </form>
+          </td>
+        );
+      },
+    )
     .listen(3000);
 
   console.log(`Serving at ${app.server?.hostname}:${app.server?.port}`);

@@ -62,8 +62,8 @@ export async function startup() {
   const databaseIsEmpty = await checkEmptyDatabase();
   if (databaseIsEmpty) {
     await seedDatabase();
-    await saveDatabase();
   }
+  await saveDatabase();
 }
 
 startup();

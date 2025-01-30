@@ -18,30 +18,57 @@ export async function HandleOperationInput(operationInput) {
     case /0/.test(operationInput):
       table = "configuration";
       break;
+    case /configuration/.test(operationInput):
+      return await ReadDataComponent("configuration");
+
     case /1/.test(operationInput):
       table = "history";
       break;
+    case /history/.test(operationInput):
+      return await ReadDataComponent("history");
+
     case /2/.test(operationInput):
       table = "record";
       break;
+    case /record/.test(operationInput):
+      return await ReadDataComponent("record");
+
     case /3/.test(operationInput):
       table = "karma";
       break;
+    case /karma/.test(operationInput):
+      return await ReadDataComponent("karma");
+
     case /4/.test(operationInput):
       table = "frequency";
       break;
+    case /frequency/.test(operationInput):
+      return await ReadDataComponent("frequency");
+
     case /5/.test(operationInput):
       table = "command";
       break;
+    case /command/.test(operationInput):
+      return await ReadDataComponent("command");
+
     case /6/.test(operationInput):
       table = "sum";
       break;
+    case /sum/.test(operationInput):
+      return await ReadDataComponent("sum");
+
     case /7/.test(operationInput):
       table = "transfer";
       break;
+    case /transfer/.test(operationInput):
+      return await ReadDataComponent("transfer");
+
     case /8/.test(operationInput):
       table = "view";
       break;
+    case /view/.test(operationInput):
+      return await ReadDataComponent("view");
+
     default:
       table = "record";
       break;
@@ -80,11 +107,12 @@ export default async function OperationComponent(operationInput) {
   const HandledOperation = await HandleOperationInput(operationInput);
   return (
     <FatherBody>
-      <div class="flex justify-center items-center">
+      <div class="flex flex-col justify-center items-center">
+        (Press Escape to remove)
         <div
-          class="flex w-full align-center rounded justify-center z-50 focus:outline-none focus:ring-0"
+          class="flex align-center rounded justify-center z-50 focus:outline-none focus:ring-0"
           hx-get="/"
-          hx-trigger="keydown[(event.key === 'Escape')]"
+          hx-trigger="keydown[key === 'Escape'] from:body"
           hx-target="#body"
         >
           {HandledOperation}

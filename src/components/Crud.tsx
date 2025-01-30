@@ -60,7 +60,7 @@ export async function getTableData() {
   return [data, tableNames];
 }
 
-export async function RunSqlFileComponent() {}
+export async function RunSqlFileComponent() { }
 
 export async function PrintHelpComponent() {
   try {
@@ -91,7 +91,7 @@ export async function CreateDataComponent(table: string) {
     <form
       class="border border-white rounded font-bold flex flex-col p-2"
       hx-post="/data"
-      hx-trigger="keydown[key === 'Enter']"
+      hx-trigger="keydown[event.key === 'Enter']"
       hx-target="#body"
       hx-vals={`js:{table: "${table}"}`}
     >

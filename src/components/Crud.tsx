@@ -21,6 +21,7 @@ export async function QueryInputComponent() {
 }
 
 export async function RunQuery(query: string) {
+  console.log("runqquey", query);
   await sql(query);
   return Body();
 }
@@ -37,7 +38,9 @@ export async function getTableData() {
     }),
   );
 
-  const mappedQueries = queriedQueries.map((query) => query[0].query);
+  const mappedQueries = queriedQueries.map((query) => {
+    return query[0].query;
+  });
 
   const tableNames = mappedQueries.map((query) => {
     const words = query.split(" ");
@@ -252,7 +255,7 @@ export async function CreateViewComponent() {
   return <p>osidnodicn</p>;
 }
 
-export async function EditableRow(table, id) {
+export async function EditableRow(table: string, id: number) {
   const row = await sql`SELECT * FROM ${table} WHERE id = ${id}`;
   return (
     <form
@@ -263,18 +266,18 @@ export async function EditableRow(table, id) {
   );
 }
 
-export async function CreateView(view, configurationId) {
+export async function CreateView(view: string[], configurationId: number) {
   try {
-    console.log(views, configurationId);
+    console.log(view, configurationId);
 
-    const queriedViews = await prisma.view.findMany();
+    // const queriedViews = await prisma.view.findMany();
 
-    if (queriedViews) {
-      console.log(queriedViews);
-    }
+    // if (queriedViews) {
+    //   console.log(queriedViews);
+    // }
   } catch (error) {
     console.log(
-      `Error: ${error}, when creating new view in configuration with id: ${configurationId}. Views received: ${views}`,
+      `Error: ${error}, when creating new view in configuration with id: ${configurationId}. Views received: ${view}`,
     );
   }
 }

@@ -7,12 +7,10 @@ import Body from "./components/sections/Body";
 import ConfigurationsUnhovered, {
   ConfigurationsHovered,
 } from "./components/Configurations";
-import Tables from "./components/Tables";
 import {
   ConfigurationChange,
   CreateData,
   DeleteView,
-  EditableRow,
   RunQuery,
   ToggleView,
   UpdateData,
@@ -52,7 +50,9 @@ export default async function app() {
     })
 
     .post("/operation", async ({ body }) => {
+      console.log("operation body: ", body);
       const { operation } = await body;
+      console.log("operation op: ", operation);
       return await OperationComponent(operation);
     })
     .post("/query", async ({ body }) => {
@@ -66,18 +66,10 @@ export default async function app() {
       const { table, set, where } = await body;
       return await UpdateData(table, set, where);
     })
-    // .put(
-    //   "/datanotform/:table/:set/:where",
-    //   async ({ params: { table, set, where } }) => {
-    //     console.log(table, set, where);
-    //     return await UpdateData(table, set, where);
-    //   },
-    // )
     .put(
       "/datanotform/:table/:key/:id",
       async ({ params: { table, key, id }, body }) => {
-        const { value } = body; // Extract value from request body
-        console.log(table, key, id, value);
+        const { value } = body;
         return await UpdateData(table, `${key}='${value}'`, `id=${id}`);
       },
     )
@@ -85,9 +77,6 @@ export default async function app() {
     .delete("/data", async ({ query }) => {
       const { table, where } = query;
       return await RunQuery(`DELETE FROM ${table} WHERE ${where}`);
-    })
-    .get("/editablerow/:table/:id", async ({ params: { table, id } }) => {
-      return await EditableRow(table, id);
     })
     .get(
       "/inputcell/:table/:id/:key/:value",

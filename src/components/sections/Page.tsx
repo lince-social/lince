@@ -12,7 +12,7 @@ export default async function Page({ children }: elements.Children) {
         <script src="https://cdn.tailwindcss.com"></script>
         <style>
           body {
-            background-color: #000000;
+            background-color: #1e1e2e;
             color: #ffffff;
           }
         </style

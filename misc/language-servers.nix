@@ -15,7 +15,7 @@ pkgs.mkShell {
     nixfmt-rfc-style
   ];
   shellHook = ''
-    cd ${toString ./.}
+    cd ${toString ../.}
     nvim
   '';
 }

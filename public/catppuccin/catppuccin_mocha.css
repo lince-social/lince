@@ -29,6 +29,6 @@
 
     /* Lince's variables, pair every variable with a color: */
     /* --theme-something: #color */
-    --theme-background: #000000;
+    --theme-background: var(--base);
     --theme-background: #ffffff;
 }

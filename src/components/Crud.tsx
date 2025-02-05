@@ -1,6 +1,6 @@
 import { join } from "path";
 import * as elements from "typed-html";
-import { file, sql } from "bun";
+import { sql } from "bun";
 import Tables, { Table } from "./Tables";
 import { ConfigurationsHovered } from "./Configurations";
 import Body from "./sections/Body";
@@ -21,7 +21,6 @@ export async function QueryInputComponent() {
 }
 
 export async function RunQuery(query: string) {
-  console.log("runqquey", query);
   await sql(query);
   return Body();
 }
@@ -63,7 +62,9 @@ export async function getTableData() {
   return [data, tableNames];
 }
 
-export async function RunSqlFileComponent() { }
+export async function RunSqlFileComponent() {
+  return null;
+}
 
 export async function PrintHelpComponent() {
   try {
@@ -221,7 +222,8 @@ export async function ConfigurationChange(id: string) {
   }
 }
 
-export async function ToggleView(views, view, configurationId) {
+export async function ToggleView(body) {
+  const { views, view, configurationId } = body;
   const jsonviews = JSON.parse(views);
   const jsonview = JSON.parse(view);
 
@@ -239,9 +241,10 @@ export async function ToggleView(views, view, configurationId) {
   );
 }
 
-export async function DeleteView(viewName, configurationId) {
-  const query = `UPDATE configuration SET views = views - '${viewName}' WHERE id = ${configurationId};`;
-  await sql(query);
+export async function DeleteView(query) {
+  const { viewName, configurationId } = query;
+  const queryString = `UPDATE configuration SET views = views - '${viewName}' WHERE id = ${configurationId};`;
+  await sql(queryString);
 
   return (
     <main id="main">
@@ -251,33 +254,104 @@ export async function DeleteView(viewName, configurationId) {
   );
 }
 
-export async function CreateViewComponent() {
+export async function CreateViewComponent(configurationId, view_name, query) {
   return <p>osidnodicn</p>;
-}
-
-export async function EditableRow(table: string, id: number) {
-  const row = await sql`SELECT * FROM ${table} WHERE id = ${id}`;
-  return (
-    <form
-      hx-put={`/data`}
-      hx-target="#body"
-      hx-trigger="keydown[key === 'Enter'] from:body"
-    ></form>
-  );
 }
 
 export async function CreateView(view: string[], configurationId: number) {
   try {
     console.log(view, configurationId);
-
-    // const queriedViews = await prisma.view.findMany();
-
-    // if (queriedViews) {
-    //   console.log(queriedViews);
-    // }
   } catch (error) {
     console.log(
       `Error: ${error}, when creating new view in configuration with id: ${configurationId}. Views received: ${view}`,
     );
   }
+}
+
+export async function InitialAddView(configurationId, viewname, query) {
+  return (
+    <div>
+      <AddViewInput />
+      <MatchedViewProperties />
+    </div>
+  );
+}
+export async function AddViewInput(configurationId, viewname, query) {
+  console.log("viewname: ", viewname);
+  console.log("query: ", query);
+  console.log("reloaded");
+
+  return (
+    <div>
+      <form
+        id="addviewcomponent"
+        hx-trigger={`input changed`}
+        hx-get={`/matchedviewproperties/${configurationId}`}
+        hx-target="#matchedviewproperties"
+        class="flex relative space-x-2 p-1 rounded border border-white"
+      >
+        <input
+          name="viewname"
+          placeholder="Add view"
+          class="rounded text-black bg-white"
+          value={viewname}
+          autofocus
+        />
+        <input
+          name="query"
+          placeholder="Query..."
+          class="rounded text-black bg-white"
+          value={query}
+        />
+      </form>
+      {await (<MatchedViewProperties />)}
+    </div>
+  );
+}
+
+export async function MatchedViewProperties(configurationId, viewname, query) {
+  const views = await sql`SELECT view_name, query FROM view`;
+  // const containsAllChars = (str: string, chars: string): boolean => {
+  //   if (typeof chars !== "string") return false; // Handle non-string input safely
+  //   return chars
+  //     .split("")
+  //     .every((char) => str.toLowerCase().includes(char.toLowerCase()));
+  // };
+  //
+  // const queriedNames = views
+  //   .filter((item) => containsAllChars(item.view_name, viewname))
+  //   .map((item) => item.view_name);
+  //
+  // const queriedQueries = views
+  //   .filter((item) => containsAllChars(item.query, query))
+  //   .map((item) => item.query);
+
+  const queriedNames = views
+    .filter((item) => item.view_name)
+    .map((item) => item.view_name);
+
+  const queriedQueries = views
+    .filter((item) => item.query)
+    .map((item) => item.query);
+
+  console.log(queriedQueries);
+  console.log(queriedNames);
+
+  return (
+    <div
+      id="matchedviewproperties"
+      class="z-50 relative flex flex-wrap justify-between w-full mt-2 space-x-2"
+    >
+      <ul class="absolute left-0 top-full mt-2 bg-black text-white p-2 rounded border border-white min-w-[150px] max-w-[45%]">
+        {queriedNames.map((item) => (
+          <li class="truncate px-2 py-1">{item}</li>
+        ))}
+      </ul>
+      <ul class="absolute right-0 top-full mt-2 bg-black text-white p-2 rounded border border-white min-w-[150px] max-w-[45%]">
+        {queriedQueries.map((item) => (
+          <li class="truncate px-2 py-1">{item}</li>
+        ))}
+      </ul>
+    </div>
+  );
 }

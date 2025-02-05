@@ -8,17 +8,20 @@ import ConfigurationsUnhovered, {
   ConfigurationsHovered,
 } from "./components/Configurations";
 import {
+  AddViewInput,
   ConfigurationChange,
   CreateData,
   DeleteView,
+  MatchedViewProperties,
   RunQuery,
   ToggleView,
   UpdateData,
 } from "./components//Crud";
 import OperationComponent from "./components/Operation";
+import DataNotFormComponent from "./components/EdiTable";
 
 export default async function app() {
-  const app = new Elysia()
+  new Elysia()
     .use(html())
     .get("/", async ({ html }) => {
       const body = await Body();
@@ -39,21 +42,14 @@ export default async function app() {
     .get("/configurationunhovered", async () => {
       return await ConfigurationsUnhovered();
     })
-    .post("/view", async (context) => {
-      const body = await context.body;
-      const { views, view, configurationId } = body;
-      return await ToggleView(views, view, configurationId);
+    .post("/view", async ({ body }) => {
+      return await ToggleView(body);
     })
     .delete("/view", async ({ query }) => {
-      const { viewName, configurationId } = query;
-      return await DeleteView(viewName, configurationId);
+      return await DeleteView(query);
     })
-
     .post("/operation", async ({ body }) => {
-      console.log("operation body: ", body);
-      const { operation } = await body;
-      console.log("operation op: ", operation);
-      return await OperationComponent(operation);
+      return await OperationComponent(body);
     })
     .post("/query", async ({ body }) => {
       const { query } = await body;
@@ -73,7 +69,6 @@ export default async function app() {
         return await UpdateData(table, `${key}='${value}'`, `id=${id}`);
       },
     )
-
     .delete("/data", async ({ query }) => {
       const { table, where } = query;
       return await RunQuery(`DELETE FROM ${table} WHERE ${where}`);
@@ -81,25 +76,31 @@ export default async function app() {
     .get(
       "/inputcell/:table/:id/:key/:value",
       async ({ params: { table, id, key, value } }) => {
-        return (
-          <td>
-            <form
-              hx-put={`/datanotform/${table}/${key}/${id}`}
-              hx-target="#body"
-            >
-              <input
-                name="value"
-                value={decodeURIComponent(value)}
-                class="text-white bg-black"
-              />
-            </form>
-          </td>
-        );
+        return await DataNotFormComponent(table, id, key, value);
       },
     )
+    .post(
+      "/addviewcomponent/:configurationid/",
+      async ({ params: { configurationid }, body }) => {
+        const { viewname, query } = await body;
+        console.log("body: ", body);
+        console.log("viewname from app: ", viewname);
+        console.log("query from app: ", query);
+        return await AddViewInput(configurationid, viewname, query);
+      },
+    )
+    // .get(
+    //   "/matchedviewproperties/:configurationid",
+    //   async ({ params: { configurationId }, body }) => {
+    //     const { viewname, query } = await body;
+    //     console.log("body: ", body);
+    //     console.log("viewname from app: ", viewname);
+    //     console.log("query from app: ", query);
+    //     console.log("test");
+    //     return await MatchedViewProperties(configurationId, viewname, query);
+    //   },
+    // )
     .listen(3000);
-
-  console.log(`Serving at ${app.server?.hostname}:${app.server?.port}`);
 }
 
 app();

@@ -30,11 +30,18 @@ export default function Views({ views, configurationId }) {
           </button>
         </div>
       ))}
-      <div class="flex items-center justify-center">
+      <form
+        hx-post={`/addviewcomponent/${configurationId}`}
+        hx-trigger="click"
+        hx-swap="outerHTML"
+        class="flex items-center justify-center"
+      >
         <button class="flex items-center justify-center bg-gray-200 text-black hover:bg-white ml-2 w-6 h-6 rounded">
           +
         </button>
-      </div>
+        <input name="viewname" type="hidden" value="" />
+        <input name="query" type="hidden" value="" />
+      </form>
     </div>
   );
 }

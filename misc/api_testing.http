@@ -2,3 +2,9 @@
 
 ###
 GET {{url}}/rowid/1/2
+
+###
+GET {{url}}/matchedviewproperties/1
+
+###
+GET {{url}}/test

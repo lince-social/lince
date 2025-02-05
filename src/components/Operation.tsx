@@ -103,14 +103,15 @@ export async function HandleOperationInput(operationInput) {
   }
 }
 
-export default async function OperationComponent(operationInput) {
+export default async function OperationComponent(body) {
+  const { operationInput } = await body;
   const HandledOperation = await HandleOperationInput(operationInput);
   return (
     <FatherBody>
       <div class="flex flex-col justify-center items-center">
         (Press Escape to remove)
         <div
-          class="flex align-center rounded justify-center z-50 focus:outline-none focus:ring-0"
+          class="flex align-center rounded justify-center z-30 focus:outline-none focus:ring-0"
           hx-get="/"
           hx-trigger="keydown[key === 'Escape'] from:body"
           hx-target="#body"

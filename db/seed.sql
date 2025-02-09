@@ -1,8 +1,5 @@
 INSERT INTO record (head, quantity) VALUES
-	('Adicionar rows em qualquer table', -1),
-	('Deletar rows em qualquer table', -1),
-	('Adicionar configuraçoes com botao', -1),
-	('Adicionar views com botao', -1);
+	('Deletar rows em qualquer table', -1);
 
 INSERT INTO view (view_name, query) VALUES
 	('View 1', 'SELECT * FROM record'),

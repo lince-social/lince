@@ -47,9 +47,12 @@ export default async function app() {
     .put("/view", async ({ body }) => {
       return await ToggleView(body);
     })
-    .post("/view", async ({ body }) => {
-      return await CreateView(body);
-    })
+    .post(
+      "/view/:configurationid",
+      async ({ params: { configurationid }, body }) => {
+        return await CreateView(configurationid, body);
+      },
+    )
     .delete("/view", async ({ query }) => {
       return await DeleteView(query);
     })

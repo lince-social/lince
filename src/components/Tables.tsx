@@ -31,7 +31,7 @@ export function Table({ data, table }) {
         </thead>
         <tbody>
           {data.map((row, rowIndex) => (
-            <tr key={row.id || rowIndex} class="bg-gray-600 text-white">
+            <tr key={row.id || rowIndex} class="group bg-gray-600 text-white">
               {headers.map((header, colIndex) => (
                 <td
                   key={header}

@@ -25,42 +25,6 @@ export async function RunQuery(query: string) {
   return Body();
 }
 
-// export async function getTableData() {
-//   const result = await sql`SELECT views FROM configuration WHERE quantity = 1`;
-//   const views = result[0].views;
-//
-//   const activeViews = Object.keys(views).filter((viewName) => views[viewName]);
-//
-//   const queriedQueries = await Promise.all(
-//     activeViews.map(async (activeView) => {
-//       return await sql`SELECT query FROM view WHERE view_name = ${activeView}`;
-//     }),
-//   );
-//
-//   const mappedQueries = queriedQueries.map((query) => {
-//     return query[0].query;
-//   });
-//
-//   const tableNames = mappedQueries.map((query) => {
-//     const words = query.split(" ");
-//     let tableName = null;
-//     for (let i = 0; i < words.length; i++) {
-//       if (words[i].toUpperCase() === "FROM" && i + 1 < words.length) {
-//         tableName = words[i + 1];
-//         break;
-//       }
-//     }
-//     return tableName;
-//   });
-//
-//   const data = await Promise.all(
-//     mappedQueries.map(async (query) => {
-//       const queriedData = await sql(query);
-//       return queriedData;
-//     }),
-//   );
-//   return [data, tableNames];
-// }
 export async function getTableData() {
   const result = await sql`
     SELECT v.query 
@@ -129,7 +93,7 @@ export async function CreateDataComponent(table: string) {
             type="text"
             id={col}
             name={col}
-            class="bg-black text-white rounded border border-white"
+            class="text-white bg-[#1e1e2e] rounded border border-white"
           />
         </div>
       ))}
@@ -137,9 +101,42 @@ export async function CreateDataComponent(table: string) {
   );
 }
 
-export async function CreateData(data) {
-  console.log(data);
-  return await Body();
+// export async function CreateData(data) {
+//   const fields = [];
+//   const values = [];
+//
+//   for (const [key, value] of Object.entries(data)) {
+//     if (value !== "") {
+//       fields.push(key);
+//       values.push(value);
+//     }
+//   }
+//
+//   const query = `INSERT INTO ${data.table} (${sql(fields)}) VALUES (${sql(values)})`;
+//   await sql(query);
+//   return Body();
+// }
+export async function CreateData(body) {
+  // console.log(body);
+  const { table, ...fields } = await body;
+  // console.log(fields);
+
+  const fieldNames = [];
+  const fieldValues = [];
+
+  for (const [key, value] of Object.entries(fields)) {
+    if (value !== "") {
+      fieldNames.push(key);
+      fieldValues.push(typeof value === "string" ? `'${value}'` : value);
+      // console.log(key);
+      // console.log(value);
+    }
+  }
+
+  const query = `INSERT INTO ${table} (${fieldNames}) VALUES (${fieldValues})`;
+  console.log(query);
+  await sql(query);
+  return Body();
 }
 
 export async function ReadDataComponent(table: string) {
@@ -215,16 +212,45 @@ export async function getInactiveConfigurations() {
   return await sql`SELECT id, configurationName, quantity FROM configuration WHERE quantity <> 1`;
 }
 
-export async function CreateView(body) {
+export async function CreateView(configurationId, body) {
   try {
-    const { configurationId, viewname, query } = await body;
+    const { viewname, query } = await body;
     console.log(configurationId, viewname, query);
-    // await sql`INSERT INTO configuration_view (configuration_id, )`;
+
+    // Check if the view already exists
+    const existingView = await sql`
+      SELECT id FROM view 
+      WHERE view_name = ${viewname} AND query = ${query}
+      LIMIT 1;
+    `;
+
+    let viewId;
+
+    if (existingView.length > 0) {
+      viewId = existingView[0].id;
+    } else {
+      // Insert the new view and get its ID
+      const insertedView = await sql`
+        INSERT INTO view (view_name, query) 
+        VALUES (${viewname}, ${query}) 
+        RETURNING id;
+      `;
+      viewId = insertedView[0].id;
+    }
+
+    // Insert into configuration_view if it doesn't already exist
+    await sql`
+      INSERT INTO configuration_view (configuration_id, view_id, is_active) 
+      VALUES (${configurationId}, ${viewId}, true)
+      ON CONFLICT (configuration_id, view_id) DO NOTHING;
+    `;
+
+    return { success: true, message: "View successfully added or linked." };
   } catch (error) {
-    const { configurationId, viewname, query } = await body;
-    console.log(
+    console.error(
       `Error: ${error}, when creating new view in configuration with id: ${configurationId}. View received: ${viewname}, Query received: ${query}`,
     );
+    return { success: false, error: error.message };
   }
 }
 
@@ -232,28 +258,6 @@ export async function getViews() {
   return await sql`SELECT viewName, query FROM view`;
 }
 
-// export async function ConfigurationChange(id: string) {
-//   try {
-//     await sql`
-//       UPDATE configuration
-//       SET quantity = CASE
-//         WHEN id = ${id} THEN 1
-//         ELSE 0
-//       END
-//       WHERE EXISTS (
-//         SELECT 1 FROM configuration WHERE id = ${id}
-//       )
-//     `;
-//     return (
-//       <main id="main">
-//         <div>{await ConfigurationsHovered()} </div>
-//         <div> {await Tables()} </div>
-//       </main>
-//     );
-//   } catch (error) {
-//     console.log("Error updating quantities:", error);
-//   }
-// }
 export async function ConfigurationChange(id: string) {
   try {
     await sql`
@@ -272,24 +276,6 @@ export async function ConfigurationChange(id: string) {
   }
 }
 
-// export async function ToggleView(body) {
-//   const { views, view, configurationId } = body;
-//   const jsonviews = JSON.parse(views);
-//   const jsonview = JSON.parse(view);
-//
-//   Object.keys(jsonview).forEach((viewName) => {
-//     jsonviews[viewName] = !jsonview[viewName];
-//   });
-//
-//   await sql`UPDATE configuration SET views = ${jsonviews} WHERE id = ${configurationId};`;
-//
-//   return (
-//     <main id="main">
-//       <div>{await ConfigurationsHovered()}</div>
-//       <div>{await Tables()}</div>
-//     </main>
-//   );
-// }
 export async function ToggleView(body) {
   const { configurationId, viewId, isActive } = body;
   const isActiveBool = isActive === "true";
@@ -308,18 +294,6 @@ export async function ToggleView(body) {
   );
 }
 
-// export async function DeleteView(query) {
-//   const { viewName, configurationId } = query;
-//   const queryString = `UPDATE configuration SET views = views - '${viewName}' WHERE id = ${configurationId};`;
-//   await sql(queryString);
-//
-//   return (
-//     <main id="main">
-//       <div>{await ConfigurationsHovered()}</div>
-//       <div>{await Tables()}</div>
-//     </main>
-//   );
-// }
 export async function DeleteView(query) {
   const { viewId, configurationId } = query;
 
@@ -354,7 +328,7 @@ export async function AddViewInput(configurationId, viewname, query) {
       <form
         id="addviewcomponent"
         hx-trigger={`keydown[key === "Enter"]`}
-        hx-post={`/createview/${configurationId}`}
+        hx-post={`/view/${configurationId}`}
         hx-target="#body"
         class="flex relative space-x-2 p-1 rounded border border-white"
       >

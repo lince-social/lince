@@ -3,12 +3,7 @@ import { sql } from "bun";
 import Views from "./Views";
 
 export async function ConfigurationRow({ configurationItem }) {
-  const views = await (
-    <Views
-      views={configurationItem.views}
-      configurationId={configurationItem.id}
-    />
-  );
+  const views = await (<Views configurationId={configurationItem.id} />);
 
   return (
     <div class="flex space space-x-1 p-2">
@@ -27,7 +22,7 @@ export async function ConfigurationRow({ configurationItem }) {
 
 export default async function ConfigurationsUnhovered() {
   const activeConfiguration =
-    await sql`SELECT id, configuration_name, quantity, views FROM configuration WHERE quantity = 1`;
+    await sql`SELECT id, configuration_name, quantity FROM configuration WHERE quantity = 1`;
   const activeConfigurationRow = await (
     <ConfigurationRow
       key={activeConfiguration[0].id}
@@ -64,7 +59,7 @@ export default async function ConfigurationsUnhovered() {
 
 export async function ConfigurationsHovered() {
   const activeConfiguration =
-    await sql`SELECT id, configuration_name, quantity, views FROM configuration WHERE quantity = 1`;
+    await sql`SELECT id, configuration_name, quantity FROM configuration WHERE quantity = 1`;
   const activeConfigurationRow = await (
     <ConfigurationRow
       key={activeConfiguration[0].id}
@@ -73,7 +68,7 @@ export async function ConfigurationsHovered() {
   );
 
   const inactiveConfigurations =
-    await sql`SELECT id, configuration_name, quantity, views  FROM configuration WHERE quantity <> 1`;
+    await sql`SELECT id, configuration_name, quantity FROM configuration WHERE quantity <> 1`;
   const inactiveConfigurationsRows = await Promise.all(
     inactiveConfigurations.map(async (inactiveConfiguration) => {
       return (

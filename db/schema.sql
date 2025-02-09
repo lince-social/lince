@@ -6,18 +6,24 @@ origin TEXT NOT NULL DEFAULT 'lince.sql'
 
 CREATE TABLE view (
 	id SERIAL PRIMARY KEY,
-	view_name TEXT,
- 	query TEXT NOT NULL DEFAULT 'SELECT * FROM record'
+	view_name TEXT NOT NULL,
+	query TEXT NOT NULL DEFAULT 'SELECT * FROM record'
 );
 
 CREATE TABLE configuration (
 	id SERIAL PRIMARY KEY,
-	configuration_name VARCHAR(50),
+	configuration_name VARCHAR(50) NOT NULL,
 	quantity REAL NOT NULL DEFAULT 0,
- 	views jsonb NOT NULL DEFAULT '{}',
 	language VARCHAR(20),
 	timezone VARCHAR(3) NOT NULL DEFAULT '0',
 	style VARCHAR(50)
+);
+
+CREATE TABLE configuration_view (
+	configuration_id INT REFERENCES configuration(id) ON DELETE CASCADE,
+	view_id INT REFERENCES view(id) ON DELETE CASCADE,
+	is_active BOOLEAN NOT NULL DEFAULT false,
+	PRIMARY KEY (configuration_id, view_id)
 );
 
 CREATE TABLE record (
@@ -29,11 +35,11 @@ CREATE TABLE record (
 );
 
 CREATE TABLE history (
-    id SERIAL PRIMARY KEY,
-    record_id INTEGER NOT NULL,
-    change_time TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    old_quantity REAL NOT NULL,
-    new_quantity REAL NOT NULL
+	id SERIAL PRIMARY KEY,
+	record_id INTEGER NOT NULL,
+	change_time TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+	old_quantity REAL NOT NULL,
+	new_quantity REAL NOT NULL
 );
 
 CREATE TABLE karma (

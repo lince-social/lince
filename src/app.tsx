@@ -11,7 +11,9 @@ import {
   AddViewInput,
   ConfigurationChange,
   CreateData,
+  CreateView,
   DeleteView,
+  InitialAddView,
   MatchedViewProperties,
   RunQuery,
   ToggleView,
@@ -42,8 +44,11 @@ export default async function app() {
     .get("/configurationunhovered", async () => {
       return await ConfigurationsUnhovered();
     })
-    .post("/view", async ({ body }) => {
+    .put("/view", async ({ body }) => {
       return await ToggleView(body);
+    })
+    .post("/view", async ({ body }) => {
+      return await CreateView(body);
     })
     .delete("/view", async ({ query }) => {
       return await DeleteView(query);
@@ -83,20 +88,20 @@ export default async function app() {
       "/addviewcomponent/:configurationid/",
       async ({ params: { configurationid }, body }) => {
         const { viewname, query } = await body;
-        console.log("body: ", body);
-        console.log("viewname from app: ", viewname);
-        console.log("query from app: ", query);
+        // console.log("avc body: ", body);
+        // console.log("avc viewname from app: ", viewname);
+        // console.log("avc query from app: ", query);
         return await AddViewInput(configurationid, viewname, query);
       },
     )
-    // .get(
+    // .post(
     //   "/matchedviewproperties/:configurationid",
     //   async ({ params: { configurationId }, body }) => {
     //     const { viewname, query } = await body;
-    //     console.log("body: ", body);
-    //     console.log("viewname from app: ", viewname);
-    //     console.log("query from app: ", query);
-    //     console.log("test");
+    //     // console.log("mvp body: ", body);
+    //     // console.log("mvp viewname from app: ", viewname);
+    //     // console.log("mvpquery from app: ", query);
+    //     // console.log("mvp test");
     //     return await MatchedViewProperties(configurationId, viewname, query);
     //   },
     // )

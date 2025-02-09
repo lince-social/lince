@@ -25,40 +25,60 @@ export async function RunQuery(query: string) {
   return Body();
 }
 
+// export async function getTableData() {
+//   const result = await sql`SELECT views FROM configuration WHERE quantity = 1`;
+//   const views = result[0].views;
+//
+//   const activeViews = Object.keys(views).filter((viewName) => views[viewName]);
+//
+//   const queriedQueries = await Promise.all(
+//     activeViews.map(async (activeView) => {
+//       return await sql`SELECT query FROM view WHERE view_name = ${activeView}`;
+//     }),
+//   );
+//
+//   const mappedQueries = queriedQueries.map((query) => {
+//     return query[0].query;
+//   });
+//
+//   const tableNames = mappedQueries.map((query) => {
+//     const words = query.split(" ");
+//     let tableName = null;
+//     for (let i = 0; i < words.length; i++) {
+//       if (words[i].toUpperCase() === "FROM" && i + 1 < words.length) {
+//         tableName = words[i + 1];
+//         break;
+//       }
+//     }
+//     return tableName;
+//   });
+//
+//   const data = await Promise.all(
+//     mappedQueries.map(async (query) => {
+//       const queriedData = await sql(query);
+//       return queriedData;
+//     }),
+//   );
+//   return [data, tableNames];
+// }
 export async function getTableData() {
-  const result = await sql`SELECT views FROM configuration WHERE quantity = 1`;
-  const views = result[0].views;
+  const result = await sql`
+    SELECT v.query 
+    FROM configuration_view cv
+    JOIN view v ON cv.view_id = v.id
+    WHERE cv.is_active = true
+      AND cv.configuration_id = (SELECT id FROM configuration WHERE quantity = 1);
+  `;
 
-  const activeViews = Object.keys(views).filter((viewName) => views[viewName]);
-
-  const queriedQueries = await Promise.all(
-    activeViews.map(async (activeView) => {
-      return await sql`SELECT query FROM view WHERE view_name = ${activeView}`;
-    }),
-  );
-
-  const mappedQueries = queriedQueries.map((query) => {
-    return query[0].query;
-  });
+  const mappedQueries = result.map((row) => row.query);
 
   const tableNames = mappedQueries.map((query) => {
     const words = query.split(" ");
-    let tableName = null;
-    for (let i = 0; i < words.length; i++) {
-      if (words[i].toUpperCase() === "FROM" && i + 1 < words.length) {
-        tableName = words[i + 1];
-        break;
-      }
-    }
-    return tableName;
+    return words[words.indexOf("FROM") + 1] || null;
   });
 
-  const data = await Promise.all(
-    mappedQueries.map(async (query) => {
-      const queriedData = await sql(query);
-      return queriedData;
-    }),
-  );
+  const data = await Promise.all(mappedQueries.map((query) => sql(query)));
+
   return [data, tableNames];
 }
 
@@ -123,7 +143,7 @@ export async function CreateData(data) {
 }
 
 export async function ReadDataComponent(table: string) {
-  return <Table data={await sql(`SELECT * FROM ${table}`)} tableName={table} />;
+  return <Table data={await sql(`SELECT * FROM ${table}`)} table={table} />;
 }
 
 export async function UpdateDataComponent(table: string) {
@@ -188,50 +208,97 @@ export async function DeleteDataComponent(table: string) {
 }
 
 export async function getActiveConfiguration() {
-  return await sql`SELECT id, configurationName, quantity, views FROM configuration WHERE quantity = 1`;
+  return await sql`SELECT id, configurationName, quantity FROM configuration WHERE quantity = 1`;
 }
 
 export async function getInactiveConfigurations() {
-  return await sql`SELECT id, configurationName, quantity, views  FROM configuration WHERE quantity <> 1`;
+  return await sql`SELECT id, configurationName, quantity FROM configuration WHERE quantity <> 1`;
+}
+
+export async function CreateView(body) {
+  try {
+    const { configurationId, viewname, query } = await body;
+    console.log(configurationId, viewname, query);
+    // await sql`INSERT INTO configuration_view (configuration_id, )`;
+  } catch (error) {
+    const { configurationId, viewname, query } = await body;
+    console.log(
+      `Error: ${error}, when creating new view in configuration with id: ${configurationId}. View received: ${viewname}, Query received: ${query}`,
+    );
+  }
 }
 
 export async function getViews() {
   return await sql`SELECT viewName, query FROM view`;
 }
 
+// export async function ConfigurationChange(id: string) {
+//   try {
+//     await sql`
+//       UPDATE configuration
+//       SET quantity = CASE
+//         WHEN id = ${id} THEN 1
+//         ELSE 0
+//       END
+//       WHERE EXISTS (
+//         SELECT 1 FROM configuration WHERE id = ${id}
+//       )
+//     `;
+//     return (
+//       <main id="main">
+//         <div>{await ConfigurationsHovered()} </div>
+//         <div> {await Tables()} </div>
+//       </main>
+//     );
+//   } catch (error) {
+//     console.log("Error updating quantities:", error);
+//   }
+// }
 export async function ConfigurationChange(id: string) {
   try {
     await sql`
       UPDATE configuration
-      SET quantity = CASE
-        WHEN id = ${id} THEN 1
-        ELSE 0
-      END
-      WHERE EXISTS (
-        SELECT 1 FROM configuration WHERE id = ${id}
-      )
+      SET quantity = CASE WHEN id = ${id} THEN 1 ELSE 0 END;
     `;
+
     return (
       <main id="main">
-        <div>{await ConfigurationsHovered()} </div>
-        <div> {await Tables()} </div>
+        <div>{await ConfigurationsHovered()}</div>
+        <div>{await Tables()}</div>
       </main>
     );
   } catch (error) {
-    console.log("Error updating quantities:", error);
+    console.log("Error updating configuration:", error);
   }
 }
 
+// export async function ToggleView(body) {
+//   const { views, view, configurationId } = body;
+//   const jsonviews = JSON.parse(views);
+//   const jsonview = JSON.parse(view);
+//
+//   Object.keys(jsonview).forEach((viewName) => {
+//     jsonviews[viewName] = !jsonview[viewName];
+//   });
+//
+//   await sql`UPDATE configuration SET views = ${jsonviews} WHERE id = ${configurationId};`;
+//
+//   return (
+//     <main id="main">
+//       <div>{await ConfigurationsHovered()}</div>
+//       <div>{await Tables()}</div>
+//     </main>
+//   );
+// }
 export async function ToggleView(body) {
-  const { views, view, configurationId } = body;
-  const jsonviews = JSON.parse(views);
-  const jsonview = JSON.parse(view);
+  const { configurationId, viewId, isActive } = body;
+  const isActiveBool = isActive === "true";
 
-  Object.keys(jsonview).forEach((viewName) => {
-    jsonviews[viewName] = !jsonview[viewName];
-  });
-
-  await sql`UPDATE configuration SET views = ${jsonviews} WHERE id = ${configurationId};`;
+  await sql`
+    UPDATE configuration_view
+    SET is_active = ${!isActiveBool}
+    WHERE configuration_id = ${configurationId} AND view_id = ${viewId};
+  `;
 
   return (
     <main id="main">
@@ -241,10 +308,25 @@ export async function ToggleView(body) {
   );
 }
 
+// export async function DeleteView(query) {
+//   const { viewName, configurationId } = query;
+//   const queryString = `UPDATE configuration SET views = views - '${viewName}' WHERE id = ${configurationId};`;
+//   await sql(queryString);
+//
+//   return (
+//     <main id="main">
+//       <div>{await ConfigurationsHovered()}</div>
+//       <div>{await Tables()}</div>
+//     </main>
+//   );
+// }
 export async function DeleteView(query) {
-  const { viewName, configurationId } = query;
-  const queryString = `UPDATE configuration SET views = views - '${viewName}' WHERE id = ${configurationId};`;
-  await sql(queryString);
+  const { viewId, configurationId } = query;
+
+  await sql`
+    DELETE FROM configuration_view
+    WHERE configuration_id = ${configurationId} AND view_id = ${viewId};
+  `;
 
   return (
     <main id="main">
@@ -258,36 +340,22 @@ export async function CreateViewComponent(configurationId, view_name, query) {
   return <p>osidnodicn</p>;
 }
 
-export async function CreateView(view: string[], configurationId: number) {
-  try {
-    console.log(view, configurationId);
-  } catch (error) {
-    console.log(
-      `Error: ${error}, when creating new view in configuration with id: ${configurationId}. Views received: ${view}`,
-    );
-  }
-}
-
 export async function InitialAddView(configurationId, viewname, query) {
   return (
     <div>
-      <AddViewInput />
-      <MatchedViewProperties />
+      {await AddViewInput(configurationId, viewname, query)}
+      {await MatchedViewProperties(configurationId, viewname, query)}
     </div>
   );
 }
 export async function AddViewInput(configurationId, viewname, query) {
-  console.log("viewname: ", viewname);
-  console.log("query: ", query);
-  console.log("reloaded");
-
   return (
     <div>
       <form
         id="addviewcomponent"
-        hx-trigger={`input changed`}
-        hx-get={`/matchedviewproperties/${configurationId}`}
-        hx-target="#matchedviewproperties"
+        hx-trigger={`keydown[key === "Enter"]`}
+        hx-post={`/createview/${configurationId}`}
+        hx-target="#body"
         class="flex relative space-x-2 p-1 rounded border border-white"
       >
         <input
@@ -304,38 +372,27 @@ export async function AddViewInput(configurationId, viewname, query) {
           value={query}
         />
       </form>
-      {await (<MatchedViewProperties />)}
     </div>
   );
 }
 
 export async function MatchedViewProperties(configurationId, viewname, query) {
   const views = await sql`SELECT view_name, query FROM view`;
-  // const containsAllChars = (str: string, chars: string): boolean => {
-  //   if (typeof chars !== "string") return false; // Handle non-string input safely
-  //   return chars
-  //     .split("")
-  //     .every((char) => str.toLowerCase().includes(char.toLowerCase()));
-  // };
-  //
-  // const queriedNames = views
-  //   .filter((item) => containsAllChars(item.view_name, viewname))
-  //   .map((item) => item.view_name);
-  //
-  // const queriedQueries = views
-  //   .filter((item) => containsAllChars(item.query, query))
-  //   .map((item) => item.query);
+
+  function containsAllChars(str: string, chars: string): boolean {
+    if (typeof chars !== "string") return false;
+    return chars
+      .split("")
+      .every((char) => str.toLowerCase().includes(char.toLowerCase()));
+  }
 
   const queriedNames = views
-    .filter((item) => item.view_name)
+    .filter((item) => containsAllChars(item.view_name, viewname))
     .map((item) => item.view_name);
 
   const queriedQueries = views
-    .filter((item) => item.query)
+    .filter((item) => containsAllChars(item.query, query))
     .map((item) => item.query);
-
-  console.log(queriedQueries);
-  console.log(queriedNames);
 
   return (
     <div
@@ -343,14 +400,26 @@ export async function MatchedViewProperties(configurationId, viewname, query) {
       class="z-50 relative flex flex-wrap justify-between w-full mt-2 space-x-2"
     >
       <ul class="absolute left-0 top-full mt-2 bg-black text-white p-2 rounded border border-white min-w-[150px] max-w-[45%]">
-        {queriedNames.map((item) => (
-          <li class="truncate px-2 py-1">{item}</li>
-        ))}
+        {queriedNames.length === 0 ? (
+          <li class="trucate px-2 py-1">{viewname}</li>
+        ) : (
+          queriedNames.map((item) => <li class="truncate px-2 py-1">{item}</li>)
+        )}
       </ul>
       <ul class="absolute right-0 top-full mt-2 bg-black text-white p-2 rounded border border-white min-w-[150px] max-w-[45%]">
-        {queriedQueries.map((item) => (
-          <li class="truncate px-2 py-1">{item}</li>
-        ))}
+        {queriedQueries.length === 0 ? (
+          <li
+            hx-triger="click"
+            hx-post={`/matchedviewqueryclick/${configurationId}/${query}}`}
+            class="truncate px-2 py-1"
+          >
+            {query}
+          </li>
+        ) : (
+          queriedQueries.map((item) => (
+            <li class="truncate px-2 py-1">{item}</li>
+          ))
+        )}
       </ul>
     </div>
   );

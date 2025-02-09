@@ -12,15 +12,15 @@ import {
   ConfigurationChange,
   CreateData,
   CreateView,
+  DeleteRow,
   DeleteView,
-  InitialAddView,
-  MatchedViewProperties,
   RunQuery,
   ToggleView,
   UpdateData,
 } from "./components//Crud";
 import OperationComponent from "./components/Operation";
 import DataNotFormComponent from "./components/EdiTable";
+import { saveDatabase } from "../db/startup";
 
 export default async function app() {
   new Elysia()
@@ -91,12 +91,12 @@ export default async function app() {
       "/addviewcomponent/:configurationid/",
       async ({ params: { configurationid }, body }) => {
         const { viewname, query } = await body;
-        // console.log("avc body: ", body);
-        // console.log("avc viewname from app: ", viewname);
-        // console.log("avc query from app: ", query);
         return await AddViewInput(configurationid, viewname, query);
       },
     )
+    .post("/deletedata/:table", async ({ params: { table }, body }) => {
+      return await DeleteRow(table, body);
+    })
     // .post(
     //   "/matchedviewproperties/:configurationid",
     //   async ({ params: { configurationId }, body }) => {
@@ -112,3 +112,9 @@ export default async function app() {
 }
 
 app();
+
+setTimeout(() => {
+  setInterval(async () => {
+    await saveDatabase();
+  }, 10000);
+}, 60000);

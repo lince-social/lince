@@ -2,12 +2,10 @@ import * as elements from "typed-html";
 import { getTableData } from "./Crud";
 
 export function Table({ data, table }) {
-  // Handle empty or invalid data
   if (!Array.isArray(data) || data.length === 0) {
     return <p class="text-center">No data available on table: {table}</p>;
   }
 
-  // Derive headers from the first row of data
   const headers = Object.keys(data[0]).filter(
     (key) => data[0][key] !== undefined,
   );
@@ -31,7 +29,10 @@ export function Table({ data, table }) {
         </thead>
         <tbody>
           {data.map((row, rowIndex) => (
-            <tr key={row.id || rowIndex} class="group bg-gray-600 text-white">
+            <tr
+              key={row.id || rowIndex}
+              class="group bg-gray-600 text-white relative"
+            >
               {headers.map((header, colIndex) => (
                 <td
                   key={header}
@@ -43,14 +44,32 @@ export function Table({ data, table }) {
                       ? "rounded-br"
                       : ""
                     }`}
-                  hx-get={`/inputcell/${table}/${row.id || rowIndex}/${header}/${row[header] !== null ? row[header].toString() : ""
-                    }`}
+                  hx-get={`/inputcell/${table}/${row.id || rowIndex}/${header}/${encodeURIComponent(row[header] !== null ? row[header].toString() : "")}`}
                   hx-swap="outerHTML"
                   hx-trigger="click"
                 >
                   {row[header] !== null ? row[header].toString() : ""}
                 </td>
               ))}
+              {/* Absolute Positioned Delete Button */}
+              <td class="absolute top-1/2 left-0 transform -translate-y-1/2 p-2 invisible group-hover:visible">
+                <button
+                  class="bg-red-500 text-white p-2 rounded-full w-6 h-6 flex items-center justify-center text-xl"
+                  hx-post={`/deletedata/${table}`}
+                  hx-trigger="click"
+                  hx-vals={JSON.stringify(
+                    Object.fromEntries(
+                      headers.map((header) => [
+                        header,
+                        row[header] !== null ? row[header] : "",
+                      ]),
+                    ),
+                  )}
+                  hx-target="#body"
+                >
+                  &times;
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>

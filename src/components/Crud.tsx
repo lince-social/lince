@@ -66,6 +66,49 @@ export async function PrintHelpComponent() {
   }
 }
 
+// export async function DeleteRow(table, body) {
+//   console.log(table);
+//   console.log(body);
+//   const { ...fields } = await body;
+//
+//   const fieldNames = [];
+//   const fieldValues = [];
+//
+//   for (const [key, value] of Object.entries(fields)) {
+//     if (value !== "") {
+//       fieldNames.push(key);
+//       fieldValues.push(typeof value === "string" ? `'${value}'` : value);
+//       // console.log(key);
+//       // console.log(value);
+//     }
+//   }
+//
+//   const query = `DELETE FROM ${table} (${fieldNames}) VALUES (${fieldValues})`;
+//   console.log(query);
+//   // await sql(query);
+//   return Body();
+// }
+export async function DeleteRow(table, body) {
+  const { ...fields } = await body;
+
+  const conditions = [];
+
+  for (const [key, value] of Object.entries(fields)) {
+    if (value !== "") {
+      // For strings, wrap the value in quotes, for other types, leave them as is
+      const condition = `${key} = ${typeof value === "string" ? `'${value}'` : value}`;
+      conditions.push(condition);
+    }
+  }
+
+  const whereClause = conditions.join(" AND ");
+
+  const query = `DELETE FROM ${table} WHERE ${whereClause}`;
+  console.log(query);
+  await sql(query);
+  return await Body();
+}
+
 export async function CreateDataComponent(table: string) {
   const result =
     await sql`SELECT column_name FROM information_schema.columns WHERE table_name = ${table};`;
@@ -117,9 +160,7 @@ export async function CreateDataComponent(table: string) {
 //   return Body();
 // }
 export async function CreateData(body) {
-  // console.log(body);
   const { table, ...fields } = await body;
-  // console.log(fields);
 
   const fieldNames = [];
   const fieldValues = [];
@@ -128,13 +169,10 @@ export async function CreateData(body) {
     if (value !== "") {
       fieldNames.push(key);
       fieldValues.push(typeof value === "string" ? `'${value}'` : value);
-      // console.log(key);
-      // console.log(value);
     }
   }
 
   const query = `INSERT INTO ${table} (${fieldNames}) VALUES (${fieldValues})`;
-  console.log(query);
   await sql(query);
   return Body();
 }
@@ -244,13 +282,13 @@ export async function CreateView(configurationId, body) {
       VALUES (${configurationId}, ${viewId}, true)
       ON CONFLICT (configuration_id, view_id) DO NOTHING;
     `;
-
-    return { success: true, message: "View successfully added or linked." };
+    return await Body();
   } catch (error) {
-    console.error(
+    const { viewname, query } = await body;
+    console.log(
       `Error: ${error}, when creating new view in configuration with id: ${configurationId}. View received: ${viewname}, Query received: ${query}`,
     );
-    return { success: false, error: error.message };
+    return { success: false, error: error };
   }
 }
 

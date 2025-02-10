@@ -1,5 +1,5 @@
 INSERT INTO record (head, quantity) VALUES
-	('Deletar rows em qualquer table', -1);
+	('Bugfix: when some unknown event happens, personal db data is reset to seed data.', -1);
 
 INSERT INTO view (view_name, query) VALUES
 	('View 1', 'SELECT * FROM record'),

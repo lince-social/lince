@@ -368,19 +368,19 @@ export async function AddViewInput(configurationId, viewname, query) {
         hx-trigger={`keydown[key === "Enter"]`}
         hx-post={`/view/${configurationId}`}
         hx-target="#body"
-        class="flex relative space-x-2 p-1 rounded border border-white"
+        class="flex relative space-x-2 p-1"
       >
         <input
           name="viewname"
           placeholder="Add view"
-          class="rounded text-black bg-white"
+          class="rounded text-white bg-transparent border border-white"
           value={viewname}
           autofocus
         />
         <input
           name="query"
           placeholder="Query..."
-          class="rounded text-black bg-white"
+          class="rounded text-white bg-transparent border borde-white"
           value={query}
         />
       </form>

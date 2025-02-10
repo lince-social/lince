@@ -29,7 +29,7 @@ export default async function DataNotFormComponent(table, id, key, value) {
           <input
             name="value"
             value={sanitizedValue}
-            class="text-white  bg-gray-600"
+            class="text-white bg-gray-600"
           />
         </form>
       </td>

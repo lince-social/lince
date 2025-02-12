@@ -36,10 +36,17 @@ export async function getTableData() {
 
   const mappedQueries = result.map((row) => row.query);
 
-  const tableNames = mappedQueries.map((query) => {
-    const words = query.split(" ");
-    return words[words.indexOf("FROM") + 1] || null;
+  // const tableNames = mappedQueries.map((query) => {
+  //   const words = query.split(" ");
+  //   return words[words.indexOf("FROM") + 1] || null;
+  // });
+
+   const tableNames = mappedQueries.map((query) => {
+    const words = query.split(/\s+/);
+    const fromIndex = words.findIndex((word) => word.toUpperCase() === "FROM");
+    return fromIndex !== -1 ? words[fromIndex + 1] || null : null;
   });
+
 
   const data = await Promise.all(mappedQueries.map((query) => sql(query)));
 

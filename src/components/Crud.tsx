@@ -41,12 +41,11 @@ export async function getTableData() {
   //   return words[words.indexOf("FROM") + 1] || null;
   // });
 
-   const tableNames = mappedQueries.map((query) => {
+  const tableNames = mappedQueries.map((query) => {
     const words = query.split(/\s+/);
     const fromIndex = words.findIndex((word) => word.toUpperCase() === "FROM");
     return fromIndex !== -1 ? words[fromIndex + 1] || null : null;
   });
-
 
   const data = await Promise.all(mappedQueries.map((query) => sql(query)));
 
@@ -73,47 +72,32 @@ export async function PrintHelpComponent() {
   }
 }
 
-// export async function DeleteRow(table, body) {
-//   console.log(table);
-//   console.log(body);
-//   const { ...fields } = await body;
-//
-//   const fieldNames = [];
-//   const fieldValues = [];
-//
-//   for (const [key, value] of Object.entries(fields)) {
-//     if (value !== "") {
-//       fieldNames.push(key);
-//       fieldValues.push(typeof value === "string" ? `'${value}'` : value);
-//       // console.log(key);
-//       // console.log(value);
-//     }
-//   }
-//
-//   const query = `DELETE FROM ${table} (${fieldNames}) VALUES (${fieldValues})`;
-//   console.log(query);
-//   // await sql(query);
-//   return Body();
-// }
 export async function DeleteRow(table, body) {
-  const { ...fields } = await body;
+  try {
+    const { ...fields } = await body;
 
-  const conditions = [];
+    const conditions = [];
 
-  for (const [key, value] of Object.entries(fields)) {
-    if (value !== "") {
-      // For strings, wrap the value in quotes, for other types, leave them as is
-      const condition = `${key} = ${typeof value === "string" ? `'${value}'` : value}`;
-      conditions.push(condition);
+    for (let [key, value] of Object.entries(fields)) {
+      if (typeof value === "string") {
+        value = value.replace(/'/g, "''");
+        if (value !== "") {
+          const condition = `${key} = ${typeof value === "string" ? `'${value}'` : value}`;
+          conditions.push(condition);
+        }
+      }
     }
+
+    const whereClause = conditions.join(" AND ");
+
+    const query = `DELETE FROM ${table} WHERE ${whereClause}`;
+    await sql(query);
+    return await Body();
+  } catch (error) {
+    console.log(
+      `Error deleting data: ${body} in table: ${table}, error: ${error}`,
+    );
   }
-
-  const whereClause = conditions.join(" AND ");
-
-  const query = `DELETE FROM ${table} WHERE ${whereClause}`;
-  console.log(query);
-  await sql(query);
-  return await Body();
 }
 
 export async function CreateDataComponent(table: string) {

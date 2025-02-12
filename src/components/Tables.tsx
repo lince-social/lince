@@ -19,8 +19,9 @@ export function Table({ data, table }) {
             {headers.map((header, index) => (
               <th
                 key={header}
-                class={`p-2 ${index === 0 ? "rounded-tl" : ""} ${index === headers.length - 1 ? "rounded-tr" : ""
-                  }`}
+                class={`p-2 ${index === 0 ? "rounded-tl" : ""} ${
+                  index === headers.length - 1 ? "rounded-tr" : ""
+                }`}
               >
                 {header}
               </th>
@@ -36,14 +37,16 @@ export function Table({ data, table }) {
               {headers.map((header, colIndex) => (
                 <td
                   key={header}
-                  class={`p-2 ${rowIndex === data.length - 1 && colIndex === 0
+                  class={`p-2 ${
+                    rowIndex === data.length - 1 && colIndex === 0
                       ? "rounded-bl"
                       : ""
-                    } ${rowIndex === data.length - 1 &&
-                      colIndex === headers.length - 1
+                  } ${
+                    rowIndex === data.length - 1 &&
+                    colIndex === headers.length - 1
                       ? "rounded-br"
                       : ""
-                    }`}
+                  }`}
                   hx-get={`/inputcell/${table}/${row.id || rowIndex}/${header}/${encodeURIComponent(row[header] !== null ? row[header].toString() : "")}`}
                   hx-swap="outerHTML"
                   hx-trigger="click"

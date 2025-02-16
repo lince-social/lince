@@ -1,15 +1,15 @@
+import * as elements from "typed-html"
 import { sql } from "bun";
-import * as elements from "typed-html";
 
-export default async function Views({ configurationId }) {
-  const results = await sql`
+export default async function Views({configurationId}: {configurationId: number}) {
+     const results = await sql`
     SELECT v.id AS view_id, v.view_name, cv.is_active
     FROM configuration_view cv
     JOIN view v ON cv.view_id = v.id
     WHERE cv.configuration_id = ${configurationId};
   `;
 
-  const views = results.map(({ view_id, view_name, is_active }) => ({
+  const views = results.map(({ view_id, view_name, is_active }: { view_id: number, view_name: string, is_active: boolean }) => ({
     view_id,
     view_name,
     is_active,

@@ -1,6 +1,6 @@
 import * as elements from "typed-html";
 import { sql } from "bun";
-import Views from "./Views";
+import Views from "../views/Views";
 
 export async function ConfigurationRow({ configurationItem }) {
   const views = await (<Views configurationId={configurationItem.id} />);

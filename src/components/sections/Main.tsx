@@ -1,9 +1,6 @@
 import * as elements from "typed-html";
-
-import ConfigurationsUnhovered, {
-  ConfigurationsHovered,
-} from "../Configurations";
-import Tables from "../Tables";
+import ConfigurationsUnhovered from "../configurations/Configurations";
+import Tables from "../tables/Tables";
 
 export default async function UnhoveredMain() {
   const configurations = await (<ConfigurationsUnhovered />);

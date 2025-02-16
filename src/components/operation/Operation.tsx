@@ -1,19 +1,21 @@
 import * as elements from "typed-html";
-import { saveDatabase } from "../../db/startup";
 import {
   CreateDataComponent,
   DeleteDataComponent,
   PrintHelpComponent,
-  ReadDataComponent,
   QueryInputComponent,
+  ReadDataComponent,
   RunSqlFileComponent,
   UpdateDataComponent,
-  ConfigurationChange,
-} from "./Crud";
-import { FatherBody } from "../components/sections/Body";
+  ZeroRecordQuantity,
+} from "./CrudOperation";
+import { saveDatabase } from "../../../db/startup";
+import { ConfigurationChange } from "../configurations/CrudConfigurations";
+import Body, { FatherBody } from "../sections/Body";
+import { isNumericString } from "elysia/utils";
 
 export async function HandleOperation(operation: string) {
-  let table;
+
 
   switch (true) {
     case operation === "configuration":
@@ -36,9 +38,13 @@ export async function HandleOperation(operation: string) {
       return await ReadDataComponent("transfer");
     case operation === "view":
       return await ReadDataComponent("view");
+    case operation === "karma_consequence":
+      return await ReadDataComponent("karma_consequence");
+    case operation === "karma_condition":
+      return await ReadDataComponent("karma_condition");
   }
 
-  // Determine table based on shortcuts
+  let table;
   switch (true) {
     case /0/.test(operation):
       table = "configuration";
@@ -70,11 +76,16 @@ export async function HandleOperation(operation: string) {
     case /9/.test(operation):
       table = "configuration_view";
       break;
+    case /10/.test(operation):
+      table = "karma_consequence";
+      break;
+    case /11/.test(operation):
+      table = "karma_condition";
+      break;
     default:
-      table = "record"; // Default fallback
+      table = "record";
   }
 
-  // Handle actions
   switch (true) {
     case /c/.test(operation):
       return await CreateDataComponent(table);
@@ -104,17 +115,23 @@ export async function HandleOperation(operation: string) {
 
 export default async function OperationComponent(body: any) {
   const { operation } = await body;
+
+  if (isNumericString(operation)) {
+    await ZeroRecordQuantity(operation)
+    return Body()
+  }
+
   const HandledOperation = await HandleOperation(operation);
   return (
     <FatherBody>
-      <div class="flex flex-col justify-center items-center">
-        (Press Escape to remove)
+      <div class="fixed inset-0 z-30 flex items-center justify-center">
         <div
-          class="flex align-center rounded justify-center z-30 focus:outline-none focus:ring-0"
+          class="flex align-center rounded justify-center focus:outline-none focus:ring-0"
           hx-get="/"
           hx-trigger="keydown[key === 'Escape'] from:body"
           hx-target="#body"
         >
+          (Press Escape to remove)
           {HandledOperation}
         </div>
       </div>

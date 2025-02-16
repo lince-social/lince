@@ -31,7 +31,8 @@ CREATE TABLE record (
 	quantity REAL NOT NULL DEFAULT 1,
 	head TEXT,
 	body TEXT,
-	location POINT
+	location POINT,
+	save_history BOOLEAN
 );
 
 CREATE TABLE history (
@@ -42,10 +43,24 @@ CREATE TABLE history (
 	new_quantity REAL NOT NULL
 );
 
-CREATE TABLE karma (
+CREATE TABLE karma_condition (
 	id SERIAL PRIMARY KEY,
-	quantity INTEGER NOT NULL DEFAULT 1,
-	consequence TEXT
+	quantity INTEGER,
+	condition TEXT NOT NULL
+);
+
+CREATE TABLE karma_consequence (
+	id SERIAL PRIMARY KEY,
+	quantity INTEGER,
+	consequence TEXT NOT NULL
+);
+
+CREATE TABLE karma(
+	id SERIAL PRIMARY KEY,
+	quantity INTEGER,
+	condition_id INT NOT NULL,
+	operator TEXT NOT NULL,
+	consequence_id INT NOT NULL
 );
 
 CREATE TABLE frequency (

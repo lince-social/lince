@@ -4,23 +4,24 @@ import { html } from "@elysiajs/html";
 
 import Page from "./components/sections/Page";
 import Body from "./components/sections/Body";
+import { saveDatabase } from "../db/startup";
+import { ConfigurationChange } from "./components/configurations/CrudConfigurations";
 import ConfigurationsUnhovered, {
   ConfigurationsHovered,
-} from "./components/Configurations";
+} from "./components/configurations/Configurations";
 import {
   AddViewInput,
-  ConfigurationChange,
-  CreateData,
   CreateView,
-  DeleteRow,
   DeleteView,
-  RunQuery,
   ToggleView,
+} from "./components/views/CrudViews";
+import OperationComponent from "./components/operation/Operation"; import {
+  CreateData,
+  RunQuery,
   UpdateData,
-} from "./components//Crud";
-import OperationComponent from "./components/Operation";
-import DataNotFormComponent from "./components/EdiTable";
-import { saveDatabase } from "../db/startup";
+} from "./components/operation/CrudOperation";
+import DataNotFormComponent from "./components/tables/EdiTable";
+import { DeleteRow } from "./components/tables/CrudTables";
 
 export default async function app() {
   new Elysia()

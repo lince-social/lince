@@ -1,8 +1,8 @@
 import * as elements from "typed-html"
 import { sql } from "bun";
 
-export default async function Views({configurationId}: {configurationId: number}) {
-     const results = await sql`
+export default async function Views({ configurationId }: { configurationId: number }) {
+  const results = await sql`
     SELECT v.id AS view_id, v.view_name, cv.is_active
     FROM configuration_view cv
     JOIN view v ON cv.view_id = v.id
@@ -21,8 +21,8 @@ export default async function Views({configurationId}: {configurationId: number}
         <div
           key={view_id}
           class={`group flex space-x-1 rounded p-1 text-nowrap ${is_active
-              ? "bg-slate-700 hover:bg-slate-900"
-              : "bg-slate-900 hover:bg-slate-800"
+            ? "bg-slate-700 hover:bg-slate-900"
+            : "bg-slate-900 hover:bg-slate-800"
             }`}
         >
           <button

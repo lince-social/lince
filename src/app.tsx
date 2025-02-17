@@ -23,6 +23,13 @@ import OperationComponent from "./components/operation/Operation"; import {
 import DataNotFormComponent from "./components/tables/EdiTable";
 import { DeleteRow } from "./components/tables/CrudTables";
 
+
+async function KarmaWorker() {
+  new Worker(import.meta.dir + "/components/karma/Karma.ts").postMessage("hello")
+}
+KarmaWorker()
+
+
 export default async function app() {
   new Elysia()
     .use(html())

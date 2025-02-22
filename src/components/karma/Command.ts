@@ -1,7 +1,7 @@
-import { $ } from "bun"
+import { $ } from "bun";
 
 export async function ExecuteShellCommand(command: string) {
-  await $`command`
+  await $`${command}`;
 }
 
 // def execute_shell_command(id, output):

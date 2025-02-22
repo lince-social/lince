@@ -4,7 +4,6 @@ import { html } from "@elysiajs/html";
 
 import Page from "./components/sections/Page";
 import Body from "./components/sections/Body";
-import { saveDatabase } from "../db/startup";
 import { ConfigurationChange } from "./components/configurations/CrudConfigurations";
 import ConfigurationsUnhovered, {
   ConfigurationsHovered,
@@ -116,13 +115,7 @@ export default async function app() {
     //     return await MatchedViewProperties(configurationId, viewname, query);
     //   },
     // )
-    .listen(3000);
+    .listen(6174);
 }
 
 app();
-
-setTimeout(() => {
-  setInterval(async () => {
-    await saveDatabase();
-  }, 10000);
-}, 60000);

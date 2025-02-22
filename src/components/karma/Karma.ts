@@ -1,14 +1,17 @@
 import { sql } from "bun";
+import { saveDatabase } from "../../../db/startup";
 declare var self: Worker;
 
-self.onmessage = async (event: MessageEvent) => {
+self.onmessage = async () => {
   setTimeout(async () => {
     await Karma()
+    await saveDatabase()
   }, 3000)
 }
 
 export default async function Karma() {
   try {
+    console.log("helorowd")
     console.log(await sql`SELECT * FROM record`)
     // olhar pra karma:
     // ver a coluna condition_id, puxar 

@@ -106,20 +106,3 @@ CREATE TABLE transfer (
 	transfer_confirmation JSON,
 	transfer_time TIMESTAMP WITH TIME ZONE
 );
-
-CREATE OR REPLACE FUNCTION record_quantity_change()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF NEW.quantity IS DISTINCT FROM OLD.quantity THEN
-        INSERT INTO history (record_id, old_quantity, new_quantity)
-        VALUES (OLD.id, OLD.quantity, NEW.quantity);
-    END IF;
-    RETURN NEW;
-END;
-$$
- LANGUAGE plpgsql;
-
-CREATE TRIGGER record_quantity_update
-AFTER UPDATE OF quantity ON record
-FOR EACH ROW
-EXECUTE FUNCTION record_quantity_change();

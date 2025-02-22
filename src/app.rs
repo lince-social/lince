@@ -1,34 +1,3 @@
-import * as elements from "typed-html";
-import { Elysia } from "elysia";
-import { html } from "@elysiajs/html";
-
-import Page from "./components/sections/Page";
-import Body from "./components/sections/Body";
-import { ConfigurationChange } from "./components/configurations/CrudConfigurations";
-import ConfigurationsUnhovered, {
-  ConfigurationsHovered,
-} from "./components/configurations/Configurations";
-import {
-  AddViewInput,
-  CreateView,
-  DeleteView,
-  ToggleView,
-} from "./components/views/CrudViews";
-import OperationComponent from "./components/operation/Operation"; import {
-  CreateData,
-  RunQuery,
-  UpdateData,
-} from "./components/operation/CrudOperation";
-import DataNotFormComponent from "./components/tables/EdiTable";
-import { DeleteRow } from "./components/tables/CrudTables";
-
-
-async function KarmaWorker() {
-  new Worker(import.meta.dir + "/components/karma/Karma.ts").postMessage("hello")
-}
-KarmaWorker()
-
-
 export default async function app() {
   new Elysia()
     .use(html())

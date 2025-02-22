@@ -13,25 +13,12 @@
 
 ## Getting Started
 
-If you have PostgreSQL and Bun ^1.2 installed, run:
-
 ```bash
-bun dev
+cargo build
+cargo run
 ```
 
-If not, you can install [Nix](https://nixos.org/download), then type on the directory you cloned it:
-
-```bash
-nix-shell
-```
-
-Or anywhere on your system:
-
-```bash
-nix-shell /path/to/lince
-```
-
-Either way, after that, open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 ---
 

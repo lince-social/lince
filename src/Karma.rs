@@ -1,47 +1,47 @@
-import { sql } from "bun";
-import { saveDatabase } from "../../../db/startup";
-declare var self: Worker;
-
-self.onmessage = async () => {
-  setTimeout(async () => {
-    await Karma()
-    await saveDatabase()
-  }, 3000)
-}
-
-export default async function Karma() {
-  try {
-    console.log("helorowd")
-    console.log(await sql`SELECT * FROM record`)
-    // olhar pra karma:
-    // ver a coluna condition_id, puxar 
-    // const data = await sql`SELECT FROM karma`;
-    // karma_consequence | operator | karma_condition
-    // 
-    // CONDITION: SELECT condition FROM karma_condition:
-    // if 'f' take the numbers after and thats the id, run UpdateFrequency(id) and replace in the string the fNUMBERS with the result: number
-    // if 'c' take the numbers after and thats the id, run RunShellCommand(id) and replace in the string the cNUMBERS with the result: number 
-    // if 'rq' take the numbers after and thats the id, run GetRecordQuantity(id) and replace in the string the rqNUMBERS with the result: number
-    // if 's' take the numbers after and thats the id, run CalculateSum(id) and replace in the string the sNUMBERS with the result: number
-    // then, eval the condition and grab the result: number
-    //
-    // OPERATOR: SELECT operator from
-    // def if true: apply operator to all consequences in question:
-    // record quantity
-    // command
-    //
-    // ---------- operator:
-    // if null -> =
-    // if * in it, if the condition is zero, apply zero to the consequences.
-    //
-    // ----------- consequences:
-    // if rqNUMBERS -> put the result of operator(condition) into record quantity
-    // if cNUMBERS -> activate the script the module of times of operator(condition)
-  } catch (error) {
-    console.log(`Error when running Karma() at: ${new Date()}: ${error}`)
-  }
-}
-
+// import { sql } from "bun";
+// import { saveDatabase } from "../../../db/startup";
+// declare var self: Worker;
+// 
+// self.onmessage = async () => {
+//   setTimeout(async () => {
+//     await Karma()
+//     await saveDatabase()
+//   }, 3000)
+// }
+// 
+// export default async function Karma() {
+//   try {
+//     console.log("helorowd")
+//     console.log(await sql`SELECT * FROM record`)
+//     // olhar pra karma:
+//     // ver a coluna condition_id, puxar 
+//     // const data = await sql`SELECT FROM karma`;
+//     // karma_consequence | operator | karma_condition
+//     // 
+//     // CONDITION: SELECT condition FROM karma_condition:
+//     // if 'f' take the numbers after and thats the id, run UpdateFrequency(id) and replace in the string the fNUMBERS with the result: number
+//     // if 'c' take the numbers after and thats the id, run RunShellCommand(id) and replace in the string the cNUMBERS with the result: number 
+//     // if 'rq' take the numbers after and thats the id, run GetRecordQuantity(id) and replace in the string the rqNUMBERS with the result: number
+//     // if 's' take the numbers after and thats the id, run CalculateSum(id) and replace in the string the sNUMBERS with the result: number
+//     // then, eval the condition and grab the result: number
+//     //
+//     // OPERATOR: SELECT operator from
+//     // def if true: apply operator to all consequences in question:
+//     // record quantity
+//     // command
+//     //
+//     // ---------- operator:
+//     // if null -> =
+//     // if * in it, if the condition is zero, apply zero to the consequences.
+//     //
+//     // ----------- consequences:
+//     // if rqNUMBERS -> put the result of operator(condition) into record quantity
+//     // if cNUMBERS -> activate the script the module of times of operator(condition)
+//   } catch (error) {
+//     console.log(`Error when running Karma() at: ${new Date()}: ${error}`)
+//   }
+// }
+// 
 // def karma():
 //     karma_df = read_rows("SELECT * FROM karma")
 //

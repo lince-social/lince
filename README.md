@@ -13,12 +13,13 @@
 
 ## Getting Started
 
+If you have [cargo](https://www.rust-lang.org/tools/install), run:
+
 ```bash
-cargo build
 cargo run
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Go to [http://localhost:3000](http://localhost:3000)
 
 ---
 

@@ -1,9 +1,9 @@
-import { $ } from "bun";
-
-export async function ExecuteShellCommand(command: string) {
-  await $`${command}`;
-}
-
+// import { $ } from "bun";
+// 
+// export async function ExecuteShellCommand(command: string) {
+//   await $`${command}`;
+// }
+// 
 // def execute_shell_command(id, output):
 //     command_row = read_rows(f"SELECT * FROM command WHERE id={id}")
 //     if command_row.empty:

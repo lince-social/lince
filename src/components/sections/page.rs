@@ -1,5 +1,12 @@
+use axum::response::Html;
+
+pub async fn root() -> Html<&'static str> {
+    Html("Hello world! Im an amendobobo")
+}
+
 // import * as elements from "typed-html";
-// 
+//
+//
 // export default async function Page({ children }: elements.Children) {
 //   return `<!DOCTYPE html>
 //     <html lang="en">

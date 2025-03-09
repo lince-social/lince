@@ -1,6 +1,6 @@
-pub fn get_configs() {
-    "asoiasjd"
-}
+pub fn get_active_configs() {}
+pub fn get_inactive_configs() {}
+
 // import { sql } from "bun";
 // import * as elements from "typed-html";
 // import { ConfigurationsHovered } from "./Configurations";

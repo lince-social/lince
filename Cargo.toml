@@ -1,12 +1,19 @@
 [package]
 name = "dev"
-version = "0.1.0"
+version = "0.5.0"
 edition = "2024"
 
 [dependencies]
-sqlx = {version = "*", features = ["sqlite", "runtime-tokio", "tls-native-tls"]}
-serde = "1.0.218"
-tokio = {version = "1.43.0", features = ["rt-multi-thread"]}
+sqlx = { version = "*", features = [
+  "sqlite",
+  "runtime-tokio",
+  "tls-native-tls",
+] }
+serde = { version = "*", features = ["derive"] }
+serde_json = "*"
+tower = "*"
+tower-http = "*"
+tokio = { version = "1.43.0", features = ["full"] }
 tracing-subscriber = "0.3.19"
 axum = "0.8.1"
 dirs = "6.0.0"

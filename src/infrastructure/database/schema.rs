@@ -1,4 +1,4 @@
-use sqlx::{sqlite, Executor};
+use sqlx::{Executor, sqlite};
 
 #[tokio::main]
 pub async fn schema_database() {

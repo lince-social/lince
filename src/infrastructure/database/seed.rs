@@ -1,4 +1,5 @@
-use sqlx::sqlite;
+use sqlx::{Executor, sqlite};
+use std::io;
 
 struct Record {
     head: String,
@@ -18,28 +19,33 @@ struct Configuration {
 //     configuration_id: i32,
 // }
 
-pub fn seed() -> Result<()> {
+#[tokio::main]
+pub async fn seed() -> std::io::Result<()> {
     let config_dir = dirs::config_dir().unwrap();
     let db_path = String::from(config_dir.to_str().unwrap()) + "/lince/lince.db";
     let opt = sqlite::SqliteConnectOptions::new()
         .filename(db_path)
         .create_if_missing(true);
-    let conn = sqlite::SqlitePool::connect_with(opt);
+    let conn = sqlite::SqlitePool::connect_with(opt).await.unwrap();
 
     let apple = Record {
         head: "Apple".to_string(),
     };
-    sqlx::query("INSERT INTO record (head) SELECT (?1) WHERE NOT EXISTS (SELECT * FROM record)")
-        .bind(apple.head)
-        .execute(&conn);
-    // .expect("Error when seeding record");
 
-    let configuration = Configuration {
-        configuration_name: "First Config".to_string(),
-    };
-    sqlx::query("INSERT INTO configuration (configuration_name) SELECT (?1) WHERE NOT EXISTS (SELECT * FROM configuration)")
-        .bind(configuration.configuration_name)
-        .execute(&conn);
+    // conn.execute("INSERT INTO record (head) SELECT (?1) WHERE NOT EXISTS (SELECT * FROM record)")
+    sqlx::query("INSERT INTO record (head) SELECT (?1) WHERE NOT EXISTS (SELECT * FROM record)");
+    // sqlx::query("INSERT INTO record (head) SELECT (?1) WHERE NOT EXISTS (SELECT * FROM record)")
+    //     .bind(apple.head)
+    //     .execute(&mut conn)
+    //     .await
+    //     .unwrap();
+
+    // let configuration = Configuration {
+    //     configuration_name: "First Config".to_string(),
+    // };
+    // sqlx::query("INSERT INTO configuration (configuration_name) SELECT (?1) WHERE NOT EXISTS (SELECT * FROM configuration)")
+    //     .bind(configuration.configuration_name)
+    //     .execute(&conn);
     // .expect("Error when seeding configuration");
 
     // let view = View {
@@ -49,7 +55,8 @@ pub fn seed() -> Result<()> {
     // conn.execute(
     //     "INSERT INTO view (view_name, query) SELECT ?1, ?2 WHERE NOT EXISTS (SELECT * FROM view)",
     // )
-    // .bind(&view.view_name, &view.query)
+    // .bind(&view.view_name)
+    // .bind(&view.query)
     // .execute(&conn)
     // .expect("Error when seeding view");
     // sqlx::query(

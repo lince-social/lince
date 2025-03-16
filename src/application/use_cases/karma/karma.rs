@@ -1,11 +1,10 @@
-use std::thread;
-use std::time::Duration;
-
 pub fn karma() {
-    thread::spawn(|| loop {
-        thread::sleep(Duration::from_secs(1));
-        println!("hello from karma")
-    });
+    // thread::spawn(|| {
+    //     loop {
+    //         thread::sleep(Duration::from_secs(1));
+    println!("hello from karma")
+    // }
+    // });
 }
 
 // import { sql } from "bun";

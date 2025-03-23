@@ -27,6 +27,7 @@ async fn main() {
     let app = Router::new()
         .route("/", get(page_handler))
         .nest("/section", section_router().await)
+        .nest("/table")
         .nest("/configuration", configuration_router().await);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();

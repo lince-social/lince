@@ -39,8 +39,8 @@ pub async fn seed() -> Result<()> {
         quantity: 1,
     };
     conn.execute(
-        "INSERT INTO configuration (name) SELECT ?1, ?2 WHERE NOT EXISTS (SELECT * FROM configuration)",
-        (configuration.name,),
+        "INSERT INTO configuration (name, quantity) SELECT ?1, ?2 WHERE NOT EXISTS (SELECT * FROM configuration)",
+        (&configuration.name, &configuration.quantity),
     )
     .expect("Error when seeding configuration");
 

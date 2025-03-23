@@ -1,11 +1,2 @@
-pub mod command;
 pub mod configuration;
-pub mod configuration_view;
-pub mod frequency;
-pub mod karma;
-pub mod karma_condition;
-pub mod karma_consequence;
-pub mod record;
-pub mod sum;
 pub mod table;
-pub mod view;

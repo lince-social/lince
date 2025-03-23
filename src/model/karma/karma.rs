@@ -1,23 +1,8 @@
 pub fn karma() {
-    // thread::spawn(|| {
-    //     loop {
-    //         thread::sleep(Duration::from_secs(1));
     println!("hello from karma")
-    // }
-    // });
 }
 
-// import { sql } from "bun";
-//
 // import { saveDatabase } from "../../../db/startup";
-// declare var self: Worker;
-//
-// self.onmessage = async () => {
-//   setTimeout(async () => {
-//     await Karma()
-//     await saveDatabase()
-//   }, 3000)
-// }
 //
 // export default async function Karma() {
 //   try {

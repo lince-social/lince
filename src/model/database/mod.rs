@@ -1,5 +1,2 @@
-pub mod connection;
+pub mod management;
 pub mod repositories;
-pub mod schema;
-pub mod seed;
-pub mod startup;

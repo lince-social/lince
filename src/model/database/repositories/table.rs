@@ -5,7 +5,7 @@ use std::{
 
 use rusqlite::types::Value;
 
-use crate::infrastructure::database::connection::connection;
+use crate::model::database::management::connection::connection;
 
 pub async fn get_data(query: String) -> Result<Vec<HashMap<String, String>>, Error> {
     let conn = connection().await;

@@ -1,17 +1,12 @@
-mod application;
-mod domain;
-mod infrastructure;
-mod presentation;
+mod controller;
+mod model;
+mod view;
 
-use application::use_cases::karma::karma::karma;
-use axum::routing::get;
-use infrastructure::http::handlers::section::page::page_handler;
-use infrastructure::http::routers::configuration::configuration_router;
-use infrastructure::{database::startup::tidy_database, http::routers::section::section_router};
-
-use axum::Router;
-use std::thread;
-use std::time::Duration;
+use axum::{Router, routing::get};
+use controller::{configuration::configuration_router, section::section_router};
+use model::{database::management::startup::tidy_database, karma::karma::karma};
+use std::{thread, time::Duration};
+use view::section::page::page;
 
 #[tokio::main]
 async fn main() {
@@ -25,10 +20,10 @@ async fn main() {
     });
 
     let app = Router::new()
-        .route("/", get(page_handler))
+        .route("/", get(page))
         .nest("/section", section_router().await)
-        .nest("/table")
         .nest("/configuration", configuration_router().await);
+    // .nest("/table")
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
 

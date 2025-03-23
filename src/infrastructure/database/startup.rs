@@ -1,7 +1,7 @@
-use super::schema::schema_database;
+use super::schema::schema;
 use super::seed::seed;
 
-pub fn tidy_database() {
-    let _ = schema_database();
-    let _ = seed();
+pub async fn tidy_database() {
+    let _schema = schema().await;
+    let _seed = seed().await;
 }

@@ -1,6 +1,6 @@
 use std::io::{Error, ErrorKind};
 
-use rusqlite::{Connection, Result};
+use rusqlite::Result;
 
 use super::connection::connection;
 

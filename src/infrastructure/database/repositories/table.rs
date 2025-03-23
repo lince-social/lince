@@ -14,7 +14,7 @@ pub async fn get_data(query: String) -> Result<Vec<HashMap<String, String>>, Err
         ));
     }
     let conn = conn.unwrap();
-    let stmt = conn.prepare(&query).unwrap();
+    let stmt = conn.prepare("SELECT * FROM record").unwrap();
 
     let column_names: Vec<String> = stmt.column_names().iter().map(|s| s.to_string()).collect();
 

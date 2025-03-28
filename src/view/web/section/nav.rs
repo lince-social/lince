@@ -15,13 +15,3 @@ pub async fn nav() -> Html<String> {
         .to_string(),
     )
 }
-// import * as elements from "typed-html";
-// import OperationInput from "../operation/OperationInput";
-//
-// export default async function Nav() {
-//   return (
-//     <nav class="flex items-center justify-between">
-//       <OperationInput />
-//     </nav>
-//   );
-// }

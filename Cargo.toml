@@ -13,3 +13,4 @@ tokio = { version = "1.43.0", features = ["full"] }
 tracing-subscriber = "0.3.19"
 axum = "0.8.1"
 dirs = "6.0.0"
+polars = { version = "*", features = ["lazy", "sql"] }

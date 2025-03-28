@@ -1,3 +1,2 @@
-pub mod configuration;
-pub mod section;
-pub mod table;
+pub mod tui;
+pub mod web;

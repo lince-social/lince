@@ -1,20 +1,19 @@
 use axum::response::Html;
 
-use crate::model::database::repositories::configuration::{get_active, get_inactive};
-
-use super::configuration_rows::configuration_rows;
+use crate::model::database::repositories::configuration::get_active;
 
 pub async fn unhovered() -> Html<String> {
     let active = get_active().await;
     if active.is_err() {
         return Html("<p>Error when getting config</p>".to_string());
     }
-    let active: Vec<(String, i32)> = active.unwrap();
-    if active.is_empty() {
-        return Html(r#"<button style="background-color: lightgray; padding: 10px; border: none; border-radius: 5px;">No active configuration</button>"#.to_string());
-    }
+    // let active = active.unwrap();
+    // if active.is_empty() {
+    //     return Html(r#"<button style="background-color: lightgray; padding: 10px; border: none; border-radius: 5px;">No active configuration</button>"#.to_string());
+    // }
 
-    Html(configuration_rows(active))
+    // Html(configuration_rows(active))
+    Html("<p>active config</p>".to_string())
 }
 
 // pub async fn hovered() -> Html<String> {

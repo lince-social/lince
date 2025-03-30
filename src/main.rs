@@ -4,13 +4,17 @@ mod view;
 
 use axum::{Router, routing::get};
 use controller::{configuration::configuration_router, section::section_router, tui::run_tui_mode};
-use model::{database::management::startup::tidy_database, karma::karma::karma};
+use model::{database::management::schema::schema, karma::karma::karma};
 use std::{env, thread, time::Duration};
 use view::web::section::page::page;
 
 #[tokio::main]
 async fn main() {
-    tidy_database().await;
+    let schema_database = schema().await;
+    if schema_database.is_err() {
+        println!("Error creating schema: {}", schema_database.err().unwrap());
+        return;
+    }
 
     thread::spawn(|| {
         loop {

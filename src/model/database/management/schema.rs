@@ -1,28 +1,28 @@
+use sqlx::sqlite;
 use std::io::{Error, ErrorKind};
 
-use rusqlite::Result;
-
-use super::connection::connection;
-
 pub async fn schema() -> Result<(), Error> {
-    let conn = connection().await;
-    if conn.is_err() {
-        return Err(Error::new(
-            ErrorKind::ConnectionAborted,
-            "Error when connecting to database",
-        ));
+    let config_dir = dirs::config_dir().unwrap();
+    let db_path = String::from(config_dir.to_str().unwrap()) + "/lince/lince.db";
+    let opt = sqlite::SqliteConnectOptions::new()
+        .filename(db_path)
+        .create_if_missing(true);
+    let pool = sqlite::SqlitePool::connect_with(opt).await;
+    if pool.is_err() {
+        return Err(Error::new(ErrorKind::Other, "Pool error"));
     }
-    let conn = conn.unwrap();
+    let pool = pool.unwrap();
 
-    let record = conn.execute(
+    let record = sqlx::query(
         "CREATE TABLE IF NOT EXISTS record(
              id INTEGER PRIMARY KEY,
              quantity REAL NOT NULL DEFAULT 1,
              head TEXT,
              body TEXT
          )",
-        (),
-    );
+    )
+    .execute(&pool)
+    .await;
     if record.is_err() {
         return Err(Error::new(
             ErrorKind::ConnectionAborted,
@@ -30,14 +30,15 @@ pub async fn schema() -> Result<(), Error> {
         ));
     }
 
-    let dna = conn.execute(
+    let dna = sqlx::query(
         "CREATE TABLE IF NOT EXISTS dna(
              id INTEGER PRIMARY KEY,
              quantity INTEGER NOT NULL DEFAULT 1,
              origin TEXT NOT NULL DEFAULT 'lince.db'
          )",
-        (),
-    );
+    )
+    .execute(&pool)
+    .await;
     if dna.is_err() {
         return Err(Error::new(
             ErrorKind::ConnectionAborted,
@@ -45,14 +46,15 @@ pub async fn schema() -> Result<(), Error> {
         ));
     }
 
-    let view = conn.execute(
+    let view = sqlx::query(
         "CREATE TABLE IF NOT EXISTS view(
             id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
             query TEXT NOT NULL DEFAULT 'SELECT * FROM record'
         )",
-        (),
-    );
+    )
+    .execute(&pool)
+    .await;
     if view.is_err() {
         return Err(Error::new(
             ErrorKind::ConnectionAborted,
@@ -60,7 +62,7 @@ pub async fn schema() -> Result<(), Error> {
         ));
     }
 
-    let configuration = conn.execute(
+    let configuration = sqlx::query(
         "CREATE TABLE IF NOT EXISTS configuration(
             id INTEGER PRIMARY KEY,
             quantity INTEGER,
@@ -69,8 +71,9 @@ pub async fn schema() -> Result<(), Error> {
             timezone INTEGER,
             style TEXT
         )",
-        [],
-    );
+    )
+    .execute(&pool)
+    .await;
     if configuration.is_err() {
         return Err(Error::new(
             ErrorKind::ConnectionAborted,
@@ -78,15 +81,16 @@ pub async fn schema() -> Result<(), Error> {
         ));
     }
 
-    let configuration_view = conn.execute(
+    let configuration_view = sqlx::query(
         "CREATE TABLE IF NOT EXISTS configuration_view(
             configuration_id INTEGER REFERENCES configuration(id),
             view_id INTEGER REFERENCES view(id),
             quantity INTEGER NOT NULL DEFAULT 0,
             PRIMARY KEY (configuration_id, view_id)
          )",
-        [],
-    );
+    )
+    .execute(&pool)
+    .await;
     if configuration_view.is_err() {
         return Err(Error::new(
             ErrorKind::ConnectionAborted,
@@ -94,15 +98,16 @@ pub async fn schema() -> Result<(), Error> {
         ));
     }
 
-    let configuration_view = conn.execute(
+    let configuration_view = sqlx::query(
         "CREATE TABLE IF NOT EXISTS configuration_view(
             configuration_id INTEGER REFERENCES configuration(id),
             view_id INTEGER REFERENCES view(id),
             quantity INTEGER NOT NULL DEFAULT 0,
             PRIMARY KEY (configuration_id, view_id)
          )",
-        [],
-    );
+    )
+    .execute(&pool)
+    .await;
     if configuration_view.is_err() {
         return Err(Error::new(
             ErrorKind::ConnectionAborted,
@@ -110,88 +115,88 @@ pub async fn schema() -> Result<(), Error> {
         ));
     }
 
-    let karma_condition = conn.execute(
-        "CREATE TABLE IF NOT EXISTS karma_condition(
-                id INTEGER PRIMARY KEY,
-                quantity INTEGER NOT NULL DEFAULT 0,
-                condition TEXT NOT NULL
-            )",
-        [],
-    );
-    if karma_condition.is_err() {
-        return Err(Error::new(
-            ErrorKind::ConnectionAborted,
-            "Error when creating table karma_condition",
-        ));
-    }
+    // let karma_condition = conn.execute(
+    //     "CREATE TABLE IF NOT EXISTS karma_condition(
+    //             id INTEGER PRIMARY KEY,
+    //             quantity INTEGER NOT NULL DEFAULT 0,
+    //             condition TEXT NOT NULL
+    //         )",
+    //     [],
+    // );
+    // if karma_condition.is_err() {
+    //     return Err(Error::new(
+    //         ErrorKind::ConnectionAborted,
+    //         "Error when creating table karma_condition",
+    //     ));
+    // }
 
-    let karma_consequence = conn.execute(
-        "CREATE TABLE IF NOT EXISTS karma_consequence(
-             id INTEGER PRIMARY KEY,
-             quantity INTEGER NOT NULL DEFAULT 0,
-             consequence TEXT NOT NULL
-         )",
-        [],
-    );
-    if karma_consequence.is_err() {
-        return Err(Error::new(
-            ErrorKind::ConnectionAborted,
-            "Error when creating table karma_consequence",
-        ));
-    }
+    // let karma_consequence = conn.execute(
+    //     "CREATE TABLE IF NOT EXISTS karma_consequence(
+    //          id INTEGER PRIMARY KEY,
+    //          quantity INTEGER NOT NULL DEFAULT 0,
+    //          consequence TEXT NOT NULL
+    //      )",
+    //     [],
+    // );
+    // if karma_consequence.is_err() {
+    //     return Err(Error::new(
+    //         ErrorKind::ConnectionAborted,
+    //         "Error when creating table karma_consequence",
+    //     ));
+    // }
 
-    let karma = conn.execute(
-        "CREATE TABLE IF NOT EXISTS karma(
-            id INTEGER PRIMARY KEY,
-            quantity REAL NOT NULL DEFAULT 1,
-            condition_id INTEGER NOT NULL,
-            operator TEXT NOT NULL,
-            consequence_id INTEGER NOT NULL
-         )",
-        [],
-    );
-    if karma.is_err() {
-        return Err(Error::new(
-            ErrorKind::ConnectionAborted,
-            "Error when creating table karma",
-        ));
-    }
+    // let karma = conn.execute(
+    //     "CREATE TABLE IF NOT EXISTS karma(
+    //         id INTEGER PRIMARY KEY,
+    //         quantity REAL NOT NULL DEFAULT 1,
+    //         condition_id INTEGER NOT NULL,
+    //         operator TEXT NOT NULL,
+    //         consequence_id INTEGER NOT NULL
+    //      )",
+    //     [],
+    // );
+    // if karma.is_err() {
+    //     return Err(Error::new(
+    //         ErrorKind::ConnectionAborted,
+    //         "Error when creating table karma",
+    //     ));
+    // }
 
-    let frequency = conn.execute(
-        "CREATE TABLE IF NOT EXISTS frequency(
-            id INTEGER PRIMARY KEY,
-            quantity REAL NOT NULL DEFAULT 1,
-            day_week REAL,
-            months REAL DEFAULT 0 NOT NULL,
-            days REAL DEFAULT 0 NOT NULL,
-            seconds REAL DEFAULT 0 NOT NULL,
-            next_date DATETIME NOT NULL,
-            finish_date DATETIME,
-            catch_up_sum INTEGER NOT NULL DEFAULT 0
-         )",
-        [],
-    );
-    if frequency.is_err() {
-        return Err(Error::new(
-            ErrorKind::ConnectionAborted,
-            "Error when creating table frequency",
-        ));
-    }
+    // let frequency = conn.execute(
+    //     "CREATE TABLE IF NOT EXISTS frequency(
+    //         id INTEGER PRIMARY KEY,
+    //         quantity REAL NOT NULL DEFAULT 1,
+    //         day_week REAL,
+    //         months REAL DEFAULT 0 NOT NULL,
+    //         days REAL DEFAULT 0 NOT NULL,
+    //         seconds REAL DEFAULT 0 NOT NULL,
+    //         next_date DATETIME NOT NULL,
+    //         finish_date DATETIME,
+    //         catch_up_sum INTEGER NOT NULL DEFAULT 0
+    //      )",
+    //     [],
+    // );
+    // if frequency.is_err() {
+    //     return Err(Error::new(
+    //         ErrorKind::ConnectionAborted,
+    //         "Error when creating table frequency",
+    //     ));
+    // }
 
-    let command = conn.execute(
-        "CREATE TABLE IF NOT EXISTS command(
-             id INTEGER PRIMARY KEY,
-             quantity REAL NOT NULL DEFAULT 1,
-             command TEXT NOT NULL
-         )",
-        [],
-    );
-    if command.is_err() {
-        return Err(Error::new(
-            ErrorKind::ConnectionAborted,
-            "Error when creating table command",
-        ));
-    }
+    // let command = conn.execute(
+    //     "CREATE TABLE IF NOT EXISTS command(
+    //          id INTEGER PRIMARY KEY,
+    //          quantity REAL NOT NULL DEFAULT 1,
+    //          command TEXT NOT NULL
+    //      )",
+    //     [],
+    // );
+    // if command.is_err() {
+    //     return Err(Error::new(
+    //         ErrorKind::ConnectionAborted,
+    //         "Error when creating table command",
+    //     ));
+    // }
 
     // conn.execute(
     //     "CREATE TABLE IF NOT EXISTS transfer(

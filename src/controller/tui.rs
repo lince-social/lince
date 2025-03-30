@@ -38,7 +38,9 @@ Your choice: "
         }
 
         if let Err(e) = execute_operation(input).await {
-            eprintln!("Error when executing operation: {:#?}", e)
+            eprintln!("Error when executing operation: {:#?}", e);
+            println!("(Press enter to continue)");
+            let _ = io::stdin().read_line(&mut String::new());
         }
     }
 }

@@ -1,9 +1,8 @@
+use crate::model::entities::record::Record;
 use sqlx::SqlitePool;
-
-use crate::model::entities::configuration::Configuration;
 use std::io::{Error, ErrorKind};
 
-pub async fn get_active() -> Result<Option<Configuration>, Error> {
+pub async fn create_record() -> Result<Option<Record>, Error> {
     let pool = SqlitePool::connect("/home/eduardo/.config/lince/lince.db").await;
     if pool.is_err() {
         return Err(Error::new(
@@ -13,13 +12,17 @@ pub async fn get_active() -> Result<Option<Configuration>, Error> {
     }
     let pool = pool.unwrap();
 
-    let configuration: Option<Configuration> =
-        sqlx::query_as("SELECT * FROM configuration WHERE quantity = 1")
-            .fetch_optional(&pool)
-            .await
-            .unwrap();
+    sqlx::query("INSERT INTO record (head) VALUES $1")
+        .bind("Record 1")
+        .fetch_optional(&pool)
+        .await;
 
-    Ok(configuration)
+    let record: Option<Record> = sqlx::query_as("SELECT * FROM record")
+        .fetch_optional(&pool)
+        .await
+        .unwrap();
+
+    Ok(record)
 }
 
 // pub async fn get_inactive() {

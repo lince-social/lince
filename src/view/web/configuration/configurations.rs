@@ -1,19 +1,23 @@
 use axum::response::Html;
+use maud::{Markup, html};
 
 use crate::model::database::repositories::configuration::get_active;
 
-pub async fn unhovered() -> Html<String> {
+pub async fn unhovered() -> Markup {
     let active = get_active().await;
     if active.is_err() {
-        return Html("<p>Error when getting config</p>".to_string());
+        println!("Error: {}", active.unwrap_err());
+        return html!({p {"Error when grabbing active config"}});
     }
-    // let active = active.unwrap();
+    let active = active.unwrap();
     // if active.is_empty() {
     //     return Html(r#"<button style="background-color: lightgray; padding: 10px; border: none; border-radius: 5px;">No active configuration</button>"#.to_string());
     // }
 
     // Html(configuration_rows(active))
-    Html("<p>active config</p>".to_string())
+    html!({ pre {@if let Some(user) = active {
+       "Active config"
+    } @else {"No active config"}} })
 }
 
 // pub async fn hovered() -> Html<String> {

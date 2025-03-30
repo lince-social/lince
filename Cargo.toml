@@ -4,7 +4,7 @@ version = "0.5.0"
 edition = "2024"
 
 [dependencies]
-rusqlite = { version = "0.34.0", features = ["bundled"] }
+sqlx = { version = "*", features = ["runtime-tokio", "sqlite"] }
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
 tower = "*"
@@ -13,4 +13,5 @@ tokio = { version = "1.43.0", features = ["full"] }
 tracing-subscriber = "0.3.19"
 axum = "0.8.1"
 dirs = "6.0.0"
-polars = { version = "*", features = ["lazy", "sql"] }
+regex = "1.11.1"
+maud = "0.27.0"

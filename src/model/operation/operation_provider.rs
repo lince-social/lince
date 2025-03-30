@@ -1,19 +1,38 @@
-use std::io::{self, Error, ErrorKind, Read};
+use regex::Regex;
+use std::io::Error;
 
 pub async fn execute_operation(operation: String) -> Result<String, Error> {
-    let int = operation.parse::<u32>();
-    let wait;
-    if int.is_err() {
-        return Err(Error::new(
-            ErrorKind::InvalidInput,
-            "Error when parsing table, incorrect integer passed",
-        ));
-        io::stdin().read_line(wait);
+    let re = Regex::new(r"\d+").unwrap();
+    let mut table = "";
+
+    if let Some(matched) = re.find(&operation) {
+        match matched.as_str() {
+            "0" => table = "configuration",
+            "1" => table = "view",
+            "2" => table = "configuration_view",
+            "3" => table = "record",
+            "4" => table = "karma_condition",
+            "5" => table = "karma_consequence",
+            "6" => table = "karma",
+            "7" => table = "command",
+            "8" => table = "frequency",
+            "9" => table = "sum",
+            "10" => table = "history",
+            "11" => table = "dna",
+            "12" => table = "transfer",
+            _ => table = "record",
+        }
+    } else {
+        table = "record";
     }
 
-    let int = int.unwrap();
-    println!("{int}");
+    // let re = Regex::new(r"[a-z]+").unwrap();
+    // if let Some(matched) = re.find(&operation) {
+    //     match matched.as_str() {
+    //         "c" => tui,
+    //     }
+    // }
+    println!("{table}");
 
-    Ok(operation)
-    // Ok("All gucci".to_string())
+    Ok(table.to_string())
 }

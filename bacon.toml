@@ -1,0 +1,5 @@
+[jobs.run]
+command = ["cargo", "run", "--color", "always"]
+need_stdout = true
+allow_warnings = true
+watch = ["src/*/*"]

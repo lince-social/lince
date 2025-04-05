@@ -3,17 +3,17 @@ mod domain;
 mod infrastructure;
 mod presentation;
 
-use application::karma::karma::karma;
+// use application::karma::karma::karma;
 use axum::{Router, routing::get};
 use infrastructure::{
     database::management::schema::schema,
     http::routers::{
-        configuration::configuration_router, operation::operation_router, section::section_router,
-        tui::run_tui_mode,
+        configuration::configuration_router, operation::operation_router, record::record_router,
+        section::section_router, tui::run_tui_mode,
     },
 };
 use presentation::web::section::page::page;
-use std::{env, thread, time::Duration};
+use std::env;
 
 #[tokio::main]
 async fn main() {
@@ -23,12 +23,12 @@ async fn main() {
         return;
     }
 
-    thread::spawn(|| {
-        loop {
-            karma();
-            thread::sleep(Duration::from_secs(60));
-        }
-    });
+    // thread::spawn(|| {
+    //     loop {
+    //         karma();
+    //         thread::sleep(Duration::from_secs(60));
+    //     }
+    // });
 
     let args = env::args().nth(1);
 
@@ -39,6 +39,7 @@ async fn main() {
             .route("/", get(page))
             .nest("/section", section_router().await)
             .nest("/configuration", configuration_router().await)
+            .nest("/record", record_router().await)
             .nest("/operation", operation_router().await);
 
         let listener = tokio::net::TcpListener::bind("0.0.0.0:6174").await.unwrap();

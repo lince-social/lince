@@ -1,6 +1,6 @@
-use axum::response::{Html, IntoResponse};
+use axum::response::Html;
 
-pub async fn body() -> impl IntoResponse {
+pub async fn body_component() -> Html<&'static str> {
     Html(
         r#"
         <body id="body">

@@ -1,4 +1,4 @@
-use axum::{extract::Path, response::Html};
+use axum::response::Html;
 
 use crate::{
     application::providers::operation::execute_operation::execute_operation,

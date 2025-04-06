@@ -1,10 +1,10 @@
-use sqlx::SqlitePool;
-
 use crate::domain::entities::configuration::Configuration;
 use std::io::{Error, ErrorKind};
 
-pub async fn get_active() -> Result<Option<Configuration>, Error> {
-    let pool = SqlitePool::connect("/home/eduardo/.config/lince/lince.db").await;
+use super::record::connection;
+
+pub async fn repository_configuration_get_active() -> Result<Configuration, Error> {
+    let pool = connection().await;
     if pool.is_err() {
         return Err(Error::new(
             ErrorKind::ConnectionAborted,
@@ -13,19 +13,32 @@ pub async fn get_active() -> Result<Option<Configuration>, Error> {
     }
     let pool = pool.unwrap();
 
-    let configuration: Option<Configuration> =
+    let configuration: Configuration =
         sqlx::query_as("SELECT * FROM configuration WHERE quantity = 1")
-            .fetch_optional(&pool)
+            .fetch_one(&pool)
             .await
             .unwrap();
 
     Ok(configuration)
 }
+pub async fn repository_configuration_get_inactive() -> Result<Vec<Configuration>, Error> {
+    let pool = connection().await;
+    if pool.is_err() {
+        return Err(Error::new(
+            ErrorKind::ConnectionAborted,
+            "Error connecting to database",
+        ));
+    }
+    let pool = pool.unwrap();
 
-// pub async fn get_inactive() {
-//     let conn = connection().await.unwrap();
-//     let query = "SELECT * FROM configuration WHERE quantity <> 1";
-// }
+    let configuration: Vec<Configuration> =
+        sqlx::query_as("SELECT * FROM configuration WHERE quantity <> 1")
+            .fetch_all(&pool)
+            .await
+            .unwrap();
+
+    Ok(configuration)
+}
 
 // pub async fn set_active(id: String) {
 //     let conn = connection().await.unwrap();

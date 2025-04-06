@@ -81,6 +81,14 @@ pub async fn schema() -> Result<(), Error> {
         ));
     }
 
+    let _created_configuration = sqlx::query(
+        "INSERT INTO configuration(name, quantity)
+        SELECT ?1, ?2
+        WHERE NOT EXISTS (SELECT * FROM configuration)",
+    )
+    .execute(&pool)
+    .await;
+
     let configuration_view = sqlx::query(
         "CREATE TABLE IF NOT EXISTS configuration_view(
             configuration_id INTEGER REFERENCES configuration(id),

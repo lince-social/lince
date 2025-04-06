@@ -1,12 +1,26 @@
-use axum::extract::Query;
+use std::collections::HashMap;
 
-use crate::presentation::web::operation::operation::{get_operation, post_operation};
+use axum::{Form, extract::Path, response::Html};
 
-pub async fn get_operation_handler() -> String {
-    get_operation().0
+use crate::{
+    application::use_cases::operation::{
+        crud::use_case_operation_create_persist, execute_operation::execute_operation,
+    },
+    domain::entities::operation::Operation,
+    presentation::web::operation::operation::presentation_web_operation_get_operation_input,
+};
+
+pub async fn get_operation_handler() -> Html<String> {
+    Html(presentation_web_operation_get_operation_input())
 }
 
-pub async fn post_operation_handler(operation: Query<String>) -> String {
-    println!("operation in handler: {operation:?}");
-    post_operation(operation.0).await.0
+pub async fn post_operation_handler(Form(operation): Form<Operation>) -> Html<String> {
+    Html(execute_operation(operation.operation).await)
+}
+
+pub async fn handler_operation_create(
+    Path(table): Path<String>,
+    Form(data): Form<HashMap<String, String>>,
+) -> () {
+    use_case_operation_create_persist(table, data).await
 }

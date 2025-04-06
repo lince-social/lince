@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(sqlx::FromRow, Debug, PartialEq)]
+#[derive(sqlx::FromRow, Debug, PartialEq, Deserialize, Serialize)]
 pub struct Record {
     pub id: u32,
-    pub quantity: f32, //default 1
-    pub head: String,  // default None
-    pub body: String,  // default None
+    pub quantity: f64,
+    pub head: String,
+    pub body: String,
 }
 
 #[derive(sqlx::FromRow, Debug, PartialEq, Serialize, Deserialize, Clone)]

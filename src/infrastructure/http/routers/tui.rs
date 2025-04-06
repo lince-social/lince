@@ -1,6 +1,6 @@
 use std::{io, process::Command};
 
-use crate::application::providers::operation::{
+use crate::application::use_cases::operation::{
     execute_operation::execute_operation,
     list_operations::{operation_actions, operation_tables},
 };
@@ -37,10 +37,6 @@ Your choice: "
             break;
         }
 
-        if let Err(e) = execute_operation(input).await {
-            eprintln!("Error when executing operation: {:#?}", e);
-            println!("(Press enter to continue)");
-            let _ = io::stdin().read_line(&mut String::new());
-        }
+        execute_operation(input).await;
     }
 }

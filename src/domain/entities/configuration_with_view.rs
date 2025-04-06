@@ -1,6 +1,6 @@
-use super::{configuration::Configuration, view::View};
+use super::configuration::Configuration;
 
-pub struct ConfigurationWithViews {
+pub struct _ConfigurationWithViews {
     configuration: Configuration,
-    views: Vec<(View, i32)>,
+    // views: Vec<(View, i32)>,
 }

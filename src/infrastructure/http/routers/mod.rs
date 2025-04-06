@@ -15,7 +15,7 @@ use axum::{
 use serde_json::json;
 use std::io::{Error, ErrorKind};
 
-pub fn error_into_response(error: Error) -> Response {
+pub fn _error_into_response(error: Error) -> Response {
     let status = match error.kind() {
         ErrorKind::NotFound => StatusCode::NOT_FOUND,
         ErrorKind::InvalidInput => StatusCode::BAD_REQUEST,

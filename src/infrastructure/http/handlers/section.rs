@@ -1,7 +1,14 @@
 use axum::response::Html;
 
-use crate::presentation::web::section::main::main_component;
+use crate::{
+    application::use_cases::section::body::use_case_section_get_body,
+    presentation::web::section::main::presentation_web_main,
+};
 
 pub async fn main_handler() -> Html<String> {
-    Html(main_component().await.0)
+    Html(presentation_web_main().await.0)
+}
+
+pub async fn handler_section_get_body() -> Html<String> {
+    Html(use_case_section_get_body().to_string())
 }

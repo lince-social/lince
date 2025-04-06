@@ -1,4 +1,4 @@
-pub fn karma() {
+pub fn _karma() {
     println!("hello from karma")
 }
 

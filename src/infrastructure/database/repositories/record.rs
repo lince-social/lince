@@ -74,6 +74,14 @@ pub async fn repository_record_delete_by_id(id: String) -> Result<(), Error> {
 
     Ok(())
 }
+
+pub async fn repository_record_zero_quantity(id: String) -> () {
+    let query = format!("UPDATE record SET quantity = 0 WHERE id = {}", id);
+    let pool = connection().await.unwrap();
+    let _ = sqlx::query(&query).fetch_optional(&pool).await;
+    ()
+}
+
 // pub async fn get_inactive() {
 //     let conn = connection().await.unwrap();
 //     let query = "SELECT * FROM configuration WHERE quantity <> 1";

@@ -12,7 +12,7 @@ use infrastructure::{
         section::section_router, tui::run_tui_mode,
     },
 };
-use presentation::web::section::page::page;
+use presentation::web::section::page::presentation_web_section_page;
 use std::env;
 
 #[tokio::main]
@@ -36,7 +36,7 @@ async fn main() {
         run_tui_mode().await
     } else {
         let app = Router::new()
-            .route("/", get(page))
+            .route("/", get(presentation_web_section_page))
             .nest("/section", section_router().await)
             .nest("/configuration", configuration_router().await)
             .nest("/record", record_router().await)

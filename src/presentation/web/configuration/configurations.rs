@@ -1,24 +1,27 @@
+use super::configuration_rows::presentation_web_configuration_row;
+use crate::domain::entities::configuration::Configuration;
 use maud::{Markup, html};
 
-use crate::infrastructure::database::repositories::configuration::get_active;
-
-pub async fn unhovered() -> Markup {
-    let active = get_active().await;
-    if active.is_err() {
-        println!("Error: {}", active.unwrap_err());
-        return html!({p {"Error when grabbing active config"}});
-    }
-    let active = active.unwrap();
-    // if active.is_empty() {
-    //     return Html(r#"<button style="background-color: lightgray; padding: 10px; border: none; border-radius: 5px;">No active configuration</button>"#.to_string());
-    // }
-
-    // Html(configuration_rows(active))
-    html!({ pre {@if let Some(_user) = active {
-       "Active config"
-    } @else {"No active config"}} })
+pub async fn presentation_web_configuration_unhovered(
+    active_configuration: Configuration,
+) -> Markup {
+    presentation_web_configuration_row(active_configuration)
 }
 
+pub async fn presentation_web_configuration_hovered(
+    active_configuration: Configuration,
+    inactive_configurations: Vec<Configuration>,
+) -> Markup {
+    html!(
+        div {
+           div { (presentation_web_configuration_row(active_configuration)) }
+        div { @for inactive_configuration in inactive_configurations {
+           div { (presentation_web_configuration_row(inactive_configuration)) }
+        } }
+        }
+
+    )
+}
 // pub async fn hovered() -> Html<String> {
 //     let active: Vec<String> = get_active().await;
 //     let inactive: Vec<String> = get_inactive().await;

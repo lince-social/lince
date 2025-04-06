@@ -5,6 +5,6 @@ use crate::{
     domain::entities::record::Record,
 };
 
-pub async fn main_use_case() -> Result<Vec<Record>, Error> {
+pub async fn _main_use_case() -> Result<Vec<Record>, Error> {
     record_providers_fetch_all().await
 }

@@ -1,8 +1,5 @@
-use axum::response::Html;
-
-pub async fn body_component() -> Html<&'static str> {
-    Html(
-        r#"
+pub fn presentation_web_section_body() -> &'static str {
+    r#"
         <body id="body">
         <header
         id="header"
@@ -17,13 +14,12 @@ pub async fn body_component() -> Html<&'static str> {
           hx-swap="outerHTML"
           ></main>
         </body>
-        "#,
-    )
+        "#
 }
 
-pub async fn nested_body(element: String) -> Html<String> {
-    Html(format!(
-        r#"
+pub async fn nested_body(element: String) -> String {
+    format!(
+        r##"
             <body id="body">
             <header
             id="header"
@@ -37,8 +33,14 @@ pub async fn nested_body(element: String) -> Html<String> {
               hx-trigger="load"
               hx-swap="outerHTML"
               ></main>
+              <div class="framed shy modal filled"
+              hx-get="/section/body"
+              hx-trigger="keyup[key === 'Escape'] from:body"
+              hx-target="#body"
+              >
               {element}
+              </div>
             </body>
-        "#
-    ))
+        "##
+    )
 }

@@ -1,31 +1,9 @@
-use maud::{Markup, html};
+use maud::Markup;
 
-use crate::application::use_cases::section::main::main_use_case;
+use crate::presentation::web::record::record::get_records_component;
 
-pub async fn main_component() -> Markup {
-    let main_data = main_use_case().await;
-
-    html! {
-        div id="main" {
-        @match main_data {
-            Ok(records) => {
-                @for record in &records {
-                    div {
-                        p { (record.head) }
-
-                        button
-                        hx-delete=(format!("/record/{}", record.id))
-                            hx-swap="outerHTML"
-                            hx-target="#main"
-                        hx-trigger="click"
-                        { "x" }
-                    }
-                }
-            },
-            Err(_) => p { "Error when fetching records" }
-        }
-        }
-    }
+pub async fn presentation_web_main() -> Markup {
+    get_records_component().await
 }
 
 // pub async fn main_component() -> Markup {

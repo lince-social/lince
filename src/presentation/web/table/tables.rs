@@ -1,15 +1,65 @@
+use maud::{Markup, html};
+
+use crate::application::providers::view::get_active_view_data::provider_view_get_active_view_data;
+
+pub async fn presentation_web_tables() -> Markup {
+    let tables = provider_view_get_active_view_data().await.unwrap();
+    html! {
+        main id="main" {
+        @for (table_name, table) in tables {
+            @let headers: Vec<String> = table.get(0)
+                .map(|row| row.keys().cloned().collect())
+                .unwrap_or_default();
+
+            div {
+
+            p {(table_name)}
+            table class="framed" {
+                @if !headers.is_empty() {
+                    thead {
+                        tr {
+                            @for key in &headers {
+                                th { (key) }
+                            }
+                        }
+                    }
+                }
+                tbody {
+                    @for row in table {
+                        tr {
+                            @for key in &headers {
+                                td hx-trigger="click" hx-swap="outerHTML" hx-get=(format!("/table/{}/{}/{}/{}", table_name, row.get("id").unwrap(), key, row.get(key).unwrap_or(&"".to_string()) )) {
+                                @if key == "id" {
+                                    button
+                                    hx-delete=(format!("/table/{}/{}", table_name, row.get(key).unwrap_or(&"NULL".to_string())))
+                                    hx-target="#main"
+                                    hx-trigger="click"
+                                    { "x"}
+                                }
+                                    (row.get(key).unwrap_or(&"NULL".to_string())) }
+                            }
+                        }
+                    }
+            }
+                }
+            }
+        }
+    }
+        }
+}
+
 // import * as elements from "typed-html";
 // import { getTableData } from "./CrudTables";
-// 
+//
 // export function Table({ data, table }) {
 //   if (!Array.isArray(data) || data.length === 0) {
 //     return <p class="text-center">No data available on table: {table}</p>;
 //   }
-// 
+//
 //   const headers = Object.keys(data[0]).filter(
 //     (key) => data[0][key] !== undefined,
 //   );
-// 
+//
 //   return (
 //     <div class="overflow-x-auto mt-2">
 //       <h2 class="font-bold mb-4">{table[0].toUpperCase() + table.slice(1)}</h2>
@@ -80,7 +130,7 @@
 //     </div>
 //   );
 // }
-// 
+//
 // export default async function Tables() {
 //   const [dataArray, tableNames] = await getTableData();
 //   return (

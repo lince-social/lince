@@ -91,10 +91,10 @@ pub async fn schema() -> Result<(), Error> {
 
     let configuration_view = sqlx::query(
         "CREATE TABLE IF NOT EXISTS configuration_view(
-            configuration_id INTEGER REFERENCES configuration(id),
-            view_id INTEGER REFERENCES view(id),
+        id INTEGER PRIMARY KEY,
             quantity INTEGER NOT NULL DEFAULT 0,
-            PRIMARY KEY (configuration_id, view_id)
+            configuration_id INTEGER REFERENCES configuration(id),
+            view_id INTEGER REFERENCES view(id)
          )",
     )
     .execute(&pool)
@@ -106,131 +106,163 @@ pub async fn schema() -> Result<(), Error> {
         ));
     }
 
-    let configuration_view = sqlx::query(
-        "CREATE TABLE IF NOT EXISTS configuration_view(
-            configuration_id INTEGER REFERENCES configuration(id),
-            view_id INTEGER REFERENCES view(id),
-            quantity INTEGER NOT NULL DEFAULT 0,
-            PRIMARY KEY (configuration_id, view_id)
+    let karma_condition = sqlx::query(
+        "CREATE TABLE IF NOT EXISTS karma_condition(
+                id INTEGER PRIMARY KEY,
+                quantity INTEGER NOT NULL DEFAULT 0,
+                condition TEXT NOT NULL
+            )",
+    )
+    .execute(&pool)
+    .await;
+    if karma_condition.is_err() {
+        return Err(Error::new(
+            ErrorKind::ConnectionAborted,
+            "Error when creating table karma_condition",
+        ));
+    }
+
+    let karma_consequence = sqlx::query(
+        "CREATE TABLE IF NOT EXISTS karma_consequence(
+             id INTEGER PRIMARY KEY,
+             quantity INTEGER NOT NULL DEFAULT 0,
+             consequence TEXT NOT NULL
          )",
     )
     .execute(&pool)
     .await;
-    if configuration_view.is_err() {
+    if karma_consequence.is_err() {
         return Err(Error::new(
             ErrorKind::ConnectionAborted,
-            "Error when creating table configuration_view",
+            "Error when creating table karma_consequence",
         ));
     }
 
-    // let karma_condition = conn.execute(
-    //     "CREATE TABLE IF NOT EXISTS karma_condition(
-    //             id INTEGER PRIMARY KEY,
-    //             quantity INTEGER NOT NULL DEFAULT 0,
-    //             condition TEXT NOT NULL
-    //         )",
-    //     [],
-    // );
-    // if karma_condition.is_err() {
-    //     return Err(Error::new(
-    //         ErrorKind::ConnectionAborted,
-    //         "Error when creating table karma_condition",
-    //     ));
-    // }
+    let karma = sqlx::query(
+        "CREATE TABLE IF NOT EXISTS karma(
+            id INTEGER PRIMARY KEY,
+            quantity REAL NOT NULL DEFAULT 1,
+            condition_id INTEGER NOT NULL,
+            operator TEXT NOT NULL,
+            consequence_id INTEGER NOT NULL
+         )",
+    )
+    .execute(&pool)
+    .await;
+    if karma.is_err() {
+        return Err(Error::new(
+            ErrorKind::ConnectionAborted,
+            "Error when creating table karma",
+        ));
+    }
 
-    // let karma_consequence = conn.execute(
-    //     "CREATE TABLE IF NOT EXISTS karma_consequence(
-    //          id INTEGER PRIMARY KEY,
-    //          quantity INTEGER NOT NULL DEFAULT 0,
-    //          consequence TEXT NOT NULL
-    //      )",
-    //     [],
-    // );
-    // if karma_consequence.is_err() {
-    //     return Err(Error::new(
-    //         ErrorKind::ConnectionAborted,
-    //         "Error when creating table karma_consequence",
-    //     ));
-    // }
+    let frequency = sqlx::query(
+        "CREATE TABLE IF NOT EXISTS frequency(
+            id INTEGER PRIMARY KEY,
+            quantity REAL NOT NULL DEFAULT 1,
+            day_week REAL,
+            months REAL DEFAULT 0 NOT NULL,
+            days REAL DEFAULT 0 NOT NULL,
+            seconds REAL DEFAULT 0 NOT NULL,
+            next_date DATETIME NOT NULL,
+            finish_date DATETIME,
+            catch_up_sum INTEGER NOT NULL DEFAULT 0
+         )",
+    )
+    .execute(&pool)
+    .await;
+    if frequency.is_err() {
+        return Err(Error::new(
+            ErrorKind::ConnectionAborted,
+            "Error when creating table frequency",
+        ));
+    }
 
-    // let karma = conn.execute(
-    //     "CREATE TABLE IF NOT EXISTS karma(
-    //         id INTEGER PRIMARY KEY,
-    //         quantity REAL NOT NULL DEFAULT 1,
-    //         condition_id INTEGER NOT NULL,
-    //         operator TEXT NOT NULL,
-    //         consequence_id INTEGER NOT NULL
-    //      )",
-    //     [],
-    // );
-    // if karma.is_err() {
-    //     return Err(Error::new(
-    //         ErrorKind::ConnectionAborted,
-    //         "Error when creating table karma",
-    //     ));
-    // }
+    let command = sqlx::query(
+        "CREATE TABLE IF NOT EXISTS command(
+             id INTEGER PRIMARY KEY,
+             quantity REAL NOT NULL DEFAULT 1,
+             command TEXT NOT NULL
+         )",
+    )
+    .execute(&pool)
+    .await;
+    if command.is_err() {
+        return Err(Error::new(
+            ErrorKind::ConnectionAborted,
+            "Error when creating table command",
+        ));
+    }
 
-    // let frequency = conn.execute(
-    //     "CREATE TABLE IF NOT EXISTS frequency(
-    //         id INTEGER PRIMARY KEY,
-    //         quantity REAL NOT NULL DEFAULT 1,
-    //         day_week REAL,
-    //         months REAL DEFAULT 0 NOT NULL,
-    //         days REAL DEFAULT 0 NOT NULL,
-    //         seconds REAL DEFAULT 0 NOT NULL,
-    //         next_date DATETIME NOT NULL,
-    //         finish_date DATETIME,
-    //         catch_up_sum INTEGER NOT NULL DEFAULT 0
-    //      )",
-    //     [],
-    // );
-    // if frequency.is_err() {
-    //     return Err(Error::new(
-    //         ErrorKind::ConnectionAborted,
-    //         "Error when creating table frequency",
-    //     ));
-    // }
+    let transfer = sqlx::query(
+        "CREATE TABLE IF NOT EXISTS transfer(
+             id INTEGER PRIMARY KEY,
+             quantity REAL NOT NULL DEFAULT 1
 
-    // let command = conn.execute(
-    //     "CREATE TABLE IF NOT EXISTS command(
-    //          id INTEGER PRIMARY KEY,
-    //          quantity REAL NOT NULL DEFAULT 1,
-    //          command TEXT NOT NULL
-    //      )",
-    //     [],
-    // );
-    // if command.is_err() {
-    //     return Err(Error::new(
-    //         ErrorKind::ConnectionAborted,
-    //         "Error when creating table command",
-    //     ));
-    // }
+         )",
+    )
+    .execute(&pool)
+    .await;
+    if transfer.is_err() {
+        return Err(Error::new(
+            ErrorKind::ConnectionAborted,
+            "Error when creating table transfer",
+        ));
+    }
 
-    // conn.execute(
-    //     "CREATE TABLE IF NOT EXISTS transfer(
-    //          id INTEGER PRIMARY KEY,
-    //          quantity REAL NOT NULL DEFAULT 1,
+    let sum = sqlx::query(
+        "CREATE TABLE IF NOT EXISTS sum(
+             id INTEGER PRIMARY KEY,
+             quantity REAL NOT NULL DEFAULT 1
+         )",
+    )
+    .execute(&pool)
+    .await;
+    if sum.is_err() {
+        return Err(Error::new(
+            ErrorKind::ConnectionAborted,
+            "Error when creating table sum",
+        ));
+    }
 
-    //      )",
-    //     [],
-    // )?;
-    // conn.execute(
-    //     "CREATE TABLE IF NOT EXISTS sum(
-    //          id INTEGER PRIMARY KEY,
-    //          quantity REAL NOT NULL DEFAULT 1,
-    //      )",
-    //     [],
-    // )?;
-    //    conn.execute(
-    //        "CREATE TABLE IF NOT EXISTS history(
-    //             id INTEGER PRIMARY KEY,
-    // record_id INTEGER NOT NULL,
-    // change_time TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    // old_quantity REAL NOT NULL,
-    // new_quantity REAL NOT NULL
-    //         )",
-    //        [],
-    //    )?;
+    let history = sqlx::query(
+        "DROP TABLE IF EXISTS history;
+        CREATE TABLE IF NOT EXISTS history(
+                id INTEGER PRIMARY KEY,
+    record_id INTEGER NOT NULL,
+    change_time TEXT DEFAULT CURRENT_TIMESTAMP,
+    old_quantity REAL NOT NULL,
+    new_quantity REAL NOT NULL
+            )",
+    )
+    .execute(&pool)
+    .await;
+    if history.is_err() {
+        return Err(Error::new(
+            ErrorKind::ConnectionAborted,
+            format!(
+                "Error when creating table history: {}",
+                history.unwrap_err()
+            ),
+        ));
+    }
+
+    let dna = sqlx::query(
+        "CREATE TABLE IF NOT EXISTS dna(
+                id INTEGER PRIMARY KEY,
+                name TEXT,
+                origin TEXT NOT NULL,
+                quantity INTEGER NOT NULL DEFAULT 0
+            )",
+    )
+    .execute(&pool)
+    .await;
+    if dna.is_err() {
+        return Err(Error::new(
+            ErrorKind::ConnectionAborted,
+            "Error when creating table dna",
+        ));
+    }
 
     Ok(())
 }

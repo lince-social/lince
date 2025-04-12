@@ -4,7 +4,7 @@ use crate::{
     application::providers::operation::crud::{
         provider_operation_create, provider_operation_get_column_names,
     },
-    presentation::web::operation::crud::presentation_web_create,
+    presentation::web::operation::create::presentation_web_create,
 };
 
 pub async fn use_case_operation_create_component(table: String) -> String {

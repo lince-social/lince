@@ -7,7 +7,7 @@ pub async fn presentation_web_tables() -> Markup {
     html! {
         main id="main" {
         @for (table_name, table) in tables {
-            @let headers: Vec<String> = table.get(0)
+            @let headers: Vec<String> = table.first()
                 .map(|row| row.keys().cloned().collect())
                 .unwrap_or_default();
 
@@ -28,7 +28,10 @@ pub async fn presentation_web_tables() -> Markup {
                     @for row in table {
                         tr {
                             @for key in &headers {
-                                td hx-trigger="click" hx-swap="outerHTML" hx-get=(format!("/table/{}/{}/{}/{}", table_name, row.get("id").unwrap(), key, row.get(key).unwrap_or(&"".to_string()) )) {
+                                td hx-trigger="click" hx-swap="outerHTML" hx-get=(format!("/table/{}/{}/{}/{}", table_name, row.get("id").unwrap(), key, match row.get(key).unwrap().as_str() {
+                                   "" => "None",
+                                   a => a
+                                } )) {
                                 @if key == "id" {
                                     button
                                     hx-delete=(format!("/table/{}/{}", table_name, row.get(key).unwrap_or(&"NULL".to_string())))

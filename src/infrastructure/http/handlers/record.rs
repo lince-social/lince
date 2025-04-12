@@ -3,15 +3,9 @@ use crate::{
         create::provider_record_create, delete_by_id::provider_record_delete_by_id,
     },
     domain::entities::record::RecordSchemaCreate,
-    presentation::web::{
-        record::record::get_records_component, section::main::presentation_web_main,
-    },
+    presentation::web::section::main::presentation_web_main,
 };
 use axum::{Form, extract::Path, response::Html};
-
-pub async fn _get_records_handler() -> String {
-    get_records_component().await.0
-}
 
 pub async fn delete_record_handler(Path(id): Path<String>) -> axum::response::Html<String> {
     let _ = provider_record_delete_by_id(id).await;

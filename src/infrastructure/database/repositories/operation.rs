@@ -14,10 +14,9 @@ pub async fn repository_operation_get_column_names(table: String) -> Vec<String>
     column_names
 }
 
-pub async fn repository_operation_create(query: String) -> () {
+pub async fn repository_operation_create(query: String) {
     let pool = connection().await.unwrap();
-    sqlx::query(&query).execute(&pool).await.unwrap();
-    ()
+    let _ = sqlx::query(&query).execute(&pool).await.unwrap();
 }
 // import * as elements from "typed-html";
 // import Body from "../sections/Body";

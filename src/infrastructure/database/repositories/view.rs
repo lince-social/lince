@@ -65,8 +65,7 @@ pub async fn repository_view_get_active_view_data()
 
                 let columns = row.columns();
 
-                for i in 0..columns.len() {
-                    let col = &columns[i];
+                for (i, col) in columns.iter().enumerate() {
                     let col_name = col.name();
                     let type_name = col.type_info().name().to_uppercase();
 

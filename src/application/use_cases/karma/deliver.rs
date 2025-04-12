@@ -1,5 +1,6 @@
-pub fn _karma() {
-    println!("hello from karma")
+pub fn deliver_karma() {
+    println!("Running Karma...");
+    println!("Karma delivered")
 }
 
 // import { saveDatabase } from "../../../db/startup";

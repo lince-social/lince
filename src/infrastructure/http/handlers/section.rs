@@ -1,8 +1,7 @@
 use axum::response::Html;
 
-use crate::{
-    application::use_cases::section::body::use_case_section_get_body,
-    presentation::web::section::main::presentation_web_main,
+use crate::presentation::web::section::{
+    body::presentation_web_section_body, main::presentation_web_main,
 };
 
 pub async fn main_handler() -> Html<String> {
@@ -10,5 +9,5 @@ pub async fn main_handler() -> Html<String> {
 }
 
 pub async fn handler_section_get_body() -> Html<String> {
-    Html(use_case_section_get_body().to_string())
+    Html(presentation_web_section_body().to_string())
 }

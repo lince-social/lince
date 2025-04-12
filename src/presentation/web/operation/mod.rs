@@ -1,2 +1,2 @@
-pub mod crud;
-pub mod operation;
+pub mod create;
+pub mod get;

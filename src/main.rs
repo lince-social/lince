@@ -3,7 +3,7 @@ mod domain;
 mod infrastructure;
 mod presentation;
 
-// use application::karma::karma::karma;
+use application::use_cases::karma::deliver::deliver_karma;
 use axum::{Router, routing::get};
 use infrastructure::{
     database::management::schema::schema,
@@ -13,7 +13,7 @@ use infrastructure::{
     },
 };
 use presentation::web::section::page::presentation_web_section_page;
-use std::env;
+use std::{env, thread, time::Duration};
 
 #[tokio::main]
 async fn main() {
@@ -23,12 +23,12 @@ async fn main() {
         return;
     }
 
-    // thread::spawn(|| {
-    //     loop {
-    //         karma();
-    //         thread::sleep(Duration::from_secs(60));
-    //     }
-    // });
+    thread::spawn(|| {
+        loop {
+            deliver_karma();
+            thread::sleep(Duration::from_secs(3));
+        }
+    });
 
     let args = env::args().nth(1);
 

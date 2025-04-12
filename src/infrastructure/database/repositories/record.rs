@@ -42,23 +42,6 @@ pub async fn repository_record_create(record: RecordSchemaCreate) -> Result<(), 
     Ok(())
 }
 
-pub async fn record_repository_fetch_all() -> Result<Vec<Record>, Error> {
-    let pool = connection().await.unwrap();
-
-    let record: Result<Vec<Record>, sqlx::Error> = sqlx::query_as("SELECT * FROM record")
-        .fetch_all(&pool)
-        .await;
-    if record.is_err() {
-        return Err(Error::new(
-            ErrorKind::InvalidData,
-            "Error when querying record fetch all",
-        ));
-    }
-    let record = record.unwrap();
-
-    Ok(record)
-}
-
 pub async fn repository_record_delete_by_id(id: String) -> Result<(), Error> {
     let pool = connection().await.unwrap();
 
@@ -75,11 +58,10 @@ pub async fn repository_record_delete_by_id(id: String) -> Result<(), Error> {
     Ok(())
 }
 
-pub async fn repository_record_zero_quantity(id: String) -> () {
+pub async fn repository_record_zero_quantity(id: String) {
     let query = format!("UPDATE record SET quantity = 0 WHERE id = {}", id);
     let pool = connection().await.unwrap();
     let _ = sqlx::query(&query).fetch_optional(&pool).await;
-    ()
 }
 
 // pub async fn get_inactive() {

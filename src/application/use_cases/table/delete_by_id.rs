@@ -1,5 +1,5 @@
 use crate::{
-    application::providers::table::provider_table_delete_by_id,
+    application::providers::table::delete_by_id::provider_table_delete_by_id,
     presentation::web::section::main::presentation_web_main,
 };
 

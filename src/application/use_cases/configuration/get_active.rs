@@ -4,8 +4,9 @@ use crate::{
 };
 
 pub async fn use_case_configuration_get_active() -> String {
-    let active_configuration = provider_configuration_get_active().await;
-    presentation_web_configuration_unhovered(active_configuration)
+    let (active_configuration, active_configuration_views) =
+        provider_configuration_get_active().await;
+    presentation_web_configuration_unhovered(active_configuration, active_configuration_views)
         .await
         .0
 }

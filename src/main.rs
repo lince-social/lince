@@ -9,7 +9,7 @@ use infrastructure::{
     database::management::schema::schema,
     http::routers::{
         configuration::configuration_router, operation::operation_router, record::record_router,
-        section::section_router, tui::run_tui_mode,
+        section::section_router, table::table_router, tui::run_tui_mode, view::view_router,
     },
 };
 use presentation::web::section::page::presentation_web_section_page;
@@ -40,6 +40,8 @@ async fn main() {
             .nest("/section", section_router().await)
             .nest("/configuration", configuration_router().await)
             .nest("/record", record_router().await)
+            .nest("/view", view_router().await)
+            .nest("/table", table_router().await)
             .nest("/operation", operation_router().await);
 
         let listener = tokio::net::TcpListener::bind("0.0.0.0:6174").await.unwrap();

@@ -1,7 +1,7 @@
 use regex::Regex;
 
 use crate::{
-    application::use_cases::record::zero_quantity::use_case_record_zero_quantity,
+    application::use_cases::record::set_quantity::use_case_record_set_quantity,
     presentation::web::{
         operation::get::presentation_web_operation_get_nested_body,
         section::body::presentation_web_section_body,
@@ -39,7 +39,7 @@ fn parse_table(operation: String) -> String {
 pub async fn execute_operation(operation: String) -> String {
     let only_digits = Regex::new(r"^\d+$").unwrap();
     if only_digits.is_match(&operation) {
-        return use_case_record_zero_quantity(operation).await;
+        return use_case_record_set_quantity(operation, 0.0).await;
     }
 
     let table = parse_table(operation.clone());

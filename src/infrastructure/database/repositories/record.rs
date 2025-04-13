@@ -1,20 +1,12 @@
-use crate::domain::entities::record::{Record, RecordSchemaCreate};
-use sqlx::{Pool, Sqlite, sqlite};
 use std::io::{Error, ErrorKind};
 
-pub async fn connection() -> Result<Pool<Sqlite>, Error> {
-    let config_dir = dirs::config_dir().unwrap();
-    let db_path = String::from(config_dir.to_str().unwrap()) + "/lince/lince.db";
-    let opt = sqlite::SqliteConnectOptions::new()
-        .filename(db_path)
-        .create_if_missing(true);
-    let pool = sqlite::SqlitePool::connect_with(opt).await;
-    if pool.is_err() {
-        return Err(Error::new(ErrorKind::Other, "Pool error"));
-    }
-    let pool = pool.unwrap();
-    Ok(pool)
-}
+use serde::{Deserialize, Serialize};
+use sqlx::prelude::FromRow;
+
+use crate::{
+    domain::entities::record::{Record, RecordSchemaCreate},
+    infrastructure::database::management::lib::connection,
+};
 
 pub async fn repository_record_create(record: RecordSchemaCreate) -> Result<(), Error> {
     let pool = connection().await;
@@ -58,19 +50,24 @@ pub async fn repository_record_delete_by_id(id: String) -> Result<(), Error> {
     Ok(())
 }
 
-pub async fn repository_record_zero_quantity(id: String) {
-    let query = format!("UPDATE record SET quantity = 0 WHERE id = {}", id);
+pub async fn repository_record_set_quantity(id: String, quantity: f64) {
+    let query = format!(
+        "UPDATE record SET quantity = {} WHERE id = {}",
+        quantity, id
+    );
     let pool = connection().await.unwrap();
     let _ = sqlx::query(&query).fetch_optional(&pool).await;
 }
 
-// pub async fn get_inactive() {
-//     let conn = connection().await.unwrap();
-//     let query = "SELECT * FROM configuration WHERE quantity <> 1";
-// }
-
-// pub async fn set_active(id: String) {
-//     let conn = connection().await.unwrap();
-//     let query =
-//         format!("UPDATE configuration SET quantity = CASE WHEN id = {id} THEN 1 ELSE 0 END");
-// }
+pub async fn repository_record_get_quantity_by_id(id: u32) -> f64 {
+    #[derive(FromRow, Serialize, Deserialize)]
+    pub struct Record {
+        pub quantity: f64,
+    }
+    let pool = connection().await.unwrap();
+    let record: Record = sqlx::query_as(&format!("SELECT quantity FROM record WHERE id = {}", id))
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    record.quantity
+}

@@ -1,107 +1,85 @@
-pub fn deliver_karma() {
-    println!("Running Karma...");
-    println!("Karma delivered")
-}
+use crate::application::providers::{
+    karma::get::provider_karma_get,
+    record::{
+        get_quantity_by_id::provider_record_get_quantity_by_id_sync,
+        set_quantity::provider_record_set_quantity_sync,
+    },
+};
+use regex::Regex;
+use rhai::Engine;
+pub async fn use_case_karma_deliver() {
+    println!("Delivering Karma...");
 
-// import { saveDatabase } from "../../../db/startup";
-//
-// export default async function Karma() {
-//   try {
-//     console.log("helorowd")
-//     console.log(await sql`SELECT * FROM record`)
-//     // olhar pra karma:
-//     // ver a coluna condition_id, puxar
-//     // const data = await sql`SELECT FROM karma`;
-//     // karma_consequence | operator | karma_condition
-//     //
-//     // CONDITION: SELECT condition FROM karma_condition:
-//     // if 'f' take the numbers after and thats the id, run UpdateFrequency(id) and replace in the string the fNUMBERS with the result: number
-//     // if 'c' take the numbers after and thats the id, run RunShellCommand(id) and replace in the string the cNUMBERS with the result: number
-//     // if 'rq' take the numbers after and thats the id, run GetRecordQuantity(id) and replace in the string the rqNUMBERS with the result: number
-//     // if 's' take the numbers after and thats the id, run CalculateSum(id) and replace in the string the sNUMBERS with the result: number
-//     // then, eval the condition and grab the result: number
-//     //
-//     // OPERATOR: SELECT operator from
-//     // def if true: apply operator to all consequences in question:
-//     // record quantity
-//     // command
-//     //
-//     // ---------- operator:
-//     // if null -> =
-//     // if * in it, if the condition is zero, apply zero to the consequences.
-//     //
-//     // ----------- consequences:
-//     // if rqNUMBERS -> put the result of operator(condition) into record quantity
-//     // if cNUMBERS -> activate the script the module of times of operator(condition)
-//   } catch (error) {
-//     console.log(`Error when running Karma() at: ${new Date()}: ${error}`)
-//   }
-// }
-//
-// def karma():
-//     karma_df = read_rows("SELECT * FROM karma")
-//
-//     for index, karma_row in karma_df.iterrows():
-//         expression = karma_row["expression"]
-//         expression = [item.strip() for item in expression.split("=", 1)]
-//
-//         try:
-//             expression_one_record_quantities = re.findall("rq[0-9]+", expression[1])
-//             for id in expression_one_record_quantities:
-//                 quantity = execute_sql_command(
-//                     f"SELECT quantity FROM record WHERE id = {id[2:]}"
-//                 )["quantity"].iloc[0]
-//                 expression[1] = expression[1].replace(id, str(quantity))
-//
-//             expression_one_frequencies = re.findall("f[0-9]+", expression[1])
-//             for frequency in expression_one_frequencies:
-//                 frequency_return = check_update_frequency(id=frequency[1:])
-//                 expression[1] = expression[1].replace(frequency, str(frequency_return))
-//
-//             expression_one_commands = re.findall("co?[0-9]+", expression[1])
-//             for command in expression_one_commands:
-//                 if "o" in command:
-//                     command_return = execute_shell_command(id=command[2:], output=True)
-//                 else:
-//                     command_return = execute_shell_command(id=command[1:], output=False)
-//                 expression[1] = expression[1].replace(command, str(command_return))
-//
-//             expression_one_sums = re.findall("s[0-9]+", expression[1])
-//             for sum in expression_one_sums:
-//                 sum_return = return_sum_delta_record(id=sum[1:])
-//                 expression[1] = expression[1].replace(sum, str(sum_return))
-//
-//             result = eval(expression[1])
-//             if result == None:
-//                 continue
-//         except:
-//             continue
-//
-//         if result != 0 or (result == 0 and expression[0].endswith("*")):
-//             expression[0] = expression[0].replace("*", "")
-//             expression[0] = expression[0].strip()
-//             left_expression = expression[0].split(",")
-//
-//             for consequence in left_expression:
-//                 consequence = consequence.strip()
-//
-//                 if "rq" in consequence:
-//                     table = "record"
-//                     set_column = "quantity"
-//                     set_value = result
-//                     where_column = "id"
-//                     where_value = f"{consequence[2:]}"
-//                     execute_sql_command(
-//                         f"UPDATE {table} SET {set_column} = {set_value} WHERE {where_column} = {where_value}"
-//                     )
-//                     dump_db()
-//
-//                 if "co" in consequence:
-//                     execute_shell_command(consequence[2:], output=True)
-//                     continue
-//
-//                 if "c" in consequence:
-//                     execute_shell_command(consequence[1:], output=False)
-//                     continue
-//
-//     return True
+    let mut engine = Engine::new();
+    engine.set_fast_operators(false);
+
+    engine.register_fn("+", |a: f64, b: bool| a + if b { 1.0 } else { 0.0 });
+    engine.register_fn("+", |a: bool, b: f64| if a { 1.0 } else { 0.0 } + b);
+    engine.register_fn("+", |a: i64, b: bool| a + if b { 1 } else { 0 });
+    engine.register_fn("+", |a: bool, b: i64| if a { 1 } else { 0 } + b);
+
+    engine.register_fn("-", |a: f64, b: bool| a - if b { 1.0 } else { 0.0 });
+    engine.register_fn("-", |a: bool, b: f64| if a { 1.0 } else { 0.0 } - b);
+    engine.register_fn("-", |a: i64, b: bool| a - if b { 1 } else { 0 });
+    engine.register_fn("-", |a: bool, b: i64| if a { 1 } else { 0 } - b);
+
+    engine.register_fn("*", |a: f64, b: bool| a * if b { 1.0 } else { 0.0 });
+    engine.register_fn("*", |a: bool, b: f64| if a { 1.0 } else { 0.0 } * b);
+    engine.register_fn("*", |a: i64, b: bool| a * if b { 1 } else { 0 });
+    engine.register_fn("*", |a: bool, b: i64| if a { 1 } else { 0 } * b);
+
+    engine.register_fn("/", |a: f64, b: bool| {
+        a / if b { 1.0 } else { f64::MIN_POSITIVE }
+    });
+    engine.register_fn(
+        "/",
+        |a: bool, b: f64| if a { 1.0 } else { 0.0 } / b.max(f64::MIN_POSITIVE),
+    );
+    engine.register_fn("/", |a: i64, b: bool| a / if b { 1 } else { 1 });
+    engine.register_fn("/", |a: bool, b: i64| if a { 1 } else { 0 } / b.max(1));
+
+    engine.register_fn("%", |a: f64, b: bool| {
+        a % if b { 1.0 } else { f64::MIN_POSITIVE }
+    });
+    engine.register_fn(
+        "%",
+        |a: bool, b: f64| if a { 1.0 } else { 0.0 } % b.max(f64::MIN_POSITIVE),
+    );
+    engine.register_fn("%", |a: i64, b: bool| a % if b { 1 } else { 1 });
+    engine.register_fn("%", |a: bool, b: i64| if a { 1 } else { 0 } % b.max(1));
+
+    let vec_karma = provider_karma_get();
+    let regex_rq = Regex::new(r"rq(\d+)").unwrap();
+
+    for karma in &vec_karma {
+        println!("Karma Condition Original: {}", karma.condition);
+
+        let mut replacements = Vec::new();
+        for caps in regex_rq.captures_iter(&karma.condition) {
+            let id = caps[1].parse::<u32>().unwrap();
+            replacements.push((caps.get(0).unwrap().range(), id));
+        }
+
+        // Process async replacements
+        let mut karma_condition = karma.condition.clone();
+        for (range, id) in replacements.into_iter().rev() {
+            let replacement = provider_record_get_quantity_by_id_sync(id).to_string();
+            karma_condition.replace_range(range, &replacement);
+        }
+        let karma_condition = format!("({}) * 1.0", karma_condition);
+        let karma_condition: f64 = engine.eval(&karma_condition).unwrap();
+        println!("Result: {:?}", karma_condition);
+
+        match karma.operator.as_str() {
+            "=" => {
+                if let Some(caps) = regex_rq.captures(&karma.consequence) {
+                    let record_id = &caps[1];
+                    provider_record_set_quantity_sync(record_id.to_string(), karma_condition)
+                }
+            }
+            _ => println!("Invalid operator for Karma with id: {}", karma.id),
+        }
+    }
+
+    println!("Karma delivered");
+}

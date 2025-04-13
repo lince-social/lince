@@ -5,10 +5,12 @@ edition = "2024"
 
 [dependencies]
 axum = { version = "*" }
+chrono = { version = "*" }
 dirs = { version = "*" }
 futures = { version = "*" }
 maud = { version = "*" }
 regex = { version = "*" }
+rhai = { version = "*" }
 serde = { version = "*", features = ["derive"] }
 serde_json = { version = "*" }
 sqlx = { version = "*", features = ["runtime-tokio", "sqlite"] }
@@ -16,4 +18,3 @@ tokio = { version = "*", features = ["full"] }
 tower = { version = "*" }
 tower-http = { version = "*" }
 tracing-subscriber = { version = "*" }
-rhai = "*"

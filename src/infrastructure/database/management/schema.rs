@@ -92,7 +92,7 @@ pub async fn schema() -> Result<(), Error> {
     let configuration_view = sqlx::query(
         "CREATE TABLE IF NOT EXISTS configuration_view(
         id INTEGER PRIMARY KEY,
-            quantity INTEGER NOT NULL DEFAULT 0,
+            quantity INTEGER NOT NULL DEFAULT 1,
             configuration_id INTEGER REFERENCES configuration(id),
             view_id INTEGER REFERENCES view(id)
          )",
@@ -164,7 +164,7 @@ pub async fn schema() -> Result<(), Error> {
             months REAL DEFAULT 0 NOT NULL,
             days REAL DEFAULT 0 NOT NULL,
             seconds REAL DEFAULT 0 NOT NULL,
-            next_date DATETIME NOT NULL,
+            next_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
             finish_date DATETIME,
             catch_up_sum INTEGER NOT NULL DEFAULT 0
          )",

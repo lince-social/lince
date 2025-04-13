@@ -3,7 +3,7 @@ use sqlx::{Column, Row, TypeInfo};
 use std::collections::HashMap;
 use std::io::Error;
 
-use super::record::connection;
+use crate::infrastructure::database::management::lib::connection;
 
 pub async fn repository_view_toggle(id: String) -> Result<(), Error> {
     let pool = connection().await.unwrap();

@@ -16,3 +16,4 @@ tokio = { version = "*", features = ["full"] }
 tower = { version = "*" }
 tower-http = { version = "*" }
 tracing-subscriber = { version = "*" }
+rhai = "*"

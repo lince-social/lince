@@ -109,7 +109,7 @@ pub async fn schema() -> Result<(), Error> {
     let karma_condition = sqlx::query(
         "CREATE TABLE IF NOT EXISTS karma_condition(
                 id INTEGER PRIMARY KEY,
-                quantity INTEGER NOT NULL DEFAULT 0,
+                quantity INTEGER NOT NULL DEFAULT 1,
                 condition TEXT NOT NULL
             )",
     )
@@ -125,7 +125,7 @@ pub async fn schema() -> Result<(), Error> {
     let karma_consequence = sqlx::query(
         "CREATE TABLE IF NOT EXISTS karma_consequence(
              id INTEGER PRIMARY KEY,
-             quantity INTEGER NOT NULL DEFAULT 0,
+             quantity INTEGER NOT NULL DEFAULT 1,
              consequence TEXT NOT NULL
          )",
     )
@@ -141,7 +141,7 @@ pub async fn schema() -> Result<(), Error> {
     let karma = sqlx::query(
         "CREATE TABLE IF NOT EXISTS karma(
             id INTEGER PRIMARY KEY,
-            quantity REAL NOT NULL DEFAULT 1,
+            quantity INTEGER NOT NULL DEFAULT 1,
             condition_id INTEGER NOT NULL,
             operator TEXT NOT NULL,
             consequence_id INTEGER NOT NULL

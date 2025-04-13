@@ -1,5 +1,6 @@
-use super::record::connection;
 use sqlx::Row;
+
+use crate::infrastructure::database::management::lib::connection;
 
 pub async fn repository_operation_get_column_names(table: String) -> Vec<String> {
     let pool = connection().await.unwrap();

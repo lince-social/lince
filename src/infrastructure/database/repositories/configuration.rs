@@ -1,10 +1,9 @@
 use crate::{
     application::schema::view::queried_view::QueriedView,
     domain::entities::configuration::Configuration,
+    infrastructure::database::management::lib::connection,
 };
 use std::io::{Error, ErrorKind};
-
-use super::record::connection;
 
 pub async fn repository_configuration_get_active()
 -> Result<(Configuration, Vec<QueriedView>), Error> {

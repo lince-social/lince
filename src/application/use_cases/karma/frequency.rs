@@ -61,7 +61,6 @@ pub fn use_case_frequency_check(id: u32) -> u32 {
             next_date: new_next_date,
             ..frequency.clone()
         };
-        println!("NEW FREQUENCY: {:#?}", new_frequency);
 
         provider_frequency_update(new_frequency).await;
         1

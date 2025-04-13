@@ -20,7 +20,6 @@ pub async fn use_case_karma_deliver() {
 
     for karma in &vec_karma {
         let mut karma_condition = karma.condition.clone();
-        println!("{}", karma_condition);
 
         let mut replacements_rq = Vec::new();
         for caps in regex_rq.captures_iter(&karma.condition) {

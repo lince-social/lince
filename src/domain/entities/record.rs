@@ -10,10 +10,5 @@ pub struct Record {
 
 #[derive(sqlx::FromRow, Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub struct RecordSchemaCreate {
-    // pub quantity: f32,
     pub head: String,
-    // pub body: String,
-    // pub quantity: Option<f32>,
-    // pub head: Option<String>,
-    // pub body: Option<String>,
 }

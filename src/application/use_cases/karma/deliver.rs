@@ -1,12 +1,19 @@
-use crate::application::{
-    providers::{
-        karma::get::provider_karma_get,
-        record::{
-            get_quantity_by_id::provider_record_get_quantity_by_id_sync,
-            set_quantity::provider_record_set_quantity_sync,
+use std::collections::HashMap;
+
+use crate::{
+    application::{
+        providers::{
+            karma::get::provider_karma_get,
+            record::{
+                get_quantity_by_id::provider_record_get_quantity_by_id_sync,
+                set_quantity::provider_record_set_quantity_sync,
+            },
+        },
+        use_cases::frequency::{
+            check::use_case_frequency_check, update::use_case_frequency_update,
         },
     },
-    use_cases::karma::frequency::use_case_frequency_check,
+    domain::entities::frequency::Frequency,
 };
 use regex::Regex;
 use rhai::Engine;
@@ -17,6 +24,7 @@ pub async fn use_case_karma_deliver() {
     let vec_karma = provider_karma_get();
     let regex_rq = Regex::new(r"rq(\d+)").unwrap();
     let regex_f = Regex::new(r"f(\d+)").unwrap();
+    let mut frequencies_to_update: HashMap<u32, Frequency> = HashMap::new();
 
     for karma in &vec_karma {
         let mut karma_condition = karma.condition.clone();
@@ -37,8 +45,13 @@ pub async fn use_case_karma_deliver() {
             replacements_f.push((caps.get(0).unwrap().range(), id));
         }
         for (range, id) in replacements_f.into_iter().rev() {
-            let replacement_f = use_case_frequency_check(id).to_string();
-            karma_condition.replace_range(range, &replacement_f);
+            let (replacement_f, frequency_to_update) = use_case_frequency_check(id);
+
+            if let Some(frequency_to_update) = frequency_to_update {
+                frequencies_to_update.insert(frequency_to_update.id, frequency_to_update);
+            }
+
+            karma_condition.replace_range(range, &replacement_f.to_string());
         }
 
         let karma_condition = format!("({}) * 1.0", karma_condition);
@@ -56,6 +69,8 @@ pub async fn use_case_karma_deliver() {
             _ => println!("Invalid operator for Karma with id: {}", karma.id),
         }
     }
+
+    use_case_frequency_update(frequencies_to_update.into_values().collect());
 
     println!("Karma delivered");
 }

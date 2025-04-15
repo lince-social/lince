@@ -11,7 +11,7 @@ use crate::{
 };
 
 pub async fn get_operation_handler() -> Html<String> {
-    Html(presentation_web_operation_get_operation_input())
+    Html(presentation_web_operation_get_operation_input().to_string())
 }
 
 pub async fn post_operation_handler(Form(operation): Form<Operation>) -> Html<String> {

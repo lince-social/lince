@@ -6,18 +6,18 @@ use crate::{
 };
 use chrono::{Datelike, Duration, NaiveDateTime, TimeZone, Utc};
 
-pub fn use_case_frequency_check(id: u32) -> u32 {
+pub fn use_case_frequency_check(id: u32) -> (u32, Option<Frequency>) {
     futures::executor::block_on(async {
         let frequency = provider_frequency_get(id).await;
         if frequency.is_none() {
-            return 0;
+            return (0, None);
         }
         let frequency = frequency.unwrap();
 
         let now = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
         if frequency.next_date > now {
-            return 0;
+            return (0, None);
         }
 
         if frequency.finish_date.is_some() && frequency.finish_date.clone().unwrap() < now {
@@ -26,7 +26,7 @@ pub fn use_case_frequency_check(id: u32) -> u32 {
                 ..frequency.clone()
             };
             provider_frequency_update(frequency).await;
-            return 0;
+            return (0, None);
         }
 
         let naive =
@@ -62,7 +62,6 @@ pub fn use_case_frequency_check(id: u32) -> u32 {
             ..frequency.clone()
         };
 
-        provider_frequency_update(new_frequency).await;
-        1
+        (1, Some(new_frequency))
     })
 }

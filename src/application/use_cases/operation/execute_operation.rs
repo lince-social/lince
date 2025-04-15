@@ -46,7 +46,7 @@ pub async fn execute_operation(operation: String) -> String {
     let re = Regex::new(r"[a-z]+").unwrap();
 
     let _ = match re.find(&operation) {
-        None => return presentation_web_section_body().to_string(),
+        None => return presentation_web_section_body().await,
         Some(operation) => {
             let element = match operation.as_str() {
                 "c" => use_case_operation_create_component(table).await,

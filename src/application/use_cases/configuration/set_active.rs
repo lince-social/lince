@@ -3,7 +3,7 @@ use crate::{
     presentation::web::section::body::presentation_web_section_body,
 };
 
-pub async fn use_case_configuration_set_active(id: String) -> &'static str {
+pub async fn use_case_configuration_set_active(id: String) -> String {
     provider_configuration_set_active(id).await;
-    presentation_web_section_body()
+    presentation_web_section_body().await
 }

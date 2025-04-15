@@ -9,5 +9,5 @@ pub async fn main_handler() -> Html<String> {
 }
 
 pub async fn handler_section_get_body() -> Html<String> {
-    Html(presentation_web_section_body().to_string())
+    Html(presentation_web_section_body().await)
 }

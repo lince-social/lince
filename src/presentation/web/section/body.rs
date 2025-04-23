@@ -1,6 +1,6 @@
 use crate::presentation::web::table::tables::presentation_web_tables;
 
-use super::header::header;
+use super::{header::header, nav::presentation_web_section_nav};
 
 pub async fn presentation_web_section_body() -> String {
     r#"<body id="body">"#.to_string()
@@ -9,7 +9,7 @@ pub async fn presentation_web_section_body() -> String {
         + "</body>"
 }
 
-pub async fn nested_body(element: String) -> String {
+pub async fn modal_body(element: String) -> String {
     format!(
         r##"
             <body id="body">
@@ -35,4 +35,11 @@ pub async fn nested_body(element: String) -> String {
             </body>
         "##
     )
+}
+
+pub async fn nav_body(element: String) -> String {
+    r#"<body id="body">"#.to_string()
+        + presentation_web_section_nav().await.as_str()
+        + element.as_str()
+        + "</body>"
 }

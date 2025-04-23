@@ -13,8 +13,8 @@ use axum::{
 use infrastructure::{
     database::management::schema::schema,
     http::routers::{
-        configuration::configuration_router, operation::operation_router, section::section_router,
-        table::table_router, tui::run_tui_mode, view::view_router,
+        configuration::configuration_router, operation::operation_router, page::router_page,
+        section::section_router, table::table_router, tui::run_tui_mode, view::view_router,
     },
 };
 use presentation::web::section::page::presentation_web_section_page;
@@ -41,7 +41,6 @@ async fn main() {
         return;
     }
 
-    // Spawn karma delivery task
     tokio::spawn({
         async {
             loop {
@@ -61,6 +60,7 @@ async fn main() {
                 .nest("/configuration", configuration_router().await)
                 .nest("/view", view_router().await)
                 .nest("/table", table_router().await)
+                .nest("/page", router_page().await)
                 .nest("/operation", operation_router().await);
 
             let listener = tokio::net::TcpListener::bind("0.0.0.0:6174").await.unwrap();

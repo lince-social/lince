@@ -1,13 +1,12 @@
-use crate::application::providers::view::get_active_view_data::provider_view_get_active_view_data;
+use crate::{
+    application::providers::view::get_active_view_data::provider_view_get_active_view_data,
+    domain::entities::table::SortedTables,
+};
 use maud::{Markup, html};
 
 pub async fn presentation_web_tables() -> Markup {
     let tables = provider_view_get_active_view_data().await.unwrap();
-    let tables_sorted: Vec<(
-        String,
-        Vec<std::collections::HashMap<String, String>>,
-        Vec<String>,
-    )> = tables
+    let sorted_tables: SortedTables = tables
         .into_iter()
         .map(|(table_name, table)| {
             let mut headers: Vec<String> = table
@@ -21,7 +20,7 @@ pub async fn presentation_web_tables() -> Markup {
 
     html! {
         main id="main" {
-            @for (table_name, table, headers) in tables_sorted {
+            @for (table_name, table, headers) in sorted_tables {
                 div {
                     p { (table_name) }
                     table class="framed" {
@@ -46,14 +45,16 @@ pub async fn presentation_web_tables() -> Markup {
                                             key,
                                             match row.get(key).unwrap().as_str() {
                                                 "" => "None",
-                                                a => a,
-                                            }
-                                        )) {
+                                                some => some,
+                                            }))
+                                            {
                                             @if key == "id" {
                                                 button
                                                     hx-delete=(format!("/table/{}/{}", table_name, row.get(key).unwrap_or(&"NULL".to_string())))
                                                     hx-target="#main"
+                                                    class="delete_row"
                                                     hx-trigger="click"
+                                                    onclick="event.stopPropagation()"
                                                 { "x" }
                                             }
                                             (row.get(key).unwrap_or(&"NULL".to_string()))

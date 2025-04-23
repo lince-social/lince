@@ -49,8 +49,8 @@ pub async fn execute_operation(operation: String) -> String {
         None => return presentation_web_section_body().await,
         Some(operation) => {
             let element = match operation.as_str() {
-                "c" => use_case_operation_create_component(table).await,
-                _ => "".to_string(),
+                "c" => Some(use_case_operation_create_component(table).await),
+                _ => None,
             };
             return presentation_web_operation_get_nested_body(element).await;
         }

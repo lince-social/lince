@@ -3,6 +3,7 @@ use sqlx::{Column, Row, TypeInfo};
 use std::collections::HashMap;
 use std::io::Error;
 
+use crate::domain::entities::table::{Row as RowEntity, Table};
 use crate::infrastructure::database::management::lib::connection;
 
 pub async fn repository_view_toggle(id: String) -> Result<(), Error> {
@@ -22,8 +23,7 @@ pub async fn repository_view_toggle(id: String) -> Result<(), Error> {
     Ok(())
 }
 
-pub async fn repository_view_get_active_view_data()
--> sqlx::Result<Vec<(String, Vec<HashMap<String, String>>)>> {
+pub async fn repository_view_get_active_view_data() -> sqlx::Result<Vec<(String, Table)>> {
     let pool = connection().await.unwrap();
 
     let query_rows = sqlx::query(
@@ -58,10 +58,10 @@ pub async fn repository_view_get_active_view_data()
         let pool = pool.clone();
         async move {
             let rows = sqlx::query(&query_string).fetch_all(&pool).await?;
-            let mut result_rows = Vec::with_capacity(rows.len());
+            let mut result_rows: Table = Vec::with_capacity(rows.len());
 
             for row in rows {
-                let mut row_map: HashMap<String, String> = HashMap::new();
+                let mut row_map: RowEntity = HashMap::new();
 
                 let columns = row.columns();
 

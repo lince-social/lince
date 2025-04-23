@@ -21,6 +21,6 @@ pub async fn post_operation_handler(Form(operation): Form<Operation>) -> Html<St
 pub async fn handler_operation_create(
     Path(table): Path<String>,
     Form(data): Form<HashMap<String, String>>,
-) {
-    use_case_operation_create_persist(table, data).await
+) -> Html<String> {
+    Html(use_case_operation_create_persist(table, data).await)
 }

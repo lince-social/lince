@@ -9,8 +9,7 @@ pub async fn repository_frequency_get(id: u32) -> Option<Frequency> {
         "SELECT * FROM frequency WHERE id = {} and quantity <> 0",
         id
     );
-    let frequency = sqlx::query_as(&query).fetch_optional(&pool).await.unwrap();
-    frequency
+    sqlx::query_as(&query).fetch_optional(&pool).await.unwrap()
 }
 
 pub async fn repository_frequency_update(frequency: Frequency) {

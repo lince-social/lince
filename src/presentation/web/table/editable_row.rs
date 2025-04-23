@@ -14,5 +14,5 @@ pub async fn presentation_web_table_editable_row(
         name="value"
         hx-params="*"
         hx-target="#main"
-        hx-patch=(format!("/table/{}/{}/{}", table, id, column)) value=(value){}}})
+        hx-patch=(format!("/table/{}/{}/{}", table, id, column)) value=(value.replace("'", "''")){}}})
 }

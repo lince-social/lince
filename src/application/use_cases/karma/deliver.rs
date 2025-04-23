@@ -18,8 +18,6 @@ use crate::{
 use regex::Regex;
 use rhai::Engine;
 pub async fn use_case_karma_deliver() {
-    println!("Delivering Karma...");
-
     let engine = return_engine();
     let vec_karma = provider_karma_get();
     let regex_rq = Regex::new(r"rq(\d+)").unwrap();
@@ -71,8 +69,6 @@ pub async fn use_case_karma_deliver() {
     }
 
     use_case_frequency_update(frequencies_to_update.into_values().collect());
-
-    println!("Karma delivered");
 }
 
 pub fn return_engine() -> Engine {
@@ -101,7 +97,7 @@ pub fn return_engine() -> Engine {
         "/",
         |a: bool, b: f64| if a { 1.0 } else { 0.0 } / b.max(f64::MIN_POSITIVE),
     );
-    engine.register_fn("/", |a: i64, b: bool| a / if b { 1 } else { 1 });
+    engine.register_fn("/", |a: i64, _b: bool| a);
     engine.register_fn("/", |a: bool, b: i64| if a { 1 } else { 0 } / b.max(1));
 
     engine.register_fn("%", |a: f64, b: bool| {
@@ -111,7 +107,7 @@ pub fn return_engine() -> Engine {
         "%",
         |a: bool, b: f64| if a { 1.0 } else { 0.0 } % b.max(f64::MIN_POSITIVE),
     );
-    engine.register_fn("%", |a: i64, b: bool| a % if b { 1 } else { 1 });
+    engine.register_fn("%", |a: i64, _b: bool| a);
     engine.register_fn("%", |a: bool, b: i64| if a { 1 } else { 0 } % b.max(1));
     engine
 }

@@ -21,6 +21,19 @@ pub fn style() -> &'static str {
             padding: 0.25rem;
         }
 
+        input {
+            all: unset;
+            color: #fff;
+            background: #000;
+            border: 1px solid white;
+            padding: 0.25rem;
+            border-radius: 2px;
+        }
+
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 5px 2px white;
+        }
         .active {
             background-color: #fff;
             color: #000;
@@ -46,6 +59,10 @@ pub fn style() -> &'static str {
             border-radius: 2px;
         }
 
+        .middle_y {
+            align-items: center;
+        }
+
         .modal {
             position: fixed;
             top: 50%;
@@ -64,21 +81,6 @@ pub fn style() -> &'static str {
             flex-direction: row;
             gap: 0.25rem;
         }
-
-        input {
-            all: unset;
-            color: #fff;
-            background: #000;
-            border: 1px solid white;
-            padding: 0.25rem;
-            border-radius: 2px;
-        }
-
-        input:focus {
-            outline: none;
-            box-shadow: 0 0 5px 2px white;
-        }
-
     </style>"
 }
 

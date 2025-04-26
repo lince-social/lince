@@ -1,6 +1,4 @@
-use crate::presentation::web::section::body::{
-    presentation_web_section_body, presentation_web_section_body_home_modal,
-};
+use crate::presentation::web::section::body::presentation_web_section_body_home_modal;
 
 pub fn presentation_web_operation_get_operation_input() -> &'static str {
     r##"
@@ -43,9 +41,6 @@ pub fn presentation_web_operation_get_operation_input() -> &'static str {
     "##
 }
 
-pub async fn presentation_web_operation_get_nested_body(element: Option<String>) -> String {
-    if element.is_none() {
-        return presentation_web_section_body().await;
-    }
-    presentation_web_section_body_home_modal(element.unwrap()).await
+pub async fn presentation_web_operation_get_nested_body(element: String) -> String {
+    presentation_web_section_body_home_modal(element).await
 }

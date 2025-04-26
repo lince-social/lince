@@ -1,7 +1,7 @@
 use std::{io, process::Command};
 
 use crate::application::use_cases::operation::{
-    execute_operation::execute_operation,
+    execute::use_case_operation_execute,
     list_operations::{operation_actions, operation_tables},
 };
 
@@ -37,6 +37,6 @@ Your choice: "
             break;
         }
 
-        execute_operation(input).await;
+        use_case_operation_execute(input).await;
     }
 }

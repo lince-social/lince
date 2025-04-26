@@ -1,4 +1,7 @@
-use crate::domain::entities::table::{SortedTables, Table};
+use crate::{
+    domain::entities::table::{SortedTables, Table},
+    presentation::web::table::add_row::presentation_web_table_add_row,
+};
 use maud::{Markup, html};
 
 pub async fn presentation_web_tables(page: String, tables: Vec<(String, Table)>) -> Markup {
@@ -18,7 +21,7 @@ pub async fn presentation_web_tables(page: String, tables: Vec<(String, Table)>)
         main id="main" {
             @for (table_name, table, headers) in sorted_tables {
                 div {
-                    p { (table_name) }
+                    div class="row middle_y" {p { (table_name) } (presentation_web_table_add_row(table_name.clone()))}
                     table class="framed" {
                         @if !headers.is_empty() {
                             thead {
@@ -46,7 +49,7 @@ pub async fn presentation_web_tables(page: String, tables: Vec<(String, Table)>)
                                             {
                                             @if key == "id" {
                                                 button
-                                                    hx-delete=(format!("/table/{}/{}/{}", page, table_name, row.get(key).unwrap_or(&"NULL".to_string())))
+                                                    hx-delete=(format!("/table/{}/{}/page/{}", table_name, row.get(key).unwrap_or(&"NULL".to_string()), page))
                                                     hx-target="#main"
                                                     class="delete_row"
                                                     hx-trigger="click"

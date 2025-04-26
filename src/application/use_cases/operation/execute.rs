@@ -1,0 +1,80 @@
+use super::crud::use_case_operation_create_component;
+use crate::{
+    application::use_cases::record::set_quantity::use_case_record_set_quantity,
+    presentation::web::{
+        karma::orchestra::presentation_web_karma_orchestra,
+        operation::get::presentation_web_operation_get_nested_body,
+        section::body::presentation_web_section_body,
+    },
+};
+use regex::Regex;
+
+fn parse_table(operation: String) -> String {
+    let re = Regex::new(r"^\w+").unwrap();
+
+    let operation_parts: Vec<&str> = operation.split_whitespace().collect();
+
+    for part in operation_parts {
+        if let Some(matched) = re.find(part) {
+            match matched.as_str() {
+                "0" | "configuration" => return "configuration".to_string(),
+                "1" | "view" => return "view".to_string(),
+                "2" | "configuration_view" => return "configuration_view".to_string(),
+                "3" | "record" => return "record".to_string(),
+                "4" | "karma_condition" => return "karma_condition".to_string(),
+                "5" | "karma_consequence" => return "karma_consequence".to_string(),
+                "6" | "karma" => return "karma".to_string(),
+                "7" | "command" => return "command".to_string(),
+                "8" | "frequency" => return "frequency".to_string(),
+                "9" | "sum" => return "sum".to_string(),
+                "10" | "history" => return "history".to_string(),
+                "11" | "dna" => return "dna".to_string(),
+                "12" | "transfer" => return "transfer".to_string(),
+                _ => continue,
+            }
+        }
+    }
+
+    "record".to_string()
+}
+
+pub async fn parse_operation_and_execute(operation: String, table: String) -> Option<String> {
+    let re = Regex::new(r"[a-zA-Z]+").unwrap();
+
+    let operation_parts: Vec<&str> = operation.split_whitespace().collect();
+
+    for part in operation_parts {
+        if let Some(matched) = re.find(part) {
+            match matched.as_str() {
+                "c" | "create" => {
+                    return Some(
+                        presentation_web_operation_get_nested_body(
+                            use_case_operation_create_component(table.clone()).await,
+                        )
+                        .await,
+                    );
+                }
+                "k" | "karma_orchestra" | "orchestra" => {
+                    return Some(presentation_web_karma_orchestra().await);
+                }
+                "h" | "home" => return None,
+                _ => continue,
+            }
+        }
+    }
+
+    None
+}
+
+pub async fn use_case_operation_execute(operation: String) -> String {
+    let only_digits = Regex::new(r"^\d+$").unwrap();
+    if only_digits.is_match(&operation) {
+        return use_case_record_set_quantity(operation, 0.0).await;
+    }
+
+    let table = parse_table(operation.clone());
+    match parse_operation_and_execute(operation, table).await {
+        None => presentation_web_section_body().await,
+        Some(element) => element,
+    }
+}

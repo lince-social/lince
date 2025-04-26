@@ -12,7 +12,7 @@ use axum::{Form, extract::Path, response::Html};
 use serde::Deserialize;
 
 pub async fn handler_table_delete_by_id(
-    Path((page, table, id)): Path<(String, String, String)>,
+    Path((table, id, page)): Path<(String, String, String)>,
 ) -> Html<String> {
     use_case_table_delete_by_id(table, id).await;
     let content = match page.as_str() {

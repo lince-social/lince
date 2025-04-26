@@ -1,11 +1,7 @@
-use crate::{
-    application::providers::view::get_active_view_data::provider_view_get_active_view_data,
-    domain::entities::table::SortedTables,
-};
+use crate::domain::entities::table::{SortedTables, Table};
 use maud::{Markup, html};
 
-pub async fn presentation_web_tables() -> Markup {
-    let tables = provider_view_get_active_view_data().await.unwrap();
+pub async fn presentation_web_tables(page: String, tables: Vec<(String, Table)>) -> Markup {
     let sorted_tables: SortedTables = tables
         .into_iter()
         .map(|(table_name, table)| {
@@ -50,7 +46,7 @@ pub async fn presentation_web_tables() -> Markup {
                                             {
                                             @if key == "id" {
                                                 button
-                                                    hx-delete=(format!("/table/{}/{}", table_name, row.get(key).unwrap_or(&"NULL".to_string())))
+                                                    hx-delete=(format!("/table/{}/{}/{}", page, table_name, row.get(key).unwrap_or(&"NULL".to_string())))
                                                     hx-target="#main"
                                                     class="delete_row"
                                                     hx-trigger="click"

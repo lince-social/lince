@@ -1,6 +1,13 @@
+use crate::infrastructure::http::handlers::view::{
+    handler_view_toggle_configuration_id, handler_view_toggle_view_id,
+};
 use axum::{Router, routing::patch};
 
-use crate::infrastructure::http::handlers::view::handler_view_toggle;
 pub async fn view_router() -> Router {
-    Router::new().route("/{id}", patch(handler_view_toggle))
+    Router::new()
+        .route("/toggle/view/{view_id}", patch(handler_view_toggle_view_id))
+        .route(
+            "/toggle/configuration/{configuration_id}",
+            patch(handler_view_toggle_configuration_id),
+        )
 }

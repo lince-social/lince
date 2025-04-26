@@ -5,7 +5,7 @@ use crate::{
         provider_operation_create, provider_operation_get_column_names,
     },
     presentation::web::{
-        operation::create::presentation_web_create, section::main::presentation_web_main,
+        operation::create::presentation_web_create, section::main::presentation_web_section_main,
     },
 };
 
@@ -19,5 +19,5 @@ pub async fn use_case_operation_create_persist(
     data: HashMap<String, String>,
 ) -> String {
     provider_operation_create(table, data).await;
-    presentation_web_main().await.0
+    presentation_web_section_main().await.0
 }

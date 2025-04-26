@@ -1,4 +1,6 @@
-use crate::presentation::web::section::body::{modal_body, presentation_web_section_body};
+use crate::presentation::web::section::body::{
+    presentation_web_section_body, presentation_web_section_body_home_modal,
+};
 
 pub fn presentation_web_operation_get_operation_input() -> &'static str {
     r##"
@@ -45,5 +47,5 @@ pub async fn presentation_web_operation_get_nested_body(element: Option<String>)
     if element.is_none() {
         return presentation_web_section_body().await;
     }
-    modal_body(element.unwrap()).await
+    presentation_web_section_body_home_modal(element.unwrap()).await
 }

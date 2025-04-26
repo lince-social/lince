@@ -1,15 +1,15 @@
-use crate::presentation::web::table::tables::presentation_web_tables;
-
-use super::{header::header, nav::presentation_web_section_nav};
+use super::{
+    header::header, main::presentation_web_section_main, nav::presentation_web_section_nav,
+};
 
 pub async fn presentation_web_section_body() -> String {
     r#"<body id="body">"#.to_string()
         + header().await.as_str()
-        + presentation_web_tables().await.0.as_str()
+        + presentation_web_section_main().await.0.as_str()
         + "</body>"
 }
 
-pub async fn modal_body(element: String) -> String {
+pub async fn presentation_web_section_body_home_modal(element: String) -> String {
     format!(
         r##"
             <body id="body">
@@ -37,7 +37,7 @@ pub async fn modal_body(element: String) -> String {
     )
 }
 
-pub async fn nav_body(element: String) -> String {
+pub async fn presentation_web_section_body_nested_with_nav(element: String) -> String {
     r#"<body id="body">"#.to_string()
         + presentation_web_section_nav().await.as_str()
         + element.as_str()

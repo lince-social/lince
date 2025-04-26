@@ -1,13 +1,9 @@
-use std::collections::HashMap;
-
+use super::{engine::return_engine, get::use_case_karma_get};
 use crate::{
     application::{
-        providers::{
-            karma::get::provider_karma_get,
-            record::{
-                get_quantity_by_id::provider_record_get_quantity_by_id_sync,
-                set_quantity::provider_record_set_quantity_sync,
-            },
+        providers::record::{
+            get_quantity_by_id::provider_record_get_quantity_by_id_sync,
+            set_quantity::provider_record_set_quantity_sync,
         },
         use_cases::frequency::{
             check::use_case_frequency_check, update::use_case_frequency_update,
@@ -16,10 +12,11 @@ use crate::{
     domain::entities::frequency::Frequency,
 };
 use regex::Regex;
-use rhai::Engine;
+use std::collections::HashMap;
+
 pub async fn use_case_karma_deliver() {
     let engine = return_engine();
-    let vec_karma = provider_karma_get();
+    let vec_karma = use_case_karma_get().unwrap();
     let regex_rq = Regex::new(r"rq(\d+)").unwrap();
     let regex_f = Regex::new(r"f(\d+)").unwrap();
     let mut frequencies_to_update: HashMap<u32, Frequency> = HashMap::new();
@@ -69,45 +66,4 @@ pub async fn use_case_karma_deliver() {
     }
 
     use_case_frequency_update(frequencies_to_update.into_values().collect());
-}
-
-pub fn return_engine() -> Engine {
-    let mut engine = Engine::new();
-    engine.set_fast_operators(false);
-
-    engine.register_fn("+", |a: f64, b: bool| a + if b { 1.0 } else { 0.0 });
-    engine.register_fn("+", |a: bool, b: f64| if a { 1.0 } else { 0.0 } + b);
-    engine.register_fn("+", |a: i64, b: bool| a + if b { 1 } else { 0 });
-    engine.register_fn("+", |a: bool, b: i64| if a { 1 } else { 0 } + b);
-
-    engine.register_fn("-", |a: f64, b: bool| a - if b { 1.0 } else { 0.0 });
-    engine.register_fn("-", |a: bool, b: f64| if a { 1.0 } else { 0.0 } - b);
-    engine.register_fn("-", |a: i64, b: bool| a - if b { 1 } else { 0 });
-    engine.register_fn("-", |a: bool, b: i64| if a { 1 } else { 0 } - b);
-
-    engine.register_fn("*", |a: f64, b: bool| a * if b { 1.0 } else { 0.0 });
-    engine.register_fn("*", |a: bool, b: f64| if a { 1.0 } else { 0.0 } * b);
-    engine.register_fn("*", |a: i64, b: bool| a * if b { 1 } else { 0 });
-    engine.register_fn("*", |a: bool, b: i64| if a { 1 } else { 0 } * b);
-
-    engine.register_fn("/", |a: f64, b: bool| {
-        a / if b { 1.0 } else { f64::MIN_POSITIVE }
-    });
-    engine.register_fn(
-        "/",
-        |a: bool, b: f64| if a { 1.0 } else { 0.0 } / b.max(f64::MIN_POSITIVE),
-    );
-    engine.register_fn("/", |a: i64, _b: bool| a);
-    engine.register_fn("/", |a: bool, b: i64| if a { 1 } else { 0 } / b.max(1));
-
-    engine.register_fn("%", |a: f64, b: bool| {
-        a % if b { 1.0 } else { f64::MIN_POSITIVE }
-    });
-    engine.register_fn(
-        "%",
-        |a: bool, b: f64| if a { 1.0 } else { 0.0 } % b.max(f64::MIN_POSITIVE),
-    );
-    engine.register_fn("%", |a: i64, _b: bool| a);
-    engine.register_fn("%", |a: bool, b: i64| if a { 1 } else { 0 } % b.max(1));
-    engine
 }

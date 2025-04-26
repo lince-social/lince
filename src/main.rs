@@ -4,35 +4,19 @@ mod infrastructure;
 mod presentation;
 
 use application::use_cases::karma::deliver::use_case_karma_deliver;
-use axum::{
-    Router,
-    http::{HeaderMap, HeaderValue, StatusCode},
-    response::IntoResponse,
-    routing::get,
-};
+use axum::{Router, routing::get};
 use infrastructure::{
-    database::management::schema::schema,
-    http::routers::{
-        configuration::configuration_router, operation::operation_router, page::router_page,
-        section::section_router, table::table_router, tui::run_tui_mode, view::view_router,
+    database::management::{migration::execute_migration, schema::schema},
+    http::{
+        handlers::section::handler_section_favicon,
+        routers::{
+            configuration::configuration_router, operation::operation_router, page::router_page,
+            section::section_router, table::table_router, tui::run_tui_mode, view::view_router,
+        },
     },
 };
 use presentation::web::section::page::presentation_web_section_page;
-use std::{env, path::Path, time::Duration};
-use tokio::fs;
-
-async fn favicon() -> impl IntoResponse {
-    let path = Path::new("assets/preto_no_branco.ico");
-
-    match fs::read(path).await {
-        Ok(bytes) => {
-            let mut headers = HeaderMap::new();
-            headers.insert("Content-Type", HeaderValue::from_static("image/x-icon"));
-            (StatusCode::OK, headers, bytes).into_response()
-        }
-        Err(_) => StatusCode::NOT_FOUND.into_response(),
-    }
-}
+use std::{env, time::Duration};
 
 #[tokio::main]
 async fn main() {
@@ -52,10 +36,11 @@ async fn main() {
 
     match env::args().nth(1).as_deref() {
         Some("tui") => run_tui_mode().await,
+        Some("migrate") => execute_migration().await,
         _ => {
             let app = Router::new()
                 .route("/", get(presentation_web_section_page))
-                .route("/preto_no_branco.ico", get(favicon))
+                .route("/preto_no_branco.ico", get(handler_section_favicon))
                 .nest("/section", section_router().await)
                 .nest("/configuration", configuration_router().await)
                 .nest("/view", view_router().await)

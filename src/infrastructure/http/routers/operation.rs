@@ -1,10 +1,9 @@
+use crate::infrastructure::http::handlers::operation::{
+    get_operation_handler, handler_operation_create, post_operation_handler,
+};
 use axum::{
     Router,
     routing::{get, post},
-};
-
-use crate::infrastructure::http::handlers::operation::{
-    get_operation_handler, handler_operation_create, post_operation_handler,
 };
 
 pub async fn operation_router() -> Router {

@@ -1,8 +1,5 @@
 pub mod configuration;
-pub mod configuration_view;
-pub mod karma;
 pub mod operation;
-pub mod page;
 pub mod section;
 pub mod table;
 pub mod tui;

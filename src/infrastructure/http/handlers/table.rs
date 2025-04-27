@@ -3,23 +3,14 @@ use crate::{
         delete_by_id::use_case_table_delete_by_id, edit_row::use_case_table_edit_row,
         patch_row::use_case_table_patch_row,
     },
-    presentation::web::{
-        karma::orchestra::presentation_web_karma_orchestra,
-        section::main::presentation_web_section_main,
-    },
+    presentation::web::section::main::presentation_web_section_main,
 };
 use axum::{Form, extract::Path, response::Html};
 use serde::Deserialize;
 
-pub async fn handler_table_delete_by_id(
-    Path((table, id, page)): Path<(String, String, String)>,
-) -> Html<String> {
+pub async fn handler_table_delete_by_id(Path((table, id)): Path<(String, String)>) -> Html<String> {
     use_case_table_delete_by_id(table, id).await;
-    let content = match page.as_str() {
-        "karma" => presentation_web_karma_orchestra().await,
-        _ => presentation_web_section_main().await.0,
-    };
-    Html(content)
+    Html(presentation_web_section_main().await)
 }
 
 pub async fn handler_table_editable_row(

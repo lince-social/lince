@@ -81,6 +81,11 @@ pub fn style() -> &'static str {
             flex-direction: row;
             gap: 0.25rem;
         }
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 0.1rem;
+        }
     </style>"
 }
 

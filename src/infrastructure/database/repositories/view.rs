@@ -196,7 +196,8 @@ pub async fn repository_execute_queries(
 //     Ok(all_query_results)
 // }
 
-pub async fn repository_view_get_active_view_data() -> Result<Vec<(String, Table)>, Error> {
+pub async fn repository_view_get_active_view_data()
+-> Result<(Vec<(String, Table)>, Vec<String>), Error> {
     let pool = connection().await.unwrap();
 
     let query_rows = sqlx::query(
@@ -222,7 +223,18 @@ pub async fn repository_view_get_active_view_data() -> Result<Vec<(String, Table
         .map(|row| row.get::<String, _>("query"))
         .collect();
 
-    repository_execute_queries(queries).await
+    let (special_queries, sql_queries): (Vec<_>, Vec<_>) = queries
+        .into_iter()
+        .partition(|query| ["karma_orchestra".to_string()].contains(query));
+
+    let res = repository_execute_queries(sql_queries).await;
+    if res.is_err() {
+        return Err(Error::new(
+            ErrorKind::InvalidData,
+            "Error when querying main data",
+        ));
+    }
+    Ok((res.unwrap(), special_queries))
 }
 
 // export async function CreateView(configurationId, body) {

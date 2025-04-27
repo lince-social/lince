@@ -9,7 +9,7 @@ use std::path::Path;
 use tokio::fs;
 
 pub async fn main_handler() -> Html<String> {
-    Html(presentation_web_section_main().await.0)
+    Html(presentation_web_section_main().await)
 }
 
 pub async fn handler_section_get_body() -> Html<String> {

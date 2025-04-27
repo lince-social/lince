@@ -10,5 +10,5 @@ pub async fn use_case_table_patch_row(
     value: String,
 ) -> String {
     provider_table_edit_row(table, id, column, value).await;
-    presentation_web_section_main().await.0
+    presentation_web_section_main().await
 }

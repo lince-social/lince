@@ -10,7 +10,7 @@ use infrastructure::{
     http::{
         handlers::section::handler_section_favicon,
         routers::{
-            configuration::configuration_router, operation::operation_router, page::router_page,
+            configuration::configuration_router, operation::operation_router,
             section::section_router, table::table_router, tui::run_tui_mode, view::view_router,
         },
     },
@@ -45,7 +45,6 @@ async fn main() {
                 .nest("/configuration", configuration_router().await)
                 .nest("/view", view_router().await)
                 .nest("/table", table_router().await)
-                .nest("/page", router_page().await)
                 .nest("/operation", operation_router().await);
 
             let listener = tokio::net::TcpListener::bind("0.0.0.0:6174").await.unwrap();

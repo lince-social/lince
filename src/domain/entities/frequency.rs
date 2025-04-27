@@ -5,6 +5,7 @@ use sqlx::prelude::FromRow;
 pub struct Frequency {
     pub id: u32,
     pub quantity: f64,
+    pub name: String,
     pub day_week: f64,
     pub months: f64,
     pub days: f64,

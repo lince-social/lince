@@ -19,5 +19,5 @@ pub async fn use_case_operation_create_persist(
     data: HashMap<String, String>,
 ) -> String {
     provider_operation_create(table, data).await;
-    presentation_web_section_main().await.0
+    presentation_web_section_main().await
 }

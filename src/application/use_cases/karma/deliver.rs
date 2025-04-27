@@ -30,7 +30,12 @@ pub async fn use_case_karma_deliver() {
             replacements_rq.push((caps.get(0).unwrap().range(), id));
         }
         for (range, id) in replacements_rq.into_iter().rev() {
-            let replacement_rq = provider_record_get_quantity_by_id_sync(id).to_string();
+            let res = provider_record_get_quantity_by_id_sync(id);
+            if res.is_err() {
+                println!("Karma Error at record with id: {id}")
+            }
+
+            let replacement_rq = res.unwrap().to_string();
             karma_condition.replace_range(range, &replacement_rq);
         }
 

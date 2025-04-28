@@ -12,8 +12,8 @@ pub async fn presentation_web_karma_orchestra() -> String {
         div class="row" {
             (presentation_web_karma_condition().await)
             (presentation_web_karma_consequence().await)
-            (presentation_web_karma_karma().await)
         }
+           div { (presentation_web_karma_karma().await)}
     })
     .0;
     presentation_web_section_body_nested_with_nav(element).await

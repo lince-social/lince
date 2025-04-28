@@ -172,7 +172,8 @@ pub async fn presentation_web_tables_karma(tables: Vec<(String, Table)>) -> Mark
 pub async fn presentation_web_tables_karma_replacer(og_row: String) -> Markup {
     let regex_rq = Regex::new(r"rq(\d+)").unwrap();
     let regex_f = Regex::new(r"f(\d+)").unwrap();
-    let mut row = og_row.clone();
+    // let mut row = og_row.clone();
+    let mut row = og_row;
 
     let mut replacements_rq = Vec::new();
     for caps in regex_rq.captures_iter(&row) {
@@ -205,9 +206,6 @@ pub async fn presentation_web_tables_karma_replacer(og_row: String) -> Markup {
     }
 
     html!(
-       div {
-            p {(row)}
-            p {(og_row)}
-       }
+        (row) // p {(og_row)}
     )
 }

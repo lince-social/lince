@@ -54,7 +54,7 @@ pub async fn presentation_web_tables(tables: Vec<(String, Table)>) -> Markup {
                                             {
                                             @if key == "id" {
                                                 button
-                                                    hx-delete=(format!("/table/{}/{}/",
+                                                    hx-delete=(format!("/table/{}/{}",
                                                         table_name, row.get(key).unwrap_or(&"NULL".to_string())))
                                                     hx-target="#main"
                                                     class="delete_row"

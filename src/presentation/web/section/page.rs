@@ -6,6 +6,8 @@ pub fn style() -> &'static str {
         body {
             background-color: #000;
             color: #fff;
+            margin: 0px;
+            padding: 0px;
         }
 
         main {

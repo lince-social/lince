@@ -223,9 +223,13 @@ pub async fn repository_view_get_active_view_data()
         .map(|row| row.get::<String, _>("query"))
         .collect();
 
-    let (special_queries, sql_queries): (Vec<_>, Vec<_>) = queries
-        .into_iter()
-        .partition(|query| ["karma_orchestra".to_string()].contains(query));
+    let (special_queries, sql_queries): (Vec<_>, Vec<_>) = queries.into_iter().partition(|query| {
+        [
+            "karma_orchestra".to_string(),
+            "testing_presentation".to_string(),
+        ]
+        .contains(query)
+    });
 
     let res = repository_execute_queries(sql_queries).await;
     if res.is_err() {

@@ -3,7 +3,11 @@ use futures::future::join_all;
 use crate::{
     application::providers::view::get_active_view_data::provider_view_get_active_view_data,
     presentation::web::{
-        karma::orchestra::presentation_web_karma_orchestra, table::tables::presentation_web_tables,
+        pages::{
+            karma::orchestra::presentation_web_karma_orchestra,
+            testing::presentation::presentation_web_page_testing_presentation,
+        },
+        table::tables::presentation_web_tables,
     },
 };
 
@@ -14,6 +18,9 @@ pub async fn presentation_web_section_main() -> String {
     let special_futures = special_views.iter().map(|special_view| async move {
         match special_view.as_str() {
             "karma_orchestra" => presentation_web_karma_orchestra().await,
+            "testing_presentation" => presentation_web_page_testing_presentation()
+                .await
+                .to_string(),
             _ => String::new(), // fallback to empty string
         }
     });

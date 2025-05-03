@@ -1,20 +1,9 @@
-use crate::{
-    application::providers::configuration::{
-        get_active::provider_configuration_get_active,
-        get_inactive::provider_configuration_get_inactive,
-    },
-    presentation::web::configuration::configurations::presentation_web_configuration_hovered,
+use crate::application::{
+    providers::configuration::get_inactive::provider_configuration_get_inactive,
+    schema::{configuration::row::ConfigurationForBarScheme, view::queried_view::QueriedView},
 };
 
-pub async fn use_case_configuration_get_inactive() -> String {
-    let (active_configuration, active_configuration_views) =
-        provider_configuration_get_active().await;
-    let inactive_configurations = provider_configuration_get_inactive().await;
-    presentation_web_configuration_hovered(
-        active_configuration,
-        active_configuration_views,
-        inactive_configurations,
-    )
-    .await
-    .0
+pub async fn use_case_configuration_get_inactive()
+-> Vec<(ConfigurationForBarScheme, Vec<QueriedView>)> {
+    provider_configuration_get_inactive().await
 }

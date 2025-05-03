@@ -1,4 +1,6 @@
-use super::{engine::return_engine, get::use_case_karma_get};
+use super::{
+    command::use_case_karma_execute_command, engine::return_engine, get::use_case_karma_get,
+};
 use crate::{
     application::{
         providers::record::{
@@ -17,15 +19,16 @@ use std::collections::HashMap;
 pub async fn use_case_karma_deliver() {
     let engine = return_engine();
     let vec_karma = use_case_karma_get().unwrap();
-    let regex_rq = Regex::new(r"rq(\d+)").unwrap();
-    let regex_f = Regex::new(r"f(\d+)").unwrap();
+    let regex_record_quantity = Regex::new(r"rq(\d+)").unwrap();
+    let regex_frequency = Regex::new(r"f(\d+)").unwrap();
+    let regex_command = Regex::new(r"c(\d+)").unwrap();
     let mut frequencies_to_update: HashMap<u32, Frequency> = HashMap::new();
 
     for karma in &vec_karma {
         let mut karma_condition = karma.condition.clone();
 
         let mut replacements_rq = Vec::new();
-        for caps in regex_rq.captures_iter(&karma.condition) {
+        for caps in regex_record_quantity.captures_iter(&karma.condition) {
             let id = caps[1].parse::<u32>().unwrap();
             replacements_rq.push((caps.get(0).unwrap().range(), id));
         }
@@ -40,7 +43,7 @@ pub async fn use_case_karma_deliver() {
         }
 
         let mut replacements_f = Vec::new();
-        for caps in regex_f.captures_iter(&karma.condition) {
+        for caps in regex_frequency.captures_iter(&karma.condition) {
             let id = caps[1].parse::<u32>().unwrap();
             replacements_f.push((caps.get(0).unwrap().range(), id));
         }
@@ -54,13 +57,23 @@ pub async fn use_case_karma_deliver() {
             karma_condition.replace_range(range, &replacement_f.to_string());
         }
 
+        let mut replacements_command = Vec::new();
+        for caps in regex_command.captures_iter(&karma.condition) {
+            let id = caps[1].parse::<u32>().unwrap();
+            replacements_command.push((caps.get(0).unwrap().range(), id));
+        }
+        for (range, id) in replacements_command.into_iter().rev() {
+            let replacement_command = use_case_karma_execute_command(id);
+            karma_condition.replace_range(range, &replacement_command.unwrap_or(0).to_string());
+        }
+
         let karma_condition = format!("({}) * 1.0", karma_condition);
         let karma_condition: f64 = engine.eval(&karma_condition).unwrap();
 
         match karma.operator.as_str() {
             "=" => {
                 if karma_condition != 0.0 {
-                    if let Some(caps) = regex_rq.captures(&karma.consequence) {
+                    if let Some(caps) = regex_record_quantity.captures(&karma.consequence) {
                         let record_id = &caps[1];
                         provider_record_set_quantity_sync(record_id.to_string(), karma_condition)
                     }

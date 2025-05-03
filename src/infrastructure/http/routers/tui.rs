@@ -2,7 +2,7 @@ use std::{io, process::Command};
 
 use crate::application::use_cases::operation::{
     execute::use_case_operation_execute,
-    list_operations::{operation_actions, operation_tables},
+    list::{operation_actions, operation_tables},
 };
 
 pub async fn run_tui_mode() {

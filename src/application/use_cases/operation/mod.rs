@@ -1,3 +1,3 @@
 pub mod crud;
 pub mod execute;
-pub mod list_operations;
+pub mod list;

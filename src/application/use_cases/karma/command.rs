@@ -1,34 +1,32 @@
-// import { $ } from "bun";
-// 
-// export async function ExecuteShellCommand(command: string) {
-//   await $`${command}`;
-// }
-// 
-// def execute_shell_command(id, output):
-//     command_row = read_rows(f"SELECT * FROM command WHERE id={id}")
-//     if command_row.empty:
-//         return False
-//
-//     command_row = command_row.iloc[0]
-//     quantity = command_row["quantity"]
-//
-//     if quantity == 0:
-//         return 0
-//     if quantity < 0:
-//         update_rows(
-//             "command",
-//             set_clause=f"quantity = {quantity + 1}",
-//             where_clause=f"id = {command_row['id']}",
-//         )
-//
-//     if output:
-//         subprocess.run(
-//             command_row["command"], text=True, shell=True, capture_output=True
-//         ).stdout.strip()
-//         with open("/tmp/lince") as file:
-//             contents = file.read()
-//         os.remove("/tmp/lince")
-//         return contents
-//
-//     os.system(command_row["command"])
-//     return False
+use crate::application::providers::command::get::provider_karma_get_command_by_id;
+use std::process::Stdio;
+use tokio::process::Command;
+
+pub fn use_case_karma_execute_command(id: u32) -> Option<i64> {
+    futures::executor::block_on(async {
+        let command = provider_karma_get_command_by_id(id).await;
+        if command.is_err() {
+            return None;
+        }
+        let command = command.unwrap();
+
+        service_karma_execute_command(command).await
+    })
+}
+
+async fn service_karma_execute_command(command: String) -> Option<i64> {
+    let output = Command::new("sh")
+        .arg("-c")
+        .arg(command)
+        .stdout(Stdio::piped())
+        .output()
+        .await
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    let stdout = String::from_utf8(output.stdout).ok()?;
+    stdout.trim().parse::<i64>().ok()
+}

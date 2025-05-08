@@ -7,8 +7,10 @@ use crate::{
 };
 use axum::extract::Path;
 
-pub async fn handler_view_toggle_view_id(Path(id): Path<String>) -> String {
-    let _ = provider_view_toggle_view_id(id).await;
+pub async fn handler_view_toggle_view_id(
+    Path((configuration_id, view_id)): Path<(String, String)>,
+) -> String {
+    let _ = provider_view_toggle_view_id(configuration_id, view_id).await;
     presentation_web_section_body().await
 }
 

@@ -254,5 +254,22 @@ pub async fn schema() -> Result<(), Error> {
         ));
     }
 
+    let query = sqlx::query(
+        "CREATE TABLE IF NOT EXISTS query (
+                id INTEGER PRIMARY KEY,
+                name TEXT,
+                query TEXT NOT NULL
+            )",
+    )
+    .execute(&pool)
+    .await;
+    if query.is_err() {
+        println!("{}", query.unwrap_err());
+        return Err(Error::new(
+            ErrorKind::ConnectionAborted,
+            "Error when creating table query",
+        ));
+    }
+
     Ok(())
 }

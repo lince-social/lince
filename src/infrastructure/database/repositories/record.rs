@@ -4,13 +4,18 @@ use crate::{
 };
 use std::io::{Error, ErrorKind};
 
-pub async fn repository_record_set_quantity(id: String, quantity: f64) {
+pub async fn repository_record_set_quantity(id: u32, quantity: f64) -> Result<(), Error> {
     let query = format!(
         "UPDATE record SET quantity = {} WHERE id = {}",
         quantity, id
     );
+
     let pool = connection().await.unwrap();
-    let _ = sqlx::query(&query).fetch_optional(&pool).await;
+
+    match sqlx::query(&query).execute(&pool).await {
+        Ok(_) => Ok(()),
+        Err(e) => Err(Error::new(ErrorKind::InvalidData, e)),
+    }
 }
 
 pub async fn repository_record_get_quantity_by_id(id: u32) -> Result<f64, Error> {

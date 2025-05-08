@@ -1,6 +1,6 @@
 use crate::application::providers::command::get::provider_karma_get_command_by_id;
 use std::process::Stdio;
-use tokio::process::Command;
+use tokio::process::Command as TokioCommand;
 
 pub fn use_case_karma_execute_command(id: u32) -> Option<i64> {
     futures::executor::block_on(async {
@@ -10,12 +10,12 @@ pub fn use_case_karma_execute_command(id: u32) -> Option<i64> {
         }
         let command = command.unwrap();
 
-        service_karma_execute_command(command).await
+        service_karma_execute_command(command.command).await
     })
 }
 
 async fn service_karma_execute_command(command: String) -> Option<i64> {
-    let output = Command::new("sh")
+    let output = TokioCommand::new("sh")
         .arg("-c")
         .arg(command)
         .stdout(Stdio::piped())
@@ -29,4 +29,11 @@ async fn service_karma_execute_command(command: String) -> Option<i64> {
 
     let stdout = String::from_utf8(output.stdout).ok()?;
     stdout.trim().parse::<i64>().ok()
+}
+
+pub async fn use_case_command_get_name(id: u32) -> Option<String> {
+    match provider_karma_get_command_by_id(id).await {
+        Err(_) => None,
+        Ok(value) => Some(value.name),
+    }
 }

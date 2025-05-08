@@ -1,3 +1,4 @@
+pub mod command;
 pub mod configuration;
 pub mod frequency;
 pub mod karma;

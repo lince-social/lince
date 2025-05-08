@@ -28,7 +28,9 @@ async fn main() {
     tokio::spawn({
         async {
             loop {
-                use_case_karma_deliver().await;
+                if let Err(error) = use_case_karma_deliver().await {
+                    println!("Error from karma: {}", error)
+                }
                 tokio::time::sleep(Duration::from_secs(60)).await;
             }
         }

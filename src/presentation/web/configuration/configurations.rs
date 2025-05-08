@@ -67,10 +67,10 @@ async fn presentation_web_configuration_row(
              (presentation_web_view_toggle_all(configuration.id).await)
          @for view in views {
              @if view.quantity == 1 {
-                 button hx-patch=(format!("/view/toggle/view/{}", view.id)) hx-target="#body" class="active"
+                 button hx-patch=(format!("/view/toggle/{}/{}", configuration.id, view.id)) hx-target="#body" class="active"
                  {(view.name)}
              } @else {
-                 button hx-patch=(format!("/view/toggle/view/{}", view.id)) hx-target="#body" class="inactive"
+                 button hx-patch=(format!("/view/toggle/{}/{}", configuration.id, view.id)) hx-target="#body" class="inactive"
                  {(view.name)}
              }
          }

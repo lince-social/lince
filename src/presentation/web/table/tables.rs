@@ -1,7 +1,10 @@
 use crate::{
     application::{
         providers::record::get_name_by_id::provider_record_get_head_by_id,
-        use_cases::frequency::get_name::use_case_frequency_get_name,
+        use_cases::{
+            frequency::get_name::use_case_frequency_get_name,
+            karma::command::use_case_command_get_name,
+        },
     },
     domain::entities::table::{SortedTables, Table},
     presentation::web::table::add_row::presentation_web_table_add_row,
@@ -172,6 +175,7 @@ pub async fn presentation_web_tables_karma(tables: Vec<(String, Table)>) -> Mark
 pub async fn presentation_web_tables_karma_replacer(og_row: String) -> Markup {
     let regex_rq = Regex::new(r"rq(\d+)").unwrap();
     let regex_f = Regex::new(r"f(\d+)").unwrap();
+    let regex_command = Regex::new(r"c(\d+)").unwrap();
     // let mut row = og_row.clone();
     let mut row = og_row;
 
@@ -205,7 +209,18 @@ pub async fn presentation_web_tables_karma_replacer(og_row: String) -> Markup {
         }
     }
 
-    html!(
-        (row) // p {(og_row)}
-    )
+    let mut replacements_command = Vec::new();
+    for caps in regex_command.captures_iter(&row) {
+        let id = caps[1].parse::<u32>().unwrap();
+        replacements_command.push((caps.get(0).unwrap().range(), id));
+    }
+    for (range, id) in replacements_command.into_iter().rev() {
+        let replacement_command = use_case_command_get_name(id).await;
+        match replacement_command {
+            None => println!("Empty command name with id: {id}"),
+            Some(name) => row.replace_range(range, &name),
+        }
+    }
+
+    html!((row))
 }

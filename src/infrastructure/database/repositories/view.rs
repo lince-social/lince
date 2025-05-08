@@ -9,7 +9,10 @@ use std::{
     io::{Error, ErrorKind},
 };
 
-pub async fn repository_view_toggle_view_id(view_id: String) -> Result<(), Error> {
+pub async fn repository_view_toggle_view_id(
+    view_id: String,
+    configuration_id: String,
+) -> Result<(), Error> {
     let pool = connection().await.unwrap();
     let _ = sqlx::query(&format!(
         "UPDATE configuration_view
@@ -17,8 +20,8 @@ pub async fn repository_view_toggle_view_id(view_id: String) -> Result<(), Error
               WHEN quantity = 1 THEN 0
               ELSE 1
             END
-           WHERE view_id = {}",
-        &view_id
+           WHERE view_id = {} AND configuration_id = {}",
+        &view_id, &configuration_id
     ))
     .execute(&pool)
     .await;

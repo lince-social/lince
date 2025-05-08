@@ -2,7 +2,10 @@ use super::crud::use_case_operation_create_component;
 use crate::{
     application::use_cases::record::set_quantity::use_case_record_set_quantity,
     presentation::web::{
-        operation::get::presentation_web_operation_get_nested_body,
+        operation::{
+            get::presentation_web_operation_get_nested_body,
+            query::presentation_web_operation_query,
+        },
         section::body::presentation_web_section_body,
     },
 };
@@ -27,6 +30,7 @@ fn parse_table(operation: String) -> String {
                 "10" => return "history".to_string(),
                 "11" => return "dna".to_string(),
                 "12" => return "transfer".to_string(),
+                "13" => return "query".to_string(),
                 _ => continue,
             }
         }
@@ -50,6 +54,7 @@ fn parse_table(operation: String) -> String {
                 "history" => return "history".to_string(),
                 "dna" => return "dna".to_string(),
                 "transfer" => return "transfer".to_string(),
+                "query" => return "query".to_string(),
                 _ => continue,
             }
         }
@@ -66,6 +71,14 @@ pub async fn parse_operation_and_execute(operation: String) -> Option<String> {
     for part in operation_parts {
         if let Some(matched) = re.find(part) {
             match matched.as_str() {
+                "q" | "query" => {
+                    return Some(
+                        presentation_web_operation_get_nested_body(
+                            presentation_web_operation_query().await,
+                        )
+                        .await,
+                    );
+                }
                 "c" | "create" => {
                     return Some(
                         presentation_web_operation_get_nested_body(
@@ -86,7 +99,7 @@ pub async fn parse_operation_and_execute(operation: String) -> Option<String> {
 pub async fn use_case_operation_execute(operation: String) -> String {
     let only_digits = Regex::new(r"^\d+$").unwrap();
     if only_digits.is_match(&operation) {
-        return use_case_record_set_quantity(operation, 0.0).await;
+        return use_case_record_set_quantity(operation.parse::<u32>().unwrap(), 0.0).await;
     }
 
     match parse_operation_and_execute(operation).await {

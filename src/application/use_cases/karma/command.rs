@@ -13,22 +13,22 @@ pub fn use_case_karma_execute_command(id: u32) -> Option<i64> {
         service_karma_execute_command(command.command).await
     })
 }
-
-async fn service_karma_execute_command(command: String) -> Option<i64> {
-    let output = TokioCommand::new("sh")
+pub async fn service_karma_execute_command(command: String) -> Option<i64> {
+    let status = TokioCommand::new("sh")
         .arg("-c")
         .arg(command)
-        .stdout(Stdio::piped())
-        .output()
+        .stdin(Stdio::inherit()) // allow input from terminal
+        .stdout(Stdio::inherit()) // print output directly
+        .stderr(Stdio::inherit()) // show errors in terminal
+        .status()
         .await
         .ok()?;
 
-    if !output.status.success() {
+    if !status.success() {
         return None;
     }
 
-    let stdout = String::from_utf8(output.stdout).ok()?;
-    stdout.trim().parse::<i64>().ok()
+    Some(0) // placeholder: interactive commands won't return stdout we can parse
 }
 
 pub async fn use_case_command_get_name(id: u32) -> Option<String> {

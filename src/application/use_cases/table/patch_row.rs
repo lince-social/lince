@@ -1,5 +1,6 @@
 use crate::{
     application::providers::table::edit_row::provider_table_edit_row,
+    infrastructure::utils::log::{LogEntry, log},
     presentation::web::section::main::presentation_web_section_main,
 };
 
@@ -9,6 +10,9 @@ pub async fn use_case_table_patch_row(
     column: String,
     value: String,
 ) -> String {
-    provider_table_edit_row(table, id, column, value).await;
+    let _ = provider_table_edit_row(table, id, column, value)
+        .await
+        .map_err(|e| log(LogEntry::Error(e.kind(), e.to_string())));
+
     presentation_web_section_main().await
 }

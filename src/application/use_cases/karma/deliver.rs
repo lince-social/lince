@@ -60,24 +60,29 @@ pub async fn use_case_karma_deliver() -> Result<(), Error> {
         if !((operator == "=" && condition != 0.0) || operator == "=*") {
             continue;
         }
-
-        regex_record_quantity
+        if let Some(e) = regex_record_quantity
             .captures(&karma.consequence)
             .and_then(|caps| caps[1].parse::<u32>().ok())
             .and_then(|id| provider_record_set_quantity_sync(id, condition).err())
-            .map(|e| println!("Error when zeroing record: {e}"));
+        {
+            println!("Error when zeroing record: {e}")
+        }
 
-        regex_command
+        if let Some(e) = regex_command
             .captures(&karma.consequence)
             .and_then(|caps| caps[1].parse::<u32>().ok())
-            .and_then(|id| use_case_karma_execute_command(id))
-            .map(|e| println!("Error when executing command: {e}"));
+            .and_then(use_case_karma_execute_command)
+        {
+            println!("Error when executing command: {e}")
+        }
 
-        regex_query
+        if let Some(e) = regex_query
             .captures(&karma.consequence)
             .and_then(|caps| caps[1].parse::<u32>().ok())
             .and_then(|id| use_case_query_execute(id).err())
-            .map(|e| println!("Error when executing query: {e}"));
+        {
+            println!("Error when executing query: {e}")
+        }
     }
 
     use_case_frequency_update(frequencies_to_update.into_values().collect());
@@ -91,12 +96,13 @@ fn replace_record_quantities(regex: &Regex, condition: String) -> Result<String,
 
     let replaced = regex.replace_all(&condition, |caps: &regex::Captures| {
         let id = caps[1].parse::<u32>().unwrap();
-        let quantity = match provider_record_get_quantity_by_id_sync(id) {
+
+        match provider_record_get_quantity_by_id_sync(id) {
             Ok(quantity) => quantity.to_string(),
             Err(_) => "0.0".to_string(),
-        };
-        quantity
+        }
     });
+
     Ok(replaced.into_owned())
 }
 

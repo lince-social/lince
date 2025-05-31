@@ -44,28 +44,29 @@ pub async fn presentation_web_tables(tables: Vec<(String, Table)>) -> Markup {
                             @for row in table {
                                 tr {
                                     @for key in &headers {
-                                        td
-                                            hx-trigger="click" hx-swap="outerHTML" hx-get=(format!(
-                                            "/table/{}/{}/{}/{}",
-                                            table_name,
-                                            row.get("id").unwrap(),
-                                            key,
-                                            match row.get(key).unwrap().as_str() {
-                                                "" => "None",
-                                                some => some,
-                                            }))
+                                        td {
+                                            form
+                                                hx-post=(format!("/table/{}/{}/{}", table_name, row.get("id").unwrap(), key))
+                                                hx-swap="outerHTML"
+                                                hx-target="closest td"
+                                                hx-trigger="click"
                                             {
-                                            @if key == "id" {
-                                                button
-                                                    hx-delete=(format!("/table/{}/{}",
-                                                        table_name, row.get(key).unwrap_or(&"NULL".to_string())))
-                                                    hx-target="#main"
-                                                    class="delete_row"
-                                                    hx-trigger="click"
-                                                    onclick="event.stopPropagation()"
-                                                { "x" }
+                                                input type="hidden" name="value"
+                                                    value=(row.get(key).unwrap_or(&"".to_string())) {}
+                                                button type="submit" style="all: unset; cursor: pointer;" {
+                                                    (row.get(key).unwrap_or(&"NULL".to_string()))
+                                                @if key == "id" {
+                                                    button
+                                                        hx-delete=(format!("/table/{}/{}",
+                                                            table_name, row.get(key).unwrap_or(&"NULL".to_string())))
+                                                        hx-target="#main"
+                                                        class="delete_row"
+                                                        hx-trigger="click"
+                                                        onclick="event.stopPropagation()"
+                                                    { "x" }
+                                                }
+                                                }
                                             }
-                                            (row.get(key).unwrap_or(&"NULL".to_string()))
                                         }
                                     }
                                 }
@@ -92,50 +93,28 @@ pub async fn presentation_web_tables_karma(tables: Vec<(String, Table)>) -> Mark
         .collect();
 
     html! {
-    main id="main" {
-        @for (table_name, table, headers) in sorted_tables {
-            div {
-                div class="row middle_y" {p { (table_name) } (presentation_web_table_add_row(table_name.clone()))}
-                table class="framed" {
-                    @if !headers.is_empty() {
-                        thead {
-                            tr {
-                                @for key in &headers {
-                                    th { (key) }
+        main id="main" {
+            @for (table_name, table, headers) in sorted_tables {
+                div {
+                    div class="row middle_y" {p { (table_name) } (presentation_web_table_add_row(table_name.clone()))}
+                    table class="framed" {
+                        @if !headers.is_empty() {
+                            thead {
+                                tr {
+                                    @for key in &headers {
+                                        th { (key) }
+                                    }
                                 }
                             }
                         }
-                    }
-                    tbody {
-                        @for row in table {
-                            tr {
-                                @for key in &headers {
-                                        @if key == "id" {
-                                            td
-                                                hx-trigger="click" hx-swap="outerHTML"
-                                                hx-get=(format!(
-                                                "/table/{}/{}/{}/{}",
-                                                table_name,
-                                                row.get("id").unwrap(),
-                                                key,
-                                                match row.get(key).unwrap().as_str() {
-                                                    "" => "None",
-                                                    some => some,
-                                                }))
-                                        {
-                                            button
-                                                hx-delete=(format!("/table/{}/{}",
-                                                    table_name,
-                                                    row.get(key).unwrap_or(&"NULL".to_string())))
-                                                hx-target="#body"
-                                                class="delete_row"
-                                                hx-trigger="click"
-                                                onclick="event.stopPropagation()"
-                                            { "x" }
-                                            (row.get(key).unwrap_or(&"NULL".to_string()))}
-                                            } @else if key == "condition" || key == "consequence" {
+                        tbody {
+                            @for row in table {
+                                tr {
+                                    @for key in &headers {
+                                            @if key == "id" {
                                                 td
-                                                    hx-trigger="click" hx-swap="outerHTML" hx-get=(format!(
+                                                    hx-trigger="click" hx-swap="outerHTML"
+                                                    hx-get=(format!(
                                                     "/table/{}/{}/{}/{}",
                                                     table_name,
                                                     row.get("id").unwrap(),
@@ -144,22 +123,47 @@ pub async fn presentation_web_tables_karma(tables: Vec<(String, Table)>) -> Mark
                                                         "" => "None",
                                                         some => some,
                                                     }))
-                                                    {
-                                                (presentation_web_tables_karma_replacer(
-                                                    row.get(key).unwrap_or(&"NULL".to_string()).clone()).await)}
-                                            } @else {
-                                                td
-                                                    hx-trigger="click" hx-swap="outerHTML" hx-get=(format!(
-                                                    "/table/{}/{}/{}/{}",
-                                                    table_name,
-                                                    row.get("id").unwrap(),
-                                                    key,
-                                                    match row.get(key).unwrap().as_str() {
-                                                        "" => "None",
-                                                        some => some,
-                                                    }))
-                                                    {
-                                            (row.get(key).unwrap_or(&"NULL".to_string()))}
+                                            {
+                                                button
+                                                    hx-delete=(format!("/table/{}/{}",
+                                                        table_name,
+                                                        row.get(key).unwrap_or(&"NULL".to_string())))
+                                                    hx-target="#body"
+                                                    class="delete_row"
+                                                    hx-trigger="click"
+                                                    onclick="event.stopPropagation()"
+                                                { "x" }
+                                                (row.get(key).unwrap_or(&"NULL".to_string()))}
+                                                } @else if key == "condition" || key == "consequence" {
+                                                    td
+                                                    hx-trigger="click"
+                                                    hx-swap="outerHTML"
+                                                    hx-post="/table/editable"
+                                                    hx-vals=(format!(
+                                                        r#"{{ "table": "{}", "id": "{}", "column": "{}", "value": "{}" }}"#,
+                                                        table_name,
+                                                        row.get("id").unwrap(),
+                                                        key,
+                                                        row.get(key).unwrap().replace('"', "\\\"")
+                                                    ))
+                                                        {
+                                                    (presentation_web_tables_karma_replacer(
+                                                        row.get(key).unwrap_or(&"NULL".to_string()).clone()).await)}
+                                                } @else {
+                                                    td
+                                                        hx-trigger="click"
+                                                        hx-swap="outerHTML"
+                                                        hx-post="/table/editable"
+                                                        hx-vals=(format!(
+                                                            r#"{{ "table": "{}", "id": "{}", "column": "{}", "value": "{}" }}"#,
+                                                            table_name,
+                                                            row.get("id").unwrap(),
+                                                            key,
+                                                            row.get(key).unwrap().replace('"', "\\\"")
+                                                        ))
+                                                        {
+                                                            (row.get(key).unwrap_or(&"NULL".to_string()))
+                                                        }
                                         }
                                     }
                                 }

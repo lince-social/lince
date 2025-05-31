@@ -24,12 +24,13 @@ pub async fn repository_query_get_by_id(id: u32) -> Result<Query, Error> {
 }
 pub async fn repository_query_execute(sql: String) -> Result<(), Error> {
     let pool = connection().await.unwrap();
-    let res = sqlx::query(&sql).execute(&pool).await;
-    match res {
-        Ok(_) => Ok(()),
-        Err(error) => Err(Error::new(
+
+    sqlx::query(&sql).execute(&pool).await.map_err(|e| {
+        Error::new(
             ErrorKind::InvalidInput,
-            format!("Failed to run query: {}. Error: {}", sql, error),
-        )),
-    }
+            format!("Failed to run query: {}. Error: {}", sql, e),
+        )
+    })?;
+
+    Ok(())
 }

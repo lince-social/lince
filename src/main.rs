@@ -10,8 +10,8 @@ use infrastructure::{
     http::{
         handlers::section::handler_section_favicon,
         routers::{
-            configuration::configuration_router, operation::operation_router,
-            section::section_router, table::table_router, tui::run_tui_mode, view::view_router,
+            operation::operation_router, section::section_router, selection::selection_router,
+            table::table_router, tui::run_tui_mode, view::view_router,
         },
     },
 };
@@ -24,6 +24,7 @@ async fn main() {
         println!("Error creating schema: {}", e);
         return;
     }
+    execute_migration().await;
 
     tokio::spawn({
         async {
@@ -38,13 +39,12 @@ async fn main() {
 
     match env::args().nth(1).as_deref() {
         Some("tui") => run_tui_mode().await,
-        Some("migrate") => execute_migration().await,
         _ => {
             let app = Router::new()
                 .route("/", get(presentation_web_section_page))
                 .route("/preto_no_branco.ico", get(handler_section_favicon))
                 .nest("/section", section_router().await)
-                .nest("/configuration", configuration_router().await)
+                .nest("/selection", selection_router().await)
                 .nest("/view", view_router().await)
                 .nest("/table", table_router().await)
                 .nest("/operation", operation_router().await);

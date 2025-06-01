@@ -11,17 +11,17 @@ use std::{
 
 pub async fn repository_view_toggle_view_id(
     view_id: String,
-    configuration_id: String,
+    selection_id: String,
 ) -> Result<(), Error> {
     let pool = connection().await.unwrap();
     let _ = sqlx::query(&format!(
-        "UPDATE configuration_view
+        "UPDATE selection_view
            SET quantity = CASE
               WHEN quantity = 1 THEN 0
               ELSE 1
             END
-           WHERE view_id = {} AND configuration_id = {}",
-        &view_id, &configuration_id
+           WHERE view_id = {} AND selection_id = {}",
+        &view_id, &selection_id
     ))
     .execute(&pool)
     .await;
@@ -29,27 +29,25 @@ pub async fn repository_view_toggle_view_id(
     Ok(())
 }
 
-pub async fn repository_view_toggle_configuration_id(
-    configuration_id: String,
-) -> Result<(), Error> {
+pub async fn repository_view_toggle_selection_id(selection_id: String) -> Result<(), Error> {
     let pool = connection().await.unwrap();
     let _ = sqlx::query(
         "
-        UPDATE configuration_view
+        UPDATE selection_view
         SET quantity = CASE
             WHEN EXISTS (
                 SELECT 1
-                FROM configuration_view
-                WHERE configuration_id = $1
+                FROM selection_view
+                WHERE selection_id = $1
                   AND quantity = 1
             )
             THEN 0
             ELSE 1
         END
-        WHERE configuration_id = $1;
+        WHERE selection_id = $1;
         ",
     )
-    .bind(configuration_id)
+    .bind(selection_id)
     .execute(&pool)
     .await;
 
@@ -120,9 +118,9 @@ pub async fn repository_execute_queries(
 
 //     let query_rows = sqlx::query(
 //         "SELECT v.query AS query
-//          FROM configuration_view cv
+//          FROM selection_view cv
 //          JOIN view v ON cv.view_id = v.id
-//          JOIN configuration c ON cv.configuration_id = c.id
+//          JOIN selection c ON cv.selection_id = c.id
 //          WHERE cv.quantity = 1 AND c.quantity = 1",
 //     )
 //     .fetch_all(&pool)
@@ -205,9 +203,9 @@ pub async fn repository_view_get_active_view_data()
 
     let query_rows = sqlx::query(
         "SELECT v.query AS query
-         FROM configuration_view cv
+         FROM selection_view cv
          JOIN view v ON cv.view_id = v.id
-         JOIN configuration c ON cv.configuration_id = c.id
+         JOIN selection c ON cv.selection_id = c.id
          WHERE cv.quantity = 1 AND c.quantity = 1",
     )
     .fetch_all(&pool)
@@ -244,10 +242,10 @@ pub async fn repository_view_get_active_view_data()
     Ok((res.unwrap(), special_queries))
 }
 
-// export async function CreateView(configurationId, body) {
+// export async function CreateView(selectionId, body) {
 //   try {
 //     const { viewname, query } = await body;
-//     console.log(configurationId, viewname, query);
+//     console.log(selectionId, viewname, query);
 //
 //     // Check if the view already exists
 //     const existingView = await sql`
@@ -270,17 +268,17 @@ pub async fn repository_view_get_active_view_data()
 //       viewId = insertedView[0].id;
 //     }
 //
-//     // Insert into configuration_view if it doesn't already exist
+//     // Insert into selection_view if it doesn't already exist
 //     await sql`
-//       INSERT INTO configuration_view (configuration_id, view_id, is_active)
-//       VALUES (${configurationId}, ${viewId}, true)
-//       ON CONFLICT (configuration_id, view_id) DO NOTHING;
+//       INSERT INTO selection_view (selection_id, view_id, is_active)
+//       VALUES (${selectionId}, ${viewId}, true)
+//       ON CONFLICT (selection_id, view_id) DO NOTHING;
 //     `;
 //     return await Body();
 //   } catch (error) {
 //     const { viewname, query } = await body;
 //     console.log(
-//       `Error: ${error}, when creating new view in configuration with id: ${configurationId}. View received: ${viewname}, Query received: ${query}`,
+//       `Error: ${error}, when creating new view in selection with id: ${selectionId}. View received: ${viewname}, Query received: ${query}`,
 //     );
 //     return { success: false, error: error };
 //   }
@@ -291,11 +289,11 @@ pub async fn repository_view_get_active_view_data()
 // }
 //
 // export async function DeleteView(query) {
-//   const { viewId, configurationId } = query;
+//   const { viewId, selectionId } = query;
 //
 //   await sql`
-//     DELETE FROM configuration_view
-//     WHERE configuration_id = ${configurationId} AND view_id = ${viewId};
+//     DELETE FROM selection_view
+//     WHERE selection_id = ${selectionId} AND view_id = ${viewId};
 //   `;
 //
 //   return (
@@ -306,25 +304,25 @@ pub async fn repository_view_get_active_view_data()
 //   );
 // }
 //
-// export async function CreateViewComponent(configurationId, view_name, query) {
+// export async function CreateViewComponent(selectionId, view_name, query) {
 //   return <p>osidnodicn</p>;
 // }
 //
-// export async function InitialAddView(configurationId, viewname, query) {
+// export async function InitialAddView(selectionId, viewname, query) {
 //   return (
 //     <div>
-//       {await AddViewInput(configurationId, viewname, query)}
-//       {await MatchedViewProperties(configurationId, viewname, query)}
+//       {await AddViewInput(selectionId, viewname, query)}
+//       {await MatchedViewProperties(selectionId, viewname, query)}
 //     </div>
 //   );
 // }
-// export async function AddViewInput(configurationId, viewname, query) {
+// export async function AddViewInput(selectionId, viewname, query) {
 //   return (
 //     <div>
 //       <form
 //         id="addviewcomponent"
 //         hx-trigger={`keydown[key === "Enter"]`}
-//         hx-post={`/view/${configurationId}`}
+//         hx-post={`/view/${selectionId}`}
 //         hx-target="#body"
 //         class="flex relative space-x-2 p-1"
 //       >
@@ -346,7 +344,7 @@ pub async fn repository_view_get_active_view_data()
 //   );
 // }
 //
-// export async function MatchedViewProperties(configurationId, viewname, query) {
+// export async function MatchedViewProperties(selectionId, viewname, query) {
 //   const views = await sql`SELECT view_name, query FROM view`;
 //
 //   function containsAllChars(str: string, chars: string): boolean {
@@ -380,7 +378,7 @@ pub async fn repository_view_get_active_view_data()
 //         {queriedQueries.length === 0 ? (
 //           <li
 //             hx-triger="click"
-//             hx-post={`/matchedviewqueryclick/${configurationId}/${query}}`}
+//             hx-post={`/matchedviewqueryclick/${selectionId}/${query}}`}
 //             class="truncate px-2 py-1"
 //           >
 //             {query}

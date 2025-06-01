@@ -1,4 +1,4 @@
-use super::selections::{
+use super::collection::{
     presentation_web_karma_condition, presentation_web_karma_consequence,
     presentation_web_karma_karma,
 };

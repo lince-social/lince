@@ -11,17 +11,17 @@ use std::{
 
 pub async fn repository_view_toggle_view_id(
     view_id: String,
-    selection_id: String,
+    collection_id: String,
 ) -> Result<(), Error> {
     let pool = connection().await.unwrap();
     let _ = sqlx::query(&format!(
-        "UPDATE selection_view
+        "UPDATE collection_view
            SET quantity = CASE
               WHEN quantity = 1 THEN 0
               ELSE 1
             END
-           WHERE view_id = {} AND selection_id = {}",
-        &view_id, &selection_id
+           WHERE view_id = {} AND collection_id = {}",
+        &view_id, &collection_id
     ))
     .execute(&pool)
     .await;
@@ -29,25 +29,25 @@ pub async fn repository_view_toggle_view_id(
     Ok(())
 }
 
-pub async fn repository_view_toggle_selection_id(selection_id: String) -> Result<(), Error> {
+pub async fn repository_view_toggle_collection_id(collection_id: String) -> Result<(), Error> {
     let pool = connection().await.unwrap();
     let _ = sqlx::query(
         "
-        UPDATE selection_view
+        UPDATE collection_view
         SET quantity = CASE
             WHEN EXISTS (
                 SELECT 1
-                FROM selection_view
-                WHERE selection_id = $1
+                FROM collection_view
+                WHERE collection_id = $1
                   AND quantity = 1
             )
             THEN 0
             ELSE 1
         END
-        WHERE selection_id = $1;
+        WHERE collection_id = $1;
         ",
     )
-    .bind(selection_id)
+    .bind(collection_id)
     .execute(&pool)
     .await;
 
@@ -118,9 +118,9 @@ pub async fn repository_execute_queries(
 
 //     let query_rows = sqlx::query(
 //         "SELECT v.query AS query
-//          FROM selection_view cv
+//          FROM collection_view cv
 //          JOIN view v ON cv.view_id = v.id
-//          JOIN selection c ON cv.selection_id = c.id
+//          JOIN collection c ON cv.collection_id = c.id
 //          WHERE cv.quantity = 1 AND c.quantity = 1",
 //     )
 //     .fetch_all(&pool)
@@ -203,9 +203,9 @@ pub async fn repository_view_get_active_view_data()
 
     let query_rows = sqlx::query(
         "SELECT v.query AS query
-         FROM selection_view cv
+         FROM collection_view cv
          JOIN view v ON cv.view_id = v.id
-         JOIN selection c ON cv.selection_id = c.id
+         JOIN collection c ON cv.collection_id = c.id
          WHERE cv.quantity = 1 AND c.quantity = 1",
     )
     .fetch_all(&pool)
@@ -224,13 +224,9 @@ pub async fn repository_view_get_active_view_data()
         .map(|row| row.get::<String, _>("query"))
         .collect();
 
-    let (special_queries, sql_queries): (Vec<_>, Vec<_>) = queries.into_iter().partition(|query| {
-        [
-            "karma_orchestra".to_string(),
-            "testing_presentation".to_string(),
-        ]
-        .contains(query)
-    });
+    let (special_queries, sql_queries): (Vec<_>, Vec<_>) = queries
+        .into_iter()
+        .partition(|query| ["karma_orchestra".to_string()].contains(query));
 
     let res = repository_execute_queries(sql_queries).await;
     if res.is_err() {
@@ -242,10 +238,10 @@ pub async fn repository_view_get_active_view_data()
     Ok((res.unwrap(), special_queries))
 }
 
-// export async function CreateView(selectionId, body) {
+// export async function CreateView(collectionId, body) {
 //   try {
 //     const { viewname, query } = await body;
-//     console.log(selectionId, viewname, query);
+//     console.log(collectionId, viewname, query);
 //
 //     // Check if the view already exists
 //     const existingView = await sql`
@@ -268,17 +264,17 @@ pub async fn repository_view_get_active_view_data()
 //       viewId = insertedView[0].id;
 //     }
 //
-//     // Insert into selection_view if it doesn't already exist
+//     // Insert into collection_view if it doesn't already exist
 //     await sql`
-//       INSERT INTO selection_view (selection_id, view_id, is_active)
-//       VALUES (${selectionId}, ${viewId}, true)
-//       ON CONFLICT (selection_id, view_id) DO NOTHING;
+//       INSERT INTO collection_view (collection_id, view_id, is_active)
+//       VALUES (${collectionId}, ${viewId}, true)
+//       ON CONFLICT (collection_id, view_id) DO NOTHING;
 //     `;
 //     return await Body();
 //   } catch (error) {
 //     const { viewname, query } = await body;
 //     console.log(
-//       `Error: ${error}, when creating new view in selection with id: ${selectionId}. View received: ${viewname}, Query received: ${query}`,
+//       `Error: ${error}, when creating new view in collection with id: ${collectionId}. View received: ${viewname}, Query received: ${query}`,
 //     );
 //     return { success: false, error: error };
 //   }
@@ -289,11 +285,11 @@ pub async fn repository_view_get_active_view_data()
 // }
 //
 // export async function DeleteView(query) {
-//   const { viewId, selectionId } = query;
+//   const { viewId, collectionId } = query;
 //
 //   await sql`
-//     DELETE FROM selection_view
-//     WHERE selection_id = ${selectionId} AND view_id = ${viewId};
+//     DELETE FROM collection_view
+//     WHERE collection_id = ${collectionId} AND view_id = ${viewId};
 //   `;
 //
 //   return (
@@ -304,25 +300,25 @@ pub async fn repository_view_get_active_view_data()
 //   );
 // }
 //
-// export async function CreateViewComponent(selectionId, view_name, query) {
+// export async function CreateViewComponent(collectionId, view_name, query) {
 //   return <p>osidnodicn</p>;
 // }
 //
-// export async function InitialAddView(selectionId, viewname, query) {
+// export async function InitialAddView(collectionId, viewname, query) {
 //   return (
 //     <div>
-//       {await AddViewInput(selectionId, viewname, query)}
-//       {await MatchedViewProperties(selectionId, viewname, query)}
+//       {await AddViewInput(collectionId, viewname, query)}
+//       {await MatchedViewProperties(collectionId, viewname, query)}
 //     </div>
 //   );
 // }
-// export async function AddViewInput(selectionId, viewname, query) {
+// export async function AddViewInput(collectionId, viewname, query) {
 //   return (
 //     <div>
 //       <form
 //         id="addviewcomponent"
 //         hx-trigger={`keydown[key === "Enter"]`}
-//         hx-post={`/view/${selectionId}`}
+//         hx-post={`/view/${collectionId}`}
 //         hx-target="#body"
 //         class="flex relative space-x-2 p-1"
 //       >
@@ -344,7 +340,7 @@ pub async fn repository_view_get_active_view_data()
 //   );
 // }
 //
-// export async function MatchedViewProperties(selectionId, viewname, query) {
+// export async function MatchedViewProperties(collectionId, viewname, query) {
 //   const views = await sql`SELECT view_name, query FROM view`;
 //
 //   function containsAllChars(str: string, chars: string): boolean {
@@ -378,7 +374,7 @@ pub async fn repository_view_get_active_view_data()
 //         {queriedQueries.length === 0 ? (
 //           <li
 //             hx-triger="click"
-//             hx-post={`/matchedviewqueryclick/${selectionId}/${query}}`}
+//             hx-post={`/matchedviewqueryclick/${collectionId}/${query}}`}
 //             class="truncate px-2 py-1"
 //           >
 //             {query}

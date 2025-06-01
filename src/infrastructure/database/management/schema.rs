@@ -38,8 +38,8 @@ pub async fn schema() -> Result<(), Error> {
         ));
     }
 
-    let selection = sqlx::query(
-        "CREATE TABLE IF NOT EXISTS selection(
+    let collection = sqlx::query(
+        "CREATE TABLE IF NOT EXISTS collection(
             id INTEGER PRIMARY KEY,
             quantity INTEGER,
             name TEXT NOT NULL
@@ -47,10 +47,10 @@ pub async fn schema() -> Result<(), Error> {
     )
     .execute(&pool)
     .await;
-    if selection.is_err() {
+    if collection.is_err() {
         return Err(Error::new(
             ErrorKind::ConnectionAborted,
-            "Error when creating table selection",
+            "Error when creating table collection",
         ));
     }
 
@@ -73,20 +73,20 @@ pub async fn schema() -> Result<(), Error> {
         ));
     }
 
-    let selection_view = sqlx::query(
-        "CREATE TABLE IF NOT EXISTS selection_view(
-        id INTEGER PRIMARY KEY,
-            quantity INTEGER NOT NULL DEFAULT 1,
-            selection_id INTEGER REFERENCES selection(id),
-            view_id INTEGER REFERENCES view(id)
+    let collection_view = sqlx::query(
+        "CREATE TABLE IF NOT EXISTS collection_view(
+                id INTEGER PRIMARY KEY,
+                quantity INTEGER NOT NULL DEFAULT 1,
+                collection_id INTEGER REFERENCES collection(id),
+                view_id INTEGER REFERENCES view(id)
          )",
     )
     .execute(&pool)
     .await;
-    if selection_view.is_err() {
+    if collection_view.is_err() {
         return Err(Error::new(
             ErrorKind::ConnectionAborted,
-            "Error when creating table selection_view",
+            "Error when creating table collection_view",
         ));
     }
 

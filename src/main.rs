@@ -10,7 +10,7 @@ use infrastructure::{
     http::{
         handlers::section::handler_section_favicon,
         routers::{
-            operation::operation_router, section::section_router, selection::selection_router,
+            collection::collection_router, operation::operation_router, section::section_router,
             table::table_router, tui::run_tui_mode, view::view_router,
         },
     },
@@ -44,7 +44,7 @@ async fn main() {
                 .route("/", get(presentation_web_section_page))
                 .route("/preto_no_branco.ico", get(handler_section_favicon))
                 .nest("/section", section_router().await)
-                .nest("/selection", selection_router().await)
+                .nest("/collection", collection_router().await)
                 .nest("/view", view_router().await)
                 .nest("/table", table_router().await)
                 .nest("/operation", operation_router().await);

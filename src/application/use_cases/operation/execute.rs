@@ -17,9 +17,9 @@ fn parse_table(operation: String) -> String {
     for part in operation_parts {
         if let Some(matched) = re.find(part) {
             match matched.as_str() {
-                "0" => return "configuration".to_string(),
+                "0" => return "selection".to_string(),
                 "1" => return "view".to_string(),
-                "2" => return "configuration_view".to_string(),
+                "2" => return "selection_view".to_string(),
                 "3" => return "record".to_string(),
                 "4" => return "karma_condition".to_string(),
                 "5" => return "karma_consequence".to_string(),
@@ -41,9 +41,9 @@ fn parse_table(operation: String) -> String {
     for part in operation_parts {
         if let Some(matched) = re.find(part) {
             match matched.as_str() {
-                "configuration" => return "configuration".to_string(),
+                "selection" => return "selection".to_string(),
                 "view" => return "view".to_string(),
-                "configuration_view" => return "configuration_view".to_string(),
+                "selection_view" => return "selection_view".to_string(),
                 "record" => return "record".to_string(),
                 "karma_condition" => return "karma_condition".to_string(),
                 "karma_consequence" => return "karma_consequence".to_string(),

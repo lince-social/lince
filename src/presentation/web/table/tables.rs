@@ -51,10 +51,6 @@ pub async fn presentation_web_tables(tables: Vec<(String, Table)>) -> Markup {
                                                 hx-target="closest td"
                                                 hx-trigger="click"
                                             {
-                                                input type="hidden" name="value"
-                                                    value=(row.get(key).unwrap_or(&"".to_string())) {}
-                                                button type="submit" style="all: unset; cursor: pointer;" {
-                                                    (row.get(key).unwrap_or(&"NULL".to_string()))
                                                 @if key == "id" {
                                                     button
                                                         hx-delete=(format!("/table/{}/{}",
@@ -65,6 +61,10 @@ pub async fn presentation_web_tables(tables: Vec<(String, Table)>) -> Markup {
                                                         onclick="event.stopPropagation()"
                                                     { "x" }
                                                 }
+                                                input type="hidden" name="value"
+                                                    value=(row.get(key).unwrap_or(&"".to_string())) {}
+                                                button type="submit" style="all: unset; cursor: pointer;" {
+                                                    (row.get(key).unwrap_or(&"NULL".to_string()))
                                                 }
                                             }
                                         }

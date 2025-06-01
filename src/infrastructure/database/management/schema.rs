@@ -38,6 +38,22 @@ pub async fn schema() -> Result<(), Error> {
         ));
     }
 
+    let selection = sqlx::query(
+        "CREATE TABLE IF NOT EXISTS selection(
+            id INTEGER PRIMARY KEY,
+            quantity INTEGER,
+            name TEXT NOT NULL
+        )",
+    )
+    .execute(&pool)
+    .await;
+    if selection.is_err() {
+        return Err(Error::new(
+            ErrorKind::ConnectionAborted,
+            "Error when creating table selection",
+        ));
+    }
+
     let configuration = sqlx::query(
         "CREATE TABLE IF NOT EXISTS configuration(
             id INTEGER PRIMARY KEY,
@@ -57,28 +73,20 @@ pub async fn schema() -> Result<(), Error> {
         ));
     }
 
-    let _created_configuration = sqlx::query(
-        "INSERT INTO configuration(name, quantity)
-        SELECT ?1, ?2
-        WHERE NOT EXISTS (SELECT * FROM configuration)",
-    )
-    .execute(&pool)
-    .await;
-
-    let configuration_view = sqlx::query(
-        "CREATE TABLE IF NOT EXISTS configuration_view(
+    let selection_view = sqlx::query(
+        "CREATE TABLE IF NOT EXISTS selection_view(
         id INTEGER PRIMARY KEY,
             quantity INTEGER NOT NULL DEFAULT 1,
-            configuration_id INTEGER REFERENCES configuration(id),
+            selection_id INTEGER REFERENCES selection(id),
             view_id INTEGER REFERENCES view(id)
          )",
     )
     .execute(&pool)
     .await;
-    if configuration_view.is_err() {
+    if selection_view.is_err() {
         return Err(Error::new(
             ErrorKind::ConnectionAborted,
-            "Error when creating table configuration_view",
+            "Error when creating table selection_view",
         ));
     }
 

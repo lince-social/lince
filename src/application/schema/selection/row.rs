@@ -1,6 +1,6 @@
 use crate::{
     application::schema::view::queried_view::QueriedView,
-    domain::entities::configuration::Configuration,
+    domain::entities::selection::Configuration,
 };
 
 #[derive(Debug, sqlx::FromRow, PartialEq, Eq)]

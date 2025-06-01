@@ -1,7 +1,7 @@
 // def return_column_information(column):
-//     selection_df = read_rows("select * from selection")
-//     max_quantity_config = selection_df[
-//         selection_df["quantity"] == selection_df["quantity"].max()
+//     collection_df = read_rows("select * from collection")
+//     max_quantity_config = collection_df[
+//         collection_df["quantity"] == collection_df["quantity"].max()
 //     ].iloc[0]
 //     column_information_mode = max_quantity_config["column_information_mode"]
 //
@@ -96,7 +96,7 @@
 //                 info += "Responsible for saving the database after operations in an automatic way, or when manually done."
 //             case "view_id":
 //                 info += (
-//                     "Responsible for referencing the view that goes into selection."
+//                     "Responsible for referencing the view that goes into collection."
 //                 )
 //             case "column_information_mode":
 //                 info += "Responsible for selecting different quantities of information about columns when you fill them at row creation."

@@ -15,7 +15,7 @@ pub fn presentation_web_operation_get_operation_input() -> &'static str {
                 style="display: none;"
             >
                 <input
-                class="framed modal filled"
+                class="modal filled"
                 id="operation_input_field" name='operation' autofocus>
                 <button type="submit" style="display: none;"></button>
             </form>
@@ -32,7 +32,7 @@ pub fn presentation_web_operation_get_operation_input() -> &'static str {
                         form.style.display = 'block';
                         input.value = e.key;
                         input.focus();
-                        input.setSelectionRange(input.value.length, input.value.length);
+                        input.setcollectionRange(input.value.length, input.value.length);
                         e.preventDefault();
                     }
                 }

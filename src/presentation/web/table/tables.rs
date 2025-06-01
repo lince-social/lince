@@ -30,7 +30,7 @@ pub async fn presentation_web_tables(tables: Vec<(String, Table)>) -> Markup {
             @for (table_name, table, headers) in sorted_tables {
                 div {
                     div class="row middle_y" {p { (table_name) } (presentation_web_table_add_row(table_name.clone()))}
-                    table class="framed" {
+                    table {
                         @if !headers.is_empty() {
                             thead {
                                 tr {
@@ -97,7 +97,7 @@ pub async fn presentation_web_tables_karma(tables: Vec<(String, Table)>) -> Mark
             @for (table_name, table, headers) in sorted_tables {
                 div {
                     div class="row middle_y" {p { (table_name) } (presentation_web_table_add_row(table_name.clone()))}
-                    table class="framed" {
+                    table {
                         @if !headers.is_empty() {
                             thead {
                                 tr {

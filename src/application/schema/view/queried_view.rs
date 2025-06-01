@@ -9,7 +9,7 @@ pub struct QueriedView {
 }
 #[derive(sqlx::FromRow)]
 pub struct QueriedViewWithConfigId {
-    pub selection_id: u32,
+    pub collection_id: u32,
     pub id: u32,
     pub quantity: i32,
     pub name: String,

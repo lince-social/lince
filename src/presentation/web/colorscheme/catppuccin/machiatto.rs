@@ -40,6 +40,8 @@ pub fn presentation_colorscheme_catppuccin_machiatto() -> &'static str {
         --text-normal: var(--text);
         --border: var(--text);
 
+        --configuration-bg: var(--base);
+
         --active-button-txt: var(--surface1);
         --active-button-bg: var(--blue);
         --active-button-border: var(--blue);
@@ -57,12 +59,18 @@ pub fn presentation_colorscheme_catppuccin_machiatto() -> &'static str {
         --table-cell-border-width: 0.00625rem;
         --table-border-radius: 0.5rem;
 
-        --table-th-bg: var(--surface0);
-        --table-th-bg-hover: var(--base);
+        --table-th-bg: var(--base);
+        --table-th-bg-hover: var(--surface0);
 
         --table-tr-bg-hover: var(--surface2);
         --table-td-bg: var(--surface1);
         --table-td-bg-hover: var(--surface2);
+
+        --button-add-row-bg: var(--green);
+        --button-add-row-border-radius: 1rem;
+        --button-add-row-border-color: var(--green);
+        --button-add-row-bg-hover: var(--teal);
+        --button-add-row-border-color-hover: var(--teal);
 
         --input-txt: var(--text);
         --input-bg: var(--overlay0);

@@ -10,36 +10,21 @@ use crate::{
 };
 use maud::{Markup, html};
 
-pub async fn presentation_web_collection_unhovered() -> Markup {
-    let (active_collection, active_collection_views) = use_case_collection_get_active().await;
-
-    html!(
-        div
-            hx-get="/collection/hovered"
-             hx-trigger="mouseenter"
-             hx-swap="outerHTML"
-             {
-        (presentation_web_collection_row(active_collection, active_collection_views)
-            .await)
-                 }
-    )
-}
-
-pub async fn presentation_web_collection_hovered() -> Markup {
+pub async fn presentation_web_collection() -> Markup {
     let (active_collection, active_collection_views) = use_case_collection_get_active().await;
     let inactive_collections = use_case_collection_get_inactive().await;
     html!(
-        div
-        hx-get="/collection/unhovered"
-         hx-trigger="mouseleave"
-         hx-swap="outerHTML"
-            {
-                (presentation_web_collection_row(active_collection, active_collection_views).await)
-        div
-        { @for (inactive_collection, inactive_collection_views) in inactive_collections {
-           (presentation_web_collection_row(inactive_collection, inactive_collection_views).await)
-        }
-        }
+        .configurations.column.xs_gap
+            data-signals="{configurationOpen: false}"
+            data-on-mouseover="$configurationOpen = true"
+            data-on-mouseleave="$configurationOpen = false"
+        {
+            (presentation_web_collection_row(active_collection, active_collection_views).await)
+            .inactive_configurations.column.xs_gap data-show="$configurationOpen" {
+                @for (inactive_collection, inactive_collection_views) in inactive_collections {
+                    (presentation_web_collection_row(inactive_collection, inactive_collection_views).await)
+                }
+            }
         }
     )
 }
@@ -49,27 +34,29 @@ async fn presentation_web_collection_row(
     views: Vec<QueriedView>,
 ) -> Markup {
     html!(
-    div
-     class="row"
-         {
+    .row.xs_gap {
              @if collection.quantity == 1 {
-                button class="active"
-                {(collection.name)}
+                button.active
+                    {(collection.name)}
              } @else {
-                 button class="inactive"
+                 button.inactive
                     hx-patch=(format!("/collection/active/{}", collection.id))
                     hx-trigger="click"
                     hx-target="#body"
-                 {(collection.name)}
+                    {(collection.name)}
              }
              (presentation_web_view_toggle_all(collection.id).await)
          @for view in views {
              @if view.quantity == 1 {
-                 button hx-patch=(format!("/view/toggle/{}/{}", collection.id, view.id)) hx-target="#body" class="active"
-                 {(view.name)}
+                 button.active
+                     hx-patch=(format!("/view/toggle/{}/{}", collection.id, view.id))
+                     hx-target="#body"
+                    {(view.name)}
              } @else {
-                 button hx-patch=(format!("/view/toggle/{}/{}", collection.id, view.id)) hx-target="#body" class="inactive"
-                 {(view.name)}
+                 button.inactive
+                     hx-patch=(format!("/view/toggle/{}/{}", collection.id, view.id))
+                     hx-target="#body"
+                    {(view.name)}
              }
          }
      }

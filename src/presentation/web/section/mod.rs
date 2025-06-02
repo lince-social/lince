@@ -3,3 +3,4 @@ pub mod header;
 pub mod main;
 pub mod nav;
 pub mod page;
+pub mod style;

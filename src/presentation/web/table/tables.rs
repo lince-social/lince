@@ -29,7 +29,7 @@ pub async fn presentation_web_tables(tables: Vec<(String, Table)>) -> Markup {
         main id="main" {
             @for (table_name, table, headers) in sorted_tables {
                 div {
-                    div class="row middle_y" {p { (table_name) } (presentation_web_table_add_row(table_name.clone()))}
+                    row.middle_y.s_gap {p { (table_name) } (presentation_web_table_add_row(table_name.clone()))}
                     table {
                         @if !headers.is_empty() {
                             thead {

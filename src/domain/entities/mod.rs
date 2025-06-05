@@ -1,5 +1,6 @@
 pub mod collection;
 pub mod command;
+pub mod configuration;
 pub mod frequency;
 pub mod karma;
 pub mod karma_condition;

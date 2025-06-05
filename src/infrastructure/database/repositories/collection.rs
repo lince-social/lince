@@ -11,14 +11,12 @@ use std::{
 };
 
 pub async fn repository_collection_get_active() -> Result<ConfigurationRow, Error> {
-    let pool = connection().await;
-    if pool.is_err() {
-        return Err(Error::new(
+    let pool = connection().await.map_err(|e| {
+        Error::new(
             ErrorKind::ConnectionAborted,
-            "Error connecting to database",
-        ));
-    }
-    let pool = pool.unwrap();
+            format!("Error connecting to database. Error: {}", e),
+        )
+    })?;
 
     let collection: ConfigurationForBarScheme =
         sqlx::query_as("SELECT id, name, quantity FROM collection WHERE quantity = 1")

@@ -16,7 +16,9 @@ use infrastructure::{
     },
 };
 use presentation::web::section::page::presentation_web_section_page;
-use std::{env, time::Duration};
+use std::{env, sync::Arc, time::Duration};
+
+use crate::infrastructure::database::management::lib::connection;
 
 #[tokio::main]
 async fn main() {
@@ -24,7 +26,9 @@ async fn main() {
         println!("Error creating schema: {}", e);
         return;
     }
-    execute_migration().await;
+    let db = Arc::new(connection().await.unwrap());
+
+    execute_migration(db.clone()).await;
 
     tokio::spawn({
         async {

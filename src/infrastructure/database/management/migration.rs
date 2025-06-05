@@ -1,7 +1,9 @@
-use super::lib::connection;
+// use super::lib::connection;
+use sqlx::{Pool, Sqlite};
+use std::sync::Arc;
 
-pub async fn execute_migration() {
-    let pool = connection().await.unwrap();
+pub async fn execute_migration(db: Arc<Pool<Sqlite>>) {
+    // let pool = connection().await.unwrap();
 
     // INSERT INTO selection_view (id, quantity, selection_id, view_id)
     // SELECT id,quantity, configuration_id, view_id FROM configuration_view;
@@ -15,7 +17,7 @@ pub async fn execute_migration() {
         PRAGMA foreign_keys = ON;
         ",
     )
-    .execute(&pool)
+    .execute(&*db)
     .await;
     if migration.is_err() {
         println!("{}", migration.unwrap_err());

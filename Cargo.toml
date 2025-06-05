@@ -4,6 +4,7 @@ version = "0.5.0"
 edition = "2024"
 
 [dependencies]
+async-trait = "0.1.88"
 axum = { version = "*" }
 chrono = { version = "*" }
 dirs = { version = "*" }

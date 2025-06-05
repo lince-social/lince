@@ -1,15 +1,12 @@
-use crate::{
-    domain::entities::collection::Configuration,
-    infrastructure::database::repositories::configuration::{
-        repository_configuration_get_active, repository_configuration_set_active,
-    },
-};
-use std::io::Error;
+use crate::domain::repositories::configuration::ConfigurationRepository;
+use std::{io::Error, sync::Arc};
 
-pub async fn provider_activate_configuration(id: &str) -> Result<(), Error> {
-    repository_configuration_set_active(id).await
+pub struct ActivateConfigurationProvider {
+    pub repository: Arc<dyn ConfigurationRepository>,
 }
 
-pub async fn provider_configuration_get_active() -> Result<Configuration, Error> {
-    repository_configuration_get_active().await
+impl ActivateConfigurationProvider {
+    pub async fn execute(&self, id: &str) -> Result<(), Error> {
+        self.repository.set_active(id).await
+    }
 }

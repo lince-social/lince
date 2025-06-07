@@ -1,10 +1,10 @@
 use super::crud::use_case_operation_create_component;
 use crate::{
-    application::{
-        providers::configuration::activate::provider_activate_configuration,
-        use_cases::record::set_quantity::use_case_record_set_quantity,
+    application::use_cases::record::set_quantity::use_case_record_set_quantity,
+    infrastructure::{
+        cross_cutting::InjectedServices,
+        utils::log::{LogEntry, log},
     },
-    infrastructure::utils::log::{LogEntry, log},
     presentation::web::{
         operation::{
             get::presentation_web_operation_get_nested_body,
@@ -79,7 +79,10 @@ fn parse_id(part: &str) -> Option<&str> {
     None
 }
 
-pub async fn parse_operation_and_execute(operation: String) -> Option<String> {
+pub async fn parse_operation_and_execute(
+    services: InjectedServices,
+    operation: String,
+) -> Option<String> {
     let re = Regex::new(r"[a-zA-Z]+").unwrap();
 
     let operation_parts: Vec<&str> = operation.split_whitespace().collect();
@@ -106,12 +109,13 @@ pub async fn parse_operation_and_execute(operation: String) -> Option<String> {
                 }
                 "a" | "configuration" => {
                     if let Some(id) = parse_id(&operation) {
-                        if let Err(e) = provider_activate_configuration(id).await {
+                        if let Err(e) = services.providers.configuration.activate.execute(id).await
+                        {
                             log(LogEntry::Error(e.kind(), e.to_string()))
                         }
                     }
 
-                    return Some(presentation_web_section_body().await);
+                    return Some(presentation_web_section_body(services).await);
                 }
                 _ => continue,
             }
@@ -121,14 +125,19 @@ pub async fn parse_operation_and_execute(operation: String) -> Option<String> {
     None
 }
 
-pub async fn use_case_operation_execute(operation: String) -> String {
+pub async fn use_case_operation_execute(services: InjectedServices, operation: String) -> String {
     let only_digits = Regex::new(r"^\d+$").unwrap();
     if only_digits.is_match(&operation) {
-        return use_case_record_set_quantity(operation.parse::<u32>().unwrap(), 0.0).await;
+        return use_case_record_set_quantity(
+            services.clone(),
+            operation.parse::<u32>().unwrap(),
+            0.0,
+        )
+        .await;
     }
 
-    match parse_operation_and_execute(operation).await {
-        None => presentation_web_section_body().await,
+    match parse_operation_and_execute(services.clone(), operation).await {
+        None => presentation_web_section_body(services).await,
         Some(element) => element,
     }
 }

@@ -2,13 +2,14 @@ use futures::future::join_all;
 
 use crate::{
     application::providers::view::get_active_view_data::provider_view_get_active_view_data,
+    infrastructure::cross_cutting::InjectedServices,
     presentation::web::{
         pages::karma::orchestra::presentation_web_karma_orchestra,
         table::tables::presentation_web_tables,
     },
 };
 
-pub async fn presentation_web_section_main() -> String {
+pub async fn presentation_web_section_main(services: InjectedServices) -> String {
     let (tables, special_views) = provider_view_get_active_view_data().await.unwrap();
     let mut content = presentation_web_tables(tables).await.0;
 

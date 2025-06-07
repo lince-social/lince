@@ -1,6 +1,5 @@
-use maud::html;
-
 use crate::presentation::web::section::body::presentation_web_section_body_home_modal;
+use maud::html;
 
 pub fn presentation_web_operation_get_operation_input() -> String {
     html! {

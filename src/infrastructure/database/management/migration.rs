@@ -1,14 +1,10 @@
-// use super::lib::connection;
-use sqlx::{Pool, Sqlite};
-use std::sync::Arc;
+use crate::infrastructure::database::management::lib::connection;
+use std::io::Error;
 
-pub async fn execute_migration(db: Arc<Pool<Sqlite>>) {
-    // let pool = connection().await.unwrap();
+pub async fn execute_migration() -> Result<(), Error> {
+    let db = connection().await?;
 
-    // INSERT INTO selection_view (id, quantity, selection_id, view_id)
-    // SELECT id,quantity, configuration_id, view_id FROM configuration_view;
-    // DROP TABLE configuration_view;
-    let migration = sqlx::query(
+    sqlx::query(
         "
         PRAGMA foreign_keys = OFF;
 
@@ -17,9 +13,9 @@ pub async fn execute_migration(db: Arc<Pool<Sqlite>>) {
         PRAGMA foreign_keys = ON;
         ",
     )
-    .execute(&*db)
-    .await;
-    if migration.is_err() {
-        println!("{}", migration.unwrap_err());
-    }
+    .execute(&db)
+    .await
+    .map_err(|e| Error::other(format!("Error in executing migration. Error: {}", e)))?;
+
+    Ok(())
 }

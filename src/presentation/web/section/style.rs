@@ -1,10 +1,15 @@
-use crate::application::use_cases::configuration::get_active_colorscheme::use_case_configuration_get_active_colorscheme;
+use crate::infrastructure::cross_cutting::InjectedServices;
 
-pub async fn style() -> String {
+pub async fn presentation_web_style(services: InjectedServices) -> String {
     "<style>
         :root {"
         .to_string()
-        + use_case_configuration_get_active_colorscheme().await
+        + services
+            .use_cases
+            .configuration
+            .get_active_colorscheme
+            .execute(services.clone())
+            .await
         + "}
 
         body {

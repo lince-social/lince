@@ -13,11 +13,12 @@ use crate::{
         },
     },
     domain::entities::frequency::Frequency,
+    infrastructure::cross_cutting::InjectedServices,
 };
 use regex::Regex;
 use std::{collections::HashMap, io::Error};
 
-pub async fn use_case_karma_deliver() -> Result<(), Error> {
+pub async fn use_case_karma_deliver(services: InjectedServices) -> Result<(), Error> {
     let engine = return_engine();
     let vec_karma = use_case_karma_get().unwrap();
     let regex_record_quantity = Regex::new(r"rq(\d+)").unwrap();

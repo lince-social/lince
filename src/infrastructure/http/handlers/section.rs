@@ -1,19 +1,23 @@
-use crate::presentation::web::section::{
-    body::presentation_web_section_body, main::presentation_web_section_main,
+use crate::{
+    infrastructure::cross_cutting::InjectedServices,
+    presentation::web::section::{
+        body::presentation_web_section_body, main::presentation_web_section_main,
+    },
 };
 use axum::{
+    extract::State,
     http::{HeaderMap, HeaderValue, StatusCode},
     response::{Html, IntoResponse},
 };
 use std::path::Path;
 use tokio::fs;
 
-pub async fn main_handler() -> Html<String> {
-    Html(presentation_web_section_main().await)
+pub async fn main_handler(State(services): State<InjectedServices>) -> Html<String> {
+    Html(presentation_web_section_main(services).await)
 }
 
-pub async fn handler_section_get_body() -> Html<String> {
-    Html(presentation_web_section_body().await)
+pub async fn handler_section_get_body(State(services): State<InjectedServices>) -> Html<String> {
+    Html(presentation_web_section_body(services).await)
 }
 
 pub async fn handler_section_favicon() -> impl IntoResponse {

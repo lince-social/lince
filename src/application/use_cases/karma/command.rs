@@ -17,9 +17,9 @@ pub async fn service_karma_execute_command(command: String) -> Option<i64> {
     let status = TokioCommand::new("sh")
         .arg("-c")
         .arg(command)
-        .stdin(Stdio::inherit()) // allow input from terminal
-        .stdout(Stdio::inherit()) // print output directly
-        .stderr(Stdio::inherit()) // show errors in terminal
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
         .status()
         .await
         .ok()?;
@@ -28,7 +28,7 @@ pub async fn service_karma_execute_command(command: String) -> Option<i64> {
         return None;
     }
 
-    Some(0) // placeholder: interactive commands won't return stdout we can parse
+    Some(0)
 }
 
 pub async fn use_case_command_get_name(id: u32) -> Option<String> {

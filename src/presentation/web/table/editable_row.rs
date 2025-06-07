@@ -1,6 +1,9 @@
 use maud::{Markup, html};
 
+use crate::infrastructure::cross_cutting::InjectedServices;
+
 pub async fn presentation_web_table_editable_row(
+    services: InjectedServices,
     table: String,
     id: String,
     column: String,

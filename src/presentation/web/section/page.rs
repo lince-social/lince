@@ -1,7 +1,14 @@
-use super::{body::presentation_web_section_body, style::style};
-use axum::response::Html;
+use super::body::presentation_web_section_body;
+use crate::{
+    infrastructure::cross_cutting::InjectedServices,
+    presentation::web::section::style::presentation_web_style,
+};
+use axum::{extract::State, response::Html};
 
-pub async fn presentation_web_section_page() -> Html<String> {
+#[axum::debug_handler]
+pub async fn presentation_web_section_page(
+    State(services): State<InjectedServices>,
+) -> Html<String> {
     Html(
         r##"
     <!doctype html>
@@ -14,11 +21,11 @@ pub async fn presentation_web_section_page() -> Html<String> {
         <title>Lince</title>
         "##
         .to_string()
-            + style().await.as_str()
+            + presentation_web_style(services.clone()).await.as_str()
             + htmx()
             + datastar_alpha011()
             + "</head>"
-            + presentation_web_section_body().await.as_str()
+            + presentation_web_section_body(services).await.as_str()
             + "</html>",
     )
 }

@@ -1,9 +1,11 @@
+use crate::infrastructure::cross_cutting::InjectedServices;
+
 use super::{header::header, main::presentation_web_section_main};
 
-pub async fn presentation_web_section_body() -> String {
+pub async fn presentation_web_section_body(services: InjectedServices) -> String {
     r#"<body id="body">"#.to_string()
         + header().await.as_str()
-        + presentation_web_section_main().await.as_str()
+        + presentation_web_section_main(services).await.as_str()
         + "</body>"
 }
 

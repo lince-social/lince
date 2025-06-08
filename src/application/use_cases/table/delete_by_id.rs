@@ -1,5 +1,5 @@
-use crate::application::providers::table::delete_by_id::provider_table_delete_by_id;
+use crate::infrastructure::cross_cutting::InjectedServices;
 
-pub async fn use_case_table_delete_by_id(table: String, id: String) {
-    provider_table_delete_by_id(table, id).await;
+pub async fn use_case_table_delete_by_id(services: InjectedServices, table: String, id: String) {
+    services.providers.table.delete_by_id(table, id).await;
 }

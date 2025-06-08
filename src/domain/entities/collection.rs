@@ -1,5 +1,5 @@
 #[derive(sqlx::FromRow, Debug, PartialEq, Eq)]
-pub struct Configuration {
+pub struct Collection {
     pub id: u32,
     pub name: String,
     pub quantity: i32,

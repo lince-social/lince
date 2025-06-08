@@ -1,60 +1,84 @@
-use super::view::repository_execute_queries;
 use crate::{
-    domain::entities::{karma::Karma, table::Table},
-    infrastructure::database::management::lib::connection,
+    domain::{
+        entities::{karma::Karma, table::Table},
+        repositories::karma::KarmaRepository,
+    },
 };
-use std::io::{Error, ErrorKind};
+use async_trait::async_trait;
+use sqlx::{Pool, Sqlite};
+use std::{
+    io::{Error, ErrorKind},
+    sync::Arc,
+};
 
-pub async fn repository_karma_condition() -> Result<Vec<(String, Table)>, Error> {
-    let query = "SELECT * FROM karma_condition";
-    repository_execute_queries(vec![query.to_string()]).await
+pub struct KarmaRepositoryImpl {
+    pool: Arc<Pool<Sqlite>>,
 }
 
-pub async fn repository_karma_consequence() -> Result<Vec<(String, Table)>, Error> {
-    let query = "SELECT * FROM karma_consequence";
-    repository_execute_queries(vec![query.to_string()]).await
-}
-
-pub async fn repository_karma_get_joined() -> Result<Vec<(String, Table)>, Error> {
-    let query = "
-            SELECT
-                k.id,
-                k.quantity,
-                kcd.condition,
-                k.operator,
-                kcs.consequence
-            FROM karma k
-            JOIN karma_condition kcd ON kcd.id = k.condition_id
-            JOIN karma_consequence kcs ON kcs.id = k.consequence_id
-            WHERE k.quantity > 0 AND kcd.quantity > 0 AND kcs.quantity > 0;
-            ";
-
-    repository_execute_queries(vec![query.to_string()]).await
-}
-
-pub async fn repository_karma_get_deliver() -> Result<Vec<Karma>, Error> {
-    let pool = connection().await.unwrap();
-    let query = "
-            SELECT
-                k.id,
-                k.quantity,
-                kcd.condition,
-                k.operator,
-                kcs.consequence
-            FROM karma k
-            JOIN karma_condition kcd ON kcd.id = k.condition_id
-            JOIN karma_consequence kcs ON kcs.id = k.consequence_id
-            WHERE k.quantity > 0 AND kcd.quantity > 0 AND kcs.quantity > 0;
-            ";
-
-    let data: Result<Vec<Karma>, sqlx::Error> = sqlx::query_as(query).fetch_all(&pool).await;
-    if data.is_err() {
-        return Err(Error::new(
-            ErrorKind::InvalidData,
-            "Error when querying karma",
-        ));
+impl KarmaRepositoryImpl {
+    pub fn new(pool: Arc<Pool<Sqlite>>) -> Self {
+        Self { pool }
     }
-    let data = data.unwrap();
-    Ok(data)
-    // repository_execute_queries(vec![query.to_string()]).await
+}
+
+#[async_trait]
+impl KarmaRepository for KarmaRepositoryImpl {
+    async fn get_condition(&self) -> Result<Vec<(String, Table)>, Error> {
+        let query = "SELECT * FROM karma_condition";
+        let result: Vec<(String, Table)> = sqlx::query_as(query)
+            .fetch_all(&*self.pool)
+            .await
+            .map_err(|e| Error::new(ErrorKind::InvalidData, e))?;
+        Ok(result)
+    }
+
+    async fn get_consequence(&self) -> Result<Vec<(String, Table)>, Error> {
+        let query = "SELECT * FROM karma_consequence";
+        let result: Vec<(String, Table)> = sqlx::query_as(query)
+            .fetch_all(&*self.pool)
+            .await
+            .map_err(|e| Error::new(ErrorKind::InvalidData, e))?;
+        Ok(result)
+    }
+
+    async fn get_joined(&self) -> Result<Vec<(String, Table)>, Error> {
+        let query = "
+            SELECT
+                k.id,
+                k.quantity,
+                kcd.condition,
+                k.operator,
+                kcs.consequence
+            FROM karma k
+            JOIN karma_condition kcd ON kcd.id = k.condition_id
+            JOIN karma_consequence kcs ON kcs.id = k.consequence_id
+            WHERE k.quantity > 0 AND kcd.quantity > 0 AND kcs.quantity > 0;
+            ";
+        let result: Vec<(String, Table)> = sqlx::query_as(query)
+            .fetch_all(&*self.pool)
+            .await
+            .map_err(|e| Error::new(ErrorKind::InvalidData, e))?;
+        Ok(result)
+    }
+
+    async fn get_deliver(&self) -> Result<Vec<Karma>, Error> {
+        let query = "
+            SELECT
+                k.id,
+                k.quantity,
+                kcd.condition,
+                k.operator,
+                kcs.consequence
+            FROM karma k
+            JOIN karma_condition kcd ON kcd.id = k.condition_id
+            JOIN karma_consequence kcs ON kcs.id = k.consequence_id
+            WHERE k.quantity > 0 AND kcd.quantity > 0 AND kcs.quantity > 0;
+            ";
+
+        let data: Vec<Karma> = sqlx::query_as(query)
+            .fetch_all(&*self.pool)
+            .await
+            .map_err(|e| Error::new(ErrorKind::InvalidData, e))?;
+        Ok(data)
+    }
 }

@@ -1,12 +1,7 @@
 use crate::{
-    application::{
-        providers::record::get_name_by_id::provider_record_get_head_by_id,
-        use_cases::{
-            frequency::get_name::use_case_frequency_get_name,
-            karma::command::use_case_command_get_name,
-        },
-    },
+    application::use_cases::frequency::get_name::use_case_frequency_get_name,
     domain::entities::table::{SortedTables, Table},
+    infrastructure::cross_cutting::InjectedServices,
     presentation::web::table::add_row::presentation_web_table_add_row,
 };
 use maud::{Markup, html};
@@ -111,19 +106,19 @@ pub async fn presentation_web_tables_karma(tables: Vec<(String, Table)>) -> Mark
                             @for row in table {
                                 tr {
                                     @for key in &headers {
-                                            @if key == "id" {
-                                                td
-                                                    hx-trigger="click" hx-swap="outerHTML"
-                                                    hx-get=(format!(
-                                                    "/table/{}/{}/{}/{}",
-                                                    table_name,
-                                                    row.get("id").unwrap(),
-                                                    key,
-                                                    match row.get(key).unwrap().as_str() {
-                                                        "" => "None",
-                                                        some => some,
-                                                    }))
-                                            {
+                                        @if key == "id" {
+                                            td
+                                                hx-trigger="click" hx-swap="outerHTML"
+                                                hx-get=(format!(
+                                                "/table/{}/{}/{}/{}",
+                                                table_name,
+                                                row.get("id").unwrap(),
+                                                key,
+                                                match row.get(key).unwrap().as_str() {
+                                                    "" => "None",
+                                                    some => some,
+                                                }))
+                                        {
                                                 button
                                                     hx-delete=(format!("/table/{}/{}",
                                                         table_name,
@@ -148,6 +143,7 @@ pub async fn presentation_web_tables_karma(tables: Vec<(String, Table)>) -> Mark
                                                     ))
                                                         {
                                                     (presentation_web_tables_karma_replacer(
+                                                        services.clone(),
                                                         row.get(key).unwrap_or(&"NULL".to_string()).clone()).await)}
                                                 } @else {
                                                     td
@@ -176,55 +172,40 @@ pub async fn presentation_web_tables_karma(tables: Vec<(String, Table)>) -> Mark
     }
 }
 
-pub async fn presentation_web_tables_karma_replacer(og_row: String) -> Markup {
-    let regex_rq = Regex::new(r"rq(\d+)").unwrap();
-    let regex_f = Regex::new(r"f(\d+)").unwrap();
-    let regex_command = Regex::new(r"c(\d+)").unwrap();
-    // let mut row = og_row.clone();
-    let mut row = og_row;
+pub async fn presentation_web_tables_karma_replacer(
+    services: InjectedServices,
+    id: u32,
+    key: String,
+) -> Markup {
+    let res = services.providers.record.get_head_by_id(id).await;
+    match res {
+        Ok(head) => {
+            let replacement_f = services
+                .providers
+                .frequency
+                .get(head)
+                .execute(services.clone(), head.frequency_id)
+                .await;
+            let replacement_command = services
+                .providers
+                .command
+                .get_by_id(id)
+                .get
+                .get_command_name(services.clone(), head.command_id)
+                .await;
 
-    let mut replacements_rq = Vec::new();
-    for caps in regex_rq.captures_iter(&row) {
-        let id = caps[1].parse::<u32>().unwrap();
-        replacements_rq.push((caps.get(0).unwrap().range(), id));
-    }
-    for (range, id) in replacements_rq.into_iter().rev() {
-        let res = provider_record_get_head_by_id(id).await;
-        let replacement_rq = match res {
-            Ok(quantity) => quantity.to_string(),
-            Err(error) => {
-                println!("Error at record with id: {id}: {}", error);
-                "Error".to_string()
+            html! {
+                td {
+                    (replacement_f)
+                }
+                td {
+                    (replacement_command)
+                }
             }
-        };
-        row.replace_range(range, &replacement_rq);
-    }
-
-    let mut replacements_f = Vec::new();
-    for caps in regex_f.captures_iter(&row) {
-        let id = caps[1].parse::<u32>().unwrap();
-        replacements_f.push((caps.get(0).unwrap().range(), id));
-    }
-    for (range, id) in replacements_f.into_iter().rev() {
-        let replacement_f = use_case_frequency_get_name(id).await;
-        match replacement_f {
-            None => println!("Empty frequency name with id: {id}"),
-            Some(name) => row.replace_range(range, &name),
         }
+        Err(_) => html! {
+            td { "Error" }
+            td { "Error" }
+        },
     }
-
-    let mut replacements_command = Vec::new();
-    for caps in regex_command.captures_iter(&row) {
-        let id = caps[1].parse::<u32>().unwrap();
-        replacements_command.push((caps.get(0).unwrap().range(), id));
-    }
-    for (range, id) in replacements_command.into_iter().rev() {
-        let replacement_command = use_case_command_get_name(id).await;
-        match replacement_command {
-            None => println!("Empty command name with id: {id}"),
-            Some(name) => row.replace_range(range, &name),
-        }
-    }
-
-    html!((row))
 }

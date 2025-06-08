@@ -1,5 +1,4 @@
 use crate::{
-    application::providers::table::edit_row::provider_table_edit_row,
     infrastructure::{
         cross_cutting::InjectedServices,
         utils::log::{LogEntry, log},
@@ -14,9 +13,7 @@ pub async fn use_case_table_patch_row(
     column: String,
     value: String,
 ) -> String {
-    let _ = provider_table_edit_row(table, id, column, value)
-        .await
-        .map_err(|e| log(LogEntry::Error(e.kind(), e.to_string())));
+    let _ = services.providers.record.edit_row(table, id, column, value).await;
 
     presentation_web_section_main(services).await
 }

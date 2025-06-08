@@ -113,89 +113,6 @@ pub async fn repository_execute_queries(
 
     results.into_iter().collect()
 }
-// pub async fn repository_view_get_active_view_data() -> sqlx::Result<Vec<(String, Table)>> {
-//     let pool = connection().await.unwrap();
-
-//     let query_rows = sqlx::query(
-//         "SELECT v.query AS query
-//          FROM collection_view cv
-//          JOIN view v ON cv.view_id = v.id
-//          JOIN collection c ON cv.collection_id = c.id
-//          WHERE cv.quantity = 1 AND c.quantity = 1",
-//     )
-//     .fetch_all(&pool)
-//     .await?;
-
-//     let queries: Vec<String> = query_rows
-//         .into_iter()
-//         .map(|row| row.get::<String, _>("query"))
-//         .collect();
-
-//     let task_futures = queries.into_iter().map(|query_string| {
-//         let table_name = query_string
-//             .split_whitespace()
-//             .enumerate()
-//             .find_map(|(i, word)| {
-//                 if word.eq_ignore_ascii_case("from") {
-//                     query_string.split_whitespace().nth(i + 1)
-//                 } else {
-//                     None
-//                 }
-//             })
-//             .unwrap_or("unknown_table")
-//             .to_string();
-
-//         let pool = pool.clone();
-//         async move {
-//             let rows = sqlx::query(&query_string).fetch_all(&pool).await?;
-//             let mut result_rows: Table = Vec::with_capacity(rows.len());
-
-//             for row in rows {
-//                 let mut row_map: RowEntity = HashMap::new();
-
-//                 let columns = row.columns();
-
-//                 for (i, col) in columns.iter().enumerate() {
-//                     let col_name = col.name();
-//                     let type_name = col.type_info().name().to_uppercase();
-
-//                     let value = match type_name.as_str() {
-//                         "INTEGER" => row
-//                             .try_get::<i64, _>(i)
-//                             .map(|v| v.to_string())
-//                             .unwrap_or_else(|_| "NULL".to_string()),
-//                         "REAL" => row
-//                             .try_get::<f64, _>(i)
-//                             .map(|v| v.to_string())
-//                             .unwrap_or_else(|_| "NULL".to_string()),
-//                         "FLOAT" => row
-//                             .try_get::<f32, _>(i)
-//                             .map(|v| v.to_string())
-//                             .unwrap_or_else(|_| "NULL".to_string()),
-//                         _ => row
-//                             .try_get::<String, _>(i)
-//                             .unwrap_or_else(|_| "NULL".to_string()),
-//                     };
-
-//                     row_map.insert(col_name.to_string(), value);
-//                 }
-
-//                 result_rows.push(row_map);
-//             }
-
-//             Ok::<_, sqlx::Error>((table_name, result_rows))
-//         }
-//     });
-
-//     let results = join_all(task_futures).await;
-
-//     let mut all_query_results = Vec::new();
-//     for res in results {
-//         all_query_results.push(res?);
-//     }
-
-//     Ok(all_query_results)
-// }
 
 pub async fn repository_view_get_active_view_data()
 -> Result<(Vec<(String, Table)>, Vec<String>), Error> {
@@ -278,26 +195,6 @@ pub async fn repository_view_get_active_view_data()
 //     );
 //     return { success: false, error: error };
 //   }
-// }
-//
-// export async function getViews() {
-//   return await sql`SELECT viewName, query FROM view`;
-// }
-//
-// export async function DeleteView(query) {
-//   const { viewId, collectionId } = query;
-//
-//   await sql`
-//     DELETE FROM collection_view
-//     WHERE collection_id = ${collectionId} AND view_id = ${viewId};
-//   `;
-//
-//   return (
-//     <main id="main">
-//       <div>{await ConfigurationsHovered()}</div>
-//       <div>{await Tables()}</div>
-//     </main>
-//   );
 // }
 //
 // export async function CreateViewComponent(collectionId, view_name, query) {

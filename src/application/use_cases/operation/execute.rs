@@ -101,7 +101,11 @@ pub async fn parse_operation_and_execute(
                 "c" | "create" => {
                     return Some(
                         presentation_web_operation_get_nested_body(
-                            use_case_operation_create_component(parse_table(operation.clone()))
+                            services
+                                .use_cases
+                                .operation
+                                .create_component
+                                .execute(parse_table(operation.clone()))
                                 .await,
                         )
                         .await,

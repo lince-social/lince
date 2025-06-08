@@ -1,9 +1,5 @@
-use crate::{
-    application::providers::karma::get_deliver::provider_karma_get_deliver,
-    domain::entities::karma::Karma,
-};
-use std::io::Error;
+use crate::infrastructure::cross_cutting::InjectedServices;
 
-pub fn use_case_karma_get() -> Result<Vec<Karma>, Error> {
-    futures::executor::block_on(async { provider_karma_get_deliver().await })
+pub async fn use_case_karma_get(services: InjectedServices) -> Vec<String> {
+    services.providers.karma.get_deliver.get_all().await
 }

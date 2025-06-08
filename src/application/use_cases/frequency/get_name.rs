@@ -1,8 +1,8 @@
-use crate::application::providers::frequency::get::provider_frequency_get;
+use crate::infrastructure::cross_cutting::InjectedServices;
 
-pub async fn use_case_frequency_get_name(id: u32) -> Option<String> {
-    match provider_frequency_get(id).await {
-        None => None,
-        Some(frequency) => Some(frequency.name),
+pub async fn use_case_frequency_get_name(services: InjectedServices, id: String) -> String {
+    match services.providers.frequency.get(id).await {
+        Some(frequency) => frequency.name,
+        None => String::new(),
     }
 }

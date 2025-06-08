@@ -2,15 +2,16 @@ use super::collection::{
     presentation_web_karma_condition, presentation_web_karma_consequence,
     presentation_web_karma_karma,
 };
+use crate::infrastructure::cross_cutting::InjectedServices;
 use maud::html;
 
-pub async fn presentation_web_karma_orchestra() -> String {
+pub async fn presentation_web_karma_orchestra(services: InjectedServices) -> String {
     html!({
         div class="row" {
-            (presentation_web_karma_condition().await)
-            (presentation_web_karma_consequence().await)
+            (presentation_web_karma_condition(services.clone()).await)
+            (presentation_web_karma_consequence(services.clone()).await)
         }
-           div { (presentation_web_karma_karma().await)}
+           div { (presentation_web_karma_karma(services).await)}
     })
     .0
 }

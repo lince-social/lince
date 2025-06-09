@@ -1,9 +1,4 @@
-use crate::{
-    domain::{
-        entities::operation::Query,
-        repositories::query::QueryRepository,
-    },
-};
+use crate::domain::{entities::operation::Query, repositories::query::QueryRepository};
 use async_trait::async_trait;
 use sqlx::{Pool, Sqlite};
 use std::{
@@ -26,8 +21,9 @@ impl QueryRepository for QueryRepositoryImpl {
     async fn get_by_id(&self, id: u32) -> Result<Query, Error> {
         let sql = format!("SELECT query FROM query WHERE id = {}", id);
 
-        let res: Result<Option<Query>, sqlx::Error> =
-            sqlx::query_as::<_, Query>(&sql).fetch_optional(&*self.pool).await;
+        let res: Result<Option<Query>, sqlx::Error> = sqlx::query_as::<_, Query>(&sql)
+            .fetch_optional(&*self.pool)
+            .await;
 
         match res {
             Ok(Some(query)) => Ok(query),
@@ -42,16 +38,13 @@ impl QueryRepository for QueryRepositoryImpl {
         }
     }
 
-    async fn execute(&self, sql: String) -> Result<(), Error> {
-        sqlx::query(&sql)
-            .execute(&*self.pool)
-            .await
-            .map_err(|e| {
-                Error::new(
-                    ErrorKind::InvalidInput,
-                    format!("Failed to run query: {}. Error: {}", sql, e),
-                )
-            })?;
+    async fn execute(&self, sql: &str) -> Result<(), Error> {
+        sqlx::query(&sql).execute(&*self.pool).await.map_err(|e| {
+            Error::new(
+                ErrorKind::InvalidInput,
+                format!("Failed to run query: {}. Error: {}", sql, e),
+            )
+        })?;
 
         Ok(())
     }

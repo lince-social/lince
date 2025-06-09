@@ -1,5 +1,3 @@
-use futures::future::join_all;
-
 use crate::{
     infrastructure::cross_cutting::InjectedServices,
     presentation::web::{
@@ -7,9 +5,15 @@ use crate::{
         table::tables::presentation_web_tables,
     },
 };
+use futures::future::join_all;
 
 pub async fn presentation_web_section_main(services: InjectedServices) -> String {
-    let (tables, special_views) = services.providers.view.get_active_view_data().await.unwrap();
+    let (tables, special_views) = services
+        .providers
+        .view
+        .get_active_view_data()
+        .await
+        .unwrap();
     let mut content = presentation_web_tables(tables).await.0;
 
     let special_futures = special_views.iter().map(|special_view| async move {

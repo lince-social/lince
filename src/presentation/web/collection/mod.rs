@@ -12,7 +12,8 @@ use crate::{
 use maud::{Markup, html};
 
 pub async fn presentation_web_collection(services: InjectedServices) -> Markup {
-    let (active_collection, active_collection_views) = services.providers.collection.get_active().await;
+    let (active_collection, active_collection_views) =
+        services.providers.collection.get_active().await;
     let inactive_collections = services.providers.collection.get_inactive().await;
     html!(
         .configurations.column.xs_gap

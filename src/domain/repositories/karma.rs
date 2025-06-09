@@ -7,5 +7,5 @@ pub trait KarmaRepository: Send + Sync {
     async fn get_condition(&self) -> Result<Vec<(String, Table)>, Error>;
     async fn get_consequence(&self) -> Result<Vec<(String, Table)>, Error>;
     async fn get_joined(&self) -> Result<Vec<(String, Table)>, Error>;
-    async fn get_deliver(&self) -> Result<Vec<Karma>, Error>;
-} 
+    async fn get(&self) -> Result<Vec<Karma>, Error>;
+}

@@ -1,6 +1,5 @@
 use super::crud::use_case_operation_create_component;
 use crate::{
-    application::use_cases::record::set_quantity::use_case_record_set_quantity,
     infrastructure::{
         cross_cutting::InjectedServices,
         utils::log::{LogEntry, log},
@@ -101,20 +100,18 @@ pub async fn parse_operation_and_execute(
                 "c" | "create" => {
                     return Some(
                         presentation_web_operation_get_nested_body(
-                            services
-                                .use_cases
-                                .operation
-                                .create_component
-                                .execute(parse_table(operation.clone()))
-                                .await,
+                            use_case_operation_create_component(
+                                services,
+                                parse_table(operation.clone()),
+                            )
+                            .await,
                         )
                         .await,
                     );
                 }
                 "a" | "configuration" => {
                     if let Some(id) = parse_id(&operation) {
-                        if let Err(e) = services.providers.configuration.activate.execute(id).await
-                        {
+                        if let Err(e) = services.providers.configuration.activate(id).await {
                             log(LogEntry::Error(e.kind(), e.to_string()))
                         }
                     }
@@ -132,12 +129,12 @@ pub async fn parse_operation_and_execute(
 pub async fn use_case_operation_execute(services: InjectedServices, operation: String) -> String {
     let only_digits = Regex::new(r"^\d+$").unwrap();
     if only_digits.is_match(&operation) {
-        return use_case_record_set_quantity(
-            services.clone(),
-            operation.parse::<u32>().unwrap(),
-            0.0,
-        )
-        .await;
+        services
+            .providers
+            .record
+            .set_quantity(operation.parse::<u32>().unwrap(), 0.0)
+            .await;
+        return presentation_web_section_body(services).await;
     }
 
     match parse_operation_and_execute(services.clone(), operation).await {

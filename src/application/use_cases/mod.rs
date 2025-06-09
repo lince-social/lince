@@ -1,4 +1,3 @@
-pub mod collection;
 pub mod configuration;
 pub mod frequency;
 pub mod karma;

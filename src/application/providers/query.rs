@@ -14,7 +14,7 @@ impl QueryProvider {
         self.repository.get_by_id(id).await
     }
 
-    pub async fn execute(&self, sql: String) -> Result<(), Error> {
+    pub async fn execute(&self, sql: &str) -> Result<(), Error> {
         self.repository.execute(sql).await
     }
 }

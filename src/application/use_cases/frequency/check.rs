@@ -1,15 +1,16 @@
 use crate::{
-    domain::entities::frequency::Frequency,
-    infrastructure::cross_cutting::InjectedServices,
+    domain::entities::frequency::Frequency, infrastructure::cross_cutting::InjectedServices,
 };
 use chrono::{Datelike, Duration, NaiveDateTime, TimeZone, Utc};
 
-pub async fn use_case_frequency_check(services: InjectedServices, id: u32) -> (u32, Option<Frequency>) {
-    let frequency = services.providers.frequency.get(id).await;
-    if frequency.is_none() {
-        return (0, None);
-    }
-    let frequency = frequency.unwrap();
+pub async fn use_case_frequency_check(
+    services: InjectedServices,
+    id: &str,
+) -> (u32, Option<Frequency>) {
+    let frequency = match services.providers.frequency.get(id).await {
+        Ok(Some(f)) => f,
+        _ => return (0, None),
+    };
 
     let now = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
@@ -28,9 +29,8 @@ pub async fn use_case_frequency_check(services: InjectedServices, id: u32) -> (u
 
     let naive = NaiveDateTime::parse_from_str(&frequency.next_date, "%Y-%m-%d %H:%M:%S").unwrap();
 
-    let shifted = naive
-        + Duration::days(frequency.days as i64)
-        + Duration::seconds(frequency.seconds as i64);
+    let shifted =
+        naive + Duration::days(frequency.days as i64) + Duration::seconds(frequency.seconds as i64);
 
     let mut year = shifted.year();
     let mut month = shifted.month() as i32 + frequency.months as i32;
@@ -58,6 +58,10 @@ pub async fn use_case_frequency_check(services: InjectedServices, id: u32) -> (u
         ..frequency.clone()
     };
 
-    services.providers.frequency.update(new_frequency.clone()).await;
+    services
+        .providers
+        .frequency
+        .update(new_frequency.clone())
+        .await;
     (frequency.quantity as u32, Some(new_frequency))
 }

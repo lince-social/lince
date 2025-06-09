@@ -1,5 +1,5 @@
 use crate::{
-    application::schema::collection::row::ConfigurationRow,
+    application::schema::collection::row::CollectionRow,
     domain::repositories::collection::CollectionRepository,
 };
 use std::io::Error;
@@ -13,14 +13,14 @@ impl CollectionProvider {
         Self { repository }
     }
 
-    pub async fn get_active(&self) -> ConfigurationRow {
+    pub async fn get_active(&self) -> CollectionRow {
         let (collection, queried_views) = self.repository.get_active().await.unwrap();
         (collection, queried_views)
     }
-    pub async fn get_inactive(&self) -> Result<Vec<ConfigurationRow>, Error> {
+    pub async fn get_inactive(&self) -> Result<Vec<CollectionRow>, Error> {
         self.repository.get_inactive().await
     }
-    pub async fn set_active(&self, id: u32) -> Result<(), Error> {
+    pub async fn set_active(&self, id: &str) -> Result<(), Error> {
         self.repository.set_active(id).await
     }
 }

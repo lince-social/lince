@@ -1,7 +1,7 @@
 use crate::{
     application::schema::record::{record_head::RecordHead, record_quantity::RecordQuantity},
-    infrastructure::database::management::lib::connection,
     domain::repositories::record::RecordRepository,
+    infrastructure::database::management::lib::connection,
 };
 use async_trait::async_trait;
 use sqlx::{Pool, Sqlite};
@@ -35,19 +35,15 @@ impl RecordRepository for RecordRepositoryImpl {
     }
 
     async fn get_quantity_by_id(&self, id: u32) -> Result<f64, Error> {
-        let record: Result<_, sqlx::Error> =
-            sqlx::query_as(&format!("SELECT quantity FROM record WHERE id = {}", id))
-                .fetch_one(&*self.pool)
-                .await;
-        if record.is_err() {
-            return Err(Error::new(
-                ErrorKind::NotFound,
-                format!("No record with id: {} found", id),
-            ));
-        }
-        let record = record.unwrap();
-
-        Ok(record.quantity)
+        sqlx::query_as(&format!("SELECT quantity FROM record WHERE id = {}", id))
+            .fetch_one(&*self.pool)
+            .await
+            .map_err(|_| {
+                Error::new(
+                    ErrorKind::NotFound,
+                    format!("No record with id: {} found", id),
+                )
+            })
     }
 
     async fn get_head_by_id(&self, id: u32) -> Result<String, Error> {

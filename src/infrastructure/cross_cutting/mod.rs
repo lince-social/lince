@@ -1,16 +1,17 @@
 use crate::{
     application::{
         providers::{
-            command::CommandProvider, configuration::ConfigurationProvider,
-            frequency::FrequencyProvider, karma::KarmaProvider, operation::OperationProvider,
-            query::QueryProvider, record::RecordProvider, table::TableProvider,
+            collection::CollectionProvider, command::CommandProvider,
+            configuration::ConfigurationProvider, frequency::FrequencyProvider,
+            karma::KarmaProvider, operation::OperationProvider, query::QueryProvider,
+            record::RecordProvider, table::TableProvider,
         },
         use_cases::configuration::get_active_colorscheme::UseCaseConfigurationGetActiveColorscheme,
     },
     infrastructure::database::repositories::{
-        command::CommandRepositoryImpl, configuration::ConfigurationRepositoryImpl,
-        frequency::FrequencyRepositoryImpl, karma::KarmaRepositoryImpl,
-        operation::OperationRepositoryImpl, query::QueryRepositoryImpl,
+        collection::CollectionRepositoryImpl, command::CommandRepositoryImpl,
+        configuration::ConfigurationRepositoryImpl, frequency::FrequencyRepositoryImpl,
+        karma::KarmaRepositoryImpl, operation::OperationRepositoryImpl, query::QueryRepositoryImpl,
         record::RecordRepositoryImpl, table::TableRepositoryImpl,
     },
 };
@@ -26,6 +27,7 @@ pub struct Providers {
     pub command: CommandProvider,
     pub frequency: FrequencyProvider,
     pub karma: KarmaProvider,
+    pub collection: CollectionProvider,
 }
 
 pub struct UseCases {
@@ -54,6 +56,7 @@ pub fn dependency_injection(db: Pool<Sqlite>) -> InjectedServices {
     let command_repository = Arc::new(CommandRepositoryImpl::new(db.clone()));
     let frequency_repository = Arc::new(FrequencyRepositoryImpl::new(db.clone()));
     let karma_repository = Arc::new(KarmaRepositoryImpl::new(db.clone()));
+    let collection_repository = Arc::new(CollectionRepositoryImpl::new(db.clone()));
 
     let services: InjectedServices = Arc::new(Injected {
         providers: Providers {
@@ -80,6 +83,9 @@ pub fn dependency_injection(db: Pool<Sqlite>) -> InjectedServices {
             },
             karma: KarmaProvider {
                 repository: karma_repository,
+            },
+            collection: CollectionProvider {
+                repository: collection_repository,
             },
         },
         use_cases: UseCases {

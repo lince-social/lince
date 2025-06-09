@@ -17,8 +17,7 @@ impl UseCaseConfigurationGetActiveColorscheme {
         let style = match services
             .providers
             .configuration
-            .get_active
-            .execute()
+            .get_active()
             .await
             .ok()
             .and_then(|c| Some(c.style))

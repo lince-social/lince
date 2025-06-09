@@ -8,13 +8,7 @@ pub async fn use_case_record_set_quantity(
     id: u32,
     quantity: f64,
 ) -> String {
-    if let Err(e) = services
-        .providers
-        .record
-        .set_quantity
-        .execute(id, quantity)
-        .await
-    {
+    if let Err(e) = services.providers.record.set_quantity(id, quantity).await {
         println!(
             "Error when setting record with id: {} to quantity: {} | Error: {}",
             id, quantity, e

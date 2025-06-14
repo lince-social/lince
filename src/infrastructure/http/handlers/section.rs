@@ -1,7 +1,8 @@
 use crate::{
     infrastructure::cross_cutting::InjectedServices,
     presentation::web::section::{
-        body::presentation_web_section_body, main::presentation_web_section_main,
+        body::presentation_web_section_body, header::presentation_web_section_header,
+        main::presentation_web_section_main,
     },
 };
 use axum::{
@@ -12,12 +13,16 @@ use axum::{
 use std::path::Path;
 use tokio::fs;
 
-pub async fn main_handler(State(services): State<InjectedServices>) -> Html<String> {
+pub async fn handler_section_main(State(services): State<InjectedServices>) -> Html<String> {
     Html(presentation_web_section_main(services).await)
 }
 
-pub async fn handler_section_get_body(State(services): State<InjectedServices>) -> Html<String> {
+pub async fn handler_section_body(State(services): State<InjectedServices>) -> Html<String> {
     Html(presentation_web_section_body(services).await)
+}
+
+pub async fn handler_section_header(State(services): State<InjectedServices>) -> Html<String> {
+    Html(presentation_web_section_header(services).await)
 }
 
 pub async fn handler_section_favicon() -> impl IntoResponse {

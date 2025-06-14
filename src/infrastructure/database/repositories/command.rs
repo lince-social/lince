@@ -18,7 +18,7 @@ impl CommandRepositoryImpl {
 
 #[async_trait]
 impl CommandRepository for CommandRepositoryImpl {
-    async fn get_by_id(&self, id: &str) -> Result<Option<Command>, Error> {
+    async fn get_by_id(&self, id: u32) -> Result<Option<Command>, Error> {
         sqlx::query_as::<_, Command>("SELECT * FROM command WHERE id = $1")
             .bind(id)
             .fetch_optional(&*self.pool)

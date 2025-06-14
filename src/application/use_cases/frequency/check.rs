@@ -5,7 +5,7 @@ use chrono::{Datelike, Duration, NaiveDateTime, TimeZone, Utc};
 
 pub async fn use_case_frequency_check(
     services: InjectedServices,
-    id: &str,
+    id: u32,
 ) -> (u32, Option<Frequency>) {
     let frequency = match services.providers.frequency.get(id).await {
         Ok(Some(f)) => f,

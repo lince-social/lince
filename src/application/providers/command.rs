@@ -10,7 +10,7 @@ impl CommandProvider {
         Self { repository }
     }
 
-    pub async fn get_by_id(&self, id: &str) -> Result<Option<Command>, Error> {
+    pub async fn get_by_id(&self, id: u32) -> Result<Option<Command>, Error> {
         self.repository.get_by_id(id).await
     }
 }

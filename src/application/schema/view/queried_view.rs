@@ -8,7 +8,7 @@ pub struct QueriedView {
     pub query: String,
 }
 #[derive(sqlx::FromRow)]
-pub struct QueriedViewWithConfigId {
+pub struct QueriedViewWithCollectionId {
     pub collection_id: u32,
     pub id: u32,
     pub quantity: i32,

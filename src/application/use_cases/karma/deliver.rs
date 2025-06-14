@@ -1,7 +1,8 @@
 use super::{command::use_case_karma_execute_command, engine::return_engine};
 use crate::{
     application::use_cases::{
-        frequency::update::use_case_frequency_update, query::execute::use_case_query_execute,
+        frequency::{check::use_case_frequency_check, update::use_case_frequency_update},
+        query::execute::use_case_query_execute,
     },
     domain::entities::frequency::Frequency,
     infrastructure::cross_cutting::InjectedServices,
@@ -11,7 +12,7 @@ use std::{collections::HashMap, io::Error};
 
 pub async fn use_case_karma_deliver(services: InjectedServices) -> Result<(), Error> {
     let engine = return_engine();
-    let vec_karma = services.providers.karma.get().await?;
+    let vec_karma = futures::executor::block_on(async { services.providers.karma.get().await })?;
     let regex_record_quantity = Regex::new(r"rq(\d+)").unwrap();
     let regex_frequency = Regex::new(r"f(\d+)").unwrap();
     let regex_command = Regex::new(r"c(\d+)").unwrap();
@@ -19,25 +20,32 @@ pub async fn use_case_karma_deliver(services: InjectedServices) -> Result<(), Er
     let mut frequencies_to_update: HashMap<u32, Frequency> = HashMap::new();
 
     for karma in vec_karma {
-        let condition =
-            match replace_record_quantities(&regex_record_quantity, karma.clone().condition) {
-                Ok(c) => c,
-                Err(_) => {
-                    eprintln!("record quantity error on karma id {}", karma.id);
-                    continue;
-                }
-            };
+        let condition = match replace_record_quantities(
+            services.clone(),
+            &regex_record_quantity,
+            karma.clone().condition,
+        ) {
+            Ok(c) => c,
+            Err(_) => {
+                eprintln!("record quantity error on karma id {}", karma.id);
+                continue;
+            }
+        };
 
-        let condition =
-            match replace_frequencies(&regex_frequency, condition, &mut frequencies_to_update) {
-                Ok(c) => c,
-                Err(e) => {
-                    eprintln!("frequency error on karma id {}: {}", karma.id, e);
-                    continue;
-                }
-            };
+        let condition = match replace_frequencies(
+            services.clone(),
+            &regex_frequency,
+            condition,
+            &mut frequencies_to_update,
+        ) {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!("frequency error on karma id {}: {}", karma.id, e);
+                continue;
+            }
+        };
 
-        let condition = match replace_commands(&regex_command, condition) {
+        let condition = match replace_commands(services.clone(), &regex_command, condition) {
             Ok(c) => c,
             Err(e) => {
                 eprintln!("command error on karma id {}: {}", karma.id, e);
@@ -71,7 +79,7 @@ pub async fn use_case_karma_deliver(services: InjectedServices) -> Result<(), Er
             .and_then(|caps| caps[1].parse::<u32>().ok())
             .and_then(|id| {
                 futures::executor::block_on(async {
-                    use_case_karma_execute_command(services, &id.to_string()).await
+                    use_case_karma_execute_command(services.clone(), id).await
                 })
             })
         {
@@ -82,8 +90,10 @@ pub async fn use_case_karma_deliver(services: InjectedServices) -> Result<(), Er
             .captures(&karma.consequence)
             .and_then(|caps| caps[1].parse::<u32>().ok())
             .and_then(|id| {
-                futures::executor::block_on(async { use_case_query_execute(services, id).await })
-                    .err()
+                futures::executor::block_on(async {
+                    use_case_query_execute(services.clone(), id).await
+                })
+                .err()
             })
         {
             println!("Error when executing query: {e}")
@@ -109,11 +119,10 @@ fn replace_record_quantities(
         let id = caps[1].parse::<u32>().unwrap();
 
         services
-            .provider
+            .providers
             .record
             .get_quantity_by_id_sync(id)
-            .map_err(|_| "0.0")
-            .to_string()
+            .unwrap_or_else(|_| "0.0".to_string())
     });
 
     Ok(replaced.into_owned())
@@ -131,7 +140,8 @@ fn replace_frequencies(
 
     let replaced = regex.replace_all(&karma_condition, |caps: &regex::Captures| {
         let id = caps[1].parse::<u32>().unwrap();
-        let (replacement, freq_opt) = use_case_frequency_check(services, id);
+        let (replacement, freq_opt) =
+            futures::executor::block_on(async { use_case_frequency_check(services, id).await });
         if let Some(f) = freq_opt {
             frequencies_to_update.insert(f.id, f);
         }
@@ -151,103 +161,9 @@ fn replace_commands(
 
     let replaced = regex.replace_all(&karma_condition, |caps: &regex::Captures| {
         let id = caps[1].parse::<u32>().unwrap();
-        use_case_karma_execute_command(id)
+        futures::executor::block_on(async { use_case_karma_execute_command(services, id).await })
             .map(|v| v.to_string())
             .unwrap_or_else(|| "0".to_string())
     });
     Ok(replaced.into_owned())
-}
-
-pub async fn use_case_karma_deliver(services: InjectedServices) -> Result<(), Error> {
-    let engine = return_engine();
-    let vec_karma = services.providers.karma.get().await?;
-    let regex_record_quantity = Regex::new(r"rq(\d+)").unwrap();
-    let regex_frequency = Regex::new(r"f(\d+)").unwrap();
-    let regex_command = Regex::new(r"c(\d+)").unwrap();
-    let regex_query = Regex::new(r"sql(\d+)").unwrap();
-    let mut frequencies_to_update: HashMap<u32, Frequency> = HashMap::new();
-
-    for karma in vec_karma {
-        let mut should_execute = true;
-
-        for condition in karma.condition {
-            let record_quantity = regex_record_quantity
-                .captures(&condition.condition)
-                .and_then(|c| c.get(1))
-                .and_then(|m| m.as_str().parse::<u32>().ok());
-
-            if let Some(record_id) = record_quantity {
-                let quantity = services
-                    .providers
-                    .record
-                    .get_quantity_by_id(record_id)
-                    .await;
-                if quantity < condition.quantity {
-                    should_execute = false;
-                    break;
-                }
-            }
-        }
-
-        if !should_execute {
-            continue;
-        }
-
-        for consequence in karma.consequences {
-            let record_quantity = regex_record_quantity
-                .captures(&consequence.consequence)
-                .and_then(|c| c.get(1))
-                .and_then(|m| m.as_str().parse::<u32>().ok());
-
-            if let Some(record_id) = record_quantity {
-                let quantity = services
-                    .providers
-                    .record
-                    .get_quantity_by_id(record_id)
-                    .await;
-                let new_quantity = quantity + consequence.quantity;
-                services
-                    .providers
-                    .record
-                    .set_quantity(record_id, new_quantity)
-                    .await;
-            }
-
-            let frequency = regex_frequency
-                .captures(&consequence.consequence)
-                .and_then(|c| c.get(1))
-                .and_then(|m| m.as_str().parse::<u32>().ok());
-
-            if let Some(frequency_id) = frequency {
-                let (_, frequency) = services.providers.frequency.check(frequency_id).await;
-                if let Some(frequency) = frequency {
-                    frequencies_to_update.insert(frequency_id, frequency);
-                }
-            }
-
-            let command = regex_command
-                .captures(&consequence.consequence)
-                .and_then(|c| c.get(1))
-                .and_then(|m| m.as_str().parse::<u32>().ok());
-
-            if let Some(command_id) = command {
-                use_case_karma_execute_command(services.clone(), command_id).await;
-            }
-
-            let query = regex_query
-                .captures(&consequence.consequence)
-                .and_then(|c| c.get(1))
-                .and_then(|m| m.as_str().parse::<u32>().ok());
-
-            if let Some(query_id) = query {
-                services.providers.query.execute(query_id).await?;
-            }
-        }
-    }
-
-    for (_, frequency) in frequencies_to_update {
-        services.providers.frequency.update(frequency).await;
-    }
-
-    Ok(())
 }

@@ -12,16 +12,30 @@ use crate::{
 use maud::{Markup, html};
 
 pub async fn presentation_web_collection(services: InjectedServices) -> Markup {
-    let (active_collection, active_collection_views) =
-        services.providers.collection.get_active().await;
-    let inactive_collections = services.providers.collection.get_inactive().await;
+    let collection_rows = services.providers.collection.get().await;
+    if collection_rows.is_err() {
+        return html!("Failed to fetch collections");
+    }
+    let collection_rows = collection_rows.unwrap();
+    let active = collection_rows
+        .first()
+        .unwrap_or(html!(p {"No active collection"}));
+
     html!(
         .configurations.column.xs_gap
             data-signals="{configurationOpen: false}"
             data-on-mouseover="$configurationOpen = true"
             data-on-mouseleave="$configurationOpen = false"
         {
-            (presentation_web_collection_row(active_collection, active_collection_views).await)
+            @for (i, (collection, views)) in collection_rows.iter.enumerate() {
+                @if i == 0 {
+                    (presentation_web_collection_row(inactive_collection, inactive_collection_views).await)
+                } @else {
+
+                }
+
+
+            }
             .inactive_configurations.column.xs_gap data-show="$configurationOpen" {
                 @for (inactive_collection, inactive_collection_views) in inactive_collections {
                     (presentation_web_collection_row(inactive_collection, inactive_collection_views).await)

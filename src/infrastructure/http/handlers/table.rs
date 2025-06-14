@@ -19,7 +19,7 @@ pub async fn handler_table_delete_by_id(
     State(services): State<InjectedServices>,
     Path((table, id)): Path<(String, String)>,
 ) -> Html<String> {
-    use_case_table_delete_by_id(table, id).await;
+    services.providers.table.delete_by_id(table, id).await;
     Html(presentation_web_section_main(services).await)
 }
 

@@ -4,5 +4,5 @@ use std::io::Error;
 
 #[async_trait]
 pub trait CommandRepository: Send + Sync {
-    async fn get_by_id(&self, id: &str) -> Result<Option<Command>, Error>;
+    async fn get_by_id(&self, id: u32) -> Result<Option<Command>, Error>;
 }

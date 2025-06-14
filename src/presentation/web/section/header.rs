@@ -4,7 +4,7 @@ use crate::{
     presentation::web::collection::presentation_web_collection,
 };
 
-pub async fn header(services: InjectedServices) -> String {
+pub async fn presentation_web_section_header(services: InjectedServices) -> String {
     "<header>".to_string()
         + presentation_web_section_nav().await.as_str()
         + presentation_web_collection(services).await.0.as_str()

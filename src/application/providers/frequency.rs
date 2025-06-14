@@ -10,7 +10,7 @@ impl FrequencyProvider {
         Self { repository }
     }
 
-    pub async fn get(&self, id: &str) -> Result<Option<Frequency>, Error> {
+    pub async fn get(&self, id: u32) -> Result<Option<Frequency>, Error> {
         self.repository.get(id).await
     }
 

@@ -4,7 +4,7 @@ use crate::{
             collection::CollectionProvider, command::CommandProvider,
             configuration::ConfigurationProvider, frequency::FrequencyProvider,
             karma::KarmaProvider, operation::OperationProvider, query::QueryProvider,
-            record::RecordProvider, table::TableProvider,
+            record::RecordProvider, table::TableProvider, view::ViewProvider,
         },
         use_cases::configuration::get_active_colorscheme::UseCaseConfigurationGetActiveColorscheme,
     },
@@ -12,7 +12,7 @@ use crate::{
         collection::CollectionRepositoryImpl, command::CommandRepositoryImpl,
         configuration::ConfigurationRepositoryImpl, frequency::FrequencyRepositoryImpl,
         karma::KarmaRepositoryImpl, operation::OperationRepositoryImpl, query::QueryRepositoryImpl,
-        record::RecordRepositoryImpl, table::TableRepositoryImpl,
+        record::RecordRepositoryImpl, table::TableRepositoryImpl, view::ViewRepositoryImpl,
     },
 };
 use sqlx::{Pool, Sqlite};
@@ -28,6 +28,7 @@ pub struct Providers {
     pub frequency: FrequencyProvider,
     pub karma: KarmaProvider,
     pub collection: CollectionProvider,
+    pub view: ViewProvider,
 }
 
 pub struct UseCases {
@@ -57,6 +58,7 @@ pub fn dependency_injection(db: Pool<Sqlite>) -> InjectedServices {
     let frequency_repository = Arc::new(FrequencyRepositoryImpl::new(db.clone()));
     let karma_repository = Arc::new(KarmaRepositoryImpl::new(db.clone()));
     let collection_repository = Arc::new(CollectionRepositoryImpl::new(db.clone()));
+    let view_repository = Arc::new(ViewRepositoryImpl::new(db.clone()));
 
     let services: InjectedServices = Arc::new(Injected {
         providers: Providers {
@@ -86,6 +88,9 @@ pub fn dependency_injection(db: Pool<Sqlite>) -> InjectedServices {
             },
             collection: CollectionProvider {
                 repository: collection_repository,
+            },
+            view: ViewProvider {
+                repository: view_repository,
             },
         },
         use_cases: UseCases {

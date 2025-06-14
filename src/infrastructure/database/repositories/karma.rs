@@ -1,12 +1,11 @@
 use crate::domain::{
     entities::{
         karma::Karma, karma_condition::KarmaCondition, karma_consequence::KarmaConsequence,
-        table::Table,
     },
     repositories::karma::KarmaRepository,
 };
 use async_trait::async_trait;
-use sqlx::{Pool, Row, Sqlite};
+use sqlx::{Pool, Sqlite};
 use std::{
     io::{Error, ErrorKind},
     sync::Arc,

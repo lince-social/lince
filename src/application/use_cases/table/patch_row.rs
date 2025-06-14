@@ -1,7 +1,5 @@
-use crate::{
-    infrastructure::cross_cutting::InjectedServices,
-    presentation::web::section::main::presentation_web_section_main,
-};
+use crate::infrastructure::cross_cutting::InjectedServices;
+use std::io::Error;
 
 pub async fn use_case_table_patch_row(
     services: InjectedServices,
@@ -9,12 +7,13 @@ pub async fn use_case_table_patch_row(
     id: String,
     column: String,
     value: String,
-) -> String {
-    let _ = services
-        .providers
-        .record
-        .edit_row(table, id, column, value)
-        .await;
+) -> Result<(), Error> {
+    let value = value.replace("'", "''");
 
-    presentation_web_section_main(services).await
+    let query = format!(
+        "UPDATE {} SET {} = '{}' WHERE id = {}",
+        table, column, value, id
+    );
+
+    services.providers.query.execute(&query).await
 }

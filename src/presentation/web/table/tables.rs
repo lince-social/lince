@@ -1,5 +1,4 @@
 use crate::{
-    application::use_cases::frequency::get_name::use_case_frequency_get_name,
     domain::entities::table::{SortedTables, Table},
     infrastructure::cross_cutting::InjectedServices,
     presentation::web::table::add_row::presentation_web_table_add_row,
@@ -74,22 +73,13 @@ pub async fn presentation_web_tables(tables: Vec<(String, Table)>) -> Markup {
     }
 }
 
-pub async fn presentation_web_tables_karma(tables: Vec<(String, Table)>) -> Markup {
-    let sorted_tables: SortedTables = tables
-        .into_iter()
-        .map(|(table_name, table)| {
-            let mut headers: Vec<String> = table
-                .first()
-                .map(|row| row.keys().cloned().collect())
-                .unwrap_or_default();
-            headers.sort();
-            (table_name, table, headers)
-        })
-        .collect();
-
+pub async fn presentation_web_tables_karma(
+    services: InjectedServices,
+    tables: SortedTables,
+) -> Markup {
     html! {
         main id="main" {
-            @for (table_name, table, headers) in sorted_tables {
+            @for (table_name, table, headers) in tables{
                 div {
                     div class="row middle_y" {p { (table_name) } (presentation_web_table_add_row(table_name.clone()))}
                     table {
@@ -171,41 +161,67 @@ pub async fn presentation_web_tables_karma(tables: Vec<(String, Table)>) -> Mark
         }
     }
 }
-
 pub async fn presentation_web_tables_karma_replacer(
     services: InjectedServices,
-    id: u32,
-    key: String,
+    og_row: String,
 ) -> Markup {
-    let res = services.providers.record.get_head_by_id(id).await;
-    match res {
-        Ok(head) => {
-            let replacement_f = services
-                .providers
-                .frequency
-                .get(head)
-                .execute(services.clone(), head.frequency_id)
-                .await;
-            let replacement_command = services
-                .providers
-                .command
-                .get_by_id(id)
-                .get
-                .get_command_name(services.clone(), head.command_id)
-                .await;
+    let regex_rq = Regex::new(r"rq(\d+)").unwrap();
+    let regex_f = Regex::new(r"f(\d+)").unwrap();
+    let regex_command = Regex::new(r"c(\d+)").unwrap();
+    // let mut row = og_row.clone();
+    let mut row = og_row;
 
-            html! {
-                td {
-                    (replacement_f)
-                }
-                td {
-                    (replacement_command)
-                }
-            }
-        }
-        Err(_) => html! {
-            td { "Error" }
-            td { "Error" }
-        },
+    let mut replacements_rq = Vec::new();
+    for caps in regex_rq.captures_iter(&row) {
+        let id = caps[1].parse::<u32>().unwrap();
+        replacements_rq.push((caps.get(0).unwrap().range(), id));
     }
+    for (range, id) in replacements_rq.into_iter().rev() {
+        let res = services.providers.record.get_by_id(id).await;
+        let replacement_rq = match res {
+            Ok(record) => record.quantity.to_string(),
+            Err(error) => {
+                println!("Error at record with id: {id}: {}", error);
+                "Error".to_string()
+            }
+        };
+        row.replace_range(range, &replacement_rq);
+    }
+
+    let mut replacements_f = Vec::new();
+    for caps in regex_f.captures_iter(&row) {
+        let id = caps[1].parse::<u32>().unwrap();
+        replacements_f.push((caps.get(0).unwrap().range(), id));
+    }
+    for (range, id) in replacements_f.into_iter().rev() {
+        let replacement_f = services.providers.frequency.get(id).await;
+        match replacement_f {
+            Ok(opt) => match opt {
+                None => println!("Empty frequency name with id: {id}"),
+                Some(frequency) => row.replace_range(range, &frequency.name),
+            },
+            Err(e) => println!(
+                "Error when fetching frequency with id: {}. Error: {}",
+                id, e
+            ),
+        }
+    }
+
+    let mut replacements_command = Vec::new();
+    for caps in regex_command.captures_iter(&row) {
+        let id = caps[1].parse::<u32>().unwrap();
+        replacements_command.push((caps.get(0).unwrap().range(), id));
+    }
+    for (range, id) in replacements_command.into_iter().rev() {
+        let replacement_command = services.providers.command.get_by_id(id).await;
+        match replacement_command {
+            Ok(opt) => match opt {
+                None => println!("Empty command name with id: {id}"),
+                Some(command) => row.replace_range(range, &command.name),
+            },
+            Err(e) => println!("Error when fetching command with id: {}. Error: {}", id, e),
+        }
+    }
+
+    html!((row))
 }

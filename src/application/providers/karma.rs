@@ -1,5 +1,7 @@
 use crate::domain::{
-    entities::{karma::Karma, table::Table},
+    entities::{
+        karma::Karma, karma_condition::KarmaCondition, karma_consequence::KarmaConsequence,
+    },
     repositories::karma::KarmaRepository,
 };
 use std::{io::Error, sync::Arc};
@@ -17,15 +19,11 @@ impl KarmaProvider {
         self.repository.get().await
     }
 
-    pub async fn get_condition(&self) -> Result<Vec<(String, Table)>, Error> {
+    pub async fn get_condition(&self) -> Result<Vec<KarmaCondition>, Error> {
         self.repository.get_condition().await
     }
 
-    pub async fn get_consequence(&self) -> Result<Vec<(String, Table)>, Error> {
+    pub async fn get_consequence(&self) -> Result<Vec<KarmaConsequence>, Error> {
         self.repository.get_consequence().await
-    }
-
-    pub async fn get_joined(&self) -> Result<Vec<(String, Table)>, Error> {
-        self.repository.get_joined().await
     }
 }

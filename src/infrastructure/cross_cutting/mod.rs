@@ -46,9 +46,7 @@ pub struct Injected {
 
 pub type InjectedServices = Arc<Injected>;
 
-pub fn dependency_injection(db: Pool<Sqlite>) -> InjectedServices {
-    let db = Arc::new(db);
-
+pub fn dependency_injection(db: Arc<Pool<Sqlite>>) -> InjectedServices {
     let configuration_repository = Arc::new(ConfigurationRepositoryImpl::new(db.clone()));
     let operation_repository = Arc::new(OperationRepositoryImpl::new(db.clone()));
     let query_repository = Arc::new(QueryRepositoryImpl::new(db.clone()));

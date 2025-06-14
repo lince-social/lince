@@ -1,9 +1,10 @@
-use super::lib::connection;
-use std::io::{Error, ErrorKind};
+use sqlx::{Pool, Sqlite};
+use std::{
+    io::{Error, ErrorKind},
+    sync::Arc,
+};
 
-pub async fn schema() -> Result<(), Error> {
-    let pool = connection().await?;
-
+pub async fn schema(db: Arc<Pool<Sqlite>>) -> Result<(), Error> {
     let record = sqlx::query(
         "CREATE TABLE IF NOT EXISTS record(
              id INTEGER PRIMARY KEY,
@@ -12,7 +13,7 @@ pub async fn schema() -> Result<(), Error> {
              body TEXT
          )",
     )
-    .execute(&pool)
+    .execute(&*db)
     .await;
     if record.is_err() {
         println!("{}", record.unwrap_err());
@@ -29,7 +30,7 @@ pub async fn schema() -> Result<(), Error> {
             query TEXT NOT NULL DEFAULT 'SELECT * FROM record'
         )",
     )
-    .execute(&pool)
+    .execute(&*db)
     .await;
     if view.is_err() {
         return Err(Error::new(
@@ -45,7 +46,7 @@ pub async fn schema() -> Result<(), Error> {
             name TEXT NOT NULL
         )",
     )
-    .execute(&pool)
+    .execute(&*db)
     .await;
     if collection.is_err() {
         return Err(Error::new(
@@ -64,7 +65,7 @@ pub async fn schema() -> Result<(), Error> {
             style TEXT
         )",
     )
-    .execute(&pool)
+    .execute(&*db)
     .await;
     if configuration.is_err() {
         return Err(Error::new(
@@ -81,7 +82,7 @@ pub async fn schema() -> Result<(), Error> {
                 view_id INTEGER REFERENCES view(id)
          )",
     )
-    .execute(&pool)
+    .execute(&*db)
     .await;
     if collection_view.is_err() {
         return Err(Error::new(
@@ -98,7 +99,7 @@ pub async fn schema() -> Result<(), Error> {
                 condition TEXT NOT NULL
             )",
     )
-    .execute(&pool)
+    .execute(&*db)
     .await;
     if karma_condition.is_err() {
         return Err(Error::new(
@@ -115,7 +116,7 @@ pub async fn schema() -> Result<(), Error> {
              consequence TEXT NOT NULL
          )",
     )
-    .execute(&pool)
+    .execute(&*db)
     .await;
     if karma_consequence.is_err() {
         return Err(Error::new(
@@ -134,7 +135,7 @@ pub async fn schema() -> Result<(), Error> {
             consequence_id INTEGER NOT NULL
          )",
     )
-    .execute(&pool)
+    .execute(&*db)
     .await;
     if karma.is_err() {
         return Err(Error::new(
@@ -157,7 +158,7 @@ pub async fn schema() -> Result<(), Error> {
             catch_up_sum INTEGER NOT NULL DEFAULT 0
          )",
     )
-    .execute(&pool)
+    .execute(&*db)
     .await;
     if frequency.is_err() {
         return Err(Error::new(
@@ -174,7 +175,7 @@ pub async fn schema() -> Result<(), Error> {
              command TEXT NOT NULL
          )",
     )
-    .execute(&pool)
+    .execute(&*db)
     .await;
     if command.is_err() {
         return Err(Error::new(
@@ -190,7 +191,7 @@ pub async fn schema() -> Result<(), Error> {
 
          )",
     )
-    .execute(&pool)
+    .execute(&*db)
     .await;
     if transfer.is_err() {
         return Err(Error::new(
@@ -205,7 +206,7 @@ pub async fn schema() -> Result<(), Error> {
              quantity REAL NOT NULL DEFAULT 1
          )",
     )
-    .execute(&pool)
+    .execute(&*db)
     .await;
     if sum.is_err() {
         return Err(Error::new(
@@ -223,7 +224,7 @@ pub async fn schema() -> Result<(), Error> {
     new_quantity REAL NOT NULL
             )",
     )
-    .execute(&pool)
+    .execute(&*db)
     .await;
     if history.is_err() {
         return Err(Error::new(
@@ -243,7 +244,7 @@ pub async fn schema() -> Result<(), Error> {
                 quantity INTEGER NOT NULL DEFAULT 0
             )",
     )
-    .execute(&pool)
+    .execute(&*db)
     .await;
     if dna.is_err() {
         println!("{}", dna.unwrap_err());
@@ -260,7 +261,7 @@ pub async fn schema() -> Result<(), Error> {
                 query TEXT NOT NULL
             )",
     )
-    .execute(&pool)
+    .execute(&*db)
     .await;
     if query.is_err() {
         println!("{}", query.unwrap_err());

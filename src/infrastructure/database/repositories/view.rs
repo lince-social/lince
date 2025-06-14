@@ -1,9 +1,6 @@
-use crate::{
-    domain::{
-        entities::table::{Row as RowEntity, Table},
-        repositories::view::ViewRepository,
-    },
-    infrastructure::database::management::lib::connection,
+use crate::domain::{
+    entities::table::{Row as RowEntity, Table},
+    repositories::view::ViewRepository,
 };
 use async_trait::async_trait;
 use futures::future::join_all;
@@ -27,7 +24,6 @@ impl ViewRepositoryImpl {
 #[async_trait]
 impl ViewRepository for ViewRepositoryImpl {
     async fn toggle_by_view_id(&self, collection_id: u32, view_id: u32) -> Result<(), Error> {
-        let pool = connection().await.unwrap();
         let _ = sqlx::query(&format!(
             "UPDATE collection_view
            SET quantity = CASE
@@ -37,7 +33,7 @@ impl ViewRepository for ViewRepositoryImpl {
            WHERE view_id = {} AND collection_id = {}",
             &view_id, &collection_id
         ))
-        .execute(&pool)
+        .execute(&*self.pool)
         .await;
 
         Ok(())
@@ -73,8 +69,6 @@ impl ViewRepository for ViewRepositoryImpl {
     }
 
     async fn execute_queries(&self, queries: Vec<String>) -> Result<Vec<(String, Table)>, Error> {
-        let pool = connection().await.unwrap();
-
         let task_futures = queries.into_iter().map(|query_string| {
             let table_name = query_string
                 .split_whitespace()
@@ -89,9 +83,8 @@ impl ViewRepository for ViewRepositoryImpl {
                 .unwrap_or("unknown_table")
                 .to_string();
 
-            let pool = pool.clone();
             async move {
-                let rows = sqlx::query(&query_string).fetch_all(&pool).await;
+                let rows = sqlx::query(&query_string).fetch_all(&*self.pool).await;
                 if rows.is_err() {
                     return Err(Error::new(ErrorKind::InvalidData, "Error when querying"));
                 }

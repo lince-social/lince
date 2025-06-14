@@ -64,11 +64,14 @@ pub async fn use_case_karma_deliver(services: InjectedServices) -> Result<(), Er
             .captures(&karma.consequence)
             .and_then(|caps| caps[1].parse::<u32>().ok())
             .and_then(|id| {
-                services
-                    .providers
-                    .record
-                    .set_quantity_sync(id, condition)
-                    .err()
+                futures::executor::block_on(async {
+                    services
+                        .providers
+                        .record
+                        .set_quantity(id, condition)
+                        .await
+                        .err()
+                })
             })
         {
             println!("Error when zeroing record: {e}")
@@ -118,11 +121,10 @@ fn replace_record_quantities(
     let replaced = regex.replace_all(&condition, |caps: &regex::Captures| {
         let id = caps[1].parse::<u32>().unwrap();
 
-        services
-            .providers
-            .record
-            .get_quantity_by_id_sync(id)
-            .unwrap_or_else(|_| "0.0".to_string())
+        match futures::executor::block_on(async { services.providers.record.get_by_id(id).await }) {
+            Ok(record) => record.quantity.to_string(),
+            Err(_) => "0.0".to_string(),
+        }
     });
 
     Ok(replaced.into_owned())
@@ -140,8 +142,9 @@ fn replace_frequencies(
 
     let replaced = regex.replace_all(&karma_condition, |caps: &regex::Captures| {
         let id = caps[1].parse::<u32>().unwrap();
-        let (replacement, freq_opt) =
-            futures::executor::block_on(async { use_case_frequency_check(services, id).await });
+        let (replacement, freq_opt) = futures::executor::block_on(async {
+            use_case_frequency_check(services.clone(), id).await
+        });
         if let Some(f) = freq_opt {
             frequencies_to_update.insert(f.id, f);
         }
@@ -161,9 +164,11 @@ fn replace_commands(
 
     let replaced = regex.replace_all(&karma_condition, |caps: &regex::Captures| {
         let id = caps[1].parse::<u32>().unwrap();
-        futures::executor::block_on(async { use_case_karma_execute_command(services, id).await })
-            .map(|v| v.to_string())
-            .unwrap_or_else(|| "0".to_string())
+        futures::executor::block_on(async {
+            use_case_karma_execute_command(services.clone(), id).await
+        })
+        .map(|v| v.to_string())
+        .unwrap_or_else(|| "0".to_string())
     });
     Ok(replaced.into_owned())
 }

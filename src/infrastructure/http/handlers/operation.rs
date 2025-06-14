@@ -1,9 +1,6 @@
 use crate::{
-    application::{
-        providers::query::execute::provider_query_execute,
-        use_cases::operation::{
-            crud::use_case_operation_create_persist, execute::use_case_operation_execute,
-        },
+    application::use_cases::operation::{
+        crud::use_case_operation_create_persist, execute::use_case_operation_execute,
     },
     domain::entities::operation::{Operation, Query},
     infrastructure::cross_cutting::InjectedServices,
@@ -42,6 +39,6 @@ pub async fn handler_operation_execute_query(
     State(services): State<InjectedServices>,
     Form(data): Form<Query>,
 ) -> Html<String> {
-    let _ = provider_query_execute(data.query).await;
+    services.providers.query.execute(&data.query).await;
     Html(presentation_web_section_main(services).await)
 }

@@ -19,16 +19,17 @@ use crate::{
     },
 };
 use axum::{Router, routing::get};
-use std::{env, io::Error, time::Duration};
+use std::{env, io::Error, sync::Arc, time::Duration};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    schema().await.map_err(|e| {
+    let db = connection().await.map_err(|e| {
         log(LogEntry::Error(e.kind(), e.to_string()));
         e
     })?;
+    let db = Arc::new(db);
 
-    let db = connection().await.map_err(|e| {
+    schema(db.clone()).await.map_err(|e| {
         log(LogEntry::Error(e.kind(), e.to_string()));
         e
     })?;
@@ -36,7 +37,7 @@ async fn main() -> Result<(), Error> {
     let services = dependency_injection(db.clone());
 
     match env::args().nth(1).as_deref() {
-        Some("migrate") => execute_migration().await.map_err(|e| {
+        Some("migrate") => execute_migration(db.clone()).await.map_err(|e| {
             log(LogEntry::Error(e.kind(), e.to_string()));
             e
         }),

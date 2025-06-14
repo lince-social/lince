@@ -1,9 +1,7 @@
-use crate::infrastructure::database::management::lib::connection;
-use std::io::Error;
+use sqlx::{Pool, Sqlite};
+use std::{io::Error, sync::Arc};
 
-pub async fn execute_migration() -> Result<(), Error> {
-    let db = connection().await?;
-
+pub async fn execute_migration(db: Arc<Pool<Sqlite>>) -> Result<(), Error> {
     sqlx::query(
         "
         PRAGMA foreign_keys = OFF;
@@ -13,7 +11,7 @@ pub async fn execute_migration() -> Result<(), Error> {
         PRAGMA foreign_keys = ON;
         ",
     )
-    .execute(&db)
+    .execute(&*db)
     .await
     .map_err(|e| Error::other(format!("Error in executing migration. Error: {}", e)))?;
 

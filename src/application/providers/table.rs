@@ -6,9 +6,6 @@ pub struct TableProvider {
 }
 
 impl TableProvider {
-    pub fn new(repository: std::sync::Arc<dyn TableRepository>) -> Self {
-        Self { repository }
-    }
     pub async fn delete_by_id(&self, table: String, id: String) -> Result<(), Error> {
         self.repository.delete_by_id(table, id).await
     }

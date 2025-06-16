@@ -129,7 +129,7 @@ pub async fn parse_operation_and_execute(
 pub async fn use_case_operation_execute(services: InjectedServices, operation: String) -> String {
     let only_digits = Regex::new(r"^\d+$").unwrap();
     if only_digits.is_match(&operation) {
-        services
+        let _ = services
             .providers
             .record
             .set_quantity(operation.parse::<u32>().unwrap(), 0.0)

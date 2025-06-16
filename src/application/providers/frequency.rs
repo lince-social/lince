@@ -6,10 +6,6 @@ pub struct FrequencyProvider {
 }
 
 impl FrequencyProvider {
-    pub fn new(repository: std::sync::Arc<dyn FrequencyRepository>) -> Self {
-        Self { repository }
-    }
-
     pub async fn get(&self, id: u32) -> Result<Option<Frequency>, Error> {
         self.repository.get(id).await
     }

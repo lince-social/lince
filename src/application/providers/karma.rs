@@ -11,10 +11,6 @@ pub struct KarmaProvider {
 }
 
 impl KarmaProvider {
-    pub fn new(repository: Arc<dyn KarmaRepository>) -> Self {
-        Self { repository }
-    }
-
     pub async fn get(&self) -> Result<Vec<Karma>, Error> {
         self.repository.get().await
     }

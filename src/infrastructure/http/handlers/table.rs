@@ -17,7 +17,7 @@ pub async fn handler_table_delete_by_id(
     State(services): State<InjectedServices>,
     Path((table, id)): Path<(String, String)>,
 ) -> Html<String> {
-    services.providers.table.delete_by_id(table, id).await;
+    let _ = services.providers.table.delete_by_id(table, id).await;
     Html(presentation_web_section_main(services).await)
 }
 
@@ -42,6 +42,6 @@ pub async fn handler_table_patch_row(
     Path((table, id, column)): Path<(String, String, String)>,
     Form(ValueForm { value }): Form<ValueForm>,
 ) -> Html<String> {
-    use_case_table_patch_row(services.clone(), table, id, column, value).await;
+    let _ = use_case_table_patch_row(services.clone(), table, id, column, value).await;
     Html(presentation_web_section_main(services).await)
 }

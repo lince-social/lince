@@ -6,18 +6,21 @@ use crate::{
 use maud::{Markup, html};
 
 pub async fn presentation_web_collection(services: InjectedServices) -> Markup {
-    let mut collection_rows = services
+    let (active_collection_name, active_collection_views) = services
         .providers
         .collection
-        .get()
+        .get_active()
         .await
-        .map_err(|e| return html!((format!("Failed to get collections. Error: {}", e))))
+        .map_err(|e| return html!((format!("Failed to get active collection. Error: {}", e))))
         .unwrap();
 
-    let Some((active_collection_name, active_collection_views)) = collection_rows.drain(..).next()
-    else {
-        return html!(p {"No active views"});
-    };
+    let inactive_collections = services
+        .providers
+        .collection
+        .get_inactive()
+        .await
+        .map_err(|e| return html!((format!("Failed to get active collection. Error: {}", e))))
+        .unwrap();
 
     html!(
         .configurations.column.xs_gap
@@ -26,7 +29,7 @@ pub async fn presentation_web_collection(services: InjectedServices) -> Markup {
         data-on-mouseleave="$configurationOpen = false" {
             (presentation_web_collection_row(active_collection_name, active_collection_views).await)
             .inactive_configurations.column.xs_gap data-show="$configurationOpen" {
-                @for (inactive_collection, inactive_collection_views) in collection_rows {
+                @for (inactive_collection, inactive_collection_views) in inactive_collections {
                     (presentation_web_collection_row(inactive_collection, inactive_collection_views).await)
                 }
             }

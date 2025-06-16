@@ -81,6 +81,7 @@ pub async fn use_case_karma_deliver(services: InjectedServices) -> Result<(), Er
             .captures(&karma.consequence)
             .and_then(|caps| caps[1].parse::<u32>().ok())
             .and_then(|id| {
+                println!("Chegou no comando com id: {}", id);
                 futures::executor::block_on(async {
                     use_case_karma_execute_command(services.clone(), id).await
                 })

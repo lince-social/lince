@@ -6,9 +6,6 @@ pub struct RecordProvider {
 }
 
 impl RecordProvider {
-    pub fn new(repository: std::sync::Arc<dyn RecordRepository>) -> Self {
-        Self { repository }
-    }
     pub async fn set_quantity(&self, id: u32, quantity: f64) -> Result<(), Error> {
         self.repository.set_quantity(id, quantity).await
     }

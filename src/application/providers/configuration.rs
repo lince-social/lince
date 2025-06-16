@@ -8,10 +8,6 @@ pub struct ConfigurationProvider {
 }
 
 impl ConfigurationProvider {
-    pub fn new(repository: std::sync::Arc<dyn ConfigurationRepository>) -> Self {
-        Self { repository }
-    }
-    
     pub async fn get_active(&self) -> Result<Configuration, Error> {
         self.repository.get_active().await
     }

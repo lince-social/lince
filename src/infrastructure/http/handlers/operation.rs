@@ -39,6 +39,6 @@ pub async fn handler_operation_execute_query(
     State(services): State<InjectedServices>,
     Form(data): Form<Query>,
 ) -> Html<String> {
-    services.providers.query.execute(&data.query).await;
+    let _ = services.providers.query.execute(&data.query).await;
     Html(presentation_web_section_main(services).await)
 }

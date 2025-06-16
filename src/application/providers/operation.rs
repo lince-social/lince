@@ -6,10 +6,6 @@ pub struct OperationProvider {
 }
 
 impl OperationProvider {
-    pub fn new(repository: std::sync::Arc<dyn OperationRepository>) -> Self {
-        Self { repository }
-    }
-
     pub async fn create(&self, table: String, data: HashMap<String, String>) -> Result<(), Error> {
         let mut columns = Vec::new();
         let mut values = Vec::new();

@@ -179,7 +179,7 @@ pub async fn presentation_web_tables_karma_replacer(
     for (range, id) in replacements_rq.into_iter().rev() {
         let res = services.providers.record.get_by_id(id).await;
         let replacement_rq = match res {
-            Ok(record) => record.quantity.to_string(),
+            Ok(record) => record.head.to_string(),
             Err(error) => {
                 println!("Error at record with id: {id}: {}", error);
                 "Error".to_string()

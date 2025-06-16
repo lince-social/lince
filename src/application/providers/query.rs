@@ -6,10 +6,6 @@ pub struct QueryProvider {
 }
 
 impl QueryProvider {
-    pub fn new(repository: std::sync::Arc<dyn QueryRepository>) -> Self {
-        Self { repository }
-    }
-
     pub async fn get_by_id(&self, id: u32) -> Result<Query, Error> {
         self.repository.get_by_id(id).await
     }

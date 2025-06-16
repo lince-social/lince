@@ -23,7 +23,7 @@ pub async fn use_case_frequency_check(
             quantity: 0.0,
             ..frequency.clone()
         };
-        services.providers.frequency.update(frequency).await;
+        let _ = services.providers.frequency.update(frequency).await;
         return (0, None);
     }
 
@@ -58,7 +58,7 @@ pub async fn use_case_frequency_check(
         ..frequency.clone()
     };
 
-    services
+    let _ = services
         .providers
         .frequency
         .update(new_frequency.clone())

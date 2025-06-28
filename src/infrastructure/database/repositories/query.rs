@@ -39,7 +39,7 @@ impl QueryRepository for QueryRepositoryImpl {
     }
 
     async fn execute(&self, sql: &str) -> Result<(), Error> {
-        sqlx::query(&sql).execute(&*self.pool).await.map_err(|e| {
+        sqlx::query(sql).execute(&*self.pool).await.map_err(|e| {
             Error::new(
                 ErrorKind::InvalidInput,
                 format!("Failed to run query: {}. Error: {}", sql, e),

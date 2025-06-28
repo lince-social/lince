@@ -146,8 +146,17 @@ pub async fn presentation_web_style(services: InjectedServices) -> String {
             border: 1px solid var(--button-add-row-border-color-hover);
         }
 
-        s_padding{
+        .s_padding{
             padding: 0.25rem;
+        }
+
+        .s_margin{
+            margin: 0.25rem;
+        }
+
+        .stripped {
+            padding: 0rem;
+            margin: 0rem;
         }
 
     </style>"

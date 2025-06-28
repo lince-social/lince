@@ -11,7 +11,7 @@ pub async fn presentation_web_collection(services: InjectedServices) -> Markup {
         .collection
         .get_active()
         .await
-        .map_err(|e| return html!((format!("Failed to get active collection. Error: {}", e))))
+        .map_err(|e| html!((format!("Failed to get active collection. Error: {}", e))))
         .unwrap();
 
     let inactive_collections = services
@@ -19,7 +19,7 @@ pub async fn presentation_web_collection(services: InjectedServices) -> Markup {
         .collection
         .get_inactive()
         .await
-        .map_err(|e| return html!((format!("Failed to get active collection. Error: {}", e))))
+        .map_err(|e| html!((format!("Failed to get active collection. Error: {}", e))))
         .unwrap();
 
     html!(

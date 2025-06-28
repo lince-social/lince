@@ -1,10 +1,10 @@
 [package]
-name = "dev"
+name = "lince"
 version = "0.5.0"
 edition = "2024"
 
 [dependencies]
-async-trait = "0.1.88"
+async-trait = "*"
 axum = { version = "*", features = ["macros"] }
 chrono = { version = "*" }
 dirs = { version = "*" }
@@ -19,3 +19,27 @@ tokio = { version = "*", features = ["full"] }
 tower = { version = "*" }
 tower-http = { version = "*" }
 tracing-subscriber = { version = "*" }
+
+[profile]
+
+[profile.wasm-dev]
+inherits = "dev"
+opt-level = 1
+
+[profile.server-dev]
+inherits = "dev"
+
+[profile.android-dev]
+inherits = "dev"
+
+# [profile]
+
+# [profile.wasm-dev]
+# inherits = "dev"
+# opt-level = 1
+
+# [profile.server-dev]
+# inherits = "dev"
+
+# [profile.android-dev]
+# inherits = "dev"

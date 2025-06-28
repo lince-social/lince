@@ -1,8 +1,8 @@
 use crate::domain::repositories::operation::OperationRepository;
-use std::{collections::HashMap, io::Error};
+use std::{collections::HashMap, io::Error, sync::Arc};
 
 pub struct OperationProvider {
-    pub repository: std::sync::Arc<dyn OperationRepository>,
+    pub repository: Arc<dyn OperationRepository>,
 }
 
 impl OperationProvider {

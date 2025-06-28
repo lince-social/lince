@@ -20,7 +20,7 @@ impl UseCaseConfigurationGetActiveColorscheme {
             .get_active()
             .await
             .ok()
-            .and_then(|c| Some(c.style))
+            .map(|c| c.style)
         {
             Some(s) => s,
             None => return presentation_colorscheme_general_default(),

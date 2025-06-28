@@ -1,5 +1,6 @@
 use super::crud::use_case_operation_create_component;
 use crate::{
+    application::use_cases::karma::command::use_case_karma_execute_command,
     infrastructure::{
         cross_cutting::InjectedServices,
         utils::log::{LogEntry, log},
@@ -13,6 +14,7 @@ use crate::{
     },
 };
 use regex::Regex;
+use std::io::Error;
 
 fn parse_table(operation: String) -> String {
     let re = Regex::new(r"\d+").unwrap();
@@ -118,6 +120,28 @@ pub async fn parse_operation_and_execute(
 
                     return Some(presentation_web_section_body(services).await);
                 }
+                "s" | "command" | "shell" | "shell command" => {
+                    if let Some(id) = parse_id(&operation) {
+                        if (use_case_karma_execute_command(
+                            services.clone(),
+                            id.parse::<u32>().unwrap_or(0),
+                        )
+                        .await)
+                            .is_none()
+                        // if let None = use_case_karma_execute_command(
+                        //     services.clone(),
+                        //     id.parse::<u32>().unwrap_or(0),
+                        // )
+                        // .await
+                        {
+                            let e = Error::other(format!("Failed to run command with id: {}", id));
+                            log(LogEntry::Error(e.kind(), e.to_string()))
+                        }
+                    }
+
+                    return Some(presentation_web_section_body(services).await);
+                }
+
                 _ => continue,
             }
         }

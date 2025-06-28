@@ -1,5 +1,8 @@
-use crate::presentation::web::section::body::presentation_web_section_body_home_modal;
-use maud::html;
+use crate::{
+    application::use_cases::operation::list::{operation_actions, operation_tables},
+    presentation::web::section::body::presentation_web_section_body_home_modal,
+};
+use maud::{Markup, html};
 
 pub fn presentation_web_operation_get_operation_input() -> String {
     html! {
@@ -8,7 +11,7 @@ pub fn presentation_web_operation_get_operation_input() -> String {
             hx-trigger="keyup[key === 'Escape'] from:body"
             hx-get="/section/body"
         {
-            form
+            form.modal
                 id="operation_input"
                 hx-post="/operation"
                 hx-target="#body"
@@ -16,13 +19,14 @@ pub fn presentation_web_operation_get_operation_input() -> String {
                 style="display: none;"
             {
                 input
-                    class="modal filled"
+                    class="filled"
                     id="operation_input_field"
                     name="operation"
                     autofocus;
                 button
                     type="submit"
                     style="display: none;" {}
+                (presentation_web_get_operation_options())
             }
         }
         script {
@@ -45,9 +49,35 @@ pub fn presentation_web_operation_get_operation_input() -> String {
                 });
             "#))
         }
+
     }.0
 }
 
 pub async fn presentation_web_operation_get_nested_body(element: String) -> String {
     presentation_web_section_body_home_modal(element).await
+}
+
+pub fn presentation_web_get_operation_options() -> Markup {
+    let operation_tables = operation_tables();
+    let operation_actions = operation_actions();
+    html!(
+        .filled.row.s_margin {
+            .column {
+                @for (table_number, table_name) in operation_tables {
+                    .row.xs_gap {
+                        div {(table_number)}
+                        div {(table_name)}
+                    }
+                }
+           }
+           .column {
+                @for (action_number, action_name) in operation_actions {
+                    .row.xs_gap {
+                        div {(action_number)}
+                        div {(action_name)}
+                    }
+                }
+           }
+        }
+    )
 }

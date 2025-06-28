@@ -1,27 +1,32 @@
-pub fn operation_tables() -> Vec<Vec<&'static str>> {
+pub fn operation_tables() -> Vec<(&'static str, &'static str)> {
     vec![
-        vec!["0", "Configuration"],
-        vec!["1", "collection"],
-        vec!["2", "View"],
-        vec!["3", "collection_View"],
-        vec!["4", "Record"],
-        vec!["5", "Karma_Condition"],
-        vec!["6", "Karma_Consequence"],
-        vec!["7", "Karma"],
-        vec!["8", "Command"],
-        vec!["9", "Frequency"],
-        vec!["10", "Sum"],
-        vec!["11", "History"],
-        vec!["12", "DNA"],
-        vec!["13", "Transfer"],
+        ("0", "Configuration"),
+        ("1", "Collection"),
+        ("2", "View"),
+        ("3", "collection_View"),
+        ("4", "Record"),
+        ("5", "Karma_Condition"),
+        ("6", "Karma_Consequence"),
+        ("7", "Karma"),
+        ("8", "Command"),
+        ("9", "Frequency"),
+        ("10", "Sum"),
+        ("11", "History"),
+        ("12", "DNA"),
+        ("13", "Transfer"),
     ]
 }
 
-pub fn operation_actions() -> Vec<Vec<&'static str>> {
+pub fn operation_actions() -> Vec<(&'static str, &'static str)> {
     vec![
-        vec!["c", "Create"],
-        vec!["r", "Read"],
-        vec!["u", "Update"],
-        vec!["d", "Delete"],
+        ("c", "Create"),
+        ("q", "SQL Query"),
+        ("k", "Karma"),
+        ("s", "Shell Command"),
+        ("a", "Activate Configuration"),
+        // ("t", "Transfer"),
+        // ("r", "Read"),
+        // ("u", "Update"),
+        // ("d", "Delete"),
     ]
 }

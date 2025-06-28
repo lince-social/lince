@@ -353,27 +353,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dev"
-version = "0.5.0"
-dependencies = [
- "async-trait",
- "axum",
- "chrono",
- "dirs",
- "futures",
- "maud",
- "regex",
- "rhai",
- "serde",
- "serde_json",
- "sqlx",
- "tokio",
- "tower",
- "tower-http",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -993,6 +972,27 @@ dependencies = [
  "cc",
  "pkg-config",
  "vcpkg",
+]
+
+[[package]]
+name = "lince"
+version = "0.5.0"
+dependencies = [
+ "async-trait",
+ "axum",
+ "chrono",
+ "dirs",
+ "futures",
+ "maud",
+ "regex",
+ "rhai",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tracing-subscriber",
 ]
 
 [[package]]

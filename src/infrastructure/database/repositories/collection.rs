@@ -25,7 +25,7 @@ impl CollectionRepository for CollectionRepositoryImpl {
         ))
         .execute(&*self.pool)
         .await
-        .map_err(|e| Error::other(e))?;
+        .map_err(Error::other)?;
         Ok(())
     }
 

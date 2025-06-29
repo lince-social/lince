@@ -26,7 +26,6 @@ pub async fn use_case_karma_deliver(services: InjectedServices) -> Result<(), Er
     let mut frequencies_to_update: HashMap<u32, Frequency> = HashMap::new();
 
     for karma in vec_karma {
-        dbg!(&karma.id);
         let condition = match replace_record_quantities(
             services.clone(),
             &regex_record_quantity,
@@ -76,9 +75,7 @@ pub async fn use_case_karma_deliver(services: InjectedServices) -> Result<(), Er
         if !((operator == "=" && condition != 0.0) || operator == "=*") {
             continue;
         }
-        dbg!(&condition);
 
-        // Handle `record.set_quantity(...)`
         if let Some(caps) = regex_record_quantity.captures(&karma.consequence) {
             let id_str = &caps[1];
             match id_str.parse::<u32>() {
@@ -102,7 +99,6 @@ pub async fn use_case_karma_deliver(services: InjectedServices) -> Result<(), Er
             }
         }
 
-        // Handle `use_case_karma_execute_command(...)`
         if let Some(caps) = regex_command.captures(&karma.consequence) {
             let id_str = &caps[1];
             match id_str.parse::<u32>() {
@@ -128,7 +124,6 @@ pub async fn use_case_karma_deliver(services: InjectedServices) -> Result<(), Er
             }
         }
 
-        // Handle `use_case_query_execute(...)`
         if let Some(caps) = regex_query.captures(&karma.consequence) {
             let id_str = &caps[1];
             match id_str.parse::<u32>() {
@@ -151,158 +146,6 @@ pub async fn use_case_karma_deliver(services: InjectedServices) -> Result<(), Er
                 )),
             }
         }
-        // if let Some(caps) = regex_record_quantity.captures(&karma.consequence) {
-        //     let id_str = &caps[1];
-        //     match id_str.parse::<u32>() {
-        //         Ok(id) => {
-        //             if let Err(e) = futures::executor::block_on(async {
-        //                 services.providers.record.set_quantity(id, condition).await
-        //             }) {
-        //                 println!("Error when zeroing record on karma id {}: {e}", karma.id);
-        //             }
-        //         }
-        //         Err(e) => println!(
-        //             "Failed to parse record id '{}' on karma id {}: {e}",
-        //             id_str, karma.id
-        //         ),
-        //     }
-        // }
-
-        // if let Some(caps) = regex_command.captures(&karma.consequence) {
-        //     let id_str = &caps[1];
-        //     match id_str.parse::<u32>() {
-        //         Ok(id) => {
-        //             println!("Chegou no comando com id: {}", id);
-        //             let result = futures::executor::block_on(async {
-        //                 use_case_karma_execute_command(services.clone(), id).await
-        //             });
-        //             if result.is_none() {
-        //                 log(LogEntry::Error(
-        //                     ErrorKind::Other,
-        //                     format!("Command returned None for karma id {}", karma.id),
-        //                 ));
-        //             }
-        //         }
-        //         Err(e) => log(LogEntry::Error(
-        //             ErrorKind::Other,
-        //             format!(
-        //                 "Failed to parse command id '{}' on karma id {}: {e}",
-        //                 id_str, karma.id
-        //             ),
-        //         )),
-        //     }
-        // }
-
-        // if let Some(caps) = regex_query.captures(&karma.consequence) {
-        //     let id_str = &caps[1];
-        //     match id_str.parse::<u32>() {
-        //         Ok(id) => {
-        //             if let Err(e) = futures::executor::block_on(async {
-        //                 use_case_query_execute(services.clone(), id).await
-        //             }) {
-        //                 println!("Error when executing query on karma id {}: {e}", karma.id);
-        //             }
-        //         }
-        //         Err(e) => println!(
-        //             "Failed to parse query id '{}' on karma id {}: {e}",
-        //             id_str, karma.id
-        //         ),
-        //     }
-        // }
-        // if let Some(caps) = regex_record_quantity.captures(&karma.consequence) {
-        //     let id_str = &caps[1];
-        //     match id_str.parse::<u32>() {
-        //         Ok(id) => {
-        //             if let Err(e) = futures::executor::block_on(async {
-        //                 services.providers.record.set_quantity(id, condition).await
-        //             }) {
-        //                 println!("Error when zeroing record on karma id {}: {e}", karma.id);
-        //             }
-        //         }
-        //         Err(e) => println!(
-        //             "Failed to parse record id '{}' on karma id {}: {e}",
-        //             id_str, karma.id
-        //         ),
-        //     }
-        // }
-
-        // if let Some(caps) = regex_command.captures(&karma.consequence) {
-        //     let id_str = &caps[1];
-        //     match id_str.parse::<u32>() {
-        //         Ok(id) => {
-        //             println!("Chegou no comando com id: {}", id);
-        //             if let Err(e) = futures::executor::block_on(async {
-        //                 use_case_karma_execute_command(services.clone(), id).await
-        //             }) {
-        //                 println!("Error when executing command on karma id {}: {e}", karma.id);
-        //             }
-        //         }
-        //         Err(e) => println!(
-        //             "Failed to parse command id '{}' on karma id {}: {e}",
-        //             id_str, karma.id
-        //         ),
-        //     }
-        // }
-
-        // if let Some(caps) = regex_query.captures(&karma.consequence) {
-        //     let id_str = &caps[1];
-        //     match id_str.parse::<u32>() {
-        //         Ok(id) => {
-        //             if let Err(e) = futures::executor::block_on(async {
-        //                 use_case_query_execute(services.clone(), id).await
-        //             }) {
-        //                 println!("Error when executing query on karma id {}: {e}", karma.id);
-        //             }
-        //         }
-        //         Err(e) => println!(
-        //             "Failed to parse query id '{}' on karma id {}: {e}",
-        //             id_str, karma.id
-        //         ),
-        //     }
-        // }
-
-        // if let Some(e) = regex_record_quantity
-        //     .captures(&karma.consequence)
-        //     .and_then(|caps| caps[1].parse::<u32>().ok())
-        //     .and_then(|id| {
-        //         futures::executor::block_on(async {
-        //             services
-        //                 .providers
-        //                 .record
-        //                 .set_quantity(id, condition)
-        //                 .await
-        //                 .err()
-        //         })
-        //     })
-        // {
-        //     println!("Error when zeroing record: {e}")
-        // }
-
-        // if let Some(e) = regex_command
-        //     .captures(&karma.consequence)
-        //     .and_then(|caps| caps[1].parse::<u32>().ok())
-        //     .and_then(|id| {
-        //         println!("Chegou no comando com id: {}", id);
-        //         futures::executor::block_on(async {
-        //             use_case_karma_execute_command(services.clone(), id).await
-        //         })
-        //     })
-        // {
-        //     println!("Error when executing command: {e}")
-        // }
-
-        // if let Some(e) = regex_query
-        //     .captures(&karma.consequence)
-        //     .and_then(|caps| caps[1].parse::<u32>().ok())
-        //     .and_then(|id| {
-        //         futures::executor::block_on(async {
-        //             use_case_query_execute(services.clone(), id).await
-        //         })
-        //         .err()
-        //     })
-        // {
-        //     println!("Error when executing query: {e}")
-        // }
     }
 
     futures::executor::block_on(async {
@@ -363,7 +206,6 @@ fn replace_commands(
     if !regex.is_match(&karma_condition) {
         return Ok(karma_condition);
     }
-    dbg!(&karma_condition);
 
     let replaced = regex.replace_all(&karma_condition, |caps: &regex::Captures| {
         let id = caps[1].parse::<u32>().unwrap();

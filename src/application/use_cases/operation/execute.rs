@@ -5,12 +5,12 @@ use crate::{
         cross_cutting::InjectedServices,
         utils::log::{LogEntry, log},
     },
-    presentation::web::{
+    presentation::html::{
         operation::{
-            get::presentation_web_operation_get_nested_body,
-            query::presentation_web_operation_query,
+            get::presentation_html_operation_get_nested_body,
+            query::presentation_html_operation_query,
         },
-        section::body::presentation_web_section_body,
+        section::body::presentation_html_section_body,
     },
 };
 use regex::Regex;
@@ -93,15 +93,15 @@ pub async fn parse_operation_and_execute(
             match matched.as_str() {
                 "q" | "query" => {
                     return Some(
-                        presentation_web_operation_get_nested_body(
-                            presentation_web_operation_query().await,
+                        presentation_html_operation_get_nested_body(
+                            presentation_html_operation_query().await,
                         )
                         .await,
                     );
                 }
                 "c" | "create" => {
                     return Some(
-                        presentation_web_operation_get_nested_body(
+                        presentation_html_operation_get_nested_body(
                             use_case_operation_create_component(
                                 services,
                                 parse_table(operation.clone()),
@@ -118,7 +118,7 @@ pub async fn parse_operation_and_execute(
                         }
                     }
 
-                    return Some(presentation_web_section_body(services).await);
+                    return Some(presentation_html_section_body(services).await);
                 }
                 "s" | "command" | "shell" | "shell command" => {
                     if let Some(id) = parse_id(&operation) {
@@ -139,7 +139,7 @@ pub async fn parse_operation_and_execute(
                         }
                     }
 
-                    return Some(presentation_web_section_body(services).await);
+                    return Some(presentation_html_section_body(services).await);
                 }
 
                 _ => continue,
@@ -158,11 +158,11 @@ pub async fn use_case_operation_execute(services: InjectedServices, operation: S
             .record
             .set_quantity(operation.parse::<u32>().unwrap(), 0.0)
             .await;
-        return presentation_web_section_body(services).await;
+        return presentation_html_section_body(services).await;
     }
 
     match parse_operation_and_execute(services.clone(), operation).await {
-        None => presentation_web_section_body(services).await,
+        None => presentation_html_section_body(services).await,
         Some(element) => element,
     }
 }

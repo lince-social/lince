@@ -1,1 +1,2 @@
-pub mod web;
+pub mod bevy;
+pub mod html;

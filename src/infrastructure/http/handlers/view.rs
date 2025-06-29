@@ -1,6 +1,6 @@
 use crate::{
     infrastructure::cross_cutting::InjectedServices,
-    presentation::web::section::body::presentation_web_section_body,
+    presentation::html::section::body::presentation_html_section_body,
 };
 use axum::extract::{Path, State};
 
@@ -14,7 +14,7 @@ pub async fn handler_view_toggle_view_id(
         .toggle_by_view_id(collection_id, view_id)
         .await;
 
-    presentation_web_section_body(services).await
+    presentation_html_section_body(services).await
 }
 
 pub async fn handler_view_toggle_collection_id(
@@ -22,5 +22,5 @@ pub async fn handler_view_toggle_collection_id(
     Path(id): Path<u32>,
 ) -> String {
     let _ = services.providers.view.toggle_by_collection_id(id).await;
-    presentation_web_section_body(services).await
+    presentation_html_section_body(services).await
 }

@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 async-trait = "*"
 axum = { version = "*", features = ["macros"] }
+bevy = "0.16.1"
 chrono = { version = "*" }
 dirs = { version = "*" }
 futures = { version = "*" }

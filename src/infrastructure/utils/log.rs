@@ -7,6 +7,7 @@ use std::{
 
 pub enum LogEntry {
     Error(ErrorKind, String),
+    Message(String),
 }
 
 pub fn log(entry: LogEntry) {
@@ -36,6 +37,7 @@ pub fn log(entry: LogEntry) {
             "{} | [ERROR]: Kind: {:?} | Message: {}",
             time, kind, message
         ),
+        LogEntry::Message(message) => format!("{} | [MESSAGE]: {:?}", time, message),
     };
 
     match OpenOptions::new().create(true).append(true).open(&log_file) {

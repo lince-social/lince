@@ -26,14 +26,18 @@ pub async fn use_case_karma_deliver(services: InjectedServices) -> Result<(), Er
     let mut frequencies_to_update: HashMap<u32, Frequency> = HashMap::new();
 
     for karma in vec_karma {
+        dbg!(&karma.id);
         let condition = match replace_record_quantities(
             services.clone(),
             &regex_record_quantity,
             karma.clone().condition,
         ) {
             Ok(c) => c,
-            Err(_) => {
-                eprintln!("record quantity error on karma id {}", karma.id);
+            Err(e) => {
+                log(LogEntry::Error(
+                    e.kind(),
+                    format!("record quantity error on karma id {}", karma.id),
+                ));
                 continue;
             }
         };
@@ -46,7 +50,10 @@ pub async fn use_case_karma_deliver(services: InjectedServices) -> Result<(), Er
         ) {
             Ok(c) => c,
             Err(e) => {
-                eprintln!("frequency error on karma id {}: {}", karma.id, e);
+                log(LogEntry::Error(
+                    e.kind(),
+                    format!("frequency error on karma id {}: {}", karma.id, e),
+                ));
                 continue;
             }
         };
@@ -54,7 +61,10 @@ pub async fn use_case_karma_deliver(services: InjectedServices) -> Result<(), Er
         let condition = match replace_commands(services.clone(), &regex_command, condition) {
             Ok(c) => c,
             Err(e) => {
-                eprintln!("command error on karma id {}: {}", karma.id, e);
+                log(LogEntry::Error(
+                    e.kind(),
+                    format!("command error on karma id {}: {}", karma.id, e),
+                ));
                 continue;
             }
         };
@@ -66,6 +76,7 @@ pub async fn use_case_karma_deliver(services: InjectedServices) -> Result<(), Er
         if !((operator == "=" && condition != 0.0) || operator == "=*") {
             continue;
         }
+        dbg!(&condition);
 
         // Handle `record.set_quantity(...)`
         if let Some(caps) = regex_record_quantity.captures(&karma.consequence) {
@@ -352,6 +363,7 @@ fn replace_commands(
     if !regex.is_match(&karma_condition) {
         return Ok(karma_condition);
     }
+    dbg!(&karma_condition);
 
     let replaced = regex.replace_all(&karma_condition, |caps: &regex::Captures| {
         let id = caps[1].parse::<u32>().unwrap();

@@ -7,12 +7,15 @@ pub async fn use_case_frequency_check(
     services: InjectedServices,
     id: u32,
 ) -> (u32, Option<Frequency>) {
+    dbg!(&id);
     let frequency = match services.providers.frequency.get(id).await {
         Ok(Some(f)) => f,
         _ => return (0, None),
     };
 
     let now = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    dbg!(&now);
+    dbg!(&frequency);
 
     if frequency.next_date > now {
         return (0, None);
@@ -58,10 +61,5 @@ pub async fn use_case_frequency_check(
         ..frequency.clone()
     };
 
-    let _ = services
-        .providers
-        .frequency
-        .update(new_frequency.clone())
-        .await;
     (frequency.quantity as u32, Some(new_frequency))
 }

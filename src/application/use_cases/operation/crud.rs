@@ -1,7 +1,7 @@
 use crate::{
     infrastructure::cross_cutting::InjectedServices,
-    presentation::web::{
-        operation::create::presentation_web_create, section::main::presentation_web_section_main,
+    presentation::html::{
+        operation::create::presentation_html_create, section::main::presentation_html_section_main,
     },
 };
 use std::collections::HashMap;
@@ -17,7 +17,7 @@ pub async fn use_case_operation_create_component(
         .await
         .unwrap_or_default();
 
-    presentation_web_create(table, column_names).await.0
+    presentation_html_create(table, column_names).await.0
 }
 
 pub async fn use_case_operation_create_persist(
@@ -28,5 +28,5 @@ pub async fn use_case_operation_create_persist(
     if let Err(e) = services.providers.operation.create(table, data).await {
         println!("Error creating operation: {}", e);
     }
-    presentation_web_section_main(services).await
+    presentation_html_section_main(services).await
 }

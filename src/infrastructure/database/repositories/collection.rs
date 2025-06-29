@@ -1,7 +1,7 @@
-use crate::application::schema::view::queried_view::QueriedViewWithCollectionId;
 use crate::{
-    application::schema::{collection::row::CollectionRow, view::queried_view::QueriedView},
+    application::providers::collection::CollectionRow,
     domain::{entities::collection::Collection, repositories::collection::CollectionRepository},
+    infrastructure::database::repositories::view::{QueriedView, QueriedViewWithCollectionId},
 };
 use async_trait::async_trait;
 use sqlx::{Pool, Sqlite};

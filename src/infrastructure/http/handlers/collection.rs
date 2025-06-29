@@ -1,6 +1,6 @@
 use crate::{
     infrastructure::cross_cutting::InjectedServices,
-    presentation::web::section::body::presentation_web_section_body,
+    presentation::html::section::body::presentation_html_section_body,
 };
 use axum::{
     extract::{Path, State},
@@ -12,5 +12,5 @@ pub async fn handler_collection_set_active(
     Path(id): Path<String>,
 ) -> Html<String> {
     let _ = services.providers.collection.set_active(&id).await;
-    Html(presentation_web_section_body(services).await)
+    Html(presentation_html_section_body(services).await)
 }

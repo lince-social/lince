@@ -4,12 +4,29 @@ use crate::domain::{
 };
 use async_trait::async_trait;
 use futures::future::join_all;
+use serde::{Deserialize, Serialize};
 use sqlx::{Column, Pool, Row, Sqlite, TypeInfo};
 use std::{
     collections::HashMap,
     io::{Error, ErrorKind},
     sync::Arc,
 };
+
+#[derive(sqlx::FromRow, Debug, PartialEq, Serialize, Deserialize, Clone)]
+pub struct QueriedView {
+    pub id: u32,
+    pub quantity: i32,
+    pub name: String,
+    pub query: String,
+}
+#[derive(sqlx::FromRow)]
+pub struct QueriedViewWithCollectionId {
+    pub collection_id: u32,
+    pub id: u32,
+    pub quantity: i32,
+    pub name: String,
+    pub query: String,
+}
 
 pub struct ViewRepositoryImpl {
     pub pool: Arc<Pool<Sqlite>>,

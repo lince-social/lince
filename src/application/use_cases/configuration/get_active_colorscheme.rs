@@ -1,6 +1,6 @@
 use crate::{
     infrastructure::cross_cutting::InjectedServices,
-    presentation::web::colorscheme::{
+    presentation::html::colorscheme::{
         catppuccin::machiatto::presentation_colorscheme_catppuccin_machiatto,
         general::default::presentation_colorscheme_general_default,
         mono::{

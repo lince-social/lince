@@ -1,9 +1,9 @@
 use crate::{
     application::use_cases::table::patch_row::use_case_table_patch_row,
     infrastructure::cross_cutting::InjectedServices,
-    presentation::web::{
-        section::main::presentation_web_section_main,
-        table::editable_row::presentation_web_table_editable_row,
+    presentation::html::{
+        section::main::presentation_html_section_main,
+        table::editable_row::presentation_html_table_editable_row,
     },
 };
 use axum::{
@@ -18,7 +18,7 @@ pub async fn handler_table_delete_by_id(
     Path((table, id)): Path<(String, String)>,
 ) -> Html<String> {
     let _ = services.providers.table.delete_by_id(table, id).await;
-    Html(presentation_web_section_main(services).await)
+    Html(presentation_html_section_main(services).await)
 }
 
 pub async fn handler_table_editable_row(
@@ -26,7 +26,7 @@ pub async fn handler_table_editable_row(
     Form(ValueForm { value }): Form<ValueForm>,
 ) -> Html<String> {
     Html(
-        presentation_web_table_editable_row(table, id, column, value)
+        presentation_html_table_editable_row(table, id, column, value)
             .await
             .0,
     )
@@ -43,5 +43,5 @@ pub async fn handler_table_patch_row(
     Form(ValueForm { value }): Form<ValueForm>,
 ) -> Html<String> {
     let _ = use_case_table_patch_row(services.clone(), table, id, column, value).await;
-    Html(presentation_web_section_main(services).await)
+    Html(presentation_html_section_main(services).await)
 }

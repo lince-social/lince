@@ -4,9 +4,9 @@ use crate::{
     },
     domain::entities::operation::{Operation, Query},
     infrastructure::cross_cutting::InjectedServices,
-    presentation::web::{
-        operation::get::presentation_web_operation_get_operation_input,
-        section::main::presentation_web_section_main,
+    presentation::html::{
+        operation::get::presentation_html_operation_get_operation_input,
+        section::main::presentation_html_section_main,
     },
 };
 use axum::{
@@ -17,7 +17,7 @@ use axum::{
 use std::collections::HashMap;
 
 pub async fn get_operation_handler() -> Html<String> {
-    Html(presentation_web_operation_get_operation_input().to_string())
+    Html(presentation_html_operation_get_operation_input().to_string())
 }
 
 pub async fn post_operation_handler(
@@ -40,5 +40,5 @@ pub async fn handler_operation_execute_query(
     Form(data): Form<Query>,
 ) -> Html<String> {
     let _ = services.providers.query.execute(&data.query).await;
-    Html(presentation_web_section_main(services).await)
+    Html(presentation_html_section_main(services).await)
 }

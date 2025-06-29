@@ -1,6 +1,7 @@
-use crate::application::schema::collection::row::CollectionRow;
 use async_trait::async_trait;
 use std::io::Error;
+
+use crate::application::providers::collection::CollectionRow;
 
 #[async_trait]
 pub trait CollectionRepository: Send + Sync {

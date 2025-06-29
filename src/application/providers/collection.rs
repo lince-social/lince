@@ -1,8 +1,10 @@
 use crate::{
-    application::schema::collection::row::CollectionRow,
-    domain::repositories::collection::CollectionRepository,
+    domain::{entities::collection::Collection, repositories::collection::CollectionRepository},
+    infrastructure::database::repositories::view::QueriedView,
 };
 use std::{io::Error, sync::Arc};
+
+pub type CollectionRow = (Collection, Vec<QueriedView>);
 
 pub struct CollectionProvider {
     pub repository: Arc<dyn CollectionRepository>,

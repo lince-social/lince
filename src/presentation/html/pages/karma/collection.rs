@@ -1,4 +1,5 @@
 use crate::{
+    application::schemas::karma_filters::KarmaFilters,
     infrastructure::cross_cutting::InjectedServices,
     presentation::html::{
         table::tables::presentation_html_tables_karma, utils::to_table::to_named_sorted_table,
@@ -27,7 +28,7 @@ pub async fn presentation_html_karma_consequence(services: InjectedServices) -> 
 }
 
 pub async fn presentation_html_karma_karma(services: InjectedServices) -> Markup {
-    match services.providers.karma.get().await {
+    match services.providers.karma.get(KarmaFilters::default()).await {
         Ok(table) => {
             presentation_html_tables_karma(services, to_named_sorted_table("karma", table)).await
         }

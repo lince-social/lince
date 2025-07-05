@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 async-trait = "*"
 axum = { version = "*", features = ["macros"] }
-bevy = "0.16.1"
+bevy = { version = "*", features = ["wayland"] }
 chrono = { version = "*" }
 dirs = { version = "*" }
 futures = { version = "*" }
@@ -32,15 +32,3 @@ inherits = "dev"
 
 [profile.android-dev]
 inherits = "dev"
-
-# [profile]
-
-# [profile.wasm-dev]
-# inherits = "dev"
-# opt-level = 1
-
-# [profile.server-dev]
-# inherits = "dev"
-
-# [profile.android-dev]
-# inherits = "dev"

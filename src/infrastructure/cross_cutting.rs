@@ -6,7 +6,10 @@ use crate::{
             karma::KarmaProvider, operation::OperationProvider, query::QueryProvider,
             record::RecordProvider, table::TableProvider, view::ViewProvider,
         },
-        use_cases::configuration::get_active_colorscheme::UseCaseConfigurationGetActiveColorscheme,
+        use_cases::{
+            configuration::get_active_colorscheme::UseCaseConfigurationGetActiveColorscheme,
+            operation::only_digits::UseCaseOnlyDigits,
+        },
     },
     infrastructure::database::repositories::{
         collection::CollectionRepositoryImpl, command::CommandRepositoryImpl,
@@ -31,12 +34,17 @@ pub struct Providers {
     pub view: ViewProvider,
 }
 
-pub struct UseCases {
-    pub configuration: ConfigurationUseCases,
-}
-
 pub struct ConfigurationUseCases {
     pub get_active_colorscheme: UseCaseConfigurationGetActiveColorscheme,
+}
+
+pub struct UseCasesOperation {
+    pub only_digits: UseCaseOnlyDigits,
+}
+
+pub struct UseCases {
+    pub configuration: ConfigurationUseCases,
+    pub operation: UseCasesOperation,
 }
 
 pub struct Injected {
@@ -83,6 +91,9 @@ pub fn dependency_injection(db: Arc<Pool<Sqlite>>) -> InjectedServices {
         use_cases: UseCases {
             configuration: ConfigurationUseCases {
                 get_active_colorscheme: UseCaseConfigurationGetActiveColorscheme {},
+            },
+            operation: UseCasesOperation {
+                only_digits: UseCaseOnlyDigits {},
             },
         },
     });

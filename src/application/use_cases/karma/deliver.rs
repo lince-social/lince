@@ -4,7 +4,7 @@ use crate::{
         frequency::{check::use_case_frequency_check, update::use_case_frequency_update},
         query::execute::use_case_query_execute,
     },
-    domain::entities::frequency::Frequency,
+    domain::entities::{frequency::Frequency, karma::Karma},
     infrastructure::{
         cross_cutting::InjectedServices,
         utils::log::{LogEntry, log},
@@ -16,9 +16,11 @@ use std::{
     io::{Error, ErrorKind},
 };
 
-pub async fn use_case_karma_deliver(services: InjectedServices) -> Result<(), Error> {
+pub async fn use_case_karma_deliver(
+    services: InjectedServices,
+    vec_karma: Vec<Karma>,
+) -> Result<(), Error> {
     let engine = return_engine();
-    let vec_karma = futures::executor::block_on(async { services.providers.karma.get().await })?;
     let regex_record_quantity = Regex::new(r"rq(\d+)").unwrap();
     let regex_frequency = Regex::new(r"f(\d+)").unwrap();
     let regex_command = Regex::new(r"c(\d+)").unwrap();
@@ -40,6 +42,10 @@ pub async fn use_case_karma_deliver(services: InjectedServices) -> Result<(), Er
                 continue;
             }
         };
+
+        if karma.id == 46 {
+            dbg!(&condition);
+        }
 
         let condition = match replace_frequencies(
             services.clone(),
@@ -71,9 +77,19 @@ pub async fn use_case_karma_deliver(services: InjectedServices) -> Result<(), Er
         let condition = format!("({}) * 1.0", condition);
         let condition: f64 = engine.eval(&condition).unwrap();
 
+        if karma.id == 46 {
+            dbg!(&karma);
+            dbg!(&condition);
+        }
+
         let operator = karma.operator.as_str();
         if !((operator == "=" && condition != 0.0) || operator == "=*") {
             continue;
+        }
+
+        if karma.id == 46 {
+            dbg!(&karma);
+            dbg!(&condition);
         }
 
         if let Some(caps) = regex_record_quantity.captures(&karma.consequence) {

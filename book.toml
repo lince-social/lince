@@ -1,0 +1,15 @@
+[book]
+authors = ["xaviduds"]
+language = "en"
+src = "src"
+title = "Lince Documentation"
+
+[output.html]
+site-url = "/documentation/book"
+
+[output.html.playground]
+editable = true     # allows editing the source code
+copyable = true     # include the copy button for copying code snippets
+copy-js = true      # includes the JavaScript for the code editor
+line-numbers = true # displays line numbers for editable code
+runnable = true

@@ -1,14 +1,16 @@
-// use bevy::{app::{App, Startup}, ecs::system::Commands};
+use bevy::{
+    app::{App, Startup},
+    prelude::Plugin,
+};
 
-// pub struct CollectionPlugin;
+pub struct CollectionPlugin;
 
-// impl Plugin for CollectionPlugin {
-//    fn build(app: &App) {
-//       app.add_systems(Startup, systems)
-//    }
+impl Plugin for CollectionPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, setup);
+    }
+}
 
-//    fn setup(commands: Commands) {
-//        commands.spawn(bundle)
-
-//    }
-// }
+fn setup() {
+    println!("Hello from bevy plugin");
+}

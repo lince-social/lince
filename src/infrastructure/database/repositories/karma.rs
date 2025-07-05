@@ -1,8 +1,11 @@
-use crate::domain::{
-    entities::{
-        karma::Karma, karma_condition::KarmaCondition, karma_consequence::KarmaConsequence,
+use crate::{
+    application::schemas::karma_filters::KarmaFilters,
+    domain::{
+        entities::{
+            karma::Karma, karma_condition::KarmaCondition, karma_consequence::KarmaConsequence,
+        },
+        repositories::karma::KarmaRepository,
     },
-    repositories::karma::KarmaRepository,
 };
 use async_trait::async_trait;
 use sqlx::{Pool, Sqlite};
@@ -37,8 +40,8 @@ impl KarmaRepository for KarmaRepositoryImpl {
             .map_err(|e| Error::new(ErrorKind::InvalidData, e))
     }
 
-    async fn get(&self) -> Result<Vec<Karma>, Error> {
-        let query = "
+    async fn get(&self, filters: KarmaFilters) -> Result<Vec<Karma>, Error> {
+        let mut sql = "
             SELECT
                 k.id,
                 k.quantity,
@@ -48,13 +51,20 @@ impl KarmaRepository for KarmaRepositoryImpl {
             FROM karma k
             JOIN karma_condition kcd ON kcd.id = k.condition_id
             JOIN karma_consequence kcs ON kcs.id = k.consequence_id
-            WHERE k.quantity > 0 AND kcd.quantity > 0 AND kcs.quantity > 0;
-            ";
+            WHERE k.quantity > 0 AND kcd.quantity > 0 AND kcs.quantity > 0"
+            .to_string();
 
-        let data: Vec<Karma> = sqlx::query_as(query)
+        if let Some(record_id) = &filters.condition_record_id {
+            sql.push_str(&format!(" AND kcd.condition LIKE \"%{record_id}%\""));
+        }
+
+        sql.push_str(";");
+
+        let data: Vec<Karma> = sqlx::query_as(&sql)
             .fetch_all(&*self.pool)
             .await
             .map_err(|e| Error::new(ErrorKind::InvalidData, e))?;
+
         Ok(data)
     }
 }

@@ -1,6 +1,11 @@
 use super::crud::use_case_operation_create_component;
 use crate::{
-    application::use_cases::karma::command::use_case_karma_execute_command,
+    application::{
+        schemas::karma_filters::KarmaFilters,
+        use_cases::karma::{
+            command::use_case_karma_execute_command, deliver::use_case_karma_deliver,
+        },
+    },
     infrastructure::{
         cross_cutting::InjectedServices,
         utils::log::{LogEntry, log},
@@ -153,11 +158,28 @@ pub async fn parse_operation_and_execute(
 pub async fn use_case_operation_execute(services: InjectedServices, operation: String) -> String {
     let only_digits = Regex::new(r"^\d+$").unwrap();
     if only_digits.is_match(&operation) {
+        let id = operation.parse::<u32>().unwrap();
         let _ = services
+            .use_cases
+            .operation
+            .only_digits
+            .execute(services.clone(), id)
+            .await
+            .inspect_err(|e| log(LogEntry::Error(e.kind(), e.to_string())));
+
+        let vec_karma = services
             .providers
-            .record
-            .set_quantity(operation.parse::<u32>().unwrap(), 0.0)
+            .karma
+            .get(KarmaFilters::new(Some(id)))
             .await;
+        if let Err(e) = vec_karma {
+            log(LogEntry::Error(e.kind(), e.to_string()))
+        } else {
+            let _ = use_case_karma_deliver(services.clone(), vec_karma.unwrap())
+                .await
+                .inspect_err(|e| log(LogEntry::Error(e.kind(), e.to_string())));
+        }
+
         return presentation_html_section_body(services).await;
     }
 

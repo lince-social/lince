@@ -1,8 +1,11 @@
-use crate::domain::{
-    entities::{
-        karma::Karma, karma_condition::KarmaCondition, karma_consequence::KarmaConsequence,
+use crate::{
+    application::schemas::karma_filters::KarmaFilters,
+    domain::{
+        entities::{
+            karma::Karma, karma_condition::KarmaCondition, karma_consequence::KarmaConsequence,
+        },
+        repositories::karma::KarmaRepository,
     },
-    repositories::karma::KarmaRepository,
 };
 use std::{io::Error, sync::Arc};
 
@@ -11,8 +14,8 @@ pub struct KarmaProvider {
 }
 
 impl KarmaProvider {
-    pub async fn get(&self) -> Result<Vec<Karma>, Error> {
-        self.repository.get().await
+    pub async fn get(&self, filters: KarmaFilters) -> Result<Vec<Karma>, Error> {
+        self.repository.get(filters).await
     }
 
     pub async fn get_condition(&self) -> Result<Vec<KarmaCondition>, Error> {

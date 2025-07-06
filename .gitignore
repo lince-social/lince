@@ -2,4 +2,4 @@
 /logs
 mprocs.log
 /book
-*.html
+/documentation/**/*.html

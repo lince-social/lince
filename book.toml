@@ -5,7 +5,7 @@ src = "src"
 title = "Lince Documentation"
 
 [output.html]
-site-url = "/documentation/book"
+site-url = "/book"
 
 [output.html.playground]
 editable = true     # allows editing the source code

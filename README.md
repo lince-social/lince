@@ -34,3 +34,13 @@ This project is licensed under the GNU GPLv3 license. Crowdfunding is the source
 [GitHub Sponsors](https://github.com/sponsors/lince-social) | [Patreon](https://www.patreon.com/lince_social) | [Apoia.se](https://www.apoia.se/lince)
 
 Lince tries to facilitate and automate the connection between people and resources, by transforming needs and contributions into data. The gains and losses related to the interaction, such as transportation, production and services themselves, remain the responsibility of the parties involved.
+
+## Star History
+
+<a href="https://www.star-history.com/#lince-social/lince&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=lince-social/lince&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=lince-social/lince&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=lince-social/lince&type=Date" />
+ </picture>
+</a>

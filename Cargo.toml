@@ -18,7 +18,6 @@ serde_json = { version = "*" }
 sqlx = { version = "*", features = ["runtime-tokio", "sqlite"] }
 tokio = { version = "*", features = ["full"] }
 tower = { version = "*" }
-tower-http = { version = "*" }
 tracing-subscriber = { version = "*" }
 
 [profile]

@@ -1,9 +1,14 @@
 # Summary
 
 - [Installation](../documentation/00_intro/00_installation.md)
+- [Explanation](../documentation/00_intro/01_explanation.md)
 - [Introduction](../documentation/00_intro/02_introduction.md)
 - [Organization](../documentation/00_intro/03_organization.md)
 - [Tech Stack](../documentation/01_stack/00_tech_stack.md)
+    - [Rust](../documentation/01_stack/00_languages/00_rust/00_introduction.md)
+    - [Learning](../documentation/01_stack/00_languages/00_rust/01_learning.md)
+    - [Debugging](../documentation/01_stack/00_languages/00_rust/09_debugging.md)
+    - [Cargo](../documentation/01_stack/00_languages/00_rust/10_cargo.md)
 - [Tables](../documentation/02_tables/00_introduction/00_intro.md)
   - [Record](../documentation/02_tables/01_record/00_intro.md)
   - [Views](../documentation/02_tables/02_views/00_intro.md)
@@ -27,9 +32,3 @@
   - [Karma](../documentation/04_personal/02_tasks.md)
   - [Tasks](../documentation/04_personal/03_tasks.md)
   - [Items](../documentation/04_personal/04_items.md)
-
-- [Programming Manual](../documentation/001_general/02_programming_manual.md)
-- [Languages](../documentation/003_languages/00_logic.md)
-  - [Rust](../documentation/003_languages/02_rust/00_introduction.md)
-  - [Learning](../documentation/003_languages/02_rust/01_learning.md)
-  - [Debugging](../documentation/003_languages/02_rust/09_debugging.md)

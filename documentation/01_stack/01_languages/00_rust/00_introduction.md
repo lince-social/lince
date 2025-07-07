@@ -12,14 +12,14 @@ You install Rust preferably through [Rustup](https://www.rust-lang.org/tools/ins
 
 Cool things that are built with Rust:
 
-* [Lince](https://lince-social.github.io/book/00_intro/00_installation.html): an app for modeling, interconnection and automation of Needs and Contributions. I think it's cool, and it's not because I made it okay?
+* [Bevy](https://bevy.org/): a game engine that you use by writing 'pretty normal' Rust.
+* [Helix](https://helix-editor.com/) | [Zed](https://zed.dev/): text editors/IDEs.
+* [uutils](https://uutils.github.io/): rewrite of GNU's core utils.
 * [Deno](https://deno.com/): a JavaScript/TypeScript runtime.
 * [Rust for Linux](https://github.com/Rust-for-Linux/linux): an effort to support Linux kernel modules in Rust.
-* [Helix](https://helix-editor.com/) | [Zed](https://zed.dev/): text editors/IDEs.
 * [Dioxus](https://dioxuslabs.com/) | [Tauri](https://tauri.app/): cross-platform application builders.
 * [Axum](https://docs.rs/axum) | [Actix Web](https://actix.rs/): backend frameworks.
 * [Redox](https://www.redox-os.org/): an operating system.
-* [uutils](https://uutils.github.io/): rewrite of GNU's core utils.
 * [Limbo](https://github.com/tursodatabase/limbo): an SQLite 'evolution'.
 * [Fish](https://fishshell.com/) | [Nushell](https://www.nushell.sh/): shells.
 * [Servo](https://servo.org/): a browser engine.
@@ -28,7 +28,6 @@ Cool things that are built with Rust:
 * [Niri](https://github.com/YaLTeR/niri): a scrollable window manager for Wayland.
 * [Maud (awesome)](https://maud.lambda.xyz/) | [Yew](https://yew.rs/) | [Leptos](https://leptos.dev/): frontend.
 * [Iced](https://iced.rs/) | [egui](https://www.egui.rs/): GUI toolkits.
-* [Bevy](https://bevy.org/): a game engine that you use by writing 'pretty normal' Rust.
 * [Polars](https://github.com/pola-rs/polars): DataFrames.
 
 Read the next session to create a project and force me to put it in the list.

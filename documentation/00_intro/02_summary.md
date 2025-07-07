@@ -1,4 +1,4 @@
-# Introduction
+# Summary
 
 Lince is a tool for registry, interconnection and automation of Needs and Contributions with open scope.
 

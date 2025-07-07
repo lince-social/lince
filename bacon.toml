@@ -3,3 +3,6 @@ command = ["cargo", "run", "--color", "always"]
 need_stdout = true
 allow_warnings = true
 watch = ["src/**"]
+
+[jobs.dev]
+command = ["cargo", "run", "--features", "bevy/dynamic_linking"]

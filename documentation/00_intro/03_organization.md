@@ -16,9 +16,6 @@ The online resource to communicate is the [Discord](https://discord.gg/3Gr9rYWHp
 
 The git repositories hosted currently in the [lince-social](https://github.com/lince-social) GitHub Organization mean this:
 
-- [lince](https://github.com/lince-social/lince): the app's code.
+- [lince](https://github.com/lince-social/lince): the app's code and this documentation.
 - [dna](https://github.com/lince-social/dna): the databases for different Lince behaviors.
-- [lince-social.github.io](https://github.com/lince-social/lince-social.github.io): this documentation.
-- [cub](https://github.com/lince-social/cub): homework and challenges to understand how do use Lince, from begginer to advanced.
-- [mosca](https://github.com/lince-social/mosca): tool for different computer actions, like cleaning the system, linking dotfiles and more. The goal is that the Command table calls this binary with different flags for common tasks. This repo is what should evolve into an Operating System or customization of an existing one.
 - [.github](https://github.com/lince-social/.github): general stuff, like photos, icons and information about GitHub sponsors.

@@ -10,7 +10,7 @@ You install Rust preferably through [Rustup](https://www.rust-lang.org/tools/ins
 - [clippy](https://doc.rust-lang.org/stable/clippy/index.html): a linter that provides suggestions to improve your code (micro best practices).
 - rust-analyzer: a language server for IDE support and code navigation.
 
-Cool things that are built with Rust:
+There are [awesome](https://github.com/rust-unofficial/awesome-rust?tab=readme-ov-file#games) things built with Rust, including:
 
 * [Bevy](https://bevy.org/): a game engine that you use by writing 'pretty normal' Rust.
 * [Helix](https://helix-editor.com/) | [Zed](https://zed.dev/): text editors/IDEs.

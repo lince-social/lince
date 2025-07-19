@@ -1,10 +1,12 @@
 # Transfer
 
+> This is from the old Postgres Schema and idea of Transfer, it is kept here whilst it is in TODO.
+
 ## Table: `transfer`
 
-| transfer              | DATA STRUCTURE |
+| transfer              | DATA TYPE |
 | --------------------- | -------------- |
-| id                    | SERIAL         |
+| id                    | INTEGER         |
 | records_received      | JSON           |
 | records_contributed   | JSON           |
 | agreement             | JSON           |

@@ -12,7 +12,7 @@ cargo audit
 ```
 
 #### Cargo Udeps
-See your unused cargo dependencies
+See your unused cargo dependencies:
 
 ```bash
 # Install

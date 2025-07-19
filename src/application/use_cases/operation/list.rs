@@ -24,9 +24,5 @@ pub fn operation_actions() -> Vec<(&'static str, &'static str)> {
         ("k", "Karma"),
         ("s", "Shell Command"),
         ("a", "Activate Configuration"),
-        // ("t", "Transfer"),
-        // ("r", "Read"),
-        // ("u", "Update"),
-        // ("d", "Delete"),
     ]
 }

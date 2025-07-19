@@ -1,10 +1,10 @@
 # Views
 
-| COLUMNS | DATA STRUCTURE |
-| ------- | -------------- |
-| id      | INT            |
-| name    | STRING         |
-| query   | STRING         |
+| COLUMNS | DATA TYPE |
+| ------- | --------- |
+| id      | INTEGER   |
+| name    | TEXT      |
+| query   | TEXT      |
 
 Views are ways to select records.
 

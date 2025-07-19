@@ -1,8 +1,8 @@
 # Sum
 
-| sum               | DATA STRUCTURE |
+| sum               | DATA TYPE |
 | ----------------- | -------------- |
-| id                | SERIAL         |
+| id                | INTEGER         |
 | quantity          | INTEGER        |
 | record_id         | INTEGER        |
 | interval_relative | BOOL           |

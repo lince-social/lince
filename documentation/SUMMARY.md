@@ -7,6 +7,7 @@
 - [Tech Stack](01_stack/00_tech_stack.md)
     - [Rust](01_stack/01_languages/00_rust/00_introduction.md)
       - [Learning](01_stack/01_languages/00_rust/01_learning.md)
+      - [Explanation](01_stack/01_languages/00_rust/02_explanation.md)
       - [Debugging](01_stack/01_languages/00_rust/09_debugging.md)
       - [Cargo](01_stack/01_languages/00_rust/10_cargo.md)
 - [Tables](02_tables/00_introduction/00_intro.md)

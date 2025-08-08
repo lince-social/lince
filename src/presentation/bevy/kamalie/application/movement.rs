@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::domain::{
+use crate::presentation::bevy::kamalie::domain::{
     components::movement::{
         AccumulatedInput, PhysicalTranslation, PreviousPhysicalTranslation, Velocity,
     },

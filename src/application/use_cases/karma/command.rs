@@ -23,32 +23,62 @@ pub async fn use_case_karma_execute_command(services: InjectedServices, id: u32)
 }
 
 pub async fn service_karma_execute_command(command: String) -> Option<i64> {
-    let status = match TokioCommand::new("sh")
+    let output = TokioCommand::new("sh")
         .arg("-c")
         .arg(&command)
-        .stdin(Stdio::inherit())
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .status()
-        .await
-    {
-        Ok(s) => s,
+        .output()
+        .await;
+
+    match output {
+        Ok(output) => {
+            if !output.status.success() {
+                log(LogEntry::Error(
+                    ErrorKind::Other,
+                    format!(
+                        "Command '{}' failed with status: {}. Stderr: {}",
+                        command,
+                        output.status,
+                        String::from_utf8_lossy(&output.stderr)
+                    ),
+                ));
+                return None;
+            }
+            Some(0)
+        }
         Err(e) => {
             log(LogEntry::Error(
                 e.kind(),
-                format!("Error when running command '{}': {}", command, e),
+                format!("Failed to execute command '{}': {}", command, e),
             ));
-            return None;
+            None
         }
-    };
-
-    if !status.success() {
-        log(LogEntry::Error(
-            ErrorKind::Other,
-            format!("Command '{}' exited with non-zero status", command),
-        ));
-        return None;
     }
+    // let status = match TokioCommand::new("sh")
+    //     .arg("-c")
+    //     .arg(&command)
+    //     .stdin(Stdio::inherit())
+    //     .stdout(Stdio::inherit())
+    //     .stderr(Stdio::inherit())
+    //     .status()
+    //     .await
+    // {
+    //     Ok(s) => s,
+    //     Err(e) => {
+    //         log(LogEntry::Error(
+    //             e.kind(),
+    //             format!("Error when running command '{}': {}", command, e),
+    //         ));
+    //         return None;
+    //     }
+    // };
 
-    Some(0)
+    // if !status.success() {
+    //     log(LogEntry::Error(
+    //         ErrorKind::Other,
+    //         format!("Command '{}' exited with non-zero status", command),
+    //     ));
+    //     return None;
+    // }
+
+    // Some(0)
 }

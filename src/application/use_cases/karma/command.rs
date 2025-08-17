@@ -2,7 +2,7 @@ use crate::infrastructure::{
     cross_cutting::InjectedServices,
     utils::log::{LogEntry, log},
 };
-use std::{io::ErrorKind, process::Stdio};
+use std::io::ErrorKind;
 use tokio::process::Command as TokioCommand;
 
 pub async fn use_case_karma_execute_command(services: InjectedServices, id: u32) -> Option<i64> {

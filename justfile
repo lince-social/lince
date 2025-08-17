@@ -1,12 +1,15 @@
 install:
-    cargo install mprocs mdbook
+    cargo install mprocs mdbook cargo-edit cargo-udeps --locked
+update: install
+    rustup self update
+    rustup update
+    cargo upgrade
 
-run: install
+run: update
     mprocs \
-    "bacon . --job clippy-all" \
-    "dx serve --platform desktop" \
+    "bacon . --job fix" \
     "systemctl --user restart lince.service &&  journalctl --user -u lince.service -f --output=cat" \
     "systemctl --user stop lince.service &&  journalctl --user -u lince.service -f --output=cat"
 
-book: install
+book: update
     mdbook serve --port 9999

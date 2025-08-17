@@ -70,12 +70,10 @@ async fn main() -> Result<(), Error> {
 
                 if let Err(e) = vec_karma {
                     log(LogEntry::Error(e.kind(), e.to_string()));
-                } else {
-                    if let Err(e) =
-                        use_case_karma_deliver(services.clone(), vec_karma.unwrap()).await
-                    {
-                        log(LogEntry::Error(e.kind(), e.to_string()));
-                    }
+                } else if let Err(e) =
+                    use_case_karma_deliver(services.clone(), vec_karma.unwrap()).await
+                {
+                    log(LogEntry::Error(e.kind(), e.to_string()));
                 }
 
                 println!("Karma Delivered!");
@@ -124,8 +122,4 @@ async fn main() -> Result<(), Error> {
     }?;
 
     Ok(())
-}
-
-fn test() {
-    println!("hsdoidsnm")
 }

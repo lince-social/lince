@@ -43,6 +43,7 @@ async fn presentation_html_collection_row(
 ) -> Markup {
     html!(
         .row.xs_gap {
+            button {(collection.id)}
             @if collection.quantity == 1 {
                 button.active {(collection.name)}
             } @else {

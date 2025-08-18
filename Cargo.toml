@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 async-trait = "*"
 axum = { version = "*", features = ["macros"] }
-bevy = { version = "*", features = ["wayland"] }
+# bevy = { version = "*", features = ["wayland"] }
 chrono = { version = "*" }
 dirs = { version = "*" }
 futures = { version = "*" }
@@ -19,7 +19,7 @@ sqlx = { version = "*", features = ["runtime-tokio", "sqlite"] }
 tokio = { version = "*", features = ["full"] }
 tower = { version = "*" }
 tracing-subscriber = { version = "*" }
-# rand = "0.9.1"
+# rand = "*"
 # wasm-bindgen = "0.2.100"
 
 [profile]

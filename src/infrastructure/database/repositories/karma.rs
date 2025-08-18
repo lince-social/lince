@@ -58,7 +58,7 @@ impl KarmaRepository for KarmaRepositoryImpl {
             sql.push_str(&format!(" AND kcd.condition LIKE \"%{record_id}%\""));
         }
 
-        sql.push_str(";");
+        sql.push(';');
 
         let data: Vec<Karma> = sqlx::query_as(&sql)
             .fetch_all(&*self.pool)

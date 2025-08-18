@@ -4,5 +4,15 @@ need_stdout = true
 allow_warnings = true
 watch = ["src/**"]
 
-[jobs.dev]
-command = ["cargo", "run", "--features", "bevy/dynamic_linking"]
+# [jobs.dev]
+# command = ["cargo", "run", "--features", "bevy/dynamic_linking"]
+
+[jobs.fix]
+command = [
+    "sh",
+    "-c",
+    "cargo fix --broken-code --allow-dirty && cargo clippy --fix --allow-dirty --quiet >/dev/null 2>&1",
+]
+need_stdout = true
+allow_warnings = true
+watch = ["src/**"]

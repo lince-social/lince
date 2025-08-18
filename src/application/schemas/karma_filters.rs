@@ -1,3 +1,4 @@
+#[derive(Default)]
 pub struct KarmaFilters {
     pub condition_record_id: Option<u32>,
 }
@@ -10,10 +11,3 @@ impl KarmaFilters {
     }
 }
 
-impl Default for KarmaFilters {
-    fn default() -> Self {
-        Self {
-            condition_record_id: None,
-        }
-    }
-}

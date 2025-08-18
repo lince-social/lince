@@ -1,4 +1,4 @@
-use crate::{
+use crate::presentation::bevy::kamalie::{
     application::util::rand::{util_random_1d_size, util_random_color, util_random_position},
     domain::components::life::Ego,
 };

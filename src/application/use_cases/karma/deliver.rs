@@ -43,10 +43,6 @@ pub async fn use_case_karma_deliver(
             }
         };
 
-        if karma.id == 46 {
-            dbg!(&condition);
-        }
-
         let condition = match replace_frequencies(
             services.clone(),
             &regex_frequency,
@@ -77,19 +73,9 @@ pub async fn use_case_karma_deliver(
         let condition = format!("({}) * 1.0", condition);
         let condition: f64 = engine.eval(&condition).unwrap();
 
-        if karma.id == 46 {
-            dbg!(&karma);
-            dbg!(&condition);
-        }
-
         let operator = karma.operator.as_str();
         if !((operator == "=" && condition != 0.0) || operator == "=*") {
             continue;
-        }
-
-        if karma.id == 46 {
-            dbg!(&karma);
-            dbg!(&condition);
         }
 
         if let Some(caps) = regex_record_quantity.captures(&karma.consequence) {

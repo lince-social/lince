@@ -1,7 +1,4 @@
-use crate::{
-    application::use_cases::operation::list::{operation_actions, operation_tables},
-    presentation::html::section::body::presentation_html_section_body_home_modal,
-};
+use crate::application::use_cases::operation::list::{operation_actions, operation_tables};
 use maud::{Markup, html};
 
 pub fn presentation_html_operation_get_operation_input() -> String {
@@ -9,7 +6,7 @@ pub fn presentation_html_operation_get_operation_input() -> String {
         div
             hx-target="#body"
             hx-trigger="keyup[key === 'Escape'] from:body"
-            hx-get="/section/body"
+            hx-get="/body"
         {
             form.modal
                 id="operation_input"
@@ -51,10 +48,6 @@ pub fn presentation_html_operation_get_operation_input() -> String {
         }
 
     }.0
-}
-
-pub async fn presentation_html_operation_get_nested_body(element: String) -> String {
-    presentation_html_section_body_home_modal(element).await
 }
 
 pub fn presentation_html_get_operation_options() -> Markup {

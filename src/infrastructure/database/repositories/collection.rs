@@ -1,11 +1,13 @@
+use async_trait::async_trait;
+use sqlx::{Pool, Sqlite};
+use std::{collections::HashMap, io::Error, sync::Arc};
+
 use crate::{
     application::providers::collection::CollectionRow,
     domain::{entities::collection::Collection, repositories::collection::CollectionRepository},
     infrastructure::database::repositories::view::{QueriedView, QueriedViewWithCollectionId},
 };
-use async_trait::async_trait;
-use sqlx::{Pool, Sqlite};
-use std::{collections::HashMap, io::Error, sync::Arc};
+
 pub struct CollectionRepositoryImpl {
     pool: Arc<Pool<Sqlite>>,
 }
@@ -29,12 +31,16 @@ impl CollectionRepository for CollectionRepositoryImpl {
         Ok(())
     }
 
-    async fn get_active(&self) -> Result<CollectionRow, Error> {
-        let collection: Collection =
+    async fn get_active(&self) -> Result<Option<CollectionRow>, Error> {
+        let collection: Option<Collection> =
             sqlx::query_as("SELECT id, name, quantity FROM collection WHERE quantity = 1")
-                .fetch_one(&*self.pool)
+                .fetch_optional(&*self.pool)
                 .await
-                .unwrap();
+                .map_err(Error::other)?;
+        if collection.is_none() {
+            return Ok(None);
+        }
+        let collection = collection.unwrap();
 
         let views: Vec<QueriedView> = sqlx::query_as(
             "
@@ -49,7 +55,7 @@ impl CollectionRepository for CollectionRepositoryImpl {
         .await
         .unwrap();
 
-        Ok((collection, views))
+        Ok(Some((collection, views)))
     }
 
     async fn get_inactive(&self) -> Result<Vec<CollectionRow>, Error> {

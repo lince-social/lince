@@ -11,11 +11,10 @@ use crate::{
         utils::log::{LogEntry, log},
     },
     presentation::html::{
-        operation::{
-            get::presentation_html_operation_get_nested_body,
-            query::presentation_html_operation_query,
+        operation::query::presentation_html_operation_query,
+        section::body::{
+            presentation_html_section_body, presentation_html_section_body_home_modal,
         },
-        section::body::presentation_html_section_body,
     },
 };
 use regex::Regex;
@@ -98,7 +97,7 @@ pub async fn parse_operation_and_execute(
             match matched.as_str() {
                 "q" | "query" => {
                     return Some(
-                        presentation_html_operation_get_nested_body(
+                        presentation_html_section_body_home_modal(
                             presentation_html_operation_query().await,
                         )
                         .await,
@@ -106,7 +105,7 @@ pub async fn parse_operation_and_execute(
                 }
                 "c" | "create" => {
                     return Some(
-                        presentation_html_operation_get_nested_body(
+                        presentation_html_section_body_home_modal(
                             use_case_operation_create_component(
                                 services,
                                 parse_table(operation.clone()),
@@ -118,16 +117,18 @@ pub async fn parse_operation_and_execute(
                 }
                 "k" | "collection" => {
                     if let Some(id) = parse_id(&operation)
-                        && let Err(e) = services.providers.collection.set_active(id).await {
-                            log(LogEntry::Error(e.kind(), e.to_string()))
-                        }
+                        && let Err(e) = services.providers.collection.set_active(id).await
+                    {
+                        log(LogEntry::Error(e.kind(), e.to_string()))
+                    }
                     return Some(presentation_html_section_body(services).await);
                 }
                 "a" | "configuration" => {
                     if let Some(id) = parse_id(&operation)
-                        && let Err(e) = services.providers.configuration.activate(id).await {
-                            log(LogEntry::Error(e.kind(), e.to_string()))
-                        }
+                        && let Err(e) = services.providers.configuration.activate(id).await
+                    {
+                        log(LogEntry::Error(e.kind(), e.to_string()))
+                    }
                     return Some(presentation_html_section_body(services).await);
                 }
                 "s" | "command" | "shell" | "shell command" => {
@@ -138,10 +139,10 @@ pub async fn parse_operation_and_execute(
                         )
                         .await)
                             .is_none()
-                        {
-                            let e = Error::other(format!("Failed to run command with id: {}", id));
-                            log(LogEntry::Error(e.kind(), e.to_string()))
-                        }
+                    {
+                        let e = Error::other(format!("Failed to run command with id: {}", id));
+                        log(LogEntry::Error(e.kind(), e.to_string()))
+                    }
 
                     return Some(presentation_html_section_body(services).await);
                 }

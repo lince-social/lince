@@ -11,7 +11,7 @@ pub struct CollectionProvider {
 }
 
 impl CollectionProvider {
-    pub async fn get_active(&self) -> Result<CollectionRow, Error> {
+    pub async fn get_active(&self) -> Result<Option<CollectionRow>, Error> {
         self.repository.get_active().await
     }
     pub async fn get_inactive(&self) -> Result<Vec<CollectionRow>, Error> {

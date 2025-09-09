@@ -149,6 +149,9 @@ pub async fn presentation_html_style(services: InjectedServices) -> String {
         .s_padding{
             padding: 0.25rem;
         }
+        .m_padding{
+            padding: 0.5rem;
+        }
 
         .s_margin{
             margin: 0.25rem;
@@ -157,6 +160,19 @@ pub async fn presentation_html_style(services: InjectedServices) -> String {
         .stripped {
             padding: 0rem;
             margin: 0rem;
+        }
+        .glow {
+        box-shadow: 0 0 20px white, 0 0 40px white, 0 0 60px white;
+        animation: glow 10s infinite alternate;
+      }
+
+      @keyframes glow {
+        from {
+          box-shadow: 0 0 1rem white, 0 0 2rem white;
+        }
+        to {
+          box-shadow: 0 0 1.1rem white, 0 0 2.2rem white;
+        }
         }
 
     </style>"

@@ -8,20 +8,20 @@ keywords = ["todo"]
 include = ["/src"]
 
 [dependencies]
-async-trait = "*"
-axum = { version = "*", features = ["macros"] }
-chrono = { version = "*" }
-dirs = { version = "*" }
-futures = { version = "*" }
-maud = { version = "*" }
-regex = { version = "*" }
-rhai = { version = "*" }
-serde = { version = "*", features = ["derive"] }
-serde_json = { version = "*" }
-sqlx = { version = "*", features = ["runtime-tokio", "sqlite"] }
-tokio = { version = "*", features = ["full"] }
-tower = { version = "*" }
-tracing-subscriber = { version = "*" }
+async-trait = "0.1.89"
+axum = "0.8.4"
+chrono = "0.4.42"
+dirs = "6.0.0"
+futures = "0.3.31"
+maud = "0.27.0"
+regex = "1.11.2"
+rhai = "1.22.2"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.143"
+sqlx = { version = "0.8.6", features = ["runtime-tokio", "sqlite"] }
+tokio = { version = "1.47.1", features = ["rt-multi-thread", "process"] }
+tower = "0.5.2"
+tracing-subscriber = "0.3.20"
 
 [profile]
 

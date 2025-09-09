@@ -5,7 +5,6 @@ use crate::{
 };
 use axum::{extract::State, response::Html};
 
-#[axum::debug_handler]
 pub async fn presentation_html_section_page(
     State(services): State<InjectedServices>,
 ) -> Html<String> {

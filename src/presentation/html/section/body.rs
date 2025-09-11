@@ -19,18 +19,18 @@ pub async fn presentation_html_section_body_home_modal(element: String) -> Strin
             <body id="body">
             <header
             id="header"
-             hx-get="/section/header"
+             hx-get="/header"
              hx-trigger="load"
              hx-swap="outerHTML"
              ></header>
              <main
              id="main"
-              hx-get="/section/main"
+              hx-get="/main"
               hx-trigger="load"
               hx-swap="outerHTML"
               ></main>
               <div class="shy modal filled"
-              hx-get="/section/body"
+              hx-get="/body"
               hx-trigger="keyup[key === 'Escape'] from:body"
               hx-target="#body"
               >

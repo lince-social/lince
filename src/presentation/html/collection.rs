@@ -6,13 +6,17 @@ use crate::{
 use maud::{Markup, html};
 
 pub async fn presentation_html_collection(services: InjectedServices) -> Markup {
-    let (active_collection_name, active_collection_views) = services
+    let opt = services
         .providers
         .collection
         .get_active()
         .await
         .map_err(|e| html!((format!("Failed to get active collection. Error: {}", e))))
         .unwrap();
+    if opt.is_none() {
+        return html!("No active collection");
+    }
+    let (active_collection_name, active_collection_views) = opt.unwrap();
 
     let inactive_collections = services
         .providers

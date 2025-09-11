@@ -1,7 +1,7 @@
 use maud::{Markup, html};
 
 pub async fn presentation_html_create(table: String, column_names: Vec<String>) -> Markup {
-    html!(form
+    html!(form.m_padding.glow
         hx-post=(format!("/operation/create/{}", table))
         hx-target="#main"
         {

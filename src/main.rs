@@ -19,6 +19,7 @@ use crate::{
         },
         utils::log::{LogEntry, log},
     },
+    presentation::gpui::general::general_gpui,
     // presentation::bevy::{
     //     collection::CollectionPlugin,
     //     kamalie::{
@@ -105,6 +106,9 @@ async fn main() -> Result<(), Error> {
         //         .run();
         //     Ok(())
         // }
+        Some("gpui") => {
+            general_gpui();
+        }
         _ => {
             let app = Router::new()
                 .route("/preto_no_branco.ico", get(handler_section_favicon))

@@ -31,14 +31,18 @@ pub async fn service_karma_execute_command(command: String) -> Option<i64> {
 
     match output {
         Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let stderr = String::from_utf8_lossy(&output.stderr);
+
+            println!("stdout:\n{}", stdout);
+            println!("stderr:\n{}", stderr);
+
             if !output.status.success() {
                 log(LogEntry::Error(
                     ErrorKind::Other,
                     format!(
                         "Command '{}' failed with status: {}. Stderr: {}",
-                        command,
-                        output.status,
-                        String::from_utf8_lossy(&output.stderr)
+                        command, output.status, stderr
                     ),
                 ));
                 return None;
@@ -53,32 +57,4 @@ pub async fn service_karma_execute_command(command: String) -> Option<i64> {
             None
         }
     }
-    // let status = match TokioCommand::new("sh")
-    //     .arg("-c")
-    //     .arg(&command)
-    //     .stdin(Stdio::inherit())
-    //     .stdout(Stdio::inherit())
-    //     .stderr(Stdio::inherit())
-    //     .status()
-    //     .await
-    // {
-    //     Ok(s) => s,
-    //     Err(e) => {
-    //         log(LogEntry::Error(
-    //             e.kind(),
-    //             format!("Error when running command '{}': {}", command, e),
-    //         ));
-    //         return None;
-    //     }
-    // };
-
-    // if !status.success() {
-    //     log(LogEntry::Error(
-    //         ErrorKind::Other,
-    //         format!("Command '{}' exited with non-zero status", command),
-    //     ));
-    //     return None;
-    // }
-
-    // Some(0)
 }

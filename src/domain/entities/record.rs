@@ -7,8 +7,3 @@ pub struct Record {
     pub head: String,
     pub body: String,
 }
-
-#[derive(sqlx::FromRow, Debug, PartialEq, Serialize, Deserialize, Clone)]
-pub struct RecordSchemaCreate {
-    pub head: String,
-}

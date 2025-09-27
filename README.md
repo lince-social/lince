@@ -6,8 +6,7 @@
 </p>
 
 # Lince
-
-### Tool for registry, interconnection and automation of Needs and Contributions with open scope.
+Tool for registry, interconnection and automation of Needs and Contributions with open scope.
 
 Detailed explanations of what Lince is, how to run it and use it's ecosystem can be found in the [documentation](https://lince-social.github.io/book/).
 
@@ -36,7 +35,7 @@ Both methods should allow you to start using it at [http://localhost:6174](http:
 
 ---
 
-## Disclamer
+# Disclamer
 
 This project is licensed under the GNU GPLv3 license. Crowdfunding is the source of development compensation:
 

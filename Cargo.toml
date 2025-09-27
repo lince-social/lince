@@ -7,16 +7,21 @@ license = "GPL-3.0-or-later"
 keywords = ["todo"]
 include = ["/src"]
 
+[features]
+default = ["gpui"]
+gpui = ["dep:gpui"]
+
 [dependencies]
 async-trait = "0.1.89"
 axum = "0.8.4"
 chrono = "0.4.42"
 dirs = "6.0.0"
 futures = "0.3.31"
+gpui = { git = "https://github.com/zed-industries/zed", optional = true }
 maud = "0.27.0"
-regex = "1.11.2"
+regex = "1.11.3"
 rhai = "1.23.4"
-serde = { version = "1.0.223", features = ["derive"] }
+serde = { version = "1.0.227", features = ["derive"] }
 serde_json = "1.0.145"
 sqlx = { version = "0.8.6", features = ["runtime-tokio", "sqlite"] }
 tokio = { version = "1.47.1", features = ["rt-multi-thread", "process"] }

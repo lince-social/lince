@@ -1,10 +1,7 @@
 use super::crud::use_case_operation_create_component;
 use crate::{
-    application::{
-        schemas::karma_filters::KarmaFilters,
-        use_cases::karma::{
-            command::use_case_karma_execute_command, deliver::use_case_karma_deliver,
-        },
+    application::use_cases::karma::{
+        command::use_case_karma_execute_command, deliver::use_case_karma_deliver,
     },
     infrastructure::{
         cross_cutting::InjectedServices,
@@ -117,7 +114,7 @@ pub async fn parse_operation_and_execute(
                 }
                 "k" | "collection" => {
                     if let Some(id) = parse_id(&operation)
-                        && let Err(e) = services.providers.collection.set_active(id).await
+                        && let Err(e) = services.repository.collection.set_active(id).await
                     {
                         log(LogEntry::Error(e.kind(), e.to_string()))
                     }
@@ -125,7 +122,7 @@ pub async fn parse_operation_and_execute(
                 }
                 "a" | "configuration" => {
                     if let Some(id) = parse_id(&operation)
-                        && let Err(e) = services.providers.configuration.activate(id).await
+                        && let Err(e) = services.repository.configuration.set_active(id).await
                     {
                         log(LogEntry::Error(e.kind(), e.to_string()))
                     }
@@ -167,11 +164,7 @@ pub async fn use_case_operation_execute(services: InjectedServices, operation: S
             .await
             .inspect_err(|e| log(LogEntry::Error(e.kind(), e.to_string())));
 
-        let vec_karma = services
-            .providers
-            .karma
-            .get(KarmaFilters::new(Some(id)))
-            .await;
+        let vec_karma = services.repository.karma.get(Some(id)).await;
         if let Err(e) = vec_karma {
             log(LogEntry::Error(e.kind(), e.to_string()))
         } else {

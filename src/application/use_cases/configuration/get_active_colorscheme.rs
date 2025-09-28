@@ -15,7 +15,7 @@ pub struct UseCaseConfigurationGetActiveColorscheme;
 impl UseCaseConfigurationGetActiveColorscheme {
     pub async fn execute(&self, services: InjectedServices) -> &'static str {
         let style = match services
-            .providers
+            .repository
             .configuration
             .get_active()
             .await

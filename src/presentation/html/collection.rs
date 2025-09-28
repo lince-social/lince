@@ -7,7 +7,7 @@ use maud::{Markup, html};
 
 pub async fn presentation_html_collection(services: InjectedServices) -> Markup {
     let opt = services
-        .providers
+        .repository
         .collection
         .get_active()
         .await
@@ -19,7 +19,7 @@ pub async fn presentation_html_collection(services: InjectedServices) -> Markup 
     let (active_collection_name, active_collection_views) = opt.unwrap();
 
     let inactive_collections = services
-        .providers
+        .repository
         .collection
         .get_inactive()
         .await

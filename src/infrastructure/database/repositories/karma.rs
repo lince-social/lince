@@ -1,11 +1,8 @@
-use crate::{
-    application::schemas::karma_filters::KarmaFilters,
-    domain::{
-        entities::{
-            karma::Karma, karma_condition::KarmaCondition, karma_consequence::KarmaConsequence,
-        },
-        repositories::karma::KarmaRepository,
+use crate::domain::{
+    entities::{
+        karma::Karma, karma_condition::KarmaCondition, karma_consequence::KarmaConsequence,
     },
+    repositories::karma::KarmaRepository,
 };
 use async_trait::async_trait;
 use sqlx::{Pool, Sqlite};
@@ -40,7 +37,7 @@ impl KarmaRepository for KarmaRepositoryImpl {
             .map_err(|e| Error::new(ErrorKind::InvalidData, e))
     }
 
-    async fn get(&self, filters: KarmaFilters) -> Result<Vec<Karma>, Error> {
+    async fn get(&self, condition_record_id: Option<u32>) -> Result<Vec<Karma>, Error> {
         let mut sql = "
             SELECT
                 k.id,
@@ -54,7 +51,7 @@ impl KarmaRepository for KarmaRepositoryImpl {
             .to_string();
         // WHERE k.quantity > 0 AND kcd.quantity > 0 AND kcs.quantity > 0
 
-        if let Some(record_id) = &filters.condition_record_id {
+        if let Some(record_id) = condition_record_id {
             sql.push_str(&format!(" AND kcd.condition LIKE \"%{record_id}%\""));
         }
 

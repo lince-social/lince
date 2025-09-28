@@ -3,8 +3,10 @@ use sqlx::{Pool, Sqlite};
 use std::{collections::HashMap, io::Error, sync::Arc};
 
 use crate::{
-    application::providers::collection::CollectionRow,
-    domain::{entities::collection::Collection, repositories::collection::CollectionRepository},
+    domain::{
+        entities::collection::Collection,
+        repositories::collection::{CollectionRepository, CollectionRow},
+    },
     infrastructure::database::repositories::view::{QueriedView, QueriedViewWithCollectionId},
 };
 

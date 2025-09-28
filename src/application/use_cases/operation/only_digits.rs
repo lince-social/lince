@@ -5,7 +5,7 @@ pub struct UseCaseOnlyDigits {}
 
 impl UseCaseOnlyDigits {
     pub async fn execute(&self, services: InjectedServices, id: u32) -> Result<(), Error> {
-        services.providers.record.set_quantity(id, 0.0).await?;
+        services.repository.record.set_quantity(id, 0.0).await?;
 
         Ok(())
     }

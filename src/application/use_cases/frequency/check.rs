@@ -7,7 +7,7 @@ pub async fn use_case_frequency_check(
     services: InjectedServices,
     id: u32,
 ) -> (u32, Option<Frequency>) {
-    let frequency = match services.providers.frequency.get(id).await {
+    let frequency = match services.repository.frequency.get(id).await {
         Ok(Some(f)) => f,
         _ => return (0, None),
     };
@@ -23,7 +23,7 @@ pub async fn use_case_frequency_check(
             quantity: 0.0,
             ..frequency.clone()
         };
-        let _ = services.providers.frequency.update(frequency).await;
+        let _ = services.repository.frequency.update(frequency).await;
         return (0, None);
     }
 

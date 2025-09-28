@@ -1,16 +1,14 @@
 use crate::{
-    application::{
-        providers::{
-            collection::CollectionProvider, configuration::ConfigurationProvider,
-            frequency::FrequencyProvider, karma::KarmaProvider, operation::OperationProvider,
-            query::QueryProvider, record::RecordProvider, table::TableProvider, view::ViewProvider,
-        },
-        use_cases::{
-            configuration::get_active_colorscheme::UseCaseConfigurationGetActiveColorscheme,
-            operation::only_digits::UseCaseOnlyDigits,
-        },
+    application::use_cases::{
+        configuration::get_active_colorscheme::UseCaseConfigurationGetActiveColorscheme,
+        operation::only_digits::UseCaseOnlyDigits,
     },
-    domain::repositories::command::CommandRepository,
+    domain::repositories::{
+        collection::CollectionRepository, command::CommandRepository,
+        configuration::ConfigurationRepository, frequency::FrequencyRepository,
+        karma::KarmaRepository, operation::OperationRepository, query::QueryRepository,
+        record::RecordRepository, table::TableRepository, view::ViewRepository,
+    },
     infrastructure::database::repositories::{
         collection::CollectionRepositoryImpl, command::CommandRepositoryImpl,
         configuration::ConfigurationRepositoryImpl, frequency::FrequencyRepositoryImpl,
@@ -22,16 +20,16 @@ use sqlx::{Pool, Sqlite};
 use std::sync::Arc;
 
 pub struct Repositories {
-    pub configuration: ConfigurationProvider,
-    pub operation: OperationProvider,
-    pub query: QueryProvider,
-    pub record: RecordProvider,
-    pub table: TableProvider,
+    pub configuration: Arc<dyn ConfigurationRepository>,
+    pub operation: Arc<dyn OperationRepository>,
+    pub query: Arc<dyn QueryRepository>,
+    pub record: Arc<dyn RecordRepository>,
+    pub table: Arc<dyn TableRepository>,
     pub command: Arc<dyn CommandRepository>,
-    pub frequency: FrequencyProvider,
-    pub karma: KarmaProvider,
-    pub collection: CollectionProvider,
-    pub view: ViewProvider,
+    pub frequency: Arc<dyn FrequencyRepository>,
+    pub karma: Arc<dyn KarmaRepository>,
+    pub collection: Arc<dyn CollectionRepository>,
+    pub view: Arc<dyn ViewRepository>,
 }
 
 pub struct ConfigurationUseCases {
@@ -48,7 +46,7 @@ pub struct UseCases {
 }
 
 pub struct Injected {
-    pub repositories: Repositories,
+    pub repository: Repositories,
     pub use_cases: UseCases,
 }
 
@@ -56,35 +54,17 @@ pub type InjectedServices = Arc<Injected>;
 
 pub fn dependency_injection(db: Arc<Pool<Sqlite>>) -> InjectedServices {
     let services: InjectedServices = Arc::new(Injected {
-        repositories: Repositories {
-            configuration: ConfigurationProvider {
-                repository: Arc::new(ConfigurationRepositoryImpl::new(db.clone())),
-            },
-            operation: OperationProvider {
-                repository: Arc::new(OperationRepositoryImpl::new(db.clone())),
-            },
-            query: QueryProvider {
-                repository: Arc::new(QueryRepositoryImpl::new(db.clone())),
-            },
-            record: RecordProvider {
-                repository: Arc::new(RecordRepositoryImpl::new(db.clone())),
-            },
-            table: TableProvider {
-                repository: Arc::new(TableRepositoryImpl::new(db.clone())),
-            },
+        repository: Repositories {
+            configuration: Arc::new(ConfigurationRepositoryImpl::new(db.clone())),
+            operation: Arc::new(OperationRepositoryImpl::new(db.clone())),
+            query: Arc::new(QueryRepositoryImpl::new(db.clone())),
+            record: Arc::new(RecordRepositoryImpl::new(db.clone())),
+            table: Arc::new(TableRepositoryImpl::new(db.clone())),
             command: Arc::new(CommandRepositoryImpl::new(db.clone())),
-            frequency: FrequencyProvider {
-                repository: Arc::new(FrequencyRepositoryImpl::new(db.clone())),
-            },
-            karma: KarmaProvider {
-                repository: Arc::new(KarmaRepositoryImpl::new(db.clone())),
-            },
-            collection: CollectionProvider {
-                repository: Arc::new(CollectionRepositoryImpl::new(db.clone())),
-            },
-            view: ViewProvider {
-                repository: Arc::new(ViewRepositoryImpl::new(db.clone())),
-            },
+            frequency: Arc::new(FrequencyRepositoryImpl::new(db.clone())),
+            karma: Arc::new(KarmaRepositoryImpl::new(db.clone())),
+            collection: Arc::new(CollectionRepositoryImpl::new(db.clone())),
+            view: Arc::new(ViewRepositoryImpl::new(db.clone())),
         },
         use_cases: UseCases {
             configuration: ConfigurationUseCases {

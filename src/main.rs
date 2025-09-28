@@ -8,9 +8,7 @@ mod presentation;
 use crate::presentation::gpui::app::gpui_app;
 
 use crate::{
-    application::{
-        schemas::karma_filters::KarmaFilters, use_cases::karma::deliver::use_case_karma_deliver,
-    },
+    application::use_cases::karma::deliver::use_case_karma_deliver,
     infrastructure::{
         cross_cutting::dependency_injection,
         database::management::{lib::connection, migration::execute_migration, schema::schema},
@@ -48,7 +46,7 @@ async fn main() -> Result<(), Error> {
             loop {
                 println!("Delivering Karma...");
                 let vec_karma = futures::executor::block_on(async {
-                    services.providers.karma.get(KarmaFilters::default()).await
+                    services.repository.karma.get(None).await
                 });
 
                 if let Err(e) = vec_karma {

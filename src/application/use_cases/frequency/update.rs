@@ -7,6 +7,6 @@ pub async fn use_case_frequency_update(
     frequencies_to_update: Vec<Frequency>,
 ) {
     for frequency in frequencies_to_update {
-        let _ = services.providers.frequency.update(frequency).await;
+        let _ = services.repository.frequency.update(frequency).await;
     }
 }

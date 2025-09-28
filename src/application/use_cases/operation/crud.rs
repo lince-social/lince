@@ -11,7 +11,7 @@ pub async fn use_case_operation_create_component(
     table: String,
 ) -> String {
     let column_names = services
-        .providers
+        .repository
         .operation
         .get_column_names(table.clone())
         .await
@@ -25,7 +25,7 @@ pub async fn use_case_operation_create_persist(
     table: String,
     data: HashMap<String, String>,
 ) -> String {
-    if let Err(e) = services.providers.operation.create(table, data).await {
+    if let Err(e) = services.repository.operation.create(table, data).await {
         println!("Error creating operation: {}", e);
     }
     presentation_html_section_main(services).await

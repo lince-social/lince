@@ -1,7 +1,11 @@
+use crate::{
+    domain::entities::collection::Collection,
+    infrastructure::database::repositories::view::QueriedView,
+};
 use async_trait::async_trait;
 use std::io::Error;
 
-use crate::application::providers::collection::CollectionRow;
+pub type CollectionRow = (Collection, Vec<QueriedView>);
 
 #[async_trait]
 pub trait CollectionRepository: Send + Sync {

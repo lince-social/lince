@@ -15,5 +15,5 @@ pub async fn use_case_table_patch_row(
         table, column, value, id
     );
 
-    services.providers.query.execute(&query).await
+    services.repository.query.execute(&query).await
 }

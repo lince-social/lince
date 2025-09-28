@@ -8,7 +8,7 @@ use crate::{
 
 pub async fn presentation_html_section_main(services: InjectedServices) -> String {
     let (tables, special_views) = services
-        .providers
+        .repository
         .view
         .get_active_view_data()
         .await

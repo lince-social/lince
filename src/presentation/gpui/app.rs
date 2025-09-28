@@ -1,6 +1,6 @@
 use crate::{
-    application::providers::collection::CollectionRow,
     domain::entities::collection::Collection,
+    domain::repositories::collection::CollectionRow,
     infrastructure::cross_cutting::{Injected, InjectedServices},
 };
 use gpui::{
@@ -105,7 +105,7 @@ impl LinceApp {
         let sc = services.clone();
         cx.spawn(
             |weak: WeakEntity<LinceApp>, cx_async: &mut AsyncApp| async move {
-                if let Ok(opt) = sc.providers.collection.get_active().await {
+                if let Ok(opt) = sc.repository.collection.get_active().await {
                     if let Some(collection_row) = opt {
                         let _ = weak.update(cx_async, |this, cx| {
                             let mut data = this.data.lock().await;
@@ -121,7 +121,7 @@ impl LinceApp {
 
         // cx.spawn(|weak: WeakEntity<LinceApp>, cx_async: &mut AsyncApp| {
         //     async move {
-        //         if let Ok(opt) = sc.providers.collection.get_active().await {
+        //         if let Ok(opt) = sc.repository.collection.get_active().await {
         //             if let Some(collection_row) = opt {
         //                 // Clone the data we need before moving into the update closure
         //                 let collection_row_clone = collection_row.clone();

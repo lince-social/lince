@@ -83,7 +83,7 @@ pub async fn use_case_karma_deliver(
             match id_str.parse::<u32>() {
                 Ok(id) => {
                     if let Err(e) = futures::executor::block_on(async {
-                        services.providers.record.set_quantity(id, condition).await
+                        services.repository.record.set_quantity(id, condition).await
                     }) {
                         log(LogEntry::Error(
                             ErrorKind::Other,
@@ -168,7 +168,8 @@ fn replace_record_quantities(
     let replaced = regex.replace_all(&condition, |caps: &regex::Captures| {
         let id = caps[1].parse::<u32>().unwrap();
 
-        match futures::executor::block_on(async { services.providers.record.get_by_id(id).await }) {
+        match futures::executor::block_on(async { services.repository.record.get_by_id(id).await })
+        {
             Ok(record) => record.quantity.to_string(),
             Err(_) => "0.0".to_string(),
         }

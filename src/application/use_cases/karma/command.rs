@@ -6,7 +6,7 @@ use std::io::ErrorKind;
 use tokio::process::Command as TokioCommand;
 
 pub async fn use_case_karma_execute_command(services: InjectedServices, id: u32) -> Option<i64> {
-    let res = services.providers.command.get_by_id(id).await;
+    let res = services.repository.command.get_by_id(id).await;
     match res {
         Err(e) => {
             log(LogEntry::Error(

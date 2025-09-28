@@ -17,7 +17,7 @@ pub async fn handler_table_delete_by_id(
     State(services): State<InjectedServices>,
     Path((table, id)): Path<(String, String)>,
 ) -> Html<String> {
-    let _ = services.providers.table.delete_by_id(table, id).await;
+    let _ = services.repository.table.delete_by_id(table, id).await;
     Html(presentation_html_section_main(services).await)
 }
 

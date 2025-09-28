@@ -11,7 +11,9 @@ use crate::{
     application::use_cases::karma::deliver::use_case_karma_deliver,
     infrastructure::{
         cross_cutting::dependency_injection,
-        database::management::{lib::connection, migration::execute_migration, schema::schema},
+        database::management::{
+            connection::connection, migration::execute_migration, schema::schema,
+        },
         http::{
             handlers::section::handler_section_favicon,
             routers::{

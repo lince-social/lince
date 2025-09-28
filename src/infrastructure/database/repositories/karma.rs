@@ -50,9 +50,9 @@ impl KarmaRepository for KarmaRepositoryImpl {
                 kcs.consequence
             FROM karma k
             JOIN karma_condition kcd ON kcd.id = k.condition_id
-            JOIN karma_consequence kcs ON kcs.id = k.consequence_id
-            WHERE k.quantity > 0 AND kcd.quantity > 0 AND kcs.quantity > 0"
+            JOIN karma_consequence kcs ON kcs.id = k.consequence_id"
             .to_string();
+        // WHERE k.quantity > 0 AND kcd.quantity > 0 AND kcs.quantity > 0
 
         if let Some(record_id) = &filters.condition_record_id {
             sql.push_str(&format!(" AND kcd.condition LIKE \"%{record_id}%\""));

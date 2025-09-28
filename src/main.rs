@@ -71,9 +71,10 @@ async fn main() -> Result<(), Error> {
                 log(LogEntry::Error(e.kind(), e.to_string()));
             })?;
         } else if arg.as_str() == "gpui" {
-            task::spawn(async {
+            let cloned_services = services.clone();
+            task::spawn(async move {
                 #[cfg(feature = "gpui")]
-                gpui_app();
+                gpui_app(cloned_services.clone()).await;
             });
         } else if arg.as_str() == "html" {
             let app = Router::new()

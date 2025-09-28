@@ -1,4 +1,4 @@
-#[derive(sqlx::FromRow, Debug, PartialEq, Eq)]
+#[derive(sqlx::FromRow, Clone, Debug, PartialEq, Eq)]
 pub struct Collection {
     pub id: u32,
     pub name: String,

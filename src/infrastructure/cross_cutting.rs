@@ -1,16 +1,16 @@
 use crate::{
     application::{
         providers::{
-            collection::CollectionProvider, command::CommandProvider,
-            configuration::ConfigurationProvider, frequency::FrequencyProvider,
-            karma::KarmaProvider, operation::OperationProvider, query::QueryProvider,
-            record::RecordProvider, table::TableProvider, view::ViewProvider,
+            collection::CollectionProvider, configuration::ConfigurationProvider,
+            frequency::FrequencyProvider, karma::KarmaProvider, operation::OperationProvider,
+            query::QueryProvider, record::RecordProvider, table::TableProvider, view::ViewProvider,
         },
         use_cases::{
             configuration::get_active_colorscheme::UseCaseConfigurationGetActiveColorscheme,
             operation::only_digits::UseCaseOnlyDigits,
         },
     },
+    domain::repositories::command::CommandRepository,
     infrastructure::database::repositories::{
         collection::CollectionRepositoryImpl, command::CommandRepositoryImpl,
         configuration::ConfigurationRepositoryImpl, frequency::FrequencyRepositoryImpl,
@@ -21,13 +21,13 @@ use crate::{
 use sqlx::{Pool, Sqlite};
 use std::sync::Arc;
 
-pub struct Providers {
+pub struct Repositories {
     pub configuration: ConfigurationProvider,
     pub operation: OperationProvider,
     pub query: QueryProvider,
     pub record: RecordProvider,
     pub table: TableProvider,
-    pub command: CommandProvider,
+    pub command: Arc<dyn CommandRepository>,
     pub frequency: FrequencyProvider,
     pub karma: KarmaProvider,
     pub collection: CollectionProvider,
@@ -48,7 +48,7 @@ pub struct UseCases {
 }
 
 pub struct Injected {
-    pub providers: Providers,
+    pub repositories: Repositories,
     pub use_cases: UseCases,
 }
 
@@ -56,7 +56,7 @@ pub type InjectedServices = Arc<Injected>;
 
 pub fn dependency_injection(db: Arc<Pool<Sqlite>>) -> InjectedServices {
     let services: InjectedServices = Arc::new(Injected {
-        providers: Providers {
+        repositories: Repositories {
             configuration: ConfigurationProvider {
                 repository: Arc::new(ConfigurationRepositoryImpl::new(db.clone())),
             },
@@ -72,9 +72,7 @@ pub fn dependency_injection(db: Arc<Pool<Sqlite>>) -> InjectedServices {
             table: TableProvider {
                 repository: Arc::new(TableRepositoryImpl::new(db.clone())),
             },
-            command: CommandProvider {
-                repository: Arc::new(CommandRepositoryImpl::new(db.clone())),
-            },
+            command: Arc::new(CommandRepositoryImpl::new(db.clone())),
             frequency: FrequencyProvider {
                 repository: Arc::new(FrequencyRepositoryImpl::new(db.clone())),
             },

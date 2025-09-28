@@ -1,17 +1,40 @@
-use gpui::{
-    App, AppContext, Application, Bounds, Context, FocusHandle, Focusable, InteractiveElement,
-    IntoElement, KeyDownEvent, MouseButton, MouseUpEvent, ParentElement, Render, Styled, Window,
-    WindowBounds, WindowOptions, actions, div, prelude::FluentBuilder, px, rgb, size,
-};
-
 use crate::{
-    application::providers::collection::CollectionRow, domain::entities::collection::Collection,
+    application::providers::collection::CollectionRow,
+    domain::entities::collection::Collection,
+    infrastructure::cross_cutting::{Injected, InjectedServices},
 };
+use gpui::{
+    App, AppContext, Application, AsyncApp, Bounds, Context, FocusHandle, Focusable, Global,
+    InteractiveElement, IntoElement, KeyDownEvent, MouseButton, MouseUpEvent, ParentElement,
+    Render, Styled, WeakEntity, Window, WindowBounds, WindowOptions, actions, div,
+    prelude::FluentBuilder, px, rgb, size,
+};
+use std::sync::{Arc, Weak};
+use tokio::sync::Mutex;
+// use tokio::sync::Mutex;
 
 actions!(todo, [AddTodo, Backspace, ClearInput]);
 
-pub fn gpui_app() {
-    Application::new().run(|cx: &mut App| {
+pub struct AppState {
+    pub data: Arc<LinceData>,
+}
+struct GlobalAppState(Weak<AppState>);
+impl Global for GlobalAppState {}
+impl AppState {
+    pub fn global(cx: &App) -> Weak<Self> {
+        cx.global::<GlobalAppState>().0.clone()
+    }
+    pub fn try_global(cx: &App) -> Option<Weak<Self>> {
+        cx.try_global::<GlobalAppState>()
+            .map(|state| state.0.clone())
+    }
+    pub fn set_global(state: Weak<AppState>, cx: &mut App) {
+        cx.set_global(GlobalAppState(state));
+    }
+}
+
+pub async fn gpui_app(services: InjectedServices) {
+    Application::new().run(move |cx: &mut App| {
         cx.bind_keys([
             gpui::KeyBinding::new("enter", AddTodo, None),
             gpui::KeyBinding::new("backspace", Backspace, None),
@@ -27,7 +50,7 @@ pub fn gpui_app() {
                 ))),
                 ..Default::default()
             },
-            |_, cx| cx.new(LinceApp::new),
+            move |_, cx| cx.new(|cx| LinceApp::with_services(cx, services.clone())),
         )
         .unwrap()
         .update(cx, |view, window, cx| {
@@ -63,21 +86,64 @@ impl LinceData {
 
 struct LinceApp {
     focus_handle: FocusHandle,
-    data: LinceData,
+    pub data: Arc<Mutex<LinceData>>,
+    services: Arc<Injected>,
     todos: Vec<Todo>,
     input_text: String,
     next_id: usize,
 }
-
 impl LinceApp {
-    fn new(cx: &mut Context<Self>) -> Self {
-        Self {
+    pub fn with_services(cx: &mut Context<Self>, services: InjectedServices) -> Self {
+        let mut s = Self {
             focus_handle: cx.focus_handle(),
-            data: LinceData::default(),
+            data: Arc::new(Mutex::new(LinceData::default())),
+            services: services.clone(),
             todos: Vec::new(),
             input_text: String::new(),
             next_id: 1,
-        }
+        };
+        let sc = services.clone();
+        cx.spawn(
+            |weak: WeakEntity<LinceApp>, cx_async: &mut AsyncApp| async move {
+                if let Ok(opt) = sc.providers.collection.get_active().await {
+                    if let Some(collection_row) = opt {
+                        let _ = weak.update(cx_async, |this, cx| {
+                            let mut data = this.data.lock().await;
+                            data.collection = vec![collection_row];
+                            cx.notify(); // This is correct: `cx` is `&mut Context`
+                            Ok::<(), ()>(())
+                        });
+                    }
+                }
+            },
+        )
+        .detach();
+
+        // cx.spawn(|weak: WeakEntity<LinceApp>, cx_async: &mut AsyncApp| {
+        //     async move {
+        //         if let Ok(opt) = sc.providers.collection.get_active().await {
+        //             if let Some(collection_row) = opt {
+        //                 // Clone the data we need before moving into the update closure
+        //                 let collection_row_clone = collection_row.clone();
+
+        //                 // Use a non-async closure for the update
+        //                 let _ = weak.update(cx_async, |this, cx| {
+        //                     let data = this.data.clone();
+        //                     cx.spawn(|_, cx: &mut AsyncApp| async move {
+        //                         let mut data_lock = data.lock().await;
+        //                         data_lock.collection = vec![collection_row_clone];
+        //                         cx.notify();
+        //                     })
+        //                     .detach();
+        //                     Ok(())
+        //                 });
+        //             }
+        //         }
+        //     }
+        // })
+        // .detach();
+
+        s
     }
 
     fn add_todo(&mut self, _: &AddTodo, _: &mut Window, cx: &mut Context<Self>) {

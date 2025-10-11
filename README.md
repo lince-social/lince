@@ -52,7 +52,7 @@ cargo install mask
 
 ## install
 ```bash
-cargo install mprocs mdbook cargo-edit cargo-udeps --locked
+cargo install mprocs mdbook bacon cargo-edit cargo-udeps --locked
 ```
 
 ## update
@@ -71,7 +71,6 @@ cargo fix --broken-code --allow-dirty && cargo clippy --fix --allow-dirty --quie
 
 ## run
 ```bash
-mask update
 mprocs \
 "bacon . --job fix" \
 "systemctl --user restart lince.service &&  journalctl --user -u lince.service -f --output=cat" \

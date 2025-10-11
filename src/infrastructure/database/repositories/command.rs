@@ -1,10 +1,15 @@
-use crate::domain::{entities::command::Command, repositories::command::CommandRepository};
+use crate::domain::clean::command::Command;
 use async_trait::async_trait;
 use sqlx::{Pool, Sqlite};
 use std::{
     io::{Error, ErrorKind},
     sync::Arc,
 };
+
+#[async_trait]
+pub trait CommandRepository: Send + Sync {
+    async fn get_by_id(&self, id: u32) -> Result<Option<Command>, Error>;
+}
 
 pub struct CommandRepositoryImpl {
     pool: Arc<Pool<Sqlite>>,

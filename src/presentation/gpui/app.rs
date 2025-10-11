@@ -1,16 +1,20 @@
 use crate::{
-    domain::entities::collection::Collection,
-    domain::repositories::collection::CollectionRow,
-    infrastructure::cross_cutting::{Injected, InjectedServices},
+    infrastructure::{
+        cross_cutting::{Injected, InjectedServices},
+        database::repositories::collection::CollectionRow,
+    },
+    ok,
 };
 use gpui::{
-    App, AppContext, Application, AsyncApp, Bounds, Context, FocusHandle, Focusable, Global,
+    App, AppContext, Application, Bounds, Context, FocusHandle, Focusable, Global,
     InteractiveElement, IntoElement, KeyDownEvent, MouseButton, MouseUpEvent, ParentElement,
-    Render, Styled, WeakEntity, Window, WindowBounds, WindowOptions, actions, div,
+    Render, Styled, Task, Window, WindowBounds, WindowOptions, actions, div,
     prelude::FluentBuilder, px, rgb, size,
 };
-use std::sync::{Arc, Weak};
-use tokio::sync::Mutex;
+use std::{
+    io::Error,
+    sync::{Arc, Weak},
+};
 // use tokio::sync::Mutex;
 
 actions!(todo, [AddTodo, Backspace, ClearInput]);
@@ -86,7 +90,9 @@ impl LinceData {
 
 struct LinceApp {
     focus_handle: FocusHandle,
-    pub data: Arc<Mutex<LinceData>>,
+    // pub data: LinceData,
+    pub _update_data: Task<Result<(), Error>>,
+    pub data: LinceData,
     services: Arc<Injected>,
     todos: Vec<Todo>,
     input_text: String,
@@ -94,56 +100,33 @@ struct LinceApp {
 }
 impl LinceApp {
     pub fn with_services(cx: &mut Context<Self>, services: InjectedServices) -> Self {
-        let mut s = Self {
+        let sc = services.clone();
+        let update_data = cx.spawn(async move |this, cx| {
+            loop {
+                let collection = vec![
+                    sc.repository
+                        .collection
+                        .get_active()
+                        .await
+                        .unwrap()
+                        .unwrap(),
+                ];
+                ok!(this.update(cx, |this, cx| {
+                    this.data.collection = collection;
+                    cx.notify();
+                }));
+            }
+        });
+
+        Self {
             focus_handle: cx.focus_handle(),
-            data: Arc::new(Mutex::new(LinceData::default())),
+            data: LinceData::default(),
+            _update_data: update_data,
             services: services.clone(),
             todos: Vec::new(),
             input_text: String::new(),
             next_id: 1,
-        };
-        let sc = services.clone();
-        cx.spawn(
-            |weak: WeakEntity<LinceApp>, cx_async: &mut AsyncApp| async move {
-                if let Ok(opt) = sc.repository.collection.get_active().await {
-                    if let Some(collection_row) = opt {
-                        let _ = weak.update(cx_async, |this, cx| {
-                            let mut data = this.data.lock().await;
-                            data.collection = vec![collection_row];
-                            cx.notify(); // This is correct: `cx` is `&mut Context`
-                            Ok::<(), ()>(())
-                        });
-                    }
-                }
-            },
-        )
-        .detach();
-
-        // cx.spawn(|weak: WeakEntity<LinceApp>, cx_async: &mut AsyncApp| {
-        //     async move {
-        //         if let Ok(opt) = sc.repository.collection.get_active().await {
-        //             if let Some(collection_row) = opt {
-        //                 // Clone the data we need before moving into the update closure
-        //                 let collection_row_clone = collection_row.clone();
-
-        //                 // Use a non-async closure for the update
-        //                 let _ = weak.update(cx_async, |this, cx| {
-        //                     let data = this.data.clone();
-        //                     cx.spawn(|_, cx: &mut AsyncApp| async move {
-        //                         let mut data_lock = data.lock().await;
-        //                         data_lock.collection = vec![collection_row_clone];
-        //                         cx.notify();
-        //                     })
-        //                     .detach();
-        //                     Ok(())
-        //                 });
-        //             }
-        //         }
-        //     }
-        // })
-        // .detach();
-
-        s
+        }
     }
 
     fn add_todo(&mut self, _: &AddTodo, _: &mut Window, cx: &mut Context<Self>) {
@@ -210,13 +193,9 @@ impl Render for LinceApp {
                     cx.notify();
                 }
             }))
-            .child(
-                div()
-                    .text_3xl()
-                    .text_color(rgb(0xe0e0e0))
-                    .mb_4()
-                    .child("📝 Simple Todo App"),
-            )
+            .child(div().text_3xl().text_color(rgb(0xe0e0e0)).mb_4().child(
+                format!("{}", &self.data.collection.first().map(|f| f.0.id).unwrap_or_default()),
+            ))
             .child(
                 div()
                     .flex()

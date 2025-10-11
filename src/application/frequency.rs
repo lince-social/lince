@@ -1,12 +1,7 @@
-use crate::{
-    domain::entities::frequency::Frequency, infrastructure::cross_cutting::InjectedServices,
-};
+use crate::{domain::clean::frequency::Frequency, infrastructure::cross_cutting::InjectedServices};
 use chrono::{Datelike, Duration, NaiveDateTime, TimeZone, Utc};
 
-pub async fn use_case_frequency_check(
-    services: InjectedServices,
-    id: u32,
-) -> (u32, Option<Frequency>) {
+pub async fn frequency_check(services: InjectedServices, id: u32) -> (u32, Option<Frequency>) {
     let frequency = match services.repository.frequency.get(id).await {
         Ok(Some(f)) => f,
         _ => return (0, None),

@@ -1,10 +1,9 @@
-use super::{command::use_case_karma_execute_command, engine::return_engine};
 use crate::{
-    application::use_cases::{
-        frequency::{check::use_case_frequency_check, update::use_case_frequency_update},
-        query::execute::use_case_query_execute,
+    application::{
+        command::karma_execute_command, engine::return_engine, frequency::frequency_check,
+        query::query_execute,
     },
-    domain::entities::{frequency::Frequency, karma::Karma},
+    domain::clean::{frequency::Frequency, karma::Karma},
     infrastructure::{
         cross_cutting::InjectedServices,
         utils::log::{LogEntry, log},
@@ -16,10 +15,7 @@ use std::{
     io::{Error, ErrorKind},
 };
 
-pub async fn use_case_karma_deliver(
-    services: InjectedServices,
-    vec_karma: Vec<Karma>,
-) -> Result<(), Error> {
+pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) -> Result<(), Error> {
     let engine = return_engine();
     let regex_record_quantity = Regex::new(r"rq(\d+)").unwrap();
     let regex_frequency = Regex::new(r"f(\d+)").unwrap();
@@ -107,7 +103,7 @@ pub async fn use_case_karma_deliver(
                 Ok(id) => {
                     println!("Chegou no comando com id: {}", id);
                     let result = futures::executor::block_on(async {
-                        use_case_karma_execute_command(services.clone(), id).await
+                        karma_execute_command(services.clone(), id).await
                     });
                     if result.is_none() {
                         log(LogEntry::Error(
@@ -131,7 +127,7 @@ pub async fn use_case_karma_deliver(
             match id_str.parse::<u32>() {
                 Ok(id) => {
                     if let Err(e) = futures::executor::block_on(async {
-                        use_case_query_execute(services.clone(), id).await
+                        query_execute(services.clone(), id).await
                     }) {
                         log(LogEntry::Error(
                             ErrorKind::Other,
@@ -151,7 +147,9 @@ pub async fn use_case_karma_deliver(
     }
 
     futures::executor::block_on(async {
-        use_case_frequency_update(services, frequencies_to_update.into_values().collect()).await
+        for (_, frequency) in frequencies_to_update {
+            let _ = services.repository.frequency.update(frequency).await;
+        }
     });
     Ok(())
 }
@@ -190,9 +188,8 @@ fn replace_frequencies(
 
     let replaced = regex.replace_all(&karma_condition, |caps: &regex::Captures| {
         let id = caps[1].parse::<u32>().unwrap();
-        let (replacement, freq_opt) = futures::executor::block_on(async {
-            use_case_frequency_check(services.clone(), id).await
-        });
+        let (replacement, freq_opt) =
+            futures::executor::block_on(async { frequency_check(services.clone(), id).await });
         if let Some(f) = freq_opt {
             frequencies_to_update.insert(f.id, f);
         }
@@ -212,11 +209,9 @@ fn replace_commands(
 
     let replaced = regex.replace_all(&karma_condition, |caps: &regex::Captures| {
         let id = caps[1].parse::<u32>().unwrap();
-        futures::executor::block_on(async {
-            use_case_karma_execute_command(services.clone(), id).await
-        })
-        .map(|v| v.to_string())
-        .unwrap_or_else(|| "0".to_string())
+        futures::executor::block_on(async { karma_execute_command(services.clone(), id).await })
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "0".to_string())
     });
     Ok(replaced.into_owned())
 }

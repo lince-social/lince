@@ -5,7 +5,7 @@ use crate::infrastructure::{
 use std::io::ErrorKind;
 use tokio::process::Command as TokioCommand;
 
-pub async fn use_case_karma_execute_command(services: InjectedServices, id: u32) -> Option<i64> {
+pub async fn karma_execute_command(services: InjectedServices, id: u32) -> Option<i64> {
     let res = services.repository.command.get_by_id(id).await;
     match res {
         Err(e) => {

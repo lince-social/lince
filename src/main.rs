@@ -8,7 +8,7 @@ mod presentation;
 use crate::presentation::gpui::app::gpui_app;
 
 use crate::{
-    application::use_cases::karma::deliver::use_case_karma_deliver,
+    application::karma::karma_deliver,
     infrastructure::{
         cross_cutting::dependency_injection,
         database::management::{
@@ -26,7 +26,7 @@ use crate::{
 };
 use axum::{Router, routing::get};
 use std::{env, io::Error, sync::Arc, time::Duration};
-use tokio::task;
+use tokio::spawn;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -53,9 +53,7 @@ async fn main() -> Result<(), Error> {
 
                 if let Err(e) = vec_karma {
                     log(LogEntry::Error(e.kind(), e.to_string()));
-                } else if let Err(e) =
-                    use_case_karma_deliver(services.clone(), vec_karma.unwrap()).await
-                {
+                } else if let Err(e) = karma_deliver(services.clone(), vec_karma.unwrap()).await {
                     log(LogEntry::Error(e.kind(), e.to_string()));
                 }
 
@@ -72,7 +70,7 @@ async fn main() -> Result<(), Error> {
             })?;
         } else if arg.as_str() == "gpui" {
             let cloned_services = services.clone();
-            task::spawn(async move {
+            spawn(async move {
                 #[cfg(feature = "gpui")]
                 gpui_app(cloned_services.clone()).await;
             });

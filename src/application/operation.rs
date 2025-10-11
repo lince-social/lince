@@ -1,21 +1,48 @@
-use super::crud::use_case_operation_create_component;
 use crate::{
-    application::use_cases::karma::{
-        command::use_case_karma_execute_command, deliver::use_case_karma_deliver,
-    },
+    application::{command::karma_execute_command, karma::karma_deliver},
     infrastructure::{
         cross_cutting::InjectedServices,
         utils::log::{LogEntry, log},
     },
     presentation::html::{
-        operation::query::presentation_html_operation_query,
-        section::body::{
-            presentation_html_section_body, presentation_html_section_body_home_modal,
+        operation::{create::presentation_html_create, query::presentation_html_operation_query},
+        section::{
+            body::{presentation_html_section_body, presentation_html_section_body_home_modal},
+            main::presentation_html_section_main,
         },
     },
 };
 use regex::Regex;
-use std::io::Error;
+use std::{collections::HashMap, io::Error};
+
+pub fn operation_tables() -> Vec<(&'static str, &'static str)> {
+    vec![
+        ("0", "Configuration"),
+        ("1", "Collection"),
+        ("2", "View"),
+        ("3", "collection_View"),
+        ("4", "Record"),
+        ("5", "Karma_Condition"),
+        ("6", "Karma_Consequence"),
+        ("7", "Karma"),
+        ("8", "Command"),
+        ("9", "Frequency"),
+        ("10", "Sum"),
+        ("11", "History"),
+        ("12", "DNA"),
+        ("13", "Transfer"),
+    ]
+}
+
+pub fn operation_actions() -> Vec<(&'static str, &'static str)> {
+    vec![
+        ("c", "Create"),
+        ("q", "SQL Query"),
+        ("k", "Karma"),
+        ("s", "Shell Command"),
+        ("a", "Activate Configuration"),
+    ]
+}
 
 fn parse_table(operation: String) -> String {
     let re = Regex::new(r"\d+").unwrap();
@@ -103,11 +130,8 @@ pub async fn parse_operation_and_execute(
                 "c" | "create" => {
                     return Some(
                         presentation_html_section_body_home_modal(
-                            use_case_operation_create_component(
-                                services,
-                                parse_table(operation.clone()),
-                            )
-                            .await,
+                            operation_create_component(services, parse_table(operation.clone()))
+                                .await,
                         )
                         .await,
                     );
@@ -130,11 +154,8 @@ pub async fn parse_operation_and_execute(
                 }
                 "s" | "command" | "shell" | "shell command" => {
                     if let Some(id) = parse_id(&operation)
-                        && (use_case_karma_execute_command(
-                            services.clone(),
-                            id.parse::<u32>().unwrap_or(0),
-                        )
-                        .await)
+                        && (karma_execute_command(services.clone(), id.parse::<u32>().unwrap_or(0))
+                            .await)
                             .is_none()
                     {
                         let e = Error::other(format!("Failed to run command with id: {}", id));
@@ -152,15 +173,14 @@ pub async fn parse_operation_and_execute(
     None
 }
 
-pub async fn use_case_operation_execute(services: InjectedServices, operation: String) -> String {
-    let only_digits = Regex::new(r"^\d+$").unwrap();
-    if only_digits.is_match(&operation) {
+pub async fn operation_execute(services: InjectedServices, operation: String) -> String {
+    let only_digits_regex = Regex::new(r"^\d+$").unwrap();
+    if only_digits_regex.is_match(&operation) {
         let id = operation.parse::<u32>().unwrap();
         let _ = services
-            .use_cases
-            .operation
-            .only_digits
-            .execute(services.clone(), id)
+            .repository
+            .record
+            .set_quantity(id, 0.0)
             .await
             .inspect_err(|e| log(LogEntry::Error(e.kind(), e.to_string())));
 
@@ -168,7 +188,7 @@ pub async fn use_case_operation_execute(services: InjectedServices, operation: S
         if let Err(e) = vec_karma {
             log(LogEntry::Error(e.kind(), e.to_string()))
         } else {
-            let _ = use_case_karma_deliver(services.clone(), vec_karma.unwrap())
+            let _ = karma_deliver(services.clone(), vec_karma.unwrap())
                 .await
                 .inspect_err(|e| log(LogEntry::Error(e.kind(), e.to_string())));
         }
@@ -180,4 +200,26 @@ pub async fn use_case_operation_execute(services: InjectedServices, operation: S
         None => presentation_html_section_body(services).await,
         Some(element) => element,
     }
+}
+
+pub async fn operation_create_component(services: InjectedServices, table: String) -> String {
+    let column_names = services
+        .repository
+        .operation
+        .get_column_names(table.clone())
+        .await
+        .unwrap_or_default();
+
+    presentation_html_create(table, column_names).await.0
+}
+
+pub async fn operation_create_persist(
+    services: InjectedServices,
+    table: String,
+    data: HashMap<String, String>,
+) -> String {
+    if let Err(e) = services.repository.operation.create(table, data).await {
+        println!("Error creating operation: {}", e);
+    }
+    presentation_html_section_main(services).await
 }

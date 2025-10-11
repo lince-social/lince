@@ -1,4 +1,4 @@
-use crate::application::use_cases::operation::list::{operation_actions, operation_tables};
+use crate::application::operation::{operation_actions, operation_tables};
 use maud::{Markup, html};
 
 pub fn presentation_html_operation_get_operation_input() -> String {

@@ -1,10 +1,14 @@
-use crate::domain::repositories::table::TableRepository;
 use async_trait::async_trait;
 use sqlx::{Pool, Sqlite};
 use std::{
     io::{Error, ErrorKind},
     sync::Arc,
 };
+
+#[async_trait]
+pub trait TableRepository: Send + Sync {
+    async fn delete_by_id(&self, table: String, id: String) -> Result<(), Error>;
+}
 
 pub struct TableRepositoryImpl {
     pool: Arc<Pool<Sqlite>>,

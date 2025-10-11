@@ -1,4 +1,3 @@
-use crate::domain::repositories::operation::OperationRepository;
 use async_trait::async_trait;
 use sqlx::{Pool, Row, Sqlite};
 use std::{
@@ -6,6 +5,12 @@ use std::{
     io::{Error, ErrorKind},
     sync::Arc,
 };
+
+#[async_trait]
+pub trait OperationRepository: Send + Sync {
+    async fn get_column_names(&self, table: String) -> Result<Vec<String>, Error>;
+    async fn create(&self, table: String, data: HashMap<String, String>) -> Result<(), Error>;
+}
 
 pub struct OperationRepositoryImpl {
     pool: Arc<Pool<Sqlite>>,

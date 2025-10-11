@@ -1,7 +1,4 @@
-use crate::domain::{
-    entities::table::{Row as RowEntity, Table},
-    repositories::view::ViewRepository,
-};
+use crate::domain::clean::table::{Row as RowEntity, Table};
 use async_trait::async_trait;
 use futures::future::join_all;
 use serde::{Deserialize, Serialize};
@@ -11,6 +8,14 @@ use std::{
     io::{Error, ErrorKind},
     sync::Arc,
 };
+
+#[async_trait]
+pub trait ViewRepository: Send + Sync {
+    async fn toggle_by_view_id(&self, collection_id: u32, view_id: u32) -> Result<(), Error>;
+    async fn toggle_by_collection_id(&self, id: u32) -> Result<(), Error>;
+    async fn execute_queries(&self, queries: Vec<String>) -> Result<Vec<(String, Table)>, Error>;
+    async fn get_active_view_data(&self) -> Result<(Vec<(String, Table)>, Vec<String>), Error>;
+}
 
 #[derive(sqlx::FromRow, Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub struct QueriedView {

@@ -1,5 +1,5 @@
 use crate::{
-    domain::entities::collection::Collection,
+    domain::clean::collection::Collection,
     infrastructure::{cross_cutting::InjectedServices, database::repositories::view::QueriedView},
     presentation::html::view::toggle_all::presentation_html_view_toggle_all,
 };

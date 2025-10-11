@@ -1,15 +1,13 @@
-use crate::infrastructure::cross_cutting::InjectedServices;
+use crate::{
+    application::configuration::get_active_colorscheme,
+    infrastructure::cross_cutting::InjectedServices,
+};
 
 pub async fn presentation_html_style(services: InjectedServices) -> String {
     "<style>
         :root {"
         .to_string()
-        + services
-            .use_cases
-            .configuration
-            .get_active_colorscheme
-            .execute(services.clone())
-            .await
+        + get_active_colorscheme(services.clone()).await
         + "}
 
         body {

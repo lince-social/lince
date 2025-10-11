@@ -1,5 +1,5 @@
 use crate::{
-    domain::entities::table::{SortedTables, Table},
+    domain::clean::table::{SortedTables, Table},
     infrastructure::cross_cutting::InjectedServices,
     presentation::html::table::add_row::presentation_html_table_add_row,
 };

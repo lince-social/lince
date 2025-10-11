@@ -1,7 +1,7 @@
 use crate::infrastructure::cross_cutting::InjectedServices;
 use std::io::Error;
 
-pub async fn use_case_table_patch_row(
+pub async fn table_patch_row(
     services: InjectedServices,
     table: String,
     id: String,

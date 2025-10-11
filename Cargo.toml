@@ -8,16 +8,16 @@ keywords = ["todo"]
 include = ["/src"]
 
 [features]
-default = []
+default = ["gpui"]
 gpui = ["dep:gpui"]
 
 [dependencies]
 async-trait = "0.1.89"
-axum = "0.8.4"
+axum = "0.8.6"
 chrono = "0.4.42"
 dirs = "6.0.0"
 futures = "0.3.31"
-gpui = { git = "https://github.com/zed-industries/zed", optional = true }
+gpui = { version="0.2.0", optional = true }
 maud = "0.27.0"
 regex = "1.11.3"
 rhai = "1.23.4"

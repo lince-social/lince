@@ -1,41 +1,21 @@
 use crate::{
+    domain::clean::collection::Collection,
     infrastructure::{
         cross_cutting::{Injected, InjectedServices},
-        database::repositories::collection::CollectionRow,
+        database::repositories::{collection::CollectionRow, view::QueriedView},
     },
-    ok,
+    log, ok,
 };
+use chrono::Utc;
 use gpui::{
-    App, AppContext, Application, Bounds, Context, FocusHandle, Focusable, Global,
-    InteractiveElement, IntoElement, KeyDownEvent, MouseButton, MouseUpEvent, ParentElement,
-    Render, Styled, Task, Window, WindowBounds, WindowOptions, actions, div,
-    prelude::FluentBuilder, px, rgb, size,
+    App, AppContext, Application, Bounds, Context, FocusHandle, Focusable, InteractiveElement,
+    IntoElement, KeyDownEvent, MouseButton, MouseUpEvent, ParentElement, Render, Styled, Task,
+    Window, WindowBounds, WindowOptions, actions, div, prelude::FluentBuilder, px, rgb, size,
 };
-use std::{
-    io::Error,
-    sync::{Arc, Weak},
-};
-// use tokio::sync::Mutex;
+use std::{io::Error, sync::Arc, time::Duration};
+use tokio::time::sleep;
 
 actions!(todo, [AddTodo, Backspace, ClearInput]);
-
-pub struct AppState {
-    pub data: Arc<LinceData>,
-}
-struct GlobalAppState(Weak<AppState>);
-impl Global for GlobalAppState {}
-impl AppState {
-    pub fn global(cx: &App) -> Weak<Self> {
-        cx.global::<GlobalAppState>().0.clone()
-    }
-    pub fn try_global(cx: &App) -> Option<Weak<Self>> {
-        cx.try_global::<GlobalAppState>()
-            .map(|state| state.0.clone())
-    }
-    pub fn set_global(state: Weak<AppState>, cx: &mut App) {
-        cx.set_global(GlobalAppState(state));
-    }
-}
 
 pub async fn gpui_app(services: InjectedServices) {
     Application::new().run(move |cx: &mut App| {
@@ -91,7 +71,7 @@ impl LinceData {
 struct LinceApp {
     focus_handle: FocusHandle,
     // pub data: LinceData,
-    pub _update_data: Task<Result<(), Error>>,
+    pub _update_data: Option<Task<Result<(), Error>>>,
     pub data: LinceData,
     services: Arc<Injected>,
     todos: Vec<Todo>,
@@ -103,25 +83,29 @@ impl LinceApp {
         let sc = services.clone();
         let update_data = cx.spawn(async move |this, cx| {
             loop {
-                let collection = vec![
-                    sc.repository
-                        .collection
-                        .get_active()
-                        .await
-                        .unwrap()
-                        .unwrap(),
-                ];
+                println!("Looping for collection");
+                let collection = vec![match sc.repository.collection.get_active().await {
+                    Err(e) => {
+                        log!(e, "Failed to get Collections for GPUI");
+                        (Collection::error(), vec![QueriedView::default()])
+                    }
+                    Ok(collection) => collection.unwrap_or_default(),
+                }];
+                dbg!(&collection.first().unwrap().0.id);
                 ok!(this.update(cx, |this, cx| {
                     this.data.collection = collection;
+                    println!("notifying");
+                    dbg!(Utc::now());
                     cx.notify();
                 }));
+                sleep(Duration::from_millis(400)).await;
             }
         });
 
         Self {
             focus_handle: cx.focus_handle(),
             data: LinceData::default(),
-            _update_data: update_data,
+            _update_data: Some(update_data),
             services: services.clone(),
             todos: Vec::new(),
             input_text: String::new(),
@@ -183,7 +167,6 @@ impl Render for LinceApp {
             .on_action(cx.listener(Self::add_todo))
             .on_action(cx.listener(Self::backspace))
             .on_action(cx.listener(Self::clear_input))
-            // Handle regular character input
             .on_key_down(cx.listener(|this, event: &KeyDownEvent, _, cx| {
                 if let Some(key_char) = &event.keystroke.key_char
                     && key_char.len() == 1

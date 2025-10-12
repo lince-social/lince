@@ -24,6 +24,27 @@ pub struct QueriedView {
     pub name: String,
     pub query: String,
 }
+impl Default for QueriedView {
+    fn default() -> Self {
+        Self {
+            id: 0,
+            quantity: 1,
+            name: "Default View".to_string(),
+            query: "SELECT * FROM record".to_string(),
+        }
+    }
+}
+impl QueriedView {
+    pub fn error() -> Self {
+        Self {
+            id: 0,
+            quantity: 1,
+            name: "Error in View".to_string(),
+            query: "".to_string(),
+        }
+    }
+}
+
 #[derive(sqlx::FromRow)]
 pub struct QueriedViewWithCollectionId {
     pub collection_id: u32,

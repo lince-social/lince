@@ -8,7 +8,8 @@ keywords = ["todo"]
 include = ["/src"]
 
 [features]
-default = ["gpui"]
+default = ["karma"]
+karma = []
 gpui = ["dep:gpui"]
 
 [dependencies]

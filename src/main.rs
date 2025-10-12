@@ -7,41 +7,43 @@ mod presentation;
 #[cfg(feature = "gpui")]
 use crate::presentation::gpui::app::gpui_app;
 
-use crate::{
-    application::karma::karma_deliver,
-    infrastructure::{
-        cross_cutting::dependency_injection,
-        database::management::{
-            connection::connection, migration::execute_migration, schema::schema,
+// #[cfg(feature = "karma")]
+use crate::application::karma::karma_deliver;
+// #[cfg(feature = "karma")]
+use std::time::Duration;
+
+use crate::infrastructure::{
+    cross_cutting::dependency_injection,
+    database::management::{connection::connection, migration::execute_migration, schema::schema},
+    http::{
+        handlers::section::handler_section_favicon,
+        routers::{
+            collection::collection_router, operation::operation_router, section::section_router,
+            table::table_router, view::view_router,
         },
-        http::{
-            handlers::section::handler_section_favicon,
-            routers::{
-                collection::collection_router, operation::operation_router,
-                section::section_router, table::table_router, view::view_router,
-            },
-        },
-        utils::log::{LogEntry, log},
     },
+    utils::logging::{LogEntry, generalog},
 };
 use axum::{Router, routing::get};
-use std::{env, io::Error, sync::Arc, time::Duration};
+use std::{env, io::Error, sync::Arc};
 use tokio::spawn;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     let db = connection().await.inspect_err(|e| {
-        log(LogEntry::Error(e.kind(), e.to_string()));
+        generalog(LogEntry::Error(e.kind(), e.to_string()));
     })?;
     let db = Arc::new(db);
 
     schema(db.clone()).await.inspect_err(|e| {
-        log(LogEntry::Error(e.kind(), e.to_string()));
+        generalog(LogEntry::Error(e.kind(), e.to_string()));
     })?;
 
     let services = dependency_injection(db.clone());
 
+    // #[cfg(feature = "karma")]
     let move_services = services.clone();
+    // #[cfg(feature = "karma")]
     tokio::spawn({
         async move {
             let services = move_services.clone();
@@ -52,9 +54,9 @@ async fn main() -> Result<(), Error> {
                 });
 
                 if let Err(e) = vec_karma {
-                    log(LogEntry::Error(e.kind(), e.to_string()));
+                    generalog(LogEntry::Error(e.kind(), e.to_string()));
                 } else if let Err(e) = karma_deliver(services.clone(), vec_karma.unwrap()).await {
-                    log(LogEntry::Error(e.kind(), e.to_string()));
+                    generalog(LogEntry::Error(e.kind(), e.to_string()));
                 }
 
                 println!("Karma Delivered!");
@@ -66,7 +68,7 @@ async fn main() -> Result<(), Error> {
     for arg in env::args() {
         if arg.as_str() == "migrate" {
             execute_migration(db.clone()).await.inspect_err(|e| {
-                log(LogEntry::Error(e.kind(), e.to_string()));
+                generalog(LogEntry::Error(e.kind(), e.to_string()));
             })?;
         } else if arg.as_str() == "gpui" {
             let cloned_services = services.clone();

@@ -36,10 +36,13 @@ pub async fn presentation_html_karma_view(services: InjectedServices) -> String 
                                         td { (karma_view.karma_quantity) }
 
                                         td {
-                                            div class="karma-cell" {
+                                            .karma-cell {
                                                 .karma-primary.column {
-                                                    .div{ (karma_view.karma_condition_value) }
-                                                    .div {(karma_view.karma_condition_condition)}
+                                                    .div {(karma_view.karma_condition_explanation)}
+                                                    .row {
+                                                        .div { (karma_view.karma_condition_condition) }
+                                                        .div{ (karma_view.karma_condition_value.clone().unwrap_or_default()) }
+                                                    }
                                                 }
                                             }
                                         }
@@ -54,9 +57,13 @@ pub async fn presentation_html_karma_view(services: InjectedServices) -> String 
 
                                         // Karma Consequence Cell - shows consequence
                                         td class=(if last_row { "bottom-right" } else { "" }) {
-                                            div class="karma-cell" {
-                                                div class="karma-primary" {
-                                                    (karma_view.karma_consequence_consequence)
+                                            .karma-cell {
+                                                .karma-primary.column {
+                                                    .div {(karma_view.karma_consequence_explanation)}
+                                                    .row.fence--row.separa {
+                                                        .div { (karma_view.karma_consequence_consequence) }
+                                                        .div {(karma_view.karma_consequence_value.clone().unwrap_or_default())}
+                                                    }
                                                 }
                                             }
                                         }

@@ -74,7 +74,8 @@ cargo fix --broken-code --allow-dirty && cargo clippy --fix --allow-dirty --quie
 mprocs \
 "bacon . --job fix" \
 "systemctl --user restart lince.service &&  journalctl --user -u lince.service -f --output=cat" \
-"systemctl --user stop lince.service &&  journalctl --user -u lince.service -f --output=cat"
+"systemctl --user stop lince.service &&  journalctl --user -u lince.service -f --output=cat" \
+"bacon --job featureful"
 ```
 
 ## book

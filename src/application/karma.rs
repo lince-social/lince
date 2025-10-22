@@ -4,7 +4,6 @@ use crate::{
         query::query_execute,
     },
     domain::clean::{frequency::Frequency, karma::Karma},
-    info,
     infrastructure::{
         cross_cutting::InjectedServices,
         utils::logging::{LogEntry, log},

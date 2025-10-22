@@ -58,7 +58,31 @@ pub async fn presentation_html_style(services: InjectedServices) -> String {
             border-bottom-right-radius: 0.75rem;
         }
 
+        .separa {
+            justify-content: space-between;
+        }
 
+        .fence--row {
+            display: flex;
+            flex-direction: row;
+        }
+        .fence--row > * {
+            border: none; /* start with no borders */
+        }
+        .fence--row > * + * {
+            border-left: 1.5px solid transparent;
+        }
+
+        .fence-col {
+            display: flex;
+            /* flex-direction: column; */
+        }
+        .fence-col > * {
+            border: none;
+        }
+        .fence-col > * + * {
+            border-top: 1.33px solid transparent;
+        }
         th {
             background-color: var(--table-th-bg);
         }
@@ -183,25 +207,25 @@ pub async fn presentation_html_style(services: InjectedServices) -> String {
             padding: 0rem;
             margin: 0rem;
         }
-        
+
         /* Karma cell styles for combined condition/consequence display */
         .karma-cell {
             display: flex;
             flex-direction: column;
             gap: 0.25rem;
         }
-        
+
         .karma-primary {
             font-weight: bold;
             font-size: 0.9em;
         }
-        
+
         .karma-secondary {
             font-size: 0.8em;
             opacity: 0.8;
             font-style: italic;
         }
-        
+
         .glow {
         box-shadow: 0 0 20px white, 0 0 40px white, 0 0 60px white;
         animation: glow 10s infinite alternate;

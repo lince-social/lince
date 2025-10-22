@@ -21,7 +21,7 @@ macro_rules! ok {
 #[macro_export]
 macro_rules! log {
     ($error:expr, $($message:expr)*) => {
-        $crate::infrastructure::utils::logging::generalog(
+        $crate::infrastructure::utils::logging::log(
             $crate::infrastructure::utils::logging::LogEntry::Error($error.kind(), format!(
                 "{}:{} | {}",
                 file!(),
@@ -35,13 +35,12 @@ macro_rules! log {
 macro_rules! info {
     ($($arg:tt)+) => {
         $crate::infrastructure::utils::logging::log(
-            $crate::infrastructure::utils::logging::LogType::Info(format!(
+            $crate::infrastructure::utils::logging::LogEntry::Info(format!(
                 "{}:{} | {}",
                 file!(),
                 line!(),
                 format!($($arg)+)
-            )),
-            None,
+            ))
         )
     };
 }

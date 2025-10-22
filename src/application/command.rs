@@ -1,6 +1,6 @@
 use crate::infrastructure::{
     cross_cutting::InjectedServices,
-    utils::logging::{LogEntry, generalog},
+    utils::logging::{LogEntry, log},
 };
 use std::io::ErrorKind;
 use tokio::process::Command as TokioCommand;
@@ -9,7 +9,7 @@ pub async fn karma_execute_command(services: InjectedServices, id: u32) -> Optio
     let res = services.repository.command.get_by_id(id).await;
     match res {
         Err(e) => {
-            generalog(LogEntry::Error(
+            log(LogEntry::Error(
                 e.kind(),
                 format!("Error when getting command with id: {}. Error: {}", id, e),
             ));
@@ -38,7 +38,7 @@ pub async fn service_karma_execute_command(command: String) -> Option<i64> {
             println!("stderr:\n{}", stderr);
 
             if !output.status.success() {
-                generalog(LogEntry::Error(
+                log(LogEntry::Error(
                     ErrorKind::Other,
                     format!(
                         "Command '{}' failed with status: {}. Stderr: {}",
@@ -50,7 +50,7 @@ pub async fn service_karma_execute_command(command: String) -> Option<i64> {
             Some(0)
         }
         Err(e) => {
-            generalog(LogEntry::Error(
+            log(LogEntry::Error(
                 e.kind(),
                 format!("Failed to execute command '{}': {}", command, e),
             ));

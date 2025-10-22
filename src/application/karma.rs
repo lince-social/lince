@@ -4,9 +4,10 @@ use crate::{
         query::query_execute,
     },
     domain::clean::{frequency::Frequency, karma::Karma},
+    info,
     infrastructure::{
         cross_cutting::InjectedServices,
-        utils::logging::{LogEntry, generalog},
+        utils::logging::{LogEntry, log},
     },
 };
 use regex::Regex;
@@ -31,7 +32,7 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
         ) {
             Ok(c) => c,
             Err(e) => {
-                generalog(LogEntry::Error(
+                log(LogEntry::Error(
                     e.kind(),
                     format!("record quantity error on karma id {}", karma.id),
                 ));
@@ -47,7 +48,7 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
         ) {
             Ok(c) => c,
             Err(e) => {
-                generalog(LogEntry::Error(
+                log(LogEntry::Error(
                     e.kind(),
                     format!("frequency error on karma id {}: {}", karma.id, e),
                 ));
@@ -58,7 +59,7 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
         let condition = match replace_commands(services.clone(), &regex_command, condition) {
             Ok(c) => c,
             Err(e) => {
-                generalog(LogEntry::Error(
+                log(LogEntry::Error(
                     e.kind(),
                     format!("command error on karma id {}: {}", karma.id, e),
                 ));
@@ -81,13 +82,13 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
                     if let Err(e) = futures::executor::block_on(async {
                         services.repository.record.set_quantity(id, condition).await
                     }) {
-                        generalog(LogEntry::Error(
+                        log(LogEntry::Error(
                             ErrorKind::Other,
                             format!("Error when zeroing record on karma id {}: {e}", karma.id),
                         ));
                     }
                 }
-                Err(e) => generalog(LogEntry::Error(
+                Err(e) => log(LogEntry::Error(
                     ErrorKind::Other,
                     format!(
                         "Failed to parse record id '{}' on karma id {}: {e}",
@@ -106,13 +107,13 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
                         karma_execute_command(services.clone(), id).await
                     });
                     if result.is_none() {
-                        generalog(LogEntry::Error(
+                        log(LogEntry::Error(
                             ErrorKind::Other,
                             format!("Command returned None for karma id {}", karma.id),
                         ));
                     }
                 }
-                Err(e) => generalog(LogEntry::Error(
+                Err(e) => log(LogEntry::Error(
                     ErrorKind::Other,
                     format!(
                         "Failed to parse command id '{}' on karma id {}: {e}",
@@ -129,13 +130,13 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
                     if let Err(e) = futures::executor::block_on(async {
                         query_execute(services.clone(), id).await
                     }) {
-                        generalog(LogEntry::Error(
+                        log(LogEntry::Error(
                             ErrorKind::Other,
                             format!("Error when executing query on karma id {}: {e}", karma.id),
                         ));
                     }
                 }
-                Err(e) => generalog(LogEntry::Error(
+                Err(e) => log(LogEntry::Error(
                     ErrorKind::Other,
                     format!(
                         "Failed to parse query id '{}' on karma id {}: {e}",

@@ -2,7 +2,7 @@ use crate::{
     application::{command::karma_execute_command, karma::karma_deliver},
     infrastructure::{
         cross_cutting::InjectedServices,
-        utils::logging::{LogEntry, generalog},
+        utils::logging::{LogEntry, log},
     },
     presentation::html::{
         operation::{create::presentation_html_create, query::presentation_html_operation_query},
@@ -140,7 +140,7 @@ pub async fn parse_operation_and_execute(
                     if let Some(id) = parse_id(&operation)
                         && let Err(e) = services.repository.collection.set_active(id).await
                     {
-                        generalog(LogEntry::Error(e.kind(), e.to_string()))
+                        log(LogEntry::Error(e.kind(), e.to_string()))
                     }
                     return Some(presentation_html_section_body(services).await);
                 }
@@ -148,7 +148,7 @@ pub async fn parse_operation_and_execute(
                     if let Some(id) = parse_id(&operation)
                         && let Err(e) = services.repository.configuration.set_active(id).await
                     {
-                        generalog(LogEntry::Error(e.kind(), e.to_string()))
+                        log(LogEntry::Error(e.kind(), e.to_string()))
                     }
                     return Some(presentation_html_section_body(services).await);
                 }
@@ -159,7 +159,7 @@ pub async fn parse_operation_and_execute(
                             .is_none()
                     {
                         let e = Error::other(format!("Failed to run command with id: {}", id));
-                        generalog(LogEntry::Error(e.kind(), e.to_string()))
+                        log(LogEntry::Error(e.kind(), e.to_string()))
                     }
 
                     return Some(presentation_html_section_body(services).await);
@@ -182,15 +182,15 @@ pub async fn operation_execute(services: InjectedServices, operation: String) ->
             .record
             .set_quantity(id, 0.0)
             .await
-            .inspect_err(|e| generalog(LogEntry::Error(e.kind(), e.to_string())));
+            .inspect_err(|e| log(LogEntry::Error(e.kind(), e.to_string())));
 
-        let vec_karma = services.repository.karma.get(Some(id)).await;
+        let vec_karma = services.repository.karma.get_active(Some(id)).await;
         if let Err(e) = vec_karma {
-            generalog(LogEntry::Error(e.kind(), e.to_string()))
+            log(LogEntry::Error(e.kind(), e.to_string()))
         } else {
             let _ = karma_deliver(services.clone(), vec_karma.unwrap())
                 .await
-                .inspect_err(|e| generalog(LogEntry::Error(e.kind(), e.to_string())));
+                .inspect_err(|e| log(LogEntry::Error(e.kind(), e.to_string())));
         }
 
         return presentation_html_section_body(services).await;

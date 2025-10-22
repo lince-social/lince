@@ -119,6 +119,10 @@ impl KarmaRepository for KarmaRepositoryImpl {
                 k.quantity AS karma_quantity,
 
                 kcd.condition AS karma_condition_condition,
+                -- condition: explanation = record.head when rq<id> present, otherwise the condition text
+                COALESCE(rcon.head, kcd.condition) AS karma_condition_explanation,
+                -- condition value: record.quantity when rq present, otherwise NULL (maps to Option<String>)
+                CAST(rcon.quantity AS TEXT) AS karma_condition_value,
                 kcd.name AS karma_condition_name,
                 kcd.quantity AS karma_condition_quantity,
                 kcd.id AS karma_condition_id,
@@ -130,12 +134,15 @@ impl KarmaRepository for KarmaRepositoryImpl {
                 kcs.quantity AS karma_consequence_quantity,
                 kcs.id AS karma_consequence_id,
 
-                COALESCE(r.head, '') AS karma_consequence_explanation,
-                COALESCE(CAST(r.quantity AS TEXT), '') AS karma_consequence_value
+                -- consequence: explanation = record.head when rq<id> present, otherwise the consequence text
+                COALESCE(rc.head, kcs.consequence) AS karma_consequence_explanation,
+                -- consequence value: record.quantity when rq present, otherwise NULL (maps to Option<String>)
+                CAST(rc.quantity AS TEXT) AS karma_consequence_value
             FROM karma k
             JOIN karma_condition kcd ON kcd.id = k.condition_id
             JOIN karma_consequence kcs ON kcs.id = k.consequence_id
-            LEFT JOIN record r ON r.id = CAST(substr(kcs.consequence, instr(kcs.consequence, 'rq') + 2) AS INTEGER)
+            LEFT JOIN record rc ON instr(kcs.consequence, 'rq') > 0 AND rc.id = CAST(substr(kcs.consequence, instr(kcs.consequence, 'rq') + 2) AS INTEGER)
+            LEFT JOIN record rcon ON instr(kcd.condition, 'rq') > 0 AND rcon.id = CAST(substr(kcd.condition, instr(kcd.condition, 'rq') + 2) AS INTEGER)
             "
         .to_string();
 

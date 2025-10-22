@@ -7,7 +7,7 @@ pub struct KarmaView {
     pub karma_name: String,
     pub karma_quantity: i32,
 
-    pub karma_condition_value: String,
+    pub karma_condition_value: Option<String>,
     pub karma_condition_explanation: String,
     pub karma_condition_condition: String,
     pub karma_condition_name: String,
@@ -21,5 +21,5 @@ pub struct KarmaView {
     pub karma_consequence_name: String,
     pub karma_consequence_consequence: String,
     pub karma_consequence_explanation: String,
-    pub karma_consequence_value: String,
+    pub karma_consequence_value: Option<String>,
 }

@@ -10,7 +10,7 @@ pub enum LogEntry {
     Info(String),
 }
 
-pub fn generalog(entry: LogEntry) {
+pub fn log(entry: LogEntry) {
     let timestamp: DateTime<Utc> = Utc::now();
     let date = timestamp.format("%Y-%m-%d").to_string();
     let time = timestamp.format("%Y-%m-%d %H:%M:%S").to_string();

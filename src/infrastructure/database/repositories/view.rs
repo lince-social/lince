@@ -183,9 +183,9 @@ impl ViewRepository for ViewRepositoryImpl {
             )
         })?;
 
-        let (special_queries, sql_queries) = queries
-            .into_iter()
-            .partition(|query| ["karma_orchestra".to_string()].contains(query));
+        let (special_queries, sql_queries) = queries.into_iter().partition(|query| {
+            ["karma_orchestra".to_string(), "karma_view".to_string()].contains(query)
+        });
 
         let res = self.execute_queries(sql_queries).await.map_err(|e| {
             Error::new(

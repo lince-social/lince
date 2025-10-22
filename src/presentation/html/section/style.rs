@@ -34,6 +34,30 @@ pub async fn presentation_html_style(services: InjectedServices) -> String {
         th, td {
             border: var(--table-cell-border-width) solid var(--table-border);
         }
+        .rounded-table {
+            border-collapse: separate;
+            border-spacing: 0;
+            overflow: hidden;
+        }
+
+        .rounded-table th,
+        .rounded-table td {
+            padding: 0.5rem;
+        }
+
+        .rounded-table .top-left {
+            border-top-left-radius: 0.75rem;
+        }
+        .rounded-table .top-right {
+            border-top-right-radius: 0.75rem;
+        }
+        .rounded-table .bottom-left {
+            border-bottom-left-radius: 0.75rem;
+        }
+        .rounded-table .bottom-right {
+            border-bottom-right-radius: 0.75rem;
+        }
+
 
         th {
             background-color: var(--table-th-bg);
@@ -159,6 +183,25 @@ pub async fn presentation_html_style(services: InjectedServices) -> String {
             padding: 0rem;
             margin: 0rem;
         }
+        
+        /* Karma cell styles for combined condition/consequence display */
+        .karma-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .karma-primary {
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .karma-secondary {
+            font-size: 0.8em;
+            opacity: 0.8;
+            font-style: italic;
+        }
+        
         .glow {
         box-shadow: 0 0 20px white, 0 0 40px white, 0 0 60px white;
         animation: glow 10s infinite alternate;

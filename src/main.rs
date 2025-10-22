@@ -22,21 +22,20 @@ use crate::infrastructure::{
             table::table_router, view::view_router,
         },
     },
-    utils::logging::{LogEntry, generalog},
+    utils::logging::{LogEntry, log},
 };
 use axum::{Router, routing::get};
 use std::{env, io::Error, sync::Arc};
-use tokio::spawn;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     let db = connection().await.inspect_err(|e| {
-        generalog(LogEntry::Error(e.kind(), e.to_string()));
+        log(LogEntry::Error(e.kind(), e.to_string()));
     })?;
     let db = Arc::new(db);
 
     schema(db.clone()).await.inspect_err(|e| {
-        generalog(LogEntry::Error(e.kind(), e.to_string()));
+        log(LogEntry::Error(e.kind(), e.to_string()));
     })?;
 
     let services = dependency_injection(db.clone());
@@ -54,9 +53,9 @@ async fn main() -> Result<(), Error> {
                 });
 
                 if let Err(e) = vec_karma {
-                    generalog(LogEntry::Error(e.kind(), e.to_string()));
+                    log(LogEntry::Error(e.kind(), e.to_string()));
                 } else if let Err(e) = karma_deliver(services.clone(), vec_karma.unwrap()).await {
-                    generalog(LogEntry::Error(e.kind(), e.to_string()));
+                    log(LogEntry::Error(e.kind(), e.to_string()));
                 }
 
                 println!("Karma Delivered!");
@@ -67,13 +66,15 @@ async fn main() -> Result<(), Error> {
 
     for arg in env::args() {
         if arg.as_str() == "migrate" {
+            println!("Executing migration...");
             execute_migration(db.clone()).await.inspect_err(|e| {
-                generalog(LogEntry::Error(e.kind(), e.to_string()));
+                log(LogEntry::Error(e.kind(), e.to_string()));
             })?;
         } else if arg.as_str() == "gpui" {
+            #[cfg(feature = "gpui")]
             let cloned_services = services.clone();
+            #[cfg(feature = "gpui")]
             spawn(async move {
-                #[cfg(feature = "gpui")]
                 gpui_app(cloned_services.clone()).await;
             });
         } else if arg.as_str() == "html" {

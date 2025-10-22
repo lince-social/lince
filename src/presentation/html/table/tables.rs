@@ -24,21 +24,34 @@ pub async fn presentation_html_tables(tables: Vec<(String, Table)>) -> Markup {
             @for (table_name, table, headers) in sorted_tables {
                 div {
                     row.middle_y.s_gap {p { (table_name) } (presentation_html_table_add_row(table_name.clone()))}
-                    table {
+                    table class="rounded-table" {
                         @if !headers.is_empty() {
                             thead {
                                 tr {
-                                    @for key in &headers {
-                                        th { (key) }
+                                    @for (i, key) in headers.iter().enumerate() {
+                                        @let class = match i {
+                                            0 => "top-left",
+                                            _ if i == headers.len() - 1 => "top-right",
+                                            _ => "",
+                                        };
+                                        th class=(class) { (key) }
                                     }
                                 }
                             }
                         }
                         tbody {
-                            @for row in table {
+                            @for (row_i, row) in table.iter().enumerate() {
+                                @let last_row = row_i == table.len() - 1;
                                 tr {
-                                    @for key in &headers {
-                                        td {
+                                    @for (col_i, key) in headers.iter().enumerate() {
+                                        @let class = match (row_i, col_i) {
+                                           (_, 0) if last_row => "bottom-left",
+                                            (_, x) if last_row && x == headers.len() - 1 => "bottom-right",
+                                            _ => "",
+                                        };
+
+                                        td class=(class) {
+                                            // your <form> and <button> logic stays the same
                                             form
                                                 hx-post=(format!("/table/{}/{}/{}", table_name, row.get("id").unwrap(), key))
                                                 hx-swap="outerHTML"

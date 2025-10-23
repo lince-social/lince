@@ -224,7 +224,7 @@ impl KarmaRepository for KarmaRepositoryImpl {
             LEFT JOIN frequency fcon ON instr(kcd.condition, 'f') > 0 AND fcon.id = CAST(substr(kcd.condition, instr(kcd.condition, 'f') + 1) AS INTEGER)
             ";
 
-        let data: Vec<KarmaConditionView> = sqlx::query_as(&sql)
+        let data: Vec<KarmaConditionView> = sqlx::query_as(sql)
             .fetch_all(&*self.pool)
             .await
             .map_err(|e| Error::new(ErrorKind::InvalidData, e))?;
@@ -267,7 +267,7 @@ impl KarmaRepository for KarmaRepositoryImpl {
             LEFT JOIN frequency fcmd ON instr(kcs.consequence, 'f') > 0 AND fcmd.id = CAST(substr(kcs.consequence, instr(kcs.consequence, 'f') + 1) AS INTEGER)
             ";
 
-        let data: Vec<KarmaConsequenceView> = sqlx::query_as(&sql)
+        let data: Vec<KarmaConsequenceView> = sqlx::query_as(sql)
             .fetch_all(&*self.pool)
             .await
             .map_err(|e| Error::new(ErrorKind::InvalidData, e))?;

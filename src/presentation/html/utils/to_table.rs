@@ -1,4 +1,4 @@
-use crate::domain::entities::table::{SortedTables, Table};
+use crate::domain::clean::table::{SortedTables, Table};
 use serde::Serialize;
 use std::collections::HashMap;
 

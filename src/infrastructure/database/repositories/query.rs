@@ -1,10 +1,16 @@
-use crate::domain::{entities::operation::Query, repositories::query::QueryRepository};
+use crate::domain::clean::operation::Query;
 use async_trait::async_trait;
 use sqlx::{Pool, Sqlite};
 use std::{
     io::{Error, ErrorKind},
     sync::Arc,
 };
+
+#[async_trait]
+pub trait QueryRepository: Send + Sync {
+    async fn get_by_id(&self, id: u32) -> Result<Query, Error>;
+    async fn execute(&self, sql: &str) -> Result<(), Error>;
+}
 
 pub struct QueryRepositoryImpl {
     pool: Arc<Pool<Sqlite>>,

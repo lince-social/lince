@@ -9,7 +9,7 @@ pub async fn handler_view_toggle_view_id(
     Path((collection_id, view_id)): Path<(u32, u32)>,
 ) -> String {
     let _ = services
-        .providers
+        .repository
         .view
         .toggle_by_view_id(collection_id, view_id)
         .await;
@@ -21,6 +21,6 @@ pub async fn handler_view_toggle_collection_id(
     State(services): State<InjectedServices>,
     Path(id): Path<u32>,
 ) -> String {
-    let _ = services.providers.view.toggle_by_collection_id(id).await;
+    let _ = services.repository.view.toggle_by_collection_id(id).await;
     presentation_html_section_body(services).await
 }

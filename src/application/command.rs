@@ -1,0 +1,60 @@
+use crate::infrastructure::{
+    cross_cutting::InjectedServices,
+    utils::logging::{LogEntry, log},
+};
+use std::io::ErrorKind;
+use tokio::process::Command as TokioCommand;
+
+pub async fn karma_execute_command(services: InjectedServices, id: u32) -> Option<i64> {
+    let res = services.repository.command.get_by_id(id).await;
+    match res {
+        Err(e) => {
+            log(LogEntry::Error(
+                e.kind(),
+                format!("Error when getting command with id: {}. Error: {}", id, e),
+            ));
+            None
+        }
+        Ok(opt) => match opt {
+            None => None,
+            Some(command) => service_karma_execute_command(command.command).await,
+        },
+    }
+}
+
+pub async fn service_karma_execute_command(command: String) -> Option<i64> {
+    let output = TokioCommand::new("sh")
+        .arg("-c")
+        .arg(&command)
+        .output()
+        .await;
+
+    match output {
+        Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let stderr = String::from_utf8_lossy(&output.stderr);
+
+            println!("stdout:\n{}", stdout);
+            println!("stderr:\n{}", stderr);
+
+            if !output.status.success() {
+                log(LogEntry::Error(
+                    ErrorKind::Other,
+                    format!(
+                        "Command '{}' failed with status: {}. Stderr: {}",
+                        command, output.status, stderr
+                    ),
+                ));
+                return None;
+            }
+            Some(0)
+        }
+        Err(e) => {
+            log(LogEntry::Error(
+                e.kind(),
+                format!("Failed to execute command '{}': {}", command, e),
+            ));
+            None
+        }
+    }
+}

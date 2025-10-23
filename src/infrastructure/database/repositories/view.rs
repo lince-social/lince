@@ -1,7 +1,4 @@
-use crate::domain::{
-    entities::table::{Row as RowEntity, Table},
-    repositories::view::ViewRepository,
-};
+use crate::domain::clean::table::{Row as RowEntity, Table};
 use async_trait::async_trait;
 use futures::future::join_all;
 use serde::{Deserialize, Serialize};
@@ -12,6 +9,14 @@ use std::{
     sync::Arc,
 };
 
+#[async_trait]
+pub trait ViewRepository: Send + Sync {
+    async fn toggle_by_view_id(&self, collection_id: u32, view_id: u32) -> Result<(), Error>;
+    async fn toggle_by_collection_id(&self, id: u32) -> Result<(), Error>;
+    async fn execute_queries(&self, queries: Vec<String>) -> Result<Vec<(String, Table)>, Error>;
+    async fn get_active_view_data(&self) -> Result<(Vec<(String, Table)>, Vec<String>), Error>;
+}
+
 #[derive(sqlx::FromRow, Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub struct QueriedView {
     pub id: u32,
@@ -19,6 +24,27 @@ pub struct QueriedView {
     pub name: String,
     pub query: String,
 }
+impl Default for QueriedView {
+    fn default() -> Self {
+        Self {
+            id: 0,
+            quantity: 1,
+            name: "Default View".to_string(),
+            query: "SELECT * FROM record".to_string(),
+        }
+    }
+}
+impl QueriedView {
+    pub fn error() -> Self {
+        Self {
+            id: 0,
+            quantity: 1,
+            name: "Error in View".to_string(),
+            query: "".to_string(),
+        }
+    }
+}
+
 #[derive(sqlx::FromRow)]
 pub struct QueriedViewWithCollectionId {
     pub collection_id: u32,
@@ -157,9 +183,9 @@ impl ViewRepository for ViewRepositoryImpl {
             )
         })?;
 
-        let (special_queries, sql_queries) = queries
-            .into_iter()
-            .partition(|query| ["karma_orchestra".to_string()].contains(query));
+        let (special_queries, sql_queries) = queries.into_iter().partition(|query| {
+            ["karma_orchestra".to_string(), "karma_view".to_string()].contains(query)
+        });
 
         let res = self.execute_queries(sql_queries).await.map_err(|e| {
             Error::new(

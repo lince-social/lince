@@ -1,4 +1,4 @@
-use crate::presentation::bevy::kamalie::domain::entities::npc::spawn::entity_npc_spawn;
+use crate::presentation::bevy::kamalie::domain::clean::npc::spawn::entity_npc_spawn;
 use bevy::prelude::*;
 use rand::random_range;
 

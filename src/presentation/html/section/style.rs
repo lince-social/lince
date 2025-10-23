@@ -1,15 +1,13 @@
-use crate::infrastructure::cross_cutting::InjectedServices;
+use crate::{
+    application::configuration::get_active_colorscheme,
+    infrastructure::cross_cutting::InjectedServices,
+};
 
 pub async fn presentation_html_style(services: InjectedServices) -> String {
     "<style>
         :root {"
         .to_string()
-        + services
-            .use_cases
-            .configuration
-            .get_active_colorscheme
-            .execute(services.clone())
-            .await
+        + get_active_colorscheme(services.clone()).await
         + "}
 
         body {
@@ -36,7 +34,59 @@ pub async fn presentation_html_style(services: InjectedServices) -> String {
         th, td {
             border: var(--table-cell-border-width) solid var(--table-border);
         }
+        .rounded-table {
+            border-collapse: separate;
+            border-spacing: 0;
+            overflow: hidden;
+        }
 
+        .rounded-table th,
+        .rounded-table td {
+            padding: 0.5rem;
+        }
+
+        .rounded-table .top-left {
+            border-top-left-radius: 0.75rem;
+        }
+        .rounded-table .top-right {
+            border-top-right-radius: 0.75rem;
+        }
+        .rounded-table .bottom-left {
+            border-bottom-left-radius: 0.75rem;
+        }
+        .rounded-table .bottom-right {
+            border-bottom-right-radius: 0.75rem;
+        }
+
+        .separa {
+            justify-content: space-between;
+        }
+
+        .fence--row {
+            display: flex;
+            flex-direction: row;
+        }
+        .fence--row > * {
+            border: none; /* start with no borders */
+        }
+        .fence--row > * + * {
+            border-left: 1.5px solid transparent;
+        }
+
+        .breakword {
+            white-space: pre-wrap; word-break: break-word;
+        }
+
+        .fence-col {
+            display: flex;
+            /* flex-direction: column; */
+        }
+        .fence-col > * {
+            border: none;
+        }
+        .fence-col > * + * {
+            border-top: 1.33px solid transparent;
+        }
         th {
             background-color: var(--table-th-bg);
         }
@@ -62,6 +112,29 @@ pub async fn presentation_html_style(services: InjectedServices) -> String {
         input:focus {
             outline: none;
             box-shadow: 0 0 5px 2px var(--input-focus-shadow);
+        }
+
+        .autosize-textarea {
+            white-space: pre; /* preserve newlines, do not wrap */
+            word-break: normal;
+            overflow: auto; /* allow scrollbars when needed and show resize UI */
+            resize: both; /* let users resize horizontally and vertically */
+            min-width: 3rem;
+            max-width: 100%;
+            box-sizing: border-box;
+            padding: 0.25rem;
+            border: 1px solid var(--input-border-color);
+            border-radius: 2px;
+            background: var(--input-bg);
+            color: var(--input-txt);
+        }
+
+        .plain-button {
+            all: unset;
+            cursor: pointer;
+            white-space: pre-wrap;
+            word-break: break-word;
+            display: inline-block;
         }
 
         .configurations {
@@ -161,6 +234,25 @@ pub async fn presentation_html_style(services: InjectedServices) -> String {
             padding: 0rem;
             margin: 0rem;
         }
+
+        /* Karma cell styles for combined condition/consequence display */
+        .karma-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .karma-primary {
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .karma-secondary {
+            font-size: 0.8em;
+            opacity: 0.8;
+            font-style: italic;
+        }
+
         .glow {
         box-shadow: 0 0 20px white, 0 0 40px white, 0 0 60px white;
         animation: glow 10s infinite alternate;

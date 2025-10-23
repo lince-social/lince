@@ -1,12 +1,16 @@
-use crate::domain::{
-    entities::configuration::Configuration, repositories::configuration::ConfigurationRepository,
-};
+use crate::domain::clean::configuration::Configuration;
 use async_trait::async_trait;
 use sqlx::{Pool, Sqlite};
 use std::{
     io::{Error, ErrorKind},
     sync::Arc,
 };
+
+#[async_trait]
+pub trait ConfigurationRepository: Send + Sync {
+    async fn set_active(&self, id: &str) -> Result<(), Error>;
+    async fn get_active(&self) -> Result<Configuration, Error>;
+}
 
 pub struct ConfigurationRepositoryImpl {
     pool: Arc<Pool<Sqlite>>,

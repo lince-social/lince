@@ -23,3 +23,22 @@ pub struct KarmaView {
     pub karma_consequence_explanation: String,
     pub karma_consequence_value: Option<String>,
 }
+#[derive(Deserialize, Serialize, Debug, Clone, FromRow)]
+pub struct KarmaConditionView {
+    pub value: Option<String>,
+    pub explanation: String,
+    pub condition: String,
+    pub name: String,
+    pub quantity: i32,
+    pub id: u32,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, FromRow)]
+pub struct KarmaConsequenceView {
+    pub id: u32,
+    pub quantity: i32,
+    pub name: String,
+    pub consequence: String,
+    pub explanation: String,
+    pub value: Option<String>,
+}

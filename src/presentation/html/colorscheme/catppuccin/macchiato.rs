@@ -1,4 +1,4 @@
-pub fn presentation_colorscheme_catppuccin_machiatto() -> &'static str {
+pub fn presentation_colorscheme_catppuccin_macchiato() -> &'static str {
     "
         /* Colorscheme Colors */
         --rosewater: #f4dbd6;

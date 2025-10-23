@@ -8,5 +8,5 @@ pub struct Configuration {
     pub name: String,
     pub language: String,
     pub style: String,
-    pub timezone: String,
+    pub timezone: i64,
 }

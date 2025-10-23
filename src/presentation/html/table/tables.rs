@@ -45,13 +45,12 @@ pub async fn presentation_html_tables(tables: Vec<(String, Table)>) -> Markup {
                                 tr {
                                     @for (col_i, key) in headers.iter().enumerate() {
                                         @let class = match (row_i, col_i) {
-                                           (_, 0) if last_row => "bottom-left",
-                                            (_, x) if last_row && x == headers.len() - 1 => "bottom-right",
-                                            _ => "",
+                                           (_, 0) if last_row => "bottom-left breakword",
+                                            (_, x) if last_row && x == headers.len() - 1 => "bottom-right breakword",
+                                            _ => "breakword",
                                         };
 
                                         td class=(class) {
-                                            // your <form> and <button> logic stays the same
                                             form
                                                 hx-post=(format!("/table/{}/{}/{}", table_name, row.get("id").unwrap(), key))
                                                 hx-swap="outerHTML"
@@ -70,7 +69,7 @@ pub async fn presentation_html_tables(tables: Vec<(String, Table)>) -> Markup {
                                                 }
                                                 input type="hidden" name="value"
                                                     value=(row.get(key).unwrap_or(&"".to_string())) {}
-                                                button type="submit" style="all: unset; cursor: pointer;" {
+                                                button type="submit" class="plain-button" {
                                                     (row.get(key).unwrap_or(&"NULL".to_string()))
                                                 }
                                             }

@@ -73,6 +73,10 @@ pub async fn presentation_html_style(services: InjectedServices) -> String {
             border-left: 1.5px solid transparent;
         }
 
+        .breakword {
+            white-space: pre-wrap; word-break: break-word;
+        }
+
         .fence-col {
             display: flex;
             /* flex-direction: column; */
@@ -108,6 +112,29 @@ pub async fn presentation_html_style(services: InjectedServices) -> String {
         input:focus {
             outline: none;
             box-shadow: 0 0 5px 2px var(--input-focus-shadow);
+        }
+
+        .autosize-textarea {
+            white-space: pre; /* preserve newlines, do not wrap */
+            word-break: normal;
+            overflow: auto; /* allow scrollbars when needed and show resize UI */
+            resize: both; /* let users resize horizontally and vertically */
+            min-width: 3rem;
+            max-width: 100%;
+            box-sizing: border-box;
+            padding: 0.25rem;
+            border: 1px solid var(--input-border-color);
+            border-radius: 2px;
+            background: var(--input-bg);
+            color: var(--input-txt);
+        }
+
+        .plain-button {
+            all: unset;
+            cursor: pointer;
+            white-space: pre-wrap;
+            word-break: break-word;
+            display: inline-block;
         }
 
         .configurations {

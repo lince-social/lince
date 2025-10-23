@@ -19,8 +19,18 @@ macro_rules! ok {
 }
 
 #[macro_export]
+macro_rules! query {
+    ($query:expr, $db:expr) => {
+        sqlx::query($query)
+            .execute(&*$db)
+            .await
+            .map_err(Error::other)?
+    };
+}
+
+#[macro_export]
 macro_rules! log {
-    ($error:expr, $($message:expr)*) => {
+    ($error:expr, $($message:tt)+) => {
         $crate::infrastructure::utils::logging::log(
             $crate::infrastructure::utils::logging::LogEntry::Error($error.kind(), format!(
                 "{}:{} | {}",
@@ -31,6 +41,7 @@ macro_rules! log {
         )
     };
 }
+
 #[macro_export]
 macro_rules! info {
     ($($arg:tt)+) => {

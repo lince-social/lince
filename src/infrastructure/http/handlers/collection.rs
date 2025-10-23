@@ -11,6 +11,6 @@ pub async fn handler_collection_set_active(
     State(services): State<InjectedServices>,
     Path(id): Path<String>,
 ) -> Html<String> {
-    let _ = services.providers.collection.set_active(&id).await;
+    let _ = services.repository.collection.set_active(&id).await;
     Html(presentation_html_section_body(services).await)
 }

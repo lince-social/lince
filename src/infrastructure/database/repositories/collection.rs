@@ -1,12 +1,21 @@
+use crate::{
+    domain::clean::collection::Collection,
+    infrastructure::database::repositories::view::{QueriedView, QueriedViewWithCollectionId},
+};
 use async_trait::async_trait;
 use sqlx::{Pool, Sqlite};
 use std::{collections::HashMap, io::Error, sync::Arc};
 
-use crate::{
-    application::providers::collection::CollectionRow,
-    domain::{entities::collection::Collection, repositories::collection::CollectionRepository},
-    infrastructure::database::repositories::view::{QueriedView, QueriedViewWithCollectionId},
-};
+pub type CollectionRow = (Collection, Vec<QueriedView>);
+
+// pub fn default_collection_row() -> CollectionRow {}
+
+#[async_trait]
+pub trait CollectionRepository: Send + Sync {
+    async fn get_active(&self) -> Result<Option<CollectionRow>, Error>;
+    async fn get_inactive(&self) -> Result<Vec<CollectionRow>, Error>;
+    async fn set_active(&self, id: &str) -> Result<(), Error>;
+}
 
 pub struct CollectionRepositoryImpl {
     pool: Arc<Pool<Sqlite>>,

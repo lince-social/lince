@@ -1,49 +1,32 @@
+#![allow(dead_code)]
 mod application;
 mod domain;
 mod infrastructure;
+mod macros;
 mod presentation;
 
-use crate::{
-    application::{
-        schemas::karma_filters::KarmaFilters, use_cases::karma::deliver::use_case_karma_deliver,
-    },
-    infrastructure::{
-        cross_cutting::dependency_injection,
-        database::management::{lib::connection, migration::execute_migration, schema::schema},
-        http::{
-            handlers::section::handler_section_favicon,
-            routers::{
-                collection::collection_router, operation::operation_router,
-                section::section_router, table::table_router, view::view_router,
-            },
+#[cfg(feature = "gpui")]
+use crate::presentation::gpui::app::gpui_app;
+
+// #[cfg(feature = "karma")]
+use crate::application::karma::karma_deliver;
+// #[cfg(feature = "karma")]
+use std::time::Duration;
+
+use crate::infrastructure::{
+    cross_cutting::dependency_injection,
+    database::management::{connection::connection, migration::execute_migration, schema::schema},
+    http::{
+        handlers::section::handler_section_favicon,
+        routers::{
+            collection::collection_router, operation::operation_router, section::section_router,
+            table::table_router, view::view_router,
         },
-        utils::log::{LogEntry, log},
     },
-    // presentation::bevy::{
-    //     collection::CollectionPlugin,
-    //     kamalie::{
-    //         application::movement::{
-    //             advance_physics, handle_input, interpolate_rendered_transform, update_camera,
-    //         },
-    //         domain::entities::{
-    //             npc::{
-    //                 setup::setup_npcs,
-    //                 spawn::{SpawnTimer, entity_npc_check_spawn},
-    //             },
-    //             user::setup::setup_user,
-    //             world::setup::setup_world,
-    //         },
-    //     },
-    // },
+    utils::logging::{LogEntry, log},
 };
 use axum::{Router, routing::get};
-// use bevy::{
-//     DefaultPlugins,
-//     app::{App, FixedUpdate, RunFixedMainLoop, RunFixedMainLoopSystem, Startup, Update},
-//     prelude::*,
-//     time::{Timer, TimerMode},
-// };
-use std::{env, io::Error, sync::Arc, time::Duration};
+use std::{env, io::Error, sync::Arc};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -58,21 +41,21 @@ async fn main() -> Result<(), Error> {
 
     let services = dependency_injection(db.clone());
 
+    // #[cfg(feature = "karma")]
     let move_services = services.clone();
+    // #[cfg(feature = "karma")]
     tokio::spawn({
         async move {
             let services = move_services.clone();
             loop {
                 println!("Delivering Karma...");
                 let vec_karma = futures::executor::block_on(async {
-                    services.providers.karma.get(KarmaFilters::default()).await
+                    services.repository.karma.get(None).await
                 });
 
                 if let Err(e) = vec_karma {
                     log(LogEntry::Error(e.kind(), e.to_string()));
-                } else if let Err(e) =
-                    use_case_karma_deliver(services.clone(), vec_karma.unwrap()).await
-                {
+                } else if let Err(e) = karma_deliver(services.clone(), vec_karma.unwrap()).await {
                     log(LogEntry::Error(e.kind(), e.to_string()));
                 }
 
@@ -82,30 +65,20 @@ async fn main() -> Result<(), Error> {
         }
     });
 
-    match env::args().nth(1).as_deref() {
-        Some("migrate") => execute_migration(db.clone()).await.inspect_err(|e| {
-            log(LogEntry::Error(e.kind(), e.to_string()));
-        }),
-        // Some("bevy") => {
-        //     App::new()
-        //         .add_plugins(DefaultPlugins)
-        //         .insert_resource(SpawnTimer(Timer::from_seconds(1., TimerMode::Repeating)))
-        //         .add_systems(Startup, (setup_user, setup_world, setup_npcs))
-        //         .add_systems(Update, entity_npc_check_spawn)
-        //         .add_systems(FixedUpdate, advance_physics)
-        //         .add_systems(
-        //             RunFixedMainLoop,
-        //             (
-        //                 handle_input.in_set(RunFixedMainLoopSystem::BeforeFixedMainLoop),
-        //                 interpolate_rendered_transform
-        //                     .in_set(RunFixedMainLoopSystem::AfterFixedMainLoop),
-        //                 update_camera.in_set(RunFixedMainLoopSystem::AfterFixedMainLoop),
-        //             ),
-        //         )
-        //         .run();
-        //     Ok(())
-        // }
-        _ => {
+    for arg in env::args() {
+        if arg.as_str() == "migrate" {
+            println!("Executing migration...");
+            execute_migration(db.clone()).await.inspect_err(|e| {
+                log(LogEntry::Error(e.kind(), e.to_string()));
+            })?;
+        } else if arg.as_str() == "gpui" {
+            #[cfg(feature = "gpui")]
+            let cloned_services = services.clone();
+            #[cfg(feature = "gpui")]
+            spawn(async move {
+                gpui_app(cloned_services.clone()).await;
+            });
+        } else if arg.as_str() == "html" {
             let app = Router::new()
                 .route("/preto_no_branco.ico", get(handler_section_favicon))
                 .merge(section_router(services.clone()))
@@ -117,9 +90,8 @@ async fn main() -> Result<(), Error> {
             let listener = tokio::net::TcpListener::bind("0.0.0.0:6174").await.unwrap();
             println!("Listening on: {}", listener.local_addr().unwrap());
             axum::serve(listener, app).await?;
-            Ok(())
         }
-    }?;
+    }
 
     Ok(())
 }

@@ -1,5 +1,5 @@
 use crate::{
-    domain::entities::collection::Collection,
+    domain::clean::collection::Collection,
     infrastructure::{cross_cutting::InjectedServices, database::repositories::view::QueriedView},
     presentation::html::view::toggle_all::presentation_html_view_toggle_all,
 };
@@ -7,7 +7,7 @@ use maud::{Markup, html};
 
 pub async fn presentation_html_collection(services: InjectedServices) -> Markup {
     let opt = services
-        .providers
+        .repository
         .collection
         .get_active()
         .await
@@ -18,13 +18,15 @@ pub async fn presentation_html_collection(services: InjectedServices) -> Markup 
     }
     let (active_collection_name, active_collection_views) = opt.unwrap();
 
-    let inactive_collections = services
-        .providers
+    //help sort by collection with smallest id first
+    let mut inactive_collections: Vec<(Collection, Vec<QueriedView>)> = services
+        .repository
         .collection
         .get_inactive()
         .await
         .map_err(|e| html!((format!("Failed to get active collection. Error: {}", e))))
         .unwrap();
+    inactive_collections.sort_by_key(|(collection, _)| collection.id);
 
     html!(
         .configurations.column.xs_gap

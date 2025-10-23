@@ -1,5 +1,5 @@
 use crate::{
-    domain::entities::table::{SortedTables, Table},
+    domain::clean::table::{SortedTables, Table},
     infrastructure::cross_cutting::InjectedServices,
     presentation::html::table::add_row::presentation_html_table_add_row,
 };
@@ -24,21 +24,33 @@ pub async fn presentation_html_tables(tables: Vec<(String, Table)>) -> Markup {
             @for (table_name, table, headers) in sorted_tables {
                 div {
                     row.middle_y.s_gap {p { (table_name) } (presentation_html_table_add_row(table_name.clone()))}
-                    table {
+                    table class="rounded-table" {
                         @if !headers.is_empty() {
                             thead {
                                 tr {
-                                    @for key in &headers {
-                                        th { (key) }
+                                    @for (i, key) in headers.iter().enumerate() {
+                                        @let class = match i {
+                                            0 => "top-left",
+                                            _ if i == headers.len() - 1 => "top-right",
+                                            _ => "",
+                                        };
+                                        th class=(class) { (key) }
                                     }
                                 }
                             }
                         }
                         tbody {
-                            @for row in table {
+                            @for (row_i, row) in table.iter().enumerate() {
+                                @let last_row = row_i == table.len() - 1;
                                 tr {
-                                    @for key in &headers {
-                                        td {
+                                    @for (col_i, key) in headers.iter().enumerate() {
+                                        @let class = match (row_i, col_i) {
+                                           (_, 0) if last_row => "bottom-left breakword",
+                                            (_, x) if last_row && x == headers.len() - 1 => "bottom-right breakword",
+                                            _ => "breakword",
+                                        };
+
+                                        td class=(class) {
                                             form
                                                 hx-post=(format!("/table/{}/{}/{}", table_name, row.get("id").unwrap(), key))
                                                 hx-swap="outerHTML"
@@ -57,7 +69,7 @@ pub async fn presentation_html_tables(tables: Vec<(String, Table)>) -> Markup {
                                                 }
                                                 input type="hidden" name="value"
                                                     value=(row.get(key).unwrap_or(&"".to_string())) {}
-                                                button type="submit" style="all: unset; cursor: pointer;" {
+                                                button type="submit" class="plain-button" {
                                                     (row.get(key).unwrap_or(&"NULL".to_string()))
                                                 }
                                             }
@@ -177,7 +189,7 @@ pub async fn presentation_html_tables_karma_replacer(
         replacements_rq.push((caps.get(0).unwrap().range(), id));
     }
     for (range, id) in replacements_rq.into_iter().rev() {
-        let res = services.providers.record.get_by_id(id).await;
+        let res = services.repository.record.get_by_id(id).await;
         let replacement_rq = match res {
             Ok(record) => record.head.to_string(),
             Err(error) => {
@@ -194,7 +206,7 @@ pub async fn presentation_html_tables_karma_replacer(
         replacements_f.push((caps.get(0).unwrap().range(), id));
     }
     for (range, id) in replacements_f.into_iter().rev() {
-        let replacement_f = services.providers.frequency.get(id).await;
+        let replacement_f = services.repository.frequency.get(id).await;
         match replacement_f {
             Ok(opt) => match opt {
                 None => println!("Empty frequency name with id: {id}"),
@@ -213,7 +225,7 @@ pub async fn presentation_html_tables_karma_replacer(
         replacements_command.push((caps.get(0).unwrap().range(), id));
     }
     for (range, id) in replacements_command.into_iter().rev() {
-        let replacement_command = services.providers.command.get_by_id(id).await;
+        let replacement_command = services.repository.command.get_by_id(id).await;
         match replacement_command {
             Ok(opt) => match opt {
                 None => println!("Empty command name with id: {id}"),

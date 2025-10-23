@@ -1,10 +1,16 @@
-use crate::domain::repositories::operation::OperationRepository;
 use async_trait::async_trait;
 use sqlx::{Pool, Row, Sqlite};
 use std::{
+    collections::HashMap,
     io::{Error, ErrorKind},
     sync::Arc,
 };
+
+#[async_trait]
+pub trait OperationRepository: Send + Sync {
+    async fn get_column_names(&self, table: String) -> Result<Vec<String>, Error>;
+    async fn create(&self, table: String, data: HashMap<String, String>) -> Result<(), Error>;
+}
 
 pub struct OperationRepositoryImpl {
     pool: Arc<Pool<Sqlite>>,
@@ -31,7 +37,28 @@ impl OperationRepository for OperationRepositoryImpl {
             .collect())
     }
 
-    async fn create(&self, query: String) -> Result<(), Error> {
+    async fn create(&self, table: String, data: HashMap<String, String>) -> Result<(), Error> {
+        let mut columns = Vec::new();
+        let mut values = Vec::new();
+
+        for (k, v) in data {
+            if v.is_empty() {
+                continue;
+            }
+            columns.push(k);
+            values.push(if v.parse::<i64>().is_ok() || v.parse::<f64>().is_ok() {
+                v
+            } else {
+                format!("'{}'", v)
+            });
+        }
+
+        let query = format!(
+            "INSERT INTO {} ({}) VALUES ({})",
+            table,
+            columns.join(", "),
+            values.join(", ")
+        );
         sqlx::query(&query)
             .execute(&*self.pool)
             .await

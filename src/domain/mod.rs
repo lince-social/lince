@@ -1,2 +1,2 @@
-pub mod entities;
-pub mod repositories;
+pub mod clean;
+pub mod dirty;

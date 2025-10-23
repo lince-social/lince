@@ -1,8 +1,8 @@
 <p align=center>
-<img width=24% src="assets/preto_no_branco.png">
-<img width=24% src="assets/branco_no_preto.png">
-<img width=24% src="assets/preto_no_branco.png">
-<img width=24% src="assets/branco_no_preto.png">
+<img width=24% src="https://github.com/lince-social/lince/blob/main/assets/preto_no_branco.png">
+<img width=24% src="https://github.com/lince-social/lince/blob/main/assets/branco_no_preto.png">
+<img width=24% src="https://github.com/lince-social/lince/blob/main/assets/preto_no_branco.png">
+<img width=24% src="https://github.com/lince-social/lince/blob/main/assets/branco_no_preto.png">
 </p>
 
 # Lince

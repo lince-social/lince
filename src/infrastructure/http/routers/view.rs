@@ -11,7 +11,7 @@ pub fn view_router(services: InjectedServices) -> Router {
             patch(handler_view_toggle_view_id),
         )
         .route(
-            "/toggle/collection/{collection_id}",
+            "/toggle/{collection_id}",
             patch(handler_view_toggle_collection_id),
         )
         .with_state(services)

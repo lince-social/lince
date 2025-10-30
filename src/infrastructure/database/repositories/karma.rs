@@ -18,6 +18,14 @@ pub trait KarmaRepository: Send + Sync {
     async fn get_condition_view(&self) -> Result<Vec<KarmaConditionView>, Error>;
     async fn get_consequence_view(&self) -> Result<Vec<KarmaConsequenceView>, Error>;
     async fn get_active(&self, condition_record_id: Option<u32>) -> Result<Vec<Karma>, Error>;
+    async fn get_condition_tokens(
+        &self,
+        search: Option<String>,
+    ) -> Result<Vec<(u32, String, String)>, Error>;
+    async fn get_consequence_tokens(
+        &self,
+        search: Option<String>,
+    ) -> Result<Vec<(u32, String, String)>, Error>;
 }
 
 pub struct KarmaRepositoryImpl {
@@ -273,5 +281,169 @@ impl KarmaRepository for KarmaRepositoryImpl {
             .map_err(|e| Error::new(ErrorKind::InvalidData, e))?;
 
         Ok(data)
+    }
+
+    async fn get_condition_tokens(
+        &self,
+        search: Option<String>,
+    ) -> Result<Vec<(u32, String, String)>, Error> {
+        let base = r#"
+            SELECT
+                kcd.id AS id,
+                CASE WHEN instr(kcd.condition, 'rq') > 0 THEN CAST(rcon.quantity AS TEXT) ELSE '' END AS value,
+                CASE
+                    WHEN instr(kcd.condition, 'rq') > 0 THEN
+                        replace(
+                            kcd.condition,
+                            'rq' || CAST(CAST(substr(kcd.condition, instr(kcd.condition, 'rq') + 2) AS INTEGER) AS TEXT),
+                            rcon.head
+                        )
+                    WHEN instr(kcd.condition, 'c') > 0 THEN
+                        replace(
+                            kcd.condition,
+                            'c' || CAST(CAST(substr(kcd.condition, instr(kcd.condition, 'c') + 1) AS INTEGER) AS TEXT),
+                            cmdcon.name
+                        )
+                    WHEN instr(kcd.condition, 'f') > 0 THEN
+                        replace(
+                            kcd.condition,
+                            'f' || CAST(CAST(substr(kcd.condition, instr(kcd.condition, 'f') + 1) AS INTEGER) AS TEXT),
+                            fcon.name
+                        )
+                    ELSE kcd.condition
+                END AS explanation
+            FROM karma_condition kcd
+            LEFT JOIN record rcon ON instr(kcd.condition, 'rq') > 0 AND rcon.id = CAST(substr(kcd.condition, instr(kcd.condition, 'rq') + 2) AS INTEGER)
+            LEFT JOIN command cmdcon ON instr(kcd.condition, 'c') > 0 AND cmdcon.id = CAST(substr(kcd.condition, instr(kcd.condition, 'c') + 1) AS INTEGER)
+            LEFT JOIN frequency fcon ON instr(kcd.condition, 'f') > 0 AND fcon.id = CAST(substr(kcd.condition, instr(kcd.condition, 'f') + 1) AS INTEGER)
+            WHERE instr(kcd.condition, 'rq') > 0 OR instr(kcd.condition, 'c') > 0 OR instr(kcd.condition, 'f') > 0
+        "#;
+
+        if let Some(s) = search {
+            let like = format!("%{}%", s);
+            let sql = format!(
+                "SELECT * FROM ({}) t WHERE CAST(t.id AS TEXT) LIKE ? OR t.value LIKE ? OR t.explanation LIKE ?",
+                base
+            );
+            let rows: Vec<(i64, String, String)> = sqlx::query_as(&sql)
+                .bind(like.clone())
+                .bind(like.clone())
+                .bind(like)
+                .fetch_all(&*self.pool)
+                .await
+                .map_err(|e| Error::new(ErrorKind::InvalidData, e))?;
+
+            let data = rows
+                .into_iter()
+                .filter_map(|(id, value, explanation)| {
+                    if id <= 0 {
+                        None
+                    } else {
+                        Some((id as u32, value, explanation))
+                    }
+                })
+                .collect();
+            Ok(data)
+        } else {
+            let rows: Vec<(i64, String, String)> = sqlx::query_as(base)
+                .fetch_all(&*self.pool)
+                .await
+                .map_err(|e| Error::new(ErrorKind::InvalidData, e))?;
+
+            let data = rows
+                .into_iter()
+                .filter_map(|(id, value, explanation)| {
+                    if id <= 0 {
+                        None
+                    } else {
+                        Some((id as u32, value, explanation))
+                    }
+                })
+                .collect();
+
+            Ok(data)
+        }
+    }
+
+    async fn get_consequence_tokens(
+        &self,
+        search: Option<String>,
+    ) -> Result<Vec<(u32, String, String)>, Error> {
+        let base = r#"
+            SELECT
+                kcs.id AS id,
+                CASE WHEN instr(kcs.consequence, 'rq') > 0 THEN CAST(rc.quantity AS TEXT) ELSE '' END AS value,
+                CASE
+                    WHEN instr(kcs.consequence, 'rq') > 0 THEN
+                        replace(
+                            kcs.consequence,
+                            'rq' || CAST(CAST(substr(kcs.consequence, instr(kcs.consequence, 'rq') + 2) AS INTEGER) AS TEXT),
+                            rc.head
+                        )
+                    WHEN instr(kcs.consequence, 'c') > 0 THEN
+                        replace(
+                            kcs.consequence,
+                            'c' || CAST(CAST(substr(kcs.consequence, instr(kcs.consequence, 'c') + 1) AS INTEGER) AS TEXT),
+                            cmdc.name
+                        )
+                    WHEN instr(kcs.consequence, 'f') > 0 THEN
+                        replace(
+                            kcs.consequence,
+                            'f' || CAST(CAST(substr(kcs.consequence, instr(kcs.consequence, 'f') + 1) AS INTEGER) AS TEXT),
+                            fcmd.name
+                        )
+                    ELSE kcs.consequence
+                END AS explanation
+            FROM karma_consequence kcs
+            LEFT JOIN record rc ON instr(kcs.consequence, 'rq') > 0 AND rc.id = CAST(substr(kcs.consequence, instr(kcs.consequence, 'rq') + 2) AS INTEGER)
+            LEFT JOIN command cmdc ON instr(kcs.consequence, 'c') > 0 AND cmdc.id = CAST(substr(kcs.consequence, instr(kcs.consequence, 'c') + 1) AS INTEGER)
+            LEFT JOIN frequency fcmd ON instr(kcs.consequence, 'f') > 0 AND fcmd.id = CAST(substr(kcs.consequence, instr(kcs.consequence, 'f') + 1) AS INTEGER)
+            WHERE instr(kcs.consequence, 'rq') > 0 OR instr(kcs.consequence, 'c') > 0 OR instr(kcs.consequence, 'f') > 0
+        "#;
+
+        if let Some(s) = search {
+            let like = format!("%{}%", s);
+            let sql = format!(
+                "SELECT * FROM ({}) t WHERE CAST(t.id AS TEXT) LIKE ? OR t.value LIKE ? OR t.explanation LIKE ?",
+                base
+            );
+            let rows: Vec<(i64, String, String)> = sqlx::query_as(&sql)
+                .bind(like.clone())
+                .bind(like.clone())
+                .bind(like)
+                .fetch_all(&*self.pool)
+                .await
+                .map_err(|e| Error::new(ErrorKind::InvalidData, e))?;
+
+            let data = rows
+                .into_iter()
+                .filter_map(|(id, value, explanation)| {
+                    if id <= 0 {
+                        None
+                    } else {
+                        Some((id as u32, value, explanation))
+                    }
+                })
+                .collect();
+            Ok(data)
+        } else {
+            let rows: Vec<(i64, String, String)> = sqlx::query_as(base)
+                .fetch_all(&*self.pool)
+                .await
+                .map_err(|e| Error::new(ErrorKind::InvalidData, e))?;
+
+            let data = rows
+                .into_iter()
+                .filter_map(|(id, value, explanation)| {
+                    if id <= 0 {
+                        None
+                    } else {
+                        Some((id as u32, value, explanation))
+                    }
+                })
+                .collect();
+
+            Ok(data)
+        }
     }
 }

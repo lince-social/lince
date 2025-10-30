@@ -83,6 +83,7 @@ impl ViewRepository for ViewRepositoryImpl {
     }
 
     async fn toggle_by_collection_id(&self, collection_id: u32) -> Result<(), Error> {
+        dbg!(&collection_id);
         sqlx::query(
             "
         UPDATE collection_view
@@ -184,7 +185,12 @@ impl ViewRepository for ViewRepositoryImpl {
         })?;
 
         let (special_queries, sql_queries) = queries.into_iter().partition(|query| {
-            ["karma_orchestra".to_string(), "karma_view".to_string()].contains(query)
+            [
+                "karma_orchestra".to_string(),
+                "karma_view".to_string(),
+                "testing".to_string(),
+            ]
+            .contains(query)
         });
 
         let res = self.execute_queries(sql_queries).await.map_err(|e| {

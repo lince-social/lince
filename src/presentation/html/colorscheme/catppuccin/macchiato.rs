@@ -72,6 +72,12 @@ pub fn presentation_colorscheme_catppuccin_macchiato() -> &'static str {
         --button-add-row-bg-hover: var(--teal);
         --button-add-row-border-color-hover: var(--teal);
 
+        --button-collection-id-bg: var(--blue);
+        --button-collection-id-bg-hover: var(--mauve);
+        --button-collection-id-border-color: var(--blue);
+        --button-collection-id-border-color-hover: var(--mauve);
+        --button-collection-id-border-radius: 0.1rem;
+
         --input-txt: var(--text);
         --input-bg: var(--overlay0);
         --input-border-color: var(--subtext1);

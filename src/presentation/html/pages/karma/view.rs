@@ -18,70 +18,69 @@ pub async fn presentation_html_karma_view(services: InjectedServices) -> String 
 async fn presentation_html_karma(services: InjectedServices) -> Markup {
     match services.repository.karma.get_view().await {
         Ok(karma_views) => html! {
-            main id="main" {
-                div {
-                    p { "Karma View" }
-                    table class="rounded-table" {
-                        thead {
-                            tr {
-                                th.karma-view-karma class="top-left" { "id" }
-                                th.karma-view-karma { "Qty" }
-                                th.karma-view-karma { "Name" }
-                                th.karma-view-condition { "Kcd Qty" }
-                                th.karma-view-condition { "Kcd Id" }
-                                th.karma-view-condition { "Kcd Name" }
-                                th.karma-view-condition { "Kcd Cd" }
-                                th.karma-view-karma { "Operand" }
-                                th.karma-view-condition { "Kcs Cs" }
-                                th.karma-view-condition { "Kcs Name" }
-                                th.karma-view-condition { "Kcs Id" }
-                                th.karma-view-condition.top-right { "Kcs Qty" }
-                            }
+            div {
+                p { "Karma View" }
+                table class="rounded-table" {
+                    thead {
+                        tr {
+                            th.karma-view-karma class="top-left" { "id" }
+                            th.karma-view-karma { "Qty" }
+                            th.karma-view-karma { "Name" }
+                            th.karma-view-condition { "Kcd Qty" }
+                            th.karma-view-condition { "Kcd Id" }
+                            th.karma-view-condition { "Kcd Name" }
+                            th.karma-view-condition { "Kcd Cd" }
+                            th.karma-view-karma { "Operand" }
+                            th.karma-view-condition { "Kcs Cs" }
+                            th.karma-view-condition { "Kcs Name" }
+                            th.karma-view-condition { "Kcs Id" }
+                            th.karma-view-condition.top-right { "Kcs Qty" }
                         }
-                        tbody {
-                            @for (row_i, karma_view) in karma_views.iter().enumerate() {
-                                @let last_row = row_i == karma_views.len() - 1;
-                                tr {
-                                    td class=(if last_row { "bottom-left" } else { "" }) {
-                                        (karma_view.karma_id)
-                                    }
-
-                                    (htmx_edit_cell!("karma", karma_view.karma_id, "quantity", karma_view.karma_quantity))
-                                    (htmx_edit_cell!("karma", karma_view.karma_id, "name", karma_view.karma_name))
-                                    (htmx_edit_cell!("karma_condition", karma_view.karma_condition_id, "quantity", karma_view.karma_condition_quantity))
-                                    td { (karma_view.karma_condition_id) }
-                                    (htmx_edit_cell!("karma_condition", karma_view.karma_condition_id, "name", karma_view.karma_condition_name))
-
-                                    td {
-                                        .karma-cell {
-                                            .karma-primary.column {
-                                                .div { (karma_view.karma_condition_explanation) }
-                                                .row.separa {
-                                                    (htmx_edit_cell!("karma_condition", karma_view.karma_condition_id, "condition", karma_view.karma_condition_condition, div))
-                                                    .div { (karma_view.karma_condition_value.clone().unwrap_or_default()) }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    (htmx_edit_cell!("karma", karma_view.karma_id, "operator", karma_view.karma_operator))
-
-                                    td {
-                                        .karma-cell {
-                                            .karma-primary.column {
-                                                .div { (karma_view.karma_consequence_explanation) }
-                                                .row.separa {
-                                                    (htmx_edit_cell!("karma_consequence", karma_view.karma_consequence_id, "consequence", karma_view.karma_consequence_consequence, div))
-                                                    .div { (karma_view.karma_consequence_value.clone().unwrap_or_default()) }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    (htmx_edit_cell!("karma_consequence", karma_view.karma_consequence_id, "name", karma_view.karma_consequence_name))
-                                    (htmx_edit_cell!("karma", karma_view.karma_id, "consequence_id", karma_view.karma_consequence_id))
-                                    (htmx_edit_cell!("karma_consequence", karma_view.karma_consequence_id, "quantity", karma_view.karma_consequence_quantity))
+                    }
+                    tbody {
+                        @for (row_i, karma_view) in karma_views.iter().enumerate() {
+                            @let last_row = row_i == karma_views.len() - 1;
+                            tr {
+                                td class=(if last_row { "bottom-left" } else { "" }) {
+                                    (karma_view.karma_id)
                                 }
+
+                                (htmx_edit_cell!("karma", karma_view.karma_id, "quantity", karma_view.karma_quantity))
+                                (htmx_edit_cell!("karma", karma_view.karma_id, "name", karma_view.karma_name))
+                                (htmx_edit_cell!("karma_condition", karma_view.karma_condition_id, "quantity", karma_view.karma_condition_quantity))
+                                (htmx_edit_cell!("karma", karma_view.karma_id, "condition_id", karma_view.karma_condition_id))
+
+                                (htmx_edit_cell!("karma_condition", karma_view.karma_condition_id, "name", karma_view.karma_condition_name))
+
+                                td {
+                                    .karma-cell {
+                                        .karma-primary.column {
+                                            .div { (karma_view.karma_condition_explanation) }
+                                            .row.separa {
+                                                (htmx_edit_cell!("karma_condition", karma_view.karma_condition_id, "condition", karma_view.karma_condition_condition, div))
+                                                .div { (karma_view.karma_condition_value.clone().unwrap_or_default()) }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                (htmx_edit_cell!("karma", karma_view.karma_id, "operator", karma_view.karma_operator))
+
+                                td {
+                                    .karma-cell {
+                                        .karma-primary.column {
+                                            .div { (karma_view.karma_consequence_explanation) }
+                                            .row.separa {
+                                                (htmx_edit_cell!("karma_consequence", karma_view.karma_consequence_id, "consequence", karma_view.karma_consequence_consequence, div))
+                                                .div { (karma_view.karma_consequence_value.clone().unwrap_or_default()) }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                (htmx_edit_cell!("karma_consequence", karma_view.karma_consequence_id, "name", karma_view.karma_consequence_name))
+                                (htmx_edit_cell!("karma", karma_view.karma_id, "consequence_id", karma_view.karma_consequence_id))
+                                (htmx_edit_cell!("karma_consequence", karma_view.karma_consequence_id, "quantity", karma_view.karma_consequence_quantity))
                             }
                         }
                     }

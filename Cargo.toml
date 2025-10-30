@@ -14,8 +14,10 @@ gpui = ["dep:gpui"]
 
 [dependencies]
 async-trait = "0.1.89"
+asynk-strim = { version = "0.1" }
 axum = "0.8.6"
 chrono = "0.4.42"
+datastar = { version = "0.3.1", features = ["axum"] }
 dirs = "6.0.0"
 futures = "0.3.31"
 gpui = { version="0.2.2", optional = true }

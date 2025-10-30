@@ -8,5 +8,6 @@ pub async fn presentation_html_section_header(services: InjectedServices) -> Str
     "<header>".to_string()
         + presentation_html_section_nav().await.as_str()
         + presentation_html_collection(services).await.0.as_str()
+        + r#"<div id="karma-search-modal">Modal</div>"#
         + "</header>"
 }

@@ -8,9 +8,9 @@ mod presentation;
 #[cfg(feature = "gpui")]
 use crate::presentation::gpui::app::gpui_app;
 
-// #[cfg(feature = "karma")]
+#[cfg(feature = "karma")]
 use crate::application::karma::karma_deliver;
-// #[cfg(feature = "karma")]
+#[cfg(feature = "karma")]
 use std::time::Duration;
 
 use crate::infrastructure::{
@@ -19,8 +19,8 @@ use crate::infrastructure::{
     http::{
         handlers::section::handler_section_favicon,
         routers::{
-            collection::collection_router, operation::operation_router, section::section_router,
-            table::table_router, view::view_router,
+            collection::collection_router, karma::karma_router, operation::operation_router,
+            section::section_router, table::table_router, view::view_router,
         },
     },
     utils::logging::{LogEntry, log},
@@ -41,16 +41,15 @@ async fn main() -> Result<(), Error> {
 
     let services = dependency_injection(db.clone());
 
-    // #[cfg(feature = "karma")]
+    #[cfg(feature = "karma")]
     let move_services = services.clone();
-    // #[cfg(feature = "karma")]
+    #[cfg(feature = "karma")]
     tokio::spawn({
         async move {
             let services = move_services.clone();
             loop {
-                println!("Delivering Karma...");
                 let vec_karma = futures::executor::block_on(async {
-                    services.repository.karma.get(None).await
+                    services.repository.karma.get_active(None).await
                 });
 
                 if let Err(e) = vec_karma {
@@ -85,6 +84,7 @@ async fn main() -> Result<(), Error> {
                 .nest("/collection", collection_router(services.clone()))
                 .nest("/view", view_router(services.clone()))
                 .nest("/table", table_router(services.clone()))
+                .nest("/karma", karma_router(services.clone()))
                 .nest("/operation", operation_router(services.clone()));
 
             let listener = tokio::net::TcpListener::bind("0.0.0.0:6174").await.unwrap();

@@ -27,29 +27,9 @@ pub async fn handler_table_delete_by_id(
 }
 
 pub async fn handler_table_editable_row(
-    State(services): State<InjectedServices>,
     Path((table, id, column)): Path<(String, String, String)>,
     Form(ValueForm { value, token_kind }): Form<ValueForm>,
 ) -> impl IntoResponse {
-    // let search = match token_kind.as_deref() {
-    //     Some("condition") => {
-    //         Some(presentation_html_karma_get_condition(services.clone(), None).await)
-    //     }
-    //     Some("consequence") => None,
-    //     Some(_) | None => None,
-    // };
-
-    // Sse::new(stream_fn(
-    //     move |mut yielder: Yielder<Result<Event, Infallible>>| async move {
-    //         yielder
-    //             .yield_item(Ok(PatchElements::new(
-    //                 presentation_html_karma_get_condition(services, search).await,
-    //             )
-    //             .write_as_axum_sse_event()))
-    //             .await;
-    //     },
-    // ));
-
     Html(
         presentation_html_table_editable_row(table, id, column, value, token_kind)
             .await

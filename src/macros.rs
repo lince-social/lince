@@ -19,11 +19,9 @@ macro_rules! ok {
 }
 #[macro_export]
 macro_rules! htmx_edit_cell {
-    // default tag = td
     ($table:expr, $id:expr, $field:expr, $value:expr) => {
         $crate::htmx_edit_cell!($table, $id, $field, $value, td)
     };
-    // explicit tag (e.g. div)
     ($table:expr, $id:expr, $field:expr, $value:expr, $tag:ident) => {{
         let value_str = $value.to_string();
         let post_value = if value_str.is_empty() {
@@ -32,10 +30,11 @@ macro_rules! htmx_edit_cell {
             value_str.clone()
         };
         let display_value = if value_str.is_empty() {
-            "".to_string()
+            "condition".to_string()
         } else {
             value_str.clone()
         };
+
         html! {
             $tag {
                 form
@@ -45,6 +44,7 @@ macro_rules! htmx_edit_cell {
                     hx-trigger="click"
                 {
                     input type="hidden" name="value" value=(post_value) {}
+                    input type="hidden" name="token_kind" value="condition" {} // 👈 add this
                     button type="submit" class="plain-button" {
                         (display_value)
                     }

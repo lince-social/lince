@@ -33,31 +33,18 @@ pub async fn handler_karma_get_condition(
         Err(e) => serde_json::Value::Null,
     };
 
-    // extract search from several possible key names
     let search = signals_value
         .get("search")
         .and_then(|s| s.as_str())
-        .map(|s| s.to_string())
-        // also accept camelCase
-        .or_else(|| {
-            signals_value
-                .get("Search")
-                .and_then(|s| s.as_str())
-                .map(|s| s.to_string())
-        })
-        .or_else(|| {
-            signals_value
-                .get("searchText")
-                .and_then(|s| s.as_str())
-                .map(|s| s.to_string())
-        });
+        .map(|s| s.to_string());
 
-    let a = presentation_html_karma_get_condition(services, search).await;
-    dbg!(&a);
     Sse::new(stream_fn(
         move |mut yielder: Yielder<Result<Event, Infallible>>| async move {
             yielder
-                .yield_item(Ok(PatchElements::new(a).write_as_axum_sse_event()))
+                .yield_item(Ok(PatchElements::new(
+                    presentation_html_karma_get_condition(services, search).await,
+                )
+                .write_as_axum_sse_event()))
                 .await;
         },
     ))
@@ -67,18 +54,18 @@ pub async fn handler_karma_post_condition(
     State(services): State<InjectedServices>,
     Json(body): Json<serde_json::Value>,
 ) -> impl IntoResponse {
-    // extract search from the JSON body
     let search = body
         .get("search")
         .and_then(|s| s.as_str())
         .map(|s| s.to_string());
 
-    let a = presentation_html_karma_get_condition(services, search).await;
-    println!("test: {a}");
     Sse::new(stream_fn(
         move |mut yielder: Yielder<Result<Event, Infallible>>| async move {
             yielder
-                .yield_item(Ok(PatchElements::new(a).write_as_axum_sse_event()))
+                .yield_item(Ok(PatchElements::new(
+                    presentation_html_karma_get_condition(services, search).await,
+                )
+                .write_as_axum_sse_event()))
                 .await;
         },
     ))

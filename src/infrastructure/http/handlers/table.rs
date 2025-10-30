@@ -1,16 +1,21 @@
+use std::convert::Infallible;
+
 use crate::{
     application::table::table_patch_row,
     infrastructure::cross_cutting::InjectedServices,
     presentation::html::{
+        karma::search::presentation_html_karma_get_condition,
         section::main::presentation_html_section_main,
         table::editable_row::presentation_html_table_editable_row,
     },
 };
+use asynk_strim::{Yielder, stream_fn};
 use axum::{
     Form,
     extract::{Path, State},
-    response::Html,
+    response::{Html, IntoResponse, Sse, sse::Event},
 };
+use datastar::prelude::PatchElements;
 use serde::Deserialize;
 
 pub async fn handler_table_delete_by_id(
@@ -22,11 +27,31 @@ pub async fn handler_table_delete_by_id(
 }
 
 pub async fn handler_table_editable_row(
+    State(services): State<InjectedServices>,
     Path((table, id, column)): Path<(String, String, String)>,
-    Form(ValueForm { value }): Form<ValueForm>,
-) -> Html<String> {
+    Form(ValueForm { value, token_kind }): Form<ValueForm>,
+) -> impl IntoResponse {
+    // let search = match token_kind.as_deref() {
+    //     Some("condition") => {
+    //         Some(presentation_html_karma_get_condition(services.clone(), None).await)
+    //     }
+    //     Some("consequence") => None,
+    //     Some(_) | None => None,
+    // };
+
+    // Sse::new(stream_fn(
+    //     move |mut yielder: Yielder<Result<Event, Infallible>>| async move {
+    //         yielder
+    //             .yield_item(Ok(PatchElements::new(
+    //                 presentation_html_karma_get_condition(services, search).await,
+    //             )
+    //             .write_as_axum_sse_event()))
+    //             .await;
+    //     },
+    // ));
+
     Html(
-        presentation_html_table_editable_row(table, id, column, value)
+        presentation_html_table_editable_row(table, id, column, value, token_kind)
             .await
             .0,
     )
@@ -35,12 +60,16 @@ pub async fn handler_table_editable_row(
 #[derive(Deserialize)]
 pub struct ValueForm {
     pub value: String,
+    pub token_kind: Option<String>,
 }
 
 pub async fn handler_table_patch_row(
     State(services): State<InjectedServices>,
     Path((table, id, column)): Path<(String, String, String)>,
-    Form(ValueForm { value }): Form<ValueForm>,
+    Form(ValueForm {
+        value,
+        token_kind: _,
+    }): Form<ValueForm>,
 ) -> Html<String> {
     let _ = table_patch_row(services.clone(), table, id, column, value).await;
     Html(presentation_html_section_main(services).await)

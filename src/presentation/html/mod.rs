@@ -1,5 +1,6 @@
 pub mod collection;
 pub mod colorscheme;
+pub mod karma;
 pub mod operation;
 pub mod pages;
 pub mod section;

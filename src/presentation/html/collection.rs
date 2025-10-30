@@ -31,8 +31,8 @@ pub async fn presentation_html_collection(services: InjectedServices) -> Markup 
     html!(
         .configurations.column.xs_gap
         data-signals="{configurationOpen: false}"
-        data-on-mouseover="$configurationOpen = true"
-        data-on-mouseleave="$configurationOpen = false" {
+        data-on:mouseover="$configurationOpen = true"
+        data-on:mouseleave="$configurationOpen = false" {
             (presentation_html_collection_row(active_collection_name, active_collection_views).await)
             .inactive_configurations.column.xs_gap data-show="$configurationOpen" {
                 @for (inactive_collection, inactive_collection_views) in inactive_collections {
@@ -49,7 +49,7 @@ async fn presentation_html_collection_row(
 ) -> Markup {
     html!(
         .row.xs_gap {
-            button {(collection.id)}
+            button #button-collection-id {(collection.id)}
             @if collection.quantity == 1 {
                 button.active {(collection.name)}
             } @else {

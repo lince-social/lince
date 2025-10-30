@@ -219,6 +219,16 @@ pub async fn presentation_html_style(services: InjectedServices) -> String {
             border: 1px solid var(--button-add-row-border-color-hover);
         }
 
+        #button-collection-id {
+            background: var(--button-collection-id-bg);
+            border: 1px solid var(--button-collection-id-border-color);
+            border-radius: var(--button-collection-id-border-radius);
+        }
+        #button-collection-id:hover {
+            background: var(--button-collection-id-bg-hover);
+            border: 1px solid var(--button-collection-id-border-color-hover);
+        }
+
         .s_padding{
             padding: 0.25rem;
         }

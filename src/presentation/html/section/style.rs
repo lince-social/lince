@@ -185,6 +185,15 @@ pub async fn presentation_html_style(services: InjectedServices) -> String {
             z-index: 1;
         }
 
+        .northeast_modal {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 2;
+        border: 1px solid var(--modal-border-color);
+        border-radius: 0.75rem;
+        }
+
         .shy {
             width: min-content;
             height: min-content;

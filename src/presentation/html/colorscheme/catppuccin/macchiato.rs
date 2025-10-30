@@ -82,5 +82,7 @@ pub fn presentation_colorscheme_catppuccin_macchiato() -> &'static str {
         --input-bg: var(--overlay0);
         --input-border-color: var(--subtext1);
         --input-focus-shadow: var(--pink);
+
+        --modal-border-color: var(--rosewater);
     "
 }

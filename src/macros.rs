@@ -17,6 +17,7 @@ macro_rules! ok {
         $expression.map_err(Error::other)?
     };
 }
+
 #[macro_export]
 macro_rules! htmx_edit_cell {
     ($table:expr, $id:expr, $field:expr, $value:expr) => {
@@ -30,9 +31,16 @@ macro_rules! htmx_edit_cell {
             value_str.clone()
         };
         let display_value = if value_str.is_empty() {
-            "condition".to_string()
+            $field.to_string() // show field name if empty
         } else {
             value_str.clone()
+        };
+
+        // determine token kind based on field name
+        let token_kind = match $field {
+            "condition" => "condition",
+            "consequence" => "consequence",
+            _ => "unknown",
         };
 
         html! {
@@ -44,7 +52,7 @@ macro_rules! htmx_edit_cell {
                     hx-trigger="click"
                 {
                     input type="hidden" name="value" value=(post_value) {}
-                    input type="hidden" name="token_kind" value="condition" {} // 👈 add this
+                    input type="hidden" name="token_kind" value=(token_kind) {}
                     button type="submit" class="plain-button" {
                         (display_value)
                     }

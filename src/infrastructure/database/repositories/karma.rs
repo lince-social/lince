@@ -322,11 +322,6 @@ impl KarmaRepository for KarmaRepositoryImpl {
 
         if let Some(s) = search {
             let like = format!("%{}%", s);
-            // To allow searching by the raw token text (e.g. "-1 * f2") as well as
-            // the replaced explanation (e.g. "-1 * Test"), build a version of the
-            // base query that also returns the raw condition text and use it only
-            // for filtering. The outer select returns only id,value,explanation so
-            // the row mapping remains the same.
             let base_with_raw = base;
 
             let sql = format!(

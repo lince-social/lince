@@ -29,3 +29,35 @@ pub async fn presentation_html_karma_get_condition(
         }
     }
 }
+pub async fn presentation_html_karma_get_consequence(
+    services: InjectedServices,
+    search: Option<String>,
+) -> String {
+    match services
+        .repository
+        .karma
+        .get_consequence_tokens(search)
+        .await
+    {
+        Ok(tokens) => {
+            html! {
+                .northeast_modal.filled id="karma-search-modal" {
+                @for (consequence_id, _, consequence_explanation, consequence_value) in tokens {
+                    .row.s_gap.m_padding {
+                        div { (consequence_id) }
+                        div {" |"}
+                        div { (consequence_value) }
+                        div {" |"}
+                        div { (consequence_explanation) }
+                    }
+                }
+                }
+            }
+            .0
+        }
+        Err(e) => {
+            log!(e, "Error getting consequences");
+            "Error getting consequences".to_string()
+        }
+    }
+}

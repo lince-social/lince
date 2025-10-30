@@ -83,7 +83,6 @@ impl ViewRepository for ViewRepositoryImpl {
     }
 
     async fn toggle_by_collection_id(&self, collection_id: u32) -> Result<(), Error> {
-        dbg!(&collection_id);
         sqlx::query(
             "
         UPDATE collection_view

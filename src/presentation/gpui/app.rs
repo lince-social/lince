@@ -91,7 +91,6 @@ impl LinceApp {
                     }
                     Ok(collection) => collection.unwrap_or_default(),
                 }];
-                // dbg!(&collection.first().unwrap().0.id);
                 ok!(this.update(cx, |this, cx| {
                     this.data.collection = collection;
                     println!("notifying");

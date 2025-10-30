@@ -10,11 +10,12 @@ pub async fn presentation_html_karma_get_condition(
         Ok(tokens) => {
             html! {
                 .modal.filled id="karma-search-modal" {
-                @for (condition_id, condition_value, condition_explanation) in tokens {
+                @for (condition_id, condition_value, condition_explanation, sei_la) in tokens {
                     .row.s_gap {
                         div { (condition_id) }
                         div { (condition_value) }
                         div { (condition_explanation) }
+                        div { (sei_la) }
                     }
                 }
                 }

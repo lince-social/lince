@@ -21,11 +21,11 @@ pub trait KarmaRepository: Send + Sync {
     async fn get_condition_tokens(
         &self,
         search: Option<String>,
-    ) -> Result<Vec<(u32, String, String)>, Error>;
+    ) -> Result<Vec<(u32, String, String, String)>, Error>;
     async fn get_consequence_tokens(
         &self,
         search: Option<String>,
-    ) -> Result<Vec<(u32, String, String)>, Error>;
+    ) -> Result<Vec<(u32, String, String, String)>, Error>;
 }
 
 pub struct KarmaRepositoryImpl {
@@ -286,7 +286,7 @@ impl KarmaRepository for KarmaRepositoryImpl {
     async fn get_condition_tokens(
         &self,
         search: Option<String>,
-    ) -> Result<Vec<(u32, String, String)>, Error> {
+    ) -> Result<Vec<(u32, String, String, String)>, Error> {
         let base = r#"
             SELECT
                 kcd.id AS id,
@@ -311,7 +311,8 @@ impl KarmaRepository for KarmaRepositoryImpl {
                             fcon.name
                         )
                     ELSE kcd.condition
-                END AS explanation
+                END AS explanation,
+                kcd.condition AS raw_condition
             FROM karma_condition kcd
             LEFT JOIN record rcon ON instr(kcd.condition, 'rq') > 0 AND rcon.id = CAST(substr(kcd.condition, instr(kcd.condition, 'rq') + 2) AS INTEGER)
             LEFT JOIN command cmdcon ON instr(kcd.condition, 'c') > 0 AND cmdcon.id = CAST(substr(kcd.condition, instr(kcd.condition, 'c') + 1) AS INTEGER)
@@ -321,11 +322,19 @@ impl KarmaRepository for KarmaRepositoryImpl {
 
         if let Some(s) = search {
             let like = format!("%{}%", s);
+            // To allow searching by the raw token text (e.g. "-1 * f2") as well as
+            // the replaced explanation (e.g. "-1 * Test"), build a version of the
+            // base query that also returns the raw condition text and use it only
+            // for filtering. The outer select returns only id,value,explanation so
+            // the row mapping remains the same.
+            let base_with_raw = base;
+
             let sql = format!(
-                "SELECT * FROM ({}) t WHERE CAST(t.id AS TEXT) LIKE ? OR t.value LIKE ? OR t.explanation LIKE ?",
-                base
+                "SELECT id, value, explanation, raw_condition FROM ({}) t WHERE CAST(t.id AS TEXT) LIKE ? OR t.value LIKE ? OR t.explanation LIKE ? OR t.raw_condition LIKE ?",
+                base_with_raw
             );
-            let rows: Vec<(i64, String, String)> = sqlx::query_as(&sql)
+            let rows: Vec<(i64, String, String, String)> = sqlx::query_as(&sql)
+                .bind(like.clone())
                 .bind(like.clone())
                 .bind(like.clone())
                 .bind(like)
@@ -335,28 +344,28 @@ impl KarmaRepository for KarmaRepositoryImpl {
 
             let data = rows
                 .into_iter()
-                .filter_map(|(id, value, explanation)| {
+                .filter_map(|(id, value, explanation, raw)| {
                     if id <= 0 {
                         None
                     } else {
-                        Some((id as u32, value, explanation))
+                        Some((id as u32, value, explanation, raw))
                     }
                 })
                 .collect();
             Ok(data)
         } else {
-            let rows: Vec<(i64, String, String)> = sqlx::query_as(base)
+            let rows: Vec<(i64, String, String, String)> = sqlx::query_as(base)
                 .fetch_all(&*self.pool)
                 .await
                 .map_err(|e| Error::new(ErrorKind::InvalidData, e))?;
 
             let data = rows
                 .into_iter()
-                .filter_map(|(id, value, explanation)| {
+                .filter_map(|(id, value, explanation, raw)| {
                     if id <= 0 {
                         None
                     } else {
-                        Some((id as u32, value, explanation))
+                        Some((id as u32, value, explanation, raw))
                     }
                 })
                 .collect();
@@ -368,7 +377,7 @@ impl KarmaRepository for KarmaRepositoryImpl {
     async fn get_consequence_tokens(
         &self,
         search: Option<String>,
-    ) -> Result<Vec<(u32, String, String)>, Error> {
+    ) -> Result<Vec<(u32, String, String, String)>, Error> {
         let base = r#"
             SELECT
                 kcs.id AS id,
@@ -393,7 +402,8 @@ impl KarmaRepository for KarmaRepositoryImpl {
                             fcmd.name
                         )
                     ELSE kcs.consequence
-                END AS explanation
+                END AS explanation,
+                kcs.consequence AS raw_consequence
             FROM karma_consequence kcs
             LEFT JOIN record rc ON instr(kcs.consequence, 'rq') > 0 AND rc.id = CAST(substr(kcs.consequence, instr(kcs.consequence, 'rq') + 2) AS INTEGER)
             LEFT JOIN command cmdc ON instr(kcs.consequence, 'c') > 0 AND cmdc.id = CAST(substr(kcs.consequence, instr(kcs.consequence, 'c') + 1) AS INTEGER)
@@ -404,10 +414,11 @@ impl KarmaRepository for KarmaRepositoryImpl {
         if let Some(s) = search {
             let like = format!("%{}%", s);
             let sql = format!(
-                "SELECT * FROM ({}) t WHERE CAST(t.id AS TEXT) LIKE ? OR t.value LIKE ? OR t.explanation LIKE ?",
+                "SELECT id, value, explanation, raw_consequence FROM ({}) t WHERE CAST(t.id AS TEXT) LIKE ? OR t.value LIKE ? OR t.explanation LIKE ? OR t.raw_consequence LIKE ?",
                 base
             );
-            let rows: Vec<(i64, String, String)> = sqlx::query_as(&sql)
+            let rows: Vec<(i64, String, String, String)> = sqlx::query_as(&sql)
+                .bind(like.clone())
                 .bind(like.clone())
                 .bind(like.clone())
                 .bind(like)
@@ -417,28 +428,28 @@ impl KarmaRepository for KarmaRepositoryImpl {
 
             let data = rows
                 .into_iter()
-                .filter_map(|(id, value, explanation)| {
+                .filter_map(|(id, value, explanation, raw)| {
                     if id <= 0 {
                         None
                     } else {
-                        Some((id as u32, value, explanation))
+                        Some((id as u32, value, explanation, raw))
                     }
                 })
                 .collect();
             Ok(data)
         } else {
-            let rows: Vec<(i64, String, String)> = sqlx::query_as(base)
+            let rows: Vec<(i64, String, String, String)> = sqlx::query_as(base)
                 .fetch_all(&*self.pool)
                 .await
                 .map_err(|e| Error::new(ErrorKind::InvalidData, e))?;
 
             let data = rows
                 .into_iter()
-                .filter_map(|(id, value, explanation)| {
+                .filter_map(|(id, value, explanation, raw)| {
                     if id <= 0 {
                         None
                     } else {
-                        Some((id as u32, value, explanation))
+                        Some((id as u32, value, explanation, raw))
                     }
                 })
                 .collect();

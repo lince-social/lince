@@ -1,6 +1,6 @@
 [package]
 name = "lince"
-version = "0.6.0"
+version = "0.6.1"
 edition = "2024"
 description = "Tool for registry, interconnection and automation of Needs and Contributions with open scope"
 license = "GPL-3.0-or-later"

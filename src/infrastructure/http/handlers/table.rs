@@ -1,21 +1,17 @@
-use std::convert::Infallible;
 
 use crate::{
     application::table::table_patch_row,
     infrastructure::cross_cutting::InjectedServices,
     presentation::html::{
-        karma::search::presentation_html_karma_get_condition,
         section::main::presentation_html_section_main,
         table::editable_row::presentation_html_table_editable_row,
     },
 };
-use asynk_strim::{Yielder, stream_fn};
 use axum::{
     Form,
     extract::{Path, State},
-    response::{Html, IntoResponse, Sse, sse::Event},
+    response::{Html, IntoResponse},
 };
-use datastar::prelude::PatchElements;
 use serde::Deserialize;
 
 pub async fn handler_table_delete_by_id(

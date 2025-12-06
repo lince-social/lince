@@ -31,7 +31,7 @@ pub async fn handler_karma_get_condition(
 ) -> impl IntoResponse {
     let signals_value: serde_json::Value = match from_str(&wrapper.datastar) {
         Ok(v) => v,
-        Err(e) => serde_json::Value::Null,
+        Err(_e) => serde_json::Value::Null,
     };
 
     let search = signals_value
@@ -78,7 +78,7 @@ pub async fn handler_karma_get_consequence(
 ) -> impl IntoResponse {
     let signals_value: serde_json::Value = match from_str(&wrapper.datastar) {
         Ok(v) => v,
-        Err(e) => serde_json::Value::Null,
+        Err(_e) => serde_json::Value::Null,
     };
 
     let search = signals_value

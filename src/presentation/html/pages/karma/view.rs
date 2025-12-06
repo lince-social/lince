@@ -146,7 +146,7 @@ async fn presentation_html_karma_view_consequence(services: InjectedServices) ->
                 }
                 tbody {
                     @for (i, consequence) in consequences.iter().enumerate() {
-                        @let last_row = i == consequences.len() - 1;
+                        @let _last_row = i == consequences.len() - 1;
                         tr {
                             td.column {
                                 div { (consequence.explanation) }

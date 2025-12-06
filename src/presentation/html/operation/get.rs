@@ -8,7 +8,7 @@ pub fn presentation_html_operation_get_operation_input() -> String {
             hx-trigger="keyup[key === 'Escape'] from:body"
             hx-get="/body"
         {
-            form.modal
+            form.northeast_modal.filled
                 id="operation_input"
                 hx-post="/operation"
                 hx-target="#body"

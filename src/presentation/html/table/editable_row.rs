@@ -8,7 +8,7 @@ pub async fn presentation_html_table_editable_row(
     search: Option<String>,
 ) -> Markup {
     html!(
-        td {
+        td.modal {
             form
                 method="post"
                 action=(format!("/table/{}/{}/{}", table, id, column))
@@ -27,7 +27,6 @@ pub async fn presentation_html_table_editable_row(
                                 search.unwrap_or("foo".to_string()),&value
                             )))
 
-                script { (PreEscaped(r#"(function(){var el=document.getElementById('editable_textarea'); if(!el) return; el.style.height='auto'; el.style.height=el.scrollHeight+'px';})();"#)) }
                 button type="submit" { "Save" }
             }
         }

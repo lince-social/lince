@@ -127,6 +127,7 @@ pub async fn presentation_html_style(services: InjectedServices) -> String {
             border-radius: 2px;
             background: var(--input-bg);
             color: var(--input-txt);
+            max-height: 90vh;
         }
 
         .plain-button {

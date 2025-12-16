@@ -1,13 +1,13 @@
-#import "chapters/aging/birth.typ"
-#import "aging.typ"
-#import "chapters/sickness/sickness.typ"
+#import "chapters/birth/birth.typ"
+#import "chapters/aging/aging.typ"
+#import "chapters/sickness.typ"
 #import "chapters/death.typ"
 
 #import "@preview/hydra:0.6.2": hydra
 #import "@preview/cheq:0.3.0": checklist
 #show: checklist
 
-#set document(title: [Instinctus], author: "Eduardo de Melo Xavier")
+#set document(title: [Instinto], author: "Eduardo de Melo Xavier")
 #set text(
   lang: "en",
   region: "us",
@@ -18,22 +18,22 @@
 #place(
   center + horizon,
 )[
-  #title(align(center, text(40pt, "Instinctus")))
-  #title(align(center, text(15pt, "Lince Documentation")))
+  #title(align(center, text(65pt, "Instinto")))
+  #title(align(center, text(20pt, "Lince Documentation")))
 ]
 
+#show link: it => underline(text(fill: rgb("#0000EE"), it))
 #pagebreak()
-
+Lince Version: 0.6.1 \ \
 Typst Version: #dictionary(sys).at("version") \ \
-Starting Date: #datetime(year: 2025, month: 12, day: 15).display() \ \
-Date of Print:  #datetime.today().display() \ \
+Documentation Start: #datetime(year: 2025, month: 12, day: 15).display() \ \
+Documentation Print:  #datetime.today().display() \ \
 Days of Construction: #(datetime.today() - datetime(year: 2025, month: 12, day: 15)).days() \ \
-Source: Lince (\@lince-social/lince)
+Source: #link("https://github.com/lince-social/lince")[Lince] (\@lince-social/lince)
 #footnote["https://github.com/lince-social/lince"] \
 
 #pagebreak()
 #outline()
-#pagebreak()
 
 #set page(
   margin: (top: 1in, bottom: 1in, left: 1in, right: 1in),
@@ -62,4 +62,4 @@ Source: Lince (\@lince-social/lince)
 
 #pagebreak()
 
-#bibliography("chapters/bibliography.yml")
+#bibliography("bibliography.yml")

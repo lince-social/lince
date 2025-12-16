@@ -77,8 +77,25 @@ mprocs \
 "bacon . --job run"
 ```
 
-## book
+## docs
 ```bash
-mask update
-mdbook serve --port 9999
+cmd() { command -v "$1" >/dev/null; }
+
+if ! cmd tinymist || ! cmd typst; then
+  read -p "Docs will run in http://localhost:23625. Write the package manager that will install typst and tinymist [brew/pacman]: " c
+  case $c in
+    brew) brew install tinymist typst ;;
+    pacman) sudo pacman -Syu --needed --noconfirm typst tinymist ;;
+    *) exit 1 ;;
+  esac
+fi
+
+tinymist preview \
+--control-plane-host 127.0.0.1:3002 \
+--data-plane-host 127.0.0.1:3001 \
+--static-file-host 127.0.0.1:3003 \
+--font-path documentation/font/IBM_Plex_Sans/static \
+--invert-colors='{"rest":"always", "image": "never"}' \
+documentation/main.typ
 ```
+> Starts typst documentation with tinymist on http://localhost:23625

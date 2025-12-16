@@ -1,8 +1,26 @@
-#import "../components/major.typ": major
+#import "../../components/major.typ": major
+#import "collection.typ"
+#import "configuration.typ"
+#import "dna.typ"
+#import "examples.typ"
+#import "history.typ"
+#import "karma.typ"
+#import "operations.typ"
+#import "record.typ"
+#import "transfer.typ"
 
 #major(
   "Aging",
-  $"Cough"$,
-  message: "`Morbus est medicus naturae` \\Disease is the doctor of nature, illness forces correction",
-  by: "ChatGPT (circa 2025)",
+  $""$,
+  message: "Ouch! My back!",
+  by: "Sedentary Person, Modern",
 )
+
+#record
+#collection
+#karma
+#transfer
+#configuration
+#history
+#dna
+#examples

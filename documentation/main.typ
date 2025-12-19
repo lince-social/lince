@@ -18,6 +18,7 @@
 #place(
   center + horizon,
 )[
+  #figure(image("media/preto.png", width: 40%))
   #title(align(center, text(65pt, "Instinto")))
   #title(align(center, text(20pt, "Lince Documentation")))
 ]
@@ -31,6 +32,8 @@ Documentation Print:  #datetime.today().display() \ \
 Days of Construction: #(datetime.today() - datetime(year: 2025, month: 12, day: 15)).days() \ \
 Source: #link("https://github.com/lince-social/lince")[Lince] (\@lince-social/lince)
 #footnote["https://github.com/lince-social/lince"] \
+
+The one that first wrote this is a functional illiterate and a broken poet, the phrasing needs improvement much more yes.
 
 #pagebreak()
 #outline()
@@ -60,6 +63,6 @@ Source: #link("https://github.com/lince-social/lince")[Lince] (\@lince-social/li
 #sickness
 #death
 
-#pagebreak()
+// #pagebreak()
 
-#bibliography("bibliography.yml")
+// #bibliography("bibliography.yml")

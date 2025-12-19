@@ -1,109 +1,106 @@
 == Karma
 
 #table(
-  [
-    ["karma", "DATA TYPE"],
-    ["id", "INTEGER"],
-    ["quantity", "INTEGER"],
-    ["name", "TEXT"],
-    ["condition_id", "INTEGER"],
-    ["operator", "TEXT"],
-    ["consequence_id", "INTEGER"],
-  ],
+  columns: 2,
+  [karma], [DATA TYPE],
+  [id], [INTEGER],
+  [quantity], [INTEGER],
+  [name], [TEXT],
+  [condition_id], [INTEGER],
+  [operator], [TEXT],
+  [consequence_id], [INTEGER],
 )
 
 Karma is a condition checker and an action taker. A constructor of if/then, behavior, inside your DNA.
-It does it by replacing symbols in the Condition that point to data with it's actual values, then evaluating it as a
+It does it by selecting data or running commands, then if the data fits some criteria, changing records, running commands and more.
+It replaces a syntax that references parts of Lince with it's actual values, then evaluating it as a
 mathematical equation and according to the Operator. If the operator is '=' it lets only non zero values take effect,
 if it is '=\*' it doesnt have that constraint.
 
-This is an introduction to Karma. The full description, plus examples, will take place a little further ahead.
-This process is called a Delivery and it is run every 60 seconds, and sometimes instantly for some special cases.
-== Karma Condition
+This is the hardest thing to understand in Lince and also the most useful. The full description, plus examples, will take place a little further ahead.
+This process is called a Delivery and it is run every 60 seconds, and sometimes instantly when wanted.
+
+*Karma Condition* \
 
 #table(
-  [
-    ["COLUMN NAME", "DATA TYPE"],
-    ["id", "INTEGER"],
-    ["quantity", "INTEGER"],
-    ["name", "TEXT"],
-    ["condition", "TEXT"],
-  ],
+  columns: 2,
+  [COLUMN NAME], [DATA TYPE],
+  [id], [INTEGER],
+  [quantity], [INTEGER],
+  [name], [TEXT],
+  [condition], [TEXT],
 )
 
 A Karma Condition is something checked by replacing parts of the string (text) with real values.
 A record with id 1 has a quantity of 5. When we set a Karma Condition to be 'rq1' we are saying the value evaluated will be 5 (at that Delivery).
-== Karma Consequence
+
+*Karma Consequence* \
 
 #table(
-  [
-    ["COLUMN NAME", "DATA TYPE"],
-    ["id", "INTEGER"],
-    ["quantity", "INTEGER"],
-    ["name", "TEXT"],
-    ["consequence", "TEXT"],
-  ],
+  columns: 2,
+  [COLUMN NAME], [DATA TYPE],
+  [id], [INTEGER],
+  [quantity], [INTEGER],
+  [name], [TEXT],
+  [consequence], [TEXT],
 )
 
 The Karma Consequence works the same way as Condition but instead of getting values it is responsible for setting what
-is supposed to change. It can be the activation of a Shell/SQL command, the changing of the value of a Record and more
-in the future, like making transactions, changing Quantities of other tables like Configuration and Collection Views, or changing DNAs.
+is supposed to change. It can be the activation of a Shell/SQL command, the changing of the value of a Record and more;
+in the future it would be cool to make transactions, changing Quantities of other tables like Configuration and Collection Views, maybe even altering
+other Karma, or changing DNAs.
 
-== Frequency
+*Frequency* \
 
 #table(
-  [
-    ["frequency", "DATA TYPE"],
-    ["id", "INTEGER"],
-    ["quantity", "INTEGER"],
-    ["day_week", "INTEGER"],
-    ["months", "INTEGER"],
-    ["days", "INTEGER"],
-    ["seconds", "INTEGER"],
-    ["next_date", "STRING"],
-    ["finish_date", "STRING"],
-    ["catch_up_sum", "INTEGER"],
-  ],
+  columns: 2,
+  [frequency], [DATA TYPE],
+  [id], [INTEGER],
+  [quantity], [INTEGER],
+  [day_week], [INTEGER],
+  [months], [INTEGER],
+  [days], [INTEGER],
+  [seconds], [INTEGER],
+  [next_date], [STRING],
+  [finish_date], [STRING],
+  [catch_up_sum], [INTEGER],
 )
 
 The frequency table holds account of a fixed period for returning a value of 1 or more. If a frequency occurs
 every 1 day and 60 seconds it might start, for example at 2030-01-01 10:00:00. When that time comes, if this Frequency exists
 in a Karma Condition it will be checked and updated, setting next_date to 2030-01-02 10:01:00.
 
-The catch_up_sum is a multiplier, if many days have passed since the last check like 4, instead of each minute it returns one,
-if catch up sum is 1 it will in the same Deliver jump the next_date until it has surpassed the current time returning the amount of times.
-Anything else will not do that.
+The catch_up_sum is a multiplier, if many days have passed since the last check like 4, instead of returning one each minute, it catches up
+to the present in 'next_date' and returns the periods passed or only one.
 
 In Karma, Frequencies are represented by the letter 'f'. So setting in a Condition '-1 \* f1' means Karma Delivery
 will check the returned number for the specific Frequency with Id 1 and multiply that by '-1'.
 
-== Command
+*Command* \
 
 #table(
-  [
-    ["command", "DATA TYPE"],
-    ["id", "INTEGER"],
-    ["quantity", "INTEGER"],
-    ["name", "TEXT"],
-    ["command", "TEXT"],
-  ],
+  columns: 2,
+  [command], [DATA TYPE],
+  [id], [INTEGER],
+  [quantity], [INTEGER],
+  [name], [TEXT],
+  [command], [TEXT],
 )
 
 The Command is a Shell command you can run in a bash Shell.
 
-== Example:
+*Example:* \
 
 #table(
-  [
-    ["id", "quantity", "command"],
-    ["1", "", "touch grass.el"],
-  ],
+  columns: 3,
+  [id], [quantity], [command],
+  [1], [], [touch grass.el],
 )
 
-It is referenced in Karma Condition and/or Consequence as the letter 'c', followed by the id number, so this example would be 'c1'.
+It is referenced in Karma Condition and/or Consequence as the letter 'c', followed by the id number, so this example would be 'c1'. The command above
+creates the file grass.el.
 
-
-== Query
+*Query* \
 
 #table(
   columns: 2,
@@ -113,9 +110,9 @@ It is referenced in Karma Condition and/or Consequence as the letter 'c', follow
   [query], [TEXT],
 )
 
-The Query is an SQL command you can run.
+The Query is an SQL command you can run and affect your current DNA.
 
-== Example:
+*Example:* \
 
 #table(
   [
@@ -125,20 +122,20 @@ The Query is an SQL command you can run.
 )
 
 It is referenced in Karma Condition and/or Consequence as the characters 'sql', followed by the id number, so this example would be 'sql1'.
-== Sum
+
+*Sum* \
 
 #table(
-  [
-    ["sum", "DATA TYPE"],
-    ["id", "INTEGER"],
-    ["quantity", "INTEGER"],
-    ["record_id", "INTEGER"],
-    ["interval_relative", "BOOL"],
-    ["interval_length", "INTERVAL"],
-    ["sum_mode", "INTEGER"],
-    ["end_lag", "INTERVAL"],
-    ["end_date", "TIMESTAMP"],
-  ],
+  columns: 2,
+  [sum], [DATA TYPE],
+  [id], [INTEGER],
+  [quantity], [INTEGER],
+  [record_id], [INTEGER],
+  [interval_relative], [BOOL],
+  [interval_length], [INTERVAL],
+  [sum_mode], [INTEGER],
+  [end_lag], [INTERVAL],
+  [end_date], [TIMESTAMP],
 )
 
 This table is responsible for returning a sum of change. Change of a record's quantity over time. You have the 'record_id' to know what record to look for.

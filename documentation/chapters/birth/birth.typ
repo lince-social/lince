@@ -8,6 +8,8 @@
 #major(
   "Birth",
   $$,
+  message: "It's a Lince!",
+  by: "Docta",
 )
 
 #summary

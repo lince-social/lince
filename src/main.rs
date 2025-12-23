@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+// #![allow(dead_code)]
 mod application;
 mod domain;
 mod infrastructure;
@@ -74,7 +74,7 @@ async fn main() -> Result<(), Error> {
             #[cfg(feature = "gpui")]
             let cloned_services = services.clone();
             #[cfg(feature = "gpui")]
-            spawn(async move {
+            tokio::spawn(async move {
                 gpui_app(cloned_services.clone()).await;
             });
         } else if arg.as_str() == "html" {

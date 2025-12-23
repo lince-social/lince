@@ -77,7 +77,17 @@ mprocs \
 "bacon . --job run"
 ```
 
-## docs
+## dev
+```bash
+mprocs \
+"systemctl --user restart lince.service &&  journalctl --user -u lince.service -f --output=cat" \
+"systemctl --user stop lince.service &&  journalctl --user -u lince.service -f --output=cat" \
+"bacon . --job fix" \
+"cargo run -- html gpui"
+```
+
+
+## install-docs
 ```bash
 cmd() { command -v "$1" >/dev/null; }
 
@@ -89,7 +99,11 @@ if ! cmd tinymist || ! cmd typst; then
     *) exit 1 ;;
   esac
 fi
+```
 
+## docs
+```bash
+mask install-docs
 tinymist preview \
 --control-plane-host 127.0.0.1:3002 \
 --data-plane-host 127.0.0.1:3001 \
@@ -98,4 +112,23 @@ tinymist preview \
 --invert-colors='{"rest":"always", "image": "never"}' \
 documentation/main.typ
 ```
-> Starts typst documentation with tinymist on http://localhost:23625
+> Starts typst documentation with tinymist on http://localhost:3003
+
+## tmol 
+```bash
+mask install-docs
+
+trap 'typst compile \
+--root documentation \
+documentation/chapters/TMOL/main.typ' EXIT
+
+tinymist preview \
+--root documentation \
+--control-plane-host 127.0.0.1:3002 \
+--data-plane-host 127.0.0.1:3001 \
+--static-file-host 127.0.0.1:3003 \
+--font-path documentation/font/IBM_Plex_Sans/static \
+--invert-colors='{"rest":"always", "image": "never"}' \
+documentation/chapters/TMIL/main.typ
+```
+> Starts typst documentation for This Month in Lince with tinymist on http://localhost:3003

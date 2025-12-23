@@ -175,9 +175,7 @@ impl Render for LinceApp {
                     cx.notify();
                 }
             }))
-            .child(div().text_3xl().text_color(rgb(0xe0e0e0)).mb_4().child(
-                format!("{}", &self.data.collection.first().map(|f| f.0.id).unwrap_or_default()),
-            ))
+            .child()
             .child(
                 div()
                     .flex()
@@ -269,5 +267,23 @@ impl Render for LinceApp {
                         )
                     }),
             )
+    }
+}
+
+impl Render for LinceApp {
+    fn presentation_gpui_collection(self: Self) {
+        div()
+            .text_3xl()
+            .text_color(rgb(0xe0e0e0))
+            .mb_4()
+            .child(format!(
+                "{}",
+                &self
+                    .data
+                    .collection
+                    .first()
+                    .map(|f| f.0.id)
+                    .unwrap_or_default()
+            ))
     }
 }

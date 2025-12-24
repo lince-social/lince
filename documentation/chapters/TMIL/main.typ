@@ -41,9 +41,9 @@
     "en": "Programming",
   ),
   "roadmap": (
-    "en": "Roadmap",
-    "pt-BR": "Roadmap",
+    "pt-BR": "Cronograma",
     "zh-CN": "路线图",
+    "en": "Roadmap",
   ),
   "see-you": (
     "pt-BR": "Até o próximo mês!",
@@ -76,6 +76,7 @@
     ]
   ]
 ]
+
 #let parts(str) = [
   #for i in latest.at(str) [
     == #for (code, _) in languages {

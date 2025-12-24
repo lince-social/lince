@@ -114,12 +114,17 @@ documentation/main.typ
 ```
 > Starts typst documentation with tinymist on http://localhost:3003
 
-## tmol 
+## tmil 
 ```bash
 mask install-docs
 
 trap 'typst compile \
 --root documentation \
+documentation/chapters/TMOL/main.typ' EXIT
+
+trap 'touying compile \
+--root documentation \
+--format html \
 documentation/chapters/TMOL/main.typ' EXIT
 
 tinymist preview \

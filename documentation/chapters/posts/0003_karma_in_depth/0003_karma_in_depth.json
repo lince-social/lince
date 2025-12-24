@@ -1,0 +1,49 @@
+{
+  "posts": [
+    {
+      "id": "records-in-depth",
+      "title": {
+        "pt-BR": "Registros: O Coração da Lince",
+        "zh-CN": "记录：Lince 的核心",
+        "en": "Records: The Heart of Lince"
+      },
+      "slides": [
+        {
+          "i18n": {
+            "pt-BR": "Um \"Registro\" pode ser qualquer coisa: uma ação, um item ou um plano.",
+            "zh-CN": "“记录”可以是任何东西：一个行动、一个物品或一个计划。",
+            "en": "A \"Record\" can be anything: an action, an item, or a plan."
+          }
+        },
+        {
+          "i18n": {
+            "pt-BR": "Ele possui campos de texto, mas tudo gira em torno da sua Quantidade.",
+            "zh-CN": "它包含文本字段，但一切都围绕其数量展开。",
+            "en": "It has text fields, but everything revolves around its Quantity."
+          }
+        },
+        {
+          "i18n": {
+            "pt-BR": "Quantidade negativa = Necessidade (ex.: Maçã (-2): preciso de 2 maçãs).",
+            "zh-CN": "负数量 = 需求（例如：苹果 (-2)：我需要 2 个苹果）。",
+            "en": "Negative Quantity = Need (e.g., Apple (-2): I need 2 apples)."
+          }
+        },
+        {
+          "i18n": {
+            "pt-BR": "Quantidade positiva = Contribuição (ex.: Maçã (+2): posso doar ou vender 2 maçãs).",
+            "zh-CN": "正数量 = 贡献（例如：苹果 (+2)：我可以捐赠或出售 2 个苹果）。",
+            "en": "Positive Quantity = Contribution (e.g., Apple (+2): I can donate or sell 2 apples)."
+          }
+        },
+        {
+          "i18n": {
+            "pt-BR": "Modele, organize e automatize sua vida em um só lugar, de tarefas pessoais a trocas econômicas.",
+            "zh-CN": "在一个地方建模、组织并自动化你的生活，从个人任务到经济交换。",
+            "en": "Model, organize, and automate your life in one place, from personal tasks to economic trades."
+          }
+        }
+      ]
+    }
+  ]
+}

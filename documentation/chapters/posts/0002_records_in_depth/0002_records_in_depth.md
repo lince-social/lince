@@ -17,7 +17,7 @@ Then go to the main.typ in this same /posts dir and change the file used to poin
 - It has text fields, but everything revolves around it's Quantity.
 - Negative Quantity = Need (e.g., Apple (-2): I need 2 apples).
 - Positive Quantity = Contribution (e.g., Apple (+2): I can donate or sell 2 apples).
-- Model and organize possibly all parts of your life in one place, from personal tasks to economic trades.
+- Model, organize and automate your life in one place, from personal tasks to economic trades.
 
 # JSON Target Schema Example
 

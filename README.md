@@ -120,12 +120,12 @@ mask install-docs
 
 trap 'typst compile \
 --root documentation \
-documentation/chapters/TMOL/main.typ' EXIT
+documentation/chapters/TMIL/main.typ' EXIT
 
 trap 'touying compile \
 --root documentation \
 --format html \
-documentation/chapters/TMOL/main.typ' EXIT
+documentation/chapters/TMIL/main.typ' EXIT
 
 tinymist preview \
 --root documentation \
@@ -137,3 +137,30 @@ tinymist preview \
 documentation/chapters/TMIL/main.typ
 ```
 > Starts typst documentation for This Month in Lince with tinymist on http://localhost:3003
+
+## posts
+```bash
+# mask install-docs
+
+# trap '
+typst compile \
+--root documentation \
+--input json=0001_lince_overview.json \
+documentation/chapters/posts/main.typ
+# ' EXIT
+
+# trap 'touying compile \
+# --root documentation \
+# --format html \
+# documentation/chapters/posts/main.typ' EXIT
+
+# tinymist preview \
+# --root documentation \
+# --control-plane-host 127.0.0.1:3002 \
+# --data-plane-host 127.0.0.1:3001 \
+# --static-file-host 127.0.0.1:3003 \
+# --font-path documentation/font/IBM_Plex_Sans/static \
+# --invert-colors='{"rest":"always", "image": "never"}' \
+# documentation/chapters/posts/main.typ
+```
+> Starts typst documentation for social media posts with tinymist on http://localhost:3003

@@ -1,0 +1,84 @@
+{
+  "posts": [
+    {
+      "id": "overview",
+      "title": {
+        "pt-BR": "O que é a Lince?",
+        "zh-CN": "什么是 Lince？",
+        "en": "What is Lince?"
+      },
+      "slides": [
+        {
+          "i18n": {
+            "pt-BR": "Uma ferramenta para registro, interconexão e automação de Necessidades e Contribuições.",
+            "zh-CN": "一个用于需求和贡献的注册、互联和自动化工具。",
+            "en": "A tool for registry, interconnection, and automation of Needs and Contributions."
+          }
+        },
+        {
+          "i18n": {
+            "pt-BR": "Vamos cobrir em detalhes todas as partes da Lince; por enquanto, veja um resumo.",
+            "zh-CN": "我们将详细介绍 Lince 的所有部分；现在先看一个概览。",
+            "en": "We will cover in detail all the parts of Lince; for now, let's see a summary."
+          }
+        },
+        {
+          "i18n": {
+            "pt-BR": "Seus dados são privados e locais por padrão, chamados de seu DNA.",
+            "zh-CN": "你的数据默认是私有且本地的，称为你的 DNA。",
+            "en": "Your data is private and local by default, called your DNA."
+          }
+        },
+        {
+          "i18n": {
+            "pt-BR": "Tudo gira em torno de Registros, que podem modelar ações, itens... qualquer coisa que você quiser.",
+            "zh-CN": "一切都围绕记录展开，它们可以建模操作、物品……你想要的任何东西。",
+            "en": "Everything revolves around Records, which can model actions, items... anything you want."
+          }
+        },
+        {
+          "i18n": {
+            "pt-BR": "Automações podem ser feitas usando Karma, um sistema de SE (condições) e ENTÃO (consequência).",
+            "zh-CN": "可以使用 Karma 进行自动化，这是一个由 IF（条件）和 THEN（结果）组成的系统。",
+            "en": "Automations can be done using Karma, a system of IF (conditions) and THEN (consequence)."
+          }
+        },
+        {
+          "i18n": {
+            "pt-BR": "As automações podem alterar seus Registros, executar programas e mais; a criatividade é o limite.",
+            "zh-CN": "自动化可以更改你的记录、运行程序等；创造力是唯一的限制。",
+            "en": "The automations can change your Records, run programs and more; creativity is the limit."
+          }
+        },
+        {
+          "i18n": {
+            "pt-BR": "Você pode compartilhar partes dos seus dados com outras pessoas para colaborar e trocar recursos.",
+            "zh-CN": "你可以与他人共享部分数据以进行协作和资源交换。",
+            "en": "You can share parts of your data with others to collaborate and trade resources."
+          }
+        },
+        {
+          "i18n": {
+            "pt-BR": "Muitas instâncias da Lince podem criar um grupo, chamado Órgão, uma rede descentralizada ponto a ponto.",
+            "zh-CN": "多个 Lince 实例可以组成一个称为“器官（Organ）”的群组，这是一个去中心化的点对点网络。",
+            "en": "Many Lince instances can create a group, called an Organ, a decentralized peer-to-peer network."
+          }
+        },
+        {
+          "i18n": {
+            "pt-BR": "Você pode usar os Órgãos para criar tarefas em grupo, comprar bens e serviços e muito mais.",
+            "zh-CN": "你可以使用 Organ 来创建群组任务、购买商品和服务等。",
+            "en": "You can use the Organs to create group tasks, to buy goods and services, and more."
+          }
+        },
+        {
+          "i18n": {
+            "pt-BR": "Confira nossos outros posts e o canal no YouTube para mais informações.",
+            "zh-CN": "更多信息请查看我们的其他文章和 YouTube 频道。",
+            "en": "Check our other posts and the YouTube channel for more information."
+          }
+        }
+      ]
+    }
+  ]
+}

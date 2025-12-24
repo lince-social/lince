@@ -8,7 +8,7 @@
         "i18n": {
           "pt-BR": {
             "title": "Planejamento",
-            "description": "Roadmap da versão v1.0.0"
+            "description": "Cronograma da versão v1.0.0"
           },
           "zh-CN": { "title": "规划", "description": "v1.0.0 路线图" },
           "en": {
@@ -30,11 +30,12 @@
           },
           "en": {
             "title": "LinceCon",
-            "description": "2025 Edition. Held online"
+            "description": "2025 Edition. online"
           }
         }
       },
       {
+        "image": "202512/tmil.jpg",
         "i18n": {
           "pt-BR": {
             "title": "Este Mês na Lince",

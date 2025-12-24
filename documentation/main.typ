@@ -11,7 +11,7 @@
 #set text(
   lang: "en",
   region: "us",
-  font: "New Computer Modern Math",
+  // font: "New Computer Modern Math",
   weight: "regular",
   size: 12pt,
 )

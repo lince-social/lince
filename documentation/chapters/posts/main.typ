@@ -8,9 +8,23 @@
   size: 22pt,
 )
 
-#let json_name = sys.inputs.at("json", default: "0001_lince_overview.json")
+#let json_name = sys.inputs.at(
+  "json",
+  default: "0001_lince_overview/0001_lince_overview.json",
+)
 #let data = json(json_name)
 
+
+#let corner-logo = image("../../../assets/preto_no_branco.png", width: 18pt)
+
+#show page: it => (
+  it
+    + place(
+      top + right,
+      inset: 10pt,
+      corner-logo,
+    )
+)
 
 
 #let languages = (

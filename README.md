@@ -140,27 +140,34 @@ documentation/chapters/TMIL/main.typ
 
 ## posts
 ```bash
-# mask install-docs
+mask install-docs
+find documentation/chapters/posts -name '*.json' -type f | while read -r json; do
+  rel="${json#documentation/chapters/posts/}"
+  dir="$(dirname "$json")"
+  base="$(basename "$json" .json)"
+  echo $rel
+  echo $dir
+  echo $base
 
-# trap '
-typst compile \
---root documentation \
---input json=0001_lince_overview.json \
+  typst compile \
+    --root ./ \
+    --format png \
+    --input json="$rel" \
+    documentation/chapters/posts/main.typ \
+    "$dir/${base}-{0p}.png"
+done
+```
+> Creates the PNGs for all the posts. It's in .gitignore, dont worry.
+
+## post 
+```bash
+tinymist preview \
+--root ./ \
+--control-plane-host 127.0.0.1:3002 \
+--data-plane-host 127.0.0.1:3001 \
+--static-file-host 127.0.0.1:3003 \
+--font-path documentation/font/IBM_Plex_Sans/static \
+--invert-colors='{"rest":"always", "image": "never"}' \
 documentation/chapters/posts/main.typ
-# ' EXIT
-
-# trap 'touying compile \
-# --root documentation \
-# --format html \
-# documentation/chapters/posts/main.typ' EXIT
-
-# tinymist preview \
-# --root documentation \
-# --control-plane-host 127.0.0.1:3002 \
-# --data-plane-host 127.0.0.1:3001 \
-# --static-file-host 127.0.0.1:3003 \
-# --font-path documentation/font/IBM_Plex_Sans/static \
-# --invert-colors='{"rest":"always", "image": "never"}' \
-# documentation/chapters/posts/main.typ
 ```
 > Starts typst documentation for social media posts with tinymist on http://localhost:3003

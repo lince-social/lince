@@ -3,6 +3,7 @@ pub mod configuration;
 pub mod cub;
 pub mod engine;
 pub mod frequency;
+pub mod gpui;
 pub mod karma;
 pub mod mosca;
 pub mod operation;

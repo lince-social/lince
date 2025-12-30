@@ -6,6 +6,7 @@ mod macros;
 mod presentation;
 
 #[cfg(feature = "gpui")]
+use crate::application::gpui::get_gpui_startup_data;
 use crate::presentation::gpui::app::gpui_app;
 
 #[cfg(feature = "karma")]
@@ -64,33 +65,35 @@ async fn main() -> Result<(), Error> {
         }
     });
 
-    for arg in env::args() {
-        if arg.as_str() == "migrate" {
-            println!("Executing migration...");
-            execute_migration(db.clone()).await.inspect_err(|e| {
-                log(LogEntry::Error(e.kind(), e.to_string()));
-            })?;
-        } else if arg.as_str() == "gpui" {
-            #[cfg(feature = "gpui")]
-            let cloned_services = services.clone();
-            #[cfg(feature = "gpui")]
-            tokio::spawn(async move {
-                gpui_app(cloned_services.clone()).await;
-            });
-        } else if arg.as_str() == "html" {
-            let app = Router::new()
-                .route("/preto_no_branco.ico", get(handler_section_favicon))
-                .merge(section_router(services.clone()))
-                .nest("/collection", collection_router(services.clone()))
-                .nest("/view", view_router(services.clone()))
-                .nest("/table", table_router(services.clone()))
-                .nest("/karma", karma_router(services.clone()))
-                .nest("/operation", operation_router(services.clone()));
+    let args = env::args().collect::<Vec<String>>();
 
-            let listener = tokio::net::TcpListener::bind("0.0.0.0:6174").await.unwrap();
-            println!("Listening on: {}", listener.local_addr().unwrap());
-            axum::serve(listener, app).await?;
-        }
+    if args.contains(&"migrate".to_string()) {
+        println!("Executing migration...");
+        execute_migration(db.clone()).await.inspect_err(|e| {
+            log(LogEntry::Error(e.kind(), e.to_string()));
+        })?;
+    }
+    #[cfg(feature = "gpui")]
+    if args.contains(&"gpui".to_string()) {
+        let cloned_services = services.clone();
+        let gpui_startup_data = get_gpui_startup_data(services.clone()).await?;
+        tokio::spawn(async move {
+            gpui_app(cloned_services.clone(), gpui_startup_data).await;
+        });
+    }
+    if args.contains(&"html".to_string()) {
+        let app = Router::new()
+            .route("/preto_no_branco.ico", get(handler_section_favicon))
+            .merge(section_router(services.clone()))
+            .nest("/collection", collection_router(services.clone()))
+            .nest("/view", view_router(services.clone()))
+            .nest("/table", table_router(services.clone()))
+            .nest("/karma", karma_router(services.clone()))
+            .nest("/operation", operation_router(services.clone()));
+
+        let listener = tokio::net::TcpListener::bind("0.0.0.0:6174").await.unwrap();
+        println!("Listening on: {}", listener.local_addr().unwrap());
+        axum::serve(listener, app).await?;
     }
 
     Ok(())

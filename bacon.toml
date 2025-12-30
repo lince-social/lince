@@ -1,12 +1,3 @@
-[jobs.run]
-command = ["cargo", "run", "--color", "always"]
-need_stdout = true
-allow_warnings = true
-watch = ["src/**"]
-
-[jobs.featureful]
-command = ["cargo", "run", "--", "html", "gpui"]
-
 [jobs.fix]
 command = [
     "sh",

@@ -1,17 +1,17 @@
 use crate::{
     domain::clean::collection::Collection,
     infrastructure::database::repositories::view::{QueriedView, QueriedViewWithCollectionId},
+    ok,
 };
 use async_trait::async_trait;
 use sqlx::{Pool, Sqlite};
-use std::{collections::HashMap, io::Error, sync::Arc};
+use std::{collections::HashMap, io::Error, iter::once, sync::Arc};
 
 pub type CollectionRow = (Collection, Vec<QueriedView>);
 
-// pub fn default_collection_row() -> CollectionRow {}
-
 #[async_trait]
 pub trait CollectionRepository: Send + Sync {
+    async fn get_all(&self) -> Result<Vec<CollectionRow>, Error>;
     async fn get_active(&self) -> Result<Option<CollectionRow>, Error>;
     async fn get_inactive(&self) -> Result<Vec<CollectionRow>, Error>;
     async fn set_active(&self, id: &str) -> Result<(), Error>;
@@ -29,6 +29,14 @@ impl CollectionRepositoryImpl {
 
 #[async_trait]
 impl CollectionRepository for CollectionRepositoryImpl {
+    async fn get_all(&self) -> Result<Vec<CollectionRow>, Error> {
+        let mut inactive = self.get_inactive().await?;
+        inactive.sort_by_key(|(collection, _)| collection.id);
+        Ok(once(self.get_active().await?.unwrap())
+            .chain(inactive)
+            .collect())
+    }
+
     async fn set_active(&self, id: &str) -> Result<(), Error> {
         sqlx::query(&format!(
             "UPDATE collection SET quantity = CASE WHEN id = {} THEN 1 ELSE 0 END",
@@ -41,11 +49,11 @@ impl CollectionRepository for CollectionRepositoryImpl {
     }
 
     async fn get_active(&self) -> Result<Option<CollectionRow>, Error> {
-        let collection: Option<Collection> =
-            sqlx::query_as("SELECT id, name, quantity FROM collection WHERE quantity = 1")
-                .fetch_optional(&*self.pool)
-                .await
-                .map_err(Error::other)?;
+        let collection: Option<Collection> = ok!(sqlx::query_as(
+            "SELECT id, name, quantity FROM collection WHERE quantity = 1"
+        )
+        .fetch_optional(&*self.pool)
+        .await);
         if collection.is_none() {
             return Ok(None);
         }
@@ -68,17 +76,19 @@ impl CollectionRepository for CollectionRepositoryImpl {
     }
 
     async fn get_inactive(&self) -> Result<Vec<CollectionRow>, Error> {
-        let collections: Vec<Collection> =
-            sqlx::query_as("SELECT id, name, quantity FROM collection WHERE quantity <> 1")
-                .fetch_all(&*self.pool)
-                .await
-                .unwrap();
+        let collections: Vec<Collection> = sqlx::query_as(
+            "SELECT id, name, quantity FROM collection WHERE quantity <> 1 ORDER BY id",
+        )
+        .fetch_all(&*self.pool)
+        .await
+        .unwrap();
 
         let views: Vec<QueriedViewWithCollectionId> = sqlx::query_as(
             "SELECT cv.collection_id, v.id, v.name, v.query, cv.quantity
             FROM collection_view cv
             JOIN view v ON v.id = cv.view_id
-            WHERE cv.collection_id IN (SELECT id FROM collection WHERE quantity <> 1)",
+            WHERE cv.collection_id IN (SELECT id FROM collection WHERE quantity <> 1)
+            ",
         )
         .fetch_all(&*self.pool)
         .await

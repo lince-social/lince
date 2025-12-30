@@ -6,8 +6,7 @@ mod macros;
 mod presentation;
 
 #[cfg(feature = "gpui")]
-use crate::application::gpui::get_gpui_startup_data;
-use crate::presentation::gpui::app::gpui_app;
+use crate::{application::gpui::get_gpui_startup_data, presentation::gpui::app::gpui_app};
 
 #[cfg(feature = "karma")]
 use crate::application::karma::karma_deliver;

@@ -1,47 +1,58 @@
 use crate::{
     infrastructure::database::repositories::collection::CollectionRow,
-    presentation::gpui::state::StateModel,
+    presentation::gpui::{themes::catppuccin_macchiato::*, workspace::Workspace},
 };
 use gpui::*;
 
 #[derive(Clone)]
 pub struct CollectionList {
     pub collections: Vec<CollectionRow>,
+    pub workspace: WeakEntity<Workspace>,
 }
 
 impl CollectionList {
-    pub fn new(collections: Vec<CollectionRow>) -> Self {
-        Self { collections }
-    }
-    pub fn view(cx: &mut App, collections: Vec<CollectionRow>) -> Entity<Self> {
-        cx.new(|_| Self::new(collections))
+    pub fn new(collections: Vec<CollectionRow>, workspace: WeakEntity<Workspace>) -> Self {
+        Self {
+            collections,
+            workspace,
+        }
     }
 }
-
-impl Global for CollectionList {}
-
-pub struct CollectionSelectedEvent {
-    pub id: u32,
-}
-
-impl EventEmitter<CollectionSelectedEvent> for CollectionList {}
 
 impl Render for CollectionList {
-    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let weak = self.workspace.clone();
+
         div().p_2().children(
             self.collections
                 .iter()
                 .map(|(collection, views)| {
+                    let collection_id = collection.id;
+                    let weak = weak.clone();
                     div()
                         .p_2()
                         .flex()
                         .flex_row()
-                        .child(collection.name.clone())
-                        .on_mouse_up(MouseButton::Left, move |_, _, cx| {
-                            cx.update_global::<StateModel, _>(|model, cx| {
-                                cx.emit(CollectionSelectedEvent { id: collection.id });
-                            });
-                        })
+                        .child(
+                            div()
+                                .m_1()
+                                .p_1()
+                                .rounded_sm()
+                                .bg(surface0())
+                                .text_color(text())
+                                .hover(|s| s.bg(surface1()))
+                                .child(collection.name.clone())
+                                .on_mouse_up(
+                                    MouseButton::Left,
+                                    cx.listener(move |_this, _evt, _win, cx| {
+                                        if let Some(workspace) = weak.upgrade() {
+                                            workspace.update(cx, |ws, cx| {
+                                                ws.on_collection_selected(collection_id, cx);
+                                            });
+                                        }
+                                    }),
+                                ),
+                        )
                         .children(
                             views
                                 .iter()
@@ -53,51 +64,3 @@ impl Render for CollectionList {
         )
     }
 }
-
-// impl RenderOnce for CollectionList {
-//     fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
-//         let weak = self.weak.clone();
-
-//         div().children(
-//             self.collections
-//                 .into_iter()
-//                 .map(|each| {
-//                     let collection_id = each.0.id;
-//                     let weak = weak.clone();
-
-//                     div()
-//                         .child(each.0.name)
-//                         .on_mouse_up(MouseButton::Left, move |_event, _window, cx| {
-//                             if let Some(workspace) = weak.upgrade() {
-//                                 workspace.update(cx, |ws, cx| {
-//                                     ws.on_collection_selected(collection_id, cx);
-//                                 });
-//                             }
-//                         })
-//                         .children(
-//                             each.1
-//                                 .into_iter()
-//                                 .map(|view| div().child(view.name))
-//                                 .collect::<Vec<_>>(),
-//                         )
-//                 })
-//                 .collect::<Vec<_>>(),
-//         )
-//     }
-// }
-
-// // impl RenderOnce for CollectionList {
-// //     fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
-// //         div().children(
-// //             self.collections
-// //                 .into_iter() // turn Vec into iterator
-// //                 .map(|each| {
-// //                     div()
-// //                         .child(each.0.name)
-// //                         .on_mouse_up(MouseButton::Left, listener)
-// //                         .children(each.1.into_iter().map(|view| div().child(view.name))) // make an element per item
-// //                 })
-// //                 .collect::<Vec<_>>(), // collect into Vec<impl IntoElement>
-// //         )
-// //     }
-// // }

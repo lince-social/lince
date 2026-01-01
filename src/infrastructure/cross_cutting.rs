@@ -8,7 +8,6 @@ use crate::infrastructure::database::repositories::{
     query::{QueryRepository, QueryRepositoryImpl},
     record::{RecordRepository, RecordRepositoryImpl},
     table::{TableRepository, TableRepositoryImpl},
-    view::{ViewRepository, ViewRepositoryImpl},
 };
 use sqlx::{Pool, Sqlite};
 use std::sync::Arc;
@@ -23,7 +22,6 @@ pub struct Repositories {
     pub frequency: Arc<dyn FrequencyRepository>,
     pub karma: Arc<dyn KarmaRepository>,
     pub collection: Arc<dyn CollectionRepository>,
-    pub view: Arc<dyn ViewRepository>,
 }
 
 pub struct Injected {
@@ -44,7 +42,6 @@ pub fn dependency_injection(db: Arc<Pool<Sqlite>>) -> InjectedServices {
             frequency: Arc::new(FrequencyRepositoryImpl::new(db.clone())),
             karma: Arc::new(KarmaRepositoryImpl::new(db.clone())),
             collection: Arc::new(CollectionRepositoryImpl::new(db.clone())),
-            view: Arc::new(ViewRepositoryImpl::new(db.clone())),
         },
     });
 

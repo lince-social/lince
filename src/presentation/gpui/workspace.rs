@@ -2,7 +2,9 @@ use crate::{
     domain::clean::collection::Collection,
     infrastructure::cross_cutting::InjectedServices,
     log,
-    presentation::gpui::{components::parts::collection::bar::CollectionList, state::State},
+    presentation::gpui::{
+        components::collection::CollectionList, state::State, themes::catppuccin_mocha::mantle,
+    },
 };
 use gpui::*;
 
@@ -62,32 +64,34 @@ impl Workspace {
         })
         .detach();
     }
+    pub fn on_view_selected(&mut self, cx: &mut Context<Self>, collection_id: u32, view_id: u32) {
+        let services = self.services.clone();
+        cx.spawn(async move |this, cx| {
+            match services
+                .repository
+                .collection
+                .toggle_by_view_id(collection_id, view_id)
+                .await
+            {
+                Ok(collections) => {
+                    this.update(cx, move |owner, cx| {
+                        owner.state.collections = collections.clone();
 
-    // pub fn on_collection_selected(&mut self, collection_id: u32, cx: &mut Context<Self>) {
-    //     let services = self.services.clone();
+                        owner.collection_list.update(cx, |bar, _| {
+                            bar.collections = collections;
+                        });
 
-    //     cx.spawn(async move |_this, cx| {
-    //         let _ = services
-    //             .repository
-    //             .collection
-    //             .set_active(&collection_id.to_string())
-    //             .await;
-
-    //         let rows = services
-    //             .repository
-    //             .collection
-    //             .get_all()
-    //             .await
-    //             .unwrap_or_else(|_| vec![]);
-
-    //         cx.update_global::<CollectionList, _>(|list, _| {
-    //             list.collections = rows;
-    //         });
-
-    //         // cx.notify();
-    //     })
-    //     .detach();
-    // }
+                        cx.notify();
+                    })
+                    .unwrap();
+                }
+                Err(e) => {
+                    log!(e, "failed to set active view");
+                }
+            }
+        })
+        .detach();
+    }
 }
 
 impl Focusable for Workspace {
@@ -102,9 +106,9 @@ impl Render for Workspace {
             .flex()
             .flex_col()
             .gap_4()
-            .bg(rgb(0x1a1a1a))
+            .bg(mantle())
             .size_full()
-            .p_6()
+            .p_3()
             .track_focus(&self.focus_handle(cx))
             .child(self.collection_list.clone())
             .text_color(rgb(0xffffff))

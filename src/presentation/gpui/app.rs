@@ -22,12 +22,6 @@ pub async fn gpui_app(services: InjectedServices, state: State) {
         let window_options = get_window_options(cx);
         gpui_component::init(cx);
 
-        // let state_entity = cx.new(|_| state.clone());
-        // let state_model = StateModel {
-        //     inner: state_entity.clone(),
-        // };
-        // cx.set_global(state_model);
-
         // cx.bind_keys([
         //     KeyBinding::new("escape", ClearInput, None),
         // ]);

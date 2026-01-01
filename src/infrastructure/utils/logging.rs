@@ -5,6 +5,7 @@ use std::{
     path::PathBuf,
 };
 
+#[allow(dead_code)]
 pub enum LogEntry {
     Error(ErrorKind, String),
     Info(String),

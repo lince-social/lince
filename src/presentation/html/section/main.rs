@@ -14,7 +14,7 @@ use crate::{
 pub async fn presentation_html_section_main(services: InjectedServices) -> String {
     let (tables, special_views) = services
         .repository
-        .view
+        .collection
         .get_active_view_data()
         .await
         .unwrap();

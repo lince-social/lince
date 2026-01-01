@@ -1,2 +1,2 @@
-pub mod parts;
-pub mod section;
+pub mod collection;
+pub mod table;

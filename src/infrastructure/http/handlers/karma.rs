@@ -19,12 +19,6 @@ pub struct Wrapper {
     datastar: String,
 }
 
-#[derive(Deserialize, Debug)]
-pub struct LinceSignals {
-    pub configuration_open: bool,
-    pub search: Option<String>,
-}
-
 pub async fn handler_karma_get_condition(
     State(services): State<InjectedServices>,
     Query(wrapper): Query<Wrapper>,

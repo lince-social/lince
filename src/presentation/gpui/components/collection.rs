@@ -12,6 +12,7 @@ use gpui::{
 
 #[derive(Clone)]
 pub struct CollectionList {
+    pub hovered: bool,
     pub collections: Vec<CollectionRow>,
     pub workspace: WeakEntity<Workspace>,
 }
@@ -19,6 +20,7 @@ pub struct CollectionList {
 impl CollectionList {
     pub fn new(collections: Vec<CollectionRow>, workspace: WeakEntity<Workspace>) -> Self {
         Self {
+            hovered: false,
             collections,
             workspace,
         }
@@ -28,7 +30,7 @@ impl CollectionList {
 #[derive(Clone, IntoElement)]
 struct CollectionButton {
     id: u32,
-    name: String,
+    name: SharedString,
     workspace: WeakEntity<Workspace>,
 }
 
@@ -76,7 +78,7 @@ impl RenderOnce for CollectionButton {
 struct CollectionViewRow {
     id: u32,
     quantity: i32,
-    name: String,
+    name: SharedString,
 
     collection_id: u32,
 
@@ -107,9 +109,8 @@ impl RenderOnce for CollectionViewRow {
             })
     }
 }
-
 impl Render for CollectionList {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let weak = self.workspace.clone();
 
         div()
@@ -120,27 +121,38 @@ impl Render for CollectionList {
             .flex()
             .gap_1()
             .flex_col()
+            .on_hover(cx.listener(|this, hovered, _window, _cx| {
+                // println!("this.hovered 1: {}", this.hovered);
+                // println!("Hovered: {}", hovered);
+
+                this.hovered = *hovered;
+                // println!("this.hovered 2: {} \n", this.hovered);
+            }))
             .children(
-                self.collections
+                self.collections[..if self.hovered {
+                    self.collections.len()
+                } else {
+                    self.collections.len().min(1)
+                }]
                     .iter()
                     .map(|(collection, views)| {
                         div()
                             .flex()
                             .flex_row()
                             .items_center()
+                            .gap_1()
                             .child(CollectionButton {
                                 id: collection.id,
-                                name: collection.name.clone(),
+                                name: SharedString::from(&collection.name),
                                 workspace: weak.clone(),
                             })
-                            .gap_1()
                             .children(
                                 views
                                     .iter()
                                     .map(|view| CollectionViewRow {
                                         id: view.id,
                                         quantity: view.quantity,
-                                        name: view.name.clone(),
+                                        name: SharedString::from(&view.name),
                                         collection_id: collection.id,
                                         workspace: weak.clone(),
                                     })
@@ -149,15 +161,65 @@ impl Render for CollectionList {
                     })
                     .collect::<Vec<_>>(),
             )
-            .on_hover(|hovered, _window, _app| {
-                println!(
-                    "{}",
-                    if *hovered {
-                        "Hover started"
-                    } else {
-                        "Hover ended"
-                    }
-                );
-            })
     }
 }
+
+// impl Render for CollectionList {
+//     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+//         let weak = self.workspace.clone();
+
+//         div()
+//             .id("hoverable_collection")
+//             .bg(base())
+//             .p_2()
+//             .rounded_xs()
+//             .flex()
+//             .gap_1()
+//             .flex_col()
+//             .children(
+//                 self.collections
+//                     .iter()
+//                     .map(|(collection, views)| {
+//                         div()
+//                             .flex()
+//                             .flex_row()
+//                             .items_center()
+//                             .child(CollectionButton {
+//                                 id: collection.id,
+//                                 name: SharedString::from(&collection.name.clone()),
+//                                 workspace: weak.clone(),
+//                             })
+//                             .gap_1()
+//                             .children(
+//                                 views[..if self.hovered {
+//                                     views.len()
+//                                 } else {
+//                                     views.len().min(1)
+//                                 }]
+//                                     .iter()
+//                                     .map(|view| CollectionViewRow {
+//                                         id: view.id,
+//                                         quantity: view.quantity,
+//                                         name: SharedString::from(&view.name),
+//                                         collection_id: collection.id,
+//                                         workspace: weak.clone(),
+//                                     })
+//                                     .collect::<Vec<_>>(),
+//                             )
+//                     })
+//                     .collect::<Vec<_>>(),
+//             )
+//             .on_hover(|hovered, _window, _app| {
+//                 println!(
+//                     "{}",
+//                     if *hovered {
+//                         self.hovered = true;
+//                         "Hover started"
+//                     } else {
+//                         self.hovered = false;
+//                         "Hover ended"
+//                     }
+//                 );
+//             })
+//     }
+// }

@@ -52,6 +52,7 @@ pub struct QueriedView {
     pub name: String,
     pub query: String,
 }
+
 impl Default for QueriedView {
     fn default() -> Self {
         Self {

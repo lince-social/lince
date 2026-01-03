@@ -1,5 +1,5 @@
-## [0.6.8] - 2026-01-03
+## [0.6.9] - 2026-01-03
 
 ### 🐛 Bug Fixes
 
-- *(Build)* Install system dependencies for linux
+- *(Build)* Fix windows

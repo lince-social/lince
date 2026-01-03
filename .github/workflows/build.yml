@@ -61,20 +61,21 @@ jobs:
           mkdir -p artifacts
 
           if [[ "${{ runner.os }}" == "Windows" ]]; then
-            cp target/${{ matrix.target }}/release/${BIN}.exe artifacts/
-            mv artifacts/${BIN}.exe artifacts/${BIN}-${{ matrix.target }}.exe
-            zip -j artifacts/${BIN}-${{ matrix.target }}.zip artifacts/${BIN}-${{ matrix.target }}.exe
-            tar -czf artifacts/${BIN}-${{ matrix.target }}.tar.gz -C artifacts ${BIN}-${{ matrix.target }}.exe
+            cp target/${{ matrix.target }}/release/${BIN}.exe \
+               artifacts/${BIN}-${{ matrix.target }}.exe
           else
-            cp target/${{ matrix.target }}/release/${BIN} artifacts/
-            mv artifacts/${BIN} artifacts/${BIN}-${{ matrix.target }}
-            zip -j artifacts/${BIN}-${{ matrix.target }}.zip artifacts/${BIN}-${{ matrix.target }}
-            tar -czf artifacts/${BIN}-${{ matrix.target }}.tar.gz -C artifacts ${BIN}-${{ matrix.target }}
+            cp target/${{ matrix.target }}/release/${BIN} \
+               artifacts/${BIN}-${{ matrix.target }}
+
+            tar -czf artifacts/${BIN}-${{ matrix.target }}.tar.gz \
+              -C artifacts ${BIN}-${{ matrix.target }}
+
+            zip -j artifacts/${BIN}-${{ matrix.target }}.zip \
+              artifacts/${BIN}-${{ matrix.target }}
           fi
 
       - name: Upload assets to GitHub Release
-        uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
         with:
-          files: |
-            artifacts/*
+          files: artifacts/*

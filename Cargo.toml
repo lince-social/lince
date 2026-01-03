@@ -16,15 +16,15 @@ html = ["dep:maud", "dep:datastar", "dep:axum"]
 [dependencies]
 async-trait = "0.1.89"
 asynk-strim = { version = "0.1" }
-axum = "0.8.6"
+axum = { version = "0.8.6", optional = true }
 chrono = "0.4.42"
-datastar = { version = "0.3.1", features = ["axum"] }
+datastar = { version = "0.3.1", features = ["axum"], optional = true }
 dirs = "6.0.0"
 futures = "0.3.31"
 gpui = { version="0.2.2", optional = true }
 gpui-component = "0.5.0"
 gpui-component-assets = "0.5.0"
-maud = "0.27.0"
+maud = { version = "0.27.0", optional = true }
 regex = "1.12.2"
 rhai = "1.23.4"
 serde = { version = "1.0.228", features = ["derive"] }

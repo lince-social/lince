@@ -1,5 +1,5 @@
-## [0.6.4] - 2026-01-03
+## [0.6.5] - 2026-01-03
 
 ### 🐛 Bug Fixes
 
-- *(Cargo)* Optional true gpui
+- *(Cargo)* Optional true gpui 2

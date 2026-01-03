@@ -38,10 +38,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Rust
+      - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
+          toolchain: stable
+
+      - name: Add Rust target
+        shell: bash
+        run: rustup target add ${{ matrix.target }}
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -54,8 +58,8 @@ jobs:
 
       - name: Install cross
         if: ${{ matrix.use_cross }}
-        run: cargo install cross --locked
         shell: bash
+        run: cargo install cross --locked
 
       - name: Build
         shell: bash
@@ -72,7 +76,7 @@ jobs:
           BIN=lince
           mkdir -p artifacts
 
-          # Windows binaries have .exe extension
+          # Windows needs .exe extension
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             cp target/${{ matrix.target }}/release/${BIN}.exe artifacts/
             mv artifacts/${BIN}.exe artifacts/${BIN}-${{ matrix.target }}.exe

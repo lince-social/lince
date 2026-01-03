@@ -1,13 +1,12 @@
 ## install
 ```bash
-cargo install mprocs mdbook bacon cargo-edit cargo-udeps --locked
+cargo install mprocs bacon git-cliff cargo-edit cargo-udeps --locked
 ```
 
 ## update
 ```bash
-mask install
 rustup self update
-rustup update stable
+rustup update nightly 
 cargo upgrade
 ```
 
@@ -164,6 +163,11 @@ fi
 
 read -rp "Next version (auto: $NEXT_VERSION): " input_version
 VERSION=${input_version:-$NEXT_VERSION}
+
+# Ensure v-prefix
+if [[ "$VERSION" != v* ]]; then
+  VERSION="v$VERSION"
+fi
 
 # -----------------------------
 # Ask for release title

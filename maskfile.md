@@ -118,3 +118,85 @@ tinymist preview \
 documentation/chapters/posts/main.typ
 ```
 > Starts typst documentation for social media posts with tinymist on http://localhost:3003
+
+
+## release
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+
+# -----------------------------
+# Ensure git-cliff is initialized
+# -----------------------------
+if [[ ! -f "cliff.toml" ]]; then
+    echo "⚙️  Initializing git-cliff config..."
+    git cliff --init
+fi
+
+# -----------------------------
+# Determine last tag or default
+# -----------------------------
+if git describe --tags --abbrev=0 &>/dev/null; then
+    last_tag=$(git describe --tags --abbrev=0)
+else
+    last_tag=""
+fi
+echo "Last tag: ${last_tag:-<none>}"
+
+# -----------------------------
+# Ensure CHANGELOG.md exists
+# -----------------------------
+if [[ ! -f CHANGELOG.md ]]; then
+    echo "📝 Creating initial CHANGELOG.md..."
+    touch CHANGELOG.md
+fi
+
+# -----------------------------
+# Compute proposed version
+# -----------------------------
+if [[ -n "$last_tag" ]]; then
+    NEXT_VERSION=$(git cliff --bumped-version)
+else
+    NEXT_VERSION="0.1.0"
+fi
+
+read -rp "Next version (auto: $NEXT_VERSION): " input_version
+VERSION=${input_version:-$NEXT_VERSION}
+
+# -----------------------------
+# Ask for release title
+# -----------------------------
+read -rp "Release title (optional, press enter to use '$VERSION'): " input_title
+TITLE=${input_title:-"Release $VERSION"}
+
+# -----------------------------
+# Generate changelog and bump
+# -----------------------------
+git cliff --unreleased --bump --tag "$VERSION" -o CHANGELOG.md
+
+# -----------------------------
+# Commit changelog and create tag
+# -----------------------------
+git add CHANGELOG.md
+git commit -m "chore(release): $VERSION"
+git tag -a "$VERSION" -m "$TITLE"
+git push origin "$branch"
+git push origin "$VERSION"
+
+# -----------------------------
+# Publish GitHub release if gh exists
+# -----------------------------
+if command -v gh &>/dev/null; then
+    echo "📦 Creating GitHub release for $VERSION..."
+    gh release create "$VERSION" -F CHANGELOG.md --title "$TITLE"
+    echo "✅ GitHub release created."
+else
+    echo "⚠️  'gh' CLI not found. Install it with:"
+    echo "    sudo pacman -S github-cli && gh auth login"
+    echo "Then rerun 'mask release' to auto-publish the release."
+fi
+
+echo "✅ Released $VERSION from $branch"
+```

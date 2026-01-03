@@ -51,3 +51,5 @@ Using mask:
 ```bash
 cargo install mask
 ```
+
+Check the maskfile.md for more information.

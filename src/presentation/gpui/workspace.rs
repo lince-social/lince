@@ -3,20 +3,32 @@ use crate::{
     infrastructure::cross_cutting::InjectedServices,
     log,
     presentation::gpui::{
-        components::collection::CollectionList, state::State, themes::catppuccin_mocha::mantle,
+        components::{
+            collection::CollectionList,
+            table::{MyRecordTableDelegate, TableView},
+        },
+        state::State,
+        themes::catppuccin_mocha::mantle,
     },
 };
 use gpui::*;
+use gpui_component::table::TableState;
 
 pub struct Workspace {
     pub focus_handle: FocusHandle,
     pub state: State,
     pub services: InjectedServices,
     pub collection_list: Entity<CollectionList>,
+    pub table: Entity<TableState<MyRecordTableDelegate>>,
 }
 
 impl Workspace {
-    fn new(cx: &mut Context<Self>, services: InjectedServices, state: State) -> Self {
+    fn new(
+        cx: &mut Context<Self>,
+        services: InjectedServices,
+        state: State,
+        table_entity: Entity<TableState<MyRecordTableDelegate>>,
+    ) -> Self {
         let weak = cx.weak_entity();
         let collection_list = cx.new(|_| CollectionList::new(state.collections.clone(), weak));
 
@@ -25,11 +37,17 @@ impl Workspace {
             state,
             services,
             collection_list,
+            table: table_entity,
         }
     }
 
-    pub fn view(cx: &mut App, services: InjectedServices, state: State) -> Entity<Self> {
-        cx.new(|cx| Self::new(cx, services, state))
+    pub fn view(
+        cx: &mut App,
+        services: InjectedServices,
+        state: State,
+        table_entity: Entity<TableState<MyRecordTableDelegate>>,
+    ) -> Entity<Self> {
+        cx.new(|cx| Self::new(cx, services, state, table_entity))
     }
     pub fn on_collection_selected(&mut self, collection_id: u32, cx: &mut Context<Self>) {
         let services = self.services.clone();
@@ -111,6 +129,7 @@ impl Render for Workspace {
             .p_3()
             .track_focus(&self.focus_handle(cx))
             .child(self.collection_list.clone())
+            .child(self.table.clone())
             .text_color(rgb(0xffffff))
             .child("Hellour")
     }

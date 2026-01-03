@@ -2,7 +2,6 @@ name: build-release
 
 on:
   push:
-    branches: ["main"]
     tags: ["v*"]
 
 jobs:
@@ -10,42 +9,37 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     strategy:
+      fail-fast: false
       matrix:
         include:
-          # Linux
+          # Linux (glibc)
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            use_cross: false
 
-          - os: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-            use_cross: true
-
-          # macOS
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            use_cross: false
-
+          # macOS (Apple Silicon)
           - os: macos-latest
             target: aarch64-apple-darwin
-            use_cross: false
 
           # Windows
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            use_cross: false
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Rust toolchain
+      - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
+          targets: ${{ matrix.target }}
 
-      - name: Add Rust target
-        shell: bash
-        run: rustup target add ${{ matrix.target }}
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libxcb1-dev \
+            libxkbcommon-dev \
+            libxkbcommon-x11-dev
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -54,21 +48,11 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Install cross
-        if: ${{ matrix.use_cross }}
-        shell: bash
-        run: cargo install cross --locked
+          key: ${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Build
         shell: bash
-        run: |
-          if [ "${{ matrix.use_cross }}" = "true" ]; then
-            cross build --release --target ${{ matrix.target }}
-          else
-            cargo build --release --target ${{ matrix.target }}
-          fi
+        run: cargo build --release --target ${{ matrix.target }}
 
       - name: Package artifacts
         shell: bash
@@ -76,22 +60,21 @@ jobs:
           BIN=lince
           mkdir -p artifacts
 
-          # Windows needs .exe extension
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
             cp target/${{ matrix.target }}/release/${BIN}.exe artifacts/
             mv artifacts/${BIN}.exe artifacts/${BIN}-${{ matrix.target }}.exe
             zip -j artifacts/${BIN}-${{ matrix.target }}.zip artifacts/${BIN}-${{ matrix.target }}.exe
             tar -czf artifacts/${BIN}-${{ matrix.target }}.tar.gz -C artifacts ${BIN}-${{ matrix.target }}.exe
           else
-            cp target/${{ matrix.target }}/release/$BIN artifacts/
-            mv artifacts/$BIN artifacts/${BIN}-${{ matrix.target }}
+            cp target/${{ matrix.target }}/release/${BIN} artifacts/
+            mv artifacts/${BIN} artifacts/${BIN}-${{ matrix.target }}
             zip -j artifacts/${BIN}-${{ matrix.target }}.zip artifacts/${BIN}-${{ matrix.target }}
             tar -czf artifacts/${BIN}-${{ matrix.target }}.tar.gz -C artifacts ${BIN}-${{ matrix.target }}
           fi
 
       - name: Upload assets to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            artifacts/${{ matrix.target }}*
+            artifacts/*

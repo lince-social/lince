@@ -1,5 +1,5 @@
-## [0.6.7] - 2026-01-03
+## [0.6.8] - 2026-01-03
 
 ### 🐛 Bug Fixes
 
-- *(Build)* Add targets
+- *(Build)* Install system dependencies for linux

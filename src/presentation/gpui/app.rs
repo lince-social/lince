@@ -1,7 +1,7 @@
 use super::{state::*, workspace::*};
 use crate::{
     infrastructure::cross_cutting::InjectedServices,
-    presentation::gpui::{components::table::MyRecordTableDelegate, window::get_window_options},
+    presentation::gpui::{components::table::GenericTableDelegate, window::get_window_options},
 };
 use gpui::*;
 use gpui_component::{table::TableState, *};
@@ -26,19 +26,27 @@ pub async fn gpui_app(services: InjectedServices, state: State) {
         // cx.bind_keys([
         //     KeyBinding::new("escape", ClearInput, None),
         // ]);
-        //                 let a = cx.new(|cx| {
 
         cx.open_window(window_options, |window, cx| {
-            let a = cx.new(|cx| {
-                TableState::new(MyRecordTableDelegate::new(), window, cx)
-                    .col_resizable(true)
-                    .col_movable(true)
-                    .sortable(true)
-                    .col_selectable(true)
-                    .row_selectable(true)
-            });
+            let all_tables: Vec<(String, Entity<TableState<GenericTableDelegate>>)> = state
+                .tables
+                .iter()
+                .cloned()
+                .map(|(name, table)| {
+                    let table_state = cx.new(|cx| {
+                        TableState::new(GenericTableDelegate::new(table), window, cx)
+                            .col_resizable(true)
+                            .col_movable(true)
+                            .sortable(true)
+                            .col_selectable(true)
+                            .row_selectable(true)
+                    });
 
-            let workspace_view = Workspace::view(cx, services, state, a);
+                    (name, table_state)
+                })
+                .collect();
+
+            let workspace_view = Workspace::view(cx, services, state, all_tables);
             cx.new(|cx| Root::new(workspace_view, window, cx))
         })
         .unwrap();

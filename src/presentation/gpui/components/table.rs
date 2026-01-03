@@ -7,81 +7,43 @@
 // Localização atual
 // Custos? O que que é um custo? É a contribuição necessária para ter isso. Pode ser outro record? Como? Com proposta de transferencia
 // A Proposta de Transferencia é a relação entre um cadastro e seu custo.
+
 use gpui::*;
-use gpui_component::table::{Column, ColumnSort, Table, TableDelegate, TableState};
+use gpui_component::table::*;
+use std::collections::HashMap;
 
-pub struct Record {
-    pub id: u32,
-    pub quantity: SharedString,
-    pub head: SharedString,
-    pub body: SharedString,
-}
+pub type Row = HashMap<String, String>;
+pub type Table = Vec<Row>;
 
-pub struct TableView {
-    table: Entity<TableState<MyRecordTableDelegate>>,
-}
-
-impl TableView {
-    pub fn view(window: &mut Window, cx: &mut App) -> Entity<Self> {
-        cx.new(|cx| Self::new(window, cx))
-    }
-
-    fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
-        let delegate = MyRecordTableDelegate::new();
-        let table = cx.new(|cx| TableState::new(delegate, window, cx));
-
-        Self { table }
-    }
-}
-
-impl Render for TableView {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        div().child(Table::new(&self.table))
-    }
-}
-
-pub struct MyRecordTableDelegate {
-    data: Vec<Record>,
+pub struct GenericTableDelegate {
+    data: Table,
+    headers: Vec<String>,
     columns: Vec<Column>,
 }
 
-impl MyRecordTableDelegate {
-    pub fn new() -> Self {
+impl GenericTableDelegate {
+    pub fn new(data: Table) -> Self {
+        let mut headers: Vec<String> = data
+            .first()
+            .map(|r| r.keys().cloned().collect())
+            .unwrap_or_default();
+
+        headers.sort();
+
+        let columns = headers
+            .iter()
+            .map(|h| Column::new(h.clone(), h.clone()).sortable().movable(true))
+            .collect();
+
         Self {
-            data: vec![
-                Record {
-                    id: 1,
-                    quantity: SharedString::new("10.0"),
-                    head: SharedString::new("Head"),
-                    body: SharedString::new("Body"),
-                },
-                Record {
-                    id: 2,
-                    quantity: SharedString::new("20.0"),
-                    head: SharedString::new("Head2"),
-                    body: SharedString::new("Body2"),
-                },
-            ],
-            columns: vec![
-                Column::new("id", "ID").width(60.).sortable().movable(true),
-                Column::new("quantity", "Quantity")
-                    .width(150.)
-                    .sortable()
-                    .movable(true),
-                Column::new("head", "Head")
-                    .width(80.)
-                    .sortable()
-                    .movable(true),
-                Column::new("body", "Body")
-                    .width(200.)
-                    .sortable()
-                    .movable(true),
-            ],
+            data,
+            headers,
+            columns,
         }
     }
 }
 
-impl TableDelegate for MyRecordTableDelegate {
+impl TableDelegate for GenericTableDelegate {
     fn columns_count(&self, _: &App) -> usize {
         self.columns.len()
     }
@@ -101,17 +63,15 @@ impl TableDelegate for MyRecordTableDelegate {
         _: &mut Window,
         _: &mut Context<TableState<Self>>,
     ) -> impl IntoElement {
-        let row = &self.data[row_ix];
-        let col = &self.columns[col_ix];
+        let key = &self.headers[col_ix];
+        let value = self.data[row_ix]
+            .get(key)
+            .map(String::as_str)
+            .unwrap_or("NULL");
 
-        match col.key.as_ref() {
-            "id" => div().bg(rgb(0x808080)).child(row.id.to_string()),
-            "head" => div().bg(rgb(0xeeeeee)).child(row.head.clone()),
-            "body" => div().bg(rgb(0x303030)).child(row.body.to_string()),
-            "quantity" => div().bg(rgb(0x606060)).child(row.quantity.to_string()),
-            _ => div().bg(rgb(0x909090)).child("".to_string()),
-        }
+        div().p_1p5().child(value.to_string())
     }
+
     fn perform_sort(
         &mut self,
         col_ix: usize,
@@ -119,25 +79,16 @@ impl TableDelegate for MyRecordTableDelegate {
         _: &mut Window,
         _: &mut Context<TableState<Self>>,
     ) {
-        let col = &self.columns[col_ix];
+        let key = self.headers[col_ix].clone();
 
-        match col.key.as_ref() {
-            "head" => {
-                match sort {
-                    ColumnSort::Ascending => self.data.sort_by(|a, b| a.head.cmp(&b.head)),
-                    ColumnSort::Descending => self.data.sort_by(|a, b| b.head.cmp(&a.head)),
-                    ColumnSort::Default => {
-                        // Reset to original order or default sort
-                        self.data.sort_by(|a, b| a.id.cmp(&b.id));
-                    }
-                }
+        match sort {
+            ColumnSort::Ascending => {
+                self.data.sort_by(|a, b| a.get(&key).cmp(&b.get(&key)));
             }
-            "quantity" => match sort {
-                ColumnSort::Ascending => self.data.sort_by(|a, b| a.quantity.cmp(&b.quantity)),
-                ColumnSort::Descending => self.data.sort_by(|a, b| b.quantity.cmp(&a.quantity)),
-                ColumnSort::Default => self.data.sort_by(|a, b| a.id.cmp(&b.id)),
-            },
-            _ => {}
+            ColumnSort::Descending => {
+                self.data.sort_by(|a, b| b.get(&key).cmp(&a.get(&key)));
+            }
+            ColumnSort::Default => {}
         }
     }
 }

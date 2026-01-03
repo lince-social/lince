@@ -38,3 +38,4 @@
 - *(Version)* 0.6.1
 - *(release)* V0.6.2
 - *(release)* V0.6.2
+- *(release)* V0.6.2

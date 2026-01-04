@@ -10,7 +10,7 @@
 # Lince
 Tool for registry, interconnection and automation of Needs and Contributions with open scope.
 
-Detailed explanations of what Lince is, how to run it and use it's ecosystem can be found in the [documentation](https://github.com/lince-social/lince/blob/main/documentation/main.pdf)
+Detailed explanations of what Lince is, how to run it and use it's ecosystem can be found in the [documentation](https://github.com/lince-social/lince/blob/main/documentation/main.pdf).
 
 To install, you can download the crate and run it:
 ```bash

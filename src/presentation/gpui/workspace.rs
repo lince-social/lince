@@ -61,13 +61,22 @@ impl Workspace {
             let rows = match services.repository.collection.get_all().await {
                 Ok(rows) => rows,
                 Err(e) => {
-                    log!(e, "failed fetch");
+                    log!(e, "failed fetch collections");
                     vec![(Collection::error(), Vec::new())]
+                }
+            };
+
+            let tables = match services.repository.collection.get_active_view_data().await {
+                Ok((tables, _)) => tables,
+                Err(e) => {
+                    log!(e, "failed to fetch table data");
+                    vec![]
                 }
             };
 
             this.update(cx, move |owner, cx| {
                 owner.state.collections = rows.clone();
+                owner.state.tables = tables.clone();
 
                 owner.collection_list.update(cx, move |bar, _| {
                     bar.collections = rows.clone();
@@ -116,7 +125,41 @@ impl Focusable for Workspace {
 }
 
 impl Render for Workspace {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        // Check if table entities need to be recreated based on current state
+        let current_table_names: Vec<String> = self
+            .state
+            .tables
+            .iter()
+            .map(|(name, _)| name.clone())
+            .collect();
+        let entity_table_names: Vec<String> = self
+            .table_entities
+            .iter()
+            .map(|(name, _)| name.clone())
+            .collect();
+
+        // If the table names don't match or counts are different, recreate entities
+        if current_table_names != entity_table_names {
+            self.table_entities = self
+                .state
+                .tables
+                .iter()
+                .cloned()
+                .map(|(name, table)| {
+                    let table_state = cx.new(|cx| {
+                        TableState::new(GenericTableDelegate::new(table), window, cx)
+                            .col_resizable(true)
+                            .col_movable(true)
+                            .sortable(true)
+                            .col_selectable(true)
+                            .row_selectable(true)
+                    });
+                    (name, table_state)
+                })
+                .collect();
+        }
+
         div()
             .flex()
             .flex_col()

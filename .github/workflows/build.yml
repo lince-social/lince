@@ -78,6 +78,12 @@ jobs:
               artifacts/${BIN}-${{ matrix.target }}
           fi
 
+      - name: Upload build artifact (temp)
+        uses: actions/upload-artifact@v3
+        with:
+          name: lince-temp
+          path: artifacts/*
+
       - name: Upload assets to GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2

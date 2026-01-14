@@ -25,14 +25,15 @@ impl RecordRepositoryImpl {
 #[async_trait]
 impl RecordRepository for RecordRepositoryImpl {
     async fn set_quantity(&self, id: u32, quantity: f64) -> Result<(), Error> {
-        let query = format!(
+        match sqlx::query(&format!(
             "UPDATE record SET quantity = {} WHERE id = {}",
             quantity, id
-        );
-
-        match sqlx::query(&query).execute(&*self.pool).await {
-            Ok(_) => Ok(()),
+        ))
+        .execute(&*self.pool)
+        .await
+        {
             Err(e) => Err(Error::new(ErrorKind::InvalidData, e)),
+            _ => Ok(()),
         }
     }
 

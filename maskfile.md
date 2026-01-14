@@ -64,9 +64,9 @@ documentation/main.typ
 ```bash
 mask install-docs
 
-trap 'typst compile \
---root documentation \
-documentation/chapters/TMIL/main.typ' EXIT
+# trap 'typst compile \
+# --root documentation \
+# documentation/chapters/TMIL/main.typ' EXIT
 
 trap 'touying compile \
 --root documentation \

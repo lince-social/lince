@@ -1,6 +1,7 @@
 use sqlx::{Pool, Sqlite};
 use std::{io::Error, sync::Arc};
 
+#[allow(dead_code)]
 pub async fn execute_migration(db: Arc<Pool<Sqlite>>) -> Result<(), Error> {
     sqlx::query(
         "

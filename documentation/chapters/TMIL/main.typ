@@ -7,6 +7,15 @@
 #import themes.simple: *
 #show: simple-theme.with(aspect-ratio: "16-9")
 
+#let dark = true
+
+#let bg = if dark { rgb(20, 20, 20) } else { white }
+#let fg = if dark { white } else { black }
+
+#set page(fill: bg)
+#set text(fill: fg)
+
+
 #set text(
   lang: "en",
   font: "New Computer Modern Math",

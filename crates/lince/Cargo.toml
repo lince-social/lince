@@ -13,6 +13,12 @@ karma = []
 gpui = ["dep:gpui", "dep:gpui-component", "dep:gpui-component-assets"]
 
 [dependencies]
+application.workspace = true
+domain.workspace = true
+infrastructure.workspace = true
+macros.workspace = true
+presentation.workspace = true
+
 gpui.workspace = true
 gpui-component.workspace = true
 gpui-component-assets.workspace = true

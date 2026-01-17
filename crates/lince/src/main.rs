@@ -1,33 +1,16 @@
 #![forbid(unsafe_code)]
 
-mod application;
-mod domain;
-mod infrastructure;
-mod macros;
-mod presentation;
-
 #[cfg(feature = "karma")]
-use crate::application::karma::karma_deliver;
-use crate::infrastructure::{
+use application::karma::karma_deliver;
+use infrastructure::{
     cross_cutting::dependency_injection,
     database::management::{connection::connection, schema::schema},
-    http::{
-        handlers::section::handler_section_favicon,
-        routers::{
-            collection::collection_router, karma::karma_router, operation::operation_router,
-            section::section_router, table::table_router, view::view_router,
-        },
-    },
     utils::logging::{LogEntry, log},
 };
 #[cfg(feature = "gpui")]
-use crate::{
-    application::gpui::get_gpui_startup_data, infrastructure::cross_cutting::InjectedServices,
-    presentation::gpui::app::gpui_app,
-};
-use axum::{Router, routing::get};
-#[cfg(feature = "karma")]
-use std::time::Duration;
+use application::gpui::get_gpui_startup_data, infrastructure::cross_cutting::InjectedServices;
+#[cfg(feature = "gpui")]
+use presentation::gpui::app::gpui_app;
 use std::{env, io::Error, sync::Arc};
 
 #[tokio::main]
@@ -52,10 +35,7 @@ async fn main() -> Result<(), Error> {
     if let Err(e) = start_gpui(args.clone(), services.clone()).await {
         log(LogEntry::Error(e.kind(), e.to_string()));
     }
-    #[cfg(feature = "html")]
-    if let Err(e) = start_html(args.clone(), services.clone()).await {
-        log(LogEntry::Error(e.kind(), e.to_string()));
-    }
+
     #[cfg(feature = "karma")]
     start_karma(args.clone(), services.clone()).await?;
 
@@ -87,28 +67,6 @@ async fn start_karma(args: Vec<String>, services: InjectedServices) -> Result<()
             println!("Karma Delivered!");
             tokio::time::sleep(Duration::from_secs(60)).await;
         }
-    }
-    Ok(())
-}
-
-#[cfg(feature = "html")]
-async fn start_html(args: Vec<String>, services: InjectedServices) -> Result<(), Error> {
-    if args.contains(&"html".to_string()) {
-        let services_clone = services.clone();
-        tokio::spawn(async move {
-            let app = Router::new()
-                .route("/preto_no_branco.ico", get(handler_section_favicon))
-                .merge(section_router(services_clone.clone()))
-                .nest("/collection", collection_router(services_clone.clone()))
-                .nest("/view", view_router(services_clone.clone()))
-                .nest("/table", table_router(services_clone.clone()))
-                .nest("/karma", karma_router(services_clone.clone()))
-                .nest("/operation", operation_router(services_clone.clone()));
-
-            let listener = tokio::net::TcpListener::bind("0.0.0.0:6174").await.unwrap();
-            println!("Listening on: {}", listener.local_addr().unwrap());
-            axum::serve(listener, app).await.unwrap();
-        });
     }
     Ok(())
 }

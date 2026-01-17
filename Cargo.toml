@@ -1,34 +1,30 @@
-[package]
-name = "lince"
-version = "0.6.1"
-edition = "2024"
-description = "Tool for registry, interconnection and automation of Needs and Contributions with open scope"
-license = "GPL-3.0-or-later"
-keywords = ["todo"]
-include = ["/src"]
+[workspace]
+resolver = "3"
+members = [
+    "crates/*",
+]
 
-[features]
-default = ["karma", "gpui", "html"]
-karma = []
-gpui = ["dep:gpui"]
-html = ["dep:maud", "dep:datastar", "dep:axum"]
+default-members = ["crates/lince"]
 
-[dependencies]
+[workspace.dependencies]
+application = { path = "crates/application" }
+domain = { path = "crates/domain" }
+injection = {path = "crates/injection" }
+lince = {path = "crates/lince" }
+persistence = {path = "crates/persistence" }
+presentation = {path = "crates/presentation" }
+utils = { path = "crates/utils" }
+
 async-trait = "0.1.89"
-asynk-strim = { version = "0.1" }
-axum = { version = "0.8.8", optional = true }
 chrono = "0.4.42"
-datastar = { version = "0.3.1", features = ["axum"], optional = true }
 dirs = "6.0.0"
 futures = "0.3.31"
 gpui = { version="0.2.2", optional = true }
-gpui-component = "0.5.0"
-gpui-component-assets = "0.5.0"
-maud = { version = "0.27.0", optional = true }
+gpui-component = {version = "0.5.0", optional = true}
+gpui-component-assets = {version = "0.5.0", optional = true}
 regex = "1.12.2"
 rhai = "1.23.6"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 sqlx = { version = "0.8.6", features = ["runtime-tokio", "sqlite"] }
 tokio = { version = "1.49.0", features = ["rt-multi-thread", "process"] }
-tower = "0.5.2"

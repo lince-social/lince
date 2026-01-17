@@ -1,0 +1,18 @@
+[package]
+name = "lince"
+version = "0.6.1"
+edition = "2024"
+description = "Tool for registry, interconnection and automation of Needs and Contributions with open scope"
+license = "GPL-3.0-or-later"
+keywords = ["todo"]
+include = ["/crates", "Cargo.toml", "LICENSE"]
+
+[features]
+default = ["karma", "gpui"]
+karma = []
+gpui = ["dep:gpui", "dep:gpui-component", "dep:gpui-component-assets"]
+
+[dependencies]
+gpui.workspace = true
+gpui-component.workspace = true
+gpui-component-assets.workspace = true

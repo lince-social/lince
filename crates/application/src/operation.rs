@@ -1,19 +1,8 @@
-use crate::{
-    application::{command::karma_execute_command, karma::karma_deliver},
-    infrastructure::{
-        cross_cutting::InjectedServices,
-        utils::logging::{LogEntry, log},
-    },
-    presentation::html::{
-        operation::{create::presentation_html_create, query::presentation_html_operation_query},
-        section::{
-            body::{presentation_html_section_body, presentation_html_section_body_home_modal},
-            main::presentation_html_section_main,
-        },
-    },
-};
+use crate::{command::karma_execute_command, karma::karma_deliver};
+use injection::cross_cutting::InjectedServices;
 use regex::Regex;
 use std::{collections::HashMap, io::Error};
+use utils::logging::{LogEntry, log};
 
 pub fn operation_tables() -> Vec<(&'static str, &'static str)> {
     vec![
@@ -120,21 +109,12 @@ pub async fn parse_operation_and_execute(
         if let Some(matched) = re.find(part) {
             match matched.as_str() {
                 "q" | "query" => {
-                    return Some(
-                        presentation_html_section_body_home_modal(
-                            presentation_html_operation_query().await,
-                        )
-                        .await,
-                    );
+                    return Some("query modal".to_string());
                 }
                 "c" | "create" => {
-                    return Some(
-                        presentation_html_section_body_home_modal(
-                            operation_create_component(services, parse_table(operation.clone()))
-                                .await,
-                        )
-                        .await,
-                    );
+                    let _ =
+                        operation_create_component(services, parse_table(operation.clone())).await;
+                    return Some("create modal".to_string());
                 }
                 "k" | "collection" => {
                     if let Some(id) = parse_id(&operation)
@@ -142,7 +122,7 @@ pub async fn parse_operation_and_execute(
                     {
                         log(LogEntry::Error(e.kind(), e.to_string()))
                     }
-                    return Some(presentation_html_section_body(services).await);
+                    return Some("record body".to_string());
                 }
                 "a" | "configuration" => {
                     if let Some(id) = parse_id(&operation)
@@ -150,7 +130,7 @@ pub async fn parse_operation_and_execute(
                     {
                         log(LogEntry::Error(e.kind(), e.to_string()))
                     }
-                    return Some(presentation_html_section_body(services).await);
+                    return Some("configuration body".to_string());
                 }
                 "s" | "command" | "shell" | "shell command" => {
                     if let Some(id) = parse_id(&operation)
@@ -162,7 +142,7 @@ pub async fn parse_operation_and_execute(
                         log(LogEntry::Error(e.kind(), e.to_string()))
                     }
 
-                    return Some(presentation_html_section_body(services).await);
+                    return Some("collection body".to_string());
                 }
 
                 _ => continue,
@@ -193,24 +173,24 @@ pub async fn operation_execute(services: InjectedServices, operation: String) ->
                 .inspect_err(|e| log(LogEntry::Error(e.kind(), e.to_string())));
         }
 
-        return presentation_html_section_body(services).await;
+        return "main body".to_string();
     }
 
     match parse_operation_and_execute(services.clone(), operation).await {
-        None => presentation_html_section_body(services).await,
+        None => "main body".to_string(),
         Some(element) => element,
     }
 }
 
 pub async fn operation_create_component(services: InjectedServices, table: String) -> String {
-    let column_names = services
+    let _column_names = services
         .repository
         .operation
         .get_column_names(table.clone())
         .await
         .unwrap_or_default();
 
-    presentation_html_create(table, column_names).await.0
+    "create form".to_string()
 }
 
 pub async fn operation_create_persist(
@@ -221,5 +201,5 @@ pub async fn operation_create_persist(
     if let Err(e) = services.repository.operation.create(table, data).await {
         println!("Error creating operation: {}", e);
     }
-    presentation_html_section_main(services).await
+    "main section".to_string()
 }

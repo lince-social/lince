@@ -1,5 +1,5 @@
-use crate::domain::clean::frequency::Frequency;
 use async_trait::async_trait;
+use domain::clean::frequency::Frequency;
 use sqlx::{Pool, Sqlite};
 use std::{
     io::{Error, ErrorKind},

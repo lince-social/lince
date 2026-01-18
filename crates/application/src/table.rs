@@ -1,4 +1,4 @@
-use crate::infrastructure::cross_cutting::InjectedServices;
+use injection::cross_cutting::InjectedServices;
 use std::io::Error;
 
 pub async fn table_patch_row(

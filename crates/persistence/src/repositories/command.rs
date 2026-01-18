@@ -1,5 +1,5 @@
-use crate::domain::clean::command::Command;
 use async_trait::async_trait;
+use domain::clean::command::Command;
 use sqlx::{Pool, Sqlite};
 use std::{
     io::{Error, ErrorKind},

@@ -1,8 +1,8 @@
-use crate::domain::{
+use async_trait::async_trait;
+use domain::{
     clean::{karma::Karma, karma_condition::KarmaCondition, karma_consequence::KarmaConsequence},
     dirty::karma::{KarmaConditionView, KarmaConsequenceView, KarmaView},
 };
-use async_trait::async_trait;
 use sqlx::{Pool, Sqlite};
 use std::{
     io::{Error, ErrorKind},

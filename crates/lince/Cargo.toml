@@ -4,21 +4,26 @@ version = "0.6.1"
 edition = "2024"
 description = "Tool for registry, interconnection and automation of Needs and Contributions with open scope"
 license = "GPL-3.0-or-later"
-keywords = ["todo"]
-include = ["/crates", "Cargo.toml", "LICENSE"]
+# keywords = ["todo"]
+# include = ["/crates", "Cargo.toml", "LICENSE"]
 
 [features]
-default = ["karma", "gpui"]
+default = ["karma", "gui"]
 karma = []
-gpui = ["dep:gpui", "dep:gpui-component", "dep:gpui-component-assets"]
+gui = ["gui/gui"]
+tui = ["tui/tui"]
 
 [dependencies]
-application.workspace = true
-domain.workspace = true
-infrastructure.workspace = true
-macros.workspace = true
-presentation.workspace = true
+application = { workspace = true }
+domain = { workspace = true }
+injection = { workspace = true }
+persistence = { workspace = true }
+gui = { workspace = true, optional = true }
+tui = { workspace = true, optional = true }
+utils = { workspace = true }
 
-gpui.workspace = true
-gpui-component.workspace = true
-gpui-component-assets.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "process", "time", "macros"] }
+sqlx = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }

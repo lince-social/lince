@@ -2,16 +2,16 @@
 
 #[cfg(feature = "karma")]
 use application::karma::karma_deliver;
-use infrastructure::{
-    cross_cutting::dependency_injection,
-    database::management::{connection::connection, schema::schema},
-    utils::logging::{LogEntry, log},
-};
-#[cfg(feature = "gpui")]
-use application::gpui::get_gpui_startup_data, infrastructure::cross_cutting::InjectedServices;
-#[cfg(feature = "gpui")]
-use presentation::gpui::app::gpui_app;
+#[cfg(feature = "gui")]
+use gui::app::gpui_app;
+use injection::cross_cutting::InjectedServices;
+use injection::cross_cutting::dependency_injection;
+use persistence::management::{connection::connection, schema::schema};
+use std::time::Duration;
 use std::{env, io::Error, sync::Arc};
+#[cfg(feature = "tui")]
+use tui::tui_app;
+use utils::logging::{LogEntry, log};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -31,8 +31,13 @@ async fn main() -> Result<(), Error> {
     //     })?;
     // }
 
-    #[cfg(feature = "gpui")]
-    if let Err(e) = start_gpui(args.clone(), services.clone()).await {
+    #[cfg(feature = "gui")]
+    if let Err(e) = start_gui(args.clone(), services.clone()).await {
+        log(LogEntry::Error(e.kind(), e.to_string()));
+    }
+
+    #[cfg(feature = "tui")]
+    if let Err(e) = start_tui(args.clone(), services.clone()).await {
         log(LogEntry::Error(e.kind(), e.to_string()));
     }
 
@@ -42,13 +47,18 @@ async fn main() -> Result<(), Error> {
     Ok(())
 }
 
-#[cfg(feature = "gpui")]
-async fn start_gpui(args: Vec<String>, services: InjectedServices) -> Result<(), Error> {
-    if args.contains(&"gpui".to_string()) {
-        let gpui_startup_data = get_gpui_startup_data(services.clone()).await?;
-        tokio::spawn(async move {
-            gpui_app(services, gpui_startup_data).await;
-        });
+#[cfg(feature = "gui")]
+async fn start_gui(args: Vec<String>, services: InjectedServices) -> Result<(), Error> {
+    if args.contains(&"gui".to_string()) {
+        gpui_app(services).await;
+    }
+    Ok(())
+}
+
+#[cfg(feature = "tui")]
+async fn start_tui(args: Vec<String>, services: InjectedServices) -> Result<(), Error> {
+    if args.contains(&"tui".to_string()) {
+        tui_app(services.clone()).await;
     }
     Ok(())
 }

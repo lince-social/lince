@@ -1,0 +1,17 @@
+[package]
+name = "gui"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+gui = ["dep:gpui", "dep:gpui-component", "dep:gpui-component-assets"]
+
+[dependencies]
+domain = { workspace = true }
+injection = { workspace = true }
+persistence = { workspace = true }
+utils = { workspace = true }
+
+gpui = { workspace = true, optional = true }
+gpui-component = { workspace = true, optional = true }
+gpui-component-assets = { workspace = true, optional = true }

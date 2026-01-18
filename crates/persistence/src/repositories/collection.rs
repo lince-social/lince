@@ -1,11 +1,8 @@
-use crate::{
-    domain::clean::{
-        collection::Collection,
-        table::{Row as RowEntity, Table},
-    },
-    ok,
-};
 use async_trait::async_trait;
+use domain::clean::{
+    collection::Collection,
+    table::{Row as RowEntity, Table},
+};
 use futures::future::join_all;
 use serde::{Deserialize, Serialize};
 use sqlx::{Column, Pool, Row, Sqlite, TypeInfo};
@@ -15,6 +12,7 @@ use std::{
     iter::once,
     sync::Arc,
 };
+use utils::ok;
 
 pub type CollectionRow = (Collection, Vec<QueriedView>);
 

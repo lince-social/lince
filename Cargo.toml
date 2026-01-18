@@ -1,7 +1,13 @@
 [workspace]
 resolver = "3"
 members = [
-    "crates/*",
+    "crates/lince",
+    "crates/application",
+    "crates/domain",
+    "crates/injection",
+    "crates/persistence",
+    "crates/gui",
+    "crates/utils", "crates/tui",
 ]
 
 default-members = ["crates/lince"]
@@ -10,21 +16,23 @@ default-members = ["crates/lince"]
 application = { path = "crates/application" }
 domain = { path = "crates/domain" }
 injection = {path = "crates/injection" }
-lince = {path = "crates/lince" }
+lince = {path = "crates/lince", features = ["karma", "gui", "tui"] }
 persistence = {path = "crates/persistence" }
-presentation = {path = "crates/presentation" }
+gui = {path = "crates/gui" }
+tui = {path = "crates/tui" }
 utils = { path = "crates/utils" }
 
 async-trait = "0.1.89"
-chrono = "0.4.42"
+chrono = "0.4.43"
 dirs = "6.0.0"
 futures = "0.3.31"
-gpui = { version="0.2.2", optional = true }
-gpui-component = {version = "0.5.0", optional = true}
-gpui-component-assets = {version = "0.5.0", optional = true}
+gpui = { version="0.2.2"}
+gpui-component = {version = "0.5.0"}
+gpui-component-assets = {version = "0.5.0"}
 regex = "1.12.2"
 rhai = "1.23.6"
-serde = { version = "1.0.228", features = ["derive"] }
+serde = { version = "1.0.228" }
 serde_json = "1.0.149"
-sqlx = { version = "0.8.6", features = ["runtime-tokio", "sqlite"] }
-tokio = { version = "1.49.0", features = ["rt-multi-thread", "process"] }
+sqlx = { version = "0.8.6" }
+tokio = { version = "1.49.0" }
+ratatui = { version = "0.27" }

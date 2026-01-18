@@ -1,9 +1,7 @@
-use crate::infrastructure::{
-    cross_cutting::InjectedServices,
-    utils::logging::{LogEntry, log},
-};
+use injection::cross_cutting::InjectedServices;
 use std::io::ErrorKind;
 use tokio::process::Command as TokioCommand;
+use utils::logging::{LogEntry, log};
 
 pub async fn karma_execute_command(services: InjectedServices, id: u32) -> Option<i64> {
     let res = services.repository.command.get_by_id(id).await;

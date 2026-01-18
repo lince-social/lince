@@ -1,6 +1,6 @@
-use crate::{ok, query};
 use sqlx::{Pool, Sqlite};
 use std::{io::Error, sync::Arc};
+use utils::{ok, query};
 
 pub async fn schema(db: Arc<Pool<Sqlite>>) -> Result<(), Error> {
     // === TABLES ===

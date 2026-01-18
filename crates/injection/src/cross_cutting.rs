@@ -1,4 +1,4 @@
-use crate::infrastructure::database::repositories::{
+use persistence::repositories::{
     collection::{CollectionRepository, CollectionRepositoryImpl},
     command::{CommandRepository, CommandRepositoryImpl},
     configuration::{ConfigurationRepository, ConfigurationRepositoryImpl},

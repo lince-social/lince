@@ -1,5 +1,6 @@
-use crate::{domain::clean::frequency::Frequency, infrastructure::cross_cutting::InjectedServices};
 use chrono::{Datelike, Duration, NaiveDateTime, TimeZone, Utc};
+use domain::clean::frequency::Frequency;
+use injection::cross_cutting::InjectedServices;
 
 pub async fn frequency_check(services: InjectedServices, id: u32) -> (u32, Option<Frequency>) {
     let frequency = match services.repository.frequency.get(id).await {

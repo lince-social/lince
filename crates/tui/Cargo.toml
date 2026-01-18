@@ -1,0 +1,15 @@
+[package]
+name = "tui"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+tui = ["dep:ratatui"]
+
+[dependencies]
+domain = { workspace = true }
+injection = { workspace = true }
+persistence = { workspace = true }
+utils = { workspace = true }
+
+ratatui = { version = "0.30.0", optional = true }

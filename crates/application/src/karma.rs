@@ -1,17 +1,13 @@
-use crate::{
-    application::{
-        command::karma_execute_command, engine::return_engine, frequency::frequency_check,
-        query::query_execute,
-    },
-    domain::clean::{frequency::Frequency, karma::Karma},
-    info,
-    infrastructure::{
-        cross_cutting::InjectedServices,
-        utils::logging::{LogEntry, log},
-    },
-};
-
+use domain::clean::{frequency::Frequency, karma::Karma};
+use injection::cross_cutting::InjectedServices;
 use regex::Regex;
+use utils::info;
+use utils::logging::{LogEntry, log};
+
+use crate::{
+    command::karma_execute_command, engine::return_engine, frequency::frequency_check,
+    query::query_execute,
+};
 use std::{
     collections::HashMap,
     io::{Error, ErrorKind},

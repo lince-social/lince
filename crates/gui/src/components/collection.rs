@@ -1,14 +1,12 @@
-use crate::{
-    infrastructure::database::repositories::collection::CollectionRow,
-    presentation::gpui::{
-        themes::catppuccin_mocha::{self, red, *},
-        workspace::Workspace,
-    },
+use super::super::{
+    themes::catppuccin_mocha::{self, red, *},
+    workspace::Workspace,
 };
 use gpui::{
     Context, InteractiveElement, IntoElement, ParentElement, Render, StatefulInteractiveElement,
     Styled, Window, div, *,
 };
+use persistence::repositories::collection::CollectionRow;
 
 #[derive(Clone)]
 pub struct CollectionList {

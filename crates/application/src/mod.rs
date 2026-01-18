@@ -11,5 +11,5 @@ pub mod query;
 pub mod sum;
 pub mod table;
 
-#[cfg(feature = "gpui")]
+#[cfg(feature = "gui")]
 pub mod gpui;

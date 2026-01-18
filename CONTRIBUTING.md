@@ -44,7 +44,7 @@ The application can be run using [mask](https://github.com/jacobdeichert/mask), 
 cargo install mask
 ```
 
-The main command is `cargo run -- gpui`, which runs Karma and the GPUI frontend.
+The main command is `cargo run -- gui`, which runs Karma and the GPUI frontend.
 
 It is recommended to run `mask update` so you have the latest Rust nightly version.
 

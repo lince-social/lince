@@ -1,15 +1,13 @@
-use crate::{
-    domain::clean::collection::Collection,
-    infrastructure::cross_cutting::InjectedServices,
-    log,
-    presentation::gpui::{
-        components::{collection::CollectionList, table::GenericTableDelegate},
-        state::State,
-        themes::catppuccin_mocha::mantle,
-    },
+use super::{
+    components::{collection::CollectionList, table::GenericTableDelegate},
+    state::State,
+    themes::catppuccin_mocha::mantle,
 };
+use domain::clean::collection::Collection;
 use gpui::*;
 use gpui_component::table::TableState;
+use injection::cross_cutting::InjectedServices;
+use utils::log;
 
 pub struct Workspace {
     pub focus_handle: FocusHandle,
@@ -55,7 +53,7 @@ impl Workspace {
                 .set_active(&collection_id.to_string())
                 .await
             {
-                log!(e, "failed to set active collection");
+                utils::log!(e, "failed to set active collection");
             }
 
             let rows = match services.repository.collection.get_all().await {

@@ -1,7 +1,7 @@
 #import "chapters/birth/birth.typ"
 #import "chapters/aging/aging.typ"
 #import "chapters/sickness.typ"
-#import "chapters/death.typ"
+#import "chapters/death/death.typ"
 
 #import "@preview/hydra:0.6.2": hydra
 #import "@preview/cheq:0.3.0": checklist

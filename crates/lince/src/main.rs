@@ -2,8 +2,6 @@
 
 #[cfg(feature = "karma")]
 use application::karma::karma_deliver;
-#[cfg(feature = "gui")]
-use gui::app::gpui_app;
 use injection::cross_cutting::InjectedServices;
 use injection::cross_cutting::dependency_injection;
 use persistence::management::{connection::connection, schema::schema};
@@ -50,7 +48,13 @@ async fn main() -> Result<(), Error> {
 #[cfg(feature = "gui")]
 async fn start_gui(args: Vec<String>, services: InjectedServices) -> Result<(), Error> {
     if args.contains(&"gui".to_string()) {
-        gpui_app(services).await;
+        use application::gpui::get_gpui_startup_data;
+        use gui::app::gpui_app;
+
+        match get_gpui_startup_data(services.clone()).await {
+            Ok(state) => gpui_app(services, state).await,
+            Err(e) => log(LogEntry::Error(e.kind(), e.to_string())),
+        }
     }
     Ok(())
 }

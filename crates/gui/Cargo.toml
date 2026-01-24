@@ -7,6 +7,7 @@ edition = "2024"
 gui = ["dep:gpui", "dep:gpui-component", "dep:gpui-component-assets"]
 
 [dependencies]
+application = { workspace = true }
 domain = { workspace = true }
 injection = { workspace = true }
 persistence = { workspace = true }

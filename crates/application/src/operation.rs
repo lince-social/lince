@@ -1,37 +1,10 @@
 use crate::{command::karma_execute_command, karma::karma_deliver};
+use domain::dirty::operation::{OperationActions, OperationTables};
 use injection::cross_cutting::InjectedServices;
-use regex::Regex;
-use std::{collections::HashMap, io::Error};
 use utils::logging::{LogEntry, log};
 
-pub fn operation_tables() -> Vec<(&'static str, &'static str)> {
-    vec![
-        ("0", "Configuration"),
-        ("1", "Collection"),
-        ("2", "View"),
-        ("3", "collection_View"),
-        ("4", "Record"),
-        ("5", "Karma_Condition"),
-        ("6", "Karma_Consequence"),
-        ("7", "Karma"),
-        ("8", "Command"),
-        ("9", "Frequency"),
-        ("10", "Sum"),
-        ("11", "History"),
-        ("12", "DNA"),
-        ("13", "Transfer"),
-    ]
-}
-
-pub fn operation_actions() -> Vec<(&'static str, &'static str)> {
-    vec![
-        ("c", "Create"),
-        ("q", "SQL Query"),
-        ("k", "Karma"),
-        ("s", "Shell Command"),
-        ("a", "Activate Configuration"),
-    ]
-}
+use regex::Regex;
+use std::io::Error;
 
 fn parse_table(operation: String) -> String {
     let re = Regex::new(r"\d+").unwrap();
@@ -97,10 +70,7 @@ fn parse_id(part: &str) -> Option<&str> {
     None
 }
 
-pub async fn parse_operation_and_execute(
-    services: InjectedServices,
-    operation: String,
-) -> Option<String> {
+pub async fn parse_operation_and_execute(services: InjectedServices, operation: String) {
     let re = Regex::new(r"[a-zA-Z]+").unwrap();
 
     let operation_parts: Vec<&str> = operation.split_whitespace().collect();
@@ -108,21 +78,29 @@ pub async fn parse_operation_and_execute(
     for part in operation_parts {
         if let Some(matched) = re.find(part) {
             match matched.as_str() {
-                "q" | "query" => {
-                    return Some("query modal".to_string());
-                }
-                "c" | "create" => {
-                    let _ =
-                        operation_create_component(services, parse_table(operation.clone())).await;
-                    return Some("create modal".to_string());
-                }
+                // "q" | "query" => {
+                //     return Some(
+                //         presentation_html_section_body_home_modal(
+                //             presentation_html_operation_query().await,
+                //         )
+                //         .await,
+                //     );
+                // }
+                // "c" | "create" => {
+                //     return Some(
+                //         presentation_html_section_body_home_modal(
+                //             operation_create_component(services, parse_table(operation.clone()))
+                //                 .await,
+                //         )
+                //         .await,
+                //     );
+                // }
                 "k" | "collection" => {
                     if let Some(id) = parse_id(&operation)
                         && let Err(e) = services.repository.collection.set_active(id).await
                     {
                         log(LogEntry::Error(e.kind(), e.to_string()))
                     }
-                    return Some("record body".to_string());
                 }
                 "a" | "configuration" => {
                     if let Some(id) = parse_id(&operation)
@@ -130,7 +108,6 @@ pub async fn parse_operation_and_execute(
                     {
                         log(LogEntry::Error(e.kind(), e.to_string()))
                     }
-                    return Some("configuration body".to_string());
                 }
                 "s" | "command" | "shell" | "shell command" => {
                     if let Some(id) = parse_id(&operation)
@@ -141,19 +118,18 @@ pub async fn parse_operation_and_execute(
                         let e = Error::other(format!("Failed to run command with id: {}", id));
                         log(LogEntry::Error(e.kind(), e.to_string()))
                     }
-
-                    return Some("collection body".to_string());
                 }
 
                 _ => continue,
             }
         }
     }
-
-    None
 }
 
-pub async fn operation_execute(services: InjectedServices, operation: String) -> String {
+pub async fn operation_execute(
+    services: InjectedServices,
+    operation: String,
+) -> Result<Vec<(OperationTables, OperationActions)>, Error> {
     let only_digits_regex = Regex::new(r"^\d+$").unwrap();
     if only_digits_regex.is_match(&operation) {
         let id = operation.parse::<u32>().unwrap();
@@ -172,34 +148,16 @@ pub async fn operation_execute(services: InjectedServices, operation: String) ->
                 .await
                 .inspect_err(|e| log(LogEntry::Error(e.kind(), e.to_string())));
         }
-
-        return "main body".to_string();
     }
 
-    match parse_operation_and_execute(services.clone(), operation).await {
-        None => "main body".to_string(),
-        Some(element) => element,
-    }
+    // match parse_operation_and_execute(services.clone(), operation).await {
+    //     None => presentation_html_section_body(services).await,
+    //     Some(element) => element,
+    // }
+    Ok(vec![])
 }
 
-pub async fn operation_create_component(services: InjectedServices, table: String) -> String {
-    let _column_names = services
-        .repository
-        .operation
-        .get_column_names(table.clone())
-        .await
-        .unwrap_or_default();
-
-    "create form".to_string()
-}
-
-pub async fn operation_create_persist(
-    services: InjectedServices,
-    table: String,
-    data: HashMap<String, String>,
-) -> String {
-    if let Err(e) = services.repository.operation.create(table, data).await {
-        println!("Error creating operation: {}", e);
-    }
-    "main section".to_string()
-}
+// Pega a operação que chegou e categoriza ela
+// Se for Numbers zera rqNumbers, devolve: Enum
+// Se for numeros e letras faz o parse e monta o Enum, devolve: Enum porque cada presentation tem que poder lidar de forma diferente com uma operação, a operação faz o parsing, e só
+// a execução de mudança de coleção ativa, refetch dos dados, enviar comandos depende do frontend pq ele precisa poder lidar com o ato em si, não pegar um memorando dele.

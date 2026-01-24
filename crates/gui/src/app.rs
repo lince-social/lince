@@ -1,18 +1,13 @@
-use super::{
-    components::table::GenericTableDelegate, state::State, window::get_window_options, workspace::*,
-};
+use super::{components::table::GenericTableDelegate, window::get_window_options, workspace::*};
+use domain::dirty::gpui::State;
 use gpui::*;
 use gpui_component::{table::TableState, *};
 use gpui_component_assets::Assets;
 use injection::cross_cutting::InjectedServices;
 
-actions!(window, []);
+actions!(window, [Enter, Backspace]);
 
-pub async fn gpui_app(services: InjectedServices) {
-    let state = State {
-        collections: vec![],
-        tables: vec![],
-    };
+pub async fn gpui_app(services: InjectedServices, state: State) {
     let app = Application::new().with_assets(Assets);
 
     app.run(move |cx: &mut App| {
@@ -26,9 +21,10 @@ pub async fn gpui_app(services: InjectedServices) {
         let window_options = get_window_options(cx);
         gpui_component::init(cx);
 
-        // cx.bind_keys([
-        //     KeyBinding::new("escape", ClearInput, None),
-        // ]);
+        cx.bind_keys([
+            KeyBinding::new("enter", Enter, None),
+            KeyBinding::new("backspace", Backspace, None),
+        ]);
 
         cx.open_window(window_options, |window, cx| {
             let all_tables: Vec<(String, Entity<TableState<GenericTableDelegate>>)> = vec![];

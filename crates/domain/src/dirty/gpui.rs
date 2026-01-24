@@ -1,5 +1,4 @@
-use domain::clean::table::Table;
-use persistence::repositories::collection::CollectionRow;
+use crate::{clean::table::Table, dirty::collection::CollectionRow};
 
 #[derive(Clone, Debug)]
 pub struct State {

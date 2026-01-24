@@ -1,10 +1,12 @@
 use async_trait::async_trait;
-use domain::clean::{
-    collection::Collection,
-    table::{Row as RowEntity, Table},
+use domain::{
+    clean::{
+        collection::Collection,
+        table::{Row as RowEntity, Table},
+    },
+    dirty::{collection::CollectionRow, view::QueriedView},
 };
 use futures::future::join_all;
-use serde::{Deserialize, Serialize};
 use sqlx::{Column, Pool, Row, Sqlite, TypeInfo};
 use std::{
     collections::HashMap,
@@ -13,8 +15,6 @@ use std::{
     sync::Arc,
 };
 use utils::ok;
-
-pub type CollectionRow = (Collection, Vec<QueriedView>);
 
 #[async_trait]
 pub trait CollectionRepository: Send + Sync {
@@ -40,25 +40,6 @@ pub struct CollectionRepositoryImpl {
 impl CollectionRepositoryImpl {
     pub fn new(pool: Arc<Pool<Sqlite>>) -> Self {
         Self { pool }
-    }
-}
-
-#[derive(sqlx::FromRow, Debug, PartialEq, Serialize, Deserialize, Clone)]
-pub struct QueriedView {
-    pub id: u32,
-    pub quantity: i32,
-    pub name: String,
-    pub query: String,
-}
-
-impl Default for QueriedView {
-    fn default() -> Self {
-        Self {
-            id: 0,
-            quantity: 1,
-            name: "Default View".to_string(),
-            query: "SELECT * FROM record".to_string(),
-        }
     }
 }
 

@@ -2,11 +2,11 @@ use super::super::{
     themes::catppuccin_mocha::{self, red, *},
     workspace::Workspace,
 };
+use domain::dirty::collection::CollectionRow;
 use gpui::{
     Context, InteractiveElement, IntoElement, ParentElement, Render, StatefulInteractiveElement,
     Styled, Window, div, *,
 };
-use persistence::repositories::collection::CollectionRow;
 
 #[derive(Clone)]
 pub struct CollectionList {
@@ -120,11 +120,7 @@ impl Render for CollectionList {
             .gap_1()
             .flex_col()
             .on_hover(cx.listener(|this, hovered, _window, _cx| {
-                // println!("this.hovered 1: {}", this.hovered);
-                // println!("Hovered: {}", hovered);
-
                 this.hovered = *hovered;
-                // println!("this.hovered 2: {} \n", this.hovered);
             }))
             .children(
                 self.collections[..if self.hovered {

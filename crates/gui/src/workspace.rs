@@ -1,9 +1,11 @@
+use crate::components::operation::Operation;
+
 use super::{
     components::{collection::CollectionList, table::GenericTableDelegate},
-    state::State,
     themes::catppuccin_mocha::mantle,
 };
-use domain::clean::collection::Collection;
+use application::operation::operation_execute;
+use domain::{clean::collection::Collection, dirty::gpui::State};
 use gpui::*;
 use gpui_component::table::TableState;
 use injection::cross_cutting::InjectedServices;
@@ -15,6 +17,7 @@ pub struct Workspace {
     pub services: InjectedServices,
     pub collection_list: Entity<CollectionList>,
     pub table_entities: Vec<(String, Entity<TableState<GenericTableDelegate>>)>,
+    pub operation: Entity<Operation>,
 }
 
 impl Workspace {
@@ -25,7 +28,9 @@ impl Workspace {
         table_entities: Vec<(String, Entity<TableState<GenericTableDelegate>>)>,
     ) -> Self {
         let weak = cx.weak_entity();
-        let collection_list = cx.new(|_| CollectionList::new(state.collections.clone(), weak));
+        let collection_list =
+            cx.new(|_| CollectionList::new(state.collections.clone(), weak.clone()));
+        let operation = cx.new(|_| Operation::new(weak.clone()));
 
         Self {
             focus_handle: cx.focus_handle(),
@@ -33,6 +38,7 @@ impl Workspace {
             services,
             collection_list,
             table_entities,
+            operation,
         }
     }
 
@@ -96,8 +102,17 @@ impl Workspace {
                 .await
             {
                 Ok(collections) => {
+                    let tables = match services.repository.collection.get_active_view_data().await {
+                        Ok((tables, _)) => tables,
+                        Err(e) => {
+                            log!(e, "failed to fetch table data");
+                            vec![]
+                        }
+                    };
+
                     this.update(cx, move |owner, cx| {
                         owner.state.collections = collections.clone();
+                        owner.state.tables = tables.clone();
 
                         owner.collection_list.update(cx, |bar, _| {
                             bar.collections = collections;
@@ -116,6 +131,35 @@ impl Workspace {
     }
 }
 
+impl Workspace {
+    pub fn send_operation(&mut self, cx: &mut Context<Self>, operation: String) {
+        let services = self.services.clone();
+        cx.spawn(async move |this, cx| {
+            match operation_execute(services.clone(), operation.clone()).await {
+                Ok(_operationresult) => {
+                    let tables = match services.repository.collection.get_active_view_data().await {
+                        Ok((tables, _)) => tables,
+                        Err(e) => {
+                            log!(e, "failed to fetch table data");
+                            vec![]
+                        }
+                    };
+
+                    this.update(cx, move |owner, cx| {
+                        owner.state.tables = tables.clone();
+                        cx.notify();
+                    })
+                    .unwrap();
+                }
+                Err(e) => {
+                    log!(e, "Failed to get collections");
+                }
+            }
+        })
+        .detach();
+    }
+}
+
 impl Focusable for Workspace {
     fn focus_handle(&self, _: &App) -> FocusHandle {
         self.focus_handle.clone()
@@ -124,55 +168,39 @@ impl Focusable for Workspace {
 
 impl Render for Workspace {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        // Check if table entities need to be recreated based on current state
-        let current_table_names: Vec<String> = self
+        self.table_entities = self
             .state
             .tables
             .iter()
-            .map(|(name, _)| name.clone())
+            .cloned()
+            .map(|(name, table)| {
+                let table_state = cx.new(|cx| {
+                    TableState::new(GenericTableDelegate::new(table), window, cx)
+                        .col_resizable(true)
+                        .col_movable(true)
+                        .sortable(true)
+                        .col_selectable(true)
+                        .row_selectable(true)
+                });
+                (name, table_state)
+            })
             .collect();
-        let entity_table_names: Vec<String> = self
-            .table_entities
-            .iter()
-            .map(|(name, _)| name.clone())
-            .collect();
-
-        // If the table names don't match or counts are different, recreate entities
-        if current_table_names != entity_table_names {
-            self.table_entities = self
-                .state
-                .tables
-                .iter()
-                .cloned()
-                .map(|(name, table)| {
-                    let table_state = cx.new(|cx| {
-                        TableState::new(GenericTableDelegate::new(table), window, cx)
-                            .col_resizable(true)
-                            .col_movable(true)
-                            .sortable(true)
-                            .col_selectable(true)
-                            .row_selectable(true)
-                    });
-                    (name, table_state)
-                })
-                .collect();
-        }
 
         div()
             .flex()
             .flex_col()
             .gap_4()
             .bg(mantle())
+            .text_color(rgb(0xffffff))
             .size_full()
             .p_3()
             .track_focus(&self.focus_handle(cx))
+            .child(self.operation.clone())
             .child(self.collection_list.clone())
             .children(
                 self.table_entities
                     .iter()
                     .map(|(_name, entity)| entity.clone()),
             )
-            .text_color(rgb(0xffffff))
-            .child("Hellour")
     }
 }

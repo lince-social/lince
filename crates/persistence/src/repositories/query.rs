@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use domain::clean::operation::Query;
+use domain::dirty::operation::Query;
 use sqlx::{Pool, Sqlite};
 use std::{
     io::{Error, ErrorKind},

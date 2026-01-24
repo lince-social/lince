@@ -37,6 +37,8 @@ The tasks and community to improve are found in the Discord server. But this doc
 ]
 #roadmap
 
+For detailed tasks, go to the end of this book.
+
 == Good practices
 Making a Lince DNA, modeling items and actions to perform is a continuous effort, if it makes sense to you. With that said,
 here are some ideas to get started:
@@ -68,6 +70,6 @@ SELECT * FROM record WHERE quantity < 0 AND LOWER(head) LIKE '%task%'
 -- One can use the 'head' column in 'record' table as a tag holder.
 So Record's heads with Items and Tasks that have negative quantities appear in my 'Negatives' view.
 
-=== Finance
+*Finance*
 Currently not very featureful. You can model in Records your monthly earnings and expenditures
 and make a Karma with a condition of (Records of Earnings) - (Records of Expenditures)

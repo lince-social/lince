@@ -4,12 +4,13 @@
 
 - image: logo/black.png | New Logo: Made by Nika
 - image: | Website: lince.social
-- Lince Institute in Brazil: Draft of regiment -> "Estatuto Social"
+- image: | Lince Institute in Brazil: Draft of regiment -> "Estatuto Social"
+- image: | Social Media Posts: Draft, in Typst -> PNG
 
 ## Development
 
 - Playing around, bugging out: Exploration with manual input
-- Playing around, bugging out: Small bug's
+- Playing around, bugging out: Small bugs
 
 # Objective
 

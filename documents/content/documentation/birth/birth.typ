@@ -3,7 +3,7 @@
 #import "organization.typ"
 #import "stack.typ"
 
-#import "../../components/major.typ": major
+#import "../../../components/major.typ": major
 
 #major(
   "Birth",

@@ -11,7 +11,7 @@
 )
 
 #task(
-  title: "Canvas",
+  "Canvas",
   contributors: ("N1",),
 )[
   Make an expansive 2d canvas, views dragging to adjust the position.
@@ -22,7 +22,7 @@
 ]
 
 #task(
-  title: "I can have a view that is the Creation Modal of any table",
+  "I can have a view that is the Creation Modal of any table",
   contributors: ("N1",),
 )[
   One of the Views of any collection is the creation modal, now a View. So the person will see tables and next to it the component used to create a new record, so they will be able to create new records easily.
@@ -30,28 +30,28 @@
 ]
 
 #task(
-  title: "Collection CRUD",
+  "Collection CRUD",
   contributors: ("N1",),
 )[
   Enable CRUD operations for collections.
 ]
 
 #task(
-  title: "Nextcloud integration",
+  "Nextcloud integration",
   contributors: ("N1",),
 )[
   Integração com nextcloud ou algum provedor de cloud pra sincronizar DNAs entre dispositivos
 ]
 
 #task(
-  title: "Note-taking-like",
+  "Note-taking-like",
   contributors: ("N1",),
 )[
   Ter uma forma boa de editar notas, conectando possivelmente notas de objetivos com karma, pra que cada workflow tenha sua justificativa e possa-se criar primeiro os objetivos e completar eles com os passos pra chegar lá
 ]
 
 #task(
-  title: "Karma Refactor",
+  "Karma Refactor",
   contributors: ("N1",),
 )[
   Karma Conditions poderem ser referenciadas em outras conditions tipo kd2 + kd6.
@@ -59,7 +59,7 @@
 ]
 
 #task(
-  title: "Extensions",
+  "Extensions",
   contributors: ("N1",),
 )[
   Be able to receive information about ESP and put it into a Karma condition.
@@ -68,7 +68,7 @@
 ]
 
 #task(
-  title: "Collection's Views CRUD",
+  "Collection's Views CRUD",
   contributors: ("N1",),
 )[
   Be able to:
@@ -79,35 +79,35 @@
 ]
 
 #task(
-  title: "Be able to Pin Views",
+  "Be able to Pin Views",
   contributors: ("N1",),
 )[
   I can pin a View of Collection A when I am in collection B, making it appear on the screen with higher Z index and stuck to a place
 ]
 
 #task(
-  title: "Execute single Karma with visualization on the condition being evaluated",
+  "Execute single Karma with visualization on the condition being evaluated",
   contributors: ("N1",),
 )[
   Maybe a modal
 ]
 
 #task(
-  title: "Cub",
+  "Cub",
   contributors: ("N1",),
 )[
   Just like rustlings, a tutorial that you code Rust to fix bugs and learn we can have Cub. It will teach you things and ask you to fix stuff maybe to advance forward in using Lince and creating a useful DNA.
 ]
 
 #task(
-  title: "syntax highlighting and lsp (TreeSitter?) for Commands",
+  "syntax highlighting and lsp (TreeSitter?) for Commands",
   contributors: ("N1",),
 )[
   Being able to see based on the language syntax highlighting. So if in a Command block there is not a language set default to bash, if there is rust use the highlight for Rust, use lsp to see if its wrong, be able to run every command and see the result.
 ]
 
 #task(
-  title: "JSON Endpoints",
+  "JSON Endpoints",
   contributors: ("N1",),
 )[
   - backend retorna dados em json
@@ -115,21 +115,21 @@
 ]
 
 #task(
-  title: "IA de recomendação de Karma",
+  "IA de recomendação de Karma",
   contributors: ("N1",),
 )[
   fazer otimizações balanceamento de atividades ao longo da semana pra nao sobrecarregar um dia. Sugerir habitos novos...
 ]
 
 #task(
-  title: "Shift de Ids",
+  "Shift de Ids",
   contributors: ("N1",),
 )[
   Caso ids em cada dna ainda se mantenham em um INT autoincremental: Ajustar Ids quando deleto algo deixo espaços vazios, fazer um shift pra eles se apertarem em direção ao zero, pra ficar mais fácil de digitar numeros menores. Mudar todos os ids que referenciam os que mudaram, em karma expressions
 ]
 
 #task(
-  title: "Table component",
+  "Table component",
   contributors: ("N1",),
 )[
   Table needs to have these properties:
@@ -141,8 +141,8 @@
 ]
 
 #task(
-  title: "New Logo Items: First Batch",
-  contributors: ("Nika", "xaviduds"),
+  "New Logo Items: First Batch",
+  contributors: ("Nika", "@xaviduds"),
 )[
   - [/] New vetorized logo
   - [ ] Hering's Super Cotton for t-shirts
@@ -151,7 +151,7 @@
 ]
 
 #task(
-  title: "Lince Institute",
+  "Lince Institute",
   contributors: ("N1",),
 )[
   - [ ] Consolidate the 'Ata de Fundação' and 'Estatuto Social'
@@ -182,11 +182,46 @@
 ]
 
 
-#task(title: "Find Social Media Manager", contributors: "N1")[
+#task("Find Social Media Manager", contributors: "N1")[
   Train them into using Typst to automate it, make simple content that delivers only
   important news and concepts with mininum words, connecting it with trying out Lince.
   Youtube (this_month_in_lince)
   Insta (social_media_posts)
   TikTok
   Website?? (Blogpost)
+]
+
+#task("Migration with Fallback", contributors: "@xaviduds")[
+  There should be a way with an update to ask the user if they want to apply a migration, the system needs to work with a certain db schema and those
+  breaking changes should be able to be applied with:
+  - A migration by the user's choice
+  - Automatic backup of the db
+  - Automatic reversal if it doesnt work
+
+  SQLx has a migration feature, what might happen is that the database layer needs to change to make the tables reflect an Infrastructure Struct
+  that reflects the Domain. Currently the schema of the db is a bunch of strings...
+]
+
+#task("Hello", contributors: "@DiogoTeixeiraDEV")[
+  Frequency has two features to be done so we can complete it:
+
+  *Catch Up Sum:*
+  When a frequency hasnt been activated for a long time, like for a 1 Day frequency with a next_date stuck
+  three months ago, if something references it, every Karma Delivery (60s) will update it to one day closer to tomorrow (2 months 29 days now).
+  The catch_up_sum is something that takes all of the possible times the frequency would activate and moves the next_date until it reaches stability.
+  catch_up_sum == 0 => dont do anything, just calculate frequency normally one time.
+  catch_up_sum => positive, make the next_date jump the number of times the value of catch_up_sum, never jumping if next_date is already in the future.
+  In other words: if its 1, its the same as zero, you jump the next_date one time based on the frequency (1 day) and go on.
+  If it's two, you jump two times so it would go from 3 months ago to 2 months and 28 days.
+  If its negative dont do anything.
+
+  *Days of the Week:*
+  There already is a commented try at this in the frequency function. The goal is to make something easy to write to say that it should fall in a day
+  of the week. So if the frequency only contains info about jumping every monday and tuesday then the day_of_week would be something like `1, 2` or `12`
+  or something else, you who knows.
+  If the frequency is `months: 2, day_of_week: 5` it will first jump to the next friday, then jump two months. Or maybe it should first go to the two
+  months and then fall on a friday. There should be a mechanism to easily set a prefference between the two behaviors.
+
+  Feel free to refactor this a lot. With those two unfinished parts the frequency will be able to cover many cases, if you have more periodicies in
+  mind to cover even more cases please refactor.
 ]

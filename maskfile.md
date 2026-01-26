@@ -57,6 +57,7 @@ fi
 ```bash
 mask install-docs
 tinymist preview \
+--root . \
 --control-plane-host 127.0.0.1:3002 \
 --data-plane-host 127.0.0.1:3001 \
 --static-file-host 127.0.0.1:3003 \

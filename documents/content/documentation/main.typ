@@ -18,7 +18,7 @@
 #place(
   center + horizon,
 )[
-  #figure(image("media/preto.png", width: 40%))
+  #figure(image("../../media/logo/preto.png", width: 40%))
   #title(align(center, text(65pt, "Instinto")))
   #title(align(center, text(20pt, "Lince Documentation")))
 ]

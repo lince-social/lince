@@ -1,4 +1,4 @@
-#import "../../components/major.typ": major
+#import "../../../components/major.typ": major
 #import "tasks.typ"
 
 #major(
@@ -38,7 +38,7 @@ It's only a complete animal when independent of platform, language, nationality
 [TODO: insert the rest of 'imagine all the people' by john lenon's lyrics here]... or footbal team,  people are working together like the image below:
 
 #figure(
-  image("../../media/utopia_meme_1.jpg", width: 40%),
+  image("../../../media/random/utopia_meme_1.jpg", width: 40%),
   caption: [Society if freelancers had a lot of work: Green utopia with a gal petting a
     tiger careful it might bite],
 )

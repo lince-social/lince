@@ -1,4 +1,4 @@
-#import "../../components/major.typ": major
+#import "../../../components/major.typ": major
 #import "collection.typ"
 #import "configuration.typ"
 #import "dna.typ"

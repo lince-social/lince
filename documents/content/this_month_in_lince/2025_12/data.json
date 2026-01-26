@@ -1,0 +1,58 @@
+{
+  "growth": [
+    {
+      "image": "planning/2025_12.jpg",
+      "i18n": {
+        "pt-BR": {
+          "title": "Planejamento",
+          "description": "Cronograma da versão v1.0.0"
+        },
+        "zh-CN": { "title": "规划", "description": "v1.0.0 路线图" },
+        "en": {
+          "title": "Planning",
+          "description": "Roadmap for the v1.0.0"
+        }
+      }
+    },
+    {
+      "image": "lincecon/2025/full.jpg",
+      "i18n": {
+        "pt-BR": {
+          "title": "LinceCon",
+          "description": "Edição 2025. Online"
+        },
+        "zh-CN": {
+          "title": "LinceCon",
+          "description": "2025 年版，线上举办"
+        },
+        "en": {
+          "title": "LinceCon",
+          "description": "2025 Edition. online"
+        }
+      }
+    },
+    {
+      "image": "random/tmil.jpg",
+      "i18n": {
+        "pt-BR": {
+          "title": "Este Mês na Lince",
+          "description": "A partir de 2025-12"
+        },
+        "zh-CN": { "title": "本月在林斯", "description": "始于 2025-12" },
+        "en": {
+          "title": "This Month in Lince",
+          "description": "Starting with month 2025-12"
+        }
+      }
+    }
+  ],
+  "development": [
+    {
+      "i18n": {
+        "pt-BR": { "title": "Tudo", "description": "Hora da Demo" },
+        "zh-CN": { "title": "全部内容", "description": "演示时间" },
+        "en": { "title": "Everything", "description": "Demo Time" }
+      }
+    }
+  ]
+}

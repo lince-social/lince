@@ -1,0 +1,109 @@
+[tools]
+rust = "stable"
+"cargo:mprocs" = "latest"
+"cargo:bacon" = "latest"
+"cargo:git-cliff" = "latest"
+"cargo:cargo-edit" = "latest"
+"cargo:cargo-udeps" = "latest"
+# Typst tools
+"npm:tinymist" = "latest"
+typst = "latest"
+
+[tasks.install]
+description = "Install core rust tooling"
+run = "cargo install mprocs bacon git-cliff cargo-edit cargo-udeps --locked"
+
+[tasks.update]
+description = "Update rustup and dependencies"
+run = """
+rustup self update
+rustup update nightly
+cargo upgrade
+"""
+
+[tasks.off]
+description = "Auto-fix code and clippy warnings"
+run = """
+cargo upgrade
+cargo fix --broken-code --allow-dirty && \
+cargo clippy --fix --allow-dirty --quiet >/dev/null 2>&1
+"""
+
+[tasks.run]
+description = "Run with bacon background jobs"
+run = 'mprocs "bacon . --job fix" "bacon . --job run"'
+
+[tasks.dev]
+description = "Systemd service management and bacon"
+run = """
+mprocs \
+"systemctl --user restart lince.service && journalctl --user -u lince.service -f --output=cat" \
+"systemctl --user stop lince.service && journalctl --user -u lince.service -f --output=cat" \
+"bacon . --job fix" \
+"cargo run -- html gpui"
+"""
+
+[tasks.docs]
+description = "Start typst documentation preview"
+run = """
+tinymist preview \
+--control-plane-host 127.0.0.1:3002 \
+--data-plane-host 127.0.0.1:3001 \
+--static-file-host 127.0.0.1:3003 \
+--font-path documentation/font/IBM_Plex_Sans/static \
+--invert-colors='{"rest":"always", "image": "never"}' \
+documents/content/documentation/main.typ
+"""
+
+[tasks.tmil]
+description = "This Month in Lince documentation"
+run = """
+SEARCH_PATH="documents/content/this_month_in_lince"
+LATEST_DIR=$(ls -d $SEARCH_PATH/20*/ | sort -V | tail -n 1 | xargs basename)
+
+echo "🚀 Using latest data from: $LATEST_DIR"
+
+# Cleanup/Compile on exit
+trap "typst compile --root documents --input dir=$LATEST_DIR $SEARCH_PATH/main.typ" EXIT
+trap "touying compile --root documents --format html --input dir=$LATEST_DIR $SEARCH_PATH/main.typ" EXIT
+
+tinymist preview \
+  --root documents \
+  --control-plane-host 127.0.0.1:3002 \
+  --data-plane-host 127.0.0.1:3001 \
+  --static-file-host 127.0.0.1:3003 \
+  --font-path documents/font/IBM_Plex_Sans/static \
+  --invert-colors='{"rest":"always", "image": "never"}' \
+  --input dir=$LATEST_DIR \
+  $SEARCH_PATH/main.typ
+"""
+
+[tasks.posts]
+description = "Generate PNGs for social media posts"
+run = """
+find documents/content/social_media_posts -name '*.json' -type f | while read -r json; do
+  rel="${json#documents/content/social_media_posts/}"
+  dir="$(dirname "$json")"
+  base="$(basename "$json" .json)"
+  typst compile --root ./ --format png --input json=\"$rel\" \
+    documents/content/social_media_posts/main.typ \
+    \"$dir/${base}-{0p}.png\"
+done
+"""
+
+[tasks.post]
+description = "Preview social media posts"
+run = """
+tinymist preview \
+--root ./ \
+--control-plane-host 127.0.0.1:3002 \
+--data-plane-host 127.0.0.1:3001 \
+--static-file-host 127.0.0.1:3003 \
+--font-path documentation/font/IBM_Plex_Sans/static \
+--invert-colors='{"rest":"always", "image": "never"}' \
+documents/content/social_media_posts/main.typ
+"""
+
+[tasks.release]
+description = "Automated release workflow"
+run = "./scripts/release.sh"

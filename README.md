@@ -8,32 +8,36 @@
 <img src="https://raw.githubusercontent.com/lince-social/lince/main/assets/display.gif" alt="Lince Logo">
 
 # Lince
+
 Tool for registry, interconnection and automation of Needs and Contributions with open scope.
 
-Detailed explanations of what Lince is, how to run it and use it's ecosystem can be found in the [documentation](https://raw.githubusercontent.com/lince-social/lince/main/documentation/main.pdf).
+Detailed explanations of what Lince is, how to run it and use it's ecosystem can be found in the [documentation](https://raw.githubusercontent.com/lince-social/lince/main/documents/content/documentation/main.pdf).
 
-To install, you can download the crate and run it:
+To install, you can download the crate and run it with Karma and a GUI:
+
 ```bash
 # Download
 cargo install lince
 
 # Run
-lince
+lince karma gui
 ```
 
-Or get the binary [here](https://github.com/lince-social/lince/tags). Pick the latest one for your machine and operating system, then unzip and execute the binary:
+Or get the binary [here](https://github.com/lince-social/lince/releases). Pick the latest one for your machine and operating system, then unzip and execute the binary:
 
 ```bash
-./lince
+./lince karma gui
 ```
 
 If you want to compile it, and have [cargo](https://www.rust-lang.org/tools/install) installed, run:
 
 ```bash
-cargo run
+cargo run -- karma gui
 ```
 
-Both methods should allow you to start using it at [http://localhost:6174](http://localhost:6174). I recommend using Lince as a linux service. Have fun.
+> Tip: One can run `lince karma` as a service to have Karma always running in the background. And run `lince gui` to use it through the GUI.
+
+Have fun!
 
 ---
 
@@ -48,6 +52,7 @@ Lince tries to facilitate and automate the connection between people and resourc
 # Dev Commands
 
 Using mask:
+
 ```bash
 cargo install mask
 ```

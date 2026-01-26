@@ -1,22 +1,26 @@
 ## install
+
 ```bash
 cargo install mprocs bacon git-cliff cargo-edit cargo-udeps --locked
 ```
 
 ## update
+
 ```bash
 rustup self update
-rustup update nightly 
+rustup update nightly
 cargo upgrade
 ```
 
 ## off
+
 ```bash
 mask update
 cargo fix --broken-code --allow-dirty && cargo clippy --fix --allow-dirty --quiet >/dev/null 2>&1
 ```
 
 ## run
+
 ```bash
 mprocs \
 "bacon . --job fix" \
@@ -24,6 +28,7 @@ mprocs \
 ```
 
 ## dev
+
 ```bash
 mprocs \
 "systemctl --user restart lince.service &&  journalctl --user -u lince.service -f --output=cat" \
@@ -32,8 +37,8 @@ mprocs \
 "cargo run -- html gpui"
 ```
 
-
 ## install-docs
+
 ```bash
 cmd() { command -v "$1" >/dev/null; }
 
@@ -48,6 +53,7 @@ fi
 ```
 
 ## docs
+
 ```bash
 mask install-docs
 tinymist preview \
@@ -56,39 +62,49 @@ tinymist preview \
 --static-file-host 127.0.0.1:3003 \
 --font-path documentation/font/IBM_Plex_Sans/static \
 --invert-colors='{"rest":"always", "image": "never"}' \
-documentation/main.typ
+documents/content/documentation/main.typ
 ```
+
 > Starts typst documentation with tinymist on http://localhost:3003
 
-## tmil 
+## tmil
+
 ```bash
-mask install-docs
+SEARCH_PATH="documents/content/this_month_in_lince"
+LATEST_DIR=$(ls -d $SEARCH_PATH/20*/ | sort -V | tail -n 1 | xargs basename)
 
-# trap 'typst compile \
-# --root documentation \
-# documentation/chapters/TMIL/main.typ' EXIT
+echo "🚀 Using latest data from: $LATEST_DIR"
 
-trap 'touying compile \
---root documentation \
---format html \
-documentation/chapters/TMIL/main.typ' EXIT
+# 2. Pass the directory to the EXIT traps
+trap "typst compile \
+  --root ./ \
+  --input dir=$LATEST_DIR \
+  $SEARCH_PATH/main.typ" EXIT
 
+trap "touying compile \
+  --root ./ \
+  --format html \
+  --input dir=$LATEST_DIR \
+  $SEARCH_PATH/main.typ" EXIT
+
+# 3. Start the preview with the dynamic input
 tinymist preview \
---root documentation \
---control-plane-host 127.0.0.1:3002 \
---data-plane-host 127.0.0.1:3001 \
---static-file-host 127.0.0.1:3003 \
---font-path documentation/font/IBM_Plex_Sans/static \
---invert-colors='{"rest":"always", "image": "never"}' \
-documentation/chapters/TMIL/main.typ
+  --root ./ \
+  --control-plane-host 127.0.0.1:3002 \
+  --data-plane-host 127.0.0.1:3001 \
+  --static-file-host 127.0.0.1:3003 \
+  --input dir=$LATEST_DIR \
+  $SEARCH_PATH/main.typ
 ```
+
 > Starts typst documentation for This Month in Lince with tinymist on http://localhost:3003
 
 ## posts
+
 ```bash
 mask install-docs
-find documentation/chapters/posts -name '*.json' -type f | while read -r json; do
-  rel="${json#documentation/chapters/posts/}"
+find documents/content/social_media_posts -name '*.json' -type f | while read -r json; do
+  rel="${json#documents/content/social_media_posts/}"
   dir="$(dirname "$json")"
   base="$(basename "$json" .json)"
   echo $rel
@@ -99,13 +115,15 @@ find documentation/chapters/posts -name '*.json' -type f | while read -r json; d
     --root ./ \
     --format png \
     --input json="$rel" \
-    documentation/chapters/posts/main.typ \
+    documents/content/social_media_posts/main.typ \
     "$dir/${base}-{0p}.png"
 done
 ```
+
 > Creates the PNGs for all the posts. It's in .gitignore, dont worry.
 
-## post 
+## post
+
 ```bash
 tinymist preview \
 --root ./ \
@@ -114,29 +132,24 @@ tinymist preview \
 --static-file-host 127.0.0.1:3003 \
 --font-path documentation/font/IBM_Plex_Sans/static \
 --invert-colors='{"rest":"always", "image": "never"}' \
-documentation/chapters/posts/main.typ
+documents/content/social_media_posts/main.typ
 ```
+
 > Starts typst documentation for social media posts with tinymist on http://localhost:3003
 
-
 ## release
+
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
 
 branch=$(git rev-parse --abbrev-ref HEAD)
 
-# -----------------------------
-# Ensure git-cliff is initialized
-# -----------------------------
 if [[ ! -f "cliff.toml" ]]; then
     echo "⚙️  Initializing git-cliff config..."
     git cliff --init
 fi
 
-# -----------------------------
-# Determine last tag or default
-# -----------------------------
 if git describe --tags --abbrev=0 &>/dev/null; then
     last_tag=$(git describe --tags --abbrev=0)
 else
@@ -144,17 +157,11 @@ else
 fi
 echo "Last tag: ${last_tag:-<none>}"
 
-# -----------------------------
-# Ensure CHANGELOG.md exists
-# -----------------------------
 if [[ ! -f CHANGELOG.md ]]; then
     echo "📝 Creating initial CHANGELOG.md..."
     touch CHANGELOG.md
 fi
 
-# -----------------------------
-# Compute proposed version
-# -----------------------------
 if [[ -n "$last_tag" ]]; then
     NEXT_VERSION=$(git cliff --bumped-version)
 else
@@ -164,34 +171,21 @@ fi
 read -rp "Next version (auto: $NEXT_VERSION): " input_version
 VERSION=${input_version:-$NEXT_VERSION}
 
-# Ensure v-prefix
 if [[ "$VERSION" != v* ]]; then
   VERSION="v$VERSION"
 fi
 
-# -----------------------------
-# Ask for release title
-# -----------------------------
 read -rp "Release title (optional, press enter to use '$VERSION'): " input_title
 TITLE=${input_title:-"Release $VERSION"}
 
-# -----------------------------
-# Generate changelog and bump
-# -----------------------------
 git cliff --unreleased --bump --tag "$VERSION" -o CHANGELOG.md
 
-# -----------------------------
-# Commit changelog and create tag
-# -----------------------------
 git add CHANGELOG.md
 git commit -m "chore(release): $VERSION"
 git tag -a "$VERSION" -m "$TITLE"
 git push origin "$branch"
 git push origin "$VERSION"
 
-# -----------------------------
-# Publish GitHub release if gh exists
-# -----------------------------
 if command -v gh &>/dev/null; then
     echo "📦 Creating GitHub release for $VERSION..."
     gh release create "$VERSION" -F CHANGELOG.md --title "$TITLE"

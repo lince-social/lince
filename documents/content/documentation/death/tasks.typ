@@ -191,7 +191,7 @@
   Website?? (Blogpost)
 ]
 
-#task("Migration with Fallback", contributors: "@xaviduds")[
+#task("Migration with Fallback", contributors: ("@xaviduds",))[
   There should be a way with an update to ask the user if they want to apply a migration, the system needs to work with a certain db schema and those
   breaking changes should be able to be applied with:
   - A migration by the user's choice
@@ -202,7 +202,7 @@
   that reflects the Domain. Currently the schema of the db is a bunch of strings...
 ]
 
-#task("Hello", contributors: "@DiogoTeixeiraDEV")[
+#task("Hello", contributors: ("@DiogoTeixeiraDEV",))[
   Frequency has two features to be done so we can complete it:
 
   *Catch Up Sum:*

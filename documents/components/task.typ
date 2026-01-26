@@ -12,9 +12,9 @@
 //   ]
 }
 #let task(
-  title: none, // Named argument, default is none
-  contributors: (), // Named argument, default is none
-  body, // Positional argument (the trailing [])
+  title,
+  contributors: (),
+  body,
 ) = {
   assert(title != none, message: "You must provide a 'title' parameter.")
   block(width: 100%, inset: 1em, stroke: 0.5pt + gray, radius: 4pt)[

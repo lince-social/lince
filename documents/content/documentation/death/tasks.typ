@@ -130,12 +130,13 @@
 
 #task(
   "Table component",
-  contributors: ("N1",),
+  contributors: ("@chicogborba",),
 )[
   Table needs to have these properties:
-  - Column Resize (Saving information on individual columns)
-  - Word wrapping or not ( info in configuration)
-  - Editable: edit in place, in the cell, not changing the ui much, and also being able to edit a cell occupying a resizeable portion of the screen, so you can maximize/fullscreen a cell to edit
+  - Column Resize (saving information on individual columns' size)
+  - Word wrapping or not (option to word wrap in configuration)
+  - Editable: edit in place, in the cell, not changing the ui much, just turning the cell into an editable field.
+  While also being able to edit a cell occupying a resizeable portion of the screen, so you can maximize/fullscreen a cell to edit it like a text editor.
   - Delete row (with confirmation, by default, with option in configuration to not ask)
   - Sorteable (On runtime, updates should respect this sort, even though data comes with another sort or unsorted
 ]
@@ -182,12 +183,16 @@
 ]
 
 
-#task("Find Social Media Manager", contributors: "N1")[
+#task("Find Social Media Manager", contributors: ("N1",))[
   Train them into using Typst to automate it, make simple content that delivers only
   important news and concepts with mininum words, connecting it with trying out Lince.
+
   Youtube (this_month_in_lince)
+
   Insta (social_media_posts)
+
   TikTok
+
   Website?? (Blogpost)
 ]
 

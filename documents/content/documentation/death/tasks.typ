@@ -30,13 +30,6 @@
 ]
 
 #task(
-  "Collection CRUD",
-  contributors: ("N1",),
-)[
-  Enable CRUD operations for collections.
-]
-
-#task(
   "Nextcloud integration",
   contributors: ("N1",),
 )[
@@ -63,8 +56,6 @@
   contributors: ("N1",),
 )[
   Be able to receive information about ESP and put it into a Karma condition.
-
-  Dont remember what esp is...
 ]
 
 #task(
@@ -181,7 +172,6 @@
   *Procuração*
   Document to be updated and adapted whenever a new legal/financial task needs to be complete, and it's not done by the Executive Director.
 ]
-
 
 #task("Find Social Media Manager", contributors: ("N1",))[
   Train them into using Typst to automate it, make simple content that delivers only

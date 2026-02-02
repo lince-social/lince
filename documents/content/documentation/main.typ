@@ -33,8 +33,6 @@ Days of Construction: #(datetime.today() - datetime(year: 2025, month: 12, day: 
 Source: #link("https://github.com/lince-social/lince")[Lince] (\@lince-social/lince)
 #footnote["https://github.com/lince-social/lince"] \
 
-The one that first wrote this is a functional illiterate and a broken poet, the phrasing needs improvement much more yes.
-
 #pagebreak()
 #outline()
 

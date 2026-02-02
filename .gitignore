@@ -1,6 +1,5 @@
 /target
 /logs
 mprocs.log
-/book
 /documentation/**/*.html
 /documentation/chapters/posts/**/*.png

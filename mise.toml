@@ -34,6 +34,17 @@ mprocs \
 "cargo run -- karma gui"
 """
 
+[tasks.migrate]
+description = "Create a reversible SQL migration"
+tools = {"cargo:sqlx-cli" = "latest"}
+usage = "arg '<name>' help='The name of the migration'"
+run = """
+echo Creating migration: $usage_name
+sqlx migrate add -r $usage_name
+echo Created migration: $usage_name
+"""
+
+
 [tasks.docs]
 description = "Start typst documentation preview"
 tools = { "tinymist" = "latest", "typst" = "latest" }

@@ -21,9 +21,8 @@ persistence = { workspace = true }
 gui = { workspace = true, optional = true }
 tui = { workspace = true, optional = true }
 utils = { workspace = true }
-
 tokio = { workspace = true, features = ["rt-multi-thread", "process", "time", "macros"] }
-sqlx = { workspace = true }
+sqlx = { workspace = true, features }
 serde = { workspace = true }
 serde_json = { workspace = true }
 chrono = { workspace = true }

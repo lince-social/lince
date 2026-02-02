@@ -44,3 +44,9 @@ codegen-units = 1     # Single compilation unit
 debug = false         # No debug symbols (runtime doesn't care, size smaller)
 incremental = false   # Better optimization
 panic = "unwind"      # Keep panic recovery (or "abort" for ~1-3% more speed)
+
+[profile.dev]
+opt-level = 0        # Fastest compile
+debug = true         # Debug symbols
+incremental = true   # Fast incremental builds
+codegen-units = 256  # Max parallelism

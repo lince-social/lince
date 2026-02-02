@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 domain = { workspace = true }
 utils = { workspace = true }
-sqlx.workspace = true
+sqlx = {workspace = true, features = ["runtime-tokio", "sqlite"]}
 tokio.workspace = true
 serde.workspace = true
 serde_json.workspace = true

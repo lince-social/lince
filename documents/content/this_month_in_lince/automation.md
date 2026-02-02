@@ -2,15 +2,16 @@
 
 ## Growth
 
-- image: logo/black.png | New Logo: Made by Nika
-- image: | Website: lince.social
-- image: | Lince Institute in Brazil: Draft of regiment -> "Estatuto Social"
+- image: logo/white_in_black.png | New Logo: Made by Nika
+- image: random/website1.jpg | Website: lince.social
+- image: | Lince Institute in Brazil: Draft of Institute regiment (Estatuto Social) + In touch with help to create it
 - image: | Social Media Posts: Draft, in Typst -> PNG
 
 ## Development
 
 - Playing around, bugging out: Exploration with manual input
-- Playing around, bugging out: Small bugs
+- Playing around, bugging out: Small bugs (Toggle View now updating data)
+- Migrations: With SQLx
 
 # Objective
 

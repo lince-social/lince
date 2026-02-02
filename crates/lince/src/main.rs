@@ -2,11 +2,9 @@
 
 #[cfg(feature = "karma")]
 use application::karma::karma_deliver;
-use injection::cross_cutting::InjectedServices;
-use injection::cross_cutting::dependency_injection;
-use persistence::management::{connection::connection, schema::schema};
-use std::time::Duration;
-use std::{env, io::Error, sync::Arc};
+use injection::cross_cutting::{InjectedServices, dependency_injection};
+use persistence::connection::connection;
+use std::{env, io::Error, sync::Arc, time::Duration};
 #[cfg(feature = "tui")]
 use tui::tui_app;
 use utils::logging::{LogEntry, log};
@@ -16,18 +14,12 @@ async fn main() -> Result<(), Error> {
     let db = Arc::new(connection().await.inspect_err(|e| {
         log(LogEntry::Error(e.kind(), e.to_string()));
     })?);
-    schema(db.clone()).await.inspect_err(|e| {
-        log(LogEntry::Error(e.kind(), e.to_string()));
-    })?;
+    sqlx::migrate!("../../migrations")
+        .run(&*db)
+        .await
+        .map_err(|e| Error::new(std::io::ErrorKind::Other, e))?;
     let services = dependency_injection(db.clone());
     let args = env::args().collect::<Vec<String>>();
-
-    // if args.contains(&"migrate".to_string()) {
-    //     println!("Executing migration...");
-    //     execute_migration(db.clone()).await.inspect_err(|e| {
-    //         log(LogEntry::Error(e.kind(), e.to_string()));
-    //     })?;
-    // }
 
     #[cfg(feature = "gui")]
     if let Err(e) = start_gui(args.clone(), services.clone()).await {

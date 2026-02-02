@@ -1,0 +1,16 @@
+-- Add down migration script here
+DROP TABLE IF EXISTS query;
+DROP TABLE IF EXISTS dna;
+DROP TABLE IF EXISTS history;
+DROP TABLE IF EXISTS sum;
+DROP TABLE IF EXISTS transfer;
+DROP TABLE IF EXISTS command;
+DROP TABLE IF EXISTS frequency;
+DROP TABLE IF EXISTS karma;
+DROP TABLE IF EXISTS karma_consequence;
+DROP TABLE IF EXISTS karma_condition;
+DROP TABLE IF EXISTS collection_view;
+DROP TABLE IF EXISTS configuration;
+DROP TABLE IF EXISTS collection;
+DROP TABLE IF EXISTS view;
+DROP TABLE IF EXISTS record;

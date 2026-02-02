@@ -1,2 +1,2 @@
-pub mod management;
+pub mod connection;
 pub mod repositories;

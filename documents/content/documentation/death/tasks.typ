@@ -186,7 +186,7 @@
   Website?? (Blogpost)
 ]
 
-#task("Migration with Fallback", contributors: ("@xaviduds",))[
+#task("Migration with Fallback", contributors: ("@xaviduds (doing)",))[
   There should be a way with an update to ask the user if they want to apply a migration, the system needs to work with a certain db schema and those
   breaking changes should be able to be applied with:
   - A migration by the user's choice

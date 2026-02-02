@@ -4,6 +4,7 @@
 use application::karma::karma_deliver;
 use injection::cross_cutting::{InjectedServices, dependency_injection};
 use persistence::connection::connection;
+use persistence::seeder::seed;
 use std::{env, io::Error, sync::Arc, time::Duration};
 #[cfg(feature = "tui")]
 use tui::tui_app;
@@ -18,6 +19,11 @@ async fn main() -> Result<(), Error> {
         .run(&*db)
         .await
         .map_err(|e| Error::new(std::io::ErrorKind::Other, e))?;
+
+    let _ = seed(&*db)
+        .await
+        .map_err(|e| Error::new(std::io::ErrorKind::Other, e))?;
+
     let services = dependency_injection(db.clone());
     let args = env::args().collect::<Vec<String>>();
 

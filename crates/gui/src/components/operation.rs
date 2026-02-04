@@ -5,7 +5,6 @@ use crate::{
 
 use super::super::workspace::Workspace;
 use gpui::{Context, IntoElement, Render, Window, div, *};
-use utils::log;
 
 #[derive(Clone)]
 pub struct Operation {

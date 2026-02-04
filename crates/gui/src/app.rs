@@ -20,6 +20,7 @@ pub async fn gpui_app(services: InjectedServices, state: State) {
 
         let window_options = get_window_options(cx);
         gpui_component::init(cx);
+        Theme::change(ThemeMode::Dark, None, cx);
 
         cx.bind_keys([
             KeyBinding::new("enter", Enter, None),

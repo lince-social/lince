@@ -19,6 +19,8 @@ pub struct GenericTableDelegate {
     data: Table,
     headers: Vec<String>,
     columns: Vec<Column>,
+    // track column widths locally so resize events are preserved
+    col_widths: Vec<f32>,
 }
 
 impl GenericTableDelegate {
@@ -32,13 +34,22 @@ impl GenericTableDelegate {
 
         let columns = headers
             .iter()
-            .map(|h| Column::new(h.clone(), h.clone()).sortable().movable(true))
-            .collect();
+            .map(|h| {
+                Column::new(h.clone(), h.clone())
+                    .sortable()
+                    .movable(true)
+                    .resizable(true)
+            })
+            .collect::<Vec<_>>();
+
+        // default column width when none has been set yet
+        let col_widths = vec![150.0; headers.len()];
 
         Self {
             data,
             headers,
             columns,
+            col_widths,
         }
     }
 }
@@ -89,6 +100,35 @@ impl TableDelegate for GenericTableDelegate {
                 self.data.sort_by(|a, b| b.get(&key).cmp(&a.get(&key)));
             }
             ColumnSort::Default => {}
+        }
+    }
+
+    // called when the table reports a column has been moved via drag & drop
+    // Implemented as `move_column` to match the `TableDelegate` trait.
+    fn move_column(
+        &mut self,
+        col_ix: usize,
+        to_ix: usize,
+        _: &mut Window,
+        _: &mut Context<TableState<Self>>,
+    ) {
+        let len = self.headers.len();
+        if col_ix >= len || to_ix >= len || col_ix == to_ix {
+            return;
+        }
+
+        // move header label
+        let header = self.headers.remove(col_ix);
+        self.headers.insert(to_ix, header);
+
+        // move column metadata
+        let column = self.columns.remove(col_ix);
+        self.columns.insert(to_ix, column);
+
+        // keep width vector in sync
+        if !self.col_widths.is_empty() {
+            let w = self.col_widths.remove(col_ix);
+            self.col_widths.insert(to_ix, w);
         }
     }
 }

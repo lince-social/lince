@@ -7,6 +7,17 @@
 #import "@preview/cheq:0.3.0": checklist
 #show: checklist
 
+// Dark mode configuration via input variable (default: false for light mode)
+#let dark-mode = sys.inputs.at("dark", default: "false") == "true"
+
+#let bg-color = if dark-mode { rgb("#000000") } else { white }
+#let text-color = if dark-mode { rgb("#eaeaea") } else { black }
+#let link-color = if dark-mode { rgb("#6ea8fe") } else { rgb("#0000EE") }
+#let logo-path = if dark-mode { "../../media/logo/branco.png" } else {
+  "../../media/logo/preto.png"
+}
+
+#set page(fill: bg-color)
 #set document(title: [Instinto], author: "Eduardo de Melo Xavier")
 #set text(
   lang: "en",
@@ -14,16 +25,17 @@
   // font: "New Computer Modern Math",
   weight: "regular",
   size: 12pt,
+  fill: text-color,
 )
 #place(
   center + horizon,
 )[
-  #figure(image("../../media/logo/preto.png", width: 40%))
+  #figure(image(logo-path, width: 40%))
   #title(align(center, text(65pt, "Instinto")))
   #title(align(center, text(20pt, "Lince Documentation")))
 ]
 
-#show link: it => underline(text(fill: rgb("#0000EE"), it))
+#show link: it => underline(text(fill: link-color, it))
 #pagebreak()
 Lince Version: 0.6.1 \ \
 Typst Version: #dictionary(sys).at("version") \ \

@@ -11,7 +11,7 @@
 
 Tool for registry, interconnection and automation of Needs and Contributions with open scope.
 
-Detailed explanations of what Lince is, how to run it and use it's ecosystem can be found in the [documentation](https://raw.githubusercontent.com/lince-social/lince/main/documents/content/documentation/main.pdf).
+Detailed explanations of what Lince is, how to run it and use it's ecosystem can be found in the [Dark Mode Documentation](https://raw.githubusercontent.com/lince-social/lince/main/documents/content/documentation/main-dark.pdf)/[Light Mode Documentation](https://raw.githubusercontent.com/lince-social/lince/main/documents/content/documentation/main-light.pdf).
 
 To install, you can download the crate and run it with Karma and a GUI:
 

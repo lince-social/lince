@@ -12,28 +12,38 @@ pub struct Operation {
     pub input_text: String,
     pub workspace: WeakEntity<Workspace>,
     pub placeholder: SharedString,
+    pub focus_handle: FocusHandle,
+}
+
+impl Focusable for Operation {
+    fn focus_handle(&self, _: &App) -> FocusHandle {
+        self.focus_handle.clone()
+    }
 }
 
 impl Operation {
-    pub fn new(workspace: WeakEntity<Workspace>) -> Self {
+    pub fn new(workspace: WeakEntity<Workspace>, focus_handle: FocusHandle) -> Self {
         Self {
             hovered: false,
             input_text: "".to_string(),
             workspace,
             placeholder: SharedString::from(&"Type your operation...".to_string()),
+            focus_handle,
         }
     }
 }
 
 impl Render for Operation {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let weak = self.workspace.clone();
+        cx.focus_self(window);
 
         div()
             .id("operation")
             .bg(base())
             .p_2()
             .rounded_xs()
+            .track_focus(&self.focus_handle(cx))
             .flex()
             .gap_1()
             .flex_col()

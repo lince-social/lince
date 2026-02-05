@@ -12,7 +12,7 @@ use injection::cross_cutting::InjectedServices;
 use utils::log;
 
 pub struct Workspace {
-    pub focus_handle: FocusHandle,
+    // pub focus_handle: FocusHandle,
     pub state: State,
     pub services: InjectedServices,
     pub collection_list: Entity<CollectionList>,
@@ -30,16 +30,18 @@ impl Workspace {
         let weak = cx.weak_entity();
         let collection_list =
             cx.new(|_| CollectionList::new(state.collections.clone(), weak.clone()));
-        let operation = cx.new(|_| Operation::new(weak.clone()));
+        let focus_handle = cx.focus_handle();
+        let operation = cx.new(|_| Operation::new(weak.clone(), focus_handle.clone()));
 
-        Self {
-            focus_handle: cx.focus_handle(),
+        let workspace = Self {
             state,
             services,
             collection_list,
             table_entities,
             operation,
-        }
+        };
+
+        workspace
     }
 
     pub fn view(
@@ -160,12 +162,6 @@ impl Workspace {
     }
 }
 
-impl Focusable for Workspace {
-    fn focus_handle(&self, _: &App) -> FocusHandle {
-        self.focus_handle.clone()
-    }
-}
-
 impl Render for Workspace {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         self.table_entities = self
@@ -194,7 +190,6 @@ impl Render for Workspace {
             .text_color(rgb(0xffffff))
             .size_full()
             .p_3()
-            .track_focus(&self.focus_handle(cx))
             .child(self.operation.clone())
             .child(self.collection_list.clone())
             .children(

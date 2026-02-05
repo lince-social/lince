@@ -53,10 +53,9 @@
   ],
   // End of table-view-collection features
 
-  // Start of bureaucracy
   task-data(
     "Lince Institute",
-    contributors: (("N1", "wip"),),
+    contributors: (("@xaviduds", "wip"),),
     type: "Bureaucracy",
   )[
     - [ ] Consolidate the 'Ata de Fundação' and 'Estatuto Social'
@@ -85,9 +84,6 @@
     *Procuração*
     Document to be updated and adapted whenever a new legal/financial task needs to be complete, and it's not done by the Executive Director.
   ],
-  // End of bureaucracy
-
-  // Start of design
   task-data(
     "Find Social Media Manager",
     contributors: (("N1", "todo"),),
@@ -114,9 +110,6 @@
     - [ ] Stickers: get tip from Nika
     - [ ] 3D Keychain Items: \@tecnopuc_crialab
   ],
-  // End of design
-
-  // Start of Karma
   task-data(
     "Karma Refactor",
     contributors: (("N1", "todo"),),
@@ -208,8 +201,6 @@
     TigerBeetle is the GOATED db for this, perhaps Lince can learn from it, fork it, or use it with a different schema for Transaction of Records.
     https://www.youtube.com/watch?v=JoYjji1DZCE
   ],
-  // End of Karma
-
   task-data(
     "Canvas",
     contributors: (("N1", "todo"),),
@@ -217,6 +208,14 @@
   )[
     Make an expansive 2d canvas, views dragging to adjust the position.
     When im in any collection, i can drag and drop my views, resize them, and their positions and
+  ],
+  task-data(
+    "Input Field",
+    contributors: (("xaviduds", "wip"),),
+    type: "Frontend",
+  )[
+    - Visual feedback when input focused.
+    - Make auto-focused at startup.
   ],
 )
 

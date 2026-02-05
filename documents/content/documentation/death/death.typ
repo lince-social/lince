@@ -60,10 +60,4 @@ that can turn into a dance of the world is to the writer something useful and ex
 
 A team is being assembled, to fight the battle of killing Lince. Will you join the cult?
 
-== Why Lince?
-Here is a list how Lince might help the needs of different people to emotionally manipulate you into helping build it, feel free to add yours for
-the piramid scheme:
-
--- *Eduardo de Melo Xavier*: I want Lince to be productive and help others with basic needs. After that I want to register resources to meditate.
-
 #tasks

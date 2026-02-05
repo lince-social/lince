@@ -96,7 +96,6 @@ tinymist preview \
 --control-plane-host 127.0.0.1:3002 \
 --data-plane-host 127.0.0.1:3001 \
 --static-file-host 127.0.0.1:3003 \
---font-path {{env.FONT_PATH}} \
 --input shadows=$PREVIEW_SHADOWS \
 --input dark=$PREVIEW_DARK \
 {{env.DOCS_ROOT}}/content/documentation/main.typ

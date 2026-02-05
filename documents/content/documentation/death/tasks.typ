@@ -43,16 +43,35 @@
     contributors: (("@chicogborba", "wip"),),
     type: "Frontend",
   )[
+    I think this is the best way, sending the column size information to the db... but it's kinda weird?
     Table needs to have these properties:
-    - Column Resize (saving information on individual columns' size)
-    - Word wrapping or not (option to word wrap in configuration)
-    - Editable: edit in place, in the cell, not changing the ui much, just turning the cell into an editable field.
-    While also being able to edit a cell occupying a resizeable portion of the screen, so you can maximize/fullscreen a cell to edit it like a text editor.
+    - [ ] Custom column width. If a table has too many columns we need to decide if we:
+    (A) reduce that columns' size to fit the screen (hard)
+    (B) make the central area with the tables be like a 2d canvas with vertical/horizontal scrollable space (maybe even zoom).
+    If that's the case a (return to content is cool but for now ok not having).
+    - [/] Column Resize: saves information on individual columns' size.
+    For each collection, every view that is a table should be able to have each column with a custom width.
+    - [ ] Have word-wrapping by default, in the cells, being able to toggle it in Configuration.
+    - [ ] Any changes made to the db have all fit inside one or more migrations.
+  ],
+  task-data(
+    "Editable cell",
+    contributors: (("@xaviduds", "wip"),),
+    type: "Frontend",
+  )[
+    Each cell when hovered should:
+    - [ ] Have an icon to edit it in a resizeable text buffer.
+    - [ ] Be editable in place if clicked, maintainting the same size,
+    but with a big text field, instead of just a text cell.
+  ],
+  task-data(
+    "Table Extra Ergonomics",
+    contributors: (("N1", "todo"),),
+    type: "Frontend",
+  )[
     - Delete row (with confirmation, by default, with option in configuration to not ask)
     - Sorteable (On runtime, updates should respect this sort, even though data comes with another sort or unsorted
   ],
-  // End of table-view-collection features
-
   task-data(
     "Lince Institute",
     contributors: (("@xaviduds", "wip"),),
@@ -208,14 +227,6 @@
   )[
     Make an expansive 2d canvas, views dragging to adjust the position.
     When im in any collection, i can drag and drop my views, resize them, and their positions and
-  ],
-  task-data(
-    "Input Field",
-    contributors: (("xaviduds", "wip"),),
-    type: "Frontend",
-  )[
-    - Visual feedback when input focused.
-    - Make auto-focused at startup.
   ],
 )
 

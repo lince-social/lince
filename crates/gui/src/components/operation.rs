@@ -13,6 +13,7 @@ pub struct Operation {
     pub workspace: WeakEntity<Workspace>,
     pub placeholder: SharedString,
     pub focus_handle: FocusHandle,
+    pub has_focused: bool,
 }
 
 impl Focusable for Operation {
@@ -29,6 +30,7 @@ impl Operation {
             workspace,
             placeholder: SharedString::from(&"Type your operation...".to_string()),
             focus_handle,
+            has_focused: false,
         }
     }
 }
@@ -36,7 +38,10 @@ impl Operation {
 impl Render for Operation {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let weak = self.workspace.clone();
-        cx.focus_self(window);
+        if !self.has_focused {
+            cx.focus_self(window);
+            self.has_focused = true;
+        }
 
         div()
             .id("operation")

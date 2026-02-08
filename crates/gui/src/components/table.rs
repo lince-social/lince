@@ -110,22 +110,19 @@ impl GenericTableDelegate {
     }
 
     fn start_edit(&mut self, row_ix: usize, col_ix: usize, window: &mut Window, cx: &mut Context<TableState<Self>>) {
-        eprintln!("DEBUG: start_edit called for row={}, col={}", row_ix, col_ix);
         let key = &self.headers[col_ix];
         let value = self.data[row_ix]
             .get(key)
             .map(String::as_str)
             .unwrap_or("");
 
-        eprintln!("DEBUG: Setting editing_cell, value={:?}", value);
         self.editing_cell = Some(CellPosition { row_ix, col_ix });
         self.edit_value = Rope::from_str(value);
         
-        // Try to focus the modal that will be rendered
+        // Focus the modal so keyboard input goes there instead of Operation bar
         window.focus(&self.focus_handle);
         
         cx.notify();
-        eprintln!("DEBUG: start_edit completed, editing_cell={:?}", self.editing_cell);
     }
 
     fn finish_edit(&mut self, cx: &mut Context<TableState<Self>>) {
@@ -170,9 +167,6 @@ impl TableDelegate for GenericTableDelegate {
 
         let current_pos = CellPosition { row_ix, col_ix };
         let is_editing = self.editing_cell.as_ref() == Some(&current_pos);
-
-        eprintln!("DEBUG: render_td row={} col={} is_editing={} editing_cell={:?}", 
-                  row_ix, col_ix, is_editing, self.editing_cell);
 
         if is_editing {
             // Show modal editor
@@ -312,7 +306,6 @@ impl TableDelegate for GenericTableDelegate {
                 .cursor_pointer()
                 .hover(|style| style.bg(rgba(0xffffff11)))
                 .on_mouse_down(MouseButton::Left, cx.listener(move |this, _event, window, cx| {
-                    eprintln!("DEBUG: Cell clicked - row={}, col={}", row_ix, col_ix);
                     this.delegate_mut().start_edit(row_ix, col_ix, window, cx);
                 }))
                 .child(value.to_string())

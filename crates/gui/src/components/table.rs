@@ -16,7 +16,7 @@ use std::collections::HashMap;
 
 use crate::{
     app::{Backspace, Enter},
-    themes::catppuccin_mocha::{base, blue, overlay0, sapphire, surface1, text},
+    themes::catppuccin_mocha::{base, blue, overlay0, sapphire, surface1},
 };
 
 pub type Row = HashMap<String, String>;
@@ -156,7 +156,7 @@ impl TableDelegate for GenericTableDelegate {
         &mut self,
         row_ix: usize,
         col_ix: usize,
-        window: &mut Window,
+        _window: &mut Window,
         cx: &mut Context<TableState<Self>>,
     ) -> impl IntoElement {
         let key = &self.headers[col_ix];
@@ -265,7 +265,7 @@ impl TableDelegate for GenericTableDelegate {
                 }));
 
             div()
-                .id(format!("cell_editor_{}_{}", row_ix, col_ix))  // Give unique ID for focus management
+                .id(("cell_editor", row_ix * 1000 + col_ix))  // Give unique ID for focus management
                 .relative()
                 .p_1p5()
                 .w_full()
@@ -299,12 +299,15 @@ impl TableDelegate for GenericTableDelegate {
         } else {
             // View mode - cell is clickable
             div()
+                .id(("cell_view", row_ix * 1000 + col_ix))  // Give unique ID
                 .relative()
                 .p_1p5()
                 .w_full()
                 .h_full()
                 .cursor_pointer()
                 .hover(|style| style.bg(rgba(0xffffff11)))
+                .focusable()  // Make focusable to match the editing branch type
+                .track_focus(&self.focus_handle(cx))  // Track focus to match the editing branch type
                 .on_mouse_down(MouseButton::Left, cx.listener(move |this, _event, window, cx| {
                     this.delegate_mut().start_edit(row_ix, col_ix, window, cx);
                 }))

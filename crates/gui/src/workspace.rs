@@ -38,7 +38,7 @@ impl Workspace {
         let focus_handle = cx.focus_handle();
         let operation = cx.new(|_| Operation::new(weak.clone(), focus_handle.clone()));
 
-        let workspace = Self {
+        let mut workspace = Self {
             state,
             services,
             collection_list,
@@ -46,6 +46,15 @@ impl Workspace {
             pinned_table_entities: vec![],
             operation,
         };
+
+        // If state has tables/pinned tables, we need to create entities for them
+        // We'll do this in a deferred call after construction
+        let has_data = !workspace.state.tables.is_empty() || !workspace.state.pinned_tables.is_empty();
+        if has_data {
+            cx.defer(move |owner, window, cx| {
+                owner.recreate_table_entities(window, cx);
+            });
+        }
 
         workspace
     }

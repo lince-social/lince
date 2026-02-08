@@ -17,7 +17,7 @@
     type: "Frontend",
   )[
     Each cell when hovered should:
-    - [ ] Have an icon to edit it in a resizeable text buffer.
+    - [ ] Have an icon to edit it in a resizeable text buffer. Becoming a big modal that covers almost the entire screen when it opens.
     - [ ] Be editable in place if clicked, maintainting the same size,
     but with a big text field, instead of just a text cell.
   ],
@@ -212,7 +212,10 @@
     contributors: (("N1", "todo"),),
     type: "Frontend",
   )[
-    I can pin a View of Collection A when I am in collection B, making it appear on the screen with higher Z index and stuck to a place
+    I can pin a View. Saving that information in the Configuration (maybe an intermediate table).
+
+    Pinned Views appear on the screen independently of the active Collection,
+    making it appear on the screen with higher Z index and stuck to a place.
   ],
 )
 

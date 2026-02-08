@@ -176,8 +176,8 @@ impl Render for Workspace {
                         .col_resizable(true)
                         .col_movable(true)
                         .sortable(true)
-                        .col_selectable(true)
-                        .row_selectable(true)
+                        .col_selectable(false)  // Disable to allow cell editing
+                        .row_selectable(false)  // Disable to allow cell editing
                 });
                 (name, table_state)
             })

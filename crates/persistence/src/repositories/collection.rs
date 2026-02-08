@@ -31,6 +31,13 @@ pub trait CollectionRepository: Send + Sync {
     async fn toggle_by_collection_id(&self, id: u32) -> Result<(), Error>;
     async fn execute_queries(&self, queries: Vec<String>) -> Result<Vec<(String, Table)>, Error>;
     async fn get_active_view_data(&self) -> Result<(Vec<(String, Table)>, Vec<String>), Error>;
+    
+    // New methods for pinned views
+    async fn get_pinned_views(&self) -> Result<Vec<QueriedView>, Error>;
+    async fn get_pinned_view_data(&self) -> Result<Vec<(String, Table)>, Error>;
+    async fn pin_view(&self, view_id: u32, position_x: f64, position_y: f64) -> Result<(), Error>;
+    async fn unpin_view(&self, view_id: u32) -> Result<(), Error>;
+    async fn update_view_position(&self, view_id: u32, position_x: f64, position_y: f64) -> Result<(), Error>;
 }
 
 pub struct CollectionRepositoryImpl {
@@ -50,6 +57,10 @@ pub struct QueriedViewWithCollectionId {
     pub quantity: i32,
     pub name: String,
     pub query: String,
+    pub pinned: i32,
+    pub position_x: Option<f64>,
+    pub position_y: Option<f64>,
+    pub z_index: i32,
 }
 
 #[async_trait]
@@ -86,7 +97,7 @@ impl CollectionRepository for CollectionRepositoryImpl {
 
         let views: Vec<QueriedView> = sqlx::query_as(
             "
-            SELECT v.id, cv.quantity, v.name, v.query
+            SELECT v.id, cv.quantity, v.name, v.query, v.pinned, v.position_x, v.position_y, v.z_index
             FROM view v
             JOIN collection_view cv ON v.id = cv.view_id
             JOIN collection c ON c.id = cv.collection_id
@@ -109,7 +120,7 @@ impl CollectionRepository for CollectionRepositoryImpl {
         .unwrap();
 
         let views: Vec<QueriedViewWithCollectionId> = sqlx::query_as(
-            "SELECT cv.collection_id, v.id, v.name, v.query, cv.quantity
+            "SELECT cv.collection_id, v.id, v.name, v.query, cv.quantity, v.pinned, v.position_x, v.position_y, v.z_index
             FROM collection_view cv
             JOIN view v ON v.id = cv.view_id
             WHERE cv.collection_id IN (SELECT id FROM collection WHERE quantity <> 1)
@@ -130,6 +141,10 @@ impl CollectionRepository for CollectionRepositoryImpl {
                     quantity: v.quantity,
                     name: v.name,
                     query: v.query,
+                    pinned: v.pinned,
+                    position_x: v.position_x,
+                    position_y: v.position_y,
+                    z_index: v.z_index,
                 });
             }
         }
@@ -273,5 +288,82 @@ impl CollectionRepository for CollectionRepositoryImpl {
             )
         })?;
         Ok((res, special_queries))
+    }
+
+    async fn get_pinned_views(&self) -> Result<Vec<QueriedView>, Error> {
+        let views: Vec<QueriedView> = sqlx::query_as(
+            "
+            SELECT v.id, 1 as quantity, v.name, v.query, v.pinned, v.position_x, v.position_y, v.z_index
+            FROM view v
+            WHERE v.pinned = 1
+            ORDER BY v.z_index DESC
+            ",
+        )
+        .fetch_all(&*self.pool)
+        .await
+        .map_err(Error::other)?;
+        
+        Ok(views)
+    }
+
+    async fn get_pinned_view_data(&self) -> Result<Vec<(String, Table)>, Error> {
+        let queries: Vec<String> = sqlx::query_scalar(
+            "SELECT v.query FROM view v WHERE v.pinned = 1"
+        )
+        .fetch_all(&*self.pool)
+        .await
+        .map_err(Error::other)?;
+
+        self.execute_queries(queries).await
+    }
+
+    async fn pin_view(&self, view_id: u32, position_x: f64, position_y: f64) -> Result<(), Error> {
+        // Get max z_index and increment it
+        let max_z_index: Option<i32> = sqlx::query_scalar("SELECT MAX(z_index) FROM view WHERE pinned = 1")
+            .fetch_optional(&*self.pool)
+            .await
+            .map_err(Error::other)?
+            .flatten();
+        
+        let new_z_index = max_z_index.unwrap_or(0) + 1;
+        
+        sqlx::query(
+            "UPDATE view SET pinned = 1, position_x = ?, position_y = ?, z_index = ? WHERE id = ?"
+        )
+        .bind(position_x)
+        .bind(position_y)
+        .bind(new_z_index)
+        .bind(view_id)
+        .execute(&*self.pool)
+        .await
+        .map_err(Error::other)?;
+        
+        Ok(())
+    }
+
+    async fn unpin_view(&self, view_id: u32) -> Result<(), Error> {
+        sqlx::query(
+            "UPDATE view SET pinned = 0, position_x = NULL, position_y = NULL, z_index = 0 WHERE id = ?"
+        )
+        .bind(view_id)
+        .execute(&*self.pool)
+        .await
+        .map_err(Error::other)?;
+        
+        Ok(())
+    }
+
+    async fn update_view_position(&self, view_id: u32, position_x: f64, position_y: f64) -> Result<(), Error> {
+        sqlx::query(
+            "UPDATE view SET position_x = ?, position_y = ? WHERE id = ?"
+        )
+        .bind(position_x)
+        .bind(position_y)
+        .bind(view_id)
+        .execute(&*self.pool)
+        .await
+        .map_err(Error::other)?;
+        
+        Ok(())
     }
 }

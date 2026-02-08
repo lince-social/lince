@@ -17,6 +17,7 @@ pub struct Workspace {
     pub services: InjectedServices,
     pub collection_list: Entity<CollectionList>,
     pub table_entities: Vec<(String, Entity<TableState<GenericTableDelegate>>)>,
+    pub pinned_table_entities: Vec<(u32, String, Entity<TableState<GenericTableDelegate>>)>,
     pub operation: Entity<Operation>,
 }
 
@@ -38,6 +39,7 @@ impl Workspace {
             services,
             collection_list,
             table_entities,
+            pinned_table_entities: vec![],
             operation,
         };
 
@@ -80,9 +82,27 @@ impl Workspace {
                 }
             };
 
+            let pinned_views = match services.repository.collection.get_pinned_views().await {
+                Ok(views) => views,
+                Err(e) => {
+                    log!(e, "failed to fetch pinned views");
+                    vec![]
+                }
+            };
+
+            let pinned_tables = match services.repository.collection.get_pinned_view_data().await {
+                Ok(tables) => tables,
+                Err(e) => {
+                    log!(e, "failed to fetch pinned table data");
+                    vec![]
+                }
+            };
+
             this.update(cx, move |owner, cx| {
                 owner.state.collections = rows.clone();
                 owner.state.tables = tables.clone();
+                owner.state.pinned_views = pinned_views;
+                owner.state.pinned_tables = pinned_tables;
 
                 owner.collection_list.update(cx, move |bar, _| {
                     bar.collections = rows.clone();
@@ -112,9 +132,18 @@ impl Workspace {
                         }
                     };
 
+                    let pinned_tables = match services.repository.collection.get_pinned_view_data().await {
+                        Ok(tables) => tables,
+                        Err(e) => {
+                            log!(e, "failed to fetch pinned table data");
+                            vec![]
+                        }
+                    };
+
                     this.update(cx, move |owner, cx| {
                         owner.state.collections = collections.clone();
                         owner.state.tables = tables.clone();
+                        owner.state.pinned_tables = pinned_tables;
 
                         owner.collection_list.update(cx, |bar, _| {
                             bar.collections = collections;
@@ -147,8 +176,17 @@ impl Workspace {
                         }
                     };
 
+                    let pinned_tables = match services.repository.collection.get_pinned_view_data().await {
+                        Ok(tables) => tables,
+                        Err(e) => {
+                            log!(e, "failed to fetch pinned table data");
+                            vec![]
+                        }
+                    };
+
                     this.update(cx, move |owner, cx| {
                         owner.state.tables = tables.clone();
+                        owner.state.pinned_tables = pinned_tables;
                         cx.notify();
                     })
                     .unwrap();
@@ -156,6 +194,94 @@ impl Workspace {
                 Err(e) => {
                     log!(e, "Failed to get collections");
                 }
+            }
+        })
+        .detach();
+    }
+
+    pub fn pin_view(&mut self, view_id: u32, position_x: f64, position_y: f64, cx: &mut Context<Self>) {
+        let services = self.services.clone();
+        cx.spawn(async move |this, cx| {
+            if let Err(e) = services
+                .repository
+                .collection
+                .pin_view(view_id, position_x, position_y)
+                .await
+            {
+                log!(e, "failed to pin view");
+                return;
+            }
+
+            let pinned_views = match services.repository.collection.get_pinned_views().await {
+                Ok(views) => views,
+                Err(e) => {
+                    log!(e, "failed to fetch pinned views");
+                    vec![]
+                }
+            };
+
+            let pinned_tables = match services.repository.collection.get_pinned_view_data().await {
+                Ok(tables) => tables,
+                Err(e) => {
+                    log!(e, "failed to fetch pinned table data");
+                    vec![]
+                }
+            };
+
+            this.update(cx, move |owner, cx| {
+                owner.state.pinned_views = pinned_views;
+                owner.state.pinned_tables = pinned_tables;
+                cx.notify();
+            })
+            .unwrap();
+        })
+        .detach();
+    }
+
+    pub fn unpin_view(&mut self, view_id: u32, cx: &mut Context<Self>) {
+        let services = self.services.clone();
+        cx.spawn(async move |this, cx| {
+            if let Err(e) = services.repository.collection.unpin_view(view_id).await {
+                log!(e, "failed to unpin view");
+                return;
+            }
+
+            let pinned_views = match services.repository.collection.get_pinned_views().await {
+                Ok(views) => views,
+                Err(e) => {
+                    log!(e, "failed to fetch pinned views");
+                    vec![]
+                }
+            };
+
+            let pinned_tables = match services.repository.collection.get_pinned_view_data().await {
+                Ok(tables) => tables,
+                Err(e) => {
+                    log!(e, "failed to fetch pinned table data");
+                    vec![]
+                }
+            };
+
+            this.update(cx, move |owner, cx| {
+                owner.state.pinned_views = pinned_views;
+                owner.state.pinned_tables = pinned_tables;
+                cx.notify();
+            })
+            .unwrap();
+        })
+        .detach();
+    }
+
+    pub fn update_view_position(&mut self, view_id: u32, position_x: f64, position_y: f64, cx: &mut Context<Self>) {
+        let services = self.services.clone();
+        cx.spawn(async move |_this, _cx| {
+            if let Err(e) = services
+                .repository
+                .collection
+                .update_view_position(view_id, position_x, position_y)
+                .await
+            {
+                log!(e, "failed to update view position");
             }
         })
         .detach();
@@ -182,6 +308,25 @@ impl Render for Workspace {
             })
             .collect();
 
+        // Create table entities for pinned views
+        self.pinned_table_entities = self
+            .state
+            .pinned_views
+            .iter()
+            .zip(self.state.pinned_tables.iter())
+            .map(|(view, (table_name, table))| {
+                let table_state = cx.new(|cx| {
+                    TableState::new(GenericTableDelegate::new(table.clone()), window, cx)
+                        .col_resizable(true)
+                        .col_movable(true)
+                        .sortable(true)
+                        .col_selectable(true)
+                        .row_selectable(true)
+                });
+                (view.id, table_name.clone(), table_state)
+            })
+            .collect();
+
         div()
             .flex()
             .flex_col()
@@ -196,6 +341,29 @@ impl Render for Workspace {
                 self.table_entities
                     .iter()
                     .map(|(_name, entity)| entity.clone()),
+            )
+            // Add pinned views with higher z-index
+            .children(
+                self.pinned_table_entities
+                    .iter()
+                    .map(|(view_id, name, entity)| {
+                        // Find the view to get position
+                        let view = self.state.pinned_views.iter().find(|v| v.id == *view_id);
+                        let position_x = view.and_then(|v| v.position_x).unwrap_or(100.0);
+                        let position_y = view.and_then(|v| v.position_y).unwrap_or(100.0);
+                        
+                        div()
+                            .absolute()
+                            .left(px(position_x as f32))
+                            .top(px(position_y as f32))
+                            .bg(mantle())
+                            .border_1()
+                            .border_color(rgb(0x45475a))
+                            .rounded_md()
+                            .p_2()
+                            .child(div().text_sm().mb_2().child(name.clone()))
+                            .child(entity.clone())
+                    }),
             )
     }
 }

@@ -300,7 +300,7 @@ impl TableDelegate for GenericTableDelegate {
                 .cursor_pointer()
                 .hover(|style| style.bg(rgba(0xffffff11)))
                 .on_mouse_down(MouseButton::Left, cx.listener(move |this, _event, _window, cx| {
-                    this.delegate_mut().start_edit(row_ix, col_ix, _window, cx);
+                    this.delegate_mut().start_edit(row_ix, col_ix, cx);
                 }))
                 .child(value.to_string())
         }

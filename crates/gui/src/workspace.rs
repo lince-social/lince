@@ -352,18 +352,71 @@ impl Render for Workspace {
                         let view = self.state.pinned_views.iter().find(|v| v.id == *view_id);
                         let position_x = view.and_then(|v| v.position_x).unwrap_or(100.0);
                         let position_y = view.and_then(|v| v.position_y).unwrap_or(100.0);
+                        let view_id_for_close = *view_id;
+                        let weak = cx.weak_entity();
                         
                         div()
                             .absolute()
                             .left(px(position_x as f32))
                             .top(px(position_y as f32))
                             .bg(mantle())
-                            .border_1()
-                            .border_color(rgb(0x45475a))
-                            .rounded_md()
-                            .p_2()
-                            .child(div().text_sm().mb_2().child(name.clone()))
-                            .child(entity.clone())
+                            .border_2()
+                            .border_color(rgb(0xf9e2af)) // Yellow border for pinned views
+                            .rounded_lg()
+                            .shadow_lg()
+                            .min_w(px(300.0))
+                            .max_w(px(600.0))
+                            .min_h(px(200.0))
+                            .max_h(px(400.0))
+                            .overflow_hidden()
+                            .flex()
+                            .flex_col()
+                            // Title bar
+                            .child(
+                                div()
+                                    .flex()
+                                    .flex_row()
+                                    .items_center()
+                                    .justify_between()
+                                    .bg(rgb(0xf9e2af))
+                                    .text_color(rgb(0x1e1e2e))
+                                    .p_2()
+                                    .child(
+                                        div()
+                                            .flex()
+                                            .flex_row()
+                                            .gap_2()
+                                            .items_center()
+                                            .child("📌")
+                                            .child(div().text_sm().font_weight(FontWeight::BOLD).child(name.clone()))
+                                    )
+                                    .child(
+                                        div()
+                                            .px_2()
+                                            .py_1()
+                                            .rounded_sm()
+                                            .bg(rgb(0xf38ba8))
+                                            .hover(|s| s.bg(rgb(0xeba0ac)))
+                                            .text_xs()
+                                            .font_weight(FontWeight::BOLD)
+                                            .child("✕")
+                                            .on_mouse_up(MouseButton::Left, move |_evt, _win, cx| {
+                                                if let Some(ws) = weak.upgrade() {
+                                                    ws.update(cx, |ws, cx| {
+                                                        ws.unpin_view(view_id_for_close, cx);
+                                                    });
+                                                }
+                                            })
+                                    )
+                            )
+                            // Table content
+                            .child(
+                                div()
+                                    .p_2()
+                                    .overflow_hidden()
+                                    .flex_1()
+                                    .child(entity.clone())
+                            )
                     }),
             )
     }

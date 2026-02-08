@@ -304,21 +304,28 @@ impl TableDelegate for GenericTableDelegate {
                 }))
         } else {
             // View mode - cell is clickable
+            // We need to capture the click before the table component does
             div()
-                .id(("cell_view", row_ix * 1000 + col_ix))  // Give unique ID
+                .id(("cell_view", row_ix * 1000 + col_ix))
                 .relative()
-                .p_1p5()
                 .w_full()
                 .h_full()
-                .cursor_pointer()
-                .hover(|style| style.bg(rgba(0xffffff11)))
-                .child(value.to_string())
+                .child(
+                    // Inner clickable div that captures events
+                    div()
+                        .p_1p5()
+                        .w_full()
+                        .h_full()
+                        .cursor_pointer()
+                        .hover(|style| style.bg(rgba(0xffffff11)))
+                        .on_click(cx.listener(move |this, _event, window, cx| {
+                            eprintln!("DEBUG: Cell clicked (on_click) - row={}, col={}", row_ix, col_ix);
+                            this.delegate_mut().start_edit(row_ix, col_ix, window, cx);
+                        }))
+                        .child(value.to_string())
+                )
                 .focusable()  // Make focusable to match the editing branch type
                 .track_focus(&self.focus_handle(cx))  // Track focus to match the editing branch type
-                .on_click(cx.listener(move |this, _event, window, cx| {
-                    eprintln!("DEBUG: Cell clicked (on_click) - row={}, col={}", row_ix, col_ix);
-                    this.delegate_mut().start_edit(row_ix, col_ix, window, cx);
-                }))
         }
     }
 

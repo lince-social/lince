@@ -16,7 +16,7 @@ use std::collections::HashMap;
 
 use crate::{
     app::{Backspace, Enter},
-    themes::catppuccin_mocha::{base, blue, overlay0, surface1, text},
+    themes::catppuccin_mocha::{base, blue, overlay0, sapphire, surface1, text},
 };
 
 pub type Row = HashMap<String, String>;
@@ -109,7 +109,7 @@ impl GenericTableDelegate {
         .detach();
     }
 
-    fn start_edit(&mut self, row_ix: usize, col_ix: usize, _window: &mut Window, cx: &mut Context<TableState<Self>>) {
+    fn start_edit(&mut self, row_ix: usize, col_ix: usize, cx: &mut Context<TableState<Self>>) {
         let key = &self.headers[col_ix];
         let value = self.data[row_ix]
             .get(key)
@@ -244,7 +244,7 @@ impl TableDelegate for GenericTableDelegate {
                                 .text_color(base())
                                 .rounded_xs()
                                 .cursor_pointer()
-                                .hover(|style| style.bg(rgb(0x7097fa)))
+                                .hover(|style| style.bg(sapphire()))
                                 .child("Save")
                                 .on_mouse_down(MouseButton::Left, cx.listener(|this, _event, _window, cx| {
                                     this.delegate_mut().finish_edit(cx);

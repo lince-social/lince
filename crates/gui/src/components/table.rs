@@ -318,8 +318,8 @@ impl TableDelegate for GenericTableDelegate {
                         .h_full()
                         .cursor_pointer()
                         .hover(|style| style.bg(rgba(0xffffff11)))
-                        .on_click(cx.listener(move |this, _event, window, cx| {
-                            eprintln!("DEBUG: Cell clicked (on_click) - row={}, col={}", row_ix, col_ix);
+                        .on_mouse_down(MouseButton::Left, cx.listener(move |this, _event, window, cx| {
+                            eprintln!("DEBUG: Cell clicked (on_mouse_down) - row={}, col={}", row_ix, col_ix);
                             this.delegate_mut().start_edit(row_ix, col_ix, window, cx);
                         }))
                         .child(value.to_string())

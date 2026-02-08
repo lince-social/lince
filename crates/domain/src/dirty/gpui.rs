@@ -1,4 +1,4 @@
-use crate::{clean::{table::Table, pinned_view::PinnedView}, dirty::{collection::CollectionRow, view::{QueriedView, ViewWithPinInfo}}};
+use crate::{clean::{table::Table, pinned_view::PinnedView}, dirty::{collection::CollectionRow, view::ViewWithPinInfo}};
 
 #[derive(Clone, Debug)]
 pub struct State {

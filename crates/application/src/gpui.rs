@@ -11,5 +11,7 @@ pub async fn get_gpui_startup_data(services: InjectedServices) -> Result<State, 
             .get_active_view_data()
             .await?
             .0,
+        pinned_views: services.repository.collection.get_pinned_views().await?,
+        pinned_tables: services.repository.collection.get_pinned_view_data().await?,
     })
 }

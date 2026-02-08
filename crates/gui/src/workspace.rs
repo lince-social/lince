@@ -416,10 +416,8 @@ impl Render for Workspace {
                             .border_color(yellow()) // Yellow border for pinned views
                             .rounded_lg()
                             .shadow_lg()
-                            .min_w(px(300.0))
-                            .max_w(px(600.0))
-                            .min_h(px(200.0))
-                            .max_h(px(400.0))
+                            .w(px(500.0))  // Fixed width for now
+                            .h(px(400.0))  // Fixed height for now
                             .overflow_hidden()
                             .flex()
                             .flex_col()
@@ -464,9 +462,8 @@ impl Render for Workspace {
                             // Table content
                             .child(
                                 div()
-                                    .p_2()
-                                    .overflow_hidden()
                                     .flex_1()
+                                    .overflow_y_hidden()
                                     .child(entity.clone())
                             )
                     }),

@@ -5,8 +5,6 @@
 <img width="24%" src="https://raw.githubusercontent.com/lince-social/lince/main/assets/preto_no_branco.png" alt="Lince Logo">
 </p>
 
-<img src="https://raw.githubusercontent.com/lince-social/lince/main/assets/display.gif" alt="Lince Logo">
-
 # Lince
 
 Tool for registry, interconnection and automation of Needs and Contributions with open scope.

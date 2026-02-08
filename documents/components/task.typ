@@ -95,8 +95,7 @@
     .join([, ])
 }
 
-// Create a task data structure
-#let task-data(
+#let task(
   title,
   contributors: (),
   type: "Other",
@@ -252,19 +251,19 @@
 }
 
 // Legacy task function for backwards compatibility (defaults to todo status)
-#let task(
-  title,
-  contributors: (),
-  body,
-) = {
-  // Convert old format ("name",) to new format (("name", "todo"),)
-  let new-contributors = contributors.map(c => {
-    if type(c) == array {
-      c
-    } else {
-      (c, "todo")
-    }
-  })
+// #let task(
+//   title,
+//   contributors: (),
+//   body,
+// ) = {
+//   // Convert old format ("name",) to new format (("name", "todo"),)
+//   let new-contributors = contributors.map(c => {
+//     if type(c) == array {
+//       c
+//     } else {
+//       (c, "todo")
+//     }
+//   })
 
-  render-task(task-data(title, contributors: new-contributors, body))
-}
+//   render-task(task(title, contributors: new-contributors, body))
+// }

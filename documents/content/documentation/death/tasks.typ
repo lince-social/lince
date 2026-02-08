@@ -1,5 +1,5 @@
 #import "../../../components/major.typ": major
-#import "../../../components/task.typ": task-board, task-data
+#import "../../../components/task.typ": task, task-board
 #import "@preview/cheq:0.3.0": checklist
 #show: checklist
 
@@ -11,34 +11,17 @@
 )
 
 #let tasks = (
-  // Start of table-view-collection features
-  task-data(
-    "I can have a view that is the Creation Modal of any table",
-    contributors: (("N1", "todo"),),
+  task(
+    "Editable cell",
+    contributors: (("@xaviduds", "wip"),),
     type: "Frontend",
   )[
-    One of the Views of any collection is the creation modal, now a View. So the person will see tables and next to it the component used to create a new record, so they will be able to create new records easily.
-    This is good for todo behavior, being able to pin the view of record creation means a quick todo creation
+    Each cell when hovered should:
+    - [ ] Have an icon to edit it in a resizeable text buffer.
+    - [ ] Be editable in place if clicked, maintainting the same size,
+    but with a big text field, instead of just a text cell.
   ],
-  task-data(
-    "Collection's Views CRUD",
-    contributors: (("N1", "todo"),),
-    type: "Frontend",
-  )[
-    Be able to:
-    - Update view's name, query
-    - Add views
-    - Remove Views
-    - Create Views
-  ],
-  task-data(
-    "Be able to Pin Views",
-    contributors: (("N1", "todo"),),
-    type: "Frontend",
-  )[
-    I can pin a View of Collection A when I am in collection B, making it appear on the screen with higher Z index and stuck to a place
-  ],
-  task-data(
+  task(
     "Table component",
     contributors: (("@chicogborba", "wip"),),
     type: "Frontend",
@@ -54,29 +37,12 @@
     - [ ] Have word-wrapping by default, in the cells, being able to toggle it in Configuration.
     - [ ] Any changes made to the db have all fit inside one or more migrations.
   ],
-  task-data(
-    "Editable cell",
-    contributors: (("@xaviduds", "wip"),),
-    type: "Frontend",
-  )[
-    Each cell when hovered should:
-    - [ ] Have an icon to edit it in a resizeable text buffer.
-    - [ ] Be editable in place if clicked, maintainting the same size,
-    but with a big text field, instead of just a text cell.
-  ],
-  task-data(
-    "Table Extra Ergonomics",
-    contributors: (("N1", "todo"),),
-    type: "Frontend",
-  )[
-    - Delete row (with confirmation, by default, with option in configuration to not ask)
-    - Sorteable (On runtime, updates should respect this sort, even though data comes with another sort or unsorted
-  ],
-  task-data(
+  task(
     "Lince Institute",
     contributors: (("@xaviduds", "wip"),),
     type: "Bureaucracy",
   )[
+    - [/] Hire Lawyer
     - [ ] Consolidate the 'Ata de Fundação' and 'Estatuto Social'
     - [ ] Use the 'Ata de Fundação' and 'Estatuto Social' to create the 'Associação privada' called 'Instituto Lince'
     - [ ] CNPJ (Cora (more famous) or Conta Simples)
@@ -103,33 +69,18 @@
     *Procuração*
     Document to be updated and adapted whenever a new legal/financial task needs to be complete, and it's not done by the Executive Director.
   ],
-  task-data(
-    "Find Social Media Manager",
-    contributors: (("N1", "todo"),),
-    type: "Design",
-  )[
-    Train them into using Typst to automate it, make simple content that delivers only
-    important news and concepts with mininum words, connecting it with trying out Lince.
-
-    Youtube (this_month_in_lince)
-
-    Insta (social_media_posts)
-
-    TikTok
-
-    Website?? (Blogpost)
-  ],
-  task-data(
+  task(
     "New Logo Items: First Batch",
-    contributors: (("Nika", "wip"), ("@xaviduds", "todo")),
+    contributors: (("Nika", "wip"), ("@xaviduds", "wip")),
     type: "Design",
   )[
-    - [/] New vetorized logo
-    - [ ] Hering's Super Cotton for t-shirts
-    - [ ] Stickers: get tip from Nika
-    - [ ] 3D Keychain Items: \@tecnopuc_crialab
+    - [x] New vetorized logo | nika
+      - [ ] Stickers: get tip from Nika | duds
+      - [/] Hering's Super Cotton for t-shirts | duds
+    - [/] Blender 3D logo | nika
+      - [ ] 3D Keychain Items \@tecnopuc_crialab | duds
   ],
-  task-data(
+  task(
     "Karma Refactor",
     contributors: (("N1", "todo"),),
     type: "Karma",
@@ -137,14 +88,14 @@
     Karma Conditions poderem ser referenciadas em outras conditions tipo kd2 + kd6.
     Garantir que seja possível ter cadeias infinitas de condições: karma: kd2 = kd6 = ks2
   ],
-  task-data(
+  task(
     "Extensions",
     contributors: (("N1", "todo"),),
     type: "Karma",
   )[
     Be able to receive information about ESP and put it into a Karma condition.
   ],
-  task-data(
+  task(
     "Note-taking-like",
     contributors: (("N1", "todo"),),
     type: "Karma",
@@ -152,21 +103,29 @@
     Ter uma forma boa de editar notas, conectando possivelmente notas de objetivos com karma, pra que cada workflow tenha sua
     justificativa e possa-se criar primeiro os objetivos e completar eles com os passos pra chegar lá
   ],
-  task-data(
+  task(
     "IA de recomendação de Karma",
     contributors: (("N1", "todo"),),
     type: "Karma",
   )[
     fazer otimizações balanceamento de atividades ao longo da semana pra nao sobrecarregar um dia. Sugerir habitos novos...
   ],
-  task-data(
+  task(
     "Execute single Karma with visualization on the condition being evaluated",
     contributors: (("N1", "todo"),),
     type: "Karma",
   )[
     Maybe a modal
   ],
-  task-data(
+  task(
+    "Table Extra Ergonomics",
+    contributors: (("N1", "todo"),),
+    type: "Frontend",
+  )[
+    - Delete row (with confirmation, by default, with option in configuration to not ask)
+    - Sorteable (On runtime, updates should respect this sort, even though data comes with another sort or unsorted
+  ],
+  task(
     "Frequency",
     contributors: (("@DiogoTeixeiraDEV", "wip"),),
     type: "Karma",
@@ -193,7 +152,7 @@
     Feel free to refactor this a lot. With those two unfinished parts the frequency will be able to cover many cases, if you have more periodicies in
     mind to cover even more cases please refactor.
   ],
-  task-data(
+  task(
     "syntax highlighting and lsp (TreeSitter?) for Commands",
     contributors: (("N1", "todo"),),
     type: "Karma",
@@ -201,7 +160,7 @@
     Being able to see based on the language syntax highlighting. So if in a Command block there is not a language set default to bash,
     if there is rust use the highlight for Rust, use lsp to see if its wrong, be able to run every command and see the result.
   ],
-  task-data(
+  task(
     "Deterministic Simulation Testing",
     contributors: (("@xaviduds", "todo"), ("@DiogoTeixeiraDEV", "todo")),
     type: "Karma",
@@ -218,15 +177,42 @@
     just manipulating data inside the program.
 
     TigerBeetle is the GOATED db for this, perhaps Lince can learn from it, fork it, or use it with a different schema for Transaction of Records.
+    https://youtu.be/sC1B3d9C_sI?si=_HbNMQ9NVegLyS2a
     https://www.youtube.com/watch?v=JoYjji1DZCE
   ],
-  task-data(
+  task(
     "Canvas",
     contributors: (("N1", "todo"),),
     type: "Frontend",
   )[
     Make an expansive 2d canvas, views dragging to adjust the position.
     When im in any collection, i can drag and drop my views, resize them, and their positions and
+  ],
+  task(
+    "I can have a view that is the Creation Modal of any table",
+    contributors: (("N1", "todo"),),
+    type: "Frontend",
+  )[
+    One of the Views of any collection is the creation modal, now a View. So the person will see tables and next to it the component used to create a new record, so they will be able to create new records easily.
+    This is good for todo behavior, being able to pin the view of record creation means a quick todo creation
+  ],
+  task(
+    "Collection's Views CRUD",
+    contributors: (("N1", "todo"),),
+    type: "Frontend",
+  )[
+    Be able to:
+    - Update view's name, query
+    - Add views
+    - Remove Views
+    - Create Views
+  ],
+  task(
+    "Be able to Pin Views",
+    contributors: (("N1", "todo"),),
+    type: "Frontend",
+  )[
+    I can pin a View of Collection A when I am in collection B, making it appear on the screen with higher Z index and stuck to a place
   ],
 )
 

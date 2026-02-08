@@ -39,7 +39,6 @@ pub struct GenericTableDelegate {
     // Track editing state
     editing_cell: Option<CellPosition>,
     edit_value: Rope,
-    hovered_cell: Option<CellPosition>,
     focus_handle: FocusHandle,
 }
 
@@ -80,7 +79,6 @@ impl GenericTableDelegate {
             services,
             editing_cell: None,
             edit_value: Rope::new(),
-            hovered_cell: None,
             focus_handle: cx.focus_handle(),
         }
     }
@@ -103,7 +101,7 @@ impl GenericTableDelegate {
         }
 
         // Save to database
-        cx.spawn(|_this, _cx| async move {
+        cx.spawn(async move |_this, _cx| {
             if let Err(e) = application::table::table_patch_row(services, table, row_id, column, value).await {
                 eprintln!("Failed to save cell: {}", e);
             }
@@ -111,7 +109,7 @@ impl GenericTableDelegate {
         .detach();
     }
 
-    fn start_edit(&mut self, row_ix: usize, col_ix: usize, window: &mut Window, cx: &mut Context<TableState<Self>>) {
+    fn start_edit(&mut self, row_ix: usize, col_ix: usize, _window: &mut Window, cx: &mut Context<TableState<Self>>) {
         let key = &self.headers[col_ix];
         let value = self.data[row_ix]
             .get(key)
@@ -120,7 +118,6 @@ impl GenericTableDelegate {
 
         self.editing_cell = Some(CellPosition { row_ix, col_ix });
         self.edit_value = Rope::from_str(value);
-        cx.focus(&self.focus_handle, window);
         cx.notify();
     }
 
@@ -166,7 +163,6 @@ impl TableDelegate for GenericTableDelegate {
 
         let current_pos = CellPosition { row_ix, col_ix };
         let is_editing = self.editing_cell.as_ref() == Some(&current_pos);
-        let is_hovered = self.hovered_cell.as_ref() == Some(&current_pos);
 
         if is_editing {
             // Show modal editor
@@ -185,7 +181,6 @@ impl TableDelegate for GenericTableDelegate {
                 .flex_col()
                 .p_4()
                 .gap_2()
-                .z_index(1000)
                 .child(
                     div()
                         .flex()
@@ -219,7 +214,6 @@ impl TableDelegate for GenericTableDelegate {
                         .border_color(blue())
                         .rounded_xs()
                         .p_3()
-                        .overflow_scroll()
                         .text_size(px(14.))
                         .line_height(px(20.))
                         .child(self.edit_value.to_string()),
@@ -262,7 +256,6 @@ impl TableDelegate for GenericTableDelegate {
                 .absolute()
                 .inset_0()
                 .bg(gpui::rgba(0x00000088))
-                .z_index(999)
                 .on_mouse_down(MouseButton::Left, cx.listener(|this, _event, _window, cx| {
                     this.delegate_mut().cancel_edit(cx);
                 }));
@@ -298,29 +291,7 @@ impl TableDelegate for GenericTableDelegate {
                     this.delegate_mut().finish_edit(cx);
                 }))
         } else {
-            // View mode with hover state and edit icon
-            let edit_icon = if is_hovered {
-                Some(
-                    div()
-                        .absolute()
-                        .top_0p5()
-                        .right_0p5()
-                        .p_0p5()
-                        .rounded_xs()
-                        .bg(overlay0())
-                        .text_color(text())
-                        .text_size(px(12.))
-                        .child("✎")
-                        .cursor_pointer()
-                        .hover(|style| style.bg(surface1()))
-                        .on_mouse_down(MouseButton::Left, cx.listener(move |this, _event, window, cx| {
-                            this.delegate_mut().start_edit(row_ix, col_ix, window, cx);
-                        })),
-                )
-            } else {
-                None
-            };
-
+            // View mode - cell is clickable
             div()
                 .relative()
                 .p_1p5()
@@ -328,20 +299,10 @@ impl TableDelegate for GenericTableDelegate {
                 .h_full()
                 .cursor_pointer()
                 .hover(|style| style.bg(rgba(0xffffff11)))
-                .on_hover(cx.listener(move |this, hovered, _window, cx| {
-                    let delegate = this.delegate_mut();
-                    if *hovered {
-                        delegate.hovered_cell = Some(current_pos.clone());
-                    } else if delegate.hovered_cell.as_ref() == Some(&current_pos) {
-                        delegate.hovered_cell = None;
-                    }
-                    cx.notify();
-                }))
-                .on_mouse_down(MouseButton::Left, cx.listener(move |this, _event, window, cx| {
-                    this.delegate_mut().start_edit(row_ix, col_ix, window, cx);
+                .on_mouse_down(MouseButton::Left, cx.listener(move |this, _event, _window, cx| {
+                    this.delegate_mut().start_edit(row_ix, col_ix, _window, cx);
                 }))
                 .child(value.to_string())
-                .children(edit_icon)
         }
     }
 

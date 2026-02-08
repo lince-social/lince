@@ -2,7 +2,7 @@ use super::super::{
     themes::catppuccin_mocha::{self, red, *},
     workspace::Workspace,
 };
-use domain::dirty::collection::CollectionRow;
+use domain::dirty::{collection::CollectionRow, view::ViewWithPinInfo};
 use gpui::{
     Context, InteractiveElement, IntoElement, ParentElement, Render, StatefulInteractiveElement,
     Styled, Window, div, *,
@@ -16,14 +16,16 @@ const DEFAULT_PIN_POSITION_Y: f64 = 200.0;
 pub struct CollectionList {
     pub hovered: bool,
     pub collections: Vec<CollectionRow>,
+    pub views_with_pin_info: Vec<ViewWithPinInfo>,
     pub workspace: WeakEntity<Workspace>,
 }
 
 impl CollectionList {
-    pub fn new(collections: Vec<CollectionRow>, workspace: WeakEntity<Workspace>) -> Self {
+    pub fn new(collections: Vec<CollectionRow>, views_with_pin_info: Vec<ViewWithPinInfo>, workspace: WeakEntity<Workspace>) -> Self {
         Self {
             hovered: false,
             collections,
+            views_with_pin_info,
             workspace,
         }
     }
@@ -81,7 +83,7 @@ struct CollectionViewRow {
     id: u32,
     quantity: i32,
     name: SharedString,
-    pinned: i32,
+    pinned: bool,
 
     collection_id: u32,
 
@@ -128,14 +130,14 @@ impl RenderOnce for CollectionViewRow {
                     .px_1()
                     .rounded_xs()
                     .text_xs()
-                    .bg(if pinned == 1 { catppuccin_mocha::yellow() } else { surface0() })
-                    .hover(|s| s.bg(if pinned == 1 { peach() } else { surface1() }))
-                    .text_color(if pinned == 1 { crust() } else { text() })
-                    .child(if pinned == 1 { "📌" } else { "📍" })
+                    .bg(if pinned { catppuccin_mocha::yellow() } else { surface0() })
+                    .hover(|s| s.bg(if pinned { peach() } else { surface1() }))
+                    .text_color(if pinned { crust() } else { text() })
+                    .child(if pinned { "📌" } else { "📍" })
                     .on_mouse_up(MouseButton::Left, move |_evt, _win, cx| {
                         if let Some(ws) = workspace_for_pin.upgrade() {
                             ws.update(cx, |ws, cx| {
-                                if pinned == 1 {
+                                if pinned {
                                     ws.unpin_view(view_id, cx);
                                 } else {
                                     // Default position when pinning
@@ -183,13 +185,21 @@ impl Render for CollectionList {
                             .children(
                                 views
                                     .iter()
-                                    .map(|view| CollectionViewRow {
-                                        id: view.id,
-                                        quantity: view.quantity,
-                                        name: SharedString::from(&view.name),
-                                        pinned: view.pinned,
-                                        collection_id: collection.id,
-                                        workspace: weak.clone(),
+                                    .map(|view| {
+                                        let pinned = self.views_with_pin_info
+                                            .iter()
+                                            .find(|v| v.view_id == view.id)
+                                            .map(|v| v.pinned)
+                                            .unwrap_or(false);
+                                        
+                                        CollectionViewRow {
+                                            id: view.id,
+                                            quantity: view.quantity,
+                                            name: SharedString::from(&view.name),
+                                            pinned,
+                                            collection_id: collection.id,
+                                            workspace: weak.clone(),
+                                        }
                                     })
                                     .collect::<Vec<_>>(),
                             )

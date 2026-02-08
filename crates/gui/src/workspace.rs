@@ -367,13 +367,14 @@ impl Render for Workspace {
             .iter()
             .zip(self.state.pinned_tables.iter())
             .map(|(pinned_view, (table_name, table))| {
-                let table_state = cx.new(|cx| {
-                    TableState::new(GenericTableDelegate::new(table.clone()), window, cx)
+                let services = self.services.clone();
+                let table_state = cx.new(|app_cx| {
+                    TableState::new(GenericTableDelegate::new(table.clone(), table_name.clone(), services, app_cx), window, app_cx)
                         .col_resizable(true)
                         .col_movable(true)
                         .sortable(true)
-                        .col_selectable(true)
-                        .row_selectable(true)
+                        .col_selectable(false)  // Disable to allow cell editing
+                        .row_selectable(false)  // Disable to allow cell editing
                 });
                 (pinned_view.view_id, table_name.clone(), table_state)
             })

@@ -11,48 +11,56 @@ Tool for registry, interconnection and automation of Needs and Contributions wit
 
 Detailed explanations of what Lince is, how to run it and use it's ecosystem can be found in the [Dark Mode Documentation](https://raw.githubusercontent.com/lince-social/lince/main/documents/content/documentation/main-dark.pdf)/[Light Mode Documentation](https://raw.githubusercontent.com/lince-social/lince/main/documents/content/documentation/main-light.pdf).
 
-To install, you can download the crate and run it with Karma and a GUI:
+Check the website [lince.social](https://lince.social) for more.
 
-```bash
-# Download
-cargo install lince
+# Ways to install
 
-# Run
-lince karma gui
-```
+After installing Lince, you can run it with Karma and GUI functionalities.
+One can run `lince karma` as a service to have Karma always running in the background. And run `lince gui` to use it through the GUI.
 
-Or get the binary [here](https://github.com/lince-social/lince/releases). Pick the latest one for your machine and operating system, then unzip and execute the binary:
+### 1. Releases
+
+Check the [releases](https://github.com/lince-social/lince/releases), pick the latest one for your operating system. Unzip it, then run:
 
 ```bash
 ./lince karma gui
 ```
 
-If you want to compile it, and have [cargo](https://www.rust-lang.org/tools/install) installed, run:
+### 2. Cargo install
+
+```bash
+cargo install lince
+lince karma gui
+```
+
+### 3. Compiling yourself
+
+> Beware! Here be dragons (bugs).
+
+For those that want to compile the latest and have [cargo](https://www.rust-lang.org/tools/install) installed, run:
 
 ```bash
 cargo run -- karma gui
 ```
 
-> Tip: One can run `lince karma` as a service to have Karma always running in the background. And run `lince gui` to use it through the GUI.
-
-Have fun!
-
----
-
-# Disclamer
-
-This project is licensed under the GNU GPLv3 license. Crowdfunding is the source of development compensation:
-
-[GitHub Sponsors](https://github.com/sponsors/lince-social) | [Patreon](https://www.patreon.com/lince_social) | [Apoia.se](https://www.apoia.se/lince)
-
-Lince tries to facilitate and automate the connection between people and resources, by transforming needs and contributions into data. The gains and losses related to the interaction, such as transportation, production and services themselves, remain the responsibility of the parties involved.
-
-# Dev Commands
-
-Using mask:
+Or with [mise](https://mise.jdx.dev/):
 
 ```bash
-cargo install mask
+mise dev
 ```
 
-Check the maskfile.md for more information.
+### Extra
+
+You can also use `mise` to run Lince:
+
+```bash
+mise exec cargo:lince -- lince karma gui
+```
+
+# Contributions
+
+To contribute, check the [CONTRIBUTING.md](CONTRIBUTING.md).
+
+# License
+
+Check the [License](LICENSE)

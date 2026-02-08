@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-#[allow(dead_code)]
 #[derive(sqlx::FromRow, Debug, PartialEq, Serialize, Deserialize, Clone)]
-pub struct View {
+pub struct PinnedView {
     pub id: u32,
-    pub name: String,
-    pub query: String,
+    pub view_id: u32,
+    pub position_x: f64,
+    pub position_y: f64,
+    pub z_index: i32,
 }

@@ -34,7 +34,7 @@ impl Workspace {
     ) -> Self {
         let weak = cx.weak_entity();
         let collection_list =
-            cx.new(|_| CollectionList::new(state.collections.clone(), weak.clone()));
+            cx.new(|_| CollectionList::new(state.collections.clone(), state.views_with_pin_info.clone(), weak.clone()));
         let focus_handle = cx.focus_handle();
         let operation = cx.new(|_| Operation::new(weak.clone(), focus_handle.clone()));
 
@@ -102,14 +102,24 @@ impl Workspace {
                 }
             };
 
+            let views_with_pin_info = match services.repository.collection.get_views_with_pin_info().await {
+                Ok(info) => info,
+                Err(e) => {
+                    log!(e, "failed to fetch views with pin info");
+                    vec![]
+                }
+            };
+
             this.update(cx, move |owner, cx| {
                 owner.state.collections = rows.clone();
                 owner.state.tables = tables.clone();
                 owner.state.pinned_views = pinned_views;
                 owner.state.pinned_tables = pinned_tables;
+                owner.state.views_with_pin_info = views_with_pin_info.clone();
 
                 owner.collection_list.update(cx, move |bar, _| {
                     bar.collections = rows.clone();
+                    bar.views_with_pin_info = views_with_pin_info;
                 });
 
                 cx.notify();
@@ -144,13 +154,23 @@ impl Workspace {
                         }
                     };
 
+                    let views_with_pin_info = match services.repository.collection.get_views_with_pin_info().await {
+                        Ok(info) => info,
+                        Err(e) => {
+                            log!(e, "failed to fetch views with pin info");
+                            vec![]
+                        }
+                    };
+
                     this.update(cx, move |owner, cx| {
                         owner.state.collections = collections.clone();
                         owner.state.tables = tables.clone();
                         owner.state.pinned_tables = pinned_tables;
+                        owner.state.views_with_pin_info = views_with_pin_info.clone();
 
                         owner.collection_list.update(cx, |bar, _| {
-                            bar.collections = collections;
+                            bar.collections = collections.clone();
+                            bar.views_with_pin_info = views_with_pin_info;
                         });
 
                         cx.notify();
@@ -188,9 +208,18 @@ impl Workspace {
                         }
                     };
 
+                    let views_with_pin_info = match services.repository.collection.get_views_with_pin_info().await {
+                        Ok(info) => info,
+                        Err(e) => {
+                            log!(e, "failed to fetch views with pin info");
+                            vec![]
+                        }
+                    };
+
                     this.update(cx, move |owner, cx| {
                         owner.state.tables = tables.clone();
                         owner.state.pinned_tables = pinned_tables;
+                        owner.state.views_with_pin_info = views_with_pin_info;
                         cx.notify();
                     })
                     .unwrap();
@@ -232,9 +261,18 @@ impl Workspace {
                 }
             };
 
+            let views_with_pin_info = match services.repository.collection.get_views_with_pin_info().await {
+                Ok(info) => info,
+                Err(e) => {
+                    log!(e, "failed to fetch views with pin info");
+                    vec![]
+                }
+            };
+
             this.update(cx, move |owner, cx| {
                 owner.state.pinned_views = pinned_views;
                 owner.state.pinned_tables = pinned_tables;
+                owner.state.views_with_pin_info = views_with_pin_info;
                 cx.notify();
             })
             .unwrap();
@@ -266,9 +304,18 @@ impl Workspace {
                 }
             };
 
+            let views_with_pin_info = match services.repository.collection.get_views_with_pin_info().await {
+                Ok(info) => info,
+                Err(e) => {
+                    log!(e, "failed to fetch views with pin info");
+                    vec![]
+                }
+            };
+
             this.update(cx, move |owner, cx| {
                 owner.state.pinned_views = pinned_views;
                 owner.state.pinned_tables = pinned_tables;
+                owner.state.views_with_pin_info = views_with_pin_info;
                 cx.notify();
             })
             .unwrap();
@@ -318,7 +365,7 @@ impl Render for Workspace {
             .pinned_views
             .iter()
             .zip(self.state.pinned_tables.iter())
-            .map(|(view, (table_name, table))| {
+            .map(|(pinned_view, (table_name, table))| {
                 let table_state = cx.new(|cx| {
                     TableState::new(GenericTableDelegate::new(table.clone()), window, cx)
                         .col_resizable(true)
@@ -327,7 +374,7 @@ impl Render for Workspace {
                         .col_selectable(true)
                         .row_selectable(true)
                 });
-                (view.id, table_name.clone(), table_state)
+                (pinned_view.view_id, table_name.clone(), table_state)
             })
             .collect();
 
@@ -354,9 +401,9 @@ impl Render for Workspace {
                         use super::themes::catppuccin_mocha::{yellow, base, red, maroon};
                         
                         // Find the view to get position
-                        let view = self.state.pinned_views.iter().find(|v| v.id == *view_id);
-                        let position_x = view.and_then(|v| v.position_x).unwrap_or(DEFAULT_PIN_POSITION_X);
-                        let position_y = view.and_then(|v| v.position_y).unwrap_or(DEFAULT_PIN_POSITION_Y);
+                        let pinned_view = self.state.pinned_views.iter().find(|v| v.view_id == *view_id);
+                        let position_x = pinned_view.map(|v| v.position_x).unwrap_or(DEFAULT_PIN_POSITION_X);
+                        let position_y = pinned_view.map(|v| v.position_y).unwrap_or(DEFAULT_PIN_POSITION_Y);
                         let view_id_for_close = *view_id;
                         let weak = cx.weak_entity();
                         

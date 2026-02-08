@@ -23,6 +23,8 @@ pub struct Workspace {
     pub table_entities: Vec<(String, Entity<TableState<GenericTableDelegate>>)>,
     pub pinned_table_entities: Vec<(u32, String, Entity<TableState<GenericTableDelegate>>)>,
     pub operation: Entity<Operation>,
+    // Flag to track if tables need recreation
+    tables_need_recreation: bool,
 }
 
 impl Workspace {
@@ -45,15 +47,13 @@ impl Workspace {
             table_entities,
             pinned_table_entities: vec![],
             operation,
+            tables_need_recreation: false,
         };
 
         // If state has tables/pinned tables, we need to create entities for them
-        // We'll do this in a deferred call after construction
         let has_data = !workspace.state.tables.is_empty() || !workspace.state.pinned_tables.is_empty();
         if has_data {
-            cx.defer(move |owner, window, cx| {
-                owner.recreate_table_entities(window, cx);
-            });
+            workspace.tables_need_recreation = true;
         }
 
         workspace
@@ -173,10 +173,9 @@ impl Workspace {
                     bar.views_with_pin_info = views_with_pin_info;
                 });
 
-                // Recreate table entities since data changed
-                cx.defer(move |owner, window, cx| {
-                    owner.recreate_table_entities(window, cx);
-                });
+                // Mark tables for recreation since data changed
+                owner.tables_need_recreation = true;
+                cx.notify();
             })
             .unwrap();
         })
@@ -227,10 +226,9 @@ impl Workspace {
                             bar.views_with_pin_info = views_with_pin_info;
                         });
 
-                        // Recreate table entities since data changed
-                        cx.defer(move |owner, window, cx| {
-                            owner.recreate_table_entities(window, cx);
-                        });
+                        // Mark tables for recreation since data changed
+                        owner.tables_need_recreation = true;
+                        cx.notify();
                     })
                     .unwrap();
                 }
@@ -278,10 +276,9 @@ impl Workspace {
                         owner.state.pinned_tables = pinned_tables;
                         owner.state.views_with_pin_info = views_with_pin_info;
                         
-                        // Recreate table entities since data changed
-                        cx.defer(move |owner, window, cx| {
-                            owner.recreate_table_entities(window, cx);
-                        });
+                        // Mark tables for recreation since data changed
+                        owner.tables_need_recreation = true;
+                        cx.notify();
                     })
                     .unwrap();
                 }
@@ -401,9 +398,12 @@ impl Workspace {
 }
 
 impl Render for Workspace {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        // Don't recreate table entities here! They're created by recreate_table_entities()
-        // when the data actually changes, not on every render cycle.
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        // Recreate table entities if data changed
+        if self.tables_need_recreation {
+            self.recreate_table_entities(window, cx);
+            self.tables_need_recreation = false;
+        }
 
         div()
             .flex()

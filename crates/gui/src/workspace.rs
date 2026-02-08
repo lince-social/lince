@@ -11,6 +11,10 @@ use gpui_component::table::TableState;
 use injection::cross_cutting::InjectedServices;
 use utils::log;
 
+// Default position for newly pinned views
+const DEFAULT_PIN_POSITION_X: f64 = 300.0;
+const DEFAULT_PIN_POSITION_Y: f64 = 200.0;
+
 pub struct Workspace {
     // pub focus_handle: FocusHandle,
     pub state: State,
@@ -348,10 +352,12 @@ impl Render for Workspace {
                 self.pinned_table_entities
                     .iter()
                     .map(|(view_id, name, entity)| {
+                        use super::themes::catppuccin_mocha::{yellow, base, red, maroon};
+                        
                         // Find the view to get position
                         let view = self.state.pinned_views.iter().find(|v| v.id == *view_id);
-                        let position_x = view.and_then(|v| v.position_x).unwrap_or(100.0);
-                        let position_y = view.and_then(|v| v.position_y).unwrap_or(100.0);
+                        let position_x = view.and_then(|v| v.position_x).unwrap_or(DEFAULT_PIN_POSITION_X);
+                        let position_y = view.and_then(|v| v.position_y).unwrap_or(DEFAULT_PIN_POSITION_Y);
                         let view_id_for_close = *view_id;
                         let weak = cx.weak_entity();
                         
@@ -361,7 +367,7 @@ impl Render for Workspace {
                             .top(px(position_y as f32))
                             .bg(mantle())
                             .border_2()
-                            .border_color(rgb(0xf9e2af)) // Yellow border for pinned views
+                            .border_color(yellow()) // Yellow border for pinned views
                             .rounded_lg()
                             .shadow_lg()
                             .min_w(px(300.0))
@@ -378,8 +384,8 @@ impl Render for Workspace {
                                     .flex_row()
                                     .items_center()
                                     .justify_between()
-                                    .bg(rgb(0xf9e2af))
-                                    .text_color(rgb(0x1e1e2e))
+                                    .bg(yellow())
+                                    .text_color(base())
                                     .p_2()
                                     .child(
                                         div()
@@ -395,8 +401,8 @@ impl Render for Workspace {
                                             .px_2()
                                             .py_1()
                                             .rounded_sm()
-                                            .bg(rgb(0xf38ba8))
-                                            .hover(|s| s.bg(rgb(0xeba0ac)))
+                                            .bg(red())
+                                            .hover(|s| s.bg(maroon()))
                                             .text_xs()
                                             .font_weight(FontWeight::BOLD)
                                             .child("✕")

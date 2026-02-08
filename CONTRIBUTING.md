@@ -10,9 +10,9 @@ This project uses the [Git Cliff](https://github.com/orhun/git-cliff) crate toge
 
 \<type\>(\<optional scope\>): \<short message\>
 
-* **type**: `fix`, `feat`, `perf`, `security`, etc.
-* **scope**: affected module or component (optional, but recommended).
-* **message**: short description of what changed.
+- **type**: `fix`, `feat`, `perf`, `security`, etc.
+- **scope**: affected module or component (optional, but recommended).
+- **message**: short description of what changed.
 
 > Examples:
 >
@@ -44,8 +44,6 @@ The application can be run using [mask](https://github.com/jacobdeichert/mask), 
 cargo install mask
 ```
 
-The main command is `cargo run -- gui`, which runs Karma and the GPUI frontend.
+The main command is `cargo run -- karma gui`, which runs Karma and the GPUI frontend.
 
-It is recommended to run `mask update` so you have the latest Rust nightly version.
-
-Check the `maskfile.md` for more information about the workflow.
+Check the `mise.md` for more information about the workflow.

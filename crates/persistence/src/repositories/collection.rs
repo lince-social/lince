@@ -309,7 +309,17 @@ impl CollectionRepository for CollectionRepositoryImpl {
         .await
         .map_err(Error::other)?;
 
-        self.execute_queries(queries).await
+        // Filter out special queries (non-SQL queries that need special handling)
+        let (_special_queries, sql_queries): (Vec<_>, Vec<_>) = queries.into_iter().partition(|query| {
+            [
+                "karma_orchestra".to_string(),
+                "karma_view".to_string(),
+                "testing".to_string(),
+            ]
+            .contains(query)
+        });
+
+        self.execute_queries(sql_queries).await
     }
 
     async fn get_views_with_pin_info(&self) -> Result<Vec<domain::dirty::view::ViewWithPinInfo>, Error> {

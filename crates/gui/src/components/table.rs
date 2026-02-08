@@ -265,7 +265,7 @@ impl TableDelegate for GenericTableDelegate {
                 }));
 
             div()
-                .id(("cell_editor", row_ix, col_ix))  // Give unique ID for focus management
+                .id(format!("cell_editor_{}_{}", row_ix, col_ix))  // Give unique ID for focus management
                 .relative()
                 .p_1p5()
                 .w_full()
@@ -273,8 +273,8 @@ impl TableDelegate for GenericTableDelegate {
                 .child(value.to_string())
                 .child(backdrop)
                 .child(modal_content)
-                .track_focus(&self.focus_handle(cx))
-                .focusable()  // Make the modal focusable
+                .focusable()  // Make the modal focusable first
+                .track_focus(&self.focus_handle(cx))  // Then track focus
                 .on_key_down(cx.listener(|this, event: &KeyDownEvent, _window, cx| {
                     if let Some(key_char) = &event.keystroke.key_char {
                         if key_char.len() == 1 && !event.keystroke.modifiers.control {

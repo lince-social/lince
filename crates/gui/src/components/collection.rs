@@ -8,6 +8,10 @@ use gpui::{
     Styled, Window, div, *,
 };
 
+// Default position for newly pinned views
+const DEFAULT_PIN_POSITION_X: f64 = 300.0;
+const DEFAULT_PIN_POSITION_Y: f64 = 200.0;
+
 #[derive(Clone)]
 pub struct CollectionList {
     pub hovered: bool,
@@ -135,7 +139,7 @@ impl RenderOnce for CollectionViewRow {
                                     ws.unpin_view(view_id, cx);
                                 } else {
                                     // Default position when pinning
-                                    ws.pin_view(view_id, 300.0, 200.0, cx);
+                                    ws.pin_view(view_id, DEFAULT_PIN_POSITION_X, DEFAULT_PIN_POSITION_Y, cx);
                                 }
                             });
                         }

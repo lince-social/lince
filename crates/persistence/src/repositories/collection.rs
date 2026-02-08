@@ -303,6 +303,7 @@ impl CollectionRepository for CollectionRepositoryImpl {
         .await
         .map_err(Error::other)?;
         
+        // Note: quantity is set to 1 to indicate the view is active/visible when pinned
         Ok(views)
     }
 

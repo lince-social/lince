@@ -109,7 +109,7 @@ impl GenericTableDelegate {
         .detach();
     }
 
-    fn start_edit(&mut self, row_ix: usize, col_ix: usize, cx: &mut Context<TableState<Self>>) {
+    fn start_edit(&mut self, row_ix: usize, col_ix: usize, window: &mut Window, cx: &mut Context<TableState<Self>>) {
         eprintln!("DEBUG: start_edit called for row={}, col={}", row_ix, col_ix);
         let key = &self.headers[col_ix];
         let value = self.data[row_ix]
@@ -120,6 +120,10 @@ impl GenericTableDelegate {
         eprintln!("DEBUG: Setting editing_cell, value={:?}", value);
         self.editing_cell = Some(CellPosition { row_ix, col_ix });
         self.edit_value = Rope::from_str(value);
+        
+        // Try to focus the modal that will be rendered
+        window.focus(&self.focus_handle);
+        
         cx.notify();
         eprintln!("DEBUG: start_edit completed, editing_cell={:?}", self.editing_cell);
     }
@@ -267,6 +271,7 @@ impl TableDelegate for GenericTableDelegate {
                 }));
 
             div()
+                .id(("cell_editor", row_ix, col_ix))  // Give unique ID for focus management
                 .relative()
                 .p_1p5()
                 .w_full()
@@ -275,6 +280,7 @@ impl TableDelegate for GenericTableDelegate {
                 .child(backdrop)
                 .child(modal_content)
                 .track_focus(&self.focus_handle(cx))
+                .focusable()  // Make the modal focusable
                 .on_key_down(cx.listener(|this, event: &KeyDownEvent, _window, cx| {
                     if let Some(key_char) = &event.keystroke.key_char {
                         if key_char.len() == 1 && !event.keystroke.modifiers.control {
@@ -305,9 +311,9 @@ impl TableDelegate for GenericTableDelegate {
                 .h_full()
                 .cursor_pointer()
                 .hover(|style| style.bg(rgba(0xffffff11)))
-                .on_mouse_down(MouseButton::Left, cx.listener(move |this, _event, _window, cx| {
+                .on_mouse_down(MouseButton::Left, cx.listener(move |this, _event, window, cx| {
                     eprintln!("DEBUG: Cell clicked - row={}, col={}", row_ix, col_ix);
-                    this.delegate_mut().start_edit(row_ix, col_ix, cx);
+                    this.delegate_mut().start_edit(row_ix, col_ix, window, cx);
                 }))
                 .child(value.to_string())
         }

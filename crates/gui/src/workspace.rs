@@ -170,8 +170,9 @@ impl Render for Workspace {
             .iter()
             .cloned()
             .map(|(name, table)| {
-                let table_state = cx.new(|cx| {
-                    TableState::new(GenericTableDelegate::new(table), window, cx)
+                let services = self.services.clone();
+                let table_state = cx.new(|app_cx| {
+                    TableState::new(GenericTableDelegate::new(table, name.clone(), services, app_cx), window, app_cx)
                         .col_resizable(true)
                         .col_movable(true)
                         .sortable(true)

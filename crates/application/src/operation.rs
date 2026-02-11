@@ -6,60 +6,6 @@ use utils::logging::{LogEntry, log};
 use regex::Regex;
 use std::io::Error;
 
-fn parse_table(operation: String) -> String {
-    let re = Regex::new(r"\d+").unwrap();
-    let operation_parts: Vec<&str> = operation.split_whitespace().collect();
-    for part in operation_parts {
-        if let Some(matched) = re.find(part) {
-            match matched.as_str() {
-                "0" => return "configuration".to_string(),
-                "1" => return "collection".to_string(),
-                "2" => return "view".to_string(),
-                "3" => return "collection_view".to_string(),
-                "4" => return "record".to_string(),
-                "5" => return "karma_condition".to_string(),
-                "6" => return "karma_consequence".to_string(),
-                "7" => return "karma".to_string(),
-                "8" => return "command".to_string(),
-                "9" => return "frequency".to_string(),
-                "10" => return "sum".to_string(),
-                "11" => return "history".to_string(),
-                "12" => return "dna".to_string(),
-                "13" => return "transfer".to_string(),
-                "14" => return "query".to_string(),
-                _ => continue,
-            }
-        }
-    }
-
-    let re = Regex::new(r"\w+").unwrap();
-    let operation_parts: Vec<&str> = operation.split_whitespace().collect();
-    for part in operation_parts {
-        if let Some(matched) = re.find(part) {
-            match matched.as_str() {
-                "configuration" => return "configuration".to_string(),
-                "collection" => return "collection".to_string(),
-                "view" => return "view".to_string(),
-                "collection_view" => return "collection_view".to_string(),
-                "record" => return "record".to_string(),
-                "karma_condition" => return "karma_condition".to_string(),
-                "karma_consequence" => return "karma_consequence".to_string(),
-                "karma" => return "karma".to_string(),
-                "command" => return "command".to_string(),
-                "frequency" => return "frequency".to_string(),
-                "sum" => return "sum".to_string(),
-                "history" => return "history".to_string(),
-                "dna" => return "dna".to_string(),
-                "transfer" => return "transfer".to_string(),
-                "query" => return "query".to_string(),
-                _ => continue,
-            }
-        }
-    }
-
-    "record".to_string()
-}
-
 fn parse_id(part: &str) -> Option<&str> {
     let re = Regex::new(r"\d+").unwrap();
 

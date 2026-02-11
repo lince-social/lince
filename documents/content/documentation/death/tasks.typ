@@ -17,7 +17,8 @@
     type: "Frontend",
   )[
     Each cell when hovered should:
-    - [ ] Have an icon to edit it in a resizeable text buffer. Becoming a big modal that covers almost the entire screen when it opens.
+    - [ ] Have an icon to edit it in a resizeable text buffer.
+    Becoming a big modal that covers almost the entire screen when it opens.
     - [ ] Be editable in place if clicked, maintainting the same size,
     but with a big text field, instead of just a text cell.
   ],

@@ -23,6 +23,8 @@ pub struct Workspace {
     pub table_entities: Vec<(String, Entity<TableState<GenericTableDelegate>>)>,
     pub pinned_table_entities: Vec<(u32, String, Entity<TableState<GenericTableDelegate>>)>,
     pub operation: Entity<Operation>,
+    // Flag to track if tables need recreation
+    tables_need_recreation: bool,
 }
 
 impl Workspace {
@@ -38,16 +40,65 @@ impl Workspace {
         let focus_handle = cx.focus_handle();
         let operation = cx.new(|_| Operation::new(weak.clone(), focus_handle.clone()));
 
-        let workspace = Self {
+        let mut workspace = Self {
             state,
             services,
             collection_list,
             table_entities,
             pinned_table_entities: vec![],
             operation,
+            tables_need_recreation: false,
         };
 
+        // If state has tables/pinned tables, we need to create entities for them
+        let has_data = !workspace.state.tables.is_empty() || !workspace.state.pinned_tables.is_empty();
+        if has_data {
+            workspace.tables_need_recreation = true;
+        }
+
         workspace
+    }
+
+    // Helper method to recreate table entities when data changes
+    fn recreate_table_entities(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.table_entities = self
+            .state
+            .tables
+            .iter()
+            .cloned()
+            .map(|(name, table)| {
+                let services = self.services.clone();
+                let table_state = cx.new(|app_cx| {
+                    TableState::new(GenericTableDelegate::new(table, name.clone(), services, app_cx), window, app_cx)
+                        .col_resizable(true)
+                        .col_movable(true)
+                        .sortable(true)
+                        .col_selectable(false)  // Disable to allow cell editing
+                        .row_selectable(false)  // Disable to allow cell editing
+                });
+                (name, table_state)
+            })
+            .collect();
+
+        // Create table entities for pinned views
+        self.pinned_table_entities = self
+            .state
+            .pinned_views
+            .iter()
+            .zip(self.state.pinned_tables.iter())
+            .map(|(pinned_view, (table_name, table))| {
+                let services = self.services.clone();
+                let table_state = cx.new(|app_cx| {
+                    TableState::new(GenericTableDelegate::new(table.clone(), table_name.clone(), services, app_cx), window, app_cx)
+                        .col_resizable(true)
+                        .col_movable(true)
+                        .sortable(true)
+                        .col_selectable(false)  // Disable to allow cell editing
+                        .row_selectable(false)  // Disable to allow cell editing
+                });
+                (pinned_view.view_id, table_name.clone(), table_state)
+            })
+            .collect();
     }
 
     pub fn view(
@@ -122,6 +173,8 @@ impl Workspace {
                     bar.views_with_pin_info = views_with_pin_info;
                 });
 
+                // Mark tables for recreation since data changed
+                owner.tables_need_recreation = true;
                 cx.notify();
             })
             .unwrap();
@@ -173,6 +226,8 @@ impl Workspace {
                             bar.views_with_pin_info = views_with_pin_info;
                         });
 
+                        // Mark tables for recreation since data changed
+                        owner.tables_need_recreation = true;
                         cx.notify();
                     })
                     .unwrap();
@@ -220,6 +275,9 @@ impl Workspace {
                         owner.state.tables = tables.clone();
                         owner.state.pinned_tables = pinned_tables;
                         owner.state.views_with_pin_info = views_with_pin_info;
+                        
+                        // Mark tables for recreation since data changed
+                        owner.tables_need_recreation = true;
                         cx.notify();
                     })
                     .unwrap();
@@ -341,42 +399,11 @@ impl Workspace {
 
 impl Render for Workspace {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        self.table_entities = self
-            .state
-            .tables
-            .iter()
-            .cloned()
-            .map(|(name, table)| {
-                let table_state = cx.new(|cx| {
-                    TableState::new(GenericTableDelegate::new(table), window, cx)
-                        .col_resizable(true)
-                        .col_movable(true)
-                        .sortable(true)
-                        .col_selectable(true)
-                        .row_selectable(true)
-                });
-                (name, table_state)
-            })
-            .collect();
-
-        // Create table entities for pinned views
-        self.pinned_table_entities = self
-            .state
-            .pinned_views
-            .iter()
-            .zip(self.state.pinned_tables.iter())
-            .map(|(pinned_view, (table_name, table))| {
-                let table_state = cx.new(|cx| {
-                    TableState::new(GenericTableDelegate::new(table.clone()), window, cx)
-                        .col_resizable(true)
-                        .col_movable(true)
-                        .sortable(true)
-                        .col_selectable(true)
-                        .row_selectable(true)
-                });
-                (pinned_view.view_id, table_name.clone(), table_state)
-            })
-            .collect();
+        // Recreate table entities if data changed
+        if self.tables_need_recreation {
+            self.recreate_table_entities(window, cx);
+            self.tables_need_recreation = false;
+        }
 
         div()
             .flex()

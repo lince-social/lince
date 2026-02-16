@@ -1,5 +1,4 @@
 /target
 /logs
 mprocs.log
-/documentation/**/*.html
-/documentation/chapters/posts/**/*.png
+/documents/**/*.html

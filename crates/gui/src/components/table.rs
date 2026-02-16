@@ -14,10 +14,7 @@ use injection::cross_cutting::InjectedServices;
 use ropey::Rope;
 use std::collections::HashMap;
 
-use crate::{
-    app::{Backspace, Enter},
-    themes::catppuccin_mocha::{base, blue, overlay0, sapphire, surface1},
-};
+use crate::themes::catppuccin_mocha::{blue, surface1};
 
 pub type Row = HashMap<String, String>;
 pub type Table = Vec<Row>;
@@ -32,7 +29,6 @@ pub struct GenericTableDelegate {
     data: Table,
     headers: Vec<String>,
     columns: Vec<Column>,
-    // track column widths locally so resize events are preserved
     col_widths: Vec<f32>,
     table_name: String,
     services: InjectedServices,
@@ -83,7 +79,12 @@ impl GenericTableDelegate {
         }
     }
 
-    fn save_cell_changes(&mut self, row_ix: usize, col_ix: usize, cx: &mut Context<TableState<Self>>) {
+    fn save_cell_changes(
+        &mut self,
+        row_ix: usize,
+        col_ix: usize,
+        cx: &mut Context<TableState<Self>>,
+    ) {
         let key = self.headers[col_ix].clone();
         let row_id = self.data[row_ix]
             .get("id")
@@ -102,30 +103,37 @@ impl GenericTableDelegate {
 
         // Save to database
         cx.spawn(async move |_this, _cx| {
-            if let Err(e) = application::table::table_patch_row(services, table, row_id, column, value).await {
+            if let Err(e) =
+                application::table::table_patch_row(services, table, row_id, column, value).await
+            {
                 eprintln!("Failed to save cell: {}", e);
             }
         })
         .detach();
     }
 
-    fn start_edit(&mut self, row_ix: usize, col_ix: usize, window: &mut Window, cx: &mut Context<TableState<Self>>) {
-        eprintln!("DEBUG: start_edit called for row={}, col={}", row_ix, col_ix);
+    fn start_edit(
+        &mut self,
+        row_ix: usize,
+        col_ix: usize,
+        window: &mut Window,
+        cx: &mut Context<TableState<Self>>,
+    ) {
         let key = &self.headers[col_ix];
-        let value = self.data[row_ix]
-            .get(key)
-            .map(String::as_str)
-            .unwrap_or("");
+        let value = self.data[row_ix].get(key).map(String::as_str).unwrap_or("");
 
-        eprintln!("DEBUG: Setting editing_cell, current value={:?}", value);
         self.editing_cell = Some(CellPosition { row_ix, col_ix });
         self.edit_value = Rope::from_str(value);
-        
-        // Focus the modal so keyboard input goes there instead of Operation bar
-        window.focus(&self.focus_handle);
-        
+
+        // Focus after the cell editor is mounted.
+        window.defer(cx, {
+            let focus_handle = self.focus_handle.clone();
+            move |window, _cx| {
+                window.focus(&focus_handle);
+            }
+        });
+
         cx.notify();
-        eprintln!("DEBUG: start_edit completed, editing_cell={:?}", self.editing_cell);
     }
 
     fn finish_edit(&mut self, cx: &mut Context<TableState<Self>>) {
@@ -171,161 +179,90 @@ impl TableDelegate for GenericTableDelegate {
         let current_pos = CellPosition { row_ix, col_ix };
         let is_editing = self.editing_cell.as_ref() == Some(&current_pos);
 
-        eprintln!("DEBUG: render_td row={} col={} is_editing={} editing_cell={:?}", 
-                  row_ix, col_ix, is_editing, self.editing_cell);
-
         if is_editing {
-            // Show modal editor
-            let modal_content = div()
-                .absolute()
-                .top(px(50.))
-                .left(px(50.))
-                .right(px(50.))
-                .bottom(px(50.))
-                .bg(base())
-                .border_1()
-                .border_color(blue())
-                .rounded_md()
-                .shadow_lg()
-                .flex()
-                .flex_col()
-                .p_4()
-                .gap_2()
-                .child(
-                    div()
-                        .flex()
-                        .justify_between()
-                        .items_center()
-                        .child(
-                            div()
-                                .text_size(px(18.))
-                                .font_weight(FontWeight::BOLD)
-                                .child("Edit Cell")
-                        )
-                        .child(
-                            div()
-                                .px_2()
-                                .py_1()
-                                .bg(overlay0())
-                                .rounded_xs()
-                                .cursor_pointer()
-                                .hover(|style| style.bg(surface1()))
-                                .child("✕")
-                                .on_mouse_down(MouseButton::Left, cx.listener(|this, _event, _window, cx| {
-                                    this.delegate_mut().cancel_edit(cx);
-                                })),
-                        ),
-                )
-                .child(
-                    div()
-                        .flex_1()
-                        .bg(surface1())
-                        .border_1()
-                        .border_color(blue())
-                        .rounded_xs()
-                        .p_3()
-                        .text_size(px(14.))
-                        .line_height(px(20.))
-                        .child(self.edit_value.to_string()),
-                )
-                .child(
-                    div()
-                        .flex()
-                        .gap_2()
-                        .justify_end()
-                        .child(
-                            div()
-                                .px_4()
-                                .py_2()
-                                .bg(overlay0())
-                                .rounded_xs()
-                                .cursor_pointer()
-                                .hover(|style| style.bg(surface1()))
-                                .child("Cancel")
-                                .on_mouse_down(MouseButton::Left, cx.listener(|this, _event, _window, cx| {
-                                    this.delegate_mut().cancel_edit(cx);
-                                })),
-                        )
-                        .child(
-                            div()
-                                .px_4()
-                                .py_2()
-                                .bg(blue())
-                                .text_color(base())
-                                .rounded_xs()
-                                .cursor_pointer()
-                                .hover(|style| style.bg(sapphire()))
-                                .child("Save")
-                                .on_mouse_down(MouseButton::Left, cx.listener(|this, _event, _window, cx| {
-                                    this.delegate_mut().finish_edit(cx);
-                                })),
-                        ),
-                );
-
-            let backdrop = div()
-                .absolute()
-                .inset_0()
-                .bg(gpui::rgba(0x00000088))
-                .on_mouse_down(MouseButton::Left, cx.listener(|this, _event, _window, cx| {
-                    this.delegate_mut().cancel_edit(cx);
-                }));
-
+            let cell_id = row_ix
+                .saturating_mul(self.headers.len())
+                .saturating_add(col_ix);
             div()
-                .id(("cell_editor", row_ix * 1000 + col_ix))  // Give unique ID for focus management
-                .relative()
+                .id(("cell_editor", cell_id))
                 .p_1p5()
                 .w_full()
                 .h_full()
-                .child(value.to_string())
-                .child(backdrop)
-                .child(modal_content)
-                .focusable()  // Make the modal focusable first
-                .track_focus(&self.focus_handle(cx))  // Then track focus
-                .on_key_down(cx.listener(|this, event: &KeyDownEvent, _window, cx| {
+                .bg(surface1())
+                .border_1()
+                .border_color(blue())
+                .rounded_xs()
+                .focusable()
+                .track_focus(&self.focus_handle(cx))
+                .on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener(|_, _event, _window, cx| {
+                        cx.stop_propagation();
+                    }),
+                )
+                .on_key_down(cx.listener(|this, event: &KeyDownEvent, window, cx| {
+                    match event.keystroke.key.as_str() {
+                        "enter" => {
+                            this.delegate_mut().finish_edit(cx);
+                            window.prevent_default();
+                            cx.stop_propagation();
+                            return;
+                        }
+                        "escape" => {
+                            this.delegate_mut().cancel_edit(cx);
+                            window.prevent_default();
+                            cx.stop_propagation();
+                            return;
+                        }
+                        "backspace" => {
+                            let delegate = this.delegate_mut();
+                            let len = delegate.edit_value.len_chars();
+                            if len > 0 {
+                                delegate.edit_value.remove(len - 1..len);
+                            }
+                            cx.notify();
+                            window.prevent_default();
+                            cx.stop_propagation();
+                            return;
+                        }
+                        _ => {}
+                    }
+
                     if let Some(key_char) = &event.keystroke.key_char {
-                        if key_char.len() == 1 && !event.keystroke.modifiers.control {
+                        if key_char.chars().count() == 1
+                            && !event.keystroke.modifiers.control
+                            && !event.keystroke.modifiers.platform
+                        {
                             let delegate = this.delegate_mut();
                             let len = delegate.edit_value.len_chars();
                             delegate.edit_value.insert(len, key_char);
                             cx.notify();
+                            window.prevent_default();
+                            cx.stop_propagation();
                         }
                     }
                 }))
-                .on_action(cx.listener(|this, _event: &Backspace, _window, cx| {
-                    let delegate = this.delegate_mut();
-                    let len = delegate.edit_value.len_chars();
-                    if len > 0 {
-                        delegate.edit_value.remove(len - 1..len);
-                    }
-                    cx.notify();
-                }))
-                .on_action(cx.listener(|this, _event: &Enter, _window, cx| {
-                    this.delegate_mut().finish_edit(cx);
-                }))
+                .child(self.edit_value.to_string())
         } else {
-            // View mode - cell is clickable
-            // We need to capture the click before the table component does
-            div()
-                .id(("cell_view", row_ix * 1000 + col_ix))
-                .relative()
-                .w_full()
-                .h_full()
-                .child(
-                    // Inner clickable div that captures events
-                    div()
-                        .p_1p5()
-                        .w_full()
-                        .h_full()
-                        .cursor_pointer()
-                        .hover(|style| style.bg(rgba(0xffffff11)))
-                        .on_mouse_down(MouseButton::Left, cx.listener(move |this, _event, window, cx| {
-                            eprintln!("DEBUG: Cell clicked (on_mouse_down) - row={}, col={}", row_ix, col_ix);
+            let cell_id = row_ix
+                .saturating_mul(self.headers.len())
+                .saturating_add(col_ix);
+            div().id(("cell_view", cell_id)).w_full().h_full().child(
+                div()
+                    .p_1p5()
+                    .w_full()
+                    .h_full()
+                    .cursor_pointer()
+                    .hover(|style| style.bg(rgba(0xffffff11)))
+                    .on_mouse_down(
+                        MouseButton::Left,
+                        cx.listener(move |this, _event, window, cx| {
                             this.delegate_mut().start_edit(row_ix, col_ix, window, cx);
-                        }))
-                        .child(value.to_string())
-                )
-                .focusable()  // Make focusable to match the editing branch type
-                .track_focus(&self.focus_handle(cx))  // Track focus to match the editing branch type
+                            cx.stop_propagation();
+                        }),
+                    )
+                    .child(value.to_string()),
+            )
         }
     }
 
@@ -378,4 +315,3 @@ impl TableDelegate for GenericTableDelegate {
         }
     }
 }
-

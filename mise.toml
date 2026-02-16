@@ -103,55 +103,32 @@ tinymist preview \
 
 [tasks.tmil]
 description = "This Month in Lince (Latest Month Preview)"
-tools = { "tinymist" = "latest", "typst" = "latest" }
+tools = { "tinymist" = "latest", "typst" = "latest", "pipx:touying" = "latest" }
 run = """
 SEARCH_PATH="{{env.DOCS_ROOT}}/content/this_month_in_lince"
-LATEST_DIR=$(ls -d $SEARCH_PATH/20*/ | sort -V | tail -n 1 | xargs basename)
+DEFAULT_DIR="2025_12"
+ACTIVE_YEAR=$(find "$SEARCH_PATH" -mindepth 1 -maxdepth 1 -type d -name '20*' -printf '%f\\n' | sort -V | tail -n 1)
+LATEST_DIR=""
+if [ -n "$ACTIVE_YEAR" ]; then
+  LATEST_DIR=$(find "$SEARCH_PATH/$ACTIVE_YEAR" -mindepth 1 -maxdepth 1 -type f -name "${ACTIVE_YEAR}_*.json" -printf '%f\\n' | sed 's/\\.json$//' | sort -V | tail -n 1)
+fi
+if [ -z "$LATEST_DIR" ]; then
+  LATEST_DIR="$DEFAULT_DIR"
+fi
+SYS_INPUTS=$(printf '{"dir":"%s"}' "$LATEST_DIR")
 
 echo "🚀 Using latest data from: $LATEST_DIR"
 
-# Cleanup/Compile on exit
-trap "typst compile --root {{env.DOCS_ROOT}} --input dir=$LATEST_DIR $SEARCH_PATH/main.typ" EXIT
-# Note: Ensure touying is in your path or added to tools if needed
-trap "touying compile --root {{env.DOCS_ROOT}} --format html --input dir=$LATEST_DIR $SEARCH_PATH/main.typ" EXIT
+trap 'touying compile --root . --format html --sys-inputs "$SYS_INPUTS" "$SEARCH_PATH/main.typ"' EXIT
 
 tinymist preview \
-  --root {{env.DOCS_ROOT}} \
+  --root . \
   --control-plane-host 127.0.0.1:3002 \
   --data-plane-host 127.0.0.1:3001 \
   --static-file-host 127.0.0.1:3003 \
   --font-path {{env.FONT_PATH}} \
-  --invert-colors='{"rest":"always", "image": "never"}' \
   --input dir=$LATEST_DIR \
   $SEARCH_PATH/main.typ
-"""
-
-[tasks.posts]
-description = "Generate PNGs for social media posts"
-tools = { "typst" = "latest" }
-run = """
-find {{env.DOCS_ROOT}}/content/social_media_posts -name '*.json' -type f | while read -r json; do
-  rel="${json#{{env.DOCS_ROOT}}/content/social_media_posts/}"
-  dir="$(dirname "$json")"
-  base="$(basename "$json" .json)"
-  typst compile --root ./ --format png --input json=\"$rel\" \
-    {{env.DOCS_ROOT}}/content/social_media_posts/main.typ \
-    \"$dir/${base}-{0p}.png\"
-done
-"""
-
-[tasks.post]
-description = "Preview social media posts"
-tools = { "tinymist" = "latest" }
-run = """
-tinymist preview \
---root . \
---control-plane-host 127.0.0.1:3002 \
---data-plane-host 127.0.0.1:3001 \
---static-file-host 127.0.0.1:3003 \
---font-path {{env.FONT_PATH}} \
---invert-colors='{"rest":"always", "image": "never"}' \
-{{env.DOCS_ROOT}}/content/social_media_posts/main.typ
 """
 
 [tasks.release]

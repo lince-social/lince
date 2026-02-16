@@ -1,0 +1,72 @@
+{
+  "growth": [
+    {
+      "image": "random/institute_depenency.jpg",
+      "i18n": {
+        "pt-BR": {
+          "title": "Instituto Lince no Brasil",
+          "description": "Rascunho do regimento do Instituto (Estatuto Social) + Em contato com ajuda para criá-lo"
+        },
+        "zh-CN": {
+          "title": "巴西林斯研究所",
+          "description": "研究所章程（社会章程）草案 + 正在联系协助完成制定"
+        },
+        "en": {
+          "title": "Lince Institute in Brazil",
+          "description": "Draft of Institute regiment (Estatuto Social) + In touch with help to create it"
+        }
+      }
+    },
+    {
+      "image": "random/social_media_posts.jpg",
+      "i18n": {
+        "pt-BR": {
+          "title": "Posts em Redes Sociais",
+          "description": "Rascunho, em Typst -> PNG"
+        },
+        "zh-CN": {
+          "title": "社交媒体帖子",
+          "description": "草稿，Typst -> PNG"
+        },
+        "en": {
+          "title": "Social Media Posts",
+          "description": "Draft, in Typst -> PNG"
+        }
+      }
+    }
+  ],
+  "development": [
+    {
+      "i18n": {
+        "pt-BR": {
+          "title": "Explorando, encontrando bugs",
+          "description": "Exploração com entrada manual"
+        },
+        "zh-CN": {
+          "title": "边尝试边排错",
+          "description": "使用手动输入进行探索"
+        },
+        "en": {
+          "title": "Playing around, bugging out",
+          "description": "Exploration with manual input"
+        }
+      }
+    },
+    {
+      "i18n": {
+        "pt-BR": {
+          "title": "Explorando, encontrando bugs",
+          "description": "Pequenos bugs (Toggle View agora atualizando os dados)"
+        },
+        "zh-CN": {
+          "title": "边尝试边排错",
+          "description": "小问题（Toggle View 现在会更新数据）"
+        },
+        "en": {
+          "title": "Playing around, bugging out",
+          "description": "Small bugs (Toggle View now updating data)"
+        }
+      }
+    }
+  ]
+}

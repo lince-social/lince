@@ -17,14 +17,8 @@
     type: "Frontend",
   )[
     Each cell when hovered should:
-<<<<<<< HEAD
-    - [ ] Have an icon to edit it in a resizeable text buffer.
-    Becoming a big modal that covers almost the entire screen when it opens.
-=======
     - [ ] Have an icon to edit it in a resizeable text buffer. Becoming a big modal that covers almost the entire screen when it opens.
->>>>>>> dev
-    - [ ] Be editable in place if clicked, maintainting the same size,
-    but with a big text field, instead of just a text cell.
+    - [/] Be editable in place if clicked, maintainting the same size, but with a big text field, instead of just a text cell.
   ],
   task(
     "Table component",
@@ -44,54 +38,45 @@
   ],
   task(
     "Lince Institute",
-    contributors: (("@xaviduds", "wip"),),
+    contributors: (("@xaviduds", "todo"),),
     type: "Bureaucracy",
   )[
-    - [/] Hire Lawyer
+    - [/] Hire Lawyer: AFOSC.
     - [ ] Consolidate the 'Ata de Fundação' and 'Estatuto Social'
-    - [ ] Use the 'Ata de Fundação' and 'Estatuto Social' to create the 'Associação privada' called 'Instituto Lince'
+    - [ ] Use the 'Ata de Fundação' and 'Estatuto Social' to create the OSC Institute called called 'Instituto Lince'
     - [ ] CNPJ (Cora (more famous) or Conta Simples)
     - [ ] Bank Account (which bank? Banco do Brasil?)
 
-    In Brazil there is a model of legal organization called Associação privada with a non-profit declaration.
-    It has the best legal model for Lince in the several years to come. It's main purpose is to be a legal body
+
+    It's main purpose is to be a legal body
     in case the project needs to be represented or have a relationship with other parties.
     These relationships include donations, contracts with developers, legal operational reports and more.
 
-    The legal category of the organization is an 'Associação privada'. The plan is for the public legal names 'Razão Social' and 'Nome Fantasia'
-    to be 'Insituto Lince'. And to be commonly known when reffering to the project as Lince and have the institute as a supporting piece.
+    The Institute being OSC, 'Organização da Sociedade Civil' allows for donations to become tax reductions by the
+    donating parties. Also opens the possibility of earning technology-based government programs' funding.
 
     The following documents explain all the papers needed for the entire lifecycle of the Instituto Lince, the legal
     entity in Brazil to operate and represent the bureaucracy of the project.
 
     *Ata de Fundação*
-    Document used to officially create the organization, needs at minimum the founder Eduardo another associate (they dont need to be
-    involved in the project after the creation).
+    Document used to officially create the organization, needs at minimum two people.
 
     *Estatuto Social*
     The rules and permissions the project has. The rights and duties it proposes to follow.
 
     *Procuração*
-    Document to be updated and adapted whenever a new legal/financial task needs to be complete, and it's not done by the Executive Director.
+    Document to be updated and adapted whenever a new legal/financial task needs to be complete,
+    and it's not done by someone of the Institute with permission.
   ],
   task(
     "New Logo Items: First Batch",
-<<<<<<< HEAD
     contributors: (("Nika", "wip"), ("@xaviduds", "todo")),
     type: "Design",
   )[
-    - [/] New vetorized logo | nika
-      - [ ] Stickers: get tip from Nika | duds
-      - [/] Hering's Super Cotton for t-shirts | duds
-        - [ ] Embroider them with the logo | duds
-=======
-    contributors: (("Nika", "wip"), ("@xaviduds", "wip")),
-    type: "Design",
-  )[
     - [x] New vetorized logo | nika
-      - [ ] Stickers: get tip from Nika | duds
+      - [/] Stickers: get tip from Nika | duds
       - [/] Hering's Super Cotton for t-shirts | duds
->>>>>>> dev
+        - [ ] Embroider them with the logo: iguat | duds
     - [/] Blender 3D logo | nika
       - [ ] 3D Keychain Items \@tecnopuc_crialab | duds
   ],
@@ -150,7 +135,6 @@
     *Catch Up Sum:*
     When a frequency hasnt been activated for a long time, like for a 1 Day frequency with a next_date stuck
     three months ago, if something references it, every Karma Delivery (60s) will update it to one day closer to tomorrow (2 months 29 days now).
-<<<<<<< HEAD
 
     The catch_up_sum is something that takes all of the possible times the frequency would activate and moves the next_date until it reaches stability.
 
@@ -158,11 +142,6 @@
 
     catch_up_sum => positive, make the next_date jump the number of times the value of catch_up_sum, never jumping if next_date is already in the future.
 
-=======
-    The catch_up_sum is something that takes all of the possible times the frequency would activate and moves the next_date until it reaches stability.
-    catch_up_sum == 0 => dont do anything, just calculate frequency normally one time.
-    catch_up_sum => positive, make the next_date jump the number of times the value of catch_up_sum, never jumping if next_date is already in the future.
->>>>>>> dev
     In other words: if its 1, its the same as zero, you jump the next_date one time based on the frequency (1 day) and go on.
     If it's two, you jump two times so it would go from 3 months ago to 2 months and 28 days.
     If its negative dont do anything.
@@ -171,10 +150,7 @@
     There already is a commented try at this in the frequency function. The goal is to make something easy to write to say that it should fall in a day
     of the week. So if the frequency only contains info about jumping every monday and tuesday then the day_of_week would be something like `1, 2` or `12`
     or something else, you who knows.
-<<<<<<< HEAD
 
-=======
->>>>>>> dev
     If the frequency is `months: 2, day_of_week: 5` it will first jump to the next friday, then jump two months. Or maybe it should first go to the two
     months and then fall on a friday. There should be a mechanism to easily set a prefference between the two behaviors.
 
@@ -245,7 +221,6 @@
 
     Pinned Views appear on the screen independently of the active Collection,
     making it appear on the screen with higher Z index and stuck to a place.
-<<<<<<< HEAD
 
     - [x] Be able to Pin/Unpin Views.
     - [ ] Have the pinned view be able to be resized and moved. Persist that information in the Pin Collection table.
@@ -273,8 +248,36 @@
     *Bonus Points*
 
     - [ ] Goated is the one that can maintain the shell's text highlighting.
-=======
->>>>>>> dev
+  ],
+  task("Lynx alive in Website", contributors: (("N1", "todo"),))[
+    Make a _Lynx canadensis_ 3D model inside the website. While the website is boring, the Lynx is very alive.
+    By default it doesnt mess with anything. But if you pet it a lot it becomes hiperstimulated and with that energy it becomes hyperactive.
+    It plays with the components of the screen, scrambles them, munches them, removing a part of the top bar. It follows you around the screen.
+    If you try to click some links it moves them away, like a Turk icecream man that never lets you get the icecream.
+
+    The model of the Lynx probably needs to be done in Blender, then put in Three.js or Bevy WebAssembly WebGPU.
+
+    If you refresh the screen it goes back to normal.
+  ],
+  task("Online Shop", contributors: (("N1", "todo"),))[
+    - [ ] Make an online shop managed by Lince.
+    When purchases arrive, all the Needs to complete the service to the customers are created, including:
+    - [ ] Ordering the white label items in the case of clothing, embroidering them (maybe both by same vendor);
+    or printing stickers/keychains.
+    - [ ] Creating the transport Need.
+    - [ ] NF-e.
+
+    For items put:
+    - [ ] T-shirts
+    - [ ] Stickers
+    - [ ] 3D Keychain Accessory
+    - [ ] Hoodies
+
+    Depending on the cost it might be good to make either on demand by third party
+    (JIT when an order arrives one item is bought) or
+    produce in batches.
+    - [ ] Give the option for the person to wait until a new batch is created for a lower cost or for them to
+    buy 1 or more from "scratch". For the latter we will charge more because making one single item is more expensive.
   ],
 )
 

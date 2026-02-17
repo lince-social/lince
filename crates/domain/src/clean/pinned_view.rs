@@ -6,5 +6,7 @@ pub struct PinnedView {
     pub view_id: u32,
     pub position_x: f64,
     pub position_y: f64,
+    pub width: f64,
+    pub height: f64,
     pub z_index: i32,
 }

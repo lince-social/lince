@@ -27,4 +27,6 @@ pub struct ViewWithPinInfo {
     pub pinned: bool,
     pub position_x: Option<f64>,
     pub position_y: Option<f64>,
+    pub width: Option<f64>,
+    pub height: Option<f64>,
 }

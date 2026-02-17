@@ -75,9 +75,9 @@
   )[
     - [x] New vetorized logo | nika
       - [/] Stickers: get tip from Nika | duds
-      - [/] Hering's Super Cotton for t-shirts | duds
-        - [ ] Embroider them with the logo: iguat | duds
-    - [/] Blender 3D logo | nika
+      - [x] Hering's Super Cotton for t-shirts | duds
+        - [/] Embroider them with the logo: iguat | duds
+    - [ ] Blender 3D logo | nika
       - [ ] 3D Keychain Items \@tecnopuc_crialab | duds
   ],
   task(

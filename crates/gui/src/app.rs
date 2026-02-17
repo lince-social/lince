@@ -1,7 +1,7 @@
-use super::{components::table::GenericTableDelegate, window::get_window_options, workspace::*};
+use super::{components::table::CustomTable, window::get_window_options, workspace::*};
 use domain::dirty::gpui::State;
 use gpui::*;
-use gpui_component::{table::TableState, *};
+use gpui_component::*;
 use gpui_component_assets::Assets;
 use injection::cross_cutting::InjectedServices;
 
@@ -28,7 +28,7 @@ pub async fn gpui_app(services: InjectedServices, state: State) {
         ]);
 
         cx.open_window(window_options, |window, cx| {
-            let all_tables: Vec<(String, Entity<TableState<GenericTableDelegate>>)> = vec![];
+            let all_tables: Vec<(String, Entity<CustomTable>)> = vec![];
 
             let workspace_view = Workspace::view(cx, services.clone(), state.clone(), all_tables);
             cx.new(|cx| Root::new(workspace_view, window, cx))

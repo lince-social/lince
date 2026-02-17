@@ -1,18 +1,8 @@
-// Record tem que ter propriedades do mundo real? Ou deve-se fazer uma gambiarra pelos usuários? tentar overreach de modelagem de banco
-// pode ter um backfire porqua estamos complicando demais? se o usuário fizer uma query que pega tudo e se deparar com uma montanha de colunas
-// vai ser meio assustador.
-// Tmbém tem o fato de que nem todos os cadastros vao possuir certas propriedades, vai estar mal normalizdo com varias celulas vazias.
-//
-// Propriedades que se pode adicionar aos records:
-// Localização atual
-// Custos? O que que é um custo? É a contribuição necessária para ter isso. Pode ser outro record? Como? Com proposta de transferencia
-// A Proposta de Transferencia é a relação entre um cadastro e seu custo.
-
 use gpui::*;
-use gpui_component::table::*;
+use gpui_component::h_flex;
 use injection::cross_cutting::InjectedServices;
 use ropey::Rope;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::themes::catppuccin_mocha::{blue, surface1};
 
@@ -25,83 +15,191 @@ struct CellPosition {
     col_ix: usize,
 }
 
-pub struct GenericTableDelegate {
+pub struct CustomTable {
     data: Table,
     headers: Vec<String>,
-    columns: Vec<Column>,
-    col_widths: Vec<f32>,
     table_name: String,
     services: InjectedServices,
-    // Track editing state
     editing_cell: Option<CellPosition>,
     edit_value: Rope,
+    cursor_pos: usize,
+    preferred_col: Option<usize>,
     focus_handle: FocusHandle,
 }
 
-impl Focusable for GenericTableDelegate {
+impl Focusable for CustomTable {
     fn focus_handle(&self, _: &App) -> FocusHandle {
         self.focus_handle.clone()
     }
 }
 
-impl GenericTableDelegate {
+impl CustomTable {
     pub fn new(data: Table, table_name: String, services: InjectedServices, cx: &mut App) -> Self {
-        let mut headers: Vec<String> = data
-            .first()
-            .map(|r| r.keys().cloned().collect())
-            .unwrap_or_default();
-
+        let mut header_set = HashSet::new();
+        for row in &data {
+            for key in row.keys() {
+                header_set.insert(key.clone());
+            }
+        }
+        let mut headers = header_set.into_iter().collect::<Vec<_>>();
         headers.sort();
-
-        let columns = headers
-            .iter()
-            .map(|h| {
-                Column::new(h.clone(), h.clone())
-                    .sortable()
-                    .movable(true)
-                    .resizable(true)
-            })
-            .collect::<Vec<_>>();
-
-        // default column width when none has been set yet
-        let col_widths = vec![150.0; headers.len()];
 
         Self {
             data,
             headers,
-            columns,
-            col_widths,
             table_name,
             services,
             editing_cell: None,
             edit_value: Rope::new(),
+            cursor_pos: 0,
+            preferred_col: None,
             focus_handle: cx.focus_handle(),
         }
     }
 
-    fn save_cell_changes(
-        &mut self,
-        row_ix: usize,
-        col_ix: usize,
-        cx: &mut Context<TableState<Self>>,
-    ) {
+    fn line_starts(text: &str) -> Vec<usize> {
+        let mut starts = vec![0];
+        for (ix, ch) in text.chars().enumerate() {
+            if ch == '\n' {
+                starts.push(ix + 1);
+            }
+        }
+        starts
+    }
+
+    fn line_index_and_col(cursor: usize, starts: &[usize]) -> (usize, usize) {
+        let line_ix = starts.partition_point(|s| *s <= cursor).saturating_sub(1);
+        let col = cursor.saturating_sub(starts[line_ix]);
+        (line_ix, col)
+    }
+
+    fn line_end(starts: &[usize], text_len: usize, line_ix: usize) -> usize {
+        if line_ix + 1 < starts.len() {
+            starts[line_ix + 1].saturating_sub(1)
+        } else {
+            text_len
+        }
+    }
+
+    fn line_col_to_cursor(
+        starts: &[usize],
+        text_len: usize,
+        line_ix: usize,
+        target_col: usize,
+    ) -> usize {
+        let line_start = starts[line_ix];
+        let line_end = Self::line_end(starts, text_len, line_ix);
+        line_start + target_col.min(line_end.saturating_sub(line_start))
+    }
+
+    fn clamp_cursor(&mut self) {
+        let len = self.edit_value.len_chars();
+        if self.cursor_pos > len {
+            self.cursor_pos = len;
+        }
+    }
+
+    fn insert_text(&mut self, text: &str) {
+        self.clamp_cursor();
+        self.edit_value.insert(self.cursor_pos, text);
+        self.cursor_pos += text.chars().count();
+        self.preferred_col = None;
+    }
+
+    fn move_left(&mut self) {
+        self.clamp_cursor();
+        if self.cursor_pos > 0 {
+            self.cursor_pos -= 1;
+        }
+        self.preferred_col = None;
+    }
+
+    fn move_right(&mut self) {
+        self.clamp_cursor();
+        if self.cursor_pos < self.edit_value.len_chars() {
+            self.cursor_pos += 1;
+        }
+        self.preferred_col = None;
+    }
+
+    fn move_home(&mut self) {
+        self.clamp_cursor();
+        let text = self.edit_value.to_string();
+        let starts = Self::line_starts(&text);
+        let (line_ix, _) = Self::line_index_and_col(self.cursor_pos, &starts);
+        self.cursor_pos = starts[line_ix];
+        self.preferred_col = None;
+    }
+
+    fn move_end(&mut self) {
+        self.clamp_cursor();
+        let text = self.edit_value.to_string();
+        let text_len = text.chars().count();
+        let starts = Self::line_starts(&text);
+        let (line_ix, _) = Self::line_index_and_col(self.cursor_pos, &starts);
+        self.cursor_pos = Self::line_end(&starts, text_len, line_ix);
+        self.preferred_col = None;
+    }
+
+    fn move_up(&mut self) {
+        self.clamp_cursor();
+        let text = self.edit_value.to_string();
+        let text_len = text.chars().count();
+        let starts = Self::line_starts(&text);
+        let (line_ix, col) = Self::line_index_and_col(self.cursor_pos, &starts);
+        let target_col = self.preferred_col.unwrap_or(col);
+        if line_ix > 0 {
+            self.cursor_pos = Self::line_col_to_cursor(&starts, text_len, line_ix - 1, target_col);
+        }
+        self.preferred_col = Some(target_col);
+    }
+
+    fn move_down(&mut self) {
+        self.clamp_cursor();
+        let text = self.edit_value.to_string();
+        let text_len = text.chars().count();
+        let starts = Self::line_starts(&text);
+        let (line_ix, col) = Self::line_index_and_col(self.cursor_pos, &starts);
+        let target_col = self.preferred_col.unwrap_or(col);
+        if line_ix + 1 < starts.len() {
+            self.cursor_pos = Self::line_col_to_cursor(&starts, text_len, line_ix + 1, target_col);
+        }
+        self.preferred_col = Some(target_col);
+    }
+
+    fn backspace(&mut self) {
+        self.clamp_cursor();
+        if self.cursor_pos > 0 {
+            let start = self.cursor_pos - 1;
+            self.edit_value.remove(start..self.cursor_pos);
+            self.cursor_pos = start;
+            self.preferred_col = None;
+        }
+    }
+
+    fn delete_forward(&mut self) {
+        self.clamp_cursor();
+        if self.cursor_pos < self.edit_value.len_chars() {
+            self.edit_value.remove(self.cursor_pos..self.cursor_pos + 1);
+            self.preferred_col = None;
+        }
+    }
+
+    fn save_cell_changes(&mut self, row_ix: usize, col_ix: usize, cx: &mut Context<Self>) {
         let key = self.headers[col_ix].clone();
         let row_id = self.data[row_ix]
             .get("id")
             .map(|s| s.to_string())
             .unwrap_or_else(|| row_ix.to_string());
-
         let services = self.services.clone();
         let table = self.table_name.clone();
         let column = key.clone();
         let value = self.edit_value.to_string();
 
-        // Update local data
         if let Some(row) = self.data.get_mut(row_ix) {
             row.insert(key, value.clone());
         }
 
-        // Save to database
         cx.spawn(async move |_this, _cx| {
             if let Err(e) =
                 application::table::table_patch_row(services, table, row_id, column, value).await
@@ -117,201 +215,241 @@ impl GenericTableDelegate {
         row_ix: usize,
         col_ix: usize,
         window: &mut Window,
-        cx: &mut Context<TableState<Self>>,
+        cx: &mut Context<Self>,
     ) {
         let key = &self.headers[col_ix];
         let value = self.data[row_ix].get(key).map(String::as_str).unwrap_or("");
-
         self.editing_cell = Some(CellPosition { row_ix, col_ix });
         self.edit_value = Rope::from_str(value);
-
-        // Focus after the cell editor is mounted.
+        self.cursor_pos = self.edit_value.len_chars();
+        self.preferred_col = None;
         window.defer(cx, {
             let focus_handle = self.focus_handle.clone();
             move |window, _cx| {
                 window.focus(&focus_handle);
             }
         });
-
         cx.notify();
     }
 
-    fn finish_edit(&mut self, cx: &mut Context<TableState<Self>>) {
+    fn finish_edit(&mut self, cx: &mut Context<Self>) {
         if let Some(pos) = self.editing_cell.clone() {
             self.save_cell_changes(pos.row_ix, pos.col_ix, cx);
         }
         self.editing_cell = None;
+        self.preferred_col = None;
         cx.notify();
     }
 
-    fn cancel_edit(&mut self, cx: &mut Context<TableState<Self>>) {
+    fn cancel_edit(&mut self, cx: &mut Context<Self>) {
         self.editing_cell = None;
+        self.preferred_col = None;
         cx.notify();
     }
 }
 
-impl TableDelegate for GenericTableDelegate {
-    fn columns_count(&self, _: &App) -> usize {
-        self.columns.len()
-    }
-
-    fn rows_count(&self, _: &App) -> usize {
-        self.data.len()
-    }
-
-    fn column(&self, col_ix: usize, _: &App) -> &Column {
-        &self.columns[col_ix]
-    }
-
-    fn render_td(
-        &mut self,
-        row_ix: usize,
-        col_ix: usize,
-        _window: &mut Window,
-        cx: &mut Context<TableState<Self>>,
-    ) -> impl IntoElement {
-        let key = &self.headers[col_ix];
-        let value = self.data[row_ix]
-            .get(key)
-            .map(String::as_str)
-            .unwrap_or("NULL");
-
-        let current_pos = CellPosition { row_ix, col_ix };
-        let is_editing = self.editing_cell.as_ref() == Some(&current_pos);
-
-        if is_editing {
-            let cell_id = row_ix
-                .saturating_mul(self.headers.len())
-                .saturating_add(col_ix);
+impl Render for CustomTable {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let header_cells = self.headers.iter().map(|header| {
             div()
-                .id(("cell_editor", cell_id))
+                .min_w(px(120.0))
+                .flex_1()
                 .p_1p5()
-                .w_full()
-                .h_full()
-                .bg(surface1())
-                .border_1()
-                .border_color(blue())
-                .rounded_xs()
-                .focusable()
-                .track_focus(&self.focus_handle(cx))
-                .on_mouse_down(
-                    MouseButton::Left,
-                    cx.listener(|_, _event, _window, cx| {
-                        cx.stop_propagation();
-                    }),
-                )
-                .on_key_down(cx.listener(|this, event: &KeyDownEvent, window, cx| {
-                    match event.keystroke.key.as_str() {
-                        "enter" => {
-                            this.delegate_mut().finish_edit(cx);
-                            window.prevent_default();
-                            cx.stop_propagation();
-                            return;
-                        }
-                        "escape" => {
-                            this.delegate_mut().cancel_edit(cx);
-                            window.prevent_default();
-                            cx.stop_propagation();
-                            return;
-                        }
-                        "backspace" => {
-                            let delegate = this.delegate_mut();
-                            let len = delegate.edit_value.len_chars();
-                            if len > 0 {
-                                delegate.edit_value.remove(len - 1..len);
+                .bg(rgba(0xffffff08))
+                .border_r_1()
+                .border_color(rgba(0xffffff14))
+                .child(header.clone())
+        });
+
+        let rows = self.data.iter().enumerate().map(|(row_ix, row)| {
+            let cells = self.headers.iter().enumerate().map(|(col_ix, key)| {
+                let value = row.get(key).map(String::as_str).unwrap_or("NULL");
+                let lines = value.split('\n').map(str::to_string).collect::<Vec<_>>();
+                let current_pos = CellPosition { row_ix, col_ix };
+                let is_editing = self.editing_cell.as_ref() == Some(&current_pos);
+                let cell_id = row_ix
+                    .saturating_mul(self.headers.len())
+                    .saturating_add(col_ix);
+
+                if is_editing {
+                    let edit_text = self.edit_value.to_string();
+                    let text_len = edit_text.chars().count();
+                    let cursor = self.cursor_pos.min(text_len);
+                    let starts = Self::line_starts(&edit_text);
+                    let (cursor_line, cursor_col) = Self::line_index_and_col(cursor, &starts);
+                    let edit_lines = edit_text
+                        .split('\n')
+                        .enumerate()
+                        .map(|(line_ix, line)| {
+                            if line_ix == cursor_line {
+                                let chars = line.chars().collect::<Vec<_>>();
+                                let split_ix = cursor_col.min(chars.len());
+                                let before = chars.iter().take(split_ix).collect::<String>();
+                                let after = chars.iter().skip(split_ix).collect::<String>();
+                                format!("{before}|{after}")
+                            } else {
+                                line.to_string()
                             }
-                            cx.notify();
-                            window.prevent_default();
-                            cx.stop_propagation();
-                            return;
-                        }
-                        _ => {}
-                    }
+                        })
+                        .collect::<Vec<_>>();
+                    div()
+                        .id(("cell_editor", cell_id))
+                        .min_w(px(120.0))
+                        .flex_1()
+                        .p_1p5()
+                        .bg(surface1())
+                        .border_1()
+                        .border_color(blue())
+                        .whitespace_normal()
+                        .flex_col()
+                        .focusable()
+                        .track_focus(&self.focus_handle(cx))
+                        .on_mouse_down(
+                            MouseButton::Left,
+                            cx.listener(|_, _event, _window, cx| {
+                                cx.stop_propagation();
+                            }),
+                        )
+                        .on_key_down(cx.listener(|this, event: &KeyDownEvent, window, cx| {
+                            match event.keystroke.key.as_str() {
+                                "enter" => {
+                                    if event.keystroke.modifiers.shift {
+                                        this.insert_text("\n");
+                                        cx.notify();
+                                    } else {
+                                        this.finish_edit(cx);
+                                    }
+                                    window.prevent_default();
+                                    cx.stop_propagation();
+                                    return;
+                                }
+                                "escape" => {
+                                    this.cancel_edit(cx);
+                                    window.prevent_default();
+                                    cx.stop_propagation();
+                                    return;
+                                }
+                                "backspace" => {
+                                    this.backspace();
+                                    cx.notify();
+                                    window.prevent_default();
+                                    cx.stop_propagation();
+                                    return;
+                                }
+                                "delete" => {
+                                    this.delete_forward();
+                                    cx.notify();
+                                    window.prevent_default();
+                                    cx.stop_propagation();
+                                    return;
+                                }
+                                "left" | "arrowleft" => {
+                                    this.move_left();
+                                    cx.notify();
+                                    window.prevent_default();
+                                    cx.stop_propagation();
+                                    return;
+                                }
+                                "right" | "arrowright" => {
+                                    this.move_right();
+                                    cx.notify();
+                                    window.prevent_default();
+                                    cx.stop_propagation();
+                                    return;
+                                }
+                                "up" | "arrowup" => {
+                                    this.move_up();
+                                    cx.notify();
+                                    window.prevent_default();
+                                    cx.stop_propagation();
+                                    return;
+                                }
+                                "down" | "arrowdown" => {
+                                    this.move_down();
+                                    cx.notify();
+                                    window.prevent_default();
+                                    cx.stop_propagation();
+                                    return;
+                                }
+                                "home" => {
+                                    this.move_home();
+                                    cx.notify();
+                                    window.prevent_default();
+                                    cx.stop_propagation();
+                                    return;
+                                }
+                                "end" => {
+                                    this.move_end();
+                                    cx.notify();
+                                    window.prevent_default();
+                                    cx.stop_propagation();
+                                    return;
+                                }
+                                _ => {}
+                            }
 
-                    if let Some(key_char) = &event.keystroke.key_char {
-                        if key_char.chars().count() == 1
-                            && !event.keystroke.modifiers.control
-                            && !event.keystroke.modifiers.platform
-                        {
-                            let delegate = this.delegate_mut();
-                            let len = delegate.edit_value.len_chars();
-                            delegate.edit_value.insert(len, key_char);
-                            cx.notify();
-                            window.prevent_default();
-                            cx.stop_propagation();
-                        }
-                    }
-                }))
-                .child(self.edit_value.to_string())
-        } else {
-            let cell_id = row_ix
-                .saturating_mul(self.headers.len())
-                .saturating_add(col_ix);
-            div().id(("cell_view", cell_id)).w_full().h_full().child(
-                div()
-                    .p_1p5()
+                            if let Some(key_char) = &event.keystroke.key_char {
+                                if key_char.chars().count() == 1
+                                    && !event.keystroke.modifiers.control
+                                    && !event.keystroke.modifiers.platform
+                                {
+                                    this.insert_text(key_char);
+                                    cx.notify();
+                                    window.prevent_default();
+                                    cx.stop_propagation();
+                                }
+                            }
+                        }))
+                        .children(
+                            edit_lines
+                                .into_iter()
+                                .map(|line| div().w_full().child(line)),
+                        )
+                        .into_any_element()
+                } else {
+                    div()
+                        .id(("cell_view", cell_id))
+                        .min_w(px(120.0))
+                        .flex_1()
+                        .p_1p5()
+                        .whitespace_normal()
+                        .flex_col()
+                        .cursor_pointer()
+                        .border_r_1()
+                        .border_color(rgba(0xffffff14))
+                        .hover(|style| style.bg(rgba(0xffffff11)))
+                        .on_mouse_down(
+                            MouseButton::Left,
+                            cx.listener(move |this, _event, window, cx| {
+                                this.start_edit(row_ix, col_ix, window, cx);
+                                cx.stop_propagation();
+                            }),
+                        )
+                        .children(lines.into_iter().map(|line| div().w_full().child(line)))
+                        .into_any_element()
+                }
+            });
+
+            h_flex()
+                .w_full()
+                .border_b_1()
+                .border_color(rgba(0xffffff14))
+                .children(cells)
+        });
+
+        div()
+            .w_full()
+            .overflow_hidden()
+            .border_1()
+            .border_color(rgba(0xffffff14))
+            .child(
+                h_flex()
                     .w_full()
-                    .h_full()
-                    .cursor_pointer()
-                    .hover(|style| style.bg(rgba(0xffffff11)))
-                    .on_mouse_down(
-                        MouseButton::Left,
-                        cx.listener(move |this, _event, window, cx| {
-                            this.delegate_mut().start_edit(row_ix, col_ix, window, cx);
-                            cx.stop_propagation();
-                        }),
-                    )
-                    .child(value.to_string()),
+                    .items_center()
+                    .border_b_1()
+                    .border_color(rgba(0xffffff14))
+                    .children(header_cells),
             )
-        }
-    }
-
-    fn perform_sort(
-        &mut self,
-        col_ix: usize,
-        sort: ColumnSort,
-        _: &mut Window,
-        _: &mut Context<TableState<Self>>,
-    ) {
-        let key = self.headers[col_ix].clone();
-
-        match sort {
-            ColumnSort::Ascending => {
-                self.data.sort_by(|a, b| a.get(&key).cmp(&b.get(&key)));
-            }
-            ColumnSort::Descending => {
-                self.data.sort_by(|a, b| b.get(&key).cmp(&a.get(&key)));
-            }
-            ColumnSort::Default => {}
-        }
-    }
-
-    // called when the table reports a column has been moved via drag & drop
-    // Implemented as `move_column` to match the `TableDelegate` trait.
-    fn move_column(
-        &mut self,
-        col_ix: usize,
-        to_ix: usize,
-        _: &mut Window,
-        _: &mut Context<TableState<Self>>,
-    ) {
-        let len = self.headers.len();
-        if col_ix >= len || to_ix >= len || col_ix == to_ix {
-            return;
-        }
-
-        // move header label
-        let header = self.headers.remove(col_ix);
-        self.headers.insert(to_ix, header);
-
-        // move column metadata
-        let column = self.columns.remove(col_ix);
-        self.columns.insert(to_ix, column);
-
-        // keep width vector in sync
-        if !self.col_widths.is_empty() {
-            let w = self.col_widths.remove(col_ix);
-            self.col_widths.insert(to_ix, w);
-        }
+            .children(rows)
     }
 }

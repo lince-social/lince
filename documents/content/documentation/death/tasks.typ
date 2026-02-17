@@ -19,6 +19,11 @@
     Each cell when hovered should:
     - [ ] Have an icon to edit it in a resizeable text buffer. Becoming a big modal that covers almost the entire screen when it opens.
     - [/] Be editable in place if clicked, maintainting the same size, but with a big text field, instead of just a text cell.
+      - [/] Since gpui-component's Table component doesnt have that great of a fit with certain features Lince needs,
+      we need to create a custom table component. Features it needs:
+      - [/] Have editable cells.
+      - [/] Each cell renders the content regardless of the amount of lines it has. So if its a supermarket list not only the
+      line called "Items:" is shown, but the "- Apple \\n Peaches".
   ],
   task(
     "Table component",

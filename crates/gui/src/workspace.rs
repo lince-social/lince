@@ -1,13 +1,12 @@
 use crate::components::operation::Operation;
 
 use super::{
-    components::{collection::CollectionList, table::GenericTableDelegate},
+    components::{collection::CollectionList, table::CustomTable},
     themes::catppuccin_mocha::mantle,
 };
 use application::operation::operation_execute;
 use domain::{clean::collection::Collection, dirty::gpui::State};
 use gpui::*;
-use gpui_component::table::TableState;
 use injection::cross_cutting::InjectedServices;
 use utils::log;
 
@@ -20,8 +19,8 @@ pub struct Workspace {
     pub state: State,
     pub services: InjectedServices,
     pub collection_list: Entity<CollectionList>,
-    pub table_entities: Vec<(String, Entity<TableState<GenericTableDelegate>>)>,
-    pub pinned_table_entities: Vec<(u32, String, Entity<TableState<GenericTableDelegate>>)>,
+    pub table_entities: Vec<(String, Entity<CustomTable>)>,
+    pub pinned_table_entities: Vec<(u32, String, Entity<CustomTable>)>,
     pub operation: Entity<Operation>,
     // Flag to track if tables need recreation
     tables_need_recreation: bool,
@@ -32,11 +31,16 @@ impl Workspace {
         cx: &mut Context<Self>,
         services: InjectedServices,
         state: State,
-        table_entities: Vec<(String, Entity<TableState<GenericTableDelegate>>)>,
+        table_entities: Vec<(String, Entity<CustomTable>)>,
     ) -> Self {
         let weak = cx.weak_entity();
-        let collection_list =
-            cx.new(|_| CollectionList::new(state.collections.clone(), state.views_with_pin_info.clone(), weak.clone()));
+        let collection_list = cx.new(|_| {
+            CollectionList::new(
+                state.collections.clone(),
+                state.views_with_pin_info.clone(),
+                weak.clone(),
+            )
+        });
         let focus_handle = cx.focus_handle();
         let operation = cx.new(|_| Operation::new(weak.clone(), focus_handle.clone()));
 
@@ -51,7 +55,8 @@ impl Workspace {
         };
 
         // If state has tables/pinned tables, we need to create entities for them
-        let has_data = !workspace.state.tables.is_empty() || !workspace.state.pinned_tables.is_empty();
+        let has_data =
+            !workspace.state.tables.is_empty() || !workspace.state.pinned_tables.is_empty();
         if has_data {
             workspace.tables_need_recreation = true;
         }
@@ -60,7 +65,7 @@ impl Workspace {
     }
 
     // Helper method to recreate table entities when data changes
-    fn recreate_table_entities(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+    fn recreate_table_entities(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
         self.table_entities = self
             .state
             .tables
@@ -68,15 +73,9 @@ impl Workspace {
             .cloned()
             .map(|(name, table)| {
                 let services = self.services.clone();
-                let table_state = cx.new(|app_cx| {
-                    TableState::new(GenericTableDelegate::new(table, name.clone(), services, app_cx), window, app_cx)
-                        .col_resizable(true)
-                        .col_movable(true)
-                        .sortable(true)
-                        .col_selectable(false)  // Disable to allow cell editing
-                        .row_selectable(false)  // Disable to allow cell editing
-                });
-                (name, table_state)
+                let table_entity =
+                    cx.new(|app_cx| CustomTable::new(table, name.clone(), services, app_cx));
+                (name, table_entity)
             })
             .collect();
 
@@ -88,15 +87,10 @@ impl Workspace {
             .zip(self.state.pinned_tables.iter())
             .map(|(pinned_view, (table_name, table))| {
                 let services = self.services.clone();
-                let table_state = cx.new(|app_cx| {
-                    TableState::new(GenericTableDelegate::new(table.clone(), table_name.clone(), services, app_cx), window, app_cx)
-                        .col_resizable(true)
-                        .col_movable(true)
-                        .sortable(true)
-                        .col_selectable(false)  // Disable to allow cell editing
-                        .row_selectable(false)  // Disable to allow cell editing
+                let table_entity = cx.new(|app_cx| {
+                    CustomTable::new(table.clone(), table_name.clone(), services, app_cx)
                 });
-                (pinned_view.view_id, table_name.clone(), table_state)
+                (pinned_view.view_id, table_name.clone(), table_entity)
             })
             .collect();
     }
@@ -105,7 +99,7 @@ impl Workspace {
         cx: &mut App,
         services: InjectedServices,
         state: State,
-        table_entities: Vec<(String, Entity<TableState<GenericTableDelegate>>)>,
+        table_entities: Vec<(String, Entity<CustomTable>)>,
     ) -> Entity<Self> {
         cx.new(|cx| Self::new(cx, services, state, table_entities))
     }
@@ -153,7 +147,12 @@ impl Workspace {
                 }
             };
 
-            let views_with_pin_info = match services.repository.collection.get_views_with_pin_info().await {
+            let views_with_pin_info = match services
+                .repository
+                .collection
+                .get_views_with_pin_info()
+                .await
+            {
                 Ok(info) => info,
                 Err(e) => {
                     log!(e, "failed to fetch views with pin info");
@@ -199,15 +198,21 @@ impl Workspace {
                         }
                     };
 
-                    let pinned_tables = match services.repository.collection.get_pinned_view_data().await {
-                        Ok(tables) => tables,
-                        Err(e) => {
-                            log!(e, "failed to fetch pinned table data");
-                            vec![]
-                        }
-                    };
+                    let pinned_tables =
+                        match services.repository.collection.get_pinned_view_data().await {
+                            Ok(tables) => tables,
+                            Err(e) => {
+                                log!(e, "failed to fetch pinned table data");
+                                vec![]
+                            }
+                        };
 
-                    let views_with_pin_info = match services.repository.collection.get_views_with_pin_info().await {
+                    let views_with_pin_info = match services
+                        .repository
+                        .collection
+                        .get_views_with_pin_info()
+                        .await
+                    {
                         Ok(info) => info,
                         Err(e) => {
                             log!(e, "failed to fetch views with pin info");
@@ -255,15 +260,21 @@ impl Workspace {
                         }
                     };
 
-                    let pinned_tables = match services.repository.collection.get_pinned_view_data().await {
-                        Ok(tables) => tables,
-                        Err(e) => {
-                            log!(e, "failed to fetch pinned table data");
-                            vec![]
-                        }
-                    };
+                    let pinned_tables =
+                        match services.repository.collection.get_pinned_view_data().await {
+                            Ok(tables) => tables,
+                            Err(e) => {
+                                log!(e, "failed to fetch pinned table data");
+                                vec![]
+                            }
+                        };
 
-                    let views_with_pin_info = match services.repository.collection.get_views_with_pin_info().await {
+                    let views_with_pin_info = match services
+                        .repository
+                        .collection
+                        .get_views_with_pin_info()
+                        .await
+                    {
                         Ok(info) => info,
                         Err(e) => {
                             log!(e, "failed to fetch views with pin info");
@@ -275,7 +286,7 @@ impl Workspace {
                         owner.state.tables = tables.clone();
                         owner.state.pinned_tables = pinned_tables;
                         owner.state.views_with_pin_info = views_with_pin_info;
-                        
+
                         // Mark tables for recreation since data changed
                         owner.tables_need_recreation = true;
                         cx.notify();
@@ -290,7 +301,13 @@ impl Workspace {
         .detach();
     }
 
-    pub fn pin_view(&mut self, view_id: u32, position_x: f64, position_y: f64, cx: &mut Context<Self>) {
+    pub fn pin_view(
+        &mut self,
+        view_id: u32,
+        position_x: f64,
+        position_y: f64,
+        cx: &mut Context<Self>,
+    ) {
         let services = self.services.clone();
         cx.spawn(async move |this, cx| {
             if let Err(e) = services
@@ -319,7 +336,12 @@ impl Workspace {
                 }
             };
 
-            let views_with_pin_info = match services.repository.collection.get_views_with_pin_info().await {
+            let views_with_pin_info = match services
+                .repository
+                .collection
+                .get_views_with_pin_info()
+                .await
+            {
                 Ok(info) => info,
                 Err(e) => {
                     log!(e, "failed to fetch views with pin info");
@@ -362,7 +384,12 @@ impl Workspace {
                 }
             };
 
-            let views_with_pin_info = match services.repository.collection.get_views_with_pin_info().await {
+            let views_with_pin_info = match services
+                .repository
+                .collection
+                .get_views_with_pin_info()
+                .await
+            {
                 Ok(info) => info,
                 Err(e) => {
                     log!(e, "failed to fetch views with pin info");
@@ -381,7 +408,13 @@ impl Workspace {
         .detach();
     }
 
-    pub fn update_view_position(&mut self, view_id: u32, position_x: f64, position_y: f64, cx: &mut Context<Self>) {
+    pub fn update_view_position(
+        &mut self,
+        view_id: u32,
+        position_x: f64,
+        position_y: f64,
+        cx: &mut Context<Self>,
+    ) {
         let services = self.services.clone();
         cx.spawn(async move |_this, _cx| {
             if let Err(e) = services
@@ -425,15 +458,23 @@ impl Render for Workspace {
                 self.pinned_table_entities
                     .iter()
                     .map(|(view_id, name, entity)| {
-                        use super::themes::catppuccin_mocha::{yellow, base, red, maroon};
-                        
+                        use super::themes::catppuccin_mocha::{base, maroon, red, yellow};
+
                         // Find the view to get position
-                        let pinned_view = self.state.pinned_views.iter().find(|v| v.view_id == *view_id);
-                        let position_x = pinned_view.map(|v| v.position_x).unwrap_or(DEFAULT_PIN_POSITION_X);
-                        let position_y = pinned_view.map(|v| v.position_y).unwrap_or(DEFAULT_PIN_POSITION_Y);
+                        let pinned_view = self
+                            .state
+                            .pinned_views
+                            .iter()
+                            .find(|v| v.view_id == *view_id);
+                        let position_x = pinned_view
+                            .map(|v| v.position_x)
+                            .unwrap_or(DEFAULT_PIN_POSITION_X);
+                        let position_y = pinned_view
+                            .map(|v| v.position_y)
+                            .unwrap_or(DEFAULT_PIN_POSITION_Y);
                         let view_id_for_close = *view_id;
                         let weak = cx.weak_entity();
-                        
+
                         div()
                             .absolute()
                             .left(px(position_x as f32))
@@ -443,8 +484,8 @@ impl Render for Workspace {
                             .border_color(yellow()) // Yellow border for pinned views
                             .rounded_lg()
                             .shadow_lg()
-                            .w(px(500.0))  // Fixed width for now
-                            .h(px(400.0))  // Fixed height for now
+                            .w(px(500.0)) // Fixed width for now
+                            .h(px(400.0)) // Fixed height for now
                             .overflow_hidden()
                             .flex()
                             .flex_col()
@@ -465,7 +506,12 @@ impl Render for Workspace {
                                             .gap_2()
                                             .items_center()
                                             .child("📌")
-                                            .child(div().text_sm().font_weight(FontWeight::BOLD).child(name.clone()))
+                                            .child(
+                                                div()
+                                                    .text_sm()
+                                                    .font_weight(FontWeight::BOLD)
+                                                    .child(name.clone()),
+                                            ),
                                     )
                                     .child(
                                         div()
@@ -477,22 +523,20 @@ impl Render for Workspace {
                                             .text_xs()
                                             .font_weight(FontWeight::BOLD)
                                             .child("✕")
-                                            .on_mouse_up(MouseButton::Left, move |_evt, _win, cx| {
-                                                if let Some(ws) = weak.upgrade() {
-                                                    ws.update(cx, |ws, cx| {
-                                                        ws.unpin_view(view_id_for_close, cx);
-                                                    });
-                                                }
-                                            })
-                                    )
+                                            .on_mouse_up(
+                                                MouseButton::Left,
+                                                move |_evt, _win, cx| {
+                                                    if let Some(ws) = weak.upgrade() {
+                                                        ws.update(cx, |ws, cx| {
+                                                            ws.unpin_view(view_id_for_close, cx);
+                                                        });
+                                                    }
+                                                },
+                                            ),
+                                    ),
                             )
                             // Table content
-                            .child(
-                                div()
-                                    .flex_1()
-                                    .overflow_y_hidden()
-                                    .child(entity.clone())
-                            )
+                            .child(div().flex_1().overflow_y_hidden().child(entity.clone()))
                     }),
             )
     }

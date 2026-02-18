@@ -140,8 +140,11 @@
   task(
     "Creation Component for any Table",
   )[
-    - [ ] Create the modal that is the Creation component of any Table. So for records it shows all fields except for Id and is like a forms.
-    - [ ] I can have that creation component as a View. So the person will see tables and next to it the component used to create a new record, so they will be able to create new records easily. This is good for todo behavior, being able to pin the view of record creation means a quick todo creation.
+    - [/] I can have that creation component as a View. So the person will see tables and next to it the component used to create a new record, so they will be able to create new records easily. When i type 4c, or c4, or create 4 or record c or create record, ... in operation i will get in return the action the frontend must take, so the parse operation will be in charge of running commands, zeroing the quantities of records if an id is passed and matches any, this already exists. The feature we need to build well is to make this enum of crud operation or more, tables, and then with that we give to the gpui that enum, based on the return of the operation we activate on the screen a modal for creation of the specific table passed to the operation.
+    - [ ] Create the modal that is the Creation component of any Table. So for records it shows all fields except for Id and is like a forms. Find a way to get the columns of the table. Have a laywer of
+
+
+    - [ ] Pin: This is good for todo behavior, being able to pin the view of record creation means a quick todo creation.
   ],
   task(
     "Karma Refactor",
@@ -191,10 +194,10 @@
   )[
     I can pin a View. Saving that information in the Configuration (maybe an intermediate table).
 
-    Pinned Views appear on the screen independently of the active Collection,
-    making it appear on the screen with higher Z index and stuck to a place.
+    Pinned Views appear on the screen independently of the active Collection, making it appear on the screen with higher Z index and stuck to a place.
 
     - [x] Be able to Pin/Unpin Views.
+    - [ ] Currently the pin only appears when we change active Collection.
     - [ ] Have the pinned view be able to be resized and moved. Persist that information in the Pin Collection table.
     - [ ] Default to putting the pinned view on the bottom right corner.
     - [ ] Make sure the Pin border and the unpin button doesn't take too much space, as little as possible.
@@ -216,10 +219,11 @@
     This component must be able to be set as a View in any Collection.
 
     This looks like a streaming of text in a box, like an agent chat.
+    - [x] Make sure the GPUI is not waiting for the command to finish to finish a Karma if that Karma is a Consequence. If i have a Karma that if some Record has 0 quantity you zathura /home/user/mybook.pdf when i zero the quantity of a record X and also have a karma to if zero quantity make it one so it doesnt infinite loop, until i close the book it will not stop hanging waiting for the command to finish, so the record never stops being zero and it keeps opening the book. That's why the calling of a command when its in a Consequence should be done almost like in paralel.
 
-    *Bonus Points*
 
-    - [ ] Goated is the one that can maintain the shell's text highlighting.
+    // *Bonus Points*
+    // - [ ] Goated is the one that can maintain the shell's text highlighting.
   ],
   task(
     "syntax highlighting and lsp (TreeSitter?) for Commands",
@@ -250,6 +254,8 @@
   ],
   task("Transfer Proposal")[
     One can create a Transference Proposal, saying they have a Contribution to make. That initial part, with their Record and a proposal of a Contribution can be enough data to be shown to the public. One doesn't need to set what type of Counter Contribution they receive for it. Whenever the one part of the transfer is written, it is ready to be shown.
+
+    - [ ] I can set a proposal public with a certain frequency. One time or in a pendulum. I can set it public first to my main Organ.
   ],
   task(
     "IA de recomendação de Karma",
@@ -261,6 +267,20 @@
     - [ ] One can see the world as a plane with lines for the streets.
       - [ ] Bonus points for terrain data, elevation, like mountains. With that in rendering we can portrait a more accurate picture of the world and also use the elevation to show the Needs and Contributions in a 3d way. If there are a lot of Needs in one area that is like a mountain visually.
       - [ ] Integrate that with Transfer Proposal. Being able to accompany the whole process through the maps, like a delivery; understanding who is closest to Contribute to your Need.
+
+      https://github.com/orgs/Far-Beyond-Pulsar/discussions/40
+
+      Maybe the way to go is using a game engine in gpui ike Pulsar if it allows for the rendering of a Component in a canvas or something similar to display like a game level.
+  ],
+
+  task("5D rendering")[
+    3D so we can view a world. 4D so we can watch it's history, 5D so we can compare different scenarios in the future with their simulations of different outcomes.
+
+    Visually this is actually 3D, but we can always put different 3D things side by side to compare between stages of the same timeline (4D) or 5D for different timelines.
+
+    If we change the Frequency one Karma uses we can see how it will affect our DNA and others too if we have Karma that involves their DNA.
+
+    With such possibly 5D canvas we will be able to save things spatially. One line in a 2D table is a way of grouping several lines close to one another. If we have things spacially set out in 3D we can have one record be like an object visually, with several copies in sync with the db one. We might not need a table like a 2d plane on a 3D world, that might be too boring.
   ],
 )
 

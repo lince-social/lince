@@ -9,4 +9,6 @@ pub struct Configuration {
     pub language: String,
     pub style: String,
     pub timezone: i64,
+    pub show_command_notifications: i64,
+    pub command_notification_seconds: f64,
 }

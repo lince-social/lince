@@ -1,4 +1,7 @@
-use crate::{command::karma_execute_command, karma::karma_deliver};
+use crate::{
+    command::{CommandOrigin, spawn_command_buffer_session_by_id},
+    karma::karma_deliver,
+};
 use domain::dirty::operation::{OperationActions, OperationTables};
 use injection::cross_cutting::InjectedServices;
 use utils::logging::{LogEntry, log};
@@ -56,13 +59,17 @@ pub async fn parse_operation_and_execute(services: InjectedServices, operation: 
                     }
                 }
                 "s" | "command" | "shell" | "shell command" => {
-                    if let Some(id) = parse_id(&operation)
-                        && (karma_execute_command(services.clone(), id.parse::<u32>().unwrap_or(0))
-                            .await)
-                            .is_none()
-                    {
-                        let e = Error::other(format!("Failed to run command with id: {}", id));
-                        log(LogEntry::Error(e.kind(), e.to_string()))
+                    if let Some(id) = parse_id(&operation) {
+                        let parsed_id = id.parse::<u32>().unwrap_or(0);
+                        if let Err(e) = spawn_command_buffer_session_by_id(
+                            services.clone(),
+                            parsed_id,
+                            CommandOrigin::Operation,
+                        )
+                        .await
+                        {
+                            log(LogEntry::Error(e.kind(), e.to_string()))
+                        }
                     }
                 }
 
@@ -96,10 +103,8 @@ pub async fn operation_execute(
         }
     }
 
-    // match parse_operation_and_execute(services.clone(), operation).await {
-    //     None => presentation_html_section_body(services).await,
-    //     Some(element) => element,
-    // }
+    parse_operation_and_execute(services.clone(), operation.clone()).await;
+
     Ok(vec![])
 }
 

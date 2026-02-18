@@ -152,5 +152,32 @@ pub async fn seed(db: &Pool<Sqlite>) -> Result<(), Error> {
             .map_err(Error::other)?;
     }
 
+    sqlx::query(
+        "INSERT INTO view(name, query)
+         SELECT 'Command Buffer', 'command_buffer'
+         WHERE NOT EXISTS (
+            SELECT 1 FROM view WHERE query = 'command_buffer'
+         )",
+    )
+    .execute(&*db)
+    .await
+    .map_err(Error::other)?;
+
+    sqlx::query(
+        "INSERT INTO collection_view(quantity, collection_id, view_id)
+         SELECT 0, c.id, v.id
+         FROM collection c
+         JOIN view v ON v.query = 'command_buffer'
+         WHERE NOT EXISTS (
+            SELECT 1
+            FROM collection_view cv
+            WHERE cv.collection_id = c.id
+              AND cv.view_id = v.id
+         )",
+    )
+    .execute(&*db)
+    .await
+    .map_err(Error::other)?;
+
     Ok(())
 }

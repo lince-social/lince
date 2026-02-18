@@ -21,7 +21,11 @@ pub struct CollectionList {
 }
 
 impl CollectionList {
-    pub fn new(collections: Vec<CollectionRow>, views_with_pin_info: Vec<ViewWithPinInfo>, workspace: WeakEntity<Workspace>) -> Self {
+    pub fn new(
+        collections: Vec<CollectionRow>,
+        views_with_pin_info: Vec<ViewWithPinInfo>,
+        workspace: WeakEntity<Workspace>,
+    ) -> Self {
         Self {
             hovered: false,
             collections,
@@ -83,6 +87,7 @@ struct CollectionViewRow {
     id: u32,
     quantity: i32,
     name: SharedString,
+    query: SharedString,
     pinned: bool,
 
     collection_id: u32,
@@ -94,9 +99,53 @@ impl RenderOnce for CollectionViewRow {
     fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
         let view_id = self.id;
         let pinned = self.pinned;
+        let is_special = self.query.as_ref() == "command_buffer";
         let workspace_for_toggle = self.workspace.clone();
         let workspace_for_pin = self.workspace.clone();
-        
+
+        let pin_control = if is_special {
+            div()
+                .p_0()
+                .px_1()
+                .rounded_xs()
+                .text_xs()
+                .bg(surface0())
+                .text_color(text())
+                .child("view")
+                .into_any_element()
+        } else {
+            div()
+                .p_0()
+                .px_1()
+                .rounded_xs()
+                .text_xs()
+                .bg(if pinned {
+                    catppuccin_mocha::yellow()
+                } else {
+                    surface0()
+                })
+                .hover(|s| s.bg(if pinned { peach() } else { surface1() }))
+                .text_color(if pinned { crust() } else { text() })
+                .child(if pinned { "📌" } else { "📍" })
+                .on_mouse_up(MouseButton::Left, move |_evt, _win, cx| {
+                    if let Some(ws) = workspace_for_pin.upgrade() {
+                        ws.update(cx, |ws, cx| {
+                            if pinned {
+                                ws.unpin_view(view_id, cx);
+                            } else {
+                                ws.pin_view(
+                                    view_id,
+                                    DEFAULT_PIN_POSITION_X,
+                                    DEFAULT_PIN_POSITION_Y,
+                                    cx,
+                                );
+                            }
+                        });
+                    }
+                })
+                .into_any_element()
+        };
+
         div()
             .p_0()
             .px_1()
@@ -122,31 +171,9 @@ impl RenderOnce for CollectionViewRow {
                                 ws.on_view_selected(cx, self.collection_id, self.id);
                             });
                         }
-                    })
+                    }),
             )
-            .child(
-                div()
-                    .p_0()
-                    .px_1()
-                    .rounded_xs()
-                    .text_xs()
-                    .bg(if pinned { catppuccin_mocha::yellow() } else { surface0() })
-                    .hover(|s| s.bg(if pinned { peach() } else { surface1() }))
-                    .text_color(if pinned { crust() } else { text() })
-                    .child(if pinned { "📌" } else { "📍" })
-                    .on_mouse_up(MouseButton::Left, move |_evt, _win, cx| {
-                        if let Some(ws) = workspace_for_pin.upgrade() {
-                            ws.update(cx, |ws, cx| {
-                                if pinned {
-                                    ws.unpin_view(view_id, cx);
-                                } else {
-                                    // Default position when pinning
-                                    ws.pin_view(view_id, DEFAULT_PIN_POSITION_X, DEFAULT_PIN_POSITION_Y, cx);
-                                }
-                            });
-                        }
-                    })
-            )
+            .child(pin_control)
     }
 }
 impl Render for CollectionList {
@@ -186,16 +213,18 @@ impl Render for CollectionList {
                                 views
                                     .iter()
                                     .map(|view| {
-                                        let pinned = self.views_with_pin_info
+                                        let pinned = self
+                                            .views_with_pin_info
                                             .iter()
                                             .find(|v| v.view_id == view.id)
                                             .map(|v| v.pinned)
                                             .unwrap_or(false);
-                                        
+
                                         CollectionViewRow {
                                             id: view.id,
                                             quantity: view.quantity,
                                             name: SharedString::from(&view.name),
+                                            query: SharedString::from(&view.query),
                                             pinned,
                                             collection_id: collection.id,
                                             workspace: weak.clone(),

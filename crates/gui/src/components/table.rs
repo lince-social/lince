@@ -445,8 +445,8 @@ impl CustomTable {
     pub fn editing_mode_widget_label(&self, window: &Window) -> Option<&'static str> {
         if self.editing_cell.is_some() && self.focus_handle.is_focused(window) {
             Some(match self.edit_mode {
-                EditMode::Normal => "N",
-                EditMode::Insert => "I",
+                EditMode::Normal => "Normal",
+                EditMode::Insert => "Insert",
             })
         } else {
             None

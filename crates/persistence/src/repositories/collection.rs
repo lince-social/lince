@@ -59,6 +59,13 @@ impl CollectionRepositoryImpl {
     }
 }
 
+fn is_special_query(query: &str) -> bool {
+    matches!(
+        query,
+        "karma_orchestra" | "karma_view" | "testing" | "command_buffer"
+    )
+}
+
 #[derive(sqlx::FromRow)]
 pub struct QueriedViewWithCollectionId {
     pub collection_id: u32,
@@ -273,14 +280,9 @@ impl CollectionRepository for CollectionRepositoryImpl {
             )
         })?;
 
-        let (special_queries, sql_queries) = queries.into_iter().partition(|query| {
-            [
-                "karma_orchestra".to_string(),
-                "karma_view".to_string(),
-                "testing".to_string(),
-            ]
-            .contains(query)
-        });
+        let (special_queries, sql_queries) = queries
+            .into_iter()
+            .partition(|query| is_special_query(query.as_str()));
 
         let res = self.execute_queries(sql_queries).await.map_err(|e| {
             Error::new(
@@ -318,15 +320,9 @@ impl CollectionRepository for CollectionRepositoryImpl {
         .map_err(Error::other)?;
 
         // Filter out special queries (non-SQL queries that need special handling)
-        let (_special_queries, sql_queries): (Vec<_>, Vec<_>) =
-            queries.into_iter().partition(|query| {
-                [
-                    "karma_orchestra".to_string(),
-                    "karma_view".to_string(),
-                    "testing".to_string(),
-                ]
-                .contains(query)
-            });
+        let (_special_queries, sql_queries): (Vec<_>, Vec<_>) = queries
+            .into_iter()
+            .partition(|query| is_special_query(query.as_str()));
 
         self.execute_queries(sql_queries).await
     }

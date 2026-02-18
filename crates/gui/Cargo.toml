@@ -17,3 +17,4 @@ gpui = { workspace = true, optional = true }
 gpui-component = { workspace = true, optional = true }
 gpui-component-assets = { workspace = true, optional = true }
 ropey = { workspace = true }
+tokio = { workspace = true, features = ["time"] }

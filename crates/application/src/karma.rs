@@ -5,7 +5,9 @@ use utils::info;
 use utils::logging::{LogEntry, log};
 
 use crate::{
-    command::karma_execute_command, engine::return_engine, frequency::frequency_check,
+    command::{CommandOrigin, karma_execute_command, spawn_command_buffer_session_by_id},
+    engine::return_engine,
+    frequency::frequency_check,
     query::query_execute,
 };
 use std::{
@@ -84,10 +86,16 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
                 let services = services.clone();
                 let karma_id = karma.id;
                 tokio::spawn(async move {
-                    if karma_execute_command(services, id).await.is_none() {
+                    if let Err(e) = spawn_command_buffer_session_by_id(
+                        services,
+                        id,
+                        CommandOrigin::Consequence(karma_id),
+                    )
+                    .await
+                    {
                         log(LogEntry::Error(
                             ErrorKind::Other,
-                            format!("Command returned None for karma id {}", karma_id),
+                            format!("Command returned None for karma id {}: {}", karma_id, e),
                         ));
                     }
                 });

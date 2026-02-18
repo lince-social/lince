@@ -50,10 +50,14 @@
     "New Logo Items: First Batch",
     contributors: (("Nica", "wip"), ("@xaviduds", "wip")),
   )[
+    - [ ] Decide on a font for the 'Lince' word and 'Instituto Lince'.
+      - [ ] How it is displayed in relation to the logo, if its logo on top and 'Lince' written on the bottom or on the right.
+      - [ ] Same thing for 'Instituto Lince'
     - [x] New vetorized logo | Nica
       - [/] Stickers: get tip from Nica | Duds
       - [x] Buy Hering's Super Cotton for t-shirts | Duds
         - [ ] Create the digital Tshirt design | Nica
+          - [ ] Decide if its only logo and text close togeter, or if its logo in the heart part of the chest and 'Lince' in the other, or maybe in the back. Maybe have the name of the person in the other part of the chest and Lince in the back.
         - [/] Embroider them with the logo: iguat | Duds
     - [ ] Blender 3D logo | Nica
       - [ ] 3D Keychain Items \@tecnopuc_crialab | Duds
@@ -212,22 +216,28 @@
 
     The streaming is of the stdin/out/err between the function that executes the 'sh' command and the frontend being accessed.
 
-    *Tasks*
-    - [ ] Bidirectional channel between Command runner and a Command watcher. The Command runner sends information about the Command,
+    - [x] Bidirectional channel between Command runner and a Command watcher. The Command runner sends information about the Command,
     the Command watcher sends information about the user's interaction.
-    - [ ] GPUI component that acts as a watcher to receive and send Command information.
-    This component must be able to be set as a View in any Collection.
+    - [x] GPUI component that acts as a watcher to receive and send Command information. This component must be able to be set as a View in any Collection. This looks like a streaming of text in a box, like an agent chat.
+      - [x] You went and created the collection_buffer view, thats ok, you changed my db and added that view to everything. This works as a component, but i want it to yes be a view, but also have a Configuration to show it as the notification/accordion i mentioned. Not tied to a collection.
+      - [x] I also want to see that notification if the command takes more than N seconds to run, so put that in configuration too. I dont want to see something popup for milliseconds maybe. Have a way to control if some command takes more than that N seconds to run it becomes a Notification. Negative values means its not shown ever as a notification, 0 is as soon as possible, the rest if its positive waits. If the command finishes before that dont show anything.
+    - [x] Be able to have many different running commands at the same time. Showing like many different boxes like notifications floating in the right side of the screen, multiple ones take up space stacking downward.
+    - [x] Be able to toggle open/closed like an accordion.
+    - [x] The Command component should be resizeable, take a look at the resizeable component to create this. The text inside the component should adapt to the resize.
+    - [x] One should be able to interact with the component, write stuff, press enter just like a terminal
 
-    This looks like a streaming of text in a box, like an agent chat.
     - [x] Make sure the GPUI is not waiting for the command to finish to finish a Karma if that Karma is a Consequence. If i have a Karma that if some Record has 0 quantity you zathura /home/user/mybook.pdf when i zero the quantity of a record X and also have a karma to if zero quantity make it one so it doesnt infinite loop, until i close the book it will not stop hanging waiting for the command to finish, so the record never stops being zero and it keeps opening the book. That's why the calling of a command when its in a Consequence should be done almost like in paralel.
 
-
     // *Bonus Points*
-    // - [ ] Goated is the one that can maintain the shell's text highlighting.
+    // - [ ] Goated is the one that can maintain the shell's text highlighting. Maybe using tree-sitter?
+  ],
+  task("Shortcut focus operation input")[
+    Ctrl-K will focus on it with insert mode, when clicking it i think this is already the case.
   ],
   task(
-    "syntax highlighting and lsp (TreeSitter?) for Commands",
+    "Command in several languages",
   )[
+    syntax highlighting and lsp (Tree-Sitter?) for Commands
     Being able to see based on the language syntax highlighting. So if in a Command block there is not a language set default to bash,
     if there is rust use the highlight for Rust, use lsp to see if its wrong, be able to run every command and see the result.
   ],
@@ -251,6 +261,16 @@
     https://youtu.be/sC1B3d9C_sI?si=_HbNMQ9NVegLyS2a
 
     https://www.youtube.com/watch?v=JoYjji1DZCE
+  ],
+  task("Configuration")[
+    Show configuration divided into sections, with toggle buttons, input fields so the user doesnt have to just edit a table.
+    For colorschemes show the possible ones.
+  ],
+  task("Colorscheme")[
+    Make figma design use variables, in the figma they will set a colorschme to watch things that will use those variable names with different values for the colors in each colorscheme. In compilation, have one struct with different values for each colorscheme, make figma export those variables to use in the application.
+    Whenever a color is set, it will use the name of the variables from the design. We must in a very efficient way access those variables in the active colorscheme. That might be done every render, if we have access to that in global memory data it's better than accessing a json.
+
+    That should also be done with scaling properties, so padding_s is maybe 2px or rem. The design will use the padding_s and the code will mimic it.
   ],
   task("Transfer Proposal")[
     One can create a Transference Proposal, saying they have a Contribution to make. That initial part, with their Record and a proposal of a Contribution can be enough data to be shown to the public. One doesn't need to set what type of Counter Contribution they receive for it. Whenever the one part of the transfer is written, it is ready to be shown.

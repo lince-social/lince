@@ -1,6 +1,6 @@
 use crate::{
     components::operation::Operation,
-    themes::catppuccin_macchiato::{base, surface0},
+    themes::catppuccin_macchiato::{crust, green, surface0, text},
 };
 use std::collections::HashMap;
 
@@ -568,10 +568,10 @@ impl Render for Workspace {
                     .iter()
                     .find_map(|(_, _, entity)| entity.read(cx).editing_mode_widget_label(window))
             })
-            .unwrap_or("N");
+            .unwrap_or("Normal");
 
         let bar = div()
-            .h(rems(1.5))
+            .h(rems(1.6))
             .bg(surface0())
             .relative()
             .flex()
@@ -585,13 +585,15 @@ impl Render for Workspace {
             .child(div().w_full().h_full().child(self.operation.clone()))
             .child(
                 div()
-                    .absolute()
-                    .right_2()
-                    .top_0()
-                    .h_full()
                     .flex()
+                    .justify_center()
                     .items_center()
-                    .child(div().text_color(base()).child(mode_label)),
+                    .h(rems(1.2))
+                    .w(rems(3.4))
+                    .rounded_xs()
+                    .bg(green())
+                    .text_color(crust())
+                    .child(mode_label),
             );
 
         let main = div()

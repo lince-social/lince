@@ -19,40 +19,6 @@
     - [ ] Switching License from GPLv3 to MIT for ease of collaboration with other projects. Should we do it?
   ],
   task(
-    "Editable cell",
-    contributors: (("@xaviduds", "wip"),),
-    type: "Frontend",
-  )[
-    Each cell when hovered should:
-    - [x] Have an icon to edit it in a resizeable text buffer. Becoming a big modal that covers almost the entire screen when it opens.
-      - [x] When clicking the icon, the modal is gone now, the screen becomes darker and no modal appears. The modal appears now.
-    - [x] The resize is not a click and drag. Please create reusable modal functionality that can be used for the editing cell and pinned Views. The editing cell is
-      at the top of every component. Make the appearance unique to both of those components but the resize and move a point of that reusable modal:
-      - [x] Be able to click in the top of the modal (have the border be thin everywhere and slightly thicker at the top to be able to grab it) and move it around the screen.
-      For pinned views that position should be saved, for editing cells it should not. Currently the pinned view is saved and can be moved, but not resized.
-      - [x] Be able to resize the modal by dragging anywhere on the frame, in the sides and in the corners. Doesnt work.
-      I can now see the modal but it is not resizeable, for that to work i need to be able to drag the corners or sides of the modal, also i can move the modal.
-      The final version that has these features should not need the Smaller/Bigger buttons.
-      Also save for pinned Views the size of the pin.
-
-    Vim motions for the edit cells:
-    - [x] Have a left sidebar in the workspace (currently in the edit cell: wrong) that expands when hovered,
-      - [x] Currently the N or I indicator its outside the cell, but its very small and ugly, make like a widget in a sidebar that runs in the left side of the screen from top to bottom, just like a normal system bar in the left. It feels like its not inside the workspace, it feels inside the main content, inside the padding, not at the body, glued to the wall. Make it always showing, make editing change its state.
-    in the hidden mode one can see N or I to indicate the editing state of the cell, dont put it in the editing modal.
-    - [x] Implement the B and W of vim motions.
-    - [x] Enter should not save but move the cursor down in Normal and create newline in Insert. Ctrl-S or Alt-S saves, Esc continues to cancel. Remove those buttons and info from
-    the edit modal.
-    - [x] This works but i was mistaken, esc should only go to normal mode. Make Ctrl-q or Alt-q to cancel.
-    - [x] Currently be it in the modal or in the cell, the cursor feels like takes space between the letters, make it so it doesnt.
-    The cursor should be like in a different Z so it doesnt take space. Also make it so in Insert its a line, in Normal its a bar.
-    Make it so the bar changes the color of the letter it is on top of, so if the cursor line and letters are white, the cursor in bar
-    format is still white but the letter it's on top of is black.
-    - [x] The cursor in line mode insert disapears.
-    - [x] Make the topbar that hosts the N or I be affected about the mode in the cell edit modal. Also add to the top bar of the modal: "Id: 45, Quantity: -1"
-    - [x] Make the topbar host the Operation input also.
-    - [x] Make the main content of workspace scrollable: The .child(bar) is now at the bottom and for some reason i cant see it. After you fix that bug implement the scrollable feature. Currently if tables have too many lines or a line that has too long vertically cells that content is hidden. I was using gpui component before and now i made a custom table because i need to, but maybe you can help me with the part of scrolling by inspiring yourself at their table. If its no help then just think of something on your own. I need to be able to scroll downward.
-  ],
-  task(
     "Table component",
     contributors: (("@chicogborba", "wip"),),
     type: "Frontend",

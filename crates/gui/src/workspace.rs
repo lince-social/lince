@@ -548,7 +548,6 @@ impl Workspace {
 
 impl Render for Workspace {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        // Recreate table entities if data changed
         if self.tables_need_recreation {
             self.recreate_table_entities(window, cx);
             self.tables_need_recreation = false;

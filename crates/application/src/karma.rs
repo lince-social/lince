@@ -21,9 +21,6 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
 
     let mut frequencies_to_update: HashMap<u32, Frequency> = HashMap::new();
 
-    // ─────────────────────────────
-    // 1. Async preparation phase
-    // ─────────────────────────────
     let mut prepared = Vec::with_capacity(vec_karma.len());
 
     for karma in vec_karma {
@@ -84,12 +81,16 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
         if let Some(caps) = regex_command.captures(&karma.consequence) {
             if let Ok(id) = caps[1].parse::<u32>() {
                 info!("Running command {}", id);
-                if karma_execute_command(services.clone(), id).await.is_none() {
-                    log(LogEntry::Error(
-                        ErrorKind::Other,
-                        format!("Command returned None for karma id {}", karma.id),
-                    ));
-                }
+                let services = services.clone();
+                let karma_id = karma.id;
+                tokio::spawn(async move {
+                    if karma_execute_command(services, id).await.is_none() {
+                        log(LogEntry::Error(
+                            ErrorKind::Other,
+                            format!("Command returned None for karma id {}", karma_id),
+                        ));
+                    }
+                });
             }
         }
 

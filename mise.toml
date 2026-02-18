@@ -49,15 +49,11 @@ echo Created migration: $usage_name
 description = "Start typst documentation preview"
 tools = { "tinymist" = "latest", "typst" = "latest" }
 usage = """
-flag "-s --shadows" help="Enable shadows in tinymist preview (default: false)"
-flag "-n --no-compile-shadows" help="Disable shadows in final typst compile (default: true)"
 flag "-l --light" help="Use light mode in tinymist preview (default: dark)"
 flag "-L --light-only" help="Only compile light version (default: compiles both)"
 flag "-D --dark-only" help="Only compile dark version (default: compiles both)"
 """
 run = """
-PREVIEW_SHADOWS="${usage_shadows:-false}"
-COMPILE_SHADOWS="true"
 LIGHT_ONLY="${usage_light_only:-false}"
 DARK_ONLY="${usage_dark_only:-false}"
 
@@ -68,23 +64,19 @@ else
   PREVIEW_DARK="true"
 fi
 
-if [ "${usage_no_compile_shadows:-false}" = "true" ]; then
-  COMPILE_SHADOWS="false"
-fi
-
 compile_docs() {
   echo 'Compiling PDF versions, might take a while...'
   if [ "$LIGHT_ONLY" = "true" ]; then
     echo '  → Compiling light version...'
-    typst compile --root . --input shadows=$COMPILE_SHADOWS --input dark=false documents/content/documentation/main.typ documents/content/documentation/main-light.pdf
+    typst compile --root . --input dark=false documents/content/documentation/main.typ documents/content/documentation/main-light.pdf
   elif [ "$DARK_ONLY" = "true" ]; then
     echo '  → Compiling dark version...'
-    typst compile --root . --input shadows=$COMPILE_SHADOWS --input dark=true documents/content/documentation/main.typ documents/content/documentation/main-dark.pdf
+    typst compile --root . --input dark=true documents/content/documentation/main.typ documents/content/documentation/main-dark.pdf
   else
     echo '  → Compiling light version...'
-    typst compile --root . --input shadows=$COMPILE_SHADOWS --input dark=false documents/content/documentation/main.typ documents/content/documentation/main-light.pdf
+    typst compile --root . --input dark=false documents/content/documentation/main.typ documents/content/documentation/main-light.pdf
     echo '  → Compiling dark version...'
-    typst compile --root . --input shadows=$COMPILE_SHADOWS --input dark=true documents/content/documentation/main.typ documents/content/documentation/main-dark.pdf
+    typst compile --root . --input dark=true documents/content/documentation/main.typ documents/content/documentation/main-dark.pdf
   fi
   echo 'Done!'
 }
@@ -96,7 +88,6 @@ tinymist preview \
 --control-plane-host 127.0.0.1:3002 \
 --data-plane-host 127.0.0.1:3001 \
 --static-file-host 127.0.0.1:3003 \
---input shadows=$PREVIEW_SHADOWS \
 --input dark=$PREVIEW_DARK \
 {{env.DOCS_ROOT}}/content/documentation/main.typ
 """

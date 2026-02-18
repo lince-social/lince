@@ -13,38 +13,18 @@
 #let tasks = (
   task(
     "Next Planning Talking Points",
-    contributors: (("N1", "wip"),),
-    type: "Bureau",
   )[
     - [ ] Switching License from GPLv3 to MIT for ease of collaboration with other projects. Should we do it?
   ],
   task(
-    "Table component",
-    contributors: (("@chicogborba", "wip"),),
-    type: "Frontend",
-  )[
-    I think this is the best way, sending the column size information to the db... but it's kinda weird?
-    Table needs to have these properties:
-    - [ ] Custom column width. If a table has too many columns we need to decide if we:
-    (A) reduce that columns' size to fit the screen (hard)
-    (B) make the central area with the tables be like a 2d canvas with vertical/horizontal scrollable space (maybe even zoom).
-    If that's the case a (return to content is cool but for now ok not having).
-    - [ ] Column Resize: saves information on individual columns' size.
-    For each collection, every view that is a table should be able to have each column with a custom width.
-    - [ ] Have word-wrapping by default, in the cells, being able to toggle it in Configuration.
-    - [ ] Any changes made to the db have all fit inside one or more migrations.
-  ],
-  task(
     "Lince Institute",
     contributors: (("@xaviduds", "todo"),),
-    type: "Bureau",
   )[
     - [/] Hire Lawyer: AFOSC.
     - [ ] Consolidate the 'Ata de Fundação' and 'Estatuto Social'
     - [ ] Use the 'Ata de Fundação' and 'Estatuto Social' to create the OSC Institute called called 'Instituto Lince'
     - [ ] CNPJ (Cora (more famous) or Conta Simples)
     - [ ] Bank Account (which bank? Banco do Brasil?)
-
 
     It's main purpose is to be a legal body
     in case the project needs to be represented or have a relationship with other parties.
@@ -68,65 +48,52 @@
   ],
   task(
     "New Logo Items: First Batch",
-    contributors: (("Nika", "wip"), ("@xaviduds", "todo")),
-    type: "Design",
+    contributors: (("Nica", "wip"), ("@xaviduds", "wip")),
   )[
-    - [x] New vetorized logo | nika
-      - [/] Stickers: get tip from Nika | duds
-      - [x] Hering's Super Cotton for t-shirts | duds
-        - [/] Embroider them with the logo: iguat | duds
-    - [ ] Blender 3D logo | nika
-      - [ ] 3D Keychain Items \@tecnopuc_crialab | duds
+    - [x] New vetorized logo | Nica
+      - [/] Stickers: get tip from Nica | Duds
+      - [x] Buy Hering's Super Cotton for t-shirts | Duds
+        - [ ] Create the digital Tshirt design | Nica
+        - [/] Embroider them with the logo: iguat | Duds
+    - [ ] Blender 3D logo | Nica
+      - [ ] 3D Keychain Items \@tecnopuc_crialab | Duds
   ],
   task(
-    "Karma Refactor",
-    contributors: (("N1", "todo"),),
-    type: "Karma",
+    "Lynx alive in Website",
   )[
-    Karma Conditions poderem ser referenciadas em outras conditions tipo kd2 + kd6.
-    Garantir que seja possível ter cadeias infinitas de condições: karma: kd2 = kd6 = ks2
+    Make a _Lynx canadensis_ 3D model inside the website. While the website is boring, the Lynx is very alive.
+    By default it doesnt mess with anything. But if you pet it a lot it becomes hiperstimulated and with that energy it becomes hyperactive.
+    It plays with the components of the screen, scrambles them, munches them, removing a part of the top bar. It follows you around the screen.
+    If you try to click some links it moves them away, like a Turk icecream man that never lets you get the icecream.
+
+    The model of the Lynx probably needs to be done in Blender, then put in Three.js or Bevy WebAssembly WebGPU.
+
+    If you refresh the screen it goes back to normal.
   ],
-  task(
-    "Extensions",
-    contributors: (("N1", "todo"),),
-    type: "Karma",
-  )[
-    Be able to receive information about ESP and put it into a Karma condition.
+  task("Online Shop")[
+    - [ ] Make an online shop managed by Lince.
+    When purchases arrive, all the Needs to complete the service to the customers are created, including:
+    - [ ] Ordering the white label items in the case of clothing, embroidering them (maybe both by same vendor);
+    or printing stickers/keychains.
+    - [ ] Creating the transport Need.
+    - [ ] NF-e.
+
+    For items put:
+    - [ ] T-shirts
+    - [ ] Stickers
+    - [ ] 3D Keychain Accessory
+    - [ ] Hoodies
+
+    Depending on the cost it might be good to make either on demand by third party
+    (JIT when an order arrives one item is bought) or
+    produce in batches.
+    - [ ] Give the option for the person to wait until a new batch is created for a lower cost or for them to
+    buy 1 or more from "scratch". For the latter we will charge more because making one single item is more expensive.
   ],
-  task(
-    "Note-taking-like",
-    contributors: (("N1", "todo"),),
-    type: "Karma",
-  )[
-    Ter uma forma boa de editar notas, conectando possivelmente notas de objetivos com karma, pra que cada workflow tenha sua
-    justificativa e possa-se criar primeiro os objetivos e completar eles com os passos pra chegar lá
-  ],
-  task(
-    "IA de recomendação de Karma",
-    contributors: (("N1", "todo"),),
-    type: "Karma",
-  )[
-    fazer otimizações balanceamento de atividades ao longo da semana pra nao sobrecarregar um dia. Sugerir habitos novos...
-  ],
-  task(
-    "Execute single Karma with visualization on the condition being evaluated",
-    contributors: (("N1", "todo"),),
-    type: "Karma",
-  )[
-    Maybe a modal
-  ],
-  task(
-    "Table Extra Ergonomics",
-    contributors: (("N1", "todo"),),
-    type: "Frontend",
-  )[
-    - Delete row (with confirmation, by default, with option in configuration to not ask)
-    - Sorteable (On runtime, updates should respect this sort, even though data comes with another sort or unsorted
-  ],
+
   task(
     "Frequency",
     contributors: (("@DiogoTeixeiraDEV", "wip"),),
-    type: "Karma",
   )[
     Frequency has two features to be done so we can complete it:
 
@@ -156,53 +123,62 @@
     mind to cover even more cases please refactor.
   ],
   task(
-    "syntax highlighting and lsp (TreeSitter?) for Commands",
-    contributors: (("N1", "todo"),),
-    type: "Karma",
+    "Table component",
+    contributors: (("@chicogborba", "wip"),),
   )[
-    Being able to see based on the language syntax highlighting. So if in a Command block there is not a language set default to bash,
-    if there is rust use the highlight for Rust, use lsp to see if its wrong, be able to run every command and see the result.
+    I think this is the best way, sending the column size information to the db... but it's kinda weird?
+    Table needs to have these properties:
+    - [ ] Custom column width. If a table has too many columns we need to decide if we:
+    (A) reduce that columns' size to fit the screen (hard)
+    (B) make the central area with the tables be like a 2d canvas with vertical/horizontal scrollable space (maybe even zoom).
+    If that's the case a (return to content is cool but for now ok not having).
+    - [ ] Column Resize: saves information on individual columns' size.
+    For each collection, every view that is a table should be able to have each column with a custom width.
+    - [ ] Have word-wrapping by default, in the cells, being able to toggle it in Configuration.
+    - [ ] Any changes made to the db have all fit inside one or more migrations.
   ],
   task(
-    "Deterministic Simulation Testing",
-    contributors: (("@xaviduds", "todo"), ("@DiogoTeixeiraDEV", "todo")),
-    type: "Karma",
+    "Creation Component for any Table",
   )[
-    DST is amazing!  The idea (I think) is to have three things:
-    1. The Seed: the user's DNA (la ele).
-    2. The Rules: What events should be bookmarked or stop the simulation?
-    3. The Engine: How will this simulation happen? With the normal flow of time, or a tampered one? Connecting to the outside world with Commands?
-
-    This way we can create futures shown to the user so they can see to the end of their Karma and catch bugs or unintended behavior.
-    This is useful in finantial simulation, or for understanding the costs of time for doing tasks (like the Calendar feature).
-
-    With DST we may duplicate the DNA to change it freely without affecting the user's data, or perhaps not changing persistent data at all,
-    just manipulating data inside the program.
-
-    TigerBeetle is the GOATED db for this, perhaps Lince can learn from it, fork it, or use it with a different schema for Transaction of Records.
-    https://youtu.be/sC1B3d9C_sI?si=_HbNMQ9NVegLyS2a
-    https://www.youtube.com/watch?v=JoYjji1DZCE
+    - [ ] Create the modal that is the Creation component of any Table. So for records it shows all fields except for Id and is like a forms.
+    - [ ] I can have that creation component as a View. So the person will see tables and next to it the component used to create a new record, so they will be able to create new records easily. This is good for todo behavior, being able to pin the view of record creation means a quick todo creation.
+  ],
+  task(
+    "Karma Refactor",
+  )[
+    Karma Conditions poderem ser referenciadas em outras conditions tipo kd2 + kd6.
+    Garantir que seja possível ter cadeias infinitas de condições: karma: kd2 = kd6 = ks2
+  ],
+  task(
+    "Extensions",
+  )[
+    Be able to receive information about ESP and put it into a Karma condition.
+  ],
+  task(
+    "Note-taking-like",
+  )[
+    Ter uma forma boa de editar notas, conectando possivelmente notas de objetivos com karma, pra que cada workflow tenha sua
+    justificativa e possa-se criar primeiro os objetivos e completar eles com os passos pra chegar lá
+  ],
+  task(
+    "Execute single Karma with visualization on the condition being evaluated",
+  )[
+    Maybe a modal
+  ],
+  task(
+    "Table Extra Ergonomics",
+  )[
+    - Delete row (with confirmation, by default, with option in configuration to not ask).
+    - [ ] Every row should have in the id column a button to delete the row with such id from the table in question. The
   ],
   task(
     "Canvas",
-    contributors: (("N1", "todo"),),
-    type: "Frontend",
   )[
     Make an expansive 2d canvas, views dragging to adjust the position.
     When im in any collection, i can drag and drop my views, resize them, and their positions and
   ],
   task(
-    "I can have a view that is the Creation Modal of any table",
-    contributors: (("N1", "todo"),),
-    type: "Frontend",
-  )[
-    One of the Views of any collection is the creation modal, now a View. So the person will see tables and next to it the component used to create a new record, so they will be able to create new records easily.
-    This is good for todo behavior, being able to pin the view of record creation means a quick todo creation
-  ],
-  task(
     "Collection's Views CRUD",
-    contributors: (("N1", "todo"),),
-    type: "Frontend",
   )[
     Be able to:
     - Update view's name, query
@@ -212,8 +188,6 @@
   ],
   task(
     "Be able to Pin Views",
-    contributors: (("N1", "todo"),),
-    type: "Frontend",
   )[
     I can pin a View. Saving that information in the Configuration (maybe an intermediate table).
 
@@ -226,7 +200,7 @@
     - [ ] Make sure the Pin border and the unpin button doesn't take too much space, as little as possible.
     Maybe a thin line border and an unpin button on hover. Now its like a thick window decoration.
   ],
-  task("Command buffer", contributors: (("N1", "todo"),))[
+  task("Command buffer")[
     When a Command is run, an 'sh' command is spawn. One can see the stdin/out/err if looking at the binary's console.
 
     That limits the interaction with the command; the read of the output/err and the usage of stdin, interactive programs...
@@ -248,38 +222,45 @@
     - [ ] Goated is the one that can maintain the shell's text highlighting.
   ],
   task(
-    "Lynx alive in Website",
-    contributors: (("N1", "todo"),),
-    type: "Frontend",
+    "syntax highlighting and lsp (TreeSitter?) for Commands",
   )[
-    Make a _Lynx canadensis_ 3D model inside the website. While the website is boring, the Lynx is very alive.
-    By default it doesnt mess with anything. But if you pet it a lot it becomes hiperstimulated and with that energy it becomes hyperactive.
-    It plays with the components of the screen, scrambles them, munches them, removing a part of the top bar. It follows you around the screen.
-    If you try to click some links it moves them away, like a Turk icecream man that never lets you get the icecream.
-
-    The model of the Lynx probably needs to be done in Blender, then put in Three.js or Bevy WebAssembly WebGPU.
-
-    If you refresh the screen it goes back to normal.
+    Being able to see based on the language syntax highlighting. So if in a Command block there is not a language set default to bash,
+    if there is rust use the highlight for Rust, use lsp to see if its wrong, be able to run every command and see the result.
   ],
-  task("Online Shop", contributors: (("N1", "todo"),))[
-    - [ ] Make an online shop managed by Lince.
-    When purchases arrive, all the Needs to complete the service to the customers are created, including:
-    - [ ] Ordering the white label items in the case of clothing, embroidering them (maybe both by same vendor);
-    or printing stickers/keychains.
-    - [ ] Creating the transport Need.
-    - [ ] NF-e.
+  task(
+    "Deterministic Simulation Testing",
+    contributors: (("@xaviduds", "todo"), ("@DiogoTeixeiraDEV", "todo")),
+  )[
+    DST is amazing! The idea (I think) is to have three things:
+    1. The Seed: the user's DNA (la ele).
+    2. The Rules: What events should be bookmarked or stop the simulation?
+    3. The Engine: How will this simulation happen? With the normal flow of time, or a tampered one? Connecting to the outside world with Commands?
 
-    For items put:
-    - [ ] T-shirts
-    - [ ] Stickers
-    - [ ] 3D Keychain Accessory
-    - [ ] Hoodies
+    This way we can create futures shown to the user so they can see to the end of their Karma and catch bugs or unintended behavior.
+    This is useful in finantial simulation, or for understanding the costs of time for doing tasks (like the Calendar feature).
 
-    Depending on the cost it might be good to make either on demand by third party
-    (JIT when an order arrives one item is bought) or
-    produce in batches.
-    - [ ] Give the option for the person to wait until a new batch is created for a lower cost or for them to
-    buy 1 or more from "scratch". For the latter we will charge more because making one single item is more expensive.
+    With DST we may duplicate the DNA to change it freely without affecting the user's data, or perhaps not changing persistent data at all,
+    just manipulating data inside the program.
+
+    TigerBeetle is the GOATED db for this, perhaps Lince can learn from it, fork it, or use it with a different schema for Transaction of Records.
+
+    https://youtu.be/sC1B3d9C_sI?si=_HbNMQ9NVegLyS2a
+
+    https://www.youtube.com/watch?v=JoYjji1DZCE
+  ],
+  task("Transfer Proposal")[
+    One can create a Transference Proposal, saying they have a Contribution to make. That initial part, with their Record and a proposal of a Contribution can be enough data to be shown to the public. One doesn't need to set what type of Counter Contribution they receive for it. Whenever the one part of the transfer is written, it is ready to be shown.
+  ],
+  task(
+    "IA de recomendação de Karma",
+  )[
+    fazer otimizações balanceamento de atividades ao longo da semana pra nao sobrecarregar um dia. Sugerir habitos novos...
+  ],
+  task("Digital/Real-World Maps")[
+    Being able to see the world or a digital space with it's actors and needs/contributions.
+    - [ ] One can see the world as a plane with lines for the streets.
+      - [ ] Bonus points for terrain data, elevation, like mountains. With that in rendering we can portrait a more accurate picture of the world and also use the elevation to show the Needs and Contributions in a 3d way. If there are a lot of Needs in one area that is like a mountain visually.
+      - [ ] Integrate that with Transfer Proposal. Being able to accompany the whole process through the maps, like a delivery; understanding who is closest to Contribute to your Need.
   ],
 )
 

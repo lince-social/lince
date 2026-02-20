@@ -1,7 +1,7 @@
 use crate::{
     components::{
         command_notifications::CommandNotifications, command_watcher::CommandWatcher,
-        operation::Operation,
+        creation_modal::CreationModal, operation::Operation,
     },
     themes::catppuccin_macchiato::{crust, green, surface0},
 };
@@ -19,7 +19,13 @@ use super::{
     themes::catppuccin_mocha::mantle,
 };
 use application::operation::operation_execute;
-use domain::{clean::collection::Collection, dirty::gpui::State};
+use domain::{
+    clean::collection::Collection,
+    dirty::{
+        gpui::State,
+        operation::{OperationActions, OperationTables},
+    },
+};
 use gpui::*;
 use gpui_component::scroll::ScrollableElement;
 use injection::cross_cutting::InjectedServices;
@@ -39,6 +45,7 @@ pub struct Workspace {
     pub command_watcher: Entity<CommandWatcher>,
     pub command_notifications: Entity<CommandNotifications>,
     pub operation: Entity<Operation>,
+    pub creation_modal: Option<Entity<CreationModal>>,
     tables_need_recreation: bool,
     pinned_sizes: HashMap<u32, (f32, f32)>,
     pinned_drag: Option<(u32, ModalFrameDrag)>,
@@ -73,6 +80,7 @@ impl Workspace {
             command_watcher,
             command_notifications,
             operation,
+            creation_modal: None,
             tables_need_recreation: false,
             pinned_sizes: HashMap::new(),
             pinned_drag: None,
@@ -281,11 +289,108 @@ impl Workspace {
 }
 
 impl Workspace {
+    pub fn close_creation_modal(&mut self, cx: &mut Context<Self>) {
+        self.creation_modal = None;
+        cx.notify();
+    }
+
+    pub fn open_creation_modal(&mut self, table: OperationTables, cx: &mut Context<Self>) {
+        let services = self.services.clone();
+        cx.spawn(async move |this, cx| {
+            let columns = match services
+                .repository
+                .table
+                .get_columns(table.as_table_name().to_string())
+                .await
+            {
+                Ok(columns) => columns,
+                Err(e) => {
+                    log!(e, "failed to fetch table columns");
+                    vec![]
+                }
+            };
+
+            this.update(cx, move |owner, cx| {
+                let fields = columns
+                    .into_iter()
+                    .filter(|column| column.to_lowercase() != "id")
+                    .collect::<Vec<_>>();
+                let weak = cx.weak_entity();
+                owner.creation_modal =
+                    Some(cx.new(|app_cx| CreationModal::new(weak, table, fields, app_cx)));
+                cx.notify();
+            })
+            .unwrap();
+        })
+        .detach();
+    }
+
+    pub fn create_row_from_modal(
+        &mut self,
+        table: OperationTables,
+        values: HashMap<String, String>,
+        cx: &mut Context<Self>,
+    ) {
+        let services = self.services.clone();
+        cx.spawn(async move |this, cx| {
+            if let Err(e) = services
+                .repository
+                .table
+                .insert_row(table.as_table_name().to_string(), values)
+                .await
+            {
+                log!(e, "failed to create row from modal");
+                return;
+            }
+
+            let (tables, special_views) =
+                match services.repository.collection.get_active_view_data().await {
+                    Ok((tables, special_views)) => (tables, special_views),
+                    Err(e) => {
+                        log!(e, "failed to fetch table data");
+                        (vec![], vec![])
+                    }
+                };
+
+            let pinned_tables = match services.repository.collection.get_pinned_view_data().await {
+                Ok(tables) => tables,
+                Err(e) => {
+                    log!(e, "failed to fetch pinned table data");
+                    vec![]
+                }
+            };
+
+            let views_with_pin_info = match services
+                .repository
+                .collection
+                .get_views_with_pin_info()
+                .await
+            {
+                Ok(info) => info,
+                Err(e) => {
+                    log!(e, "failed to fetch views with pin info");
+                    vec![]
+                }
+            };
+
+            this.update(cx, move |owner, cx| {
+                owner.state.tables = tables.clone();
+                owner.state.special_views = special_views;
+                owner.state.pinned_tables = pinned_tables;
+                owner.state.views_with_pin_info = views_with_pin_info;
+                owner.tables_need_recreation = true;
+                cx.notify();
+            })
+            .unwrap();
+        })
+        .detach();
+    }
+
     pub fn send_operation(&mut self, cx: &mut Context<Self>, operation: String) {
         let services = self.services.clone();
         cx.spawn(async move |this, cx| {
             match operation_execute(services.clone(), operation.clone()).await {
-                Ok(_operationresult) => {
+                Ok(operationresult) => {
                     let (tables, special_views) =
                         match services.repository.collection.get_active_view_data().await {
                             Ok((tables, special_views)) => (tables, special_views),
@@ -322,9 +427,12 @@ impl Workspace {
                         owner.state.special_views = special_views;
                         owner.state.pinned_tables = pinned_tables;
                         owner.state.views_with_pin_info = views_with_pin_info;
-
-                        // Mark tables for recreation since data changed
                         owner.tables_need_recreation = true;
+                        for (table, action) in operationresult {
+                            if action == OperationActions::Create {
+                                owner.open_creation_modal(table, cx);
+                            }
+                        }
                         cx.notify();
                     })
                     .unwrap();
@@ -1013,6 +1121,18 @@ impl Render for Workspace {
             .overflow_y_scrollbar()
             .child(main);
 
+        let creation_modal_overlay = self.creation_modal.as_ref().map(|entity| {
+            div()
+                .absolute()
+                .inset_0()
+                .bg(rgba(0x00000099))
+                .flex()
+                .items_center()
+                .justify_center()
+                .child(entity.clone())
+                .into_any_element()
+        });
+
         div()
             .bg(mantle())
             .text_color(rgb(0xffffff))
@@ -1022,6 +1142,7 @@ impl Render for Workspace {
             .size_full()
             .child(scrollable_main)
             .child(bar)
+            .children(creation_modal_overlay)
             .child(self.command_notifications.clone())
     }
 }

@@ -50,14 +50,13 @@
     "New Logo Items: First Batch",
     contributors: (("Nica", "wip"), ("@xaviduds", "wip")),
   )[
-    - [ ] Decide on a font for the 'Lince' word and 'Instituto Lince'.
-      - [ ] How it is displayed in relation to the logo, if its logo on top and 'Lince' written on the bottom or on the right.
-      - [ ] Same thing for 'Instituto Lince'
     - [x] New vetorized logo | Nica
-      - [/] Stickers: get tip from Nica | Duds
+    - [x] Decide on a font for the 'Lince' word and 'Instituto Lince'.: Instrument Serif
+      - [/] How it is displayed in relation to the logo, if its logo on top and 'Lince' written on the bottom or on the right.
+      - [/] Same thing for 'Instituto Lince'
+      - [/] Stickers -> Rei do Sticker: 500 (250 b&w, 250 w&b) laminated or holographic. Make a design for it (may contain website lince.social).
       - [x] Buy Hering's Super Cotton for t-shirts | Duds
-        - [ ] Create the digital Tshirt design | Nica
-          - [ ] Decide if its only logo and text close togeter, or if its logo in the heart part of the chest and 'Lince' in the other, or maybe in the back. Maybe have the name of the person in the other part of the chest and Lince in the back.
+        - [/] Create the digital Tshirt design. Decide if its only logo and text close togeter, or if its logo in the heart part of the chest and 'Lince' in the other, or maybe in the back. Maybe have the name of the person in the other part of the chest and Lince in the back.
         - [/] Embroider them with the logo: iguat | Duds
     - [ ] Blender 3D logo | Nica
       - [ ] 3D Keychain Items \@tecnopuc_crialab | Duds
@@ -144,8 +143,11 @@
   task(
     "Creation Component for any Table",
   )[
-    - [/] I can have that creation component as a View. So the person will see tables and next to it the component used to create a new record, so they will be able to create new records easily. When i type 4c, or c4, or create 4 or record c or create record, ... in operation i will get in return the action the frontend must take, so the parse operation will be in charge of running commands, zeroing the quantities of records if an id is passed and matches any, this already exists. The feature we need to build well is to make this enum of crud operation or more, tables, and then with that we give to the gpui that enum, based on the return of the operation we activate on the screen a modal for creation of the specific table passed to the operation.
-    - [ ] Create the modal that is the Creation component of any Table. So for records it shows all fields except for Id and is like a forms. Find a way to get the columns of the table. Have a laywer of
+    - [x] I can have that creation component as a View. So the person will see tables and next to it the component used to create a new record, so they will be able to create new records easily. When i type 4c, or c4, or create 4 or record c or create record, ... in operation i will get in return the action the frontend must take, so the parse operation will be in charge of running commands, zeroing the quantities of records if an id is passed and matches any, this already exists. The feature we need to build well is to make this enum of crud operation or more, tables, and then with that we give to the gpui that enum, based on the return of the operation we activate on the screen a modal for creation of the specific table passed to the operation.
+    - [x] Create the modal that is the Creation component of any Table. So for records it shows all fields except for Id and is like a forms. Find a way to get the columns of the table.
+      - [x] It showed the modal, but the screen behind it was just background.
+      - [x] Hitting tab didnt advance to the next input, ctrl-tab didnt go back. Arrow keys worked though..
+      - [x] Hitting enter created it, but it closed the modal, please only close the modal when I the user presses esc so they can continue to create more. Make sure to update the current data with every creation.
 
 
     - [ ] Pin: This is good for todo behavior, being able to pin the view of record creation means a quick todo creation.
@@ -208,28 +210,8 @@
     Maybe a thin line border and an unpin button on hover. Now its like a thick window decoration.
   ],
   task("Command buffer")[
-    When a Command is run, an 'sh' command is spawn. One can see the stdin/out/err if looking at the binary's console.
-
-    That limits the interaction with the command; the read of the output/err and the usage of stdin, interactive programs...
-
-    The task involves a bidirectional connection, probably with tokio's rx/tx.
-
-    The streaming is of the stdin/out/err between the function that executes the 'sh' command and the frontend being accessed.
-
-    - [x] Bidirectional channel between Command runner and a Command watcher. The Command runner sends information about the Command,
-    the Command watcher sends information about the user's interaction.
-    - [x] GPUI component that acts as a watcher to receive and send Command information. This component must be able to be set as a View in any Collection. This looks like a streaming of text in a box, like an agent chat.
-      - [x] You went and created the collection_buffer view, thats ok, you changed my db and added that view to everything. This works as a component, but i want it to yes be a view, but also have a Configuration to show it as the notification/accordion i mentioned. Not tied to a collection.
-      - [x] I also want to see that notification if the command takes more than N seconds to run, so put that in configuration too. I dont want to see something popup for milliseconds maybe. Have a way to control if some command takes more than that N seconds to run it becomes a Notification. Negative values means its not shown ever as a notification, 0 is as soon as possible, the rest if its positive waits. If the command finishes before that dont show anything.
-    - [x] Be able to have many different running commands at the same time. Showing like many different boxes like notifications floating in the right side of the screen, multiple ones take up space stacking downward.
-    - [x] Be able to toggle open/closed like an accordion.
-    - [x] The Command component should be resizeable, take a look at the resizeable component to create this. The text inside the component should adapt to the resize.
-    - [x] One should be able to interact with the component, write stuff, press enter just like a terminal
-
-    - [x] Make sure the GPUI is not waiting for the command to finish to finish a Karma if that Karma is a Consequence. If i have a Karma that if some Record has 0 quantity you zathura /home/user/mybook.pdf when i zero the quantity of a record X and also have a karma to if zero quantity make it one so it doesnt infinite loop, until i close the book it will not stop hanging waiting for the command to finish, so the record never stops being zero and it keeps opening the book. That's why the calling of a command when its in a Consequence should be done almost like in paralel.
-
-    // *Bonus Points*
-    // - [ ] Goated is the one that can maintain the shell's text highlighting. Maybe using tree-sitter?
+    - [ ] The command buffer doesnt always appear. At least when running the command with Operation Input.
+    - [ ] Maintain the shell's text highlighting. Maybe using tree-sitter?
   ],
   task("Shortcut focus operation input")[
     Ctrl-K will focus on it with insert mode, when clicking it i think this is already the case.

@@ -8,6 +8,7 @@ use utils::logging::{LogEntry, log};
 
 use regex::Regex;
 use std::io::Error;
+use std::str::FromStr;
 
 fn parse_id(part: &str) -> Option<&str> {
     let re = Regex::new(r"\d+").unwrap();
@@ -17,6 +18,56 @@ fn parse_id(part: &str) -> Option<&str> {
     }
 
     None
+}
+
+fn parse_create_action(operation: &str) -> bool {
+    let compact = operation
+        .chars()
+        .filter(|ch| !ch.is_whitespace())
+        .collect::<String>()
+        .to_lowercase();
+
+    let short_pattern = Regex::new(r"^(\d+c|c\d+)$").unwrap();
+    if short_pattern.is_match(&compact) {
+        return true;
+    }
+
+    operation.split_whitespace().any(|part| {
+        matches!(
+            part.to_lowercase().as_str(),
+            "c" | "create" | "criar" | "novo"
+        )
+    })
+}
+
+fn parse_operation_table(operation: &str) -> Option<OperationTables> {
+    if let Some(id) = parse_id(operation)
+        && let Ok(parsed_id) = id.parse::<u32>()
+        && let Some(table) = OperationTables::from_id(parsed_id)
+    {
+        return Some(table);
+    }
+
+    let word_regex = Regex::new(r"[a-zA-Z_]+").unwrap();
+    for matched in word_regex.find_iter(operation) {
+        if let Ok(table) = OperationTables::from_str(matched.as_str()) {
+            return Some(table);
+        }
+    }
+
+    None
+}
+
+fn parse_operation_result(operation: &str) -> Vec<(OperationTables, OperationActions)> {
+    let mut results = Vec::new();
+
+    if parse_create_action(operation)
+        && let Some(table) = parse_operation_table(operation)
+    {
+        results.push((table, OperationActions::Create));
+    }
+
+    results
 }
 
 pub async fn parse_operation_and_execute(services: InjectedServices, operation: String) {
@@ -105,10 +156,5 @@ pub async fn operation_execute(
 
     parse_operation_and_execute(services.clone(), operation.clone()).await;
 
-    Ok(vec![])
+    Ok(parse_operation_result(&operation))
 }
-
-// Pega a operação que chegou e categoriza ela
-// Se for Numbers zera rqNumbers, devolve: Enum
-// Se for numeros e letras faz o parse e monta o Enum, devolve: Enum porque cada presentation tem que poder lidar de forma diferente com uma operação, a operação faz o parsing, e só
-// a execução de mudança de coleção ativa, refetch dos dados, enviar comandos depende do frontend pq ele precisa poder lidar com o ato em si, não pegar um memorando dele.

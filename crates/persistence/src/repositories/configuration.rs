@@ -10,6 +10,7 @@ use std::{
 pub trait ConfigurationRepository: Send + Sync {
     async fn set_active(&self, id: &str) -> Result<(), Error>;
     async fn get_active(&self) -> Result<Configuration, Error>;
+    async fn set_delete_confirmation_for_active(&self, enabled: bool) -> Result<(), Error>;
 }
 
 pub struct ConfigurationRepositoryImpl {
@@ -41,5 +42,15 @@ impl ConfigurationRepository for ConfigurationRepositoryImpl {
             .fetch_one(&*self.pool)
             .await
             .map_err(Error::other)
+    }
+
+    async fn set_delete_confirmation_for_active(&self, enabled: bool) -> Result<(), Error> {
+        let enabled_as_int = if enabled { 1_i64 } else { 0_i64 };
+        sqlx::query("UPDATE configuration SET delete_confirmation = ? WHERE quantity = 1")
+            .bind(enabled_as_int)
+            .execute(&*self.pool)
+            .await
+            .map_err(Error::other)?;
+        Ok(())
     }
 }

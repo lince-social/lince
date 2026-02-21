@@ -9,7 +9,7 @@ use crate::components::modal_frame::{
     begin_drag_with_interaction,
 };
 use crate::components::table_vim::{EditMode, TableVimCommand, table_vim_command};
-use crate::themes::catppuccin_mocha::{blue, surface1};
+use crate::themes::catppuccin_mocha::{blue, green, mantle, red, surface0, surface1, text, yellow};
 
 pub type Row = HashMap<String, String>;
 pub type Table = Vec<Row>;
@@ -24,6 +24,12 @@ struct CellPosition {
 enum EditSurface {
     Inline,
     Modal,
+}
+
+#[derive(Clone, Debug)]
+struct DeleteRowRequest {
+    row_ix: usize,
+    row_id: String,
 }
 
 pub struct CustomTable {
@@ -45,6 +51,8 @@ pub struct CustomTable {
     modal_x: f32,
     modal_y: f32,
     modal_drag: Option<ModalFrameDrag>,
+    pending_delete: Option<DeleteRowRequest>,
+    delete_modal_dont_ask_again: bool,
     focus_handle: FocusHandle,
 }
 
@@ -85,6 +93,8 @@ impl CustomTable {
             modal_x: 2400.0,
             modal_y: 2200.0,
             modal_drag: None,
+            pending_delete: None,
+            delete_modal_dont_ask_again: false,
             focus_handle: cx.focus_handle(),
         }
     }
@@ -613,6 +623,86 @@ impl CustomTable {
         self.modal_drag = None;
         cx.notify();
     }
+
+    fn open_delete_modal(&mut self, row_ix: usize, row_id: String, cx: &mut Context<Self>) {
+        self.pending_delete = Some(DeleteRowRequest { row_ix, row_id });
+        self.delete_modal_dont_ask_again = false;
+        cx.notify();
+    }
+
+    fn close_delete_modal(&mut self, cx: &mut Context<Self>) {
+        self.pending_delete = None;
+        self.delete_modal_dont_ask_again = false;
+        cx.notify();
+    }
+
+    fn delete_row(
+        &mut self,
+        row_ix: usize,
+        row_id: String,
+        disable_confirmation: bool,
+        cx: &mut Context<Self>,
+    ) {
+        let table = self.table_name.clone();
+        let services = self.services.clone();
+        cx.spawn(async move |this, cx| {
+            if let Err(e) = services.repository.table.delete_by_id(table, row_id).await {
+                eprintln!("Failed to delete row: {e}");
+                return;
+            }
+            if disable_confirmation
+                && let Err(e) = services
+                    .repository
+                    .configuration
+                    .set_delete_confirmation_for_active(false)
+                    .await
+            {
+                eprintln!("Failed to disable delete confirmation: {e}");
+            }
+            let _ = this.update(cx, move |this, cx| {
+                if row_ix < this.data.len() {
+                    this.data.remove(row_ix);
+                }
+                this.pending_delete = None;
+                this.delete_modal_dont_ask_again = false;
+                this.editing_cell = None;
+                this.hovered_cell = None;
+                cx.notify();
+            });
+        })
+        .detach();
+    }
+
+    fn delete_row_with_confirmation_check(
+        &mut self,
+        row_ix: usize,
+        row_id: String,
+        cx: &mut Context<Self>,
+    ) {
+        let services = self.services.clone();
+        cx.spawn(async move |this, cx| {
+            let should_confirm = match services.repository.configuration.get_active().await {
+                Ok(configuration) => configuration.delete_confirmation != 0,
+                Err(e) => {
+                    eprintln!("Failed to fetch active configuration: {e}");
+                    true
+                }
+            };
+            let _ = this.update(cx, move |this, cx| {
+                if should_confirm {
+                    this.open_delete_modal(row_ix, row_id, cx);
+                } else {
+                    this.delete_row(row_ix, row_id, false, cx);
+                }
+            });
+        })
+        .detach();
+    }
+
+    fn toggle_delete_modal_dont_ask_again(&mut self, cx: &mut Context<Self>) {
+        self.delete_modal_dont_ask_again = !self.delete_modal_dont_ask_again;
+        cx.notify();
+    }
 }
 
 impl Render for CustomTable {
@@ -661,6 +751,8 @@ impl Render for CustomTable {
         let rows = self.data.iter().enumerate().map(|(row_ix, row)| {
             let cells = self.headers.iter().enumerate().map(|(col_ix, key)| {
                 let value = row.get(key).map(String::as_str).unwrap_or("NULL");
+                let row_id_value = row.get("id").cloned();
+                let is_id_column = key.eq_ignore_ascii_case("id");
                 let lines = value.split('\n').map(str::to_string).collect::<Vec<_>>();
                 let current_pos = CellPosition { row_ix, col_ix };
                 let is_editing_inline = self.editing_cell.as_ref() == Some(&current_pos)
@@ -705,7 +797,9 @@ impl Render for CustomTable {
                         }))
                         .into_any_element()
                 } else {
-                    let show_modal_icon = self.hovered_cell.as_ref() == Some(&current_pos);
+                    let is_hovered_cell = self.hovered_cell.as_ref() == Some(&current_pos);
+                    let show_modal_icon = is_hovered_cell && !is_id_column;
+                    let show_delete_button = is_hovered_cell && is_id_column;
                     let width = self.col_widths.get(col_ix).copied().unwrap_or(180.0);
                     div()
                         .id(("cell_view", cell_id))
@@ -730,8 +824,16 @@ impl Render for CustomTable {
                         .on_mouse_down(
                             MouseButton::Left,
                             cx.listener(move |this, _event, window, cx| {
-                                this.start_edit(row_ix, col_ix, EditSurface::Inline, window, cx);
-                                cx.stop_propagation();
+                                if !is_id_column {
+                                    this.start_edit(
+                                        row_ix,
+                                        col_ix,
+                                        EditSurface::Inline,
+                                        window,
+                                        cx,
+                                    );
+                                    cx.stop_propagation();
+                                }
                             }),
                         )
                         .children(if show_modal_icon {
@@ -761,6 +863,42 @@ impl Render for CustomTable {
                                         }),
                                     ),
                             )
+                        } else {
+                            None
+                        })
+                        .children(if show_delete_button {
+                            row_id_value.map(|row_id| {
+                                div()
+                                    .absolute()
+                                    .top_1()
+                                    .left_1()
+                                    .px_1()
+                                    .py_0p5()
+                                    .rounded_sm()
+                                    .bg(red())
+                                    .hover(|s| s.bg(yellow()))
+                                    .text_xs()
+                                    .text_color(text())
+                                    .child("del")
+                                    .on_mouse_down(
+                                        MouseButton::Left,
+                                        cx.listener(|_, _event, _window, cx| {
+                                            cx.stop_propagation();
+                                        }),
+                                    )
+                                    .on_mouse_up(
+                                        MouseButton::Left,
+                                        cx.listener(move |this, _event, _window, cx| {
+                                            this.delete_row_with_confirmation_check(
+                                                row_ix,
+                                                row_id.clone(),
+                                                cx,
+                                            );
+                                            cx.stop_propagation();
+                                        }),
+                                    )
+                                    .into_any_element()
+                            })
                         } else {
                             None
                         })
@@ -1077,6 +1215,122 @@ impl Render for CustomTable {
             None
         };
 
+        let delete_confirmation_overlay = self.pending_delete.as_ref().map(|pending| {
+            let row_id = pending.row_id.clone();
+            div()
+                .absolute()
+                .left(px(0.0))
+                .top(px(0.0))
+                .size_full()
+                .bg(rgba(0x00000099))
+                .flex()
+                .items_center()
+                .justify_center()
+                .child(
+                    div()
+                        .w(px(460.0))
+                        .bg(mantle())
+                        .border_2()
+                        .border_color(green())
+                        .rounded_lg()
+                        .shadow_lg()
+                        .overflow_hidden()
+                        .child(
+                            div()
+                                .bg(green())
+                                .text_color(surface0())
+                                .px_3()
+                                .py_2()
+                                .child("Delete row confirmation"),
+                        )
+                        .child(
+                            div()
+                                .p_3()
+                                .flex()
+                                .flex_col()
+                                .gap_3()
+                                .child(format!("Delete row with id {row_id}?"))
+                                .child(
+                                    div()
+                                        .flex()
+                                        .flex_row()
+                                        .gap_2()
+                                        .items_center()
+                                        .child(
+                                            div()
+                                                .px_2()
+                                                .py_1()
+                                                .rounded_sm()
+                                                .bg(if self.delete_modal_dont_ask_again {
+                                                    blue()
+                                                } else {
+                                                    surface1()
+                                                })
+                                                .text_color(text())
+                                                .child(if self.delete_modal_dont_ask_again {
+                                                    "☑"
+                                                } else {
+                                                    "☐"
+                                                })
+                                                .on_mouse_up(
+                                                    MouseButton::Left,
+                                                    cx.listener(|this, _event, _window, cx| {
+                                                        this.toggle_delete_modal_dont_ask_again(cx);
+                                                    }),
+                                                ),
+                                        )
+                                        .child("Dont ask me again"),
+                                )
+                                .child(
+                                    div()
+                                        .flex()
+                                        .flex_row()
+                                        .justify_end()
+                                        .gap_2()
+                                        .child(
+                                            div()
+                                                .px_3()
+                                                .py_1()
+                                                .rounded_sm()
+                                                .bg(surface1())
+                                                .hover(|s| s.bg(blue()))
+                                                .child("Cancel")
+                                                .on_mouse_up(
+                                                    MouseButton::Left,
+                                                    cx.listener(|this, _event, _window, cx| {
+                                                        this.close_delete_modal(cx);
+                                                    }),
+                                                ),
+                                        )
+                                        .child(
+                                            div()
+                                                .px_3()
+                                                .py_1()
+                                                .rounded_sm()
+                                                .bg(red())
+                                                .hover(|s| s.bg(yellow()))
+                                                .child("Delete")
+                                                .on_mouse_up(
+                                                    MouseButton::Left,
+                                                    cx.listener(|this, _event, _window, cx| {
+                                                        if let Some(pending) =
+                                                            this.pending_delete.clone()
+                                                        {
+                                                            this.delete_row(
+                                                                pending.row_ix,
+                                                                pending.row_id,
+                                                                this.delete_modal_dont_ask_again,
+                                                                cx,
+                                                            );
+                                                        }
+                                                    }),
+                                                ),
+                                        ),
+                                ),
+                        ),
+                )
+        });
+
         div()
             .relative()
             .w_full()
@@ -1106,5 +1360,6 @@ impl Render for CustomTable {
                     .children(rows),
             )
             .children(modal_overlay)
+            .children(delete_confirmation_overlay)
     }
 }

@@ -11,4 +11,5 @@ pub struct Configuration {
     pub timezone: i64,
     pub show_command_notifications: i64,
     pub command_notification_seconds: f64,
+    pub delete_confirmation: i64,
 }

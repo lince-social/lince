@@ -4,7 +4,7 @@ use domain::{
         collection::Collection,
         table::{Row as RowEntity, Table},
     },
-    dirty::{collection::CollectionRow, view::QueriedView},
+    dirty::{collection::CollectionRow, operation::OperationTables, view::QueriedView},
 };
 use futures::future::join_all;
 use sqlx::{Column, Pool, Row, Sqlite, TypeInfo};
@@ -12,6 +12,7 @@ use std::{
     collections::HashMap,
     io::{Error, ErrorKind},
     iter::once,
+    str::FromStr,
     sync::Arc,
 };
 use utils::ok;
@@ -34,7 +35,7 @@ pub trait CollectionRepository: Send + Sync {
 
     // New methods for pinned views
     async fn get_pinned_views(&self) -> Result<Vec<domain::clean::pinned_view::PinnedView>, Error>;
-    async fn get_pinned_view_data(&self) -> Result<Vec<(String, Table)>, Error>;
+    async fn get_pinned_view_data(&self) -> Result<Vec<(u32, String, Table)>, Error>;
     async fn get_views_with_pin_info(
         &self,
     ) -> Result<Vec<domain::dirty::view::ViewWithPinInfo>, Error>;
@@ -60,10 +61,24 @@ impl CollectionRepositoryImpl {
 }
 
 fn is_special_query(query: &str) -> bool {
+    if parse_creation_view_query(query).is_some() {
+        return true;
+    }
     matches!(
         query,
         "karma_orchestra" | "karma_view" | "testing" | "command_buffer"
     )
+}
+
+fn parse_creation_view_query(query: &str) -> Option<OperationTables> {
+    let normalized = query.trim().to_lowercase().replace(['-', ' '], "_");
+    let table_name = normalized
+        .strip_prefix("create_view_")
+        .or_else(|| normalized.strip_prefix("creation_view_"))
+        .or_else(|| normalized.strip_prefix("create_modal_"))
+        .or_else(|| normalized.strip_prefix("creation_modal_"))
+        .or_else(|| normalized.strip_prefix("cv_"))?;
+    OperationTables::from_str(table_name).ok()
 }
 
 #[derive(sqlx::FromRow)]
@@ -308,9 +323,9 @@ impl CollectionRepository for CollectionRepositoryImpl {
         Ok(pinned_views)
     }
 
-    async fn get_pinned_view_data(&self) -> Result<Vec<(String, Table)>, Error> {
-        let queries: Vec<String> = sqlx::query_scalar(
-            "SELECT v.query
+    async fn get_pinned_view_data(&self) -> Result<Vec<(u32, String, Table)>, Error> {
+        let query_rows: Vec<(u32, String)> = sqlx::query_as(
+            "SELECT pv.view_id, v.query
              FROM view v
              JOIN pinned_view pv ON v.id = pv.view_id
              ORDER BY pv.z_index DESC",
@@ -319,12 +334,22 @@ impl CollectionRepository for CollectionRepositoryImpl {
         .await
         .map_err(Error::other)?;
 
-        // Filter out special queries (non-SQL queries that need special handling)
-        let (_special_queries, sql_queries): (Vec<_>, Vec<_>) = queries
+        let sql_rows: Vec<(u32, String)> = query_rows
             .into_iter()
-            .partition(|query| is_special_query(query.as_str()));
+            .filter(|(_, query)| !is_special_query(query.as_str()))
+            .collect();
 
-        self.execute_queries(sql_queries).await
+        let sql_queries = sql_rows
+            .iter()
+            .map(|(_, query)| query.clone())
+            .collect::<Vec<_>>();
+        let tables = self.execute_queries(sql_queries).await?;
+
+        Ok(sql_rows
+            .into_iter()
+            .zip(tables)
+            .map(|((view_id, _), (name, table))| (view_id, name, table))
+            .collect())
     }
 
     async fn get_views_with_pin_info(

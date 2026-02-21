@@ -15,6 +15,9 @@
     "Next Planning Talking Points",
   )[
     - [ ] Switching License from GPLv3 to MIT for ease of collaboration with other projects. Should we do it?
+    Or changing it to WTFPL: https://en.wikipedia.org/wiki/WTFPL
+
+    - [ ] Going through the excalidraw and critiquing with design. Make documentation of things there.
   ],
   task(
     "Lince Institute",
@@ -127,7 +130,7 @@
   ],
   task(
     "Table component",
-    contributors: (("@chicogborba", "wip"),),
+    contributors: (("@xaviduds", "wip"),),
   )[
     I think this is the best way, sending the column size information to the db... but it's kinda weird?
     Table needs to have these properties:
@@ -152,6 +155,7 @@
 
     - [ ] Pin: This is good for todo behavior, being able to pin the view of record creation means a quick todo creation.
   ],
+  task("SQL Query Editor GUI", contributors: (("@chicogborba", "wip"),))[],
   task(
     "Karma Refactor",
   )[

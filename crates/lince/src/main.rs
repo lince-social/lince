@@ -12,6 +12,12 @@ use utils::logging::{LogEntry, log};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
+    let args = env::args().collect::<Vec<String>>();
+    if args.iter().any(|arg| arg == "--help" || arg == "-h") {
+        print_help();
+        return Ok(());
+    }
+
     let db = Arc::new(connection().await.inspect_err(|e| {
         log(LogEntry::Error(e.kind(), e.to_string()));
     })?);
@@ -25,7 +31,6 @@ async fn main() -> Result<(), Error> {
         .map_err(|e| Error::new(std::io::ErrorKind::Other, e))?;
 
     let services = dependency_injection(db.clone());
-    let args = env::args().collect::<Vec<String>>();
 
     #[cfg(feature = "gui")]
     if let Err(e) = start_gui(args.clone(), services.clone()).await {
@@ -43,9 +48,22 @@ async fn main() -> Result<(), Error> {
     Ok(())
 }
 
+fn print_help() {
+    println!("Usage: lince [OPTIONS]");
+    println!();
+    println!("Options:");
+    println!("  -h, --help            Show this help message");
+    #[cfg(feature = "gui")]
+    println!("      --guiless        Disable GUI startup");
+    #[cfg(feature = "karma")]
+    println!("      --karmaless       Disable karma delivery loop");
+    println!();
+    println!("To learn more visit https://lince.social")
+}
+
 #[cfg(feature = "gui")]
 async fn start_gui(args: Vec<String>, services: InjectedServices) -> Result<(), Error> {
-    if args.contains(&"gui".to_string()) {
+    if !args.contains(&"--guiless".to_string()) {
         use application::gpui::get_gpui_startup_data;
         use gui::app::gpui_app;
 
@@ -67,7 +85,7 @@ async fn start_tui(args: Vec<String>, services: InjectedServices) -> Result<(), 
 
 #[cfg(feature = "karma")]
 async fn start_karma(args: Vec<String>, services: InjectedServices) -> Result<(), Error> {
-    if args.contains(&"karma".to_string()) {
+    if !args.contains(&"--karmaless".to_string()) {
         loop {
             println!("Delivering Karma");
             let vec_karma = services.repository.karma.get_active(None).await;

@@ -17,6 +17,7 @@ pub struct CreationModal {
     workspace: WeakEntity<Workspace>,
     table: OperationTables,
     table_name: String,
+    modal: bool,
     columns: Vec<String>,
     values: Vec<String>,
     cursors: Vec<usize>,
@@ -38,12 +39,32 @@ impl CreationModal {
         columns: Vec<String>,
         cx: &mut App,
     ) -> Self {
+        Self::new_with_mode(workspace, table, columns, true, cx)
+    }
+
+    pub fn new_view(
+        workspace: WeakEntity<Workspace>,
+        table: OperationTables,
+        columns: Vec<String>,
+        cx: &mut App,
+    ) -> Self {
+        Self::new_with_mode(workspace, table, columns, false, cx)
+    }
+
+    fn new_with_mode(
+        workspace: WeakEntity<Workspace>,
+        table: OperationTables,
+        columns: Vec<String>,
+        modal: bool,
+        cx: &mut App,
+    ) -> Self {
         let values = vec![String::new(); columns.len()];
         let cursors = vec![0; columns.len()];
         Self {
             workspace,
             table,
             table_name: table.as_table_name().to_string(),
+            modal,
             columns,
             values,
             cursors,
@@ -176,6 +197,9 @@ impl CreationModal {
     }
 
     fn close_modal(&self, cx: &mut Context<Self>) {
+        if !self.modal {
+            return;
+        }
         let weak = self.workspace.clone();
         let _ = weak.update(cx, |ws, cx| {
             ws.close_creation_modal(cx);
@@ -190,14 +214,26 @@ impl CreationModal {
                 values.insert(column.clone(), trimmed);
             }
         }
+        let table = self.table;
+        let weak = self.workspace.clone();
+        let source = cx.weak_entity();
+        let _ = weak.update(cx, |ws, cx| {
+            ws.create_row_from_modal(table, values, Some(source), cx);
+        });
+    }
+
+    pub fn clear_inputs(&mut self, cx: &mut Context<Self>) {
         self.values.iter_mut().for_each(String::clear);
         self.cursors.iter_mut().for_each(|cursor| *cursor = 0);
         self.active_field_ix = 0;
-        let table = self.table;
-        let weak = self.workspace.clone();
-        let _ = weak.update(cx, |ws, cx| {
-            ws.create_row_from_modal(table, values, cx);
-        });
+        cx.notify();
+    }
+
+    fn all_fields_have_values(&self) -> bool {
+        if self.values.is_empty() {
+            return false;
+        }
+        self.values.iter().all(|value| !value.trim().is_empty())
     }
 }
 
@@ -209,9 +245,14 @@ impl Render for CreationModal {
         }
 
         let title = format!("Create in {}", self.table_name);
+        let component_id = if self.modal {
+            self.table as u32
+        } else {
+            self.table as u32 + 1000
+        };
 
-        div()
-            .id("creation_modal")
+        let container = div()
+            .id(("creation_component", component_id))
             .w(px(480.0))
             .max_h(px(620.0))
             .bg(mantle())
@@ -227,7 +268,7 @@ impl Render for CreationModal {
                 let modifiers = event.keystroke.modifiers;
                 let with_save_mod = modifiers.control || modifiers.alt;
 
-                if key == "escape" {
+                if this.modal && key == "escape" {
                     this.close_modal(cx);
                     window.prevent_default();
                     cx.stop_propagation();
@@ -292,11 +333,15 @@ impl Render for CreationModal {
                         cx.stop_propagation();
                     }
                     "enter" => {
-                        let last_field_ix = this.columns.len().saturating_sub(1);
-                        if this.active_field_ix >= last_field_ix {
+                        if this.all_fields_have_values() {
                             this.submit(cx);
                         } else {
-                            this.move_active_field(1);
+                            let last_field_ix = this.columns.len().saturating_sub(1);
+                            if this.active_field_ix >= last_field_ix {
+                                this.submit(cx);
+                            } else {
+                                this.move_active_field(1);
+                            }
                         }
                         window.prevent_default();
                         cx.stop_propagation();
@@ -334,22 +379,27 @@ impl Render for CreationModal {
                     .px_3()
                     .py_2()
                     .child(div().text_sm().font_weight(FontWeight::BOLD).child(title))
-                    .child(
-                        div()
-                            .bg(red())
-                            .hover(|s| s.bg(yellow()))
-                            .text_color(crust())
-                            .rounded_sm()
-                            .px_2()
-                            .py_1()
-                            .child("Close")
-                            .on_mouse_up(
-                                MouseButton::Left,
-                                cx.listener(|this, _event, _window, cx| {
-                                    this.close_modal(cx);
-                                }),
-                            ),
-                    ),
+                    .children(if self.modal {
+                        Some(
+                            div()
+                                .bg(red())
+                                .hover(|s| s.bg(yellow()))
+                                .text_color(crust())
+                                .rounded_sm()
+                                .px_2()
+                                .py_1()
+                                .child("Close")
+                                .on_mouse_up(
+                                    MouseButton::Left,
+                                    cx.listener(|this, _event, _window, cx| {
+                                        this.close_modal(cx);
+                                    }),
+                                )
+                                .into_any_element(),
+                        )
+                    } else {
+                        None
+                    }),
             )
             .child(
                 div()
@@ -422,6 +472,17 @@ impl Render for CreationModal {
                                 }),
                             ),
                     ),
-            )
+            );
+
+        if self.modal {
+            container.into_any_element()
+        } else {
+            div()
+                .w_full()
+                .flex()
+                .justify_start()
+                .child(container)
+                .into_any_element()
+        }
     }
 }

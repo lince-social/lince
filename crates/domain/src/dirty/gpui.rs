@@ -9,6 +9,6 @@ pub struct State {
     pub tables: Vec<(String, Table)>,
     pub special_views: Vec<String>,
     pub pinned_views: Vec<PinnedView>,
-    pub pinned_tables: Vec<(String, Table)>,
+    pub pinned_tables: Vec<(u32, String, Table)>,
     pub views_with_pin_info: Vec<ViewWithPinInfo>,
 }

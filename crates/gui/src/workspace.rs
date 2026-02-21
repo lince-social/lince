@@ -5,7 +5,7 @@ use crate::{
     },
     themes::catppuccin_macchiato::{crust, green, surface0},
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
 use super::{
     components::{
@@ -46,9 +46,12 @@ pub struct Workspace {
     pub command_notifications: Entity<CommandNotifications>,
     pub operation: Entity<Operation>,
     pub creation_modal: Option<Entity<CreationModal>>,
+    pub creation_view_entities: Vec<(String, Entity<CreationModal>)>,
+    pub pinned_creation_view_entities: Vec<(u32, String, Entity<CreationModal>)>,
     tables_need_recreation: bool,
     pinned_sizes: HashMap<u32, (f32, f32)>,
     pinned_drag: Option<(u32, ModalFrameDrag)>,
+    pinned_hovered_view_id: Option<u32>,
 }
 
 impl Workspace {
@@ -81,9 +84,12 @@ impl Workspace {
             command_notifications,
             operation,
             creation_modal: None,
+            creation_view_entities: vec![],
+            pinned_creation_view_entities: vec![],
             tables_need_recreation: false,
             pinned_sizes: HashMap::new(),
             pinned_drag: None,
+            pinned_hovered_view_id: None,
         };
 
         // If state has tables/pinned tables, we need to create entities for them
@@ -92,6 +98,7 @@ impl Workspace {
         if has_data {
             workspace.tables_need_recreation = true;
         }
+        workspace.refresh_creation_view_entities(cx);
 
         workspace
     }
@@ -116,13 +123,18 @@ impl Workspace {
             .state
             .pinned_views
             .iter()
-            .zip(self.state.pinned_tables.iter())
-            .map(|(pinned_view, (table_name, table))| {
+            .filter_map(|pinned_view| {
+                let (table_name, table) = self
+                    .state
+                    .pinned_tables
+                    .iter()
+                    .find(|(view_id, _, _)| *view_id == pinned_view.view_id)
+                    .map(|(_, table_name, table)| (table_name, table))?;
                 let services = self.services.clone();
                 let table_entity = cx.new(|app_cx| {
                     CustomTable::new(table.clone(), table_name.clone(), services, app_cx)
                 });
-                (pinned_view.view_id, table_name.clone(), table_entity)
+                Some((pinned_view.view_id, table_name.clone(), table_entity))
             })
             .collect();
         self.pinned_sizes = self
@@ -214,6 +226,7 @@ impl Workspace {
 
                 // Mark tables for recreation since data changed
                 owner.tables_need_recreation = true;
+                owner.refresh_creation_view_entities(cx);
                 cx.notify();
             })
             .unwrap();
@@ -275,6 +288,7 @@ impl Workspace {
 
                         // Mark tables for recreation since data changed
                         owner.tables_need_recreation = true;
+                        owner.refresh_creation_view_entities(cx);
                         cx.notify();
                     })
                     .unwrap();
@@ -329,6 +343,7 @@ impl Workspace {
         &mut self,
         table: OperationTables,
         values: HashMap<String, String>,
+        source: Option<WeakEntity<CreationModal>>,
         cx: &mut Context<Self>,
     ) {
         let services = self.services.clone();
@@ -379,6 +394,12 @@ impl Workspace {
                 owner.state.pinned_tables = pinned_tables;
                 owner.state.views_with_pin_info = views_with_pin_info;
                 owner.tables_need_recreation = true;
+                owner.refresh_creation_view_entities(cx);
+                if let Some(source) = source.as_ref() {
+                    let _ = source.update(cx, |modal, cx| {
+                        modal.clear_inputs(cx);
+                    });
+                }
                 cx.notify();
             })
             .unwrap();
@@ -428,6 +449,7 @@ impl Workspace {
                         owner.state.pinned_tables = pinned_tables;
                         owner.state.views_with_pin_info = views_with_pin_info;
                         owner.tables_need_recreation = true;
+                        owner.refresh_creation_view_entities(cx);
                         for (table, action) in operationresult {
                             if action == OperationActions::Create {
                                 owner.open_creation_modal(table, cx);
@@ -497,6 +519,8 @@ impl Workspace {
                 owner.state.pinned_views = pinned_views;
                 owner.state.pinned_tables = pinned_tables;
                 owner.state.views_with_pin_info = views_with_pin_info;
+                owner.tables_need_recreation = true;
+                owner.refresh_creation_view_entities(cx);
                 cx.notify();
             })
             .unwrap();
@@ -545,6 +569,8 @@ impl Workspace {
                 owner.state.pinned_views = pinned_views;
                 owner.state.pinned_tables = pinned_tables;
                 owner.state.views_with_pin_info = views_with_pin_info;
+                owner.tables_need_recreation = true;
+                owner.refresh_creation_view_entities(cx);
                 cx.notify();
             })
             .unwrap();
@@ -674,6 +700,114 @@ impl Workspace {
             .iter()
             .any(|active| active == query)
     }
+
+    fn parse_creation_view_query(query: &str) -> Option<OperationTables> {
+        let normalized = query.trim().to_lowercase().replace(['-', ' '], "_");
+        let table_name = normalized
+            .strip_prefix("create_view_")
+            .or_else(|| normalized.strip_prefix("creation_view_"))
+            .or_else(|| normalized.strip_prefix("create_modal_"))
+            .or_else(|| normalized.strip_prefix("creation_modal_"))
+            .or_else(|| normalized.strip_prefix("cv_"))?;
+        OperationTables::from_str(table_name).ok()
+    }
+
+    fn refresh_creation_view_entities(&mut self, cx: &mut Context<Self>) {
+        let services = self.services.clone();
+        let active_creation_views = self
+            .state
+            .special_views
+            .iter()
+            .filter_map(|query| {
+                Self::parse_creation_view_query(query).map(|table| (query.clone(), table))
+            })
+            .collect::<Vec<_>>();
+        let pinned_creation_views = self
+            .state
+            .pinned_views
+            .iter()
+            .filter_map(|pinned_view| {
+                let view_info = self
+                    .state
+                    .views_with_pin_info
+                    .iter()
+                    .find(|info| info.view_id == pinned_view.view_id)?;
+                let table = Self::parse_creation_view_query(&view_info.query)?;
+                Some((pinned_view.view_id, view_info.name.clone(), table))
+            })
+            .collect::<Vec<_>>();
+        cx.spawn(async move |this, cx| {
+            let mut active_definitions = Vec::new();
+            for (query, table) in active_creation_views {
+                let columns = match services
+                    .repository
+                    .table
+                    .get_columns(table.as_table_name().to_string())
+                    .await
+                {
+                    Ok(columns) => columns,
+                    Err(e) => {
+                        log!(e, "failed to fetch table columns");
+                        vec![]
+                    }
+                };
+                let fields = columns
+                    .into_iter()
+                    .filter(|column| column.to_lowercase() != "id")
+                    .collect::<Vec<_>>();
+                active_definitions.push((query, table, fields));
+            }
+
+            let mut pinned_definitions = Vec::new();
+            for (view_id, view_name, table) in pinned_creation_views {
+                let columns = match services
+                    .repository
+                    .table
+                    .get_columns(table.as_table_name().to_string())
+                    .await
+                {
+                    Ok(columns) => columns,
+                    Err(e) => {
+                        log!(e, "failed to fetch table columns");
+                        vec![]
+                    }
+                };
+                let fields = columns
+                    .into_iter()
+                    .filter(|column| column.to_lowercase() != "id")
+                    .collect::<Vec<_>>();
+                pinned_definitions.push((view_id, view_name, table, fields));
+            }
+
+            this.update(cx, move |owner, cx| {
+                let weak = cx.weak_entity();
+                owner.creation_view_entities = active_definitions
+                    .into_iter()
+                    .map(|(query, table, fields)| {
+                        let weak = weak.clone();
+                        (
+                            query,
+                            cx.new(|app_cx| CreationModal::new_view(weak, table, fields, app_cx)),
+                        )
+                    })
+                    .collect();
+                owner.pinned_creation_view_entities = pinned_definitions
+                    .into_iter()
+                    .map(|(view_id, view_name, table, fields)| {
+                        let weak = weak.clone();
+                        (
+                            view_id,
+                            view_name,
+                            cx.new(|app_cx| CreationModal::new_view(weak, table, fields, app_cx)),
+                        )
+                    })
+                    .collect();
+                cx.notify();
+            })
+            .unwrap();
+        })
+        .detach();
+    }
 }
 
 impl Render for Workspace {
@@ -732,6 +866,20 @@ impl Render for Workspace {
             .w_full()
             .p_3()
             .child(self.collection_list.clone());
+        let pinned_content_entities = self
+            .pinned_table_entities
+            .iter()
+            .map(|(view_id, name, entity)| {
+                (*view_id, name.clone(), entity.clone().into_any_element())
+            })
+            .chain(
+                self.pinned_creation_view_entities
+                    .iter()
+                    .map(|(view_id, name, entity)| {
+                        (*view_id, name.clone(), entity.clone().into_any_element())
+                    }),
+            )
+            .collect::<Vec<_>>();
         let main = if self.has_active_special_view("command_buffer") {
             main.child(self.command_watcher.clone())
         } else {
@@ -743,40 +891,48 @@ impl Render for Workspace {
                 .map(|(_name, entity)| entity.clone()),
         )
         .children(
-            self.pinned_table_entities
+            self.creation_view_entities
                 .iter()
-                .map(|(view_id, name, entity)| {
-                    use super::themes::catppuccin_mocha::{base, maroon, red, yellow};
+                .map(|(_, entity)| entity.clone()),
+        )
+        .children(
+            pinned_content_entities
+                .into_iter()
+                .map(|(view_id, name, content)| {
+                    use super::themes::catppuccin_mocha::{base, maroon, surface0};
 
                     let pinned_view = self
                         .state
                         .pinned_views
                         .iter()
-                        .find(|v| v.view_id == *view_id);
+                        .find(|v| v.view_id == view_id);
                     let position_x = pinned_view
                         .map(|v| v.position_x)
                         .unwrap_or(DEFAULT_PIN_POSITION_X);
                     let position_y = pinned_view
                         .map(|v| v.position_y)
                         .unwrap_or(DEFAULT_PIN_POSITION_Y);
-                    let view_id_for_close = *view_id;
-                    let view_id_for_drag = *view_id;
+                    let view_id_for_close = view_id;
+                    let view_id_for_drag = view_id;
+                    let view_id_for_hover = view_id;
                     let position_x_f32 = position_x as f32;
                     let position_y_f32 = position_y as f32;
                     let weak = cx.weak_entity();
+                    let show_unpin = self.pinned_hovered_view_id == Some(view_id);
 
                     let (width, height) = self
                         .pinned_sizes
-                        .get(view_id)
+                        .get(&view_id)
                         .copied()
                         .unwrap_or((500.0, 400.0));
                     div()
+                        .id(("pinned_view_panel", view_id))
                         .absolute()
                         .left(px(position_x as f32))
                         .top(px(position_y as f32))
                         .bg(mantle())
                         .border_1()
-                        .border_color(yellow()) // Yellow border for pinned views
+                        .border_color(surface0())
                         .rounded_lg()
                         .shadow_lg()
                         .w(px(width))
@@ -794,6 +950,14 @@ impl Render for Workspace {
                                 this.end_pinned_drag(cx);
                             }),
                         )
+                        .on_hover(cx.listener(move |this, hovered, _window, cx| {
+                            if *hovered {
+                                this.pinned_hovered_view_id = Some(view_id_for_hover);
+                            } else if this.pinned_hovered_view_id == Some(view_id_for_hover) {
+                                this.pinned_hovered_view_id = None;
+                            }
+                            cx.notify();
+                        }))
                         .child(
                             div()
                                 .absolute()
@@ -1048,11 +1212,12 @@ impl Render for Workspace {
                                 .flex_row()
                                 .items_center()
                                 .justify_between()
-                                .bg(yellow())
-                                .border_b_2()
-                                .border_color(yellow())
+                                .bg(surface0())
+                                .border_b_1()
+                                .border_color(base())
                                 .text_color(base())
-                                .p_2()
+                                .px_2()
+                                .py_1()
                                 .on_mouse_down(
                                     MouseButton::Left,
                                     cx.listener(
@@ -1080,36 +1245,44 @@ impl Render for Workspace {
                                         .child("📌")
                                         .child(
                                             div()
-                                                .text_sm()
+                                                .text_xs()
                                                 .font_weight(FontWeight::BOLD)
                                                 .child(name.clone()),
                                         ),
                                 )
-                                .child(
-                                    div()
-                                        .px_2()
-                                        .py_1()
-                                        .rounded_sm()
-                                        .bg(red())
-                                        .hover(|s| s.bg(maroon()))
-                                        .text_xs()
-                                        .font_weight(FontWeight::BOLD)
-                                        .child("✕")
-                                        .on_mouse_up(MouseButton::Left, move |_evt, _win, cx| {
-                                            if let Some(ws) = weak.upgrade() {
-                                                ws.update(cx, |ws, cx| {
-                                                    ws.unpin_view(view_id_for_close, cx);
-                                                });
-                                            }
-                                        }),
-                                ),
+                                .children(if show_unpin {
+                                    Some(
+                                        div()
+                                            .px_1()
+                                            .py_0p5()
+                                            .rounded_sm()
+                                            .bg(base())
+                                            .hover(|s| s.bg(maroon()))
+                                            .text_xs()
+                                            .font_weight(FontWeight::BOLD)
+                                            .child("✕")
+                                            .on_mouse_up(
+                                                MouseButton::Left,
+                                                move |_evt, _win, cx| {
+                                                    if let Some(ws) = weak.upgrade() {
+                                                        ws.update(cx, |ws, cx| {
+                                                            ws.unpin_view(view_id_for_close, cx);
+                                                        });
+                                                    }
+                                                },
+                                            )
+                                            .into_any_element(),
+                                    )
+                                } else {
+                                    None
+                                }),
                         )
                         .child(
                             div()
                                 .flex_1()
                                 .min_h(px(0.0))
                                 .overflow_y_scrollbar()
-                                .child(entity.clone()),
+                                .child(content),
                         )
                 }),
         );

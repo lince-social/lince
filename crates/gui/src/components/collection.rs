@@ -8,9 +8,9 @@ use gpui::{
     Styled, Window, div, *,
 };
 
-// Default position for newly pinned views
-const DEFAULT_PIN_POSITION_X: f64 = 300.0;
-const DEFAULT_PIN_POSITION_Y: f64 = 200.0;
+const DEFAULT_PIN_WIDTH: f64 = 500.0;
+const DEFAULT_PIN_HEIGHT: f64 = 400.0;
+const DEFAULT_PIN_MARGIN: f64 = 24.0;
 
 #[derive(Clone)]
 pub struct CollectionList {
@@ -127,18 +127,20 @@ impl RenderOnce for CollectionViewRow {
                 .hover(|s| s.bg(if pinned { peach() } else { surface1() }))
                 .text_color(if pinned { crust() } else { text() })
                 .child(if pinned { "📌" } else { "📍" })
-                .on_mouse_up(MouseButton::Left, move |_evt, _win, cx| {
+                .on_mouse_up(MouseButton::Left, move |_evt, win, cx| {
                     if let Some(ws) = workspace_for_pin.upgrade() {
+                        let viewport = win.viewport_size();
+                        let viewport_width = f64::from(f32::from(viewport.width));
+                        let viewport_height = f64::from(f32::from(viewport.height));
+                        let position_x =
+                            (viewport_width - DEFAULT_PIN_WIDTH - DEFAULT_PIN_MARGIN).max(0.0);
+                        let position_y =
+                            (viewport_height - DEFAULT_PIN_HEIGHT - DEFAULT_PIN_MARGIN).max(0.0);
                         ws.update(cx, |ws, cx| {
                             if pinned {
                                 ws.unpin_view(view_id, cx);
                             } else {
-                                ws.pin_view(
-                                    view_id,
-                                    DEFAULT_PIN_POSITION_X,
-                                    DEFAULT_PIN_POSITION_Y,
-                                    cx,
-                                );
+                                ws.pin_view(view_id, position_x, position_y, cx);
                             }
                         });
                     }

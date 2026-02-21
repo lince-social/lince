@@ -129,7 +129,7 @@
     mind to cover even more cases please refactor.
   ],
   task(
-    "Table component",
+    "Table + Skeleton + Smooth + 6 7",
     contributors: (("@xaviduds", "wip"),),
   )[
     I think this is the best way, sending the column size information to the db... but it's kinda weird?
@@ -144,18 +144,36 @@
     - [ ] Any changes made to the db have all fit inside one or more migrations.
   ],
   task(
-    "Creation Component for any Table",
+    "Usable by another non-crazy human being knowing the app is rough still, AKA 0.0 GPUI version",
   )[
-    - [x] I can have that creation component as a View. So the person will see tables and next to it the component used to create a new record, so they will be able to create new records easily. When i type 4c, or c4, or create 4 or record c or create record, ... in operation i will get in return the action the frontend must take, so the parse operation will be in charge of running commands, zeroing the quantities of records if an id is passed and matches any, this already exists. The feature we need to build well is to make this enum of crud operation or more, tables, and then with that we give to the gpui that enum, based on the return of the operation we activate on the screen a modal for creation of the specific table passed to the operation.
-    - [x] Create the modal that is the Creation component of any Table. So for records it shows all fields except for Id and is like a forms. Find a way to get the columns of the table.
-      - [x] It showed the modal, but the screen behind it was just background.
-      - [x] Hitting tab didnt advance to the next input, ctrl-tab didnt go back. Arrow keys worked though..
-      - [x] Hitting enter created it, but it closed the modal, please only close the modal when I the user presses esc so they can continue to create more. Make sure to update the current data with every creation.
-
-
-    - [ ] Pin: This is good for todo behavior, being able to pin the view of record creation means a quick todo creation.
+    - [ ] Keybindings with ease of access (maybe when operation input is focused in insert mode)
+    - [ ] Vim motions off by default, with Configuration to set it On/Off (one needs to be able to exit Vim).
+    - [ ] GUI non tecnical way of configuring CollectionView intermediate table.
   ],
-  task("SQL Query Editor GUI", contributors: (("@chicogborba", "wip"),))[],
+  task("SQL Query Editor GUI", contributors: (("@chicogborba", "wip"),))[
+
+    THERE'S A FRAME IN EXCALIDRAW FOR THIS. Import the file at /assets/lince.excalidraw in the excalidraw.com website.
+
+    For this task we need to create the functionality, envolving the Design along the way, to follow the UI/UX of Figma in the end.
+    - [ ] Being able to drag and drop columns to change the order of the SQL column being fetched.
+    - [ ] In the GUI SQL Editor (excel-filters-like) have an order of priority for the rules of each column:
+      - [ ] Order by (Ascending or Descending).
+      - [ ] Filter by excluding or including. Example: only lines with certain characters at the start/end/anywhere of the line in that column: SELECT \* FROM record WHERE LOWER(body) LIKE '%task%' is the pseudo sql one might write to only get lines that contain any casing of 'task' in it.
+
+      Maybe we can combine several including and several excluding to make it very versatile and allow for many different workflows.
+
+      Wireframe suggestion of UI we first thought, probably very bad and stinky and needs complete rethinking:
+
+      Having one modal open somewhere on the screen when filtering the table, if every column has a filter icon it might get repetitive since we always open the same modal when clicking it, we can put somewhere fixed on tables, or not, to hide it in the columns with hover.
+
+      After clicking it we go to the modal that shows the columns, probably with empty rules at first. We might see a button with a plus sign, clicking it will show us the options of rules we can add to this column. If its a column wih limited options like an order by that can only be Ascending or Descending it can be a dropdown. If its something like an exclude/include it might need an input field.
+
+      It would be awesome, maybe not in 1.0, to have autocomplete in this field. That would probably involve making some sort of real time query in db to get the data that is similar to what the user is typing. But it still needs more tought.
+
+      I think it might be necessary to recycle some of these components to help people to create SQL Views without having to know SQL. In the Create View modal, or in each Collection row when hovering over the Views we might see a '+' button for a special View creation modal that is more graphical, with checkboxes to select the columns wanted from what table. No need to allow for joins, just basic select from where, maybe some of the logic of the filter with sorting.
+      - [ ] Maybe todo?
+
+  ],
   task(
     "Karma Refactor",
   )[
@@ -177,12 +195,6 @@
     "Execute single Karma with visualization on the condition being evaluated",
   )[
     Maybe a modal
-  ],
-  task(
-    "Table Extra Ergonomics",
-  )[
-    - Delete row (with confirmation, by default, with option in configuration to not ask).
-    - [ ] Every row should have in the id column a button to delete the row with such id from the table in question. The
   ],
   task(
     "Canvas",
@@ -207,10 +219,10 @@
     Pinned Views appear on the screen independently of the active Collection, making it appear on the screen with higher Z index and stuck to a place.
 
     - [x] Be able to Pin/Unpin Views.
-    - [ ] Currently the pin only appears when we change active Collection.
-    - [ ] Have the pinned view be able to be resized and moved. Persist that information in the Pin Collection table.
-    - [ ] Default to putting the pinned view on the bottom right corner.
-    - [ ] Make sure the Pin border and the unpin button doesn't take too much space, as little as possible.
+    - [x] Currently the pin only appears when we change active Collection.
+    - [x] Have the pinned view be able to be resized and moved. Persist that information in the Pin Collection table.
+    - [x] Default to putting the pinned view on the bottom right corner.
+    - [x] Make sure the Pin border and the unpin button doesn't take too much space, as little as possible.
     Maybe a thin line border and an unpin button on hover. Now its like a thick window decoration.
   ],
   task("Command buffer")[
@@ -218,14 +230,7 @@
     - [ ] Maintain the shell's text highlighting. Maybe using tree-sitter?
   ],
   task("Shortcut focus operation input")[
-    Ctrl-K will focus on it with insert mode, when clicking it i think this is already the case.
-  ],
-  task(
-    "Command in several languages",
-  )[
-    syntax highlighting and lsp (Tree-Sitter?) for Commands
-    Being able to see based on the language syntax highlighting. So if in a Command block there is not a language set default to bash,
-    if there is rust use the highlight for Rust, use lsp to see if its wrong, be able to run every command and see the result.
+    Ctrl-K will focus on it, anywhere that im in, it focuses it.
   ],
   task(
     "Deterministic Simulation Testing",
@@ -287,6 +292,13 @@
     If we change the Frequency one Karma uses we can see how it will affect our DNA and others too if we have Karma that involves their DNA.
 
     With such possibly 5D canvas we will be able to save things spatially. One line in a 2D table is a way of grouping several lines close to one another. If we have things spacially set out in 3D we can have one record be like an object visually, with several copies in sync with the db one. We might not need a table like a 2d plane on a 3D world, that might be too boring.
+  ],
+  task(
+    "Command in several languages",
+  )[
+    syntax highlighting and lsp (Tree-Sitter?) for Commands
+    Being able to see based on the language syntax highlighting. So if in a Command block there is not a language set default to bash,
+    if there is rust use the highlight for Rust, use lsp to see if its wrong, be able to run every command and see the result.
   ],
 )
 

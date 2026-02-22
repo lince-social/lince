@@ -132,22 +132,12 @@
     "Table + Skeleton + Smooth + 6 7",
     contributors: (("@xaviduds", "wip"),),
   )[
-    I think this is the best way, sending the column size information to the db... but it's kinda weird?
-    Table needs to have these properties:
-    - [ ] Custom column width. If a table has too many columns we need to decide if we:
-    (A) reduce that columns' size to fit the screen (hard)
-    (B) make the central area with the tables be like a 2d canvas with vertical/horizontal scrollable space (maybe even zoom).
-    If that's the case a (return to content is cool but for now ok not having).
     - [ ] Column Resize: saves information on individual columns' size.
     For each collection, every view that is a table should be able to have each column with a custom width.
     - [ ] Have word-wrapping by default, in the cells, being able to toggle it in Configuration.
     - [ ] Any changes made to the db have all fit inside one or more migrations.
-  ],
-  task(
-    "Usable by another non-crazy human being knowing the app is rough still, AKA 0.0 GPUI version",
-  )[
     - [ ] Keybindings with ease of access (maybe when operation input is focused in insert mode)
-    - [ ] Vim motions off by default, with Configuration to set it On/Off (one needs to be able to exit Vim).
+    - [ ] Vim motions off by default, with Configuration to set it On/Off (one needs to be able to exit Vim). If Vim mode is off, there's no Mode button: Normal/Insert.
     - [ ] GUI non tecnical way of configuring CollectionView intermediate table.
   ],
   task("SQL Query Editor GUI", contributors: (("@chicogborba", "wip"),))[
@@ -181,15 +171,14 @@
     Garantir que seja possível ter cadeias infinitas de condições: karma: kd2 = kd6 = ks2
   ],
   task(
-    "Extensions",
+    "Endpoint",
   )[
-    Be able to receive information about ESP and put it into a Karma condition.
+    - Be able to receive info about actions like changing a record Quantity, activating commands, running Karma through endpoints. That way any device can be a client, even an ESP.
   ],
   task(
     "Note-taking-like",
   )[
-    Ter uma forma boa de editar notas, conectando possivelmente notas de objetivos com karma, pra que cada workflow tenha sua
-    justificativa e possa-se criar primeiro os objetivos e completar eles com os passos pra chegar lá
+    Ter uma forma boa de editar notas, conectando possivelmente notas de objetivos com karma, pra que cada workflow tenha sua justificativa e possa-se criar primeiro os objetivos e completar eles com os passos pra chegar lá
   ],
   task(
     "Execute single Karma with visualization on the condition being evaluated",
@@ -224,6 +213,15 @@
     - [x] Default to putting the pinned view on the bottom right corner.
     - [x] Make sure the Pin border and the unpin button doesn't take too much space, as little as possible.
     Maybe a thin line border and an unpin button on hover. Now its like a thick window decoration.
+    - [x] The pin appears not very consistently, every pin should appear no matter the active Collection. Currently I need to switch Collections for it to update.
+
+    The pins stopped working i think, or maybe is db starvation. Is there a db that is not sqlite i can use that comes with my binary and runs no matter the os? Prefferably rust based. Or something that doesnt have this problem of sqlpool and whatnot, my requirements:
+    - Best if not starting a new connection at every query.
+    - Able to ship a single binary for my open source project.
+    - Doesnt face pool problems, i think i am having it now.
+
+    Please investigate deeply why this is happening. I can only do certain actions once per running of program, like switching active collections, (cant even see the pins anymore), running commands and seeing their buffers as notifications, creation modals, it feels like i can do one commmand of these every run, after that the app freezes. Please try first to solve this issue with sqlite, then do research about alternatives.
+
   ],
   task("Command buffer")[
     - [ ] The command buffer doesnt always appear. At least when running the command with Operation Input.

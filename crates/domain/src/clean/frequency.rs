@@ -6,7 +6,7 @@ pub struct Frequency {
     pub id: u32,
     pub quantity: f64,
     pub name: String,
-    pub day_week: String,
+    pub day_week: Option<f64>,
     pub months: f64,
     pub days: f64,
     pub seconds: f64,

@@ -222,6 +222,8 @@
 
     Please investigate deeply why this is happening. I can only do certain actions once per running of program, like switching active collections, (cant even see the pins anymore), running commands and seeing their buffers as notifications, creation modals, it feels like i can do one commmand of these every run, after that the app freezes. Please try first to solve this issue with sqlite, then do research about alternatives.
 
+
+    Help me fix my app to remove as much complexity as possible around my sqlite, i want to be able to run one --headless and one --karmaless instance of my lince binary. They both will have access to the db, you can refactor as much as you want, just try to keep it simple and powerfull. Please fix the issue with the app freezing due to pool exaustion.
   ],
   task("Command buffer")[
     - [ ] The command buffer doesnt always appear. At least when running the command with Operation Input.

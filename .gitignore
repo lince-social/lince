@@ -2,3 +2,4 @@
 /logs
 mprocs.log
 /documents/**/*.html
+.local

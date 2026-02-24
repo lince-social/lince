@@ -8,7 +8,7 @@ license = "GPL-3.0-or-later"
 # include = ["/crates", "Cargo.toml", "LICENSE"]
 
 [features]
-default = ["karma", "gui"]
+default = ["karma", "tui"]
 karma = []
 gui = ["gui/gui"]
 tui = ["tui/tui"]

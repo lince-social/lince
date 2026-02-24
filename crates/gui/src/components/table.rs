@@ -9,7 +9,9 @@ use crate::components::modal_frame::{
     begin_drag_with_interaction,
 };
 use crate::components::table_vim::{EditMode, TableVimCommand, table_vim_command};
-use crate::themes::catppuccin_mocha::{blue, green, mantle, red, surface0, surface1, text, yellow};
+use crate::themes::catppuccin_macchiato::{
+    blue, green, mantle, red, surface0, surface1, text, yellow,
+};
 
 pub type Row = HashMap<String, String>;
 pub type Table = Vec<Row>;

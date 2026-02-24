@@ -11,7 +11,7 @@ use gpui_component::scroll::ScrollableElement;
 use ropey::Rope;
 use std::collections::HashMap;
 
-use crate::themes::catppuccin_mocha::{
+use crate::themes::catppuccin_macchiato::{
     base, crust, green, mantle, overlay0, red, surface0, surface1, text, yellow,
 };
 

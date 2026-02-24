@@ -24,11 +24,11 @@ async fn main() -> Result<(), Error> {
     sqlx::migrate!("../../migrations")
         .run(&*db)
         .await
-        .map_err(|e| Error::new(std::io::ErrorKind::Other, e))?;
+        .map_err(Error::other)?;
 
-    let _ = seed(&*db)
+    seed(&db)
         .await
-        .map_err(|e| Error::new(std::io::ErrorKind::Other, e))?;
+        .map_err(Error::other)?;
 
     let services = dependency_injection(db.clone());
 

@@ -10,7 +10,7 @@ use gpui_component::scroll::ScrollableElement;
 use injection::cross_cutting::InjectedServices;
 use std::{collections::HashMap, time::Duration};
 
-use crate::themes::catppuccin_mocha::{
+use crate::themes::catppuccin_macchiato::{
     crust, green, mantle, overlay0, red, surface0, surface1, text, yellow,
 };
 

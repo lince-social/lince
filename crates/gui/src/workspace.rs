@@ -16,7 +16,7 @@ use super::{
         },
         table::CustomTable,
     },
-    themes::catppuccin_mocha::mantle,
+    themes::catppuccin_macchiato::mantle,
 };
 use application::operation::operation_execute;
 use domain::{
@@ -899,7 +899,7 @@ impl Render for Workspace {
             pinned_content_entities
                 .into_iter()
                 .map(|(view_id, name, content)| {
-                    use super::themes::catppuccin_mocha::{base, maroon, surface0};
+                    use super::themes::catppuccin_macchiato::{base, maroon, surface0};
 
                     let pinned_view = self
                         .state

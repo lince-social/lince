@@ -1,7 +1,6 @@
-use super::super::{
-    themes::catppuccin_mocha::{self, red, *},
-    workspace::Workspace,
-};
+use crate::themes::catppuccin_macchiato::{blue, red, yellow};
+
+use super::super::{themes::catppuccin_macchiato::*, workspace::Workspace};
 use domain::dirty::{collection::CollectionRow, view::ViewWithPinInfo};
 use gpui::{
     Context, InteractiveElement, IntoElement, ParentElement, Render, StatefulInteractiveElement,
@@ -119,11 +118,7 @@ impl RenderOnce for CollectionViewRow {
                 .px_1()
                 .rounded_xs()
                 .text_xs()
-                .bg(if pinned {
-                    catppuccin_mocha::yellow()
-                } else {
-                    surface0()
-                })
+                .bg(if pinned { yellow() } else { surface0() })
                 .hover(|s| s.bg(if pinned { peach() } else { surface1() }))
                 .text_color(if pinned { crust() } else { text() })
                 .child(if pinned { "📌" } else { "📍" })
@@ -159,11 +154,7 @@ impl RenderOnce for CollectionViewRow {
                 div()
                     .rounded_xs()
                     .text_color(crust())
-                    .bg(if self.quantity == 0 {
-                        red()
-                    } else {
-                        catppuccin_mocha::blue()
-                    })
+                    .bg(if self.quantity == 0 { red() } else { blue() })
                     .items_center()
                     .hover(|s| s.bg(if self.quantity == 0 { peach() } else { mauve() }))
                     .child(self.name)

@@ -1,5 +1,5 @@
 [env]
-RUST_CHANNEL = "nightly"
+RUST_CHANNEL = "stable"
 DOCS_ROOT = "documents"
 FONT_PATH = "documents/font/IBM_Plex_Sans/static"
 

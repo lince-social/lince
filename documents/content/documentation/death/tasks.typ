@@ -129,7 +129,7 @@
     mind to cover even more cases please refactor.
   ],
   task(
-    "Table + Skeleton + Smooth + 6 7",
+    "0.0 Usable by non-crazy-frog people",
     contributors: (("@xaviduds", "wip"),),
   )[
     - [ ] Column Resize: saves information on individual columns' size.
@@ -163,6 +163,9 @@
       I think it might be necessary to recycle some of these components to help people to create SQL Views without having to know SQL. In the Create View modal, or in each Collection row when hovering over the Views we might see a '+' button for a special View creation modal that is more graphical, with checkboxes to select the columns wanted from what table. No need to allow for joins, just basic select from where, maybe some of the logic of the filter with sorting.
       - [ ] Maybe todo?
 
+  ],
+  task("Subscribe")[
+    - [ ] Make the Views be subscription to data, that updates the frontend automatically. No need to poll, the db publishes changes. The Views receive new data and render them anew.
   ],
   task(
     "Karma Refactor",

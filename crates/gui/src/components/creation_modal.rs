@@ -9,7 +9,9 @@ use gpui::{
 use gpui_component::scroll::ScrollableElement;
 
 use crate::{
-    themes::catppuccin_mocha::{blue, crust, green, mantle, red, surface0, surface1, text, yellow},
+    themes::catppuccin_macchiato::{
+        blue, crust, green, mantle, red, surface0, surface1, text, yellow,
+    },
     workspace::Workspace,
 };
 

@@ -173,6 +173,7 @@ async fn append_session_output(
         session.snapshot.output.push_str(prefix);
         session.snapshot.output.push_str(&chunk);
     }
+    dbg!(&session.snapshot.output);
     trim_output(&mut session.snapshot.output);
     let _ = hub.event_tx.send(CommandBufferEvent::Output(session_id));
     Ok(())
@@ -364,6 +365,7 @@ pub async fn karma_execute_command(services: InjectedServices, id: u32) -> Optio
 }
 
 pub async fn service_karma_execute_command(command: String) -> Option<i64> {
+    println!("Running command: {}", command);
     let output = TokioCommand::new("sh")
         .arg("-c")
         .arg(&command)

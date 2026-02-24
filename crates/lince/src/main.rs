@@ -26,9 +26,7 @@ async fn main() -> Result<(), Error> {
         .await
         .map_err(Error::other)?;
 
-    seed(&db)
-        .await
-        .map_err(Error::other)?;
+    seed(&db).await.map_err(Error::other)?;
 
     let services = dependency_injection(db.clone());
 
@@ -77,8 +75,10 @@ async fn start_gui(args: Vec<String>, services: InjectedServices) -> Result<(), 
 
 #[cfg(feature = "tui")]
 async fn start_tui(args: Vec<String>, services: InjectedServices) -> Result<(), Error> {
-    if args.contains(&"tui".to_string()) {
-        tui_app(services.clone()).await;
+    if !args.contains(&"--tuiless".to_string()) {
+        while let Err(e) = tui_app(services.clone()).await {
+            println!("Tui error: {e}")
+        }
     }
     Ok(())
 }

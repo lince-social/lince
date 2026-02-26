@@ -50,12 +50,9 @@ description = "Start typst documentation preview"
 tools = { "tinymist" = "latest", "typst" = "latest" }
 usage = """
 flag "-l --light" help="Use light mode in tinymist preview (default: dark)"
-flag "-L --light-only" help="Only compile light version (default: compiles both)"
-flag "-D --dark-only" help="Only compile dark version (default: compiles both)"
 """
 run = """
-LIGHT_ONLY="${usage_light_only:-false}"
-DARK_ONLY="${usage_dark_only:-false}"
+LINCE_VERSION=$(awk 'BEGIN{in_pkg=0} /^[[]package[]]$/{in_pkg=1;next} /^[[]/{in_pkg=0} in_pkg&&/^version = /{print $3;exit}' crates/lince/Cargo.toml | xargs)
 
 # Default to dark mode, use light if --light flag is passed
 if [ "${usage_light:-false}" = "true" ]; then
@@ -65,20 +62,11 @@ else
 fi
 
 compile_docs() {
-  echo 'Compiling PDF versions, might take a while...'
-  if [ "$LIGHT_ONLY" = "true" ]; then
     echo '  → Compiling light version...'
-    typst compile --root . --input dark=false documents/content/documentation/main.typ documents/content/documentation/main-light.pdf
-  elif [ "$DARK_ONLY" = "true" ]; then
+    typst compile --root . --input dark=false --input lince_version="$LINCE_VERSION" documents/content/documentation/main.typ documents/content/documentation/lince-documentation-light.pdf
     echo '  → Compiling dark version...'
-    typst compile --root . --input dark=true documents/content/documentation/main.typ documents/content/documentation/main-dark.pdf
-  else
-    echo '  → Compiling light version...'
-    typst compile --root . --input dark=false documents/content/documentation/main.typ documents/content/documentation/main-light.pdf
-    echo '  → Compiling dark version...'
-    typst compile --root . --input dark=true documents/content/documentation/main.typ documents/content/documentation/main-dark.pdf
-  fi
-  echo 'Done!'
+    typst compile --root . --input dark=true --input lince_version="$LINCE_VERSION" documents/content/documentation/main.typ documents/content/documentation/lince-documentation-dark.pdf
+    echo 'Done!'
 }
 
 trap compile_docs EXIT
@@ -89,6 +77,7 @@ tinymist preview \
 --data-plane-host 127.0.0.1:3001 \
 --static-file-host 127.0.0.1:3003 \
 --input dark=$PREVIEW_DARK \
+--input lince_version=$LINCE_VERSION \
 {{env.DOCS_ROOT}}/content/documentation/main.typ
 """
 

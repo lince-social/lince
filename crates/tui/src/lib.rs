@@ -2,6 +2,7 @@
 
 pub mod app;
 pub mod components;
+pub mod pages;
 
 use crate::app::app;
 use injection::cross_cutting::InjectedServices;

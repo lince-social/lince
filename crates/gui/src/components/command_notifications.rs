@@ -8,7 +8,7 @@ use gpui::{
 };
 use gpui_component::scroll::ScrollableElement;
 use injection::cross_cutting::InjectedServices;
-use std::{collections::HashMap, time::Duration};
+use std::collections::HashMap;
 
 use crate::themes::catppuccin_macchiato::{
     crust, green, mantle, overlay0, red, surface0, surface1, text, yellow,
@@ -71,22 +71,15 @@ impl CommandNotifications {
     fn start_configuration_poller(&mut self, cx: &mut Context<Self>) {
         let services = self.services.clone();
         cx.spawn(async move |this, cx| {
-            loop {
-                let config = services.repository.configuration.get_active().await.ok();
-                if this
-                    .update(cx, |this, cx| {
-                        if let Some(config) = config {
-                            this.show_notifications = config.show_command_notifications > 0;
-                            this.notification_seconds = config.command_notification_seconds;
-                            cx.notify();
-                        }
-                    })
-                    .is_err()
-                {
-                    break;
+            let config = services.repository.configuration.get_active().await.ok();
+            this.update(cx, |this, cx| {
+                if let Some(config) = config {
+                    this.show_notifications = config.show_command_notifications > 0;
+                    this.notification_seconds = config.command_notification_seconds;
+                    cx.notify();
                 }
-                tokio::time::sleep(Duration::from_millis(500)).await;
-            }
+            })
+            .ok();
         })
         .detach();
     }

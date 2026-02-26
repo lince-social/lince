@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-tui = ["dep:ratatui", "dep:color-eyre"]
+tui = ["dep:ratatui", "dep:color-eyre", "dep:crossterm"]
 
 [dependencies]
 domain = { workspace = true }
@@ -14,3 +14,4 @@ utils = { workspace = true }
 
 ratatui = { workspace = true, optional = true, features = ["serde"] }
 color-eyre = {workspace = true, optional = true}
+crossterm = {workspace = true, optional = true}

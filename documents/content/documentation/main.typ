@@ -9,12 +9,13 @@
 
 // Dark mode configuration via input variable (default: false for light mode)
 #let dark-mode = sys.inputs.at("dark", default: "false") == "true"
+#let lince-version = sys.inputs.at("lince_version", default: "unknown")
 
 #let bg-color = if dark-mode { rgb("#000000") } else { white }
 #let text-color = if dark-mode { rgb("#eaeaea") } else { black }
 #let link-color = if dark-mode { rgb("#6ea8fe") } else { rgb("#0000EE") }
-#let logo-path = if dark-mode { "../../media/logo/branco.png" } else {
-  "../../media/logo/preto.png"
+#let logo-path = if dark-mode { "../../media/logo/white.svg" } else {
+  "../../media/logo/black.svg"
 }
 
 #set page(fill: bg-color)
@@ -37,7 +38,7 @@
 
 #show link: it => underline(text(fill: link-color, it))
 #pagebreak()
-Lince Version: 0.6.1 \ \
+Lince Version: #lince-version \ \
 Typst Version: #dictionary(sys).at("version") \ \
 Documentation Start: #datetime(year: 2025, month: 12, day: 15).display() \ \
 Documentation Print:  #datetime.today().display() \ \

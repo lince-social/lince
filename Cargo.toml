@@ -7,7 +7,8 @@ members = [
     "crates/injection",
     "crates/persistence",
     "crates/gui",
-    "crates/utils", "crates/tui",
+    "crates/utils",
+    "crates/tui",
 ]
 
 default-members = ["crates/lince"]
@@ -38,6 +39,7 @@ sqlx = { version = "0.8.6" }
 tokio = { version = "1.49.0" }
 ratatui = { version = "0.30.0"}
 color-eyre = "0.6.5"
+crossterm = "0.29.0"
 
 [profile.release]
 opt-level = 3          # Maximum optimization

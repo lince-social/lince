@@ -17,7 +17,7 @@ pub async fn connection() -> Result<Pool<Sqlite>, Error> {
         .foreign_keys(true);
 
     let pool = SqlitePoolOptions::new()
-        .max_connections(1) // correct for SQLite
+        .max_connections(5)
         .acquire_timeout(Duration::from_secs(3))
         .connect_with(options)
         .await

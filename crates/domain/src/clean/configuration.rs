@@ -12,4 +12,5 @@ pub struct Configuration {
     pub show_command_notifications: i64,
     pub command_notification_seconds: f64,
     pub delete_confirmation: i64,
+    pub keybinding_mode: i64,
 }

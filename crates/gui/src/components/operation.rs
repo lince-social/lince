@@ -1,4 +1,5 @@
 use crate::components::table_vim::EditMode;
+use crate::keybinding_mode::global_mode_is_vim;
 
 use super::super::workspace::Workspace;
 use gpui::{Context, IntoElement, Render, Window, div, *};
@@ -136,6 +137,15 @@ impl Operation {
         }
         self.input_text = Rope::new();
         self.cursor_pos = 0;
+        self.edit_mode = EditMode::Insert;
+        self.has_focused = false;
+    }
+
+    pub fn schedule_refocus(&mut self) {
+        self.has_focused = false;
+        if global_mode_is_vim() {
+            self.edit_mode = EditMode::Insert;
+        }
     }
 
     fn display_text_with_cursor(&self) -> AnyElement {
@@ -143,7 +153,7 @@ impl Operation {
         let chars = text.chars().collect::<Vec<_>>();
         let len = chars.len();
         let cursor = self.cursor_pos.min(len);
-        match self.edit_mode {
+        match self.effective_edit_mode() {
             EditMode::Insert => {
                 let before = chars.iter().take(cursor).collect::<String>();
                 let after = chars.iter().skip(cursor).collect::<String>();
@@ -183,13 +193,89 @@ impl Operation {
     }
 
     pub fn editing_mode_widget_label(&self, window: &Window) -> Option<&'static str> {
-        if self.focus_handle.is_focused(window) {
+        if global_mode_is_vim() && self.focus_handle.is_focused(window) {
             Some(match self.edit_mode {
                 EditMode::Normal => "Normal",
                 EditMode::Insert => "Insert",
             })
         } else {
             None
+        }
+    }
+
+    fn effective_edit_mode(&self) -> EditMode {
+        if global_mode_is_vim() {
+            self.edit_mode
+        } else {
+            EditMode::Insert
+        }
+    }
+
+    fn handle_normal_keybinding(
+        &mut self,
+        event: &KeyDownEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let key = event.keystroke.key.as_str();
+        match key {
+            "backspace" => {
+                self.delete_backward();
+                window.prevent_default();
+                cx.stop_propagation();
+                cx.notify();
+                return;
+            }
+            "delete" => {
+                self.delete_forward();
+                window.prevent_default();
+                cx.stop_propagation();
+                cx.notify();
+                return;
+            }
+            "left" | "arrowleft" => {
+                self.move_left();
+                window.prevent_default();
+                cx.stop_propagation();
+                cx.notify();
+                return;
+            }
+            "right" | "arrowright" => {
+                self.move_right();
+                window.prevent_default();
+                cx.stop_propagation();
+                cx.notify();
+                return;
+            }
+            "home" => {
+                self.move_home();
+                window.prevent_default();
+                cx.stop_propagation();
+                cx.notify();
+                return;
+            }
+            "end" => {
+                self.move_end();
+                window.prevent_default();
+                cx.stop_propagation();
+                cx.notify();
+                return;
+            }
+            _ => {}
+        }
+
+        if let Some(key_char) = &event.keystroke.key_char {
+            if key_char.chars().count() == 1
+                && !event.keystroke.modifiers.control
+                && !event.keystroke.modifiers.platform
+            {
+                if let Some(ch) = key_char.chars().next() {
+                    self.insert_char(ch);
+                    window.prevent_default();
+                    cx.stop_propagation();
+                    cx.notify();
+                }
+            }
         }
     }
 }
@@ -216,6 +302,9 @@ impl Render for Operation {
             .child(":")
             .child(self.display_text_with_cursor())
             .on_key_down(cx.listener(|this, event: &KeyDownEvent, window, cx| {
+                if !global_mode_is_vim() {
+                    this.edit_mode = EditMode::Insert;
+                }
                 let key = event.keystroke.key.as_str();
                 let is_ctrl_or_alt =
                     event.keystroke.modifiers.control || event.keystroke.modifiers.alt;
@@ -227,6 +316,11 @@ impl Render for Operation {
                     window.prevent_default();
                     cx.stop_propagation();
                     cx.notify();
+                    return;
+                }
+
+                if !global_mode_is_vim() {
+                    this.handle_normal_keybinding(event, window, cx);
                     return;
                 }
 

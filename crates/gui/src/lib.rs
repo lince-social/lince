@@ -2,6 +2,7 @@
 
 pub mod app;
 pub mod components;
+pub mod keybinding_mode;
 pub mod themes;
 pub mod window;
 pub mod workspace;

@@ -8,7 +8,8 @@ use crate::components::modal_frame::{
     ModalConstraints, ModalFrameDrag, ModalInteraction, ModalRect, ResizeEdges, apply_drag,
     begin_drag_with_interaction,
 };
-use crate::components::table_vim::{EditMode, TableVimCommand, table_vim_command};
+use crate::components::table_vim::{EditMode, TableVimCommand, table_command};
+use crate::keybinding_mode::{Mode, global_mode, global_mode_is_vim, set_global_mode};
 use crate::themes::catppuccin_macchiato::{
     blue, green, mantle, red, surface0, surface1, text, yellow,
 };
@@ -298,7 +299,7 @@ impl CustomTable {
         }
 
         let chars = line.chars().collect::<Vec<_>>();
-        match self.edit_mode {
+        match self.effective_edit_mode() {
             EditMode::Insert => {
                 let split_ix = cursor_col.min(chars.len());
                 h_flex()
@@ -455,13 +456,63 @@ impl CustomTable {
     }
 
     pub fn editing_mode_widget_label(&self, window: &Window) -> Option<&'static str> {
-        if self.editing_cell.is_some() && self.focus_handle.is_focused(window) {
+        if global_mode_is_vim()
+            && self.editing_cell.is_some()
+            && self.focus_handle.is_focused(window)
+        {
             Some(match self.edit_mode {
                 EditMode::Normal => "Normal",
                 EditMode::Insert => "Insert",
             })
         } else {
             None
+        }
+    }
+
+    fn effective_edit_mode(&self) -> EditMode {
+        if global_mode_is_vim() {
+            self.edit_mode
+        } else {
+            EditMode::Insert
+        }
+    }
+
+    fn normalize_edit_mode_for_global(&mut self) {
+        if !global_mode_is_vim() {
+            self.edit_mode = EditMode::Insert;
+        }
+    }
+
+    fn update_global_mode_from_configuration_row(&self, row_ix: usize, column: &str, value: &str) {
+        if !self.table_name.eq_ignore_ascii_case("configuration") {
+            return;
+        }
+        if column.eq_ignore_ascii_case("keybinding_mode") {
+            let is_active = self
+                .data
+                .get(row_ix)
+                .and_then(|row| row.get("quantity"))
+                .and_then(|quantity| quantity.trim().parse::<i64>().ok())
+                .unwrap_or(0)
+                > 0;
+            if is_active {
+                let parsed = value.trim().parse::<i64>().unwrap_or(0);
+                set_global_mode(Mode::from_db(parsed));
+            }
+            return;
+        }
+
+        if column.eq_ignore_ascii_case("quantity") {
+            let becoming_active = value.trim().parse::<i64>().unwrap_or(0) > 0;
+            if becoming_active {
+                let mode_value = self
+                    .data
+                    .get(row_ix)
+                    .and_then(|row| row.get("keybinding_mode"))
+                    .and_then(|mode| mode.trim().parse::<i64>().ok())
+                    .unwrap_or(0);
+                set_global_mode(Mode::from_db(mode_value));
+            }
         }
     }
 
@@ -558,6 +609,7 @@ impl CustomTable {
         let table = self.table_name.clone();
         let column = key.clone();
         let value = self.edit_value.to_string();
+        self.update_global_mode_from_configuration_row(row_ix, &column, &value);
 
         if let Some(row) = self.data.get_mut(row_ix) {
             row.insert(key, value.clone());
@@ -587,7 +639,11 @@ impl CustomTable {
         self.edit_value = Rope::from_str(value);
         self.cursor_pos = self.edit_value.len_chars();
         self.preferred_col = None;
-        self.edit_mode = EditMode::Normal;
+        self.edit_mode = if global_mode_is_vim() {
+            EditMode::Normal
+        } else {
+            EditMode::Insert
+        };
         self.edit_surface = surface;
         if self.edit_surface == EditSurface::Modal {
             let viewport = window.viewport_size();
@@ -709,6 +765,8 @@ impl CustomTable {
 
 impl Render for CustomTable {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.normalize_edit_mode_for_global();
+
         let header_cells = self.headers.iter().enumerate().map(|(col_ix, header)| {
             let width = self.col_widths.get(col_ix).copied().unwrap_or(180.0);
             div()
@@ -787,7 +845,7 @@ impl Render for CustomTable {
                             }),
                         )
                         .on_key_down(cx.listener(|this, event: &KeyDownEvent, window, cx| {
-                            let command = table_vim_command(event, this.edit_mode);
+                            let command = table_command(event, global_mode(), this.edit_mode);
                             if command != TableVimCommand::None {
                                 this.handle_table_vim_command(command, cx);
                                 window.prevent_default();
@@ -1192,7 +1250,8 @@ impl Render for CustomTable {
                                     .track_focus(&self.focus_handle(cx))
                                     .on_key_down(cx.listener(
                                         |this, event: &KeyDownEvent, window, cx| {
-                                            let command = table_vim_command(event, this.edit_mode);
+                                            let command =
+                                                table_command(event, global_mode(), this.edit_mode);
                                             if command != TableVimCommand::None {
                                                 this.handle_table_vim_command(command, cx);
                                                 window.prevent_default();

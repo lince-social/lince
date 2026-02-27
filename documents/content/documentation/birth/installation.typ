@@ -4,7 +4,7 @@ You can run Lince as an executable, here are the #link("https://github.com/lince
 Pick the latest one for your machine and operating system. After the download, unzip it and run the binary:
 
 ```bash
-./lince karma gui
+./lince
 ```
 
 Or you can install from the crates.io repository with:
@@ -15,7 +15,7 @@ cargo install lince
 If you prefer to compile the source code, the easiest way is to download the repo and run:
 
 ```bash
-cargo run -- karma gui
+cargo run
 ```
 
 If you don't have Cargo installed, you can install it with #link("https://www.rust-lang.org/tools/install")[Rustup].
@@ -28,6 +28,8 @@ echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.zshrc
 ```
 
 This uses #link("https://typst.app/")[Typst] to generate the documentation.
-I recommend installing #link("https://github.com/jacobdeichert/mask")[mask] with `cargo install mask`, then running `mask docs`.
-If you are in Arch or MacOS systems it will automatically install typst and #link("https://github.com/Myriad-Dreamin/tinymist")[tinymist] (web server),
-else it will probably not work automatically.
+One way of running the project is with Mise, the command runner that installs the programs you need to run. To get Mise, run:
+```bash
+curl https://mise.run | sh
+```
+Then run `mise docs` for documentation.

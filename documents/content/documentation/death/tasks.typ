@@ -16,8 +16,8 @@
   )[
     - [ ] Switching License from GPLv3 to MIT for ease of collaboration with other projects. Should we do it?
     Or changing it to WTFPL: https://en.wikipedia.org/wiki/WTFPL
-
     - [ ] Going through the excalidraw and critiquing with design. Make documentation of things there.
+    - [ ] Should we open an Institute? Why? Good reasons only
   ],
   task(
     "Lince Institute",
@@ -54,7 +54,7 @@
     contributors: (("Nica", "wip"), ("@xaviduds", "wip")),
   )[
     - [x] New vetorized logo | Nica
-    - [x] Decide on a font for the 'Lince' word and 'Instituto Lince'.: Instrument Serif
+    - [x] Decide on a font for the 'Lince' word and 'Instituto Lince'.: Instrument Serif?
       - [/] How it is displayed in relation to the logo, if its logo on top and 'Lince' written on the bottom or on the right.
       - [/] Same thing for 'Instituto Lince'
       - [/] Stickers -> Rei do Sticker: 500 (250 b&w, 250 w&b) laminated or holographic. Make a design for it (may contain website lince.social).
@@ -137,7 +137,10 @@
     - [ ] Have word-wrapping by default, in the cells, being able to toggle it in Configuration.
     - [ ] Any changes made to the db have all fit inside one or more migrations.
     - [ ] Keybindings with ease of access (maybe when operation input is focused in insert mode)
-    - [ ] Vim motions off by default, with Configuration to set it On/Off (one needs to be able to exit Vim). If Vim mode is off, there's no Mode button: Normal/Insert.
+    - [x] Vim motions off by default, with Configuration to set it On/Off (one needs to be able to exit Vim). If Vim mode is off, there's no Mode button: Normal/Insert.
+    - [ ] The operation input should be the component that gains focus by default, if the user clicks on a collection to change it, after that click currently the operation input looses focus, it should always go back to it.
+      - [ ] Also, if vim mode is enabled it always defaults to gainning focus in insert mode, after every 'enter', sending an operation, the mode should be insert
+
     - [ ] GUI non tecnical way of configuring CollectionView intermediate table.
   ],
   task("SQL Query Editor GUI", contributors: (("@chicogborba", "wip"),))[

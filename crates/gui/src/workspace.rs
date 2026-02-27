@@ -3,6 +3,7 @@ use crate::{
         command_notifications::CommandNotifications, command_watcher::CommandWatcher,
         creation_modal::CreationModal, operation::Operation,
     },
+    keybinding_mode::{Mode, global_mode_is_vim, set_global_mode},
     themes::catppuccin_macchiato::{crust, green, surface0},
 };
 use std::{collections::HashMap, str::FromStr};
@@ -55,6 +56,22 @@ pub struct Workspace {
 }
 
 impl Workspace {
+    fn refresh_global_keybinding_mode(&self, cx: &mut Context<Self>) {
+        let services = self.services.clone();
+        cx.spawn(async move |this, cx| {
+            if let Ok(configuration) = services.repository.configuration.get_active().await {
+                set_global_mode(Mode::from_db(configuration.keybinding_mode));
+                let _ = this.update(cx, |workspace, cx| {
+                    workspace.operation.update(cx, |operation, _| {
+                        operation.schedule_refocus();
+                    });
+                    cx.notify();
+                });
+            }
+        })
+        .detach();
+    }
+
     fn new(
         cx: &mut Context<Self>,
         services: InjectedServices,
@@ -71,6 +88,9 @@ impl Workspace {
         });
         let focus_handle = cx.focus_handle();
         let operation = cx.new(|_| Operation::new(weak.clone(), focus_handle.clone()));
+        operation.update(cx, |operation, _| {
+            operation.schedule_refocus();
+        });
         let command_watcher = cx.new(CommandWatcher::new);
         let command_notifications = cx.new(|cx| CommandNotifications::new(services.clone(), cx));
 
@@ -99,6 +119,7 @@ impl Workspace {
             workspace.tables_need_recreation = true;
         }
         workspace.refresh_creation_view_entities(cx);
+        workspace.refresh_global_keybinding_mode(cx);
 
         workspace
     }
@@ -154,6 +175,10 @@ impl Workspace {
         cx.new(|cx| Self::new(cx, services, state, table_entities))
     }
     pub fn on_collection_selected(&mut self, collection_id: u32, cx: &mut Context<Self>) {
+        self.operation.update(cx, |operation, _| {
+            operation.schedule_refocus();
+        });
+
         let services = self.services.clone();
         cx.spawn(async move |this, cx| {
             if let Err(e) = services
@@ -223,6 +248,9 @@ impl Workspace {
                     bar.collections = rows.clone();
                     bar.views_with_pin_info = views_with_pin_info;
                 });
+                owner.operation.update(cx, |operation, _| {
+                    operation.schedule_refocus();
+                });
 
                 // Mark tables for recreation since data changed
                 owner.tables_need_recreation = true;
@@ -234,6 +262,10 @@ impl Workspace {
         .detach();
     }
     pub fn on_view_selected(&mut self, cx: &mut Context<Self>, collection_id: u32, view_id: u32) {
+        self.operation.update(cx, |operation, _| {
+            operation.schedule_refocus();
+        });
+
         let services = self.services.clone();
         cx.spawn(async move |this, cx| {
             match services
@@ -284,6 +316,9 @@ impl Workspace {
                         owner.collection_list.update(cx, |bar, _| {
                             bar.collections = collections.clone();
                             bar.views_with_pin_info = views_with_pin_info;
+                        });
+                        owner.operation.update(cx, |operation, _| {
+                            operation.schedule_refocus();
                         });
 
                         // Mark tables for recreation since data changed
@@ -450,6 +485,7 @@ impl Workspace {
                         owner.state.views_with_pin_info = views_with_pin_info;
                         owner.tables_need_recreation = true;
                         owner.refresh_creation_view_entities(cx);
+                        owner.refresh_global_keybinding_mode(cx);
                         for (table, action) in operationresult {
                             if action == OperationActions::Create {
                                 owner.open_creation_modal(table, cx);
@@ -817,21 +853,26 @@ impl Render for Workspace {
             self.tables_need_recreation = false;
         }
 
-        let mode_label = self
-            .operation
-            .read(cx)
-            .editing_mode_widget_label(window)
-            .or_else(|| {
-                self.table_entities
-                    .iter()
-                    .find_map(|(_, entity)| entity.read(cx).editing_mode_widget_label(window))
-            })
-            .or_else(|| {
-                self.pinned_table_entities
-                    .iter()
-                    .find_map(|(_, _, entity)| entity.read(cx).editing_mode_widget_label(window))
-            })
-            .unwrap_or("Normal");
+        let mode_label = if global_mode_is_vim() {
+            self.operation
+                .read(cx)
+                .editing_mode_widget_label(window)
+                .or_else(|| {
+                    self.table_entities
+                        .iter()
+                        .find_map(|(_, entity)| entity.read(cx).editing_mode_widget_label(window))
+                })
+                .or_else(|| {
+                    self.pinned_table_entities
+                        .iter()
+                        .find_map(|(_, _, entity)| {
+                            entity.read(cx).editing_mode_widget_label(window)
+                        })
+                })
+                .or(Some("Insert"))
+        } else {
+            None
+        };
 
         let bar = div()
             .h(rems(1.6))
@@ -845,8 +886,9 @@ impl Render for Workspace {
             .m_0()
             .text_sm()
             .font_weight(FontWeight::BOLD)
-            .child(div().w_full().h_full().child(self.operation.clone()))
-            .child(
+            .child(div().w_full().h_full().child(self.operation.clone()));
+        let bar = if let Some(mode_label) = mode_label {
+            bar.child(
                 div()
                     .flex()
                     .justify_center()
@@ -857,7 +899,10 @@ impl Render for Workspace {
                     .bg(green())
                     .text_color(crust())
                     .child(mode_label),
-            );
+            )
+        } else {
+            bar
+        };
 
         let main = div()
             .flex()

@@ -1,4 +1,4 @@
-use std::sync::atomic::{AtomicU8, Ordering};
+use gpui::{BorrowAppContext, Global};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Mode {
@@ -15,19 +15,37 @@ impl Mode {
     }
 }
 
-static GLOBAL_KEYBINDING_MODE: AtomicU8 = AtomicU8::new(Mode::Normal as u8);
+pub struct KeybindingModeGlobal {
+    pub mode: Mode,
+}
 
-pub fn global_mode() -> Mode {
-    match GLOBAL_KEYBINDING_MODE.load(Ordering::Relaxed) {
-        1 => Mode::Vim,
-        _ => Mode::Normal,
+impl Default for KeybindingModeGlobal {
+    fn default() -> Self {
+        Self { mode: Mode::Normal }
     }
 }
 
-pub fn global_mode_is_vim() -> bool {
-    global_mode() == Mode::Vim
+impl Global for KeybindingModeGlobal {}
+
+pub fn global_mode<C>(cx: &mut C) -> Mode
+where
+    C: BorrowAppContext,
+{
+    cx.update_default_global::<KeybindingModeGlobal, _>(|global, _| global.mode)
 }
 
-pub fn set_global_mode(mode: Mode) {
-    GLOBAL_KEYBINDING_MODE.store(mode as u8, Ordering::Relaxed);
+pub fn global_mode_is_vim<C>(cx: &mut C) -> bool
+where
+    C: BorrowAppContext,
+{
+    global_mode(cx) == Mode::Vim
+}
+
+pub fn set_global_mode<C>(cx: &mut C, mode: Mode)
+where
+    C: BorrowAppContext,
+{
+    cx.update_default_global::<KeybindingModeGlobal, _>(|global, _| {
+        global.mode = mode;
+    });
 }

@@ -4,12 +4,15 @@ use injection::cross_cutting::InjectedServices;
 use ropey::Rope;
 use std::collections::{HashMap, HashSet};
 
+use crate::collection_view_column_widths::{
+    get_collection_view_column_widths, update_collection_view_column_widths,
+};
 use crate::components::modal_frame::{
     ModalConstraints, ModalFrameDrag, ModalInteraction, ModalRect, ResizeEdges, apply_drag,
     begin_drag_with_interaction,
 };
 use crate::components::table_vim::{EditMode, TableVimCommand, table_command};
-use crate::keybinding_mode::{Mode, global_mode, global_mode_is_vim, set_global_mode};
+use crate::keybinding_mode::{Mode, global_mode, set_global_mode};
 use crate::themes::catppuccin_macchiato::{
     blue, green, mantle, red, surface0, surface1, text, yellow,
 };
@@ -39,6 +42,7 @@ pub struct CustomTable {
     data: Table,
     headers: Vec<String>,
     table_name: String,
+    collection_view_id: Option<u32>,
     services: InjectedServices,
     editing_cell: Option<CellPosition>,
     hovered_cell: Option<CellPosition>,
@@ -57,6 +61,7 @@ pub struct CustomTable {
     pending_delete: Option<DeleteRowRequest>,
     delete_modal_dont_ask_again: bool,
     focus_handle: FocusHandle,
+    keybinding_mode: Mode,
 }
 
 impl Focusable for CustomTable {
@@ -66,7 +71,13 @@ impl Focusable for CustomTable {
 }
 
 impl CustomTable {
-    pub fn new(data: Table, table_name: String, services: InjectedServices, cx: &mut App) -> Self {
+    pub fn new(
+        data: Table,
+        table_name: String,
+        collection_view_id: Option<u32>,
+        services: InjectedServices,
+        cx: &mut App,
+    ) -> Self {
         let mut header_set = HashSet::new();
         for row in &data {
             for key in row.keys() {
@@ -76,11 +87,19 @@ impl CustomTable {
         let mut headers = header_set.into_iter().collect::<Vec<_>>();
         headers.sort();
         let header_count = headers.len();
+        let saved_widths = collection_view_id
+            .map(|id| get_collection_view_column_widths(cx, id))
+            .unwrap_or_default();
+        let col_widths = headers
+            .iter()
+            .map(|header| saved_widths.get(header).copied().unwrap_or(180.0))
+            .collect::<Vec<_>>();
 
         Self {
             data,
             headers,
             table_name,
+            collection_view_id,
             services,
             editing_cell: None,
             hovered_cell: None,
@@ -89,7 +108,11 @@ impl CustomTable {
             preferred_col: None,
             edit_mode: EditMode::Normal,
             edit_surface: EditSurface::Inline,
-            col_widths: vec![180.0; header_count],
+            col_widths: if header_count == col_widths.len() {
+                col_widths
+            } else {
+                vec![180.0; header_count]
+            },
             resizing_col: None,
             modal_width: 1200.0,
             modal_height: 760.0,
@@ -99,6 +122,7 @@ impl CustomTable {
             pending_delete: None,
             delete_modal_dont_ask_again: false,
             focus_handle: cx.focus_handle(),
+            keybinding_mode: Mode::Normal,
         }
     }
 
@@ -448,15 +472,53 @@ impl CustomTable {
         }
     }
 
+    fn current_widths_by_header(&self) -> HashMap<String, f32> {
+        self.headers
+            .iter()
+            .enumerate()
+            .map(|(ix, header)| {
+                (
+                    header.clone(),
+                    self.col_widths.get(ix).copied().unwrap_or(180.0),
+                )
+            })
+            .collect::<HashMap<_, _>>()
+    }
+
     fn end_column_resize(&mut self, cx: &mut Context<Self>) {
-        if self.resizing_col.is_some() {
-            self.resizing_col = None;
+        let Some((col_ix, _start_x, start_width)) = self.resizing_col.take() else {
+            return;
+        };
+        let Some(collection_view_id) = self.collection_view_id else {
             cx.notify();
+            return;
+        };
+        let final_width = self.col_widths.get(col_ix).copied().unwrap_or(start_width);
+        if (final_width - start_width).abs() < 0.1 {
+            cx.notify();
+            return;
         }
+
+        let widths = self.current_widths_by_header();
+        update_collection_view_column_widths(cx, collection_view_id, widths.clone());
+
+        let services = self.services.clone();
+        cx.spawn(async move |_this, _cx| {
+            if let Err(e) = services
+                .repository
+                .collection
+                .update_collection_view_column_widths(collection_view_id, widths)
+                .await
+            {
+                eprintln!("Failed to save column widths: {}", e);
+            }
+        })
+        .detach();
+        cx.notify();
     }
 
     pub fn editing_mode_widget_label(&self, window: &Window) -> Option<&'static str> {
-        if global_mode_is_vim()
+        if self.keybinding_mode == Mode::Vim
             && self.editing_cell.is_some()
             && self.focus_handle.is_focused(window)
         {
@@ -470,7 +532,7 @@ impl CustomTable {
     }
 
     fn effective_edit_mode(&self) -> EditMode {
-        if global_mode_is_vim() {
+        if self.keybinding_mode == Mode::Vim {
             self.edit_mode
         } else {
             EditMode::Insert
@@ -478,12 +540,18 @@ impl CustomTable {
     }
 
     fn normalize_edit_mode_for_global(&mut self) {
-        if !global_mode_is_vim() {
+        if self.keybinding_mode != Mode::Vim {
             self.edit_mode = EditMode::Insert;
         }
     }
 
-    fn update_global_mode_from_configuration_row(&self, row_ix: usize, column: &str, value: &str) {
+    fn update_global_mode_from_configuration_row(
+        &self,
+        row_ix: usize,
+        column: &str,
+        value: &str,
+        cx: &mut Context<Self>,
+    ) {
         if !self.table_name.eq_ignore_ascii_case("configuration") {
             return;
         }
@@ -497,7 +565,7 @@ impl CustomTable {
                 > 0;
             if is_active {
                 let parsed = value.trim().parse::<i64>().unwrap_or(0);
-                set_global_mode(Mode::from_db(parsed));
+                set_global_mode(cx, Mode::from_db(parsed));
             }
             return;
         }
@@ -511,7 +579,7 @@ impl CustomTable {
                     .and_then(|row| row.get("keybinding_mode"))
                     .and_then(|mode| mode.trim().parse::<i64>().ok())
                     .unwrap_or(0);
-                set_global_mode(Mode::from_db(mode_value));
+                set_global_mode(cx, Mode::from_db(mode_value));
             }
         }
     }
@@ -609,7 +677,7 @@ impl CustomTable {
         let table = self.table_name.clone();
         let column = key.clone();
         let value = self.edit_value.to_string();
-        self.update_global_mode_from_configuration_row(row_ix, &column, &value);
+        self.update_global_mode_from_configuration_row(row_ix, &column, &value, cx);
 
         if let Some(row) = self.data.get_mut(row_ix) {
             row.insert(key, value.clone());
@@ -639,7 +707,7 @@ impl CustomTable {
         self.edit_value = Rope::from_str(value);
         self.cursor_pos = self.edit_value.len_chars();
         self.preferred_col = None;
-        self.edit_mode = if global_mode_is_vim() {
+        self.edit_mode = if self.keybinding_mode == Mode::Vim {
             EditMode::Normal
         } else {
             EditMode::Insert
@@ -765,7 +833,9 @@ impl CustomTable {
 
 impl Render for CustomTable {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.keybinding_mode = global_mode(cx);
         self.normalize_edit_mode_for_global();
+        let table_content_width = self.col_widths.iter().copied().sum::<f32>().max(220.0);
 
         let header_cells = self.headers.iter().enumerate().map(|(col_ix, header)| {
             let width = self.col_widths.get(col_ix).copied().unwrap_or(180.0);
@@ -845,7 +915,15 @@ impl Render for CustomTable {
                             }),
                         )
                         .on_key_down(cx.listener(|this, event: &KeyDownEvent, window, cx| {
-                            let command = table_command(event, global_mode(), this.edit_mode);
+                            let command = table_command(
+                                event,
+                                if this.keybinding_mode == Mode::Vim {
+                                    Mode::Vim
+                                } else {
+                                    Mode::Normal
+                                },
+                                this.edit_mode,
+                            );
                             if command != TableVimCommand::None {
                                 this.handle_table_vim_command(command, cx);
                                 window.prevent_default();
@@ -971,8 +1049,7 @@ impl Render for CustomTable {
                 .flex()
                 .flex_row()
                 .relative()
-                .w_full()
-                .min_w(px(0.0))
+                .w(px(table_content_width))
                 .border_b_1()
                 .border_color(rgba(0xffffff14))
                 .children(cells)
@@ -1250,8 +1327,15 @@ impl Render for CustomTable {
                                     .track_focus(&self.focus_handle(cx))
                                     .on_key_down(cx.listener(
                                         |this, event: &KeyDownEvent, window, cx| {
-                                            let command =
-                                                table_command(event, global_mode(), this.edit_mode);
+                                            let command = table_command(
+                                                event,
+                                                if this.keybinding_mode == Mode::Vim {
+                                                    Mode::Vim
+                                                } else {
+                                                    Mode::Normal
+                                                },
+                                                this.edit_mode,
+                                            );
                                             if command != TableVimCommand::None {
                                                 this.handle_table_vim_command(command, cx);
                                                 window.prevent_default();
@@ -1394,7 +1478,8 @@ impl Render for CustomTable {
 
         div()
             .relative()
-            .w_full()
+            .w(px(table_content_width))
+            .flex_shrink_0()
             .on_mouse_move(cx.listener(|this, event: &MouseMoveEvent, _window, cx| {
                 this.update_column_resize(event, cx);
             }))
@@ -1406,13 +1491,13 @@ impl Render for CustomTable {
             )
             .child(
                 div()
-                    .w_full()
+                    .w(px(table_content_width))
                     .overflow_x_scrollbar()
                     .border_1()
                     .border_color(rgba(0xffffff14))
                     .child(
                         h_flex()
-                            .w_full()
+                            .w(px(table_content_width))
                             .items_center()
                             .border_b_1()
                             .border_color(rgba(0xffffff14))

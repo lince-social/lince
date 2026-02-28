@@ -1,5 +1,5 @@
 use crate::components::table_vim::EditMode;
-use crate::keybinding_mode::global_mode_is_vim;
+use crate::keybinding_mode::{Mode, global_mode};
 
 use super::super::workspace::Workspace;
 use gpui::{Context, IntoElement, Render, Window, div, *};
@@ -15,6 +15,7 @@ pub struct Operation {
     pub has_focused: bool,
     pub cursor_pos: usize,
     pub edit_mode: EditMode,
+    pub keybinding_mode: Mode,
 }
 
 impl Focusable for Operation {
@@ -34,6 +35,7 @@ impl Operation {
             has_focused: false,
             cursor_pos: 0,
             edit_mode: EditMode::Insert,
+            keybinding_mode: Mode::Normal,
         }
     }
 
@@ -143,9 +145,7 @@ impl Operation {
 
     pub fn schedule_refocus(&mut self) {
         self.has_focused = false;
-        if global_mode_is_vim() {
-            self.edit_mode = EditMode::Insert;
-        }
+        self.edit_mode = EditMode::Insert;
     }
 
     fn display_text_with_cursor(&self) -> AnyElement {
@@ -193,7 +193,7 @@ impl Operation {
     }
 
     pub fn editing_mode_widget_label(&self, window: &Window) -> Option<&'static str> {
-        if global_mode_is_vim() && self.focus_handle.is_focused(window) {
+        if self.keybinding_mode == Mode::Vim && self.focus_handle.is_focused(window) {
             Some(match self.edit_mode {
                 EditMode::Normal => "Normal",
                 EditMode::Insert => "Insert",
@@ -204,7 +204,7 @@ impl Operation {
     }
 
     fn effective_edit_mode(&self) -> EditMode {
-        if global_mode_is_vim() {
+        if self.keybinding_mode == Mode::Vim {
             self.edit_mode
         } else {
             EditMode::Insert
@@ -282,6 +282,7 @@ impl Operation {
 
 impl Render for Operation {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.keybinding_mode = global_mode(cx);
         if !self.has_focused {
             cx.focus_self(window);
             self.has_focused = true;
@@ -302,7 +303,7 @@ impl Render for Operation {
             .child(":")
             .child(self.display_text_with_cursor())
             .on_key_down(cx.listener(|this, event: &KeyDownEvent, window, cx| {
-                if !global_mode_is_vim() {
+                if this.keybinding_mode != Mode::Vim {
                     this.edit_mode = EditMode::Insert;
                 }
                 let key = event.keystroke.key.as_str();
@@ -319,7 +320,7 @@ impl Render for Operation {
                     return;
                 }
 
-                if !global_mode_is_vim() {
+                if this.keybinding_mode != Mode::Vim {
                     this.handle_normal_keybinding(event, window, cx);
                     return;
                 }

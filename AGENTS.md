@@ -13,3 +13,5 @@ TUI: Ratatui.
 Utils: System-wide utilities.
 Injection: Dependency Injection.
 Application: Main application logic.
+
+In root of project there is the SQLite migrations/ directory.

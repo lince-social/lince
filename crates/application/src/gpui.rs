@@ -23,5 +23,10 @@ pub async fn get_gpui_startup_data(services: InjectedServices) -> Result<State, 
             .collection
             .get_views_with_pin_info()
             .await?,
+        collection_view_column_widths: services
+            .repository
+            .collection
+            .get_all_collection_view_column_widths()
+            .await?,
     })
 }

@@ -479,12 +479,7 @@ impl Render for CreationModal {
         if self.modal {
             container.into_any_element()
         } else {
-            div()
-                .w_full()
-                .flex()
-                .justify_start()
-                .child(container)
-                .into_any_element()
+            container.into_any_element()
         }
     }
 }

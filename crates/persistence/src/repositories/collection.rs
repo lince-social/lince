@@ -31,7 +31,16 @@ pub trait CollectionRepository: Send + Sync {
     ) -> Result<Vec<CollectionRow>, Error>;
     async fn toggle_by_collection_id(&self, id: u32) -> Result<(), Error>;
     async fn execute_queries(&self, queries: Vec<String>) -> Result<Vec<(String, Table)>, Error>;
-    async fn get_active_view_data(&self) -> Result<(Vec<(String, Table)>, Vec<String>), Error>;
+    async fn get_active_view_data(&self)
+    -> Result<(Vec<(u32, String, Table)>, Vec<String>), Error>;
+    async fn get_all_collection_view_column_widths(
+        &self,
+    ) -> Result<HashMap<u32, HashMap<String, f32>>, Error>;
+    async fn update_collection_view_column_widths(
+        &self,
+        collection_view_id: u32,
+        widths: HashMap<String, f32>,
+    ) -> Result<(), Error>;
 
     // New methods for pinned views
     async fn get_pinned_views(&self) -> Result<Vec<domain::clean::pinned_view::PinnedView>, Error>;
@@ -278,13 +287,16 @@ impl CollectionRepository for CollectionRepositoryImpl {
         results.into_iter().collect()
     }
 
-    async fn get_active_view_data(&self) -> Result<(Vec<(String, Table)>, Vec<String>), Error> {
-        let queries: Vec<String> = sqlx::query_scalar(
-            "SELECT v.query AS query
+    async fn get_active_view_data(
+        &self,
+    ) -> Result<(Vec<(u32, String, Table)>, Vec<String>), Error> {
+        let query_rows: Vec<(u32, String)> = sqlx::query_as(
+            "SELECT cv.id AS collection_view_id, v.query AS query
              FROM collection_view cv
              JOIN view v ON cv.view_id = v.id
              JOIN collection c ON cv.collection_id = c.id
-             WHERE cv.quantity = 1 AND c.quantity = 1",
+             WHERE cv.quantity = 1 AND c.quantity = 1
+             ORDER BY cv.id",
         )
         .fetch_all(&*self.pool)
         .await
@@ -295,17 +307,67 @@ impl CollectionRepository for CollectionRepositoryImpl {
             )
         })?;
 
-        let (special_queries, sql_queries) = queries
+        let (special_rows, sql_rows): (Vec<_>, Vec<_>) = query_rows
             .into_iter()
-            .partition(|query| is_special_query(query.as_str()));
+            .partition(|(_, query)| is_special_query(query.as_str()));
+        let special_queries = special_rows
+            .into_iter()
+            .map(|(_, query)| query)
+            .collect::<Vec<_>>();
+        let sql_queries = sql_rows
+            .iter()
+            .map(|(_, query)| query.clone())
+            .collect::<Vec<_>>();
 
-        let res = self.execute_queries(sql_queries).await.map_err(|e| {
+        let queried_tables = self.execute_queries(sql_queries).await.map_err(|e| {
             Error::new(
                 ErrorKind::InvalidData,
                 format!("Error when querying main data. {}", e),
             )
         })?;
-        Ok((res, special_queries))
+        let tables = sql_rows
+            .into_iter()
+            .zip(queried_tables)
+            .map(|((collection_view_id, _), (name, table))| (collection_view_id, name, table))
+            .collect::<Vec<_>>();
+
+        Ok((tables, special_queries))
+    }
+
+    async fn get_all_collection_view_column_widths(
+        &self,
+    ) -> Result<HashMap<u32, HashMap<String, f32>>, Error> {
+        let rows: Vec<(u32, String)> =
+            sqlx::query_as("SELECT id, column_sizes FROM collection_view")
+                .fetch_all(&*self.pool)
+                .await
+                .map_err(Error::other)?;
+
+        let widths = rows
+            .into_iter()
+            .map(|(collection_view_id, widths_json)| {
+                let parsed =
+                    serde_json::from_str::<HashMap<String, f32>>(&widths_json).unwrap_or_default();
+                (collection_view_id, parsed)
+            })
+            .collect::<HashMap<_, _>>();
+        Ok(widths)
+    }
+
+    async fn update_collection_view_column_widths(
+        &self,
+        collection_view_id: u32,
+        widths: HashMap<String, f32>,
+    ) -> Result<(), Error> {
+        let widths_json = serde_json::to_string(&widths).map_err(Error::other)?;
+        sqlx::query("UPDATE collection_view SET column_sizes = ? WHERE id = ?")
+            .bind(widths_json)
+            .bind(collection_view_id)
+            .execute(&*self.pool)
+            .await
+            .map_err(Error::other)?;
+
+        Ok(())
     }
 
     async fn get_pinned_views(&self) -> Result<Vec<domain::clean::pinned_view::PinnedView>, Error> {

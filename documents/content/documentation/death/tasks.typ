@@ -129,19 +129,24 @@
     mind to cover even more cases please refactor.
   ],
   task(
-    "0.0 Usable by non-crazy-frog people",
+    "0.0 Usable by non-crazy-frog people, but still technical",
     contributors: (("@xaviduds", "wip"),),
   )[
-    - [ ] Column Resize: saves information on individual columns' size.
-    For each collection, every view that is a table should be able to have each column with a custom width.
+    - [ ] Column Resize: each View in each Collection has information on individual columns' size. This might be better to organize by putting it in the CollectionView intermediate table.
+      - [ ] Whenever a user that is dragging the column releases and fixes a size save it to the db.
+      - [ ] Make it effficient so many re-renders dont trigger calls to the db, this information should be grabbed when the app starts up and saved. In any change of the real value this global one updated, make it a gpui global. Save for every CollectionView entry. So when the active Collection is being switched we dont need to fetch the db.
     - [ ] Have word-wrapping by default, in the cells, being able to toggle it in Configuration.
-    - [ ] Any changes made to the db have all fit inside one or more migrations.
-    - [ ] Keybindings with ease of access (maybe when operation input is focused in insert mode)
-    - [x] Vim motions off by default, with Configuration to set it On/Off (one needs to be able to exit Vim). If Vim mode is off, there's no Mode button: Normal/Insert.
-    - [ ] The operation input should be the component that gains focus by default, if the user clicks on a collection to change it, after that click currently the operation input looses focus, it should always go back to it.
-      - [ ] Also, if vim mode is enabled it always defaults to gainning focus in insert mode, after every 'enter', sending an operation, the mode should be insert
-
-    - [ ] GUI non tecnical way of configuring CollectionView intermediate table.
+    - [ ] GUI non technical way of configuring CollectionView intermediate table.
+    - [ ] Keybinding table with ease of access (maybe when operation input is focused in insert mode)
+    - [ ] Editable Cell Ergonomics:
+      - [ ] In normal and vim mode, being able to select text to:
+        - [ ] Delete
+        - [ ] Copy to clipboard
+        - [ ] Paste from clipboard
+    - [ ] Table:
+      - [ ] Make tables always shrink to fit, that is evident in tables with one column with short text that shouldn't have a big empty block to the end of the page on the right.
+        - [ ] Also make every View, regardless if its a Table or a Creation component be an element inside my main content that is inside a wrap, so the main content below the Collections tries to, yes, shrink to fit in the case of the Table (photo is provided now), but also many different Views are able to be side by side if they both/many can be in the same "line".
+      When html has a lot of tables in the <body>, how does it decide the size of each table (by it's column)? To me it makes most sense that given an order of tables and a column size, for a limited area, one can minimize the vertical space that the tables occupy with some configuration, but that configuration depends on the content i believe, so everytime the code should render the components based on the content to achieve minimum taken vertical space? How much of that should be on cpu and/or gpu to make it as fast as possible with the least amount of moving parts? Help me think.
   ],
   task("SQL Query Editor GUI", contributors: (("@chicogborba", "wip"),))[
 

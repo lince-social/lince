@@ -41,7 +41,7 @@ pub struct Workspace {
     pub state: State,
     pub services: InjectedServices,
     pub collection_list: Entity<CollectionList>,
-    pub table_entities: Vec<(String, Entity<CustomTable>)>,
+    pub table_entities: Vec<(u32, String, Entity<CustomTable>)>,
     pub pinned_table_entities: Vec<(u32, String, Entity<CustomTable>)>,
     pub command_watcher: Entity<CommandWatcher>,
     pub command_notifications: Entity<CommandNotifications>,
@@ -60,8 +60,9 @@ impl Workspace {
         let services = self.services.clone();
         cx.spawn(async move |this, cx| {
             if let Ok(configuration) = services.repository.configuration.get_active().await {
-                set_global_mode(Mode::from_db(configuration.keybinding_mode));
+                let mode = Mode::from_db(configuration.keybinding_mode);
                 let _ = this.update(cx, |workspace, cx| {
+                    set_global_mode(cx, mode);
                     workspace.operation.update(cx, |operation, _| {
                         operation.schedule_refocus();
                     });
@@ -76,7 +77,7 @@ impl Workspace {
         cx: &mut Context<Self>,
         services: InjectedServices,
         state: State,
-        table_entities: Vec<(String, Entity<CustomTable>)>,
+        table_entities: Vec<(u32, String, Entity<CustomTable>)>,
     ) -> Self {
         let weak = cx.weak_entity();
         let collection_list = cx.new(|_| {
@@ -131,11 +132,18 @@ impl Workspace {
             .tables
             .iter()
             .cloned()
-            .map(|(name, table)| {
+            .map(|(collection_view_id, name, table)| {
                 let services = self.services.clone();
-                let table_entity =
-                    cx.new(|app_cx| CustomTable::new(table, name.clone(), services, app_cx));
-                (name, table_entity)
+                let table_entity = cx.new(|app_cx| {
+                    CustomTable::new(
+                        table,
+                        name.clone(),
+                        Some(collection_view_id),
+                        services,
+                        app_cx,
+                    )
+                });
+                (collection_view_id, name, table_entity)
             })
             .collect();
 
@@ -153,7 +161,7 @@ impl Workspace {
                     .map(|(_, table_name, table)| (table_name, table))?;
                 let services = self.services.clone();
                 let table_entity = cx.new(|app_cx| {
-                    CustomTable::new(table.clone(), table_name.clone(), services, app_cx)
+                    CustomTable::new(table.clone(), table_name.clone(), None, services, app_cx)
                 });
                 Some((pinned_view.view_id, table_name.clone(), table_entity))
             })
@@ -170,7 +178,7 @@ impl Workspace {
         cx: &mut App,
         services: InjectedServices,
         state: State,
-        table_entities: Vec<(String, Entity<CustomTable>)>,
+        table_entities: Vec<(u32, String, Entity<CustomTable>)>,
     ) -> Entity<Self> {
         cx.new(|cx| Self::new(cx, services, state, table_entities))
     }
@@ -853,14 +861,14 @@ impl Render for Workspace {
             self.tables_need_recreation = false;
         }
 
-        let mode_label = if global_mode_is_vim() {
+        let mode_label = if global_mode_is_vim(cx) {
             self.operation
                 .read(cx)
                 .editing_mode_widget_label(window)
                 .or_else(|| {
-                    self.table_entities
-                        .iter()
-                        .find_map(|(_, entity)| entity.read(cx).editing_mode_widget_label(window))
+                    self.table_entities.iter().find_map(|(_, _, entity)| {
+                        entity.read(cx).editing_mode_widget_label(window)
+                    })
                 })
                 .or_else(|| {
                     self.pinned_table_entities
@@ -904,13 +912,35 @@ impl Render for Workspace {
             bar
         };
 
+        let mut active_views = div()
+            .flex()
+            .flex_row()
+            .flex_wrap()
+            .items_start()
+            .gap_4()
+            .w_full()
+            .children(
+                self.table_entities
+                    .iter()
+                    .map(|(_, _name, entity)| entity.clone()),
+            )
+            .children(
+                self.creation_view_entities
+                    .iter()
+                    .map(|(_, entity)| entity.clone()),
+            );
+        if self.has_active_special_view("command_buffer") {
+            active_views = active_views.child(self.command_watcher.clone());
+        }
+
         let main = div()
             .flex()
             .flex_col()
             .gap_4()
             .w_full()
             .p_3()
-            .child(self.collection_list.clone());
+            .child(self.collection_list.clone())
+            .child(active_views);
         let pinned_content_entities = self
             .pinned_table_entities
             .iter()
@@ -925,412 +955,374 @@ impl Render for Workspace {
                     }),
             )
             .collect::<Vec<_>>();
-        let main = if self.has_active_special_view("command_buffer") {
-            main.child(self.command_watcher.clone())
-        } else {
-            main
-        }
-        .children(
-            self.table_entities
-                .iter()
-                .map(|(_name, entity)| entity.clone()),
-        )
-        .children(
-            self.creation_view_entities
-                .iter()
-                .map(|(_, entity)| entity.clone()),
-        )
-        .children(
-            pinned_content_entities
-                .into_iter()
-                .map(|(view_id, name, content)| {
-                    use super::themes::catppuccin_macchiato::{base, maroon, surface0};
+        let main = main.children(pinned_content_entities.into_iter().map(
+            |(view_id, name, content)| {
+                use super::themes::catppuccin_macchiato::{base, maroon, surface0};
 
-                    let pinned_view = self
-                        .state
-                        .pinned_views
-                        .iter()
-                        .find(|v| v.view_id == view_id);
-                    let position_x = pinned_view
-                        .map(|v| v.position_x)
-                        .unwrap_or(DEFAULT_PIN_POSITION_X);
-                    let position_y = pinned_view
-                        .map(|v| v.position_y)
-                        .unwrap_or(DEFAULT_PIN_POSITION_Y);
-                    let view_id_for_close = view_id;
-                    let view_id_for_drag = view_id;
-                    let view_id_for_hover = view_id;
-                    let position_x_f32 = position_x as f32;
-                    let position_y_f32 = position_y as f32;
-                    let weak = cx.weak_entity();
-                    let show_unpin = self.pinned_hovered_view_id == Some(view_id);
+                let pinned_view = self
+                    .state
+                    .pinned_views
+                    .iter()
+                    .find(|v| v.view_id == view_id);
+                let position_x = pinned_view
+                    .map(|v| v.position_x)
+                    .unwrap_or(DEFAULT_PIN_POSITION_X);
+                let position_y = pinned_view
+                    .map(|v| v.position_y)
+                    .unwrap_or(DEFAULT_PIN_POSITION_Y);
+                let view_id_for_close = view_id;
+                let view_id_for_drag = view_id;
+                let view_id_for_hover = view_id;
+                let position_x_f32 = position_x as f32;
+                let position_y_f32 = position_y as f32;
+                let weak = cx.weak_entity();
+                let show_unpin = self.pinned_hovered_view_id == Some(view_id);
 
-                    let (width, height) = self
-                        .pinned_sizes
-                        .get(&view_id)
-                        .copied()
-                        .unwrap_or((500.0, 400.0));
-                    div()
-                        .id(("pinned_view_panel", view_id))
-                        .absolute()
-                        .left(px(position_x as f32))
-                        .top(px(position_y as f32))
-                        .bg(mantle())
-                        .border_1()
-                        .border_color(surface0())
-                        .rounded_lg()
-                        .shadow_lg()
-                        .w(px(width))
-                        .h(px(height))
-                        .relative()
-                        .overflow_hidden()
-                        .flex()
-                        .flex_col()
-                        .on_mouse_move(cx.listener(|this, event: &MouseMoveEvent, _window, cx| {
-                            this.update_pinned_drag(event, cx);
-                        }))
-                        .on_mouse_up(
-                            MouseButton::Left,
-                            cx.listener(|this, _event: &MouseUpEvent, _window, cx| {
-                                this.end_pinned_drag(cx);
-                            }),
-                        )
-                        .on_hover(cx.listener(move |this, hovered, _window, cx| {
-                            if *hovered {
-                                this.pinned_hovered_view_id = Some(view_id_for_hover);
-                            } else if this.pinned_hovered_view_id == Some(view_id_for_hover) {
-                                this.pinned_hovered_view_id = None;
-                            }
-                            cx.notify();
-                        }))
-                        .child(
-                            div()
-                                .absolute()
-                                .left(px(0.0))
-                                .top(px(0.0))
-                                .w(px(10.0))
-                                .h_full()
-                                .on_mouse_down(
-                                    MouseButton::Left,
-                                    cx.listener(
-                                        move |this, event: &MouseDownEvent, _window, cx| {
-                                            this.begin_pinned_drag(
-                                                view_id_for_drag,
-                                                event,
-                                                ModalInteraction::Resize(ResizeEdges {
-                                                    left: true,
-                                                    right: false,
-                                                    top: false,
-                                                    bottom: false,
-                                                }),
-                                                position_x_f32,
-                                                position_y_f32,
-                                                width,
-                                                height,
-                                                cx,
-                                            );
-                                            cx.stop_propagation();
-                                        },
-                                    ),
-                                ),
-                        )
-                        .child(
-                            div()
-                                .absolute()
-                                .right(px(0.0))
-                                .top(px(0.0))
-                                .w(px(10.0))
-                                .h_full()
-                                .on_mouse_down(
-                                    MouseButton::Left,
-                                    cx.listener(
-                                        move |this, event: &MouseDownEvent, _window, cx| {
-                                            this.begin_pinned_drag(
-                                                view_id_for_drag,
-                                                event,
-                                                ModalInteraction::Resize(ResizeEdges {
-                                                    left: false,
-                                                    right: true,
-                                                    top: false,
-                                                    bottom: false,
-                                                }),
-                                                position_x_f32,
-                                                position_y_f32,
-                                                width,
-                                                height,
-                                                cx,
-                                            );
-                                            cx.stop_propagation();
-                                        },
-                                    ),
-                                ),
-                        )
-                        .child(
-                            div()
-                                .absolute()
-                                .left(px(0.0))
-                                .top(px(0.0))
-                                .w_full()
-                                .h(px(10.0))
-                                .on_mouse_down(
-                                    MouseButton::Left,
-                                    cx.listener(
-                                        move |this, event: &MouseDownEvent, _window, cx| {
-                                            this.begin_pinned_drag(
-                                                view_id_for_drag,
-                                                event,
-                                                ModalInteraction::Resize(ResizeEdges {
-                                                    left: false,
-                                                    right: false,
-                                                    top: true,
-                                                    bottom: false,
-                                                }),
-                                                position_x_f32,
-                                                position_y_f32,
-                                                width,
-                                                height,
-                                                cx,
-                                            );
-                                            cx.stop_propagation();
-                                        },
-                                    ),
-                                ),
-                        )
-                        .child(
-                            div()
-                                .absolute()
-                                .left(px(0.0))
-                                .bottom(px(0.0))
-                                .w_full()
-                                .h(px(10.0))
-                                .on_mouse_down(
-                                    MouseButton::Left,
-                                    cx.listener(
-                                        move |this, event: &MouseDownEvent, _window, cx| {
-                                            this.begin_pinned_drag(
-                                                view_id_for_drag,
-                                                event,
-                                                ModalInteraction::Resize(ResizeEdges {
-                                                    left: false,
-                                                    right: false,
-                                                    top: false,
-                                                    bottom: true,
-                                                }),
-                                                position_x_f32,
-                                                position_y_f32,
-                                                width,
-                                                height,
-                                                cx,
-                                            );
-                                            cx.stop_propagation();
-                                        },
-                                    ),
-                                ),
-                        )
-                        .child(
-                            div()
-                                .absolute()
-                                .left(px(0.0))
-                                .top(px(0.0))
-                                .w(px(14.0))
-                                .h(px(14.0))
-                                .on_mouse_down(
-                                    MouseButton::Left,
-                                    cx.listener(
-                                        move |this, event: &MouseDownEvent, _window, cx| {
-                                            this.begin_pinned_drag(
-                                                view_id_for_drag,
-                                                event,
-                                                ModalInteraction::Resize(ResizeEdges {
-                                                    left: true,
-                                                    right: false,
-                                                    top: true,
-                                                    bottom: false,
-                                                }),
-                                                position_x_f32,
-                                                position_y_f32,
-                                                width,
-                                                height,
-                                                cx,
-                                            );
-                                            cx.stop_propagation();
-                                        },
-                                    ),
-                                ),
-                        )
-                        .child(
-                            div()
-                                .absolute()
-                                .right(px(0.0))
-                                .top(px(0.0))
-                                .w(px(14.0))
-                                .h(px(14.0))
-                                .on_mouse_down(
-                                    MouseButton::Left,
-                                    cx.listener(
-                                        move |this, event: &MouseDownEvent, _window, cx| {
-                                            this.begin_pinned_drag(
-                                                view_id_for_drag,
-                                                event,
-                                                ModalInteraction::Resize(ResizeEdges {
-                                                    left: false,
-                                                    right: true,
-                                                    top: true,
-                                                    bottom: false,
-                                                }),
-                                                position_x_f32,
-                                                position_y_f32,
-                                                width,
-                                                height,
-                                                cx,
-                                            );
-                                            cx.stop_propagation();
-                                        },
-                                    ),
-                                ),
-                        )
-                        .child(
-                            div()
-                                .absolute()
-                                .left(px(0.0))
-                                .bottom(px(0.0))
-                                .w(px(14.0))
-                                .h(px(14.0))
-                                .on_mouse_down(
-                                    MouseButton::Left,
-                                    cx.listener(
-                                        move |this, event: &MouseDownEvent, _window, cx| {
-                                            this.begin_pinned_drag(
-                                                view_id_for_drag,
-                                                event,
-                                                ModalInteraction::Resize(ResizeEdges {
-                                                    left: true,
-                                                    right: false,
-                                                    top: false,
-                                                    bottom: true,
-                                                }),
-                                                position_x_f32,
-                                                position_y_f32,
-                                                width,
-                                                height,
-                                                cx,
-                                            );
-                                            cx.stop_propagation();
-                                        },
-                                    ),
-                                ),
-                        )
-                        .child(
-                            div()
-                                .absolute()
-                                .right(px(0.0))
-                                .bottom(px(0.0))
-                                .w(px(14.0))
-                                .h(px(14.0))
-                                .on_mouse_down(
-                                    MouseButton::Left,
-                                    cx.listener(
-                                        move |this, event: &MouseDownEvent, _window, cx| {
-                                            this.begin_pinned_drag(
-                                                view_id_for_drag,
-                                                event,
-                                                ModalInteraction::Resize(ResizeEdges {
-                                                    left: false,
-                                                    right: true,
-                                                    top: false,
-                                                    bottom: true,
-                                                }),
-                                                position_x_f32,
-                                                position_y_f32,
-                                                width,
-                                                height,
-                                                cx,
-                                            );
-                                            cx.stop_propagation();
-                                        },
-                                    ),
-                                ),
-                        )
-                        .child(
-                            div()
-                                .flex()
-                                .flex_row()
-                                .items_center()
-                                .justify_between()
-                                .bg(surface0())
-                                .border_b_1()
-                                .border_color(base())
-                                .text_color(base())
-                                .px_2()
-                                .py_1()
-                                .on_mouse_down(
-                                    MouseButton::Left,
-                                    cx.listener(
-                                        move |this, event: &MouseDownEvent, _window, cx| {
-                                            this.begin_pinned_drag(
-                                                view_id_for_drag,
-                                                event,
-                                                ModalInteraction::Move,
-                                                position_x_f32,
-                                                position_y_f32,
-                                                width,
-                                                height,
-                                                cx,
-                                            );
-                                            cx.stop_propagation();
-                                        },
-                                    ),
-                                )
-                                .child(
-                                    div()
-                                        .flex()
-                                        .flex_row()
-                                        .gap_2()
-                                        .items_center()
-                                        .child("📌")
-                                        .child(
-                                            div()
-                                                .text_xs()
-                                                .font_weight(FontWeight::BOLD)
-                                                .child(name.clone()),
-                                        ),
-                                )
-                                .children(if show_unpin {
-                                    Some(
+                let (width, height) = self
+                    .pinned_sizes
+                    .get(&view_id)
+                    .copied()
+                    .unwrap_or((500.0, 400.0));
+                div()
+                    .id(("pinned_view_panel", view_id))
+                    .absolute()
+                    .left(px(position_x as f32))
+                    .top(px(position_y as f32))
+                    .bg(mantle())
+                    .border_1()
+                    .border_color(surface0())
+                    .rounded_lg()
+                    .shadow_lg()
+                    .w(px(width))
+                    .h(px(height))
+                    .relative()
+                    .overflow_hidden()
+                    .flex()
+                    .flex_col()
+                    .on_mouse_move(cx.listener(|this, event: &MouseMoveEvent, _window, cx| {
+                        this.update_pinned_drag(event, cx);
+                    }))
+                    .on_mouse_up(
+                        MouseButton::Left,
+                        cx.listener(|this, _event: &MouseUpEvent, _window, cx| {
+                            this.end_pinned_drag(cx);
+                        }),
+                    )
+                    .on_hover(cx.listener(move |this, hovered, _window, cx| {
+                        if *hovered {
+                            this.pinned_hovered_view_id = Some(view_id_for_hover);
+                        } else if this.pinned_hovered_view_id == Some(view_id_for_hover) {
+                            this.pinned_hovered_view_id = None;
+                        }
+                        cx.notify();
+                    }))
+                    .child(
+                        div()
+                            .absolute()
+                            .left(px(0.0))
+                            .top(px(0.0))
+                            .w(px(10.0))
+                            .h_full()
+                            .on_mouse_down(
+                                MouseButton::Left,
+                                cx.listener(move |this, event: &MouseDownEvent, _window, cx| {
+                                    this.begin_pinned_drag(
+                                        view_id_for_drag,
+                                        event,
+                                        ModalInteraction::Resize(ResizeEdges {
+                                            left: true,
+                                            right: false,
+                                            top: false,
+                                            bottom: false,
+                                        }),
+                                        position_x_f32,
+                                        position_y_f32,
+                                        width,
+                                        height,
+                                        cx,
+                                    );
+                                    cx.stop_propagation();
+                                }),
+                            ),
+                    )
+                    .child(
+                        div()
+                            .absolute()
+                            .right(px(0.0))
+                            .top(px(0.0))
+                            .w(px(10.0))
+                            .h_full()
+                            .on_mouse_down(
+                                MouseButton::Left,
+                                cx.listener(move |this, event: &MouseDownEvent, _window, cx| {
+                                    this.begin_pinned_drag(
+                                        view_id_for_drag,
+                                        event,
+                                        ModalInteraction::Resize(ResizeEdges {
+                                            left: false,
+                                            right: true,
+                                            top: false,
+                                            bottom: false,
+                                        }),
+                                        position_x_f32,
+                                        position_y_f32,
+                                        width,
+                                        height,
+                                        cx,
+                                    );
+                                    cx.stop_propagation();
+                                }),
+                            ),
+                    )
+                    .child(
+                        div()
+                            .absolute()
+                            .left(px(0.0))
+                            .top(px(0.0))
+                            .w_full()
+                            .h(px(10.0))
+                            .on_mouse_down(
+                                MouseButton::Left,
+                                cx.listener(move |this, event: &MouseDownEvent, _window, cx| {
+                                    this.begin_pinned_drag(
+                                        view_id_for_drag,
+                                        event,
+                                        ModalInteraction::Resize(ResizeEdges {
+                                            left: false,
+                                            right: false,
+                                            top: true,
+                                            bottom: false,
+                                        }),
+                                        position_x_f32,
+                                        position_y_f32,
+                                        width,
+                                        height,
+                                        cx,
+                                    );
+                                    cx.stop_propagation();
+                                }),
+                            ),
+                    )
+                    .child(
+                        div()
+                            .absolute()
+                            .left(px(0.0))
+                            .bottom(px(0.0))
+                            .w_full()
+                            .h(px(10.0))
+                            .on_mouse_down(
+                                MouseButton::Left,
+                                cx.listener(move |this, event: &MouseDownEvent, _window, cx| {
+                                    this.begin_pinned_drag(
+                                        view_id_for_drag,
+                                        event,
+                                        ModalInteraction::Resize(ResizeEdges {
+                                            left: false,
+                                            right: false,
+                                            top: false,
+                                            bottom: true,
+                                        }),
+                                        position_x_f32,
+                                        position_y_f32,
+                                        width,
+                                        height,
+                                        cx,
+                                    );
+                                    cx.stop_propagation();
+                                }),
+                            ),
+                    )
+                    .child(
+                        div()
+                            .absolute()
+                            .left(px(0.0))
+                            .top(px(0.0))
+                            .w(px(14.0))
+                            .h(px(14.0))
+                            .on_mouse_down(
+                                MouseButton::Left,
+                                cx.listener(move |this, event: &MouseDownEvent, _window, cx| {
+                                    this.begin_pinned_drag(
+                                        view_id_for_drag,
+                                        event,
+                                        ModalInteraction::Resize(ResizeEdges {
+                                            left: true,
+                                            right: false,
+                                            top: true,
+                                            bottom: false,
+                                        }),
+                                        position_x_f32,
+                                        position_y_f32,
+                                        width,
+                                        height,
+                                        cx,
+                                    );
+                                    cx.stop_propagation();
+                                }),
+                            ),
+                    )
+                    .child(
+                        div()
+                            .absolute()
+                            .right(px(0.0))
+                            .top(px(0.0))
+                            .w(px(14.0))
+                            .h(px(14.0))
+                            .on_mouse_down(
+                                MouseButton::Left,
+                                cx.listener(move |this, event: &MouseDownEvent, _window, cx| {
+                                    this.begin_pinned_drag(
+                                        view_id_for_drag,
+                                        event,
+                                        ModalInteraction::Resize(ResizeEdges {
+                                            left: false,
+                                            right: true,
+                                            top: true,
+                                            bottom: false,
+                                        }),
+                                        position_x_f32,
+                                        position_y_f32,
+                                        width,
+                                        height,
+                                        cx,
+                                    );
+                                    cx.stop_propagation();
+                                }),
+                            ),
+                    )
+                    .child(
+                        div()
+                            .absolute()
+                            .left(px(0.0))
+                            .bottom(px(0.0))
+                            .w(px(14.0))
+                            .h(px(14.0))
+                            .on_mouse_down(
+                                MouseButton::Left,
+                                cx.listener(move |this, event: &MouseDownEvent, _window, cx| {
+                                    this.begin_pinned_drag(
+                                        view_id_for_drag,
+                                        event,
+                                        ModalInteraction::Resize(ResizeEdges {
+                                            left: true,
+                                            right: false,
+                                            top: false,
+                                            bottom: true,
+                                        }),
+                                        position_x_f32,
+                                        position_y_f32,
+                                        width,
+                                        height,
+                                        cx,
+                                    );
+                                    cx.stop_propagation();
+                                }),
+                            ),
+                    )
+                    .child(
+                        div()
+                            .absolute()
+                            .right(px(0.0))
+                            .bottom(px(0.0))
+                            .w(px(14.0))
+                            .h(px(14.0))
+                            .on_mouse_down(
+                                MouseButton::Left,
+                                cx.listener(move |this, event: &MouseDownEvent, _window, cx| {
+                                    this.begin_pinned_drag(
+                                        view_id_for_drag,
+                                        event,
+                                        ModalInteraction::Resize(ResizeEdges {
+                                            left: false,
+                                            right: true,
+                                            top: false,
+                                            bottom: true,
+                                        }),
+                                        position_x_f32,
+                                        position_y_f32,
+                                        width,
+                                        height,
+                                        cx,
+                                    );
+                                    cx.stop_propagation();
+                                }),
+                            ),
+                    )
+                    .child(
+                        div()
+                            .flex()
+                            .flex_row()
+                            .items_center()
+                            .justify_between()
+                            .bg(surface0())
+                            .border_b_1()
+                            .border_color(base())
+                            .text_color(base())
+                            .px_2()
+                            .py_1()
+                            .on_mouse_down(
+                                MouseButton::Left,
+                                cx.listener(move |this, event: &MouseDownEvent, _window, cx| {
+                                    this.begin_pinned_drag(
+                                        view_id_for_drag,
+                                        event,
+                                        ModalInteraction::Move,
+                                        position_x_f32,
+                                        position_y_f32,
+                                        width,
+                                        height,
+                                        cx,
+                                    );
+                                    cx.stop_propagation();
+                                }),
+                            )
+                            .child(
+                                div()
+                                    .flex()
+                                    .flex_row()
+                                    .gap_2()
+                                    .items_center()
+                                    .child("📌")
+                                    .child(
                                         div()
-                                            .px_1()
-                                            .py_0p5()
-                                            .rounded_sm()
-                                            .bg(base())
-                                            .hover(|s| s.bg(maroon()))
                                             .text_xs()
                                             .font_weight(FontWeight::BOLD)
-                                            .child("✕")
-                                            .on_mouse_up(
-                                                MouseButton::Left,
-                                                move |_evt, _win, cx| {
-                                                    if let Some(ws) = weak.upgrade() {
-                                                        ws.update(cx, |ws, cx| {
-                                                            ws.unpin_view(view_id_for_close, cx);
-                                                        });
-                                                    }
-                                                },
-                                            )
-                                            .into_any_element(),
-                                    )
-                                } else {
-                                    None
-                                }),
-                        )
-                        .child(
-                            div()
-                                .flex_1()
-                                .min_h(px(0.0))
-                                .overflow_y_scrollbar()
-                                .child(content),
-                        )
-                }),
-        );
+                                            .child(name.clone()),
+                                    ),
+                            )
+                            .children(if show_unpin {
+                                Some(
+                                    div()
+                                        .px_1()
+                                        .py_0p5()
+                                        .rounded_sm()
+                                        .bg(base())
+                                        .hover(|s| s.bg(maroon()))
+                                        .text_xs()
+                                        .font_weight(FontWeight::BOLD)
+                                        .child("✕")
+                                        .on_mouse_up(MouseButton::Left, move |_evt, _win, cx| {
+                                            if let Some(ws) = weak.upgrade() {
+                                                ws.update(cx, |ws, cx| {
+                                                    ws.unpin_view(view_id_for_close, cx);
+                                                });
+                                            }
+                                        })
+                                        .into_any_element(),
+                                )
+                            } else {
+                                None
+                            }),
+                    )
+                    .child(
+                        div()
+                            .flex_1()
+                            .min_h(px(0.0))
+                            .overflow_y_scrollbar()
+                            .child(content),
+                    )
+            },
+        ));
 
         let scrollable_main = div()
             .flex_1()

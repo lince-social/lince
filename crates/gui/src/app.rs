@@ -1,4 +1,5 @@
 use super::{components::table::CustomTable, window::get_window_options, workspace::*};
+use crate::collection_view_column_widths::set_collection_view_column_widths;
 use domain::dirty::gpui::State;
 use gpui::*;
 use gpui_component::*;
@@ -21,6 +22,7 @@ pub async fn gpui_app(services: InjectedServices, state: State) {
         let window_options = get_window_options(cx);
         gpui_component::init(cx);
         Theme::change(ThemeMode::Dark, None, cx);
+        set_collection_view_column_widths(cx, state.collection_view_column_widths.clone());
 
         cx.bind_keys([
             KeyBinding::new("enter", Enter, None),
@@ -28,7 +30,7 @@ pub async fn gpui_app(services: InjectedServices, state: State) {
         ]);
 
         cx.open_window(window_options, |window, cx| {
-            let all_tables: Vec<(String, Entity<CustomTable>)> = vec![];
+            let all_tables: Vec<(u32, String, Entity<CustomTable>)> = vec![];
 
             let workspace_view = Workspace::view(cx, services.clone(), state.clone(), all_tables);
             cx.new(|cx| Root::new(workspace_view, window, cx))

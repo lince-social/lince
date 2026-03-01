@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use domain::dirty::operation::OperationTables;
+use domain::dirty::operation::DatabaseTable;
 use gpui::{
     App, Context, FocusHandle, Focusable, FontWeight, InteractiveElement, IntoElement,
     KeyDownEvent, MouseButton, ParentElement, Render, StatefulInteractiveElement, Styled,
@@ -17,7 +17,7 @@ use crate::{
 
 pub struct CreationModal {
     workspace: WeakEntity<Workspace>,
-    table: OperationTables,
+    table: DatabaseTable,
     table_name: String,
     modal: bool,
     columns: Vec<String>,
@@ -37,7 +37,7 @@ impl Focusable for CreationModal {
 impl CreationModal {
     pub fn new(
         workspace: WeakEntity<Workspace>,
-        table: OperationTables,
+        table: DatabaseTable,
         columns: Vec<String>,
         cx: &mut App,
     ) -> Self {
@@ -46,7 +46,7 @@ impl CreationModal {
 
     pub fn new_view(
         workspace: WeakEntity<Workspace>,
-        table: OperationTables,
+        table: DatabaseTable,
         columns: Vec<String>,
         cx: &mut App,
     ) -> Self {
@@ -55,7 +55,7 @@ impl CreationModal {
 
     fn new_with_mode(
         workspace: WeakEntity<Workspace>,
-        table: OperationTables,
+        table: DatabaseTable,
         columns: Vec<String>,
         modal: bool,
         cx: &mut App,

@@ -6,7 +6,10 @@ use crate::{
     keybinding_mode::{Mode, global_mode_is_vim, set_global_mode},
     themes::catppuccin_macchiato::{crust, green, surface0},
 };
-use std::{collections::HashMap, str::FromStr};
+use std::{
+    collections::{HashMap, HashSet},
+    str::FromStr,
+};
 
 use super::{
     components::{
@@ -24,7 +27,7 @@ use domain::{
     clean::collection::Collection,
     dirty::{
         gpui::State,
-        operation::{OperationActions, OperationTables},
+        operation::{DatabaseTable, OperationActions},
     },
 };
 use gpui::*;
@@ -351,7 +354,7 @@ impl Workspace {
         cx.notify();
     }
 
-    pub fn open_creation_modal(&mut self, table: OperationTables, cx: &mut Context<Self>) {
+    pub fn open_creation_modal(&mut self, table: DatabaseTable, cx: &mut Context<Self>) {
         let services = self.services.clone();
         cx.spawn(async move |this, cx| {
             let columns = match services
@@ -384,7 +387,7 @@ impl Workspace {
 
     pub fn create_row_from_modal(
         &mut self,
-        table: OperationTables,
+        table: DatabaseTable,
         values: HashMap<String, String>,
         source: Option<WeakEntity<CreationModal>>,
         cx: &mut Context<Self>,
@@ -562,7 +565,11 @@ impl Workspace {
             this.update(cx, move |owner, cx| {
                 owner.state.pinned_views = pinned_views;
                 owner.state.pinned_tables = pinned_tables;
-                owner.state.views_with_pin_info = views_with_pin_info;
+                owner.state.views_with_pin_info = views_with_pin_info.clone();
+
+                owner.collection_list.update(cx, move |bar, _| {
+                    bar.views_with_pin_info = views_with_pin_info;
+                });
                 owner.tables_need_recreation = true;
                 owner.refresh_creation_view_entities(cx);
                 cx.notify();
@@ -612,7 +619,11 @@ impl Workspace {
             this.update(cx, move |owner, cx| {
                 owner.state.pinned_views = pinned_views;
                 owner.state.pinned_tables = pinned_tables;
-                owner.state.views_with_pin_info = views_with_pin_info;
+                owner.state.views_with_pin_info = views_with_pin_info.clone();
+
+                owner.collection_list.update(cx, move |bar, _| {
+                    bar.views_with_pin_info = views_with_pin_info;
+                });
                 owner.tables_need_recreation = true;
                 owner.refresh_creation_view_entities(cx);
                 cx.notify();
@@ -745,7 +756,7 @@ impl Workspace {
             .any(|active| active == query)
     }
 
-    fn parse_creation_view_query(query: &str) -> Option<OperationTables> {
+    fn parse_creation_view_query(query: &str) -> Option<DatabaseTable> {
         let normalized = query.trim().to_lowercase().replace(['-', ' '], "_");
         let table_name = normalized
             .strip_prefix("create_view_")
@@ -753,7 +764,7 @@ impl Workspace {
             .or_else(|| normalized.strip_prefix("create_modal_"))
             .or_else(|| normalized.strip_prefix("creation_modal_"))
             .or_else(|| normalized.strip_prefix("cv_"))?;
-        OperationTables::from_str(table_name).ok()
+        DatabaseTable::from_str(table_name).ok()
     }
 
     fn refresh_creation_view_entities(&mut self, cx: &mut Context<Self>) {
@@ -941,7 +952,10 @@ impl Render for Workspace {
             .p_3()
             .child(self.collection_list.clone())
             .child(active_views);
-        let pinned_content_entities = self
+        let viewport = window.viewport_size();
+        let viewport_width = f32::from(viewport.width);
+        let viewport_height = f32::from(viewport.height);
+        let mut pinned_content_entities = self
             .pinned_table_entities
             .iter()
             .map(|(view_id, name, entity)| {
@@ -955,374 +969,437 @@ impl Render for Workspace {
                     }),
             )
             .collect::<Vec<_>>();
-        let main = main.children(pinned_content_entities.into_iter().map(
-            |(view_id, name, content)| {
-                use super::themes::catppuccin_macchiato::{base, maroon, surface0};
+        let rendered_pinned_ids = pinned_content_entities
+            .iter()
+            .map(|(view_id, _, _)| *view_id)
+            .collect::<HashSet<_>>();
+        pinned_content_entities.extend(
+            self.state
+                .pinned_views
+                .iter()
+                .filter(|pinned_view| !rendered_pinned_ids.contains(&pinned_view.view_id))
+                .map(|pinned_view| {
+                    let view_name = self
+                        .state
+                        .views_with_pin_info
+                        .iter()
+                        .find(|info| info.view_id == pinned_view.view_id)
+                        .map(|info| info.name.clone())
+                        .unwrap_or_else(|| format!("View {}", pinned_view.view_id));
+                    (
+                        pinned_view.view_id,
+                        view_name,
+                        div()
+                            .p_3()
+                            .text_sm()
+                            .child("Pinned view has no renderable content yet.")
+                            .into_any_element(),
+                    )
+                }),
+        );
+        let pinned_overlay =
+            div()
+                .absolute()
+                .inset_0()
+                .children(
+                    pinned_content_entities
+                        .into_iter()
+                        .map(|(view_id, name, content)| {
+                            use super::themes::catppuccin_macchiato::{base, maroon, surface0};
 
-                let pinned_view = self
-                    .state
-                    .pinned_views
-                    .iter()
-                    .find(|v| v.view_id == view_id);
-                let position_x = pinned_view
-                    .map(|v| v.position_x)
-                    .unwrap_or(DEFAULT_PIN_POSITION_X);
-                let position_y = pinned_view
-                    .map(|v| v.position_y)
-                    .unwrap_or(DEFAULT_PIN_POSITION_Y);
-                let view_id_for_close = view_id;
-                let view_id_for_drag = view_id;
-                let view_id_for_hover = view_id;
-                let position_x_f32 = position_x as f32;
-                let position_y_f32 = position_y as f32;
-                let weak = cx.weak_entity();
-                let show_unpin = self.pinned_hovered_view_id == Some(view_id);
+                            let pinned_view = self
+                                .state
+                                .pinned_views
+                                .iter()
+                                .find(|v| v.view_id == view_id);
+                            let position_x = pinned_view
+                                .map(|v| v.position_x)
+                                .unwrap_or(DEFAULT_PIN_POSITION_X);
+                            let position_y = pinned_view
+                                .map(|v| v.position_y)
+                                .unwrap_or(DEFAULT_PIN_POSITION_Y);
+                            let view_id_for_close = view_id;
+                            let view_id_for_drag = view_id;
+                            let view_id_for_hover = view_id;
+                            let weak = cx.weak_entity();
+                            let show_unpin = self.pinned_hovered_view_id == Some(view_id);
 
-                let (width, height) = self
-                    .pinned_sizes
-                    .get(&view_id)
-                    .copied()
-                    .unwrap_or((500.0, 400.0));
-                div()
-                    .id(("pinned_view_panel", view_id))
-                    .absolute()
-                    .left(px(position_x as f32))
-                    .top(px(position_y as f32))
-                    .bg(mantle())
-                    .border_1()
-                    .border_color(surface0())
-                    .rounded_lg()
-                    .shadow_lg()
-                    .w(px(width))
-                    .h(px(height))
-                    .relative()
-                    .overflow_hidden()
-                    .flex()
-                    .flex_col()
-                    .on_mouse_move(cx.listener(|this, event: &MouseMoveEvent, _window, cx| {
-                        this.update_pinned_drag(event, cx);
-                    }))
-                    .on_mouse_up(
-                        MouseButton::Left,
-                        cx.listener(|this, _event: &MouseUpEvent, _window, cx| {
-                            this.end_pinned_drag(cx);
-                        }),
-                    )
-                    .on_hover(cx.listener(move |this, hovered, _window, cx| {
-                        if *hovered {
-                            this.pinned_hovered_view_id = Some(view_id_for_hover);
-                        } else if this.pinned_hovered_view_id == Some(view_id_for_hover) {
-                            this.pinned_hovered_view_id = None;
-                        }
-                        cx.notify();
-                    }))
-                    .child(
-                        div()
-                            .absolute()
-                            .left(px(0.0))
-                            .top(px(0.0))
-                            .w(px(10.0))
-                            .h_full()
-                            .on_mouse_down(
-                                MouseButton::Left,
-                                cx.listener(move |this, event: &MouseDownEvent, _window, cx| {
-                                    this.begin_pinned_drag(
-                                        view_id_for_drag,
-                                        event,
-                                        ModalInteraction::Resize(ResizeEdges {
-                                            left: true,
-                                            right: false,
-                                            top: false,
-                                            bottom: false,
-                                        }),
-                                        position_x_f32,
-                                        position_y_f32,
-                                        width,
-                                        height,
-                                        cx,
-                                    );
-                                    cx.stop_propagation();
-                                }),
-                            ),
-                    )
-                    .child(
-                        div()
-                            .absolute()
-                            .right(px(0.0))
-                            .top(px(0.0))
-                            .w(px(10.0))
-                            .h_full()
-                            .on_mouse_down(
-                                MouseButton::Left,
-                                cx.listener(move |this, event: &MouseDownEvent, _window, cx| {
-                                    this.begin_pinned_drag(
-                                        view_id_for_drag,
-                                        event,
-                                        ModalInteraction::Resize(ResizeEdges {
-                                            left: false,
-                                            right: true,
-                                            top: false,
-                                            bottom: false,
-                                        }),
-                                        position_x_f32,
-                                        position_y_f32,
-                                        width,
-                                        height,
-                                        cx,
-                                    );
-                                    cx.stop_propagation();
-                                }),
-                            ),
-                    )
-                    .child(
-                        div()
-                            .absolute()
-                            .left(px(0.0))
-                            .top(px(0.0))
-                            .w_full()
-                            .h(px(10.0))
-                            .on_mouse_down(
-                                MouseButton::Left,
-                                cx.listener(move |this, event: &MouseDownEvent, _window, cx| {
-                                    this.begin_pinned_drag(
-                                        view_id_for_drag,
-                                        event,
-                                        ModalInteraction::Resize(ResizeEdges {
-                                            left: false,
-                                            right: false,
-                                            top: true,
-                                            bottom: false,
-                                        }),
-                                        position_x_f32,
-                                        position_y_f32,
-                                        width,
-                                        height,
-                                        cx,
-                                    );
-                                    cx.stop_propagation();
-                                }),
-                            ),
-                    )
-                    .child(
-                        div()
-                            .absolute()
-                            .left(px(0.0))
-                            .bottom(px(0.0))
-                            .w_full()
-                            .h(px(10.0))
-                            .on_mouse_down(
-                                MouseButton::Left,
-                                cx.listener(move |this, event: &MouseDownEvent, _window, cx| {
-                                    this.begin_pinned_drag(
-                                        view_id_for_drag,
-                                        event,
-                                        ModalInteraction::Resize(ResizeEdges {
-                                            left: false,
-                                            right: false,
-                                            top: false,
-                                            bottom: true,
-                                        }),
-                                        position_x_f32,
-                                        position_y_f32,
-                                        width,
-                                        height,
-                                        cx,
-                                    );
-                                    cx.stop_propagation();
-                                }),
-                            ),
-                    )
-                    .child(
-                        div()
-                            .absolute()
-                            .left(px(0.0))
-                            .top(px(0.0))
-                            .w(px(14.0))
-                            .h(px(14.0))
-                            .on_mouse_down(
-                                MouseButton::Left,
-                                cx.listener(move |this, event: &MouseDownEvent, _window, cx| {
-                                    this.begin_pinned_drag(
-                                        view_id_for_drag,
-                                        event,
-                                        ModalInteraction::Resize(ResizeEdges {
-                                            left: true,
-                                            right: false,
-                                            top: true,
-                                            bottom: false,
-                                        }),
-                                        position_x_f32,
-                                        position_y_f32,
-                                        width,
-                                        height,
-                                        cx,
-                                    );
-                                    cx.stop_propagation();
-                                }),
-                            ),
-                    )
-                    .child(
-                        div()
-                            .absolute()
-                            .right(px(0.0))
-                            .top(px(0.0))
-                            .w(px(14.0))
-                            .h(px(14.0))
-                            .on_mouse_down(
-                                MouseButton::Left,
-                                cx.listener(move |this, event: &MouseDownEvent, _window, cx| {
-                                    this.begin_pinned_drag(
-                                        view_id_for_drag,
-                                        event,
-                                        ModalInteraction::Resize(ResizeEdges {
-                                            left: false,
-                                            right: true,
-                                            top: true,
-                                            bottom: false,
-                                        }),
-                                        position_x_f32,
-                                        position_y_f32,
-                                        width,
-                                        height,
-                                        cx,
-                                    );
-                                    cx.stop_propagation();
-                                }),
-                            ),
-                    )
-                    .child(
-                        div()
-                            .absolute()
-                            .left(px(0.0))
-                            .bottom(px(0.0))
-                            .w(px(14.0))
-                            .h(px(14.0))
-                            .on_mouse_down(
-                                MouseButton::Left,
-                                cx.listener(move |this, event: &MouseDownEvent, _window, cx| {
-                                    this.begin_pinned_drag(
-                                        view_id_for_drag,
-                                        event,
-                                        ModalInteraction::Resize(ResizeEdges {
-                                            left: true,
-                                            right: false,
-                                            top: false,
-                                            bottom: true,
-                                        }),
-                                        position_x_f32,
-                                        position_y_f32,
-                                        width,
-                                        height,
-                                        cx,
-                                    );
-                                    cx.stop_propagation();
-                                }),
-                            ),
-                    )
-                    .child(
-                        div()
-                            .absolute()
-                            .right(px(0.0))
-                            .bottom(px(0.0))
-                            .w(px(14.0))
-                            .h(px(14.0))
-                            .on_mouse_down(
-                                MouseButton::Left,
-                                cx.listener(move |this, event: &MouseDownEvent, _window, cx| {
-                                    this.begin_pinned_drag(
-                                        view_id_for_drag,
-                                        event,
-                                        ModalInteraction::Resize(ResizeEdges {
-                                            left: false,
-                                            right: true,
-                                            top: false,
-                                            bottom: true,
-                                        }),
-                                        position_x_f32,
-                                        position_y_f32,
-                                        width,
-                                        height,
-                                        cx,
-                                    );
-                                    cx.stop_propagation();
-                                }),
-                            ),
-                    )
-                    .child(
-                        div()
-                            .flex()
-                            .flex_row()
-                            .items_center()
-                            .justify_between()
-                            .bg(surface0())
-                            .border_b_1()
-                            .border_color(base())
-                            .text_color(base())
-                            .px_2()
-                            .py_1()
-                            .on_mouse_down(
-                                MouseButton::Left,
-                                cx.listener(move |this, event: &MouseDownEvent, _window, cx| {
-                                    this.begin_pinned_drag(
-                                        view_id_for_drag,
-                                        event,
-                                        ModalInteraction::Move,
-                                        position_x_f32,
-                                        position_y_f32,
-                                        width,
-                                        height,
-                                        cx,
-                                    );
-                                    cx.stop_propagation();
-                                }),
-                            )
-                            .child(
-                                div()
-                                    .flex()
-                                    .flex_row()
-                                    .gap_2()
-                                    .items_center()
-                                    .child("📌")
-                                    .child(
-                                        div()
-                                            .text_xs()
-                                            .font_weight(FontWeight::BOLD)
-                                            .child(name.clone()),
-                                    ),
-                            )
-                            .children(if show_unpin {
-                                Some(
-                                    div()
-                                        .px_1()
-                                        .py_0p5()
-                                        .rounded_sm()
-                                        .bg(base())
-                                        .hover(|s| s.bg(maroon()))
-                                        .text_xs()
-                                        .font_weight(FontWeight::BOLD)
-                                        .child("✕")
-                                        .on_mouse_up(MouseButton::Left, move |_evt, _win, cx| {
-                                            if let Some(ws) = weak.upgrade() {
-                                                ws.update(cx, |ws, cx| {
-                                                    ws.unpin_view(view_id_for_close, cx);
-                                                });
-                                            }
-                                        })
-                                        .into_any_element(),
+                            let (width, height) = self
+                                .pinned_sizes
+                                .get(&view_id)
+                                .copied()
+                                .unwrap_or((500.0, 400.0));
+                            let max_x = (viewport_width - width).max(0.0);
+                            let max_y = (viewport_height - height).max(0.0);
+                            let clamped_x = (position_x as f32).clamp(0.0, max_x);
+                            let clamped_y = (position_y as f32).clamp(0.0, max_y);
+                            div()
+                                .id(("pinned_view_panel", view_id))
+                                .absolute()
+                                .left(px(clamped_x))
+                                .top(px(clamped_y))
+                                .bg(mantle())
+                                .border_1()
+                                .border_color(surface0())
+                                .rounded_lg()
+                                .shadow_lg()
+                                .w(px(width))
+                                .h(px(height))
+                                .relative()
+                                .overflow_hidden()
+                                .flex()
+                                .flex_col()
+                                .on_mouse_move(cx.listener(
+                                    |this, event: &MouseMoveEvent, _window, cx| {
+                                        this.update_pinned_drag(event, cx);
+                                    },
+                                ))
+                                .on_mouse_up(
+                                    MouseButton::Left,
+                                    cx.listener(|this, _event: &MouseUpEvent, _window, cx| {
+                                        this.end_pinned_drag(cx);
+                                    }),
                                 )
-                            } else {
-                                None
-                            }),
-                    )
-                    .child(
-                        div()
-                            .flex_1()
-                            .min_h(px(0.0))
-                            .overflow_y_scrollbar()
-                            .child(content),
-                    )
-            },
-        ));
+                                .on_hover(cx.listener(move |this, hovered, _window, cx| {
+                                    if *hovered {
+                                        this.pinned_hovered_view_id = Some(view_id_for_hover);
+                                    } else if this.pinned_hovered_view_id == Some(view_id_for_hover)
+                                    {
+                                        this.pinned_hovered_view_id = None;
+                                    }
+                                    cx.notify();
+                                }))
+                                .child(
+                                    div()
+                                        .absolute()
+                                        .left(px(0.0))
+                                        .top(px(0.0))
+                                        .w(px(10.0))
+                                        .h_full()
+                                        .on_mouse_down(
+                                            MouseButton::Left,
+                                            cx.listener(
+                                                move |this, event: &MouseDownEvent, _window, cx| {
+                                                    this.begin_pinned_drag(
+                                                        view_id_for_drag,
+                                                        event,
+                                                        ModalInteraction::Resize(ResizeEdges {
+                                                            left: true,
+                                                            right: false,
+                                                            top: false,
+                                                            bottom: false,
+                                                        }),
+                                                        clamped_x,
+                                                        clamped_y,
+                                                        width,
+                                                        height,
+                                                        cx,
+                                                    );
+                                                    cx.stop_propagation();
+                                                },
+                                            ),
+                                        ),
+                                )
+                                .child(
+                                    div()
+                                        .absolute()
+                                        .right(px(0.0))
+                                        .top(px(0.0))
+                                        .w(px(10.0))
+                                        .h_full()
+                                        .on_mouse_down(
+                                            MouseButton::Left,
+                                            cx.listener(
+                                                move |this, event: &MouseDownEvent, _window, cx| {
+                                                    this.begin_pinned_drag(
+                                                        view_id_for_drag,
+                                                        event,
+                                                        ModalInteraction::Resize(ResizeEdges {
+                                                            left: false,
+                                                            right: true,
+                                                            top: false,
+                                                            bottom: false,
+                                                        }),
+                                                        clamped_x,
+                                                        clamped_y,
+                                                        width,
+                                                        height,
+                                                        cx,
+                                                    );
+                                                    cx.stop_propagation();
+                                                },
+                                            ),
+                                        ),
+                                )
+                                .child(
+                                    div()
+                                        .absolute()
+                                        .left(px(0.0))
+                                        .top(px(0.0))
+                                        .w_full()
+                                        .h(px(10.0))
+                                        .on_mouse_down(
+                                            MouseButton::Left,
+                                            cx.listener(
+                                                move |this, event: &MouseDownEvent, _window, cx| {
+                                                    this.begin_pinned_drag(
+                                                        view_id_for_drag,
+                                                        event,
+                                                        ModalInteraction::Resize(ResizeEdges {
+                                                            left: false,
+                                                            right: false,
+                                                            top: true,
+                                                            bottom: false,
+                                                        }),
+                                                        clamped_x,
+                                                        clamped_y,
+                                                        width,
+                                                        height,
+                                                        cx,
+                                                    );
+                                                    cx.stop_propagation();
+                                                },
+                                            ),
+                                        ),
+                                )
+                                .child(
+                                    div()
+                                        .absolute()
+                                        .left(px(0.0))
+                                        .bottom(px(0.0))
+                                        .w_full()
+                                        .h(px(10.0))
+                                        .on_mouse_down(
+                                            MouseButton::Left,
+                                            cx.listener(
+                                                move |this, event: &MouseDownEvent, _window, cx| {
+                                                    this.begin_pinned_drag(
+                                                        view_id_for_drag,
+                                                        event,
+                                                        ModalInteraction::Resize(ResizeEdges {
+                                                            left: false,
+                                                            right: false,
+                                                            top: false,
+                                                            bottom: true,
+                                                        }),
+                                                        clamped_x,
+                                                        clamped_y,
+                                                        width,
+                                                        height,
+                                                        cx,
+                                                    );
+                                                    cx.stop_propagation();
+                                                },
+                                            ),
+                                        ),
+                                )
+                                .child(
+                                    div()
+                                        .absolute()
+                                        .left(px(0.0))
+                                        .top(px(0.0))
+                                        .w(px(14.0))
+                                        .h(px(14.0))
+                                        .on_mouse_down(
+                                            MouseButton::Left,
+                                            cx.listener(
+                                                move |this, event: &MouseDownEvent, _window, cx| {
+                                                    this.begin_pinned_drag(
+                                                        view_id_for_drag,
+                                                        event,
+                                                        ModalInteraction::Resize(ResizeEdges {
+                                                            left: true,
+                                                            right: false,
+                                                            top: true,
+                                                            bottom: false,
+                                                        }),
+                                                        clamped_x,
+                                                        clamped_y,
+                                                        width,
+                                                        height,
+                                                        cx,
+                                                    );
+                                                    cx.stop_propagation();
+                                                },
+                                            ),
+                                        ),
+                                )
+                                .child(
+                                    div()
+                                        .absolute()
+                                        .right(px(0.0))
+                                        .top(px(0.0))
+                                        .w(px(14.0))
+                                        .h(px(14.0))
+                                        .on_mouse_down(
+                                            MouseButton::Left,
+                                            cx.listener(
+                                                move |this, event: &MouseDownEvent, _window, cx| {
+                                                    this.begin_pinned_drag(
+                                                        view_id_for_drag,
+                                                        event,
+                                                        ModalInteraction::Resize(ResizeEdges {
+                                                            left: false,
+                                                            right: true,
+                                                            top: true,
+                                                            bottom: false,
+                                                        }),
+                                                        clamped_x,
+                                                        clamped_y,
+                                                        width,
+                                                        height,
+                                                        cx,
+                                                    );
+                                                    cx.stop_propagation();
+                                                },
+                                            ),
+                                        ),
+                                )
+                                .child(
+                                    div()
+                                        .absolute()
+                                        .left(px(0.0))
+                                        .bottom(px(0.0))
+                                        .w(px(14.0))
+                                        .h(px(14.0))
+                                        .on_mouse_down(
+                                            MouseButton::Left,
+                                            cx.listener(
+                                                move |this, event: &MouseDownEvent, _window, cx| {
+                                                    this.begin_pinned_drag(
+                                                        view_id_for_drag,
+                                                        event,
+                                                        ModalInteraction::Resize(ResizeEdges {
+                                                            left: true,
+                                                            right: false,
+                                                            top: false,
+                                                            bottom: true,
+                                                        }),
+                                                        clamped_x,
+                                                        clamped_y,
+                                                        width,
+                                                        height,
+                                                        cx,
+                                                    );
+                                                    cx.stop_propagation();
+                                                },
+                                            ),
+                                        ),
+                                )
+                                .child(
+                                    div()
+                                        .absolute()
+                                        .right(px(0.0))
+                                        .bottom(px(0.0))
+                                        .w(px(14.0))
+                                        .h(px(14.0))
+                                        .on_mouse_down(
+                                            MouseButton::Left,
+                                            cx.listener(
+                                                move |this, event: &MouseDownEvent, _window, cx| {
+                                                    this.begin_pinned_drag(
+                                                        view_id_for_drag,
+                                                        event,
+                                                        ModalInteraction::Resize(ResizeEdges {
+                                                            left: false,
+                                                            right: true,
+                                                            top: false,
+                                                            bottom: true,
+                                                        }),
+                                                        clamped_x,
+                                                        clamped_y,
+                                                        width,
+                                                        height,
+                                                        cx,
+                                                    );
+                                                    cx.stop_propagation();
+                                                },
+                                            ),
+                                        ),
+                                )
+                                .child(
+                                    div()
+                                        .flex()
+                                        .flex_row()
+                                        .items_center()
+                                        .justify_between()
+                                        .bg(surface0())
+                                        .border_b_1()
+                                        .border_color(base())
+                                        .text_color(base())
+                                        .px_2()
+                                        .py_1()
+                                        .on_mouse_down(
+                                            MouseButton::Left,
+                                            cx.listener(
+                                                move |this, event: &MouseDownEvent, _window, cx| {
+                                                    this.begin_pinned_drag(
+                                                        view_id_for_drag,
+                                                        event,
+                                                        ModalInteraction::Move,
+                                                        clamped_x,
+                                                        clamped_y,
+                                                        width,
+                                                        height,
+                                                        cx,
+                                                    );
+                                                    cx.stop_propagation();
+                                                },
+                                            ),
+                                        )
+                                        .child(
+                                            div()
+                                                .flex()
+                                                .flex_row()
+                                                .gap_2()
+                                                .items_center()
+                                                .child("📌")
+                                                .child(
+                                                    div()
+                                                        .text_xs()
+                                                        .font_weight(FontWeight::BOLD)
+                                                        .child(name.clone()),
+                                                ),
+                                        )
+                                        .children(if show_unpin {
+                                            Some(
+                                                div()
+                                                    .px_1()
+                                                    .py_0p5()
+                                                    .rounded_sm()
+                                                    .bg(base())
+                                                    .hover(|s| s.bg(maroon()))
+                                                    .text_xs()
+                                                    .font_weight(FontWeight::BOLD)
+                                                    .child("✕")
+                                                    .on_mouse_up(
+                                                        MouseButton::Left,
+                                                        move |_evt, _win, cx| {
+                                                            if let Some(ws) = weak.upgrade() {
+                                                                ws.update(cx, |ws, cx| {
+                                                                    ws.unpin_view(
+                                                                        view_id_for_close,
+                                                                        cx,
+                                                                    );
+                                                                });
+                                                            }
+                                                        },
+                                                    )
+                                                    .into_any_element(),
+                                            )
+                                        } else {
+                                            None
+                                        }),
+                                )
+                                .child(
+                                    div()
+                                        .flex_1()
+                                        .min_h(px(0.0))
+                                        .overflow_y_scrollbar()
+                                        .child(content),
+                                )
+                        }),
+                );
 
         let scrollable_main = div()
             .flex_1()
@@ -1352,6 +1429,7 @@ impl Render for Workspace {
             .size_full()
             .child(scrollable_main)
             .child(bar)
+            .child(pinned_overlay)
             .children(creation_modal_overlay)
             .child(self.command_notifications.clone())
     }

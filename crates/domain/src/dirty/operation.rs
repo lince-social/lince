@@ -9,7 +9,7 @@ pub struct Operation {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum OperationTables {
+pub enum DatabaseTable {
     Configuration = 0,
     Collection = 1,
     View = 2,
@@ -34,7 +34,7 @@ pub enum OperationActions {
     ActivateConfiguration = 4,
 }
 
-impl OperationTables {
+impl DatabaseTable {
     pub fn from_id(id: u32) -> Option<Self> {
         match id {
             0 => Some(Self::Configuration),
@@ -75,7 +75,7 @@ impl OperationTables {
     }
 }
 
-impl FromStr for OperationTables {
+impl FromStr for DatabaseTable {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {

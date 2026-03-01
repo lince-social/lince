@@ -4,7 +4,7 @@ use domain::{
         collection::Collection,
         table::{Row as RowEntity, Table},
     },
-    dirty::{collection::CollectionRow, operation::OperationTables, view::QueriedView},
+    dirty::{collection::CollectionRow, operation::DatabaseTable, view::QueriedView},
 };
 use futures::future::join_all;
 use sqlx::{Column, Pool, Row, Sqlite, TypeInfo};
@@ -79,7 +79,7 @@ fn is_special_query(query: &str) -> bool {
     )
 }
 
-fn parse_creation_view_query(query: &str) -> Option<OperationTables> {
+fn parse_creation_view_query(query: &str) -> Option<DatabaseTable> {
     let normalized = query.trim().to_lowercase().replace(['-', ' '], "_");
     let table_name = normalized
         .strip_prefix("create_view_")
@@ -87,7 +87,7 @@ fn parse_creation_view_query(query: &str) -> Option<OperationTables> {
         .or_else(|| normalized.strip_prefix("create_modal_"))
         .or_else(|| normalized.strip_prefix("creation_modal_"))
         .or_else(|| normalized.strip_prefix("cv_"))?;
-    OperationTables::from_str(table_name).ok()
+    DatabaseTable::from_str(table_name).ok()
 }
 
 #[derive(sqlx::FromRow)]

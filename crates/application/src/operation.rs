@@ -2,7 +2,7 @@ use crate::{
     command::{CommandOrigin, spawn_command_buffer_session_by_id},
     karma::karma_deliver,
 };
-use domain::dirty::operation::{OperationActions, OperationTables};
+use domain::dirty::operation::{DatabaseTable, OperationActions};
 use injection::cross_cutting::InjectedServices;
 use utils::logging::{LogEntry, log};
 
@@ -40,17 +40,17 @@ fn parse_create_action(operation: &str) -> bool {
     })
 }
 
-fn parse_operation_table(operation: &str) -> Option<OperationTables> {
+fn parse_operation_table(operation: &str) -> Option<DatabaseTable> {
     if let Some(id) = parse_id(operation)
         && let Ok(parsed_id) = id.parse::<u32>()
-        && let Some(table) = OperationTables::from_id(parsed_id)
+        && let Some(table) = DatabaseTable::from_id(parsed_id)
     {
         return Some(table);
     }
 
     let word_regex = Regex::new(r"[a-zA-Z_]+").unwrap();
     for matched in word_regex.find_iter(operation) {
-        if let Ok(table) = OperationTables::from_str(matched.as_str()) {
+        if let Ok(table) = DatabaseTable::from_str(matched.as_str()) {
             return Some(table);
         }
     }
@@ -58,7 +58,7 @@ fn parse_operation_table(operation: &str) -> Option<OperationTables> {
     None
 }
 
-fn parse_operation_result(operation: &str) -> Vec<(OperationTables, OperationActions)> {
+fn parse_operation_result(operation: &str) -> Vec<(DatabaseTable, OperationActions)> {
     let mut results = Vec::new();
 
     if parse_create_action(operation)
@@ -133,7 +133,7 @@ pub async fn parse_operation_and_execute(services: InjectedServices, operation: 
 pub async fn operation_execute(
     services: InjectedServices,
     operation: String,
-) -> Result<Vec<(OperationTables, OperationActions)>, Error> {
+) -> Result<Vec<(DatabaseTable, OperationActions)>, Error> {
     let only_digits_regex = Regex::new(r"^\d+$").unwrap();
     if only_digits_regex.is_match(&operation) {
         let id = operation.parse::<u32>().unwrap();

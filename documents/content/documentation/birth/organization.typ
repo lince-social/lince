@@ -25,3 +25,6 @@ The git repositories hosted currently in the #link("https://github.com/lince-soc
 - #link("https://github.com/lince-social/.github")[.github]: general stuff, like photos, icons and information about GitHub sponsors.
 - #link("https://github.com/lince-social/den")[den]: git submodules for all the repos in one place.
 - #link("https://github.com/lince-social/rustart")[rustart]: A template to start a Rust project.
+
+
+*General Links*

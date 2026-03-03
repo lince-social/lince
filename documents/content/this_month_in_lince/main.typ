@@ -10,6 +10,7 @@
 
 #let year = folder_name.split("_").at(0)
 #let latest = json(year + "/" + folder_name + ".json")
+#let latest_data = latest.at(0, default: latest)
 
 #let date_parts = folder_name.split("_")
 #let current_year = date_parts.at(0)
@@ -103,7 +104,7 @@
 ]
 
 #let parts(str) = [
-  #for i in latest.at(str) [
+  #for i in latest_data.at(str, default: ()) [
     == #for (code, _) in languages {
       strings.at(str).at(code)
       if code != languages.keys().last() { " | " }

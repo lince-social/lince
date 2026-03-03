@@ -355,6 +355,29 @@ impl Workspace {
     }
 
     pub fn open_creation_modal(&mut self, table: DatabaseTable, cx: &mut Context<Self>) {
+        self.open_creation_modal_with_initial_values(table, HashMap::new(), cx);
+    }
+
+    pub fn open_collection_view_creation_modal(
+        &mut self,
+        collection_id: u32,
+        cx: &mut Context<Self>,
+    ) {
+        let mut initial_values = HashMap::new();
+        initial_values.insert("collection_id".to_string(), collection_id.to_string());
+        self.open_creation_modal_with_initial_values(
+            DatabaseTable::CollectionView,
+            initial_values,
+            cx,
+        );
+    }
+
+    fn open_creation_modal_with_initial_values(
+        &mut self,
+        table: DatabaseTable,
+        initial_values: HashMap<String, String>,
+        cx: &mut Context<Self>,
+    ) {
         let services = self.services.clone();
         cx.spawn(async move |this, cx| {
             let columns = match services
@@ -376,8 +399,17 @@ impl Workspace {
                     .filter(|column| column.to_lowercase() != "id")
                     .collect::<Vec<_>>();
                 let weak = cx.weak_entity();
-                owner.creation_modal =
-                    Some(cx.new(|app_cx| CreationModal::new(weak, table, fields, app_cx)));
+                let modal_services = owner.services.clone();
+                owner.creation_modal = Some(cx.new(|app_cx| {
+                    CreationModal::new(
+                        weak,
+                        modal_services,
+                        table,
+                        fields,
+                        initial_values.clone(),
+                        app_cx,
+                    )
+                }));
                 cx.notify();
             })
             .unwrap();
@@ -840,9 +872,19 @@ impl Workspace {
                     .into_iter()
                     .map(|(query, table, fields)| {
                         let weak = weak.clone();
+                        let services = owner.services.clone();
                         (
                             query,
-                            cx.new(|app_cx| CreationModal::new_view(weak, table, fields, app_cx)),
+                            cx.new(|app_cx| {
+                                CreationModal::new_view(
+                                    weak,
+                                    services,
+                                    table,
+                                    fields,
+                                    HashMap::new(),
+                                    app_cx,
+                                )
+                            }),
                         )
                     })
                     .collect();
@@ -850,10 +892,20 @@ impl Workspace {
                     .into_iter()
                     .map(|(view_id, view_name, table, fields)| {
                         let weak = weak.clone();
+                        let services = owner.services.clone();
                         (
                             view_id,
                             view_name,
-                            cx.new(|app_cx| CreationModal::new_view(weak, table, fields, app_cx)),
+                            cx.new(|app_cx| {
+                                CreationModal::new_view(
+                                    weak,
+                                    services,
+                                    table,
+                                    fields,
+                                    HashMap::new(),
+                                    app_cx,
+                                )
+                            }),
                         )
                     })
                     .collect();

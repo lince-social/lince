@@ -1,12 +1,16 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
-use domain::dirty::operation::DatabaseTable;
+use domain::{
+    clean::table::Table,
+    dirty::operation::DatabaseTable,
+};
 use gpui::{
     App, Context, FocusHandle, Focusable, FontWeight, InteractiveElement, IntoElement,
     KeyDownEvent, MouseButton, ParentElement, Render, StatefulInteractiveElement, Styled,
     WeakEntity, Window, div, px,
 };
 use gpui_component::scroll::ScrollableElement;
+use injection::cross_cutting::InjectedServices;
 
 use crate::{
     themes::catppuccin_macchiato::{
@@ -15,8 +19,17 @@ use crate::{
     workspace::Workspace,
 };
 
+#[derive(Clone)]
+struct AutocompleteItem {
+    row: HashMap<String, String>,
+    source_table: String,
+    active_output_column: String,
+    label: String,
+}
+
 pub struct CreationModal {
     workspace: WeakEntity<Workspace>,
+    services: InjectedServices,
     table: DatabaseTable,
     table_name: String,
     modal: bool,
@@ -26,6 +39,10 @@ pub struct CreationModal {
     active_field_ix: usize,
     focus_handle: FocusHandle,
     has_focused: bool,
+    autocomplete_rows_by_table: HashMap<String, Table>,
+    autocomplete_loading_tables: HashSet<String>,
+    autocomplete_items: Vec<AutocompleteItem>,
+    autocomplete_selected_ix: Option<usize>,
 }
 
 impl Focusable for CreationModal {
@@ -37,33 +54,46 @@ impl Focusable for CreationModal {
 impl CreationModal {
     pub fn new(
         workspace: WeakEntity<Workspace>,
+        services: InjectedServices,
         table: DatabaseTable,
         columns: Vec<String>,
+        initial_values: HashMap<String, String>,
         cx: &mut App,
     ) -> Self {
-        Self::new_with_mode(workspace, table, columns, true, cx)
+        Self::new_with_mode(workspace, services, table, columns, initial_values, true, cx)
     }
 
     pub fn new_view(
         workspace: WeakEntity<Workspace>,
+        services: InjectedServices,
         table: DatabaseTable,
         columns: Vec<String>,
+        initial_values: HashMap<String, String>,
         cx: &mut App,
     ) -> Self {
-        Self::new_with_mode(workspace, table, columns, false, cx)
+        Self::new_with_mode(workspace, services, table, columns, initial_values, false, cx)
     }
 
     fn new_with_mode(
         workspace: WeakEntity<Workspace>,
+        services: InjectedServices,
         table: DatabaseTable,
         columns: Vec<String>,
+        initial_values: HashMap<String, String>,
         modal: bool,
         cx: &mut App,
     ) -> Self {
-        let values = vec![String::new(); columns.len()];
-        let cursors = vec![0; columns.len()];
+        let mut values = vec![String::new(); columns.len()];
+        let mut cursors = vec![0; columns.len()];
+        for (ix, column) in columns.iter().enumerate() {
+            if let Some(initial) = initial_values.get(column) {
+                values[ix] = initial.clone();
+                cursors[ix] = initial.chars().count();
+            }
+        }
         Self {
             workspace,
+            services,
             table,
             table_name: table.as_table_name().to_string(),
             modal,
@@ -73,6 +103,10 @@ impl CreationModal {
             active_field_ix: 0,
             focus_handle: cx.focus_handle(),
             has_focused: false,
+            autocomplete_rows_by_table: HashMap::new(),
+            autocomplete_loading_tables: HashSet::new(),
+            autocomplete_items: vec![],
+            autocomplete_selected_ix: None,
         }
     }
 
@@ -228,6 +262,8 @@ impl CreationModal {
         self.values.iter_mut().for_each(String::clear);
         self.cursors.iter_mut().for_each(|cursor| *cursor = 0);
         self.active_field_ix = 0;
+        self.autocomplete_items.clear();
+        self.autocomplete_selected_ix = None;
         cx.notify();
     }
 
@@ -237,6 +273,185 @@ impl CreationModal {
         }
         self.values.iter().all(|value| !value.trim().is_empty())
     }
+
+    fn autocomplete_spec_for_field(&self, field_ix: usize) -> Option<(String, String)> {
+        let field = self.columns.get(field_ix)?.to_lowercase();
+        match (self.table, field.as_str()) {
+            (DatabaseTable::Karma, "condition_id") => {
+                Some(("karma_condition".to_string(), "id".to_string()))
+            }
+            (DatabaseTable::Karma, "consequence_id") => {
+                Some(("karma_consequence".to_string(), "id".to_string()))
+            }
+            (DatabaseTable::CollectionView, "collection_id") => {
+                Some(("collection".to_string(), "id".to_string()))
+            }
+            (DatabaseTable::CollectionView, "view_id") => {
+                Some(("view".to_string(), "id".to_string()))
+            }
+            _ => Some((self.table_name.clone(), field)),
+        }
+    }
+
+    fn ensure_autocomplete_rows_loaded(&mut self, source_table: &str, cx: &mut Context<Self>) {
+        if self.autocomplete_rows_by_table.contains_key(source_table)
+            || self.autocomplete_loading_tables.contains(source_table)
+        {
+            return;
+        }
+
+        let source_table = source_table.to_string();
+        self.autocomplete_loading_tables.insert(source_table.clone());
+        let services = self.services.clone();
+        cx.spawn(async move |this, cx| {
+            let query = format!("SELECT * FROM {source_table}");
+            let rows = match services.repository.collection.execute_queries(vec![query]).await {
+                Ok(mut tables) => tables.pop().map(|(_, rows)| rows).unwrap_or_default(),
+                Err(_) => vec![],
+            };
+
+            let _ = this.update(cx, move |modal, cx| {
+                modal.autocomplete_loading_tables.remove(&source_table);
+                modal
+                    .autocomplete_rows_by_table
+                    .insert(source_table.clone(), rows);
+                modal.recompute_autocomplete(cx);
+                cx.notify();
+            });
+        })
+        .detach();
+    }
+
+    fn row_matches_query(row: &HashMap<String, String>, query: &str) -> bool {
+        row.values()
+            .any(|value| value.to_lowercase().contains(query))
+    }
+
+    fn format_row_label(row: &HashMap<String, String>) -> String {
+        let mut pairs = row
+            .iter()
+            .filter(|(_, value)| !value.trim().is_empty() && value != &&"NULL".to_string())
+            .map(|(key, value)| (key.clone(), value.clone()))
+            .collect::<Vec<_>>();
+        pairs.sort_by(|a, b| a.0.cmp(&b.0));
+        if pairs.is_empty() {
+            return "(empty row)".to_string();
+        }
+        pairs
+            .into_iter()
+            .take(4)
+            .map(|(key, value)| format!("{key}: {value}"))
+            .collect::<Vec<_>>()
+            .join(" | ")
+    }
+
+    fn recompute_autocomplete(&mut self, cx: &mut Context<Self>) {
+        self.autocomplete_items.clear();
+        self.autocomplete_selected_ix = None;
+
+        let Some((source_table, active_output_column)) =
+            self.autocomplete_spec_for_field(self.active_field_ix)
+        else {
+            return;
+        };
+
+        let query = self
+            .values
+            .get(self.active_field_ix)
+            .map(|value| value.trim().to_lowercase())
+            .unwrap_or_default();
+
+        if query.is_empty() {
+            return;
+        }
+
+        if !self.autocomplete_rows_by_table.contains_key(&source_table) {
+            self.ensure_autocomplete_rows_loaded(&source_table, cx);
+            return;
+        }
+
+        if let Some(rows) = self.autocomplete_rows_by_table.get(&source_table) {
+            self.autocomplete_items = rows
+                .iter()
+                .filter(|row| Self::row_matches_query(row, &query))
+                .take(25)
+                .map(|row| AutocompleteItem {
+                    row: row.clone(),
+                    source_table: source_table.clone(),
+                    active_output_column: active_output_column.clone(),
+                    label: Self::format_row_label(row),
+                })
+                .collect();
+        }
+
+        if !self.autocomplete_items.is_empty() {
+            self.autocomplete_selected_ix = Some(0);
+        }
+    }
+
+    fn autocomplete_select_next(&mut self) {
+        if self.autocomplete_items.is_empty() {
+            self.autocomplete_selected_ix = None;
+            return;
+        }
+        let current = self.autocomplete_selected_ix.unwrap_or(0);
+        self.autocomplete_selected_ix = Some((current + 1) % self.autocomplete_items.len());
+    }
+
+    fn autocomplete_select_prev(&mut self) {
+        if self.autocomplete_items.is_empty() {
+            self.autocomplete_selected_ix = None;
+            return;
+        }
+        let current = self.autocomplete_selected_ix.unwrap_or(0);
+        self.autocomplete_selected_ix = Some(if current == 0 {
+            self.autocomplete_items.len() - 1
+        } else {
+            current - 1
+        });
+    }
+
+    fn apply_selected_completion(&mut self) {
+        let Some(selected_ix) = self.autocomplete_selected_ix else {
+            return;
+        };
+        let Some(item) = self.autocomplete_items.get(selected_ix).cloned() else {
+            return;
+        };
+
+        if let Some(active_value) = item.row.get(&item.active_output_column)
+            && let Some((value, cursor)) = self.active_value_and_cursor_mut()
+        {
+            *value = active_value.clone();
+            *cursor = value.chars().count();
+        }
+
+        for (ix, column) in self.columns.iter().enumerate() {
+            if ix == self.active_field_ix {
+                continue;
+            }
+            let current = self.values.get(ix).map(|v| v.trim()).unwrap_or_default();
+            if !current.is_empty() {
+                continue;
+            }
+            if let Some(suggested) = item.row.get(column)
+                && let Some(value) = self.values.get_mut(ix)
+            {
+                *value = suggested.clone();
+                if let Some(cursor) = self.cursors.get_mut(ix) {
+                    *cursor = value.chars().count();
+                }
+            }
+        }
+
+        self.autocomplete_items.clear();
+        self.autocomplete_selected_ix = None;
+    }
+
+    fn active_source_table(&self) -> Option<String> {
+        self.autocomplete_spec_for_field(self.active_field_ix)
+            .map(|(table, _)| table)
+    }
 }
 
 impl Render for CreationModal {
@@ -244,6 +459,7 @@ impl Render for CreationModal {
         if !self.has_focused {
             cx.focus_self(window);
             self.has_focused = true;
+            self.recompute_autocomplete(cx);
         }
 
         let title = format!("Create in {}", self.table_name);
@@ -252,6 +468,13 @@ impl Render for CreationModal {
         } else {
             self.table as u32 + 1000
         };
+
+        let autocomplete_items = self.autocomplete_items.clone();
+        let autocomplete_selected_ix = self.autocomplete_selected_ix;
+        let active_loading = self
+            .active_source_table()
+            .map(|table| self.autocomplete_loading_tables.contains(&table))
+            .unwrap_or(false);
 
         let container = div()
             .id(("creation_component", component_id))
@@ -269,6 +492,7 @@ impl Render for CreationModal {
                 let key = event.keystroke.key.as_str();
                 let modifiers = event.keystroke.modifiers;
                 let with_save_mod = modifiers.control || modifiers.alt;
+                let has_autocomplete = !this.autocomplete_items.is_empty();
 
                 if this.modal && key == "escape" {
                     this.close_modal(cx);
@@ -291,16 +515,27 @@ impl Render for CreationModal {
                         } else {
                             this.move_active_field(1);
                         }
+                        this.recompute_autocomplete(cx);
                         window.prevent_default();
                         cx.stop_propagation();
                     }
                     "down" | "arrowdown" => {
-                        this.move_active_field(1);
+                        if has_autocomplete {
+                            this.autocomplete_select_next();
+                        } else {
+                            this.move_active_field(1);
+                            this.recompute_autocomplete(cx);
+                        }
                         window.prevent_default();
                         cx.stop_propagation();
                     }
                     "up" | "arrowup" => {
-                        this.move_active_field(-1);
+                        if has_autocomplete {
+                            this.autocomplete_select_prev();
+                        } else {
+                            this.move_active_field(-1);
+                            this.recompute_autocomplete(cx);
+                        }
                         window.prevent_default();
                         cx.stop_propagation();
                     }
@@ -326,16 +561,21 @@ impl Render for CreationModal {
                     }
                     "backspace" => {
                         this.delete_backward();
+                        this.recompute_autocomplete(cx);
                         window.prevent_default();
                         cx.stop_propagation();
                     }
                     "delete" => {
                         this.delete_forward();
+                        this.recompute_autocomplete(cx);
                         window.prevent_default();
                         cx.stop_propagation();
                     }
                     "enter" => {
-                        if this.all_fields_have_values() {
+                        if has_autocomplete {
+                            this.apply_selected_completion();
+                            this.recompute_autocomplete(cx);
+                        } else if this.all_fields_have_values() {
                             this.submit(cx);
                         } else {
                             let last_field_ix = this.columns.len().saturating_sub(1);
@@ -343,8 +583,19 @@ impl Render for CreationModal {
                                 this.submit(cx);
                             } else {
                                 this.move_active_field(1);
+                                this.recompute_autocomplete(cx);
                             }
                         }
+                        window.prevent_default();
+                        cx.stop_propagation();
+                    }
+                    "n" if modifiers.control => {
+                        this.autocomplete_select_next();
+                        window.prevent_default();
+                        cx.stop_propagation();
+                    }
+                    "p" if modifiers.control => {
+                        this.autocomplete_select_prev();
                         window.prevent_default();
                         cx.stop_propagation();
                     }
@@ -358,10 +609,12 @@ impl Render for CreationModal {
                                 } else {
                                     this.move_active_field(1);
                                 }
+                                this.recompute_autocomplete(cx);
                                 window.prevent_default();
                                 cx.stop_propagation();
                             } else if !modifiers.control && !modifiers.alt && !modifiers.platform {
                                 this.insert_char(ch);
+                                this.recompute_autocomplete(cx);
                                 window.prevent_default();
                                 cx.stop_propagation();
                             }
@@ -440,14 +693,76 @@ impl Render for CreationModal {
                                                 MouseButton::Left,
                                                 cx.listener(move |this, _event, window, cx| {
                                                     this.active_field_ix = field_ix;
+                                                    this.recompute_autocomplete(cx);
                                                     cx.focus_self(window);
                                                     cx.notify();
                                                 }),
                                             ),
                                     )
+                                    .children(if self.active_field_ix == ix && !autocomplete_items.is_empty() {
+                                        Some(
+                                            div()
+                                                .mt_1()
+                                                .bg(surface0())
+                                                .border_1()
+                                                .border_color(blue())
+                                                .rounded_md()
+                                                .max_h(px(140.0))
+                                                .overflow_y_scrollbar()
+                                                .children(
+                                                    autocomplete_items
+                                                        .iter()
+                                                        .enumerate()
+                                                        .map(|(option_ix, option)| {
+                                                            let is_selected = autocomplete_selected_ix
+                                                                == Some(option_ix);
+                                                            div()
+                                                                .px_2()
+                                                                .py_1()
+                                                                .text_xs()
+                                                                .bg(if is_selected {
+                                                                    blue()
+                                                                } else {
+                                                                    surface0()
+                                                                })
+                                                                .text_color(if is_selected {
+                                                                    crust()
+                                                                } else {
+                                                                    text()
+                                                                })
+                                                                .child(option.label.clone())
+                                                                .on_mouse_up(
+                                                                    MouseButton::Left,
+                                                                    cx.listener(move |this, _event, _window, cx| {
+                                                                        this.autocomplete_selected_ix =
+                                                                            Some(option_ix);
+                                                                        this.apply_selected_completion();
+                                                                        this.recompute_autocomplete(cx);
+                                                                        cx.notify();
+                                                                    }),
+                                                                )
+                                                        })
+                                                        .collect::<Vec<_>>(),
+                                                )
+                                                .into_any_element(),
+                                        )
+                                    } else {
+                                        None
+                                    })
                             })
                             .collect::<Vec<_>>(),
-                    ),
+                    )
+                    .children(if active_loading {
+                        Some(
+                            div()
+                                .text_xs()
+                                .text_color(text())
+                                .child("Loading autocomplete...")
+                                .into_any_element(),
+                        )
+                    } else {
+                        None
+                    }),
             )
             .child(
                 div()
@@ -457,7 +772,12 @@ impl Render for CreationModal {
                     .flex()
                     .justify_between()
                     .items_center()
-                    .child(div().text_xs().text_color(text()).child("Ctrl+S to submit"))
+                    .child(
+                        div()
+                            .text_xs()
+                            .text_color(text())
+                            .child("Ctrl+S submit | Enter apply/select | Ctrl+N/Ctrl+P navigate"),
+                    )
                     .child(
                         div()
                             .bg(green())
@@ -476,10 +796,6 @@ impl Render for CreationModal {
                     ),
             );
 
-        if self.modal {
-            container.into_any_element()
-        } else {
-            container.into_any_element()
-        }
+        container.into_any_element()
     }
 }

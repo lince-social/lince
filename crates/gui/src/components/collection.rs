@@ -14,6 +14,7 @@ const DEFAULT_PIN_MARGIN: f64 = 24.0;
 #[derive(Clone)]
 pub struct CollectionList {
     pub hovered: bool,
+    pub hovered_collection_id: Option<u32>,
     pub collections: Vec<CollectionRow>,
     pub views_with_pin_info: Vec<ViewWithPinInfo>,
     pub workspace: WeakEntity<Workspace>,
@@ -27,6 +28,7 @@ impl CollectionList {
     ) -> Self {
         Self {
             hovered: false,
+            hovered_collection_id: None,
             collections,
             views_with_pin_info,
             workspace,
@@ -38,13 +40,15 @@ impl CollectionList {
 struct CollectionButton {
     id: u32,
     name: SharedString,
+    show_add: bool,
     workspace: WeakEntity<Workspace>,
 }
 
 impl RenderOnce for CollectionButton {
     fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
         let id = self.id;
-        let weak = self.workspace;
+        let weak = self.workspace.clone();
+        let weak_for_add = self.workspace;
 
         div()
             .p_0()
@@ -71,6 +75,28 @@ impl RenderOnce for CollectionButton {
                     .rounded_xs()
                     .child(self.name),
             )
+            .children(if self.show_add {
+                Some(
+                    div()
+                        .bg(surface0())
+                        .hover(|s| s.bg(surface1()))
+                        .rounded_xs()
+                        .p_0()
+                        .px_1()
+                        .child("+")
+                        .on_mouse_up(MouseButton::Left, move |_evt, _win, cx| {
+                            if let Some(ws) = weak_for_add.upgrade() {
+                                ws.update(cx, |ws, cx| {
+                                    ws.open_collection_view_creation_modal(id, cx);
+                                    cx.stop_propagation();
+                                });
+                            }
+                        })
+                        .into_any_element(),
+                )
+            } else {
+                None
+            })
             .on_mouse_up(MouseButton::Left, move |_evt, _win, cx| {
                 if let Some(ws) = weak.upgrade() {
                     ws.update(cx, |ws, cx| {
@@ -192,14 +218,25 @@ impl Render for CollectionList {
                 }]
                     .iter()
                     .map(|(collection, views)| {
+                        let collection_id = collection.id;
                         div()
+                            .id(("collection_row", collection_id))
                             .flex()
                             .flex_row()
                             .items_center()
                             .gap_1()
+                            .on_hover(cx.listener(move |this, hovered, _window, cx| {
+                                if *hovered {
+                                    this.hovered_collection_id = Some(collection_id);
+                                } else if this.hovered_collection_id == Some(collection_id) {
+                                    this.hovered_collection_id = None;
+                                }
+                                cx.notify();
+                            }))
                             .child(CollectionButton {
-                                id: collection.id,
+                                id: collection_id,
                                 name: SharedString::from(&collection.name),
+                                show_add: self.hovered_collection_id == Some(collection_id),
                                 workspace: weak.clone(),
                             })
                             .children(
@@ -219,7 +256,7 @@ impl Render for CollectionList {
                                             name: SharedString::from(&view.name),
                                             query: SharedString::from(&view.query),
                                             pinned,
-                                            collection_id: collection.id,
+                                            collection_id,
                                             workspace: weak.clone(),
                                         }
                                     })

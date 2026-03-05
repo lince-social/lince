@@ -51,7 +51,7 @@ jobs:
 
       - name: Build
         shell: bash
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release --target ${{ matrix.target }} --config 'build.rustflags=[]'
 
       - name: Package artifacts
         shell: bash

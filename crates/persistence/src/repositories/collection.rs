@@ -4,7 +4,7 @@ use domain::{
         collection::Collection,
         table::{Row as RowEntity, Table},
     },
-    dirty::{collection::CollectionRow, view::QueriedView},
+    dirty::{collection::CollectionRow, operation::DatabaseTable, view::QueriedView},
 };
 use futures::future::join_all;
 use sqlx::{Column, Pool, Row, Sqlite, TypeInfo};
@@ -12,6 +12,7 @@ use std::{
     collections::HashMap,
     io::{Error, ErrorKind},
     iter::once,
+    str::FromStr,
     sync::Arc,
 };
 use utils::ok;
@@ -30,7 +31,32 @@ pub trait CollectionRepository: Send + Sync {
     ) -> Result<Vec<CollectionRow>, Error>;
     async fn toggle_by_collection_id(&self, id: u32) -> Result<(), Error>;
     async fn execute_queries(&self, queries: Vec<String>) -> Result<Vec<(String, Table)>, Error>;
-    async fn get_active_view_data(&self) -> Result<(Vec<(String, Table)>, Vec<String>), Error>;
+    async fn get_active_view_data(&self)
+    -> Result<(Vec<(u32, String, Table)>, Vec<String>), Error>;
+    async fn get_all_collection_view_column_widths(
+        &self,
+    ) -> Result<HashMap<u32, HashMap<String, f32>>, Error>;
+    async fn update_collection_view_column_widths(
+        &self,
+        collection_view_id: u32,
+        widths: HashMap<String, f32>,
+    ) -> Result<(), Error>;
+
+    // New methods for pinned views
+    async fn get_pinned_views(&self) -> Result<Vec<domain::clean::pinned_view::PinnedView>, Error>;
+    async fn get_pinned_view_data(&self) -> Result<Vec<(u32, String, Table)>, Error>;
+    async fn get_views_with_pin_info(
+        &self,
+    ) -> Result<Vec<domain::dirty::view::ViewWithPinInfo>, Error>;
+    async fn pin_view(&self, view_id: u32, position_x: f64, position_y: f64) -> Result<(), Error>;
+    async fn unpin_view(&self, view_id: u32) -> Result<(), Error>;
+    async fn update_view_position(
+        &self,
+        view_id: u32,
+        position_x: f64,
+        position_y: f64,
+    ) -> Result<(), Error>;
+    async fn update_view_size(&self, view_id: u32, width: f64, height: f64) -> Result<(), Error>;
 }
 
 pub struct CollectionRepositoryImpl {
@@ -41,6 +67,27 @@ impl CollectionRepositoryImpl {
     pub fn new(pool: Arc<Pool<Sqlite>>) -> Self {
         Self { pool }
     }
+}
+
+fn is_special_query(query: &str) -> bool {
+    if parse_creation_view_query(query).is_some() {
+        return true;
+    }
+    matches!(
+        query,
+        "karma_orchestra" | "karma_view" | "testing" | "command_buffer"
+    )
+}
+
+fn parse_creation_view_query(query: &str) -> Option<DatabaseTable> {
+    let normalized = query.trim().to_lowercase().replace(['-', ' '], "_");
+    let table_name = normalized
+        .strip_prefix("create_view_")
+        .or_else(|| normalized.strip_prefix("creation_view_"))
+        .or_else(|| normalized.strip_prefix("create_modal_"))
+        .or_else(|| normalized.strip_prefix("creation_modal_"))
+        .or_else(|| normalized.strip_prefix("cv_"))?;
+    DatabaseTable::from_str(table_name).ok()
 }
 
 #[derive(sqlx::FromRow)]
@@ -240,13 +287,16 @@ impl CollectionRepository for CollectionRepositoryImpl {
         results.into_iter().collect()
     }
 
-    async fn get_active_view_data(&self) -> Result<(Vec<(String, Table)>, Vec<String>), Error> {
-        let queries: Vec<String> = sqlx::query_scalar(
-            "SELECT v.query AS query
+    async fn get_active_view_data(
+        &self,
+    ) -> Result<(Vec<(u32, String, Table)>, Vec<String>), Error> {
+        let query_rows: Vec<(u32, String)> = sqlx::query_as(
+            "SELECT cv.id AS collection_view_id, v.query AS query
              FROM collection_view cv
              JOIN view v ON cv.view_id = v.id
              JOIN collection c ON cv.collection_id = c.id
-             WHERE cv.quantity = 1 AND c.quantity = 1",
+             WHERE cv.quantity = 1 AND c.quantity = 1
+             ORDER BY cv.id",
         )
         .fetch_all(&*self.pool)
         .await
@@ -257,21 +307,237 @@ impl CollectionRepository for CollectionRepositoryImpl {
             )
         })?;
 
-        let (special_queries, sql_queries) = queries.into_iter().partition(|query| {
-            [
-                "karma_orchestra".to_string(),
-                "karma_view".to_string(),
-                "testing".to_string(),
-            ]
-            .contains(query)
-        });
+        let (special_rows, sql_rows): (Vec<_>, Vec<_>) = query_rows
+            .into_iter()
+            .partition(|(_, query)| is_special_query(query.as_str()));
+        let special_queries = special_rows
+            .into_iter()
+            .map(|(_, query)| query)
+            .collect::<Vec<_>>();
+        let sql_queries = sql_rows
+            .iter()
+            .map(|(_, query)| query.clone())
+            .collect::<Vec<_>>();
 
-        let res = self.execute_queries(sql_queries).await.map_err(|e| {
+        let queried_tables = self.execute_queries(sql_queries).await.map_err(|e| {
             Error::new(
                 ErrorKind::InvalidData,
                 format!("Error when querying main data. {}", e),
             )
         })?;
-        Ok((res, special_queries))
+        let tables = sql_rows
+            .into_iter()
+            .zip(queried_tables)
+            .map(|((collection_view_id, _), (name, table))| (collection_view_id, name, table))
+            .collect::<Vec<_>>();
+
+        Ok((tables, special_queries))
+    }
+
+    async fn get_all_collection_view_column_widths(
+        &self,
+    ) -> Result<HashMap<u32, HashMap<String, f32>>, Error> {
+        let rows: Vec<(u32, String)> =
+            sqlx::query_as("SELECT id, column_sizes FROM collection_view")
+                .fetch_all(&*self.pool)
+                .await
+                .map_err(Error::other)?;
+
+        let widths = rows
+            .into_iter()
+            .map(|(collection_view_id, widths_json)| {
+                let parsed =
+                    serde_json::from_str::<HashMap<String, f32>>(&widths_json).unwrap_or_default();
+                (collection_view_id, parsed)
+            })
+            .collect::<HashMap<_, _>>();
+        Ok(widths)
+    }
+
+    async fn update_collection_view_column_widths(
+        &self,
+        collection_view_id: u32,
+        widths: HashMap<String, f32>,
+    ) -> Result<(), Error> {
+        let widths_json = serde_json::to_string(&widths).map_err(Error::other)?;
+        sqlx::query("UPDATE collection_view SET column_sizes = ? WHERE id = ?")
+            .bind(widths_json)
+            .bind(collection_view_id)
+            .execute(&*self.pool)
+            .await
+            .map_err(Error::other)?;
+
+        Ok(())
+    }
+
+    async fn get_pinned_views(&self) -> Result<Vec<domain::clean::pinned_view::PinnedView>, Error> {
+        let pinned_views: Vec<domain::clean::pinned_view::PinnedView> = sqlx::query_as(
+            "
+            SELECT id, view_id, position_x, position_y, width, height, z_index
+            FROM pinned_view
+            ORDER BY z_index DESC
+            ",
+        )
+        .fetch_all(&*self.pool)
+        .await
+        .map_err(Error::other)?;
+
+        Ok(pinned_views)
+    }
+
+    async fn get_pinned_view_data(&self) -> Result<Vec<(u32, String, Table)>, Error> {
+        let query_rows: Vec<(u32, String)> = sqlx::query_as(
+            "SELECT pv.view_id, v.query
+             FROM view v
+             JOIN pinned_view pv ON v.id = pv.view_id
+             ORDER BY pv.z_index DESC",
+        )
+        .fetch_all(&*self.pool)
+        .await
+        .map_err(Error::other)?;
+
+        let sql_rows: Vec<(u32, String)> = query_rows
+            .into_iter()
+            .filter(|(_, query)| !is_special_query(query.as_str()))
+            .collect();
+
+        let sql_queries = sql_rows
+            .iter()
+            .map(|(_, query)| query.clone())
+            .collect::<Vec<_>>();
+        let tables = self.execute_queries(sql_queries).await?;
+
+        Ok(sql_rows
+            .into_iter()
+            .zip(tables)
+            .map(|((view_id, _), (name, table))| (view_id, name, table))
+            .collect())
+    }
+
+    async fn get_views_with_pin_info(
+        &self,
+    ) -> Result<Vec<domain::dirty::view::ViewWithPinInfo>, Error> {
+        #[derive(sqlx::FromRow)]
+        struct ViewPinJoin {
+            view_id: u32,
+            name: String,
+            query: String,
+            pinned: i32,
+            position_x: Option<f64>,
+            position_y: Option<f64>,
+            width: Option<f64>,
+            height: Option<f64>,
+        }
+
+        let results: Vec<ViewPinJoin> = sqlx::query_as(
+            "SELECT v.id as view_id, v.name, v.query,
+                    CASE WHEN pv.id IS NOT NULL THEN 1 ELSE 0 END as pinned,
+                    pv.position_x, pv.position_y, pv.width, pv.height
+             FROM view v
+             LEFT JOIN pinned_view pv ON v.id = pv.view_id",
+        )
+        .fetch_all(&*self.pool)
+        .await
+        .map_err(Error::other)?;
+
+        Ok(results
+            .into_iter()
+            .map(|r| domain::dirty::view::ViewWithPinInfo {
+                view_id: r.view_id,
+                name: r.name,
+                query: r.query,
+                pinned: r.pinned == 1,
+                position_x: r.position_x,
+                position_y: r.position_y,
+                width: r.width,
+                height: r.height,
+            })
+            .collect())
+    }
+
+    async fn pin_view(&self, view_id: u32, position_x: f64, position_y: f64) -> Result<(), Error> {
+        // Get max z_index and increment it
+        let max_z_index: Option<i32> = sqlx::query_scalar("SELECT MAX(z_index) FROM pinned_view")
+            .fetch_optional(&*self.pool)
+            .await
+            .map_err(Error::other)?
+            .flatten();
+
+        let new_z_index = max_z_index.unwrap_or(0) + 1;
+
+        // Check if already pinned
+        let existing: Option<u32> =
+            sqlx::query_scalar("SELECT id FROM pinned_view WHERE view_id = ?")
+                .bind(view_id)
+                .fetch_optional(&*self.pool)
+                .await
+                .map_err(Error::other)?;
+
+        if existing.is_some() {
+            // Update existing pin
+            sqlx::query(
+                "UPDATE pinned_view SET position_x = ?, position_y = ?, z_index = ? WHERE view_id = ?"
+            )
+            .bind(position_x)
+            .bind(position_y)
+            .bind(new_z_index)
+            .bind(view_id)
+            .execute(&*self.pool)
+            .await
+            .map_err(Error::other)?;
+        } else {
+            // Insert new pin
+            sqlx::query(
+                "INSERT INTO pinned_view (view_id, position_x, position_y, z_index) VALUES (?, ?, ?, ?)"
+            )
+            .bind(view_id)
+            .bind(position_x)
+            .bind(position_y)
+            .bind(new_z_index)
+            .execute(&*self.pool)
+            .await
+            .map_err(Error::other)?;
+        }
+
+        Ok(())
+    }
+
+    async fn unpin_view(&self, view_id: u32) -> Result<(), Error> {
+        sqlx::query("DELETE FROM pinned_view WHERE view_id = ?")
+            .bind(view_id)
+            .execute(&*self.pool)
+            .await
+            .map_err(Error::other)?;
+
+        Ok(())
+    }
+
+    async fn update_view_position(
+        &self,
+        view_id: u32,
+        position_x: f64,
+        position_y: f64,
+    ) -> Result<(), Error> {
+        sqlx::query("UPDATE pinned_view SET position_x = ?, position_y = ? WHERE view_id = ?")
+            .bind(position_x)
+            .bind(position_y)
+            .bind(view_id)
+            .execute(&*self.pool)
+            .await
+            .map_err(Error::other)?;
+
+        Ok(())
+    }
+
+    async fn update_view_size(&self, view_id: u32, width: f64, height: f64) -> Result<(), Error> {
+        sqlx::query("UPDATE pinned_view SET width = ?, height = ? WHERE view_id = ?")
+            .bind(width)
+            .bind(height)
+            .bind(view_id)
+            .execute(&*self.pool)
+            .await
+            .map_err(Error::other)?;
+
+        Ok(())
     }
 }

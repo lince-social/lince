@@ -8,7 +8,9 @@
 
 #let folder_name = sys.inputs.at("dir", default: "2025_12")
 
-#let latest = json(folder_name + "/data.json")
+#let year = folder_name.split("_").at(0)
+#let latest = json(year + "/" + folder_name + ".json")
+#let latest_data = latest.at(0, default: latest)
 
 #let date_parts = folder_name.split("_")
 #let current_year = date_parts.at(0)
@@ -77,6 +79,18 @@
   }
 }
 
+#let resolve-image-path(image-name) = {
+  if image-name.starts-with("media/") {
+    "/documents/" + image-name
+  } else if image-name.starts-with("year/") {
+    year + "/" + image-name.slice(5)
+  } else if image-name.contains("/") {
+    "/documents/media/" + image-name
+  } else {
+    year + "/" + image-name
+  }
+}
+
 #let act(str) = [
   ==
   #align(center + horizon)[
@@ -90,7 +104,7 @@
 ]
 
 #let parts(str) = [
-  #for i in latest.at(str) [
+  #for i in latest_data.at(str, default: ()) [
     == #for (code, _) in languages {
       strings.at(str).at(code)
       if code != languages.keys().last() { " | " }
@@ -107,7 +121,7 @@
             #render-i18n(i)
           ],
           align(center + horizon)[
-            #image("/documents/media/" + i.image, width: 90%)
+            #image(resolve-image-path(i.image), width: 90%)
           ],
         )
       ]

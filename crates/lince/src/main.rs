@@ -2,32 +2,33 @@
 
 #[cfg(feature = "karma")]
 use application::karma::karma_deliver;
-use injection::cross_cutting::InjectedServices;
-use injection::cross_cutting::dependency_injection;
-use persistence::management::{connection::connection, schema::schema};
-use std::time::Duration;
-use std::{env, io::Error, sync::Arc};
+use injection::cross_cutting::{InjectedServices, dependency_injection};
+use persistence::connection::connection;
+use persistence::seeder::seed;
+use std::{env, io::Error, sync::Arc, time::Duration};
 #[cfg(feature = "tui")]
 use tui::tui_app;
 use utils::logging::{LogEntry, log};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
+    let args = env::args().collect::<Vec<String>>();
+    if args.iter().any(|arg| arg == "--help" || arg == "-h") {
+        print_help();
+        return Ok(());
+    }
+
     let db = Arc::new(connection().await.inspect_err(|e| {
         log(LogEntry::Error(e.kind(), e.to_string()));
     })?);
-    schema(db.clone()).await.inspect_err(|e| {
-        log(LogEntry::Error(e.kind(), e.to_string()));
-    })?;
-    let services = dependency_injection(db.clone());
-    let args = env::args().collect::<Vec<String>>();
+    sqlx::migrate!("../../migrations")
+        .run(&*db)
+        .await
+        .map_err(Error::other)?;
 
-    // if args.contains(&"migrate".to_string()) {
-    //     println!("Executing migration...");
-    //     execute_migration(db.clone()).await.inspect_err(|e| {
-    //         log(LogEntry::Error(e.kind(), e.to_string()));
-    //     })?;
-    // }
+    seed(&db).await.map_err(Error::other)?;
+
+    let services = dependency_injection(db.clone());
 
     #[cfg(feature = "gui")]
     if let Err(e) = start_gui(args.clone(), services.clone()).await {
@@ -45,9 +46,22 @@ async fn main() -> Result<(), Error> {
     Ok(())
 }
 
+fn print_help() {
+    println!("Usage: lince [OPTIONS]");
+    println!();
+    println!("Options:");
+    println!("  -h, --help            Show this help message");
+    #[cfg(feature = "gui")]
+    println!("      --guiless        Disable GUI startup");
+    #[cfg(feature = "karma")]
+    println!("      --karmaless       Disable karma delivery loop");
+    println!();
+    println!("To learn more visit https://lince.social")
+}
+
 #[cfg(feature = "gui")]
 async fn start_gui(args: Vec<String>, services: InjectedServices) -> Result<(), Error> {
-    if args.contains(&"gui".to_string()) {
+    if !args.contains(&"--guiless".to_string()) {
         use application::gpui::get_gpui_startup_data;
         use gui::app::gpui_app;
 
@@ -61,15 +75,17 @@ async fn start_gui(args: Vec<String>, services: InjectedServices) -> Result<(), 
 
 #[cfg(feature = "tui")]
 async fn start_tui(args: Vec<String>, services: InjectedServices) -> Result<(), Error> {
-    if args.contains(&"tui".to_string()) {
-        tui_app(services.clone()).await;
+    if !args.contains(&"--tuiless".to_string()) {
+        while let Err(e) = tui_app(services.clone()).await {
+            println!("Tui error: {e}")
+        }
     }
     Ok(())
 }
 
 #[cfg(feature = "karma")]
 async fn start_karma(args: Vec<String>, services: InjectedServices) -> Result<(), Error> {
-    if args.contains(&"karma".to_string()) {
+    if !args.contains(&"--karmaless".to_string()) {
         loop {
             println!("Delivering Karma");
             let vec_karma = services.repository.karma.get_active(None).await;

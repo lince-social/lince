@@ -1,11 +1,18 @@
 use chrono::{Datelike, Duration, NaiveDateTime, TimeZone, Utc};
 use domain::clean::frequency::Frequency;
 use injection::cross_cutting::InjectedServices;
+use utils::log;
 
 pub async fn frequency_check(services: InjectedServices, id: u32) -> (u32, Option<Frequency>) {
     let frequency = match services.repository.frequency.get(id).await {
         Ok(Some(f)) => f,
-        _ => return (0, None),
+        Err(e) => {
+            log!(e, "Failed to get frequency");
+            return (0, None);
+        }
+        _ => {
+            return (0, None);
+        }
     };
 
     let now = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();

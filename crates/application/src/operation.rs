@@ -1,64 +1,14 @@
-use crate::{command::karma_execute_command, karma::karma_deliver};
-use domain::dirty::operation::{OperationActions, OperationTables};
+use crate::{
+    command::{CommandOrigin, spawn_command_buffer_session_by_id},
+    karma::karma_deliver,
+};
+use domain::dirty::operation::{DatabaseTable, OperationActions};
 use injection::cross_cutting::InjectedServices;
 use utils::logging::{LogEntry, log};
 
 use regex::Regex;
 use std::io::Error;
-
-fn parse_table(operation: String) -> String {
-    let re = Regex::new(r"\d+").unwrap();
-    let operation_parts: Vec<&str> = operation.split_whitespace().collect();
-    for part in operation_parts {
-        if let Some(matched) = re.find(part) {
-            match matched.as_str() {
-                "0" => return "configuration".to_string(),
-                "1" => return "collection".to_string(),
-                "2" => return "view".to_string(),
-                "3" => return "collection_view".to_string(),
-                "4" => return "record".to_string(),
-                "5" => return "karma_condition".to_string(),
-                "6" => return "karma_consequence".to_string(),
-                "7" => return "karma".to_string(),
-                "8" => return "command".to_string(),
-                "9" => return "frequency".to_string(),
-                "10" => return "sum".to_string(),
-                "11" => return "history".to_string(),
-                "12" => return "dna".to_string(),
-                "13" => return "transfer".to_string(),
-                "14" => return "query".to_string(),
-                _ => continue,
-            }
-        }
-    }
-
-    let re = Regex::new(r"\w+").unwrap();
-    let operation_parts: Vec<&str> = operation.split_whitespace().collect();
-    for part in operation_parts {
-        if let Some(matched) = re.find(part) {
-            match matched.as_str() {
-                "configuration" => return "configuration".to_string(),
-                "collection" => return "collection".to_string(),
-                "view" => return "view".to_string(),
-                "collection_view" => return "collection_view".to_string(),
-                "record" => return "record".to_string(),
-                "karma_condition" => return "karma_condition".to_string(),
-                "karma_consequence" => return "karma_consequence".to_string(),
-                "karma" => return "karma".to_string(),
-                "command" => return "command".to_string(),
-                "frequency" => return "frequency".to_string(),
-                "sum" => return "sum".to_string(),
-                "history" => return "history".to_string(),
-                "dna" => return "dna".to_string(),
-                "transfer" => return "transfer".to_string(),
-                "query" => return "query".to_string(),
-                _ => continue,
-            }
-        }
-    }
-
-    "record".to_string()
-}
+use std::str::FromStr;
 
 fn parse_id(part: &str) -> Option<&str> {
     let re = Regex::new(r"\d+").unwrap();
@@ -68,6 +18,56 @@ fn parse_id(part: &str) -> Option<&str> {
     }
 
     None
+}
+
+fn parse_create_action(operation: &str) -> bool {
+    let compact = operation
+        .chars()
+        .filter(|ch| !ch.is_whitespace())
+        .collect::<String>()
+        .to_lowercase();
+
+    let short_pattern = Regex::new(r"^(\d+c|c\d+)$").unwrap();
+    if short_pattern.is_match(&compact) {
+        return true;
+    }
+
+    operation.split_whitespace().any(|part| {
+        matches!(
+            part.to_lowercase().as_str(),
+            "c" | "create" | "criar" | "novo"
+        )
+    })
+}
+
+fn parse_operation_table(operation: &str) -> Option<DatabaseTable> {
+    if let Some(id) = parse_id(operation)
+        && let Ok(parsed_id) = id.parse::<u32>()
+        && let Some(table) = DatabaseTable::from_id(parsed_id)
+    {
+        return Some(table);
+    }
+
+    let word_regex = Regex::new(r"[a-zA-Z_]+").unwrap();
+    for matched in word_regex.find_iter(operation) {
+        if let Ok(table) = DatabaseTable::from_str(matched.as_str()) {
+            return Some(table);
+        }
+    }
+
+    None
+}
+
+fn parse_operation_result(operation: &str) -> Vec<(DatabaseTable, OperationActions)> {
+    let mut results = Vec::new();
+
+    if parse_create_action(operation)
+        && let Some(table) = parse_operation_table(operation)
+    {
+        results.push((table, OperationActions::Create));
+    }
+
+    results
 }
 
 pub async fn parse_operation_and_execute(services: InjectedServices, operation: String) {
@@ -110,13 +110,17 @@ pub async fn parse_operation_and_execute(services: InjectedServices, operation: 
                     }
                 }
                 "s" | "command" | "shell" | "shell command" => {
-                    if let Some(id) = parse_id(&operation)
-                        && (karma_execute_command(services.clone(), id.parse::<u32>().unwrap_or(0))
-                            .await)
-                            .is_none()
-                    {
-                        let e = Error::other(format!("Failed to run command with id: {}", id));
-                        log(LogEntry::Error(e.kind(), e.to_string()))
+                    if let Some(id) = parse_id(&operation) {
+                        let parsed_id = id.parse::<u32>().unwrap_or(0);
+                        if let Err(e) = spawn_command_buffer_session_by_id(
+                            services.clone(),
+                            parsed_id,
+                            CommandOrigin::Operation,
+                        )
+                        .await
+                        {
+                            log(LogEntry::Error(e.kind(), e.to_string()))
+                        }
                     }
                 }
 
@@ -129,7 +133,7 @@ pub async fn parse_operation_and_execute(services: InjectedServices, operation: 
 pub async fn operation_execute(
     services: InjectedServices,
     operation: String,
-) -> Result<Vec<(OperationTables, OperationActions)>, Error> {
+) -> Result<Vec<(DatabaseTable, OperationActions)>, Error> {
     let only_digits_regex = Regex::new(r"^\d+$").unwrap();
     if only_digits_regex.is_match(&operation) {
         let id = operation.parse::<u32>().unwrap();
@@ -150,14 +154,7 @@ pub async fn operation_execute(
         }
     }
 
-    // match parse_operation_and_execute(services.clone(), operation).await {
-    //     None => presentation_html_section_body(services).await,
-    //     Some(element) => element,
-    // }
-    Ok(vec![])
-}
+    parse_operation_and_execute(services.clone(), operation.clone()).await;
 
-// Pega a operação que chegou e categoriza ela
-// Se for Numbers zera rqNumbers, devolve: Enum
-// Se for numeros e letras faz o parse e monta o Enum, devolve: Enum porque cada presentation tem que poder lidar de forma diferente com uma operação, a operação faz o parsing, e só
-// a execução de mudança de coleção ativa, refetch dos dados, enviar comandos depende do frontend pq ele precisa poder lidar com o ato em si, não pegar um memorando dele.
+    Ok(parse_operation_result(&operation))
+}

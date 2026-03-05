@@ -17,3 +17,16 @@ impl Default for QueriedView {
         }
     }
 }
+
+// New struct to represent a view with its pin information
+#[derive(Debug, Clone)]
+pub struct ViewWithPinInfo {
+    pub view_id: u32,
+    pub name: String,
+    pub query: String,
+    pub pinned: bool,
+    pub position_x: Option<f64>,
+    pub position_y: Option<f64>,
+    pub width: Option<f64>,
+    pub height: Option<f64>,
+}

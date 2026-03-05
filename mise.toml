@@ -1,109 +1,159 @@
-[tools]
-rust = "stable"
-"cargo:mprocs" = "latest"
-"cargo:bacon" = "latest"
-"cargo:git-cliff" = "latest"
-"cargo:cargo-edit" = "latest"
-"cargo:cargo-udeps" = "latest"
-# Typst tools
-"npm:tinymist" = "latest"
-typst = "latest"
+[env]
+RUST_CHANNEL = "stable"
+DOCS_ROOT = "documents"
+FONT_PATH = "documents/font/IBM_Plex_Sans/static"
 
-[tasks.install]
-description = "Install core rust tooling"
-run = "cargo install mprocs bacon git-cliff cargo-edit cargo-udeps --locked"
+[tools]
+rust = "{{env.RUST_CHANNEL}}"
 
 [tasks.update]
 description = "Update rustup and dependencies"
-run = """
-rustup self update
-rustup update nightly
-cargo upgrade
-"""
+run = "rustup self update && rustup update {{env.RUST_CHANNEL}} && cargo upgrade"
 
 [tasks.off]
 description = "Auto-fix code and clippy warnings"
+tools = { "cargo:mprocs" = "latest", "cargo:bacon" = "latest" }
 run = """
-cargo upgrade
-cargo fix --broken-code --allow-dirty && \
+cargo fix --broken-code --allow-dirty
 cargo clippy --fix --allow-dirty --quiet >/dev/null 2>&1
 """
 
-[tasks.run]
-description = "Run with bacon background jobs"
+[tasks.dev]
+description = "Run with mprocs/bacon background jobs"
+tools = { "cargo:mprocs" = "latest", "cargo:bacon" = "latest" }
 run = 'mprocs "bacon . --job fix" "bacon . --job run"'
 
-[tasks.dev]
-description = "Systemd service management and bacon"
+[tasks.service]
+description = "Systemd service management + bacon + cargo run"
+tools = { "cargo:mprocs" = "latest", "cargo:bacon" = "latest" }
 run = """
 mprocs \
 "systemctl --user restart lince.service && journalctl --user -u lince.service -f --output=cat" \
 "systemctl --user stop lince.service && journalctl --user -u lince.service -f --output=cat" \
 "bacon . --job fix" \
-"cargo run -- html gpui"
+"cargo run -- karma gui"
 """
+
+[tasks.migrate]
+description = "Create a reversible SQL migration"
+tools = {"cargo:sqlx-cli" = "latest"}
+usage = "arg '<name>' help='The name of the migration'"
+run = """
+echo Creating migration: $usage_name
+sqlx migrate add -r $usage_name
+echo Created migration: $usage_name
+"""
+
 
 [tasks.docs]
 description = "Start typst documentation preview"
+tools = { "tinymist" = "latest", "typst" = "latest" }
+usage = """
+flag "-l --light" help="Use light mode in tinymist preview (default: dark)"
+"""
 run = """
+LINCE_VERSION=$(awk 'BEGIN{in_pkg=0} /^[[]package[]]$/{in_pkg=1;next} /^[[]/{in_pkg=0} in_pkg&&/^version = /{print $3;exit}' crates/lince/Cargo.toml | xargs)
+
+# Default to dark mode, use light if --light flag is passed
+if [ "${usage_light:-false}" = "true" ]; then
+  PREVIEW_DARK="false"
+else
+  PREVIEW_DARK="true"
+fi
+
+compile_docs() {
+    echo '  → Compiling light version...'
+    typst compile --root . --input dark=false --input lince_version="$LINCE_VERSION" documents/content/documentation/main.typ documents/content/documentation/lince-documentation-light.pdf
+    echo '  → Compiling dark version...'
+    typst compile --root . --input dark=true --input lince_version="$LINCE_VERSION" documents/content/documentation/main.typ documents/content/documentation/lince-documentation-dark.pdf
+    echo 'Done!'
+}
+
+trap compile_docs EXIT
+
 tinymist preview \
+--root . \
 --control-plane-host 127.0.0.1:3002 \
 --data-plane-host 127.0.0.1:3001 \
 --static-file-host 127.0.0.1:3003 \
---font-path documentation/font/IBM_Plex_Sans/static \
---invert-colors='{"rest":"always", "image": "never"}' \
-documents/content/documentation/main.typ
+--input dark=$PREVIEW_DARK \
+--input lince_version=$LINCE_VERSION \
+{{env.DOCS_ROOT}}/content/documentation/main.typ
 """
 
 [tasks.tmil]
-description = "This Month in Lince documentation"
+description = "This Month in Lince (Latest Month Preview)"
+tools = { "tinymist" = "latest", "typst" = "latest", "pipx:touying" = "latest" }
 run = """
-SEARCH_PATH="documents/content/this_month_in_lince"
-LATEST_DIR=$(ls -d $SEARCH_PATH/20*/ | sort -V | tail -n 1 | xargs basename)
+SEARCH_PATH="{{env.DOCS_ROOT}}/content/this_month_in_lince"
+DEFAULT_DIR="2025_12"
+ACTIVE_YEAR=$(find "$SEARCH_PATH" -mindepth 1 -maxdepth 1 -type d -name '20*' -printf '%f\\n' | sort -V | tail -n 1)
+LATEST_DIR=""
+if [ -n "$ACTIVE_YEAR" ]; then
+  LATEST_DIR=$(find "$SEARCH_PATH/$ACTIVE_YEAR" -mindepth 1 -maxdepth 1 -type f -name "${ACTIVE_YEAR}_*.json" -printf '%f\\n' | sed 's/\\.json$//' | sort -V | tail -n 1)
+fi
+if [ -z "$LATEST_DIR" ]; then
+  LATEST_DIR="$DEFAULT_DIR"
+fi
+SYS_INPUTS=$(printf '{"dir":"%s"}' "$LATEST_DIR")
 
 echo "🚀 Using latest data from: $LATEST_DIR"
 
-# Cleanup/Compile on exit
-trap "typst compile --root documents --input dir=$LATEST_DIR $SEARCH_PATH/main.typ" EXIT
-trap "touying compile --root documents --format html --input dir=$LATEST_DIR $SEARCH_PATH/main.typ" EXIT
+trap 'touying compile --root . --format html --sys-inputs "$SYS_INPUTS" "$SEARCH_PATH/main.typ"' EXIT
 
 tinymist preview \
-  --root documents \
+  --root . \
   --control-plane-host 127.0.0.1:3002 \
   --data-plane-host 127.0.0.1:3001 \
   --static-file-host 127.0.0.1:3003 \
-  --font-path documents/font/IBM_Plex_Sans/static \
-  --invert-colors='{"rest":"always", "image": "never"}' \
+  --font-path {{env.FONT_PATH}} \
   --input dir=$LATEST_DIR \
   $SEARCH_PATH/main.typ
 """
 
-[tasks.posts]
-description = "Generate PNGs for social media posts"
-run = """
-find documents/content/social_media_posts -name '*.json' -type f | while read -r json; do
-  rel="${json#documents/content/social_media_posts/}"
-  dir="$(dirname "$json")"
-  base="$(basename "$json" .json)"
-  typst compile --root ./ --format png --input json=\"$rel\" \
-    documents/content/social_media_posts/main.typ \
-    \"$dir/${base}-{0p}.png\"
-done
-"""
-
-[tasks.post]
-description = "Preview social media posts"
-run = """
-tinymist preview \
---root ./ \
---control-plane-host 127.0.0.1:3002 \
---data-plane-host 127.0.0.1:3001 \
---static-file-host 127.0.0.1:3003 \
---font-path documentation/font/IBM_Plex_Sans/static \
---invert-colors='{"rest":"always", "image": "never"}' \
-documents/content/social_media_posts/main.typ
-"""
-
 [tasks.release]
 description = "Automated release workflow"
-run = "./scripts/release.sh"
+tools = { "cargo:git-cliff" = "latest", "cargo:cargo-edit" = "latest", "gh" = "latest" }
+run = """
+set -e
+[[ $(git rev-parse --abbrev-ref HEAD) != "main" ]] && echo "❌ main only" && exit 1
+gh auth status >/dev/null || { echo "🔑 login required"; exit 1; }
+
+SUGGESTED_VER=$(git cliff --bumped-version 2>/dev/null || echo "0.1.0")
+read -rp "Version (auto: $SUGGESTED_VER): " USER_INPUT
+VERSION=${USER_INPUT:-$SUGGESTED_VER}
+[[ $VERSION != v* ]] && VERSION="v$VERSION"
+
+git cliff --unreleased --bump --tag "$VERSION" -o CHANGELOG.md
+cargo set-version "${VERSION#v}"
+git add . && git commit -m "chore(release): $VERSION" && git tag -a "$VERSION" -m "$VERSION"
+git push origin main "$VERSION"
+gh run list --workflow=build-release --limit 1 --json url -q '.[0].url'
+"""
+
+[tasks.cross]
+description = "Cross-build using cross-rs"
+tools = { "cargo:cross" = "latest" }
+run = "docker pull ghcr.io/cross-rs/x86_64-unknown-linux-gnu:main --platform linux/x86_64 && cross build --target x86_64-unknown-linux-gnu --release"
+
+[tasks.postgres]
+description = "Start local Postgres latest"
+tools = { "postgres" = "latest" }
+run = """
+PGROOT="${PWD}/.local/postgres-latest"
+PGDATA="${PGROOT}/data"
+PGLOG="${PGROOT}/postgres.log"
+mkdir -p "${PGROOT}"
+
+if [ ! -d "${PGDATA}" ]; then
+  initdb -D "${PGDATA}" -U postgres -A trust
+fi
+
+if pg_ctl -D "${PGDATA}" status >/dev/null 2>&1; then
+  echo "postgres already running"
+else
+  pg_ctl -D "${PGDATA}" -l "${PGLOG}" -o "-p 6174" start
+fi
+
+echo "postgres://postgres@localhost:6174/postgres"
+"""

@@ -1,25 +1,36 @@
-use super::super::{
-    themes::catppuccin_mocha::{self, red, *},
-    workspace::Workspace,
-};
-use domain::dirty::collection::CollectionRow;
+use crate::themes::catppuccin_macchiato::{blue, red, yellow};
+
+use super::super::{themes::catppuccin_macchiato::*, workspace::Workspace};
+use domain::dirty::{collection::CollectionRow, view::ViewWithPinInfo};
 use gpui::{
     Context, InteractiveElement, IntoElement, ParentElement, Render, StatefulInteractiveElement,
     Styled, Window, div, *,
 };
 
+const DEFAULT_PIN_WIDTH: f64 = 500.0;
+const DEFAULT_PIN_HEIGHT: f64 = 400.0;
+const DEFAULT_PIN_MARGIN: f64 = 24.0;
+
 #[derive(Clone)]
 pub struct CollectionList {
     pub hovered: bool,
+    pub hovered_collection_id: Option<u32>,
     pub collections: Vec<CollectionRow>,
+    pub views_with_pin_info: Vec<ViewWithPinInfo>,
     pub workspace: WeakEntity<Workspace>,
 }
 
 impl CollectionList {
-    pub fn new(collections: Vec<CollectionRow>, workspace: WeakEntity<Workspace>) -> Self {
+    pub fn new(
+        collections: Vec<CollectionRow>,
+        views_with_pin_info: Vec<ViewWithPinInfo>,
+        workspace: WeakEntity<Workspace>,
+    ) -> Self {
         Self {
             hovered: false,
+            hovered_collection_id: None,
             collections,
+            views_with_pin_info,
             workspace,
         }
     }
@@ -29,13 +40,15 @@ impl CollectionList {
 struct CollectionButton {
     id: u32,
     name: SharedString,
+    show_add: bool,
     workspace: WeakEntity<Workspace>,
 }
 
 impl RenderOnce for CollectionButton {
     fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
         let id = self.id;
-        let weak = self.workspace;
+        let weak = self.workspace.clone();
+        let weak_for_add = self.workspace;
 
         div()
             .p_0()
@@ -62,6 +75,28 @@ impl RenderOnce for CollectionButton {
                     .rounded_xs()
                     .child(self.name),
             )
+            .children(if self.show_add {
+                Some(
+                    div()
+                        .bg(surface0())
+                        .hover(|s| s.bg(surface1()))
+                        .rounded_xs()
+                        .p_0()
+                        .px_1()
+                        .child("+")
+                        .on_mouse_up(MouseButton::Left, move |_evt, _win, cx| {
+                            if let Some(ws) = weak_for_add.upgrade() {
+                                ws.update(cx, |ws, cx| {
+                                    ws.open_collection_view_creation_modal(id, cx);
+                                    cx.stop_propagation();
+                                });
+                            }
+                        })
+                        .into_any_element(),
+                )
+            } else {
+                None
+            })
             .on_mouse_up(MouseButton::Left, move |_evt, _win, cx| {
                 if let Some(ws) = weak.upgrade() {
                     ws.update(cx, |ws, cx| {
@@ -77,6 +112,8 @@ struct CollectionViewRow {
     id: u32,
     quantity: i32,
     name: SharedString,
+    query: SharedString,
+    pinned: bool,
 
     collection_id: u32,
 
@@ -85,26 +122,77 @@ struct CollectionViewRow {
 
 impl RenderOnce for CollectionViewRow {
     fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
+        let view_id = self.id;
+        let pinned = self.pinned;
+        let is_special = self.query.as_ref() == "command_buffer";
+        let workspace_for_toggle = self.workspace.clone();
+        let workspace_for_pin = self.workspace.clone();
+
+        let pin_control = if is_special {
+            div()
+                .p_0()
+                .px_1()
+                .rounded_xs()
+                .text_xs()
+                .bg(surface0())
+                .text_color(text())
+                .child("view")
+                .into_any_element()
+        } else {
+            div()
+                .p_0()
+                .px_1()
+                .rounded_xs()
+                .text_xs()
+                .bg(if pinned { yellow() } else { surface0() })
+                .hover(|s| s.bg(if pinned { peach() } else { surface1() }))
+                .text_color(if pinned { crust() } else { text() })
+                .child(if pinned { "📌" } else { "📍" })
+                .on_mouse_up(MouseButton::Left, move |_evt, win, cx| {
+                    if let Some(ws) = workspace_for_pin.upgrade() {
+                        let viewport = win.viewport_size();
+                        let viewport_width = f64::from(f32::from(viewport.width));
+                        let viewport_height = f64::from(f32::from(viewport.height));
+                        let position_x =
+                            (viewport_width - DEFAULT_PIN_WIDTH - DEFAULT_PIN_MARGIN).max(0.0);
+                        let position_y =
+                            (viewport_height - DEFAULT_PIN_HEIGHT - DEFAULT_PIN_MARGIN).max(0.0);
+                        ws.update(cx, |ws, cx| {
+                            if pinned {
+                                ws.unpin_view(view_id, cx);
+                            } else {
+                                ws.pin_view(view_id, position_x, position_y, cx);
+                            }
+                        });
+                    }
+                })
+                .into_any_element()
+        };
+
         div()
             .p_0()
             .px_1()
-            .rounded_xs()
-            .text_color(crust())
-            .bg(if self.quantity == 0 {
-                red()
-            } else {
-                catppuccin_mocha::blue()
-            })
+            .flex()
+            .flex_row()
+            .gap_1()
             .items_center()
-            .hover(|s| s.bg(if self.quantity == 0 { peach() } else { mauve() }))
-            .child(self.name)
-            .on_mouse_up(MouseButton::Left, move |_evt, _win, cx| {
-                if let Some(ws) = self.workspace.upgrade() {
-                    ws.update(cx, |ws, cx| {
-                        ws.on_view_selected(cx, self.collection_id, self.id);
-                    });
-                }
-            })
+            .child(
+                div()
+                    .rounded_xs()
+                    .text_color(crust())
+                    .bg(if self.quantity == 0 { red() } else { blue() })
+                    .items_center()
+                    .hover(|s| s.bg(if self.quantity == 0 { peach() } else { mauve() }))
+                    .child(self.name)
+                    .on_mouse_up(MouseButton::Left, move |_evt, _win, cx| {
+                        if let Some(ws) = workspace_for_toggle.upgrade() {
+                            ws.update(cx, |ws, cx| {
+                                ws.on_view_selected(cx, self.collection_id, self.id);
+                            });
+                        }
+                    }),
+            )
+            .child(pin_control)
     }
 }
 impl Render for CollectionList {
@@ -130,25 +218,47 @@ impl Render for CollectionList {
                 }]
                     .iter()
                     .map(|(collection, views)| {
+                        let collection_id = collection.id;
                         div()
+                            .id(("collection_row", collection_id))
                             .flex()
                             .flex_row()
                             .items_center()
                             .gap_1()
+                            .on_hover(cx.listener(move |this, hovered, _window, cx| {
+                                if *hovered {
+                                    this.hovered_collection_id = Some(collection_id);
+                                } else if this.hovered_collection_id == Some(collection_id) {
+                                    this.hovered_collection_id = None;
+                                }
+                                cx.notify();
+                            }))
                             .child(CollectionButton {
-                                id: collection.id,
+                                id: collection_id,
                                 name: SharedString::from(&collection.name),
+                                show_add: self.hovered_collection_id == Some(collection_id),
                                 workspace: weak.clone(),
                             })
                             .children(
                                 views
                                     .iter()
-                                    .map(|view| CollectionViewRow {
-                                        id: view.id,
-                                        quantity: view.quantity,
-                                        name: SharedString::from(&view.name),
-                                        collection_id: collection.id,
-                                        workspace: weak.clone(),
+                                    .map(|view| {
+                                        let pinned = self
+                                            .views_with_pin_info
+                                            .iter()
+                                            .find(|v| v.view_id == view.id)
+                                            .map(|v| v.pinned)
+                                            .unwrap_or(false);
+
+                                        CollectionViewRow {
+                                            id: view.id,
+                                            quantity: view.quantity,
+                                            name: SharedString::from(&view.name),
+                                            query: SharedString::from(&view.query),
+                                            pinned,
+                                            collection_id,
+                                            workspace: weak.clone(),
+                                        }
                                     })
                                     .collect::<Vec<_>>(),
                             )

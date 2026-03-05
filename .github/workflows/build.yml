@@ -51,7 +51,14 @@ jobs:
 
       - name: Build
         shell: bash
-        run: cargo build --release --target ${{ matrix.target }} --config 'build.rustflags=[]'
+        run: |
+          if [[ "${{ matrix.target }}" == "aarch64-apple-darwin" ]]; then
+            cargo build --release --target ${{ matrix.target }} \
+              --config 'build.rustflags=[]' \
+              --config "target.aarch64-apple-darwin.rustflags=['-C','target-feature=+neon,+aes,+sha2']"
+          else
+            cargo build --release --target ${{ matrix.target }} --config 'build.rustflags=[]'
+          fi
 
       - name: Package artifacts
         shell: bash

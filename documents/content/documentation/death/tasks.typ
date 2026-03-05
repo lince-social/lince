@@ -154,6 +154,11 @@
         - [ ] Paste from clipboard
     - [ ] Moving around pinned views is very weird, it's slow, and sometimes it feels like i can only move it so much in one direction, resizing is weird too. This happens with the Editable Cell modal so its probably the skeleton Area that has resize and moveable that is weird. Make sure you are optmizing it 100% and only saving the position and resize when the user stops doing that action, releasing the mouse.
   ],
+  task("Extensions")[
+    Be able to use a View someone else made.
+    How do we use it? Editing binary is not tha wae.
+    Can i write it in a language that is not Rust? An interface library that is not the one used by the GUI? Can I run ratatui?
+  ],
   task("SQL Query Editor GUI", contributors: (("@chicogborba", "wip"),))[
 
     THERE'S A FRAME IN EXCALIDRAW FOR THIS. Import the file at /assets/lince.excalidraw in the excalidraw.com website.

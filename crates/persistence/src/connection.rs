@@ -2,11 +2,19 @@ use sqlx::{
     Pool, Sqlite,
     sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteSynchronous},
 };
-use std::{io::Error, time::Duration};
+use std::{
+    fs::create_dir_all,
+    io::Error,
+    path::PathBuf,
+    time::Duration,
+};
 
 pub async fn connection() -> Result<Pool<Sqlite>, Error> {
-    let config_dir = dirs::config_dir().unwrap();
-    let db_path = format!("{}/lince/lince.db", config_dir.display());
+    let config_dir = dirs::config_dir()
+        .ok_or_else(|| Error::other("Unable to resolve user config directory"))?;
+    let lince_config_dir: PathBuf = config_dir.join("lince");
+    create_dir_all(&lince_config_dir)?;
+    let db_path = lince_config_dir.join("lince.db");
 
     let options = SqliteConnectOptions::new()
         .filename(db_path)

@@ -9,7 +9,7 @@
 
 Tool for registry, interconnection and automation of Needs and Contributions with open scope.
 
-Detailed explanations of what Lince is, how to run it and use it's ecosystem can be found in the [Dark Mode Documentation](https://raw.githubusercontent.com/lince-social/lince/dev/documents/content/documentation/main-dark.pdf)/[Light Mode Documentation](https://raw.githubusercontent.com/lince-social/lince/dev/documents/content/documentation/main-light.pdf).
+Detailed explanations of what Lince is, how to run it and use it's ecosystem can be found in the [Dark Mode Documentation](https://raw.githubusercontent.com/lince-social/lince/dev/documentation/lince-documentation-dark.pdf)/[Light Mode Documentation](https://raw.githubusercontent.com/lince-social/lince/dev/documentation/lince-documentation-light.pdf).
 
 Check the website [lince.social](https://lince.social) for more.
 

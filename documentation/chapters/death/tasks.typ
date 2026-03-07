@@ -1,5 +1,5 @@
-#import "../../../components/major.typ": major
-#import "../../../components/task.typ": task, task-board
+#import "../../components/chapter.typ": major
+#import "../../components/task.typ": task, task-board
 #import "@preview/cheq:0.3.0": checklist
 #show: checklist
 

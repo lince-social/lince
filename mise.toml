@@ -1,7 +1,6 @@
 [env]
 RUST_CHANNEL = "stable"
-DOCS_ROOT = "documents"
-FONT_PATH = "documents/font/IBM_Plex_Sans/static"
+DOCS_ROOT = "documentation"
 
 [tools]
 rust = "{{env.RUST_CHANNEL}}"
@@ -63,9 +62,9 @@ fi
 
 compile_docs() {
     echo '  → Compiling light version...'
-    typst compile --root . --input dark=false --input lince_version="$LINCE_VERSION" documents/content/documentation/main.typ documents/content/documentation/lince-documentation-light.pdf
+    typst compile --root . --input dark=false --input lince_version="$LINCE_VERSION" {{env.DOCS_ROOT}}/lince-documentation.typ {{env.DOCS_ROOT}}/lince-documentation-light.pdf
     echo '  → Compiling dark version...'
-    typst compile --root . --input dark=true --input lince_version="$LINCE_VERSION" documents/content/documentation/main.typ documents/content/documentation/lince-documentation-dark.pdf
+    typst compile --root . --input dark=true --input lince_version="$LINCE_VERSION" {{env.DOCS_ROOT}}/lince-documentation.typ {{env.DOCS_ROOT}}/lince-documentation-dark.pdf
     echo 'Done!'
 }
 
@@ -78,37 +77,7 @@ tinymist preview \
 --static-file-host 127.0.0.1:3003 \
 --input dark=$PREVIEW_DARK \
 --input lince_version=$LINCE_VERSION \
-{{env.DOCS_ROOT}}/content/documentation/main.typ
-"""
-
-[tasks.tmil]
-description = "This Month in Lince (Latest Month Preview)"
-tools = { "tinymist" = "latest", "typst" = "latest", "pipx:touying" = "latest" }
-run = """
-SEARCH_PATH="{{env.DOCS_ROOT}}/content/this_month_in_lince"
-DEFAULT_DIR="2025_12"
-ACTIVE_YEAR=$(find "$SEARCH_PATH" -mindepth 1 -maxdepth 1 -type d -name '20*' -printf '%f\\n' | sort -V | tail -n 1)
-LATEST_DIR=""
-if [ -n "$ACTIVE_YEAR" ]; then
-  LATEST_DIR=$(find "$SEARCH_PATH/$ACTIVE_YEAR" -mindepth 1 -maxdepth 1 -type f -name "${ACTIVE_YEAR}_*.json" -printf '%f\\n' | sed 's/\\.json$//' | sort -V | tail -n 1)
-fi
-if [ -z "$LATEST_DIR" ]; then
-  LATEST_DIR="$DEFAULT_DIR"
-fi
-SYS_INPUTS=$(printf '{"dir":"%s"}' "$LATEST_DIR")
-
-echo "🚀 Using latest data from: $LATEST_DIR"
-
-trap 'touying compile --root . --format html --sys-inputs "$SYS_INPUTS" "$SEARCH_PATH/main.typ"' EXIT
-
-tinymist preview \
-  --root . \
-  --control-plane-host 127.0.0.1:3002 \
-  --data-plane-host 127.0.0.1:3001 \
-  --static-file-host 127.0.0.1:3003 \
-  --font-path {{env.FONT_PATH}} \
-  --input dir=$LATEST_DIR \
-  $SEARCH_PATH/main.typ
+{{env.DOCS_ROOT}}/lince-documentation.typ
 """
 
 [tasks.release]

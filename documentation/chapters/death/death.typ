@@ -1,4 +1,4 @@
-#import "../../../components/major.typ": major
+#import "../../components/chapter.typ": major
 #import "tasks.typ"
 
 #major(
@@ -33,14 +33,6 @@ for it is the main one. The model of Lince can be a superset of many apps, and c
 
 Lince is actually not the app you install, that's a Lince Cell. When you have a group of Cells (or p2p nodes) you have
 a Lince Organ; people interacting to meed their needs (or others'). Lince is actually when all Cells and Organs work together to satiate everyone's Needs.
-It's only a complete animal when independent of platform, language, nationality
-[TODO: insert the rest of 'imagine all the people' by john lenon's lyrics here]... or footbal team,  people are working together like the image below:
-
-#figure(
-  image("../../../media/random/utopia_meme_1.jpg", width: 40%),
-  caption: [Society if freelancers had a lot of work: Green utopia with a gal petting a
-    tiger careful it might bite],
-)
 
 The assumption is that an app that is useful for a lot of cases and incentivizes people to help eachother, with no extra friction, is the best use of technology we can have. It will not solve anything by itself, but is is the best tool in the software part of the world.
 

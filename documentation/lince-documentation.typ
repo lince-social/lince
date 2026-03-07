@@ -1,7 +1,7 @@
-#import "birth/birth.typ"
-#import "aging/aging.typ"
-#import "sickness/sickness.typ"
-#import "death/death.typ"
+#import "chapters/birth/birth.typ"
+#import "chapters/aging/aging.typ"
+#import "chapters/sickness/sickness.typ"
+#import "chapters/death/death.typ"
 
 #import "@preview/hydra:0.6.2": hydra
 #import "@preview/cheq:0.3.0": checklist
@@ -14,8 +14,8 @@
 #let bg-color = if dark-mode { rgb("#000000") } else { white }
 #let text-color = if dark-mode { rgb("#eaeaea") } else { black }
 #let link-color = if dark-mode { rgb("#6ea8fe") } else { rgb("#0000EE") }
-#let logo-path = if dark-mode { "../../media/logo/white.svg" } else {
-  "../../media/logo/black.svg"
+#let logo-path = if dark-mode { "components/logo/white.svg" } else {
+  "components/logo/black.svg"
 }
 
 #set page(fill: bg-color)

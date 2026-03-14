@@ -145,8 +145,8 @@
     So the body of Record might be repertitive, like: Habit, Work.
     One might type only H and have [Habit, Work], [Habit, Health]... appear.
 
-    - [ ] Creation modal should have a size that is not bigger than max height, if it is, it has scroll.
-    - [ ] Keybinding consultation component with ease of access (maybe when operation input is focused in insert mode)
+    - [ ] Make a View with the 'cheat' Query that is a component with all the Operations and Keybinds
+    - [x] Keybinding consultation component with ease of access (maybe when operation input is focused in insert mode)
     - [ ] Editable Cell Ergonomics:
       - [ ] In normal and vim mode, being able to select text to:
         - [ ] Delete

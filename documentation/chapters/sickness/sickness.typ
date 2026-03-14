@@ -1,6 +1,4 @@
 #import "../../components/chapter.typ": major
-#import "@preview/cheq:0.3.0": checklist
-#show: checklist
 
 #major(
   "Sickness",
@@ -11,31 +9,6 @@
 
 Lince is not great, it always needs to get better, until it dies, then it doesn't.
 The way to do it is by giving it medicine (teaching people how to use it) while we cure it (making it simpler and featureful).
-The tasks and community to improve are found in the Discord server. But this document also has some of the...
-
-#let roadmap = [
-  == Roadmap
-  - [/] v1.0.0: Todo \
-    Rewrite of Frontend in GPUI
-    - [/] Todo
-      - [/] Table
-      - [ ] Kanban
-      - [ ] Calendar
-        - [ ] Shows Records changing with Karma. If they have a time cost, it occupies time from the calendar.
-    - [ ] Finance
-      - [ ] Table
-      - [ ] Graph
-      - [ ] Calendar
-    - [ ] Connection
-      - [ ] CRUD of cells (your node) and organs (group of nodes).
-      - [ ] Public/private rows for what organ (group of cells).
-      - [ ] Transaction of quantities between cells (nodes) in p2p network.
-  - [ ] v1.1.0: AI
-    - [ ] Be able to run an AI model to look at your DNA and change it to fit your needs.
-  - [ ] v1.2.0: Stock
-    - [ ] Screens to help with stock management for small to big companies.
-]
-#roadmap
 
 For detailed tasks, go to the end of this book.
 

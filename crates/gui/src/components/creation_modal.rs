@@ -461,6 +461,12 @@ impl Render for CreationModal {
             self.has_focused = true;
             self.recompute_autocomplete(cx);
         }
+        let viewport = window.viewport_size();
+        let viewport_width = f32::from(viewport.width);
+        let viewport_height = f32::from(viewport.height);
+        let container_width = (viewport_width - 24.0).clamp(280.0, 480.0);
+        let container_max_height = (viewport_height - 24.0).max(260.0);
+        let body_max_height = (container_max_height - 120.0).max(120.0);
 
         let title = format!("Create in {}", self.table_name);
         let component_id = if self.modal {
@@ -478,8 +484,8 @@ impl Render for CreationModal {
 
         let container = div()
             .id(("creation_component", component_id))
-            .w(px(480.0))
-            .max_h(px(620.0))
+            .w(px(container_width))
+            .max_h(px(container_max_height))
             .bg(mantle())
             .border_2()
             .border_color(green())
@@ -662,7 +668,7 @@ impl Render for CreationModal {
                     .flex()
                     .flex_col()
                     .gap_2()
-                    .max_h(px(500.0))
+                    .max_h(px(body_max_height))
                     .overflow_y_scrollbar()
                     .children(
                         self.columns

@@ -944,6 +944,10 @@ impl Render for Workspace {
         } else {
             None
         };
+        let show_consultation_button = self
+            .operation
+            .read(cx)
+            .show_keybinding_consultation_button(window);
 
         let bar = div()
             .h(rems(1.6))
@@ -970,6 +974,23 @@ impl Render for Workspace {
                     .bg(green())
                     .text_color(crust())
                     .child(mode_label),
+            )
+        } else {
+            bar
+        };
+        let bar = if show_consultation_button {
+            bar.child(
+                div()
+                    .flex()
+                    .justify_center()
+                    .items_center()
+                    .h(rems(1.2))
+                    .px_2()
+                    .rounded_xs()
+                    .bg(green())
+                    .text_color(crust())
+                    .text_xs()
+                    .child("Keys"),
             )
         } else {
             bar

@@ -9,6 +9,7 @@ members = [
     "crates/gui",
     "crates/utils",
     "crates/tui",
+    "crates/html",
 ]
 
 default-members = ["crates/lince"]
@@ -22,6 +23,7 @@ persistence = {path = "crates/persistence" }
 gui = {path = "crates/gui" }
 tui = {path = "crates/tui" }
 utils = { path = "crates/utils" }
+html = { path = "crates/html" }
 
 async-trait = "0.1.89"
 chrono = "0.4.43"
@@ -30,6 +32,7 @@ futures = "0.3.31"
 gpui = { version="0.2.2"}
 gpui-component = {version = "0.5.0"}
 gpui-component-assets = {version = "0.5.0"}
+maud = "0.27.0"
 regex = "1.12.2"
 rhai = "1.24.0"
 ropey = "1.6.1"

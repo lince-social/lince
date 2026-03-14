@@ -1,8 +1,6 @@
-use crate::{
-    domain::clean::table::{SortedTables, Table},
-    infrastructure::cross_cutting::InjectedServices,
-    presentation::html::table::add_row::presentation_html_table_add_row,
-};
+use crate::table::{add_row::presentation_html_table_add_row, cell_id};
+use domain::clean::table::{SortedTables, Table};
+use injection::cross_cutting::InjectedServices;
 use maud::{Markup, html};
 use regex::Regex;
 
@@ -20,59 +18,62 @@ pub async fn presentation_html_tables(tables: Vec<(String, Table)>) -> Markup {
         .collect();
 
     html! {
-        main id="main" {
-            @for (table_name, table, headers) in sorted_tables {
-                div {
-                    row.middle_y.s_gap {p { (table_name) } (presentation_html_table_add_row(table_name.clone()))}
-                    table class="rounded-table" {
-                        @if !headers.is_empty() {
-                            thead {
-                                tr {
-                                    @for (i, key) in headers.iter().enumerate() {
-                                        @let class = match i {
-                                            0 => "top-left",
-                                            _ if i == headers.len() - 1 => "top-right",
-                                            _ => "",
-                                        };
-                                        th class=(class) { (key) }
-                                    }
+        @for (table_name, table, headers) in sorted_tables {
+            div {
+                row.middle_y.s_gap {p { (table_name) } (presentation_html_table_add_row(table_name.clone()))}
+                table class="rounded-table" {
+                    @if !headers.is_empty() {
+                        thead {
+                            tr {
+                                @for (i, key) in headers.iter().enumerate() {
+                                    @let class = match i {
+                                        0 => "top-left",
+                                        _ if i == headers.len() - 1 => "top-right",
+                                        _ => "",
+                                    };
+                                    th class=(class) { (key) }
                                 }
                             }
                         }
-                        tbody {
-                            @for (row_i, row) in table.iter().enumerate() {
-                                @let last_row = row_i == table.len() - 1;
-                                tr {
-                                    @for (col_i, key) in headers.iter().enumerate() {
-                                        @let class = match (row_i, col_i) {
-                                           (_, 0) if last_row => "bottom-left breakword",
-                                            (_, x) if last_row && x == headers.len() - 1 => "bottom-right breakword",
-                                            _ => "breakword",
-                                        };
-
-                                        td class=(class) {
-                                            form
-                                                hx-post=(format!("/table/{}/{}/{}", table_name, row.get("id").unwrap(), key))
-                                                hx-swap="outerHTML"
-                                                hx-target="closest td"
-                                                hx-trigger="click"
-                                            {
-                                                @if key == "id" {
-                                                    button
-                                                        hx-delete=(format!("/table/{}/{}",
-                                                            table_name, row.get(key).unwrap_or(&"NULL".to_string())))
-                                                        hx-target="#main"
-                                                        class="delete_row"
-                                                        hx-trigger="click"
-                                                        onclick="event.stopPropagation()"
-                                                    { "x" }
-                                                }
-                                                input type="hidden" name="value"
-                                                    value=(row.get(key).unwrap_or(&"".to_string())) {}
-                                                button type="submit" class="plain-button" {
-                                                    (row.get(key).unwrap_or(&"NULL".to_string()))
-                                                }
+                    }
+                    tbody {
+                        @for (row_i, row) in table.iter().enumerate() {
+                            @let last_row = row_i == table.len() - 1;
+                            tr {
+                                @for (col_i, key) in headers.iter().enumerate() {
+                                    @let class = match (row_i, col_i) {
+                                       (_, 0) if last_row => "bottom-left breakword",
+                                        (_, x) if last_row && x == headers.len() - 1 => "bottom-right breakword",
+                                        _ => "breakword",
+                                    };
+                                    @let cell_id = cell_id(&table_name, row.get("id").unwrap(), key);
+                                    td id=(cell_id) class=(class) data-signals="{editing: false}" {
+                                        div data-show="!$editing" data-on:click="$editing = true" {
+                                            @if key == "id" {
+                                                button
+                                                    type="button"
+                                                    data-on:click__stop=(format!("@delete('/table/{}/{}')", table_name, row.get(key).unwrap_or(&"NULL".to_string())))
+                                                    class="delete_row"
+                                                { "x" }
                                             }
+                                            button type="button" class="plain-button" {
+                                                (row.get(key).unwrap_or(&"NULL".to_string()))
+                                            }
+                                        }
+                                        form
+                                            data-show="$editing"
+                                            data-on:submit__prevent=(format!(
+                                                "@patch('/table/{}/{}/{}', {{contentType: 'form'}})",
+                                                table_name,
+                                                row.get("id").unwrap(),
+                                                key
+                                            ))
+                                        {
+                                            input
+                                                name="value"
+                                                value=(row.get(key).unwrap_or(&"".to_string())) {}
+                                            button type="submit" { "Save" }
+                                            button type="button" data-on:click="$editing = false" { "Cancel" }
                                         }
                                     }
                                 }
@@ -90,78 +91,57 @@ pub async fn presentation_html_tables_karma(
     tables: SortedTables,
 ) -> Markup {
     html! {
-        main id="main" {
-            @for (table_name, table, headers) in tables{
-                div {
-                    div class="row middle_y" {p { (table_name) } (presentation_html_table_add_row(table_name.clone()))}
-                    table {
-                        @if !headers.is_empty() {
-                            thead {
-                                tr {
-                                    @for key in &headers {
-                                        th { (key) }
-                                    }
+        @for (table_name, table, headers) in tables {
+            div {
+                div class="row middle_y" {p { (table_name) } (presentation_html_table_add_row(table_name.clone()))}
+                table {
+                    @if !headers.is_empty() {
+                        thead {
+                            tr {
+                                @for key in &headers {
+                                    th { (key) }
                                 }
                             }
                         }
-                        tbody {
-                            @for row in table {
-                                tr {
-                                    @for key in &headers {
-                                        @if key == "id" {
-                                            td
-                                                hx-trigger="click" hx-swap="outerHTML"
-                                                hx-get=(format!(
-                                                "/table/{}/{}/{}/{}",
+                    }
+                    tbody {
+                        @for row in table {
+                            tr {
+                                @for key in &headers {
+                                    @let cell_id = cell_id(&table_name, row.get("id").unwrap(), key);
+                                    td id=(cell_id) data-signals="{editing: false}" {
+                                        div data-show="!$editing" data-on:click="$editing = true" {
+                                            @if key == "id" {
+                                                button
+                                                    type="button"
+                                                    data-on:click__stop=(format!("@delete('/table/{}/{}')", table_name, row.get(key).unwrap_or(&"NULL".to_string())))
+                                                    class="delete_row"
+                                                { "x" }
+                                                (row.get(key).unwrap_or(&"NULL".to_string()))
+                                            } @else if key == "condition" || key == "consequence" {
+                                                (presentation_html_tables_karma_replacer(
+                                                    services.clone(),
+                                                    row.get(key).unwrap_or(&"NULL".to_string()).clone()).await)
+                                            } @else {
+                                                (row.get(key).unwrap_or(&"NULL".to_string()))
+                                            }
+                                        }
+                                        form
+                                            data-show="$editing"
+                                            data-on:submit__prevent=(format!(
+                                                "@patch('/table/{}/{}/{}', {{contentType: 'form'}})",
                                                 table_name,
                                                 row.get("id").unwrap(),
-                                                key,
-                                                match row.get(key).unwrap().as_str() {
-                                                    "" => "None",
-                                                    some => some,
-                                                }))
+                                                key
+                                            ))
                                         {
-                                                button
-                                                    hx-delete=(format!("/table/{}/{}",
-                                                        table_name,
-                                                        row.get(key).unwrap_or(&"NULL".to_string())))
-                                                    hx-target="#body"
-                                                    class="delete_row"
-                                                    hx-trigger="click"
-                                                    onclick="event.stopPropagation()"
-                                                { "x" }
-                                                (row.get(key).unwrap_or(&"NULL".to_string()))}
-                                                } @else if key == "condition" || key == "consequence" {
-                                                    td
-                                                    hx-trigger="click"
-                                                    hx-swap="outerHTML"
-                                                    hx-post="/table/editable"
-                                                    hx-vals=(format!(
-                                                        r#"{{ "table": "{}", "id": "{}", "column": "{}", "value": "{}" }}"#,
-                                                        table_name,
-                                                        row.get("id").unwrap(),
-                                                        key,
-                                                        row.get(key).unwrap().replace('"', "\\\"")
-                                                    ))
-                                                        {
-                                                    (presentation_html_tables_karma_replacer(
-                                                        services.clone(),
-                                                        row.get(key).unwrap_or(&"NULL".to_string()).clone()).await)}
-                                                } @else {
-                                                    td
-                                                        hx-trigger="click"
-                                                        hx-swap="outerHTML"
-                                                        hx-post="/table/editable"
-                                                        hx-vals=(format!(
-                                                            r#"{{ "table": "{}", "id": "{}", "column": "{}", "value": "{}" }}"#,
-                                                            table_name,
-                                                            row.get("id").unwrap(),
-                                                            key,
-                                                            row.get(key).unwrap().replace('"', "\\\"")
-                                                        ))
-                                                        {
-                                                            (row.get(key).unwrap_or(&"NULL".to_string()))
-                                                        }
+                                            @if key == "condition" || key == "consequence" {
+                                                textarea name="value" class="autosize-textarea" { (row.get(key).unwrap_or(&"".to_string())) }
+                                            } @else {
+                                                input name="value" value=(row.get(key).unwrap_or(&"".to_string())) {}
+                                            }
+                                            button type="submit" { "Save" }
+                                            button type="button" data-on:click="$editing = false" { "Cancel" }
                                         }
                                     }
                                 }

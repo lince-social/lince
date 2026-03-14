@@ -1,10 +1,6 @@
-use crate::{
-    domain::clean::collection::Collection,
-    infrastructure::{
-        cross_cutting::InjectedServices, database::repositories::collection::QueriedView,
-    },
-    presentation::html::view::toggle_all::presentation_html_view_toggle_all,
-};
+use crate::view::toggle_all::presentation_html_view_toggle_all;
+use domain::{clean::collection::Collection, dirty::view::QueriedView};
+use injection::cross_cutting::InjectedServices;
 use maud::{Markup, html};
 
 pub async fn presentation_html_collection(services: InjectedServices) -> Markup {
@@ -56,22 +52,21 @@ async fn presentation_html_collection_row(
                 button.active {(collection.name)}
             } @else {
                 button.inactive
-                    hx-patch=(format!("/collection/active/{}", collection.id))
-                    hx-trigger="click"
-                    hx-target="#body"
+                    type="button"
+                    data-on:click=(format!("@patch('/collection/active/{}')", collection.id))
                     {(collection.name)}
             }
             (presentation_html_view_toggle_all(collection.id).await)
             @for view in views {
                 @if view.quantity == 1 {
                     button.active
-                        hx-patch=(format!("/view/toggle/{}/{}", collection.id, view.id))
-                        hx-target="#body"
+                        type="button"
+                        data-on:click=(format!("@patch('/view/toggle/{}/{}')", collection.id, view.id))
                         {(view.name)}
                 } @else {
                     button.inactive
-                        hx-patch=(format!("/view/toggle/{}/{}", collection.id, view.id))
-                        hx-target="#body"
+                        type="button"
+                        data-on:click=(format!("@patch('/view/toggle/{}/{}')", collection.id, view.id))
                         {(view.name)}
                 }
             }

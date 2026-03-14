@@ -1,15 +1,12 @@
 use crate::{
-    infrastructure::cross_cutting::InjectedServices,
-    presentation::html::{
-        pages::{
-            karma::{
-                orchestra::presentation_html_karma_orchestra, view::presentation_html_karma_view,
-            },
-            test::presentation_html_test_page,
-        },
-        table::tables::presentation_html_tables,
+    pages::{
+        karma::{orchestra::presentation_html_karma_orchestra, view::presentation_html_karma_view},
+        test::presentation_html_test_page,
     },
+    table::tables::presentation_html_tables,
+    table::wrap_main,
 };
+use injection::cross_cutting::InjectedServices;
 
 pub async fn presentation_html_section_main(services: InjectedServices) -> String {
     let (tables, special_views) = services
@@ -19,6 +16,10 @@ pub async fn presentation_html_section_main(services: InjectedServices) -> Strin
         .await
         .unwrap();
 
+    let tables = tables
+        .into_iter()
+        .map(|(_, table_name, table)| (table_name, table))
+        .collect();
     let mut content = presentation_html_tables(tables).await.0;
 
     for special_view in special_views {
@@ -30,5 +31,5 @@ pub async fn presentation_html_section_main(services: InjectedServices) -> Strin
         });
     }
 
-    content
+    wrap_main(content)
 }

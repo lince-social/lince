@@ -2,8 +2,10 @@ use maud::{Markup, html};
 
 pub async fn presentation_html_create(table: String, column_names: Vec<String>) -> Markup {
     html!(form.m_padding.glow
-        hx-post=(format!("/operation/create/{}", table))
-        hx-target="#main"
+        data-on:submit__prevent=(format!(
+            "@post('/operation/create/{}', {{contentType: 'form'}})",
+            table
+        ))
         {
         p {(table)}
        @for (i, column) in column_names.iter().enumerate() {
@@ -17,5 +19,6 @@ pub async fn presentation_html_create(table: String, column_names: Vec<String>) 
            }
        }
        button type="submit" style="display: none;" {}
+       button type="button" data-on:click=(format!("@get('/body')")) { "Cancel" }
     })
 }

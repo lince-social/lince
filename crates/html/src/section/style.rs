@@ -1,13 +1,14 @@
-use crate::{
-    application::configuration::get_active_colorscheme,
-    infrastructure::cross_cutting::InjectedServices,
-};
+use crate::colorscheme::resolve_colorscheme;
+use application::configuration::get_active_colorscheme;
+use injection::cross_cutting::InjectedServices;
 
 pub async fn presentation_html_style(services: InjectedServices) -> String {
+    let active_colorscheme = get_active_colorscheme(services.clone()).await;
+    let active_colorscheme = resolve_colorscheme(&active_colorscheme);
     "<style>
         :root {"
         .to_string()
-        + get_active_colorscheme(services.clone()).await
+        + active_colorscheme
         + "}
 
         body {

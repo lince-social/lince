@@ -1,9 +1,7 @@
 use crate::{
-    infrastructure::cross_cutting::InjectedServices,
-    presentation::html::{
-        table::tables::presentation_html_tables_karma, utils::to_table::to_named_sorted_table,
-    },
+    table::tables::presentation_html_tables_karma, utils::to_table::to_named_sorted_table,
 };
+use injection::cross_cutting::InjectedServices;
 use maud::{Markup, html};
 
 pub async fn presentation_html_karma_condition(services: InjectedServices) -> Markup {

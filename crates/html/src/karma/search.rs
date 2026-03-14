@@ -1,6 +1,7 @@
 use maud::html;
 
-use crate::{infrastructure::cross_cutting::InjectedServices, log};
+use injection::cross_cutting::InjectedServices;
+use utils::log;
 
 pub async fn presentation_html_karma_get_condition(
     services: InjectedServices,

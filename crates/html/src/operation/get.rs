@@ -1,18 +1,12 @@
-use crate::application::operation::{operation_actions, operation_tables};
+use domain::dirty::operation::{DatabaseTable, OperationActions};
 use maud::{Markup, html};
 
 pub fn presentation_html_operation_get_operation_input() -> String {
     html! {
-        div
-            hx-target="#body"
-            hx-trigger="keyup[key === 'Escape'] from:body"
-            hx-get="/body"
-        {
+        div data-on:keyup__window="if (evt.key === 'Escape') document.getElementById('operation_input').style.display = 'none'" {
             form.northeast_modal.filled
                 id="operation_input"
-                hx-post="/operation"
-                hx-target="#body"
-                hx-on::after-request="if(event.detail.successful) this.reset(); this.style.display = 'none';"
+                data-on:submit__prevent="@post('/operation', {contentType: 'form'})"
                 style="display: none;"
             {
                 input
@@ -23,6 +17,10 @@ pub fn presentation_html_operation_get_operation_input() -> String {
                 button
                     type="submit"
                     style="display: none;" {}
+                button
+                    type="button"
+                    style="display: none;"
+                    data-on:click="document.getElementById('operation_input').style.display = 'none'" {}
                 (presentation_html_get_operation_options())
             }
         }
@@ -51,8 +49,34 @@ pub fn presentation_html_operation_get_operation_input() -> String {
 }
 
 pub fn presentation_html_get_operation_options() -> Markup {
-    let operation_tables = operation_tables();
-    let operation_actions = operation_actions();
+    let operation_tables = [
+        DatabaseTable::Configuration,
+        DatabaseTable::Collection,
+        DatabaseTable::View,
+        DatabaseTable::CollectionView,
+        DatabaseTable::Record,
+        DatabaseTable::KarmaCondition,
+        DatabaseTable::KarmaConsequence,
+        DatabaseTable::Karma,
+        DatabaseTable::Command,
+        DatabaseTable::Frequency,
+        DatabaseTable::Sum,
+        DatabaseTable::History,
+        DatabaseTable::DNA,
+        DatabaseTable::Transfer,
+    ]
+    .into_iter()
+    .map(|table| (table as usize, table.as_table_name()));
+    let operation_actions = [
+        (OperationActions::Create as usize, "create"),
+        (OperationActions::SQLQuery as usize, "query"),
+        (OperationActions::Karma as usize, "karma"),
+        (OperationActions::Command as usize, "command"),
+        (
+            OperationActions::ActivateConfiguration as usize,
+            "configuration",
+        ),
+    ];
     html!(
         .filled.row.s_margin {
             .column {

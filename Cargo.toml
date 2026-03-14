@@ -18,7 +18,7 @@ default-members = ["crates/lince"]
 application = { path = "crates/application" }
 domain = { path = "crates/domain" }
 injection = {path = "crates/injection" }
-lince = {path = "crates/lince", features = ["karma", "gui", "tui"] }
+lince = {path = "crates/lince" }
 persistence = {path = "crates/persistence" }
 gui = {path = "crates/gui" }
 tui = {path = "crates/tui" }
@@ -26,6 +26,7 @@ utils = { path = "crates/utils" }
 html = { path = "crates/html" }
 
 async-trait = "0.1.89"
+axum = "0.8.4"
 chrono = "0.4.43"
 dirs = "6.0.0"
 futures = "0.3.31"

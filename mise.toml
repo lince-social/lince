@@ -17,6 +17,12 @@ cargo fix --broken-code --allow-dirty
 cargo clippy --fix --allow-dirty --quiet >/dev/null 2>&1
 """
 
+[tasks.html]
+description = "Run the HTML server"
+run = """
+cargo run --no-default-features --features 'karma html'
+"""
+
 [tasks.dev]
 description = "Run with mprocs/bacon background jobs"
 tools = { "cargo:mprocs" = "latest", "cargo:bacon" = "latest" }

@@ -211,6 +211,10 @@ impl Operation {
         }
     }
 
+    pub fn show_keybinding_consultation_button(&self, window: &Window) -> bool {
+        self.focus_handle.is_focused(window) && self.effective_edit_mode() == EditMode::Insert
+    }
+
     fn handle_normal_keybinding(
         &mut self,
         event: &KeyDownEvent,

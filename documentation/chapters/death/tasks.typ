@@ -18,6 +18,10 @@
     Or changing it to WTFPL: https://en.wikipedia.org/wiki/WTFPL
     - [ ] Going through the excalidraw and critiquing with design. Make documentation of things there.
     - [ ] Should we open an Institute? Why? Good reasons only
+    - [ ] Eventually we probably will need to make Anicca, the very own Lince's database. It's probably the most efficient way to do Lince's workflow because we can design it to fit exactly Lince's needs and no other app's needs.
+    But right now, should we change the database from SQLite to something more potent with data streaming (so the user doesnt need to refresh the page)?
+    Data polling to the db sucks (yes)?
+    It's good if we are able to provide some docker, nix way of using it by yourself. And have a way to host some db or
   ],
   task(
     "Lince Institute",

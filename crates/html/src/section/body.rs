@@ -4,6 +4,7 @@ use injection::cross_cutting::InjectedServices;
 
 pub async fn presentation_html_section_body(services: InjectedServices) -> String {
     r#"<body id="body">"#.to_string()
+        + r#"<div id="active-context-sse" data-init="@get('/sse/active-context', {openWhenHidden: true})"></div>"#
         + presentation_html_section_header(services.clone())
             .await
             .as_str()
@@ -18,6 +19,7 @@ pub async fn presentation_html_section_body_home_modal(
     format!(
         r##"
             <body id="body">
+            <div id="active-context-sse" data-init="@get('/sse/active-context', {{openWhenHidden: true}})"></div>
             {header}
              {main}
               <div class="shy modal filled" data-on:keyup__window="if (evt.key === 'Escape') @get('/body')">

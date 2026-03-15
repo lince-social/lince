@@ -27,14 +27,16 @@ pub async fn presentation_html_collection(services: InjectedServices) -> Markup 
     inactive_collections.sort_by_key(|(collection, _)| collection.id);
 
     html!(
-        .configurations.column.xs_gap
-        data-signals="{configurationOpen: false}"
-        data-on:mouseover="$configurationOpen = true"
-        data-on:mouseleave="$configurationOpen = false" {
-            (presentation_html_collection_row(active_collection_name, active_collection_views).await)
-            .inactive_configurations.column.xs_gap data-show="$configurationOpen" {
-                @for (inactive_collection, inactive_collection_views) in inactive_collections {
-                    (presentation_html_collection_row(inactive_collection, inactive_collection_views).await)
+        #active-collection {
+            .configurations.column.xs_gap
+            data-signals="{configurationOpen: false}"
+            data-on:mouseover="$configurationOpen = true"
+            data-on:mouseleave="$configurationOpen = false" {
+                (presentation_html_collection_row(active_collection_name, active_collection_views).await)
+                .inactive_configurations.column.xs_gap data-show="$configurationOpen" {
+                    @for (inactive_collection, inactive_collection_views) in inactive_collections {
+                        (presentation_html_collection_row(inactive_collection, inactive_collection_views).await)
+                    }
                 }
             }
         }

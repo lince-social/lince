@@ -6,6 +6,10 @@ use injection::cross_cutting::InjectedServices;
 pub async fn presentation_html_section_page(
     State(services): State<InjectedServices>,
 ) -> Html<String> {
+    presentation_html_page(services).await
+}
+
+pub async fn presentation_html_page(services: InjectedServices) -> Html<String> {
     Html(
         r##"
     <!doctype html>

@@ -3067,13 +3067,16 @@ dependencies = [
  "application",
  "axum",
  "domain",
+ "futures",
  "injection",
  "maud",
  "persistence",
  "regex",
  "serde",
  "serde_json",
+ "sqlx",
  "tokio",
+ "tokio-stream",
  "utils",
 ]
 
@@ -7292,6 +7295,7 @@ dependencies = [
  "futures-core",
  "pin-project-lite",
  "tokio",
+ "tokio-util",
 ]
 
 [[package]]

@@ -187,6 +187,19 @@ pub async fn presentation_html_style(services: InjectedServices) -> String {
             z-index: 1;
         }
 
+        .table-editor-modal {
+            min-width: min(80vw, 56rem);
+            max-width: 80vw;
+            border: 1px solid var(--modal-border-color);
+            border-radius: 0.75rem;
+        }
+
+        .table-editor-modal .autosize-textarea {
+            width: 100%;
+            min-height: 12rem;
+            max-width: 100%;
+        }
+
         .northeast_modal {
         position: fixed;
         top: 1rem;

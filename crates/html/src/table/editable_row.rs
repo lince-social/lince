@@ -1,5 +1,4 @@
-use crate::table::cell_id;
-use maud::{Markup, PreEscaped, html};
+use maud::{Markup, html};
 
 pub async fn presentation_html_table_editable_row(
     table: String,
@@ -8,26 +7,28 @@ pub async fn presentation_html_table_editable_row(
     value: String,
     search: Option<String>,
 ) -> Markup {
-    let cell_id = cell_id(&table, &id, &column);
     html!(
-        td.modal id=(cell_id) {
+        .column.s_gap.m_padding.table-editor-modal {
+            h3 class="stripped" { "Edit Cell" }
+            p class="stripped breakword" { (format!("{table}.{column} #{id}")) }
             form
+                class="column s_gap"
                 data-on:submit__prevent=(format!(
                     "@patch('/table/{}/{}/{}', {{contentType: 'form'}})",
                     table, id, column
                 ))
             {
-                (PreEscaped(format!(
-                                r#"<textarea
-                                    id="editable_textarea"
-                                    name="value"
-                                    autofocus
-                                    class="autosize-textarea"
-                                    oninput="this.style.height='auto';this.style.height=(this.scrollHeight)+'px';">{}</textarea>"#,
-                                &value
-                            )))
-
-                button type="submit" { "Save" }
+                textarea
+                    id="editable_textarea"
+                    name="value"
+                    autofocus
+                    class="autosize-textarea"
+                    oninput="this.style.height='auto';this.style.height=(this.scrollHeight)+'px';"
+                { (value) }
+                .row.s_gap {
+                    button type="submit" { "Save" }
+                    button type="button" data-on:click="@get('/body')" { "Cancel" }
+                }
                 @if let Some(search) = search {
                     input type="hidden" name="search" value=(search) {}
                 }

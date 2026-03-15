@@ -62,7 +62,10 @@ pub async fn serve(services: InjectedServices) -> Result<(), Error> {
         .route("/header", get(header))
         .route("/main", get(main))
         .route("/sse/active-context", get(active_context_sse))
-        .route("/table/{table}/{id}/{column}", patch(patch_table_cell))
+        .route(
+            "/table/{table}/{id}/{column}",
+            get(open_table_cell).patch(patch_table_cell),
+        )
         .route("/table/{table}/{id}", delete(delete_table_row))
         .route("/collection/active/{id}", patch(set_active_collection))
         .route(
@@ -158,9 +161,38 @@ async fn patch_table_cell(
     notify_active_context(&state);
 
     datastar::patch_elements(
-        "#main",
+        "#body",
         "outer",
-        section::main::presentation_html_section_main(services).await,
+        section::body::presentation_html_section_body(services).await,
+    )
+}
+
+async fn open_table_cell(
+    State(state): State<Arc<HtmlState>>,
+    Path((table_name, id, column)): Path<(String, String, String)>,
+) -> impl IntoResponse {
+    let services = state.services.clone();
+    let value = services
+        .repository
+        .table
+        .get_cell_value(table_name.clone(), id.clone(), column.clone())
+        .await
+        .ok()
+        .flatten()
+        .unwrap_or_default();
+
+    datastar::patch_elements(
+        "#body",
+        "outer",
+        section::body::presentation_html_section_body_home_modal(
+            services,
+            table::editable_row::presentation_html_table_editable_row(
+                table_name, id, column, value, None,
+            )
+            .await
+            .into_string(),
+        )
+        .await,
     )
 }
 

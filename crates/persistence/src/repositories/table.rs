@@ -9,6 +9,12 @@ use std::{
 #[async_trait]
 pub trait TableRepository: Send + Sync {
     async fn delete_by_id(&self, table: String, id: String) -> Result<(), Error>;
+    async fn get_cell_value(
+        &self,
+        table: String,
+        id: String,
+        column: String,
+    ) -> Result<Option<String>, Error>;
     async fn get_columns(&self, table: String) -> Result<Vec<String>, Error>;
     async fn insert_row(&self, table: String, values: HashMap<String, String>)
     -> Result<(), Error>;
@@ -35,6 +41,21 @@ impl TableRepository for TableRepositoryImpl {
             .map_err(|e| Error::new(ErrorKind::InvalidData, e))?;
 
         Ok(())
+    }
+
+    async fn get_cell_value(
+        &self,
+        table: String,
+        id: String,
+        column: String,
+    ) -> Result<Option<String>, Error> {
+        let query = format!("SELECT CAST({column} AS TEXT) FROM {table} WHERE id = ? LIMIT 1");
+        sqlx::query_scalar::<_, Option<String>>(&query)
+            .bind(id)
+            .fetch_optional(&*self.pool)
+            .await
+            .map(|value| value.flatten())
+            .map_err(|e| Error::new(ErrorKind::InvalidData, e))
     }
 
     async fn get_columns(&self, table: String) -> Result<Vec<String>, Error> {

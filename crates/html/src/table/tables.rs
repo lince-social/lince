@@ -46,9 +46,10 @@ pub async fn presentation_html_tables(tables: Vec<(String, Table)>) -> Markup {
                                         (_, x) if last_row && x == headers.len() - 1 => "bottom-right breakword",
                                         _ => "breakword",
                                     };
-                                    @let cell_id = cell_id(&table_name, row.get("id").unwrap(), key);
-                                    td id=(cell_id) class=(class) data-signals="{editing: false}" {
-                                        div data-show="!$editing" data-on:click="$editing = true" {
+                                    @let row_id = row.get("id").unwrap();
+                                    @let cell_id = cell_id(&table_name, row_id, key);
+                                    td id=(cell_id) class=(class) {
+                                        div {
                                             @if key == "id" {
                                                 button
                                                     type="button"
@@ -56,24 +57,18 @@ pub async fn presentation_html_tables(tables: Vec<(String, Table)>) -> Markup {
                                                     class="delete_row"
                                                 { "x" }
                                             }
-                                            button type="button" class="plain-button" {
+                                            button
+                                                type="button"
+                                                class="plain-button"
+                                                data-on:click=(format!(
+                                                    "@get('/table/{}/{}/{}')",
+                                                    table_name,
+                                                    row_id,
+                                                    key
+                                                ))
+                                            {
                                                 (row.get(key).unwrap_or(&"NULL".to_string()))
                                             }
-                                        }
-                                        form
-                                            data-show="$editing"
-                                            data-on:submit__prevent=(format!(
-                                                "@patch('/table/{}/{}/{}', {{contentType: 'form'}})",
-                                                table_name,
-                                                row.get("id").unwrap(),
-                                                key
-                                            ))
-                                        {
-                                            input
-                                                name="value"
-                                                value=(row.get(key).unwrap_or(&"".to_string())) {}
-                                            button type="submit" { "Save" }
-                                            button type="button" data-on:click="$editing = false" { "Cancel" }
                                         }
                                     }
                                 }

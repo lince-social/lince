@@ -138,6 +138,7 @@ impl CollectionRepository for CollectionRepositoryImpl {
             JOIN collection_view cv ON v.id = cv.view_id
             JOIN collection c ON c.id = cv.collection_id
             WHERE c.quantity = 1
+            ORDER BY cv.id
             ",
         )
         .fetch_all(&*self.pool)

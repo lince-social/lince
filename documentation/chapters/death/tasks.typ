@@ -187,9 +187,6 @@
       - [ ] Maybe todo?
 
   ],
-  task("Subscribe")[
-    - [ ] Make the Views be subscription to data, that updates the frontend automatically. No need to poll, the db publishes changes. The Views receive new data and render them anew.
-  ],
   task(
     "Karma Refactor",
   )[
@@ -211,7 +208,7 @@
   )[
     Maybe a modal
   ],
-  task("Design: Profile like")[
+  task("Design: Profile like", contributors: (("Nica", "todo"),))[
     Currently, lince feels like only a personal offline todo app. Because that's what it currently is.
 
     In the future, we want people to use it as their business/company's profile, to buy/sell/donate stuff.

@@ -7557,12 +7557,14 @@ dependencies = [
 name = "tui"
 version = "0.1.0"
 dependencies = [
+ "application",
  "color-eyre",
  "crossterm 0.29.0",
  "domain",
  "injection",
  "persistence",
  "ratatui",
+ "sqlx",
  "utils",
 ]
 

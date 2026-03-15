@@ -7,9 +7,11 @@ edition = "2024"
 tui = ["dep:ratatui", "dep:color-eyre", "dep:crossterm"]
 
 [dependencies]
+application = { workspace = true }
 domain = { workspace = true }
 injection = { workspace = true }
 persistence = { workspace = true }
+sqlx = { workspace = true }
 utils = { workspace = true }
 
 ratatui = { workspace = true, optional = true, features = ["serde"] }

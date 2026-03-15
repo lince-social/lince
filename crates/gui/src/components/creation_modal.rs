@@ -1,9 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use domain::{
-    clean::table::Table,
-    dirty::operation::DatabaseTable,
-};
+use domain::{clean::table::Table, dirty::operation::DatabaseTable};
 use gpui::{
     App, Context, FocusHandle, Focusable, FontWeight, InteractiveElement, IntoElement,
     KeyDownEvent, MouseButton, ParentElement, Render, StatefulInteractiveElement, Styled,
@@ -60,7 +57,15 @@ impl CreationModal {
         initial_values: HashMap<String, String>,
         cx: &mut App,
     ) -> Self {
-        Self::new_with_mode(workspace, services, table, columns, initial_values, true, cx)
+        Self::new_with_mode(
+            workspace,
+            services,
+            table,
+            columns,
+            initial_values,
+            true,
+            cx,
+        )
     }
 
     pub fn new_view(
@@ -71,7 +76,15 @@ impl CreationModal {
         initial_values: HashMap<String, String>,
         cx: &mut App,
     ) -> Self {
-        Self::new_with_mode(workspace, services, table, columns, initial_values, false, cx)
+        Self::new_with_mode(
+            workspace,
+            services,
+            table,
+            columns,
+            initial_values,
+            false,
+            cx,
+        )
     }
 
     fn new_with_mode(
@@ -301,11 +314,17 @@ impl CreationModal {
         }
 
         let source_table = source_table.to_string();
-        self.autocomplete_loading_tables.insert(source_table.clone());
+        self.autocomplete_loading_tables
+            .insert(source_table.clone());
         let services = self.services.clone();
         cx.spawn(async move |this, cx| {
             let query = format!("SELECT * FROM {source_table}");
-            let rows = match services.repository.collection.execute_queries(vec![query]).await {
+            let rows = match services
+                .repository
+                .collection
+                .execute_queries(vec![query])
+                .await
+            {
                 Ok(mut tables) => tables.pop().map(|(_, rows)| rows).unwrap_or_default(),
                 Err(_) => vec![],
             };

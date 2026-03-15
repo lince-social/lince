@@ -27,6 +27,8 @@
   "done": "Done",
 )
 
+#let default-milestone = "1.0.0: Dogfooding"
+
 // Get the highest priority status from a list of contributors
 // Each contributor is a tuple: ("name", "status")
 #let get-task-status(contributors) = {
@@ -64,11 +66,13 @@
 #let task(
   title,
   contributors: (),
+  milestone: default-milestone,
   body,
 ) = {
   (
     title: title,
     contributors: contributors,
+    milestone: milestone,
     body: body,
     status: get-task-status(contributors),
   )
@@ -125,21 +129,41 @@
   }
 }
 
-// Main task board function - renders all tasks grouped by status
+#let render-milestone-header(milestone, task-count) = {
+  block(
+    width: 100%,
+    inset: (top: 0.3em, bottom: 0.2em),
+  )[
+    #text(weight: "bold", size: 1.5em, milestone)
+    #h(1fr)
+    #text(fill: gray.darken(20%), size: 0.9em, [(#task-count tasks)])
+  ]
+}
+
+// Main task board function - renders all tasks grouped by milestone, then by status
 #let task-board(tasks) = {
-  let wip-tasks = tasks.filter(t => t.status == "wip")
-  let todo-tasks = tasks.filter(t => t.status == "todo")
-  let done-tasks = tasks.filter(t => t.status == "done")
+  let milestone-order = tasks
+    .map(t => t.at("milestone", default: default-milestone))
+    .fold((), (acc, milestone) => {
+      if acc.contains(milestone) { acc } else { acc + (milestone,) }
+    })
 
-  render-status-group("wip", wip-tasks)
+  for milestone in milestone-order {
+    let milestone-tasks = tasks.filter(
+      t => t.at("milestone", default: default-milestone) == milestone,
+    )
+    let wip-tasks = milestone-tasks.filter(t => t.status == "wip")
+    let todo-tasks = milestone-tasks.filter(t => t.status == "todo")
 
-  if wip-tasks.len() > 0 and todo-tasks.len() > 0 { v(1em) }
+    render-milestone-header(milestone, milestone-tasks.len())
+    v(0.75em)
 
-  render-status-group("todo", todo-tasks)
+    render-status-group("wip", wip-tasks)
 
-  if (wip-tasks.len() > 0 or todo-tasks.len() > 0) and done-tasks.len() > 0 {
-    v(1em)
+    if wip-tasks.len() > 0 and todo-tasks.len() > 0 { v(1em) }
+
+    render-status-group("todo", todo-tasks)
+
+    if milestone != milestone-order.last() { v(1.5em) }
   }
-
-  render-status-group("done", done-tasks)
 }

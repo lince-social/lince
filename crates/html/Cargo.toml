@@ -9,9 +9,12 @@ axum.workspace = true
 domain.workspace = true
 injection.workspace = true
 maud.workspace = true
+futures.workspace = true
 persistence.workspace = true
 regex.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
-tokio = { workspace = true, features = ["net"] }
+sqlx.workspace = true
+tokio = { workspace = true, features = ["net", "sync"] }
+tokio-stream = { version = "0.1.17", features = ["sync"] }
 utils.workspace = true

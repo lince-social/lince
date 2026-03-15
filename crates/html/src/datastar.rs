@@ -4,6 +4,19 @@ use axum::{
     response::{IntoResponse, Response},
 };
 
+fn write_event_data(buffer: &mut String, key: &str, value: &str) {
+    for line in value.lines() {
+        buffer.push_str(key);
+        buffer.push(' ');
+        buffer.push_str(line);
+        buffer.push('\n');
+    }
+    if value.is_empty() {
+        buffer.push_str(key);
+        buffer.push_str(" \n");
+    }
+}
+
 fn write_sse_data(buffer: &mut String, key: &str, value: &str) {
     for line in value.lines() {
         buffer.push_str("data: ");
@@ -44,7 +57,10 @@ pub fn patch_elements_event_body(selector: &str, mode: &str, elements: String) -
 }
 
 pub fn patch_elements_event(selector: &str, mode: &str, elements: String) -> Event {
-    let payload = format!("selector {selector}\nmode {mode}\nelements {elements}");
+    let mut payload = String::new();
+    write_event_data(&mut payload, "selector", selector);
+    write_event_data(&mut payload, "mode", mode);
+    write_event_data(&mut payload, "elements", &elements);
     Event::default()
         .event("datastar-patch-elements")
         .data(payload)

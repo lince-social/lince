@@ -2,7 +2,7 @@ use crate::{
     command::{CommandOrigin, spawn_command_buffer_session_by_id},
     karma::karma_deliver,
 };
-use domain::dirty::operation::{DatabaseTable, OperationActions};
+use domain::dirty::operation::{DatabaseTable, OperationActions, ParsedOperation};
 use injection::cross_cutting::InjectedServices;
 use utils::logging::{LogEntry, log};
 
@@ -20,7 +20,7 @@ fn parse_id(part: &str) -> Option<&str> {
     None
 }
 
-fn parse_create_action(operation: &str) -> bool {
+fn parse_operation_action(operation: &str) -> Option<OperationActions> {
     let compact = operation
         .chars()
         .filter(|ch| !ch.is_whitespace())
@@ -29,15 +29,20 @@ fn parse_create_action(operation: &str) -> bool {
 
     let short_pattern = Regex::new(r"^(\d+c|c\d+)$").unwrap();
     if short_pattern.is_match(&compact) {
-        return true;
+        return Some(OperationActions::Create);
     }
 
-    operation.split_whitespace().any(|part| {
-        matches!(
-            part.to_lowercase().as_str(),
-            "c" | "create" | "criar" | "novo"
-        )
-    })
+    for part in operation.split_whitespace() {
+        let normalized = part.to_lowercase();
+        if matches!(normalized.as_str(), "criar" | "novo") {
+            return Some(OperationActions::Create);
+        }
+        if let Ok(action) = OperationActions::from_str(&normalized) {
+            return Some(action);
+        }
+    }
+
+    None
 }
 
 fn parse_operation_table(operation: &str) -> Option<DatabaseTable> {
@@ -58,13 +63,13 @@ fn parse_operation_table(operation: &str) -> Option<DatabaseTable> {
     None
 }
 
-fn parse_operation_result(operation: &str) -> Vec<(DatabaseTable, OperationActions)> {
+fn parse_operation_result(operation: &str) -> Vec<ParsedOperation> {
     let mut results = Vec::new();
 
-    if parse_create_action(operation)
-        && let Some(table) = parse_operation_table(operation)
+    if let Some(action) = parse_operation_action(operation)
+        && action == OperationActions::Create
     {
-        results.push((table, OperationActions::Create));
+        results.push(ParsedOperation::new(action, parse_operation_table(operation)));
     }
 
     results
@@ -133,7 +138,7 @@ pub async fn parse_operation_and_execute(services: InjectedServices, operation: 
 pub async fn operation_execute(
     services: InjectedServices,
     operation: String,
-) -> Result<Vec<(DatabaseTable, OperationActions)>, Error> {
+) -> Result<Vec<ParsedOperation>, Error> {
     let only_digits_regex = Regex::new(r"^\d+$").unwrap();
     if only_digits_regex.is_match(&operation) {
         let id = operation.parse::<u32>().unwrap();

@@ -529,8 +529,10 @@ impl Workspace {
                         owner.tables_need_recreation = true;
                         owner.refresh_creation_view_entities(cx);
                         owner.refresh_global_keybinding_mode(cx);
-                        for (table, action) in operationresult {
-                            if action == OperationActions::Create {
+                        for instruction in operationresult {
+                            if instruction.action == OperationActions::Create
+                                && let Some(table) = instruction.table
+                            {
                                 owner.open_creation_modal(table, cx);
                             }
                         }

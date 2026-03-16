@@ -75,6 +75,22 @@ impl DatabaseTable {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ParsedOperation {
+    pub action: OperationActions,
+    pub table: Option<DatabaseTable>,
+}
+
+impl ParsedOperation {
+    pub const fn new(action: OperationActions, table: Option<DatabaseTable>) -> Self {
+        Self { action, table }
+    }
+}
+
+pub trait OperationInstructionReceiver {
+    fn receive_operation_instruction(&mut self, instruction: ParsedOperation);
+}
+
 impl FromStr for DatabaseTable {
     type Err = String;
 

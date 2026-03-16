@@ -8,7 +8,7 @@ use logic::{
 };
 use ratatui::{
     DefaultTerminal,
-    crossterm::event::{self, Event, KeyEventKind},
+    crossterm::event::{self, Event},
 };
 use rendering::render;
 use std::time::Duration;
@@ -30,7 +30,6 @@ pub async fn app(
 
         if event::poll(Duration::from_millis(200))?
             && let Event::Key(key) = event::read()?
-            && matches!(key.kind, KeyEventKind::Press | KeyEventKind::Repeat)
         {
             match handle_key_event_result(&mut state, services.clone(), key).await {
                 Ok(true) => break Ok(()),

@@ -268,7 +268,7 @@ async fn run_operation(
     let result = application::operation::operation_execute(services.clone(), form.operation).await;
     notify_active_context(&state);
     if let Ok(results) = result
-        && let Some((table, _)) = results.first()
+        && let Some(table) = results.first().and_then(|result| result.table)
     {
         let table_name = table.as_table_name().to_string();
         if let Ok(columns) = services

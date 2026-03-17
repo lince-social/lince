@@ -56,6 +56,7 @@ pub struct Workspace {
     pinned_sizes: HashMap<u32, (f32, f32)>,
     pinned_drag: Option<(u32, ModalFrameDrag)>,
     pinned_hovered_view_id: Option<u32>,
+    main_scroll_handle: ScrollHandle,
 }
 
 impl Workspace {
@@ -114,6 +115,7 @@ impl Workspace {
             pinned_sizes: HashMap::new(),
             pinned_drag: None,
             pinned_hovered_view_id: None,
+            main_scroll_handle: ScrollHandle::new(),
         };
 
         // If state has tables/pinned tables, we need to create entities for them
@@ -126,6 +128,65 @@ impl Workspace {
         workspace.refresh_global_keybinding_mode(cx);
 
         workspace
+    }
+
+    fn clamp_main_scroll_offset(&self, y: Pixels) -> Pixels {
+        let max_offset = self.main_scroll_handle.max_offset().height;
+        y.max(-max_offset).min(px(0.0))
+    }
+
+    fn scroll_main_to(&self, y: Pixels) {
+        let mut offset = self.main_scroll_handle.offset();
+        offset.y = self.clamp_main_scroll_offset(y);
+        self.main_scroll_handle.set_offset(offset);
+    }
+
+    fn scroll_main_by(&self, delta: Pixels) {
+        let offset = self.main_scroll_handle.offset();
+        self.scroll_main_to(offset.y + delta);
+    }
+
+    fn handle_main_scroll_keybinding(
+        &self,
+        event: &KeyDownEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let line_step = px(48.0);
+        let page_step = self.main_scroll_handle.bounds().size.height * 0.9;
+        let handled = match event.keystroke.key.as_str() {
+            "up" | "arrowup" => {
+                self.scroll_main_by(line_step);
+                true
+            }
+            "down" | "arrowdown" => {
+                self.scroll_main_by(-line_step);
+                true
+            }
+            "pageup" => {
+                self.scroll_main_by(page_step);
+                true
+            }
+            "pagedown" => {
+                self.scroll_main_by(-page_step);
+                true
+            }
+            "home" => {
+                self.scroll_main_to(px(0.0));
+                true
+            }
+            "end" => {
+                self.scroll_main_to(-self.main_scroll_handle.max_offset().height);
+                true
+            }
+            _ => false,
+        };
+
+        if handled {
+            window.prevent_default();
+            cx.stop_propagation();
+            cx.notify();
+        }
     }
 
     // Helper method to recreate table entities when data changes
@@ -1480,7 +1541,12 @@ impl Render for Workspace {
             .flex_1()
             .min_h(px(0.0))
             .w_full()
-            .overflow_y_scrollbar()
+            .track_scroll(&self.main_scroll_handle)
+            .overflow_y_scroll()
+            .vertical_scrollbar(&self.main_scroll_handle)
+            .on_key_down(cx.listener(|this, event: &KeyDownEvent, window, cx| {
+                this.handle_main_scroll_keybinding(event, window, cx);
+            }))
             .child(main);
 
         let creation_modal_overlay = self.creation_modal.as_ref().map(|entity| {

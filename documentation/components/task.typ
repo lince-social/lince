@@ -27,8 +27,6 @@
   "done": "Done",
 )
 
-#let default-milestone = "1.0.0: Dogfooding"
-
 // Get the highest priority status from a list of contributors
 // Each contributor is a tuple: ("name", "status")
 #let get-task-status(contributors) = {
@@ -63,23 +61,32 @@
     .join([, ])
 }
 
+// Task data helper remains simple
 #let task(
   title,
   contributors: (),
-  milestone: default-milestone,
   body,
 ) = {
   (
     title: title,
     contributors: contributors,
-    milestone: milestone,
     body: body,
     status: get-task-status(contributors),
   )
 }
 
+#let milestone(
+  title,
+  tasks,
+) = {
+  (
+    title: title,
+    tasks: tasks,
+  )
+}
+
 // Render a single task card
-#let render-task(task) = {
+#let render-task(task, milestone-title) = {
   let status-color = status-colors.at(task.status, default: gray)
 
   block(
@@ -89,7 +96,17 @@
     radius: 4pt,
     fill: card-bg,
   )[
-    *#task.title* \
+    #text(weight: "bold", size: 1.15em)[#task.title]
+    #h(1fr)
+    #box(
+      inset: (x: 0.5em, y: 0.2em),
+      radius: 999pt,
+    )[
+      #text(size: 0.72em, weight: "bold", fill: status-color.darken(35%))[
+        #milestone-title
+      ]
+    ]
+    \
 
     _Contributors: #format-contributors(task.contributors)_
 
@@ -106,64 +123,59 @@
 
   block(
     width: 100%,
-    fill: color,
+    // color: color,
     inset: (x: 1em, y: 0.5em),
     radius: 8pt,
   )[
-    #text(fill: white, weight: "bold", size: 1.2em, label)
+    Status |
+    #underline(stroke: color + 3pt, offset: 2pt)[
+      #text(fill: white, weight: "bold", size: 1.2em, label)
+    ]
     #h(1fr)
     #text(fill: white.darken(10%), size: 0.9em, [(#task-count tasks)])
   ]
 }
 
 // Render a status group box
-#let render-status-group(status, tasks) = {
+#let render-status-group(status, tasks, milestone-title) = {
   if tasks.len() == 0 { return }
 
   render-status-header(status, tasks.len())
   v(0.5em)
 
   for task in tasks {
-    render-task(task)
+    render-task(task, milestone-title)
     v(0.5em)
   }
 }
 
-#let render-milestone-header(milestone, task-count) = {
+#let render-milestone-header(milestone-title, task-count) = {
   block(
     width: 100%,
     inset: (top: 0.3em, bottom: 0.2em),
   )[
-    #text(weight: "bold", size: 1.5em, milestone)
+    Milestone | #text(weight: "bold", size: 1.5em, milestone-title)
     #h(1fr)
     #text(fill: gray.darken(20%), size: 0.9em, [(#task-count tasks)])
   ]
 }
 
-// Main task board function - renders all tasks grouped by milestone, then by status
-#let task-board(tasks) = {
-  let milestone-order = tasks
-    .map(t => t.at("milestone", default: default-milestone))
-    .fold((), (acc, milestone) => {
-      if acc.contains(milestone) { acc } else { acc + (milestone,) }
-    })
-
-  for milestone in milestone-order {
-    let milestone-tasks = tasks.filter(
-      t => t.at("milestone", default: default-milestone) == milestone,
-    )
+#let task-board(milestones) = {
+  for group in milestones {
+    let milestone-title = group.title
+    let milestone-tasks = group.tasks
     let wip-tasks = milestone-tasks.filter(t => t.status == "wip")
     let todo-tasks = milestone-tasks.filter(t => t.status == "todo")
 
-    render-milestone-header(milestone, milestone-tasks.len())
+    render-milestone-header(milestone-title, milestone-tasks.len())
     v(0.75em)
 
-    render-status-group("wip", wip-tasks)
+    render-status-group("wip", wip-tasks, milestone-title)
 
     if wip-tasks.len() > 0 and todo-tasks.len() > 0 { v(1em) }
 
-    render-status-group("todo", todo-tasks)
+    render-status-group("todo", todo-tasks, milestone-title)
 
-    if milestone != milestone-order.last() { v(1.5em) }
+    if group != milestones.last() { v(1.5em) }
   }
 }

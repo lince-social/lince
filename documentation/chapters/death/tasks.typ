@@ -11,7 +11,7 @@
 )
 
 #let milestones = (
-  milestone("0.0.0: Non crazy-frog people", (
+  milestone("0.0.0 Non crazy-frog people", (
     task(
       "0.0 Usable by non-crazy-frog people, but still technical",
       contributors: (("@xaviduds", "wip"),),
@@ -46,27 +46,15 @@
         "Next Planning Talking Points",
         contributors: (("N1", "wip"),),
       )[
-        - [ ] Switching License from GPLv3 to MIT for ease of collaboration with other projects. Should we do it?
-        Or changing it to WTFPL: https://en.wikipedia.org/wiki/WTFPL
-        - [ ] Going through the excalidraw and critiquing with design. Make documentation of things there.
-        - [ ] Should we open an Institute? Why? Good reasons only
-        - [ ] Eventually we probably will need to make Anicca, the very own Lince's database. It's probably the most efficient way to do Lince's workflow because we can design it to fit exactly Lince's needs and no other app's needs.
-        But right now, should we change the database from SQLite to something more potent with data streaming (so the user doesnt need to refresh the page)?
-        Data polling to the db sucks (yes)?
-        It's good if we are able to provide some docker, nix way of using it by yourself. And have a way to host some db or
+        - [ ]
       ],
       task(
         "New Logo Items: First Batch",
         contributors: (("Nica", "wip"), ("@xaviduds", "wip")),
       )[
-        - [x] New vetorized logo | Nica
-        - [x] Decide on a font for the 'Lince' word and 'Instituto Lince'.: Instrument Serif?
-          - [/] How it is displayed in relation to the logo, if its logo on top and 'Lince' written on the bottom or on the right.
-          - [/] Same thing for 'Instituto Lince'
-          - [/] Stickers -> Rei do Sticker: 500 (250 b&w, 250 w&b) laminated or holographic. Make a design for it (may contain website lince.social).
-          - [x] Buy Hering's Super Cotton for t-shirts | Duds
-            - [/] Create the digital Tshirt design. Decide if its only logo and text close togeter, or if its logo in the heart part of the chest and 'Lince' in the other, or maybe in the back. Maybe have the name of the person in the other part of the chest and Lince in the back.
-            - [/] Embroider them with the logo: iguat | Duds
+        - [/] Stickers -> Rei do Sticker: 500 (250 b&w, 250 w&b) laminated. It will be 5x5cm. | Duds
+        - [/] Create the digital Tshirt design. Decide if its only logo and text close together, or if its logo in the heart part of the chest and 'Lince' in the other, or maybe in the back. Maybe have the name of the person in the other part of the chest and Lince in the back. | Nica & Duds (Website)
+          - [/] Embroider them with the logo: iguat | Duds
         - [ ] Blender 3D logo | Nica
           - [ ] 3D Keychain Items \@tecnopuc_crialab | Duds
       ],
@@ -101,16 +89,27 @@
         Feel free to refactor this a lot. With those two unfinished parts the frequency will be able to cover many cases, if you have more periodicies in
         mind to cover even more cases please refactor.
       ],
+      task("Tutorial: First Steps", contributors: (("@xaviduds", "wip"),))[
+        This is a document that is supposed to teach someone what Lince is.
+
+        The current documentation is a mix of teaching newcomers and documenting in high detail, we want to separate the two into different contributions so they fit each case better.
+
+        This should have four ways to consume easiest first:
+        - [/] Video (Not too long)
+        - [/] Text (Blogpost)
+        - [ ] HTML version
+        - [ ] TUI version (will be the sole hands-on tutorial for some time)
+      ],
       task("Extensions", contributors: (
         ("@chicogborba", "wip"),
-
         ("@xaviduds", "todo"),
       ))[
         Be able to use a View someone else made.
         How do we use it? Editing binary is not tha wae.
         Can i write it in a language that is not Rust? An interface library that is not the one used by the GUI? Can I run ratatui?
       ],
-      task("SQL Query Editor GUI", contributors: (("@chicogborba", "wip"),))[
+      task("SQL Query Editor GUI", contributors: (("@chicogborba", "todo"),))[
+        This could be replaced with the connector that is used for getting data into the sandbox the extension uses. If i need to select what data i want it is pretty similar to the workflow of making an sql query in a GUI-like way.
 
         - [ ] Being able to drag and drop columns to change the order of the SQL column being fetched.
         - [ ] In the GUI SQL Editor (excel-filters-like) have an order of priority for the rules of each column:
@@ -132,7 +131,7 @@
 
         - [ ] Maybe todo?
       ],
-      task("Schema Evolution")[
+      task("Schema Evolution", contributors: (("Vini", "wip"),))[
         This is a thinking task.
 
         There is a fine balance in making something generic and not bloated that isn't slow and painfull to work with. If you try to cover too many cases by default, with too many properties in the baseline app many people will not use it.
@@ -161,11 +160,6 @@
       )[
         Ter uma forma boa de editar notas, conectando possivelmente notas de objetivos com karma, pra que cada workflow tenha sua justificativa e possa-se criar primeiro os objetivos e completar eles com os passos pra chegar lá
       ],
-      task(
-        "Execute single Karma with visualization on the condition being evaluated",
-      )[
-        Maybe a modal
-      ],
       task("Design: Profile like", contributors: (("Nica", "todo"),))[
         Currently, lince feels like only a personal offline todo app. Because that's what it currently is.
 
@@ -190,10 +184,6 @@
         - Add views
         - Remove Views
         - Create Views
-      ],
-      task("Command buffer")[
-        - [ ] The command buffer doesnt always appear. At least when running the command with Operation Input.
-        - [ ] Maintain the shell's text highlighting. Maybe using tree-sitter?
       ],
       task("Shortcut focus operation input")[
         Ctrl-K will focus on it, anywhere that im in, it focuses it.
@@ -234,13 +224,6 @@
 
         - [ ] I can set a proposal public with a certain frequency. One time or in a pendulum. I can set it public first to my main Organ.
       ],
-      task(
-        "Command in several languages",
-      )[
-        syntax highlighting and lsp (Tree-Sitter?) for Commands
-        Being able to see based on the language syntax highlighting. So if in a Command block there is not a language set default to bash,
-        if there is rust use the highlight for Rust, use lsp to see if its wrong, be able to run every command and see the result.
-      ],
       task("Organ Management")[
         Your data is called a DNA, your Lince instance is called a Cell. Many Cells form a group called an Organ. This Organ can be for your family, friends, company, party, whatever. People can use it to share part of their Needs public in this Organ, and Contribute to the Needs of the Organ. Lince is all of the Cells and Organs are working together for eachother's Needs.
 
@@ -262,7 +245,7 @@
     ),
   ),
   milestone(
-    "1.1.0: AI",
+    "Minor Version: AI",
     (
       task("Init: Integration")[
         - [ ] Integrate with the majority of AI models, local or remote through API.
@@ -288,7 +271,25 @@
       ],
     ),
   ),
-  milestone("1.4.0: Ultra Rendering Rock n' Roll", (
+  milestone("Minor Version: Nerdmaxxing", (
+    task(
+      "Execute single Karma with visualization on the condition being evaluated",
+    )[
+      Maybe a modal
+    ],
+    task("Command buffer")[
+      - [ ] The command buffer doesnt always appear. At least when running the command with Operation Input.
+      - [ ] Maintain the shell's text highlighting. Maybe using tree-sitter?
+    ],
+    task(
+      "Command in several languages",
+    )[
+      syntax highlighting and lsp (Tree-Sitter?) for Commands
+      Being able to see based on the language syntax highlighting. So if in a Command block there is not a language set default to bash,
+      if there is rust use the highlight for Rust, use lsp to see if its wrong, be able to run every command and see the result.
+    ],
+  )),
+  milestone("Minor Version: Ultra Rendering Rock n' Roll", (
     task("Digital/Real-World Maps")[
       Being able to see the world or a digital space with it's actors and needs/contributions.
       - [ ] One can see the world as a plane with lines for the streets.

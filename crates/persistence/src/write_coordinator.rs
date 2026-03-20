@@ -1,4 +1,5 @@
 use crate::connection::sqlite_connect_options;
+use crate::repositories::view::sync_all_view_dependencies_in_connection;
 use sqlx::{Connection, SqliteConnection};
 use std::{
     collections::BTreeSet,
@@ -170,7 +171,13 @@ async fn execute_statement(
         .map_err(|error| Error::new(ErrorKind::InvalidInput, error.to_string()))?
         .rows_affected();
 
-    let (committed, changed_tables) = take_hook_state(hook_state)?;
+    let (committed, mut changed_tables) = take_hook_state(hook_state)?;
+    if committed && should_reconcile_view_dependencies(&changed_tables) {
+        sync_all_view_dependencies_in_connection(connection).await?;
+        clear_hook_state(hook_state)?;
+        changed_tables.insert("view_dependency".to_string());
+    }
+
     if committed && !changed_tables.is_empty() {
         let _ = invalidation_tx.send(InvalidationEvent {
             changed_tables: changed_tables.clone(),
@@ -200,6 +207,15 @@ fn take_hook_state(hook_state: &Arc<Mutex<HookState>>) -> Result<(bool, BTreeSet
     let changed_tables = std::mem::take(&mut state.pending_tables);
     state.committed = false;
     Ok((committed, changed_tables))
+}
+
+fn clear_hook_state(hook_state: &Arc<Mutex<HookState>>) -> Result<(), Error> {
+    let _ = take_hook_state(hook_state)?;
+    Ok(())
+}
+
+fn should_reconcile_view_dependencies(changed_tables: &BTreeSet<String>) -> bool {
+    changed_tables.contains("view") || changed_tables.contains("view_dependency")
 }
 
 fn count_statements(sql: &str) -> usize {

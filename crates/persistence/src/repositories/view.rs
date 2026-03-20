@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use domain::clean::view::View;
 use regex::Regex;
 use serde::Serialize;
-use sqlx::{Column, Pool, Row, Sqlite, TypeInfo};
+use sqlx::{Column, Pool, Row, Sqlite, SqliteConnection, TypeInfo};
 use std::{
     collections::{BTreeMap, BTreeSet},
     io::{Error, ErrorKind},
@@ -52,6 +52,7 @@ impl ViewRepository for ViewRepositoryImpl {
     }
 
     async fn get_dependencies(&self, view_id: u32) -> Result<BTreeSet<String>, Error> {
+        let view = self.get_by_id(view_id).await?;
         let rows = sqlx::query_scalar::<_, String>(
             "SELECT table_name FROM view_dependency WHERE view_id = ? ORDER BY table_name",
         )
@@ -60,11 +61,12 @@ impl ViewRepository for ViewRepositoryImpl {
         .await
         .map_err(|error| Error::new(ErrorKind::InvalidData, error))?;
 
-        let view = self.get_by_id(view_id).await?;
         let mut dependencies = rows.into_iter().collect::<BTreeSet<_>>();
-        dependencies.extend(infer_view_dependencies(&view.query));
         dependencies.insert("view".to_string());
         dependencies.insert("view_dependency".to_string());
+        if is_special_view_query(&view.query) {
+            dependencies.remove("view_dependency");
+        }
         Ok(dependencies)
     }
 
@@ -156,7 +158,8 @@ pub fn infer_view_dependencies(query: &str) -> BTreeSet<String> {
 
     static DEPENDENCY_REGEX: OnceLock<Regex> = OnceLock::new();
     let regex = DEPENDENCY_REGEX.get_or_init(|| {
-        Regex::new(r#"(?i)\b(?:from|join)\s+["`[]?([a-zA-Z_][a-zA-Z0-9_]*)"#).unwrap()
+        Regex::new(r#"(?i)\b(?:from|join)\s+(?:"|`|\[)?([a-zA-Z_][a-zA-Z0-9_]*)"#)
+            .expect("valid dependency regex")
     });
 
     regex
@@ -165,4 +168,134 @@ pub fn infer_view_dependencies(query: &str) -> BTreeSet<String> {
         .map(|matched| matched.as_str().to_lowercase())
         .filter(|name| !name.is_empty())
         .collect()
+}
+
+pub async fn sync_all_view_dependencies_in_pool(db: &Pool<Sqlite>) -> Result<(), Error> {
+    let views = sqlx::query_as::<_, (i64, String)>("SELECT id, query FROM view ORDER BY id")
+        .fetch_all(db)
+        .await
+        .map_err(Error::other)?;
+
+    apply_view_dependency_plan_to_pool(db, build_view_dependency_plan(views)).await
+}
+
+pub async fn sync_all_view_dependencies_in_connection(
+    connection: &mut SqliteConnection,
+) -> Result<(), Error> {
+    let views = sqlx::query_as::<_, (i64, String)>("SELECT id, query FROM view ORDER BY id")
+        .fetch_all(&mut *connection)
+        .await
+        .map_err(Error::other)?;
+
+    apply_view_dependency_plan_to_connection(connection, build_view_dependency_plan(views)).await
+}
+
+fn build_view_dependency_plan(views: Vec<(i64, String)>) -> Vec<(i64, BTreeSet<String>)> {
+    views
+        .into_iter()
+        .map(|(view_id, query)| (view_id, infer_view_dependencies(&query)))
+        .collect()
+}
+
+async fn apply_view_dependency_plan_to_pool(
+    db: &Pool<Sqlite>,
+    plan: Vec<(i64, BTreeSet<String>)>,
+) -> Result<(), Error> {
+    for (view_id, dependencies) in plan {
+        replace_view_dependencies_in_pool(db, view_id, dependencies).await?;
+    }
+
+    Ok(())
+}
+
+async fn apply_view_dependency_plan_to_connection(
+    connection: &mut SqliteConnection,
+    plan: Vec<(i64, BTreeSet<String>)>,
+) -> Result<(), Error> {
+    for (view_id, dependencies) in plan {
+        replace_view_dependencies_in_connection(connection, view_id, dependencies).await?;
+    }
+
+    Ok(())
+}
+
+async fn replace_view_dependencies_in_pool(
+    db: &Pool<Sqlite>,
+    view_id: i64,
+    dependencies: BTreeSet<String>,
+) -> Result<(), Error> {
+    sqlx::query("DELETE FROM view_dependency WHERE view_id = ?")
+        .bind(view_id)
+        .execute(db)
+        .await
+        .map_err(Error::other)?;
+
+    for table_name in dependencies {
+        sqlx::query("INSERT OR IGNORE INTO view_dependency(view_id, table_name) VALUES (?, ?)")
+            .bind(view_id)
+            .bind(table_name)
+            .execute(db)
+            .await
+            .map_err(Error::other)?;
+    }
+
+    Ok(())
+}
+
+async fn replace_view_dependencies_in_connection(
+    connection: &mut SqliteConnection,
+    view_id: i64,
+    dependencies: BTreeSet<String>,
+) -> Result<(), Error> {
+    sqlx::query("DELETE FROM view_dependency WHERE view_id = ?")
+        .bind(view_id)
+        .execute(&mut *connection)
+        .await
+        .map_err(Error::other)?;
+
+    for table_name in dependencies {
+        sqlx::query("INSERT OR IGNORE INTO view_dependency(view_id, table_name) VALUES (?, ?)")
+            .bind(view_id)
+            .bind(table_name)
+            .execute(&mut *connection)
+            .await
+            .map_err(Error::other)?;
+    }
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::infer_view_dependencies;
+    use std::collections::BTreeSet;
+
+    #[test]
+    fn infers_dependencies_from_basic_selects() {
+        let dependencies = infer_view_dependencies(
+            "SELECT * FROM record JOIN frequency ON frequency.id = record.id",
+        );
+
+        assert_eq!(
+            dependencies,
+            BTreeSet::from(["frequency".to_string(), "record".to_string()])
+        );
+    }
+
+    #[test]
+    fn infers_dependencies_from_bracketed_and_quoted_tables() {
+        let dependencies = infer_view_dependencies(
+            "SELECT * FROM [view] JOIN `collection_view` ON `collection_view`.view_id = [view].id",
+        );
+
+        assert_eq!(
+            dependencies,
+            BTreeSet::from(["collection_view".to_string(), "view".to_string()])
+        );
+    }
+
+    #[test]
+    fn ignores_special_views() {
+        assert!(infer_view_dependencies("karma_orchestra").is_empty());
+    }
 }

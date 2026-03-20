@@ -504,11 +504,12 @@ impl CustomTable {
 
         let services = self.services.clone();
         cx.spawn(async move |_this, _cx| {
-            if let Err(e) = services
-                .repository
-                .collection
-                .update_collection_view_column_widths(collection_view_id, widths)
-                .await
+            if let Err(e) = application::write::update_collection_view_column_widths(
+                services.clone(),
+                collection_view_id,
+                widths,
+            )
+            .await
             {
                 eprintln!("Failed to save column widths: {}", e);
             }
@@ -772,16 +773,16 @@ impl CustomTable {
         let table = self.table_name.clone();
         let services = self.services.clone();
         cx.spawn(async move |this, cx| {
-            if let Err(e) = services.repository.table.delete_by_id(table, row_id).await {
+            if let Err(e) =
+                application::write::table_delete_row(services.clone(), table, row_id).await
+            {
                 eprintln!("Failed to delete row: {e}");
                 return;
             }
             if disable_confirmation
-                && let Err(e) = services
-                    .repository
-                    .configuration
-                    .set_delete_confirmation_for_active(false)
-                    .await
+                && let Err(e) =
+                    application::write::set_delete_confirmation_for_active(services.clone(), false)
+                        .await
             {
                 eprintln!("Failed to disable delete confirmation: {e}");
             }

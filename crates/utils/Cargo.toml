@@ -4,4 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+argon2.workspace = true
 chrono.workspace = true
+jsonwebtoken.workspace = true
+serde = { workspace = true, features = ["derive"] }

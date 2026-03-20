@@ -69,7 +69,10 @@ fn parse_operation_result(operation: &str) -> Vec<ParsedOperation> {
     if let Some(action) = parse_operation_action(operation)
         && action == OperationActions::Create
     {
-        results.push(ParsedOperation::new(action, parse_operation_table(operation)));
+        results.push(ParsedOperation::new(
+            action,
+            parse_operation_table(operation),
+        ));
     }
 
     results
@@ -102,14 +105,16 @@ pub async fn parse_operation_and_execute(services: InjectedServices, operation: 
                 // }
                 "k" | "collection" => {
                     if let Some(id) = parse_id(&operation)
-                        && let Err(e) = services.repository.collection.set_active(id).await
+                        && let Err(e) =
+                            crate::write::set_active_collection(services.clone(), id).await
                     {
                         log(LogEntry::Error(e.kind(), e.to_string()))
                     }
                 }
                 "a" | "configuration" => {
                     if let Some(id) = parse_id(&operation)
-                        && let Err(e) = services.repository.configuration.set_active(id).await
+                        && let Err(e) =
+                            crate::write::set_active_configuration(services.clone(), id).await
                     {
                         log(LogEntry::Error(e.kind(), e.to_string()))
                     }
@@ -142,10 +147,7 @@ pub async fn operation_execute(
     let only_digits_regex = Regex::new(r"^\d+$").unwrap();
     if only_digits_regex.is_match(&operation) {
         let id = operation.parse::<u32>().unwrap();
-        let _ = services
-            .repository
-            .record
-            .set_quantity(id, 0.0)
+        let _ = crate::write::set_record_quantity(services.clone(), id, 0.0)
             .await
             .inspect_err(|e| log(LogEntry::Error(e.kind(), e.to_string())));
 

@@ -8,7 +8,10 @@ use persistence::repositories::{
     query::{QueryRepository, QueryRepositoryImpl},
     record::{RecordRepository, RecordRepositoryImpl},
     table::{TableRepository, TableRepositoryImpl},
+    user::{UserRepository, UserRepositoryImpl},
+    view::{ViewRepository, ViewRepositoryImpl},
 };
+use persistence::write_coordinator::WriteCoordinatorHandle;
 use sqlx::{Pool, Sqlite};
 use std::sync::Arc;
 
@@ -22,15 +25,21 @@ pub struct Repositories {
     pub frequency: Arc<dyn FrequencyRepository>,
     pub karma: Arc<dyn KarmaRepository>,
     pub collection: Arc<dyn CollectionRepository>,
+    pub user: Arc<dyn UserRepository>,
+    pub view: Arc<dyn ViewRepository>,
 }
 
 pub struct Injected {
     pub repository: Repositories,
+    pub writer: WriteCoordinatorHandle,
 }
 
 pub type InjectedServices = Arc<Injected>;
 
-pub fn dependency_injection(db: Arc<Pool<Sqlite>>) -> InjectedServices {
+pub fn dependency_injection(
+    db: Arc<Pool<Sqlite>>,
+    writer: WriteCoordinatorHandle,
+) -> InjectedServices {
     let services: InjectedServices = Arc::new(Injected {
         repository: Repositories {
             configuration: Arc::new(ConfigurationRepositoryImpl::new(db.clone())),
@@ -42,7 +51,10 @@ pub fn dependency_injection(db: Arc<Pool<Sqlite>>) -> InjectedServices {
             frequency: Arc::new(FrequencyRepositoryImpl::new(db.clone())),
             karma: Arc::new(KarmaRepositoryImpl::new(db.clone())),
             collection: Arc::new(CollectionRepositoryImpl::new(db.clone())),
+            user: Arc::new(UserRepositoryImpl::new(db.clone())),
+            view: Arc::new(ViewRepositoryImpl::new(db.clone())),
         },
+        writer,
     });
 
     services

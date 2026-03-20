@@ -1,3 +1,4 @@
+pub mod app_user;
 pub mod collection;
 pub mod command;
 pub mod configuration;

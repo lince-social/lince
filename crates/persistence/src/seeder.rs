@@ -1,3 +1,4 @@
+use crate::repositories::view::{infer_view_dependencies, is_special_view_query};
 use sqlx::{Pool, Sqlite};
 use std::io::Error;
 
@@ -205,6 +206,38 @@ pub async fn seed(db: &Pool<Sqlite>) -> Result<(), Error> {
     .execute(&*db)
     .await
     .map_err(Error::other)?;
+
+    sync_view_dependencies(db).await?;
+
+    Ok(())
+}
+
+async fn sync_view_dependencies(db: &Pool<Sqlite>) -> Result<(), Error> {
+    let views = sqlx::query_as::<_, (i64, String)>("SELECT id, query FROM view")
+        .fetch_all(&*db)
+        .await
+        .map_err(Error::other)?;
+
+    for (view_id, query) in views {
+        sqlx::query("DELETE FROM view_dependency WHERE view_id = ?")
+            .bind(view_id)
+            .execute(&*db)
+            .await
+            .map_err(Error::other)?;
+
+        if is_special_view_query(&query) {
+            continue;
+        }
+
+        for table_name in infer_view_dependencies(&query) {
+            sqlx::query("INSERT OR IGNORE INTO view_dependency(view_id, table_name) VALUES (?, ?)")
+                .bind(view_id)
+                .bind(table_name)
+                .execute(&*db)
+                .await
+                .map_err(Error::other)?;
+        }
+    }
 
     Ok(())
 }

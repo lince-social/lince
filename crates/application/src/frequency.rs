@@ -26,7 +26,7 @@ pub async fn frequency_check(services: InjectedServices, id: u32) -> (u32, Optio
             quantity: 0.0,
             ..frequency.clone()
         };
-        let _ = services.repository.frequency.update(frequency).await;
+        let _ = crate::write::update_frequency(services.clone(), frequency).await;
         return (0, None);
     }
 

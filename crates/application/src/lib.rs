@@ -11,3 +11,5 @@ pub mod operation;
 pub mod query;
 pub mod sum;
 pub mod table;
+pub mod view;
+pub mod write;

@@ -71,7 +71,9 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
 
         if let Some(caps) = regex_record_quantity.captures(&karma.consequence) {
             if let Ok(id) = caps[1].parse::<u32>() {
-                if let Err(e) = services.repository.record.set_quantity(id, condition).await {
+                if let Err(e) =
+                    crate::write::set_record_quantity(services.clone(), id, condition).await
+                {
                     log(LogEntry::Error(
                         e.kind(),
                         format!("record quantity error on karma id {}", karma.id),
@@ -115,7 +117,7 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
     }
 
     for (_, frequency) in frequencies_to_update {
-        let _ = services.repository.frequency.update(frequency).await;
+        let _ = crate::write::update_frequency(services.clone(), frequency).await;
     }
 
     Ok(())

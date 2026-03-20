@@ -321,13 +321,7 @@ impl TuiState {
                 if !filter.is_empty() && !id_text.starts_with(filter) {
                     return None;
                 }
-                Some((
-                    id,
-                    table,
-                    table
-                        .as_table_name()
-                        .replace('_', " "),
-                ))
+                Some((id, table, table.as_table_name().replace('_', " ")))
             })
             .collect()
     }
@@ -347,17 +341,15 @@ impl TuiState {
             self.create_shortcut_selection = 0;
             return;
         }
-        let next = (self.create_shortcut_selection as isize + delta).rem_euclid(option_len as isize);
+        let next =
+            (self.create_shortcut_selection as isize + delta).rem_euclid(option_len as isize);
         self.create_shortcut_selection = next as usize;
     }
 
     pub(super) fn selected_create_shortcut_instruction(&self) -> Option<ParsedOperation> {
         let options = self.create_shortcut_options();
         let (_, table, _) = options.get(self.create_shortcut_selection)?;
-        Some(ParsedOperation::new(
-            OperationActions::Create,
-            Some(*table),
-        ))
+        Some(ParsedOperation::new(OperationActions::Create, Some(*table)))
     }
 
     pub(super) fn rendered_selected_view_table(&self) -> Option<SqlViewTable> {
@@ -477,14 +469,18 @@ impl TuiState {
             self.selected_view_by_collection.remove(&collection_id);
             return;
         };
-        self.selected_view_by_collection.insert(collection_id, view_id);
+        self.selected_view_by_collection
+            .insert(collection_id, view_id);
     }
 
     fn restore_selected_view_for_active_collection(&mut self) {
         let Some(collection_id) = self.active_collection().map(|entry| entry.collection.id) else {
             return;
         };
-        let Some(selected_view_id) = self.selected_view_by_collection.get(&collection_id).copied()
+        let Some(selected_view_id) = self
+            .selected_view_by_collection
+            .get(&collection_id)
+            .copied()
         else {
             self.clamp_view_selection();
             return;
@@ -710,7 +706,9 @@ impl TuiState {
 
     pub(super) fn insert_char_in_selected_cell(&mut self, ch: char) {
         self.replace_selection_if_present();
-        let Some(mut chars) = self.selected_cell_text().map(|text| text.chars().collect::<Vec<_>>())
+        let Some(mut chars) = self
+            .selected_cell_text()
+            .map(|text| text.chars().collect::<Vec<_>>())
         else {
             return;
         };
@@ -725,7 +723,9 @@ impl TuiState {
             return;
         }
 
-        let Some(mut chars) = self.selected_cell_text().map(|text| text.chars().collect::<Vec<_>>())
+        let Some(mut chars) = self
+            .selected_cell_text()
+            .map(|text| text.chars().collect::<Vec<_>>())
         else {
             return;
         };
@@ -742,7 +742,9 @@ impl TuiState {
         let Some((start, end)) = self.cell_selection_range() else {
             return false;
         };
-        let Some(mut chars) = self.selected_cell_text().map(|text| text.chars().collect::<Vec<_>>())
+        let Some(mut chars) = self
+            .selected_cell_text()
+            .map(|text| text.chars().collect::<Vec<_>>())
         else {
             return false;
         };
@@ -1293,11 +1295,18 @@ async fn save_focused_cell_if_needed(
     let row_id = state.focused_cell_row_id().ok_or_else(|| {
         std::io::Error::other("Focused row does not expose an id column for saving")
     })?;
-    let column_name = state.focused_cell_column_name().ok_or_else(|| {
-        std::io::Error::other("Focused column could not be resolved for saving")
-    })?;
+    let column_name = state
+        .focused_cell_column_name()
+        .ok_or_else(|| std::io::Error::other("Focused column could not be resolved for saving"))?;
 
-    table_patch_row(services.clone(), source_table, row_id, column_name, edited_value).await?;
+    table_patch_row(
+        services.clone(),
+        source_table,
+        row_id,
+        column_name,
+        edited_value,
+    )
+    .await?;
     state.reload(services).await?;
     Ok(true)
 }
@@ -1354,7 +1363,10 @@ fn handle_create_shortcut_key(state: &mut TuiState, key: KeyEvent) -> Option<Par
             state.create_shortcut_buffer = Some(buffer);
             let instruction = state.selected_create_shortcut_instruction();
             if instruction.is_none() {
-                let filter = state.create_shortcut_filter().unwrap_or_default().to_string();
+                let filter = state
+                    .create_shortcut_filter()
+                    .unwrap_or_default()
+                    .to_string();
                 state.push_error(format!("No create target matches: {filter}"));
             } else {
                 state.create_shortcut_buffer = None;
@@ -1483,7 +1495,7 @@ async fn submit_creation_modal(
     let table_name = modal.table_name().to_string();
     let values = modal.values();
 
-    services.repository.table.insert_row(table_name, values).await?;
+    application::write::table_insert_row(services.clone(), table_name, values).await?;
     state.set_creation_modal(None);
     state.reload(services).await?;
     Ok(())
@@ -1501,10 +1513,7 @@ async fn cycle_active_collection(
     let len = state.collections.len() as isize;
     let next_index = (state.active_collection_index as isize + direction).rem_euclid(len) as usize;
     let next_collection_id = state.collections[next_index].collection.id;
-    services
-        .repository
-        .collection
-        .set_active(&next_collection_id.to_string())
+    application::write::set_active_collection(services.clone(), &next_collection_id.to_string())
         .await?;
     state.reload(services).await?;
     Ok(())
@@ -1521,10 +1530,7 @@ async fn toggle_selected_view(
     let Some(selected_view_id) = state.selected_view().map(|view| view.id) else {
         return Ok(());
     };
-    services
-        .repository
-        .collection
-        .toggle_by_view_id(active_collection_id, selected_view_id)
+    application::write::toggle_view(services.clone(), active_collection_id, selected_view_id)
         .await?;
     state.reload(services).await?;
     Ok(())
@@ -1653,7 +1659,9 @@ fn line_starts(text: &str) -> (Vec<usize>, usize) {
 }
 
 fn line_index_for_cursor(line_starts: &[usize], cursor: usize) -> usize {
-    line_starts.partition_point(|start| *start <= cursor).saturating_sub(1)
+    line_starts
+        .partition_point(|start| *start <= cursor)
+        .saturating_sub(1)
 }
 
 fn line_end_for_index(line_starts: &[usize], total_chars: usize, index: usize) -> usize {

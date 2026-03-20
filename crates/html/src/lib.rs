@@ -17,6 +17,7 @@ use std::{
 };
 use tokio::sync::broadcast;
 
+pub mod api;
 pub mod collection;
 pub mod colorscheme;
 pub mod datastar;
@@ -32,6 +33,7 @@ pub mod view;
 struct HtmlState {
     services: InjectedServices,
     active_context_tx: broadcast::Sender<()>,
+    jwt_secret: Arc<String>,
 }
 
 #[derive(Deserialize)]
@@ -50,17 +52,19 @@ struct CreateRowForm {
     values: std::collections::HashMap<String, String>,
 }
 
-pub async fn serve(services: InjectedServices) -> Result<(), Error> {
+pub async fn serve(services: InjectedServices, jwt_secret: String) -> Result<(), Error> {
     let (active_context_tx, _active_context_rx) = broadcast::channel(100);
     let state = Arc::new(HtmlState {
         services,
         active_context_tx,
+        jwt_secret: Arc::new(jwt_secret),
     });
     let app = Router::<Arc<HtmlState>>::new()
         .route("/", get(page))
         .route("/body", get(body))
         .route("/header", get(header))
         .route("/main", get(main))
+        .nest("/api", api::router())
         .route("/sse/active-context", get(active_context_sse))
         .route(
             "/table/{table}/{id}/{column}",
@@ -201,7 +205,7 @@ async fn delete_table_row(
     Path((table_name, id)): Path<(String, String)>,
 ) -> impl IntoResponse {
     let services = state.services.clone();
-    let _ = services.repository.table.delete_by_id(table_name, id).await;
+    let _ = application::write::table_delete_row(services.clone(), table_name, id).await;
     notify_active_context(&state);
     datastar::patch_elements(
         "#main",
@@ -215,7 +219,7 @@ async fn set_active_collection(
     Path(id): Path<String>,
 ) -> impl IntoResponse {
     let services = state.services.clone();
-    let _ = services.repository.collection.set_active(&id).await;
+    let _ = application::write::set_active_collection(services.clone(), &id).await;
     notify_active_context(&state);
     datastar::patch_elements(
         "#body",
@@ -229,11 +233,7 @@ async fn toggle_collection_views(
     Path(collection_id): Path<u32>,
 ) -> impl IntoResponse {
     let services = state.services.clone();
-    let _ = services
-        .repository
-        .collection
-        .toggle_by_collection_id(collection_id)
-        .await;
+    let _ = application::write::toggle_collection_views(services.clone(), collection_id).await;
     notify_active_context(&state);
     datastar::patch_elements(
         "#body",
@@ -247,11 +247,7 @@ async fn toggle_single_view(
     Path((collection_id, view_id)): Path<(u32, u32)>,
 ) -> impl IntoResponse {
     let services = state.services.clone();
-    let _ = services
-        .repository
-        .collection
-        .toggle_by_view_id(collection_id, view_id)
-        .await;
+    let _ = application::write::toggle_view(services.clone(), collection_id, view_id).await;
     notify_active_context(&state);
     datastar::patch_elements(
         "#body",
@@ -336,11 +332,7 @@ async fn create_row(
     let table_name = parsed
         .map(|table| table.as_table_name().to_string())
         .unwrap_or(table_name);
-    let _ = services
-        .repository
-        .table
-        .insert_row(table_name, form.values)
-        .await;
+    let _ = application::write::table_insert_row(services.clone(), table_name, form.values).await;
     notify_active_context(&state);
     datastar::patch_elements(
         "#body",

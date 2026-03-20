@@ -12,13 +12,17 @@ use application::karma::karma_deliver;
 #[cfg(feature = "html")]
 use html::serve as serve_html;
 use injection::cross_cutting::{InjectedServices, dependency_injection};
-use persistence::connection::connection;
-use persistence::seeder::seed;
+use persistence::{
+    connection::{connection, read_only_connection},
+    seeder::seed,
+    write_coordinator::{SqlParameter, WriteCoordinatorHandle, spawn_write_coordinator},
+};
 #[cfg(feature = "karma")]
 use std::time::Duration;
 use std::{env, io::Error, sync::Arc};
 #[cfg(feature = "tui")]
 use tui::tui_app;
+use utils::auth::hash_password;
 use utils::logging::{LogEntry, log};
 
 #[tokio::main]
@@ -28,6 +32,8 @@ async fn main() -> Result<(), Error> {
         print_help();
         return Ok(());
     }
+
+    let _ = dotenvy::dotenv();
 
     let db = Arc::new(connection().await.inspect_err(|e| {
         log(LogEntry::Error(e.kind(), e.to_string()));
@@ -39,11 +45,24 @@ async fn main() -> Result<(), Error> {
 
     seed(&db).await.map_err(Error::other)?;
 
-    let services = dependency_injection(db.clone());
     #[cfg(any(feature = "gui", feature = "html", feature = "tui"))]
     let frontend_enabled = should_start_frontend(&args);
     #[cfg(feature = "karma")]
     let karma_enabled = should_start_karma(&args);
+
+    let writer = spawn_write_coordinator().await.inspect_err(|e| {
+        log(LogEntry::Error(e.kind(), e.to_string()));
+    })?;
+
+    if has_arg(&args, "--seed-root-user") {
+        seed_root_user(&writer).await?;
+        return Ok(());
+    }
+
+    let read_db = Arc::new(read_only_connection().await.inspect_err(|e| {
+        log(LogEntry::Error(e.kind(), e.to_string()));
+    })?);
+    let services = dependency_injection(read_db.clone(), writer.clone());
 
     #[cfg(feature = "gui")]
     if frontend_enabled && let Err(e) = start_gui(services.clone()).await {
@@ -73,6 +92,7 @@ fn print_help() {
     println!();
     println!("Options:");
     println!("  -h, --help            Show this help message");
+    println!("      --seed-root-user  Create the root API user if it does not exist");
     println!("      --frontend       Start only the compiled frontend");
     #[cfg(feature = "karma")]
     println!("      --karma          Start only the karma delivery loop");
@@ -141,7 +161,9 @@ async fn start_gui(services: InjectedServices) -> Result<(), Error> {
 
 #[cfg(feature = "html")]
 async fn start_html(services: InjectedServices) -> Result<(), Error> {
-    serve_html(services).await
+    let jwt_secret = env::var("JWT_SECRET")
+        .map_err(|_| Error::other("JWT_SECRET is required when the HTML/API server is enabled"))?;
+    serve_html(services, jwt_secret).await
 }
 
 #[cfg(feature = "tui")]
@@ -165,4 +187,28 @@ async fn start_karma(services: InjectedServices) -> Result<(), Error> {
         println!("Karma Delivered!");
         tokio::time::sleep(Duration::from_secs(60)).await;
     }
+}
+
+async fn seed_root_user(writer: &WriteCoordinatorHandle) -> Result<(), Error> {
+    let password_hash = hash_password("crazyfrog")?;
+    let _ = writer
+        .execute_statement(
+            "
+            INSERT INTO app_user(name, username, password_hash)
+            SELECT ?, ?, ?
+            WHERE NOT EXISTS (
+                SELECT 1 FROM app_user WHERE username = ?
+            )
+            "
+            .to_string(),
+            vec![
+                SqlParameter::Text("Root".to_string()),
+                SqlParameter::Text("bomboclaat".to_string()),
+                SqlParameter::Text(password_hash),
+                SqlParameter::Text("bomboclaat".to_string()),
+            ],
+        )
+        .await?;
+    println!("Root user ensured for username bomboclaat");
+    Ok(())
 }

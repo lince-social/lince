@@ -30,6 +30,7 @@ use domain::{
         operation::{DatabaseTable, OperationActions},
     },
 };
+use gpui::StatefulInteractiveElement as _;
 use gpui::*;
 use gpui_component::scroll::ScrollableElement;
 use injection::cross_cutting::InjectedServices;
@@ -253,11 +254,11 @@ impl Workspace {
 
         let services = self.services.clone();
         cx.spawn(async move |this, cx| {
-            if let Err(e) = services
-                .repository
-                .collection
-                .set_active(&collection_id.to_string())
-                .await
+            if let Err(e) = application::write::set_active_collection(
+                services.clone(),
+                &collection_id.to_string(),
+            )
+            .await
             {
                 utils::log!(e, "failed to set active collection");
             }
@@ -340,13 +341,16 @@ impl Workspace {
 
         let services = self.services.clone();
         cx.spawn(async move |this, cx| {
-            match services
-                .repository
-                .collection
-                .toggle_by_view_id(collection_id, view_id)
-                .await
-            {
-                Ok(collections) => {
+            match application::write::toggle_view(services.clone(), collection_id, view_id).await {
+                Ok(()) => {
+                    let collections = match services.repository.collection.get_all().await {
+                        Ok(rows) => rows,
+                        Err(e) => {
+                            log!(e, "failed to fetch collections");
+                            vec![]
+                        }
+                    };
+
                     let (tables, special_views) =
                         match services.repository.collection.get_active_view_data().await {
                             Ok((tables, special_views)) => (tables, special_views),
@@ -487,11 +491,12 @@ impl Workspace {
     ) {
         let services = self.services.clone();
         cx.spawn(async move |this, cx| {
-            if let Err(e) = services
-                .repository
-                .table
-                .insert_row(table.as_table_name().to_string(), values)
-                .await
+            if let Err(e) = application::write::table_insert_row(
+                services.clone(),
+                table.as_table_name().to_string(),
+                values,
+            )
+            .await
             {
                 log!(e, "failed to create row from modal");
                 return;
@@ -618,11 +623,9 @@ impl Workspace {
     ) {
         let services = self.services.clone();
         cx.spawn(async move |this, cx| {
-            if let Err(e) = services
-                .repository
-                .collection
-                .pin_view(view_id, position_x, position_y)
-                .await
+            if let Err(e) =
+                application::write::pin_view(services.clone(), view_id, position_x, position_y)
+                    .await
             {
                 log!(e, "failed to pin view");
                 return;
@@ -677,7 +680,7 @@ impl Workspace {
     pub fn unpin_view(&mut self, view_id: u32, cx: &mut Context<Self>) {
         let services = self.services.clone();
         cx.spawn(async move |this, cx| {
-            if let Err(e) = services.repository.collection.unpin_view(view_id).await {
+            if let Err(e) = application::write::unpin_view(services.clone(), view_id).await {
                 log!(e, "failed to unpin view");
                 return;
             }
@@ -737,11 +740,13 @@ impl Workspace {
     ) {
         let services = self.services.clone();
         cx.spawn(async move |_this, _cx| {
-            if let Err(e) = services
-                .repository
-                .collection
-                .update_view_position(view_id, position_x, position_y)
-                .await
+            if let Err(e) = application::write::update_view_position(
+                services.clone(),
+                view_id,
+                position_x,
+                position_y,
+            )
+            .await
             {
                 log!(e, "failed to update view position");
             }
@@ -758,11 +763,8 @@ impl Workspace {
     ) {
         let services = self.services.clone();
         cx.spawn(async move |_this, _cx| {
-            if let Err(e) = services
-                .repository
-                .collection
-                .update_view_size(view_id, width, height)
-                .await
+            if let Err(e) =
+                application::write::update_view_size(services.clone(), view_id, width, height).await
             {
                 log!(e, "failed to update view size");
             }
@@ -1538,6 +1540,7 @@ impl Render for Workspace {
                 );
 
         let scrollable_main = div()
+            .id("main-scroll-area")
             .flex_1()
             .min_h(px(0.0))
             .w_full()

@@ -7,3 +7,5 @@ pub mod operation;
 pub mod query;
 pub mod record;
 pub mod table;
+pub mod user;
+pub mod view;

@@ -1,15 +1,15 @@
 #![forbid(unsafe_code)]
 
 #[cfg(all(feature = "gui", feature = "tui"))]
-compile_error!("Enable only one frontend feature at a time: `gui`, `tui`, or `html`.");
-#[cfg(all(feature = "gui", feature = "html"))]
-compile_error!("Enable only one frontend feature at a time: `gui`, `tui`, or `html`.");
-#[cfg(all(feature = "tui", feature = "html"))]
-compile_error!("Enable only one frontend feature at a time: `gui`, `tui`, or `html`.");
+compile_error!("Enable only one frontend feature at a time: `gui`, `tui`, or `http`.");
+#[cfg(all(feature = "gui", feature = "http"))]
+compile_error!("Enable only one frontend feature at a time: `gui`, `tui`, or `http`.");
+#[cfg(all(feature = "tui", feature = "http"))]
+compile_error!("Enable only one frontend feature at a time: `gui`, `tui`, or `http`.");
 
 #[cfg(feature = "karma")]
 use application::karma::karma_deliver;
-#[cfg(feature = "html")]
+#[cfg(feature = "http")]
 use html::serve as serve_html;
 use injection::cross_cutting::{InjectedServices, dependency_injection};
 use persistence::{
@@ -45,7 +45,7 @@ async fn main() -> Result<(), Error> {
 
     seed(&db).await.map_err(Error::other)?;
 
-    #[cfg(any(feature = "gui", feature = "html", feature = "tui"))]
+    #[cfg(any(feature = "gui", feature = "http", feature = "tui"))]
     let frontend_enabled = should_start_frontend(&args);
     #[cfg(feature = "karma")]
     let karma_enabled = should_start_karma(&args);
@@ -69,7 +69,7 @@ async fn main() -> Result<(), Error> {
         log(LogEntry::Error(e.kind(), e.to_string()));
     }
 
-    #[cfg(feature = "html")]
+    #[cfg(feature = "http")]
     if frontend_enabled && let Err(e) = start_html(services.clone()).await {
         log(LogEntry::Error(e.kind(), e.to_string()));
     }
@@ -100,7 +100,7 @@ fn print_help() {
     println!("      --karmaless       Disable karma delivery loop");
     #[cfg(feature = "gui")]
     println!("      --guiless        Disable GUI startup");
-    #[cfg(feature = "html")]
+    #[cfg(feature = "http")]
     println!("      --htmlless       Disable HTML frontend startup");
     #[cfg(feature = "tui")]
     println!("      --tuiless        Disable TUI startup");
@@ -112,7 +112,7 @@ fn has_arg(args: &[String], expected: &str) -> bool {
     args.iter().any(|arg| arg == expected)
 }
 
-#[cfg(any(feature = "gui", feature = "html", feature = "tui"))]
+#[cfg(any(feature = "gui", feature = "http", feature = "tui"))]
 fn should_start_frontend(args: &[String]) -> bool {
     let explicitly_selected = has_arg(args, "--frontend") || has_arg(args, "--karma");
     if explicitly_selected {
@@ -124,7 +124,7 @@ fn should_start_frontend(args: &[String]) -> bool {
         return false;
     }
 
-    #[cfg(feature = "html")]
+    #[cfg(feature = "http")]
     if has_arg(args, "--htmlless") {
         return false;
     }
@@ -134,7 +134,7 @@ fn should_start_frontend(args: &[String]) -> bool {
         return false;
     }
 
-    cfg!(any(feature = "gui", feature = "html", feature = "tui"))
+    cfg!(any(feature = "gui", feature = "http", feature = "tui"))
 }
 
 #[cfg(feature = "karma")]
@@ -159,7 +159,7 @@ async fn start_gui(services: InjectedServices) -> Result<(), Error> {
     Ok(())
 }
 
-#[cfg(feature = "html")]
+#[cfg(feature = "http")]
 async fn start_html(services: InjectedServices) -> Result<(), Error> {
     let jwt_secret = env::var("JWT_SECRET")
         .map_err(|_| Error::other("JWT_SECRET is required when the HTML/API server is enabled"))?;

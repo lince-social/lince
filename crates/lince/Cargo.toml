@@ -8,11 +8,11 @@ license = "GPL-3.0-or-later"
 # include = ["/crates", "Cargo.toml", "LICENSE"]
 
 [features]
-default = ["karma", "gui", "html"]
+default = ["karma", "gui", "http"]
 karma = []
 gui = ["gui/gui"]
 tui = ["tui/tui"]
-html = ["dep:html"]
+http = ["dep:html"]
 
 [dependencies]
 application = { workspace = true }

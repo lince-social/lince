@@ -1,4 +1,4 @@
-use {reqwest::Client, serde::Deserialize, serde_json::Value};
+use {reqwest::Client, serde::Deserialize};
 
 const DEFAULT_LINCE_API_BASE_URL: &str = "http://127.0.0.1:6174/consult";
 
@@ -90,37 +90,5 @@ impl ManasGateway {
         }
 
         Ok(response)
-    }
-
-    pub async fn execute_sql(
-        &self,
-        bearer_token: &str,
-        sql: &str,
-    ) -> Result<(reqwest::StatusCode, Value), String> {
-        let sql_url = format!("{}/api/sql", self.api_base_url);
-        let response = self
-            .http
-            .post(sql_url)
-            .bearer_auth(bearer_token)
-            .json(&serde_json::json!({ "sql": sql }))
-            .send()
-            .await
-            .map_err(|error| {
-                tracing::warn!("manas sql request failed: {error}");
-                "Nao foi possivel executar o SQL remoto.".to_string()
-            })?;
-
-        let status = response.status();
-        let body = response.text().await.map_err(|error| {
-            tracing::warn!("manas sql response read failed: {error}");
-            "Nao foi possivel ler a resposta do SQL remoto.".to_string()
-        })?;
-
-        let body_json = serde_json::from_str::<Value>(&body).map_err(|error| {
-            tracing::warn!("manas sql invalid json: {error}; body={body}");
-            "O endpoint SQL remoto retornou JSON invalido.".to_string()
-        })?;
-
-        Ok((status, body_json))
     }
 }

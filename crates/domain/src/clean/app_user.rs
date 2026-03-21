@@ -6,4 +6,8 @@ pub struct AppUser {
     pub name: String,
     pub username: String,
     pub password_hash: String,
+    pub role_id: i64,
+    pub role: String,
+    pub created_at: String,
+    pub updated_at: String,
 }

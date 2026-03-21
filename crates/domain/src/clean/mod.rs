@@ -8,5 +8,6 @@ pub mod karma_condition;
 pub mod karma_consequence;
 pub mod pinned_view;
 pub mod record;
+pub mod role;
 pub mod table;
 pub mod view;

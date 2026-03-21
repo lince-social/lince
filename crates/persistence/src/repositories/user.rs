@@ -25,7 +25,21 @@ impl UserRepositoryImpl {
 impl UserRepository for UserRepositoryImpl {
     async fn get_by_username(&self, username: &str) -> Result<Option<AppUser>, Error> {
         sqlx::query_as::<_, AppUser>(
-            "SELECT id, name, username, password_hash FROM app_user WHERE username = ? LIMIT 1",
+            "
+            SELECT
+                u.id,
+                u.name,
+                u.username,
+                u.password_hash,
+                u.role_id,
+                r.name AS role,
+                u.created_at,
+                u.updated_at
+            FROM app_user u
+            JOIN role r ON r.id = u.role_id
+            WHERE u.username = ?
+            LIMIT 1
+            ",
         )
         .bind(username)
         .fetch_optional(&*self.pool)

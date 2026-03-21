@@ -15,6 +15,8 @@ Check the website [lince.social](https://lince.social) for more.
 
 # Ways to install
 
+Note that the `dev` branch is always further ahead, sometimes by a lot. But it is more unstable.
+
 After installing Lince, you can run it with Karma and GUI functionalities.
 One can run `lince --headless` as a service to have Karma always running in the background. And run `lince --guiless` to use it through the GUI.
 

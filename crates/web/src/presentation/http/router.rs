@@ -10,7 +10,7 @@ use {
                 },
                 auth::{get_auth_status, post_auth_login, post_auth_logout, post_auth_skip},
                 board::{export_workspace, get_board_state, import_workspace, put_board_state},
-                integrations::{proxy_manas_sql, proxy_manas_view},
+                integrations::proxy_manas_view,
                 packages::{
                     get_local_package, install_package, list_local_packages, preview_package,
                 },
@@ -53,7 +53,6 @@ pub fn build_router(state: AppState) -> Router {
             "/integrations/manas/views/{view_id}/stream",
             get(proxy_manas_view),
         )
-        .route("/integrations/manas/sql", post(proxy_manas_sql))
         .route("/terminal/sessions", post(create_terminal_session))
         .route(
             "/terminal/sessions/{session_id}/output",

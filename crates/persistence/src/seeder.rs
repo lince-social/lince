@@ -13,6 +13,37 @@ use std::io::Error;
 /// This implementation avoids using workspace macros so it doesn't require
 /// compile-time query macros or macro imports; all queries are executed at runtime.
 pub async fn seed(db: &Pool<Sqlite>) -> Result<(), Error> {
+    sqlx::query(
+        "INSERT INTO role(name)
+         SELECT 'admin'
+         WHERE NOT EXISTS (
+            SELECT 1 FROM role WHERE name = 'admin'
+         )",
+    )
+    .execute(&*db)
+    .await
+    .map_err(Error::other)?;
+
+    sqlx::query(
+        "INSERT INTO role(name)
+         SELECT 'lince'
+         WHERE NOT EXISTS (
+            SELECT 1 FROM role WHERE name = 'lince'
+         )",
+    )
+    .execute(&*db)
+    .await
+    .map_err(Error::other)?;
+
+    sqlx::query(
+        "UPDATE app_user
+         SET role_id = (SELECT id FROM role WHERE name = 'lince')
+         WHERE role_id IS NULL",
+    )
+    .execute(&*db)
+    .await
+    .map_err(Error::other)?;
+
     // === DEFAULT RECORDS ===
     let record_count: i64 = sqlx::query_scalar::<_, i64>("SELECT COUNT(1) FROM record")
         .fetch_one(&*db)

@@ -215,8 +215,8 @@ async fn seed_root_user(writer: &WriteCoordinatorHandle, password: &str) -> Resu
     let _ = writer
         .execute_statement(
             "
-            INSERT INTO app_user(name, username, password_hash)
-            SELECT ?, ?, ?
+            INSERT INTO app_user(name, username, password_hash, role_id)
+            SELECT ?, ?, ?, (SELECT id FROM role WHERE name = 'admin')
             WHERE NOT EXISTS (
                 SELECT 1 FROM app_user WHERE username = ?
             )
@@ -228,6 +228,17 @@ async fn seed_root_user(writer: &WriteCoordinatorHandle, password: &str) -> Resu
                 SqlParameter::Text(password_hash),
                 SqlParameter::Text("bomboclaat".to_string()),
             ],
+        )
+        .await?;
+    let _ = writer
+        .execute_statement(
+            "
+            UPDATE app_user
+            SET role_id = (SELECT id FROM role WHERE name = 'admin')
+            WHERE username = ?
+            "
+            .to_string(),
+            vec![SqlParameter::Text("bomboclaat".to_string())],
         )
         .await?;
     println!("Root user ensured for username bomboclaat");

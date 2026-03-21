@@ -13,6 +13,8 @@ use std::{
 pub struct AuthClaims {
     pub sub: u64,
     pub username: String,
+    pub role_id: u64,
+    pub role: String,
     pub exp: usize,
 }
 
@@ -41,6 +43,8 @@ pub fn issue_jwt(
     secret: &str,
     user_id: u64,
     username: &str,
+    role_id: u64,
+    role: &str,
     ttl: Duration,
 ) -> Result<String, Error> {
     let expires_at = SystemTime::now()
@@ -53,6 +57,8 @@ pub fn issue_jwt(
     let claims = AuthClaims {
         sub: user_id,
         username: username.to_string(),
+        role_id,
+        role: role.to_string(),
         exp: expires_at,
     };
 

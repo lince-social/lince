@@ -17,4 +17,5 @@ serde_json.workspace = true
 sqlx.workspace = true
 tokio = { workspace = true, features = ["net", "sync"] }
 tokio-stream = { version = "0.1.17", features = ["sync"] }
+tower-http.workspace = true
 utils.workspace = true

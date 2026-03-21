@@ -52,9 +52,8 @@
         - [x] Rodar a lince no servidor
         - [ ] Integrar localmente
         - [ ] Apontar pra outro lugar que não seja localmente
-          - [ ] `
-        
-
+          - [ ] Export porta na vps com https
+          - [ ] Nginx para rate limiting (nivel absurdo)
       ],
       task(
         "New Logo Items: First Batch",

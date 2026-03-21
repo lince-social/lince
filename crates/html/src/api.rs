@@ -19,6 +19,7 @@ use std::{
     time::Duration,
 };
 use tokio::sync::broadcast;
+use tower_http::cors::{Any, CorsLayer};
 use utils::auth::{AuthClaims, decode_jwt, issue_jwt, verify_password};
 
 #[derive(Deserialize)]
@@ -55,6 +56,12 @@ pub(crate) fn router() -> Router<Arc<HtmlState>> {
         .route("/auth/login", post(login))
         .route("/sql", post(execute_sql))
         .route("/sse/view/{view_id}", get(view_sse))
+        .layer(
+            CorsLayer::new()
+                .allow_origin(Any)
+                .allow_headers(Any)
+                .allow_methods(Any),
+        )
 }
 
 async fn login(

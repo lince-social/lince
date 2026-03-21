@@ -9,6 +9,7 @@ use {
                     update_draft_size,
                 },
                 auth::{get_auth_status, post_auth_login, post_auth_logout, post_auth_skip},
+                backend::router as build_backend_router,
                 board::{export_workspace, get_board_state, import_workspace, put_board_state},
                 integrations::proxy_manas_view,
                 packages::{
@@ -80,11 +81,12 @@ pub fn build_router(state: AppState) -> Router {
     Router::<AppState>::new()
         .route("/", get(index))
         .route("/ai", get(ai_builder_page))
-        .route("/api/auth/status", get(get_auth_status))
-        .route("/api/auth/login", post(post_auth_login))
-        .route("/api/auth/skip", post(post_auth_skip))
-        .route("/api/auth/logout", post(post_auth_logout))
-        .nest("/api", protected_api)
+        .nest("/api", build_backend_router())
+        .route("/host/auth/status", get(get_auth_status))
+        .route("/host/auth/login", post(post_auth_login))
+        .route("/host/auth/skip", post(post_auth_skip))
+        .route("/host/auth/logout", post(post_auth_logout))
+        .nest("/host", protected_api)
         .nest_service("/static", ServeDir::new(static_dir))
         .with_state(state)
 }

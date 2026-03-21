@@ -1,3 +1,4 @@
+pub mod auth;
 pub mod command;
 pub mod configuration;
 pub mod cub;
@@ -9,6 +10,7 @@ pub mod karma;
 pub mod mosca;
 pub mod operation;
 pub mod query;
+pub mod subscription;
 pub mod sum;
 pub mod table;
 pub mod view;

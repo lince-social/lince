@@ -1,6 +1,6 @@
 use {reqwest::Client, serde::Deserialize};
 
-const DEFAULT_LINCE_API_BASE_URL: &str = "http://127.0.0.1:6174/consult";
+const DEFAULT_LINCE_API_BASE_URL: &str = "http://127.0.0.1:6174";
 
 #[derive(Clone)]
 pub struct ManasGateway {

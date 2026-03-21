@@ -52,7 +52,6 @@ impl ViewRepository for ViewRepositoryImpl {
     }
 
     async fn get_dependencies(&self, view_id: u32) -> Result<BTreeSet<String>, Error> {
-        let view = self.get_by_id(view_id).await?;
         let rows = sqlx::query_scalar::<_, String>(
             "SELECT table_name FROM view_dependency WHERE view_id = ? ORDER BY table_name",
         )
@@ -63,10 +62,6 @@ impl ViewRepository for ViewRepositoryImpl {
 
         let mut dependencies = rows.into_iter().collect::<BTreeSet<_>>();
         dependencies.insert("view".to_string());
-        dependencies.insert("view_dependency".to_string());
-        if is_special_view_query(&view.query) {
-            dependencies.remove("view_dependency");
-        }
         Ok(dependencies)
     }
 
@@ -188,6 +183,36 @@ pub async fn sync_all_view_dependencies_in_connection(
         .map_err(Error::other)?;
 
     apply_view_dependency_plan_to_connection(connection, build_view_dependency_plan(views)).await
+}
+
+pub async fn sync_view_dependencies_for_view_in_connection(
+    connection: &mut SqliteConnection,
+    view_id: i64,
+) -> Result<(), Error> {
+    let query = sqlx::query_scalar::<_, String>("SELECT query FROM view WHERE id = ?")
+        .bind(view_id)
+        .fetch_optional(&mut *connection)
+        .await
+        .map_err(Error::other)?;
+
+    let dependencies = query
+        .map(|query| infer_view_dependencies(&query))
+        .unwrap_or_default();
+
+    replace_view_dependencies_in_connection(connection, view_id, dependencies).await
+}
+
+pub async fn delete_view_dependencies_in_connection(
+    connection: &mut SqliteConnection,
+    view_id: i64,
+) -> Result<(), Error> {
+    sqlx::query("DELETE FROM view_dependency WHERE view_id = ?")
+        .bind(view_id)
+        .execute(&mut *connection)
+        .await
+        .map_err(Error::other)?;
+
+    Ok(())
 }
 
 fn build_view_dependency_plan(views: Vec<(i64, String)>) -> Vec<(i64, BTreeSet<String>)> {

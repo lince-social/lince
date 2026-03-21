@@ -1,3 +1,5 @@
+pub mod colorscheme;
+
 mod application;
 mod domain;
 mod infrastructure;
@@ -5,7 +7,9 @@ mod presentation;
 
 use {
     crate::{
-        application::{ai_builder::AiBuilderState, state::AppState},
+        application::{
+            ai_builder::AiBuilderState, backend_api::BackendApiService, state::AppState,
+        },
         infrastructure::{
             auth::AppAuth, board_state_store::BoardStateStore, manas::ManasGateway,
             package_catalog_store::PackageCatalogStore, terminal_store::TerminalSessionStore,
@@ -14,7 +18,7 @@ use {
         presentation::http::router::build_router,
     },
     injection::cross_cutting::InjectedServices,
-    std::{env, io::Error as IoError, net::SocketAddr},
+    std::{env, io::Error as IoError, net::SocketAddr, sync::Arc},
 };
 
 const DEFAULT_WEB_LISTEN_ADDR: &str = "127.0.0.1:6174";
@@ -25,6 +29,7 @@ pub async fn serve(services: InjectedServices, jwt_secret: String) -> Result<(),
     let app_state = AppState {
         ai: AiBuilderState::new(),
         auth: AppAuth::new(),
+        backend: BackendApiService::new(services.clone(), Arc::new(jwt_secret)),
         board_state: BoardStateStore::new().map_err(IoError::other)?,
         manas: ManasGateway::new().map_err(IoError::other)?,
         packages: PackageCatalogStore::new().map_err(IoError::other)?,
@@ -32,9 +37,7 @@ pub async fn serve(services: InjectedServices, jwt_secret: String) -> Result<(),
         widget_bridge: WidgetBridgeStore::new(),
     };
 
-    let app = axum::Router::new()
-        .merge(build_router(app_state))
-        .nest("/consult", html::app(services, jwt_secret)?);
+    let app = axum::Router::new().merge(build_router(app_state));
 
     let address = env::var("HTTP_LISTEN_ADDR")
         .ok()

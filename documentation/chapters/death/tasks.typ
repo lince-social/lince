@@ -48,6 +48,14 @@
       )[
         - [ ]
       ],
+      task("Tasks no Servidor")[
+        - [x] Rodar a lince no servidor
+        - [ ] Integrar localmente
+        - [ ] Apontar pra outro lugar que não seja localmente
+          - [ ] `
+        
+
+      ],
       task(
         "New Logo Items: First Batch",
         contributors: (("Nica", "wip"), ("@xaviduds", "wip")),

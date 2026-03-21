@@ -14,7 +14,7 @@ This document describes the architecture we agreed on before implementation.
 ## Main Decisions
 
 1. Keep HTML/Datastar transport separate from the JSON API.
-2. Use `.env` for `JWT_SECRET`.
+2. Use `.env` for `SECRET`.
 3. Store password hashes, never plain passwords.
 4. Make `/api/auth/login` the only unauthenticated API endpoint.
 5. Make runtime writes converge into one internal `WriteCoordinator`.
@@ -168,11 +168,11 @@ The application should load `.env` at startup using `dotenvy`.
 Required variable:
 
 ```env
-JWT_SECRET=very-long-random-secret
+SECRET=very-long-random-secret
 ```
 
 Rules:
-- fail fast if API mode is enabled and `JWT_SECRET` is missing
+- fail fast if API mode is enabled and `SECRET` is missing
 - do not auto-generate secrets at runtime
 - do not commit `.env`
 
@@ -182,7 +182,7 @@ Rules:
 
 At startup:
 - call `dotenvy::dotenv()` early in `lince`
-- read `JWT_SECRET`
+- read `SECRET`
 - make startup fail if the API/auth path is enabled and the secret is absent
 
 This should happen before serving HTTP.
@@ -599,7 +599,7 @@ These are reasonable later, but should not be first:
 
 If implementation needs to be phased, do it in this order:
 
-1. `.env` loading and `JWT_SECRET`
+1. `.env` loading and `SECRET`
 2. migrations for `app_user` and `view_dependency`
 3. root seeding path
 4. `AuthService`

@@ -1,4 +1,4 @@
-#import "../../components/chapter.typ": major
+#import "../../../common/typst/components/chapter.typ": major
 #import "tasks.typ"
 
 #major(

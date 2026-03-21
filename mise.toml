@@ -1,6 +1,7 @@
 [env]
 RUST_CHANNEL = "stable"
-DOCS_ROOT = "documentation"
+DOCS_ROOT = "documentation/technical"
+FIRST_STEPS_ROOT = "documentation/first_steps"
 
 [tools]
 rust = "{{env.RUST_CHANNEL}}"
@@ -20,7 +21,7 @@ cargo clippy --fix --allow-dirty --quiet >/dev/null 2>&1
 [tasks.http]
 description = "Run the HTML server"
 run = """
-cargo run --no-default-features --features 'karma http'
+RUSTFLAGS="-D warnings" cargo run --no-default-features --features 'karma http'
 """
 
 [tasks.http-build]
@@ -28,7 +29,7 @@ description = "Build the release binary for the systemd HTTP service"
 run = """
 git switch dev
 git pull
-cargo build --release --no-default-features --features 'karma http'
+RUSTFLAGS="-D warnings" cargo build --release --no-default-features --features 'karma http'
 """
 
 [tasks.http-install-service]
@@ -61,7 +62,7 @@ sudo systemctl status lince --no-pager -l
 [tasks.tui]
 description = "Run the TUI frontend"
 run = """
-cargo run --no-default-features --features 'karma tui'
+RUSTFLAGS="-D warnings" cargo run --no-default-features --features 'karma tui'
 """
 
 [tasks.dev]
@@ -93,7 +94,14 @@ echo Created migration: $usage_name
 [tasks.seed]
 description = "Seed the database with initial data"
 run = """
-cargo run --no-default-features --features "karma, http" -- --seed-root-user
+if [ -z "${ROOT_USER_PASSWORD:-}" ]; then
+  echo "ROOT_USER_PASSWORD must be set"
+  exit 1
+fi
+
+RUSTFLAGS="-D warnings" cargo run --no-default-features --features "karma, http" -- \
+  --seed-root-user \
+  --seed-root-user-password "$ROOT_USER_PASSWORD"
 """
 
 [tasks.init]
@@ -105,6 +113,15 @@ if [ ! -f .env ]; then
   sed -i "s/SECRET=.*/SECRET=$(openssl rand -hex 32)/" .env
 fi
 
+if [ -z "${ROOT_USER_PASSWORD:-}" ]; then
+  printf "Root user password: "
+  stty -echo
+  read ROOT_USER_PASSWORD
+  stty echo
+  printf "\\n"
+fi
+
+export ROOT_USER_PASSWORD
 mise seed
 """
 
@@ -142,6 +159,77 @@ tinymist preview \
 --input dark=$PREVIEW_DARK \
 --input lince_version=$LINCE_VERSION \
 {{env.DOCS_ROOT}}/lince-documentation.typ
+"""
+
+[tasks.first-steps]
+description = "Start first steps typst preview"
+tools = { "tinymist" = "latest", "typst" = "latest" }
+usage = """
+flag "-l --light" help="Use light mode in tinymist preview (default: dark)"
+"""
+run = """
+LINCE_VERSION=$(awk 'BEGIN{in_pkg=0} /^[[]package[]]$/{in_pkg=1;next} /^[[]/{in_pkg=0} in_pkg&&/^version = /{print $3;exit}' crates/lince/Cargo.toml | xargs)
+
+if [ "${usage_light:-false}" = "true" ]; then
+  PREVIEW_DARK="false"
+else
+  PREVIEW_DARK="true"
+fi
+
+compile_first_steps() {
+    echo '  → Compiling first steps light version...'
+    typst compile --root . --input dark=false --input lince_version="$LINCE_VERSION" {{env.FIRST_STEPS_ROOT}}/first_steps.typ {{env.FIRST_STEPS_ROOT}}/first_steps-light.pdf
+    echo '  → Compiling first steps dark version...'
+    typst compile --root . --input dark=true --input lince_version="$LINCE_VERSION" {{env.FIRST_STEPS_ROOT}}/first_steps.typ {{env.FIRST_STEPS_ROOT}}/first_steps-dark.pdf
+    echo 'Done!'
+}
+
+trap compile_first_steps EXIT
+
+tinymist preview \
+--root . \
+--control-plane-host 127.0.0.1:3012 \
+--data-plane-host 127.0.0.1:3011 \
+--static-file-host 127.0.0.1:3013 \
+--input dark=$PREVIEW_DARK \
+--input lince_version=$LINCE_VERSION \
+{{env.FIRST_STEPS_ROOT}}/first_steps.typ
+"""
+
+[tasks.first-steps-build]
+description = "Build first steps typst PDFs"
+tools = { "typst" = "latest" }
+run = """
+LINCE_VERSION=$(awk 'BEGIN{in_pkg=0} /^[[]package[]]$/{in_pkg=1;next} /^[[]/{in_pkg=0} in_pkg&&/^version = /{print $3;exit}' crates/lince/Cargo.toml | xargs)
+typst compile --root . --input dark=false --input lince_version="$LINCE_VERSION" {{env.FIRST_STEPS_ROOT}}/first_steps.typ {{env.FIRST_STEPS_ROOT}}/first_steps-light.pdf
+typst compile --root . --input dark=true --input lince_version="$LINCE_VERSION" {{env.FIRST_STEPS_ROOT}}/first_steps.typ {{env.FIRST_STEPS_ROOT}}/first_steps-dark.pdf
+"""
+
+[tasks.first-steps-slides]
+description = "Start first steps slides preview"
+tools = { "tinymist" = "latest", "typst" = "latest", "pipx:touying" = "latest" }
+run = """
+SOURCE_FILE="{{env.FIRST_STEPS_ROOT}}/first_steps.typ"
+SYS_INPUTS='{"slides":"true"}'
+
+trap 'touying compile --root . --format html --sys-inputs "$SYS_INPUTS" "$SOURCE_FILE"' EXIT
+
+tinymist preview \
+  --root . \
+  --control-plane-host 127.0.0.1:3022 \
+  --data-plane-host 127.0.0.1:3021 \
+  --static-file-host 127.0.0.1:3023 \
+  --input slides=true \
+  "$SOURCE_FILE"
+"""
+
+[tasks.first-steps-slides-build]
+description = "Build first steps slides outputs"
+tools = { "typst" = "latest", "pipx:touying" = "latest" }
+run = """
+SOURCE_FILE="{{env.FIRST_STEPS_ROOT}}/first_steps.typ"
+touying compile --root . --format html --sys-inputs '{"slides":"true"}' "$SOURCE_FILE"
+typst compile --root . --input slides=true "$SOURCE_FILE" "{{env.FIRST_STEPS_ROOT}}/first_steps-slides.pdf"
 """
 
 [tasks.release]

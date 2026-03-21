@@ -4,3 +4,4 @@ mprocs.log
 /documents/**/*.html
 .local
 .env
+.downloads

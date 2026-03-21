@@ -6,6 +6,8 @@ edition = "2024"
 [dependencies]
 domain = { workspace = true }
 utils = { workspace = true }
+aws-config.workspace = true
+aws-sdk-s3.workspace = true
 sqlx = {workspace = true, features = ["runtime-tokio", "sqlite", "macros"]}
 tokio.workspace = true
 serde.workspace = true

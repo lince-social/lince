@@ -12,7 +12,7 @@ use persistence::connection::sqlite_connect_options;
 use serde::Deserialize;
 use sqlx::{Connection, SqliteConnection};
 use std::{
-    collections::VecDeque, convert::Infallible, io::Error, net::SocketAddr, str::FromStr,
+    collections::VecDeque, convert::Infallible, env, io::Error, net::SocketAddr, str::FromStr,
     sync::Arc, time::Duration,
 };
 use tokio::sync::broadcast;
@@ -86,7 +86,13 @@ pub async fn serve(services: InjectedServices, jwt_secret: String) -> Result<(),
             get(open_create_row).post(create_row),
         )
         .with_state(state);
-    let address = SocketAddr::from(([127, 0, 0, 1], 6174));
+    let address = env::var("HTTP_LISTEN_ADDR")
+        .ok()
+        .filter(|value| !value.trim().is_empty())
+        .as_deref()
+        .unwrap_or("127.0.0.1:6174")
+        .parse::<SocketAddr>()
+        .map_err(|error| Error::other(format!("Invalid HTTP_LISTEN_ADDR: {error}")))?;
     let listener = tokio::net::TcpListener::bind(address)
         .await
         .map_err(Error::other)?;

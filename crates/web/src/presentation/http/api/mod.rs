@@ -1,5 +1,6 @@
-pub mod auth;
 pub mod ai;
+pub mod auth;
+pub mod backend;
 pub mod board;
 pub mod integrations;
 pub mod packages;

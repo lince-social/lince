@@ -240,7 +240,7 @@ impl From<&WidgetDraft> for WidgetDraftPreview {
             revision: draft.revision,
             usage: draft.usage.clone(),
             config_toml: draft.package.config_toml(),
-            download_url: format!("/api/ai/drafts/{}/download", draft.id),
+            download_url: format!("/host/ai/drafts/{}/download", draft.id),
             filename,
         }
     }

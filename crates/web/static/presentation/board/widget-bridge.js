@@ -5,6 +5,10 @@ const WIDGET_ACTION = "lince:widget-action";
 const WIDGET_ERROR = "lince:bridge-error";
 
 function apiPath(path) {
+  if (path.startsWith("/api/")) {
+    return `/host/${path.slice("/api/".length)}`;
+  }
+
   return path;
 }
 

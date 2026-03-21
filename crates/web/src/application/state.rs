@@ -1,9 +1,9 @@
 use crate::{
     application::ai_builder::AiBuilderState,
+    application::backend_api::BackendApiService,
     infrastructure::{
         auth::AppAuth, board_state_store::BoardStateStore, manas::ManasGateway,
-        package_catalog_store::PackageCatalogStore,
-        terminal_store::TerminalSessionStore,
+        package_catalog_store::PackageCatalogStore, terminal_store::TerminalSessionStore,
         widget_bridge_store::WidgetBridgeStore,
     },
 };
@@ -12,6 +12,7 @@ use crate::{
 pub struct AppState {
     pub ai: AiBuilderState,
     pub auth: AppAuth,
+    pub backend: BackendApiService,
     pub board_state: BoardStateStore,
     pub manas: ManasGateway,
     pub packages: PackageCatalogStore,

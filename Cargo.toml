@@ -9,7 +9,6 @@ members = [
     "crates/gui",
     "crates/utils",
     "crates/tui",
-    "crates/html",
     "crates/web",
 ]
 
@@ -24,7 +23,6 @@ persistence = {path = "crates/persistence" }
 gui = {path = "crates/gui" }
 tui = {path = "crates/tui" }
 utils = { path = "crates/utils" }
-html = { path = "crates/html" }
 web = { path = "crates/web" }
 
 async-trait = "0.1.89"

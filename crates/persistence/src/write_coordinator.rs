@@ -1,5 +1,7 @@
 use crate::connection::sqlite_connect_options;
-use crate::repositories::view::sync_all_view_dependencies_in_connection;
+use crate::repositories::view::{
+    delete_view_dependencies_in_connection, sync_view_dependencies_for_view_in_connection,
+};
 use sqlx::{Connection, SqliteConnection};
 use std::{
     collections::BTreeSet,
@@ -20,6 +22,7 @@ pub enum SqlParameter {
 pub struct WriteOutcome {
     pub rows_affected: u64,
     pub changed_tables: BTreeSet<String>,
+    pub last_insert_rowid: Option<i64>,
 }
 
 #[derive(Debug, Clone)]
@@ -37,8 +40,18 @@ enum WriteRequest {
     ExecuteStatement {
         sql: String,
         params: Vec<SqlParameter>,
+        dependency_action: ViewDependencyAction,
         reply: oneshot::Sender<Result<WriteOutcome, Error>>,
     },
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+enum ViewDependencyAction {
+    #[default]
+    None,
+    RefreshInsertedView,
+    RefreshView(i64),
+    DeleteView(i64),
 }
 
 #[derive(Default)]
@@ -57,11 +70,51 @@ impl WriteCoordinatorHandle {
         sql: String,
         params: Vec<SqlParameter>,
     ) -> Result<WriteOutcome, Error> {
+        self.execute_statement_with_action(sql, params, ViewDependencyAction::None)
+            .await
+    }
+
+    pub async fn execute_view_insert(
+        &self,
+        sql: String,
+        params: Vec<SqlParameter>,
+    ) -> Result<WriteOutcome, Error> {
+        self.execute_statement_with_action(sql, params, ViewDependencyAction::RefreshInsertedView)
+            .await
+    }
+
+    pub async fn execute_view_update(
+        &self,
+        view_id: i64,
+        sql: String,
+        params: Vec<SqlParameter>,
+    ) -> Result<WriteOutcome, Error> {
+        self.execute_statement_with_action(sql, params, ViewDependencyAction::RefreshView(view_id))
+            .await
+    }
+
+    pub async fn execute_view_delete(
+        &self,
+        view_id: i64,
+        sql: String,
+        params: Vec<SqlParameter>,
+    ) -> Result<WriteOutcome, Error> {
+        self.execute_statement_with_action(sql, params, ViewDependencyAction::DeleteView(view_id))
+            .await
+    }
+
+    async fn execute_statement_with_action(
+        &self,
+        sql: String,
+        params: Vec<SqlParameter>,
+        dependency_action: ViewDependencyAction,
+    ) -> Result<WriteOutcome, Error> {
         let (reply_tx, reply_rx) = oneshot::channel();
         self.request_tx
             .send(WriteRequest::ExecuteStatement {
                 sql,
                 params,
+                dependency_action,
                 reply: reply_tx,
             })
             .await
@@ -118,13 +171,19 @@ pub async fn spawn_write_coordinator() -> Result<WriteCoordinatorHandle, Error> 
     tokio::spawn(async move {
         while let Some(request) = request_rx.recv().await {
             match request {
-                WriteRequest::ExecuteStatement { sql, params, reply } => {
+                WriteRequest::ExecuteStatement {
+                    sql,
+                    params,
+                    dependency_action,
+                    reply,
+                } => {
                     let result = execute_statement(
                         &mut connection,
                         &hook_state,
                         &invalidation_sender,
                         sql,
                         params,
+                        dependency_action,
                     )
                     .await;
                     let _ = reply.send(result);
@@ -145,6 +204,7 @@ async fn execute_statement(
     invalidation_tx: &broadcast::Sender<InvalidationEvent>,
     sql: String,
     params: Vec<SqlParameter>,
+    dependency_action: ViewDependencyAction,
 ) -> Result<WriteOutcome, Error> {
     if count_statements(&sql) != 1 {
         return Err(Error::new(
@@ -165,18 +225,23 @@ async fn execute_statement(
         };
     }
 
-    let rows_affected = query
+    let result = query
         .execute(&mut *connection)
         .await
-        .map_err(|error| Error::new(ErrorKind::InvalidInput, error.to_string()))?
-        .rows_affected();
+        .map_err(|error| Error::new(ErrorKind::InvalidInput, error.to_string()))?;
+    let rows_affected = result.rows_affected();
+    let last_insert_rowid = result.last_insert_rowid();
+    let returned_last_insert_rowid = match dependency_action {
+        ViewDependencyAction::RefreshInsertedView if rows_affected > 0 => Some(last_insert_rowid),
+        _ => None,
+    };
+
+    if rows_affected > 0 {
+        apply_view_dependency_action(connection, dependency_action, last_insert_rowid).await?;
+    }
 
     let (committed, mut changed_tables) = take_hook_state(hook_state)?;
-    if committed && should_reconcile_view_dependencies(&changed_tables) {
-        sync_all_view_dependencies_in_connection(connection).await?;
-        clear_hook_state(hook_state)?;
-        changed_tables.insert("view_dependency".to_string());
-    }
+    changed_tables.remove("view_dependency");
 
     if committed && !changed_tables.is_empty() {
         let _ = invalidation_tx.send(InvalidationEvent {
@@ -187,6 +252,7 @@ async fn execute_statement(
     Ok(WriteOutcome {
         rows_affected,
         changed_tables,
+        last_insert_rowid: returned_last_insert_rowid,
     })
 }
 
@@ -209,13 +275,23 @@ fn take_hook_state(hook_state: &Arc<Mutex<HookState>>) -> Result<(bool, BTreeSet
     Ok((committed, changed_tables))
 }
 
-fn clear_hook_state(hook_state: &Arc<Mutex<HookState>>) -> Result<(), Error> {
-    let _ = take_hook_state(hook_state)?;
-    Ok(())
-}
-
-fn should_reconcile_view_dependencies(changed_tables: &BTreeSet<String>) -> bool {
-    changed_tables.contains("view") || changed_tables.contains("view_dependency")
+async fn apply_view_dependency_action(
+    connection: &mut SqliteConnection,
+    action: ViewDependencyAction,
+    last_insert_rowid: i64,
+) -> Result<(), Error> {
+    match action {
+        ViewDependencyAction::None => Ok(()),
+        ViewDependencyAction::RefreshInsertedView => {
+            sync_view_dependencies_for_view_in_connection(connection, last_insert_rowid).await
+        }
+        ViewDependencyAction::RefreshView(view_id) => {
+            sync_view_dependencies_for_view_in_connection(connection, view_id).await
+        }
+        ViewDependencyAction::DeleteView(view_id) => {
+            delete_view_dependencies_in_connection(connection, view_id).await
+        }
+    }
 }
 
 fn count_statements(sql: &str) -> usize {

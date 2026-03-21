@@ -23,6 +23,41 @@ run = """
 cargo run --no-default-features --features 'karma http'
 """
 
+[tasks.http-build]
+description = "Build the release binary for the systemd HTTP service"
+run = """
+git switch dev
+git pull
+cargo build --release --no-default-features --features 'karma http'
+"""
+
+[tasks.http-install-service]
+description = "Install and restart the systemd service for the release HTTP binary"
+depends = ["http-build"]
+run = """
+cat <<EOF | sudo tee /etc/systemd/system/lince.service
+[Unit]
+Description=Lince Social
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/root/git/lince-social/lince
+EnvironmentFile=/root/git/lince-social/lince/.env
+ExecStart=/root/git/lince-social/lince/target/release/lince
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable lince
+sudo systemctl restart lince
+sudo systemctl status lince --no-pager -l
+"""
+
 [tasks.tui]
 description = "Run the TUI frontend"
 run = """
@@ -133,4 +168,3 @@ gh run list --workflow=build-release --limit 1 --json url -q '.[0].url'
 description = "Cross-build using cross-rs"
 tools = { "cargo:cross" = "latest" }
 run = "docker pull ghcr.io/cross-rs/x86_64-unknown-linux-gnu:main --platform linux/x86_64 && cross build --target x86_64-unknown-linux-gnu --release"
-

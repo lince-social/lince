@@ -161,9 +161,9 @@ async fn start_gui(services: InjectedServices) -> Result<(), Error> {
 
 #[cfg(feature = "http")]
 async fn start_html(services: InjectedServices) -> Result<(), Error> {
-    let jwt_secret = env::var("JWT_SECRET")
-        .map_err(|_| Error::other("JWT_SECRET is required when the HTML/API server is enabled"))?;
-    serve_html(services, jwt_secret).await
+    let secret =
+        env::var("SECRET").map_err(|_| Error::other("SECRET is required when the HTML/API server is enabled"))?;
+    serve_html(services, secret).await
 }
 
 #[cfg(feature = "tui")]

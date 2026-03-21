@@ -55,6 +55,23 @@ sqlx migrate add -r $usage_name
 echo Created migration: $usage_name
 """
 
+[tasks.seed]
+description = "Seed the database with initial data"
+run = """
+cargo run --no-default-features --features "karma, http" -- --seed-root-user
+"""
+
+[tasks.init]
+description = "Initialize the .env file with secrets and create root user"
+run = """
+# If .env does not exist, cp .env.example to .env and use rand for secret
+if [ ! -f .env ]; then
+  cp .env.example .env
+  sed -i "s/SECRET=.*/SECRET=$(openssl rand -hex 32)/" .env
+fi
+
+mise seed
+"""
 
 [tasks.docs]
 description = "Start typst documentation preview"
@@ -117,24 +134,3 @@ description = "Cross-build using cross-rs"
 tools = { "cargo:cross" = "latest" }
 run = "docker pull ghcr.io/cross-rs/x86_64-unknown-linux-gnu:main --platform linux/x86_64 && cross build --target x86_64-unknown-linux-gnu --release"
 
-[tasks.postgres]
-description = "Start local Postgres latest"
-tools = { "postgres" = "latest" }
-run = """
-PGROOT="${PWD}/.local/postgres-latest"
-PGDATA="${PGROOT}/data"
-PGLOG="${PGROOT}/postgres.log"
-mkdir -p "${PGROOT}"
-
-if [ ! -d "${PGDATA}" ]; then
-  initdb -D "${PGDATA}" -U postgres -A trust
-fi
-
-if pg_ctl -D "${PGDATA}" status >/dev/null 2>&1; then
-  echo "postgres already running"
-else
-  pg_ctl -D "${PGDATA}" -l "${PGLOG}" -o "-p 6174" start
-fi
-
-echo "postgres://postgres@localhost:6174/postgres"
-"""

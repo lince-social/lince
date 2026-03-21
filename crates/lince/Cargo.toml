@@ -12,7 +12,7 @@ default = ["karma", "gui", "http"]
 karma = []
 gui = ["gui/gui"]
 tui = ["tui/tui"]
-http = ["dep:html"]
+http = ["dep:web"]
 
 [dependencies]
 application = { workspace = true }
@@ -21,7 +21,7 @@ injection = { workspace = true }
 persistence = { workspace = true }
 gui = { workspace = true, optional = true }
 tui = { workspace = true, optional = true }
-html = { workspace = true, optional = true }
+web = { workspace = true, optional = true }
 utils = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "process", "time", "macros"] }
 sqlx = { workspace = true}

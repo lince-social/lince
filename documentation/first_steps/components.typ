@@ -16,7 +16,7 @@
     font: "New Computer Modern Math",
     size: 20pt,
   )
-  #set heading(numbering: none)
+  #set heading(numbering: "1.")
 
   #slide[
     #align(center + horizon)[
@@ -30,23 +30,26 @@
     ]
   ]
 
+  #slide[
+    #text(size: 30pt, weight: "bold")[Outline]
+    #v(1.2em)
+    #outline(target: heading.where(level: 1))
+  ]
+
   #body
 ]
 
 #let major(title, fancy, message: "", by: "") = {
   if slides-mode {
     [
-      #slide[
-        #align(center + horizon)[
-          #text(size: 28pt)[#fancy]
+      = #title
+      #align(center + horizon)[
+        #text(size: 28pt)[#fancy]
+        #if message != "" and by != "" [
           #v(1em)
-          #text(size: 34pt, weight: "bold")[#title]
-          #if message != "" and by != "" [
-            #v(1em)
-            #text(size: 18pt)[#message]
-            #v(0.5em)
-            #text(size: 15pt)[#by]
-          ]
+          #text(size: 18pt)[#message]
+          #v(0.5em)
+          #text(size: 15pt)[#by]
         ]
       ]
     ]

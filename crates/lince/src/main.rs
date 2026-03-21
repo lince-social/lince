@@ -9,8 +9,6 @@ compile_error!("Enable only one frontend feature at a time: `gui`, `tui`, or `ht
 
 #[cfg(feature = "karma")]
 use application::karma::karma_deliver;
-#[cfg(feature = "http")]
-use html::serve as serve_html;
 use injection::cross_cutting::{InjectedServices, dependency_injection};
 use persistence::{
     connection::{connection, read_only_connection},
@@ -25,6 +23,8 @@ use std::{env, io::Error, sync::Arc};
 use tui::tui_app;
 use utils::auth::hash_password;
 use utils::logging::{LogEntry, log};
+#[cfg(feature = "http")]
+use web::serve as serve_web;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -184,7 +184,7 @@ async fn start_gui(services: InjectedServices) -> Result<(), Error> {
 async fn start_html(services: InjectedServices) -> Result<(), Error> {
     let secret = env::var("SECRET")
         .map_err(|_| Error::other("SECRET is required when the HTML/API server is enabled"))?;
-    serve_html(services, secret).await
+    serve_web(services, secret).await
 }
 
 #[cfg(feature = "tui")]

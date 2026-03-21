@@ -53,6 +53,25 @@ struct CreateRowForm {
 }
 
 pub async fn serve(services: InjectedServices, jwt_secret: String) -> Result<(), Error> {
+    let app = app(services, jwt_secret)?;
+    let address = env::var("HTTP_LISTEN_ADDR")
+        .ok()
+        .filter(|value| !value.trim().is_empty())
+        .as_deref()
+        .unwrap_or("127.0.0.1:6174")
+        .parse::<SocketAddr>()
+        .map_err(|error| Error::other(format!("Invalid HTTP_LISTEN_ADDR: {error}")))?;
+    let listener = tokio::net::TcpListener::bind(address)
+        .await
+        .map_err(Error::other)?;
+    println!(
+        "HTML frontend listening at http://{}",
+        listener.local_addr().map_err(Error::other)?
+    );
+    axum::serve(listener, app).await.map_err(Error::other)
+}
+
+pub fn app(services: InjectedServices, jwt_secret: String) -> Result<Router, Error> {
     let (active_context_tx, _active_context_rx) = broadcast::channel(100);
     let state = Arc::new(HtmlState {
         services,
@@ -86,21 +105,7 @@ pub async fn serve(services: InjectedServices, jwt_secret: String) -> Result<(),
             get(open_create_row).post(create_row),
         )
         .with_state(state);
-    let address = env::var("HTTP_LISTEN_ADDR")
-        .ok()
-        .filter(|value| !value.trim().is_empty())
-        .as_deref()
-        .unwrap_or("127.0.0.1:6174")
-        .parse::<SocketAddr>()
-        .map_err(|error| Error::other(format!("Invalid HTTP_LISTEN_ADDR: {error}")))?;
-    let listener = tokio::net::TcpListener::bind(address)
-        .await
-        .map_err(Error::other)?;
-    println!(
-        "HTML frontend listening at http://{}",
-        listener.local_addr().map_err(Error::other)?
-    );
-    axum::serve(listener, app).await.map_err(Error::other)
+    Ok(app)
 }
 
 async fn body(State(state): State<Arc<HtmlState>>) -> impl IntoResponse {

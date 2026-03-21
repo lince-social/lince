@@ -10,6 +10,7 @@ members = [
     "crates/utils",
     "crates/tui",
     "crates/html",
+    "crates/web",
 ]
 
 default-members = ["crates/lince"]
@@ -24,6 +25,7 @@ gui = {path = "crates/gui" }
 tui = {path = "crates/tui" }
 utils = { path = "crates/utils" }
 html = { path = "crates/html" }
+web = { path = "crates/web" }
 
 async-trait = "0.1.89"
 argon2 = "0.5.3"

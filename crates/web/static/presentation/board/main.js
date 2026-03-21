@@ -1,0 +1,2301 @@
+import { attachBoardInteractions } from "./interactions.js";
+import { createGridConfig } from "./grid.js";
+import { createBoardStore } from "./store.js";
+import { createWidgetBridge, enhancePackageHtml } from "./widget-bridge.js";
+
+const DEFAULT_DROP_MESSAGE =
+  "Solte um .lince ou .workspace.lince para instalar no backend local.";
+
+const PERMISSION_DESCRIPTIONS = {
+  bridge_state:
+    "Permite receber estado compartilhado do host e sincronizar widgets via bridge interno.",
+  control_spotify:
+    "Permite controlar play, pause, proxima faixa e faixa anterior dentro do widget.",
+  print_backend:
+    "Permite acionar uma operacao demonstrativa no backend local por meio do host.",
+  read_email:
+    "Permite ler dados mock de email para resumos, alertas ou widgets de caixa de entrada.",
+  read_location:
+    "Permite usar localizacao como contexto para clima, proximidade ou widgets baseados em lugar.",
+  read_metrics:
+    "Permite consumir metricas ou listas tabulares mock dentro do package.",
+  read_records:
+    "Permite consultar registros mock para tabelas e visoes compactas.",
+  read_spotify:
+    "Permite ler faixa atual, capa, artista e estado de reproducao dentro do widget.",
+  read_table:
+    "Permite carregar linhas mock para tabelas, listas e pequenos datagrids.",
+  read_tasks: "Permite ler tarefas persistidas pelo proprio widget.",
+  read_view_stream:
+    "Permite consumir um stream SSE de view mediado pelo backend local do host.",
+  read_weather: "Permite ler dados mock de clima, temperatura e previsao.",
+  terminal_session:
+    "Permite abrir uma sessao de shell local via backend do host. Trate como capability de desenvolvimento.",
+  write_records:
+    "Permite executar mutacoes na tabela record por meio do backend local conectado ao servidor externo.",
+  write_tasks:
+    "Permite criar, atualizar e remover tarefas pelo proprio widget.",
+};
+
+const bootstrapElement = document.getElementById("lince-bootstrap");
+const startupScreen = document.getElementById("startup-screen");
+const startupAuthCard = document.getElementById("startup-auth-card");
+const startupLoginForm = document.getElementById("startup-login-form");
+const startupUsernameInput = document.getElementById("startup-username");
+const startupPasswordInput = document.getElementById("startup-password");
+const startupPasswordToggle = document.getElementById(
+  "startup-password-toggle",
+);
+const startupSkipButton = document.getElementById("startup-skip-button");
+const startupLoginButton = document.getElementById("startup-login-button");
+const startupErrorMessage = document.getElementById("startup-error-message");
+const startupStatusPanel = document.getElementById("startup-status-panel");
+const startupStatusLabel = startupStatusPanel?.querySelector(
+  ".startup-status__label",
+);
+const startupStatusValue = document.getElementById("startup-status-value");
+const startupProgress = document.getElementById("startup-progress");
+const startupProgressFill = document.getElementById("startup-progress-fill");
+const editToggle = document.getElementById("edit-toggle");
+const addCardButton = document.getElementById("add-card-button");
+const addCardImportButton = document.getElementById("add-card-import-button");
+const addCardLocalButton = document.getElementById("add-card-local-button");
+const addCardPopover = document.getElementById("add-card-popover");
+const addWorkspaceButton = document.getElementById("add-workspace-button");
+const importWorkspaceButton = document.getElementById(
+  "import-workspace-button",
+);
+const exportWorkspaceButton = document.getElementById(
+  "export-workspace-button",
+);
+const densityTag = document.getElementById("density-tag");
+const modeLabel = document.getElementById("mode-label");
+const densitySlider = document.getElementById("density-slider");
+const densityValue = document.getElementById("density-value");
+const workspaceSwitcher = document.querySelector(".workspace-switcher");
+const workspaceToggle = document.getElementById("workspace-toggle");
+const workspaceCurrent = document.getElementById("workspace-current");
+const workspacePopover = document.getElementById("workspace-popover");
+const workspaceList = document.getElementById("workspace-list");
+const workspaceEmpty = document.getElementById("workspace-empty");
+const workspaceEmptyTitle = document.getElementById("workspace-empty-title");
+const workspaceEmptyCopy = document.getElementById("workspace-empty-copy");
+const boardShell = document.getElementById("board-shell");
+const boardCanvas = document.getElementById("board-canvas");
+const boardGrid = document.getElementById("board-grid");
+const dropZoneOverlay = document.getElementById("drop-zone-overlay");
+const dropZoneOverlayEyebrow = document.getElementById(
+  "drop-zone-overlay-eyebrow",
+);
+const dropZoneOverlayTitle = document.getElementById("drop-zone-overlay-title");
+const dropZoneOverlayCopy = document.getElementById("drop-zone-overlay-copy");
+const importModalBackdrop = document.getElementById("import-modal-backdrop");
+const importModalTitle = document.getElementById("import-modal-title");
+const importModalDescription = document.getElementById(
+  "import-modal-description",
+);
+const importPackageName = document.getElementById("import-package-name");
+const importAuthor = document.getElementById("import-author");
+const importVersion = document.getElementById("import-version");
+const importSize = document.getElementById("import-size");
+const importModalDetails = document.getElementById("import-modal-details");
+const importPreviewDensity = document.getElementById("import-preview-density");
+const importPreviewCells = document.getElementById("import-preview-cells");
+const importPreviewCard = document.getElementById("import-preview-card");
+const importPreviewFrame = document.getElementById("import-preview-frame");
+const importPermissionsList = document.getElementById(
+  "import-permissions-list",
+);
+const importCancelButton = document.getElementById("import-cancel-button");
+const importConfirmButton = document.getElementById("import-confirm-button");
+const importCloseButton = document.getElementById("import-close-button");
+const localPackagesModalBackdrop = document.getElementById(
+  "local-packages-modal-backdrop",
+);
+const localPackagesCloseButton = document.getElementById(
+  "local-packages-close-button",
+);
+const localPackagesSummary = document.getElementById("local-packages-summary");
+const localPackagesSearch = document.getElementById("local-packages-search");
+const localPackageList = document.getElementById("local-package-list");
+const deleteCardModalBackdrop = document.getElementById(
+  "delete-card-modal-backdrop",
+);
+const deleteCardModalTitle = document.getElementById("delete-card-modal-title");
+const deleteCardModalDescription = document.getElementById(
+  "delete-card-modal-description",
+);
+const deleteCardModalName = document.getElementById("delete-card-modal-name");
+const deleteCardCancelButton = document.getElementById(
+  "delete-card-cancel-button",
+);
+const deleteCardConfirmButton = document.getElementById(
+  "delete-card-confirm-button",
+);
+const deleteCardCloseButton = document.getElementById(
+  "delete-card-close-button",
+);
+const packageImportInput = document.getElementById("package-import-input");
+const workspaceImportInput = document.getElementById("workspace-import-input");
+const cardsLayer = document.getElementById("cards-layer");
+
+if (
+  !bootstrapElement ||
+  !startupScreen ||
+  !startupAuthCard ||
+  !startupLoginForm ||
+  !startupUsernameInput ||
+  !startupPasswordInput ||
+  !startupPasswordToggle ||
+  !startupSkipButton ||
+  !startupLoginButton ||
+  !startupErrorMessage ||
+  !startupStatusPanel ||
+  !startupStatusLabel ||
+  !startupStatusValue ||
+  !startupProgress ||
+  !startupProgressFill ||
+  !editToggle ||
+  !addCardButton ||
+  !addCardImportButton ||
+  !addCardLocalButton ||
+  !addCardPopover ||
+  !addWorkspaceButton ||
+  !importWorkspaceButton ||
+  !exportWorkspaceButton ||
+  !densityTag ||
+  !modeLabel ||
+  !densitySlider ||
+  !densityValue ||
+  !workspaceSwitcher ||
+  !workspaceToggle ||
+  !workspaceCurrent ||
+  !workspacePopover ||
+  !workspaceList ||
+  !workspaceEmpty ||
+  !workspaceEmptyTitle ||
+  !workspaceEmptyCopy ||
+  !boardShell ||
+  !boardCanvas ||
+  !boardGrid ||
+  !dropZoneOverlay ||
+  !dropZoneOverlayEyebrow ||
+  !dropZoneOverlayTitle ||
+  !dropZoneOverlayCopy ||
+  !importModalBackdrop ||
+  !importModalTitle ||
+  !importModalDescription ||
+  !importPackageName ||
+  !importAuthor ||
+  !importVersion ||
+  !importSize ||
+  !importModalDetails ||
+  !importPreviewDensity ||
+  !importPreviewCells ||
+  !importPreviewCard ||
+  !importPreviewFrame ||
+  !importPermissionsList ||
+  !importCancelButton ||
+  !importConfirmButton ||
+  !importCloseButton ||
+  !localPackagesModalBackdrop ||
+  !localPackagesCloseButton ||
+  !localPackagesSummary ||
+  !localPackagesSearch ||
+  !localPackageList ||
+  !deleteCardModalBackdrop ||
+  !deleteCardModalTitle ||
+  !deleteCardModalDescription ||
+  !deleteCardModalName ||
+  !deleteCardCancelButton ||
+  !deleteCardConfirmButton ||
+  !deleteCardCloseButton ||
+  !packageImportInput ||
+  !workspaceImportInput ||
+  !cardsLayer
+) {
+  throw new Error("Lince bootstrap did not find the required DOM nodes.");
+}
+
+const bootstrap = JSON.parse(bootstrapElement.textContent || "{}");
+const initialAuth = {
+  authenticated: Boolean(bootstrap?.auth?.authenticated),
+  usernameHint: String(bootstrap?.auth?.usernameHint || ""),
+};
+const config = createGridConfig(bootstrap);
+const hiddenCardCache = document.createElement("div");
+hiddenCardCache.setAttribute("aria-hidden", "true");
+hiddenCardCache.style.position = "fixed";
+hiddenCardCache.style.width = "1px";
+hiddenCardCache.style.height = "1px";
+hiddenCardCache.style.overflow = "hidden";
+hiddenCardCache.style.opacity = "0";
+hiddenCardCache.style.pointerEvents = "none";
+hiddenCardCache.style.inset = "-9999px auto auto -9999px";
+document.body.append(hiddenCardCache);
+const store = createBoardStore({
+  seedCards: Array.isArray(bootstrap.cards) ? bootstrap.cards : [],
+  initialBoardState: bootstrap.boardState,
+  config,
+  async persistState(nextState) {
+    const response = await fetch(apiPath("/api/board/state"), {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(nextState),
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null);
+      throw new Error(
+        payload?.error || "Falha ao persistir o board no backend.",
+      );
+    }
+  },
+});
+const widgetBridge = createWidgetBridge({
+  statusNode: null,
+  initialState: bootstrap.widgetBridge,
+  getFrames: () =>
+    Array.from(
+      document.querySelectorAll("iframe[data-package-instance-id]"),
+    ).filter(Boolean),
+  onError(message) {
+    flashDropOverlayMessage(message);
+  },
+});
+
+let editMode = false;
+let activeCardId = null;
+let activeInteractionType = null;
+let addCardPopoverOpen = false;
+let blockedFlashTimeout = null;
+let workspacePopoverOpen = false;
+let pendingWorkspaceTransitionDirection = 0;
+let lastRenderedWorkspaceId = null;
+let workspaceTransitionCleanup = null;
+let dropHoverDepth = 0;
+let dropOverlayFlashTimeout = null;
+let pendingImportPreview = null;
+let pendingImportFile = null;
+let pendingDeleteCardId = null;
+let appAuthenticated = initialAuth.authenticated;
+let installedPackages = [];
+
+const startupPaths = Array.from(startupScreen.querySelectorAll(".s0"));
+const cardNodes = new Map(
+  Array.from(cardsLayer.querySelectorAll("[data-card-id]")).map((node) => [
+    node.dataset.cardId,
+    node,
+  ]),
+);
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function formatWorkspaceNumber(index) {
+  return String(index + 1).padStart(2, "0");
+}
+
+function apiPath(path) {
+  return path;
+}
+
+function getActiveWorkspaceIndex(snapshot) {
+  const index = snapshot.workspaces.findIndex(
+    (workspace) => workspace.id === snapshot.activeWorkspaceId,
+  );
+
+  return index >= 0 ? index : 0;
+}
+
+function resolveWorkspaceDirection(fromIndex, toIndex) {
+  if (fromIndex === toIndex) {
+    return 0;
+  }
+
+  return toIndex > fromIndex ? 1 : -1;
+}
+
+function renderTrashIcon() {
+  return `
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3.5 4.5h9"></path>
+      <path d="M6.5 2.75h3"></path>
+      <path d="M5 4.5v7"></path>
+      <path d="M8 4.5v7"></path>
+      <path d="M11 4.5v7"></path>
+      <path d="M4.5 4.5 5 13h6l.5-8.5"></path>
+    </svg>
+  `;
+}
+
+function renderCloseIcon() {
+  return `
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4 4l8 8"></path>
+      <path d="M12 4 4 12"></path>
+    </svg>
+  `;
+}
+
+function renderHandles() {
+  return `
+    <button type="button" class="resize-handle resize-handle--nw" tabindex="-1" aria-hidden="true" data-resize-handle="nw"></button>
+    <button type="button" class="resize-handle resize-handle--ne" tabindex="-1" aria-hidden="true" data-resize-handle="ne"></button>
+    <button type="button" class="resize-handle resize-handle--sw" tabindex="-1" aria-hidden="true" data-resize-handle="sw"></button>
+    <button type="button" class="resize-handle resize-handle--se" tabindex="-1" aria-hidden="true" data-resize-handle="se"></button>
+    <button type="button" class="resize-handle resize-handle--n" tabindex="-1" aria-hidden="true" data-resize-handle="n"></button>
+    <button type="button" class="resize-handle resize-handle--e" tabindex="-1" aria-hidden="true" data-resize-handle="e"></button>
+    <button type="button" class="resize-handle resize-handle--s" tabindex="-1" aria-hidden="true" data-resize-handle="s"></button>
+    <button type="button" class="resize-handle resize-handle--w" tabindex="-1" aria-hidden="true" data-resize-handle="w"></button>
+  `;
+}
+
+function renderDeleteButton(card) {
+  return `
+    <button
+      type="button"
+      class="card-delete-button"
+      data-card-action="delete"
+      aria-label="Excluir ${escapeHtml(card.title)}"
+    >
+      <span class="card-delete-button__icon">${renderTrashIcon()}</span>
+      <span class="card-delete-button__label">REMOVER</span>
+    </button>
+  `;
+}
+
+function renderTextBody(card) {
+  return `
+    <div class="text-widget">
+      <p class="text-widget__content" data-card-text>
+        ${escapeHtml(card.text)}
+      </p>
+      <div class="text-widget__meta">
+        <span>snap grid</span>
+        <span>workspace card</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderPackageBody(card) {
+  const preparedHtml = enhancePackageHtml(card.html || "");
+  return `
+    <div class="package-widget">
+      <iframe
+        class="package-widget__frame"
+        title="${escapeHtml(card.title)}"
+        loading="lazy"
+        data-package-instance-id="${escapeHtml(card.id)}"
+        sandbox="allow-scripts allow-same-origin"
+        srcdoc="${escapeHtml(preparedHtml)}"
+      ></iframe>
+    </div>
+  `;
+}
+
+function renderCardMarkup(card) {
+  const isPackageCard = card.kind === "package";
+  if (isPackageCard) {
+    return `
+      <article class="board-card board-card--package" data-card-id="${escapeHtml(card.id)}" data-card-kind="${escapeHtml(card.kind || "package")}">
+        ${renderDeleteButton(card)}
+        ${renderPackageBody(card)}
+        ${renderHandles()}
+      </article>
+    `;
+  }
+
+  return `
+    <article class="board-card" data-card-id="${escapeHtml(card.id)}" data-card-kind="${escapeHtml(card.kind || "text")}">
+      ${renderDeleteButton(card)}
+      <header class="card-header">
+        <span class="card-eyebrow">Widget</span>
+        <h2 class="card-title" data-card-title>${escapeHtml(card.title)}</h2>
+        <p class="card-copy" data-card-description>${escapeHtml(card.description || "")}</p>
+      </header>
+      <div class="card-body">
+        ${renderTextBody(card)}
+      </div>
+      ${renderHandles()}
+    </article>
+  `;
+}
+
+function ensureCardNode(card) {
+  let node = cardNodes.get(card.id);
+
+  if (node && node.dataset.cardKind !== (card.kind || "text")) {
+    node.remove();
+    cardNodes.delete(card.id);
+    node = null;
+  }
+
+  if (!node) {
+    const template = document.createElement("template");
+    template.innerHTML = renderCardMarkup(card).trim();
+    node = template.content.firstElementChild;
+    cardsLayer.appendChild(node);
+    cardNodes.set(card.id, node);
+  } else if (node.parentElement !== cardsLayer) {
+    cardsLayer.appendChild(node);
+  }
+
+  return node;
+}
+
+function syncCardNode(node, card) {
+  node.style.gridColumn = `${card.x} / span ${card.w}`;
+  node.style.gridRow = `${card.y} / span ${card.h}`;
+  node.style.zIndex = card.id === activeCardId ? "4" : "1";
+  node.dataset.cardKind = card.kind || "text";
+  node.classList.toggle("board-card--package", card.kind === "package");
+  node.classList.toggle("is-compact", card.w <= 2 || card.h <= 2);
+  node.classList.toggle("is-tiny", card.w === 1 || card.h === 1);
+  node.classList.toggle("is-active", card.id === activeCardId);
+  node.classList.toggle(
+    "is-dragging",
+    card.id === activeCardId && activeInteractionType === "move",
+  );
+  node.classList.toggle(
+    "is-resizing",
+    card.id === activeCardId && activeInteractionType === "resize",
+  );
+
+  const titleNode = node.querySelector("[data-card-title]");
+  const descriptionNode = node.querySelector("[data-card-description]");
+  const textNode = node.querySelector("[data-card-text]");
+  const frameNode = node.querySelector(".package-widget__frame");
+  const deleteButton = node.querySelector("[data-card-action='delete']");
+
+  if (titleNode) {
+    titleNode.textContent = card.title;
+  }
+
+  if (descriptionNode) {
+    descriptionNode.textContent = card.description || "";
+  }
+
+  if (textNode) {
+    textNode.textContent = card.text || "";
+  }
+
+  if (frameNode) {
+    const preparedHtml = enhancePackageHtml(card.html || "");
+    if (frameNode.getAttribute("srcdoc") !== preparedHtml) {
+      frameNode.setAttribute("srcdoc", preparedHtml);
+    }
+    frameNode.setAttribute("title", card.title || "External card");
+    frameNode.dataset.packageInstanceId = card.id || "";
+  }
+
+  if (deleteButton) {
+    deleteButton.setAttribute("aria-label", `Excluir ${card.title || "card"}`);
+  }
+}
+
+function resolveAllCardIds(allCardIds) {
+  if (allCardIds instanceof Set) {
+    return allCardIds;
+  }
+
+  return new Set(
+    store
+      .getSnapshot()
+      .workspaces.flatMap((workspace) =>
+        workspace.cards.map((card) => card.id),
+      ),
+  );
+}
+
+function renderCards(cards, allCardIds) {
+  const resolvedAllCardIds = resolveAllCardIds(allCardIds);
+  const seenIds = new Set(cards.map((card) => card.id));
+
+  for (const card of cards) {
+    const node = ensureCardNode(card);
+    syncCardNode(node, card);
+  }
+
+  for (const [cardId, node] of cardNodes.entries()) {
+    if (seenIds.has(cardId)) {
+      continue;
+    }
+
+    if (!resolvedAllCardIds.has(cardId)) {
+      node.remove();
+      cardNodes.delete(cardId);
+      continue;
+    }
+
+    if (node.dataset.cardKind === "package") {
+      hiddenCardCache.appendChild(node);
+      continue;
+    }
+
+    node.remove();
+    cardNodes.delete(cardId);
+  }
+}
+
+function renderGrid(layout) {
+  boardShell.style.setProperty("--board-cols", layout.cols);
+  boardShell.style.setProperty("--board-rows", layout.rows);
+  boardShell.style.setProperty("--board-gap", `${layout.gap}px`);
+
+  const signature = `${layout.cols}:${layout.rows}`;
+  if (boardGrid.dataset.signature === signature) {
+    return;
+  }
+
+  boardGrid.dataset.signature = signature;
+  boardGrid.innerHTML = Array.from(
+    { length: layout.cols * layout.rows },
+    () => '<div class="board-grid__cell"></div>',
+  ).join("");
+}
+
+function renderWorkspaceList(snapshot) {
+  const activeIndex = getActiveWorkspaceIndex(snapshot);
+  const canDelete = snapshot.workspaces.length > 1;
+
+  workspaceCurrent.textContent = formatWorkspaceNumber(activeIndex);
+  workspaceToggle.setAttribute(
+    "aria-label",
+    `Area ${formatWorkspaceNumber(activeIndex)}. Abrir seletor de areas`,
+  );
+
+  workspaceList.innerHTML = snapshot.workspaces
+    .map((workspace, index) => {
+      const workspaceNumber = formatWorkspaceNumber(index);
+      const isActive = workspace.id === snapshot.activeWorkspaceId;
+
+      return `
+        <div class="workspace-item${isActive ? " is-active" : ""}">
+          <button
+            type="button"
+            class="workspace-item__switch"
+            data-workspace-action="switch"
+            data-workspace-id="${escapeHtml(workspace.id)}"
+            aria-pressed="${String(isActive)}"
+            aria-label="Ir para a area ${workspaceNumber}"
+          >
+            <span class="workspace-item__number">${workspaceNumber}</span>
+          </button>
+          <button
+            type="button"
+            class="workspace-item__delete"
+            data-workspace-action="delete"
+            data-workspace-id="${escapeHtml(workspace.id)}"
+            aria-label="Apagar a area ${workspaceNumber}"
+            ${canDelete ? "" : "disabled"}
+          >
+            ${renderTrashIcon()}
+          </button>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function renderDensity(snapshot) {
+  densitySlider.value = String(snapshot.density);
+  densityValue.textContent = `${snapshot.layout.cols} x ${snapshot.layout.rows} · ${snapshot.layout.densityLabel}`;
+}
+
+function renderEmptyState(snapshot) {
+  const isEmpty = snapshot.cards.length === 0;
+  workspaceEmpty.hidden = !isEmpty;
+
+  if (!isEmpty) {
+    return;
+  }
+
+  workspaceEmptyTitle.textContent = "Sem cards por aqui";
+  workspaceEmptyCopy.textContent = editMode
+    ? "Solte um .lince ou use Add card para preencher esse espaco."
+    : "Esse espaco esta livre. Entre em modo de edicao ou crie outro pelo seletor.";
+}
+
+function renderSnapshot(snapshot) {
+  const workspaceChanged =
+    lastRenderedWorkspaceId !== null &&
+    lastRenderedWorkspaceId !== snapshot.activeWorkspaceId;
+
+  if (!snapshot.cards.some((card) => card.id === activeCardId)) {
+    activeCardId = null;
+    activeInteractionType = null;
+  }
+
+  if (
+    pendingDeleteCardId &&
+    !snapshot.cards.some((card) => card.id === pendingDeleteCardId)
+  ) {
+    closeDeleteCardModal();
+  }
+
+  renderGrid(snapshot.layout);
+  renderWorkspaceList(snapshot);
+  renderDensity(snapshot);
+  const allCardIds = new Set(
+    snapshot.workspaces.flatMap((workspace) =>
+      workspace.cards.map((card) => card.id),
+    ),
+  );
+  renderCards(snapshot.cards, allCardIds);
+  widgetBridge.syncFrames();
+  renderEmptyState(snapshot);
+
+  if (workspaceChanged && pendingWorkspaceTransitionDirection) {
+    playWorkspaceTransition(pendingWorkspaceTransitionDirection);
+  }
+
+  pendingWorkspaceTransitionDirection = 0;
+  lastRenderedWorkspaceId = snapshot.activeWorkspaceId;
+}
+
+function setActiveCard(cardId, interactionType = null) {
+  activeCardId = cardId;
+  activeInteractionType = interactionType;
+  renderCards(store.getCards());
+}
+
+function clearActiveCard() {
+  activeCardId = null;
+  activeInteractionType = null;
+  renderCards(store.getCards());
+}
+
+function flashBoardBlocked() {
+  boardShell.classList.add("is-blocked");
+
+  if (blockedFlashTimeout) {
+    window.clearTimeout(blockedFlashTimeout);
+  }
+
+  blockedFlashTimeout = window.setTimeout(() => {
+    boardShell.classList.remove("is-blocked");
+  }, 400);
+}
+
+function setWorkspaceTransferPreview(direction) {
+  boardShell.classList.toggle("is-transfer-left", direction < 0);
+  boardShell.classList.toggle("is-transfer-right", direction > 0);
+}
+
+function handleWorkspaceEdgeTransfer(card, direction) {
+  const snapshot = store.getSnapshot();
+  const currentIndex = getActiveWorkspaceIndex(snapshot);
+  const targetIndex = currentIndex + direction;
+
+  if (targetIndex < 0 || targetIndex >= snapshot.workspaces.length) {
+    return false;
+  }
+
+  queueWorkspaceTransition(direction);
+  const transferred = store.moveCardToAdjacentWorkspace(card.id, direction, {
+    persist: true,
+  });
+  if (!transferred) {
+    clearWorkspaceTransition();
+    flashBoardBlocked();
+    return false;
+  }
+
+  return true;
+}
+
+function clearWorkspaceTransition() {
+  if (workspaceTransitionCleanup) {
+    window.clearTimeout(workspaceTransitionCleanup);
+    workspaceTransitionCleanup = null;
+  }
+
+  boardShell.classList.remove("is-workspace-transitioning");
+  boardGrid.classList.remove(
+    "board-grid--entering",
+    "board-grid--from-right",
+    "board-grid--from-left",
+    "is-active",
+  );
+  cardsLayer.classList.remove(
+    "cards-layer--entering",
+    "cards-layer--from-right",
+    "cards-layer--from-left",
+    "is-active",
+  );
+  workspaceEmpty.classList.remove(
+    "workspace-empty--entering",
+    "workspace-empty--from-right",
+    "workspace-empty--from-left",
+    "is-active",
+  );
+
+  for (const node of boardCanvas.querySelectorAll(
+    ".workspace-transition-layer",
+  )) {
+    node.remove();
+  }
+}
+
+function queueWorkspaceTransition(direction) {
+  if (!direction) {
+    return;
+  }
+
+  clearWorkspaceTransition();
+
+  const layer = document.createElement("div");
+  layer.className = `workspace-transition-layer ${
+    direction > 0
+      ? "workspace-transition-layer--to-left"
+      : "workspace-transition-layer--to-right"
+  }`;
+
+  const gridClone = boardGrid.cloneNode(true);
+  gridClone.removeAttribute("id");
+  gridClone.classList.add("workspace-transition-layer__grid");
+  layer.appendChild(gridClone);
+
+  const cardsClone = cardsLayer.cloneNode(true);
+  cardsClone.removeAttribute("id");
+  cardsClone.classList.add("workspace-transition-layer__cards");
+  layer.appendChild(cardsClone);
+
+  if (!workspaceEmpty.hidden) {
+    const emptyClone = workspaceEmpty.cloneNode(true);
+    emptyClone.removeAttribute("id");
+    emptyClone.hidden = false;
+
+    for (const duplicateIdNode of emptyClone.querySelectorAll("[id]")) {
+      duplicateIdNode.removeAttribute("id");
+    }
+
+    emptyClone.classList.add("workspace-transition-layer__empty");
+    layer.appendChild(emptyClone);
+  }
+
+  boardCanvas.appendChild(layer);
+  pendingWorkspaceTransitionDirection = direction;
+}
+
+function playWorkspaceTransition(direction) {
+  const directionClass = direction > 0 ? "from-right" : "from-left";
+  const outgoingLayer = boardCanvas.querySelector(
+    ".workspace-transition-layer",
+  );
+  if (!outgoingLayer) {
+    return;
+  }
+
+  boardShell.classList.add("is-workspace-transitioning");
+  outgoingLayer.getBoundingClientRect();
+  boardGrid.classList.add(
+    "board-grid--entering",
+    `board-grid--${directionClass}`,
+  );
+  cardsLayer.classList.add(
+    "cards-layer--entering",
+    `cards-layer--${directionClass}`,
+  );
+  workspaceEmpty.classList.add(
+    "workspace-empty--entering",
+    `workspace-empty--${directionClass}`,
+  );
+  boardGrid.getBoundingClientRect();
+  cardsLayer.getBoundingClientRect();
+  workspaceEmpty.getBoundingClientRect();
+
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      outgoingLayer.classList.add("is-active");
+      boardGrid.classList.add("is-active");
+      cardsLayer.classList.add("is-active");
+      workspaceEmpty.classList.add("is-active");
+    });
+  });
+
+  workspaceTransitionCleanup = window.setTimeout(() => {
+    clearWorkspaceTransition();
+  }, 660);
+}
+
+function matchesWorkspaceArrowShortcut(event, direction) {
+  const expectedCode = direction > 0 ? "ArrowRight" : "ArrowLeft";
+  if (event.code !== expectedCode) {
+    return false;
+  }
+
+  if (event.altKey && !event.metaKey && !event.ctrlKey) {
+    return true;
+  }
+
+  if (event.shiftKey && !event.altKey && !event.metaKey && !event.ctrlKey) {
+    return true;
+  }
+
+  if (event.shiftKey && event.ctrlKey && !event.altKey && !event.metaKey) {
+    return true;
+  }
+
+  return false;
+}
+
+function setWorkspacePopoverOpen(nextOpen) {
+  workspacePopoverOpen = Boolean(nextOpen);
+  if (workspacePopoverOpen) {
+    setAddCardPopoverOpen(false);
+  }
+  workspaceSwitcher.classList.toggle("is-open", workspacePopoverOpen);
+  workspacePopover.hidden = !workspacePopoverOpen;
+  workspaceToggle.setAttribute("aria-expanded", String(workspacePopoverOpen));
+}
+
+function setAddCardPopoverOpen(nextOpen) {
+  addCardPopoverOpen = Boolean(nextOpen) && editMode;
+  addCardPopover.hidden = !addCardPopoverOpen;
+  addCardButton.setAttribute("aria-expanded", String(addCardPopoverOpen));
+}
+
+function normalizedPackageSearch() {
+  return localPackagesSearch.value.trim().toLowerCase();
+}
+
+function matchesPackageQuery(pkg, query) {
+  if (!query) {
+    return true;
+  }
+
+  const tokens = [
+    pkg.id,
+    pkg.icon,
+    pkg.filename,
+    pkg.title,
+    pkg.author,
+    pkg.description,
+    pkg.details,
+    ...(Array.isArray(pkg.permissions) ? pkg.permissions : []),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return tokens.includes(query);
+}
+
+function summarizeLocalPackages(filteredPackages) {
+  const visibleCount = filteredPackages.length;
+  const totalCount = installedPackages.length;
+
+  if (!installedPackages.length) {
+    localPackagesSummary.textContent =
+      "Nenhum package local ainda. Importe um .lince para ele entrar no catalogo do sistema.";
+    return;
+  }
+
+  if (normalizedPackageSearch()) {
+    localPackagesSummary.textContent = `${visibleCount} de ${totalCount} widgets correspondem a essa busca.`;
+    return;
+  }
+
+  localPackagesSummary.textContent = `${totalCount} widget${totalCount > 1 ? "s" : ""} instalado${
+    totalCount > 1 ? "s" : ""
+  } em lince-views. Escolha um para criar outra copia no workspace atual.`;
+}
+
+function renderLocalPackageList() {
+  const query = normalizedPackageSearch();
+  const filteredPackages = installedPackages.filter((pkg) =>
+    matchesPackageQuery(pkg, query),
+  );
+  summarizeLocalPackages(filteredPackages);
+
+  if (!installedPackages.length) {
+    localPackageList.innerHTML = `
+      <div class="local-package-empty">
+        <strong>Nada instalado ainda</strong>
+        <span>Use Importar para mandar um .lince para o backend local.</span>
+      </div>
+    `;
+    return;
+  }
+
+  if (!filteredPackages.length) {
+    localPackageList.innerHTML = `
+      <div class="local-package-empty">
+        <strong>Nenhum resultado</strong>
+        <span>Tente buscar por nome, arquivo, autor ou permissao do widget.</span>
+      </div>
+    `;
+    return;
+  }
+
+  localPackageList.innerHTML = filteredPackages
+    .map((pkg) => {
+      const width = Number(pkg.initialWidth ?? pkg.initial_width) || 3;
+      const height = Number(pkg.initialHeight ?? pkg.initial_height) || 2;
+      const permissions = Array.isArray(pkg.permissions)
+        ? pkg.permissions.slice(0, 2)
+        : [];
+      return `
+        <button
+          type="button"
+          class="local-package-card"
+          data-local-package-id="${escapeHtml(pkg.id)}"
+          aria-label="Adicionar ${escapeHtml(pkg.title)}"
+        >
+          <span class="local-package-card__icon" aria-hidden="true">${escapeHtml(pkg.icon || "◧")}</span>
+          <span class="local-package-card__body">
+            <span class="local-package-card__topline">
+              <strong class="local-package-card__title">${escapeHtml(pkg.title)}</strong>
+              <span class="local-package-card__size">${escapeHtml(`${width} x ${height}`)}</span>
+            </span>
+            <span class="local-package-card__description">${escapeHtml(
+              pkg.description || "Package local instalado no sistema.",
+            )}</span>
+            <span class="local-package-card__meta">${escapeHtml(
+              `${pkg.filename} · ${pkg.author || "Lince Labs"}`,
+            )}</span>
+            <span class="local-package-card__footer">
+              ${
+                permissions.length
+                  ? permissions
+                      .map(
+                        (permission) =>
+                          `<span class="local-package-card__pill">${escapeHtml(permission)}</span>`,
+                      )
+                      .join("")
+                  : '<span class="local-package-card__pill local-package-card__pill--muted">sem permissoes</span>'
+              }
+            </span>
+          </span>
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function upsertInstalledPackage(pkg) {
+  const summary = {
+    id: String(pkg.id || String(pkg.filename || "").replace(/\.lince$/i, "")),
+    filename: String(pkg.filename || "package.lince"),
+    icon: String(pkg.icon || "◧"),
+    title: String(pkg.title || "Widget local"),
+    author: String(pkg.author || ""),
+    version: String(pkg.version || "0.1.0"),
+    description: String(
+      pkg.description || "Package local instalado no sistema.",
+    ),
+    details: String(pkg.details || ""),
+    initial_width: Number(pkg.initial_width) || 3,
+    initial_height: Number(pkg.initial_height) || 2,
+    permissions: Array.isArray(pkg.permissions) ? pkg.permissions : [],
+  };
+  const nextPackages = installedPackages.filter(
+    (entry) => entry.id !== summary.id,
+  );
+  nextPackages.push(summary);
+  nextPackages.sort((left, right) =>
+    left.title.localeCompare(right.title, "pt-BR"),
+  );
+  installedPackages = nextPackages;
+  renderLocalPackageList();
+}
+
+async function loadInstalledPackages() {
+  const response = await fetch(apiPath("/api/packages/local"));
+  const payload = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(
+      payload?.error || "Falha ao carregar o catalogo local de widgets.",
+    );
+  }
+
+  installedPackages = Array.isArray(payload) ? payload : [];
+  renderLocalPackageList();
+  return installedPackages;
+}
+
+async function requestInstalledPackage(packageId) {
+  const response = await fetch(
+    apiPath(`/api/packages/local/${encodeURIComponent(packageId)}`),
+  );
+  const payload = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(payload?.error || "Falha ao abrir o package local.");
+  }
+
+  return payload;
+}
+
+async function installUploadedPackage(file) {
+  const formData = new FormData();
+  formData.append("package", file);
+
+  const response = await fetch(apiPath("/api/packages/install"), {
+    method: "POST",
+    body: formData,
+  });
+  const payload = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(
+      payload?.error || "Falha ao instalar o package .lince no backend.",
+    );
+  }
+
+  upsertInstalledPackage(payload);
+  return payload;
+}
+
+function openLocalPackagesModal() {
+  setAddCardPopoverOpen(false);
+  renderLocalPackageList();
+  localPackagesModalBackdrop.hidden = false;
+  syncModalLock();
+  window.setTimeout(() => {
+    localPackagesSearch.focus();
+    localPackagesSearch.select();
+  }, 0);
+  void loadInstalledPackages().catch((error) => {
+    localPackagesSummary.textContent =
+      error instanceof Error ? error.message : "Falha ao ler o catalogo local.";
+  });
+}
+
+function closeLocalPackagesModal() {
+  localPackagesModalBackdrop.hidden = true;
+  syncModalLock();
+}
+
+function setEditMode(nextEditMode) {
+  editMode = Boolean(nextEditMode);
+  boardShell.classList.toggle("is-editing", editMode);
+  document.documentElement.classList.toggle("edit-mode-active", editMode);
+  editToggle.classList.toggle("is-active", editMode);
+  editToggle.setAttribute("aria-pressed", String(editMode));
+  addCardButton.hidden = !editMode;
+  densityTag.hidden = !editMode;
+  modeLabel.textContent = editMode ? "Edit mode" : "Dashboard";
+  renderEmptyState(store.getSnapshot());
+
+  if (!editMode) {
+    setAddCardPopoverOpen(false);
+    clearActiveCard();
+    hideDropOverlay();
+    closeLocalPackagesModal();
+    closeDeleteCardModal();
+  }
+}
+
+function isTypingTarget(target) {
+  return Boolean(
+    target?.closest("input, textarea, select, [contenteditable='true']"),
+  );
+}
+
+function addWorkspace() {
+  setAddCardPopoverOpen(false);
+  queueWorkspaceTransition(1);
+  clearActiveCard();
+  const created = store.addWorkspace();
+  setWorkspacePopoverOpen(false);
+  return created;
+}
+
+function switchWorkspace(workspaceId) {
+  setAddCardPopoverOpen(false);
+  const snapshot = store.getSnapshot();
+  const currentIndex = getActiveWorkspaceIndex(snapshot);
+  const nextIndex = snapshot.workspaces.findIndex(
+    (workspace) => workspace.id === workspaceId,
+  );
+  if (nextIndex < 0) {
+    setWorkspacePopoverOpen(false);
+    return;
+  }
+
+  const direction = resolveWorkspaceDirection(currentIndex, nextIndex);
+  if (!direction) {
+    setWorkspacePopoverOpen(false);
+    return;
+  }
+
+  queueWorkspaceTransition(direction);
+  clearActiveCard();
+  store.switchWorkspace(workspaceId);
+  setWorkspacePopoverOpen(false);
+}
+
+function cycleWorkspace(direction) {
+  setAddCardPopoverOpen(false);
+  const snapshot = store.getSnapshot();
+  if (snapshot.workspaces.length <= 1) {
+    return;
+  }
+
+  queueWorkspaceTransition(direction);
+  clearActiveCard();
+  setWorkspacePopoverOpen(false);
+  store.cycleWorkspace(direction);
+}
+
+function jumpToWorkspace(index) {
+  setAddCardPopoverOpen(false);
+  const snapshot = store.getSnapshot();
+  const currentIndex = getActiveWorkspaceIndex(snapshot);
+  if (index < 0 || index >= snapshot.workspaces.length) {
+    return;
+  }
+
+  const direction = resolveWorkspaceDirection(currentIndex, index);
+  if (!direction) {
+    setWorkspacePopoverOpen(false);
+    return;
+  }
+
+  queueWorkspaceTransition(direction);
+  clearActiveCard();
+  setWorkspacePopoverOpen(false);
+  store.jumpToWorkspace(index);
+}
+
+function removeWorkspace(workspaceId) {
+  setAddCardPopoverOpen(false);
+  const snapshot = store.getSnapshot();
+  const currentIndex = getActiveWorkspaceIndex(snapshot);
+  const isActiveWorkspace = snapshot.activeWorkspaceId === workspaceId;
+  if (isActiveWorkspace) {
+    queueWorkspaceTransition(
+      currentIndex >= snapshot.workspaces.length - 1 ? -1 : 1,
+    );
+  }
+
+  clearActiveCard();
+  const removed = store.removeWorkspace(workspaceId);
+
+  if (!removed) {
+    clearWorkspaceTransition();
+    flashBoardBlocked();
+    return;
+  }
+
+  setWorkspacePopoverOpen(false);
+}
+
+function primeStartupSequence() {
+  startupPaths.forEach((path, index) => {
+    const length = Math.ceil(path.getTotalLength());
+    path.style.setProperty("--path-length", String(length));
+    path.style.setProperty("--stroke-delay", `${240 + index * 150}ms`);
+  });
+}
+
+function finishStartupSequence(reduceMotion) {
+  document.body.classList.add("startup-complete");
+
+  window.setTimeout(
+    () => {
+      startupScreen.hidden = true;
+      document.body.classList.remove("startup-active");
+      document.body.classList.remove("auth-pending");
+    },
+    reduceMotion ? 220 : 680,
+  );
+}
+
+function playStartupSequence() {
+  const reduceMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)",
+  ).matches;
+  const duration = reduceMotion ? 720 : 3820;
+  const start = performance.now();
+
+  startupAuthCard.hidden = true;
+  startupStatusPanel.hidden = false;
+  startupProgress.hidden = false;
+  startupStatusLabel.textContent = "Unlocking board";
+  startupProgressFill.style.transform = "scaleX(0)";
+
+  function tick(now) {
+    const rawProgress = Math.min(1, (now - start) / duration);
+    const easedProgress = 1 - Math.pow(1 - rawProgress, 1.8);
+    const percentage = Math.round(easedProgress * 100);
+
+    startupStatusValue.textContent = `${percentage}%`;
+    startupProgressFill.style.transform = `scaleX(${easedProgress})`;
+
+    if (rawProgress < 1) {
+      window.requestAnimationFrame(tick);
+      return;
+    }
+
+    finishStartupSequence(reduceMotion);
+  }
+
+  window.requestAnimationFrame(tick);
+}
+
+function setStartupError(message) {
+  const text = String(message || "").trim();
+  startupErrorMessage.textContent = text;
+  startupErrorMessage.hidden = !text;
+}
+
+function setAuthPending(pending) {
+  document.body.classList.toggle("auth-pending", pending);
+  startupLoginButton.disabled = pending;
+  startupSkipButton.disabled = pending;
+  startupUsernameInput.disabled = pending;
+  startupPasswordInput.disabled = pending;
+  startupPasswordToggle.disabled = pending;
+}
+
+async function parseJsonResponse(response) {
+  return response.json().catch(() => null);
+}
+
+async function hydrateAuthenticatedWorkspace() {
+  const [boardResponse, bridgeResponse, packagesResponse] = await Promise.all([
+    fetch(apiPath("/api/board/state")),
+    fetch(apiPath("/api/widget-bridge/state")),
+    fetch(apiPath("/api/packages/local")),
+  ]);
+
+  const [boardPayload, bridgePayload, packagesPayload] = await Promise.all([
+    parseJsonResponse(boardResponse),
+    parseJsonResponse(bridgeResponse),
+    parseJsonResponse(packagesResponse),
+  ]);
+
+  if (!boardResponse.ok) {
+    throw new Error(
+      boardPayload?.error || "Falha ao carregar o estado do board.",
+    );
+  }
+
+  if (!bridgeResponse.ok) {
+    throw new Error(
+      bridgePayload?.error ||
+        "Falha ao carregar o estado compartilhado dos widgets.",
+    );
+  }
+
+  if (!packagesResponse.ok) {
+    throw new Error(
+      packagesPayload?.error ||
+        "Falha ao carregar o catalogo local de widgets.",
+    );
+  }
+
+  store.replaceState(boardPayload, { persist: false });
+  widgetBridge.setState(bridgePayload);
+  installedPackages = Array.isArray(packagesPayload) ? packagesPayload : [];
+  renderLocalPackageList();
+}
+
+async function submitLogin(username, password) {
+  const response = await fetch(apiPath("/api/auth/login"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      username,
+      password,
+    }),
+  });
+
+  const payload = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(
+      payload?.error || "Falha ao autenticar no servidor externo.",
+    );
+  }
+
+  return payload;
+}
+
+async function submitSkip() {
+  const response = await fetch(apiPath("/api/auth/skip"), {
+    method: "POST",
+  });
+
+  const payload = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(payload?.error || "Falha ao continuar no modo local.");
+  }
+
+  return payload;
+}
+
+async function unlockWorkspaceAfterLogin() {
+  showStartupLoadingState("Syncing local views", 0.18);
+  await hydrateAuthenticatedWorkspace();
+  startupStatusValue.textContent = "64%";
+  startupProgressFill.style.transform = "scaleX(0.64)";
+  appAuthenticated = true;
+  setStartupError("");
+  playStartupSequence();
+}
+
+async function unlockExistingSession() {
+  showStartupLoadingState("Reading local views", 0.14);
+  setStartupError("");
+
+  try {
+    await hydrateAuthenticatedWorkspace();
+    startupStatusValue.textContent = "62%";
+    startupProgressFill.style.transform = "scaleX(0.62)";
+    playStartupSequence();
+  } catch (error) {
+    appAuthenticated = false;
+    primeLoginScreen();
+    syncPasswordVisibility(false);
+    setStartupError(
+      error instanceof Error
+        ? error.message
+        : "Falha ao restaurar a sessao atual.",
+    );
+  }
+}
+
+async function handleLoginFormSubmit(event) {
+  event.preventDefault();
+
+  const username = startupUsernameInput.value.trim();
+  const password = startupPasswordInput.value;
+
+  if (!username || !password) {
+    setStartupError(
+      "Preencha login e senha para conectar ao servidor externo.",
+    );
+    return;
+  }
+
+  setStartupError("");
+  setAuthPending(true);
+  startupStatusValue.textContent = "0%";
+
+  try {
+    await submitLogin(username, password);
+    startupPasswordInput.value = "";
+    await unlockWorkspaceAfterLogin();
+  } catch (error) {
+    setStartupError(
+      error instanceof Error
+        ? error.message
+        : "Falha ao autenticar no servidor externo.",
+    );
+    startupPasswordInput.focus();
+  } finally {
+    setAuthPending(false);
+  }
+}
+
+async function handleSkipLogin() {
+  setStartupError("");
+  setAuthPending(true);
+  startupStatusValue.textContent = "0%";
+
+  try {
+    await submitSkip();
+    startupPasswordInput.value = "";
+    await unlockWorkspaceAfterLogin();
+  } catch (error) {
+    setStartupError(
+      error instanceof Error
+        ? error.message
+        : "Falha ao continuar no modo local.",
+    );
+  } finally {
+    setAuthPending(false);
+  }
+}
+
+function primeLoginScreen() {
+  startupAuthCard.hidden = false;
+  startupStatusPanel.hidden = true;
+  startupProgress.hidden = true;
+  startupProgressFill.style.transform = "scaleX(0)";
+  startupStatusLabel.textContent = "Unlocking board";
+  startupStatusValue.textContent = "0%";
+  startupUsernameInput.value =
+    initialAuth.usernameHint || startupUsernameInput.value;
+}
+
+function showStartupLoadingState(
+  label = "Syncing local views",
+  progress = 0.12,
+) {
+  startupAuthCard.hidden = true;
+  startupStatusPanel.hidden = false;
+  startupProgress.hidden = false;
+  startupStatusLabel.textContent = label;
+  startupStatusValue.textContent = `${Math.round(progress * 100)}%`;
+  startupProgressFill.style.transform = `scaleX(${progress})`;
+}
+
+function syncPasswordVisibility(visible) {
+  startupPasswordInput.type = visible ? "text" : "password";
+  startupPasswordToggle.setAttribute(
+    "aria-label",
+    visible ? "Ocultar senha" : "Mostrar senha",
+  );
+  startupPasswordToggle.setAttribute("aria-pressed", String(visible));
+  startupPasswordToggle.classList.toggle("is-active", visible);
+}
+
+function renderPermissionsList(permissions) {
+  const safePermissions = Array.isArray(permissions) ? permissions : [];
+  importPermissionsList.innerHTML = safePermissions.length
+    ? safePermissions
+        .map(
+          (permission) =>
+            `
+              <li class="permission-item">
+                <span class="permission-pill">${escapeHtml(permission)}</span>
+                <span class="permission-item__description">${escapeHtml(describePermission(permission))}</span>
+              </li>
+            `,
+        )
+        .join("")
+    : `
+        <li class="permission-item">
+          <span class="permission-pill permission-pill--muted">Nenhuma permissao mock solicitada.</span>
+          <span class="permission-item__description">Esse widget funciona fechado nele mesmo, sem pedir acesso adicional.</span>
+        </li>
+      `;
+}
+
+function describePermission(permission) {
+  return (
+    PERMISSION_DESCRIPTIONS[permission] ||
+    "Permissao mock declarada pelo package para futuras integracoes e capacidades opcionais."
+  );
+}
+
+function syncModalLock() {
+  document.documentElement.classList.toggle(
+    "modal-open",
+    !importModalBackdrop.hidden ||
+      !localPackagesModalBackdrop.hidden ||
+      !deleteCardModalBackdrop.hidden,
+  );
+}
+
+function getCardById(cardId) {
+  return store.getCards().find((card) => card.id === cardId) || null;
+}
+
+function renderImportPreview(preview) {
+  const snapshot = store.getSnapshot();
+  const cols = snapshot.layout.cols;
+  const rows = snapshot.layout.rows;
+  const cardWidth = Math.max(
+    1,
+    Math.min(cols, Number(preview.initial_width) || 3),
+  );
+  const cardHeight = Math.max(
+    1,
+    Math.min(rows, Number(preview.initial_height) || 2),
+  );
+  const cardX = Math.max(1, Math.floor((cols - cardWidth) / 2) + 1);
+  const cardY = Math.max(1, Math.floor((rows - cardHeight) / 2) + 1);
+  const previewOverlay = importPreviewCard.parentElement;
+
+  importPreviewDensity.textContent = `${cols} x ${rows} grid ativa · card ${cardWidth} x ${cardHeight}`;
+  importPreviewCells.style.setProperty("--preview-cols", String(cols));
+  importPreviewCells.style.setProperty("--preview-rows", String(rows));
+  importPreviewCells.style.setProperty(
+    "--preview-gap",
+    `${Math.max(8, snapshot.layout.gap - 4)}px`,
+  );
+  previewOverlay?.style.setProperty("--preview-cols", String(cols));
+  previewOverlay?.style.setProperty("--preview-rows", String(rows));
+  previewOverlay?.style.setProperty(
+    "--preview-gap",
+    `${Math.max(8, snapshot.layout.gap - 4)}px`,
+  );
+  importPreviewCard.style.gridColumn = `${cardX} / span ${cardWidth}`;
+  importPreviewCard.style.gridRow = `${cardY} / span ${cardHeight}`;
+
+  const signature = `${cols}:${rows}`;
+  if (importPreviewCells.dataset.signature !== signature) {
+    importPreviewCells.dataset.signature = signature;
+    importPreviewCells.innerHTML = Array.from(
+      { length: cols * rows },
+      () => '<div class="import-preview-cells__cell"></div>',
+    ).join("");
+  }
+}
+
+function openImportModal(preview, file = null) {
+  pendingImportPreview = preview;
+  pendingImportFile = file;
+  importModalTitle.textContent = preview.title;
+  importModalDescription.textContent = preview.description;
+  importPackageName.textContent = preview.filename;
+  importAuthor.textContent = preview.author;
+  importVersion.textContent = preview.version || "0.1.0";
+  importSize.textContent = `${preview.initial_width} x ${preview.initial_height}`;
+  importModalDetails.textContent = preview.details || preview.description;
+  renderImportPreview(preview);
+  importPreviewFrame.setAttribute("srcdoc", enhancePackageHtml(preview.html));
+  renderPermissionsList(preview.permissions);
+  importModalBackdrop.hidden = false;
+  syncModalLock();
+  widgetBridge.syncFrames();
+}
+
+function closeImportModal() {
+  pendingImportPreview = null;
+  pendingImportFile = null;
+  importPreviewFrame.setAttribute("srcdoc", "");
+  importModalBackdrop.hidden = true;
+  syncModalLock();
+}
+
+function openDeleteCardModal(cardId) {
+  const card = getCardById(cardId);
+  if (!card) {
+    flashBoardBlocked();
+    return;
+  }
+
+  pendingDeleteCardId = card.id;
+  deleteCardModalTitle.textContent = "Excluir card?";
+  deleteCardModalName.textContent = card.title;
+  deleteCardModalDescription.textContent =
+    card.kind === "package"
+      ? "Esse package sera removido do workspace atual. O arquivo .lince original nao sera alterado."
+      : "Esse card sera removido do workspace atual e o espaco volta a ficar livre na grid.";
+  deleteCardModalBackdrop.hidden = false;
+  syncModalLock();
+}
+
+function closeDeleteCardModal() {
+  pendingDeleteCardId = null;
+  deleteCardModalName.textContent = "";
+  deleteCardModalBackdrop.hidden = true;
+  syncModalLock();
+}
+
+function showDropOverlay(message, options = {}) {
+  if (dropOverlayFlashTimeout) {
+    window.clearTimeout(dropOverlayFlashTimeout);
+    dropOverlayFlashTimeout = null;
+  }
+
+  const variant = options.variant || "mixed";
+  dropZoneOverlay.hidden = false;
+  dropZoneOverlay.dataset.state = options.locked ? "loading" : "ready";
+  dropZoneOverlay.dataset.variant = variant;
+  dropZoneOverlayEyebrow.textContent =
+    variant === "workspace"
+      ? "Import workspace"
+      : variant === "package"
+        ? "Import package"
+        : "Import local file";
+  dropZoneOverlayTitle.textContent =
+    variant === "workspace"
+      ? "Solte um arquivo .workspace.lince"
+      : variant === "package"
+        ? "Solte um arquivo .lince"
+        : "Solte um .lince ou .workspace.lince";
+  dropZoneOverlayCopy.textContent = message;
+}
+
+function hideDropOverlay() {
+  if (dropOverlayFlashTimeout) {
+    window.clearTimeout(dropOverlayFlashTimeout);
+    dropOverlayFlashTimeout = null;
+  }
+
+  dropHoverDepth = 0;
+  dropZoneOverlay.hidden = true;
+  dropZoneOverlay.dataset.state = "ready";
+  dropZoneOverlay.dataset.variant = "mixed";
+  dropZoneOverlayEyebrow.textContent = "Import local file";
+  dropZoneOverlayTitle.textContent = "Solte um .lince ou .workspace.lince";
+  dropZoneOverlayCopy.textContent = DEFAULT_DROP_MESSAGE;
+}
+
+function flashDropOverlayMessage(message) {
+  showDropOverlay(message, { locked: true });
+  dropOverlayFlashTimeout = window.setTimeout(() => {
+    hideDropOverlay();
+  }, 1600);
+}
+
+function hasFilePayload(dataTransfer) {
+  return (
+    Array.from(dataTransfer?.items || []).some(
+      (item) => item.kind === "file",
+    ) || Number(dataTransfer?.files?.length || 0) > 0
+  );
+}
+
+function isLinceFile(file) {
+  return Boolean(file?.name && file.name.toLowerCase().endsWith(".lince"));
+}
+
+function isWorkspaceArchiveFile(file) {
+  return Boolean(
+    file?.name && file.name.toLowerCase().endsWith(".workspace.lince"),
+  );
+}
+
+function getDroppedLinceFile(dataTransfer) {
+  return (
+    Array.from(dataTransfer?.files || []).find(
+      (file) => isLinceFile(file) && !isWorkspaceArchiveFile(file),
+    ) || null
+  );
+}
+
+function getDroppedWorkspaceFile(dataTransfer) {
+  return (
+    Array.from(dataTransfer?.files || []).find(isWorkspaceArchiveFile) || null
+  );
+}
+
+async function requestPackagePreview(file) {
+  const formData = new FormData();
+  formData.append("package", file);
+
+  const response = await fetch(apiPath("/api/packages/preview"), {
+    method: "POST",
+    body: formData,
+  });
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(payload?.error || "Nao foi possivel ler o package .lince.");
+  }
+
+  return payload;
+}
+
+async function importLinceFile(file) {
+  showDropOverlay(`Lendo ${file.name}...`, {
+    locked: true,
+    variant: "package",
+  });
+
+  try {
+    const preview = await requestPackagePreview(file);
+    hideDropOverlay();
+    openImportModal(preview, file);
+  } catch (error) {
+    flashDropOverlayMessage(
+      error instanceof Error ? error.message : "Falha ao importar.",
+    );
+  }
+}
+
+async function requestWorkspaceImport(file) {
+  const formData = new FormData();
+  formData.append("workspace", file);
+
+  const response = await fetch(apiPath("/api/board/workspaces/import"), {
+    method: "POST",
+    body: formData,
+  });
+  const payload = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(payload?.error || "Nao foi possivel importar o workspace.");
+  }
+
+  return payload;
+}
+
+async function importWorkspaceFile(file) {
+  showDropOverlay(`Importando ${file.name}...`, {
+    locked: true,
+    variant: "workspace",
+  });
+
+  try {
+    queueWorkspaceTransition(1);
+    const workspace = await requestWorkspaceImport(file);
+    store.appendWorkspace(workspace, { persist: false, activate: true });
+    hideDropOverlay();
+    setWorkspacePopoverOpen(false);
+  } catch (error) {
+    clearWorkspaceTransition();
+    flashDropOverlayMessage(
+      error instanceof Error ? error.message : "Falha ao importar workspace.",
+    );
+  }
+}
+
+function resolvePreviewSize(preview, fallback = null) {
+  const width = Math.max(
+    1,
+    Number(preview?.initial_width ?? preview?.initialWidth) ||
+      Number(
+        fallback?.initial_width ?? fallback?.initialWidth ?? fallback?.w,
+      ) ||
+      3,
+  );
+  const height = Math.max(
+    1,
+    Number(preview?.initial_height ?? preview?.initialHeight) ||
+      Number(
+        fallback?.initial_height ?? fallback?.initialHeight ?? fallback?.h,
+      ) ||
+      2,
+  );
+
+  return { w: width, h: height };
+}
+
+function createCardFromPreview(preview, sizeOverride = null) {
+  const size = sizeOverride || resolvePreviewSize(preview);
+  return store.addImportedCard({
+    title: preview.title,
+    description: preview.description,
+    author: preview.author,
+    permissions: preview.permissions,
+    packageName: preview.filename,
+    html: preview.html,
+    w: size.w,
+    h: size.h,
+  });
+}
+
+async function addLocalPackageToWorkspace(packageId) {
+  const preview = await requestInstalledPackage(packageId);
+  const packageSummary =
+    installedPackages.find((entry) => entry.id === packageId) || null;
+  const created = createCardFromPreview(
+    preview,
+    resolvePreviewSize(packageSummary, preview),
+  );
+  if (!created) {
+    throw new Error("Nao encontrei espaco livre na grid para esse widget.");
+  }
+
+  setActiveCard(created.id, null);
+  closeLocalPackagesModal();
+  return created;
+}
+
+function triggerWorkspaceExport() {
+  const snapshot = store.getSnapshot();
+  const activeWorkspace = snapshot.workspaces.find(
+    (workspace) => workspace.id === snapshot.activeWorkspaceId,
+  );
+  if (!activeWorkspace) {
+    flashBoardBlocked();
+    return;
+  }
+
+  const anchor = document.createElement("a");
+  anchor.href = apiPath(
+    `/api/board/workspaces/${encodeURIComponent(activeWorkspace.id)}/export`,
+  );
+  anchor.download = `${activeWorkspace.name || "workspace"}.workspace.lince`;
+  anchor.rel = "noreferrer";
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  setWorkspacePopoverOpen(false);
+}
+
+function workspaceExportPayload() {
+  const snapshot = store.getSnapshot();
+  const activeWorkspace = snapshot.workspaces.find(
+    (workspace) => workspace.id === snapshot.activeWorkspaceId,
+  );
+  if (!activeWorkspace) {
+    return null;
+  }
+
+  const slug =
+    String(activeWorkspace.name || "workspace")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "workspace";
+
+  return {
+    filename: `${slug}.workspace.lince`,
+    url: `${window.location.origin}${apiPath(`/api/board/workspaces/${encodeURIComponent(activeWorkspace.id)}/export`)}`,
+  };
+}
+
+async function confirmImportCard() {
+  if (!pendingImportPreview || !pendingImportFile) {
+    return;
+  }
+
+  importConfirmButton.disabled = true;
+  importCancelButton.disabled = true;
+
+  try {
+    const installedPackage = await installUploadedPackage(pendingImportFile);
+    const created = createCardFromPreview(
+      installedPackage,
+      resolvePreviewSize(pendingImportPreview, installedPackage),
+    );
+
+    if (!created) {
+      flashBoardBlocked();
+      return;
+    }
+
+    closeImportModal();
+    setActiveCard(created.id, null);
+  } catch (error) {
+    flashDropOverlayMessage(
+      error instanceof Error
+        ? error.message
+        : "Falha ao instalar o package .lince.",
+    );
+  } finally {
+    importConfirmButton.disabled = false;
+    importCancelButton.disabled = false;
+  }
+}
+
+function confirmDeleteCard() {
+  if (!pendingDeleteCardId) {
+    return;
+  }
+
+  const cardId = pendingDeleteCardId;
+  closeDeleteCardModal();
+
+  if (activeCardId === cardId) {
+    activeCardId = null;
+    activeInteractionType = null;
+  }
+
+  const removed = store.removeCard(cardId);
+  if (!removed) {
+    flashBoardBlocked();
+  }
+}
+
+store.subscribe((snapshot) => {
+  renderSnapshot(snapshot);
+});
+
+attachBoardInteractions({
+  boardElement: boardCanvas,
+  config,
+  readCards: () => store.getCards(),
+  replaceCards: (cards, options) => store.replaceCards(cards, options),
+  isEditMode: () => editMode,
+  onInteractionStart: (cardId, interactionType) => {
+    setActiveCard(cardId, interactionType);
+  },
+  onInteractionEnd: () => {
+    clearActiveCard();
+  },
+  onEdgeTransferPreview: (direction) => {
+    setWorkspaceTransferPreview(direction);
+  },
+  onEdgeTransfer: (card, direction) =>
+    handleWorkspaceEdgeTransfer(card, direction),
+});
+
+editToggle.addEventListener("click", () => {
+  setEditMode(!editMode);
+});
+
+addCardButton.addEventListener("click", () => {
+  setWorkspacePopoverOpen(false);
+  setAddCardPopoverOpen(!addCardPopoverOpen);
+});
+
+addCardImportButton.addEventListener("click", () => {
+  setAddCardPopoverOpen(false);
+  packageImportInput.value = "";
+  packageImportInput.click();
+});
+
+addCardLocalButton.addEventListener("click", () => {
+  openLocalPackagesModal();
+});
+
+workspaceToggle.addEventListener("click", () => {
+  setAddCardPopoverOpen(false);
+  setWorkspacePopoverOpen(!workspacePopoverOpen);
+});
+
+addWorkspaceButton.addEventListener("click", () => {
+  addWorkspace();
+});
+
+importWorkspaceButton.addEventListener("click", () => {
+  workspaceImportInput.value = "";
+  workspaceImportInput.click();
+});
+
+exportWorkspaceButton.addEventListener("click", () => {
+  triggerWorkspaceExport();
+});
+
+exportWorkspaceButton.setAttribute("draggable", "true");
+exportWorkspaceButton.addEventListener("dragstart", (event) => {
+  const payload = workspaceExportPayload();
+  if (!payload || !event.dataTransfer) {
+    return;
+  }
+
+  event.dataTransfer.effectAllowed = "copy";
+  event.dataTransfer.setData("text/uri-list", payload.url);
+
+  try {
+    event.dataTransfer.setData(
+      "DownloadURL",
+      `application/zip:${payload.filename}:${payload.url}`,
+    );
+  } catch (error) {
+    // Browser may not support DownloadURL.
+  }
+});
+
+workspaceList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-workspace-action]");
+  if (!button) {
+    return;
+  }
+
+  const workspaceId = button.dataset.workspaceId;
+  const action = button.dataset.workspaceAction;
+  if (!workspaceId || !action) {
+    return;
+  }
+
+  if (action === "delete") {
+    removeWorkspace(workspaceId);
+    return;
+  }
+
+  switchWorkspace(workspaceId);
+});
+
+densitySlider.addEventListener("input", (event) => {
+  clearActiveCard();
+  store.updateDensity(Number(event.currentTarget.value));
+});
+
+cardsLayer.addEventListener("click", (event) => {
+  const deleteButton = event.target.closest("[data-card-action='delete']");
+  if (!deleteButton || !editMode) {
+    return;
+  }
+
+  const cardNode = deleteButton.closest("[data-card-id]");
+  if (!cardNode?.dataset.cardId) {
+    return;
+  }
+
+  openDeleteCardModal(cardNode.dataset.cardId);
+});
+
+boardShell.addEventListener("dragenter", (event) => {
+  if (!editMode || !hasFilePayload(event.dataTransfer)) {
+    return;
+  }
+
+  event.preventDefault();
+  dropHoverDepth += 1;
+  showDropOverlay(DEFAULT_DROP_MESSAGE, { variant: "mixed" });
+});
+
+boardShell.addEventListener("dragover", (event) => {
+  if (!editMode || !hasFilePayload(event.dataTransfer)) {
+    return;
+  }
+
+  event.preventDefault();
+  event.dataTransfer.dropEffect = "copy";
+
+  if (dropZoneOverlay.hidden) {
+    showDropOverlay(DEFAULT_DROP_MESSAGE);
+  }
+});
+
+boardShell.addEventListener("dragleave", (event) => {
+  if (!editMode || dropZoneOverlay.dataset.state === "loading") {
+    return;
+  }
+
+  if (event.relatedTarget && boardShell.contains(event.relatedTarget)) {
+    return;
+  }
+
+  dropHoverDepth = Math.max(0, dropHoverDepth - 1);
+  if (dropHoverDepth === 0) {
+    hideDropOverlay();
+  }
+});
+
+boardShell.addEventListener("drop", async (event) => {
+  if (!editMode || !hasFilePayload(event.dataTransfer)) {
+    return;
+  }
+
+  event.preventDefault();
+  const linceFile = getDroppedLinceFile(event.dataTransfer);
+  const workspaceFile = getDroppedWorkspaceFile(event.dataTransfer);
+
+  if (workspaceFile) {
+    await importWorkspaceFile(workspaceFile);
+    return;
+  }
+
+  if (!linceFile) {
+    flashDropOverlayMessage(
+      "Solte um arquivo .lince ou .workspace.lince valido.",
+    );
+    return;
+  }
+
+  await importLinceFile(linceFile);
+});
+
+importCancelButton.addEventListener("click", () => {
+  closeImportModal();
+});
+
+importCloseButton.addEventListener("click", () => {
+  closeImportModal();
+});
+
+importConfirmButton.addEventListener("click", () => {
+  void confirmImportCard();
+});
+
+importModalBackdrop.addEventListener("click", (event) => {
+  if (event.target === importModalBackdrop) {
+    closeImportModal();
+  }
+});
+
+localPackagesCloseButton.addEventListener("click", () => {
+  closeLocalPackagesModal();
+});
+
+localPackagesModalBackdrop.addEventListener("click", (event) => {
+  if (event.target === localPackagesModalBackdrop) {
+    closeLocalPackagesModal();
+  }
+});
+
+localPackagesSearch.addEventListener("input", () => {
+  renderLocalPackageList();
+});
+
+localPackageList.addEventListener("click", (event) => {
+  const card = event.target.closest("[data-local-package-id]");
+  if (!card?.dataset.localPackageId) {
+    return;
+  }
+
+  void addLocalPackageToWorkspace(card.dataset.localPackageId).catch(
+    (error) => {
+      localPackagesSummary.textContent =
+        error instanceof Error
+          ? error.message
+          : "Falha ao adicionar o widget local.";
+    },
+  );
+});
+
+deleteCardCancelButton.addEventListener("click", () => {
+  closeDeleteCardModal();
+});
+
+deleteCardCloseButton.addEventListener("click", () => {
+  closeDeleteCardModal();
+});
+
+deleteCardConfirmButton.addEventListener("click", () => {
+  confirmDeleteCard();
+});
+
+deleteCardModalBackdrop.addEventListener("click", (event) => {
+  if (event.target === deleteCardModalBackdrop) {
+    closeDeleteCardModal();
+  }
+});
+
+packageImportInput.addEventListener("change", () => {
+  const file = packageImportInput.files?.[0];
+  if (!file) {
+    return;
+  }
+
+  void importLinceFile(file);
+});
+
+workspaceImportInput.addEventListener("change", () => {
+  const file = workspaceImportInput.files?.[0];
+  if (!file) {
+    return;
+  }
+
+  void importWorkspaceFile(file);
+});
+
+document.addEventListener("pointerdown", (event) => {
+  if (!workspacePopoverOpen) {
+    if (
+      addCardPopoverOpen &&
+      !addCardPopover.contains(event.target) &&
+      !addCardButton.contains(event.target)
+    ) {
+      setAddCardPopoverOpen(false);
+    }
+    return;
+  }
+
+  if (workspaceSwitcher.contains(event.target)) {
+    return;
+  }
+
+  setWorkspacePopoverOpen(false);
+
+  if (
+    addCardPopoverOpen &&
+    !addCardPopover.contains(event.target) &&
+    !addCardButton.contains(event.target)
+  ) {
+    setAddCardPopoverOpen(false);
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (!deleteCardModalBackdrop.hidden && event.key === "Escape") {
+    event.preventDefault();
+    closeDeleteCardModal();
+    return;
+  }
+
+  if (!localPackagesModalBackdrop.hidden && event.key === "Escape") {
+    event.preventDefault();
+    closeLocalPackagesModal();
+    return;
+  }
+
+  if (!importModalBackdrop.hidden && event.key === "Escape") {
+    event.preventDefault();
+    closeImportModal();
+    return;
+  }
+
+  if (addCardPopoverOpen && event.key === "Escape") {
+    event.preventDefault();
+    setAddCardPopoverOpen(false);
+    return;
+  }
+
+  if (workspacePopoverOpen && event.key === "Escape") {
+    event.preventDefault();
+    setWorkspacePopoverOpen(false);
+    return;
+  }
+
+  if (isTypingTarget(event.target)) {
+    return;
+  }
+
+  const key = event.key.toLowerCase();
+
+  if ((event.metaKey || event.ctrlKey) && event.shiftKey && key === "n") {
+    event.preventDefault();
+    addWorkspace();
+    return;
+  }
+
+  if (matchesWorkspaceArrowShortcut(event, 1)) {
+    event.preventDefault();
+    cycleWorkspace(1);
+    return;
+  }
+
+  if (matchesWorkspaceArrowShortcut(event, -1)) {
+    event.preventDefault();
+    cycleWorkspace(-1);
+    return;
+  }
+
+  if (event.altKey && /^[1-9]$/.test(event.key)) {
+    event.preventDefault();
+    jumpToWorkspace(Number(event.key) - 1);
+  }
+});
+
+setWorkspacePopoverOpen(false);
+setEditMode(false);
+primeStartupSequence();
+startupLoginForm.addEventListener("submit", (event) => {
+  void handleLoginFormSubmit(event);
+});
+startupPasswordToggle.addEventListener("click", () => {
+  syncPasswordVisibility(startupPasswordInput.type === "password");
+});
+startupSkipButton.addEventListener("click", () => {
+  void handleSkipLogin();
+});
+
+if (appAuthenticated) {
+  void unlockExistingSession();
+} else {
+  primeLoginScreen();
+  syncPasswordVisibility(false);
+  window.setTimeout(() => {
+    startupUsernameInput.focus();
+    startupUsernameInput.select();
+  }, 1480);
+}
+
+window.LinceBoard = {
+  addCard() {
+    if (!editMode) {
+      return;
+    }
+
+    setAddCardPopoverOpen(!addCardPopoverOpen);
+  },
+  addWorkspace,
+  exportWorkspace() {
+    triggerWorkspaceExport();
+  },
+  importWorkspace() {
+    workspaceImportInput.value = "";
+    workspaceImportInput.click();
+  },
+  nextWorkspace() {
+    cycleWorkspace(1);
+  },
+  previousWorkspace() {
+    cycleWorkspace(-1);
+  },
+  removeCard(cardId) {
+    openDeleteCardModal(cardId);
+  },
+  removeWorkspace,
+  setDensity(level) {
+    clearActiveCard();
+    store.updateDensity(level);
+  },
+  setEditMode,
+  switchWorkspace,
+  toggleWorkspacePopover() {
+    setWorkspacePopoverOpen(!workspacePopoverOpen);
+  },
+};

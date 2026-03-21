@@ -11,6 +11,7 @@ use persistence::repositories::{
     user::{UserRepository, UserRepositoryImpl},
     view::{ViewRepository, ViewRepositoryImpl},
 };
+use persistence::storage::StorageService;
 use persistence::write_coordinator::WriteCoordinatorHandle;
 use sqlx::{Pool, Sqlite};
 use std::sync::Arc;
@@ -31,6 +32,7 @@ pub struct Repositories {
 
 pub struct Injected {
     pub repository: Repositories,
+    pub storage: Arc<StorageService>,
     pub writer: WriteCoordinatorHandle,
 }
 
@@ -38,6 +40,7 @@ pub type InjectedServices = Arc<Injected>;
 
 pub fn dependency_injection(
     db: Arc<Pool<Sqlite>>,
+    storage: Arc<StorageService>,
     writer: WriteCoordinatorHandle,
 ) -> InjectedServices {
     let services: InjectedServices = Arc::new(Injected {
@@ -54,6 +57,7 @@ pub fn dependency_injection(
             user: Arc::new(UserRepositoryImpl::new(db.clone())),
             view: Arc::new(ViewRepositoryImpl::new(db.clone())),
         },
+        storage,
         writer,
     });
 

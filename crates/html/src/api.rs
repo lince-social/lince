@@ -1,10 +1,11 @@
 use crate::HtmlState;
 use axum::{
     Json, Router,
-    extract::{Path, State},
-    http::{HeaderMap, StatusCode, header},
+    body::{Body, to_bytes},
+    extract::{Path, Query, Request, State},
+    http::{HeaderMap, HeaderValue, StatusCode, header},
     response::{
-        IntoResponse,
+        IntoResponse, Response,
         sse::{Event, KeepAlive, Sse},
     },
     routing::{get, post},
@@ -19,8 +20,15 @@ use std::{
     time::Duration,
 };
 use tokio::sync::broadcast;
+use tokio_util::io::ReaderStream;
 use tower_http::cors::{Any, CorsLayer};
 use utils::auth::{AuthClaims, decode_jwt, issue_jwt, verify_password};
+use utils::file_access::{
+    FileAccessAction, FileAccessClaims, decode_file_access_token, issue_file_access_token,
+};
+
+const FILE_LINK_TTL_SECS: u64 = 300;
+const MAX_FILE_UPLOAD_BYTES: usize = 1024 * 1024 * 1024;
 
 #[derive(Deserialize)]
 struct LoginRequest {
@@ -46,6 +54,25 @@ struct SqlResponse {
     changed_tables: BTreeSet<String>,
 }
 
+#[derive(Deserialize)]
+struct FileListQuery {
+    prefix: Option<String>,
+    limit: Option<i32>,
+    cursor: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct FileKeyRequest {
+    key: String,
+}
+
+#[derive(Serialize)]
+struct FileLinkResponse {
+    method: &'static str,
+    url: String,
+    expires_in: u64,
+}
+
 #[derive(Serialize)]
 struct ErrorResponse {
     error: String,
@@ -55,6 +82,16 @@ pub(crate) fn router() -> Router<Arc<HtmlState>> {
     Router::new()
         .route("/auth/login", post(login))
         .route("/sql", post(execute_sql))
+        .route("/files", get(list_files))
+        .route("/files/upload-link", post(upload_link))
+        .route("/files/download-link", post(download_link))
+        .route("/files/delete-link", post(delete_link))
+        .route(
+            "/files/access/{token}",
+            get(download_via_link)
+                .put(upload_via_link)
+                .delete(delete_via_link),
+        )
         .route("/sse/view/{view_id}", get(view_sse))
         .layer(
             CorsLayer::new()
@@ -115,6 +152,144 @@ async fn execute_sql(
         rows_affected: outcome.rows_affected,
         changed_tables: outcome.changed_tables,
     }))
+}
+
+async fn list_files(
+    State(state): State<Arc<HtmlState>>,
+    headers: HeaderMap,
+    Query(query): Query<FileListQuery>,
+) -> Result<Json<persistence::storage::StorageList>, ApiError> {
+    let _claims = authenticate_request(&headers, &state)?;
+    let listing = state
+        .services
+        .storage
+        .list_objects(
+            query.prefix.as_deref(),
+            query.limit.unwrap_or(100),
+            query.cursor.as_deref(),
+        )
+        .await
+        .map_err(ApiError::from_io)?;
+
+    Ok(Json(listing))
+}
+
+async fn upload_link(
+    State(state): State<Arc<HtmlState>>,
+    headers: HeaderMap,
+    Json(request): Json<FileKeyRequest>,
+) -> Result<Json<FileLinkResponse>, ApiError> {
+    let _claims = authenticate_request(&headers, &state)?;
+    let key = validate_file_key(&request.key)?;
+    Ok(Json(issue_file_link(
+        state.jwt_secret.as_str(),
+        &key,
+        FileAccessAction::Upload,
+    )?))
+}
+
+async fn download_link(
+    State(state): State<Arc<HtmlState>>,
+    headers: HeaderMap,
+    Json(request): Json<FileKeyRequest>,
+) -> Result<Json<FileLinkResponse>, ApiError> {
+    let _claims = authenticate_request(&headers, &state)?;
+    let key = validate_file_key(&request.key)?;
+    Ok(Json(issue_file_link(
+        state.jwt_secret.as_str(),
+        &key,
+        FileAccessAction::Download,
+    )?))
+}
+
+async fn delete_link(
+    State(state): State<Arc<HtmlState>>,
+    headers: HeaderMap,
+    Json(request): Json<FileKeyRequest>,
+) -> Result<Json<FileLinkResponse>, ApiError> {
+    let _claims = authenticate_request(&headers, &state)?;
+    let key = validate_file_key(&request.key)?;
+    Ok(Json(issue_file_link(
+        state.jwt_secret.as_str(),
+        &key,
+        FileAccessAction::Delete,
+    )?))
+}
+
+async fn upload_via_link(
+    State(state): State<Arc<HtmlState>>,
+    Path(token): Path<String>,
+    request: Request,
+) -> Result<StatusCode, ApiError> {
+    let claims = authenticate_file_access(&state, &token, FileAccessAction::Upload)?;
+    let content_type = request
+        .headers()
+        .get(header::CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .map(str::to_string);
+    let body = to_bytes(request.into_body(), MAX_FILE_UPLOAD_BYTES)
+        .await
+        .map_err(|error| ApiError::bad_request(Error::other(error)))?;
+
+    state
+        .services
+        .storage
+        .upload_object(&claims.key, body.to_vec(), content_type.as_deref())
+        .await
+        .map_err(ApiError::from_io)?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+async fn download_via_link(
+    State(state): State<Arc<HtmlState>>,
+    Path(token): Path<String>,
+) -> Result<Response, ApiError> {
+    let claims = authenticate_file_access(&state, &token, FileAccessAction::Download)?;
+    let object = state
+        .services
+        .storage
+        .download_object(&claims.key)
+        .await
+        .map_err(ApiError::from_io)?;
+
+    let mut response = Response::new(Body::from_stream(ReaderStream::new(
+        object.body.into_async_read(),
+    )));
+    if let Some(content_type) = object.content_type
+        && let Ok(value) = HeaderValue::from_str(&content_type)
+    {
+        response.headers_mut().insert(header::CONTENT_TYPE, value);
+    }
+    if let Some(content_length) = object.content_length
+        && let Ok(value) = HeaderValue::from_str(&content_length.to_string())
+    {
+        response.headers_mut().insert(header::CONTENT_LENGTH, value);
+    }
+    if let Ok(value) = HeaderValue::from_str(&format!(
+        "attachment; filename=\"{}\"",
+        object.filename.replace('"', "_")
+    )) {
+        response
+            .headers_mut()
+            .insert(header::CONTENT_DISPOSITION, value);
+    }
+
+    Ok(response)
+}
+
+async fn delete_via_link(
+    State(state): State<Arc<HtmlState>>,
+    Path(token): Path<String>,
+) -> Result<StatusCode, ApiError> {
+    let claims = authenticate_file_access(&state, &token, FileAccessAction::Delete)?;
+    state
+        .services
+        .storage
+        .delete_object(&claims.key)
+        .await
+        .map_err(ApiError::from_io)?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 async fn view_sse(
@@ -248,6 +423,53 @@ fn authenticate_request(
     decode_jwt(state.jwt_secret.as_str(), token).map_err(ApiError::unauthorized_err)
 }
 
+fn authenticate_file_access(
+    state: &Arc<HtmlState>,
+    token: &str,
+    expected_action: FileAccessAction,
+) -> Result<FileAccessClaims, ApiError> {
+    let claims = decode_file_access_token(state.jwt_secret.as_str(), token)
+        .map_err(ApiError::unauthorized_err)?;
+    if claims.action != expected_action {
+        return Err(ApiError::unauthorized("File access token action mismatch"));
+    }
+
+    Ok(claims)
+}
+
+fn issue_file_link(
+    secret: &str,
+    key: &str,
+    action: FileAccessAction,
+) -> Result<FileLinkResponse, ApiError> {
+    let token =
+        issue_file_access_token(secret, key, action, Duration::from_secs(FILE_LINK_TTL_SECS))
+            .map_err(ApiError::internal)?;
+
+    Ok(FileLinkResponse {
+        method: action.method(),
+        url: format!("/api/files/access/{token}"),
+        expires_in: FILE_LINK_TTL_SECS,
+    })
+}
+
+fn validate_file_key(key: &str) -> Result<String, ApiError> {
+    if key.trim().is_empty() {
+        return Err(ApiError::bad_request(Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "File key cannot be empty",
+        )));
+    }
+    if key.starts_with('/') {
+        return Err(ApiError::bad_request(Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "File key cannot start with '/'",
+        )));
+    }
+
+    Ok(key.to_string())
+}
+
 struct ApiError {
     status: StatusCode,
     message: String,
@@ -278,6 +500,20 @@ impl ApiError {
     fn internal(error: Error) -> Self {
         Self {
             status: StatusCode::INTERNAL_SERVER_ERROR,
+            message: error.to_string(),
+        }
+    }
+
+    fn from_io(error: Error) -> Self {
+        let status = match error.kind() {
+            std::io::ErrorKind::NotFound => StatusCode::NOT_FOUND,
+            std::io::ErrorKind::PermissionDenied => StatusCode::UNAUTHORIZED,
+            std::io::ErrorKind::InvalidInput => StatusCode::BAD_REQUEST,
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
+        };
+
+        Self {
+            status,
             message: error.to_string(),
         }
     }

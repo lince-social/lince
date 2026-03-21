@@ -15,6 +15,7 @@ use injection::cross_cutting::{InjectedServices, dependency_injection};
 use persistence::{
     connection::{connection, read_only_connection},
     seeder::seed,
+    storage::StorageService,
     write_coordinator::{SqlParameter, WriteCoordinatorHandle, spawn_write_coordinator},
 };
 #[cfg(feature = "karma")]
@@ -55,14 +56,28 @@ async fn main() -> Result<(), Error> {
     })?;
 
     if has_arg(&args, "--seed-root-user") {
-        seed_root_user(&writer).await?;
+        let password = arg_value(&args, "--seed-root-user-password")
+            .or_else(|| env::var("ROOT_USER_PASSWORD").ok())
+            .ok_or_else(|| {
+                Error::other(
+                    "Root user seeding requires --seed-root-user-password or ROOT_USER_PASSWORD",
+                )
+            })?;
+        seed_root_user(&writer, &password).await?;
         return Ok(());
     }
 
     let read_db = Arc::new(read_only_connection().await.inspect_err(|e| {
         log(LogEntry::Error(e.kind(), e.to_string()));
     })?);
-    let services = dependency_injection(read_db.clone(), writer.clone());
+    let storage = Arc::new(StorageService::from_env().await.inspect_err(|e| {
+        log(LogEntry::Error(e.kind(), e.to_string()));
+    })?);
+    storage.ensure_bucket_exists().await.inspect_err(|e| {
+        log(LogEntry::Error(e.kind(), e.to_string()));
+    })?;
+
+    let services = dependency_injection(read_db.clone(), storage, writer.clone());
 
     #[cfg(feature = "gui")]
     if frontend_enabled && let Err(e) = start_gui(services.clone()).await {
@@ -93,6 +108,7 @@ fn print_help() {
     println!("Options:");
     println!("  -h, --help            Show this help message");
     println!("      --seed-root-user  Create the root API user if it does not exist");
+    println!("      --seed-root-user-password <password>  Password for --seed-root-user");
     println!("      --frontend       Start only the compiled frontend");
     #[cfg(feature = "karma")]
     println!("      --karma          Start only the karma delivery loop");
@@ -110,6 +126,11 @@ fn print_help() {
 
 fn has_arg(args: &[String], expected: &str) -> bool {
     args.iter().any(|arg| arg == expected)
+}
+
+fn arg_value(args: &[String], expected: &str) -> Option<String> {
+    args.windows(2)
+        .find_map(|window| (window[0] == expected).then(|| window[1].clone()))
 }
 
 #[cfg(any(feature = "gui", feature = "http", feature = "tui"))]
@@ -161,8 +182,8 @@ async fn start_gui(services: InjectedServices) -> Result<(), Error> {
 
 #[cfg(feature = "http")]
 async fn start_html(services: InjectedServices) -> Result<(), Error> {
-    let secret =
-        env::var("SECRET").map_err(|_| Error::other("SECRET is required when the HTML/API server is enabled"))?;
+    let secret = env::var("SECRET")
+        .map_err(|_| Error::other("SECRET is required when the HTML/API server is enabled"))?;
     serve_html(services, secret).await
 }
 
@@ -189,8 +210,8 @@ async fn start_karma(services: InjectedServices) -> Result<(), Error> {
     }
 }
 
-async fn seed_root_user(writer: &WriteCoordinatorHandle) -> Result<(), Error> {
-    let password_hash = hash_password("crazyfrog")?;
+async fn seed_root_user(writer: &WriteCoordinatorHandle, password: &str) -> Result<(), Error> {
+    let password_hash = hash_password(password)?;
     let _ = writer
         .execute_statement(
             "

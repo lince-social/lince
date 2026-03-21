@@ -6,18 +6,11 @@ use {
     },
     async_stream::stream,
     axum::{
-        Json,
         extract::{Path, State},
         http::{HeaderMap, HeaderValue, StatusCode, header},
         response::IntoResponse,
     },
-    serde::Deserialize,
 };
-
-#[derive(Debug, Deserialize)]
-pub struct SqlProxyRequest {
-    pub sql: String,
-}
 
 pub async fn proxy_manas_view(
     State(state): State<AppState>,
@@ -47,34 +40,14 @@ pub async fn proxy_manas_view(
     };
 
     let mut headers = HeaderMap::new();
-    headers.insert(header::CONTENT_TYPE, HeaderValue::from_static("text/event-stream"));
+    headers.insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("text/event-stream"),
+    );
     headers.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
     headers.insert(header::CONNECTION, HeaderValue::from_static("keep-alive"));
 
     Ok((headers, axum::body::Body::from_stream(stream)))
-}
-
-pub async fn proxy_manas_sql(
-    State(state): State<AppState>,
-    headers: HeaderMap,
-    Json(payload): Json<SqlProxyRequest>,
-) -> ApiResult<impl IntoResponse> {
-    let sql = payload.sql.trim();
-    if sql.is_empty() {
-        return Err(api_error(
-            StatusCode::BAD_REQUEST,
-            "O campo sql nao pode estar vazio.",
-        ));
-    }
-
-    let bearer_token = extract_manas_token(&state, &headers).await?;
-    let (status, body_json) = state
-        .manas
-        .execute_sql(&bearer_token, sql)
-        .await
-        .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
-
-    Ok((status, Json(body_json)))
 }
 
 async fn extract_manas_token(state: &AppState, headers: &HeaderMap) -> ApiResult<String> {

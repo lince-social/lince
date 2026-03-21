@@ -31,6 +31,7 @@ pub struct Repositories {
 }
 
 pub struct Injected {
+    pub db: Arc<Pool<Sqlite>>,
     pub repository: Repositories,
     pub storage: Arc<StorageService>,
     pub writer: WriteCoordinatorHandle,
@@ -44,6 +45,7 @@ pub fn dependency_injection(
     writer: WriteCoordinatorHandle,
 ) -> InjectedServices {
     let services: InjectedServices = Arc::new(Injected {
+        db: db.clone(),
         repository: Repositories {
             configuration: Arc::new(ConfigurationRepositoryImpl::new(db.clone())),
             operation: Arc::new(OperationRepositoryImpl::new(db.clone())),

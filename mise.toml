@@ -17,10 +17,10 @@ cargo fix --broken-code --allow-dirty
 cargo clippy --fix --allow-dirty --quiet >/dev/null 2>&1
 """
 
-[tasks.html]
+[tasks.http]
 description = "Run the HTML server"
 run = """
-cargo run --no-default-features --features 'karma html'
+cargo run --no-default-features --features 'karma http'
 """
 
 [tasks.tui]

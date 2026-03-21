@@ -50,9 +50,9 @@
       ],
       task("Tasks no Servidor")[
         - [x] Rodar a lince no servidor
-        - [ ] Integrar localmente
-        - [ ] Apontar pra outro lugar que não seja localmente
-          - [ ] Export porta na vps com https
+        - [x] Integrar localmente
+        - [x] Apontar pra outro lugar que não seja localmente
+          - [x] Export porta na vps com https
           - [ ] Nginx para rate limiting (nivel absurdo)
       ],
       task(

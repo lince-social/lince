@@ -2,12 +2,14 @@ use {
     crate::domain::board::{AppBootstrap, BoardCard},
     maud::{DOCTYPE, Markup, PreEscaped, html},
     serde_json::json,
+    std::time::{SystemTime, UNIX_EPOCH},
 };
 
 const LINCE_LOGO_SVG: &str = include_str!("../../static/lince_logo_white.svg");
 
 pub fn render_app(bootstrap: &AppBootstrap) -> String {
     let bootstrap_json = safe_json_for_html(bootstrap);
+    let asset_version = asset_version_token();
 
     html! {
         (DOCTYPE)
@@ -19,9 +21,9 @@ pub fn render_app(bootstrap: &AppBootstrap) -> String {
                 link rel="preconnect" href="https://fonts.googleapis.com";
                 link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="";
                 link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap";
-                link rel="stylesheet" href="/static/styles.css";
+                link rel="stylesheet" href=(format!("/static/styles.css?v={asset_version}"));
                 script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@main/bundles/datastar.js" {}
-                script type="module" src="/static/presentation/board/main.js" {}
+                script type="module" src=(format!("/static/presentation/board/main.js?v={asset_version}")) {}
             }
             body class="startup-active" data-signals=(app_shell_signals(bootstrap)) {
                 div id="startup-screen" class="startup-screen" {
@@ -454,6 +456,7 @@ fn safe_json_for_html<T: serde::Serialize>(value: &T) -> String {
 }
 
 pub fn render_ai_builder() -> String {
+    let asset_version = asset_version_token();
     html! {
         (DOCTYPE)
         html lang="pt-BR" {
@@ -464,9 +467,9 @@ pub fn render_ai_builder() -> String {
                 link rel="preconnect" href="https://fonts.googleapis.com";
                 link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="";
                 link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap";
-                link rel="stylesheet" href="/static/styles.css";
-                link rel="stylesheet" href="/static/ai-builder.css";
-                script type="module" src="/static/presentation/ai/main.js" {}
+                link rel="stylesheet" href=(format!("/static/styles.css?v={asset_version}"));
+                link rel="stylesheet" href=(format!("/static/ai-builder.css?v={asset_version}"));
+                script type="module" src=(format!("/static/presentation/ai/main.js?v={asset_version}")) {}
             }
             body class="ai-builder-body" {
                 div class="app-shell app-shell--ai" {
@@ -747,6 +750,13 @@ pub fn render_ai_builder() -> String {
         }
     }
     .into_string()
+}
+
+fn asset_version_token() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_secs())
+        .unwrap_or(0)
 }
 
 fn board_style(bootstrap: &AppBootstrap) -> String {

@@ -20,18 +20,83 @@ use {
 };
 
 pub async fn get_board_state(State(state): State<AppState>) -> ApiResult<Json<BoardState>> {
-    Ok(Json(state.board_state.snapshot().await))
+    let snapshot = state.board_state.snapshot().await;
+    let configured_cards = snapshot
+        .workspaces
+        .iter()
+        .flat_map(|workspace| workspace.cards.iter())
+        .filter(|card| card.kind == "package")
+        .map(|card| {
+            format!(
+                "{}:{}:{}",
+                card.title,
+                card.server_id,
+                card.view_id
+                    .map(|value| value.to_string())
+                    .unwrap_or_else(|| "null".into())
+            )
+        })
+        .collect::<Vec<_>>();
+    println!(
+        "[web host] board snapshot loaded: workspaces={} package_cards={:?}",
+        snapshot.workspaces.len(),
+        configured_cards
+    );
+    Ok(Json(snapshot))
 }
 
 pub async fn put_board_state(
     State(state): State<AppState>,
     Json(payload): Json<BoardState>,
 ) -> ApiResult<Json<BoardState>> {
+    let configured_cards = payload
+        .workspaces
+        .iter()
+        .flat_map(|workspace| workspace.cards.iter())
+        .filter(|card| card.kind == "package")
+        .map(|card| {
+            format!(
+                "{}:{}:{}",
+                card.title,
+                card.server_id,
+                card.view_id
+                    .map(|value| value.to_string())
+                    .unwrap_or_else(|| "null".into())
+            )
+        })
+        .collect::<Vec<_>>();
+    println!(
+        "[web host] board snapshot save request: workspaces={} package_cards={:?}",
+        payload.workspaces.len(),
+        configured_cards
+    );
     let saved = state
         .board_state
         .replace(payload)
         .await
         .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
+
+    let saved_cards = saved
+        .workspaces
+        .iter()
+        .flat_map(|workspace| workspace.cards.iter())
+        .filter(|card| card.kind == "package")
+        .map(|card| {
+            format!(
+                "{}:{}:{}",
+                card.title,
+                card.server_id,
+                card.view_id
+                    .map(|value| value.to_string())
+                    .unwrap_or_else(|| "null".into())
+            )
+        })
+        .collect::<Vec<_>>();
+    println!(
+        "[web host] board snapshot saved: workspaces={} package_cards={:?}",
+        saved.workspaces.len(),
+        saved_cards
+    );
 
     Ok(Json(saved))
 }
@@ -58,11 +123,18 @@ pub async fn export_workspace(
     );
 
     let mut headers = HeaderMap::new();
-    headers.insert(header::CONTENT_TYPE, HeaderValue::from_static("application/zip"));
+    headers.insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("application/zip"),
+    );
     headers.insert(
         header::CONTENT_DISPOSITION,
-        HeaderValue::from_str(&format!("attachment; filename=\"{filename}\""))
-            .map_err(|_| api_error(StatusCode::INTERNAL_SERVER_ERROR, "Falha ao exportar workspace."))?,
+        HeaderValue::from_str(&format!("attachment; filename=\"{filename}\"")).map_err(|_| {
+            api_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Falha ao exportar workspace.",
+            )
+        })?,
     );
 
     Ok((headers, Body::from(archive)))
@@ -121,7 +193,11 @@ fn next_workspace_name(board_state: &BoardState, base_name: &str) -> String {
         trimmed
     };
 
-    if !board_state.workspaces.iter().any(|workspace| workspace.name == fallback) {
+    if !board_state
+        .workspaces
+        .iter()
+        .any(|workspace| workspace.name == fallback)
+    {
         return fallback.to_string();
     }
 
@@ -139,7 +215,10 @@ fn next_workspace_name(board_state: &BoardState, base_name: &str) -> String {
     format!("{fallback} {}", uuid::Uuid::new_v4())
 }
 
-fn collect_workspace_packages(state: &AppState, workspace: &BoardWorkspace) -> Result<Vec<LincePackage>, String> {
+fn collect_workspace_packages(
+    state: &AppState,
+    workspace: &BoardWorkspace,
+) -> Result<Vec<LincePackage>, String> {
     let mut packages = Vec::new();
     let mut seen = std::collections::BTreeSet::new();
 

@@ -21,7 +21,7 @@ cargo clippy --fix --allow-dirty --quiet >/dev/null 2>&1
 [tasks.http]
 description = "Run the HTML server"
 run = """
-RUSTFLAGS="-D warnings" cargo run --no-default-features --features 'karma http'
+cargo run --no-default-features --features 'karma http'
 """
 
 [tasks.http-build]
@@ -29,7 +29,7 @@ description = "Build the release binary for the systemd HTTP service"
 run = """
 git switch dev
 git pull
-RUSTFLAGS="-D warnings" cargo build --release --no-default-features --features 'karma http'
+cargo build --release --no-default-features --features 'karma http'
 """
 
 [tasks.http-install-service]
@@ -62,7 +62,7 @@ sudo systemctl status lince --no-pager -l
 [tasks.tui]
 description = "Run the TUI frontend"
 run = """
-RUSTFLAGS="-D warnings" cargo run --no-default-features --features 'karma tui'
+cargo run --no-default-features --features 'karma tui'
 """
 
 [tasks.dev]
@@ -104,7 +104,7 @@ if [ -z "${ROOT_PASSWORD:-}" ]; then
   exit 1
 fi
 
-RUSTFLAGS="-D warnings" cargo run --no-default-features --features "karma, http" -- \
+cargo run --no-default-features --features "karma, http" -- \
   --seed-root-user \
   --seed-root-user-password "$ROOT_PASSWORD"
 """

@@ -92,42 +92,28 @@ echo Created migration: $usage_name
 """
 
 [tasks.seed]
-description = "Seed the database with initial data"
+description = "Initialize .env if needed and optionally seed the root user"
 usage = """
 arg "<root_password>" help="Root user password"
 """
 run = """
+# If .env does not exist, create it and generate a secret.
+if [ ! -f .env ]; then
+  cp .env.example .env
+  SECRET_VALUE=$(openssl rand -hex 32)
+  sed -i "s|^SECRET=.*|SECRET=\"$SECRET_VALUE\"|" .env
+fi
+
 ROOT_PASSWORD="${usage_root_password:-${ROOT_USER_PASSWORD:-}}"
 
 if [ -z "${ROOT_PASSWORD:-}" ]; then
-  echo "Pass the password as an argument or set ROOT_USER_PASSWORD"
-  exit 1
+  echo "Initialized .env. Root user was not seeded because no password was provided."
+  exit 0
 fi
 
 cargo run --no-default-features --features "karma, http" -- \
   --seed-root-user \
   --seed-root-user-password "$ROOT_PASSWORD"
-"""
-
-[tasks.init]
-description = "Initialize the .env file with secrets and create root user"
-run = """
-# If .env does not exist, cp .env.example to .env and use rand for secret
-if [ ! -f .env ]; then
-  cp .env.example .env
-  sed -i "s/SECRET=.*/SECRET=$(openssl rand -hex 32)/" .env
-fi
-
-if [ -z "${ROOT_USER_PASSWORD:-}" ]; then
-  printf "Root user password: "
-  stty -echo
-  read ROOT_USER_PASSWORD
-  stty echo
-  printf "\\n"
-fi
-
-export ROOT_USER_PASSWORD
-mise seed
 """
 
 [tasks.docs]

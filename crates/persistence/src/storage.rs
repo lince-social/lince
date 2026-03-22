@@ -15,7 +15,7 @@ const DEFAULT_BUCKET_REGION: &str = "us-east-1";
 
 #[derive(Clone)]
 pub struct StorageService {
-    client: Client,
+    client: Option<Client>,
     bucket: String,
 }
 
@@ -42,6 +42,13 @@ pub struct DownloadedObject {
 
 impl StorageService {
     pub async fn from_env() -> Result<Self, Error> {
+        if !storage_enabled() {
+            return Ok(Self {
+                client: None,
+                bucket: env::var("BUCKET_NAME").unwrap_or_else(|_| DEFAULT_BUCKET_NAME.to_string()),
+            });
+        }
+
         let endpoint = normalize_endpoint(
             env::var("BUCKET_URI")
                 .map_err(|_| Error::other("BUCKET_URI is required for RustFS integration"))?,
@@ -72,14 +79,17 @@ impl StorageService {
         .build();
 
         Ok(Self {
-            client: Client::from_conf(config),
+            client: Some(Client::from_conf(config)),
             bucket,
         })
     }
 
     pub async fn ensure_bucket_exists(&self) -> Result<(), Error> {
-        if self
-            .client
+        let Some(client) = self.client.as_ref() else {
+            return Ok(());
+        };
+
+        if client
             .head_bucket()
             .bucket(&self.bucket)
             .send()
@@ -89,7 +99,7 @@ impl StorageService {
             return Ok(());
         }
 
-        self.client
+        client
             .create_bucket()
             .bucket(&self.bucket)
             .send()
@@ -107,8 +117,12 @@ impl StorageService {
         limit: i32,
         cursor: Option<&str>,
     ) -> Result<StorageList, Error> {
-        let mut request = self
+        let client = self
             .client
+            .as_ref()
+            .ok_or_else(|| Error::other("Bucket storage is disabled"))?;
+
+        let mut request = client
             .list_objects_v2()
             .bucket(&self.bucket)
             .max_keys(limit.clamp(1, 1_000));
@@ -152,8 +166,12 @@ impl StorageService {
     ) -> Result<(), Error> {
         validate_storage_key(key)?;
 
-        let mut request = self
+        let client = self
             .client
+            .as_ref()
+            .ok_or_else(|| Error::other("Bucket storage is disabled"))?;
+
+        let mut request = client
             .put_object()
             .bucket(&self.bucket)
             .key(key)
@@ -173,8 +191,12 @@ impl StorageService {
     pub async fn download_object(&self, key: &str) -> Result<DownloadedObject, Error> {
         validate_storage_key(key)?;
 
-        let response = self
+        let client = self
             .client
+            .as_ref()
+            .ok_or_else(|| Error::other("Bucket storage is disabled"))?;
+
+        let response = client
             .get_object()
             .bucket(&self.bucket)
             .key(key)
@@ -193,7 +215,12 @@ impl StorageService {
     pub async fn delete_object(&self, key: &str) -> Result<(), Error> {
         validate_storage_key(key)?;
 
-        self.client
+        let client = self
+            .client
+            .as_ref()
+            .ok_or_else(|| Error::other("Bucket storage is disabled"))?;
+
+        client
             .delete_object()
             .bucket(&self.bucket)
             .key(key)
@@ -203,6 +230,18 @@ impl StorageService {
 
         Ok(())
     }
+}
+
+fn storage_enabled() -> bool {
+    matches!(
+        env::var("BUCKET_ENABLED")
+            .ok()
+            .as_deref()
+            .map(str::trim)
+            .map(str::to_ascii_lowercase)
+            .as_deref(),
+        Some("1" | "true" | "yes" | "on")
+    )
 }
 
 fn normalize_endpoint(raw: String) -> String {

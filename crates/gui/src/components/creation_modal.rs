@@ -19,7 +19,6 @@ use crate::{
 #[derive(Clone)]
 struct AutocompleteItem {
     row: HashMap<String, String>,
-    source_table: String,
     active_output_column: String,
     label: String,
 }
@@ -396,7 +395,6 @@ impl CreationModal {
                 .take(25)
                 .map(|row| AutocompleteItem {
                     row: row.clone(),
-                    source_table: source_table.clone(),
                     active_output_column: active_output_column.clone(),
                     label: Self::format_row_label(row),
                 })

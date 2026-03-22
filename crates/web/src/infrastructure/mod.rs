@@ -4,5 +4,6 @@ pub mod board_state_store;
 pub mod manas;
 pub mod package_catalog_store;
 pub mod paths;
+pub mod server_profile_store;
 pub mod terminal_store;
 pub mod widget_bridge_store;

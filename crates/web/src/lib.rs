@@ -12,8 +12,8 @@ use {
         },
         infrastructure::{
             auth::AppAuth, board_state_store::BoardStateStore, manas::ManasGateway,
-            package_catalog_store::PackageCatalogStore, terminal_store::TerminalSessionStore,
-            widget_bridge_store::WidgetBridgeStore,
+            package_catalog_store::PackageCatalogStore, server_profile_store::ServerProfileStore,
+            terminal_store::TerminalSessionStore, widget_bridge_store::WidgetBridgeStore,
         },
         presentation::http::router::build_router,
     },
@@ -33,6 +33,7 @@ pub async fn serve(services: InjectedServices, jwt_secret: String) -> Result<(),
         board_state: BoardStateStore::new().map_err(IoError::other)?,
         manas: ManasGateway::new().map_err(IoError::other)?,
         packages: PackageCatalogStore::new().map_err(IoError::other)?,
+        servers: ServerProfileStore::new().map_err(IoError::other)?,
         terminal: TerminalSessionStore::new(),
         widget_bridge: WidgetBridgeStore::new(),
     };

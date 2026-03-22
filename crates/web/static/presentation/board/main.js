@@ -39,15 +39,6 @@ const PERMISSION_DESCRIPTIONS = {
 
 const bootstrapElement = document.getElementById("lince-bootstrap");
 const startupScreen = document.getElementById("startup-screen");
-const startupAuthCard = document.getElementById("startup-auth-card");
-const startupLoginForm = document.getElementById("startup-login-form");
-const startupUsernameInput = document.getElementById("startup-username");
-const startupPasswordInput = document.getElementById("startup-password");
-const startupPasswordToggle = document.getElementById(
-  "startup-password-toggle",
-);
-const startupSkipButton = document.getElementById("startup-skip-button");
-const startupLoginButton = document.getElementById("startup-login-button");
 const startupErrorMessage = document.getElementById("startup-error-message");
 const startupStatusPanel = document.getElementById("startup-status-panel");
 const startupStatusLabel = startupStatusPanel?.querySelector(
@@ -135,6 +126,59 @@ const deleteCardConfirmButton = document.getElementById(
 const deleteCardCloseButton = document.getElementById(
   "delete-card-close-button",
 );
+const serverLoginModalBackdrop = document.getElementById(
+  "server-login-modal-backdrop",
+);
+const serverLoginModalDescription = document.getElementById(
+  "server-login-modal-description",
+);
+const serverLoginServerName = document.getElementById(
+  "server-login-server-name",
+);
+const serverLoginForm = document.getElementById("server-login-form");
+const serverLoginUsernameInput = document.getElementById(
+  "server-login-username",
+);
+const serverLoginPasswordInput = document.getElementById(
+  "server-login-password",
+);
+const serverLoginPasswordToggle = document.getElementById(
+  "server-login-password-toggle",
+);
+const serverLoginErrorMessage = document.getElementById(
+  "server-login-error-message",
+);
+const serverLoginCancelButton = document.getElementById(
+  "server-login-cancel-button",
+);
+const serverLoginConfirmButton = document.getElementById(
+  "server-login-confirm-button",
+);
+const serverLoginCloseButton = document.getElementById(
+  "server-login-close-button",
+);
+const widgetConfigModalBackdrop = document.getElementById(
+  "widget-config-modal-backdrop",
+);
+const widgetConfigModalDescription = document.getElementById(
+  "widget-config-modal-description",
+);
+const widgetConfigForm = document.getElementById("widget-config-form");
+const widgetConfigServerId = document.getElementById("widget-config-server-id");
+const widgetConfigViewIdField = document.getElementById(
+  "widget-config-view-id-field",
+);
+const widgetConfigViewId = document.getElementById("widget-config-view-id");
+const widgetConfigHelp = document.getElementById("widget-config-help");
+const widgetConfigCancelButton = document.getElementById(
+  "widget-config-cancel-button",
+);
+const widgetConfigSaveButton = document.getElementById(
+  "widget-config-save-button",
+);
+const widgetConfigCloseButton = document.getElementById(
+  "widget-config-close-button",
+);
 const packageImportInput = document.getElementById("package-import-input");
 const workspaceImportInput = document.getElementById("workspace-import-input");
 const cardsLayer = document.getElementById("cards-layer");
@@ -142,13 +186,6 @@ const cardsLayer = document.getElementById("cards-layer");
 if (
   !bootstrapElement ||
   !startupScreen ||
-  !startupAuthCard ||
-  !startupLoginForm ||
-  !startupUsernameInput ||
-  !startupPasswordInput ||
-  !startupPasswordToggle ||
-  !startupSkipButton ||
-  !startupLoginButton ||
   !startupErrorMessage ||
   !startupStatusPanel ||
   !startupStatusLabel ||
@@ -210,6 +247,27 @@ if (
   !deleteCardCancelButton ||
   !deleteCardConfirmButton ||
   !deleteCardCloseButton ||
+  !serverLoginModalBackdrop ||
+  !serverLoginModalDescription ||
+  !serverLoginServerName ||
+  !serverLoginForm ||
+  !serverLoginUsernameInput ||
+  !serverLoginPasswordInput ||
+  !serverLoginPasswordToggle ||
+  !serverLoginErrorMessage ||
+  !serverLoginCancelButton ||
+  !serverLoginConfirmButton ||
+  !serverLoginCloseButton ||
+  !widgetConfigModalBackdrop ||
+  !widgetConfigModalDescription ||
+  !widgetConfigForm ||
+  !widgetConfigServerId ||
+  !widgetConfigViewIdField ||
+  !widgetConfigViewId ||
+  !widgetConfigHelp ||
+  !widgetConfigCancelButton ||
+  !widgetConfigSaveButton ||
+  !widgetConfigCloseButton ||
   !packageImportInput ||
   !workspaceImportInput ||
   !cardsLayer
@@ -218,10 +276,6 @@ if (
 }
 
 const bootstrap = JSON.parse(bootstrapElement.textContent || "{}");
-const initialAuth = {
-  authenticated: Boolean(bootstrap?.auth?.authenticated),
-  usernameHint: String(bootstrap?.auth?.usernameHint || ""),
-};
 const config = createGridConfig(bootstrap);
 const hiddenCardCache = document.createElement("div");
 hiddenCardCache.setAttribute("aria-hidden", "true");
@@ -280,8 +334,10 @@ let dropOverlayFlashTimeout = null;
 let pendingImportPreview = null;
 let pendingImportFile = null;
 let pendingDeleteCardId = null;
-let appAuthenticated = initialAuth.authenticated;
 let installedPackages = [];
+let serverProfiles = Array.isArray(bootstrap?.servers) ? bootstrap.servers : [];
+let pendingServerLogin = null;
+let pendingWidgetConfigCardId = null;
 
 const startupPaths = Array.from(startupScreen.querySelectorAll(".s0"));
 const cardNodes = new Map(
@@ -310,6 +366,92 @@ function apiPath(path) {
   }
 
   return path;
+}
+
+function normalizeServerProfile(rawServer) {
+  return {
+    id: String(rawServer?.id || ""),
+    name: String(rawServer?.name || "Servidor"),
+    baseUrl: String(rawServer?.baseUrl || rawServer?.base_url || ""),
+    authenticated: Boolean(rawServer?.authenticated),
+    usernameHint: String(
+      rawServer?.usernameHint || rawServer?.username_hint || "",
+    ),
+  };
+}
+
+function syncServerProfiles(nextProfiles) {
+  serverProfiles = Array.isArray(nextProfiles)
+    ? nextProfiles.map(normalizeServerProfile)
+    : [];
+}
+
+function getServerProfile(serverId) {
+  return (
+    serverProfiles.find((server) => server.id === String(serverId || "")) ||
+    null
+  );
+}
+
+function cardRequiresServer(card) {
+  const permissions = Array.isArray(card?.permissions) ? card.permissions : [];
+  return (
+    permissions.includes("read_view_stream") ||
+    permissions.includes("write_records")
+  );
+}
+
+function cardRequiresViewId(card) {
+  const permissions = Array.isArray(card?.permissions) ? card.permissions : [];
+  return permissions.includes("read_view_stream");
+}
+
+function resolveCardServerState(card) {
+  if (!cardRequiresServer(card)) {
+    return { state: "ready", server: null };
+  }
+
+  const serverId = String(card?.serverId || "").trim();
+  if (!serverId) {
+    return {
+      state: "misconfigured",
+      server: null,
+      message: "Escolha um servidor para esse widget.",
+    };
+  }
+
+  const server = getServerProfile(serverId);
+  if (!server) {
+    return {
+      state: "misconfigured",
+      server: null,
+      message: "O servidor escolhido nao existe mais.",
+    };
+  }
+
+  if (cardRequiresViewId(card)) {
+    const viewId = Number(card?.viewId);
+    if (!Number.isInteger(viewId) || viewId <= 0) {
+      return {
+        state: "misconfigured",
+        server,
+        message: "Defina um view id valido para esse widget.",
+      };
+    }
+  }
+
+  if (!server.authenticated) {
+    return {
+      state: "locked",
+      server,
+      message: `Conecte o servidor ${server.name} para liberar esse widget.`,
+    };
+  }
+
+  return {
+    state: "ready",
+    server,
+  };
 }
 
 function getActiveWorkspaceIndex(snapshot) {
@@ -347,6 +489,37 @@ function renderCloseIcon() {
       <path d="M4 4l8 8"></path>
       <path d="M12 4 4 12"></path>
     </svg>
+  `;
+}
+
+function renderConfigureIcon() {
+  return `
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M8 3.25a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z"></path>
+      <path d="M8 11.25a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z"></path>
+      <path d="M3.25 8a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"></path>
+      <path d="M11.25 8a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"></path>
+      <path d="M8 4.75V11.25"></path>
+      <path d="M4.75 8H11.25"></path>
+    </svg>
+  `;
+}
+
+function renderConfigureButton(card) {
+  if (!cardRequiresServer(card)) {
+    return "";
+  }
+
+  return `
+    <button
+      type="button"
+      class="card-delete-button card-delete-button--secondary"
+      data-card-action="configure"
+      aria-label="Configurar ${escapeHtml(card.title)}"
+    >
+      <span class="card-delete-button__icon">${renderConfigureIcon()}</span>
+      <span class="card-delete-button__label">CONFIGURAR</span>
+    </button>
   `;
 }
 
@@ -392,7 +565,34 @@ function renderTextBody(card) {
 }
 
 function renderPackageBody(card) {
+  const gate = resolveCardServerState(card);
   const preparedHtml = enhancePackageHtml(card.html || "");
+  const frameAttributes =
+    `data-lince-server-id="${escapeHtml(card.serverId || "")}" ` +
+    `data-lince-view-id="${escapeHtml(card.viewId == null ? "" : String(card.viewId))}"`;
+
+  if (gate.state !== "ready") {
+    return `
+      <div class="package-widget package-widget--locked">
+        <div class="package-widget__locked">
+          <div class="package-widget__locked-eyebrow">${
+            gate.state === "locked" ? "Servidor bloqueado" : "Falta configurar"
+          }</div>
+          <strong class="package-widget__locked-title">${escapeHtml(card.title)}</strong>
+          <p class="package-widget__locked-copy">${escapeHtml(gate.message || "Widget indisponivel.")}</p>
+          <div class="package-widget__locked-actions">
+            <button type="button" class="modal-button modal-button--ghost" data-card-action="configure" data-card-id="${escapeHtml(card.id)}">Configurar</button>
+            ${
+              gate.state === "locked" && gate.server
+                ? `<button type="button" class="modal-button modal-button--primary" data-card-action="connect-server" data-card-id="${escapeHtml(card.id)}">Conectar ${escapeHtml(gate.server.name)}</button>`
+                : ""
+            }
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   return `
     <div class="package-widget">
       <iframe
@@ -400,6 +600,7 @@ function renderPackageBody(card) {
         title="${escapeHtml(card.title)}"
         loading="lazy"
         data-package-instance-id="${escapeHtml(card.id)}"
+        ${frameAttributes}
         sandbox="allow-scripts allow-same-origin"
         srcdoc="${escapeHtml(preparedHtml)}"
       ></iframe>
@@ -413,6 +614,7 @@ function renderCardMarkup(card) {
     return `
       <article class="board-card board-card--package" data-card-id="${escapeHtml(card.id)}" data-card-kind="${escapeHtml(card.kind || "package")}">
         ${renderDeleteButton(card)}
+        ${renderConfigureButton(card)}
         ${renderPackageBody(card)}
         ${renderHandles()}
       </article>
@@ -475,6 +677,14 @@ function syncCardNode(node, card) {
     card.id === activeCardId && activeInteractionType === "resize",
   );
 
+  if (card.kind === "package") {
+    node.innerHTML =
+      renderDeleteButton(card) +
+      renderConfigureButton(card) +
+      renderPackageBody(card) +
+      renderHandles();
+  }
+
   const titleNode = node.querySelector("[data-card-title]");
   const descriptionNode = node.querySelector("[data-card-description]");
   const textNode = node.querySelector("[data-card-text]");
@@ -500,6 +710,9 @@ function syncCardNode(node, card) {
     }
     frameNode.setAttribute("title", card.title || "External card");
     frameNode.dataset.packageInstanceId = card.id || "";
+    frameNode.dataset.linceServerId = card.serverId || "";
+    frameNode.dataset.linceViewId =
+      card.viewId == null ? "" : String(card.viewId);
   }
 
   if (deleteButton) {
@@ -913,7 +1126,7 @@ function summarizeLocalPackages(filteredPackages) {
 
   localPackagesSummary.textContent = `${totalCount} widget${totalCount > 1 ? "s" : ""} instalado${
     totalCount > 1 ? "s" : ""
-  } em lince-views. Escolha um para criar outra copia no workspace atual.`;
+  } em ~/.config/lince/web/widgets. Escolha um para criar outra copia no workspace atual.`;
 }
 
 function renderLocalPackageList() {
@@ -1220,32 +1433,17 @@ function playStartupSequence() {
   const reduceMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)",
   ).matches;
-  const duration = reduceMotion ? 720 : 3820;
-  const start = performance.now();
-
-  startupAuthCard.hidden = true;
   startupStatusPanel.hidden = false;
   startupProgress.hidden = false;
-  startupStatusLabel.textContent = "Unlocking board";
-  startupProgressFill.style.transform = "scaleX(0)";
-
-  function tick(now) {
-    const rawProgress = Math.min(1, (now - start) / duration);
-    const easedProgress = 1 - Math.pow(1 - rawProgress, 1.8);
-    const percentage = Math.round(easedProgress * 100);
-
-    startupStatusValue.textContent = `${percentage}%`;
-    startupProgressFill.style.transform = `scaleX(${easedProgress})`;
-
-    if (rawProgress < 1) {
-      window.requestAnimationFrame(tick);
-      return;
-    }
-
-    finishStartupSequence(reduceMotion);
-  }
-
-  window.requestAnimationFrame(tick);
+  startupStatusLabel.textContent = "Board ready";
+  startupStatusValue.textContent = "100%";
+  startupProgressFill.style.transform = "scaleX(1)";
+  window.setTimeout(
+    () => {
+      finishStartupSequence(reduceMotion);
+    },
+    reduceMotion ? 120 : 280,
+  );
 }
 
 function setStartupError(message) {
@@ -1254,193 +1452,14 @@ function setStartupError(message) {
   startupErrorMessage.hidden = !text;
 }
 
-function setAuthPending(pending) {
-  document.body.classList.toggle("auth-pending", pending);
-  startupLoginButton.disabled = pending;
-  startupSkipButton.disabled = pending;
-  startupUsernameInput.disabled = pending;
-  startupPasswordInput.disabled = pending;
-  startupPasswordToggle.disabled = pending;
-}
-
 async function parseJsonResponse(response) {
   return response.json().catch(() => null);
 }
 
-async function hydrateAuthenticatedWorkspace() {
-  const [boardResponse, bridgeResponse, packagesResponse] = await Promise.all([
-    fetch(apiPath("/api/board/state")),
-    fetch(apiPath("/api/widget-bridge/state")),
-    fetch(apiPath("/api/packages/local")),
-  ]);
-
-  const [boardPayload, bridgePayload, packagesPayload] = await Promise.all([
-    parseJsonResponse(boardResponse),
-    parseJsonResponse(bridgeResponse),
-    parseJsonResponse(packagesResponse),
-  ]);
-
-  if (!boardResponse.ok) {
-    throw new Error(
-      boardPayload?.error || "Falha ao carregar o estado do board.",
-    );
-  }
-
-  if (!bridgeResponse.ok) {
-    throw new Error(
-      bridgePayload?.error ||
-        "Falha ao carregar o estado compartilhado dos widgets.",
-    );
-  }
-
-  if (!packagesResponse.ok) {
-    throw new Error(
-      packagesPayload?.error ||
-        "Falha ao carregar o catalogo local de widgets.",
-    );
-  }
-
-  store.replaceState(boardPayload, { persist: false });
-  widgetBridge.setState(bridgePayload);
-  installedPackages = Array.isArray(packagesPayload) ? packagesPayload : [];
-  renderLocalPackageList();
-}
-
-async function submitLogin(username, password) {
-  const response = await fetch(apiPath("/api/auth/login"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      username,
-      password,
-    }),
-  });
-
-  const payload = await parseJsonResponse(response);
-  if (!response.ok) {
-    throw new Error(
-      payload?.error || "Falha ao autenticar no servidor externo.",
-    );
-  }
-
-  return payload;
-}
-
-async function submitSkip() {
-  const response = await fetch(apiPath("/api/auth/skip"), {
-    method: "POST",
-  });
-
-  const payload = await parseJsonResponse(response);
-  if (!response.ok) {
-    throw new Error(payload?.error || "Falha ao continuar no modo local.");
-  }
-
-  return payload;
-}
-
-async function unlockWorkspaceAfterLogin() {
-  showStartupLoadingState("Syncing local views", 0.18);
-  await hydrateAuthenticatedWorkspace();
-  startupStatusValue.textContent = "64%";
-  startupProgressFill.style.transform = "scaleX(0.64)";
-  appAuthenticated = true;
-  setStartupError("");
-  playStartupSequence();
-}
-
-async function unlockExistingSession() {
-  showStartupLoadingState("Reading local views", 0.14);
-  setStartupError("");
-
-  try {
-    await hydrateAuthenticatedWorkspace();
-    startupStatusValue.textContent = "62%";
-    startupProgressFill.style.transform = "scaleX(0.62)";
-    playStartupSequence();
-  } catch (error) {
-    appAuthenticated = false;
-    primeLoginScreen();
-    syncPasswordVisibility(false);
-    setStartupError(
-      error instanceof Error
-        ? error.message
-        : "Falha ao restaurar a sessao atual.",
-    );
-  }
-}
-
-async function handleLoginFormSubmit(event) {
-  event.preventDefault();
-
-  const username = startupUsernameInput.value.trim();
-  const password = startupPasswordInput.value;
-
-  if (!username || !password) {
-    setStartupError(
-      "Preencha login e senha para conectar ao servidor externo.",
-    );
-    return;
-  }
-
-  setStartupError("");
-  setAuthPending(true);
-  startupStatusValue.textContent = "0%";
-
-  try {
-    await submitLogin(username, password);
-    startupPasswordInput.value = "";
-    await unlockWorkspaceAfterLogin();
-  } catch (error) {
-    setStartupError(
-      error instanceof Error
-        ? error.message
-        : "Falha ao autenticar no servidor externo.",
-    );
-    startupPasswordInput.focus();
-  } finally {
-    setAuthPending(false);
-  }
-}
-
-async function handleSkipLogin() {
-  setStartupError("");
-  setAuthPending(true);
-  startupStatusValue.textContent = "0%";
-
-  try {
-    await submitSkip();
-    startupPasswordInput.value = "";
-    await unlockWorkspaceAfterLogin();
-  } catch (error) {
-    setStartupError(
-      error instanceof Error
-        ? error.message
-        : "Falha ao continuar no modo local.",
-    );
-  } finally {
-    setAuthPending(false);
-  }
-}
-
-function primeLoginScreen() {
-  startupAuthCard.hidden = false;
-  startupStatusPanel.hidden = true;
-  startupProgress.hidden = true;
-  startupProgressFill.style.transform = "scaleX(0)";
-  startupStatusLabel.textContent = "Unlocking board";
-  startupStatusValue.textContent = "0%";
-  startupUsernameInput.value =
-    initialAuth.usernameHint || startupUsernameInput.value;
-}
-
 function showStartupLoadingState(
-  label = "Syncing local views",
+  label = "Loading local workspace",
   progress = 0.12,
 ) {
-  startupAuthCard.hidden = true;
   startupStatusPanel.hidden = false;
   startupProgress.hidden = false;
   startupStatusLabel.textContent = label;
@@ -1448,14 +1467,298 @@ function showStartupLoadingState(
   startupProgressFill.style.transform = `scaleX(${progress})`;
 }
 
+async function requestServerProfiles() {
+  const response = await fetch("/host/servers");
+  const payload = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(payload?.error || "Falha ao carregar os servidores.");
+  }
+
+  return Array.isArray(payload) ? payload : [];
+}
+
+function syncServerOptions(selectedId = "") {
+  const placeholder = '<option value="">Escolha um servidor</option>';
+  const options = serverProfiles.map(
+    (server) =>
+      `<option value="${escapeHtml(server.id)}">${escapeHtml(server.name)}</option>`,
+  );
+  widgetConfigServerId.innerHTML = [placeholder, ...options].join("");
+  widgetConfigServerId.value = serverProfiles.some(
+    (server) => server.id === selectedId,
+  )
+    ? selectedId
+    : "";
+}
+
+async function refreshServerProfiles() {
+  const profiles = await requestServerProfiles();
+  syncServerProfiles(profiles);
+  syncServerOptions(widgetConfigServerId.value);
+  renderSnapshot(store.getSnapshot());
+  return serverProfiles;
+}
+
+function setServerLoginError(message) {
+  const text = String(message || "").trim();
+  serverLoginErrorMessage.textContent = text;
+  serverLoginErrorMessage.hidden = !text;
+}
+
+function setServerLoginPending(pending) {
+  document.body.classList.toggle("auth-pending", pending);
+  serverLoginUsernameInput.disabled = pending;
+  serverLoginPasswordInput.disabled = pending;
+  serverLoginPasswordToggle.disabled = pending;
+  serverLoginCancelButton.disabled = pending;
+  serverLoginCloseButton.disabled = pending;
+  serverLoginConfirmButton.disabled = pending;
+}
+
 function syncPasswordVisibility(visible) {
-  startupPasswordInput.type = visible ? "text" : "password";
-  startupPasswordToggle.setAttribute(
+  serverLoginPasswordInput.type = visible ? "text" : "password";
+  serverLoginPasswordToggle.setAttribute(
     "aria-label",
     visible ? "Ocultar senha" : "Mostrar senha",
   );
-  startupPasswordToggle.setAttribute("aria-pressed", String(visible));
-  startupPasswordToggle.classList.toggle("is-active", visible);
+  serverLoginPasswordToggle.setAttribute("aria-pressed", String(visible));
+  serverLoginPasswordToggle.classList.toggle("is-active", visible);
+}
+
+function openServerLoginModal(serverId) {
+  const server = getServerProfile(serverId);
+  if (!server) {
+    flashDropOverlayMessage("Servidor nao encontrado para esse widget.");
+    return;
+  }
+
+  pendingServerLogin = server.id;
+  serverLoginServerName.textContent = server.name;
+  serverLoginModalDescription.textContent =
+    "Use suas credenciais desse servidor para desbloquear os widgets dependentes.";
+  serverLoginUsernameInput.value = server.usernameHint || "";
+  serverLoginPasswordInput.value = "";
+  setServerLoginError("");
+  setServerLoginPending(false);
+  syncPasswordVisibility(false);
+  serverLoginModalBackdrop.hidden = false;
+  syncModalLock();
+  window.setTimeout(() => {
+    serverLoginUsernameInput.focus();
+    serverLoginUsernameInput.select();
+  }, 0);
+}
+
+function closeServerLoginModal() {
+  pendingServerLogin = null;
+  serverLoginModalBackdrop.hidden = true;
+  setServerLoginPending(false);
+  setServerLoginError("");
+  serverLoginPasswordInput.value = "";
+  syncPasswordVisibility(false);
+  syncModalLock();
+}
+
+async function submitServerLogin(serverId, username, password) {
+  const response = await fetch(
+    `/host/servers/${encodeURIComponent(serverId)}/session`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username,
+        password,
+      }),
+    },
+  );
+
+  const payload = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(
+      payload?.error || "Falha ao autenticar nesse servidor remoto.",
+    );
+  }
+
+  return payload;
+}
+
+async function handleServerLoginFormSubmit(event) {
+  event.preventDefault();
+
+  if (!pendingServerLogin) {
+    return;
+  }
+
+  const username = serverLoginUsernameInput.value.trim();
+  const password = serverLoginPasswordInput.value;
+  if (!username || !password) {
+    setServerLoginError("Preencha login e senha do servidor.");
+    return;
+  }
+
+  setServerLoginError("");
+  setServerLoginPending(true);
+
+  try {
+    await submitServerLogin(pendingServerLogin, username, password);
+    await refreshServerProfiles();
+    closeServerLoginModal();
+  } catch (error) {
+    setServerLoginError(
+      error instanceof Error
+        ? error.message
+        : "Falha ao autenticar nesse servidor remoto.",
+    );
+    serverLoginPasswordInput.focus();
+  } finally {
+    setServerLoginPending(false);
+  }
+}
+
+function setWidgetConfigHelp(message) {
+  const text = String(message || "").trim();
+  widgetConfigHelp.textContent = text;
+  widgetConfigHelp.hidden = !text;
+}
+
+function openWidgetConfigModal(cardId) {
+  const card = getCardById(cardId);
+  if (!card) {
+    flashBoardBlocked();
+    return;
+  }
+
+  pendingWidgetConfigCardId = card.id;
+  widgetConfigModalDescription.textContent = `Defina o servidor e os parametros usados por ${card.title}.`;
+  syncServerOptions(card.serverId || "");
+  widgetConfigViewIdField.hidden = !cardRequiresViewId(card);
+  widgetConfigViewId.value =
+    card.viewId == null ? "" : String(card.viewId || "");
+
+  if (!serverProfiles.length && cardRequiresServer(card)) {
+    widgetConfigSaveButton.disabled = true;
+    setWidgetConfigHelp(
+      "Nenhum servidor configurado. Edite ~/.config/lince/web/servers.json e recarregue a pagina.",
+    );
+  } else if (cardRequiresViewId(card)) {
+    widgetConfigSaveButton.disabled = false;
+    setWidgetConfigHelp(
+      "Escolha um servidor e informe o view id salvo nesse backend.",
+    );
+  } else {
+    widgetConfigSaveButton.disabled = false;
+    setWidgetConfigHelp("");
+  }
+
+  widgetConfigModalBackdrop.hidden = false;
+  syncModalLock();
+  window.setTimeout(() => {
+    if (cardRequiresServer(card)) {
+      widgetConfigServerId.focus();
+      return;
+    }
+
+    widgetConfigViewId.focus();
+  }, 0);
+}
+
+function closeWidgetConfigModal() {
+  pendingWidgetConfigCardId = null;
+  widgetConfigModalBackdrop.hidden = true;
+  widgetConfigSaveButton.disabled = false;
+  setWidgetConfigHelp("");
+  syncModalLock();
+}
+
+function saveWidgetConfig(cardId, nextServerId, nextViewId) {
+  const currentCards = store.getCards();
+  const nextCards = currentCards.map((card) => {
+    if (card.id !== cardId) {
+      return card;
+    }
+
+    return {
+      ...card,
+      serverId: nextServerId,
+      viewId: nextViewId,
+    };
+  });
+
+  store.replaceCards(nextCards, { persist: true });
+}
+
+function handleWidgetConfigFormSubmit(event) {
+  event.preventDefault();
+
+  if (!pendingWidgetConfigCardId) {
+    return;
+  }
+
+  const card = getCardById(pendingWidgetConfigCardId);
+  if (!card) {
+    closeWidgetConfigModal();
+    return;
+  }
+
+  const nextServerId = cardRequiresServer(card)
+    ? widgetConfigServerId.value.trim()
+    : "";
+  if (cardRequiresServer(card) && !nextServerId) {
+    setWidgetConfigHelp("Escolha um servidor para esse widget.");
+    widgetConfigServerId.focus();
+    return;
+  }
+
+  let nextViewId = null;
+  if (cardRequiresViewId(card)) {
+    const parsedViewId = Number(widgetConfigViewId.value);
+    if (!Number.isInteger(parsedViewId) || parsedViewId <= 0) {
+      setWidgetConfigHelp("Informe um view id inteiro maior que zero.");
+      widgetConfigViewId.focus();
+      return;
+    }
+
+    nextViewId = parsedViewId;
+  }
+
+  saveWidgetConfig(pendingWidgetConfigCardId, nextServerId, nextViewId);
+  closeWidgetConfigModal();
+}
+
+async function bootWorkspace() {
+  primeStartupSequence();
+  renderSnapshot(store.getSnapshot());
+  renderLocalPackageList();
+  setStartupError("");
+
+  showStartupLoadingState("Loading local workspace", 0.14);
+
+  try {
+    showStartupLoadingState("Loading server profiles", 0.34);
+    await refreshServerProfiles();
+  } catch (error) {
+    setStartupError(
+      error instanceof Error
+        ? error.message
+        : "Falha ao carregar os servidores configurados.",
+    );
+  }
+
+  try {
+    showStartupLoadingState("Loading local widgets", 0.68);
+    await loadInstalledPackages();
+  } catch (error) {
+    setStartupError(
+      error instanceof Error
+        ? error.message
+        : "Falha ao carregar o catalogo local de widgets.",
+    );
+  }
+
+  showStartupLoadingState("Preparing board", 0.9);
+  playStartupSequence();
 }
 
 function renderPermissionsList(permissions) {
@@ -1492,7 +1795,9 @@ function syncModalLock() {
     "modal-open",
     !importModalBackdrop.hidden ||
       !localPackagesModalBackdrop.hidden ||
-      !deleteCardModalBackdrop.hidden,
+      !deleteCardModalBackdrop.hidden ||
+      !serverLoginModalBackdrop.hidden ||
+      !widgetConfigModalBackdrop.hidden,
   );
 }
 
@@ -1763,6 +2068,20 @@ function resolvePreviewSize(preview, fallback = null) {
   return { w: width, h: height };
 }
 
+function defaultServerIdForPreview(preview) {
+  const permissions = Array.isArray(preview?.permissions)
+    ? preview.permissions
+    : [];
+  if (
+    !permissions.includes("read_view_stream") &&
+    !permissions.includes("write_records")
+  ) {
+    return "";
+  }
+
+  return serverProfiles[0]?.id || "";
+}
+
 function createCardFromPreview(preview, sizeOverride = null) {
   const size = sizeOverride || resolvePreviewSize(preview);
   return store.addImportedCard({
@@ -1772,6 +2091,12 @@ function createCardFromPreview(preview, sizeOverride = null) {
     permissions: preview.permissions,
     packageName: preview.filename,
     html: preview.html,
+    serverId: defaultServerIdForPreview(preview),
+    viewId:
+      Array.isArray(preview?.permissions) &&
+      preview.permissions.includes("read_view_stream")
+        ? 1
+        : null,
     w: size.w,
     h: size.h,
   });
@@ -1996,17 +2321,40 @@ densitySlider.addEventListener("input", (event) => {
 });
 
 cardsLayer.addEventListener("click", (event) => {
-  const deleteButton = event.target.closest("[data-card-action='delete']");
-  if (!deleteButton || !editMode) {
+  const actionButton = event.target.closest("[data-card-action]");
+  if (!actionButton) {
     return;
   }
 
-  const cardNode = deleteButton.closest("[data-card-id]");
-  if (!cardNode?.dataset.cardId) {
+  const cardId =
+    actionButton.dataset.cardId ||
+    actionButton.closest("[data-card-id]")?.dataset.cardId;
+  if (!cardId) {
     return;
   }
 
-  openDeleteCardModal(cardNode.dataset.cardId);
+  const action = actionButton.dataset.cardAction;
+  if (action === "configure") {
+    openWidgetConfigModal(cardId);
+    return;
+  }
+
+  if (action === "connect-server") {
+    const card = getCardById(cardId);
+    const gate = card ? resolveCardServerState(card) : null;
+    if (gate?.server) {
+      openServerLoginModal(gate.server.id);
+    } else {
+      flashBoardBlocked();
+    }
+    return;
+  }
+
+  if (action !== "delete" || !editMode) {
+    return;
+  }
+
+  openDeleteCardModal(cardId);
 });
 
 boardShell.addEventListener("dragenter", (event) => {
@@ -2137,6 +2485,46 @@ deleteCardModalBackdrop.addEventListener("click", (event) => {
   }
 });
 
+serverLoginForm.addEventListener("submit", (event) => {
+  void handleServerLoginFormSubmit(event);
+});
+
+serverLoginPasswordToggle.addEventListener("click", () => {
+  syncPasswordVisibility(serverLoginPasswordInput.type === "password");
+});
+
+serverLoginCancelButton.addEventListener("click", () => {
+  closeServerLoginModal();
+});
+
+serverLoginCloseButton.addEventListener("click", () => {
+  closeServerLoginModal();
+});
+
+serverLoginModalBackdrop.addEventListener("click", (event) => {
+  if (event.target === serverLoginModalBackdrop) {
+    closeServerLoginModal();
+  }
+});
+
+widgetConfigForm.addEventListener("submit", (event) => {
+  handleWidgetConfigFormSubmit(event);
+});
+
+widgetConfigCancelButton.addEventListener("click", () => {
+  closeWidgetConfigModal();
+});
+
+widgetConfigCloseButton.addEventListener("click", () => {
+  closeWidgetConfigModal();
+});
+
+widgetConfigModalBackdrop.addEventListener("click", (event) => {
+  if (event.target === widgetConfigModalBackdrop) {
+    closeWidgetConfigModal();
+  }
+});
+
 packageImportInput.addEventListener("change", () => {
   const file = packageImportInput.files?.[0];
   if (!file) {
@@ -2183,6 +2571,18 @@ document.addEventListener("pointerdown", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
+  if (!serverLoginModalBackdrop.hidden && event.key === "Escape") {
+    event.preventDefault();
+    closeServerLoginModal();
+    return;
+  }
+
+  if (!widgetConfigModalBackdrop.hidden && event.key === "Escape") {
+    event.preventDefault();
+    closeWidgetConfigModal();
+    return;
+  }
+
   if (!deleteCardModalBackdrop.hidden && event.key === "Escape") {
     event.preventDefault();
     closeDeleteCardModal();
@@ -2245,27 +2645,10 @@ document.addEventListener("keydown", (event) => {
 
 setWorkspacePopoverOpen(false);
 setEditMode(false);
-primeStartupSequence();
-startupLoginForm.addEventListener("submit", (event) => {
-  void handleLoginFormSubmit(event);
-});
-startupPasswordToggle.addEventListener("click", () => {
-  syncPasswordVisibility(startupPasswordInput.type === "password");
-});
-startupSkipButton.addEventListener("click", () => {
-  void handleSkipLogin();
-});
-
-if (appAuthenticated) {
-  void unlockExistingSession();
-} else {
-  primeLoginScreen();
-  syncPasswordVisibility(false);
-  window.setTimeout(() => {
-    startupUsernameInput.focus();
-    startupUsernameInput.select();
-  }, 1480);
-}
+syncServerProfiles(serverProfiles);
+syncServerOptions("");
+syncPasswordVisibility(false);
+void bootWorkspace();
 
 window.LinceBoard = {
   addCard() {

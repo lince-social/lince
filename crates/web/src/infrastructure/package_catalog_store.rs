@@ -1,8 +1,8 @@
 use {
     crate::{
         domain::lince_package::{
-            build_lince_archive, parse_lince_package, slugify, validate_package_upload,
-            LincePackage, MAX_PACKAGE_BYTES,
+            LincePackage, MAX_PACKAGE_BYTES, build_lince_archive, parse_lince_package, slugify,
+            validate_package_upload,
         },
         infrastructure::paths,
     },
@@ -37,8 +37,9 @@ pub struct PackageCatalogStore {
 impl PackageCatalogStore {
     pub fn new() -> Result<Self, String> {
         let dir = paths::package_dir();
-        std::fs::create_dir_all(&dir)
-            .map_err(|error| format!("Nao consegui criar a pasta lince-views: {error}"))?;
+        std::fs::create_dir_all(&dir).map_err(|error| {
+            format!("Nao consegui criar a pasta ~/.config/lince/web/widgets: {error}")
+        })?;
         seed_from_view_examples(&paths::package_examples_dir(), &dir)?;
 
         Ok(Self { dir: Arc::new(dir) })
@@ -47,9 +48,9 @@ impl PackageCatalogStore {
     pub fn list(&self) -> Result<Vec<InstalledPackageSummary>, String> {
         let mut packages = Vec::new();
 
-        for entry in std::fs::read_dir(&*self.dir)
-            .map_err(|error| format!("Nao consegui ler a pasta lince-views: {error}"))?
-        {
+        for entry in std::fs::read_dir(&*self.dir).map_err(|error| {
+            format!("Nao consegui ler a pasta ~/.config/lince/web/widgets: {error}")
+        })? {
             let entry = entry
                 .map_err(|error| format!("Nao consegui ler um item da pasta local: {error}"))?;
             let path = entry.path();
@@ -101,8 +102,9 @@ impl PackageCatalogStore {
     pub fn persist_package(&self, package: &LincePackage) -> Result<(), String> {
         let raw_archive = build_lince_archive(package)?;
         let path = self.dir.join(package.archive_filename());
-        std::fs::write(&path, raw_archive)
-            .map_err(|error| format!("Nao consegui salvar o package em lince-views: {error}"))?;
+        std::fs::write(&path, raw_archive).map_err(|error| {
+            format!("Nao consegui salvar o package em ~/.config/lince/web/widgets: {error}")
+        })?;
         Ok(())
     }
 }
@@ -146,8 +148,15 @@ fn seed_from_view_examples(examples_dir: &Path, target_dir: &Path) -> Result<(),
             continue;
         };
 
-        std::fs::copy(&path, target_dir.join(filename)).map_err(|error| {
-            format!("Nao consegui copiar um example package para lince-views: {error}")
+        let target_path = target_dir.join(filename);
+        if target_path.exists() {
+            continue;
+        }
+
+        std::fs::copy(&path, &target_path).map_err(|error| {
+            format!(
+                "Nao consegui copiar um example package para ~/.config/lince/web/widgets: {error}"
+            )
         })?;
     }
 

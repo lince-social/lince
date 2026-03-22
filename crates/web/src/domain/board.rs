@@ -13,6 +13,10 @@ pub struct BoardCard {
     pub author: String,
     pub permissions: Vec<String>,
     pub package_name: String,
+    #[serde(default)]
+    pub server_id: String,
+    #[serde(default)]
+    pub view_id: Option<u32>,
     pub x: u8,
     pub y: u8,
     pub w: u8,
@@ -46,12 +50,15 @@ pub struct AppBootstrap {
     pub cards: Vec<BoardCard>,
     pub board_state: BoardState,
     pub widget_bridge: WidgetBridgeSnapshot,
-    pub auth: AuthBootstrap,
+    pub servers: Vec<ServerBootstrap>,
 }
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct AuthBootstrap {
+pub struct ServerBootstrap {
+    pub id: String,
+    pub name: String,
+    pub base_url: String,
     pub authenticated: bool,
     pub username_hint: String,
 }
@@ -60,7 +67,7 @@ impl AppBootstrap {
     pub fn new(
         widget_bridge: WidgetBridgeSnapshot,
         board_state: BoardState,
-        auth: AuthBootstrap,
+        servers: Vec<ServerBootstrap>,
     ) -> Self {
         let density = clamp_density(board_state.density);
         let (cols, rows, gap) = density_layout(density);
@@ -80,7 +87,7 @@ impl AppBootstrap {
             cards,
             board_state,
             widget_bridge,
-            auth,
+            servers,
         }
     }
 }
@@ -90,10 +97,7 @@ impl Default for AppBootstrap {
         Self::new(
             WidgetBridgeSnapshot::default(),
             default_board_state(),
-            AuthBootstrap {
-                authenticated: false,
-                username_hint: String::new(),
-            },
+            vec![],
         )
     }
 }

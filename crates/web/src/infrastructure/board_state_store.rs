@@ -16,6 +16,10 @@ pub struct BoardStateStore {
 impl BoardStateStore {
     pub fn new() -> Result<Self, String> {
         let path = paths::board_state_path();
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)
+                .map_err(|error| format!("Nao consegui criar a pasta do board salvo: {error}"))?;
+        }
         let state = load_state_from_disk(&path).unwrap_or_else(|error| {
             tracing::warn!("board state load failed, using default: {error}");
             default_board_state()

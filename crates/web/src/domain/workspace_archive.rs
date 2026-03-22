@@ -1,7 +1,9 @@
 use {
     crate::domain::{
         board::{BoardCard, BoardWorkspace},
-        lince_package::{LincePackage, PackageManifest, build_lince_archive, parse_lince_package, slugify},
+        lince_package::{
+            LincePackage, PackageManifest, build_lince_archive, parse_lince_package, slugify,
+        },
     },
     serde::{Deserialize, Serialize},
     std::{
@@ -84,7 +86,10 @@ pub fn build_workspace_archive(
     Ok(cursor.into_inner())
 }
 
-pub fn parse_workspace_archive(filename: &str, bytes: &[u8]) -> Result<ImportedWorkspaceArchive, String> {
+pub fn parse_workspace_archive(
+    filename: &str,
+    bytes: &[u8],
+) -> Result<ImportedWorkspaceArchive, String> {
     if !filename.ends_with(".workspace.lince") {
         return Err("O arquivo precisa ter extensao .workspace.lince.".into());
     }
@@ -144,7 +149,9 @@ pub fn reconstruct_package_from_card(card: &BoardCard) -> Result<LincePackage, S
                 &card.description,
                 "Package reconstruido a partir de um card exportado do workspace.",
             ),
-            details: "Package reconstruido automaticamente a partir do estado exportado de um workspace.".into(),
+            details:
+                "Package reconstruido automaticamente a partir do estado exportado de um workspace."
+                    .into(),
             initial_width: card.w,
             initial_height: card.h,
             permissions: card.permissions.clone(),
@@ -209,6 +216,8 @@ mod tests {
                 author: "Lince".into(),
                 permissions: vec!["demo".into()],
                 package_name: "demo-widget.lince".into(),
+                server_id: String::new(),
+                view_id: None,
                 x: 1,
                 y: 1,
                 w: 4,
@@ -234,8 +243,8 @@ mod tests {
         .expect("package should build");
 
         let bytes = build_workspace_archive(&workspace, &[package]).expect("archive should build");
-        let imported =
-            parse_workspace_archive("area-1.workspace.lince", &bytes).expect("archive should parse");
+        let imported = parse_workspace_archive("area-1.workspace.lince", &bytes)
+            .expect("archive should parse");
 
         assert_eq!(imported.workspace.name, "Area 1");
         assert_eq!(imported.workspace.cards.len(), 1);

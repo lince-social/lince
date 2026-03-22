@@ -27,7 +27,10 @@ function cloneWorkspaces(workspaces) {
 }
 
 function nextEntityId(prefix) {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
     return `${prefix}-${crypto.randomUUID()}`;
   }
 
@@ -38,7 +41,10 @@ function normalizeWorkspace(workspace, index, config) {
   return {
     id: String(workspace?.id || `space-${index + 1}`),
     name: String(workspace?.name || `Area ${index + 1}`),
-    cards: normalizeLayout(Array.isArray(workspace?.cards) ? workspace.cards : [], config),
+    cards: normalizeLayout(
+      Array.isArray(workspace?.cards) ? workspace.cards : [],
+      config,
+    ),
   };
 }
 
@@ -65,7 +71,10 @@ function createFallbackState(seedCards, config) {
 
 function loadState(initialBoardState, seedCards, config) {
   const fallback = createFallbackState(seedCards, config);
-  const parsed = initialBoardState && typeof initialBoardState === "object" ? initialBoardState : null;
+  const parsed =
+    initialBoardState && typeof initialBoardState === "object"
+      ? initialBoardState
+      : null;
 
   if (!parsed) {
     return fallback;
@@ -114,6 +123,8 @@ function exportState(state) {
           author,
           permissions,
           packageName,
+          serverId,
+          viewId,
           x,
           y,
           w,
@@ -128,6 +139,8 @@ function exportState(state) {
           author,
           permissions,
           packageName,
+          serverId,
+          viewId,
           x,
           y,
           w,
@@ -143,25 +156,35 @@ function cardTemplate(index) {
     id: nextEntityId("card"),
     kind: "text",
     title: `Bloco ${index}`,
-    description: "Novo card criado para texto curto, notas de contexto ou conteudo inicial.",
+    description:
+      "Novo card criado para texto curto, notas de contexto ou conteudo inicial.",
     text: "Novo card criado para texto curto, notas de contexto ou conteudo inicial de um widget futuro.",
     html: "",
     author: "",
     permissions: [],
     packageName: "",
+    serverId: "",
+    viewId: null,
     ...DEFAULT_CARD_SIZE,
     x: 1,
     y: 1,
   };
 }
 
-export function createBoardStore({ seedCards, initialBoardState, config, persistState }) {
+export function createBoardStore({
+  seedCards,
+  initialBoardState,
+  config,
+  persistState,
+}) {
   let state = loadState(initialBoardState, seedCards, config);
   const listeners = new Set();
   let persistSequence = 0;
 
   function getWorkspaceIndexById(workspaceId) {
-    return state.workspaces.findIndex((workspace) => workspace.id === workspaceId);
+    return state.workspaces.findIndex(
+      (workspace) => workspace.id === workspaceId,
+    );
   }
 
   function getWorkspaceById(workspaceId) {
@@ -275,7 +298,9 @@ export function createBoardStore({ seedCards, initialBoardState, config, persist
       const workspace = normalizeWorkspace(
         {
           id: String(workspaceLike?.id || nextEntityId("space")),
-          name: String(workspaceLike?.name || `Area ${state.workspaces.length + 1}`),
+          name: String(
+            workspaceLike?.name || `Area ${state.workspaces.length + 1}`,
+          ),
           cards: Array.isArray(workspaceLike?.cards) ? workspaceLike.cards : [],
         },
         state.workspaces.length,
@@ -293,7 +318,11 @@ export function createBoardStore({ seedCards, initialBoardState, config, persist
     addCard() {
       const activeWorkspace = getActiveWorkspace();
       const nextCard = cardTemplate(activeWorkspace.cards.length + 1);
-      const position = findOpenPosition(activeWorkspace.cards, DEFAULT_CARD_SIZE, config);
+      const position = findOpenPosition(
+        activeWorkspace.cards,
+        DEFAULT_CARD_SIZE,
+        config,
+      );
 
       if (!position) {
         return null;
@@ -309,7 +338,11 @@ export function createBoardStore({ seedCards, initialBoardState, config, persist
         w: Number(cardDefinition?.w) || DEFAULT_CARD_SIZE.w,
         h: Number(cardDefinition?.h) || DEFAULT_CARD_SIZE.h,
       };
-      const position = findOpenPosition(activeWorkspace.cards, requestedSize, config);
+      const position = findOpenPosition(
+        activeWorkspace.cards,
+        requestedSize,
+        config,
+      );
 
       if (!position) {
         return null;
@@ -329,6 +362,11 @@ export function createBoardStore({ seedCards, initialBoardState, config, persist
           ? cardDefinition.permissions.map((permission) => String(permission))
           : [],
         packageName: String(cardDefinition?.packageName || ""),
+        serverId: String(cardDefinition?.serverId || ""),
+        viewId:
+          cardDefinition?.viewId == null
+            ? null
+            : Number(cardDefinition.viewId) || null,
         ...requestedSize,
         ...position,
       };
@@ -338,7 +376,9 @@ export function createBoardStore({ seedCards, initialBoardState, config, persist
     },
     removeCard(cardId) {
       const activeWorkspace = getActiveWorkspace();
-      const nextCards = activeWorkspace.cards.filter((card) => card.id !== cardId);
+      const nextCards = activeWorkspace.cards.filter(
+        (card) => card.id !== cardId,
+      );
 
       if (nextCards.length === activeWorkspace.cards.length) {
         return null;
@@ -355,7 +395,11 @@ export function createBoardStore({ seedCards, initialBoardState, config, persist
 
       const sourceIndex = getWorkspaceIndexById(state.activeWorkspaceId);
       const targetIndex = sourceIndex + step;
-      if (sourceIndex < 0 || targetIndex < 0 || targetIndex >= state.workspaces.length) {
+      if (
+        sourceIndex < 0 ||
+        targetIndex < 0 ||
+        targetIndex >= state.workspaces.length
+      ) {
         return null;
       }
 
@@ -368,14 +412,19 @@ export function createBoardStore({ seedCards, initialBoardState, config, persist
 
       const position = findOpenPosition(
         targetWorkspace.cards,
-        { w: Number(card.w) || DEFAULT_CARD_SIZE.w, h: Number(card.h) || DEFAULT_CARD_SIZE.h },
+        {
+          w: Number(card.w) || DEFAULT_CARD_SIZE.w,
+          h: Number(card.h) || DEFAULT_CARD_SIZE.h,
+        },
         config,
       );
       if (!position) {
         return null;
       }
 
-      sourceWorkspace.cards = sourceWorkspace.cards.filter((entry) => entry.id !== cardId);
+      sourceWorkspace.cards = sourceWorkspace.cards.filter(
+        (entry) => entry.id !== cardId,
+      );
       targetWorkspace.cards = normalizeLayout(
         [
           ...targetWorkspace.cards,
@@ -414,8 +463,13 @@ export function createBoardStore({ seedCards, initialBoardState, config, persist
         return null;
       }
 
-      const nextWorkspaces = state.workspaces.filter((workspace) => workspace.id !== workspaceId);
-      const fallbackIndex = Math.max(0, Math.min(currentIndex, nextWorkspaces.length - 1));
+      const nextWorkspaces = state.workspaces.filter(
+        (workspace) => workspace.id !== workspaceId,
+      );
+      const fallbackIndex = Math.max(
+        0,
+        Math.min(currentIndex, nextWorkspaces.length - 1),
+      );
 
       state.workspaces = nextWorkspaces;
 
@@ -437,7 +491,8 @@ export function createBoardStore({ seedCards, initialBoardState, config, persist
     cycleWorkspace(direction) {
       const currentIndex = getWorkspaceIndexById(getActiveWorkspace().id);
       const nextIndex =
-        (currentIndex + direction + state.workspaces.length) % state.workspaces.length;
+        (currentIndex + direction + state.workspaces.length) %
+        state.workspaces.length;
 
       state.activeWorkspaceId = state.workspaces[nextIndex].id;
       return commit();

@@ -93,9 +93,11 @@ echo Created migration: $usage_name
 
 [tasks.seed]
 description = "Seed the database with initial data"
-usage = "arg '<password>' help='Root user password; falls back to ROOT_USER_PASSWORD if omitted'"
+usage = """
+arg "<root_password>" help="Root user password"
+"""
 run = """
-ROOT_PASSWORD="${usage_password:-${ROOT_USER_PASSWORD:-}}"
+ROOT_PASSWORD="${usage_root_password:-${ROOT_USER_PASSWORD:-}}"
 
 if [ -z "${ROOT_PASSWORD:-}" ]; then
   echo "Pass the password as an argument or set ROOT_USER_PASSWORD"

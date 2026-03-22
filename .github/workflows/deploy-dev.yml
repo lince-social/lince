@@ -24,6 +24,24 @@ jobs:
             git fetch origin dev
             git checkout dev
             git reset --hard origin/dev
+            if [ ! -f .env ]; then
+              cp .env.example .env
+              sed -i "s/^SECRET=.*/SECRET=$(openssl rand -hex 32)/" .env
+            else
+              while IFS= read -r example_line; do
+                case "$example_line" in
+                  ''|\#*) continue ;;
+                esac
+                example_key="${example_line%%=*}"
+                if ! grep -q "^${example_key}=" .env; then
+                  if [ "$example_key" = "SECRET" ]; then
+                    printf 'SECRET=%s\n' "$(openssl rand -hex 32)" >> .env
+                  else
+                    printf '%s\n' "$example_line" >> .env
+                  fi
+                fi
+              done < .env.example
+            fi
             RUSTFLAGS="-D warnings" cargo build --release --no-default-features --features "karma http"
             cat <<'EOF' | sudo tee /etc/systemd/system/lince.service
             [Unit]

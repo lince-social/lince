@@ -1623,36 +1623,18 @@ function setWidgetConfigHelp(message) {
   widgetConfigHelp.hidden = !text;
 }
 
-function widgetConfigSummary(card, serverId, viewId) {
-  const parts = [
-    `server_id=${serverId || "(vazio)"}`,
-    cardRequiresViewId(card)
-      ? `view_id=${viewId || "(vazio)"}`
-      : "view_id=(nao usado)",
-  ];
-  return parts.join(" · ");
-}
-
 function syncWidgetConfigDebug(card) {
   if (!card) {
     return;
   }
 
-  const nextServerId = cardRequiresServer(card)
-    ? widgetConfigServerId.value.trim()
-    : "";
-  const nextViewId = cardRequiresViewId(card)
-    ? widgetConfigViewId.value.trim()
-    : "";
   const base = cardRequiresViewId(card)
     ? "Escolha um servidor e informe o view id salvo nesse backend."
     : cardRequiresServer(card)
       ? "Escolha um servidor para esse widget."
       : "Esse widget nao precisa de servidor.";
 
-  setWidgetConfigHelp(
-    `${base} Debug: ${widgetConfigSummary(card, nextServerId, nextViewId)}`,
-  );
+  setWidgetConfigHelp(base);
 }
 
 function openWidgetConfigModal(cardId) {
@@ -1704,12 +1686,6 @@ function closeWidgetConfigModal() {
 
 function saveWidgetConfig(cardId, nextServerId, nextViewId) {
   const snapshot = store.getSnapshot();
-  console.debug("saveWidgetConfig", {
-    cardId,
-    nextServerId,
-    nextViewId,
-    workspaces: snapshot.workspaces,
-  });
   const nextState = {
     ...snapshot.boardState,
     workspaces: snapshot.boardState.workspaces.map((workspace) => ({
@@ -1765,11 +1741,6 @@ function handleWidgetConfigFormSubmit(event) {
     nextViewId = parsedViewId;
   }
 
-  console.debug("handleWidgetConfigFormSubmit", {
-    cardId: pendingWidgetConfigCardId,
-    nextServerId,
-    nextViewId,
-  });
   saveWidgetConfig(pendingWidgetConfigCardId, nextServerId, nextViewId);
   closeWidgetConfigModal();
 }

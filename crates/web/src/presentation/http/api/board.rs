@@ -20,83 +20,18 @@ use {
 };
 
 pub async fn get_board_state(State(state): State<AppState>) -> ApiResult<Json<BoardState>> {
-    let snapshot = state.board_state.snapshot().await;
-    let configured_cards = snapshot
-        .workspaces
-        .iter()
-        .flat_map(|workspace| workspace.cards.iter())
-        .filter(|card| card.kind == "package")
-        .map(|card| {
-            format!(
-                "{}:{}:{}",
-                card.title,
-                card.server_id,
-                card.view_id
-                    .map(|value| value.to_string())
-                    .unwrap_or_else(|| "null".into())
-            )
-        })
-        .collect::<Vec<_>>();
-    println!(
-        "[web host] board snapshot loaded: workspaces={} package_cards={:?}",
-        snapshot.workspaces.len(),
-        configured_cards
-    );
-    Ok(Json(snapshot))
+    Ok(Json(state.board_state.snapshot().await))
 }
 
 pub async fn put_board_state(
     State(state): State<AppState>,
     Json(payload): Json<BoardState>,
 ) -> ApiResult<Json<BoardState>> {
-    let configured_cards = payload
-        .workspaces
-        .iter()
-        .flat_map(|workspace| workspace.cards.iter())
-        .filter(|card| card.kind == "package")
-        .map(|card| {
-            format!(
-                "{}:{}:{}",
-                card.title,
-                card.server_id,
-                card.view_id
-                    .map(|value| value.to_string())
-                    .unwrap_or_else(|| "null".into())
-            )
-        })
-        .collect::<Vec<_>>();
-    println!(
-        "[web host] board snapshot save request: workspaces={} package_cards={:?}",
-        payload.workspaces.len(),
-        configured_cards
-    );
     let saved = state
         .board_state
         .replace(payload)
         .await
         .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
-
-    let saved_cards = saved
-        .workspaces
-        .iter()
-        .flat_map(|workspace| workspace.cards.iter())
-        .filter(|card| card.kind == "package")
-        .map(|card| {
-            format!(
-                "{}:{}:{}",
-                card.title,
-                card.server_id,
-                card.view_id
-                    .map(|value| value.to_string())
-                    .unwrap_or_else(|| "null".into())
-            )
-        })
-        .collect::<Vec<_>>();
-    println!(
-        "[web host] board snapshot saved: workspaces={} package_cards={:?}",
-        saved.workspaces.len(),
-        saved_cards
-    );
 
     Ok(Json(saved))
 }

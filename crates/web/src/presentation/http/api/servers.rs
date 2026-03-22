@@ -3,7 +3,7 @@ use {
         application::state::AppState,
         infrastructure::{
             auth::{parse_cookie_header, session_cookie_header, session_cookie_name},
-            server_profile_store::ServerProfile,
+            server_profile_store::{ServerProfile, server_requires_auth},
         },
         presentation::http::api_error::{ApiResult, api_error},
     },
@@ -63,11 +63,12 @@ pub async fn list_servers(
             .into_iter()
             .map(|server| {
                 let status = statuses.get(&server.id);
+                let authenticated = !server_requires_auth(&server) || status.is_some();
                 ServerProfileResponse {
                     id: server.id,
                     name: server.name,
                     base_url: server.base_url,
-                    authenticated: status.is_some(),
+                    authenticated,
                     username_hint: status
                         .map(|value| value.username_hint.clone())
                         .unwrap_or_default(),
@@ -248,12 +249,13 @@ async fn server_profile_response(
         .auth
         .server_session(session_token.as_deref(), &profile.id)
         .await;
+    let authenticated = !server_requires_auth(&profile) || session.is_some();
 
     ServerProfileResponse {
         id: profile.id,
         name: profile.name,
         base_url: profile.base_url,
-        authenticated: session.is_some(),
+        authenticated,
         username_hint: session.map(|value| value.username_hint).unwrap_or_default(),
     }
 }

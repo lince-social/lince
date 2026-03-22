@@ -5,6 +5,7 @@ use std::{fs, path::PathBuf, sync::Arc};
 const DEFAULT_SERVER_ID: &str = "local-dev";
 const DEFAULT_SERVER_NAME: &str = "Local Lince";
 const DEFAULT_SERVER_BASE_URL: &str = "http://127.0.0.1:6174";
+const LOCAL_AUTH_REQUIRED_ENV: &str = "LINCE_LOCAL_AUTH_REQUIRED";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -23,8 +24,9 @@ impl ServerProfileStore {
     pub fn new() -> Result<Self, String> {
         let path = paths::server_profiles_path();
         if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent)
-                .map_err(|error| format!("Nao consegui criar a pasta de configuracao web: {error}"))?;
+            fs::create_dir_all(parent).map_err(|error| {
+                format!("Nao consegui criar a pasta de configuracao web: {error}")
+            })?;
         }
 
         let store = Self {
@@ -143,6 +145,22 @@ pub fn default_server_profile() -> ServerProfile {
         name: DEFAULT_SERVER_NAME.to_string(),
         base_url: normalize_base_url(&base_url),
     }
+}
+
+pub fn is_default_local_server(server_id: &str) -> bool {
+    server_id.trim() == DEFAULT_SERVER_ID
+}
+
+pub fn local_auth_required() -> bool {
+    std::env::var(LOCAL_AUTH_REQUIRED_ENV)
+        .ok()
+        .map(|value| value.trim().to_ascii_lowercase())
+        .map(|value| matches!(value.as_str(), "1" | "true" | "yes" | "on"))
+        .unwrap_or(false)
+}
+
+pub fn server_requires_auth(profile: &ServerProfile) -> bool {
+    !is_default_local_server(&profile.id) || local_auth_required()
 }
 
 fn normalize_profile(profile: ServerProfile) -> Result<ServerProfile, String> {

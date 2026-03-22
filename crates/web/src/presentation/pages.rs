@@ -32,63 +32,15 @@ pub fn render_app(bootstrap: &AppBootstrap) -> String {
                             }
                             div class="startup-wordmark" { "Lince" }
                             p class="startup-copy" {
-                                "Conecte login e senha para acessar o servidor externo."
+                                "Abrindo o board local e preparando os widgets instalados."
                             }
                         }
-                        div id="startup-auth-card" class="startup-auth-card" data-authenticated=(bootstrap.auth.authenticated) {
-                            div class="startup-auth-card__header" {
-                                h1 class="startup-auth-card__title" { "Conectar servidor" }
-                                p class="startup-auth-card__description" {
-                                    "Use as credenciais do servidor externo ou pule para continuar no modo local."
-                                }
-                            }
-                            form id="startup-login-form" class="startup-login-form" autocomplete="on" {
-                                label class="startup-field" for="startup-username" {
-                                    input
-                                        id="startup-username"
-                                        class="startup-field__input"
-                                        type="text"
-                                        name="username"
-                                        autocomplete="username"
-                                        value=(bootstrap.auth.username_hint.as_str())
-                                        placeholder="Login";
-                                }
-                                label class="startup-field" for="startup-password" {
-                                    div class="startup-password-field" {
-                                        input
-                                            id="startup-password"
-                                            class="startup-field__input startup-field__input--password"
-                                            type="password"
-                                            name="password"
-                                            autocomplete="current-password"
-                                            placeholder="Senha";
-                                        button
-                                            id="startup-password-toggle"
-                                            class="startup-password-toggle"
-                                            type="button"
-                                            aria-label="Mostrar senha"
-                                            aria-pressed="false"
-                                        {
-                                            (eye_icon())
-                                        }
-                                    }
-                                }
-                                p id="startup-error-message" class="startup-error-message" hidden="" {}
-                                div class="startup-login-actions" {
-                                    button id="startup-skip-button" class="startup-skip-button" type="button" {
-                                        "Pular"
-                                    }
-                                    button id="startup-login-button" class="startup-login-button" type="submit" {
-                                        "Conectar"
-                                    }
-                                }
-                            }
-                        }
-                        div class="startup-status" id="startup-status-panel" hidden="" {
-                            span class="startup-status__label" { "Unlocking board" }
+                        div class="startup-status" id="startup-status-panel" {
+                            span class="startup-status__label" { "Loading local workspace" }
                             span id="startup-status-value" class="startup-status__value" { "0%" }
                         }
-                        div id="startup-progress" class="startup-progress" aria-hidden="true" hidden="" {
+                        p id="startup-error-message" class="startup-error-message" hidden="" {}
+                        div id="startup-progress" class="startup-progress" aria-hidden="true" {
                             div id="startup-progress-fill" class="startup-progress__fill" {}
                         }
                     }
@@ -340,7 +292,7 @@ pub fn render_app(bootstrap: &AppBootstrap) -> String {
                                 div class="import-modal__eyebrow" { "Local catalog" }
                                 h2 id="local-packages-modal-title" class="import-modal__title" { "Widgets instalados" }
                                 p class="import-modal__description" {
-                                    "Escolha um .lince ja presente em lince-views para criar outra copia no workspace atual."
+                                    "Escolha um .lince ja instalado em ~/.config/lince/web/widgets para criar outra copia no workspace atual."
                                 }
                             }
                             button id="local-packages-close-button" class="import-close-button" type="button" aria-label="Fechar catalogo local" { "×" }
@@ -387,6 +339,100 @@ pub fn render_app(bootstrap: &AppBootstrap) -> String {
                         div class="confirm-modal__footer" {
                             button id="delete-card-cancel-button" class="modal-button modal-button--ghost" type="button" { "Cancelar" }
                             button id="delete-card-confirm-button" class="modal-button modal-button--danger" type="button" { "Excluir card" }
+                        }
+                    }
+                }
+                div id="server-login-modal-backdrop" class="confirm-modal-backdrop" hidden="" {
+                    section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="server-login-modal-title" {
+                        header class="confirm-modal__header" {
+                            div class="confirm-modal__lockup" {
+                                div class="confirm-modal__eyebrow" { "Server login" }
+                                h2 id="server-login-modal-title" class="confirm-modal__title" { "Conectar servidor" }
+                                p id="server-login-modal-description" class="confirm-modal__description" {
+                                    "Use suas credenciais desse servidor para desbloquear os widgets dependentes."
+                                }
+                            }
+                            button id="server-login-close-button" class="import-close-button" type="button" aria-label="Fechar modal de login do servidor" { "×" }
+                        }
+                        div class="confirm-modal__body" {
+                            div class="confirm-modal__card-preview" {
+                                span class="confirm-modal__card-label" { "Servidor" }
+                                strong id="server-login-server-name" class="confirm-modal__card-name" {}
+                            }
+                            form id="server-login-form" class="startup-login-form" autocomplete="on" {
+                                label class="startup-field" for="server-login-username" {
+                                    input
+                                        id="server-login-username"
+                                        class="startup-field__input"
+                                        type="text"
+                                        name="username"
+                                        autocomplete="username"
+                                        placeholder="Login";
+                                }
+                                label class="startup-field" for="server-login-password" {
+                                    div class="startup-password-field" {
+                                        input
+                                            id="server-login-password"
+                                            class="startup-field__input startup-field__input--password"
+                                            type="password"
+                                            name="password"
+                                            autocomplete="current-password"
+                                            placeholder="Senha";
+                                        button
+                                            id="server-login-password-toggle"
+                                            class="startup-password-toggle"
+                                            type="button"
+                                            aria-label="Mostrar senha"
+                                            aria-pressed="false"
+                                        {
+                                            (eye_icon())
+                                        }
+                                    }
+                                }
+                                p id="server-login-error-message" class="startup-error-message" hidden="" {}
+                            }
+                        }
+                        div class="confirm-modal__footer" {
+                            button id="server-login-cancel-button" class="modal-button modal-button--ghost" type="button" { "Cancelar" }
+                            button id="server-login-confirm-button" class="modal-button modal-button--primary" type="submit" form="server-login-form" { "Conectar" }
+                        }
+                    }
+                }
+                div id="widget-config-modal-backdrop" class="import-modal-backdrop" hidden="" {
+                    section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="widget-config-modal-title" {
+                        header class="confirm-modal__header" {
+                            div class="confirm-modal__lockup" {
+                                div class="confirm-modal__eyebrow" { "Widget settings" }
+                                h2 id="widget-config-modal-title" class="confirm-modal__title" { "Configurar widget" }
+                                p id="widget-config-modal-description" class="confirm-modal__description" {
+                                    "Defina o servidor e os parametros do widget para desbloquear suas integracoes."
+                                }
+                            }
+                            button id="widget-config-close-button" class="import-close-button" type="button" aria-label="Fechar modal de configuracao" { "×" }
+                        }
+                        div class="confirm-modal__body" {
+                            form id="widget-config-form" class="startup-login-form" autocomplete="off" {
+                                label class="startup-field" for="widget-config-server-id" {
+                                    select id="widget-config-server-id" class="startup-field__input" name="server_id" {
+                                        option value="" { "Escolha um servidor" }
+                                    }
+                                }
+                                label id="widget-config-view-id-field" class="startup-field" for="widget-config-view-id" {
+                                    input
+                                        id="widget-config-view-id"
+                                        class="startup-field__input"
+                                        type="number"
+                                        min="1"
+                                        step="1"
+                                        name="view_id"
+                                        placeholder="View id";
+                                }
+                                p id="widget-config-help" class="startup-error-message" hidden="" {}
+                            }
+                        }
+                        div class="confirm-modal__footer" {
+                            button id="widget-config-cancel-button" class="modal-button modal-button--ghost" type="button" { "Cancelar" }
+                            button id="widget-config-save-button" class="modal-button modal-button--primary" type="submit" form="widget-config-form" { "Salvar" }
                         }
                     }
                 }
@@ -758,6 +804,8 @@ fn render_package_body(card: &BoardCard) -> Markup {
                 title=(card.title.as_str())
                 loading="lazy"
                 data-package-instance-id=(card.id.as_str())
+                data-lince-server-id=(card.server_id.as_str())
+                data-lince-view-id=(card.view_id.map(|value| value.to_string()).unwrap_or_default())
                 sandbox="allow-scripts allow-same-origin"
                 srcdoc=(card.html.as_str())
             {}

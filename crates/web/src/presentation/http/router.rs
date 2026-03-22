@@ -1,19 +1,25 @@
 use {
     crate::{
         application::state::AppState,
-        domain::board::{AppBootstrap, AuthBootstrap, default_board_state},
+        domain::board::{AppBootstrap, ServerBootstrap},
+        infrastructure::auth::{parse_cookie_header, session_cookie_header, session_cookie_name},
         presentation::{
             http::api::{
                 ai::{
                     ai_builder_status, download_draft, generate_widget, store_api_key,
                     update_draft_size,
                 },
-                auth::{get_auth_status, post_auth_login, post_auth_logout, post_auth_skip},
                 backend::router as build_backend_router,
                 board::{export_workspace, get_board_state, import_workspace, put_board_state},
-                integrations::proxy_manas_view,
+                integrations::{
+                    proxy_manas_table_collection, proxy_manas_table_item, proxy_manas_view,
+                },
                 packages::{
                     get_local_package, install_package, list_local_packages, preview_package,
+                },
+                servers::{
+                    create_server, delete_server, list_servers, login_server, logout_server,
+                    update_server,
                 },
                 terminal::{
                     create_terminal_session, delete_terminal_session, get_terminal_output,
@@ -21,7 +27,6 @@ use {
                 },
                 widget_bridge::{get_widget_bridge_state, post_widget_bridge_print},
             },
-            http::auth_middleware::require_auth,
             pages::{render_ai_builder, render_app},
         },
     },
@@ -29,9 +34,8 @@ use {
         Router,
         extract::State,
         http::{HeaderMap, header},
-        middleware,
-        response::{Html, IntoResponse, Redirect},
-        routing::{get, post},
+        response::{Html, IntoResponse},
+        routing::{get, patch, post},
     },
     tower_http::services::ServeDir,
 };
@@ -51,8 +55,18 @@ pub fn build_router(state: AppState) -> Router {
             get(export_workspace),
         )
         .route(
-            "/integrations/manas/views/{view_id}/stream",
+            "/integrations/servers/{server_id}/views/{view_id}/stream",
             get(proxy_manas_view),
+        )
+        .route(
+            "/integrations/servers/{server_id}/table/{table}",
+            get(proxy_manas_table_collection).post(proxy_manas_table_collection),
+        )
+        .route(
+            "/integrations/servers/{server_id}/table/{table}/{id}",
+            get(proxy_manas_table_item)
+                .patch(proxy_manas_table_item)
+                .delete(proxy_manas_table_item),
         )
         .route("/terminal/sessions", post(create_terminal_session))
         .route(
@@ -75,65 +89,78 @@ pub fn build_router(state: AppState) -> Router {
         .route("/packages/preview", post(preview_package))
         .route("/packages/install", post(install_package))
         .route("/packages/local", get(list_local_packages))
-        .route("/packages/local/{package_id}", get(get_local_package))
-        .route_layer(middleware::from_fn_with_state(state.clone(), require_auth));
+        .route("/packages/local/{package_id}", get(get_local_package));
 
     Router::<AppState>::new()
         .route("/", get(index))
         .route("/ai", get(ai_builder_page))
         .nest("/api", build_backend_router())
-        .route("/host/auth/status", get(get_auth_status))
-        .route("/host/auth/login", post(post_auth_login))
-        .route("/host/auth/skip", post(post_auth_skip))
-        .route("/host/auth/logout", post(post_auth_logout))
+        .route("/host/servers", get(list_servers).post(create_server))
+        .route(
+            "/host/servers/{server_id}",
+            patch(update_server).delete(delete_server),
+        )
+        .route(
+            "/host/servers/{server_id}/session",
+            post(login_server).delete(logout_server),
+        )
         .nest("/host", protected_api)
         .nest_service("/static", ServeDir::new(static_dir))
         .with_state(state)
 }
 
-async fn index(State(state): State<AppState>, headers: HeaderMap) -> Html<String> {
-    let bootstrap = build_bootstrap(&state, &headers).await;
-    Html(render_app(&bootstrap))
-}
-
-async fn ai_builder_page(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
-    let bootstrap = build_bootstrap(&state, &headers).await;
-
-    if !bootstrap.auth.authenticated {
-        return Redirect::to("/").into_response();
-    }
-
-    Html(render_ai_builder()).into_response()
-}
-
-async fn build_bootstrap(state: &AppState, headers: &HeaderMap) -> AppBootstrap {
-    let token = crate::infrastructure::auth::parse_cookie_header(
+async fn index(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
+    let session_token = parse_cookie_header(
         headers
             .get(header::COOKIE)
             .and_then(|value| value.to_str().ok()),
-        crate::infrastructure::auth::session_cookie_name(),
+        session_cookie_name(),
     );
-    let session = state.auth.session(token.as_deref()).await;
-    let authenticated = session.is_some();
-    let widget_bridge = if authenticated {
-        state.widget_bridge.snapshot().await
-    } else {
-        Default::default()
-    };
-    let board_state = if authenticated {
-        state.board_state.snapshot().await
-    } else {
-        default_board_state()
-    };
-
-    AppBootstrap::new(
-        widget_bridge,
-        board_state,
-        AuthBootstrap {
-            authenticated,
-            username_hint: session
-                .map(|record| record.username_hint)
-                .unwrap_or_else(|| state.auth.default_username_hint().to_string()),
-        },
+    let (session_token, _created) = state.auth.ensure_session(session_token.as_deref()).await;
+    let bootstrap = build_bootstrap(&state, Some(session_token.as_str())).await;
+    (
+        [(header::SET_COOKIE, session_cookie_header(&session_token))],
+        Html(render_app(&bootstrap)),
     )
+}
+
+async fn ai_builder_page(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
+    let session_token = parse_cookie_header(
+        headers
+            .get(header::COOKIE)
+            .and_then(|value| value.to_str().ok()),
+        session_cookie_name(),
+    );
+    let (session_token, _created) = state.auth.ensure_session(session_token.as_deref()).await;
+    (
+        [(header::SET_COOKIE, session_cookie_header(&session_token))],
+        Html(render_ai_builder()),
+    )
+        .into_response()
+}
+
+async fn build_bootstrap(state: &AppState, session_token: Option<&str>) -> AppBootstrap {
+    let server_statuses = state.auth.remote_server_snapshots(session_token).await;
+    let servers = state
+        .servers
+        .list()
+        .unwrap_or_default()
+        .into_iter()
+        .map(|server| {
+            let status = server_statuses.get(&server.id);
+            ServerBootstrap {
+                id: server.id,
+                name: server.name,
+                base_url: server.base_url,
+                authenticated: status.is_some(),
+                username_hint: status
+                    .map(|value| value.username_hint.clone())
+                    .unwrap_or_default(),
+            }
+        })
+        .collect();
+    let widget_bridge = state.widget_bridge.snapshot().await;
+    let board_state = state.board_state.snapshot().await;
+
+    AppBootstrap::new(widget_bridge, board_state, servers)
 }

@@ -1,6 +1,6 @@
-Instead of cargo build use cargo check.
+Instead of cargo build use cargo check. Warnings are treated as errors.
 
-If you need more information about certain topics look at the documentation in /documentation/chapters/aging. It contains information about current implementations but also ideas from other past implementations of Lince, so take it with a grain of salt. The current code is supposed to be a more up to date reference to the functioning of the app, but might not be the desired behavior, so consider it higher than the documentation for validation of business rules, but not as perfect.
+If you need more information about certain topics look at the documentation in /documentation/technical/chapters/aging. It contains information about current implementations but also ideas from other past implementations of Lince, so take it with a grain of salt. The current code is supposed to be a more up to date reference to the functioning of the app, but might not be the desired behavior, so consider it higher than the documentation for validation of business rules, but not as perfect.
 
 # Architecture
 
@@ -13,5 +13,6 @@ TUI: Ratatui.
 Utils: System-wide utilities.
 Injection: Dependency Injection.
 Application: Main application logic.
+Web: Web HTML version.
 
 In root of project there is the SQLite migrations/ directory.

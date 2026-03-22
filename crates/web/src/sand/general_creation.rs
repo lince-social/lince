@@ -792,9 +792,10 @@ fn script() -> &'static str {
 
       const DEFAULT_TABLE = "record";
       const CARD_STATE_KEY = "generalCreation";
-      let hostMeta = normalizeMeta(window.LinceWidgetHost?.getMeta?.() || null);
-      let cardState = normalizeCardState(window.LinceWidgetHost?.getCardState?.() || null);
+      let hostMeta = normalizeMeta(null);
+      let cardState = normalizeCardState(null);
       let persistTimer = null;
+      let bridgeBound = false;
 
       function normalizeMeta(rawMeta) {
         return {
@@ -848,6 +849,18 @@ fn script() -> &'static str {
             }
           });
         }, 120);
+      }
+
+      function applyBridgeDetail(detail) {
+        hostMeta = normalizeMeta(detail?.meta || null);
+        const nextCardState = normalizeCardState(detail?.meta?.cardState || null);
+        const previousTable = cardState.selectedTable;
+        cardState = nextCardState;
+        tableSelect.value = cardState.selectedTable;
+        if (previousTable !== cardState.selectedTable || payloadInput.dataset.table !== cardState.selectedTable) {
+          ensureDraftLoaded(cardState.selectedTable);
+        }
+        syncUI();
       }
 
       function setStatus(text, tone) {
@@ -1029,17 +1042,26 @@ fn script() -> &'static str {
         void submitCreate();
       });
 
-      window.LinceWidgetHost?.subscribe?.((detail) => {
-        hostMeta = normalizeMeta(detail?.meta || null);
-        const nextCardState = normalizeCardState(detail?.meta?.cardState || null);
-        const previousTable = cardState.selectedTable;
-        cardState = nextCardState;
-        tableSelect.value = cardState.selectedTable;
-        if (previousTable !== cardState.selectedTable || payloadInput.dataset.table !== cardState.selectedTable) {
-          ensureDraftLoaded(cardState.selectedTable);
+      app.addEventListener("lince-bridge-state", (event) => {
+        if (!event.detail || typeof event.detail !== "object") {
+          return;
         }
-        syncUI();
+
+        applyBridgeDetail(event.detail);
       });
+
+      function bindBridgeWhenReady() {
+        if (bridgeBound || !window.LinceWidgetHost || typeof window.LinceWidgetHost.subscribe !== "function") {
+          return false;
+        }
+
+        bridgeBound = true;
+        window.LinceWidgetHost.subscribe((detail) => {
+          applyBridgeDetail(detail);
+        });
+        window.LinceWidgetHost.requestState?.();
+        return true;
+      }
 
       tableSelect.value = cardState.selectedTable;
       ensureDraftLoaded(cardState.selectedTable);
@@ -1049,5 +1071,8 @@ fn script() -> &'static str {
         draft_source: "per-card state",
         server_id: hostMeta.serverId || null
       }, null, 2);
+      if (!bindBridgeWhenReady()) {
+        window.setTimeout(bindBridgeWhenReady, 0);
+      }
     "#
 }

@@ -93,15 +93,18 @@ echo Created migration: $usage_name
 
 [tasks.seed]
 description = "Seed the database with initial data"
+usage = "arg '<password>' help='Root user password; falls back to ROOT_USER_PASSWORD if omitted'"
 run = """
-if [ -z "${ROOT_USER_PASSWORD:-}" ]; then
-  echo "ROOT_USER_PASSWORD must be set"
+ROOT_PASSWORD="${usage_password:-${ROOT_USER_PASSWORD:-}}"
+
+if [ -z "${ROOT_PASSWORD:-}" ]; then
+  echo "Pass the password as an argument or set ROOT_USER_PASSWORD"
   exit 1
 fi
 
 RUSTFLAGS="-D warnings" cargo run --no-default-features --features "karma, http" -- \
   --seed-root-user \
-  --seed-root-user-password "$ROOT_USER_PASSWORD"
+  --seed-root-user-password "$ROOT_PASSWORD"
 """
 
 [tasks.init]

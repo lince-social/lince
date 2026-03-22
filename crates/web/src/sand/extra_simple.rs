@@ -161,6 +161,7 @@ pub(crate) fn source() -> SandWidgetSource {
         });
 
         if (response.status === 401) {
+          window.LinceWidgetHost?.invalidateServerAuth?.(serverId);
           setStatus("Bloqueado", "connecting");
           setOutput("Servidor bloqueado. Entre com suas credenciais no host para desbloquear esse widget.");
           return;

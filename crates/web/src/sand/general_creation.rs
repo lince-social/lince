@@ -996,6 +996,7 @@ fn script() -> &'static str {
           }
 
           if (response.status === 401) {
+            window.LinceWidgetHost?.invalidateServerAuth?.(hostMeta.serverId);
             throw new Error("Server locked. Authenticate that server in the host first.");
           }
 

@@ -402,6 +402,17 @@ const widgetBridge = createWidgetBridge({
   setCardStreamsEnabled(instanceId, enabled) {
     updateCardStreamsEnabled(instanceId, enabled);
   },
+  async invalidateServerAuth(serverId) {
+    const target = String(serverId || "").trim();
+    if (!target) {
+      return;
+    }
+
+    await refreshServerProfiles();
+    flashDropOverlayMessage(
+      `A sessao do servidor ${target} expirou. Conecte novamente para desbloquear os widgets.`,
+    );
+  },
   onError(message) {
     flashDropOverlayMessage(message);
   },

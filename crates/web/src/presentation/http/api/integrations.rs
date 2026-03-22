@@ -26,6 +26,7 @@ pub async fn proxy_manas_view(
     headers: HeaderMap,
     Path((server_id, view_id)): Path<(String, u64)>,
 ) -> ApiResult<impl IntoResponse> {
+    let session_token = current_session_token(&headers);
     let server = load_server_profile(&state, &server_id)?;
     let bearer_token = extract_manas_token(&state, &headers, &server_id).await?;
     let response = state
@@ -33,6 +34,31 @@ pub async fn proxy_manas_view(
         .open_view_stream(&server.base_url, &bearer_token, view_id)
         .await
         .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
+
+    if response.status() == reqwest::StatusCode::UNAUTHORIZED {
+        state
+            .auth
+            .clear_server_session(session_token.as_deref(), &server_id)
+            .await;
+        return Err(api_error(
+            StatusCode::UNAUTHORIZED,
+            "Sessao remota expirada. Conecte esse servidor novamente.",
+        ));
+    }
+
+    if !response.status().is_success() {
+        let status =
+            StatusCode::from_u16(response.status().as_u16()).unwrap_or(StatusCode::BAD_GATEWAY);
+        let body = response.text().await.unwrap_or_default();
+        return Err(api_error(
+            status,
+            if body.trim().is_empty() {
+                format!("Stream remoto recusou a conexao com status {status}.")
+            } else {
+                body
+            },
+        ));
+    }
 
     let stream = stream! {
         let mut response = response;
@@ -67,6 +93,7 @@ pub async fn proxy_manas_table_collection(
     Path((server_id, table_name)): Path<(String, String)>,
     request: Request,
 ) -> ApiResult<impl IntoResponse> {
+    let session_token = current_session_token(&headers);
     let server = load_server_profile(&state, &server_id)?;
     let bearer_token = extract_manas_token(&state, &headers, &server_id).await?;
     let body = request_json_body(request).await?;
@@ -83,7 +110,7 @@ pub async fn proxy_manas_table_collection(
         .await
         .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
 
-    proxy_json_response(response).await
+    proxy_json_response(&state, session_token.as_deref(), &server_id, response).await
 }
 
 pub async fn proxy_manas_table_item(
@@ -93,6 +120,7 @@ pub async fn proxy_manas_table_item(
     Path((server_id, table_name, id)): Path<(String, String, i64)>,
     request: Request,
 ) -> ApiResult<impl IntoResponse> {
+    let session_token = current_session_token(&headers);
     let server = load_server_profile(&state, &server_id)?;
     let bearer_token = extract_manas_token(&state, &headers, &server_id).await?;
     let body = request_json_body(request).await?;
@@ -109,7 +137,16 @@ pub async fn proxy_manas_table_item(
         .await
         .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
 
-    proxy_json_response(response).await
+    proxy_json_response(&state, session_token.as_deref(), &server_id, response).await
+}
+
+fn current_session_token(headers: &HeaderMap) -> Option<String> {
+    parse_cookie_header(
+        headers
+            .get(header::COOKIE)
+            .and_then(|value| value.to_str().ok()),
+        session_cookie_name(),
+    )
 }
 
 async fn extract_manas_token(
@@ -117,12 +154,7 @@ async fn extract_manas_token(
     headers: &HeaderMap,
     server_id: &str,
 ) -> ApiResult<String> {
-    let session_token = parse_cookie_header(
-        headers
-            .get(header::COOKIE)
-            .and_then(|value| value.to_str().ok()),
-        session_cookie_name(),
-    );
+    let session_token = current_session_token(headers);
     let Some(session) = state
         .auth
         .server_session(session_token.as_deref(), server_id)
@@ -155,9 +187,20 @@ async fn request_json_body(request: Request) -> ApiResult<Option<Value>> {
     }
 }
 
-async fn proxy_json_response(response: reqwest::Response) -> ApiResult<(StatusCode, Json<Value>)> {
+async fn proxy_json_response(
+    state: &AppState,
+    session_token: Option<&str>,
+    server_id: &str,
+    response: reqwest::Response,
+) -> ApiResult<(StatusCode, Json<Value>)> {
     let status =
         StatusCode::from_u16(response.status().as_u16()).unwrap_or(StatusCode::BAD_GATEWAY);
+    if status == StatusCode::UNAUTHORIZED {
+        state
+            .auth
+            .clear_server_session(session_token, server_id)
+            .await;
+    }
     let payload = response
         .json::<Value>()
         .await

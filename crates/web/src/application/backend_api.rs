@@ -55,8 +55,11 @@ impl BackendApiService {
         self.auth.login(username, password).await
     }
 
-    pub fn authenticate_authorization(&self, authorization: &str) -> Result<AuthSubject, Error> {
-        self.auth.authenticate_authorization(authorization)
+    pub async fn authenticate_authorization(
+        &self,
+        authorization: &str,
+    ) -> Result<AuthSubject, Error> {
+        self.auth.authenticate_authorization(authorization).await
     }
 
     pub async fn list_table_rows(
@@ -108,12 +111,16 @@ impl BackendApiService {
                     .store
                     .build_app_user_insert(object, password_hash)
                     .await?;
-                self.services.writer.execute_statement(sql, params).await
+                let outcome = self.services.writer.execute_statement(sql, params).await?;
+                self.auth.refresh_cache().await?;
+                Ok(outcome)
             }
             ApiTable::Role => {
                 require_admin(claims)?;
                 let (sql, params) = self.store.build_role_insert(object)?;
-                self.services.writer.execute_statement(sql, params).await
+                let outcome = self.services.writer.execute_statement(sql, params).await?;
+                self.auth.refresh_cache().await?;
+                Ok(outcome)
             }
         }
     }
@@ -156,12 +163,16 @@ impl BackendApiService {
                     .store
                     .build_app_user_update(claims, id, object, password_hash)
                     .await?;
-                self.services.writer.execute_statement(sql, params).await
+                let outcome = self.services.writer.execute_statement(sql, params).await?;
+                self.auth.refresh_cache().await?;
+                Ok(outcome)
             }
             ApiTable::Role => {
                 require_admin(claims)?;
                 let (sql, params) = self.store.build_role_update(id, object)?;
-                self.services.writer.execute_statement(sql, params).await
+                let outcome = self.services.writer.execute_statement(sql, params).await?;
+                self.auth.refresh_cache().await?;
+                Ok(outcome)
             }
         }
     }
@@ -181,7 +192,7 @@ impl BackendApiService {
 
         let sql = format!("DELETE FROM {} WHERE id = ?", table.as_table_name());
         let params = vec![persistence::write_coordinator::SqlParameter::Integer(id)];
-        match table {
+        let outcome = match table {
             ApiTable::View => {
                 self.services
                     .writer
@@ -189,7 +200,13 @@ impl BackendApiService {
                     .await
             }
             _ => self.services.writer.execute_statement(sql, params).await,
+        }?;
+
+        if matches!(table, ApiTable::AppUser | ApiTable::Role) {
+            self.auth.refresh_cache().await?;
         }
+
+        Ok(outcome)
     }
 
     pub async fn subscribe_view(

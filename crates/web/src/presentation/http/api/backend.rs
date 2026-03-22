@@ -118,7 +118,7 @@ async fn list_table_rows(
     headers: HeaderMap,
     Path(table_name): Path<String>,
 ) -> ApiResult<Json<Value>> {
-    let claims = authenticate_request(&state, &headers)?;
+    let claims = authenticate_request(&state, &headers).await?;
     let value = state
         .backend
         .list_table_rows(&claims, &table_name)
@@ -132,7 +132,7 @@ async fn get_table_row(
     headers: HeaderMap,
     Path((table_name, id)): Path<(String, i64)>,
 ) -> ApiResult<Json<Value>> {
-    let claims = authenticate_request(&state, &headers)?;
+    let claims = authenticate_request(&state, &headers).await?;
     let value = state
         .backend
         .get_table_row(&claims, &table_name, id)
@@ -147,7 +147,7 @@ async fn create_table_row(
     Path(table_name): Path<String>,
     Json(payload): Json<Value>,
 ) -> ApiResult<(StatusCode, Json<MutationResponse>)> {
-    let claims = authenticate_request(&state, &headers)?;
+    let claims = authenticate_request(&state, &headers).await?;
     let object = payload_object(&payload)?;
     let outcome = state
         .backend
@@ -170,7 +170,7 @@ async fn update_table_row(
     Path((table_name, id)): Path<(String, i64)>,
     Json(payload): Json<Value>,
 ) -> ApiResult<Json<MutationResponse>> {
-    let claims = authenticate_request(&state, &headers)?;
+    let claims = authenticate_request(&state, &headers).await?;
     let object = payload_object(&payload)?;
     let outcome = state
         .backend
@@ -189,7 +189,7 @@ async fn delete_table_row(
     headers: HeaderMap,
     Path((table_name, id)): Path<(String, i64)>,
 ) -> ApiResult<Json<MutationResponse>> {
-    let claims = authenticate_request(&state, &headers)?;
+    let claims = authenticate_request(&state, &headers).await?;
     let outcome = state
         .backend
         .delete_table_row(&claims, &table_name, id)
@@ -207,7 +207,7 @@ async fn list_files(
     headers: HeaderMap,
     Query(query): Query<FileListQuery>,
 ) -> ApiResult<Json<persistence::storage::StorageList>> {
-    let claims = authenticate_request(&state, &headers)?;
+    let claims = authenticate_request(&state, &headers).await?;
     let listing = state
         .backend
         .list_files(
@@ -226,7 +226,7 @@ async fn upload_link(
     headers: HeaderMap,
     Json(request): Json<FileKeyRequest>,
 ) -> ApiResult<Json<FileLinkResponse>> {
-    let claims = authenticate_request(&state, &headers)?;
+    let claims = authenticate_request(&state, &headers).await?;
     Ok(Json(map_file_link(
         state
             .backend
@@ -240,7 +240,7 @@ async fn download_link(
     headers: HeaderMap,
     Json(request): Json<FileKeyRequest>,
 ) -> ApiResult<Json<FileLinkResponse>> {
-    let claims = authenticate_request(&state, &headers)?;
+    let claims = authenticate_request(&state, &headers).await?;
     Ok(Json(map_file_link(
         state
             .backend
@@ -254,7 +254,7 @@ async fn delete_link(
     headers: HeaderMap,
     Json(request): Json<FileKeyRequest>,
 ) -> ApiResult<Json<FileLinkResponse>> {
-    let claims = authenticate_request(&state, &headers)?;
+    let claims = authenticate_request(&state, &headers).await?;
     Ok(Json(map_file_link(
         state
             .backend
@@ -335,7 +335,7 @@ async fn view_sse(
     headers: HeaderMap,
     Path(view_id): Path<u32>,
 ) -> ApiResult<Sse<impl Stream<Item = Result<Event, Infallible>>>> {
-    let claims = authenticate_request(&state, &headers)?;
+    let claims = authenticate_request(&state, &headers).await?;
     let handle = state
         .backend
         .subscribe_view(claims, view_id)
@@ -350,7 +350,7 @@ async fn view_sse(
     Ok(Sse::new(stream).keep_alive(KeepAlive::default()))
 }
 
-fn authenticate_request(
+async fn authenticate_request(
     state: &AppState,
     headers: &HeaderMap,
 ) -> Result<
@@ -369,6 +369,7 @@ fn authenticate_request(
     state
         .backend
         .authenticate_authorization(header_str)
+        .await
         .map_err(|error| api_error(StatusCode::UNAUTHORIZED, error.to_string()))
 }
 

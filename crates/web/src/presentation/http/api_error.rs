@@ -25,6 +25,6 @@ pub fn invalid_multipart(
     tracing::warn!("multipart request failed: {error}");
     api_error(
         StatusCode::BAD_REQUEST,
-        "Nao foi possivel ler o upload do package .lince.",
+        "Nao foi possivel ler o upload do widget HTML.",
     )
 }

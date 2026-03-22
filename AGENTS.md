@@ -13,6 +13,6 @@ TUI: Ratatui.
 Utils: System-wide utilities.
 Injection: Dependency Injection.
 Application: Main application logic.
-Web: Web HTML version.
+Web: Web HTML version. This uses widgets that have their documentation for creation in /documentation/ops/. It contains alplhabetically ordered markdowns to be inserted into the preprompt context of AIs that are used to create the widget and for models when changing the app's code to understand the process of changing the Web version.
 
 In root of project there is the SQLite migrations/ directory.

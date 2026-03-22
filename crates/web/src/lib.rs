@@ -4,6 +4,7 @@ mod application;
 mod domain;
 mod infrastructure;
 mod presentation;
+mod sand;
 
 use {
     crate::{

@@ -1,5 +1,6 @@
 use crate::domain::widget_bridge::WidgetBridgeSnapshot;
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -17,6 +18,10 @@ pub struct BoardCard {
     pub server_id: String,
     #[serde(default)]
     pub view_id: Option<u32>,
+    #[serde(default = "default_true")]
+    pub streams_enabled: bool,
+    #[serde(default = "default_widget_state")]
+    pub widget_state: Value,
     pub x: u8,
     pub y: u8,
     pub w: u8,
@@ -35,6 +40,8 @@ pub struct BoardWorkspace {
 #[serde(rename_all = "camelCase")]
 pub struct BoardState {
     pub density: u8,
+    #[serde(default = "default_true")]
+    pub global_streams_enabled: bool,
     pub active_workspace_id: String,
     pub workspaces: Vec<BoardWorkspace>,
 }
@@ -105,6 +112,7 @@ impl Default for AppBootstrap {
 pub fn default_board_state() -> BoardState {
     BoardState {
         density: 4,
+        global_streams_enabled: true,
         active_workspace_id: "space-1".into(),
         workspaces: vec![
             BoardWorkspace {
@@ -119,6 +127,14 @@ pub fn default_board_state() -> BoardState {
             },
         ],
     }
+}
+
+fn default_true() -> bool {
+    true
+}
+
+fn default_widget_state() -> Value {
+    Value::Object(Map::new())
 }
 
 fn clamp_density(level: u8) -> u8 {

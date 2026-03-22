@@ -1,6 +1,8 @@
 use {
     crate::{
-        domain::lince_package::{LincePackage, parse_lince_package, validate_package_upload},
+        domain::lince_package::{
+            LincePackage, package_id_from_filename, parse_lince_package, validate_package_upload,
+        },
         infrastructure::package_catalog_store::InstalledPackageSummary,
         presentation::http::api_error::{ApiResult, invalid_multipart},
     },
@@ -31,7 +33,7 @@ pub struct PackagePreview {
 impl From<LincePackage> for PackagePreview {
     fn from(package: LincePackage) -> Self {
         let filename = package.archive_filename();
-        let id = filename.trim_end_matches(".lince").to_string();
+        let id = package_id_from_filename(&filename);
         let LincePackage { manifest, html, .. } = package;
         Self {
             id,
@@ -53,12 +55,9 @@ impl From<LincePackage> for PackagePreview {
 pub async fn list_local_packages(
     State(state): State<crate::application::state::AppState>,
 ) -> ApiResult<Json<Vec<InstalledPackageSummary>>> {
-    let packages = state
-        .packages
-        .list()
-        .map_err(|message| {
-            crate::presentation::http::api_error::api_error(StatusCode::BAD_GATEWAY, message)
-        })?;
+    let packages = state.packages.list().map_err(|message| {
+        crate::presentation::http::api_error::api_error(StatusCode::BAD_GATEWAY, message)
+    })?;
 
     Ok(Json(packages))
 }
@@ -67,12 +66,9 @@ pub async fn get_local_package(
     State(state): State<crate::application::state::AppState>,
     Path(package_id): Path<String>,
 ) -> ApiResult<Json<PackagePreview>> {
-    let package = state
-        .packages
-        .load(&package_id)
-        .map_err(|message| {
-            crate::presentation::http::api_error::api_error(StatusCode::NOT_FOUND, message)
-        })?;
+    let package = state.packages.load(&package_id).map_err(|message| {
+        crate::presentation::http::api_error::api_error(StatusCode::NOT_FOUND, message)
+    })?;
 
     Ok(Json(PackagePreview::from(package)))
 }
@@ -93,7 +89,7 @@ pub async fn preview_package(mut multipart: Multipart) -> ApiResult<Json<Package
 
     Err(crate::presentation::http::api_error::api_error(
         StatusCode::BAD_REQUEST,
-        "Nenhum arquivo .lince foi enviado.",
+        "Nenhum widget HTML foi enviado.",
     ))
 }
 
@@ -117,12 +113,15 @@ pub async fn install_package(
 
     Err(crate::presentation::http::api_error::api_error(
         StatusCode::BAD_REQUEST,
-        "Nenhum arquivo .lince foi enviado.",
+        "Nenhum widget HTML foi enviado.",
     ))
 }
 
 fn map_validation_error(
     message: String,
-) -> (StatusCode, Json<crate::presentation::http::api_error::ApiError>) {
+) -> (
+    StatusCode,
+    Json<crate::presentation::http::api_error::ApiError>,
+) {
     crate::presentation::http::api_error::api_error(StatusCode::UNPROCESSABLE_ENTITY, message)
 }

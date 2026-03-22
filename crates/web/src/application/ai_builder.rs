@@ -4,6 +4,7 @@ use {
             LincePackage, PackageManifest, build_lince_archive, normalize_html,
             normalize_permissions,
         },
+        infrastructure::prompt_fragments::build_widget_builder_system_prompt,
         presentation::http::api_error::{ApiError, api_error},
     },
     axum::{
@@ -26,63 +27,6 @@ const MAX_PROMPT_CHARS: usize = 8_000;
 const MAX_OUTPUT_TOKENS: u32 = 10_000;
 const WIDGET_SCHEMA_NAME: &str = "lince_widget_package";
 const MODEL_PRICING_BASIS: &str = "Estimativa relativa baseada na tabela oficial de pricing do GPT-5.4, comparada ao gpt-5.4-mini.";
-const WIDGET_BUILDER_SYSTEM_PROMPT: &str = r#"
-You generate standalone Lince widgets.
-
-Lince is a dark, minimal, premium widget board served by a Rust host app.
-Each widget is exported as a `.lince` archive, which is just a zip renamed to `.lince`.
-The archive contains exactly two files:
-- index.html
-- config.toml
-
-Your job is to produce the contents needed for those files as a structured JSON object.
-
-Hard requirements:
-- Output valid JSON only, matching the requested schema.
-- `html` must be a complete standalone document ready for `index.html`.
-- The widget runs inside an iframe via `srcdoc`.
-- The widget body is the card surface. Do not render an extra outer browser frame, modal, or "card inside card".
-- Use inline CSS and inline JavaScript only. Do not depend on external CDNs, fonts, frameworks, or remote APIs.
-- Do not assume network access.
-- Keep the UI dark, minimal, technical, and solid-colored. Avoid gradients unless explicitly requested.
-- Favor charcoal, graphite, muted grays, subtle borders, and restrained accent colors.
-- Use negative space well and avoid template-looking layouts.
-- The widget must feel native to the Lince host.
-- The widget must support small card sizes and not overflow aggressively.
-- The widget should remain useful even in preview mode.
-- If you persist internal widget state, namespace localStorage with:
-  `const instanceId = window.frameElement?.dataset?.packageInstanceId || "preview";`
-- The host injects a bridge helper at `window.LinceWidgetHost`.
-- If the widget wants reactive host state, add `data-lince-bridge-root` to a root element and listen with `data-on:lince-bridge-state`.
-- The bridge event detail shape is `{ bridge, meta }`, so a Datastar widget can use `data-on:lince-bridge-state="$bridge = evt.detail.bridge"`.
-- The widget may use SVG, canvas, or lightweight DOM manipulation.
-- The widget should not call parent window APIs.
-- Keep scripts simple and self-contained.
-
-Manifest requirements:
-- title: short user-facing widget name
-- author: short author string
-- version: semantic version string
-- description: compact summary
-- details: richer explanation of what the widget does
-- initial_width: integer between 1 and 6
-- initial_height: integer between 1 and 6
-- permissions: mocked capabilities like `read_tasks`, `read_weather`, `control_playback`
-
-Design guidance:
-- Use a clean information hierarchy.
-- Prefer strong typography contrast over decoration.
-- Use subtle motion only when helpful.
-- Avoid large paragraphs.
-- Make controls tactile and compact.
-- If the user asks for tables, lists, clocks, calendars, weather, music, notes, or dashboards, render them as polished microfrontends.
-
-Behavior guidance:
-- If the user asks to revise an existing widget, preserve the current working logic unless the request explicitly changes it.
-- Keep generated JavaScript readable and bounded.
-- Use accessible labels where relevant.
-- Ensure the HTML can be zipped directly into a `.lince` file without further transformation.
-"#;
 
 #[derive(Clone)]
 pub struct AiBuilderState {
@@ -216,7 +160,7 @@ pub struct WidgetDraftPreview {
     pub source_prompt: String,
     pub revision: u32,
     pub usage: UsageSummary,
-    pub config_toml: String,
+    pub manifest_json: String,
     pub download_url: String,
     pub filename: String,
 }
@@ -239,7 +183,7 @@ impl From<&WidgetDraft> for WidgetDraftPreview {
             source_prompt: draft.source_prompt.clone(),
             revision: draft.revision,
             usage: draft.usage.clone(),
-            config_toml: draft.package.config_toml(),
+            manifest_json: draft.package.manifest_json(),
             download_url: format!("/host/ai/drafts/{}/download", draft.id),
             filename,
         }
@@ -393,7 +337,7 @@ pub async fn download_draft(
     let mut headers = HeaderMap::new();
     headers.insert(
         header::CONTENT_TYPE,
-        HeaderValue::from_static("application/zip"),
+        HeaderValue::from_static("text/html; charset=utf-8"),
     );
     headers.insert(
         header::CONTENT_DISPOSITION,
@@ -440,7 +384,7 @@ fn normalize_generated_widget(
     );
     let details = fallback_string(
         generated.details,
-        "Widget .lince gerado de forma experimental a partir de um prompt em linguagem natural.",
+        "Widget HTML gerado de forma experimental a partir de um prompt em linguagem natural.",
     );
 
     let package = LincePackage::new(
@@ -475,6 +419,8 @@ async fn request_openai_widget(
     prompt: &str,
     existing: Option<&WidgetDraft>,
 ) -> Result<(GeneratedWidgetPayload, UsageSummary), String> {
+    let system_prompt = build_widget_builder_system_prompt()
+        .map_err(|error| format!("Nao consegui carregar o preprompt do widget builder: {error}"))?;
     let body = json!({
         "model": model,
         "input": [
@@ -483,7 +429,7 @@ async fn request_openai_widget(
                 "content": [
                     {
                         "type": "input_text",
-                        "text": WIDGET_BUILDER_SYSTEM_PROMPT,
+                        "text": system_prompt,
                     }
                 ]
             },

@@ -3,7 +3,7 @@ use {
         application::state::AppState,
         domain::{
             board::{BoardCard, BoardState, BoardWorkspace},
-            lince_package::LincePackage,
+            lince_package::{LincePackage, slugify},
             workspace_archive::{
                 build_workspace_archive, parse_workspace_archive, reconstruct_package_from_card,
             },
@@ -52,10 +52,7 @@ pub async fn export_workspace(
 
     let archive = build_workspace_archive(&workspace, &packages)
         .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
-    let filename = format!(
-        "{}.workspace.lince",
-        crate::domain::lince_package::slugify(&workspace.name)
-    );
+    let filename = format!("{}.workspace.sand", slugify(&workspace.name));
 
     let mut headers = HeaderMap::new();
     headers.insert(
@@ -116,7 +113,7 @@ pub async fn import_workspace(
 
     Err(api_error(
         StatusCode::BAD_REQUEST,
-        "Nenhum arquivo .workspace.lince foi enviado.",
+        "Nenhum arquivo .workspace.sand foi enviado.",
     ))
 }
 

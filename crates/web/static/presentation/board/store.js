@@ -7,8 +7,23 @@ import {
 
 const DEFAULT_CARD_SIZE = { w: 3, h: 2 };
 
+function cloneJsonValue(value, fallback = {}) {
+  try {
+    if (value == null) {
+      return fallback;
+    }
+
+    return JSON.parse(JSON.stringify(value));
+  } catch {
+    return fallback;
+  }
+}
+
 function cloneCard(card) {
-  return { ...card };
+  return {
+    ...card,
+    widgetState: cloneJsonValue(card?.widgetState, {}),
+  };
 }
 
 function cloneCards(cards) {
@@ -53,6 +68,7 @@ function createFallbackState(seedCards, config) {
 
   return {
     density: config.density,
+    globalStreamsEnabled: true,
     activeWorkspaceId: "space-1",
     workspaces: [
       {
@@ -100,6 +116,7 @@ function loadState(initialBoardState, seedCards, config) {
 
   return {
     density: config.density,
+    globalStreamsEnabled: parsed.globalStreamsEnabled !== false,
     activeWorkspaceId,
     workspaces,
   };
@@ -108,6 +125,7 @@ function loadState(initialBoardState, seedCards, config) {
 function exportState(state) {
   return {
     density: state.density,
+    globalStreamsEnabled: state.globalStreamsEnabled !== false,
     activeWorkspaceId: state.activeWorkspaceId,
     workspaces: state.workspaces.map(({ id, name, cards }) => ({
       id,
@@ -125,6 +143,8 @@ function exportState(state) {
           packageName,
           serverId,
           viewId,
+          streamsEnabled,
+          widgetState,
           x,
           y,
           w,
@@ -141,6 +161,8 @@ function exportState(state) {
           packageName,
           serverId,
           viewId,
+          streamsEnabled,
+          widgetState: cloneJsonValue(widgetState, {}),
           x,
           y,
           w,
@@ -165,6 +187,8 @@ function cardTemplate(index) {
     packageName: "",
     serverId: "",
     viewId: null,
+    streamsEnabled: true,
+    widgetState: {},
     ...DEFAULT_CARD_SIZE,
     x: 1,
     y: 1,
@@ -214,6 +238,7 @@ export function createBoardStore({
         density: config.density,
         densityLabel: config.densityLabel,
       },
+      globalStreamsEnabled: state.globalStreamsEnabled !== false,
     };
   }
 
@@ -353,7 +378,7 @@ export function createBoardStore({
         kind: "package",
         title: String(cardDefinition?.title || "Card importado"),
         description: String(
-          cardDefinition?.description || "Card importado de um package .lince.",
+          cardDefinition?.description || "Card importado de um widget HTML.",
         ),
         text: "",
         html: String(cardDefinition?.html || ""),
@@ -367,6 +392,8 @@ export function createBoardStore({
           cardDefinition?.viewId == null
             ? null
             : Number(cardDefinition.viewId) || null,
+        streamsEnabled: cardDefinition?.streamsEnabled !== false,
+        widgetState: cloneJsonValue(cardDefinition?.widgetState, {}),
         ...requestedSize,
         ...position,
       };
@@ -510,6 +537,38 @@ export function createBoardStore({
       state.density = config.density;
       normalizeAllWorkspaces();
       return commit();
+    },
+    setGlobalStreamsEnabled(enabled, options = {}) {
+      state.globalStreamsEnabled = Boolean(enabled);
+      return commit(options);
+    },
+    updateCard(cardId, updater, options = {}) {
+      const mutator = typeof updater === "function" ? updater : null;
+      if (!mutator) {
+        return null;
+      }
+
+      for (const workspace of state.workspaces) {
+        const index = workspace.cards.findIndex((card) => card.id === cardId);
+        if (index < 0) {
+          continue;
+        }
+
+        const nextCard = mutator(cloneCard(workspace.cards[index]));
+        if (!nextCard) {
+          return null;
+        }
+
+        const nextCards = workspace.cards.slice();
+        nextCards[index] = nextCard;
+        workspace.cards = normalizeLayout(nextCards, config);
+        commit(options);
+        return cloneCard(
+          workspace.cards.find((card) => card.id === cardId) || nextCard,
+        );
+      }
+
+      return null;
     },
   };
 }

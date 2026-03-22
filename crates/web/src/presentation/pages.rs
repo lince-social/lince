@@ -1,5 +1,8 @@
 use {
-    crate::domain::board::{AppBootstrap, BoardCard},
+    crate::{
+        domain::board::{AppBootstrap, BoardCard},
+        infrastructure::prompt_fragments::load_widget_builder_contract_summaries,
+    },
     maud::{DOCTYPE, Markup, PreEscaped, html},
     serde_json::json,
     std::time::{SystemTime, UNIX_EPOCH},
@@ -22,7 +25,7 @@ pub fn render_app(bootstrap: &AppBootstrap) -> String {
                 link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="";
                 link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap";
                 link rel="stylesheet" href=(format!("/static/styles.css?v={asset_version}"));
-                script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@main/bundles/datastar.js" {}
+                script type="module" src=(format!("/static/vendored/datastar.js?v={asset_version}")) {}
                 script type="module" src=(format!("/static/presentation/board/main.js?v={asset_version}")) {}
             }
             body class="startup-active" data-signals=(app_shell_signals(bootstrap)) {
@@ -108,6 +111,16 @@ pub fn render_app(bootstrap: &AppBootstrap) -> String {
                                 span id="mode-label" { "Dashboard" }
                             }
                             button
+                                id="streams-toggle"
+                                class="pill pill--ghost topbar-streams-toggle"
+                                type="button"
+                                aria-label="Pausar todos os streams"
+                                aria-pressed="true"
+                            {
+                                span class="pill__dot" {}
+                                span id="streams-toggle-label" { "Streams on" }
+                            }
+                            button
                                 id="edit-toggle"
                                 class="icon-button"
                                 type="button"
@@ -169,7 +182,7 @@ pub fn render_app(bootstrap: &AppBootstrap) -> String {
                                                 span class="add-card-popover__icon" { "↥" }
                                                 span class="add-card-popover__copy" {
                                                     strong { "Importar" }
-                                                    small { ".lince do disco" }
+                                                    small { "widget HTML do disco" }
                                                 }
                                             }
                                             button
@@ -205,10 +218,10 @@ pub fn render_app(bootstrap: &AppBootstrap) -> String {
                                 }
                                 div id="drop-zone-overlay" class="drop-zone-overlay" hidden="" {
                                     div class="drop-zone-overlay__panel" {
-                                        div id="drop-zone-overlay-eyebrow" class="drop-zone-overlay__eyebrow" { "Import package" }
-                                        h2 id="drop-zone-overlay-title" class="drop-zone-overlay__title" { "Solte um arquivo .lince" }
+                                        div id="drop-zone-overlay-eyebrow" class="drop-zone-overlay__eyebrow" { "Import widget" }
+                                        h2 id="drop-zone-overlay-title" class="drop-zone-overlay__title" { "Solte um widget .html" }
                                         p id="drop-zone-overlay-copy" class="drop-zone-overlay__copy" {
-                                            "O package sera lido no backend e aberto em preview antes de virar um card."
+                                            "O widget sera lido no backend e aberto em preview antes de virar um card."
                                         }
                                     }
                                 }
@@ -226,10 +239,10 @@ pub fn render_app(bootstrap: &AppBootstrap) -> String {
                         header class="import-modal__header" {
                             div class="import-modal__lockup" {
                                 div class="import-modal__eyebrow" { "External card" }
-                                h2 id="import-modal-title" class="import-modal__title" { "Importar package .lince" }
+                                h2 id="import-modal-title" class="import-modal__title" { "Importar widget HTML" }
                                 p id="import-modal-description" class="import-modal__description" {}
                             }
-                            button id="import-close-button" class="import-close-button" type="button" aria-label="Fechar preview do package" { "×" }
+                            button id="import-close-button" class="import-close-button" type="button" aria-label="Fechar preview do widget" { "×" }
                         }
                         div class="import-modal__layout" {
                             aside class="import-modal__sidebar" {
@@ -292,18 +305,18 @@ pub fn render_app(bootstrap: &AppBootstrap) -> String {
                         header class="import-modal__header" {
                             div class="import-modal__lockup" {
                                 div class="import-modal__eyebrow" { "Local catalog" }
-                                h2 id="local-packages-modal-title" class="import-modal__title" { "Widgets instalados" }
+                                h2 id="local-packages-modal-title" class="import-modal__title" { "Catalogo de widgets" }
                                 p class="import-modal__description" {
-                                    "Escolha um .lince ja instalado em ~/.config/lince/web/widgets para criar outra copia no workspace atual."
+                                    "Escolha um widget oficial ou um widget HTML salvo em ~/.config/lince/web/widgets para criar outra copia no workspace atual."
                                 }
                             }
                             button id="local-packages-close-button" class="import-close-button" type="button" aria-label="Fechar catalogo local" { "×" }
                         }
                         div class="catalog-toolbar" {
                             div class="catalog-modal__meta" {
-                                div class="import-modal__details-label" { "Catalogo local" }
+                                div class="import-modal__details-label" { "Catalogo" }
                                 p id="local-packages-summary" class="import-modal__details-copy" {
-                                    "Carregando widgets instalados..."
+                                    "Carregando o catalogo de widgets..."
                                 }
                             }
                             label class="catalog-search" for="local-packages-search" {
@@ -429,6 +442,22 @@ pub fn render_app(bootstrap: &AppBootstrap) -> String {
                                         name="view_id"
                                         placeholder="View id";
                                 }
+                                label
+                                    id="widget-config-streams-field"
+                                    class="startup-field startup-field--checkbox"
+                                    for="widget-config-streams-enabled"
+                                {
+                                    input
+                                        id="widget-config-streams-enabled"
+                                        class="startup-field__checkbox"
+                                        type="checkbox"
+                                        name="streams_enabled"
+                                        checked="";
+                                    span class="startup-field__checkbox-copy" {
+                                        strong { "Manter stream ativo" }
+                                        small { "Desative para pausar apenas esse widget sem perder sua configuracao." }
+                                    }
+                                }
                                 p id="widget-config-help" class="startup-error-message" hidden="" {}
                             }
                         }
@@ -438,8 +467,8 @@ pub fn render_app(bootstrap: &AppBootstrap) -> String {
                         }
                     }
                 }
-                input id="package-import-input" type="file" accept=".lince,application/zip" hidden="";
-                input id="workspace-import-input" type="file" accept=".workspace.lince,application/zip" hidden="";
+                input id="package-import-input" type="file" accept=".html,.sand,.lince,text/html,application/zip" hidden="";
+                input id="workspace-import-input" type="file" accept=".workspace.sand,.workspace.lince,application/zip" hidden="";
                 script id="lince-bootstrap" type="application/json" { (PreEscaped(bootstrap_json)) }
             }
         }
@@ -457,6 +486,8 @@ fn safe_json_for_html<T: serde::Serialize>(value: &T) -> String {
 
 pub fn render_ai_builder() -> String {
     let asset_version = asset_version_token();
+    let contract_items = load_widget_builder_contract_summaries()
+        .unwrap_or_else(|error| vec![format!("Falha ao carregar prompt fragments: {error}")]);
     html! {
         (DOCTYPE)
         html lang="pt-BR" {
@@ -502,9 +533,9 @@ pub fn render_ai_builder() -> String {
                         section class="ai-lab__hero" {
                             div class="ai-lab__hero-copy" {
                                 div class="ai-lab__eyebrow" { "Experimental route" }
-                                h1 class="ai-lab__title" { "Criar widgets .lince com IA" }
+                                h1 class="ai-lab__title" { "Criar widgets HTML com IA" }
                                 p class="ai-lab__description" {
-                                    "Descreva um widget, deixe o backend gerar o package completo com OpenAI, revise quantas vezes quiser e exporte o resultado como um .lince pronto para arrastar de volta para o board."
+                                    "Descreva um widget, deixe o backend gerar o HTML completo com OpenAI, revise quantas vezes quiser e exporte o resultado como um arquivo pronto para arrastar de volta para o board."
                                 }
                             }
                             div class="ai-lab__hero-meta" {
@@ -568,7 +599,7 @@ pub fn render_ai_builder() -> String {
                                         placeholder="Ex.: crie um widget compacto de notas urgentes com duas colunas, filtros por tag, visual quase monocromatico e um composer minimalista no rodape."
                                     {}
                                     div class="ai-form__hint" {
-                                        "O backend envia um preprompt forte com o contrato do .lince, regras visuais do Lince, limites de tamanho e orientacoes de microfrontend."
+                                        "O backend envia um preprompt forte com o contrato do widget HTML, regras visuais do Lince, limites de tamanho e orientacoes de microfrontend."
                                     }
                                     div class="ai-form__actions" {
                                         button id="ai-generate-button" class="modal-button modal-button--primary" type="submit" {
@@ -582,10 +613,9 @@ pub fn render_ai_builder() -> String {
                                 section class="ai-contract" {
                                     div class="ai-contract__title" { "Contrato enviado para a IA" }
                                     ul class="ai-contract__list" {
-                                        li { "O package sempre sai como `index.html` + `config.toml`." }
-                                        li { "O `body` do HTML precisa ser o proprio widget, sem moldura extra do host." }
-                                        li { "Sem frameworks pesados, sem CDN, sem fetch remoto obrigatorio." }
-                                        li { "Estado interno pode usar `localStorage`, sempre namespaced por `data-package-instance-id`." }
+                                        @for item in contract_items {
+                                            li { (item) }
+                                        }
                                     }
                                 }
                                 section class="ai-history" {
@@ -602,7 +632,7 @@ pub fn render_ai_builder() -> String {
                                 header class="ai-panel__header ai-panel__header--preview" {
                                     div {
                                         div class="ai-panel__eyebrow" { "Preview" }
-                                        h2 class="ai-panel__title" { "Resultado do .lince" }
+                                        h2 class="ai-panel__title" { "Resultado do widget HTML" }
                                     }
                                     a
                                         id="ai-export-link"
@@ -611,7 +641,7 @@ pub fn render_ai_builder() -> String {
                                         hidden=""
                                         download=""
                                     {
-                                        "Exportar .lince"
+                                        "Exportar HTML"
                                     }
                                 }
                                 div class="ai-preview-shell" {
@@ -706,8 +736,8 @@ pub fn render_ai_builder() -> String {
                                         }
                                     }
                                     section class="ai-meta-card" {
-                                        div class="ai-meta-card__eyebrow" { "config.toml" }
-                                        pre id="ai-config-preview" class="ai-config-preview" { "# O config gerado aparece aqui." }
+                                        div class="ai-meta-card__eyebrow" { "Manifesto embutido" }
+                                        pre id="ai-config-preview" class="ai-config-preview" { "{\n  \"title\": \"Widget title\",\n  \"author\": \"Author\"\n}" }
                                     }
                                     section class="ai-meta-card" {
                                         div class="ai-meta-card__eyebrow" { "Uso da ultima geracao" }
@@ -726,7 +756,7 @@ pub fn render_ai_builder() -> String {
                         div class="ai-key-gate__eyebrow" { "OpenAI setup" }
                         h2 id="ai-key-gate-title" class="ai-key-gate__title" { "Conecte sua API key para gerar widgets" }
                         p class="ai-key-gate__copy" {
-                            "A chave e enviada para o backend Rust e fica apenas em memoria nesta sessao. O host usa essa chave para pedir ao modelo um package `.lince` completo com `index.html` e `config.toml`."
+                            "A chave e enviada para o backend Rust e fica apenas em memoria nesta sessao. O host usa essa chave para pedir ao modelo um widget HTML completo com manifesto embutido em `lince-manifest`."
                         }
                         form id="ai-key-form" class="ai-key-form" {
                             label class="ai-form__label" for="ai-api-key" { "OpenAI API key" }

@@ -3,8 +3,72 @@ import { createGridConfig } from "./grid.js";
 import { createBoardStore } from "./store.js";
 import { createWidgetBridge, enhancePackageHtml } from "./widget-bridge.js";
 
+const PACKAGE_EXTENSION = ".html";
+const LEGACY_PACKAGE_EXTENSION = ".sand";
+const LEGACY_PACKAGE_ARCHIVE_EXTENSION = ".lince";
+const WORKSPACE_ARCHIVE_EXTENSION = ".workspace.sand";
+const LEGACY_WORKSPACE_ARCHIVE_EXTENSION = ".workspace.lince";
 const DEFAULT_DROP_MESSAGE =
-  "Solte um .lince ou .workspace.lince para instalar no backend local.";
+  "Solte um .html de widget ou um .workspace.sand para instalar no backend local.";
+
+function stripPackageExtension(filename) {
+  const value = String(filename || "");
+  const lowercase = value.toLowerCase();
+  if (lowercase.endsWith(PACKAGE_EXTENSION)) {
+    return value.slice(0, -PACKAGE_EXTENSION.length);
+  }
+  if (lowercase.endsWith(LEGACY_PACKAGE_EXTENSION)) {
+    return value.slice(0, -LEGACY_PACKAGE_EXTENSION.length);
+  }
+  if (lowercase.endsWith(LEGACY_PACKAGE_ARCHIVE_EXTENSION)) {
+    return value.slice(0, -LEGACY_PACKAGE_ARCHIVE_EXTENSION.length);
+  }
+  return value;
+}
+
+function cloneJsonValue(value, fallback = null) {
+  try {
+    if (value === undefined) {
+      return fallback;
+    }
+
+    return JSON.parse(JSON.stringify(value));
+  } catch {
+    return fallback;
+  }
+}
+
+function isPlainObject(value) {
+  return Boolean(
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    Object.getPrototypeOf(value) === Object.prototype,
+  );
+}
+
+function applyJsonMergePatch(target, patch) {
+  if (!isPlainObject(patch)) {
+    return cloneJsonValue(patch, {});
+  }
+
+  const base = isPlainObject(target) ? cloneJsonValue(target, {}) : {};
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === null) {
+      delete base[key];
+      continue;
+    }
+
+    if (isPlainObject(value) && isPlainObject(base[key])) {
+      base[key] = applyJsonMergePatch(base[key], value);
+      continue;
+    }
+
+    base[key] = cloneJsonValue(value, null);
+  }
+
+  return base;
+}
 
 const PERMISSION_DESCRIPTIONS = {
   bridge_state:
@@ -33,6 +97,8 @@ const PERMISSION_DESCRIPTIONS = {
     "Permite abrir uma sessao de shell local via backend do host. Trate como capability de desenvolvimento.",
   write_records:
     "Permite executar mutacoes na tabela record por meio do backend local conectado ao servidor externo.",
+  write_table:
+    "Permite criar registros nas tabelas expostas pela API do backend remoto por meio do host local.",
   write_tasks:
     "Permite criar, atualizar e remover tarefas pelo proprio widget.",
 };
@@ -61,6 +127,8 @@ const exportWorkspaceButton = document.getElementById(
 );
 const densityTag = document.getElementById("density-tag");
 const modeLabel = document.getElementById("mode-label");
+const streamsToggle = document.getElementById("streams-toggle");
+const streamsToggleLabel = document.getElementById("streams-toggle-label");
 const densitySlider = document.getElementById("density-slider");
 const densityValue = document.getElementById("density-value");
 const workspaceSwitcher = document.querySelector(".workspace-switcher");
@@ -169,6 +237,12 @@ const widgetConfigViewIdField = document.getElementById(
   "widget-config-view-id-field",
 );
 const widgetConfigViewId = document.getElementById("widget-config-view-id");
+const widgetConfigStreamsField = document.getElementById(
+  "widget-config-streams-field",
+);
+const widgetConfigStreamsEnabled = document.getElementById(
+  "widget-config-streams-enabled",
+);
 const widgetConfigHelp = document.getElementById("widget-config-help");
 const widgetConfigCancelButton = document.getElementById(
   "widget-config-cancel-button",
@@ -308,19 +382,30 @@ const store = createBoardStore({
     }
   },
 });
+let editMode = false;
 const widgetBridge = createWidgetBridge({
   statusNode: null,
   initialState: bootstrap.widgetBridge,
   getFrames: () =>
     Array.from(
-      document.querySelectorAll("iframe[data-package-instance-id]"),
+      document.querySelectorAll("iframe.package-widget__frame"),
     ).filter(Boolean),
+  getCardMeta(instanceId) {
+    return getCardBridgeMeta(instanceId);
+  },
+  setCardState(instanceId, nextState) {
+    updateCardWidgetState(instanceId, nextState);
+  },
+  patchCardState(instanceId, patch) {
+    patchCardWidgetState(instanceId, patch);
+  },
+  setCardStreamsEnabled(instanceId, enabled) {
+    updateCardStreamsEnabled(instanceId, enabled);
+  },
   onError(message) {
     flashDropOverlayMessage(message);
   },
 });
-
-let editMode = false;
 let activeCardId = null;
 let activeInteractionType = null;
 let addCardPopoverOpen = false;
@@ -397,13 +482,86 @@ function cardRequiresServer(card) {
   const permissions = Array.isArray(card?.permissions) ? card.permissions : [];
   return (
     permissions.includes("read_view_stream") ||
-    permissions.includes("write_records")
+    permissions.includes("write_records") ||
+    permissions.includes("write_table")
   );
 }
 
 function cardRequiresViewId(card) {
   const permissions = Array.isArray(card?.permissions) ? card.permissions : [];
   return permissions.includes("read_view_stream");
+}
+
+function cardSupportsStream(card) {
+  return cardRequiresViewId(card);
+}
+
+function getCardRecord(cardId) {
+  const snapshot = store.getSnapshot();
+
+  for (const workspace of snapshot.workspaces) {
+    const card = workspace.cards.find((entry) => entry.id === cardId);
+    if (card) {
+      return { workspace, card };
+    }
+  }
+
+  return null;
+}
+
+function getCardBridgeMeta(cardId) {
+  const record = getCardRecord(cardId);
+  const card = record?.card || null;
+  const snapshot = store.getSnapshot();
+  const globalEnabled = snapshot.globalStreamsEnabled !== false;
+  const cardEnabled = card?.streamsEnabled !== false;
+
+  return {
+    instanceId: cardId,
+    source: "host",
+    mode: editMode ? "edit" : "view",
+    serverId: card?.serverId || "",
+    viewId: card?.viewId ?? null,
+    cardState: cloneJsonValue(card?.widgetState, {}),
+    streams: {
+      globalEnabled,
+      cardEnabled,
+      enabled: globalEnabled && cardEnabled,
+    },
+  };
+}
+
+function updateCardWidgetState(cardId, nextState) {
+  return store.updateCard(
+    cardId,
+    (card) => ({
+      ...card,
+      widgetState: cloneJsonValue(nextState, {}),
+    }),
+    { persist: true },
+  );
+}
+
+function patchCardWidgetState(cardId, patch) {
+  return store.updateCard(
+    cardId,
+    (card) => ({
+      ...card,
+      widgetState: applyJsonMergePatch(card.widgetState, patch),
+    }),
+    { persist: true },
+  );
+}
+
+function updateCardStreamsEnabled(cardId, enabled) {
+  return store.updateCard(
+    cardId,
+    (card) => ({
+      ...card,
+      streamsEnabled: Boolean(enabled),
+    }),
+    { persist: true },
+  );
 }
 
 function resolveCardServerState(card) {
@@ -582,6 +740,7 @@ function renderPackageBody(card) {
           <p class="package-widget__locked-copy">${escapeHtml(gate.message || "Widget indisponivel.")}</p>
           <div class="package-widget__locked-actions">
             <button type="button" class="modal-button modal-button--ghost" data-card-action="configure" data-card-id="${escapeHtml(card.id)}">Configurar</button>
+            <button type="button" class="modal-button modal-button--ghost" data-card-action="delete" data-card-id="${escapeHtml(card.id)}">Remover</button>
             ${
               gate.state === "locked" && gate.server
                 ? `<button type="button" class="modal-button modal-button--primary" data-card-action="connect-server" data-card-id="${escapeHtml(card.id)}">Conectar ${escapeHtml(gate.server.name)}</button>`
@@ -650,6 +809,9 @@ function ensureCardNode(card) {
     const template = document.createElement("template");
     template.innerHTML = renderCardMarkup(card).trim();
     node = template.content.firstElementChild;
+    if (card.kind === "package") {
+      node.dataset.packageRenderSignature = createPackageRenderSignature(card);
+    }
     cardsLayer.appendChild(node);
     cardNodes.set(card.id, node);
   } else if (node.parentElement !== cardsLayer) {
@@ -657,6 +819,15 @@ function ensureCardNode(card) {
   }
 
   return node;
+}
+
+function createPackageRenderSignature(card) {
+  const gate = resolveCardServerState(card);
+  if (gate.state === "ready") {
+    return `ready:${cardRequiresServer(card) ? "server" : "local"}`;
+  }
+
+  return `${gate.state}:${gate.server?.id || ""}:${gate.message || ""}:${card.title || ""}`;
 }
 
 function syncCardNode(node, card) {
@@ -678,11 +849,15 @@ function syncCardNode(node, card) {
   );
 
   if (card.kind === "package") {
-    node.innerHTML =
-      renderDeleteButton(card) +
-      renderConfigureButton(card) +
-      renderPackageBody(card) +
-      renderHandles();
+    const nextSignature = createPackageRenderSignature(card);
+    if (node.dataset.packageRenderSignature !== nextSignature) {
+      node.innerHTML =
+        renderDeleteButton(card) +
+        renderConfigureButton(card) +
+        renderPackageBody(card) +
+        renderHandles();
+      node.dataset.packageRenderSignature = nextSignature;
+    }
   }
 
   const titleNode = node.querySelector("[data-card-title]");
@@ -717,6 +892,14 @@ function syncCardNode(node, card) {
 
   if (deleteButton) {
     deleteButton.setAttribute("aria-label", `Excluir ${card.title || "card"}`);
+  }
+
+  const configureButton = node.querySelector("[data-card-action='configure']");
+  if (configureButton) {
+    configureButton.setAttribute(
+      "aria-label",
+      `Configurar ${card.title || "card"}`,
+    );
   }
 }
 
@@ -761,6 +944,26 @@ function renderCards(cards, allCardIds) {
 
     node.remove();
     cardNodes.delete(cardId);
+  }
+}
+
+function ensureBackgroundPackageCards(snapshot) {
+  for (const workspace of snapshot.workspaces) {
+    if (workspace.id === snapshot.activeWorkspaceId) {
+      continue;
+    }
+
+    for (const card of workspace.cards) {
+      if (card.kind !== "package") {
+        continue;
+      }
+
+      const node = ensureCardNode(card);
+      syncCardNode(node, card);
+      if (node.parentElement !== hiddenCardCache) {
+        hiddenCardCache.appendChild(node);
+      }
+    }
   }
 }
 
@@ -829,6 +1032,22 @@ function renderDensity(snapshot) {
   densityValue.textContent = `${snapshot.layout.cols} x ${snapshot.layout.rows} · ${snapshot.layout.densityLabel}`;
 }
 
+function renderStreamsToggle(snapshot) {
+  if (!streamsToggle || !streamsToggleLabel) {
+    return;
+  }
+
+  const enabled = snapshot.globalStreamsEnabled !== false;
+  streamsToggle.classList.toggle("is-active", enabled);
+  streamsToggle.classList.toggle("is-paused", !enabled);
+  streamsToggle.setAttribute("aria-pressed", String(enabled));
+  streamsToggle.setAttribute(
+    "aria-label",
+    enabled ? "Pausar todos os streams" : "Retomar todos os streams",
+  );
+  streamsToggleLabel.textContent = enabled ? "Streams on" : "Streams off";
+}
+
 function renderEmptyState(snapshot) {
   const isEmpty = snapshot.cards.length === 0;
   workspaceEmpty.hidden = !isEmpty;
@@ -839,7 +1058,7 @@ function renderEmptyState(snapshot) {
 
   workspaceEmptyTitle.textContent = "Sem cards por aqui";
   workspaceEmptyCopy.textContent = editMode
-    ? "Solte um .lince ou use Add card para preencher esse espaco."
+    ? "Solte um .html ou use Add card para preencher esse espaco."
     : "Esse espaco esta livre. Entre em modo de edicao ou crie outro pelo seletor.";
 }
 
@@ -863,12 +1082,14 @@ function renderSnapshot(snapshot) {
   renderGrid(snapshot.layout);
   renderWorkspaceList(snapshot);
   renderDensity(snapshot);
+  renderStreamsToggle(snapshot);
   const allCardIds = new Set(
     snapshot.workspaces.flatMap((workspace) =>
       workspace.cards.map((card) => card.id),
     ),
   );
   renderCards(snapshot.cards, allCardIds);
+  ensureBackgroundPackageCards(snapshot);
   widgetBridge.syncFrames();
   renderEmptyState(snapshot);
 
@@ -986,6 +1207,13 @@ function queueWorkspaceTransition(direction) {
   const cardsClone = cardsLayer.cloneNode(true);
   cardsClone.removeAttribute("id");
   cardsClone.classList.add("workspace-transition-layer__cards");
+  for (const frame of cardsClone.querySelectorAll(
+    "iframe.package-widget__frame",
+  )) {
+    const placeholder = document.createElement("div");
+    placeholder.className = "workspace-transition-frame-placeholder";
+    frame.replaceWith(placeholder);
+  }
   layer.appendChild(cardsClone);
 
   if (!workspaceEmpty.hidden) {
@@ -1115,7 +1343,7 @@ function summarizeLocalPackages(filteredPackages) {
 
   if (!installedPackages.length) {
     localPackagesSummary.textContent =
-      "Nenhum package local ainda. Importe um .lince para ele entrar no catalogo do sistema.";
+      "Nenhum widget no catalogo ainda. Importe um .html para adicionar um widget local.";
     return;
   }
 
@@ -1124,9 +1352,9 @@ function summarizeLocalPackages(filteredPackages) {
     return;
   }
 
-  localPackagesSummary.textContent = `${totalCount} widget${totalCount > 1 ? "s" : ""} instalado${
-    totalCount > 1 ? "s" : ""
-  } em ~/.config/lince/web/widgets. Escolha um para criar outra copia no workspace atual.`;
+  localPackagesSummary.textContent = `${totalCount} widget${totalCount > 1 ? "s" : ""} disponivel${
+    totalCount > 1 ? "eis" : ""
+  } no catalogo. Os oficiais sao renderizados em ~/.config/lince/web/sand; os locais ficam em ~/.config/lince/web/widgets.`;
 }
 
 function renderLocalPackageList() {
@@ -1139,8 +1367,8 @@ function renderLocalPackageList() {
   if (!installedPackages.length) {
     localPackageList.innerHTML = `
       <div class="local-package-empty">
-        <strong>Nada instalado ainda</strong>
-        <span>Use Importar para mandar um .lince para o backend local.</span>
+        <strong>Nada no catalogo ainda</strong>
+        <span>Use Importar para mandar um .html para o backend local.</span>
       </div>
     `;
     return;
@@ -1177,7 +1405,7 @@ function renderLocalPackageList() {
               <span class="local-package-card__size">${escapeHtml(`${width} x ${height}`)}</span>
             </span>
             <span class="local-package-card__description">${escapeHtml(
-              pkg.description || "Package local instalado no sistema.",
+              pkg.description || "Widget local instalado no sistema.",
             )}</span>
             <span class="local-package-card__meta">${escapeHtml(
               `${pkg.filename} · ${pkg.author || "Lince Labs"}`,
@@ -1203,14 +1431,14 @@ function renderLocalPackageList() {
 
 function upsertInstalledPackage(pkg) {
   const summary = {
-    id: String(pkg.id || String(pkg.filename || "").replace(/\.lince$/i, "")),
-    filename: String(pkg.filename || "package.lince"),
+    id: String(pkg.id || stripPackageExtension(String(pkg.filename || ""))),
+    filename: String(pkg.filename || `widget${PACKAGE_EXTENSION}`),
     icon: String(pkg.icon || "◧"),
     title: String(pkg.title || "Widget local"),
     author: String(pkg.author || ""),
     version: String(pkg.version || "0.1.0"),
     description: String(
-      pkg.description || "Package local instalado no sistema.",
+      pkg.description || "Widget local instalado no sistema.",
     ),
     details: String(pkg.details || ""),
     initial_width: Number(pkg.initial_width) || 3,
@@ -1248,7 +1476,7 @@ async function requestInstalledPackage(packageId) {
   );
   const payload = await parseJsonResponse(response);
   if (!response.ok) {
-    throw new Error(payload?.error || "Falha ao abrir o package local.");
+    throw new Error(payload?.error || "Falha ao abrir o widget local.");
   }
 
   return payload;
@@ -1265,7 +1493,7 @@ async function installUploadedPackage(file) {
   const payload = await parseJsonResponse(response);
   if (!response.ok) {
     throw new Error(
-      payload?.error || "Falha ao instalar o package .lince no backend.",
+      payload?.error || "Falha ao instalar o widget HTML no backend.",
     );
   }
 
@@ -1311,6 +1539,8 @@ function setEditMode(nextEditMode) {
     closeLocalPackagesModal();
     closeDeleteCardModal();
   }
+
+  widgetBridge.syncFrames();
 }
 
 function isTypingTarget(target) {
@@ -1628,13 +1858,23 @@ function syncWidgetConfigDebug(card) {
     return;
   }
 
-  const base = cardRequiresViewId(card)
-    ? "Escolha um servidor e informe o view id salvo nesse backend."
-    : cardRequiresServer(card)
-      ? "Escolha um servidor para esse widget."
-      : "Esse widget nao precisa de servidor.";
+  const parts = [];
 
-  setWidgetConfigHelp(base);
+  if (cardRequiresViewId(card)) {
+    parts.push("Escolha um servidor e informe o view id salvo nesse backend.");
+  } else if (cardRequiresServer(card)) {
+    parts.push("Escolha um servidor para esse widget.");
+  } else {
+    parts.push("Esse widget nao precisa de servidor.");
+  }
+
+  if (cardSupportsStream(card)) {
+    parts.push(
+      "Use o toggle de stream para pausar esse widget sem perder a configuracao.",
+    );
+  }
+
+  setWidgetConfigHelp(parts.join(" "));
 }
 
 function openWidgetConfigModal(cardId) {
@@ -1650,6 +1890,12 @@ function openWidgetConfigModal(cardId) {
   widgetConfigViewIdField.hidden = !cardRequiresViewId(card);
   widgetConfigViewId.value =
     card.viewId == null ? "" : String(card.viewId || "");
+  if (widgetConfigStreamsField) {
+    widgetConfigStreamsField.hidden = !cardSupportsStream(card);
+  }
+  if (widgetConfigStreamsEnabled) {
+    widgetConfigStreamsEnabled.checked = card.streamsEnabled !== false;
+  }
 
   if (!serverProfiles.length && cardRequiresServer(card)) {
     widgetConfigSaveButton.disabled = true;
@@ -1685,26 +1931,21 @@ function closeWidgetConfigModal() {
 }
 
 function saveWidgetConfig(cardId, nextServerId, nextViewId) {
-  const snapshot = store.getSnapshot();
-  const nextState = {
-    ...snapshot.boardState,
-    workspaces: snapshot.boardState.workspaces.map((workspace) => ({
-      ...workspace,
-      cards: workspace.cards.map((card) => {
-        if (card.id !== cardId) {
-          return card;
-        }
-
-        return {
-          ...card,
-          serverId: nextServerId,
-          viewId: nextViewId,
-        };
-      }),
-    })),
-  };
-
-  store.replaceState(nextState, { persist: true });
+  const nextStreamsEnabled = widgetConfigStreamsEnabled
+    ? widgetConfigStreamsEnabled.checked
+    : null;
+  store.updateCard(
+    cardId,
+    (card) => ({
+      ...card,
+      serverId: nextServerId,
+      viewId: nextViewId,
+      streamsEnabled: cardSupportsStream(card)
+        ? (nextStreamsEnabled ?? card.streamsEnabled !== false)
+        : card.streamsEnabled !== false,
+    }),
+    { persist: true },
+  );
 }
 
 function handleWidgetConfigFormSubmit(event) {
@@ -1820,7 +2061,7 @@ function syncModalLock() {
 }
 
 function getCardById(cardId) {
-  return store.getCards().find((card) => card.id === cardId) || null;
+  return getCardRecord(cardId)?.card || null;
 }
 
 function renderImportPreview(preview) {
@@ -1903,7 +2144,7 @@ function openDeleteCardModal(cardId) {
   deleteCardModalName.textContent = card.title;
   deleteCardModalDescription.textContent =
     card.kind === "package"
-      ? "Esse package sera removido do workspace atual. O arquivo .lince original nao sera alterado."
+      ? "Esse widget sera removido do workspace atual. O arquivo original nao sera alterado."
       : "Esse card sera removido do workspace atual e o espaco volta a ficar livre na grid.";
   deleteCardModalBackdrop.hidden = false;
   syncModalLock();
@@ -1930,14 +2171,14 @@ function showDropOverlay(message, options = {}) {
     variant === "workspace"
       ? "Import workspace"
       : variant === "package"
-        ? "Import package"
+        ? "Import widget"
         : "Import local file";
   dropZoneOverlayTitle.textContent =
     variant === "workspace"
-      ? "Solte um arquivo .workspace.lince"
+      ? "Solte um arquivo .workspace.sand"
       : variant === "package"
-        ? "Solte um arquivo .lince"
-        : "Solte um .lince ou .workspace.lince";
+        ? "Solte um arquivo .html"
+        : "Solte um .html ou .workspace.sand";
   dropZoneOverlayCopy.textContent = message;
 }
 
@@ -1952,7 +2193,7 @@ function hideDropOverlay() {
   dropZoneOverlay.dataset.state = "ready";
   dropZoneOverlay.dataset.variant = "mixed";
   dropZoneOverlayEyebrow.textContent = "Import local file";
-  dropZoneOverlayTitle.textContent = "Solte um .lince ou .workspace.lince";
+  dropZoneOverlayTitle.textContent = "Solte um .html ou .workspace.sand";
   dropZoneOverlayCopy.textContent = DEFAULT_DROP_MESSAGE;
 }
 
@@ -1972,12 +2213,19 @@ function hasFilePayload(dataTransfer) {
 }
 
 function isLinceFile(file) {
-  return Boolean(file?.name && file.name.toLowerCase().endsWith(".lince"));
+  const name = String(file?.name || "").toLowerCase();
+  return (
+    name.endsWith(PACKAGE_EXTENSION) ||
+    name.endsWith(LEGACY_PACKAGE_EXTENSION) ||
+    name.endsWith(LEGACY_PACKAGE_ARCHIVE_EXTENSION)
+  );
 }
 
 function isWorkspaceArchiveFile(file) {
-  return Boolean(
-    file?.name && file.name.toLowerCase().endsWith(".workspace.lince"),
+  const name = String(file?.name || "").toLowerCase();
+  return (
+    name.endsWith(WORKSPACE_ARCHIVE_EXTENSION) ||
+    name.endsWith(LEGACY_WORKSPACE_ARCHIVE_EXTENSION)
   );
 }
 
@@ -2006,7 +2254,7 @@ async function requestPackagePreview(file) {
   const payload = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new Error(payload?.error || "Nao foi possivel ler o package .lince.");
+    throw new Error(payload?.error || "Nao foi possivel ler o widget HTML.");
   }
 
   return payload;
@@ -2151,7 +2399,7 @@ function triggerWorkspaceExport() {
   anchor.href = apiPath(
     `/api/board/workspaces/${encodeURIComponent(activeWorkspace.id)}/export`,
   );
-  anchor.download = `${activeWorkspace.name || "workspace"}.workspace.lince`;
+  anchor.download = `${activeWorkspace.name || "workspace"}.workspace.sand`;
   anchor.rel = "noreferrer";
   document.body.appendChild(anchor);
   anchor.click();
@@ -2175,7 +2423,7 @@ function workspaceExportPayload() {
       .replace(/^-+|-+$/g, "") || "workspace";
 
   return {
-    filename: `${slug}.workspace.lince`,
+    filename: `${slug}.workspace.sand`,
     url: `${window.location.origin}${apiPath(`/api/board/workspaces/${encodeURIComponent(activeWorkspace.id)}/export`)}`,
   };
 }
@@ -2206,7 +2454,7 @@ async function confirmImportCard() {
     flashDropOverlayMessage(
       error instanceof Error
         ? error.message
-        : "Falha ao instalar o package .lince.",
+        : "Falha ao instalar o widget HTML.",
     );
   } finally {
     importConfirmButton.disabled = false;
@@ -2259,6 +2507,13 @@ attachBoardInteractions({
 editToggle.addEventListener("click", () => {
   setEditMode(!editMode);
 });
+
+if (streamsToggle) {
+  streamsToggle.addEventListener("click", () => {
+    const snapshot = store.getSnapshot();
+    store.setGlobalStreamsEnabled(snapshot.globalStreamsEnabled === false);
+  });
+}
 
 addCardButton.addEventListener("click", () => {
   setWorkspacePopoverOpen(false);
@@ -2368,7 +2623,14 @@ cardsLayer.addEventListener("click", (event) => {
     return;
   }
 
-  if (action !== "delete" || !editMode) {
+  if (action !== "delete") {
+    return;
+  }
+
+  const allowDeleteOutsideEdit = Boolean(
+    actionButton.closest(".package-widget__locked-actions"),
+  );
+  if (!editMode && !allowDeleteOutsideEdit) {
     return;
   }
 
@@ -2429,7 +2691,7 @@ boardShell.addEventListener("drop", async (event) => {
 
   if (!linceFile) {
     flashDropOverlayMessage(
-      "Solte um arquivo .lince ou .workspace.lince valido.",
+      "Solte um arquivo .html ou .workspace.sand valido.",
     );
     return;
   }
@@ -2556,6 +2818,15 @@ widgetConfigViewId.addEventListener("input", () => {
     : null;
   syncWidgetConfigDebug(card);
 });
+
+if (widgetConfigStreamsEnabled) {
+  widgetConfigStreamsEnabled.addEventListener("change", () => {
+    const card = pendingWidgetConfigCardId
+      ? getCardById(pendingWidgetConfigCardId)
+      : null;
+    syncWidgetConfigDebug(card);
+  });
+}
 
 packageImportInput.addEventListener("change", () => {
   const file = packageImportInput.files?.[0];

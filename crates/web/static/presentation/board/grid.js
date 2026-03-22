@@ -2,8 +2,23 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
+function cloneJsonValue(value, fallback = {}) {
+  try {
+    if (value == null) {
+      return fallback;
+    }
+
+    return JSON.parse(JSON.stringify(value));
+  } catch {
+    return fallback;
+  }
+}
+
 function cloneCard(card) {
-  return { ...card };
+  return {
+    ...card,
+    widgetState: cloneJsonValue(card?.widgetState, {}),
+  };
 }
 
 function sanitizePermissions(rawPermissions) {
@@ -12,6 +27,14 @@ function sanitizePermissions(rawPermissions) {
         .map((permission) => String(permission).trim())
         .filter(Boolean)
     : [];
+}
+
+function sanitizeWidgetState(rawWidgetState) {
+  if (rawWidgetState == null) {
+    return {};
+  }
+
+  return cloneJsonValue(rawWidgetState, {});
 }
 
 const DENSITY_PRESETS = [
@@ -87,6 +110,10 @@ export function sanitizeCard(rawCard, index, config) {
         kind === "package" && rawCard?.viewId != null
           ? Number(rawCard.viewId) || null
           : null,
+      streamsEnabled:
+        kind === "package" ? rawCard?.streamsEnabled !== false : true,
+      widgetState:
+        kind === "package" ? sanitizeWidgetState(rawCard?.widgetState) : {},
       x: Number(rawCard?.x) || 1,
       y: Number(rawCard?.y) || 1,
       w: Number(rawCard?.w) || 3,
@@ -143,6 +170,8 @@ export function findOpenPosition(cards, size, config) {
         packageName: "",
         serverId: "",
         viewId: null,
+        streamsEnabled: true,
+        widgetState: {},
         x,
         y,
         w,

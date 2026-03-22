@@ -52,5 +52,3 @@ then it's job is fullfilled, there is nothing else to be done, no commit, no pus
 that can turn into a dance of the world is, to some, something useful and exciting to build.
 
 A team is being assembled, to fight the battle of killing Lince. Will you join the cult?
-
-#tasks

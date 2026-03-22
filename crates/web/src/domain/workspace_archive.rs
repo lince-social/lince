@@ -2,7 +2,8 @@ use {
     crate::domain::{
         board::{BoardCard, BoardWorkspace},
         lince_package::{
-            LincePackage, PackageManifest, build_lince_archive, parse_lince_package, slugify,
+            LincePackage, PACKAGE_EXTENSION, build_lince_archive, normalize_package_filename,
+            parse_lince_package, parse_manifest_from_html, slugify,
         },
     },
     serde::{Deserialize, Serialize},
@@ -15,6 +16,8 @@ use {
 
 const WORKSPACE_FILE_NAME: &str = "workspace.json";
 const PACKAGES_DIR_NAME: &str = "packages";
+const WORKSPACE_ARCHIVE_EXTENSION: &str = ".workspace.sand";
+const LEGACY_WORKSPACE_ARCHIVE_EXTENSION: &str = ".workspace.lince";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -90,8 +93,8 @@ pub fn parse_workspace_archive(
     filename: &str,
     bytes: &[u8],
 ) -> Result<ImportedWorkspaceArchive, String> {
-    if !filename.ends_with(".workspace.lince") {
-        return Err("O arquivo precisa ter extensao .workspace.lince.".into());
+    if !is_workspace_archive_filename(filename) {
+        return Err("O arquivo precisa ter extensao .workspace.sand.".into());
     }
 
     let cursor = Cursor::new(bytes);
@@ -126,38 +129,62 @@ pub fn parse_workspace_archive(
 pub fn reconstruct_package_from_card(card: &BoardCard) -> Result<LincePackage, String> {
     let title = fallback_string(&card.title, "Widget importado");
     let filename = if card.package_name.trim().is_empty() {
-        format!("{}.lince", slugify(&title))
-    } else if card.package_name.trim().ends_with(".lince") {
-        card.package_name.trim().to_string()
+        format!("{}{}", slugify(&title), PACKAGE_EXTENSION)
     } else {
-        format!("{}.lince", slugify(card.package_name.trim()))
+        let package_name = card.package_name.trim();
+        if package_name.contains('.') {
+            normalize_package_filename(package_name)
+        } else {
+            format!("{}{}", slugify(package_name), PACKAGE_EXTENSION)
+        }
     };
     let html = if card.html.trim().is_empty() {
         "<!doctype html><html lang=\"pt-BR\"><body></body></html>".to_string()
     } else {
         card.html.clone()
     };
-
-    LincePackage::new(
-        Some(filename),
-        PackageManifest {
+    let manifest = parse_manifest_from_html(&html).unwrap_or_else(|_| {
+        crate::domain::lince_package::PackageManifest {
             icon: "◧".into(),
-            title,
+            title: title.clone(),
             author: fallback_string(&card.author, "Workspace importado"),
             version: "0.1.0".into(),
             description: fallback_string(
                 &card.description,
-                "Package reconstruido a partir de um card exportado do workspace.",
+                "Widget reconstruido a partir de um card exportado do workspace.",
             ),
             details:
-                "Package reconstruido automaticamente a partir do estado exportado de um workspace."
+                "Widget reconstruido automaticamente a partir do estado exportado de um workspace."
                     .into(),
             initial_width: card.w,
             initial_height: card.h,
             permissions: card.permissions.clone(),
+        }
+    });
+
+    LincePackage::new(
+        Some(filename),
+        crate::domain::lince_package::PackageManifest {
+            title,
+            author: fallback_string(&card.author, &manifest.author),
+            description: fallback_string(&card.description, &manifest.description),
+            initial_width: card.w,
+            initial_height: card.h,
+            permissions: if card.permissions.is_empty() {
+                manifest.permissions
+            } else {
+                card.permissions.clone()
+            },
+            ..manifest
         },
         html,
     )
+}
+
+fn is_workspace_archive_filename(filename: &str) -> bool {
+    let lowercase = filename.trim().to_ascii_lowercase();
+    lowercase.ends_with(WORKSPACE_ARCHIVE_EXTENSION)
+        || lowercase.ends_with(LEGACY_WORKSPACE_ARCHIVE_EXTENSION)
 }
 
 fn unique_packages(packages: &[LincePackage]) -> Vec<LincePackage> {
@@ -200,6 +227,7 @@ fn read_archive_entry_bytes(
 mod tests {
     use super::*;
     use crate::domain::board::{BoardCard, BoardWorkspace};
+    use serde_json::{Map, Value};
 
     #[test]
     fn workspace_archive_roundtrip_preserves_workspace_and_packages() {
@@ -215,9 +243,11 @@ mod tests {
                 html: "<!doctype html><html><body>demo</body></html>".into(),
                 author: "Lince".into(),
                 permissions: vec!["demo".into()],
-                package_name: "demo-widget.lince".into(),
+                package_name: "demo-widget.html".into(),
                 server_id: String::new(),
                 view_id: None,
+                streams_enabled: true,
+                widget_state: Value::Object(Map::new()),
                 x: 1,
                 y: 1,
                 w: 4,
@@ -226,8 +256,8 @@ mod tests {
         };
 
         let package = LincePackage::new(
-            Some("demo-widget.lince".into()),
-            PackageManifest {
+            Some("demo-widget.html".into()),
+            crate::domain::lince_package::PackageManifest {
                 icon: "◧".into(),
                 title: "Demo".into(),
                 author: "Lince".into(),
@@ -243,12 +273,12 @@ mod tests {
         .expect("package should build");
 
         let bytes = build_workspace_archive(&workspace, &[package]).expect("archive should build");
-        let imported = parse_workspace_archive("area-1.workspace.lince", &bytes)
-            .expect("archive should parse");
+        let imported =
+            parse_workspace_archive("area-1.workspace.sand", &bytes).expect("archive should parse");
 
         assert_eq!(imported.workspace.name, "Area 1");
         assert_eq!(imported.workspace.cards.len(), 1);
         assert_eq!(imported.packages.len(), 1);
-        assert_eq!(imported.packages[0].archive_filename(), "demo-widget.lince");
+        assert_eq!(imported.packages[0].archive_filename(), "demo-widget.html");
     }
 }

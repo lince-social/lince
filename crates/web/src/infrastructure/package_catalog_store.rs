@@ -1,10 +1,13 @@
 use {
     crate::{
         domain::lince_package::{
-            LincePackage, MAX_PACKAGE_BYTES, build_lince_archive, parse_lince_package, slugify,
+            LEGACY_PACKAGE_ARCHIVE_EXTENSION, LEGACY_PACKAGE_EXTENSION, LincePackage,
+            MAX_PACKAGE_BYTES, PACKAGE_EXTENSION, build_lince_archive, is_package_filename,
+            normalize_package_filename, package_id_from_filename, parse_lince_package, slugify,
             validate_package_upload,
         },
         infrastructure::paths,
+        sand,
     },
     serde::Serialize,
     std::{
@@ -32,21 +35,27 @@ pub struct InstalledPackageSummary {
 #[derive(Clone)]
 pub struct PackageCatalogStore {
     dir: Arc<PathBuf>,
+    sand_dir: Arc<PathBuf>,
 }
 
 impl PackageCatalogStore {
     pub fn new() -> Result<Self, String> {
         let dir = paths::package_dir();
+        let sand_dir = paths::sand_dir();
         std::fs::create_dir_all(&dir).map_err(|error| {
             format!("Nao consegui criar a pasta ~/.config/lince/web/widgets: {error}")
         })?;
-        seed_from_view_examples(&paths::package_examples_dir(), &dir)?;
+        sand::render_official_widgets(&sand_dir)?;
 
-        Ok(Self { dir: Arc::new(dir) })
+        Ok(Self {
+            dir: Arc::new(dir),
+            sand_dir: Arc::new(sand_dir),
+        })
     }
 
     pub fn list(&self) -> Result<Vec<InstalledPackageSummary>, String> {
         let mut packages = Vec::new();
+        let mut seen_ids = std::collections::BTreeSet::new();
 
         for entry in std::fs::read_dir(&*self.dir).map_err(|error| {
             format!("Nao consegui ler a pasta ~/.config/lince/web/widgets: {error}")
@@ -54,18 +63,46 @@ impl PackageCatalogStore {
             let entry = entry
                 .map_err(|error| format!("Nao consegui ler um item da pasta local: {error}"))?;
             let path = entry.path();
-            if path.extension().and_then(|value| value.to_str()) != Some("lince") {
+            let Some(filename) = path.file_name().and_then(|value| value.to_str()) else {
+                continue;
+            };
+            if !is_package_filename(filename) {
                 continue;
             }
 
             let bytes = std::fs::read(&path)
-                .map_err(|error| format!("Nao consegui ler um package local: {error}"))?;
+                .map_err(|error| format!("Nao consegui ler um widget local: {error}"))?;
             let filename = path
                 .file_name()
                 .and_then(|value| value.to_str())
-                .unwrap_or("package.lince");
+                .unwrap_or("widget.html");
             let package = parse_lince_package(filename, &bytes)?;
-            packages.push(summary_from_package(package));
+            let summary = summary_from_package(package);
+            seen_ids.insert(summary.id.clone());
+            packages.push(summary);
+        }
+
+        for entry in std::fs::read_dir(&*self.sand_dir).map_err(|error| {
+            format!("Nao consegui ler a pasta ~/.config/lince/web/sand: {error}")
+        })? {
+            let entry = entry
+                .map_err(|error| format!("Nao consegui ler um item da pasta sand: {error}"))?;
+            let path = entry.path();
+            let Some(filename) = path.file_name().and_then(|value| value.to_str()) else {
+                continue;
+            };
+            if !is_package_filename(filename) {
+                continue;
+            }
+
+            let bytes = std::fs::read(&path)
+                .map_err(|error| format!("Nao consegui ler um widget oficial: {error}"))?;
+            let package = parse_lince_package(filename, &bytes)?;
+            let summary = summary_from_package(package);
+            if !seen_ids.insert(summary.id.clone()) {
+                continue;
+            }
+            packages.push(summary);
         }
 
         packages.sort_by(|left, right| left.title.to_lowercase().cmp(&right.title.to_lowercase()));
@@ -73,25 +110,37 @@ impl PackageCatalogStore {
     }
 
     pub fn load(&self, package_id: &str) -> Result<LincePackage, String> {
-        let filename = format!("{}.lince", slugify(package_id));
-        self.load_by_filename(&filename)
+        let filename = format!("{}{}", slugify(package_id), PACKAGE_EXTENSION);
+        let path = resolve_package_path(&self.dir, &filename, &filename);
+        if path.exists() {
+            return self.load_by_filename(&filename);
+        }
+        self.load_rendered_sand_by_filename(&filename)
     }
 
     pub fn load_by_filename(&self, filename: &str) -> Result<LincePackage, String> {
         let filename = Path::new(filename)
             .file_name()
             .and_then(|value| value.to_str())
-            .ok_or_else(|| "Nome de package local invalido.".to_string())?;
-        let path = self.dir.join(filename);
+            .ok_or_else(|| "Nome de widget local invalido.".to_string())?;
+        let normalized = normalize_package_filename(filename);
+        let path = resolve_package_path(&self.dir, filename, &normalized);
+        if !path.exists() {
+            return self.load_rendered_sand_by_filename(filename);
+        }
         let bytes = std::fs::read(&path)
-            .map_err(|error| format!("Nao consegui ler o package local solicitado: {error}"))?;
-        parse_lince_package(filename, &bytes)
+            .map_err(|error| format!("Nao consegui ler o widget local solicitado: {error}"))?;
+        let canonical_name = path
+            .file_name()
+            .and_then(|value| value.to_str())
+            .unwrap_or(&normalized);
+        parse_lince_package(canonical_name, &bytes)
     }
 
     pub fn install_upload(&self, filename: &str, bytes: &[u8]) -> Result<LincePackage, String> {
         validate_package_upload(filename, bytes)?;
         if bytes.len() > MAX_PACKAGE_BYTES {
-            return Err("O package .lince excede o limite de tamanho aceito.".into());
+            return Err("O widget excede o limite de tamanho aceito.".into());
         }
 
         let package = parse_lince_package(filename, bytes)?;
@@ -103,15 +152,23 @@ impl PackageCatalogStore {
         let raw_archive = build_lince_archive(package)?;
         let path = self.dir.join(package.archive_filename());
         std::fs::write(&path, raw_archive).map_err(|error| {
-            format!("Nao consegui salvar o package em ~/.config/lince/web/widgets: {error}")
+            format!("Nao consegui salvar o widget em ~/.config/lince/web/widgets: {error}")
         })?;
         Ok(())
+    }
+
+    fn load_rendered_sand_by_filename(&self, filename: &str) -> Result<LincePackage, String> {
+        let normalized = normalize_package_filename(filename);
+        let path = self.sand_dir.join(&normalized);
+        let bytes = std::fs::read(&path)
+            .map_err(|_| "Nao consegui ler o widget solicitado.".to_string())?;
+        parse_lince_package(&normalized, &bytes)
     }
 }
 
 pub fn summary_from_package(package: LincePackage) -> InstalledPackageSummary {
     let filename = package.archive_filename();
-    let id = filename.trim_end_matches(".lince").to_string();
+    let id = package_id_from_filename(&filename);
     let manifest = package.manifest;
 
     InstalledPackageSummary {
@@ -129,36 +186,33 @@ pub fn summary_from_package(package: LincePackage) -> InstalledPackageSummary {
     }
 }
 
-fn seed_from_view_examples(examples_dir: &Path, target_dir: &Path) -> Result<(), String> {
-    if !examples_dir.exists() {
-        return Ok(());
+fn resolve_package_path(dir: &Path, original: &str, normalized: &str) -> PathBuf {
+    let primary = dir.join(normalized);
+    if primary.exists() {
+        return primary;
     }
 
-    for entry in std::fs::read_dir(&examples_dir)
-        .map_err(|error| format!("Nao consegui ler view-examples: {error}"))?
-    {
-        let entry =
-            entry.map_err(|error| format!("Nao consegui ler um item de view-examples: {error}"))?;
-        let path = entry.path();
-        if path.extension().and_then(|value| value.to_str()) != Some("lince") {
-            continue;
-        }
-
-        let Some(filename) = path.file_name().and_then(|value| value.to_str()) else {
-            continue;
-        };
-
-        let target_path = target_dir.join(filename);
-        if target_path.exists() {
-            continue;
-        }
-
-        std::fs::copy(&path, &target_path).map_err(|error| {
-            format!(
-                "Nao consegui copiar um example package para ~/.config/lince/web/widgets: {error}"
-            )
-        })?;
+    let direct = dir.join(original);
+    if direct.exists() {
+        return direct;
     }
 
-    Ok(())
+    if normalized.ends_with(PACKAGE_EXTENSION) {
+        let sand_fallback = dir.join(
+            normalized.trim_end_matches(PACKAGE_EXTENSION).to_string() + LEGACY_PACKAGE_EXTENSION,
+        );
+        if sand_fallback.exists() {
+            return sand_fallback;
+        }
+
+        let lince_fallback = dir.join(
+            normalized.trim_end_matches(PACKAGE_EXTENSION).to_string()
+                + LEGACY_PACKAGE_ARCHIVE_EXTENSION,
+        );
+        if lince_fallback.exists() {
+            return lince_fallback;
+        }
+    }
+
+    primary
 }

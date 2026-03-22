@@ -16,6 +16,13 @@ pub fn static_dir() -> PathBuf {
     crate_root_dir().join("static")
 }
 
+pub fn widget_builder_prompt_dir() -> PathBuf {
+    workspace_root_dir()
+        .join("documentation")
+        .join("ops")
+        .join("ai_widget_builder_prompt")
+}
+
 pub fn board_state_path() -> PathBuf {
     web_config_dir().join("board-state.json")
 }
@@ -24,8 +31,8 @@ pub fn package_dir() -> PathBuf {
     web_config_dir().join("widgets")
 }
 
-pub fn package_examples_dir() -> PathBuf {
-    crate_root_dir().join("view-examples")
+pub fn sand_dir() -> PathBuf {
+    web_config_dir().join("sand")
 }
 
 pub fn server_profiles_path() -> PathBuf {

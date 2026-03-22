@@ -332,7 +332,8 @@ function renderDraft() {
     elements.detailsValue.textContent = "-";
     elements.permissionsList.innerHTML =
       '<span class="ai-permissions-list__empty">Nenhuma permissao ainda.</span>';
-    elements.configPreview.textContent = "# O config gerado aparece aqui.";
+    elements.configPreview.textContent =
+      '{\n  "title": "Widget title",\n  "author": "Author"\n}';
     elements.usageSummary.textContent = "Sem uso registrado ainda.";
     setPreviewFrameContent(
       "<!doctype html><html><body style='margin:0;background:#0f1217;'></body></html>",
@@ -350,9 +351,10 @@ function renderDraft() {
   elements.versionValue.textContent = draft.version;
   elements.descriptionValue.textContent = draft.description;
   elements.detailsValue.textContent = draft.details;
-  elements.configPreview.textContent = buildConfigPreview(draft);
+  elements.configPreview.textContent =
+    draft.manifest_json || buildConfigPreview(draft);
   elements.exportLink.href = draft.download_url;
-  elements.exportLink.textContent = "Exportar .lince";
+  elements.exportLink.textContent = "Exportar HTML";
   elements.exportLink.setAttribute("download", draft.filename);
 
   renderPermissions(draft.permissions);
@@ -661,16 +663,20 @@ function setPreviewFrameContent(html) {
 }
 
 function buildConfigPreview(draft) {
-  return [
-    `title = "${escapeToml(draft.title)}"`,
-    `author = "${escapeToml(draft.author)}"`,
-    `version = "${escapeToml(draft.version)}"`,
-    `description = "${escapeToml(draft.description)}"`,
-    `details = "${escapeToml(draft.details)}"`,
-    `initial_width = ${draft.initial_width}`,
-    `initial_height = ${draft.initial_height}`,
-    `permissions = [${draft.permissions.map((permission) => `"${escapeToml(permission)}"`).join(", ")}]`,
-  ].join("\n");
+  return JSON.stringify(
+    {
+      title: draft.title,
+      author: draft.author,
+      version: draft.version,
+      description: draft.description,
+      details: draft.details,
+      initial_width: draft.initial_width,
+      initial_height: draft.initial_height,
+      permissions: Array.isArray(draft.permissions) ? draft.permissions : [],
+    },
+    null,
+    2,
+  );
 }
 
 function getSelectedModel() {

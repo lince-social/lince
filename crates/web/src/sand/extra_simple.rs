@@ -222,11 +222,11 @@ fn body() -> Markup {
     html! {
         main class="app" {
             header class="header" {
-                span class="eyebrow" { "SSE view" }
-                h1 class="title" id="title" { "View stream" }
+                span.eyebrow { "SSE view" }
+                h1.title id="title" { "View stream" }
                 p class="copy" { "Consome o stream remoto por meio do backend local do Lince." }
             }
-            div id="status" class="status" data-state="connecting" { "Aguardando configuracao..." }
+             .status id="status" data-state="connecting" { "Aguardando configuracao..." }
             pre id="output" { "Defina um servidor e uma view no host." }
         }
     }

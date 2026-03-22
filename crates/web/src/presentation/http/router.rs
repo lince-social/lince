@@ -3,6 +3,7 @@ use {
         application::state::AppState,
         domain::board::{AppBootstrap, ServerBootstrap},
         infrastructure::auth::{parse_cookie_header, session_cookie_header, session_cookie_name},
+        infrastructure::server_profile_store::server_requires_auth,
         presentation::{
             http::api::{
                 ai::{
@@ -148,11 +149,12 @@ async fn build_bootstrap(state: &AppState, session_token: Option<&str>) -> AppBo
         .into_iter()
         .map(|server| {
             let status = server_statuses.get(&server.id);
+            let authenticated = !server_requires_auth(&server) || status.is_some();
             ServerBootstrap {
                 id: server.id,
                 name: server.name,
                 base_url: server.base_url,
-                authenticated: status.is_some(),
+                authenticated,
                 username_hint: status
                     .map(|value| value.username_hint.clone())
                     .unwrap_or_default(),

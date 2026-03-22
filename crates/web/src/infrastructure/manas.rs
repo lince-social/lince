@@ -75,15 +75,6 @@ impl ManasGateway {
                 "Nao foi possivel abrir o stream remoto da view.".to_string()
             })?;
 
-        if !response.status().is_success() {
-            let status = response.status();
-            let body = response.text().await.unwrap_or_default();
-            tracing::warn!("manas view stream rejected with {status}: {body}");
-            return Err(format!(
-                "Stream remoto recusou a conexao com status {status}."
-            ));
-        }
-
         Ok(response)
     }
 

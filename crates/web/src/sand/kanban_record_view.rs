@@ -1091,6 +1091,7 @@ fn script() -> &'static str {
                     }
 
                     if (response.status === 401) {
+                        window.LinceWidgetHost?.invalidateServerAuth?.(state.hostMeta.serverId);
                         state.loading = false;
                         state.connected = false;
                         state.transportError =
@@ -1752,6 +1753,7 @@ fn script() -> &'static str {
                     const raw = await response.text().catch(() => "");
 
                     if (response.status === 401) {
+                        window.LinceWidgetHost?.invalidateServerAuth?.(state.hostMeta.serverId);
                         throw new Error(
                             "Servidor bloqueado. Entre com suas credenciais no host para liberar esse widget.",
                         );

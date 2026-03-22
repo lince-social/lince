@@ -278,6 +278,12 @@ function createBridgeBootstrapScript() {
         enabled: Boolean(enabled),
       });
     },
+    invalidateServerAuth(serverId) {
+      send("${WIDGET_ACTION}", {
+        action: "invalidate-server-auth",
+        serverId: String(serverId || ""),
+      });
+    },
   };
 
   send("${WIDGET_READY}", {});
@@ -320,6 +326,7 @@ export function createWidgetBridge({
   setCardState,
   patchCardState,
   setCardStreamsEnabled,
+  invalidateServerAuth,
   onError,
 }) {
   let bridgeState = normalizeBridgeState(initialState);
@@ -386,6 +393,15 @@ export function createWidgetBridge({
           message.instanceId || "",
           message.payload?.enabled !== false,
         );
+        render(bridgeState);
+        return;
+      }
+
+      if (
+        action === "invalidate-server-auth" &&
+        typeof invalidateServerAuth === "function"
+      ) {
+        await invalidateServerAuth(String(message.payload?.serverId || ""));
         render(bridgeState);
       }
     } catch (error) {

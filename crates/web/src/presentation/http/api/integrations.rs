@@ -27,12 +27,22 @@ pub async fn proxy_manas_view(
     Path((server_id, view_id)): Path<(String, u64)>,
 ) -> ApiResult<impl IntoResponse> {
     let server = load_server_profile(&state, &server_id)?;
+    println!(
+        "[web host] view stream request: server_id={} base_url={} view_id={}",
+        server_id, server.base_url, view_id
+    );
     let bearer_token = extract_manas_token(&state, &headers, &server_id).await?;
     let response = state
         .manas
         .open_view_stream(&server.base_url, &bearer_token, view_id)
         .await
         .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
+    println!(
+        "[web host] view stream upstream opened: server_id={} view_id={} status={}",
+        server_id,
+        view_id,
+        response.status()
+    );
 
     let stream = stream! {
         let mut response = response;
@@ -42,6 +52,10 @@ pub async fn proxy_manas_view(
                 Ok(None) => break,
                 Err(error) => {
                     tracing::warn!("manas proxy stream read failed: {error}");
+                    eprintln!(
+                        "[web host] view stream read failed: server_id={} view_id={} error={}",
+                        server_id, view_id, error
+                    );
                     yield Err(std::io::Error::other("Nao foi possivel ler o stream remoto da view."));
                     break;
                 }
@@ -70,6 +84,16 @@ pub async fn proxy_manas_table_collection(
     let server = load_server_profile(&state, &server_id)?;
     let bearer_token = extract_manas_token(&state, &headers, &server_id).await?;
     let body = request_json_body(request).await?;
+    let method_name = method.to_string();
+    println!(
+        "[web host] table collection request: server_id={} table={} method={} body={}",
+        server_id,
+        table_name,
+        method_name,
+        body.as_ref()
+            .map(ToString::to_string)
+            .unwrap_or_else(|| "null".into())
+    );
     let response = state
         .manas
         .send_table_request(
@@ -82,6 +106,13 @@ pub async fn proxy_manas_table_collection(
         )
         .await
         .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
+    println!(
+        "[web host] table collection upstream response: server_id={} table={} method={} status={}",
+        server_id,
+        table_name,
+        method_name,
+        response.status()
+    );
 
     proxy_json_response(response).await
 }
@@ -96,6 +127,17 @@ pub async fn proxy_manas_table_item(
     let server = load_server_profile(&state, &server_id)?;
     let bearer_token = extract_manas_token(&state, &headers, &server_id).await?;
     let body = request_json_body(request).await?;
+    let method_name = method.to_string();
+    println!(
+        "[web host] table item request: server_id={} table={} id={} method={} body={}",
+        server_id,
+        table_name,
+        id,
+        method_name,
+        body.as_ref()
+            .map(ToString::to_string)
+            .unwrap_or_else(|| "null".into())
+    );
     let response = state
         .manas
         .send_table_request(
@@ -108,6 +150,14 @@ pub async fn proxy_manas_table_item(
         )
         .await
         .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
+    println!(
+        "[web host] table item upstream response: server_id={} table={} id={} method={} status={}",
+        server_id,
+        table_name,
+        id,
+        method_name,
+        response.status()
+    );
 
     proxy_json_response(response).await
 }
@@ -128,6 +178,11 @@ async fn extract_manas_token(
         .server_session(session_token.as_deref(), server_id)
         .await
     else {
+        eprintln!(
+            "[web host] missing server session: server_id={} local_session_present={}",
+            server_id,
+            session_token.is_some()
+        );
         return Err(api_error(
             StatusCode::UNAUTHORIZED,
             "Essa sessao local nao esta conectada a esse servidor.",

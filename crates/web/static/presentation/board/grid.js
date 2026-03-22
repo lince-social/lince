@@ -8,7 +8,9 @@ function cloneCard(card) {
 
 function sanitizePermissions(rawPermissions) {
   return Array.isArray(rawPermissions)
-    ? rawPermissions.map((permission) => String(permission).trim()).filter(Boolean)
+    ? rawPermissions
+        .map((permission) => String(permission).trim())
+        .filter(Boolean)
     : [];
 }
 
@@ -58,7 +60,8 @@ export function sanitizeCard(rawCard, index, config) {
   const kind = rawCard?.kind === "package" ? "package" : "text";
   const title = String(rawCard?.title || `Resumo ${index + 1}`);
   const description = String(
-    rawCard?.description || "Card base pronto para receber tabela, formulario ou mini app.",
+    rawCard?.description ||
+      "Card base pronto para receber tabela, formulario ou mini app.",
   );
   const text =
     kind === "package"
@@ -79,6 +82,11 @@ export function sanitizeCard(rawCard, index, config) {
       author: kind === "package" ? String(rawCard?.author || "") : "",
       permissions: sanitizePermissions(rawCard?.permissions),
       packageName: kind === "package" ? String(rawCard?.packageName || "") : "",
+      serverId: kind === "package" ? String(rawCard?.serverId || "") : "",
+      viewId:
+        kind === "package" && rawCard?.viewId != null
+          ? Number(rawCard.viewId) || null
+          : null,
       x: Number(rawCard?.x) || 1,
       y: Number(rawCard?.y) || 1,
       w: Number(rawCard?.w) || 3,
@@ -105,10 +113,7 @@ export function clampCard(card, config) {
 
 export function cardsOverlap(a, b) {
   return (
-    a.x < b.x + b.w &&
-    a.x + a.w > b.x &&
-    a.y < b.y + b.h &&
-    a.y + a.h > b.y
+    a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y
   );
 }
 
@@ -136,6 +141,8 @@ export function findOpenPosition(cards, size, config) {
         author: "",
         permissions: [],
         packageName: "",
+        serverId: "",
+        viewId: null,
         x,
         y,
         w,
@@ -175,7 +182,8 @@ export function normalizeLayout(cards, config) {
 export function measureBoard(boardElement, config) {
   const rect = boardElement.getBoundingClientRect();
   const cellWidth = (rect.width - (config.cols - 1) * config.gap) / config.cols;
-  const cellHeight = (rect.height - (config.rows - 1) * config.gap) / config.rows;
+  const cellHeight =
+    (rect.height - (config.rows - 1) * config.gap) / config.rows;
 
   return {
     rect,

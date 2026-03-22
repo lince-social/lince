@@ -1,4 +1,4 @@
-use std::{env, path::PathBuf};
+use std::path::PathBuf;
 
 pub fn crate_root_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -44,8 +44,5 @@ pub fn web_config_dir() -> PathBuf {
 }
 
 fn config_root_dir() -> PathBuf {
-    env::var_os("XDG_CONFIG_HOME")
-        .map(PathBuf::from)
-        .or_else(|| env::var_os("HOME").map(|home| PathBuf::from(home).join(".config")))
-        .unwrap_or_else(|| crate_root_dir().join(".config"))
+    dirs::config_dir().unwrap_or_else(|| crate_root_dir().join(".config"))
 }

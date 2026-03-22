@@ -7,6 +7,7 @@ edition = "2024"
 application = { workspace = true }
 async-stream = "0.3.6"
 axum = { workspace = true, features = ["json", "multipart"] }
+dirs = { workspace = true }
 dotenvy = { workspace = true }
 injection = { workspace = true }
 maud = "0.27.0"

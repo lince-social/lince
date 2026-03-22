@@ -9433,6 +9433,7 @@ dependencies = [
  "application",
  "async-stream",
  "axum",
+ "dirs 6.0.0",
  "dotenvy",
  "injection",
  "maud",

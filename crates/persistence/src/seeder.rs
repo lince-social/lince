@@ -84,6 +84,17 @@ pub async fn seed(db: &Pool<Sqlite>) -> Result<(), Error> {
         .map_err(Error::other)?;
     }
 
+    sqlx::query(
+        "INSERT INTO organ(id, name, base_url)
+         SELECT 'local-dev', 'Local Lince', 'http://127.0.0.1:6174'
+         WHERE NOT EXISTS (
+            SELECT 1 FROM organ WHERE id = 'local-dev'
+         )",
+    )
+    .execute(&*db)
+    .await
+    .map_err(Error::other)?;
+
     // === DEFAULT COLLECTION + VIEWS ===
     let collection_views_count: i64 = sqlx::query_scalar::<_, i64>(
         "SELECT COUNT(1) FROM collection_view cv

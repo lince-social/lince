@@ -3,7 +3,7 @@ use {
         application::state::AppState,
         infrastructure::{
             auth::{parse_cookie_header, session_cookie_header, session_cookie_name},
-            server_profile_store::{ServerProfile, server_requires_auth},
+            organ_store::{Organ, organ_requires_auth},
         },
         presentation::http::api_error::{ApiResult, api_error},
     },
@@ -54,8 +54,9 @@ pub async fn list_servers(
         .remote_server_snapshots(session_token.as_deref())
         .await;
     let servers = state
-        .servers
+        .organs
         .list()
+        .await
         .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
 
     Ok(Json(
@@ -63,7 +64,8 @@ pub async fn list_servers(
             .into_iter()
             .map(|server| {
                 let status = statuses.get(&server.id);
-                let authenticated = !server_requires_auth(&server) || status.is_some();
+                let authenticated =
+                    !organ_requires_auth(&server, state.local_auth_required) || status.is_some();
                 ServerProfileResponse {
                     id: server.id,
                     name: server.name,
@@ -84,12 +86,13 @@ pub async fn create_server(
     Json(payload): Json<UpsertServerProfileRequest>,
 ) -> ApiResult<Json<ServerProfileResponse>> {
     let profile = state
-        .servers
-        .upsert(ServerProfile {
+        .organs
+        .upsert(Organ {
             id: payload.id.unwrap_or_default(),
             name: payload.name,
             base_url: payload.base_url,
         })
+        .await
         .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
 
     Ok(Json(
@@ -112,7 +115,7 @@ pub async fn login_server(
         ));
     }
 
-    let server = load_server_profile(&state, &server_id)?;
+    let server = load_organ(&state, &server_id).await?;
     let bearer_token = state
         .manas
         .login_with_credentials(&server.base_url, username, password)
@@ -186,12 +189,13 @@ pub async fn update_server(
     Json(payload): Json<UpsertServerProfileRequest>,
 ) -> ApiResult<Json<ServerProfileResponse>> {
     let profile = state
-        .servers
-        .upsert(ServerProfile {
+        .organs
+        .upsert(Organ {
             id: server_id,
             name: payload.name,
             base_url: payload.base_url,
         })
+        .await
         .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
 
     Ok(Json(
@@ -205,8 +209,9 @@ pub async fn delete_server(
     Path(server_id): Path<String>,
 ) -> ApiResult<StatusCode> {
     let deleted = state
-        .servers
+        .organs
         .delete(&server_id)
+        .await
         .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
     if !deleted {
         return Err(api_error(StatusCode::NOT_FOUND, "Servidor nao encontrado."));
@@ -226,10 +231,11 @@ pub async fn delete_server(
     Ok(StatusCode::NO_CONTENT)
 }
 
-fn load_server_profile(state: &AppState, server_id: &str) -> ApiResult<ServerProfile> {
+async fn load_organ(state: &AppState, server_id: &str) -> ApiResult<Organ> {
     state
-        .servers
+        .organs
         .get(server_id)
+        .await
         .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?
         .ok_or_else(|| api_error(StatusCode::NOT_FOUND, "Servidor nao encontrado."))
 }
@@ -237,7 +243,7 @@ fn load_server_profile(state: &AppState, server_id: &str) -> ApiResult<ServerPro
 async fn server_profile_response(
     state: &AppState,
     headers: &HeaderMap,
-    profile: ServerProfile,
+    profile: Organ,
 ) -> ServerProfileResponse {
     let session_token = parse_cookie_header(
         headers
@@ -249,7 +255,8 @@ async fn server_profile_response(
         .auth
         .server_session(session_token.as_deref(), &profile.id)
         .await;
-    let authenticated = !server_requires_auth(&profile) || session.is_some();
+    let authenticated =
+        !organ_requires_auth(&profile, state.local_auth_required) || session.is_some();
 
     ServerProfileResponse {
         id: profile.id,

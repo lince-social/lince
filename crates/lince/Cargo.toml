@@ -19,6 +19,7 @@ application = { workspace = true }
 domain = { workspace = true }
 injection = { workspace = true }
 persistence = { workspace = true }
+crossterm = { workspace = true }
 gui = { workspace = true, optional = true }
 tui = { workspace = true, optional = true }
 web = { workspace = true, optional = true }
@@ -28,4 +29,6 @@ sqlx = { workspace = true}
 serde = { workspace = true }
 serde_json = { workspace = true }
 chrono = { workspace = true }
-dotenvy = { workspace = true }
+dirs = { workspace = true }
+toml = "0.9.8"
+uuid = { version = "1.18.1", features = ["v4"] }

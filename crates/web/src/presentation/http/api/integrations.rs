@@ -3,7 +3,7 @@ use {
         application::state::AppState,
         infrastructure::{
             auth::{parse_cookie_header, session_cookie_name},
-            server_profile_store::{ServerProfile, server_requires_auth},
+            organ_store::{Organ, organ_requires_auth},
         },
         presentation::http::api_error::{ApiResult, api_error},
     },
@@ -30,8 +30,8 @@ pub async fn proxy_manas_view(
     Path((server_id, view_id)): Path<(String, u64)>,
 ) -> ApiResult<impl IntoResponse> {
     let session_token = current_session_token(&headers);
-    let server = load_server_profile(&state, &server_id)?;
-    if !server_requires_auth(&server) {
+    let server = load_organ(&state, &server_id).await?;
+    if !organ_requires_auth(&server, state.local_auth_required) {
         return local_view_stream(&state, view_id).await;
     }
     let bearer_token = extract_manas_token(&state, &headers, &server_id).await?;
@@ -100,9 +100,9 @@ pub async fn proxy_manas_table_collection(
     request: Request,
 ) -> ApiResult<impl IntoResponse> {
     let session_token = current_session_token(&headers);
-    let server = load_server_profile(&state, &server_id)?;
+    let server = load_organ(&state, &server_id).await?;
     let body = request_json_body(request).await?;
-    if !server_requires_auth(&server) {
+    if !organ_requires_auth(&server, state.local_auth_required) {
         return local_table_collection(&state, method, &table_name, body).await;
     }
     let bearer_token = extract_manas_token(&state, &headers, &server_id).await?;
@@ -130,9 +130,9 @@ pub async fn proxy_manas_table_item(
     request: Request,
 ) -> ApiResult<impl IntoResponse> {
     let session_token = current_session_token(&headers);
-    let server = load_server_profile(&state, &server_id)?;
+    let server = load_organ(&state, &server_id).await?;
     let body = request_json_body(request).await?;
-    if !server_requires_auth(&server) {
+    if !organ_requires_auth(&server, state.local_auth_required) {
         return local_table_item(&state, method, &table_name, id, body).await;
     }
     let bearer_token = extract_manas_token(&state, &headers, &server_id).await?;
@@ -342,10 +342,11 @@ fn payload_object(payload: Option<&Value>) -> ApiResult<&serde_json::Map<String,
         .ok_or_else(|| api_error(StatusCode::BAD_REQUEST, "Expected a JSON object payload"))
 }
 
-fn load_server_profile(state: &AppState, server_id: &str) -> ApiResult<ServerProfile> {
+async fn load_organ(state: &AppState, server_id: &str) -> ApiResult<Organ> {
     state
-        .servers
+        .organs
         .get(server_id)
+        .await
         .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?
         .ok_or_else(|| api_error(StatusCode::NOT_FOUND, "Servidor nao encontrado."))
 }

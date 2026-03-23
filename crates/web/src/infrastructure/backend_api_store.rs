@@ -103,6 +103,12 @@ struct ConfigurationRow {
     delete_confirmation: i64,
     error_toast_seconds: f64,
     keybinding_mode: i64,
+    bucket_enabled: i64,
+    bucket_username: Option<String>,
+    bucket_password: Option<String>,
+    bucket_uri: Option<String>,
+    bucket_name: Option<String>,
+    bucket_region: Option<String>,
 }
 
 #[derive(Debug, Serialize, FromRow)]
@@ -240,7 +246,7 @@ const KARMA_FIELD_SPECS: [FieldSpec; 5] = [
     },
 ];
 
-const CONFIGURATION_FIELD_SPECS: [FieldSpec; 10] = [
+const CONFIGURATION_FIELD_SPECS: [FieldSpec; 16] = [
     FieldSpec {
         name: "quantity",
         kind: FieldKind::NullableInteger,
@@ -280,6 +286,30 @@ const CONFIGURATION_FIELD_SPECS: [FieldSpec; 10] = [
     FieldSpec {
         name: "keybinding_mode",
         kind: FieldKind::Integer,
+    },
+    FieldSpec {
+        name: "bucket_enabled",
+        kind: FieldKind::BooleanInteger,
+    },
+    FieldSpec {
+        name: "bucket_username",
+        kind: FieldKind::NullableText,
+    },
+    FieldSpec {
+        name: "bucket_password",
+        kind: FieldKind::NullableText,
+    },
+    FieldSpec {
+        name: "bucket_uri",
+        kind: FieldKind::NullableText,
+    },
+    FieldSpec {
+        name: "bucket_name",
+        kind: FieldKind::NullableText,
+    },
+    FieldSpec {
+        name: "bucket_region",
+        kind: FieldKind::NullableText,
     },
 ];
 
@@ -353,7 +383,7 @@ impl BackendApiStore {
             ),
             ApiTable::Configuration => serialize_value(
                 sqlx::query_as::<_, ConfigurationRow>(
-                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode FROM configuration ORDER BY id",
+                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region FROM configuration ORDER BY id",
                 )
                 .fetch_all(db)
                 .await
@@ -426,7 +456,7 @@ impl BackendApiStore {
             ),
             ApiTable::Configuration => serialize_value(
                 sqlx::query_as::<_, ConfigurationRow>(
-                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode FROM configuration WHERE id = ?",
+                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region FROM configuration WHERE id = ?",
                 )
                 .bind(id)
                 .fetch_one(db)

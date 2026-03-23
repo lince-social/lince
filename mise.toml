@@ -18,58 +18,6 @@ cargo fix --broken-code --allow-dirty
 cargo clippy --fix --allow-dirty --quiet >/dev/null 2>&1
 """
 
-[tasks.http]
-description = "Run the HTML server"
-run = """
-cargo run --no-default-features --features 'karma http'
-"""
-
-[tasks.http-build]
-description = "Build the release binary for the systemd HTTP service"
-run = """
-git switch dev
-git pull
-cargo build --release --no-default-features --features 'karma http'
-"""
-
-[tasks.http-install-service]
-description = "Install and restart the systemd service for the release HTTP binary"
-depends = ["http-build"]
-run = """
-cat <<EOF | sudo tee /etc/systemd/system/lince.service
-[Unit]
-Description=Lince Social
-After=network.target
-
-[Service]
-User=root
-WorkingDirectory=/root/git/lince-social/lince
-EnvironmentFile=/root/git/lince-social/lince/.env
-ExecStart=/root/git/lince-social/lince/target/release/lince
-Restart=always
-RestartSec=3
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-sudo systemctl daemon-reload
-sudo systemctl enable lince
-sudo systemctl restart lince
-sudo systemctl status lince --no-pager -l
-"""
-
-[tasks.tui]
-description = "Run the TUI frontend"
-run = """
-cargo run --no-default-features --features 'karma tui'
-"""
-
-[tasks.dev]
-description = "Run with mprocs/bacon background jobs"
-tools = { "cargo:mprocs" = "latest", "cargo:bacon" = "latest" }
-run = 'mprocs "bacon . --job fix" "bacon . --job run"'
-
 [tasks.service]
 description = "Systemd service management + bacon + cargo run"
 tools = { "cargo:mprocs" = "latest", "cargo:bacon" = "latest" }
@@ -77,43 +25,7 @@ run = """
 mprocs \
 "systemctl --user restart lince.service && journalctl --user -u lince.service -f --output=cat" \
 "systemctl --user stop lince.service && journalctl --user -u lince.service -f --output=cat" \
-"bacon . --job fix" \
-"cargo run -- karma gui"
-"""
-
-[tasks.migrate]
-description = "Create a reversible SQL migration"
-tools = {"cargo:sqlx-cli" = "latest"}
-usage = "arg '<name>' help='The name of the migration'"
-run = """
-echo Creating migration: $usage_name
-sqlx migrate add -r $usage_name
-echo Created migration: $usage_name
-"""
-
-[tasks.seed]
-description = "Initialize .env if needed and optionally seed the root user"
-usage = """
-arg "<root_password>" help="Root user password"
-"""
-run = """
-# If .env does not exist, create it and generate a secret.
-if [ ! -f .env ]; then
-  cp .env.example .env
-  SECRET_VALUE=$(openssl rand -hex 32)
-  sed -i "s|^SECRET=.*|SECRET=\"$SECRET_VALUE\"|" .env
-fi
-
-ROOT_PASSWORD="${usage_root_password:-${ROOT_USER_PASSWORD:-}}"
-
-if [ -z "${ROOT_PASSWORD:-}" ]; then
-  echo "Initialized .env. Root user was not seeded because no password was provided."
-  exit 0
-fi
-
-cargo run --no-default-features --features "karma, http" -- \
-  --seed-root-user \
-  --seed-root-user-password "$ROOT_PASSWORD"
+"cargo run"
 """
 
 [tasks.docs]
@@ -187,23 +99,14 @@ tinymist preview \
 {{env.FIRST_STEPS_ROOT}}/first_steps.typ
 """
 
-[tasks.first-steps-build]
-description = "Build first steps typst PDFs"
-tools = { "typst" = "latest" }
-run = """
-LINCE_VERSION=$(awk 'BEGIN{in_pkg=0} /^[[]package[]]$/{in_pkg=1;next} /^[[]/{in_pkg=0} in_pkg&&/^version = /{print $3;exit}' crates/lince/Cargo.toml | xargs)
-typst compile --root . --input dark=false --input lince_version="$LINCE_VERSION" {{env.FIRST_STEPS_ROOT}}/first_steps.typ {{env.FIRST_STEPS_ROOT}}/first_steps-light.pdf
-typst compile --root . --input dark=true --input lince_version="$LINCE_VERSION" {{env.FIRST_STEPS_ROOT}}/first_steps.typ {{env.FIRST_STEPS_ROOT}}/first_steps-dark.pdf
-"""
-
 [tasks.first-steps-slides]
 description = "Start first steps slides preview"
 tools = { "tinymist" = "latest", "typst" = "latest", "pipx:touying" = "latest" }
 run = """
 SOURCE_FILE="{{env.FIRST_STEPS_ROOT}}/first_steps.typ"
-SYS_INPUTS='{"slides":"true"}'
 
-trap 'touying compile --root . --format html --sys-inputs "$SYS_INPUTS" "$SOURCE_FILE"' EXIT
+trap 'touying compile --root . --format html --sys-inputs '{"slides":"true"}' "$SOURCE_FILE"' EXIT
+trap 'typst compile --root . --input slides=true "$SOURCE_FILE" "{{env.FIRST_STEPS_ROOT}}/first_steps-slides.pdf"' EXIT
 
 tinymist preview \
   --root . \
@@ -214,16 +117,7 @@ tinymist preview \
   "$SOURCE_FILE"
 """
 
-[tasks.first-steps-slides-build]
-description = "Build first steps slides outputs"
-tools = { "typst" = "latest", "pipx:touying" = "latest" }
-run = """
-SOURCE_FILE="{{env.FIRST_STEPS_ROOT}}/first_steps.typ"
-touying compile --root . --format html --sys-inputs '{"slides":"true"}' "$SOURCE_FILE"
-typst compile --root . --input slides=true "$SOURCE_FILE" "{{env.FIRST_STEPS_ROOT}}/first_steps-slides.pdf"
-"""
-
-[tasks.release]
+[tasks.version-release]
 description = "Automated release workflow"
 tools = { "cargo:git-cliff" = "latest", "cargo:cargo-edit" = "latest", "gh" = "latest" }
 run = """
@@ -242,8 +136,3 @@ git add . && git commit -m "chore(release): $VERSION" && git tag -a "$VERSION" -
 git push origin main "$VERSION"
 gh run list --workflow=build-release --limit 1 --json url -q '.[0].url'
 """
-
-[tasks.cross]
-description = "Cross-build using cross-rs"
-tools = { "cargo:cross" = "latest" }
-run = "docker pull ghcr.io/cross-rs/x86_64-unknown-linux-gnu:main --platform linux/x86_64 && cross build --target x86_64-unknown-linux-gnu --release"

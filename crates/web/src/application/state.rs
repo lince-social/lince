@@ -3,7 +3,7 @@ use crate::{
     application::backend_api::BackendApiService,
     infrastructure::{
         auth::AppAuth, board_state_store::BoardStateStore, manas::ManasGateway,
-        package_catalog_store::PackageCatalogStore, server_profile_store::ServerProfileStore,
+        organ_store::OrganStore, package_catalog_store::PackageCatalogStore,
         terminal_store::TerminalSessionStore, widget_bridge_store::WidgetBridgeStore,
     },
 };
@@ -14,9 +14,10 @@ pub struct AppState {
     pub auth: AppAuth,
     pub backend: BackendApiService,
     pub board_state: BoardStateStore,
+    pub local_auth_required: bool,
     pub manas: ManasGateway,
+    pub organs: OrganStore,
     pub packages: PackageCatalogStore,
-    pub servers: ServerProfileStore,
     pub terminal: TerminalSessionStore,
     pub widget_bridge: WidgetBridgeStore,
 }

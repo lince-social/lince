@@ -35,10 +35,6 @@ pub fn sand_dir() -> PathBuf {
     web_config_dir().join("sand")
 }
 
-pub fn server_profiles_path() -> PathBuf {
-    web_config_dir().join("servers.json")
-}
-
 pub fn web_config_dir() -> PathBuf {
     config_root_dir().join("lince").join("web")
 }

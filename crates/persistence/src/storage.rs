@@ -5,10 +5,8 @@ use aws_sdk_s3::{
     primitives::ByteStream,
 };
 use serde::Serialize;
-use std::{
-    env,
-    io::{Error, ErrorKind},
-};
+use sqlx::{FromRow, Pool, Sqlite};
+use std::io::{Error, ErrorKind};
 
 const DEFAULT_BUCKET_NAME: &str = "lince";
 const DEFAULT_BUCKET_REGION: &str = "us-east-1";
@@ -40,26 +38,74 @@ pub struct DownloadedObject {
     pub filename: String,
 }
 
+#[derive(Debug, FromRow)]
+struct StorageConfigurationRow {
+    bucket_enabled: i64,
+    bucket_username: Option<String>,
+    bucket_password: Option<String>,
+    bucket_uri: Option<String>,
+    bucket_name: Option<String>,
+    bucket_region: Option<String>,
+}
+
 impl StorageService {
-    pub async fn from_env() -> Result<Self, Error> {
-        if !storage_enabled() {
+    pub async fn from_database(db: &Pool<Sqlite>) -> Result<Self, Error> {
+        let row = sqlx::query_as::<_, StorageConfigurationRow>(
+            "
+            SELECT
+                bucket_enabled,
+                bucket_username,
+                bucket_password,
+                bucket_uri,
+                bucket_name,
+                bucket_region
+            FROM configuration
+            WHERE quantity = 1
+            ORDER BY id
+            LIMIT 1
+            ",
+        )
+        .fetch_optional(db)
+        .await
+        .map_err(Error::other)?;
+
+        if !storage_enabled(row.as_ref()) {
             return Ok(Self {
                 client: None,
-                bucket: env::var("BUCKET_NAME").unwrap_or_else(|_| DEFAULT_BUCKET_NAME.to_string()),
+                bucket: row
+                    .as_ref()
+                    .and_then(|value| value.bucket_name.as_deref())
+                    .map(str::trim)
+                    .filter(|value| !value.is_empty())
+                    .unwrap_or(DEFAULT_BUCKET_NAME)
+                    .to_string(),
             });
         }
 
-        let endpoint = normalize_endpoint(
-            env::var("BUCKET_URI")
-                .map_err(|_| Error::other("BUCKET_URI is required for RustFS integration"))?,
-        );
-        let access_key = env::var("BUCKET_USERNAME")
-            .map_err(|_| Error::other("BUCKET_USERNAME is required for RustFS integration"))?;
-        let secret_key = env::var("BUCKET_PASSWORD")
-            .map_err(|_| Error::other("BUCKET_PASSWORD is required for RustFS integration"))?;
-        let bucket = env::var("BUCKET_NAME").unwrap_or_else(|_| DEFAULT_BUCKET_NAME.to_string());
-        let region =
-            env::var("BUCKET_REGION").unwrap_or_else(|_| DEFAULT_BUCKET_REGION.to_string());
+        let endpoint =
+            normalize_endpoint(required_bucket_value(row.as_ref(), "bucket_uri").map_err(
+                |_| Error::other("bucket_uri is required when bucket storage is enabled"),
+            )?);
+        let access_key = required_bucket_value(row.as_ref(), "bucket_username").map_err(|_| {
+            Error::other("bucket_username is required when bucket storage is enabled")
+        })?;
+        let secret_key = required_bucket_value(row.as_ref(), "bucket_password").map_err(|_| {
+            Error::other("bucket_password is required when bucket storage is enabled")
+        })?;
+        let bucket = row
+            .as_ref()
+            .and_then(|value| value.bucket_name.as_deref())
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .unwrap_or(DEFAULT_BUCKET_NAME)
+            .to_string();
+        let region = row
+            .as_ref()
+            .and_then(|value| value.bucket_region.as_deref())
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .unwrap_or(DEFAULT_BUCKET_REGION)
+            .to_string();
 
         let config = aws_sdk_s3::config::Builder::from(
             &aws_config::defaults(BehaviorVersion::latest())
@@ -232,16 +278,26 @@ impl StorageService {
     }
 }
 
-fn storage_enabled() -> bool {
-    matches!(
-        env::var("BUCKET_ENABLED")
-            .ok()
-            .as_deref()
-            .map(str::trim)
-            .map(str::to_ascii_lowercase)
-            .as_deref(),
-        Some("1" | "true" | "yes" | "on")
-    )
+fn storage_enabled(row: Option<&StorageConfigurationRow>) -> bool {
+    row.map(|value| value.bucket_enabled != 0).unwrap_or(false)
+}
+
+fn required_bucket_value(
+    row: Option<&StorageConfigurationRow>,
+    field: &str,
+) -> Result<String, Error> {
+    let row = row.ok_or_else(|| Error::other("Active configuration is missing"))?;
+    let value = match field {
+        "bucket_username" => row.bucket_username.as_deref(),
+        "bucket_password" => row.bucket_password.as_deref(),
+        "bucket_uri" => row.bucket_uri.as_deref(),
+        _ => None,
+    }
+    .map(str::trim)
+    .filter(|value| !value.is_empty())
+    .ok_or_else(|| Error::other(format!("{field} is missing")))?;
+
+    Ok(value.to_string())
 }
 
 fn normalize_endpoint(raw: String) -> String {

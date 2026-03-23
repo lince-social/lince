@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
 
+mod bootstrap_config;
+
 #[cfg(all(feature = "gui", feature = "tui"))]
 compile_error!("Enable only one frontend feature at a time: `gui`, `tui`, or `http`.");
 #[cfg(all(feature = "gui", feature = "http"))]
@@ -9,6 +11,10 @@ compile_error!("Enable only one frontend feature at a time: `gui`, `tui`, or `ht
 
 #[cfg(feature = "karma")]
 use application::karma::karma_deliver;
+use crossterm::{
+    event::{Event, KeyCode, KeyEventKind, read},
+    terminal::{disable_raw_mode, enable_raw_mode},
+};
 use injection::cross_cutting::{InjectedServices, dependency_injection};
 use persistence::{
     connection::{connection, read_only_connection},
@@ -18,7 +24,11 @@ use persistence::{
 };
 #[cfg(feature = "karma")]
 use std::time::Duration;
-use std::{env, io::Error, sync::Arc};
+use std::{
+    env,
+    io::{self, Error, IsTerminal, Write},
+    sync::Arc,
+};
 #[cfg(feature = "tui")]
 use tui::tui_app;
 use utils::auth::hash_password;
@@ -34,7 +44,8 @@ async fn main() -> Result<(), Error> {
         return Ok(());
     }
 
-    let _ = dotenvy::dotenv();
+    let bootstrap = bootstrap_config::load_or_init_bootstrap_config()?;
+    let listen_addr = arg_value(&args, "--listen-addr");
 
     let db = Arc::new(connection().await.inspect_err(|e| {
         log(LogEntry::Error(e.kind(), e.to_string()));
@@ -55,24 +66,17 @@ async fn main() -> Result<(), Error> {
         log(LogEntry::Error(e.kind(), e.to_string()));
     })?;
 
-    if has_arg(&args, "--seed-root-user") {
-        let password = arg_value(&args, "--seed-root-user-password")
-            .or_else(|| env::var("ROOT_USER_PASSWORD").ok())
-            .ok_or_else(|| {
-                Error::other(
-                    "Root user seeding requires --seed-root-user-password or ROOT_USER_PASSWORD",
-                )
-            })?;
-        seed_root_user(&writer, &password).await?;
-        return Ok(());
-    }
-
     let read_db = Arc::new(read_only_connection().await.inspect_err(|e| {
         log(LogEntry::Error(e.kind(), e.to_string()));
     })?);
-    let storage = Arc::new(StorageService::from_env().await.inspect_err(|e| {
-        log(LogEntry::Error(e.kind(), e.to_string()));
-    })?);
+    ensure_local_admin_if_needed(&read_db, &writer, bootstrap.auth_enabled).await?;
+    let storage = Arc::new(
+        StorageService::from_database(&read_db)
+            .await
+            .inspect_err(|e| {
+                log(LogEntry::Error(e.kind(), e.to_string()));
+            })?,
+    );
     storage.ensure_bucket_exists().await.inspect_err(|e| {
         log(LogEntry::Error(e.kind(), e.to_string()));
     })?;
@@ -85,7 +89,9 @@ async fn main() -> Result<(), Error> {
     }
 
     #[cfg(feature = "http")]
-    if frontend_enabled && let Err(e) = start_html(services.clone()).await {
+    if frontend_enabled
+        && let Err(e) = start_html(services.clone(), listen_addr.clone(), bootstrap.clone()).await
+    {
         log(LogEntry::Error(e.kind(), e.to_string()));
     }
 
@@ -107,8 +113,7 @@ fn print_help() {
     println!();
     println!("Options:");
     println!("  -h, --help            Show this help message");
-    println!("      --seed-root-user  Create the root API user if it does not exist");
-    println!("      --seed-root-user-password <password>  Password for --seed-root-user");
+    println!("      --listen-addr <addr>  Override the HTTP listen address");
     println!("      --frontend       Start only the compiled frontend");
     #[cfg(feature = "karma")]
     println!("      --karma          Start only the karma delivery loop");
@@ -181,10 +186,18 @@ async fn start_gui(services: InjectedServices) -> Result<(), Error> {
 }
 
 #[cfg(feature = "http")]
-async fn start_html(services: InjectedServices) -> Result<(), Error> {
-    let secret = env::var("SECRET")
-        .map_err(|_| Error::other("SECRET is required when the HTML/API server is enabled"))?;
-    serve_web(services, secret).await
+async fn start_html(
+    services: InjectedServices,
+    listen_addr: Option<String>,
+    bootstrap: bootstrap_config::BootstrapConfig,
+) -> Result<(), Error> {
+    serve_web(
+        services,
+        bootstrap.secret,
+        bootstrap.auth_enabled,
+        listen_addr,
+    )
+    .await
 }
 
 #[cfg(feature = "tui")]
@@ -210,8 +223,13 @@ async fn start_karma(services: InjectedServices) -> Result<(), Error> {
     }
 }
 
-async fn seed_root_user(writer: &WriteCoordinatorHandle, password: &str) -> Result<(), Error> {
+async fn seed_root_user(
+    writer: &WriteCoordinatorHandle,
+    username: &str,
+    password: &str,
+) -> Result<(), Error> {
     let password_hash = hash_password(password)?;
+    let username = username.trim();
     let _ = writer
         .execute_statement(
             "
@@ -223,10 +241,10 @@ async fn seed_root_user(writer: &WriteCoordinatorHandle, password: &str) -> Resu
             "
             .to_string(),
             vec![
-                SqlParameter::Text("Root".to_string()),
-                SqlParameter::Text("bomboclaat".to_string()),
+                SqlParameter::Text(username.to_string()),
+                SqlParameter::Text(username.to_string()),
                 SqlParameter::Text(password_hash),
-                SqlParameter::Text("bomboclaat".to_string()),
+                SqlParameter::Text(username.to_string()),
             ],
         )
         .await?;
@@ -238,9 +256,114 @@ async fn seed_root_user(writer: &WriteCoordinatorHandle, password: &str) -> Resu
             WHERE username = ?
             "
             .to_string(),
-            vec![SqlParameter::Text("bomboclaat".to_string())],
+            vec![SqlParameter::Text(username.to_string())],
         )
         .await?;
-    println!("Root user ensured for username bomboclaat");
+    println!("Admin user ensured for username {username}");
     Ok(())
+}
+
+async fn ensure_local_admin_if_needed(
+    read_db: &Arc<sqlx::Pool<sqlx::Sqlite>>,
+    writer: &WriteCoordinatorHandle,
+    auth_enabled: bool,
+) -> Result<(), Error> {
+    if !auth_enabled {
+        return Ok(());
+    }
+
+    let admin_count = sqlx::query_scalar::<_, i64>(
+        "
+        SELECT COUNT(1)
+        FROM app_user
+        WHERE role_id = (SELECT id FROM role WHERE name = 'admin')
+        ",
+    )
+    .fetch_one(&**read_db)
+    .await
+    .map_err(Error::other)?;
+
+    if admin_count > 0 {
+        return Ok(());
+    }
+
+    if !io::stdin().is_terminal() || !io::stdout().is_terminal() {
+        return Err(Error::other(
+            "Auth is enabled in ~/.config/lince/lince.toml but no admin user exists. Run lince in an interactive terminal once to create the initial admin.",
+        ));
+    }
+
+    println!("Auth is enabled and no admin user exists yet.");
+    let username = prompt_username()?;
+    let password = prompt_password_with_confirmation()?;
+    seed_root_user(writer, &username, &password).await
+}
+
+fn prompt_username() -> Result<String, Error> {
+    let mut stdout = io::stdout();
+    let mut input = String::new();
+
+    loop {
+        print!("Admin username [user]: ");
+        stdout.flush()?;
+        input.clear();
+        io::stdin().read_line(&mut input)?;
+
+        let trimmed = input.trim();
+        let username = if trimmed.is_empty() { "user" } else { trimmed };
+        if !username.is_empty() {
+            return Ok(username.to_string());
+        }
+    }
+}
+
+fn prompt_password_with_confirmation() -> Result<String, Error> {
+    loop {
+        let password = prompt_password("Admin password: ")?;
+        if password.is_empty() {
+            println!("Password cannot be empty.");
+            continue;
+        }
+
+        let confirmation = prompt_password("Confirm password: ")?;
+        if password != confirmation {
+            println!("Passwords do not match.");
+            continue;
+        }
+
+        return Ok(password);
+    }
+}
+
+fn prompt_password(prompt: &str) -> Result<String, Error> {
+    let mut stdout = io::stdout();
+    print!("{prompt}");
+    stdout.flush()?;
+    enable_raw_mode().map_err(Error::other)?;
+
+    let mut password = String::new();
+    loop {
+        match read().map_err(Error::other)? {
+            Event::Key(key) if key.kind == KeyEventKind::Press => match key.code {
+                KeyCode::Enter => {
+                    disable_raw_mode().map_err(Error::other)?;
+                    println!();
+                    return Ok(password);
+                }
+                KeyCode::Char(ch) => {
+                    password.push(ch);
+                    print!("*");
+                    stdout.flush()?;
+                }
+                KeyCode::Backspace => {
+                    if password.pop().is_some() {
+                        print!("\u{8} \u{8}");
+                        stdout.flush()?;
+                    }
+                }
+                _ => {}
+            },
+            _ => {}
+        }
+    }
 }

@@ -4655,8 +4655,9 @@ version = "0.6.1"
 dependencies = [
  "application",
  "chrono",
+ "crossterm 0.29.0",
+ "dirs 6.0.0",
  "domain",
- "dotenvy",
  "gui",
  "injection",
  "persistence",
@@ -4664,8 +4665,10 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tokio",
+ "toml 0.9.12+spec-1.1.0",
  "tui",
  "utils",
+ "uuid",
  "web",
 ]
 

@@ -3,7 +3,7 @@ use {
         application::state::AppState,
         domain::board::{AppBootstrap, ServerBootstrap},
         infrastructure::auth::{parse_cookie_header, session_cookie_header, session_cookie_name},
-        infrastructure::server_profile_store::server_requires_auth,
+        infrastructure::organ_store::organ_requires_auth,
         presentation::{
             http::api::{
                 ai::{
@@ -143,13 +143,15 @@ async fn ai_builder_page(State(state): State<AppState>, headers: HeaderMap) -> i
 async fn build_bootstrap(state: &AppState, session_token: Option<&str>) -> AppBootstrap {
     let server_statuses = state.auth.remote_server_snapshots(session_token).await;
     let servers = state
-        .servers
+        .organs
         .list()
+        .await
         .unwrap_or_default()
         .into_iter()
         .map(|server| {
             let status = server_statuses.get(&server.id);
-            let authenticated = !server_requires_auth(&server) || status.is_some();
+            let authenticated =
+                !organ_requires_auth(&server, state.local_auth_required) || status.is_some();
             ServerBootstrap {
                 id: server.id,
                 name: server.name,

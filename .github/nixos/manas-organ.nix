@@ -42,14 +42,12 @@ in
       Group = "lince";
       WorkingDirectory = "/var/lib/lince";
       StateDirectory = "lince";
-      EnvironmentFile = "/var/lib/lince/lince.env";
-      ExecStart = "${lincePackage}/bin/lince";
+      ExecStart = "${lincePackage}/bin/lince --listen-addr 127.0.0.1:6174";
       Restart = "always";
       RestartSec = 3;
     };
 
     environment = {
-      HTTP_LISTEN_ADDR = "127.0.0.1:6174";
       XDG_CONFIG_HOME = "/var/lib/lince/.config";
     };
   };

@@ -1911,7 +1911,7 @@ function openWidgetConfigModal(cardId) {
   if (!serverProfiles.length && cardRequiresServer(card)) {
     widgetConfigSaveButton.disabled = true;
     setWidgetConfigHelp(
-      "Nenhum servidor configurado. Edite ~/.config/lince/web/servers.json e recarregue a pagina.",
+      "Nenhum orgao configurado. Cadastre um servidor nessa instancia e recarregue a pagina.",
     );
   } else if (cardRequiresViewId(card)) {
     widgetConfigSaveButton.disabled = false;

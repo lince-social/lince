@@ -5,6 +5,7 @@ mod lince_logo_led;
 mod link_chip;
 mod local_terminal;
 mod markdown_notes;
+mod organ_management;
 mod record_crud;
 
 use {
@@ -45,7 +46,7 @@ pub(crate) struct SandWidgetSource {
 
 type SandSourceBuilder = fn() -> SandWidgetSource;
 
-const OFFICIAL_WIDGETS: [SandSourceBuilder; 8] = [
+const OFFICIAL_WIDGETS: [SandSourceBuilder; 9] = [
     extra_simple::source,
     general_creation::source,
     kanban_record_view::source,
@@ -53,6 +54,7 @@ const OFFICIAL_WIDGETS: [SandSourceBuilder; 8] = [
     link_chip::source,
     local_terminal::source,
     markdown_notes::source,
+    organ_management::source,
     record_crud::source,
 ];
 

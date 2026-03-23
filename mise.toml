@@ -19,13 +19,40 @@ cargo clippy --fix --allow-dirty --quiet >/dev/null 2>&1
 """
 
 [tasks.service]
-description = "Systemd service management + bacon + cargo run"
+description = "Create/update the user systemd service from the current repo + service controls + cargo run --release"
 tools = { "cargo:mprocs" = "latest", "cargo:bacon" = "latest" }
 run = """
+set -e
+REPO_DIR=$(pwd)
+SERVICE_DIR="$HOME/.config/systemd/user"
+SERVICE_PATH="$SERVICE_DIR/lince.service"
+CARGO_BIN=$(command -v cargo)
+
+mkdir -p "$SERVICE_DIR"
+
+cat > "$SERVICE_PATH" <<EOF
+[Unit]
+Description=Lince user service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=$REPO_DIR
+ExecStart=$CARGO_BIN run --release
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target
+EOF
+
+systemctl --user daemon-reload
+systemctl --user enable lince.service >/dev/null 2>&1 || true
+
 mprocs \
 "systemctl --user restart lince.service && journalctl --user -u lince.service -f --output=cat" \
 "systemctl --user stop lince.service && journalctl --user -u lince.service -f --output=cat" \
-"cargo run"
+"cargo run --release"
 """
 
 [tasks.docs]

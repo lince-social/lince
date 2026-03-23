@@ -42,7 +42,7 @@ in
       Group = "lince";
       WorkingDirectory = "/var/lib/lince";
       StateDirectory = "lince";
-      ExecStart = "${lincePackage}/bin/lince --listen-addr 127.0.0.1:6174";
+      ExecStart = "${lincePackage}/bin/lince --listen-addr 127.0.0.1:6174 --http-api-only";
       Restart = "always";
       RestartSec = 3;
     };

@@ -24,11 +24,18 @@ use {
 
 const DEFAULT_WEB_LISTEN_ADDR: &str = "127.0.0.1:6174";
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HttpServeMode {
+    FullUi,
+    ApiOnly,
+}
+
 pub async fn serve(
     services: InjectedServices,
     jwt_secret: String,
     local_auth_required: bool,
     listen_addr: Option<String>,
+    mode: HttpServeMode,
 ) -> Result<(), IoError> {
     let app_state = AppState {
         ai: AiBuilderState::new(),
@@ -43,7 +50,7 @@ pub async fn serve(
         widget_bridge: WidgetBridgeStore::new(),
     };
 
-    let app = axum::Router::new().merge(build_router(app_state));
+    let app = axum::Router::new().merge(build_router(app_state, mode));
 
     let address = listen_addr
         .filter(|value| !value.trim().is_empty())
@@ -54,9 +61,10 @@ pub async fn serve(
     let listener = tokio::net::TcpListener::bind(address)
         .await
         .map_err(IoError::other)?;
-    println!(
-        "Web frontend listening at http://{}",
-        listener.local_addr().map_err(IoError::other)?
-    );
+    let label = match mode {
+        HttpServeMode::FullUi => "Web frontend",
+        HttpServeMode::ApiOnly => "HTTP API",
+    };
+    println!("{label} listening at http://{}", listener.local_addr().map_err(IoError::other)?);
     axum::serve(listener, app).await.map_err(IoError::other)
 }

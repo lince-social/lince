@@ -37,13 +37,13 @@ jobs:
 
             cat <<EOF | sudo tee "$SYSTEMD_UNIT_PATH"
             [Unit]
-            Description=Lince Social
+            Description=Lince Social HTTP API
             After=network.target
 
             [Service]
             User=root
             WorkingDirectory=$REPO_DIR
-            ExecStart=$REPO_DIR/target/release/lince
+            ExecStart=$REPO_DIR/target/release/lince --http-api-only
             Restart=always
             RestartSec=3
 

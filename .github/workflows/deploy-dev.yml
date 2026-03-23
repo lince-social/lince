@@ -33,7 +33,7 @@ jobs:
             git checkout "$BRANCH"
             git reset --hard "origin/$BRANCH"
 
-            RUSTFLAGS="-D warnings" cargo build --release --no-default-features --features "karma http"
+            RUSTFLAGS="-D warnings" cargo build --release
 
             cat <<EOF | sudo tee "$SYSTEMD_UNIT_PATH"
             [Unit]

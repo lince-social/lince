@@ -34,7 +34,7 @@ use tui::tui_app;
 use utils::auth::hash_password;
 use utils::logging::{LogEntry, log};
 #[cfg(feature = "http")]
-use web::serve as serve_web;
+use web::{HttpServeMode, serve as serve_web};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -90,7 +90,13 @@ async fn main() -> Result<(), Error> {
 
     #[cfg(feature = "http")]
     if frontend_enabled
-        && let Err(e) = start_html(services.clone(), listen_addr.clone(), bootstrap.clone()).await
+        && let Err(e) = start_html(
+            services.clone(),
+            listen_addr.clone(),
+            bootstrap.clone(),
+            &args,
+        )
+        .await
     {
         log(LogEntry::Error(e.kind(), e.to_string()));
     }
@@ -114,6 +120,8 @@ fn print_help() {
     println!("Options:");
     println!("  -h, --help            Show this help message");
     println!("      --listen-addr <addr>  Override the HTTP listen address");
+    #[cfg(feature = "http")]
+    println!("      --http-api-only  Serve only the HTTP API. Do not expose the board UI or host widget routes.");
     println!("      --frontend       Start only the compiled frontend");
     #[cfg(feature = "karma")]
     println!("      --karma          Start only the karma delivery loop");
@@ -190,12 +198,20 @@ async fn start_html(
     services: InjectedServices,
     listen_addr: Option<String>,
     bootstrap: bootstrap_config::BootstrapConfig,
+    args: &[String],
 ) -> Result<(), Error> {
+    let mode = if has_arg(args, "--http-api-only") {
+        HttpServeMode::ApiOnly
+    } else {
+        HttpServeMode::FullUi
+    };
+
     serve_web(
         services,
         bootstrap.secret,
         bootstrap.auth_enabled,
         listen_addr,
+        mode,
     )
     .await
 }

@@ -7,6 +7,7 @@ use {
             session_cookie_header, session_cookie_name,
         },
         infrastructure::organ_store::organ_requires_auth,
+        HttpServeMode,
         presentation::{
             http::api::{
                 ai::{
@@ -37,14 +38,21 @@ use {
     axum::{
         Router,
         extract::State,
-        http::{HeaderMap, header},
+        http::{HeaderMap, StatusCode, header},
         response::{Html, IntoResponse},
         routing::{get, patch, post},
     },
     tower_http::services::ServeDir,
 };
 
-pub fn build_router(state: AppState) -> Router {
+pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
+    if mode == HttpServeMode::ApiOnly {
+        return Router::<AppState>::new()
+            .route("/", get(api_only_index))
+            .nest("/api", build_backend_router())
+            .with_state(state);
+    }
+
     let static_dir = crate::infrastructure::paths::static_dir();
     let protected_api = Router::<AppState>::new()
         .route("/ai/status", get(ai_builder_status))
@@ -111,6 +119,13 @@ pub fn build_router(state: AppState) -> Router {
         .nest("/host", protected_api)
         .nest_service("/static", ServeDir::new(static_dir))
         .with_state(state)
+}
+
+async fn api_only_index() -> impl IntoResponse {
+    (
+        StatusCode::NOT_FOUND,
+        "Lince HTTP UI is disabled on this server. Use the /api routes instead.",
+    )
 }
 
 async fn index(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {

@@ -2,7 +2,10 @@ use {
     crate::{
         application::state::AppState,
         infrastructure::{
-            auth::{parse_cookie_header, session_cookie_header, session_cookie_name},
+            auth::{
+                RemoteServerSessionSnapshot, RemoteServerSessionState, parse_cookie_header,
+                session_cookie_header, session_cookie_name,
+            },
             organ_store::{Organ, organ_requires_auth},
         },
         presentation::http::api_error::{ApiResult, api_error},
@@ -22,8 +25,12 @@ pub struct ServerProfileResponse {
     pub id: String,
     pub name: String,
     pub base_url: String,
+    pub requires_auth: bool,
     pub authenticated: bool,
+    pub session_state: Option<String>,
     pub username_hint: String,
+    pub connected_at_unix: Option<u64>,
+    pub last_error: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -64,16 +71,20 @@ pub async fn list_servers(
             .into_iter()
             .map(|server| {
                 let status = statuses.get(&server.id);
-                let authenticated =
-                    !organ_requires_auth(&server, state.local_auth_required) || status.is_some();
+                let requires_auth = organ_requires_auth(&server, state.local_auth_required);
+                let authenticated = !requires_auth || status.is_some_and(is_connected);
                 ServerProfileResponse {
                     id: server.id,
                     name: server.name,
                     base_url: server.base_url,
+                    requires_auth,
                     authenticated,
+                    session_state: status.map(|value| session_state_name(value).to_string()),
                     username_hint: status
                         .map(|value| value.username_hint.clone())
                         .unwrap_or_default(),
+                    connected_at_unix: status.and_then(|value| value.connected_at_unix),
+                    last_error: status.map(|value| value.last_error.clone()).unwrap_or_default(),
                 }
             })
             .collect(),
@@ -150,6 +161,11 @@ pub async fn login_server(
             )
         })?,
     );
+    let snapshot = state
+        .auth
+        .remote_server_snapshots(Some(&session_token))
+        .await
+        .remove(&server.id);
 
     Ok((
         response_headers,
@@ -157,8 +173,12 @@ pub async fn login_server(
             id: server.id,
             name: server.name,
             base_url: server.base_url,
+            requires_auth: true,
             authenticated: true,
+            session_state: Some("connected".to_string()),
             username_hint: username.to_string(),
+            connected_at_unix: snapshot.and_then(|value| value.connected_at_unix),
+            last_error: String::new(),
         }),
     ))
 }
@@ -251,18 +271,45 @@ async fn server_profile_response(
             .and_then(|value| value.to_str().ok()),
         session_cookie_name(),
     );
-    let session = state
+    let mut snapshot = state
         .auth
-        .server_session(session_token.as_deref(), &profile.id)
-        .await;
-    let authenticated =
-        !organ_requires_auth(&profile, state.local_auth_required) || session.is_some();
+        .remote_server_snapshots(session_token.as_deref())
+        .await
+        .remove(&profile.id);
+    let requires_auth = organ_requires_auth(&profile, state.local_auth_required);
+    let authenticated = !requires_auth || snapshot.as_ref().is_some_and(is_connected);
+    let username_hint = snapshot
+        .as_ref()
+        .map(|value| value.username_hint.clone())
+        .unwrap_or_default();
+    let connected_at_unix = snapshot.as_ref().and_then(|value| value.connected_at_unix);
+    let last_error = snapshot
+        .as_ref()
+        .map(|value| value.last_error.clone())
+        .unwrap_or_default();
+    let session_state = snapshot.take().map(|value| session_state_name(&value).to_string());
 
     ServerProfileResponse {
         id: profile.id,
         name: profile.name,
         base_url: profile.base_url,
+        requires_auth,
         authenticated,
-        username_hint: session.map(|value| value.username_hint).unwrap_or_default(),
+        session_state,
+        username_hint,
+        connected_at_unix,
+        last_error,
+    }
+}
+
+fn is_connected(session: &RemoteServerSessionSnapshot) -> bool {
+    matches!(session.session_state, RemoteServerSessionState::Connected)
+}
+
+fn session_state_name(session: &RemoteServerSessionSnapshot) -> &'static str {
+    match session.session_state {
+        RemoteServerSessionState::Connected => "connected",
+        RemoteServerSessionState::LoggedOut => "logged_out",
+        RemoteServerSessionState::Expired => "expired",
     }
 }

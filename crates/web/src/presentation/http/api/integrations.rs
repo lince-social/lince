@@ -44,7 +44,11 @@ pub async fn proxy_manas_view(
     if response.status() == reqwest::StatusCode::UNAUTHORIZED {
         state
             .auth
-            .clear_server_session(session_token.as_deref(), &server_id)
+            .expire_server_session(
+                session_token.as_deref(),
+                &server_id,
+                "Sessao remota expirada. Conecte esse servidor novamente.",
+            )
             .await;
         return Err(api_error(
             StatusCode::UNAUTHORIZED,
@@ -326,7 +330,11 @@ async fn proxy_json_response(
     if status == StatusCode::UNAUTHORIZED {
         state
             .auth
-            .clear_server_session(session_token, server_id)
+            .expire_server_session(
+                session_token,
+                server_id,
+                "Sessao remota expirada. Conecte esse servidor novamente.",
+            )
             .await;
     }
     let payload = response

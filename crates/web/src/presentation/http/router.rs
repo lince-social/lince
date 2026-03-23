@@ -2,7 +2,10 @@ use {
     crate::{
         application::state::AppState,
         domain::board::{AppBootstrap, ServerBootstrap},
-        infrastructure::auth::{parse_cookie_header, session_cookie_header, session_cookie_name},
+        infrastructure::auth::{
+            RemoteServerSessionSnapshot, RemoteServerSessionState, parse_cookie_header,
+            session_cookie_header, session_cookie_name,
+        },
         infrastructure::organ_store::organ_requires_auth,
         presentation::{
             http::api::{
@@ -150,16 +153,20 @@ async fn build_bootstrap(state: &AppState, session_token: Option<&str>) -> AppBo
         .into_iter()
         .map(|server| {
             let status = server_statuses.get(&server.id);
-            let authenticated =
-                !organ_requires_auth(&server, state.local_auth_required) || status.is_some();
+            let requires_auth = organ_requires_auth(&server, state.local_auth_required);
+            let authenticated = !requires_auth || status.is_some_and(is_connected);
             ServerBootstrap {
                 id: server.id,
                 name: server.name,
                 base_url: server.base_url,
+                requires_auth,
                 authenticated,
+                session_state: status.map(|value| session_state_name(value).to_string()),
                 username_hint: status
                     .map(|value| value.username_hint.clone())
                     .unwrap_or_default(),
+                connected_at_unix: status.and_then(|value| value.connected_at_unix),
+                last_error: status.map(|value| value.last_error.clone()).unwrap_or_default(),
             }
         })
         .collect();
@@ -167,4 +174,16 @@ async fn build_bootstrap(state: &AppState, session_token: Option<&str>) -> AppBo
     let board_state = state.board_state.snapshot().await;
 
     AppBootstrap::new(widget_bridge, board_state, servers)
+}
+
+fn is_connected(session: &RemoteServerSessionSnapshot) -> bool {
+    matches!(session.session_state, RemoteServerSessionState::Connected)
+}
+
+fn session_state_name(session: &RemoteServerSessionSnapshot) -> &'static str {
+    match session.session_state {
+        RemoteServerSessionState::Connected => "connected",
+        RemoteServerSessionState::LoggedOut => "logged_out",
+        RemoteServerSessionState::Expired => "expired",
+    }
 }

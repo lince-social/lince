@@ -469,10 +469,20 @@ function normalizeServerProfile(rawServer) {
     id: String(rawServer?.id || ""),
     name: String(rawServer?.name || "Servidor"),
     baseUrl: String(rawServer?.baseUrl || rawServer?.base_url || ""),
+    requiresAuth: Boolean(
+      rawServer?.requiresAuth ?? rawServer?.requires_auth ?? true,
+    ),
     authenticated: Boolean(rawServer?.authenticated),
+    sessionState: rawServer?.sessionState || rawServer?.session_state || null,
     usernameHint: String(
       rawServer?.usernameHint || rawServer?.username_hint || "",
     ),
+    connectedAtUnix:
+      Number.isFinite(rawServer?.connectedAtUnix) ||
+      Number.isFinite(rawServer?.connected_at_unix)
+        ? Number(rawServer?.connectedAtUnix ?? rawServer?.connected_at_unix)
+        : null,
+    lastError: String(rawServer?.lastError || rawServer?.last_error || ""),
   };
 }
 
@@ -575,6 +585,22 @@ function updateCardStreamsEnabled(cardId, enabled) {
   );
 }
 
+function serverLockMessage(server) {
+  if (!server?.requiresAuth) {
+    return "";
+  }
+
+  if (server.sessionState === "expired") {
+    return server.lastError || `A sessao de ${server.name} expirou. Conecte novamente.`;
+  }
+
+  if (server.sessionState === "logged_out") {
+    return `Conecte o servidor ${server.name} para liberar esse widget.`;
+  }
+
+  return `Conecte o servidor ${server.name} para liberar esse widget.`;
+}
+
 function resolveCardServerState(card) {
   if (!cardRequiresServer(card)) {
     return { state: "ready", server: null };
@@ -613,7 +639,7 @@ function resolveCardServerState(card) {
     return {
       state: "locked",
       server,
-      message: `Conecte o servidor ${server.name} para liberar esse widget.`,
+      message: serverLockMessage(server),
     };
   }
 
@@ -1776,7 +1802,10 @@ function openServerLoginModal(serverId) {
   pendingServerLogin = server.id;
   serverLoginServerName.textContent = server.name;
   serverLoginModalDescription.textContent =
-    "Use suas credenciais desse servidor para desbloquear os widgets dependentes.";
+    server.sessionState === "expired"
+      ? server.lastError ||
+        "A sessao remota expirou. Entre novamente para desbloquear os widgets dependentes."
+      : "Use suas credenciais desse servidor para desbloquear os widgets dependentes.";
   serverLoginUsernameInput.value = server.usernameHint || "";
   serverLoginPasswordInput.value = "";
   setServerLoginError("");

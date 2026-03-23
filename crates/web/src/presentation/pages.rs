@@ -291,7 +291,7 @@ pub fn render_app(bootstrap: &AppBootstrap) -> String {
                                                 class="import-preview-frame"
                                                 title="Preview do card importado"
                                                 data-package-instance-id="preview"
-                                                sandbox="allow-scripts allow-same-origin"
+                                                sandbox="allow-scripts"
                                             {}
                                         }
                                     }
@@ -699,7 +699,7 @@ pub fn render_ai_builder() -> String {
                                                 class="ai-preview-frame"
                                                 title="Preview do widget gerado por IA"
                                                 data-package-instance-id="ai-builder-preview"
-                                                sandbox="allow-scripts allow-same-origin"
+                                                sandbox="allow-scripts"
                                             {}
                                             button class="ai-preview-handle ai-preview-handle--e" type="button" tabindex="-1" aria-hidden="true" data-size-handle="e" {}
                                             button class="ai-preview-handle ai-preview-handle--s" type="button" tabindex="-1" aria-hidden="true" data-size-handle="s" {}

@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use domain::clean::view::View;
 use regex::Regex;
 use serde::Serialize;
-use sqlx::{Column, Pool, Row, Sqlite, SqliteConnection, TypeInfo};
+use sqlx::{Column, Executor, Pool, Row, Sqlite, SqliteConnection, TypeInfo};
 use std::{
     collections::{BTreeMap, BTreeSet},
     io::{Error, ErrorKind},
@@ -77,23 +77,29 @@ impl ViewRepository for ViewRepositoryImpl {
             ));
         }
 
+        let mut connection = self
+            .pool
+            .acquire()
+            .await
+            .map_err(|error| Error::new(ErrorKind::InvalidData, error))?;
+        let described = connection
+            .describe(&view.query)
+            .await
+            .map_err(|error| Error::new(ErrorKind::InvalidData, error))?;
+        let columns = described
+            .columns()
+            .iter()
+            .map(|column| column.name().to_string())
+            .collect::<Vec<_>>();
+
         let rows = sqlx::query(&view.query)
-            .fetch_all(&*self.pool)
+            .fetch_all(&mut *connection)
             .await
             .map_err(|error| Error::new(ErrorKind::InvalidData, error))?;
 
-        let mut columns = Vec::new();
         let mut serialized_rows = Vec::with_capacity(rows.len());
 
         for row in rows {
-            if columns.is_empty() {
-                columns = row
-                    .columns()
-                    .iter()
-                    .map(|column| column.name().to_string())
-                    .collect();
-            }
-
             let mut serialized = BTreeMap::new();
             for (index, column) in row.columns().iter().enumerate() {
                 let value = match column.type_info().name().to_uppercase().as_str() {

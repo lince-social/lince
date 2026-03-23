@@ -18,6 +18,15 @@ If you prefer to compile the source code, the easiest way is to download the rep
 cargo run
 ```
 
+If you want local authentication enabled during setup, create or edit `~/.config/lince/lince.toml` and set:
+
+```toml
+[auth]
+enabled = true
+```
+
+When auth is enabled, Lince will require an admin user to exist. If none exists yet, run `lince` once in an interactive terminal so it can prompt you to create the initial admin account.
+
 If you don't have Cargo installed, you can install it with #link("https://www.rust-lang.org/tools/install")[Rustup].
 It comes with Rust and its toolchain. If `cargo` isn’t in your `PATH`, add it to your shell configuration (`~/.bashrc` or `~/.zshrc`)
 so you don’t have to type the full path every time (i.e., `~/.cargo/bin/{program}`). Run this in your terminal:

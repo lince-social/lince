@@ -1,6 +1,7 @@
 #import "../common/typst/components/chapter.typ": major
 #import "@preview/touying:0.6.1": *
 #import themes.simple: *
+#import "@preview/mmdr:0.2.1": mermaid
 
 #let slides-mode = sys.inputs.at("slides", default: "false") == "true"
 #let book_major = major
@@ -60,25 +61,43 @@
   }
 }
 
-#let idea(title, photo: none, body) = {
+#let idea(title, visual-text: none, body) = {
+  let visual = if visual-text != none {
+    mermaid(
+      visual-text,
+      base-theme: "default",
+      theme: (
+        font_size: 24.0,
+        background: "#f4f4f400",
+        primary_text_color: "#ffffff",
+        primary_color: "#ffffff00",
+        primary_border_color: "#ffffff",
+        line_color: "#ffffff",
+      ),
+      layout: (
+        node_spacing: 50,
+        rank_spacing: 100,
+      ),
+    )
+  } else {}
+
   if slides-mode {
     [
       #slide[
-        #align(center + horizon)[
+        #align(start + top)[
           #text(size: 28pt, weight: "bold")[#title]
-          #if photo != none [
-            #image(photo, width: 40%)
-          ]
+        ]
+        #align(center + horizon)[
+          #block(width: 100%)[#visual]
         ]
       ]
     ]
   } else {
-    [
+    box()[
       == #title
-      #if photo != none [
+      #if visual != none [
         #align(center + horizon)[
-          #v(-20em)
-          #image(photo, width: 50%)
+          #block(visual, width: 50%)
         ]
       ]
       #body

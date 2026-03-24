@@ -83,6 +83,13 @@ async fn main() -> Result<(), Error> {
 
     let services = dependency_injection(read_db.clone(), storage, writer.clone());
 
+    #[cfg(feature = "karma")]
+    let karma_handle = if karma_enabled {
+        Some(tokio::spawn(start_karma(services.clone())))
+    } else {
+        None
+    };
+
     #[cfg(feature = "gui")]
     if frontend_enabled && let Err(e) = start_gui(services.clone()).await {
         log(LogEntry::Error(e.kind(), e.to_string()));
@@ -107,8 +114,8 @@ async fn main() -> Result<(), Error> {
     }
 
     #[cfg(feature = "karma")]
-    if karma_enabled {
-        start_karma(services.clone()).await?;
+    if !frontend_enabled && let Some(handle) = karma_handle {
+        handle.await.map_err(Error::other)??;
     }
 
     Ok(())
@@ -121,7 +128,9 @@ fn print_help() {
     println!("  -h, --help            Show this help message");
     println!("      --listen-addr <addr>  Override the HTTP listen address");
     #[cfg(feature = "http")]
-    println!("      --http-api-only  Serve only the HTTP API. Do not expose the board UI or host widget routes.");
+    println!(
+        "      --http-api-only  Serve only the HTTP API. Do not expose the board UI or host widget routes."
+    );
     println!("      --frontend       Start only the compiled frontend");
     #[cfg(feature = "karma")]
     println!("      --karma          Start only the karma delivery loop");

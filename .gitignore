@@ -1,8 +1,7 @@
 /target
 /logs
 mprocs.log
-/documents/**/*.html
+/documentation/**/*.html
 .local
 .env
 .downloads
-first_steps.html

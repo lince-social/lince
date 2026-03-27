@@ -126,6 +126,54 @@ tinymist preview \
 {{env.FIRST_STEPS_ROOT}}/first_steps.typ
 """
 
+[tasks.first-steps-all]
+description = "Compile all first steps outputs in English and Portuguese"
+tools = { "typst" = "latest", "pipx:touying" = "latest" }
+run = """
+set -e
+LINCE_VERSION=$(awk 'BEGIN{in_pkg=0} /^[[]package[]]$/{in_pkg=1;next} /^[[]/{in_pkg=0} in_pkg&&/^version = /{print $3;exit}' crates/lince/Cargo.toml | xargs)
+SOURCE_FILE="{{env.FIRST_STEPS_ROOT}}/first_steps.typ"
+
+compile_first_steps() {
+  local lang="$1"
+  local suffix="$2"
+  local lang_input=""
+
+  if [ "$lang" = "pt" ]; then
+    lang_input="--input lang=pt"
+  fi
+
+  echo "  → Compiling ${lang} light version..."
+  typst compile --root . $lang_input --input dark=false --input lince_version="$LINCE_VERSION" "$SOURCE_FILE" "{{env.FIRST_STEPS_ROOT}}/first_steps-light${suffix}.pdf"
+
+  echo "  → Compiling ${lang} dark version..."
+  typst compile --root . $lang_input --input dark=true --input lince_version="$LINCE_VERSION" "$SOURCE_FILE" "{{env.FIRST_STEPS_ROOT}}/first_steps-dark${suffix}.pdf"
+
+  echo "  → Compiling ${lang} slides version..."
+  typst compile --root . $lang_input --input slides=true --input lince_version="$LINCE_VERSION" "$SOURCE_FILE" "{{env.FIRST_STEPS_ROOT}}/first_steps-slides${suffix}.pdf"
+}
+
+compile_first_steps en ""
+compile_first_steps pt "-pt"
+echo "Done!"
+"""
+
+[tasks.first-steps-html]
+description = "Compile first steps HTML outputs in English and Portuguese"
+tools = { "pipx:touying" = "latest" }
+run = """
+set -e
+SOURCE_FILE="{{env.FIRST_STEPS_ROOT}}/first_steps.typ"
+
+echo "  → Compiling English HTML..."
+touying compile --root . --format html --output "{{env.FIRST_STEPS_ROOT}}/first_steps.html" --sys-inputs '{"slides":"true","lang":"en"}' "$SOURCE_FILE"
+
+echo "  → Compiling Portuguese HTML..."
+touying compile --root . --format html --output "{{env.FIRST_STEPS_ROOT}}/first_steps-pt.html" --sys-inputs '{"slides":"true","lang":"pt"}' "$SOURCE_FILE"
+
+echo "Done!"
+"""
+
 [tasks.first-steps-slides]
 description = "Start first steps slides preview"
 tools = { "tinymist" = "latest", "typst" = "latest", "pipx:touying" = "latest" }

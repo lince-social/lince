@@ -11,17 +11,6 @@
     A[What is a Need?];"
     ),
   )[
-    How does it do that?
-
-    We start by framing everything we do as a perception of attending to a Need.
-
-    If it can be modeled in a Record, you can use it as a list of tasks, personal notes, items you need and more.
-
-    If those tasks you Need to do or items you Need to get are cyclic in their nature you can see the Need of them with a certain Frequency. If that Frequency is a Condition for the Need to occur, let's say every day, you can setup a Consequence to see the that Need of eating an Apple every day. That's a Karma.
-
-    With Karma you can create a two part automation. The Condition has to occur for a Consequence to follow. In the previous example the Condition is that one day has passed (Frequency). The Consequence is that 'Eating an Apple' is a Need again.
-
-    The way we do that is by making this structure:
   ]
 
   #idea(
@@ -162,6 +151,7 @@
       A[Record] -> B[Quantity (Number)]
       A -> C[Head (Title)]
       A -> D[Body (Description)]
+      A -> E[*]
     ;"
     ),
   )[
@@ -173,21 +163,202 @@
       "graph LR;
       A[Record] -> B[Quantity (-1)]
       A -> C[Head (Apple)]
-      A -> D[Body ()]
     ;"
     ),
   )[
   ]
+  #major("Karma", $$)
 
   #idea(
-    [Record as a Need and Contribution],
+    [If, and, then...],
+    visual-text: (
+      "graph LR;
+      A[If: Condition] -> B[And: Threshold] -> C[Then: Consequence]
+    ;"
+    ),
+  )[]
+
+  #idea(
+    [If, and, then...],
+    visual-text: (
+      "graph LR;
+      A[If: Tomorrow cold enough] -> B[And: Only if cold enough] -> C[Then: Need to pack sweater]
+    ;"
+    ),
+  )[]
+
+  #idea(
+    [If, and, then...],
+    visual-text: (
+      "graph LR;
+      A[If: Tomorrow not cold enough] -> B[And: Only if cold enough] -> C[Then: No Need to pack sweater]
+    ;"
+    ),
+  )[]
+
+
+  #idea(
+    [" If " is the Condition],
+    visual-text: (
+      "graph LR;
+      A[Some Frequency]
+      B[Computer (Shell) Command]
+      C[A Certain Record's Quantity]
+    ;"
+    ),
+  )[]
+
+  #idea(
+    [" If " is the Condition],
+    visual-text: (
+      "graph LR;
+      A[0 or 1]
+      B[Number (or Text in future)]
+      C[- Infinity to + Infinity]
+    ;"
+    ),
+  )[]
+
+  #idea(
+    [" If " is the Condition],
+    visual-text: (
+      "graph TD;
+      Data
+    ;"
+    ),
+  )[]
+
+  #idea(
+    [" If " is the Condition],
+    visual-text: (
+      "graph LR;
+      A[Condition: Data > 5]
+    ;"
+    ),
+  )[]
+
+  #idea(
+    [" If " is the Condition],
+    visual-text: (
+      "graph TD;
+      A[Condition: Data > 5]
+      B[Condition: Certain Record's Quantity > 5]
+    ;"
+    ),
+  )[]
+
+  #idea(
+    [" If " is the Condition],
+    visual-text: (
+      "graph TD;
+      A[Condition: Data > 5]
+      B[Condition: Certain Record's Quantity > 5]
+      C[Condition: 2 > 5]
+    ;"
+    ),
+  )[]
+
+
+  #idea(
+    [" If " is the Condition],
+    visual-text: (
+      "graph TD;
+      A[Condition: Data > 5]
+      B[Condition: Certain Record's Quantity > 5]
+      C[Condition: 2 > 5]
+      D[Condition: False]
+    ;"
+    ),
+  )[]
+
+
+  #idea(
+    [Two scenarios],
+    visual-text: (
+      "graph TD;
+
+      A[Condition: 0 (False)]
+      B[Condition: 2 (Record Quantity)]
+      ;"
+    ),
+  )[]
+
+  #idea(
+    [0 scenario],
     visual-text: (
       "graph LR;
 
+      A[Condition: 0 (False)] -> C[Threshold: Not 0]
     ;"
     ),
-  )[
-  ]
+  )[]
+
+  #idea(
+    [2 scenario],
+    visual-text: (
+      "graph LR;
+
+      B[Condition: 2 (Record Quantity)] -> E[Threshold: Not 0] -> D[Consequence]
+    ;"
+    ),
+  )[]
+
+
+  #idea(
+    [Con-se-quen-ces!],
+    visual-text: (
+      "graph LR;
+      A[Record Changing]
+      B[Shell Command]
+      C[SQL]
+    ;"
+    ),
+  )[]
+
+  #idea(
+    [Cascating],
+    visual-text: (
+      "graph TD;
+      A[Condition: Record reaches some value] -> B[Consequence: Record becomes new value] -> C[Condition: Record becomes new value]
+    ;"
+    ),
+  )[]
+
+  #idea(
+    [Cascatinging],
+    visual-text: (
+      "graph TD;
+      C[Condition: Record becomes new value] -> D[Command is run]
+    ;"
+    ),
+  )[]
+
+  #idea(
+    [Practical example],
+    visual-text: (
+      "graph LR;
+      A[-1 * (Frequency * Record Quantity + Command)] -> B[Threshold] -> C[Record's Quantity]
+
+    ;"
+    ),
+  )[]
+
+  #idea(
+    [Flow],
+    visual-text: (
+      "graph LR;
+      A[Frequency] -> B[Condition]
+      C[Command] -> B
+      D[SQL] -> B
+      E[Record] -> B
+      B -> F[Threshold]
+      F -> G[Record]
+      F -> H[Command]
+      F -> I[SQL]
+
+    ;"
+    ),
+  )[]
 
   #major("Transactions", $"Credit" -> "Debit"$)
 
@@ -211,92 +382,84 @@
        C[1 Money] <-- A[Person A]
       D[A Brazzillion Apples] <-- B[Person B]
       A <- D
-
     ;"
     ),
   )[
   ]
 
   #idea(
-    [Inequality],
+    [Three-party transaction],
     visual-text: (
       "graph LR;
+      A -> B
+      B -> C
+      C -> A
+    ;"
+    ),
+  )[]
 
+  #major("Lince", $$)
+  #idea(
+    [You],
+    visual-text: (
+      "graph LR;
+      Cell
     ;"
     ),
   )[
   ]
 
   #idea(
-    [],
+    [You and others],
     visual-text: (
       "graph LR;
-
+      A[Cell]
+      B[Cell]
+      C[Cell]
+      D[Cell]
     ;"
     ),
   )[
   ]
 
   #idea(
-    [],
+    [Organ],
     visual-text: (
-      "graph LR;
-
+      "graph TD;
+      O[Organ]
+     O[Organ] <-- A[Cell]
+     O[Organ] <-- B[Cell]
+     O[Organ] <-- C[Cell]
+     O[Organ] <-- D[Cell]
     ;"
     ),
   )[
   ]
 
   #idea(
-    [],
+    [Organs],
     visual-text: (
-      "graph LR;
+      "graph TD;
+      B[Work] <-> A[Your Cell] <-> C[Hobby]
 
+      D[Family] <-> A <-> E[Friends]
     ;"
     ),
   )[
   ]
 
   #idea(
-    [],
+    [Lince],
     visual-text: (
-      "graph LR;
-
+      "graph TD;
+     O[Lince] <-- A[Organ]
+     O[Lince] <-- B[Cell]
+     O[Lince] <-- C[Organ]
+     O[Lince] <-- D[Cell]
     ;"
     ),
   )[
   ]
-
-  #idea(
-    [],
-    visual-text: (
-      "graph LR;
-
-    ;"
-    ),
-  )[
-  ]
-
-  #idea(
-    [],
-    visual-text: (
-      "graph LR;
-
-    ;"
-    ),
-  )[
-  ]
-
-  #idea(
-    [],
-    visual-text: (
-      "graph LR;
-
-    ;"
-    ),
-  )[
-  ]
-
 ]
 
 

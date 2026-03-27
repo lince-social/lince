@@ -21,12 +21,13 @@
 
   #slide[
     #align(center + horizon)[
+      #v(-4em)
       #image("../common/media/logo/white.svg", width: 18%)
-      #v(1.2em)
-      #text(size: 34pt, weight: "bold")[#title]
+      #v(-2em)
+      #text(size: 52pt, weight: "bold")[#title]
       #if subtitle != none [
-        #v(0.8em)
-        #text(size: 22pt)[#subtitle]
+        #v(-2em)
+        #text(size: 20pt)[#subtitle]
       ]
     ]
   ]
@@ -75,8 +76,8 @@
         line_color: "#ffffff",
       ),
       layout: (
-        node_spacing: 50,
-        rank_spacing: 100,
+        node_spacing: 1,
+        rank_spacing: 1,
       ),
     )
   } else {}

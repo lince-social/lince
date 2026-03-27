@@ -4,6 +4,8 @@
 #import "@preview/mmdr:0.2.1": mermaid
 
 #let slides-mode = sys.inputs.at("slides", default: "false") == "true"
+#let doc-lang = sys.inputs.at("lang", default: "en")
+#let doc-region = if doc-lang == "pt" { "br" } else { "us" }
 #let book_major = major
 
 #let slides-background = rgb(20, 20, 20)
@@ -16,6 +18,8 @@
     fill: slides-foreground,
     font: "New Computer Modern Math",
     size: 20pt,
+    lang: doc-lang,
+    region: doc-region,
   )
   #set heading(numbering: "1.")
 

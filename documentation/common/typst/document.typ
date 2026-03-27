@@ -3,6 +3,8 @@
 
 #let dark-mode = sys.inputs.at("dark", default: "false") == "true"
 #let lince-version = sys.inputs.at("lince_version", default: "unknown")
+#let doc-lang = sys.inputs.at("lang", default: "en")
+#let doc-region = if doc-lang == "pt" { "br" } else { "us" }
 
 #let page-background = if dark-mode { rgb("#000000") } else { white }
 #let text-color = if dark-mode { rgb("#eaeaea") } else { black }
@@ -51,8 +53,8 @@
   #set page(fill: page-background)
   #set document(title: [#title], author: author)
   #set text(
-    lang: "en",
-    region: "us",
+    lang: doc-lang,
+    region: doc-region,
     weight: "regular",
     size: 12pt,
     fill: text-color,
@@ -94,8 +96,8 @@
 
 #let body(content, source_url: "https://github.com/lince-social/lince") = [
   #set text(
-    lang: "en",
-    region: "us",
+    lang: doc-lang,
+    region: doc-region,
     weight: "regular",
     size: 12pt,
     fill: text-color,

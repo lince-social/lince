@@ -1,448 +1,550 @@
-# Web Sand Classes
+# Web Sand Classes Technical Specification
 
 ## Purpose
 
-This document defines a practical taxonomy for official `sand/` widgets in the Lince web runtime.
+This document defines the official class taxonomy for `sand/` widgets in the Lince web runtime.
 
-The goal is not to force every widget into one implementation style. The goal is to give the web version a clear set of official construction patterns, ordered by capability first and performance second.
+The purpose of the taxonomy is:
 
-This document applies to official widgets built and maintained inside `crates/web/src/sand/`.
+- to save explanation time
+- to make architecture discussions faster
+- to document how a widget usually deals with data, state, transport, and runtime
+- to provide a shared cookbook vocabulary such as `Engineer`, `Clown`, or `Mercenary`
 
-## Core Position
+These classes are documentation and clustering. They are not hard constraints.
 
-For official widgets:
+## Scope
 
-- use an internal Lince widget stream keyed by widget instance, not only by raw `server_id` and `view_id`
-- prefer server-rendered Maud fragments as the default transport for server-owned data
-- use Datastar signals for host state, persisted per-card UI state, and small reactive updates
-- keep pure JavaScript for browser-native interactions that Datastar should not own
+This specification applies primarily to official widgets built inside `crates/web/src/sand/`.
 
-For external imported HTML widgets:
+The same language may also be used when discussing:
 
-- keep the current generic iframe model
-- allow pure JavaScript
-- inject Datastar and the Lince bridge, but do not require them
+- imported HTML widgets
+- embedded third-party surfaces
+- framework-backed integrations
+- browser-engine or WASM-heavy widgets
 
-## State Ownership
+## Classification principles
 
-The web runtime should separate state into three groups.
+The classes are defined from five questions:
 
-### 1. Host-Owned Runtime State
+1. Where does truth normally live?
+2. How does truth normally reach the widget?
+3. Who normally shapes the UI?
+4. Where does interaction state normally live?
+5. How portable or foreign is the runtime?
 
-Examples:
+The classes are descriptive, not prescriptive.
+
+A widget may honestly be described as:
+
+- `Engineer`
+- `Clown with Monk traits`
+
+Or other ways. That is expected.
+
+## Core actors
+
+### Backend
+
+The Lince domain side.
+
+It normally owns:
+
+- persisted business data
+- table CRUD
+- view queries
+- semantic actions
+- official SSE streams
+
+### Host
+
+The Lince web runtime that embeds the widget.
+
+It normally owns:
+
+- widget instance identity
+- permissions
+- auth state
+- board layout
+- persisted `widgetState`
+- stream enable or pause state
+
+### Bridge
+
+The communication layer from host to widget.
+
+It should mainly carry:
+
+- bootstrap config
+- runtime events
+- auth and permission state
+- widget state patching
+- host actions
+
+It should not be treated as the main bulk transport for large server-owned collections.
+
+### External system
+
+Anything outside Lince, including:
+
+- websites
+- APIs
+- apps
+- local files
+- foreign frameworks
+- browser/device APIs
+- WebAssembly runtimes
+
+## Resource definitions
+
+The matrices below use the following resources.
+
+### Maud templating
+
+Rust-side HTML construction used for:
+
+- widget shells
+- repeated server-owned structure
+- forms
+- empty/loading/error/auth states
+
+### Datastar signals in frontend
+
+Browser-local Datastar signal state used for:
+
+- view mode
+- collapse state
+- draft UI state
+- badges and small status changes
+- anything else the user may want to construct in interactivity, look and feel.
+
+### Datastar signals from backend
+
+Signal patches emitted by the backend or host runtime, usually over SSE.
+
+Use this for:
+
+- small value changes
+- runtime status
+- connection/auth indicators
+- stable-shell reactive updates
+
+### Datastar HTML fragments from backend
+
+HTML fragment patches emitted by the backend or host runtime, usually over SSE.
+
+Use this for:
+
+- repeated collections
+- dynamic tables
+- cards and lanes
+- server-owned structural changes
+
+### Raw JSON or hand-parsed data
+
+The widget receives raw data and is responsible for parsing and shaping UI itself.
+
+This includes:
+
+- raw JSON SSE
+- JSON fetched over HTTP
+- client-side transformation and rendering
+
+### Host or bridge runtime state
+
+Runtime data that is not business truth, such as:
 
 - `serverId`
 - `viewId`
-- stream enabled state
-- auth lock state
-- per-card persisted UI state
+- auth state
+- stream state
+- `widgetState`
 
-Recommended representation:
+### Official Lince endpoints
 
-- bridge events
-- Datastar signals
+Lince-owned routes and contracts, such as:
 
-### 2. Server-Owned Data State
+- official widget streams
+- generic table routes
+- view routes
+- semantic action endpoints
 
-Examples:
+### External APIs, pages, or apps
 
-- view rows
-- table columns
-- grouped record snapshots
-- computed labels or counters derived from backend data
+Foreign systems outside Lince, such as:
 
-Recommended representation:
+- third-party APIs
+- embedded websites
+- wrapped apps
+- imported HTML
 
-- HTML fragments by default
-- signals only when the DOM shape is stable
+### Files or local resources
 
-### 3. Browser-Only Interaction State
+Non-backend resources such as:
 
-Examples:
+- local file imports
+- browser file handles
+- media blobs
+- local device or browser resources
 
-- drag and drop
-- pointer gestures
+### Iframe or embed isolation
+
+Isolation-oriented embedding where the widget intentionally hosts or wraps a foreign surface.
+
+### Foreign framework runtime
+
+A vendored or mounted runtime such as:
+
+- React
+- Vue
+- Svelte
+- Web Components
+- another JS UI runtime
+
+### WASM or browser-engine runtime
+
+A non-trivial engine-driven runtime such as:
+
+- terminal engine
+- canvas engine
+- WebGL scene
+- WASM-powered logic or rendering core
+
+## Scale legend
+
+All resource scales use:
+
+- `none`
+- `low`
+- `mid`
+- `high`
+
+These values express probability and amount of usage, not permission.
+
+## Resource matrix
+
+This matrix answers: what does this class usually lean on?
+
+| Resource                             | Engineer | Clown | Monk | Mercenary | Astromancer |
+| ------------------------------------ | -------- | ----- | ---- | --------- | ----------- |
+| Maud templating                      | high     | low   | none | none      | none        |
+| Datastar signals in frontend         | low      | high  | low  | none      | none        |
+| Datastar signals from backend        | low      | high  | none | none      | none        |
+| Datastar HTML fragments from backend | high     | low   | none | none      | none        |
+| Raw JSON or hand-parsed data         | none     | none  | high | low       | low         |
+| Host or bridge runtime state         | high     | high  | low  | low       | low         |
+| Official Lince endpoints             | high     | mid   | low  | none      | low         |
+| External APIs, pages, or apps        | none     | low   | low  | high      | none        |
+| Files or local resources             | none     | low   | low  | mid       | mid         |
+| Iframe or embed isolation            | none     | none  | none | mid       | none        |
+| Foreign framework runtime            | none     | none  | mid  | mid       | none        |
+| WASM or browser-engine runtime       | none     | none  | none | none      | high        |
+
+## Interpretation notes
+
+### Engineer
+
+- Engineer is fragment-first, not signal-first
+- Engineer still allows a little imperative JS for browser behavior
+- Engineer is strongly tied to official Lince contracts
+
+### Clown
+
+- Clown is signal-first, but not signal-only
+- small backend fragment use is still normal when a stable shell needs selected structural patches
+
+### Monk
+
+- Monk is not simply only using "lots of JS"
+- Monk specifically means being a self sufficient component, may call external data and deal with it by hand.
+- Client-shaped rendering from raw data contracts
+- vendored framework use is common enough to document explicitly
+
+### Mercenary
+
+- Used for integrating a lot with other API's, services, embedding other pages and resources.
+- Mercenary is defined by foreign negotiation
+- it may use bridge or Lince contracts opportunistically, but those are not its center of gravity
+
+### Astromancer
+
+- Astromancer is runtime-heavy, not integration-heavy
+- The use case of WASM fits perfectly in Astromancer, it is for esoteric runtimes.
+- the engine shapes the interactive surface
+- resources are inputs, not the UI owner
+
+## Five-question matrix
+
+This matrix answers how each class normally works.
+
+| Question                                    | Engineer                                               | Clown                                                                                          | Monk                                                                   | Mercenary                                                   | Astromancer                                                     |
+| ------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------- |
+| Where does truth normally live?             | Backend                                                | Mixed: backend for business, frontend for presentation                                         | Varied, often client-owned or remote-contract-owned                    | Foreign system or local widget space, with Lince optional   | Resource or engine dependent                                    |
+| How does truth normally reach the widget?   | Official backend stream and endpoints through the host | Backend seed, optional backend stream, host runtime state, and heavy signal-driven local state | Raw JSON SSE, fetch JSON, manual parsing, or vendored runtime adapters | Foreign page, foreign API, files, embeds, or adapter layers | File, buffer, resource binding, engine feed, or runtime adapter |
+| Who normally shapes the UI?                 | Maud plus backend fragments and a few signals          | Small shell plus frontend Datastar signals                                                     | JS or vendored framework                                               | Foreign UI, foreign framework, or adapter runtime           | JS or WASM engine, with DOM shell secondary                     |
+| Where does interaction state normally live? | Frontend for ergonomics, backend for domain mutations  | Mostly frontend                                                                                | Varied, usually frontend                                               | Mostly frontend or foreign runtime                          | Engine-local or use-case dependent                              |
+| How portable or foreign is the runtime?     | Low, strongly Lince-coupled                            | Low to mid, still fairly Lince-shaped                                                          | Mid to high, usually self-contained                                    | High, intentionally foreign-capable                         | Mid, more constrained by runtime capabilities than by Lince     |
+
+## Class profiles
+
+## Engineer
+
+### Definition
+
+Engineer is the default official class for robust Lince-native workflows.
+
+### Truth and transport
+
+- truth normally lives in the backend
+- truth normally reaches the widget through official streams and endpoints
+- host and bridge state are significant, but remain runtime control-plane data
+
+### UI shaping
+
+- Maud is the main structural tool
+- Datastar HTML fragments are the main update mechanism for server-owned structure
+- Datastar backend signals are secondary and support stable-shell updates
+
+### JavaScript profile
+
+Use JavaScript sparingly for:
+
+- drag and drop edges
+- resize behavior
 - focus-sensitive editing
-- canvas rendering
-- terminal emulation
+- browser APIs that should not be forced into Datastar
 
-Recommended representation:
+### API profile
 
-- pure JavaScript
+- official Lince endpoints: high
+- external APIs: none
+- iframe/embed isolation: none
 
-## Default Transport Recommendation
+### WASM profile
 
-For official widgets, the default stream profile should be:
+- none
 
-- structure updates: HTML fragments
-- small value and status updates: signal patches
+### Recommended fits
 
-If only one transport is chosen for a widget, choose HTML fragments unless the widget has a very stable DOM shape.
-
-### Why HTML Fragments First
-
-HTML fragments are the best default for capability because they handle:
-
-- variable table schemas
-- changing row counts
-- empty, loading, locked, and error states
-- grouped layouts
-- server-owned repeated lists and cards
-- server-controlled markup decisions
-
-### Why Signals Still Matter
-
-Signals are still important for:
-
-- collapsed and expanded UI state
-- selected tabs or modes
-- filter text
-- local sorting state
-- status pills
-- last-updated badges
-- bridge-owned runtime state
-
-## Sand Class Matrix
-
-| Sand Class | Maud | Datastar | Pure JS | SSE HTML | SSE Signals | Best For |
-| --- | ---: | ---: | ---: | ---: | ---: | --- |
-| Sand Class A: Fragment Shell | 80% | 15% | 5% | 90% | 10% | tables, lists, CRUD views, server-owned layouts |
-| Sand Class B: Hybrid Reactive | 60% | 30% | 10% | 60% | 40% | kanban, dashboards, editable collections |
-| Sand Class C: Signal Surface | 35% | 50% | 15% | 20% | 80% | clocks, status cards, compact dashboards, stable shells |
-| Sand Class D: Imperative Specialist | 55% | 10% | 35% | 40% | 20% | drag and drop, terminal, canvas, media control |
-| Sand Class E: External-Compatible Official | 45% | 20% | 35% | 30% | 20% | bridge-friendly widgets that still need to survive outside the official runtime |
-
-The percentages are guidance, not rules. They describe where the center of gravity of the widget should be.
-
-## Sand Class A: Fragment Shell
-
-### Summary
-
-Server-owned structure is rendered in Rust and patched into the widget as HTML fragments. Datastar is present but mostly used for small UI toggles and host state. JavaScript is minimal.
-
-### Construction Pattern
-
-- outer shell rendered with Maud
-- inner content regions patched by server-rendered Maud fragments
-- Datastar handles visibility, classes, and small local UI state
-- JavaScript is limited to wiring that is hard to express declaratively
-
-### Recommended SSE Style
-
-- primary: HTML fragment patches
-- secondary: signal patches for status and local UI mirrors
-
-### Strengths
-
-- highest capability
-- easiest to keep correct when backend shape changes
-- easiest to author in Rust
-- easiest to keep business logic centralized
-
-### Weaknesses
-
-- can overpatch if the patch target is too large
-- less ideal for high-frequency micro-updates
-
-### Recommended Component Types
-
-- generic view tables
-- record browsers
+- record tables
 - CRUD panels
-- search result widgets
-- file lists
-- calendar agendas backed by backend data
-- multi-state empty/loading/error/locked widgets
+- search results
+- record browsers
+- audit logs
+- server-owned dashboards
 
-### Good Target Examples
+## Clown
 
-- `view_table_editor`
-- a future generic file explorer
-- a future audit log widget
+### Definition
 
-## Sand Class B: Hybrid Reactive
+Clown is the signal-heavy, frontend-reactive class.
 
-### Summary
+### Truth and transport
 
-The widget has a Maud-rendered shell and significant Datastar usage for interaction state, but server-owned lists and sections still arrive as HTML fragments. JavaScript stays focused on browser-native behavior.
+- truth is often mixed
+- backend may still own business data
+- frontend often owns a large share of presentation and interaction state
 
-### Construction Pattern
+### UI shaping
 
-- Maud renders the stable shell
-- Datastar owns UI signals and local state transitions
-- server patches specific inner regions such as columns, rows, cards, or summaries
-- JavaScript handles drag/drop, optimistic updates, or browser API edges
+- the shell is small and stable
+- Datastar signals do most of the visible orchestration
+- small backend fragment use is still acceptable when selected structural patches help
 
-### Recommended SSE Style
+### JavaScript profile
 
-- balanced HTML fragment patches and signal patches
+Use JavaScript lightly for:
 
-### Strengths
+- imperative browser edges
+- local helpers around Datastar-driven state
+- interactions that are awkward in pure signals
 
-- best general-purpose class
-- keeps server data authoritative
-- keeps local UI responsive
-- adapts well to complex widgets with interactive chrome
+### API profile
 
-### Weaknesses
+- official Lince endpoints: mid
+- external APIs: low
+- iframe/embed isolation: none
 
-- requires discipline about what belongs to server data versus local UI
+### WASM profile
 
-### Recommended Component Types
+- none
 
-- kanban boards
-- dashboards with both summaries and changing lists
-- widgets with collapsible lanes or sections
-- widgets with per-card presentation modes
-- widgets with optimistic row moves or inline edits
-
-### Good Target Examples
-
-- `kanban_record_view`
-- future issue boards
-- grouped operations dashboards
-
-## Sand Class C: Signal Surface
-
-### Summary
-
-The DOM shape stays mostly fixed. Datastar signals drive most of the visible changes. Maud still provides the base shell. JavaScript is small and targeted.
-
-### Construction Pattern
-
-- Maud renders a stable shell
-- Datastar signals drive content, classes, visibility, and styling
-- server sends mostly signal patches
-- HTML fragment patches are rare and limited
-
-### Recommended SSE Style
-
-- primary: signal patches
-- secondary: occasional small HTML patches
-
-### Strengths
-
-- efficient when the DOM shape is stable
-- easy to reason about for compact widgets
-- good for rich local reactivity
-
-### Weaknesses
-
-- becomes awkward when repeated structures change often
-- can push too much templating responsibility into browser expressions
-
-### Recommended Component Types
+### Recommended fits
 
 - clocks
 - counters
-- weather summaries
-- playback status surfaces
-- compact health indicators
-- small dashboard headers
-- bridge and auth state monitors
+- compact status widgets
+- inspectors with several local display modes
+- dashboards with stable shells and lively local state
 
-### Good Target Examples
+## Monk
 
-- `ops_clock`
-- a compact server status widget
-- a compact playback state widget
+### Definition
 
-## Sand Class D: Imperative Specialist
+Monk is the client-shaped class built from raw data contracts.
 
-### Summary
+### Truth and transport
 
-The widget still uses Maud for shell and some static structure, but browser interaction logic is too rich or too stateful to force into Datastar. JavaScript remains the main interaction engine.
+- truth is varied
+- the widget often consumes raw JSON SSE or fetched JSON
+- Lince may still be the source, but the browser takes responsibility for shaping the result
 
-### Construction Pattern
+### UI shaping
 
-- Maud renders static structure and SSR fragments where useful
-- Datastar is optional and kept small
-- JavaScript owns the interaction loop
+- Maud is absent or minimal
+- JS or a vendored runtime shapes the UI
+- Datastar is optional and minor
 
-### Recommended SSE Style
+### JavaScript profile
 
-- use HTML or signals only for the server-owned parts that are easy to separate
-- avoid trying to express the whole widget as Datastar patches
+Use JavaScript as the primary rendering tool for:
 
-### Strengths
+- parsing raw snapshots
+- building DOM
+- wiring library lifecycles
+- owning client-shaped interaction flows
 
-- handles difficult browser APIs cleanly
-- avoids awkward declarative code for inherently imperative behavior
+### API profile
 
-### Weaknesses
+- official Lince endpoints: low
+- external APIs: low
+- foreign framework runtime: mid
+- iframe/embed isolation: none
 
-- highest maintenance burden
-- easiest place for duplicated transport logic to appear if discipline is weak
+### WASM profile
 
-### Recommended Component Types
+- none
+
+### Recommended fits
+
+- experimental widgets
+- client-heavy graphs
+- legacy ports
+- widgets using libraries that expect raw data
+
+## Mercenary
+
+### Definition
+
+Mercenary is the integration-first, foreign-capable class.
+
+### Truth and transport
+
+- truth often lives outside Lince
+- the widget may wrap, embed, fetch from, or adapt foreign systems
+- Lince may participate, but is not the sole world the widget serves
+
+### UI shaping
+
+- a foreign page, foreign framework, or adapter runtime often shapes the UI
+- Lince bridge or host support is opportunistic rather than central
+
+### JavaScript profile
+
+Use JavaScript mainly for:
+
+- adapters
+- wrappers
+- embed coordination
+- framework mounting
+- API mediation
+
+### API profile
+
+- official Lince endpoints: none
+- external APIs, pages, or apps: high
+- iframe/embed isolation: mid
+- foreign framework runtime: mid
+
+### WASM profile
+
+- none
+
+### Recommended fits
+
+- embeds
+- foreign sites or apps
+- wrapper widgets
+- migration widgets
+- framework-backed integrations
+- imported HTML with fallback behavior
+
+## Astromancer
+
+### Definition
+
+Astromancer is the runtime-heavy class for engine-driven browser surfaces.
+
+### Truth and transport
+
+- truth depends on the engine and resource model
+- data may come from files, buffers, resources, streams, or runtime bindings
+
+### UI shaping
+
+- the engine shapes the meaningful interactive surface
+- the DOM shell exists mainly for chrome, controls, and fallback states
+
+### JavaScript profile
+
+Use JavaScript for:
+
+- engine integration
+- lifecycle orchestration
+- browser capability access
+- glue around WASM or other runtime cores
+
+### API profile
+
+- official Lince endpoints: low
+- external APIs: none
+- iframe/embed isolation: none
+
+### WASM profile
+
+- high
+
+### Recommended fits
 
 - terminal widgets
-- canvas-based widgets
-- complex drag/drop surfaces
-- media transport controls with browser API integration
-- image tools with zoom and pan
+- canvas surfaces
+- media tools
+- graph engines
+- WASM-powered inspectors
 
-### Good Target Examples
+## Mixing guidance
 
-- `local_terminal`
-- canvas-heavy future widgets
-- advanced bucket or image inspectors
+These classes are most useful when mixed honestly.
 
-## Sand Class E: External-Compatible Official
+Examples:
 
-### Summary
+- an official Kanban is `Engineer with Clown traits`
+- a portable integration can be `Mercenary with Monk fallback`
+- a terminal can be `Astromancer with Engineer chrome`
 
-This class is for official widgets that should still degrade gracefully if copied out of the full internal runtime. The widget can use the bridge and Datastar when present, but it keeps a stronger pure-JS fallback path than other official widgets.
+## Practical defaults
 
-### Construction Pattern
+Use `Engineer` when:
 
-- Maud or static HTML shell
-- Datastar used when available
-- JavaScript fallback preserved intentionally
+- the backend should remain the main authority
+- structure is important
+- the widget is official and long-lived
 
-### Recommended SSE Style
-
-- use internal official streams when embedded in Lince
-- preserve a fallback contract for preview or external survival
-
-### Strengths
-
-- portable
-- resilient in previews and less controlled environments
-
-### Weaknesses
-
-- more duplicated logic than the pure official runtime classes
-
-### Recommended Component Types
-
-- showcase widgets
-- reference widgets
-- minimal example widgets
-- migration widgets during transition to the official stream system
-
-### Good Target Examples
-
-- `extra_simple`
-- a reference bridge demo widget
-
-## When To Send HTML Versus Signals
-
-Use HTML fragments when:
-
-- a list, table, lane, or repeated section changes
-- the backend changes the shape of the data
-- the server decides markup details
-- you want Maud to remain the source of truth for structure
-
-Use signal patches when:
-
-- the DOM shape is fixed
-- values, classes, or styles change
-- the update is small and frequent
-- the state belongs to local UI or host runtime state
-
-Use both when:
+Use `Clown` when:
 
 - the shell is stable
-- the content region is dynamic
-- local UI preferences should survive server updates
+- local presentation behavior matters a lot
+- Datastar signals are doing the visible work
 
-This mixed mode should be treated as the standard design for most serious official widgets.
+Use `Monk` when:
 
-## Recommended Official Defaults
+- the widget wants raw data and client-owned rendering on purpose
 
-### Default Class For New Data Widgets
+Use `Mercenary` when:
 
-Use `Sand Class B: Hybrid Reactive`.
+- the widget must negotiate with outside systems or foreign runtimes
 
-This should be the standard default for:
+Use `Astromancer` when:
 
-- backend view widgets
-- grouped record widgets
-- widgets with server data plus local presentation state
-
-### Default Class For Generic Table And Collection Widgets
-
-Use `Sand Class A: Fragment Shell`.
-
-This should be the standard default for:
-
-- generic tables
-- search results
-- collection views
-- widgets where the backend controls the structure
-
-### Default Class For Compact Status Widgets
-
-Use `Sand Class C: Signal Surface`.
-
-This should be the standard default for:
-
-- metrics
-- clocks
-- compact summaries
-- small indicators
-
-### Default Class For Browser-Heavy Widgets
-
-Use `Sand Class D: Imperative Specialist`.
-
-This should be the standard default for:
-
-- terminal
-- canvas
-- complex media and drag/drop interactions
-
-## Current Widget Mapping
-
-Recommended mapping for the current official set:
-
-- `extra_simple`: Sand Class E during migration, then Sand Class A
-- `view_table_editor`: Sand Class A
-- `kanban_record_view`: Sand Class B
-- `ops_clock`: Sand Class C
-- `local_terminal`: Sand Class D
-- `bucket_image_view`: Sand Class D or B depending on how much of the UI becomes server-owned
-- `record_crud`: Sand Class A or B depending on whether the form stays mostly local or becomes more server-rendered
-
-## Anti-Patterns
-
-Avoid these as general policy for official widgets:
-
-- parsing raw SSE blocks inside every widget
-- rebuilding the entire widget with `innerHTML` on every snapshot
-- forcing highly dynamic collections into signal-only rendering
-- pushing bridge-owned runtime state into backend stream payloads
-- using pure JavaScript as the default for official data widgets
-
-## Proposed Internal Runtime Direction
-
-The official runtime should move toward an instance-aware stream, for example:
-
-- `/host/widgets/{instance_id}/stream`
-
-That route should:
-
-- resolve the card from board state
-- read widget configuration and host-owned runtime state
-- subscribe internally to local or remote backend data
-- render Maud fragments for server-owned structure
-- emit Datastar patch events and signal patch events
-
-This allows:
-
-- one official runtime contract for `sand/`
-- continued support for generic imported HTML widgets
-- less duplicated transport logic in widget code
-
-## Final Rule
-
-For official `sand/` widgets:
-
-- default to Maud for structure
-- default to HTML fragment SSE for server-owned data
-- use Datastar signals for host and local UI state
-- keep pure JavaScript only where the browser interaction model truly requires it
-
-That is the best capability-first direction for the web version.
+- the browser runtime itself is the product

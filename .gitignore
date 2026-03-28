@@ -1,7 +1,5 @@
-/target
+target/
 /logs
 mprocs.log
 /documentation/**/*.html
-.local
 .env
-.downloads

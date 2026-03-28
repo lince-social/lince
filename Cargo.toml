@@ -1,6 +1,7 @@
 [workspace]
 resolver = "3"
 members = [
+    "xtask",
     "crates/lince",
     "crates/application",
     "crates/domain",

@@ -52,8 +52,17 @@ systemctl --user enable lince.service >/dev/null 2>&1 || true
 mprocs \
 "systemctl --user restart lince.service && journalctl --user -u lince.service -f --output=cat" \
 "systemctl --user stop lince.service && journalctl --user -u lince.service -f --output=cat" \
-"cargo run --release"
+"cargo run --release" \
+"cargo run" \
 """
+
+[tasks.sand-export]
+description = "Export sand widgets as a raw handoff bundle for dna to ingest"
+run = "cargo run -p xtask -- sand export"
+
+[tasks.sand-export-dry]
+description = "Preview the sand export without writing files"
+run = "cargo run -p xtask -- sand export --dry-run"
 
 [tasks.docs]
 description = "Start typst documentation preview"

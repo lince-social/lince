@@ -4,7 +4,9 @@ mod application;
 mod domain;
 mod infrastructure;
 mod presentation;
-mod sand;
+pub mod sand;
+
+pub use crate::domain::lince_package::{LincePackage, slugify};
 
 use {
     crate::{

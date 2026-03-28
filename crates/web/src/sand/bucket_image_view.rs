@@ -11,7 +11,7 @@ pub(crate) fn source() -> SandWidgetSource {
             author: "Lince Labs".into(),
             version: "0.1.0".into(),
             description: "Loads an image from the configured server bucket by relative path.".into(),
-            details: "The card config chooses the organ/server, and the widget keeps only the bucket object path in its own card state. It fetches the bytes through the host proxy and renders them as an image preview.".into(),
+            details: "The card config chooses the organ/server, and the widget stores the bucket object path in the card state so it survives refreshes. It fetches the bytes through the host proxy and renders them as an image preview.".into(),
             initial_width: 4,
             initial_height: 4,
             permissions: vec!["bridge_state".into(), "read_files".into()],
@@ -348,9 +348,11 @@ fn script() -> &'static str {
       const stateKey = "bucket-image-view/" + instanceId;
 
       const bridge = window.LinceWidgetHost || null;
+      const bridgeState = normalizeCardState(bridge?.getCardState?.() || null);
+      const fallbackState = readFallbackState();
       const state = {
         serverId: String(frame?.dataset?.linceServerId || ""),
-        path: "",
+        path: normalizePath(bridgeState.path || fallbackState.path),
       };
 
       let loadToken = 0;
@@ -468,12 +470,12 @@ fn script() -> &'static str {
         pathInput.value = normalized;
         pathPill.textContent = normalized ? "path: " + normalized : "path: unset";
 
+        writeFallbackState({ path: normalized });
+
         if (bridge?.patchCardState) {
           bridge.patchCardState({ path: normalized });
           return;
         }
-
-        writeFallbackState({ path: normalized });
       }
 
       function schedulePersistPath() {
@@ -597,7 +599,7 @@ fn script() -> &'static str {
         const nextMeta = detail?.meta && typeof detail.meta === "object" ? detail.meta : {};
         const nextServerId = String(nextMeta.serverId || frame?.dataset?.linceServerId || "");
         const nextCardState = normalizeCardState(nextMeta.cardState);
-        const nextPath = nextCardState.path;
+        const nextPath = nextCardState.path || state.path;
         const previousServerId = state.serverId;
         const previousPath = state.path;
 
@@ -643,7 +645,7 @@ fn script() -> &'static str {
       loadButton.addEventListener("click", handleLoadClick);
 
       const fallbackState = readFallbackState();
-      state.path = normalizePath(fallbackState.path);
+      state.path = normalizePath(state.path || fallbackState.path);
       pathInput.value = state.path;
       pathPill.textContent = state.path ? "path: " + state.path : "path: unset";
       updateServerPill();

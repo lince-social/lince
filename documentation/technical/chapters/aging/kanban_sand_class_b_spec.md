@@ -1,8 +1,8 @@
-# Sand Class B Spec: Kanban de Record
+# Kanban Spec: Record Engineer With Clown Traits
 
 ## Objetivo
 
-Este documento especifica o Kanban oficial recomendado para Lince Web usando `Sand Class B: Hybrid Reactive`.
+Este documento especifica o Kanban oficial recomendado para Lince Web usando `Engineer with Clown traits`.
 
 Ele serve como uma especialização concreta do documento `web_sand_classes.md`.
 
@@ -16,7 +16,7 @@ Este Kanban é:
 
 ## Classe Escolhida
 
-### Sand Class B: Hybrid Reactive
+### Engineer with Clown traits
 
 Esta é a melhor classe para este Kanban porque o componente precisa ao mesmo tempo de:
 
@@ -28,22 +28,25 @@ Esta é a melhor classe para este Kanban porque o componente precisa ao mesmo te
 - múltiplos estados visuais
 - feedback claro de conexão SSE e autenticação
 
-`Sand Class A` seria forte demais no lado servidor e fraca demais para as interações locais.
-`Sand Class C` ficaria boa demais só para shells estáveis e ruim para cards e colunas mutáveis.
-`Sand Class D` colocaria JavaScript demais como default, o que não é o melhor ponto de equilíbrio para um Kanban oficial.
+`Engineer` puro ficaria rígido demais para o volume de estado local e de interação do board.
+`Clown` puro empurraria estrutura demais para o browser.
+`Monk` colocaria JavaScript demais como default.
+`Astromancer` é a classe errada para um board DOM-first.
+`Mercenary` é útil para portabilidade, mas não é o centro de gravidade do Kanban oficial.
 
 ## Perfil Arquitetural
 
 ### Distribuição de responsabilidade
 
-- Maud: 60%
+- Maud: 55%
 - Datastar: 30%
-- JavaScript puro: 10%
+- JavaScript puro: 15%
 
 ### Distribuição de updates SSE
 
 - HTML fragments: 60%
-- signal patches: 40%
+- signal patches: 35%
+- raw JSON SSE: 5%
 
 Isso quer dizer:
 
@@ -578,7 +581,7 @@ Usar para:
 Implementar primeiro:
 
 - validação estrita de `Record`
-- shell Sand Class B
+- shell Engineer with Clown traits
 - stream interna oficial por instância
 - HTML fragments para colunas e cards
 - Datastar signals para body mode, colapso e status
@@ -606,7 +609,7 @@ Entrar quando o backend suportar:
 
 ## Decisão Final
 
-O Kanban oficial de `Record` deve ser implementado como `Sand Class B: Hybrid Reactive`.
+O Kanban oficial de `Record` deve ser implementado como `Engineer with Clown traits`.
 
 Regra principal:
 

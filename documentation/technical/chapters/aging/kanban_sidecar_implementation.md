@@ -8,12 +8,12 @@ This document proposes a holistic implementation for:
 - moving rich task-specific data into sidecar tables
 - exposing that data cleanly through views and endpoints
 - supporting multiple official `sand/` components with different behavior
-- implementing the official Kanban as `Sand Class B: Hybrid Reactive`
+- implementing the official Kanban as `Engineer with Clown traits`
 
 This document complements:
 
 - `web_sand_classes.md`
-- `kanban_sand_class_b_spec.md`
+- `kanban_sand_class_b_spec.md` (legacy filename, updated class terminology)
 
 ## Problem
 
@@ -599,7 +599,7 @@ These actions can internally use the generic table layer, but the component shou
 
 ## Endpoint model by Sand Class
 
-## Sand Class A: Fragment Shell
+## Engineer
 
 Recommended endpoint profile:
 
@@ -612,7 +612,7 @@ Best for:
 - record browsers
 - fragment-first layouts
 
-## Sand Class B: Hybrid Reactive
+## Clown
 
 Recommended endpoint profile:
 
@@ -622,27 +622,42 @@ Recommended endpoint profile:
 
 Best for:
 
-- official Kanban
 - dashboards with interaction
 - widgets with local UI state and structured backend data
 
-This is the class chosen for the Kanban.
+The Kanban should borrow from this class, but should not be a pure Clown widget.
 
-## Sand Class C: Signal Surface
+## Monk
 
 Recommended endpoint profile:
 
 - same stream endpoint
-- stream emits mostly signal patches instead of large fragments
-- writes can stay generic or action-based
+- stream can emit raw JSON SSE or lightweight signal patches
+- writes often stay generic or are delegated to client-heavy flows
 
 Best for:
 
-- clocks
-- compact summaries
-- stable small surfaces
+- experimental client-heavy widgets
+- legacy ports
+- library-driven rendering
 
-## Sand Class D: Imperative Specialist
+## Mercenary
+
+Recommended endpoint profile:
+
+- prefers generic host-mediated routes and portable fetch-style contracts
+- can optionally use the official stream when embedded in Lince
+- keeps stronger fallback behavior
+
+Best for:
+
+- showcase widgets
+- migration widgets
+- embeds
+- reference bridge widgets
+- framework-backed portable widgets
+
+## Astromancer
 
 Recommended endpoint profile:
 
@@ -655,26 +670,13 @@ Best for:
 - terminal
 - canvas
 - pointer-heavy custom interactions
-
-## Sand Class E: External-Compatible Official
-
-Recommended endpoint profile:
-
-- prefers existing generic host-mediated routes
-- can optionally use the official stream when embedded in Lince
-- keeps stronger fallback behavior
-
-Best for:
-
-- showcase widgets
-- migration widgets
-- reference bridge widgets
+- WebAssembly-backed widgets
 
 ## Kanban implementation
 
 ## Chosen class
 
-The official Kanban should be implemented as `Sand Class B: Hybrid Reactive`.
+The official Kanban should be implemented as `Engineer with Clown traits`.
 
 Reason:
 
@@ -878,7 +880,7 @@ Storage:
 
 Class:
 
-- Sand Class A or C depending on UX
+- `Engineer` or `Clown` depending on UX
 
 ### Minimal Kanban
 
@@ -889,7 +891,7 @@ Storage:
 
 Class:
 
-- Sand Class B
+- `Engineer with light Clown traits`
 
 ### Planning Kanban
 
@@ -903,7 +905,7 @@ Storage:
 
 Class:
 
-- Sand Class B
+- `Engineer with Clown traits`
 
 ### Timeline or scheduling board
 
@@ -914,7 +916,7 @@ Storage:
 
 Class:
 
-- Sand Class A or B
+- `Engineer` or `Engineer with Clown traits`
 
 ### Worklog dashboard
 
@@ -926,7 +928,7 @@ Storage:
 
 Class:
 
-- Sand Class C or B
+- `Clown` or `Engineer with Clown traits`
 
 ## Implementation changes in the web crate
 

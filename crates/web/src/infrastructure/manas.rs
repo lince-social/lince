@@ -97,7 +97,7 @@ impl ManasGateway {
             .await
     }
 
-    async fn send_backend_request(
+    pub async fn send_backend_request(
         &self,
         base_url: &str,
         bearer_token: &str,
@@ -105,7 +105,11 @@ impl ManasGateway {
         path: &str,
         body: Option<Value>,
     ) -> Result<Response, String> {
-        let url = format!("{}{}", normalize_base_url(base_url), path);
+        let url = if path.starts_with("http://") || path.starts_with("https://") {
+            path.to_string()
+        } else {
+            format!("{}{}", normalize_base_url(base_url), path)
+        };
         let mut request = self
             .http
             .request(method.clone(), url)

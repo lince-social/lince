@@ -231,6 +231,11 @@ impl BackendApiService {
             .map_err(Error::other)
     }
 
+    pub async fn download_file(&self, key: &str) -> Result<DownloadedObject, Error> {
+        let key = validate_file_key(key)?;
+        self.services.storage.download_object(&key).await
+    }
+
     pub fn issue_file_link(
         &self,
         _claims: &AuthSubject,

@@ -77,6 +77,8 @@ const PERMISSION_DESCRIPTIONS = {
     "Permite controlar play, pause, proxima faixa e faixa anterior dentro do widget.",
   print_backend:
     "Permite acionar uma operacao demonstrativa no backend local por meio do host.",
+  read_files:
+    "Permite ler um arquivo no bucket do servidor selecionado por meio do backend do host.",
   read_email:
     "Permite ler dados mock de email para resumos, alertas ou widgets de caixa de entrada.",
   read_location:
@@ -503,6 +505,7 @@ function cardRequiresServer(card) {
   const permissions = Array.isArray(card?.permissions) ? card.permissions : [];
   return (
     permissions.includes("read_view_stream") ||
+    permissions.includes("read_files") ||
     permissions.includes("write_records") ||
     permissions.includes("write_table")
   );

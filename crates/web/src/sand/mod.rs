@@ -1,4 +1,6 @@
+mod bucket_image_view;
 mod extra_simple;
+mod calendar;
 mod general_creation;
 mod kanban_record_view;
 mod lince_logo_led;
@@ -6,7 +8,13 @@ mod link_chip;
 mod local_terminal;
 mod markdown_notes;
 mod organ_management;
+mod ops_clock;
+mod view_table_editor;
+mod spotify_control;
 mod record_crud;
+mod tasklist;
+mod tasks_table;
+mod weather;
 
 use {
     crate::domain::lince_package::{LincePackage, PackageManifest, build_lince_archive},
@@ -46,8 +54,10 @@ pub(crate) struct SandWidgetSource {
 
 type SandSourceBuilder = fn() -> SandWidgetSource;
 
-const OFFICIAL_WIDGETS: [SandSourceBuilder; 9] = [
+const OFFICIAL_WIDGETS: [SandSourceBuilder; 17] = [
+    bucket_image_view::source,
     extra_simple::source,
+    calendar::source,
     general_creation::source,
     kanban_record_view::source,
     lince_logo_led::source,
@@ -55,7 +65,13 @@ const OFFICIAL_WIDGETS: [SandSourceBuilder; 9] = [
     local_terminal::source,
     markdown_notes::source,
     organ_management::source,
+    ops_clock::source,
+    view_table_editor::source,
+    spotify_control::source,
     record_crud::source,
+    tasklist::source,
+    tasks_table::source,
+    weather::source,
 ];
 
 pub fn official_packages() -> Vec<LincePackage> {

@@ -2437,7 +2437,7 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                 @if let Some(parent_head) = parent.get("head").and_then(Value::as_str) {
                     p.kanban-focus-card__parent {
                         "Parent: "
-                        a href="#" data-record-link=(parent.get("id").and_then(Value::as_i64).unwrap_or_default()) data-on:click="$focusMarkdown = false; $focusSheetOpen = true" { (parent_head) }
+                        a href="#" data-record-link=(parent.get("id").and_then(Value::as_i64).unwrap_or_default()) data-on:click="$focusMarkdown = true; $focusSheetOpen = true" { (parent_head) }
                     }
                 }
             }
@@ -2461,7 +2461,7 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                     ul {
                         @for child in &detail.children {
                             li {
-                                a href="#" data-record-link=(child.get("id").and_then(Value::as_i64).unwrap_or_default()) data-on:click="$focusMarkdown = false; $focusSheetOpen = true" {
+                                a href="#" data-record-link=(child.get("id").and_then(Value::as_i64).unwrap_or_default()) data-on:click="$focusMarkdown = true; $focusSheetOpen = true" {
                                     (child.get("head").and_then(Value::as_str).unwrap_or("Untitled"))
                                 }
                             }

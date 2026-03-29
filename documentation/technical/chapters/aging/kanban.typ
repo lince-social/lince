@@ -245,6 +245,75 @@ Future expansion:
 - if they become necessary later, add a dedicated persisted filter or preset model
 - do not overload `view.query` with per-widget temporary filters
 
+==== Current runtime flow
+
+The current code does not synthesize a base view just because the user added a Kanban.
+
+Current setup:
+
+- the widget card must already point at a real `server_id` and `view_id`
+- if `view_id` is missing, the widget is misconfigured
+- the closest generic starting point is the normal view creation flow, whose default SQL is `SELECT * FROM record`
+- Kanban itself only attaches to that existing base view
+- the base view is the source dataset; Kanban layers runtime filters on top of it
+
+When the widget loads:
+
+- `/host/widgets/{instance_id}/contract` reads the card state and returns the source view metadata plus the persisted filter rows from `widgetState`
+- `/host/widgets/{instance_id}/stream` reads the same card, loads the source view, validates that the stream is not a special non-SQL view, and builds a derived SQL query from the stored filter rows
+- the host creates or updates a derived view named `__lince_web_kanban_{instance_id}`
+- the widget subscribes to that derived view stream, not to the source view directly
+
+When the user changes filters:
+
+- the widget sends `apply-filters`
+- `KanbanFilterService` persists the structured filter rows into `widgetState.filters`
+- `filters_version` is incremented
+- the widget reconnects, which causes the host to rebuild the derived query from the stored rows
+
+When the user wants another Kanban:
+
+- a second widget instance can point at the same source `view_id` and keep its own filters
+- the derived view name includes the widget instance id, so the two Kanbans do not overwrite each other
+- if the second board should use a different dataset, it needs a different source `view_id` or a different base view query
+- there is no shared preset model in v1, so shared filtered boards are still just separate widget instances with duplicated filter state
+- the host does not inject a separate Kanban projection query on top of the base view; it only wraps the base query with filter predicates and ordering
+
+Readiness rule:
+
+- a view is Kanban-ready when its snapshot exposes at least `id`, `quantity`, `head`, and `body`
+- optional normalized columns can be missing; the widget hides the corresponding UI instead of inventing values
+- if the snapshot columns do not satisfy the contract, the board renders a mismatch state instead of trying to coerce the data
+
+==== Operator runbook
+
+Use this flow when you need a Kanban board in practice:
+
+1. Create or choose the source view.
+- If you want a generic starting point, use the normal view creator. Its default SQL is `SELECT * FROM record`.
+- If you want richer Kanban fields or joins, put that SQL in the source view itself.
+- The Kanban runtime does not add its own projection layer later.
+
+2. Point the widget at that view.
+- Set the widget card `server_id`.
+- Set the widget card `view_id`.
+- The widget will not run without both values.
+
+3. Open the widget.
+- `/host/widgets/{instance_id}/contract` resolves the widget contract.
+- `/host/widgets/{instance_id}/stream` loads the source view and derives a filtered SQL wrapper from the persisted filter rows.
+- The host creates or reuses a derived view named `__lince_web_kanban_{instance_id}` and streams that derived view to the widget.
+
+4. Apply filters from the UI.
+- Filters are stored per widget instance in `widgetState`.
+- Saving filters does not rewrite the source view query.
+- After `apply-filters`, the widget reconnects so the host can rebuild the derived view query.
+
+5. Decide what kind of second Kanban you need.
+- If you want the same dataset with different filters, create another widget instance that points at the same source `view_id`.
+- If you want a different dataset or a different projection, create another source view first and point the new widget at it.
+- v1 has no shared filter preset model, so each Kanban instance owns its own filter state.
+
 ==== Example normalized SQL direction
 
 The following is a recommended shape for a normalized Kanban view under the current sidecar plan:

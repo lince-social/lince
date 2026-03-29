@@ -2,7 +2,7 @@ use maud::{html, Markup};
 
 pub(super) fn body() -> Markup {
     html! {
-        .widget
+            .widget
             id="app"
             data-lince-bridge-root
             data-signals="{ queryOpen: false, activeSheet: '', focusSheetOpen: false, focusMarkdown: false }"
@@ -10,7 +10,7 @@ pub(super) fn body() -> Markup {
             data-on:kanban-open-create="$activeSheet = 'create'"
             data-on:kanban-open-edit="$focusSheetOpen = false; $activeSheet = 'edit'"
             data-on:kanban-close-sheets="$activeSheet = ''"
-            data-on:kanban-open-focus="$activeSheet = ''; $focusMarkdown = false; $focusSheetOpen = true"
+            data-on:kanban-open-focus="$activeSheet = ''; $focusMarkdown = true; $focusSheetOpen = true"
             data-on:kanban-close-focus="$focusMarkdown = false; $focusSheetOpen = false"
         {
             .widgetSurface {
@@ -101,21 +101,22 @@ pub(super) fn body() -> Markup {
                     #kanban-edit-sheet-body {}
                 }
             }
-            .sheetOverlay id="kanban-focus-sheet" data-show="$focusSheetOpen" style="display: none" {
-                button.sheetBackdrop type="button" data-close-focus="true" data-on:click="$focusMarkdown = false; $focusSheetOpen = false" {}
-                .sheetPanel {
-                    .sheetHeader {
-                        .headerMeta {
+                .sheetOverlay id="kanban-focus-sheet" data-show="$focusSheetOpen" style="display: none" {
+                    button.sheetBackdrop type="button" data-close-focus="true" data-on:click="$focusMarkdown = false; $focusSheetOpen = false" {}
+                    .sheetPanel {
+                        .sheetHeader {
+                            .headerMeta {
                             .headerTitle { "Task detail" }
                             .headerSub { "Focused record detail loaded from the host service." }
                         }
                         .headerActions {
                             button.toolbarBtn type="button" data-close-focus="true" data-on:click="$focusMarkdown = false; $focusSheetOpen = false" { "Close" }
+                            }
                         }
+                        #kanban-focus-action-panel.panel hidden {}
+                        #kanban-focus-card {}
                     }
-                    #kanban-focus-card {}
                 }
             }
         }
     }
-}

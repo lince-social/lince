@@ -258,6 +258,11 @@ const STYLE: &str =
                 color: #f3d6ac;
             }
 
+            .toolbarBtn--danger {
+                border-color: rgba(223, 116, 138, 0.28);
+                color: var(--warn-text);
+            }
+
             .boardWrap {
                 flex: 1;
                 min-height: 0;

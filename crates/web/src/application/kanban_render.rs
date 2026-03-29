@@ -273,11 +273,11 @@ fn render_card(row: &KanbanRow) -> Markup {
         {
             .cardActions {
                 button.cardAction type="button" data-card-body-mode="head" title="Show only the head" { "_" }
-                button.cardAction.is-active type="button" data-card-body-mode="compact" title="Show compact body" { "=" }
-                button.cardAction type="button" data-card-body-mode="full" title="Show full body" { "+" }
-                button.cardAction type="button" data-open-focus=(row.id) data-on:click="$focusMarkdown = false; $focusSheetOpen = true" title="Focus card" { "[]" }
+                button.cardAction type="button" data-card-body-mode="compact" title="Show compact body" { "=" }
+                button.cardAction.is-active type="button" data-card-body-mode="full" title="Show full body" { "+" }
+                button.cardAction type="button" data-open-focus=(row.id) data-on:click="$focusMarkdown = true; $focusSheetOpen = true" title="Focus card" { "[]" }
             }
-            button.head.headButton type="button" data-open-focus=(row.id) data-on:click="$focusMarkdown = false; $focusSheetOpen = true" {
+            button.head.headButton type="button" data-open-focus=(row.id) data-on:click="$focusMarkdown = true; $focusSheetOpen = true" {
                 @if row.head.trim().is_empty() {
                     "(no head)"
                 } @else {
@@ -302,7 +302,7 @@ fn render_card(row: &KanbanRow) -> Markup {
                 @if let Some(parent_id) = row.parent_id {
                     .parentLink {
                         "Parent "
-                        a href="#" data-record-link=(parent_id) data-on:click="$focusMarkdown = false; $focusSheetOpen = true" { (parent_head) }
+                        a href="#" data-record-link=(parent_id) data-on:click="$focusMarkdown = true; $focusSheetOpen = true" { (parent_head) }
                     }
                 }
             }

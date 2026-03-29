@@ -22,12 +22,33 @@ pub(crate) const JS_HELPERS: &str = r##"
           );
       }
 
+      function toggleMarkdownTaskLine(source, lineIndex, checked) {
+        const text = String(source || "").replace(/\r\n/g, "\n");
+        const lines = text.split("\n");
+        const index = Number(lineIndex);
+        if (!Number.isInteger(index) || index < 0 || index >= lines.length) {
+          return text;
+        }
+
+        const line = lines[index];
+        const nextLine = line.replace(
+          /^(\s*[-*]\s+\[)( |x|X)(\])(.*)$/,
+          "$1" + (checked ? "x" : " ") + "$3$4",
+        );
+        if (nextLine === line) {
+          return text;
+        }
+
+        lines[index] = nextLine;
+        return lines.join("\n");
+      }
+
       function renderMarkdown(source) {
         const lines = String(source || "").replace(/\r\n/g, "\n").split("\n");
         const blocks = [];
         let paragraph = [];
         let listItems = [];
-        let listTag = "";
+        let listKind = "";
         let codeFence = [];
         let inFence = false;
 
@@ -43,17 +64,39 @@ pub(crate) const JS_HELPERS: &str = r##"
           if (!listItems.length) {
             return;
           }
-          blocks.push(
-            "<" +
-              listTag +
-              ">" +
-              listItems.map((item) => "<li>" + applyInlineMarkdown(item) + "</li>").join("") +
-              "</" +
-              listTag +
-              ">",
-          );
+
+          if (listKind === "task") {
+            blocks.push(
+              "<ul class=\"markdownTaskList\">" +
+                listItems
+                  .map((item) =>
+                    "<li class=\"markdownTaskItem\"><label class=\"markdownTask\"><input type=\"checkbox\" aria-label=\"Toggle task item\" data-markdown-task-line=\"" +
+                    item.lineIndex +
+                    "\" " +
+                    (item.checked ? "checked" : "") +
+                    "><span>" +
+                    applyInlineMarkdown(item.text) +
+                    "</span></label></li>",
+                  )
+                  .join("") +
+                "</ul>",
+            );
+          } else {
+            blocks.push(
+              "<" +
+                listKind +
+                ">" +
+                listItems
+                  .map((item) => "<li>" + applyInlineMarkdown(item) + "</li>")
+                  .join("") +
+                "</" +
+                listKind +
+                ">",
+            );
+          }
+
           listItems = [];
-          listTag = "";
+          listKind = "";
         }
 
         function flushFence() {
@@ -65,7 +108,8 @@ pub(crate) const JS_HELPERS: &str = r##"
           inFence = false;
         }
 
-        for (const rawLine of lines) {
+        for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+          const rawLine = lines[lineIndex];
           const line = rawLine.trimEnd();
           const trimmed = line.trim();
 
@@ -108,13 +152,28 @@ pub(crate) const JS_HELPERS: &str = r##"
             continue;
           }
 
+          const task = trimmed.match(/^[-*]\s+\[([ xX])\](?:\s+(.*))?$/);
+          if (task) {
+            flushParagraph();
+            if (listKind && listKind !== "task") {
+              flushList();
+            }
+            listKind = "task";
+            listItems.push({
+              checked: task[1].toLowerCase() === "x",
+              lineIndex,
+              text: task[2] || "",
+            });
+            continue;
+          }
+
           const bullet = trimmed.match(/^[-*]\s+(.+)$/);
           if (bullet) {
             flushParagraph();
-            if (listTag && listTag !== "ul") {
+            if (listKind && listKind !== "ul") {
               flushList();
             }
-            listTag = "ul";
+            listKind = "ul";
             listItems.push(bullet[1]);
             continue;
           }
@@ -122,10 +181,10 @@ pub(crate) const JS_HELPERS: &str = r##"
           const ordered = trimmed.match(/^\d+\.\s+(.+)$/);
           if (ordered) {
             flushParagraph();
-            if (listTag && listTag !== "ol") {
+            if (listKind && listKind !== "ol") {
               flushList();
             }
-            listTag = "ol";
+            listKind = "ol";
             listItems.push(ordered[1]);
             continue;
           }
@@ -188,6 +247,44 @@ pub(crate) const PREVIEW_STYLES: &str = r#"
       .markdownRender ul,
       .markdownRender ol {
         padding-left: 1.2rem;
+      }
+
+      .markdownRender .markdownTaskList {
+        padding-left: 0;
+        list-style: none;
+      }
+
+      .markdownRender .markdownTaskItem {
+        margin: 0 0 0.65em;
+      }
+
+      .markdownRender .markdownTask {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.65rem;
+      }
+
+      .markdownRender .markdownTask input[type="checkbox"] {
+        flex: 0 0 auto;
+        width: 1em;
+        height: 1em;
+        margin-top: 0.15em;
+        accent-color: var(--accent, inherit);
+        cursor: pointer;
+      }
+
+      .markdownRender .markdownTask input[type="checkbox"]:focus-visible {
+        outline: 2px solid currentColor;
+        outline-offset: 2px;
+      }
+
+      .markdownRender .markdownTask input[type="checkbox"]:checked + span {
+        color: var(--muted, inherit);
+        text-decoration: line-through;
+      }
+
+      .markdownRender .markdownTask span {
+        min-width: 0;
       }
 
       .markdownRender blockquote {

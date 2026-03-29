@@ -13,7 +13,8 @@ pub(super) fn script() -> String {
             const DEFAULT_WIDTH = 260;
             const COLLAPSED_WIDTH = 64;
             const MIN_WIDTH = 80;
-            const DEFAULT_BODY_MODE = "compact";
+            const DEFAULT_BODY_MODE = "full";
+            const UI_SCHEMA_VERSION = 2;
             const BODY_MODES = new Set(["head", "compact", "full"]);
             const app = document.getElementById("app");
 
@@ -45,6 +46,7 @@ pub(super) fn script() -> String {
                 editSheetBody: document.getElementById("kanban-edit-sheet-body"),
                 focusSheet: document.getElementById("kanban-focus-sheet"),
                 focusCard: document.getElementById("kanban-focus-card"),
+                focusActionPanel: document.getElementById("kanban-focus-action-panel"),
             };
 
             const state = {
@@ -69,6 +71,7 @@ pub(super) fn script() -> String {
                 formOptions: null,
                 formOptionsPromise: null,
                 focusDetail: null,
+                focusAction: null,
                 pendingWorklogStops: [],
                 activeWorklogIntervals: [],
                 heartbeatTimer: null,
@@ -174,11 +177,23 @@ pub(super) fn script() -> String {
                 }
 
                 const focusedRecordId = Number(rawUi?.focusedRecordId);
+                const rawVersion = Number(rawUi?.uiVersion);
+                const hasSchemaVersion =
+                    Number.isInteger(rawVersion) && rawVersion >= UI_SCHEMA_VERSION;
+                const rawDefaultBodyMode = String(rawUi?.defaultBodyMode || "");
+                const nextDefaultBodyMode = hasSchemaVersion
+                    ? (isBodyMode(rawUi?.defaultBodyMode)
+                          ? String(rawUi.defaultBodyMode)
+                          : DEFAULT_BODY_MODE)
+                    : rawDefaultBodyMode === "head"
+                      ? "head"
+                      : rawDefaultBodyMode === "full"
+                        ? "full"
+                        : DEFAULT_BODY_MODE;
                 return {
                     lanes: nextLanes,
-                    defaultBodyMode: isBodyMode(rawUi?.defaultBodyMode)
-                        ? String(rawUi.defaultBodyMode)
-                        : DEFAULT_BODY_MODE,
+                    uiVersion: UI_SCHEMA_VERSION,
+                    defaultBodyMode: nextDefaultBodyMode,
                     cardModes,
                     focusedRecordId:
                         Number.isInteger(focusedRecordId) && focusedRecordId > 0
@@ -1115,6 +1130,7 @@ pub(super) fn script() -> String {
                 } else if (!state.focusDetail && state.ui.focusedRecordId) {
                     await loadRecordDetail(state.ui.focusedRecordId);
                 }
+                closeFocusAction();
                 closeFocusSheet();
                 openSheet("edit");
                 if (state.formOptions) {
@@ -1214,17 +1230,6 @@ pub(super) fn script() -> String {
                 }
             }
 
-            async function deleteRecordFromUi(recordId) {
-                if (!window.confirm("Delete this record?")) {
-                    return;
-                }
-                await postAction("delete-record", { recordId: Number(recordId) });
-                closeSheet("edit");
-                closeFocus();
-                state.focusDetail = null;
-                await refreshRuntime(true);
-            }
-
             function findComment(commentId) {
                 return Array.isArray(state.focusDetail?.comments)
                     ? state.focusDetail.comments.find(
@@ -1233,95 +1238,355 @@ pub(super) fn script() -> String {
                     : null;
             }
 
-            async function createComment(recordId) {
-                const body = window.prompt("Comment body", "");
-                if (body == null) {
+            function findResource(resourceRefId) {
+                return Array.isArray(state.focusDetail?.resources)
+                    ? state.focusDetail.resources.find(
+                          (entry) => Number(entry?.id || 0) === Number(resourceRefId),
+                      ) || null
+                    : null;
+            }
+
+            function closeFocusAction() {
+                state.focusAction = null;
+                if (elements.focusActionPanel) {
+                    elements.focusActionPanel.innerHTML = "";
+                    elements.focusActionPanel.hidden = true;
+                }
+            }
+
+            function focusActionInput(name) {
+                return elements.focusActionPanel?.querySelector(`[data-focus-action-field="${name}"]`);
+            }
+
+            function setFocusActionMessage(message) {
+                const target = elements.focusActionPanel?.querySelector("[data-focus-action-message]");
+                if (target) {
+                    target.textContent = String(message || "");
+                }
+            }
+
+            function renderFocusActionPanel(action) {
+                if (!action) {
+                    return "";
+                }
+
+                const recordId = Number(action.recordId || state.focusDetail?.record_id || 0);
+                const recordLabel = state.focusDetail?.head?.trim()
+                    ? state.focusDetail.head.trim()
+                    : `Record #${recordId}`;
+
+                if (action.kind === "create-comment" || action.kind === "edit-comment") {
+                    const comment = action.commentId ? findComment(action.commentId) : null;
+                    const body = action.kind === "edit-comment"
+                        ? String(action.initialBody || comment?.body || "")
+                        : "";
+                    return `
+                        <div class="sheetHeader">
+                            <div class="headerMeta">
+                                <div class="headerTitle">${action.kind === "edit-comment" ? "Edit comment" : "Add comment"}</div>
+                                <div class="headerSub">${escapeHtml(recordLabel)}</div>
+                            </div>
+                            <div class="headerActions">
+                                <button class="toolbarBtn" type="button" data-focus-action-close>Close</button>
+                            </div>
+                        </div>
+                        <form data-focus-action-form data-focus-action-kind="${escapeHtml(action.kind)}">
+                            <div class="fieldBlock">
+                                <label class="fieldLabel" for="focus-action-body">Comment body</label>
+                                <textarea class="textarea" id="focus-action-body" data-focus-action-field="body" spellcheck="true" placeholder="Write a comment">${escapeHtml(body)}</textarea>
+                            </div>
+                            <p class="small" data-focus-action-message></p>
+                            <div class="sheetActions">
+                                <button class="toolbarBtn" type="button" data-focus-action-close>Cancel</button>
+                                <button class="toolbarBtn toolbarBtn--accent" type="submit">${action.kind === "edit-comment" ? "Save comment" : "Add comment"}</button>
+                            </div>
+                        </form>
+                    `;
+                }
+
+                if (action.kind === "create-resource-ref") {
+                    return `
+                        <div class="sheetHeader">
+                            <div class="headerMeta">
+                                <div class="headerTitle">Link resource</div>
+                                <div class="headerSub">${escapeHtml(recordLabel)}</div>
+                            </div>
+                            <div class="headerActions">
+                                <button class="toolbarBtn" type="button" data-focus-action-close>Close</button>
+                            </div>
+                        </div>
+                        <form data-focus-action-form data-focus-action-kind="${escapeHtml(action.kind)}">
+                            <div class="formGrid">
+                                <div class="fieldBlock">
+                                    <label class="fieldLabel" for="focus-action-resource-path">Resource path</label>
+                                    <input class="field" id="focus-action-resource-path" data-focus-action-field="resourcePath" type="text" placeholder="bucket/path/to/file.png">
+                                </div>
+                                <div class="fieldBlock">
+                                    <label class="fieldLabel" for="focus-action-resource-kind">Resource kind</label>
+                                    <input class="field" id="focus-action-resource-kind" data-focus-action-field="resourceKind" type="text" value="image" placeholder="image">
+                                </div>
+                                <div class="fieldBlock">
+                                    <label class="fieldLabel" for="focus-action-resource-title">Title</label>
+                                    <input class="field" id="focus-action-resource-title" data-focus-action-field="title" type="text" placeholder="Optional title">
+                                </div>
+                            </div>
+                            <p class="small" data-focus-action-message></p>
+                            <div class="sheetActions">
+                                <button class="toolbarBtn" type="button" data-focus-action-close>Cancel</button>
+                                <button class="toolbarBtn toolbarBtn--accent" type="submit">Link resource</button>
+                            </div>
+                        </form>
+                    `;
+                }
+
+                if (action.kind === "start-worklog") {
+                    return `
+                        <div class="sheetHeader">
+                            <div class="headerMeta">
+                                <div class="headerTitle">Start worklog</div>
+                                <div class="headerSub">${escapeHtml(recordLabel)}</div>
+                            </div>
+                            <div class="headerActions">
+                                <button class="toolbarBtn" type="button" data-focus-action-close>Close</button>
+                            </div>
+                        </div>
+                        <form data-focus-action-form data-focus-action-kind="${escapeHtml(action.kind)}">
+                            <div class="fieldBlock">
+                                <label class="fieldLabel" for="focus-action-note">Worklog note</label>
+                                <textarea class="textarea" id="focus-action-note" data-focus-action-field="note" spellcheck="true" placeholder="Optional note"></textarea>
+                            </div>
+                            <p class="small" data-focus-action-message></p>
+                            <div class="sheetActions">
+                                <button class="toolbarBtn" type="button" data-focus-action-close>Cancel</button>
+                                <button class="toolbarBtn toolbarBtn--accent" type="submit">Start</button>
+                            </div>
+                        </form>
+                    `;
+                }
+
+                if (action.kind === "delete-comment" || action.kind === "delete-resource-ref" || action.kind === "delete-record") {
+                    const comment = action.commentId ? findComment(action.commentId) : null;
+                    const resource = action.resourceRefId ? findResource(action.resourceRefId) : null;
+                    const bodyCopy =
+                        action.kind === "delete-comment"
+                            ? String(comment?.body || "This comment will be removed.")
+                            : action.kind === "delete-resource-ref"
+                                ? String(resource?.title || resource?.resource_path || "This resource link will be removed.")
+                                : `Delete ${recordLabel}?`;
+                    return `
+                        <div class="sheetHeader">
+                            <div class="headerMeta">
+                                <div class="headerTitle">${action.kind === "delete-record" ? "Delete record" : "Confirm removal"}</div>
+                                <div class="headerSub">${escapeHtml(recordLabel)}</div>
+                            </div>
+                            <div class="headerActions">
+                                <button class="toolbarBtn" type="button" data-focus-action-close>Close</button>
+                            </div>
+                        </div>
+                        <form data-focus-action-form data-focus-action-kind="${escapeHtml(action.kind)}">
+                            <p>${escapeHtml(bodyCopy)}</p>
+                            <p class="small" data-focus-action-message></p>
+                            <div class="sheetActions">
+                                <button class="toolbarBtn" type="button" data-focus-action-close>Cancel</button>
+                                <button class="toolbarBtn toolbarBtn--danger" type="submit">${action.kind === "delete-record" ? "Delete record" : "Remove"}</button>
+                            </div>
+                        </form>
+                    `;
+                }
+
+                return "";
+            }
+
+            function openFocusAction(action) {
+                state.focusAction = action;
+                if (!elements.focusActionPanel) {
                     return;
                 }
-                await postAction("create-comment", {
-                    recordId: Number(recordId),
-                    body,
+                elements.focusActionPanel.innerHTML = renderFocusActionPanel(action);
+                elements.focusActionPanel.hidden = !action;
+                elements.focusActionPanel.scrollIntoView({
+                    block: "nearest",
+                    behavior: "smooth",
                 });
-                await loadRecordDetail(Number(recordId));
+                const firstField =
+                    focusActionInput("body") ||
+                    focusActionInput("resourcePath") ||
+                    focusActionInput("note");
+                firstField?.focus();
+            }
+
+            async function submitFocusAction() {
+                const action = state.focusAction;
+                if (!action) {
+                    return;
+                }
+
+                const recordId = Number(action.recordId || state.focusDetail?.record_id || 0);
+
+                try {
+                    if (action.kind === "create-comment") {
+                        const body = String(focusActionInput("body")?.value || "").trim();
+                        if (!body) {
+                            setFocusActionMessage("Comentario vazio nao e valido.");
+                            focusActionInput("body")?.focus();
+                            return;
+                        }
+                        await postAction("create-comment", {
+                            recordId,
+                            body,
+                        });
+                        closeFocusAction();
+                        await loadRecordDetail(recordId);
+                        return;
+                    }
+
+                    if (action.kind === "edit-comment") {
+                        const body = String(focusActionInput("body")?.value || "").trim();
+                        if (!body) {
+                            setFocusActionMessage("Comentario vazio nao e valido.");
+                            focusActionInput("body")?.focus();
+                            return;
+                        }
+                        await postAction("update-comment", {
+                            commentId: Number(action.commentId || 0),
+                            body,
+                        });
+                        closeFocusAction();
+                        if (state.focusDetail?.record_id) {
+                            await loadRecordDetail(Number(state.focusDetail.record_id));
+                        }
+                        return;
+                    }
+
+                    if (action.kind === "create-resource-ref") {
+                        const resourcePath = String(focusActionInput("resourcePath")?.value || "").trim();
+                        if (!resourcePath) {
+                            setFocusActionMessage("resource_path vazio nao e valido.");
+                            focusActionInput("resourcePath")?.focus();
+                            return;
+                        }
+                        const resourceKind = String(focusActionInput("resourceKind")?.value || "image").trim() || "image";
+                        const title = String(focusActionInput("title")?.value || "").trim();
+                        await postAction("create-resource-ref", {
+                            recordId,
+                            provider: "bucket",
+                            resourceKind,
+                            resourcePath,
+                            title: title || null,
+                            position: Array.isArray(state.focusDetail?.resources)
+                                ? state.focusDetail.resources.length
+                                : null,
+                        });
+                        closeFocusAction();
+                        if (state.focusDetail?.record_id) {
+                            await loadRecordDetail(Number(state.focusDetail.record_id));
+                        }
+                        return;
+                    }
+
+                    if (action.kind === "start-worklog") {
+                        const note = String(focusActionInput("note")?.value || "").trim();
+                        const outcome = await postAction("start-worklog", {
+                            recordId,
+                            note: note || null,
+                        });
+                        const intervalId = Number(outcome?.detail?.interval?.id || 0);
+                        if (intervalId > 0) {
+                            upsertActiveWorklogInterval(recordId, intervalId);
+                        }
+                        closeFocusAction();
+                        await refreshRuntime(true);
+                        await loadRecordDetail(recordId);
+                        return;
+                    }
+
+                    if (action.kind === "delete-comment") {
+                        await postAction("delete-comment", {
+                            commentId: Number(action.commentId || 0),
+                        });
+                        closeFocusAction();
+                        if (state.focusDetail?.record_id) {
+                            await loadRecordDetail(Number(state.focusDetail.record_id));
+                        }
+                        return;
+                    }
+
+                    if (action.kind === "delete-resource-ref") {
+                        await postAction("delete-resource-ref", {
+                            resourceRefId: Number(action.resourceRefId || 0),
+                        });
+                        closeFocusAction();
+                        if (state.focusDetail?.record_id) {
+                            await loadRecordDetail(Number(state.focusDetail.record_id));
+                        }
+                        return;
+                    }
+
+                    if (action.kind === "delete-record") {
+                        await postAction("delete-record", { recordId });
+                        closeFocusAction();
+                        closeSheet("edit");
+                        closeFocus();
+                        state.focusDetail = null;
+                        await refreshRuntime(true);
+                    }
+                } catch (error) {
+                    setFocusActionMessage(error instanceof Error ? error.message : String(error));
+                }
+            }
+
+            async function deleteRecordFromUi(recordId) {
+                openFocusAction({
+                    kind: "delete-record",
+                    recordId: Number(recordId),
+                });
+            }
+
+            async function createComment(recordId) {
+                openFocusAction({
+                    kind: "create-comment",
+                    recordId: Number(recordId),
+                });
             }
 
             async function editComment(commentId) {
                 const comment = findComment(commentId);
-                const body = window.prompt(
-                    "Edit comment",
-                    String(comment?.body || ""),
-                );
-                if (body == null) {
-                    return;
-                }
-                await postAction("update-comment", {
+                openFocusAction({
+                    kind: "edit-comment",
+                    recordId: Number(state.focusDetail?.record_id || 0),
                     commentId: Number(commentId),
-                    body,
+                    initialBody: String(comment?.body || ""),
                 });
-                if (state.focusDetail?.record_id) {
-                    await loadRecordDetail(Number(state.focusDetail.record_id));
-                }
             }
 
             async function deleteComment(commentId) {
-                if (!window.confirm("Delete this comment?")) {
-                    return;
-                }
-                await postAction("delete-comment", {
+                openFocusAction({
+                    kind: "delete-comment",
+                    recordId: Number(state.focusDetail?.record_id || 0),
                     commentId: Number(commentId),
                 });
-                if (state.focusDetail?.record_id) {
-                    await loadRecordDetail(Number(state.focusDetail.record_id));
-                }
             }
 
             async function createResourceRef(recordId) {
-                const resourcePath = window.prompt("Resource path", "");
-                if (resourcePath == null || !String(resourcePath).trim()) {
-                    return;
-                }
-                const resourceKind =
-                    window.prompt("Resource kind", "image") || "image";
-                const title = window.prompt("Title (optional)", "") || null;
-                await postAction("create-resource-ref", {
+                openFocusAction({
+                    kind: "create-resource-ref",
                     recordId: Number(recordId),
-                    provider: "bucket",
-                    resourceKind: String(resourceKind).trim() || "image",
-                    resourcePath: String(resourcePath).trim(),
-                    title: title && title.trim() ? title.trim() : null,
-                    position: Array.isArray(state.focusDetail?.resources)
-                        ? state.focusDetail.resources.length
-                        : null,
                 });
-                if (state.focusDetail?.record_id) {
-                    await loadRecordDetail(Number(state.focusDetail.record_id));
-                }
             }
 
             async function deleteResourceRef(resourceRefId) {
-                if (!window.confirm("Remove this resource link?")) {
-                    return;
-                }
-                await postAction("delete-resource-ref", {
+                openFocusAction({
+                    kind: "delete-resource-ref",
+                    recordId: Number(state.focusDetail?.record_id || 0),
                     resourceRefId: Number(resourceRefId),
                 });
-                if (state.focusDetail?.record_id) {
-                    await loadRecordDetail(Number(state.focusDetail.record_id));
-                }
             }
 
             async function startWorklog(recordId) {
-                const note = window.prompt("Worklog note (optional)", "") || null;
-                const outcome = await postAction("start-worklog", {
+                openFocusAction({
+                    kind: "start-worklog",
                     recordId: Number(recordId),
-                    note: note && note.trim() ? note.trim() : null,
                 });
-                const intervalId = Number(outcome?.detail?.interval?.id || 0);
-                if (intervalId > 0) {
-                    upsertActiveWorklogInterval(Number(recordId), intervalId);
-                }
-                await refreshRuntime(true);
-                await loadRecordDetail(Number(recordId));
             }
 
             function queuePendingStop(recordId, intervalId, endedAt) {
@@ -1817,6 +2082,7 @@ pub(super) fn script() -> String {
                     elements.focusCard,
                     `<section class="kanban-focus-card"><p class="small">Loading task detail...</p></section>`,
                 );
+                closeFocusAction();
                 openFocusSheet();
                 const payload = await postAction("load-record-detail", {
                     recordId: Number(recordId),
@@ -1837,6 +2103,7 @@ pub(super) fn script() -> String {
             function closeFocus() {
                 closeFocusSheet();
                 elements.focusCard.innerHTML = "";
+                closeFocusAction();
                 closeSheet("edit");
                 state.focusDetail = null;
                 persistUi({
@@ -1991,6 +2258,13 @@ pub(super) fn script() -> String {
                     if (openCreateButton) {
                         event.preventDefault();
                         await openCreateSheet();
+                        return;
+                    }
+
+                    const focusActionCloseButton = event.target.closest("[data-focus-action-close]");
+                    if (focusActionCloseButton) {
+                        event.preventDefault();
+                        closeFocusAction();
                         return;
                     }
 
@@ -2193,6 +2467,16 @@ pub(super) fn script() -> String {
                         error instanceof Error ? error.message : String(error);
                     updateStatus();
                 }
+            });
+
+            app.addEventListener("submit", async (event) => {
+                const form = event.target.closest("[data-focus-action-form]");
+                if (!form) {
+                    return;
+                }
+
+                event.preventDefault();
+                await submitFocusAction();
             });
 
             app.addEventListener("pointerdown", (event) => {

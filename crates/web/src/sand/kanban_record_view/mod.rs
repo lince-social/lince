@@ -22,7 +22,7 @@ pub(crate) fn source() -> SandWidgetSource {
             ],
         },
         head_links: vec![],
-        inline_styles: vec![style()],
+        inline_styles: vec![style(), crate::sand::shared_markdown::PREVIEW_STYLES],
         body: body(),
         body_scripts: vec![crate::sand::WidgetScript::inline(script())],
     }
@@ -30,14 +30,20 @@ pub(crate) fn source() -> SandWidgetSource {
 
 fn body() -> Markup {
     html! {
-        .widget id="app" data-lince-bridge-root data-signals="{ queryOpen: false }" {
+        .widget id="app" data-lince-bridge-root data-signals="{ queryOpen: false, activeSheet: '', focusSheetOpen: false }" {
+            button type="button" id="kanban-signal-open-filter" hidden data-on:click="$activeSheet = 'filter'" {}
+            button type="button" id="kanban-signal-open-create" hidden data-on:click="$activeSheet = 'create'" {}
+            button type="button" id="kanban-signal-open-edit" hidden data-on:click="$activeSheet = 'edit'" {}
+            button type="button" id="kanban-signal-close-sheets" hidden data-on:click="$activeSheet = ''" {}
+            button type="button" id="kanban-signal-open-focus" hidden data-on:click="$focusSheetOpen = true" {}
+            button type="button" id="kanban-signal-close-focus" hidden data-on:click="$focusSheetOpen = false" {}
             .widgetSurface {
                 .panel {
                     .header {
                         #kanban-header-meta.headerMeta {
                             .headerTitle id="kanban-header-title" { "Kanban Record View" }
                             button.headerSubButton type="button" id="kanban-query-toggle" data-on:click="$queryOpen = !$queryOpen" { "Waiting for widget contract..." }
-                            pre.headerQuery id="kanban-query-copy" data-show="$queryOpen" {}
+                            pre.headerQuery id="kanban-query-copy" data-show="$queryOpen" style="display: none" {}
                         }
                         .headerActions {
                             span.status id="kanban-connection-status" { "Waiting" }
@@ -48,8 +54,8 @@ fn body() -> Markup {
                                 button.toolbarBtn type="button" data-set-default-body-mode="full" { "All full" }
                             }
                             button.toolbarBtn type="button" id="kanban-toggle-updates" { "Pause updates" }
-                            button.toolbarBtn type="button" id="kanban-open-filters" { "Filters" }
-                            button.toolbarBtn.toolbarBtn--accent type="button" id="kanban-open-create" { "New task" }
+                            button.toolbarBtn type="button" id="kanban-open-filters" data-on:click="$activeSheet = 'filter'" { "Filters" }
+                            button.toolbarBtn.toolbarBtn--accent type="button" id="kanban-open-create" data-on:click="$activeSheet = 'create'" { "New task" }
                             button.toolbarBtn.toolbarBtn--paused type="button" id="kanban-toggle-stream" { "Disconnect widget" }
                             button.toolbarBtn.toolbarBtn--accent type="button" id="kanban-reconnect" { "Reconnect" }
                         }
@@ -73,8 +79,8 @@ fn body() -> Markup {
                     #kanban-columns.board {}
                 }
             }
-            .sheetOverlay id="kanban-filter-sheet" hidden {
-                button.sheetBackdrop type="button" data-close-sheet="filter" {}
+            .sheetOverlay id="kanban-filter-sheet" data-show="$activeSheet === 'filter'" style="display: none" {
+                button.sheetBackdrop type="button" data-close-sheet="filter" data-on:click="$activeSheet = ''" {}
                 .sheetPanel {
                     .sheetHeader {
                         .headerMeta {
@@ -83,14 +89,14 @@ fn body() -> Markup {
                         }
                         .headerActions {
                             button.toolbarBtn type="button" data-clear-filters="true" { "Clear all" }
-                            button.toolbarBtn type="button" data-close-sheet="filter" { "Close" }
+                            button.toolbarBtn type="button" data-close-sheet="filter" data-on:click="$activeSheet = ''" { "Close" }
                         }
                     }
                     #kanban-filter-sheet-body {}
                 }
             }
-            .sheetOverlay id="kanban-create-sheet" hidden {
-                button.sheetBackdrop type="button" data-close-sheet="create" {}
+            .sheetOverlay id="kanban-create-sheet" data-show="$activeSheet === 'create'" style="display: none" {
+                button.sheetBackdrop type="button" data-close-sheet="create" data-on:click="$activeSheet = ''" {}
                 .sheetPanel {
                     .sheetHeader {
                         .headerMeta {
@@ -98,14 +104,14 @@ fn body() -> Markup {
                             .headerSub { "A record becomes Kanban-ready when task_type is set." }
                         }
                         .headerActions {
-                            button.toolbarBtn type="button" data-close-sheet="create" { "Close" }
+                            button.toolbarBtn type="button" data-close-sheet="create" data-on:click="$activeSheet = ''" { "Close" }
                         }
                     }
                     #kanban-create-sheet-body {}
                 }
             }
-            .sheetOverlay id="kanban-edit-sheet" hidden {
-                button.sheetBackdrop type="button" data-close-sheet="edit" {}
+            .sheetOverlay id="kanban-edit-sheet" data-show="$activeSheet === 'edit'" style="display: none" {
+                button.sheetBackdrop type="button" data-close-sheet="edit" data-on:click="$activeSheet = ''" {}
                 .sheetPanel {
                     .sheetHeader {
                         .headerMeta {
@@ -113,14 +119,14 @@ fn body() -> Markup {
                             .headerSub { "Task metadata and relations are saved through the Kanban actions." }
                         }
                         .headerActions {
-                            button.toolbarBtn type="button" data-close-sheet="edit" { "Close" }
+                            button.toolbarBtn type="button" data-close-sheet="edit" data-on:click="$activeSheet = ''" { "Close" }
                         }
                     }
                     #kanban-edit-sheet-body {}
                 }
             }
-            .sheetOverlay id="kanban-focus-sheet" hidden {
-                button.sheetBackdrop type="button" data-close-focus="true" {}
+            .sheetOverlay id="kanban-focus-sheet" data-show="$focusSheetOpen" style="display: none" {
+                button.sheetBackdrop type="button" data-close-focus="true" data-on:click="$focusSheetOpen = false" {}
                 .sheetPanel {
                     .sheetHeader {
                         .headerMeta {
@@ -128,7 +134,7 @@ fn body() -> Markup {
                             .headerSub { "Focused record detail loaded from the host service." }
                         }
                         .headerActions {
-                            button.toolbarBtn type="button" data-close-focus="true" { "Close" }
+                            button.toolbarBtn type="button" data-close-focus="true" data-on:click="$focusSheetOpen = false" { "Close" }
                         }
                     }
                     #kanban-focus-card {}
@@ -189,6 +195,7 @@ fn style() -> &'static str {
             }
 
             .widget {
+                position: relative;
                 height: 100%;
                 padding: 10px;
                 display: flex;
@@ -559,9 +566,8 @@ fn style() -> &'static str {
                 flex-direction: column;
                 gap: 8px;
                 padding: 10px;
-                max-height: min(70vh, calc(100vh - 220px));
                 min-height: 0;
-                overflow: auto;
+                overflow: visible;
             }
 
             .empty {
@@ -1052,8 +1058,10 @@ fn style() -> &'static str {
     "#
 }
 
-fn script() -> &'static str {
-    r##"
+fn script() -> String {
+    let mut script = String::from(crate::sand::shared_markdown::JS_HELPERS);
+    script.push_str(
+        r##"            
             const frame = window.frameElement;
             const columns = [
                 { key: "backlog", label: "Backlog", value: 0 },
@@ -1089,6 +1097,12 @@ fn script() -> &'static str {
                 openCreate: document.getElementById("kanban-open-create"),
                 reconnect: document.getElementById("kanban-reconnect"),
                 toggleStream: document.getElementById("kanban-toggle-stream"),
+                signalOpenFilter: document.getElementById("kanban-signal-open-filter"),
+                signalOpenCreate: document.getElementById("kanban-signal-open-create"),
+                signalOpenEdit: document.getElementById("kanban-signal-open-edit"),
+                signalCloseSheets: document.getElementById("kanban-signal-close-sheets"),
+                signalOpenFocus: document.getElementById("kanban-signal-open-focus"),
+                signalCloseFocus: document.getElementById("kanban-signal-close-focus"),
                 filterSheet: document.getElementById("kanban-filter-sheet"),
                 filterSheetBody: document.getElementById("kanban-filter-sheet-body"),
                 createSheet: document.getElementById("kanban-create-sheet"),
@@ -1175,6 +1189,12 @@ fn script() -> &'static str {
                                 : globalEnabled && cardEnabled,
                     },
                 };
+            }
+
+            function clickSignalButton(button) {
+                if (button) {
+                    button.click();
+                }
             }
 
             function clampWidth(value) {
@@ -1580,6 +1600,7 @@ fn script() -> &'static str {
                     }
 
                     state.contract = payload;
+                    state.formOptions = payload?.formOptions || null;
                     state.draftFilters = parseContractFilters(payload?.filters?.rows);
                     renderActiveFilters();
                     clearShellState();
@@ -1724,178 +1745,6 @@ fn script() -> &'static str {
                 applyCardModes();
             }
 
-            function escapeHtml(value) {
-                return String(value == null ? "" : value).replace(
-                    /[&<>\"']/g,
-                    (char) =>
-                        ({
-                            "&": "&amp;",
-                            "<": "&lt;",
-                            ">": "&gt;",
-                            '"': "&quot;",
-                            "'": "&#39;",
-                        })[char],
-                );
-            }
-
-            function applyInlineMarkdown(text) {
-                return escapeHtml(text)
-                    .replace(/`([^`]+)`/g, "<code>$1</code>")
-                    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-                    .replace(/\*([^*]+)\*/g, "<em>$1</em>")
-                    .replace(
-                        /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-                        '<a href="$2" target="_blank" rel="noreferrer">$1</a>',
-                    );
-            }
-
-            function renderMarkdown(source) {
-                const lines = String(source || "").replace(/\r\n/g, "\n").split("\n");
-                const blocks = [];
-                let paragraph = [];
-                let listItems = [];
-                let listTag = "";
-                let codeFence = [];
-                let inFence = false;
-
-                function flushParagraph() {
-                    if (!paragraph.length) {
-                        return;
-                    }
-                    blocks.push(
-                        "<p>" + applyInlineMarkdown(paragraph.join(" ")) + "</p>",
-                    );
-                    paragraph = [];
-                }
-
-                function flushList() {
-                    if (!listItems.length) {
-                        return;
-                    }
-                    blocks.push(
-                        "<" +
-                            listTag +
-                            ">" +
-                            listItems
-                                .map(
-                                    (item) =>
-                                        "<li>" + applyInlineMarkdown(item) + "</li>",
-                                )
-                                .join("") +
-                            "</" +
-                            listTag +
-                            ">",
-                    );
-                    listItems = [];
-                    listTag = "";
-                }
-
-                function flushFence() {
-                    if (!inFence) {
-                        return;
-                    }
-                    blocks.push(
-                        "<pre><code>" + escapeHtml(codeFence.join("\n")) + "</code></pre>",
-                    );
-                    codeFence = [];
-                    inFence = false;
-                }
-
-                for (const rawLine of lines) {
-                    const line = rawLine.trimEnd();
-                    const trimmed = line.trim();
-
-                    if (trimmed.startsWith("```")) {
-                        flushParagraph();
-                        flushList();
-                        if (inFence) {
-                            flushFence();
-                        } else {
-                            inFence = true;
-                            codeFence = [];
-                        }
-                        continue;
-                    }
-
-                    if (inFence) {
-                        codeFence.push(rawLine);
-                        continue;
-                    }
-
-                    if (!trimmed) {
-                        flushParagraph();
-                        flushList();
-                        continue;
-                    }
-
-                    const heading = trimmed.match(/^(#{1,4})\s+(.+)$/);
-                    if (heading) {
-                        flushParagraph();
-                        flushList();
-                        const level = heading[1].length;
-                        blocks.push(
-                            "<h" +
-                                level +
-                                ">" +
-                                applyInlineMarkdown(heading[2]) +
-                                "</h" +
-                                level +
-                                ">",
-                        );
-                        continue;
-                    }
-
-                    if (trimmed === "---" || trimmed === "***") {
-                        flushParagraph();
-                        flushList();
-                        blocks.push("<hr />");
-                        continue;
-                    }
-
-                    const bullet = trimmed.match(/^[-*]\s+(.+)$/);
-                    if (bullet) {
-                        flushParagraph();
-                        if (listTag && listTag !== "ul") {
-                            flushList();
-                        }
-                        listTag = "ul";
-                        listItems.push(bullet[1]);
-                        continue;
-                    }
-
-                    const ordered = trimmed.match(/^\d+\.\s+(.+)$/);
-                    if (ordered) {
-                        flushParagraph();
-                        if (listTag && listTag !== "ol") {
-                            flushList();
-                        }
-                        listTag = "ol";
-                        listItems.push(ordered[1]);
-                        continue;
-                    }
-
-                    const quote = trimmed.match(/^>\s+(.+)$/);
-                    if (quote) {
-                        flushParagraph();
-                        flushList();
-                        blocks.push(
-                            "<blockquote>" +
-                                applyInlineMarkdown(quote[1]) +
-                                "</blockquote>",
-                        );
-                        continue;
-                    }
-
-                    flushList();
-                    paragraph.push(trimmed);
-                }
-
-                flushParagraph();
-                flushList();
-                flushFence();
-                return blocks.join("");
-            }
-
             function setQueryText(query) {
                 const text = String(query || "").trim();
                 elements.queryToggle.textContent = text
@@ -1927,26 +1776,25 @@ fn script() -> &'static str {
 
             function openSheet(name) {
                 const map = {
-                    filter: elements.filterSheet,
-                    create: elements.createSheet,
-                    edit: elements.editSheet,
+                    filter: elements.signalOpenFilter,
+                    create: elements.signalOpenCreate,
+                    edit: elements.signalOpenEdit,
                 };
-                const sheet = map[name];
-                if (sheet) {
-                    sheet.hidden = false;
-                }
+                clickSignalButton(map[name]);
             }
 
             function closeSheet(name) {
-                const map = {
-                    filter: elements.filterSheet,
-                    create: elements.createSheet,
-                    edit: elements.editSheet,
-                };
-                const sheet = map[name];
-                if (sheet) {
-                    sheet.hidden = true;
+                if (name === "filter" || name === "create" || name === "edit") {
+                    clickSignalButton(elements.signalCloseSheets);
                 }
+            }
+
+            function isSheetVisible(sheet) {
+                return Boolean(
+                    sheet &&
+                        sheet.isConnected &&
+                        window.getComputedStyle(sheet).display !== "none",
+                );
             }
 
             function renderActiveFilters() {
@@ -2311,7 +2159,7 @@ fn script() -> &'static str {
                 } else if (!state.focusDetail && state.ui.focusedRecordId) {
                     await loadRecordDetail(state.ui.focusedRecordId);
                 }
-                elements.focusSheet.hidden = true;
+                clickSignalButton(elements.signalCloseFocus);
                 openSheet("edit");
                 elements.editSheetBody.innerHTML = `<p class="small">Loading task form...</p>`;
                 await ensureFormOptionsLoaded();
@@ -2828,7 +2676,7 @@ fn script() -> &'static str {
                 patchHtml(elements.emptyOrError, payload?.html?.empty_or_error);
                 applyUiToDom();
                 updateStatus();
-                if (state.ui.focusedRecordId && elements.focusSheet.hidden === false) {
+                if (state.ui.focusedRecordId && isSheetVisible(elements.focusSheet)) {
                     loadRecordDetail(state.ui.focusedRecordId).catch(() => {
                         closeFocus();
                     });
@@ -3005,15 +2853,19 @@ fn script() -> &'static str {
             }
 
             async function loadRecordDetail(recordId) {
+                patchHtml(
+                    elements.focusCard,
+                    `<section class="kanban-focus-card"><p class="small">Loading task detail...</p></section>`,
+                );
+                clickSignalButton(elements.signalOpenFocus);
                 const payload = await postAction("load-record-detail", {
                     recordId: Number(recordId),
                 });
                 patchHtml(elements.focusCard, payload?.html);
                 state.focusDetail = payload?.detail || null;
                 hydrateFocusMarkdown();
-                elements.focusSheet.hidden = false;
                 syncHeartbeatFromDetail();
-                if (elements.editSheet.hidden === false) {
+                if (isSheetVisible(elements.editSheet)) {
                     renderEditSheet();
                 }
                 persistUi({
@@ -3023,7 +2875,7 @@ fn script() -> &'static str {
             }
 
             function closeFocus() {
-                elements.focusSheet.hidden = true;
+                clickSignalButton(elements.signalCloseFocus);
                 elements.focusCard.innerHTML = "";
                 closeSheet("edit");
                 state.focusDetail = null;
@@ -3194,7 +3046,7 @@ fn script() -> &'static str {
                         event.preventDefault();
                         state.draftFilters = emptyFilterState();
                         renderActiveFilters();
-                        if (elements.filterSheet.hidden === false) {
+                        if (isSheetVisible(elements.filterSheet)) {
                             renderFilterSheet();
                         }
                         await applyFiltersAndRefresh();
@@ -3550,5 +3402,7 @@ fn script() -> &'static str {
                     loadRecordDetail(state.ui.focusedRecordId).catch(() => {});
                 }
             });
-    "##
+    "##,
+    );
+    script
 }

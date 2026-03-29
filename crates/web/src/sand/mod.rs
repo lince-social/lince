@@ -2,12 +2,15 @@ mod bucket_image_view;
 mod extra_simple;
 mod calendar;
 mod general_creation;
+#[path = "kanban_record_view/mod.rs"]
 mod kanban_record_view;
 mod lince_logo_led;
 mod link_chip;
 mod local_terminal;
 #[path = "markdown_notes/mod.rs"]
 mod markdown_notes;
+#[path = "shared_markdown/mod.rs"]
+mod shared_markdown;
 mod organ_management;
 mod ops_clock;
 mod view_table_editor;
@@ -30,7 +33,7 @@ pub(crate) struct HeadLink {
 
 pub(crate) enum WidgetScript {
     Src(&'static str),
-    Inline(&'static str),
+    Inline(String),
 }
 
 impl WidgetScript {
@@ -38,8 +41,8 @@ impl WidgetScript {
         Self::Src(value)
     }
 
-    pub(crate) fn inline(value: &'static str) -> Self {
-        Self::Inline(value)
+    pub(crate) fn inline(value: impl Into<String>) -> Self {
+        Self::Inline(value.into())
     }
 }
 
@@ -153,7 +156,7 @@ fn render_widget(source: SandWidgetSource) -> LincePackage {
                             script src=(src) {}
                         }
                         WidgetScript::Inline(source) => {
-                            script { (PreEscaped(source)) }
+                            script { (PreEscaped(source.as_str())) }
                         }
                     }
                 }

@@ -240,6 +240,7 @@ impl WidgetRuntimeService {
                 stale_after_seconds: STALE_AFTER_SECONDS,
                 disconnected_after_seconds: DISCONNECTED_AFTER_SECONDS,
             },
+            form_options: None,
             diagnostics: KanbanDiagnostics {
                 effective_sql: None,
             },
@@ -258,6 +259,7 @@ pub struct KanbanWidgetContract {
     pub relations: Vec<KanbanRelationContract>,
     pub actions: Vec<&'static str>,
     pub liveness: KanbanLivenessContract,
+    pub form_options: Option<Value>,
     pub diagnostics: KanbanDiagnostics,
 }
 

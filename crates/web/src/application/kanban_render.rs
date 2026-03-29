@@ -275,9 +275,9 @@ fn render_card(row: &KanbanRow) -> Markup {
                 button.cardAction type="button" data-card-body-mode="head" title="Show only the head" { "_" }
                 button.cardAction.is-active type="button" data-card-body-mode="compact" title="Show compact body" { "=" }
                 button.cardAction type="button" data-card-body-mode="full" title="Show full body" { "+" }
-                button.cardAction type="button" data-open-focus=(row.id) title="Focus card" { "[]" }
+                button.cardAction type="button" data-open-focus=(row.id) data-on:click="$focusSheetOpen = true" title="Focus card" { "[]" }
             }
-            button.head.headButton type="button" data-open-focus=(row.id) {
+            button.head.headButton type="button" data-open-focus=(row.id) data-on:click="$focusSheetOpen = true" {
                 @if row.head.trim().is_empty() {
                     "(no head)"
                 } @else {
@@ -302,14 +302,14 @@ fn render_card(row: &KanbanRow) -> Markup {
                 @if let Some(parent_id) = row.parent_id {
                     .parentLink {
                         "Parent "
-                        a href="#" data-record-link=(parent_id) { (parent_head) }
+                        a href="#" data-record-link=(parent_id) data-on:click="$focusSheetOpen = true" { (parent_head) }
                     }
                 }
             }
             @if !assignees.is_empty() {
                 .small { "Assignees: " (assignees) }
             }
-            .body data-card-body { (compact_body) }
+            .body.markdownRender data-card-body { (compact_body) }
             @if let Some(comments_count) = row.comments_count.filter(|value| *value > 0) {
                 .small { (comments_count) " comments" }
             }

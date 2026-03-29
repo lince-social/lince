@@ -18,7 +18,8 @@ use {
             widget_runtime::WidgetRuntimeService,
         },
         infrastructure::{
-            auth::AppAuth, board_state_store::BoardStateStore, manas::ManasGateway,
+            auth::AppAuth, board_state_store::BoardStateStore,
+            dna_hub_store::DnaHubStore, manas::ManasGateway,
             organ_store::OrganStore, package_catalog_store::PackageCatalogStore,
             terminal_store::TerminalSessionStore, widget_bridge_store::WidgetBridgeStore,
         },
@@ -45,6 +46,7 @@ pub async fn serve(
 ) -> Result<(), IoError> {
     let auth = AppAuth::new();
     let board_state = BoardStateStore::new().map_err(IoError::other)?;
+    let dna_hub = DnaHubStore::new().map_err(IoError::other)?;
     let organs = OrganStore::new(services.db.clone(), services.writer.clone());
     let backend = BackendApiService::new(services.clone(), Arc::new(jwt_secret));
     let manas = ManasGateway::new().map_err(IoError::other)?;
@@ -54,6 +56,7 @@ pub async fn serve(
         auth: auth.clone(),
         backend: backend.clone(),
         board_state: board_state.clone(),
+        dna_hub,
         local_auth_required,
         manas: manas.clone(),
         organs: organs.clone(),

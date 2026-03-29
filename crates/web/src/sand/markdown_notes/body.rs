@@ -2,12 +2,12 @@ use maud::{html, Markup};
 
 pub(super) fn body() -> Markup {
     html! {
-        main class="app" {
+        main class="app" data-signals="{ rendered: false }" {
             div class="toolbar" {
                 label class="mode-switch" {
-                    input id="mode-toggle" type="checkbox" aria-label="Alternar preview markdown";
+                    input id="mode-toggle" type="checkbox" aria-label="Alternar preview markdown" data-bind:rendered;
                     span class="mode-switch__track" aria-hidden="true" {}
-                    span id="mode-label" { "Raw" }
+                    span data-text="$rendered ? 'MD' : 'Raw'" { "Raw" }
                 }
             }
             textarea
@@ -15,8 +15,10 @@ pub(super) fn body() -> Markup {
                 class="raw"
                 spellcheck="false"
                 placeholder="# Notas\n\nEscreva em Markdown aqui."
+                data-show="!$rendered"
+                style="display: none"
             {}
-            article id="preview" class="preview" hidden {}
+            article id="preview" class="preview markdownRender" data-show="$rendered" style="display: none" {}
         }
     }
 }

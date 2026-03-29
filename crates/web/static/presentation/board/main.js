@@ -119,6 +119,7 @@ const editToggle = document.getElementById("edit-toggle");
 const addCardButton = document.getElementById("add-card-button");
 const addCardImportButton = document.getElementById("add-card-import-button");
 const addCardLocalButton = document.getElementById("add-card-local-button");
+const addCardDnaButton = document.getElementById("add-card-dna-button");
 const addCardPopover = document.getElementById("add-card-popover");
 const addWorkspaceButton = document.getElementById("add-workspace-button");
 const importWorkspaceButton = document.getElementById(
@@ -179,6 +180,15 @@ const localPackagesCloseButton = document.getElementById(
 const localPackagesSummary = document.getElementById("local-packages-summary");
 const localPackagesSearch = document.getElementById("local-packages-search");
 const localPackageList = document.getElementById("local-package-list");
+const dnaPackagesModalBackdrop = document.getElementById(
+  "dna-packages-modal-backdrop",
+);
+const dnaPackagesCloseButton = document.getElementById(
+  "dna-packages-close-button",
+);
+const dnaPackagesSummary = document.getElementById("dna-packages-summary");
+const dnaPackagesSearch = document.getElementById("dna-packages-search");
+const dnaPackageList = document.getElementById("dna-package-list");
 const deleteCardModalBackdrop = document.getElementById(
   "delete-card-modal-backdrop",
 );
@@ -272,6 +282,7 @@ if (
   !addCardButton ||
   !addCardImportButton ||
   !addCardLocalButton ||
+  !addCardDnaButton ||
   !addCardPopover ||
   !addWorkspaceButton ||
   !importWorkspaceButton ||
@@ -316,6 +327,11 @@ if (
   !localPackagesSummary ||
   !localPackagesSearch ||
   !localPackageList ||
+  !dnaPackagesModalBackdrop ||
+  !dnaPackagesCloseButton ||
+  !dnaPackagesSummary ||
+  !dnaPackagesSearch ||
+  !dnaPackageList ||
   !deleteCardModalBackdrop ||
   !deleteCardModalTitle ||
   !deleteCardModalDescription ||
@@ -431,8 +447,14 @@ let dropHoverDepth = 0;
 let dropOverlayFlashTimeout = null;
 let pendingImportPreview = null;
 let pendingImportFile = null;
+let pendingImportRemotePackage = null;
+let reopenDnaModalOnImportClose = false;
 let pendingDeleteCardId = null;
 let installedPackages = [];
+let dnaCatalogLoaded = false;
+let dnaCatalogPackageCount = 0;
+let dnaCatalogPackages = [];
+let dnaPackageResults = [];
 let serverProfiles = Array.isArray(bootstrap?.servers) ? bootstrap.servers : [];
 let pendingServerLogin = null;
 let pendingWidgetConfigCardId = null;
@@ -1561,6 +1583,221 @@ function closeLocalPackagesModal() {
   syncModalLock();
 }
 
+function normalizedDnaPackageSearch() {
+  return dnaPackagesSearch.value.trim().toLowerCase();
+}
+
+function summarizeDnaPackages() {
+  if (!dnaCatalogLoaded) {
+    dnaPackagesSummary.textContent = "Carregando o catalogo remoto do DNA...";
+    return;
+  }
+
+  const query = normalizedDnaPackageSearch();
+  if (!dnaCatalogPackageCount) {
+    dnaPackagesSummary.textContent = "Nenhum widget publicado no DNA.";
+    return;
+  }
+
+  if (!query) {
+    dnaPackagesSummary.textContent = `${dnaCatalogPackageCount} widget${
+      dnaCatalogPackageCount === 1 ? "" : "s"
+    } publicados no DNA.`;
+    return;
+  }
+
+  dnaPackagesSummary.textContent = `${dnaPackageResults.length} de ${dnaCatalogPackageCount} pacote${
+    dnaCatalogPackageCount === 1 ? "" : "s"
+  } corresponde${dnaPackageResults.length === 1 ? "" : "m"} a essa busca.`;
+}
+
+function filterDnaPackageCatalog(query) {
+  if (!query) {
+    return [...dnaCatalogPackages];
+  }
+
+  const normalizedQuery = query.toLowerCase();
+  return dnaCatalogPackages.filter((pkg) => {
+    const id = String(pkg.id || "").toLowerCase();
+    const title = String(pkg.title || "").toLowerCase();
+    const description = String(pkg.description || "").toLowerCase();
+    return (
+      id.includes(normalizedQuery) ||
+      title.includes(normalizedQuery) ||
+      description.includes(normalizedQuery)
+    );
+  });
+}
+
+function renderDnaPackageList() {
+  if (!dnaCatalogLoaded) {
+    summarizeDnaPackages();
+    dnaPackageList.innerHTML = `
+      <div class="local-package-empty">
+        <strong>Carregando catalogo</strong>
+        <span>Buscando os widgets publicados em github.com/lince-social/dna.</span>
+      </div>
+    `;
+    return;
+  }
+
+  dnaPackageResults = filterDnaPackageCatalog(normalizedDnaPackageSearch());
+  summarizeDnaPackages();
+  if (!dnaCatalogPackageCount) {
+    dnaPackageList.innerHTML = `
+      <div class="local-package-empty">
+        <strong>Catalogo vazio</strong>
+        <span>Nao encontrei widgets publicados no catalogo remoto do DNA.</span>
+      </div>
+    `;
+    return;
+  }
+
+  if (!dnaPackageResults.length) {
+    dnaPackageList.innerHTML = `
+      <div class="local-package-empty">
+        <strong>Nenhum resultado</strong>
+        <span>Nao encontrei pacotes com esse nome, titulo ou descricao no catalogo remoto.</span>
+      </div>
+    `;
+    return;
+  }
+
+  dnaPackageList.innerHTML = dnaPackageResults
+    .map((pkg) => {
+      const channelLabel = pkg.channel === "official" ? "official" : "community";
+      return `
+        <button
+          type="button"
+          class="local-package-card"
+          data-dna-package-id="${escapeHtml(pkg.id)}"
+          data-dna-package-channel="${escapeHtml(pkg.channel)}"
+          aria-label="Abrir preview de ${escapeHtml(pkg.title)}"
+        >
+          <span class="local-package-card__icon" aria-hidden="true">◧</span>
+          <span class="local-package-card__body">
+            <span class="local-package-card__topline">
+              <strong class="local-package-card__title">${escapeHtml(pkg.title)}</strong>
+              <span class="local-package-card__size">${escapeHtml(channelLabel)}</span>
+            </span>
+            <span class="local-package-card__description">${escapeHtml(
+              pkg.description || "Widget remoto publicado no DNA.",
+            )}</span>
+            <span class="local-package-card__meta">${escapeHtml(
+              `${pkg.id} · ${pkg.path}`,
+            )}</span>
+            <span class="local-package-card__footer">
+              <span class="local-package-card__pill">preview</span>
+            </span>
+          </span>
+        </button>
+      `;
+    })
+    .join("");
+}
+
+async function loadDnaCatalog() {
+  dnaCatalogLoaded = false;
+  renderDnaPackageList();
+  const response = await fetch(apiPath("/api/packages/dna/catalog"));
+  const payload = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(payload?.error || "Falha ao buscar o catalogo do hub.");
+  }
+
+  dnaCatalogLoaded = true;
+  dnaCatalogPackageCount = Number(payload?.packageCount) || 0;
+  dnaCatalogPackages = Array.isArray(payload?.packages) ? payload.packages : [];
+  renderDnaPackageList();
+  return dnaCatalogPackageCount;
+}
+
+async function requestDnaPackageSearch(query) {
+  const response = await fetch(
+    apiPath(`/api/packages/dna/search?q=${encodeURIComponent(query)}`),
+  );
+  const payload = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(payload?.error || "Falha ao buscar o catalogo do hub.");
+  }
+
+  return Array.isArray(payload) ? payload : [];
+}
+
+async function requestDnaPackagePreview(channel, packageId) {
+  const response = await fetch(
+    apiPath(
+      `/api/packages/dna/${encodeURIComponent(channel)}/${encodeURIComponent(packageId)}/preview`,
+    ),
+  );
+  const payload = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(payload?.error || "Falha ao baixar o pacote selecionado.");
+  }
+
+  return payload;
+}
+
+async function installDnaPackage(channel, packageId) {
+  const response = await fetch(
+    apiPath(
+      `/api/packages/dna/${encodeURIComponent(channel)}/${encodeURIComponent(packageId)}/install`,
+    ),
+    {
+      method: "POST",
+    },
+  );
+  const payload = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(
+      payload?.error || "Falha ao instalar o pacote do hub no catalogo local.",
+    );
+  }
+
+  upsertInstalledPackage(payload);
+  return payload;
+}
+
+async function refreshDnaPackageSearch() {
+  renderDnaPackageList();
+}
+
+function openDnaPackagesModal({ preserveSearch = false } = {}) {
+  setAddCardPopoverOpen(false);
+  if (!preserveSearch) {
+    dnaPackagesSearch.value = "";
+  }
+  dnaPackagesModalBackdrop.hidden = false;
+  syncModalLock();
+  window.setTimeout(() => {
+    dnaPackagesSearch.focus();
+    dnaPackagesSearch.select();
+  }, 0);
+  void loadDnaCatalog().catch((error) => {
+    dnaCatalogLoaded = true;
+    dnaCatalogPackageCount = 0;
+    dnaCatalogPackages = [];
+    dnaPackageResults = [];
+    dnaPackageList.innerHTML = `
+      <div class="local-package-empty">
+        <strong>Catalogo indisponivel</strong>
+        <span>${escapeHtml(
+          error instanceof Error
+            ? error.message
+            : "Falha ao buscar o catalogo do hub.",
+        )}</span>
+      </div>
+    `;
+    dnaPackagesSummary.textContent =
+      error instanceof Error ? error.message : "Falha ao buscar o catalogo do hub.";
+  });
+}
+
+function closeDnaPackagesModal() {
+  dnaPackagesModalBackdrop.hidden = true;
+  syncModalLock();
+}
+
 function setEditMode(nextEditMode) {
   editMode = Boolean(nextEditMode);
   boardShell.classList.toggle("is-editing", editMode);
@@ -1577,6 +1814,7 @@ function setEditMode(nextEditMode) {
     clearActiveCard();
     hideDropOverlay();
     closeLocalPackagesModal();
+    closeDnaPackagesModal();
     closeDeleteCardModal();
   }
 
@@ -2097,6 +2335,7 @@ function syncModalLock() {
     "modal-open",
     !importModalBackdrop.hidden ||
       !localPackagesModalBackdrop.hidden ||
+      !dnaPackagesModalBackdrop.hidden ||
       !deleteCardModalBackdrop.hidden ||
       !serverLoginModalBackdrop.hidden ||
       !widgetConfigModalBackdrop.hidden,
@@ -2149,9 +2388,11 @@ function renderImportPreview(preview) {
   }
 }
 
-function openImportModal(preview, file = null) {
+function openImportModal(preview, file = null, options = {}) {
   pendingImportPreview = preview;
   pendingImportFile = file;
+  pendingImportRemotePackage = options.remotePackage || null;
+  reopenDnaModalOnImportClose = Boolean(options.reopenDnaModal);
   importModalTitle.textContent = preview.title;
   importModalDescription.textContent = preview.description;
   importPackageName.textContent = preview.filename;
@@ -2167,12 +2408,18 @@ function openImportModal(preview, file = null) {
   widgetBridge.syncFrames();
 }
 
-function closeImportModal() {
+function closeImportModal(options = {}) {
+  const reopenDnaModal = !options.skipReopen && reopenDnaModalOnImportClose;
   pendingImportPreview = null;
   pendingImportFile = null;
+  pendingImportRemotePackage = null;
+  reopenDnaModalOnImportClose = false;
   importPreviewFrame.setAttribute("srcdoc", "");
   importModalBackdrop.hidden = true;
   syncModalLock();
+  if (reopenDnaModal) {
+    openDnaPackagesModal({ preserveSearch: true });
+  }
 }
 
 function openDeleteCardModal(cardId) {
@@ -2428,6 +2675,15 @@ async function addLocalPackageToWorkspace(packageId) {
   return created;
 }
 
+async function previewDnaPackage(packageId, channel) {
+  const preview = await requestDnaPackagePreview(channel, packageId);
+  closeDnaPackagesModal();
+  openImportModal(preview, null, {
+    remotePackage: { packageId, channel },
+    reopenDnaModal: true,
+  });
+}
+
 function triggerWorkspaceExport() {
   const snapshot = store.getSnapshot();
   const activeWorkspace = snapshot.workspaces.find(
@@ -2472,7 +2728,7 @@ function workspaceExportPayload() {
 }
 
 async function confirmImportCard() {
-  if (!pendingImportPreview || !pendingImportFile) {
+  if (!pendingImportPreview) {
     return;
   }
 
@@ -2480,7 +2736,17 @@ async function confirmImportCard() {
   importCancelButton.disabled = true;
 
   try {
-    const installedPackage = await installUploadedPackage(pendingImportFile);
+    const installedPackage = pendingImportRemotePackage
+      ? await installDnaPackage(
+          pendingImportRemotePackage.channel,
+          pendingImportRemotePackage.packageId,
+        )
+      : pendingImportFile
+        ? await installUploadedPackage(pendingImportFile)
+        : null;
+    if (!installedPackage) {
+      throw new Error("Falha ao instalar o widget no backend local.");
+    }
     const created = createCardFromPreview(
       installedPackage,
       resolvePreviewSize(pendingImportPreview, installedPackage),
@@ -2491,13 +2757,13 @@ async function confirmImportCard() {
       return;
     }
 
-    closeImportModal();
+    closeImportModal({ skipReopen: true });
     setActiveCard(created.id, null);
   } catch (error) {
     flashDropOverlayMessage(
       error instanceof Error
         ? error.message
-        : "Falha ao instalar o widget HTML.",
+        : "Falha ao instalar o widget.",
     );
   } finally {
     importConfirmButton.disabled = false;
@@ -2571,6 +2837,10 @@ addCardImportButton.addEventListener("click", () => {
 
 addCardLocalButton.addEventListener("click", () => {
   openLocalPackagesModal();
+});
+
+addCardDnaButton.addEventListener("click", () => {
+  openDnaPackagesModal();
 });
 
 workspaceToggle.addEventListener("click", () => {
@@ -2770,8 +3040,22 @@ localPackagesModalBackdrop.addEventListener("click", (event) => {
   }
 });
 
+dnaPackagesCloseButton.addEventListener("click", () => {
+  closeDnaPackagesModal();
+});
+
+dnaPackagesModalBackdrop.addEventListener("click", (event) => {
+  if (event.target === dnaPackagesModalBackdrop) {
+    closeDnaPackagesModal();
+  }
+});
+
 localPackagesSearch.addEventListener("input", () => {
   renderLocalPackageList();
+});
+
+dnaPackagesSearch.addEventListener("input", () => {
+  void refreshDnaPackageSearch();
 });
 
 localPackageList.addEventListener("click", (event) => {
@@ -2788,6 +3072,23 @@ localPackageList.addEventListener("click", (event) => {
           : "Falha ao adicionar o widget local.";
     },
   );
+});
+
+dnaPackageList.addEventListener("click", (event) => {
+  const card = event.target.closest("[data-dna-package-id]");
+  if (!card?.dataset.dnaPackageId || !card?.dataset.dnaPackageChannel) {
+    return;
+  }
+
+  void previewDnaPackage(
+    card.dataset.dnaPackageId,
+    card.dataset.dnaPackageChannel,
+  ).catch((error) => {
+    dnaPackagesSummary.textContent =
+      error instanceof Error
+        ? error.message
+        : "Falha ao baixar o pacote selecionado.";
+  });
 });
 
 deleteCardCancelButton.addEventListener("click", () => {
@@ -2938,6 +3239,12 @@ document.addEventListener("keydown", (event) => {
   if (!localPackagesModalBackdrop.hidden && event.key === "Escape") {
     event.preventDefault();
     closeLocalPackagesModal();
+    return;
+  }
+
+  if (!dnaPackagesModalBackdrop.hidden && event.key === "Escape") {
+    event.preventDefault();
+    closeDnaPackagesModal();
     return;
   }
 

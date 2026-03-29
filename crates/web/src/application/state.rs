@@ -6,7 +6,8 @@ use crate::{
     application::kanban_streams::KanbanStreamService,
     application::widget_runtime::WidgetRuntimeService,
     infrastructure::{
-        auth::AppAuth, board_state_store::BoardStateStore, manas::ManasGateway,
+        auth::AppAuth, board_state_store::BoardStateStore, dna_hub_store::DnaHubStore,
+        manas::ManasGateway,
         organ_store::OrganStore, package_catalog_store::PackageCatalogStore,
         terminal_store::TerminalSessionStore, widget_bridge_store::WidgetBridgeStore,
     },
@@ -18,6 +19,7 @@ pub struct AppState {
     pub auth: AppAuth,
     pub backend: BackendApiService,
     pub board_state: BoardStateStore,
+    pub dna_hub: DnaHubStore,
     pub local_auth_required: bool,
     pub manas: ManasGateway,
     pub organs: OrganStore,

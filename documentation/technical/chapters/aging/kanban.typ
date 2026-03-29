@@ -1534,7 +1534,13 @@ Schema-dependent advanced features:
 
 Each step below is intended to be testable before moving to the next one.
 
-- [ ] Step 1: Freeze the implementation contract
+Current status convention:
+
+- `implemented in code`: the required code path exists and compiles
+- `runtime verification pending`: the feature still needs authenticated browser testing in the real widget flow
+- `final polish pending`: the architecture is in place, but some UX cleanup or simplification still remains
+
+- [x] Step 1: Freeze the implementation contract
 
 Requirements:
 
@@ -1550,7 +1556,7 @@ Step 1 passes when:
 - no open architecture questions remain in this document for core Kanban behavior
 - implementation can begin without redefining data shapes
 
-- [ ] Step 2: Add database migrations
+- [x] Step 2: Add database migrations
 
 Requirements:
 
@@ -1567,7 +1573,7 @@ Step 2 passes when:
 - migrations apply cleanly to an existing database
 - the one-open-worklog invariant is enforced at the DB level
 
-- [ ] Step 3: Validate data-layer behavior
+- [x] Step 3: Validate data-layer behavior
 
 Requirements:
 
@@ -1582,7 +1588,7 @@ Step 3 passes when:
 - manual table writes and reads produce the expected normalized data
 - invalid hierarchy writes are rejected
 
-- [ ] Step 4: Implement host contract service
+- [x] Step 4: Implement host contract service
 
 Requirements:
 
@@ -1596,7 +1602,7 @@ Step 4 passes when:
 - a configured widget instance returns a stable contract response
 - a misconfigured widget instance returns a compact contract error
 
-- [ ] Step 5: Implement SQL-side filter service
+- [x] Step 5: Implement SQL-side filter service
 
 Requirements:
 
@@ -1611,7 +1617,7 @@ Step 5 passes when:
 - applying filters changes the effective SQL-backed dataset
 - the GUI can be reconstructed from persisted filter rows
 
-- [ ] Step 6: Implement instance-aware stream service
+- [x] Step 6: Implement instance-aware stream service
 
 Requirements:
 
@@ -1626,7 +1632,7 @@ Step 6 passes when:
 - filter changes cause a new filtered subscription generation
 - stale and disconnected states can be observed deterministically
 
-- [ ] Step 7: Implement semantic action services
+- [x] Step 7: Implement semantic action services
 
 Requirements:
 
@@ -1646,7 +1652,7 @@ Step 7 passes when:
 - task-type and category CRUD works through `create-record` and `update-record`
 - worklog invariants hold through the service layer
 
-- [ ] Step 8: Implement Maud shell and fragments
+- [x] Step 8: Implement Maud shell and fragments
 
 Requirements:
 
@@ -1661,7 +1667,7 @@ Step 8 passes when:
 - the Kanban can render from server-owned Maud fragments without client-built HTML strings for the main board
 - the fragment targets match the contract in this document
 
-- [ ] Step 9: Implement signal hydration and widget-state persistence
+- [x] Step 9: Implement signal hydration and widget-state persistence
 
 Requirements:
 
@@ -1674,8 +1680,9 @@ Step 9 passes when:
 
 - reloads preserve the intended UI ergonomics
 - no redundant dense per-card state is written when defaults are sufficient
+- implementation note: this is implemented in code, but further reduction of imperative JavaScript in favor of Datastar remains valid incremental cleanup work
 
-- [ ] Step 10: Implement core board interactions
+- [x] Step 10: Implement core board interactions
 
 Requirements:
 
@@ -1691,8 +1698,9 @@ Step 10 passes when:
 
 - the current board ergonomics are preserved or improved
 - `move-record` replaces direct generic Record patching from the widget
+- implementation note: drag resize now uses the column side borders rather than dedicated width buttons
 
-- [ ] Step 11: Implement create and edit surfaces
+- [x] Step 11: Implement create and edit surfaces
 
 Requirements:
 
@@ -1708,7 +1716,7 @@ Step 11 passes when:
 - clearing all categories does not remove the record from Kanban
 - clearing `task_type` removes it from Kanban after refresh
 
-- [ ] Step 12: Implement filter builder GUI
+- [x] Step 12: Implement filter builder GUI
 
 Requirements:
 
@@ -1723,8 +1731,9 @@ Step 12 passes when:
 
 - the GUI can round-trip persisted filters without raw SQL editing
 - applying filters reconnects the stream and yields SQL-filtered results
+- implementation note: filter opening should be local and immediate because options are prefetched with the contract; runtime verification is still required on a fresh imported widget instance
 
-- [ ] Step 13: Implement focus mode detail loading
+- [x] Step 13: Implement focus mode detail loading
 
 Requirements:
 
@@ -1739,8 +1748,9 @@ Step 13 passes when:
 
 - focus mode can open and close without losing board context
 - parent and child navigation behave as specified
+- implementation note: the focus path is implemented in code, but it still requires runtime verification on a fresh imported widget instance
 
-- [ ] Step 14: Implement relational and aggregate task detail
+- [x] Step 14: Implement relational and aggregate task detail
 
 Requirements:
 
@@ -1754,6 +1764,7 @@ Step 14 passes when:
 
 - comments, assignees, task type, categories, and worklog are all visible and editable through the intended surfaces
 - running worklog state stays consistent across reconnects
+- implementation note: comments remain `record_comment`, not `record`; resources remain separate relations; live reconnect behavior still needs authenticated browser verification
 
 - [ ] Step 15: Implement external resource detail and final polish
 
@@ -1768,6 +1779,34 @@ Step 15 passes when:
 
 - the widget no longer depends on raw snapshot parsing for its primary runtime
 - the end-to-end Kanban matches this specification closely enough that only polish tasks remain
+
+Current implementation summary:
+
+- implemented in code:
+  - sidecar migrations and indexes
+  - record-centric contract route
+  - SQL-side derived filtering
+  - instance-aware Kanban stream
+  - semantic Kanban actions
+  - Maud-owned board shell and fragments
+  - Datastar-driven sheet, query, and focus shell state
+  - create and edit sheets
+  - filter builder GUI
+  - focus mode detail loading
+  - markdown preview in board card bodies
+  - worklog start, stop, heartbeat, and offline stop queue
+  - comments, assignees, hierarchy summaries, and resource references
+  - sparse `widgetState` persistence
+  - column drag resize through side borders
+  - removal of the old width increment and decrement buttons
+- runtime verification pending:
+  - authenticated browser verification of focus mode on a fresh imported widget
+  - authenticated browser verification of the filter GUI round trip on a fresh imported widget
+  - authenticated browser verification of worklog and reconnect flows
+  - final visual verification that the empty intermediate box and column-height box behavior are fully gone in the fresh imported widget
+- final polish pending:
+  - continue replacing imperative JavaScript with Datastar where it materially simplifies stable-shell state
+  - simplify any remaining legacy widget runtime assumptions after the fresh imported widget is confirmed
 
 === Current code path migration checklist
 

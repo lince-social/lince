@@ -16,6 +16,7 @@ use {
                 },
                 backend::router as build_backend_router,
                 board::{export_workspace, get_board_state, import_workspace, put_board_state},
+                board::hydrated_board_state,
                 integrations::{
                     proxy_manas_file, proxy_manas_table_collection, proxy_manas_table_item,
                     proxy_manas_view,
@@ -210,7 +211,7 @@ async fn build_bootstrap(state: &AppState, session_token: Option<&str>) -> AppBo
         })
         .collect();
     let widget_bridge = state.widget_bridge.snapshot().await;
-    let board_state = state.board_state.snapshot().await;
+    let board_state = hydrated_board_state(state).await;
 
     AppBootstrap::new(widget_bridge, board_state, servers)
 }

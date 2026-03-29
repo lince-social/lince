@@ -17,6 +17,11 @@ pub(super) fn script() -> String {
         "- `MD` para renderizar",
       ].join("\n");
 
+      const state = {
+        rawText: "",
+        rendered: false,
+      };
+
       function readStorage(key, fallback) {
         try {
           const value = window.localStorage.getItem(key);
@@ -34,38 +39,45 @@ pub(super) fn script() -> String {
         }
       }
 
-      function syncRenderedSignal() {
+      function syncSignalsFromDom() {
+        rawInput.dispatchEvent(new Event("input", { bubbles: true }));
+        rawInput.dispatchEvent(new Event("change", { bubbles: true }));
         toggle.dispatchEvent(new Event("input", { bubbles: true }));
         toggle.dispatchEvent(new Event("change", { bubbles: true }));
       }
 
-      function renderPreview() {
-        preview.innerHTML = renderMarkdown(rawInput.value);
-      }
+      window.MarkdownNotes = {
+        sync(rawText, rendered) {
+          const nextRawText = String(rawText ?? "");
+          const nextRendered = rendered === true;
+          if (
+            state.rawText === nextRawText &&
+            state.rendered === nextRendered
+          ) {
+            return;
+          }
+          state.rawText = nextRawText;
+          state.rendered = nextRendered;
+          preview.innerHTML = renderMarkdown(nextRawText);
+          writeStorage(noteKey, nextRawText);
+          writeStorage(modeKey, nextRendered ? "rendered" : "raw");
+          if (!nextRendered) {
+            rawInput.focus();
+            rawInput.setSelectionRange(rawInput.value.length, rawInput.value.length);
+          }
+        },
+      };
 
       rawInput.value = readStorage(noteKey, DEFAULT_TEXT);
-      rawInput.addEventListener("input", () => {
-        writeStorage(noteKey, rawInput.value);
-        if (toggle.checked) {
-          renderPreview();
-        }
-      });
-
-      toggle.addEventListener("change", () => {
-        writeStorage(modeKey, toggle.checked ? "rendered" : "raw");
-        if (toggle.checked) {
-          renderPreview();
-        } else {
-          rawInput.focus();
-        }
-      });
-
       toggle.checked = readStorage(modeKey, "raw") === "rendered";
-      syncRenderedSignal();
-      if (toggle.checked) {
-        renderPreview();
-      } else {
+      state.rawText = rawInput.value;
+      state.rendered = toggle.checked;
+      preview.innerHTML = renderMarkdown(rawInput.value);
+      syncSignalsFromDom();
+
+      if (!toggle.checked) {
         rawInput.focus();
+        rawInput.setSelectionRange(rawInput.value.length, rawInput.value.length);
       }
     "##,
     );

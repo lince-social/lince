@@ -1,10 +1,10 @@
 use {
     crate::{
-        application::backend_api::BackendApiService,
-        domain::{
-            board::{BoardCard, BoardState},
-            lince_package::normalize_package_filename,
+        application::{
+            backend_api::BackendApiService,
+            kanban_identity::is_supported_kanban_package_filename,
         },
+        domain::board::{BoardCard, BoardState},
         infrastructure::{
             auth::AppAuth,
             board_state_store::BoardStateStore,
@@ -20,7 +20,6 @@ use {
     serde_json::{Value, json},
 };
 
-const KANBAN_PACKAGE_FILENAME: &str = "kanban-record-view.html";
 const VALID_TASK_TYPES: [&str; 4] = ["epic", "feature", "task", "other"];
 
 #[derive(Clone)]
@@ -2107,7 +2106,7 @@ fn validate_kanban_card(card: &BoardCard) -> Result<(), KanbanActionError> {
             "Esse widget nao e um package oficial.".into(),
         ));
     }
-    if normalize_package_filename(&card.package_name) != KANBAN_PACKAGE_FILENAME {
+    if !is_supported_kanban_package_filename(&card.package_name) {
         return Err(KanbanActionError::Misconfigured(
             "Esse widget nao usa o package oficial do Kanban.".into(),
         ));
@@ -2413,7 +2412,7 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                     }
                 }
                 .headerActions {
-                    button.toolbarBtn type="button" data-open-edit=(detail.record_id) data-on:click="$activeSheet = 'edit'" { "Edit" }
+                    button.toolbarBtn type="button" data-open-edit=(detail.record_id) data-on:click="$focusMarkdown = false; $activeSheet = 'edit'" { "Edit" }
                     button.toolbarBtn type="button" data-delete-record=(detail.record_id) { "Delete" }
                 }
             }
@@ -2438,12 +2437,12 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                 @if let Some(parent_head) = parent.get("head").and_then(Value::as_str) {
                     p.kanban-focus-card__parent {
                         "Parent: "
-                        a href="#" data-record-link=(parent.get("id").and_then(Value::as_i64).unwrap_or_default()) data-on:click="$focusSheetOpen = true" { (parent_head) }
+                        a href="#" data-record-link=(parent.get("id").and_then(Value::as_i64).unwrap_or_default()) data-on:click="$focusMarkdown = false; $focusSheetOpen = true" { (parent_head) }
                     }
                 }
             }
             @if let Some(body) = detail.body.as_deref().filter(|value| !value.trim().is_empty()) {
-                section.kanban-focus-card__body-wrap data-signals="{ focusMarkdown: false }" {
+                section.kanban-focus-card__body-wrap {
                     .sheetHeader {
                         .headerMeta {
                             h3 { "Body" }
@@ -2462,7 +2461,7 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                     ul {
                         @for child in &detail.children {
                             li {
-                                a href="#" data-record-link=(child.get("id").and_then(Value::as_i64).unwrap_or_default()) data-on:click="$focusSheetOpen = true" {
+                                a href="#" data-record-link=(child.get("id").and_then(Value::as_i64).unwrap_or_default()) data-on:click="$focusMarkdown = false; $focusSheetOpen = true" {
                                     (child.get("head").and_then(Value::as_str).unwrap_or("Untitled"))
                                 }
                             }

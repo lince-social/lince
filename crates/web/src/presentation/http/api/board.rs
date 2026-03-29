@@ -20,7 +20,7 @@ use {
 };
 
 pub async fn get_board_state(State(state): State<AppState>) -> ApiResult<Json<BoardState>> {
-    Ok(Json(state.board_state.snapshot().await))
+    Ok(Json(hydrated_board_state(&state).await))
 }
 
 pub async fn put_board_state(
@@ -180,4 +180,35 @@ fn load_package_for_card(state: &AppState, card: &BoardCard) -> Result<LincePack
     }
 
     reconstruct_package_from_card(card)
+}
+
+pub(crate) async fn hydrated_board_state(state: &AppState) -> BoardState {
+    let mut board_state = state.board_state.snapshot().await;
+
+    for workspace in &mut board_state.workspaces {
+        for card in &mut workspace.cards {
+            hydrate_package_card_from_catalog(state, card);
+        }
+    }
+
+    board_state
+}
+
+fn hydrate_package_card_from_catalog(state: &AppState, card: &mut BoardCard) {
+    if card.kind != "package" || card.package_name.trim().is_empty() {
+        return;
+    }
+
+    let Ok(package) = state.packages.load_by_filename(card.package_name.trim()) else {
+        return;
+    };
+
+    let archive_filename = package.archive_filename();
+    let manifest = package.manifest;
+    card.title = manifest.title;
+    card.description = manifest.description;
+    card.html = package.html;
+    card.author = manifest.author;
+    card.permissions = manifest.permissions;
+    card.package_name = archive_filename;
 }

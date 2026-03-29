@@ -1,9 +1,9 @@
 use {
     crate::{
-        domain::{
-            board::{BoardCard, BoardState},
-            lince_package::normalize_package_filename,
+        application::kanban_identity::{
+            KANBAN_PACKAGE_FILENAME, is_supported_kanban_package_filename,
         },
+        domain::board::{BoardCard, BoardState},
         infrastructure::{
             auth::{AppAuth, RemoteServerSessionSnapshot, RemoteServerSessionState},
             board_state_store::BoardStateStore,
@@ -14,7 +14,6 @@ use {
     serde_json::Value,
 };
 
-const KANBAN_PACKAGE_FILENAME: &str = "kanban-record-view.html";
 const HEARTBEAT_INTERVAL_SECONDS: u64 = 15;
 const STALE_AFTER_SECONDS: u64 = 45;
 const DISCONNECTED_AFTER_SECONDS: u64 = 90;
@@ -100,7 +99,7 @@ impl WidgetRuntimeService {
                 instance_id: card.id.clone(),
                 title: card.title.clone(),
                 description: card.description.clone(),
-                package_name: normalize_package_filename(&card.package_name),
+                package_name: KANBAN_PACKAGE_FILENAME.into(),
                 sand_class: "engineer_with_clown_traits",
             },
             source: KanbanWidgetSource {
@@ -371,7 +370,7 @@ fn validate_kanban_card(card: &BoardCard) -> Result<(), WidgetRuntimeError> {
         ));
     }
 
-    if normalize_package_filename(&card.package_name) != KANBAN_PACKAGE_FILENAME {
+    if !is_supported_kanban_package_filename(&card.package_name) {
         return Err(WidgetRuntimeError::Unsupported(
             "Esse widget nao usa o package oficial do Kanban.".into(),
         ));

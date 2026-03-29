@@ -6,3 +6,4 @@ pub mod packages;
 pub mod servers;
 pub mod terminal;
 pub mod widget_bridge;
+pub mod widgets;

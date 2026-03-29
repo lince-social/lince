@@ -44,6 +44,7 @@ struct LoginResponse {
 struct MutationResponse {
     ok: bool,
     rows_affected: u64,
+    last_insert_rowid: Option<i64>,
 }
 
 #[derive(Deserialize)]
@@ -160,6 +161,7 @@ async fn create_table_row(
         Json(MutationResponse {
             ok: true,
             rows_affected: outcome.rows_affected,
+            last_insert_rowid: outcome.last_insert_rowid,
         }),
     ))
 }
@@ -181,6 +183,7 @@ async fn update_table_row(
     Ok(Json(MutationResponse {
         ok: true,
         rows_affected: outcome.rows_affected,
+        last_insert_rowid: outcome.last_insert_rowid,
     }))
 }
 
@@ -199,6 +202,7 @@ async fn delete_table_row(
     Ok(Json(MutationResponse {
         ok: true,
         rows_affected: outcome.rows_affected,
+        last_insert_rowid: outcome.last_insert_rowid,
     }))
 }
 

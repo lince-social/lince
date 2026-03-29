@@ -32,6 +32,7 @@ use {
                     post_terminal_input,
                 },
                 widget_bridge::{get_widget_bridge_state, post_widget_bridge_print},
+                widgets::{get_widget_contract, get_widget_stream, post_widget_action},
             },
             pages::{render_ai_builder, render_app},
         },
@@ -102,6 +103,12 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
         .route(
             "/widget-bridge/actions/print",
             post(post_widget_bridge_print),
+        )
+        .route("/widgets/{instance_id}/contract", get(get_widget_contract))
+        .route("/widgets/{instance_id}/stream", get(get_widget_stream))
+        .route(
+            "/widgets/{instance_id}/actions/{action}",
+            post(post_widget_action),
         )
         .route("/packages/preview", post(preview_package))
         .route("/packages/install", post(install_package))

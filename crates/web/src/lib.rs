@@ -12,6 +12,10 @@ use {
     crate::{
         application::{
             ai_builder::AiBuilderState, backend_api::BackendApiService, state::AppState,
+            kanban_actions::KanbanActionService,
+            kanban_filters::KanbanFilterService,
+            kanban_streams::KanbanStreamService,
+            widget_runtime::WidgetRuntimeService,
         },
         infrastructure::{
             auth::AppAuth, board_state_store::BoardStateStore, manas::ManasGateway,
@@ -39,17 +43,47 @@ pub async fn serve(
     listen_addr: Option<String>,
     mode: HttpServeMode,
 ) -> Result<(), IoError> {
+    let auth = AppAuth::new();
+    let board_state = BoardStateStore::new().map_err(IoError::other)?;
+    let organs = OrganStore::new(services.db.clone(), services.writer.clone());
+    let backend = BackendApiService::new(services.clone(), Arc::new(jwt_secret));
+    let manas = ManasGateway::new().map_err(IoError::other)?;
+    let kanban_filters = KanbanFilterService::new(board_state.clone());
     let app_state = AppState {
         ai: AiBuilderState::new(),
-        auth: AppAuth::new(),
-        backend: BackendApiService::new(services.clone(), Arc::new(jwt_secret)),
-        board_state: BoardStateStore::new().map_err(IoError::other)?,
+        auth: auth.clone(),
+        backend: backend.clone(),
+        board_state: board_state.clone(),
         local_auth_required,
-        manas: ManasGateway::new().map_err(IoError::other)?,
-        organs: OrganStore::new(services.db.clone(), services.writer.clone()),
+        manas: manas.clone(),
+        organs: organs.clone(),
         packages: PackageCatalogStore::new().map_err(IoError::other)?,
         terminal: TerminalSessionStore::new(),
         widget_bridge: WidgetBridgeStore::new(),
+        kanban_actions: KanbanActionService::new(
+            auth.clone(),
+            backend.clone(),
+            board_state.clone(),
+            local_auth_required,
+            manas.clone(),
+            organs.clone(),
+        ),
+        kanban_filters: kanban_filters.clone(),
+        kanban_streams: KanbanStreamService::new(
+            auth.clone(),
+            backend,
+            board_state.clone(),
+            kanban_filters,
+            local_auth_required,
+            manas,
+            organs.clone(),
+        ),
+        widget_runtime: WidgetRuntimeService::new(
+            auth,
+            board_state,
+            local_auth_required,
+            organs,
+        ),
     };
 
     let app = axum::Router::new().merge(build_router(app_state, mode));

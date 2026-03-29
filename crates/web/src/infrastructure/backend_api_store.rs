@@ -10,6 +10,11 @@ use std::io::{Error, ErrorKind};
 pub enum ApiTable {
     View,
     Record,
+    RecordExtension,
+    RecordLink,
+    RecordComment,
+    RecordWorklog,
+    RecordResourceRef,
     Frequency,
     KarmaCondition,
     KarmaConsequence,
@@ -26,6 +31,7 @@ enum FieldKind {
     Integer,
     NullableInteger,
     Real,
+    NullableReal,
     BooleanInteger,
 }
 
@@ -48,6 +54,69 @@ struct RecordRow {
     quantity: f64,
     head: Option<String>,
     body: Option<String>,
+}
+
+#[derive(Debug, Serialize, FromRow)]
+struct RecordExtensionRow {
+    id: i64,
+    record_id: i64,
+    namespace: String,
+    version: i64,
+    data_json: String,
+    created_at: String,
+    updated_at: String,
+}
+
+#[derive(Debug, Serialize, FromRow)]
+struct RecordLinkRow {
+    id: i64,
+    record_id: i64,
+    link_type: String,
+    target_table: String,
+    target_id: i64,
+    position: Option<f64>,
+    data_json: Option<String>,
+    created_at: String,
+    updated_at: String,
+}
+
+#[derive(Debug, Serialize, FromRow)]
+struct RecordCommentRow {
+    id: i64,
+    record_id: i64,
+    author_user_id: Option<i64>,
+    body: String,
+    created_at: String,
+    updated_at: String,
+    deleted_at: Option<String>,
+}
+
+#[derive(Debug, Serialize, FromRow)]
+struct RecordWorklogRow {
+    id: i64,
+    record_id: i64,
+    author_user_id: i64,
+    started_at: String,
+    ended_at: Option<String>,
+    last_heartbeat_at: Option<String>,
+    seconds: Option<f64>,
+    note: Option<String>,
+    created_at: String,
+    updated_at: String,
+}
+
+#[derive(Debug, Serialize, FromRow)]
+struct RecordResourceRefRow {
+    id: i64,
+    record_id: i64,
+    provider: String,
+    resource_kind: String,
+    resource_path: String,
+    title: Option<String>,
+    position: Option<f64>,
+    data_json: Option<String>,
+    created_at: String,
+    updated_at: String,
 }
 
 #[derive(Debug, Serialize, FromRow)]
@@ -150,6 +219,133 @@ const RECORD_FIELD_SPECS: [FieldSpec; 3] = [
     },
     FieldSpec {
         name: "body",
+        kind: FieldKind::NullableText,
+    },
+];
+
+const RECORD_EXTENSION_FIELD_SPECS: [FieldSpec; 4] = [
+    FieldSpec {
+        name: "record_id",
+        kind: FieldKind::Integer,
+    },
+    FieldSpec {
+        name: "namespace",
+        kind: FieldKind::Text,
+    },
+    FieldSpec {
+        name: "version",
+        kind: FieldKind::Integer,
+    },
+    FieldSpec {
+        name: "data_json",
+        kind: FieldKind::Text,
+    },
+];
+
+const RECORD_LINK_FIELD_SPECS: [FieldSpec; 6] = [
+    FieldSpec {
+        name: "record_id",
+        kind: FieldKind::Integer,
+    },
+    FieldSpec {
+        name: "link_type",
+        kind: FieldKind::Text,
+    },
+    FieldSpec {
+        name: "target_table",
+        kind: FieldKind::Text,
+    },
+    FieldSpec {
+        name: "target_id",
+        kind: FieldKind::Integer,
+    },
+    FieldSpec {
+        name: "position",
+        kind: FieldKind::NullableReal,
+    },
+    FieldSpec {
+        name: "data_json",
+        kind: FieldKind::NullableText,
+    },
+];
+
+const RECORD_COMMENT_FIELD_SPECS: [FieldSpec; 4] = [
+    FieldSpec {
+        name: "record_id",
+        kind: FieldKind::Integer,
+    },
+    FieldSpec {
+        name: "author_user_id",
+        kind: FieldKind::NullableInteger,
+    },
+    FieldSpec {
+        name: "body",
+        kind: FieldKind::Text,
+    },
+    FieldSpec {
+        name: "deleted_at",
+        kind: FieldKind::NullableText,
+    },
+];
+
+const RECORD_WORKLOG_FIELD_SPECS: [FieldSpec; 7] = [
+    FieldSpec {
+        name: "record_id",
+        kind: FieldKind::Integer,
+    },
+    FieldSpec {
+        name: "author_user_id",
+        kind: FieldKind::Integer,
+    },
+    FieldSpec {
+        name: "started_at",
+        kind: FieldKind::Text,
+    },
+    FieldSpec {
+        name: "ended_at",
+        kind: FieldKind::NullableText,
+    },
+    FieldSpec {
+        name: "last_heartbeat_at",
+        kind: FieldKind::NullableText,
+    },
+    FieldSpec {
+        name: "seconds",
+        kind: FieldKind::NullableReal,
+    },
+    FieldSpec {
+        name: "note",
+        kind: FieldKind::NullableText,
+    },
+];
+
+const RECORD_RESOURCE_REF_FIELD_SPECS: [FieldSpec; 7] = [
+    FieldSpec {
+        name: "record_id",
+        kind: FieldKind::Integer,
+    },
+    FieldSpec {
+        name: "provider",
+        kind: FieldKind::Text,
+    },
+    FieldSpec {
+        name: "resource_kind",
+        kind: FieldKind::Text,
+    },
+    FieldSpec {
+        name: "resource_path",
+        kind: FieldKind::Text,
+    },
+    FieldSpec {
+        name: "title",
+        kind: FieldKind::NullableText,
+    },
+    FieldSpec {
+        name: "position",
+        kind: FieldKind::NullableReal,
+    },
+    FieldSpec {
+        name: "data_json",
         kind: FieldKind::NullableText,
     },
 ];
@@ -349,6 +545,46 @@ impl BackendApiStore {
                 .await
                 .map_err(map_sqlx_error)?,
             ),
+            ApiTable::RecordExtension => serialize_value(
+                sqlx::query_as::<_, RecordExtensionRow>(
+                    "SELECT id, record_id, namespace, version, data_json, created_at, updated_at FROM record_extension ORDER BY id",
+                )
+                .fetch_all(db)
+                .await
+                .map_err(map_sqlx_error)?,
+            ),
+            ApiTable::RecordLink => serialize_value(
+                sqlx::query_as::<_, RecordLinkRow>(
+                    "SELECT id, record_id, link_type, target_table, target_id, position, data_json, created_at, updated_at FROM record_link ORDER BY id",
+                )
+                .fetch_all(db)
+                .await
+                .map_err(map_sqlx_error)?,
+            ),
+            ApiTable::RecordComment => serialize_value(
+                sqlx::query_as::<_, RecordCommentRow>(
+                    "SELECT id, record_id, author_user_id, body, created_at, updated_at, deleted_at FROM record_comment ORDER BY id",
+                )
+                .fetch_all(db)
+                .await
+                .map_err(map_sqlx_error)?,
+            ),
+            ApiTable::RecordWorklog => serialize_value(
+                sqlx::query_as::<_, RecordWorklogRow>(
+                    "SELECT id, record_id, author_user_id, started_at, ended_at, last_heartbeat_at, seconds, note, created_at, updated_at FROM record_worklog ORDER BY id",
+                )
+                .fetch_all(db)
+                .await
+                .map_err(map_sqlx_error)?,
+            ),
+            ApiTable::RecordResourceRef => serialize_value(
+                sqlx::query_as::<_, RecordResourceRefRow>(
+                    "SELECT id, record_id, provider, resource_kind, resource_path, title, position, data_json, created_at, updated_at FROM record_resource_ref ORDER BY id",
+                )
+                .fetch_all(db)
+                .await
+                .map_err(map_sqlx_error)?,
+            ),
             ApiTable::Frequency => serialize_value(
                 sqlx::query_as::<_, FrequencyRow>(
                     "SELECT id, quantity, name, day_week, months, days, seconds, next_date, finish_date, catch_up_sum FROM frequency ORDER BY id",
@@ -412,6 +648,51 @@ impl BackendApiStore {
             ApiTable::Record => serialize_value(
                 sqlx::query_as::<_, RecordRow>(
                     "SELECT id, quantity, head, body FROM record WHERE id = ?",
+                )
+                .bind(id)
+                .fetch_one(db)
+                .await
+                .map_err(map_sqlx_error)?,
+            ),
+            ApiTable::RecordExtension => serialize_value(
+                sqlx::query_as::<_, RecordExtensionRow>(
+                    "SELECT id, record_id, namespace, version, data_json, created_at, updated_at FROM record_extension WHERE id = ?",
+                )
+                .bind(id)
+                .fetch_one(db)
+                .await
+                .map_err(map_sqlx_error)?,
+            ),
+            ApiTable::RecordLink => serialize_value(
+                sqlx::query_as::<_, RecordLinkRow>(
+                    "SELECT id, record_id, link_type, target_table, target_id, position, data_json, created_at, updated_at FROM record_link WHERE id = ?",
+                )
+                .bind(id)
+                .fetch_one(db)
+                .await
+                .map_err(map_sqlx_error)?,
+            ),
+            ApiTable::RecordComment => serialize_value(
+                sqlx::query_as::<_, RecordCommentRow>(
+                    "SELECT id, record_id, author_user_id, body, created_at, updated_at, deleted_at FROM record_comment WHERE id = ?",
+                )
+                .bind(id)
+                .fetch_one(db)
+                .await
+                .map_err(map_sqlx_error)?,
+            ),
+            ApiTable::RecordWorklog => serialize_value(
+                sqlx::query_as::<_, RecordWorklogRow>(
+                    "SELECT id, record_id, author_user_id, started_at, ended_at, last_heartbeat_at, seconds, note, created_at, updated_at FROM record_worklog WHERE id = ?",
+                )
+                .bind(id)
+                .fetch_one(db)
+                .await
+                .map_err(map_sqlx_error)?,
+            ),
+            ApiTable::RecordResourceRef => serialize_value(
+                sqlx::query_as::<_, RecordResourceRefRow>(
+                    "SELECT id, record_id, provider, resource_kind, resource_path, title, position, data_json, created_at, updated_at FROM record_resource_ref WHERE id = ?",
                 )
                 .bind(id)
                 .fetch_one(db)
@@ -726,6 +1007,11 @@ impl ApiTable {
         match self {
             ApiTable::View => "view",
             ApiTable::Record => "record",
+            ApiTable::RecordExtension => "record_extension",
+            ApiTable::RecordLink => "record_link",
+            ApiTable::RecordComment => "record_comment",
+            ApiTable::RecordWorklog => "record_worklog",
+            ApiTable::RecordResourceRef => "record_resource_ref",
             ApiTable::Frequency => "frequency",
             ApiTable::KarmaCondition => "karma_condition",
             ApiTable::KarmaConsequence => "karma_consequence",
@@ -740,6 +1026,11 @@ impl ApiTable {
         match self {
             ApiTable::View => Some(VIEW_FIELD_SPECS.to_vec()),
             ApiTable::Record => Some(RECORD_FIELD_SPECS.to_vec()),
+            ApiTable::RecordExtension => Some(RECORD_EXTENSION_FIELD_SPECS.to_vec()),
+            ApiTable::RecordLink => Some(RECORD_LINK_FIELD_SPECS.to_vec()),
+            ApiTable::RecordComment => Some(RECORD_COMMENT_FIELD_SPECS.to_vec()),
+            ApiTable::RecordWorklog => Some(RECORD_WORKLOG_FIELD_SPECS.to_vec()),
+            ApiTable::RecordResourceRef => Some(RECORD_RESOURCE_REF_FIELD_SPECS.to_vec()),
             ApiTable::Frequency => Some(FREQUENCY_FIELD_SPECS.to_vec()),
             ApiTable::KarmaCondition => Some(KARMA_CONDITION_FIELD_SPECS.to_vec()),
             ApiTable::KarmaConsequence => Some(KARMA_CONSEQUENCE_FIELD_SPECS.to_vec()),
@@ -754,6 +1045,11 @@ fn parse_api_table(table_name: &str) -> Result<ApiTable, Error> {
     match table_name {
         "view" => Ok(ApiTable::View),
         "record" => Ok(ApiTable::Record),
+        "record_extension" => Ok(ApiTable::RecordExtension),
+        "record_link" => Ok(ApiTable::RecordLink),
+        "record_comment" => Ok(ApiTable::RecordComment),
+        "record_worklog" => Ok(ApiTable::RecordWorklog),
+        "record_resource_ref" => Ok(ApiTable::RecordResourceRef),
         "frequency" => Ok(ApiTable::Frequency),
         "karma_condition" => Ok(ApiTable::KarmaCondition),
         "karma_consequence" => Ok(ApiTable::KarmaConsequence),
@@ -902,6 +1198,13 @@ fn parse_parameter(
             }
         }
         FieldKind::Real => Ok(SqlParameter::Real(parse_f64_value(field_name, value)?)),
+        FieldKind::NullableReal => {
+            if value.is_null() {
+                Ok(SqlParameter::Null)
+            } else {
+                Ok(SqlParameter::Real(parse_f64_value(field_name, value)?))
+            }
+        }
         FieldKind::BooleanInteger => Ok(SqlParameter::Integer(parse_bool_i64_value(
             field_name, value,
         )?)),

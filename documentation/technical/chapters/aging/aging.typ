@@ -2,6 +2,7 @@
 #import "collection.typ"
 #import "configuration.typ"
 #import "dna.typ"
+#import "extensions.typ"
 #import "examples.typ"
 #import "history.typ"
 #import "kanban.typ"
@@ -34,3 +35,4 @@ Explanation of the tables _should_ be mostly focused on the ideas, the solutions
 #transfer
 #history
 #dna
+#extensions

@@ -95,6 +95,11 @@ impl BackendApiService {
                 self.services.writer.execute_view_insert(sql, params).await
             }
             ApiTable::Record
+            | ApiTable::RecordExtension
+            | ApiTable::RecordLink
+            | ApiTable::RecordComment
+            | ApiTable::RecordWorklog
+            | ApiTable::RecordResourceRef
             | ApiTable::Frequency
             | ApiTable::KarmaCondition
             | ApiTable::KarmaConsequence
@@ -143,6 +148,11 @@ impl BackendApiService {
                     .await
             }
             ApiTable::Record
+            | ApiTable::RecordExtension
+            | ApiTable::RecordLink
+            | ApiTable::RecordComment
+            | ApiTable::RecordWorklog
+            | ApiTable::RecordResourceRef
             | ApiTable::Frequency
             | ApiTable::KarmaCondition
             | ApiTable::KarmaConsequence

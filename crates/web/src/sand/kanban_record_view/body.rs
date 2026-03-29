@@ -57,8 +57,8 @@ pub(super) fn body() -> Markup {
             data-on:kanban-close-sheets="$activeSheet = ''"
             data-on:kanban-open-focus="$activeSheet = ''; $focusLayout = 'full'; $focusMarkdown = true; $focusSheetOpen = true"
             data-on:kanban-close-focus="$focusLayout = 'full'; $focusMarkdown = false; $focusSheetOpen = false"
-            data-on-signal-patch="window.KanbanWidget?.syncUiFromSignals(patch); window.KanbanWidget?.persistUiFromSignals(patch)"
-            data-on-signal-patch-filter="{include: /^ui(\\.|$)/}"
+            data-on-signal-patch="window.KanbanWidget?.syncSheetFromSignals?.(patch); window.KanbanWidget?.syncUiFromSignals(patch); window.KanbanWidget?.persistUiFromSignals(patch)"
+            data-on-signal-patch-filter="{include: /^(ui(\\.|$)|activeSheet$)/}"
         {
             .widgetSurface {
                 .panel {

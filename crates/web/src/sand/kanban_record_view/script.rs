@@ -68,6 +68,7 @@ pub(super) fn script() -> String {
                 activeSheet: "",
                 formOptions: null,
                 formOptionsPromise: null,
+                formOptionsRequestId: 0,
                 focusDetail: null,
                 focusPreview: null,
                 focusDetailGeneration: 0,
@@ -629,8 +630,7 @@ pub(super) fn script() -> String {
 
             async function loadFormOptions() {
                 try {
-                    state.formOptions = await postAction("load-form-options", {});
-                    return state.formOptions;
+                    return await postAction("load-form-options", {});
                 } catch (error) {
                     state.transportError =
                         error instanceof Error ? error.message : String(error);
@@ -646,10 +646,24 @@ pub(super) fn script() -> String {
                 if (!force && state.formOptionsPromise) {
                     return state.formOptionsPromise;
                 }
+                if (force) {
+                    state.formOptionsRequestId += 1;
+                }
+                const requestId = state.formOptionsRequestId;
                 state.formOptionsPromise = loadFormOptions()
+                    .then((formOptions) => {
+                        if (state.formOptionsRequestId === requestId) {
+                            state.formOptions = formOptions;
+                        }
+                        return state.formOptionsRequestId === requestId
+                            ? state.formOptions
+                            : null;
+                    })
                     .catch(() => null)
                     .finally(() => {
-                        state.formOptionsPromise = null;
+                        if (state.formOptionsRequestId === requestId) {
+                            state.formOptionsPromise = null;
+                        }
                     });
                 return state.formOptionsPromise;
             }
@@ -1263,13 +1277,8 @@ pub(super) fn script() -> String {
                 }
 
                 if (nextSheet === "create") {
-                    if (state.formOptions) {
-                        renderCreateSheet();
-                        void ensureFormOptionsLoaded();
-                        return;
-                    }
                     elements.createSheetBody.innerHTML = `<p class="small">Loading task form...</p>`;
-                    await ensureFormOptionsLoaded();
+                    await ensureFormOptionsLoaded(true);
                     if (state.activeSheet === nextSheet) {
                         renderCreateSheet();
                     }
@@ -1281,13 +1290,8 @@ pub(super) fn script() -> String {
                         elements.editSheetBody.innerHTML = `<p class="small">Load a task detail before editing.</p>`;
                         return;
                     }
-                    if (state.formOptions) {
-                        renderEditSheet();
-                        void ensureFormOptionsLoaded();
-                        return;
-                    }
                     elements.editSheetBody.innerHTML = `<p class="small">Loading task form...</p>`;
-                    await ensureFormOptionsLoaded();
+                    await ensureFormOptionsLoaded(true);
                     if (state.activeSheet === nextSheet) {
                         renderEditSheet();
                     }
@@ -2090,6 +2094,18 @@ pub(super) fn script() -> String {
                         state.ui = normalizeUi(resolved);
                     }
                 });
+            }
+
+            function syncSheetFromSignals(patch) {
+                if (!patch || typeof patch !== "object") {
+                    return;
+                }
+
+                if (!Object.prototype.hasOwnProperty.call(patch, "activeSheet")) {
+                    return;
+                }
+
+                void syncActiveSheet(patch.activeSheet);
             }
 
             function persistUiFromSignals() {
@@ -2972,6 +2988,7 @@ pub(super) fn script() -> String {
                 refreshRuntime,
                 loadRecordDetail,
                 syncActiveSheet,
+                syncSheetFromSignals,
                 syncUiFromSignals,
                 persistUiFromSignals,
                 openEditSheet,

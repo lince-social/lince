@@ -600,8 +600,9 @@ impl KanbanActionService {
 
         let mut categories = Vec::new();
         let mut seen_categories = BTreeSet::new();
-        let mut task_record_ids = BTreeSet::new();
         let mut categories_by_record_id = BTreeMap::new();
+        let mut parent_records_raw = Vec::new();
+        let mut parent_records_have_categories = false;
 
         for extension in &extensions {
             if extension.namespace == "task.categories" {
@@ -618,52 +619,55 @@ impl KanbanActionService {
                         categories.push(category);
                     }
                 }
-            } else if extension.namespace == "task.type"
-                && let Some(task_type) = extract_task_type(&extension.data_json)
-                && VALID_TASK_TYPES.contains(&task_type.as_str())
-            {
-                task_record_ids.insert(extension.record_id);
             }
         }
 
-        let mut parent_records = snapshot
-            .rows
-            .iter()
-            .filter_map(|record| {
-                let id = record
-                    .get("id")
-                    .and_then(|value| value.trim().parse::<i64>().ok())?;
-                if !task_record_ids.contains(&id) {
-                    return None;
-                }
+        for record in &snapshot.rows {
+            let Some(id) = record
+                .get("id")
+                .and_then(|value| value.trim().parse::<i64>().ok()) else {
+                continue;
+            };
 
-                let head = record
-                    .get("head")
-                    .map(|value| value.trim().to_string())
-                    .unwrap_or_default();
-                let head = if head.is_empty() {
-                    "Untitled".to_string()
-                } else {
-                    head
-                };
-                let mut categories = categories_by_record_id
-                    .get(&id)
-                    .cloned()
-                    .unwrap_or_default();
-                if let Some(primary_category) = record
-                    .get("primary_category")
-                    .map(|value| value.trim().to_string())
-                    .filter(|value| !value.is_empty())
-                {
-                    categories.push(primary_category);
-                }
-                if let Some(raw_categories) = record.get("categories_json")
-                    && let Ok(values) = serde_json::from_str::<Vec<String>>(raw_categories)
-                {
-                    categories.extend(values);
-                }
-                categories = normalize_categories(categories);
-                if !active_parent_category_keys.is_empty()
+            let head = record
+                .get("head")
+                .map(|value| value.trim().to_string())
+                .unwrap_or_default();
+            let head = if head.is_empty() {
+                "Untitled".to_string()
+            } else {
+                head
+            };
+            let mut categories = categories_by_record_id
+                .get(&id)
+                .cloned()
+                .unwrap_or_default();
+            if let Some(primary_category) = record
+                .get("primary_category")
+                .map(|value| value.trim().to_string())
+                .filter(|value| !value.is_empty())
+            {
+                categories.push(primary_category);
+            }
+            if let Some(raw_categories) = record.get("categories_json")
+                && let Ok(values) = serde_json::from_str::<Vec<String>>(raw_categories)
+            {
+                categories.extend(values);
+            }
+            categories = normalize_categories(categories);
+            if !categories.is_empty() {
+                parent_records_have_categories = true;
+            }
+
+            parent_records_raw.push((id, head, categories));
+        }
+
+        let use_parent_category_filter =
+            !active_parent_category_keys.is_empty() && parent_records_have_categories;
+        let mut parent_records = parent_records_raw
+            .into_iter()
+            .filter_map(|(id, head, categories)| {
+                if use_parent_category_filter
                     && !categories.iter().any(|category| {
                         active_parent_category_keys.contains(&category.to_lowercase())
                     })
@@ -715,7 +719,11 @@ impl KanbanActionService {
             "assignees": assignees,
             "categories": categories,
             "parentRecords": parent_records,
-            "parentCategoryQuery": parent_category_query,
+            "parentCategoryQuery": if parent_records_have_categories {
+                parent_category_query
+            } else {
+                String::new()
+            },
         }))
     }
 

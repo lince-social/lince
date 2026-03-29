@@ -4,10 +4,12 @@
 #import "dna.typ"
 #import "examples.typ"
 #import "history.typ"
+#import "kanban.typ"
 #import "karma.typ"
 #import "operations.typ"
 #import "record.typ"
 #import "transfer.typ"
+#import "web_components.typ"
 
 #major(
   "Aging",
@@ -27,6 +29,8 @@ Explanation of the tables _should_ be mostly focused on the ideas, the solutions
 #examples
 #configuration
 #operations
+#web_components
+#kanban
 #transfer
 #history
 #dna

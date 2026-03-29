@@ -232,17 +232,37 @@ fn render_columns(rows: &[KanbanRow]) -> Markup {
 }
 
 fn render_lane(lane: Lane, rows: Vec<&KanbanRow>) -> Markup {
+    let collapsed_expr = format!("$ui.lanes.{}.collapsed", lane.key);
+    let width_expr = format!(
+        "{} ? '{}px' : ($ui.lanes.{}.width + 'px')",
+        collapsed_expr.as_str(),
+        64,
+        lane.key
+    );
+    let toggle_expr = format!("$ui.lanes.{}.collapsed = !$ui.lanes.{}.collapsed", lane.key, lane.key);
+    let toggle_label_expr = format!("{} ? '+' : '-'", collapsed_expr.as_str());
     html! {
-        section.col data-col=(lane.key) {
+        section.col
+            data-col=(lane.key)
+            data-class:is-collapsed=(collapsed_expr.as_str())
+            data-style:width=(width_expr.as_str())
+            data-style:min-width=(width_expr.as_str())
+            data-style:flex-basis=(width_expr.as_str())
+        {
             button.colResizeEdge.colResizeEdge--left type="button" title="Resize column" data-resize-handle=(lane.key) data-resize-side="left" {}
             header.colHead {
                 .colHeadMain {
-                    button.laneToggle type="button" title={ "Toggle " (lane.label) } data-lane-toggle=(lane.key) { "-" }
+                    button.laneToggle
+                        type="button"
+                        title={ "Toggle " (lane.label) }
+                        data-on:click=(toggle_expr)
+                        data-text=(toggle_label_expr)
+                    { "-" }
                     .colName { (lane.label) }
                     .count { (rows.len()) }
                 }
             }
-            .list data-dropzone=(lane.key) {
+            .list data-dropzone=(lane.key) data-show=(format!("!({})", collapsed_expr.as_str())) style="display: none" {
                 @if rows.is_empty() {
                     .empty { "Drop records here" }
                 } @else {
@@ -262,19 +282,38 @@ fn render_card(row: &KanbanRow) -> Markup {
     let categories = categories_for_row(row);
     let assignees = row.assignee_names.join(", ");
     let card_class = format!("card {}", quantity_to_lane_key(row.quantity));
+    let body_mode_expr = format!("($ui.cardModes['{}'] || $ui.defaultBodyMode)", row.id);
+    let head_mode_expr = format!("{body_mode_expr} === 'head'");
+    let compact_mode_expr = format!("{body_mode_expr} === 'compact'");
+    let full_mode_expr = format!("{body_mode_expr} === 'full'");
+    let set_head_expr = format!("$ui.cardModes['{}'] = 'head'", row.id);
+    let set_compact_expr = format!("$ui.cardModes['{}'] = 'compact'", row.id);
+    let set_full_expr = format!("$ui.cardModes['{}'] = 'full'", row.id);
     html! {
         article class=(card_class)
             draggable="true"
             data-record-id=(row.id)
             data-quantity=(row.quantity)
-            data-body-full=(full_body)
-            data-body-compact=(compact_body.as_str())
-            data-body-head=(row.head.as_str())
         {
             .cardActions {
-                button.cardAction type="button" data-card-body-mode="head" title="Show only the head" { "_" }
-                button.cardAction type="button" data-card-body-mode="compact" title="Show compact body" { "=" }
-                button.cardAction.is-active type="button" data-card-body-mode="full" title="Show full body" { "+" }
+                button.cardAction
+                    type="button"
+                    title="Show only the head"
+                    data-on:click=(set_head_expr)
+                    data-class:is-active=(head_mode_expr.as_str())
+                { "_" }
+                button.cardAction
+                    type="button"
+                    title="Show compact body"
+                    data-on:click=(set_compact_expr)
+                    data-class:is-active=(compact_mode_expr.as_str())
+                { "=" }
+                button.cardAction
+                    type="button"
+                    title="Show full body"
+                    data-on:click=(set_full_expr)
+                    data-class:is-active=(full_mode_expr.as_str())
+                { "+" }
                 button.cardAction type="button" data-open-focus=(row.id) data-on:click="window.KanbanWidget?.loadRecordDetail(Number(evt.currentTarget.dataset.openFocus || 0))" title="Focus card" { "[]" }
             }
             button.head.headButton type="button" data-open-focus=(row.id) data-on:click="window.KanbanWidget?.loadRecordDetail(Number(evt.currentTarget.dataset.openFocus || 0))" {
@@ -309,7 +348,20 @@ fn render_card(row: &KanbanRow) -> Markup {
             @if !assignees.is_empty() {
                 .small { "Assignees: " (assignees) }
             }
-            .body.markdownRender data-card-body { (compact_body) }
+            @if !compact_body.trim().is_empty() {
+                .body.markdownRender
+                    data-markdown-source=(compact_body.as_str())
+                    data-show=(compact_mode_expr.as_str())
+                    style="display: none"
+                {}
+            }
+            @if !full_body.trim().is_empty() {
+                .body.is-full.markdownRender
+                    data-markdown-source=(full_body)
+                    data-show=(full_mode_expr.as_str())
+                    style="display: none"
+                {}
+            }
             @if let Some(comments_count) = row.comments_count.filter(|value| *value > 0) {
                 .small { (comments_count) " comments" }
             }

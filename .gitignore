@@ -3,3 +3,5 @@ target/
 mprocs.log
 /documentation/**/*.html
 .env
+.config/lince/
+.rustup/

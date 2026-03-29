@@ -17,19 +17,16 @@ pub(super) fn script() -> String {
             const UI_SCHEMA_VERSION = 2;
             const BODY_MODES = new Set(["head", "compact", "full"]);
             const app = document.getElementById("app");
+            let datastarApi = null;
+            const datastarReady = import("/static/vendored/datastar.js")
+                .then((module) => {
+                    datastarApi = module;
+                    return module;
+                })
+                .catch(() => null);
 
             const elements = {
-                headerMeta: document.getElementById("kanban-header-meta"),
-                headerTitle: document.getElementById("kanban-header-title"),
-                queryToggle: document.getElementById("kanban-query-toggle"),
-                queryCopy: document.getElementById("kanban-query-copy"),
-                status: document.getElementById("kanban-connection-status"),
                 toolbarState: document.getElementById("kanban-toolbar-state"),
-                statusCopy: document.getElementById("kanban-status-copy"),
-                statePanel: document.getElementById("kanban-state-panel"),
-                stateTitle: document.getElementById("kanban-state-title"),
-                stateCopy: document.getElementById("kanban-state-copy"),
-                stateDetail: document.getElementById("kanban-state-detail"),
                 emptyOrError: document.getElementById("kanban-empty-or-error"),
                 activeFilters: document.getElementById("kanban-active-filters"),
                 columns: document.getElementById("kanban-columns"),
@@ -78,6 +75,12 @@ pub(super) fn script() -> String {
                 heartbeatTimer: null,
                 draftFilters: emptyFilterState(),
                 updatesPaused: false,
+                shellState: {
+                    visible: false,
+                    title: "",
+                    copy: "",
+                    detail: "",
+                },
             };
 
             state.lastPersistedUiJson = serializeUi(state.ui);
@@ -98,6 +101,35 @@ pub(super) fn script() -> String {
                 } catch {
                     return fallback;
                 }
+            }
+
+            function withDatastar(callback) {
+                if (datastarApi) {
+                    callback(datastarApi);
+                    return;
+                }
+                void datastarReady.then((module) => {
+                    if (module) {
+                        callback(module);
+                    }
+                });
+            }
+
+            function patchSignals(patch) {
+                const safePatch = cloneJsonValue(patch, {});
+                if (!safePatch || typeof safePatch !== "object") {
+                    return;
+                }
+                withDatastar((module) => {
+                    module?.mergePatch?.(safePatch);
+                });
+            }
+
+            function readSignalPath(path) {
+                if (datastarApi?.getPath) {
+                    return cloneJsonValue(datastarApi.getPath(path), null);
+                }
+                return null;
             }
 
             function normalizeHostMeta(rawMeta) {
@@ -255,13 +287,6 @@ pub(super) fn script() -> String {
             function laneToQuantity(key) {
                 const column = columns.find((entry) => entry.key === key);
                 return column ? column.value : 0;
-            }
-
-            function bodyModeFor(recordId) {
-                return (
-                    state.ui.cardModes[String(recordId)] ||
-                    state.ui.defaultBodyMode
-                );
             }
 
             function emptyFilterState() {
@@ -425,101 +450,121 @@ pub(super) fn script() -> String {
             }
 
             function setShellState(title, copy, detail) {
-                elements.stateTitle.textContent = title || "";
-                elements.stateCopy.textContent = copy || "";
-                elements.stateDetail.textContent = detail || "";
-                elements.statePanel.hidden = false;
+                state.shellState = {
+                    visible: true,
+                    title: String(title || ""),
+                    copy: String(copy || ""),
+                    detail: String(detail || ""),
+                };
+                syncShellSignals();
             }
 
             function clearShellState() {
-                elements.statePanel.hidden = true;
-                elements.stateTitle.textContent = "";
-                elements.stateCopy.textContent = "";
-                elements.stateDetail.textContent = "";
+                state.shellState = {
+                    visible: false,
+                    title: "",
+                    copy: "",
+                    detail: "",
+                };
+                syncShellSignals();
             }
 
-            function setHeaderMetaFromContract() {
+            function syncShellSignals() {
+                const source = state.contract?.source || {};
+                let statusLabel = "Waiting";
+                let statusClass = "status";
+                let statusCopy = "Waiting for the instance-aware Kanban stream.";
+
+                if (!state.contract && state.loadingContract) {
+                    statusLabel = "Loading";
+                    statusCopy = "Resolving the Kanban contract from the host.";
+                } else if (source.requires_auth && source.authenticated === false) {
+                    statusLabel = "Locked";
+                    statusClass += " is-error";
+                    statusCopy = "This widget needs the host login to reconnect the configured server.";
+                } else if (state.hostMeta.streams.globalEnabled === false) {
+                    statusLabel = "Paused globally";
+                    statusClass += " is-paused";
+                    statusCopy = "The board disabled streams globally for this workspace.";
+                } else if (state.hostMeta.streams.cardEnabled === false) {
+                    statusLabel = "Disconnected";
+                    statusClass += " is-paused";
+                    statusCopy = "This widget disconnected its live stream.";
+                } else if (state.updatesPaused) {
+                    statusLabel = "Paused updates";
+                    statusClass += " is-paused";
+                    statusCopy = "The connection is live, but incoming merges are paused locally.";
+                } else if (state.connected) {
+                    statusLabel = "Live";
+                    statusClass += " is-live";
+                    statusCopy = state.lastUpdate
+                        ? "Live update received at " + state.lastUpdate + "."
+                        : "Connected to the filtered Kanban stream.";
+                } else if (state.transportError) {
+                    statusLabel = "Offline";
+                    statusClass += " is-error";
+                    statusCopy = state.transportError;
+                } else if (state.loadingStream) {
+                    statusLabel = "Connecting";
+                    statusCopy = "Opening the instance-aware filtered stream.";
+                }
+
                 const title =
                     state.contract?.widget?.title ||
                     state.hostMeta?.cardState?.title ||
                     "Kanban Record View";
+                const queryText = String(
+                    state.viewMeta?.query ||
+                        state.contract?.diagnostics?.effective_sql ||
+                        "",
+                ).trim();
                 const viewId =
                     state.viewMeta?.view_id ??
                     state.contract?.source?.view_id ??
                     state.hostMeta.viewId;
-                elements.headerTitle.textContent = title;
-                setQueryText(
-                    state.viewMeta?.query ||
-                        state.contract?.diagnostics?.effective_sql ||
-                        "",
-                );
+                let queryLabel = queryText
+                    ? `Query (${queryText.length} chars)`
+                    : "No query available";
                 if (viewId) {
-                    elements.queryToggle.textContent = `View ${String(viewId)} query`;
+                    queryLabel = `View ${String(viewId)} query`;
                 }
+
+                patchSignals({
+                    shell: {
+                        title,
+                        queryText,
+                        queryLabel,
+                        queryDisabled: !queryText,
+                        statusLabel,
+                        statusClass,
+                        statusCopy,
+                        warningVisible: state.shellState.visible,
+                        warningTitle: state.shellState.title,
+                        warningCopy: state.shellState.copy,
+                        warningDetail: state.shellState.detail,
+                        toggleUpdatesLabel: state.updatesPaused
+                            ? "Resume updates"
+                            : "Pause updates",
+                        toggleStreamLabel:
+                            state.hostMeta.streams.cardEnabled === false
+                                ? "Connect widget"
+                                : "Disconnect widget",
+                        toggleStreamAccent:
+                            state.hostMeta.streams.cardEnabled === false,
+                        toggleStreamPaused:
+                            state.hostMeta.streams.cardEnabled !== false,
+                        reconnectDisabled:
+                            !state.contract ||
+                            state.hostMeta.streams.enabled === false ||
+                            (source.requires_auth &&
+                                source.authenticated === false),
+                    },
+                });
             }
 
             function updateStatus() {
                 const source = state.contract?.source || {};
-                let label = "Waiting";
-                let className = "status";
-                let copy = "Waiting for the instance-aware Kanban stream.";
-
-                if (!state.contract && state.loadingContract) {
-                    label = "Loading";
-                    copy = "Resolving the Kanban contract from the host.";
-                } else if (source.requires_auth && source.authenticated === false) {
-                    label = "Locked";
-                    className += " is-error";
-                    copy = "This widget needs the host login to reconnect the configured server.";
-                } else if (state.hostMeta.streams.globalEnabled === false) {
-                    label = "Paused globally";
-                    className += " is-paused";
-                    copy = "The board disabled streams globally for this workspace.";
-                } else if (state.hostMeta.streams.cardEnabled === false) {
-                    label = "Disconnected";
-                    className += " is-paused";
-                    copy = "This widget disconnected its live stream.";
-                } else if (state.updatesPaused) {
-                    label = "Paused updates";
-                    className += " is-paused";
-                    copy = "The connection is live, but incoming merges are paused locally.";
-                } else if (state.connected) {
-                    label = "Live";
-                    className += " is-live";
-                    copy = state.lastUpdate
-                        ? "Live update received at " + state.lastUpdate + "."
-                        : "Connected to the filtered Kanban stream.";
-                } else if (state.transportError) {
-                    label = "Offline";
-                    className += " is-error";
-                    copy = state.transportError;
-                } else if (state.loadingStream) {
-                    label = "Connecting";
-                    copy = "Opening the instance-aware filtered stream.";
-                }
-
-                elements.status.className = className;
-                elements.status.textContent = label;
-                elements.statusCopy.textContent = copy;
-                elements.toggleUpdates.textContent = state.updatesPaused
-                    ? "Resume updates"
-                    : "Pause updates";
-                elements.toggleStream.textContent =
-                    state.hostMeta.streams.cardEnabled === false
-                        ? "Connect widget"
-                        : "Disconnect widget";
-                elements.toggleStream.classList.toggle(
-                    "toolbarBtn--accent",
-                    state.hostMeta.streams.cardEnabled === false,
-                );
-                elements.toggleStream.classList.toggle(
-                    "toolbarBtn--paused",
-                    state.hostMeta.streams.cardEnabled !== false,
-                );
-                elements.reconnect.disabled =
-                    !state.contract ||
-                    state.hostMeta.streams.enabled === false ||
-                    (source.requires_auth && source.authenticated === false);
+                syncShellSignals();
             }
 
             async function fetchContract() {
@@ -557,7 +602,6 @@ pub(super) fn script() -> String {
                     state.draftFilters = parseContractFilters(payload?.filters?.rows);
                     renderActiveFilters();
                     clearShellState();
-                    setHeaderMetaFromContract();
                     if (
                         Array.isArray(payload?.filters?.rows) &&
                         payload.filters.rows.length
@@ -631,80 +675,18 @@ pub(super) fn script() -> String {
                 node.innerHTML = typeof html === "string" ? html : "";
             }
 
-            function applyLaneLayout() {
-                for (const column of elements.columns.querySelectorAll(".col")) {
-                    const key = String(column.dataset.col || "");
-                    const lane = state.ui.lanes[key] || {
-                        collapsed: false,
-                        width: DEFAULT_WIDTH,
-                    };
-                    const width = lane.collapsed ? COLLAPSED_WIDTH : clampWidth(lane.width);
-                    column.classList.toggle("is-collapsed", lane.collapsed);
-                    column.style.width = width + "px";
-                    column.style.minWidth = width + "px";
-                    column.style.flexBasis = width + "px";
-                    const list = column.querySelector(".list");
-                    const tools = column.querySelector(".colTools");
-                    const toggle = column.querySelector(".laneToggle");
-                    if (list) {
-                        list.style.display = lane.collapsed ? "none" : "";
-                    }
-                    if (tools) {
-                        tools.style.display = lane.collapsed ? "none" : "";
-                    }
-                    if (toggle) {
-                        toggle.textContent = lane.collapsed ? "+" : "-";
-                    }
+            function hydrateMarkdownBlocks(root) {
+                if (!root) {
+                    return;
                 }
-            }
-
-            function applyCardModes() {
-                for (const card of elements.columns.querySelectorAll(".card")) {
-                    const recordId = String(card.dataset.recordId || "");
-                    const mode = bodyModeFor(recordId);
-                    const body = card.querySelector("[data-card-body]");
-                    const full = String(card.dataset.bodyFull || "");
-                    const compact = String(card.dataset.bodyCompact || "");
-
-                    for (const button of card.querySelectorAll("[data-card-body-mode]")) {
-                        button.classList.toggle(
-                            "is-active",
-                            String(button.dataset.cardBodyMode || "") === mode,
-                        );
-                    }
-
-                    if (!body) {
+                for (const block of root.querySelectorAll("[data-markdown-source]")) {
+                    const source = String(block.dataset.markdownSource || "");
+                    if (block.dataset.markdownRendered === source) {
                         continue;
                     }
-
-                    if (mode === "head") {
-                        body.innerHTML = "";
-                        body.style.display = "none";
-                        body.classList.remove("is-full");
-                    } else if (mode === "full") {
-                        body.innerHTML = renderMarkdown(full);
-                        body.style.display = "";
-                        body.classList.add("is-full");
-                    } else {
-                        body.innerHTML = renderMarkdown(compact);
-                        body.style.display = compact ? "" : "none";
-                        body.classList.remove("is-full");
-                    }
+                    block.innerHTML = source ? renderMarkdown(source) : "";
+                    block.dataset.markdownRendered = source;
                 }
-            }
-
-            function applyUiToDom() {
-                applyLaneLayout();
-                applyCardModes();
-            }
-
-            function setQueryText(query) {
-                const text = String(query || "").trim();
-                elements.queryToggle.textContent = text
-                    ? `Query (${text.length} chars)`
-                    : "No query available";
-                elements.queryCopy.textContent = text;
-                elements.queryToggle.disabled = !text;
             }
 
             function isoToInput(value) {
@@ -1285,15 +1267,135 @@ pub(super) fn script() -> String {
 
             function closeFocusAction() {
                 state.focusAction = null;
-                dispatchUiEvent("kanban-close-focus-action");
+                if (elements.focusActionPanel) {
+                    elements.focusActionPanel.hidden = true;
+                    elements.focusActionPanel.innerHTML = "";
+                }
             }
 
             function focusActionInput(name) {
                 return elements.focusActionPanel?.querySelector(`[data-focus-action-field="${name}"]`);
             }
 
+            function renderFocusActionPanel(action) {
+                if (!elements.focusActionPanel) {
+                    return;
+                }
+
+                const current = action || {};
+                const kind = String(current.kind || "");
+                const header = String(current.header || "Action");
+                const description = String(current.description || "");
+                const message = String(current.message || "");
+                const body = String(current.body || "");
+                const resourcePath = String(current.resourcePath || "");
+                const resourceKind = String(current.resourceKind || "image").trim() || "image";
+                const title = String(current.title || "");
+                const note = String(current.note || "");
+
+                let formHtml = "";
+                if (kind === "create-comment" || kind === "edit-comment") {
+                    formHtml = `
+                        <form data-focus-action-form="">
+                            <div class="fieldBlock">
+                                <label class="fieldLabel" for="focus-action-body">Comment body</label>
+                                <textarea class="textarea" id="focus-action-body" data-focus-action-field="body" spellcheck="true" placeholder="Write a comment">${escapeHtml(body)}</textarea>
+                            </div>
+                            <div class="sheetActions">
+                                <button class="toolbarBtn" type="button" data-focus-action-cancel="">Cancel</button>
+                                <button class="toolbarBtn toolbarBtn--accent" type="submit">${kind === "create-comment" ? "Add comment" : "Save comment"}</button>
+                            </div>
+                        </form>
+                    `;
+                } else if (kind === "create-resource-ref") {
+                    formHtml = `
+                        <form data-focus-action-form="">
+                            <div class="formGrid">
+                                <div class="fieldBlock">
+                                    <label class="fieldLabel" for="focus-action-resource-path">Resource path</label>
+                                    <input class="field" id="focus-action-resource-path" data-focus-action-field="resourcePath" type="text" placeholder="bucket/path/to/file.png" value="${escapeHtml(resourcePath)}">
+                                </div>
+                                <div class="fieldBlock">
+                                    <label class="fieldLabel" for="focus-action-resource-kind">Resource kind</label>
+                                    <input class="field" id="focus-action-resource-kind" data-focus-action-field="resourceKind" type="text" placeholder="image" value="${escapeHtml(resourceKind)}">
+                                </div>
+                                <div class="fieldBlock">
+                                    <label class="fieldLabel" for="focus-action-resource-title">Title</label>
+                                    <input class="field" id="focus-action-resource-title" data-focus-action-field="title" type="text" placeholder="Optional title" value="${escapeHtml(title)}">
+                                </div>
+                            </div>
+                            <div class="sheetActions">
+                                <button class="toolbarBtn" type="button" data-focus-action-cancel="">Cancel</button>
+                                <button class="toolbarBtn toolbarBtn--accent" type="submit">Link resource</button>
+                            </div>
+                        </form>
+                    `;
+                } else if (kind === "start-worklog") {
+                    formHtml = `
+                        <form data-focus-action-form="">
+                            <div class="fieldBlock">
+                                <label class="fieldLabel" for="focus-action-note">Worklog note</label>
+                                <textarea class="textarea" id="focus-action-note" data-focus-action-field="note" spellcheck="true" placeholder="Optional note">${escapeHtml(note)}</textarea>
+                            </div>
+                            <div class="sheetActions">
+                                <button class="toolbarBtn" type="button" data-focus-action-cancel="">Cancel</button>
+                                <button class="toolbarBtn toolbarBtn--accent" type="submit">Start</button>
+                            </div>
+                        </form>
+                    `;
+                } else if (
+                    kind === "delete-comment" ||
+                    kind === "delete-resource-ref" ||
+                    kind === "delete-record"
+                ) {
+                    formHtml = `
+                        <form data-focus-action-form="">
+                            <p data-focus-action-body="">${escapeHtml(body)}</p>
+                            <div class="sheetActions">
+                                <button class="toolbarBtn" type="button" data-focus-action-cancel="">Cancel</button>
+                                <button class="toolbarBtn toolbarBtn--danger" type="submit">${kind === "delete-record" ? "Delete record" : "Remove"}</button>
+                            </div>
+                        </form>
+                    `;
+                }
+
+                elements.focusActionPanel.hidden = false;
+                elements.focusActionPanel.innerHTML = `
+                    <div class="sheetHeader">
+                        <div class="headerMeta">
+                            <div class="headerTitle">${escapeHtml(header)}</div>
+                            <div class="headerSub">${escapeHtml(description)}</div>
+                        </div>
+                        <div class="headerActions">
+                            <button class="toolbarBtn" type="button" data-focus-action-close="">Close</button>
+                        </div>
+                    </div>
+                    <p class="small" data-focus-action-message=""${message ? "" : ' style="display: none"'}>${escapeHtml(message)}</p>
+                    ${formHtml}
+                `;
+
+                elements.focusActionPanel.querySelectorAll("[data-focus-action-close]").forEach((button) => {
+                    button.addEventListener("click", () => {
+                        closeFocusAction();
+                    });
+                });
+                elements.focusActionPanel.querySelectorAll("[data-focus-action-cancel]").forEach((button) => {
+                    button.addEventListener("click", () => {
+                        closeFocusAction();
+                    });
+                });
+            }
+
             function setFocusActionMessage(message) {
-                dispatchUiEvent("kanban-focus-action-message", String(message || ""));
+                const nextMessage = String(message || "");
+                if (state.focusAction) {
+                    state.focusAction.message = nextMessage;
+                }
+                const target = elements.focusActionPanel?.querySelector("[data-focus-action-message]");
+                if (target) {
+                    target.textContent = nextMessage;
+                    target.style.display = nextMessage ? "" : "none";
+                }
             }
 
             function openFocusAction(actionOrKind, options = {}) {
@@ -1357,7 +1459,7 @@ pub(super) fn script() -> String {
                 }
 
                 state.focusAction = nextAction;
-                dispatchUiEvent("kanban-open-focus-action", nextAction);
+                renderFocusActionPanel(nextAction);
                 window.requestAnimationFrame(() => {
                     elements.focusActionPanel?.scrollIntoView({
                         block: "nearest",
@@ -1593,19 +1695,7 @@ pub(super) fn script() -> String {
                 }
             }
 
-            function persistUi(nextUi) {
-                const normalized = normalizeUi(nextUi);
-                const nextJson = serializeUi(normalized);
-                state.ui = normalized;
-                applyUiToDom();
-
-                if (nextJson === state.lastPersistedUiJson) {
-                    return;
-                }
-
-                state.lastPersistedUiJson = nextJson;
-                persistPreviewUi(normalized);
-
+            function schedulePersistUi(normalized, nextJson) {
                 if (state.persistTimer) {
                     window.clearTimeout(state.persistTimer);
                 }
@@ -1614,6 +1704,59 @@ pub(super) fn script() -> String {
                     state.persistTimer = null;
                     window.LinceWidgetHost?.patchCardState?.({ ui: normalized });
                 }, 140);
+            }
+
+            function syncUiSignals(nextUi) {
+                const normalized = normalizeUi(nextUi);
+                state.ui = normalized;
+                patchSignals({ ui: normalized });
+            }
+
+            function syncUiFromSignals() {
+                const nextUi = readSignalPath("ui");
+                if (nextUi !== null) {
+                    state.ui = normalizeUi(nextUi);
+                    return;
+                }
+                void datastarReady.then(() => {
+                    const resolved = readSignalPath("ui");
+                    if (resolved !== null) {
+                        state.ui = normalizeUi(resolved);
+                    }
+                });
+            }
+
+            function persistUiFromSignals() {
+                const rawUi = readSignalPath("ui");
+                if (rawUi === null) {
+                    return;
+                }
+                const normalized = normalizeUi(rawUi);
+                const nextJson = serializeUi(normalized);
+                state.ui = normalized;
+
+                if (nextJson === state.lastPersistedUiJson) {
+                    return;
+                }
+
+                state.lastPersistedUiJson = nextJson;
+                persistPreviewUi(normalized);
+                schedulePersistUi(normalized, nextJson);
+            }
+
+            function persistUi(nextUi) {
+                const normalized = normalizeUi(nextUi);
+                const nextJson = serializeUi(normalized);
+                state.ui = normalized;
+                syncUiSignals(normalized);
+
+                if (nextJson === state.lastPersistedUiJson) {
+                    return;
+                }
+
+                state.lastPersistedUiJson = nextJson;
+                persistPreviewUi(normalized);
+                schedulePersistUi(normalized, nextJson);
             }
 
             function normalizePendingStops(rawStops) {
@@ -1831,7 +1974,6 @@ pub(super) fn script() -> String {
                 card.classList.add(targetLaneKey);
                 updateLaneCounts();
                 ensureEmptyPlaceholder(sourceList);
-                applyUiToDom();
                 return previousHtml;
             }
 
@@ -1840,7 +1982,7 @@ pub(super) fn script() -> String {
                     return;
                 }
                 elements.columns.innerHTML = previousHtml;
-                applyUiToDom();
+                hydrateMarkdownBlocks(elements.columns);
             }
 
             function handleKanbanSync(payload) {
@@ -1854,11 +1996,10 @@ pub(super) fn script() -> String {
                     updateStatus();
                     return;
                 }
-                setHeaderMetaFromContract();
                 patchHtml(elements.toolbarState, payload?.html?.toolbar_state);
                 patchHtml(elements.columns, payload?.html?.columns);
                 patchHtml(elements.emptyOrError, payload?.html?.empty_or_error);
-                applyUiToDom();
+                hydrateMarkdownBlocks(elements.columns);
                 updateStatus();
                 if (state.ui.focusedRecordId && isSheetVisible(elements.focusSheet)) {
                     loadRecordDetail(state.ui.focusedRecordId).catch(() => {
@@ -2002,7 +2143,6 @@ pub(super) fn script() -> String {
 
             async function refreshRuntime(resetStream) {
                 const contractLoaded = await fetchContract();
-                setHeaderMetaFromContract();
                 updateStatus();
                 if (!contractLoaded) {
                     stopStream();
@@ -2164,7 +2304,7 @@ pub(super) fn script() -> String {
                     state.ui = nextUi;
                     state.lastPersistedUiJson = nextUiJson;
                     persistPreviewUi(nextUi);
-                    applyUiToDom();
+                    syncUiSignals(nextUi);
                 }
 
                 updateStatus();
@@ -2247,55 +2387,6 @@ pub(super) fn script() -> String {
                     if (submitDeleteButton) {
                         event.preventDefault();
                         await deleteRecordFromUi(Number(submitDeleteButton.dataset.submitDelete));
-                        return;
-                    }
-
-                    const globalBodyModeButton = event.target.closest("[data-set-default-body-mode]");
-                    if (globalBodyModeButton) {
-                        event.preventDefault();
-                        const mode = String(globalBodyModeButton.dataset.setDefaultBodyMode || "");
-                        if (isBodyMode(mode)) {
-                            persistUi({
-                                ...state.ui,
-                                defaultBodyMode: mode,
-                                cardModes: {},
-                            });
-                        }
-                        return;
-                    }
-
-                    const laneToggle = event.target.closest("[data-lane-toggle]");
-                    if (laneToggle) {
-                        event.preventDefault();
-                        const key = String(laneToggle.dataset.laneToggle || "");
-                        const lane = state.ui.lanes[key];
-                        if (lane) {
-                            persistUi({
-                                ...state.ui,
-                                lanes: {
-                                    ...state.ui.lanes,
-                                    [key]: { ...lane, collapsed: !lane.collapsed },
-                                },
-                            });
-                        }
-                        return;
-                    }
-
-                    const bodyModeButton = event.target.closest("[data-card-body-mode]");
-                    if (bodyModeButton) {
-                        event.preventDefault();
-                        const card = bodyModeButton.closest(".card");
-                        const recordId = String(card?.dataset.recordId || "");
-                        const mode = String(bodyModeButton.dataset.cardBodyMode || "");
-                        if (recordId && isBodyMode(mode)) {
-                            persistUi({
-                                ...state.ui,
-                                cardModes: {
-                                    ...state.ui.cardModes,
-                                    [recordId]: mode,
-                                },
-                            });
-                        }
                         return;
                     }
 
@@ -2452,6 +2543,8 @@ pub(super) fn script() -> String {
                 refreshRuntime,
                 loadRecordDetail,
                 syncActiveSheet,
+                syncUiFromSignals,
+                persistUiFromSignals,
                 openEditSheet,
                 openFocusAction,
                 closeFocusAction,
@@ -2466,8 +2559,8 @@ pub(super) fn script() -> String {
                 closeFocus,
             };
 
+            syncUiSignals(state.ui);
             updateStatus();
-            setHeaderMetaFromContract();
             refreshRuntime(true).then(() => {
                 if (state.ui.focusedRecordId) {
                     loadRecordDetail(state.ui.focusedRecordId).catch(() => {});

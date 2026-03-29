@@ -47,14 +47,14 @@ Pure `Clown` pushes too much structure into the browser.
 
 Normal center of gravity:
 
-- Maud: main structural owner
-- Datastar: local UI state, status, selected stable-shell reactivity
-- JavaScript: drag/drop, resize, focus-sensitive editing, and scroll behavior that needs imperative handling
+- Maud: main structural owner for repeated and server-owned fragments
+- Datastar: stable shell state, derived presentation state, form drafts, loading indicators, and `widgetState` persistence glue
+- JavaScript: drag/drop, resize, scroll restoration, offline worklog queueing, and other imperative behavior that Datastar should not be asked to fake
 
 Normal transport split:
 
 - HTML fragments from backend or official widget stream: primary
-- signal patches: secondary
+- signal patches: primary for shell and draft state
 - raw JSON SSE: only as narrow fallback during transition
 
 === Runtime contract
@@ -637,16 +637,20 @@ Preferred fragment patch targets:
 Preferred signal-owned state:
 
 - connection badge state
-- paused or running state
+- paused, running, reconnecting, disconnected, and locked state
 - live connection enabled or disabled state
+- query panel open state
 - global body display mode
 - per-card body display mode
-- focused card mode
+- focused record id
+- focus markdown mode
 - collapsed columns
 - column widths
 - active sheet or drawer
-- local filters
-- local drafts that are safe to persist
+- filter drafts
+- active filter summary state
+- create, edit, and focus-action drafts
+- local validation and loading state that is safe to persist or keep local
 
 === Technology ownership
 
@@ -661,7 +665,8 @@ Maud should own:
 - compact error state
 - header and board structure
 - columns and cards
-- create and edit surfaces
+- create, edit, and focus surfaces
+- repeated filter, comment, child, and resource rows
 - empty states
 
 ==== Datastar
@@ -670,10 +675,16 @@ Datastar should own:
 
 - local UI signals
 - connection/auth/runtime indicators
+- query open state
 - collapse state
+- width and visibility styles driven from signals
 - body mode state
-- small stable-shell reactivity
+- form draft state through `data-bind`
+- focus shell state
+- loading and pending indicators
+- button labels, disabled state, and small stable-shell reactivity
 - signal-driven persistence glue into `widgetState`
+- host bridge hydration into signals
 
 ==== JavaScript
 
@@ -681,8 +692,9 @@ JavaScript should own:
 
 - drag and drop between columns
 - pointer-driven column resize
-- focus-sensitive editing
-- imperative scroll behavior
+- scroll restoration and focus positioning
+- offline worklog stop queue and heartbeat loop
+- minimal interop for markdown hydration or Datastar patch transport while the backend still needs it
 - optimistic move choreography where needed
 
 === Persistence
@@ -1549,24 +1561,53 @@ HTML fragment patches are preferred for:
 - columns
 - card lists
 - empty/error panels
-- create/edit surfaces
+- create/edit/focus surfaces
+- repeated comments, children, resources, and option lists
 - structural board updates
 
 Signal patches are preferred for:
 
 - connection state
+- auth and lock state
 - pause state
+- sheet and focus open state
 - body mode state
 - collapse state
 - width metadata
 - header/toolbar status
+- draft defaults and loading indicators
 
 Rules:
 
 - do not patch the entire document
 - do not stream script tags as normal update fragments
 - patch stable inner targets
+- keep repeated collections fragment-owned rather than inventing client-side list rendering in Datastar
 - keep JS loaded once, then patch HTML and signals around it
+
+=== Datastar feature selection
+
+Use Datastar aggressively for:
+
+- `data-signals` to hold root Kanban runtime state, per-sheet drafts, and persisted UI ergonomics
+- `data-bind` for filter, create, edit, and focus-action inputs
+- `data-computed` for derived labels, disabled states, active-filter booleans, and lane/body-mode presentation state
+- `data-show`, `data-class`, `data-style`, `data-text`, and `data-attr` for visibility, classes, widths, text, and button attributes
+- `data-on` for open, close, toggle, clear, save, and debounced text-input behavior
+- `data-indicator` for contract, detail, and action loading states
+- `data-effect` and `data-on-signal-patch` for sparse `widgetState` persistence through the host bridge
+- `data-ignore-morph` only on narrow imperative islands such as an actively dragged card, a resizing lane edge, or a DOM subtree the user is editing
+- `data-ref` only as a helper for the small remaining imperative code
+
+Do not use Datastar as:
+
+- the renderer for large repeated board structures; keep columns, cards, comments, and resources as Maud fragments
+- the drag-and-drop or resize engine
+- the authoritative store of business truth
+- a place to put side effects inside `data-computed`; the reference explicitly says not to do that
+- the primary heartbeat or offline queue worker; `data-on-interval` is acceptable for cosmetic timers, not for critical worklog delivery guarantees
+- a reason to overuse `data-init` on frequently patched nodes; it should stay on stable bootstrap points because patched attributes re-run initialization
+- a production dependency on `data-json-signals`; keep that for debugging only
 
 === Functional checklist
 
@@ -1749,7 +1790,7 @@ Step 9 passes when:
 
 - reloads preserve the intended UI ergonomics
 - no redundant dense per-card state is written when defaults are sufficient
-- implementation note: this is implemented in code, but further reduction of imperative JavaScript in favor of Datastar remains valid incremental cleanup work
+- implementation note: persistence exists in code today, but the remaining manual DOM sync in `script.rs` should still be collapsed into Datastar signal ownership
 
 - [x] Step 10: Implement core board interactions
 
@@ -1841,11 +1882,14 @@ Requirements:
 
 - bucket image references through `record_resource_ref`
 - focus-mode resource rendering
+- move remaining stable-shell UI state from imperative DOM mutation to Datastar signals and bindings
+- remove JS string-built sheets, forms, chips, and action panels where Maud fragments plus Datastar bindings are sufficient
 - final connection and auth UX polish
 - review patch granularity and remove obsolete client-side SSE assumptions
 
 Step 15 passes when:
 
+- imperative JS in the widget is limited mainly to drag/drop, resize, scroll restoration, offline worklog queueing, and thin transport interop
 - the widget no longer depends on raw snapshot parsing for its primary runtime
 - the end-to-end Kanban matches this specification closely enough that only polish tasks remain
 
@@ -1858,7 +1902,7 @@ Current implementation summary:
   - instance-aware Kanban stream
   - semantic Kanban actions
   - Maud-owned board shell and fragments
-  - Datastar-driven sheet, query, and focus shell state
+  - initial Datastar-driven sheet, query, and focus shell state
   - create and edit sheets
   - filter builder GUI
   - focus mode detail loading
@@ -1874,27 +1918,30 @@ Current implementation summary:
   - authenticated browser verification of worklog and reconnect flows
   - final visual verification that the empty intermediate box and column-height box behavior are fully gone in the fresh imported widget
 - final polish pending:
-  - continue replacing imperative JavaScript with Datastar where it materially simplifies stable-shell state
+  - replace JS string-built filter, create, edit, and focus-action surfaces with Maud fragments and Datastar `data-bind`
+  - replace manual DOM sync for status, lane layout, body modes, and active sheets with Datastar `data-text`, `data-class`, `data-style`, and `data-show`
+  - move `widgetState` persistence and bridge hydration further toward `data-on-signal-patch` and signal-first ownership
   - simplify any remaining legacy widget runtime assumptions after the fresh imported widget is confirmed
 
 === Current code path migration checklist
 
 Current widget path:
 
-- `crates/web/src/sand/kanban_record_view.rs`
+- `crates/web/src/sand/kanban_record_view/body.rs`
+- `crates/web/src/sand/kanban_record_view/script.rs`
+- `crates/web/src/application/kanban_render.rs`
 
-Current responsibilities that should be migrated:
+Current `script.rs` responsibilities that should move to Datastar-first frontend state:
 
-- `buildStreamUrl()`: replace direct `/host/integrations/servers/{server_id}/views/{view_id}/stream` usage with `/host/widgets/{instance_id}/stream`
-- `buildRecordUrl()`: replace direct generic Record patching from drag/drop with `move-record`
-- `validateSnapshot()`: replace Record-only short-form validation with `/contract`-backed normalized contract validation
-- `normalizeRows()`: replace minimal `{id, quantity, head, body}` normalization with normalized task projection fields produced by the internal service
-- `parseEventBlock()` and `consumeSseResponse()`: stop doing low-level SSE parsing in the widget once the official stream emits Datastar fragments/signals or official event shapes
-- `renderCard()`, `renderColumn()`, and `renderBoard()`: move structural HTML ownership to Maud fragments
-- `handleSnapshot()`: stop storing raw backend snapshot shape as the main rendering input
-- `handleDrop()`: keep imperative drag/drop, but switch the mutation call from generic `PATCH /table/record/{id}` to `move-record`
-- `persistUi()`: keep the persistence path, extend it to filter clauses and focus state, and keep the representation sparse
-- `toggleWidgetStream()` and `reconnect()`: keep the concepts, but drive them through the instance-aware runtime and liveness model
+- `updateStatus()`, `setShellState()`, `clearShellState()`, and `setHeaderMetaFromContract()`: convert text, classes, disabled attributes, and copy into signals plus `data-text`, `data-class`, and `data-attr`
+- `applyLaneLayout()`: keep resize math imperative, but move width and collapsed presentation into signal-driven `data-style` and `data-class`
+- `applyCardModes()`: stop swapping body HTML with `innerHTML`; pre-render head, compact, and full body regions and switch them with Datastar visibility state
+- `renderActiveFilters()`: replace string concatenation with fragment-owned chips or signal-patched chip markup
+- `renderFilterSheet()`, `renderRecordForm()`, `renderCreateSheet()`, `renderEditSheet()`, and `renderFocusActionPanel()`: stop building HTML in JS; use Maud fragments with Datastar `data-bind`
+- `syncActiveSheet()`, `openFilterSheet()`, `openCreateSheet()`, `openEditSheet()`, and `closeFocus()`: reduce these to signal transitions plus thin action calls
+- `persistUi()` and host-state synchronization: keep the sparse shape, but move the trigger path toward `data-on-signal-patch` and signal-first bridge hydration
+- `toggleWidgetStream()` and `togglePausedUpdates()`: keep the bridge calls, but make the button state and copy fully signal-driven
+- `parseEventBlock()` and `consumeSseResponse()`: remove them when the official stream can emit Datastar fragments and signals directly
 
 Current behavior already worth preserving:
 
@@ -1905,18 +1952,23 @@ Current behavior already worth preserving:
 - pause/resume controls
 - compact mismatch and transport error states
 
-Preferred implementation order against the current file:
+Current responsibilities that should stay imperative JavaScript:
 
-1. keep the widget shell alive while introducing `/contract`
-2. replace raw snapshot validation with contract validation
-3. replace direct stream URL construction with instance-aware stream
-4. move board HTML generation into Maud fragment responses
-5. keep drag/drop JS but switch writes to semantic actions
-6. add filter editor UI and wire it to `apply-filters`
-7. add focus mode detail loading through `load-record-detail`
-8. add comments, assignees, hierarchy, categories, and worklog detail
-9. add bucket image detail in focus mode
-10. remove obsolete client-side SSE parsing and raw snapshot assumptions
+- pointer-driven lane resize
+- HTML drag and drop and optimistic rollback
+- scroll restoration and focus positioning after patches
+- offline worklog stop queue, flush, and heartbeat loop
+- minimal markdown or transport interop until the backend emits fully prepared Datastar patches
+
+Preferred cleanup order against the current file:
+
+1. replace JS HTML builders for filter, create, edit, and focus-action surfaces with Maud fragments plus Datastar bindings
+2. replace manual status and shell DOM mutation with Datastar signals and computed state
+3. move lane collapse, width styling, and body-mode presentation to `data-class` and `data-style`
+4. move `widgetState` persistence to `data-on-signal-patch` with sparse host patches
+5. keep drag/drop and resize isolated as the remaining imperative island
+6. remove low-level SSE parsing once the stream emits Datastar fragments and signals directly
+7. keep the offline worklog queue in JS unless a later host/runtime layer makes that imperative loop unnecessary
 
 === Final position
 

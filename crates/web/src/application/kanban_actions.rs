@@ -2412,8 +2412,8 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                     }
                 }
                 .headerActions {
-                    button.toolbarBtn type="button" data-open-edit=(detail.record_id) data-on:click="$focusMarkdown = false; $activeSheet = 'edit'" { "Edit" }
-                    button.toolbarBtn type="button" data-delete-record=(detail.record_id) { "Delete" }
+                    button.toolbarBtn type="button" data-open-edit=(detail.record_id) data-on:click="$focusMarkdown = false; window.KanbanWidget?.openEditSheet(Number(evt.currentTarget.dataset.openEdit || 0))" { "Edit" }
+                    button.toolbarBtn type="button" data-delete-record=(detail.record_id) data-on:click="window.KanbanWidget?.deleteRecordFromUi(Number(evt.currentTarget.dataset.deleteRecord || 0))" { "Delete" }
                 }
             }
             @if !detail.categories.is_empty() {
@@ -2437,7 +2437,7 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                 @if let Some(parent_head) = parent.get("head").and_then(Value::as_str) {
                     p.kanban-focus-card__parent {
                         "Parent: "
-                        a href="#" data-record-link=(parent.get("id").and_then(Value::as_i64).unwrap_or_default()) data-on:click="$focusMarkdown = true; $focusSheetOpen = true" { (parent_head) }
+                        a href="#" data-record-link=(parent.get("id").and_then(Value::as_i64).unwrap_or_default()) data-on:click__prevent="window.KanbanWidget?.loadRecordDetail(Number(evt.currentTarget.dataset.recordLink || 0))" { (parent_head) }
                     }
                 }
             }
@@ -2461,7 +2461,7 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                     ul {
                         @for child in &detail.children {
                             li {
-                                a href="#" data-record-link=(child.get("id").and_then(Value::as_i64).unwrap_or_default()) data-on:click="$focusMarkdown = true; $focusSheetOpen = true" {
+                                a href="#" data-record-link=(child.get("id").and_then(Value::as_i64).unwrap_or_default()) data-on:click__prevent="window.KanbanWidget?.loadRecordDetail(Number(evt.currentTarget.dataset.recordLink || 0))" {
                                     (child.get("head").and_then(Value::as_str).unwrap_or("Untitled"))
                                 }
                             }
@@ -2476,7 +2476,7 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                             h3 { "Comments" }
                         }
                         .headerActions {
-                            button.toolbarBtn type="button" data-create-comment=(detail.record_id) { "Add comment" }
+                            button.toolbarBtn type="button" data-create-comment=(detail.record_id) data-on:click="window.KanbanWidget?.createComment(Number(evt.currentTarget.dataset.createComment || 0))" { "Add comment" }
                         }
                     }
                     @for comment in &detail.comments {
@@ -2488,8 +2488,8 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                                     }
                                 }
                                 .headerActions {
-                                    button.toolbarBtn type="button" data-edit-comment=(comment.get("id").and_then(Value::as_i64).unwrap_or_default()) { "Edit" }
-                                    button.toolbarBtn type="button" data-delete-comment=(comment.get("id").and_then(Value::as_i64).unwrap_or_default()) { "Delete" }
+                                    button.toolbarBtn type="button" data-edit-comment=(comment.get("id").and_then(Value::as_i64).unwrap_or_default()) data-on:click="window.KanbanWidget?.editComment(Number(evt.currentTarget.dataset.editComment || 0))" { "Edit" }
+                                    button.toolbarBtn type="button" data-delete-comment=(comment.get("id").and_then(Value::as_i64).unwrap_or_default()) data-on:click="window.KanbanWidget?.deleteComment(Number(evt.currentTarget.dataset.deleteComment || 0))" { "Delete" }
                                 }
                             }
                             p { (comment.get("body").and_then(Value::as_str).unwrap_or("")) }
@@ -2503,7 +2503,7 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                             h3 { "Comments" }
                         }
                         .headerActions {
-                            button.toolbarBtn type="button" data-create-comment=(detail.record_id) { "Add comment" }
+                            button.toolbarBtn type="button" data-create-comment=(detail.record_id) data-on:click="window.KanbanWidget?.createComment(Number(evt.currentTarget.dataset.createComment || 0))" { "Add comment" }
                         }
                     }
                     p.small { "No comments yet." }
@@ -2516,7 +2516,7 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                             h3 { "Resources" }
                         }
                         .headerActions {
-                            button.toolbarBtn type="button" data-add-resource=(detail.record_id) { "Link resource" }
+                            button.toolbarBtn type="button" data-add-resource=(detail.record_id) data-on:click="window.KanbanWidget?.createResourceRef(Number(evt.currentTarget.dataset.addResource || 0))" { "Link resource" }
                         }
                     }
                     ul {
@@ -2530,7 +2530,7 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                                         alt=(resource.get("title").and_then(Value::as_str).unwrap_or(resource.get("resource_path").and_then(Value::as_str).unwrap_or("Resource image")));
                                 }
                                 span { (resource.get("title").and_then(Value::as_str).unwrap_or(resource.get("resource_path").and_then(Value::as_str).unwrap_or(""))) }
-                                button.toolbarBtn type="button" data-delete-resource=(resource.get("id").and_then(Value::as_i64).unwrap_or_default()) { "Remove" }
+                                button.toolbarBtn type="button" data-delete-resource=(resource.get("id").and_then(Value::as_i64).unwrap_or_default()) data-on:click="window.KanbanWidget?.deleteResourceRef(Number(evt.currentTarget.dataset.deleteResource || 0))" { "Remove" }
                             }
                         }
                     }
@@ -2542,7 +2542,7 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                             h3 { "Resources" }
                         }
                         .headerActions {
-                            button.toolbarBtn type="button" data-add-resource=(detail.record_id) { "Link resource" }
+                            button.toolbarBtn type="button" data-add-resource=(detail.record_id) data-on:click="window.KanbanWidget?.createResourceRef(Number(evt.currentTarget.dataset.addResource || 0))" { "Link resource" }
                         }
                     }
                     p.small { "No linked resources." }
@@ -2555,9 +2555,9 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                     }
                     .headerActions {
                         @if let Some(interval_id) = detail.current_user_open_interval_id {
-                            button.toolbarBtn type="button" data-stop-worklog=(interval_id) data-record-id=(detail.record_id) { "Stop" }
+                            button.toolbarBtn type="button" data-stop-worklog=(interval_id) data-record-id=(detail.record_id) data-on:click="window.KanbanWidget?.stopWorklog(Number(evt.currentTarget.dataset.recordId || 0), Number(evt.currentTarget.dataset.stopWorklog || 0))" { "Stop" }
                         } @else {
-                            button.toolbarBtn type="button" data-start-worklog=(detail.record_id) { "Start" }
+                            button.toolbarBtn type="button" data-start-worklog=(detail.record_id) data-on:click="window.KanbanWidget?.startWorklog(Number(evt.currentTarget.dataset.startWorklog || 0))" { "Start" }
                         }
                     }
                 }

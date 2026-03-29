@@ -2,12 +2,10 @@ use {
     crate::{
         application::{
             backend_api::BackendApiService,
+            kanban_identity::is_supported_kanban_package_filename,
             kanban_filters::{KanbanFilterService, RawKanbanFilterRow},
         },
-        domain::{
-            board::{BoardCard, BoardState},
-            lince_package::normalize_package_filename,
-        },
+        domain::board::{BoardCard, BoardState},
         infrastructure::{
             auth::AppAuth,
             board_state_store::BoardStateStore,
@@ -24,7 +22,6 @@ use {
     serde_json::{Map, Number, Value},
 };
 
-const KANBAN_PACKAGE_FILENAME: &str = "kanban-record-view.html";
 const KANBAN_RUNTIME_STATE_KEY: &str = "kanban_runtime";
 const KANBAN_DERIVED_VIEW_NAME_PREFIX: &str = "__lince_web_kanban_";
 
@@ -598,7 +595,7 @@ fn validate_kanban_card(card: &BoardCard) -> Result<(), KanbanStreamError> {
             "Esse widget nao e um package oficial.".into(),
         ));
     }
-    if normalize_package_filename(&card.package_name) != KANBAN_PACKAGE_FILENAME {
+    if !is_supported_kanban_package_filename(&card.package_name) {
         return Err(KanbanStreamError::Misconfigured(
             "Esse widget nao usa o package oficial do Kanban.".into(),
         ));

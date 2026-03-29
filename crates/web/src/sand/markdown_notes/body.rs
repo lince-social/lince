@@ -2,7 +2,11 @@ use maud::{html, Markup};
 
 pub(super) fn body() -> Markup {
     html! {
-        main class="app" data-signals="{ rendered: false }" {
+        main
+            class="app"
+            data-signals="{ rendered: false, rawText: '' }"
+            data-effect="window.MarkdownNotes?.sync($rawText, $rendered)"
+        {
             div class="toolbar" {
                 label class="mode-switch" {
                     input id="mode-toggle" type="checkbox" aria-label="Alternar preview markdown" data-bind:rendered;
@@ -15,6 +19,7 @@ pub(super) fn body() -> Markup {
                 class="raw"
                 spellcheck="false"
                 placeholder="# Notas\n\nEscreva em Markdown aqui."
+                data-bind:rawText
                 data-show="!$rendered"
                 style="display: none"
             {}

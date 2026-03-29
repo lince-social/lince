@@ -1,16 +1,13 @@
 use {
     crate::{
-        domain::{
-            board::{BoardCard, BoardState},
-            lince_package::normalize_package_filename,
-        },
+        application::kanban_identity::is_supported_kanban_package_filename,
+        domain::board::{BoardCard, BoardState},
         infrastructure::board_state_store::BoardStateStore,
     },
     serde::{Deserialize, Serialize},
     serde_json::{Map, Number, Value},
 };
 
-const KANBAN_PACKAGE_FILENAME: &str = "kanban-record-view.html";
 const VALID_TASK_TYPES: [&str; 4] = ["epic", "feature", "task", "other"];
 const VALID_QUANTITIES: [i64; 5] = [-3, -2, -1, 0, 1];
 
@@ -392,7 +389,7 @@ fn validate_kanban_card(card: &BoardCard) -> Result<(), KanbanFilterError> {
         ));
     }
 
-    if normalize_package_filename(&card.package_name) != KANBAN_PACKAGE_FILENAME {
+    if !is_supported_kanban_package_filename(&card.package_name) {
         return Err(KanbanFilterError::Unsupported(
             "Esse widget nao usa o package oficial do Kanban.".into(),
         ));

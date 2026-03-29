@@ -294,6 +294,8 @@ fn render_card(row: &KanbanRow) -> Markup {
             draggable="true"
             data-record-id=(row.id)
             data-quantity=(row.quantity)
+            data-head=(row.head.as_str())
+            data-body=(full_body)
         {
             .cardActions {
                 button.cardAction

@@ -724,6 +724,23 @@ const STYLE: &str =
                 pointer-events: auto;
             }
 
+            .sheetOverlay.focus-layout-full {
+                justify-content: stretch;
+            }
+
+            .sheetOverlay.focus-layout-full .sheetBackdrop {
+                display: none;
+            }
+
+            .sheetOverlay.focus-layout-full .sheetPanel {
+                width: 100%;
+                border-left: 0;
+            }
+
+            .sheetOverlay.focus-layout-side {
+                justify-content: flex-end;
+            }
+
             .sheetHeader {
                 display: flex;
                 align-items: flex-start;

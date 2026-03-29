@@ -6,7 +6,7 @@ use {
                 DeleteCommentRequest, DeleteRecordRequest, DeleteResourceRefRequest,
                 HeartbeatWorklogRequest, KanbanActionError, LoadRecordDetailRequest,
                 MoveRecordRequest, StartWorklogRequest, StopWorklogRequest,
-                UpdateCommentRequest, UpdateRecordRequest,
+                UpdateCommentRequest, UpdateRecordBodyRequest, UpdateRecordRequest,
             },
             kanban_filters::{KanbanFilterError, RawKanbanFilterRow},
             kanban_render::{
@@ -207,6 +207,18 @@ pub async fn post_widget_action(
             let outcome = state
                 .kanban_actions
                 .update_record(session_token.as_deref(), &instance_id, request)
+                .await
+                .map_err(map_kanban_action_error)?;
+            Ok(Json(outcome.into_json_value()))
+        }
+        "update-record-body" => {
+            let request =
+                serde_json::from_value::<UpdateRecordBodyRequest>(payload).map_err(|error| {
+                    api_error(StatusCode::BAD_REQUEST, format!("Payload invalido: {error}"))
+                })?;
+            let outcome = state
+                .kanban_actions
+                .update_record_body(session_token.as_deref(), &instance_id, request)
                 .await
                 .map_err(map_kanban_action_error)?;
             Ok(Json(outcome.into_json_value()))

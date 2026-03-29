@@ -151,6 +151,54 @@ Problems:
 - host/card rebinding is still awkward
 - permission errors and retries become package-specific
 
+==== Feasible first step
+
+A practical first step is still possible with this model.
+
+The host change would be:
+
+- a widget that declares `read_view_stream` must be allowed to boot with `serverId` set and `viewId = null`
+- the board should treat that state as provisionable, not immediately misconfigured
+
+Then the widget can:
+
+- show "Connect to view" and "Start" actions
+- create a `record`
+- create a `record_extension`
+- create a `view`
+- switch into normal SSE behavior after a `viewId` is known
+
+This is feasible.
+It is the smallest route to a working generic Chess without adding a Chess Rust service.
+
+==== Critique of the self-service path
+
+As a first implementation, this path is good.
+As the final model for many widgets, it is weak.
+
+Main criticisms:
+
+- it makes every widget author solve provisioning orchestration alone
+- it tends to create orphaned rows and views when a multi-step flow fails midway
+- it makes retries and concurrent starts harder to reason about
+- it makes naming conventions part of widget code instead of host policy
+- it forces widgets to know too much about SQL views and infrastructure layout
+
+Using a human-readable game name plus a 4-digit hash is acceptable as a toy bootstrap key, but weak as a durable identity rule.
+
+Problems with that key:
+
+- collisions are possible
+- manual renames can break lookups
+- concurrent creators can race
+- the widget must trust a string lookup where the create response should be enough
+
+If self-service is used, the widget should strongly prefer:
+
+- using returned insert ids directly when available
+- using a longer stable slug for shared discovery
+- treating name lookups as fallback, not the primary identity mechanism
+
 ==== Option B: host-managed generic provisioning
 
 The widget asks the host to "ensure my resources".
@@ -165,6 +213,35 @@ The host then:
 This is the better target.
 
 It keeps the host generic while avoiding widget-specific Rust services.
+
+==== Hotel service shape
+
+This model can be thought of as hotel service from the backend to the widget.
+
+The widget should not have to cook the meal, clean the room, and register itself at the desk.
+It should be able to arrive, ask for what kind of stay it needs, and receive a ready contract.
+
+In that metaphor:
+
+- the widget is the guest
+- the host runtime is the concierge
+- the backend CRUD and view system are the kitchen and room service
+
+The guest says:
+
+- I need a shared game resource
+- I need a stream for it
+- I need write access to its sidecar JSON
+
+The concierge ensures:
+
+- the right resources exist
+- duplicates are not created accidentally
+- permissions are respected
+- the widget receives the resolved ids and ready state
+
+This is still generic infrastructure.
+It is not a Chess-specific backend.
 
 === Minimal generic contract
 
@@ -260,6 +337,11 @@ That state means:
 - the widget can boot
 - the widget can request provisioning
 - the host can show progress, permission denial, or success
+
+The important refinement is:
+
+- `read_view_stream` should mean "this widget can operate on a view stream"
+- it should not always mean "this widget already has a valid bound view id before first render"
 
 Without this change, self-provisioning widgets cannot fully start.
 

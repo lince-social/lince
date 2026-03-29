@@ -68,6 +68,7 @@ pub(super) fn script() -> String {
                 dragRecordId: null,
                 resize: null,
                 viewMeta: null,
+                activeSheet: "",
                 formOptions: null,
                 formOptionsPromise: null,
                 focusDetail: null,
@@ -1100,28 +1101,71 @@ pub(super) fn script() -> String {
                 });
             }
 
-            async function openFilterSheet() {
-                openSheet("filter");
-                if (state.formOptions) {
-                    renderFilterSheet();
-                    void ensureFormOptionsLoaded();
+            async function syncActiveSheet(activeSheet) {
+                const nextSheet = String(activeSheet || "");
+                if (state.activeSheet === nextSheet) {
                     return;
                 }
-                elements.filterSheetBody.innerHTML = `<p class="small">Loading filter options...</p>`;
-                await ensureFormOptionsLoaded();
-                renderFilterSheet();
+
+                state.activeSheet = nextSheet;
+
+                if (nextSheet === "filter") {
+                    if (state.formOptions) {
+                        renderFilterSheet();
+                        void ensureFormOptionsLoaded();
+                        return;
+                    }
+                    elements.filterSheetBody.innerHTML = `<p class="small">Loading filter options...</p>`;
+                    await ensureFormOptionsLoaded();
+                    if (state.activeSheet === nextSheet) {
+                        renderFilterSheet();
+                    }
+                    return;
+                }
+
+                if (nextSheet === "create") {
+                    if (state.formOptions) {
+                        renderCreateSheet();
+                        void ensureFormOptionsLoaded();
+                        return;
+                    }
+                    elements.createSheetBody.innerHTML = `<p class="small">Loading task form...</p>`;
+                    await ensureFormOptionsLoaded();
+                    if (state.activeSheet === nextSheet) {
+                        renderCreateSheet();
+                    }
+                    return;
+                }
+
+                if (nextSheet === "edit") {
+                    if (!state.focusDetail) {
+                        elements.editSheetBody.innerHTML = `<p class="small">Load a task detail before editing.</p>`;
+                        return;
+                    }
+                    if (state.formOptions) {
+                        renderEditSheet();
+                        void ensureFormOptionsLoaded();
+                        return;
+                    }
+                    elements.editSheetBody.innerHTML = `<p class="small">Loading task form...</p>`;
+                    await ensureFormOptionsLoaded();
+                    if (state.activeSheet === nextSheet) {
+                        renderEditSheet();
+                    }
+                    return;
+                }
+
+                elements.filterSheetBody.innerHTML = "";
+                elements.createSheetBody.innerHTML = "";
+                elements.editSheetBody.innerHTML = "";
+            }
+
+            async function openFilterSheet() {
+                await syncActiveSheet("filter");
             }
 
             async function openCreateSheet() {
-                openSheet("create");
-                if (state.formOptions) {
-                    renderCreateSheet();
-                    void ensureFormOptionsLoaded();
-                    return;
-                }
-                elements.createSheetBody.innerHTML = `<p class="small">Loading task form...</p>`;
-                await ensureFormOptionsLoaded();
-                renderCreateSheet();
+                await syncActiveSheet("create");
             }
 
             async function openEditSheet(recordId) {
@@ -1132,15 +1176,8 @@ pub(super) fn script() -> String {
                 }
                 closeFocusAction();
                 closeFocusSheet();
-                openSheet("edit");
-                if (state.formOptions) {
-                    renderEditSheet();
-                    void ensureFormOptionsLoaded();
-                    return;
-                }
-                elements.editSheetBody.innerHTML = `<p class="small">Loading task form...</p>`;
-                await ensureFormOptionsLoaded();
-                renderEditSheet();
+                await syncActiveSheet("edit");
+                dispatchUiEvent("kanban-open-edit");
             }
 
             function hydrateFocusMarkdown() {
@@ -1248,10 +1285,7 @@ pub(super) fn script() -> String {
 
             function closeFocusAction() {
                 state.focusAction = null;
-                if (elements.focusActionPanel) {
-                    elements.focusActionPanel.innerHTML = "";
-                    elements.focusActionPanel.hidden = true;
-                }
+                dispatchUiEvent("kanban-close-focus-action");
             }
 
             function focusActionInput(name) {
@@ -1259,160 +1293,86 @@ pub(super) fn script() -> String {
             }
 
             function setFocusActionMessage(message) {
-                const target = elements.focusActionPanel?.querySelector("[data-focus-action-message]");
-                if (target) {
-                    target.textContent = String(message || "");
-                }
+                dispatchUiEvent("kanban-focus-action-message", String(message || ""));
             }
 
-            function renderFocusActionPanel(action) {
-                if (!action) {
-                    return "";
-                }
-
-                const recordId = Number(action.recordId || state.focusDetail?.record_id || 0);
+            function openFocusAction(actionOrKind, options = {}) {
+                const baseAction =
+                    typeof actionOrKind === "string"
+                        ? { kind: actionOrKind, ...options }
+                        : { ...(actionOrKind || {}) };
+                const kind = String(baseAction.kind || "");
+                const recordId = Number(baseAction.recordId || state.focusDetail?.record_id || 0);
                 const recordLabel = state.focusDetail?.head?.trim()
                     ? state.focusDetail.head.trim()
                     : `Record #${recordId}`;
+                const nextAction = {
+                    kind,
+                    recordId,
+                    commentId: Number(baseAction.commentId || 0) || 0,
+                    resourceRefId: Number(baseAction.resourceRefId || 0) || 0,
+                    header: String(baseAction.header || ""),
+                    description: String(baseAction.description || ""),
+                    body: String(baseAction.body || ""),
+                    resourcePath: String(baseAction.resourcePath || ""),
+                    resourceKind: String(baseAction.resourceKind || "image").trim() || "image",
+                    title: String(baseAction.title || ""),
+                    note: String(baseAction.note || ""),
+                };
 
-                if (action.kind === "create-comment" || action.kind === "edit-comment") {
-                    const comment = action.commentId ? findComment(action.commentId) : null;
-                    const body = action.kind === "edit-comment"
-                        ? String(action.initialBody || comment?.body || "")
-                        : "";
-                    return `
-                        <div class="sheetHeader">
-                            <div class="headerMeta">
-                                <div class="headerTitle">${action.kind === "edit-comment" ? "Edit comment" : "Add comment"}</div>
-                                <div class="headerSub">${escapeHtml(recordLabel)}</div>
-                            </div>
-                            <div class="headerActions">
-                                <button class="toolbarBtn" type="button" data-focus-action-close>Close</button>
-                            </div>
-                        </div>
-                        <form data-focus-action-form data-focus-action-kind="${escapeHtml(action.kind)}">
-                            <div class="fieldBlock">
-                                <label class="fieldLabel" for="focus-action-body">Comment body</label>
-                                <textarea class="textarea" id="focus-action-body" data-focus-action-field="body" spellcheck="true" placeholder="Write a comment">${escapeHtml(body)}</textarea>
-                            </div>
-                            <p class="small" data-focus-action-message></p>
-                            <div class="sheetActions">
-                                <button class="toolbarBtn" type="button" data-focus-action-close>Cancel</button>
-                                <button class="toolbarBtn toolbarBtn--accent" type="submit">${action.kind === "edit-comment" ? "Save comment" : "Add comment"}</button>
-                            </div>
-                        </form>
-                    `;
+                if (kind === "create-comment") {
+                    nextAction.header = "Add comment";
+                    nextAction.description = recordLabel;
+                    nextAction.body = "";
+                } else if (kind === "edit-comment") {
+                    const comment = nextAction.commentId ? findComment(nextAction.commentId) : null;
+                    nextAction.header = "Edit comment";
+                    nextAction.description = recordLabel;
+                    nextAction.body = String(baseAction.body || comment?.body || "");
+                } else if (kind === "create-resource-ref") {
+                    nextAction.header = "Link resource";
+                    nextAction.description = recordLabel;
+                    nextAction.resourceKind = String(baseAction.resourceKind || "image").trim() || "image";
+                } else if (kind === "start-worklog") {
+                    nextAction.header = "Start worklog";
+                    nextAction.description = recordLabel;
+                } else if (kind === "delete-comment") {
+                    const comment = nextAction.commentId ? findComment(nextAction.commentId) : null;
+                    nextAction.header = "Confirm removal";
+                    nextAction.description = recordLabel;
+                    nextAction.body = String(comment?.body || "This comment will be removed.");
+                } else if (kind === "delete-resource-ref") {
+                    const resource = nextAction.resourceRefId ? findResource(nextAction.resourceRefId) : null;
+                    nextAction.header = "Confirm removal";
+                    nextAction.description = recordLabel;
+                    nextAction.body = String(
+                        resource?.title ||
+                        resource?.resource_path ||
+                        "This resource link will be removed.",
+                    );
+                } else if (kind === "delete-record") {
+                    nextAction.header = "Delete record";
+                    nextAction.description = recordLabel;
+                    nextAction.body = `Delete ${recordLabel}?`;
                 }
 
-                if (action.kind === "create-resource-ref") {
-                    return `
-                        <div class="sheetHeader">
-                            <div class="headerMeta">
-                                <div class="headerTitle">Link resource</div>
-                                <div class="headerSub">${escapeHtml(recordLabel)}</div>
-                            </div>
-                            <div class="headerActions">
-                                <button class="toolbarBtn" type="button" data-focus-action-close>Close</button>
-                            </div>
-                        </div>
-                        <form data-focus-action-form data-focus-action-kind="${escapeHtml(action.kind)}">
-                            <div class="formGrid">
-                                <div class="fieldBlock">
-                                    <label class="fieldLabel" for="focus-action-resource-path">Resource path</label>
-                                    <input class="field" id="focus-action-resource-path" data-focus-action-field="resourcePath" type="text" placeholder="bucket/path/to/file.png">
-                                </div>
-                                <div class="fieldBlock">
-                                    <label class="fieldLabel" for="focus-action-resource-kind">Resource kind</label>
-                                    <input class="field" id="focus-action-resource-kind" data-focus-action-field="resourceKind" type="text" value="image" placeholder="image">
-                                </div>
-                                <div class="fieldBlock">
-                                    <label class="fieldLabel" for="focus-action-resource-title">Title</label>
-                                    <input class="field" id="focus-action-resource-title" data-focus-action-field="title" type="text" placeholder="Optional title">
-                                </div>
-                            </div>
-                            <p class="small" data-focus-action-message></p>
-                            <div class="sheetActions">
-                                <button class="toolbarBtn" type="button" data-focus-action-close>Cancel</button>
-                                <button class="toolbarBtn toolbarBtn--accent" type="submit">Link resource</button>
-                            </div>
-                        </form>
-                    `;
-                }
-
-                if (action.kind === "start-worklog") {
-                    return `
-                        <div class="sheetHeader">
-                            <div class="headerMeta">
-                                <div class="headerTitle">Start worklog</div>
-                                <div class="headerSub">${escapeHtml(recordLabel)}</div>
-                            </div>
-                            <div class="headerActions">
-                                <button class="toolbarBtn" type="button" data-focus-action-close>Close</button>
-                            </div>
-                        </div>
-                        <form data-focus-action-form data-focus-action-kind="${escapeHtml(action.kind)}">
-                            <div class="fieldBlock">
-                                <label class="fieldLabel" for="focus-action-note">Worklog note</label>
-                                <textarea class="textarea" id="focus-action-note" data-focus-action-field="note" spellcheck="true" placeholder="Optional note"></textarea>
-                            </div>
-                            <p class="small" data-focus-action-message></p>
-                            <div class="sheetActions">
-                                <button class="toolbarBtn" type="button" data-focus-action-close>Cancel</button>
-                                <button class="toolbarBtn toolbarBtn--accent" type="submit">Start</button>
-                            </div>
-                        </form>
-                    `;
-                }
-
-                if (action.kind === "delete-comment" || action.kind === "delete-resource-ref" || action.kind === "delete-record") {
-                    const comment = action.commentId ? findComment(action.commentId) : null;
-                    const resource = action.resourceRefId ? findResource(action.resourceRefId) : null;
-                    const bodyCopy =
-                        action.kind === "delete-comment"
-                            ? String(comment?.body || "This comment will be removed.")
-                            : action.kind === "delete-resource-ref"
-                                ? String(resource?.title || resource?.resource_path || "This resource link will be removed.")
-                                : `Delete ${recordLabel}?`;
-                    return `
-                        <div class="sheetHeader">
-                            <div class="headerMeta">
-                                <div class="headerTitle">${action.kind === "delete-record" ? "Delete record" : "Confirm removal"}</div>
-                                <div class="headerSub">${escapeHtml(recordLabel)}</div>
-                            </div>
-                            <div class="headerActions">
-                                <button class="toolbarBtn" type="button" data-focus-action-close>Close</button>
-                            </div>
-                        </div>
-                        <form data-focus-action-form data-focus-action-kind="${escapeHtml(action.kind)}">
-                            <p>${escapeHtml(bodyCopy)}</p>
-                            <p class="small" data-focus-action-message></p>
-                            <div class="sheetActions">
-                                <button class="toolbarBtn" type="button" data-focus-action-close>Cancel</button>
-                                <button class="toolbarBtn toolbarBtn--danger" type="submit">${action.kind === "delete-record" ? "Delete record" : "Remove"}</button>
-                            </div>
-                        </form>
-                    `;
-                }
-
-                return "";
-            }
-
-            function openFocusAction(action) {
-                state.focusAction = action;
-                if (!elements.focusActionPanel) {
-                    return;
-                }
-                elements.focusActionPanel.innerHTML = renderFocusActionPanel(action);
-                elements.focusActionPanel.hidden = !action;
-                elements.focusActionPanel.scrollIntoView({
-                    block: "nearest",
-                    behavior: "smooth",
+                state.focusAction = nextAction;
+                dispatchUiEvent("kanban-open-focus-action", nextAction);
+                window.requestAnimationFrame(() => {
+                    elements.focusActionPanel?.scrollIntoView({
+                        block: "nearest",
+                        behavior: "smooth",
+                    });
+                    const firstField =
+                        kind === "create-comment" || kind === "edit-comment"
+                            ? focusActionInput("body")
+                            : kind === "create-resource-ref"
+                              ? focusActionInput("resourcePath")
+                              : kind === "start-worklog"
+                                ? focusActionInput("note")
+                                : null;
+                    firstField?.focus();
                 });
-                const firstField =
-                    focusActionInput("body") ||
-                    focusActionInput("resourcePath") ||
-                    focusActionInput("note");
-                firstField?.focus();
             }
 
             async function submitFocusAction() {
@@ -1525,7 +1485,6 @@ pub(super) fn script() -> String {
                     if (action.kind === "delete-record") {
                         await postAction("delete-record", { recordId });
                         closeFocusAction();
-                        closeSheet("edit");
                         closeFocus();
                         state.focusDetail = null;
                         await refreshRuntime(true);
@@ -1536,6 +1495,7 @@ pub(super) fn script() -> String {
             }
 
             async function deleteRecordFromUi(recordId) {
+                openFocusSheet();
                 openFocusAction({
                     kind: "delete-record",
                     recordId: Number(recordId),
@@ -1550,12 +1510,10 @@ pub(super) fn script() -> String {
             }
 
             async function editComment(commentId) {
-                const comment = findComment(commentId);
                 openFocusAction({
                     kind: "edit-comment",
                     recordId: Number(state.focusDetail?.record_id || 0),
                     commentId: Number(commentId),
-                    initialBody: String(comment?.body || ""),
                 });
             }
 
@@ -2247,34 +2205,6 @@ pub(super) fn script() -> String {
                         return;
                     }
 
-                    const openFiltersButton = event.target.closest("#kanban-open-filters");
-                    if (openFiltersButton) {
-                        event.preventDefault();
-                        await openFilterSheet();
-                        return;
-                    }
-
-                    const openCreateButton = event.target.closest("#kanban-open-create");
-                    if (openCreateButton) {
-                        event.preventDefault();
-                        await openCreateSheet();
-                        return;
-                    }
-
-                    const focusActionCloseButton = event.target.closest("[data-focus-action-close]");
-                    if (focusActionCloseButton) {
-                        event.preventDefault();
-                        closeFocusAction();
-                        return;
-                    }
-
-                    const closeSheetButton = event.target.closest("[data-close-sheet]");
-                    if (closeSheetButton) {
-                        event.preventDefault();
-                        closeSheet(String(closeSheetButton.dataset.closeSheet || ""));
-                        return;
-                    }
-
                     const clearFiltersButton = event.target.closest("[data-clear-filters]");
                     if (clearFiltersButton) {
                         event.preventDefault();
@@ -2317,81 +2247,6 @@ pub(super) fn script() -> String {
                     if (submitDeleteButton) {
                         event.preventDefault();
                         await deleteRecordFromUi(Number(submitDeleteButton.dataset.submitDelete));
-                        return;
-                    }
-
-                    const openEditButton = event.target.closest("[data-open-edit]");
-                    if (openEditButton) {
-                        event.preventDefault();
-                        await openEditSheet(Number(openEditButton.dataset.openEdit));
-                        return;
-                    }
-
-                    const deleteRecordButton = event.target.closest("[data-delete-record]");
-                    if (deleteRecordButton) {
-                        event.preventDefault();
-                        await deleteRecordFromUi(Number(deleteRecordButton.dataset.deleteRecord));
-                        return;
-                    }
-
-                    const createCommentButton = event.target.closest("[data-create-comment]");
-                    if (createCommentButton) {
-                        event.preventDefault();
-                        await createComment(Number(createCommentButton.dataset.createComment));
-                        return;
-                    }
-
-                    const editCommentButton = event.target.closest("[data-edit-comment]");
-                    if (editCommentButton) {
-                        event.preventDefault();
-                        await editComment(Number(editCommentButton.dataset.editComment));
-                        return;
-                    }
-
-                    const deleteCommentButton = event.target.closest("[data-delete-comment]");
-                    if (deleteCommentButton) {
-                        event.preventDefault();
-                        await deleteComment(Number(deleteCommentButton.dataset.deleteComment));
-                        return;
-                    }
-
-                    const addResourceButton = event.target.closest("[data-add-resource]");
-                    if (addResourceButton) {
-                        event.preventDefault();
-                        await createResourceRef(Number(addResourceButton.dataset.addResource));
-                        return;
-                    }
-
-                    const deleteResourceButton = event.target.closest("[data-delete-resource]");
-                    if (deleteResourceButton) {
-                        event.preventDefault();
-                        await deleteResourceRef(
-                            Number(deleteResourceButton.dataset.deleteResource),
-                        );
-                        return;
-                    }
-
-                    const startWorklogButton = event.target.closest("[data-start-worklog]");
-                    if (startWorklogButton) {
-                        event.preventDefault();
-                        await startWorklog(Number(startWorklogButton.dataset.startWorklog));
-                        return;
-                    }
-
-                    const stopWorklogButton = event.target.closest("[data-stop-worklog]");
-                    if (stopWorklogButton) {
-                        event.preventDefault();
-                        await stopWorklog(
-                            Number(stopWorklogButton.dataset.recordId),
-                            Number(stopWorklogButton.dataset.stopWorklog),
-                        );
-                        return;
-                    }
-
-                    const closeButton = event.target.closest("[data-close-focus]");
-                    if (closeButton) {
-                        event.preventDefault();
-                        closeFocus();
                         return;
                     }
 
@@ -2444,24 +2299,6 @@ pub(super) fn script() -> String {
                         return;
                     }
 
-                    const openFocus = event.target.closest("[data-open-focus]");
-                    if (openFocus) {
-                        event.preventDefault();
-                        const recordId = Number(openFocus.dataset.openFocus);
-                        if (Number.isInteger(recordId) && recordId > 0) {
-                            await loadRecordDetail(recordId);
-                        }
-                        return;
-                    }
-
-                    const recordLink = event.target.closest("[data-record-link]");
-                    if (recordLink) {
-                        event.preventDefault();
-                        const recordId = Number(recordLink.dataset.recordLink);
-                        if (Number.isInteger(recordId) && recordId > 0) {
-                            await loadRecordDetail(recordId);
-                        }
-                    }
                 } catch (error) {
                     state.transportError =
                         error instanceof Error ? error.message : String(error);
@@ -2614,6 +2451,18 @@ pub(super) fn script() -> String {
             window.KanbanWidget = {
                 refreshRuntime,
                 loadRecordDetail,
+                syncActiveSheet,
+                openEditSheet,
+                openFocusAction,
+                closeFocusAction,
+                createComment,
+                editComment,
+                deleteComment,
+                createResourceRef,
+                deleteResourceRef,
+                startWorklog,
+                deleteRecordFromUi,
+                stopWorklog,
                 closeFocus,
             };
 

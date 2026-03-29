@@ -431,14 +431,15 @@ async fn local_table_collection(
             .map_err(map_backend_error)?,
         Method::POST => {
             let object = payload_object(body.as_ref())?;
+            let outcome = state
+                .backend
+                .create_table_row(&claims, table_name, object)
+                .await
+                .map_err(map_backend_error)?;
             serde_json::json!({
                 "ok": true,
-                "rows_affected": state
-                    .backend
-                    .create_table_row(&claims, table_name, object)
-                    .await
-                    .map_err(map_backend_error)?
-                    .rows_affected,
+                "rows_affected": outcome.rows_affected,
+                "last_insert_rowid": outcome.last_insert_rowid,
             })
         }
         _ => {
@@ -472,25 +473,29 @@ async fn local_table_item(
             .map_err(map_backend_error)?,
         Method::PATCH => {
             let object = payload_object(body.as_ref())?;
+            let outcome = state
+                .backend
+                .update_table_row(&claims, table_name, id, object)
+                .await
+                .map_err(map_backend_error)?;
             serde_json::json!({
                 "ok": true,
-                "rows_affected": state
-                    .backend
-                    .update_table_row(&claims, table_name, id, object)
-                    .await
-                    .map_err(map_backend_error)?
-                    .rows_affected,
+                "rows_affected": outcome.rows_affected,
+                "last_insert_rowid": outcome.last_insert_rowid,
             })
         }
-        Method::DELETE => serde_json::json!({
-            "ok": true,
-            "rows_affected": state
+        Method::DELETE => {
+            let outcome = state
                 .backend
                 .delete_table_row(&claims, table_name, id)
                 .await
-                .map_err(map_backend_error)?
-                .rows_affected,
-        }),
+                .map_err(map_backend_error)?;
+            serde_json::json!({
+                "ok": true,
+                "rows_affected": outcome.rows_affected,
+                "last_insert_rowid": outcome.last_insert_rowid,
+            })
+        }
         _ => {
             return Err(api_error(
                 StatusCode::METHOD_NOT_ALLOWED,

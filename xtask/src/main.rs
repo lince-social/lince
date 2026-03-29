@@ -2,16 +2,14 @@
 #![deny(warnings)]
 
 use {
+    semver::Version,
     serde::Serialize,
     std::{
-        env,
-        fs,
+        env, fs,
         io::Error,
         path::{Path, PathBuf},
-        process::Command,
-        time::{SystemTime, UNIX_EPOCH},
     },
-    web::{LincePackage, sand, slugify},
+    web::{LincePackage, sand},
 };
 
 fn main() -> Result<(), Error> {
@@ -35,7 +33,7 @@ fn print_help() {
     println!("  cargo run -p xtask -- sand export [--output-dir PATH]");
     println!();
     println!("Environment:");
-    println!("  LINCE_SAND_EXPORT_DIR  Override the handoff directory");
+    println!("  LINCE_SAND_EXPORT_DIR  Override the dna lounge directory");
 }
 
 fn sand_command(args: &[String]) -> Result<(), Error> {
@@ -49,110 +47,165 @@ fn sand_command(args: &[String]) -> Result<(), Error> {
 }
 
 fn export_sand(args: &[String]) -> Result<(), Error> {
-    let staging_dir = resolve_arg_path(args, "--output-dir")
+    let output_dir = resolve_arg_path(args, "--output-dir")
         .or_else(|| env::var_os("LINCE_SAND_EXPORT_DIR").map(PathBuf::from))
-        .unwrap_or_else(|| {
-            repo_root_dir()
-                .parent()
-                .unwrap_or_else(|| Path::new("."))
-                .join("dna")
-                .join(".lounge")
-                .join("incoming")
-        });
-
+        .unwrap_or_else(|| sibling_dna_root().join("lounge"));
     let dry_run = args.iter().any(|arg| arg == "--dry-run");
-    let packages = sand::official_packages();
-    let bundles = packages
-        .into_iter()
-        .map(build_bundle)
-        .collect::<Result<Vec<_>, _>>()?;
+    let dna_root = output_dir
+        .parent()
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| sibling_dna_root());
 
     if !dry_run {
-        fs::create_dir_all(&staging_dir)?;
+        fs::create_dir_all(&output_dir)?;
     }
 
-    let source_commit = git_commit_hash(repo_root_dir().as_path()).unwrap_or_else(|_| "unknown".to_string());
-    let manifest = HandoffManifest {
-        schema: 1,
-        source_commit,
-        generated_at_unix: now_unix(),
-        artifacts: bundles.iter().map(|bundle| bundle.summary.clone()).collect(),
-    };
-
-    for bundle in bundles {
+    for package in sand::official_packages() {
+        let export = build_export(&dna_root, package)?;
         if dry_run {
             println!(
-                "would export {} as {}",
-                bundle.summary.package_id, bundle.summary.filename
+                "would export {} {} to {}",
+                export.sand.name,
+                export.sand.version,
+                output_dir.join(&export.sand.name).display()
             );
             continue;
         }
 
-        let bundle_dir = staging_dir.join(&bundle.summary.package_id);
+        let bundle_dir = output_dir.join(&export.sand.name);
+        if bundle_dir.exists() {
+            fs::remove_dir_all(&bundle_dir)?;
+        }
         fs::create_dir_all(&bundle_dir)?;
-        fs::write(bundle_dir.join("index.html"), &bundle.html)?;
+        fs::write(bundle_dir.join("index.html"), export.html)?;
         fs::write(
-            bundle_dir.join("manifest.json"),
-            serde_json::to_vec_pretty(&bundle.package.manifest).map_err(Error::other)?,
-        )?;
-        fs::write(
-            bundle_dir.join("source.json"),
-            serde_json::to_vec_pretty(&bundle.summary).map_err(Error::other)?,
-        )?;
-    }
-
-    if !dry_run {
-        fs::write(
-            staging_dir.join("index.json"),
-            serde_json::to_vec_pretty(&manifest).map_err(Error::other)?,
+            bundle_dir.join("sand.toml"),
+            toml::to_string_pretty(&export.sand).map_err(Error::other)?,
         )?;
     }
 
     Ok(())
 }
 
-#[derive(Debug, Serialize)]
-struct HandoffManifest {
-    schema: u8,
-    source_commit: String,
-    generated_at_unix: u64,
-    artifacts: Vec<ArtifactSummary>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-struct ArtifactSummary {
-    package_id: String,
-    filename: String,
-    bytes: usize,
-    title: String,
-    version: String,
-    permissions: Vec<String>,
-}
-
-#[derive(Debug)]
-struct Bundle {
-    package: LincePackage,
-    html: Vec<u8>,
-    summary: ArtifactSummary,
-}
-
-fn build_bundle(package: LincePackage) -> Result<Bundle, Error> {
-    let html = package.html_document().into_bytes();
-    let package_id = slugify(&package.manifest.title);
-    let summary = ArtifactSummary {
-        package_id,
-        filename: package.archive_filename(),
-        bytes: html.len(),
-        title: package.manifest.title.clone(),
-        version: package.manifest.version.clone(),
-        permissions: package.manifest.permissions.clone(),
+fn build_export(dna_root: &Path, package: LincePackage) -> Result<ExportBundle, Error> {
+    let html = strip_manifest_script(&package.html_document());
+    let name = package_name_from_filename(&package.archive_filename());
+    let version = exported_version(dna_root, &name, &package.manifest.version)?;
+    let sand = SandToml {
+        name,
+        channel: Channel::Official,
+        version,
+        author: package.manifest.author,
+        description: package.manifest.description,
+        details: Some(package.manifest.details),
+        initial_width: Some(package.manifest.initial_width),
+        initial_height: Some(package.manifest.initial_height),
+        permissions: package.manifest.permissions,
+        tags: Vec::new(),
+        class: None,
+        title: Some(package.manifest.title),
+        icon: Some(package.manifest.icon),
+        required_permissions: None,
+        required_host_meta: None,
+        host_contract_version: None,
+        min_lince_version: None,
     };
 
-    Ok(Bundle {
-        package,
-        html,
-        summary,
-    })
+    Ok(ExportBundle { sand, html })
+}
+
+fn exported_version(dna_root: &Path, name: &str, current: &str) -> Result<String, Error> {
+    let current_version = Version::parse(current).map_err(|error| {
+        Error::other(format!(
+            "Official widget {name} has invalid semver version {current:?}: {error}"
+        ))
+    })?;
+    let existing = load_existing_official_version(dna_root, name)?;
+
+    let version = match existing {
+        Some(existing) if current_version <= existing => bump_patch(existing),
+        _ => current_version,
+    };
+
+    Ok(version.to_string())
+}
+
+fn load_existing_official_version(dna_root: &Path, name: &str) -> Result<Option<Version>, Error> {
+    let sand_toml_path = canonical_sand_toml_path(dna_root, Channel::Official, name);
+    if !sand_toml_path.exists() {
+        return Ok(None);
+    }
+
+    let raw = fs::read_to_string(&sand_toml_path)?;
+    let sand: SandToml = toml::from_str(&raw).map_err(Error::other)?;
+    let version = Version::parse(&sand.version).map_err(|error| {
+        Error::other(format!(
+            "Canonical dna widget {} has invalid semver version {:?}: {error}",
+            sand.name, sand.version
+        ))
+    })?;
+    Ok(Some(version))
+}
+
+fn canonical_sand_toml_path(dna_root: &Path, channel: Channel, name: &str) -> PathBuf {
+    let prefix = package_prefix(name);
+    dna_root
+        .join("sand")
+        .join(channel.as_str())
+        .join(prefix)
+        .join(name)
+        .join("sand.toml")
+}
+
+fn package_name_from_filename(filename: &str) -> String {
+    let stem = filename
+        .strip_suffix(".html")
+        .unwrap_or(filename)
+        .trim()
+        .to_ascii_lowercase();
+    let mut out = String::new();
+    let mut previous_was_separator = false;
+
+    for ch in stem.chars() {
+        let normalized = match ch {
+            'a'..='z' | '0'..='9' => Some(ch),
+            '_' | '-' | ' ' => Some('_'),
+            _ => None,
+        };
+
+        let Some(normalized) = normalized else {
+            continue;
+        };
+
+        if normalized == '_' {
+            if out.is_empty() || previous_was_separator {
+                continue;
+            }
+            previous_was_separator = true;
+        } else {
+            previous_was_separator = false;
+        }
+
+        out.push(normalized);
+    }
+
+    let out = out.trim_matches('_');
+    if out.is_empty() {
+        "widget".to_string()
+    } else {
+        out.to_string()
+    }
+}
+
+fn package_prefix(name: &str) -> String {
+    name.chars().take(2).collect::<String>()
+}
+
+fn sibling_dna_root() -> PathBuf {
+    repo_root_dir()
+        .parent()
+        .unwrap_or_else(|| Path::new("."))
+        .join("dna")
 }
 
 fn resolve_arg_path(args: &[String], name: &str) -> Option<PathBuf> {
@@ -167,25 +220,96 @@ fn repo_root_dir() -> PathBuf {
         .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")))
 }
 
-fn git_commit_hash(repo_root: &Path) -> Result<String, Error> {
-    let output = Command::new("git")
-        .arg("-C")
-        .arg(repo_root)
-        .arg("rev-parse")
-        .arg("HEAD")
-        .output()?;
-
-    if !output.status.success() {
-        return Err(Error::other("Failed to resolve git commit hash"));
-    }
-
-    let hash = String::from_utf8(output.stdout).map_err(Error::other)?;
-    Ok(hash.trim().to_string())
+fn bump_patch(mut version: Version) -> Version {
+    version.patch += 1;
+    version.pre = semver::Prerelease::EMPTY;
+    version.build = semver::BuildMetadata::EMPTY;
+    version
 }
 
-fn now_unix() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|duration| duration.as_secs())
-        .unwrap_or(0)
+fn strip_manifest_script(html: &str) -> String {
+    let lowercase = html.to_ascii_lowercase();
+    let mut offset = 0;
+
+    while let Some(relative_start) = lowercase[offset..].find("<script") {
+        let script_start = offset + relative_start;
+        let Some(relative_tag_end) = lowercase[script_start..].find('>') else {
+            break;
+        };
+        let tag_end = script_start + relative_tag_end;
+        let open_tag = &lowercase[script_start..=tag_end];
+        let has_manifest_id =
+            open_tag.contains("id=\"lince-manifest\"") || open_tag.contains("id='lince-manifest'");
+
+        if !has_manifest_id {
+            offset = tag_end + 1;
+            continue;
+        }
+
+        let Some(relative_close_start) = lowercase[tag_end + 1..].find("</script>") else {
+            break;
+        };
+        let close_end = tag_end + 1 + relative_close_start + "</script>".len();
+        let mut stripped = String::with_capacity(html.len());
+        stripped.push_str(&html[..script_start]);
+        stripped.push_str(&html[close_end..]);
+        return stripped.trim().to_string();
+    }
+
+    html.trim().to_string()
+}
+
+#[derive(Debug)]
+struct ExportBundle {
+    sand: SandToml,
+    html: String,
+}
+
+#[derive(Debug, Clone, Copy, Serialize)]
+#[serde(rename_all = "lowercase")]
+enum Channel {
+    Official,
+    Community,
+}
+
+impl Channel {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Official => "official",
+            Self::Community => "community",
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+struct SandToml {
+    name: String,
+    channel: Channel,
+    version: String,
+    author: String,
+    description: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    details: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    initial_width: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    initial_height: Option<u8>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    permissions: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    tags: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    class: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    icon: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    required_permissions: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    required_host_meta: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    host_contract_version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    min_lince_version: Option<String>,
 }

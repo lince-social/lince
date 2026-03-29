@@ -9436,6 +9436,7 @@ dependencies = [
  "application",
  "async-stream",
  "axum",
+ "chrono",
  "dirs 6.0.0",
  "dotenvy",
  "injection",
@@ -9452,6 +9453,7 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
+ "urlencoding",
  "utils",
  "uuid",
  "zip",
@@ -10360,8 +10362,9 @@ name = "xtask"
 version = "0.1.0"
 dependencies = [
  "domain",
+ "semver",
  "serde",
- "serde_json",
+ "toml 0.9.12+spec-1.1.0",
  "web",
 ]
 

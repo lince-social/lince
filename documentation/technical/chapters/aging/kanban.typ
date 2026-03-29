@@ -943,6 +943,13 @@ Recommended model:
 - `started_at` and `ended_at` are canonical interval truth
 - `seconds` is derived or cached only, never a competing source of truth
 
+Current-user resolution for worklog authorship in v1:
+
+- the host resolves a stable current `app_user.id` and caches it in widget runtime state under `kanban_runtime.current_user_id`
+- if the server session exposes a stable `username_hint`, prefer matching that to `app_user.username`
+- if no username hint can be resolved in the current host runtime, fall back deterministically to the smallest available `app_user.id`
+- widgets do not send arbitrary `author_user_id` values for normal start or stop worklog flows
+
 Canonical interval fields:
 
 - `record_id`

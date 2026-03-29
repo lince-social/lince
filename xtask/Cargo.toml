@@ -8,4 +8,5 @@ publish = false
 domain = { workspace = true }
 web = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
+semver = "1.0.27"
+toml = "0.9.8"

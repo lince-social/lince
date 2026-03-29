@@ -649,17 +649,6 @@ function resolveCardServerState(card) {
     };
   }
 
-  if (cardRequiresViewId(card)) {
-    const viewId = Number(card?.viewId);
-    if (!Number.isInteger(viewId) || viewId <= 0) {
-      return {
-        state: "misconfigured",
-        server,
-        message: "Defina um view id valido para esse widget.",
-      };
-    }
-  }
-
   if (!server.authenticated) {
     return {
       state: "locked",
@@ -2142,7 +2131,9 @@ function syncWidgetConfigDebug(card) {
   const parts = [];
 
   if (cardRequiresViewId(card)) {
-    parts.push("Escolha um servidor e informe o view id salvo nesse backend.");
+    parts.push(
+      "Escolha um servidor. O view id e opcional aqui e pode ser conectado depois dentro do widget.",
+    );
   } else if (cardRequiresServer(card)) {
     parts.push("Escolha um servidor para esse widget.");
   } else {
@@ -2253,14 +2244,17 @@ function handleWidgetConfigFormSubmit(event) {
 
   let nextViewId = null;
   if (cardRequiresViewId(card)) {
-    const parsedViewId = Number(widgetConfigViewId.value);
-    if (!Number.isInteger(parsedViewId) || parsedViewId <= 0) {
-      setWidgetConfigHelp("Informe um view id inteiro maior que zero.");
-      widgetConfigViewId.focus();
-      return;
-    }
+    const rawViewId = widgetConfigViewId.value.trim();
+    if (rawViewId) {
+      const parsedViewId = Number(rawViewId);
+      if (!Number.isInteger(parsedViewId) || parsedViewId <= 0) {
+        setWidgetConfigHelp("Informe um view id inteiro maior que zero.");
+        widgetConfigViewId.focus();
+        return;
+      }
 
-    nextViewId = parsedViewId;
+      nextViewId = parsedViewId;
+    }
   }
 
   saveWidgetConfig(pendingWidgetConfigCardId, nextServerId, nextViewId);
@@ -2648,11 +2642,7 @@ function createCardFromPreview(preview, sizeOverride = null) {
     packageName: preview.filename,
     html: preview.html,
     serverId: defaultServerIdForPreview(preview),
-    viewId:
-      Array.isArray(preview?.permissions) &&
-      preview.permissions.includes("read_view_stream")
-        ? 1
-        : null,
+    viewId: null,
     w: size.w,
     h: size.h,
   });

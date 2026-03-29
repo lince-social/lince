@@ -18,7 +18,12 @@ pub(crate) fn source() -> SandWidgetSource {
                     .into(),
             initial_width: 7,
             initial_height: 6,
-            permissions: vec!["read_view_stream".into(), "write_table".into()],
+            permissions: vec![
+                "bridge_state".into(),
+                "read_view_stream".into(),
+                "write_records".into(),
+                "write_table".into(),
+            ],
         },
         head_links: vec![],
         inline_styles: vec![style()],
@@ -54,6 +59,27 @@ fn body() -> Markup {
                         div class="panelMeta" {
                             span id="source-pill" class="pill" { "Waiting for stream" }
                             span id="selection-pill" class="pill" { "No piece selected" }
+                        }
+                    }
+                    div class="setupShell" {
+                        p id="setup-copy" class="setupCopy" {
+                            "Choose a server, then start a game or connect to an existing view."
+                        }
+                        div class="setupControls" {
+                            input
+                                id="view-id-input"
+                                class="input"
+                                type="text"
+                                inputmode="numeric"
+                                autocomplete="off"
+                                spellcheck="false"
+                                placeholder="View id";
+                            button id="connect-button" class="button button--ghost" type="button" {
+                                "Connect View"
+                            }
+                            button id="start-button" class="button" type="button" {
+                                "Start New Game"
+                            }
                         }
                     }
                     div class="boardWrap" {
@@ -245,6 +271,11 @@ fn style() -> &'static str {
           transform 140ms ease;
       }
 
+      .button--ghost {
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.03);
+      }
+
       .button:hover:not(:disabled) {
         border-color: var(--line-strong);
         background: rgba(255, 255, 255, 0.08);
@@ -253,6 +284,53 @@ fn style() -> &'static str {
 
       .button:disabled {
         opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .setupShell {
+        display: grid;
+        gap: 10px;
+        padding: 10px 14px 0;
+      }
+
+      .setupCopy {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.78rem;
+        line-height: 1.45;
+      }
+
+      .setupControls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .input {
+        min-width: 0;
+        flex: 1 1 160px;
+        min-height: 36px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--text);
+        font: inherit;
+      }
+
+      .input::placeholder {
+        color: rgba(167, 173, 186, 0.86);
+      }
+
+      .input:focus {
+        outline: none;
+        border-color: rgba(103, 215, 255, 0.4);
+        box-shadow: 0 0 0 3px rgba(103, 215, 255, 0.1);
+      }
+
+      .input:disabled {
+        opacity: 0.55;
         cursor: not-allowed;
       }
 
@@ -572,6 +650,10 @@ fn script() -> &'static str {
         const sourcePill = document.getElementById("source-pill");
         const selectionPill = document.getElementById("selection-pill");
         const historyCount = document.getElementById("history-count");
+        const setupCopy = document.getElementById("setup-copy");
+        const viewIdInput = document.getElementById("view-id-input");
+        const connectButton = document.getElementById("connect-button");
+        const startButton = document.getElementById("start-button");
         const frame = window.frameElement;
         const bridge = window.LinceWidgetHost || null;
         const instanceId = String(frame?.dataset?.packageInstanceId || "preview").trim() || "preview";
@@ -586,6 +668,7 @@ fn script() -> &'static str {
         let connectionGeneration = 0;
         let streamAbortController = null;
         let persistLock = false;
+        let setupLock = false;
         let committedGame = cloneGame(INITIAL_STATE);
         let displayedGame = cloneGame(INITIAL_STATE);
         let selectedPieceId = null;
@@ -598,7 +681,12 @@ fn script() -> &'static str {
           rowId: null,
           sourceText: "Local preview",
           rowLabel: "",
+          gameCode: "",
         };
+
+        function isLocked() {
+          return persistLock || setupLock;
+        }
 
         function delay(ms) {
           return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -805,6 +893,59 @@ fn script() -> &'static str {
               pieces: createInitialPieces(),
             },
           };
+        }
+
+        function createGameCode() {
+          if (window.crypto?.getRandomValues) {
+            const buffer = new Uint32Array(1);
+            window.crypto.getRandomValues(buffer);
+            return String(buffer[0] % 100000000).padStart(8, "0");
+          }
+
+          return String(Math.floor(Math.random() * 100000000)).padStart(8, "0");
+        }
+
+        function buildChessGameName(code) {
+          return `Chess Game ${String(code || "").trim() || createGameCode()}`;
+        }
+
+        function buildChessViewQuery(extensionId) {
+          const safeExtensionId = Number(extensionId);
+          return [
+            "SELECT",
+            "  re.id,",
+            "  re.record_id,",
+            "  re.namespace,",
+            "  re.version,",
+            "  re.data_json,",
+            "  re.created_at,",
+            "  re.updated_at,",
+            "  r.head AS record_head",
+            "FROM record_extension re",
+            "JOIN record r ON r.id = re.record_id",
+            `WHERE re.id = ${safeExtensionId}`,
+          ].join(" ");
+        }
+
+        function readChessCardState(detail) {
+          const meta = isPlainObject(detail?.meta) ? detail.meta : {};
+          const cardState = isPlainObject(meta.cardState) ? meta.cardState : {};
+          const chess = isPlainObject(cardState.chess) ? cardState.chess : {};
+
+          return {
+            viewId: parseInteger(chess.viewId),
+            gameCode: String(chess.gameCode || "").trim(),
+          };
+        }
+
+        function patchChessCardState(patch) {
+          if (!bridge || typeof bridge.patchCardState !== "function") {
+            return;
+          }
+
+          bridge.patchCardState({
+            chess: patch,
+          });
         }
 
         function parseGameEnvelope(rawEnvelope) {
@@ -1094,7 +1235,49 @@ fn script() -> &'static str {
         function setHistoryCount(count) {
           const label = count === 1 ? "1 move" : `${count} moves`;
           historyCount.textContent = label;
-          undoButton.disabled = count === 0 || persistLock;
+          undoButton.disabled = count === 0 || isLocked();
+        }
+
+        function syncSetupShell() {
+          const hasServer = Boolean(String(currentConfig.serverId || "").trim());
+          const activeViewId = parseInteger(currentConfig.viewId);
+          const typedViewId = parseInteger(viewIdInput?.value ?? "");
+
+          if (setupCopy) {
+            if (!hasServer) {
+              setupCopy.textContent =
+                "Choose a server in the card config first. After that this widget can create a game or connect to an existing view.";
+            } else if (activeViewId && currentConfig.rowId != null) {
+              const label = currentConfig.gameCode
+                ? `Chess Game ${currentConfig.gameCode}`
+                : `view #${activeViewId}`;
+              setupCopy.textContent =
+                `${label} is connected. Start makes a fresh shared game, and Connect switches this widget to another view id.`;
+            } else if (activeViewId) {
+              setupCopy.textContent =
+                `View #${activeViewId} is selected. The widget is connecting or ready to reconnect to that shared board.`;
+            } else {
+              setupCopy.textContent =
+                "Start creates a record, an extension row, and a dedicated view. Connect attaches this widget to an existing shared view id.";
+            }
+          }
+
+          if (viewIdInput && document.activeElement !== viewIdInput) {
+            viewIdInput.value = activeViewId ? String(activeViewId) : "";
+          }
+
+          if (viewIdInput) {
+            viewIdInput.disabled = isLocked() || !hasServer;
+          }
+
+          if (connectButton) {
+            connectButton.disabled =
+              isLocked() || !hasServer || typedViewId == null || typedViewId <= 0;
+          }
+
+          if (startButton) {
+            startButton.disabled = isLocked() || !hasServer;
+          }
         }
 
         function renderBoard() {
@@ -1197,12 +1380,14 @@ fn script() -> &'static str {
           setSelectionPill(selectionText);
           setHistoryCount(displayedGame.history.length);
           setSourcePill(currentConfig.sourceText);
+          syncSetupShell();
           renderBoard();
           renderHistory();
         }
 
         function loadLocalGame() {
           persistLock = false;
+          setupLock = false;
           currentConfig = {
             signature: `local:${instanceId}`,
             mode: "local",
@@ -1211,6 +1396,7 @@ fn script() -> &'static str {
             rowId: null,
             sourceText: "Local preview",
             rowLabel: "",
+            gameCode: "",
           };
 
           try {
@@ -1238,6 +1424,26 @@ fn script() -> &'static str {
           renderShell();
         }
 
+        function enterProvisionableState(serverId, gameCode = "", tone = "idle", statusText = "") {
+          persistLock = false;
+          currentConfig = {
+            signature: `${serverId}:`,
+            mode: "setup",
+            serverId,
+            viewId: null,
+            rowId: null,
+            sourceText: gameCode ? `Chess Game ${gameCode}` : "No shared view connected",
+            rowLabel: "",
+            gameCode,
+          };
+          committedGame = cloneGame(INITIAL_STATE);
+          displayedGame = cloneGame(INITIAL_STATE);
+          selectedPieceId = null;
+          lastRowSignature = gameSignature(INITIAL_STATE);
+          setStatus(statusText || "Start or connect to a shared game.", tone);
+          renderShell();
+        }
+
         function persistLocalGame(game) {
           try {
             window.localStorage.setItem(storageKey, JSON.stringify({
@@ -1247,6 +1453,37 @@ fn script() -> &'static str {
           } catch {
             // ignore preview persistence failures
           }
+        }
+
+        async function createTableRow(serverId, table, object) {
+          const response = await fetch(
+            "/host/integrations/servers/" +
+              encodeURIComponent(serverId) +
+              "/table/" +
+              encodeURIComponent(table),
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(object),
+            },
+          );
+
+          const payload = await response.json().catch(() => null);
+          if (!response.ok) {
+            if (response.status === 401) {
+              window.LinceWidgetHost?.invalidateServerAuth?.(serverId);
+            }
+            throw new Error(payload?.error || `Falha ao criar ${table}.`);
+          }
+
+          const createdId = parseInteger(payload?.last_insert_rowid);
+          if (createdId == null || createdId <= 0) {
+            throw new Error(`O backend nao devolveu o id da nova row de ${table}.`);
+          }
+
+          return createdId;
         }
 
         async function persistSharedGame(game) {
@@ -1339,8 +1576,16 @@ fn script() -> &'static str {
         }
 
         function moveSelectedPiece(targetSquare) {
-          if (persistLock) {
-            setStatus("Saving the last move...", "loading");
+          if (isLocked()) {
+            setStatus(
+              setupLock ? "Finishing the current request..." : "Saving the last move...",
+              "loading",
+            );
+            return;
+          }
+
+          if (currentConfig.mode === "setup") {
+            setStatus("Start or connect to a shared game first.", "warn");
             return;
           }
 
@@ -1370,7 +1615,7 @@ fn script() -> &'static str {
         }
 
         function undoLastMove() {
-          if (persistLock || !displayedGame.history.length) {
+          if (isLocked() || !displayedGame.history.length) {
             return;
           }
 
@@ -1468,6 +1713,109 @@ fn script() -> &'static str {
           return payload;
         }
 
+        function rememberConnectedView(viewId, gameCode = "") {
+          patchChessCardState({
+            viewId,
+            gameCode: gameCode || null,
+          });
+        }
+
+        async function connectAndRememberSharedGame(serverId, viewId, gameCode = "") {
+          const connected = await connectSharedGame(serverId, viewId, gameCode);
+          if (!connected) {
+            return false;
+          }
+
+          rememberConnectedView(viewId, gameCode);
+          return true;
+        }
+
+        async function startNewSharedGame() {
+          const serverId = String(currentConfig.serverId || frame?.dataset?.linceServerId || "").trim();
+          if (!serverId) {
+            setStatus("Choose a server in the card config first.", "warn");
+            renderShell();
+            return;
+          }
+
+          if (setupLock) {
+            return;
+          }
+
+          setupLock = true;
+          setStatus("Creating a shared chess game...", "loading");
+          renderShell();
+
+          try {
+            const gameCode = createGameCode();
+            const gameName = buildChessGameName(gameCode);
+            const recordId = await createTableRow(serverId, "record", {
+              quantity: 0,
+              head: gameName,
+              body: "Shared chess board provisioned by the widget.",
+            });
+            const extensionId = await createTableRow(serverId, "record_extension", {
+              record_id: recordId,
+              namespace: "sand.chess",
+              version: 1,
+              data_json: JSON.stringify({
+                history: INITIAL_STATE.history,
+                current: INITIAL_STATE.current,
+              }),
+            });
+            const viewId = await createTableRow(serverId, "view", {
+              name: gameName,
+              query: buildChessViewQuery(extensionId),
+            });
+
+            const connected = await connectAndRememberSharedGame(serverId, viewId, gameCode);
+            if (!connected) {
+              throw new Error("Criei o jogo, mas nao consegui conectar na view nova.");
+            }
+          } catch (error) {
+            setStatus(
+              error instanceof Error
+                ? error.message
+                : "Falha ao criar o chess compartilhado.",
+              "error",
+            );
+          } finally {
+            setupLock = false;
+            renderShell();
+          }
+        }
+
+        async function connectViewFromInput() {
+          const serverId = String(currentConfig.serverId || frame?.dataset?.linceServerId || "").trim();
+          if (!serverId) {
+            setStatus("Choose a server in the card config first.", "warn");
+            renderShell();
+            return;
+          }
+
+          const viewId = parseInteger(viewIdInput?.value ?? "");
+          if (viewId == null || viewId <= 0) {
+            setStatus("Type a valid view id before connecting.", "warn");
+            renderShell();
+            return;
+          }
+
+          if (setupLock) {
+            return;
+          }
+
+          setupLock = true;
+          setStatus(`Connecting to view #${viewId}...`, "loading");
+          renderShell();
+
+          try {
+            await connectAndRememberSharedGame(serverId, viewId);
+          } finally {
+            setupLock = false;
+            renderShell();
+          }
+        }
+
         async function seedSharedGameIfNeeded(game, force = false) {
           if (!currentConfig.rowId) {
             return;
@@ -1495,7 +1843,9 @@ fn script() -> &'static str {
           if (!row) {
             currentConfig.rowId = null;
             currentConfig.rowLabel = "No chess row returned";
-            currentConfig.sourceText = "No row returned by the configured view";
+            currentConfig.sourceText = currentConfig.viewId
+              ? `View #${currentConfig.viewId} returned no chess row`
+              : "No row returned by the configured view";
             committedGame = cloneGame(INITIAL_STATE);
             displayedGame = cloneGame(INITIAL_STATE);
             selectedPieceId = null;
@@ -1512,7 +1862,9 @@ fn script() -> &'static str {
 
           currentConfig.rowId = parsedRow.rowId;
           currentConfig.rowLabel = parsedRow.rowLabel;
-          currentConfig.sourceText = `${parsedRow.rowLabel} · shared`;
+          currentConfig.sourceText = currentConfig.viewId
+            ? `view #${currentConfig.viewId} · ${parsedRow.rowLabel}`
+            : `${parsedRow.rowLabel} · shared`;
           committedGame = cloneGame(parsedRow.game);
           displayedGame = cloneGame(parsedRow.game);
           selectedPieceId = null;
@@ -1524,7 +1876,7 @@ fn script() -> &'static str {
           };
         }
 
-        async function connectSharedGame(serverId, viewId) {
+        async function connectSharedGame(serverId, viewId, gameCode = "") {
           const generation = ++connectionGeneration;
           currentConfig = {
             signature: `${serverId}:${viewId}`,
@@ -1532,60 +1884,67 @@ fn script() -> &'static str {
             serverId,
             viewId,
             rowId: null,
-            sourceText: "Loading shared board...",
+            sourceText: `Loading view #${viewId}...`,
             rowLabel: "",
+            gameCode: gameCode || currentConfig.gameCode || "",
           };
           persistLock = false;
           setStatus("Loading shared board...", "loading");
-          setSourcePill("Loading shared board...");
+          setSourcePill(`Loading view #${viewId}...`);
           renderShell();
 
           let needsSeed = false;
           try {
             const snapshot = await fetchSharedSnapshot(serverId, viewId);
             if (generation !== connectionGeneration) {
-              return;
+              return false;
             }
 
-          const result = applySnapshotPayload(snapshot);
-          needsSeed = result.needsSeed;
-          if (!result.foundRow) {
-            persistLock = false;
-            return;
-          }
+            const result = applySnapshotPayload(snapshot);
+            needsSeed = result.needsSeed;
+            if (!result.foundRow) {
+              enterProvisionableState(
+                serverId,
+                gameCode || currentConfig.gameCode,
+                "warn",
+                `View #${viewId} did not return a chess row.`,
+              );
+              return false;
+            }
 
-          setStatus(needsSeed ? "Seeding row..." : "Live", needsSeed ? "loading" : "live");
-          if (needsSeed) {
-            persistLock = true;
-            renderShell();
-            try {
-              await seedSharedGameIfNeeded(displayedGame, true);
-            } finally {
-              persistLock = false;
+            setStatus(needsSeed ? "Seeding row..." : "Live", needsSeed ? "loading" : "live");
+            if (needsSeed) {
+              persistLock = true;
               renderShell();
+              try {
+                await seedSharedGameIfNeeded(displayedGame, true);
+              } finally {
+                persistLock = false;
+                renderShell();
+              }
             }
-          }
 
             if (generation !== connectionGeneration) {
-              return;
+              return false;
             }
 
             setStatus("Live", "live");
             void streamSharedGame(serverId, viewId, generation);
+            return true;
           } catch (error) {
             if (generation !== connectionGeneration) {
-              return;
+              return false;
             }
 
-            setStatus(
-              error instanceof Error ? error.message : "Nao consegui abrir o chess compartilhado.",
+            enterProvisionableState(
+              serverId,
+              gameCode || currentConfig.gameCode,
               "error",
+              error instanceof Error
+                ? error.message
+                : "Nao consegui abrir o chess compartilhado.",
             );
-            if (!currentConfig.rowId) {
-              loadLocalGame();
-            } else {
-              renderShell();
-            }
+            return false;
           }
         }
 
@@ -1671,8 +2030,11 @@ fn script() -> &'static str {
 
         function applyBridgeDetail(detail) {
           const meta = isPlainObject(detail?.meta) ? detail.meta : {};
+          const chessState = readChessCardState(detail);
           const serverId = String(meta.serverId || frame?.dataset?.linceServerId || "").trim();
-          const viewId = parseInteger(meta.viewId ?? frame?.dataset?.linceViewId ?? "");
+          const viewId = parseInteger(
+            meta.viewId ?? chessState.viewId ?? frame?.dataset?.linceViewId ?? "",
+          );
           const signature = `${serverId}:${viewId ?? ""}`;
           if (signature === currentConfig.signature) {
             return;
@@ -1681,7 +2043,12 @@ fn script() -> &'static str {
           stopStream();
 
           if (serverId && viewId) {
-            void connectSharedGame(serverId, viewId);
+            void connectSharedGame(serverId, viewId, chessState.gameCode);
+            return;
+          }
+
+          if (serverId) {
+            enterProvisionableState(serverId, chessState.gameCode);
             return;
           }
 
@@ -1711,8 +2078,16 @@ fn script() -> &'static str {
           const pieceButton = event.target.closest("[data-piece-id]");
           const pieceId = pieceButton ? String(pieceButton.dataset.pieceId || "").trim() : "";
 
-          if (persistLock) {
-            setStatus("Saving the last move...", "loading");
+          if (isLocked()) {
+            setStatus(
+              setupLock ? "Finishing the current request..." : "Saving the last move...",
+              "loading",
+            );
+            return;
+          }
+
+          if (currentConfig.mode === "setup") {
+            setStatus("Start or connect to a shared game first.", "warn");
             return;
           }
 
@@ -1728,6 +2103,27 @@ fn script() -> &'static str {
 
         undoButton.addEventListener("click", () => {
           undoLastMove();
+        });
+
+        startButton.addEventListener("click", () => {
+          void startNewSharedGame();
+        });
+
+        connectButton.addEventListener("click", () => {
+          void connectViewFromInput();
+        });
+
+        viewIdInput.addEventListener("input", () => {
+          syncSetupShell();
+        });
+
+        viewIdInput.addEventListener("keydown", (event) => {
+          if (event.key !== "Enter") {
+            return;
+          }
+
+          event.preventDefault();
+          void connectViewFromInput();
         });
 
         boardEl.addEventListener("click", handleBoardClick);

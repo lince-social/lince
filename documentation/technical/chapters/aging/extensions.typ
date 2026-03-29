@@ -128,13 +128,13 @@ The intended split is:
 - `dna` computes checksums
 - `dna` performs upsert into the canonical tree
 - `dna` performs hard delete when explicitly requested
-- `dna` regenerates indexes
+- `dna` rebuilds the search catalog TOML
 
 Community submission being "free to push" should mean:
 
 - contributors can submit without maintainer curation before ingest into the community catalog
 - `dna` still applies schema and safety validation
-- the hub still has a canonical index and checksum record
+- the hub still has a canonical search TOML and checksum records
 - maintainers may still rename, replace, or delete packages when they decide to
 
 It should not mean:
@@ -148,7 +148,7 @@ It should not mean:
 The practical near-term direction should be family-first and channel-explicit on disk.
 Packages should be sharded by the first two letters of the package name, similar to the broad shape used by `nixpkgs`.
 There should be no JSON catalog file.
-Instead, the hub should maintain sharded TOML maps for fast lookup.
+Instead, the hub should maintain one search TOML for `sand`.
 
 Suggested direction:
 
@@ -161,8 +161,7 @@ dna/
       *.sqlite
       ...
   sand/
-    map/
-      <prefix>.toml
+    catalog.toml
     official/
       <prefix>/
         <package-name>/
@@ -178,8 +177,6 @@ dna/
           sand.toml
           sha256.txt
   db/
-    map/
-      <prefix>.toml
     official/
       <prefix>/
         <package-name>/
@@ -215,46 +212,37 @@ Rules:
 
 This keeps the hard official versus community split visible while avoiding one flat directory with too many entries.
 
-=== TOML map
+=== Catalog TOML
 
-The hub should keep a sharded TOML map for each family.
+The hub should keep one search TOML for `sand`.
 
 Suggested direction:
 
 ```text
-sand/map/<prefix>.toml
-db/map/<prefix>.toml
+sand/catalog.toml
 ```
 
 Lookup rule:
 
 1. Normalize the package name.
-2. Derive the two-letter prefix.
-3. Open the corresponding TOML map.
-4. Read the package record from there instead of scanning the whole tree.
+2. Open `sand/catalog.toml`.
+3. Read the package record from there instead of scanning the whole tree.
 
-Suggested `sand` map shape:
+Suggested `sand` catalog shape:
 
 ```toml
 [packages.hello_world]
-channel = "community"
-path = "community/he/hello_world"
-version = "0.2.0"
-sha256 = "..."
-author = "Example Author"
+title = "Hello World"
 description = "Example package"
-tags = ["demo", "widget"]
-class = "Engineer"
-html = "hello_world.html"
-metadata_html = "hello_world_metadata.html"
+path = "community/he/hello_world"
 ```
 
 Rules:
 
-- the map is the fast lookup layer
+- the catalog is the fast lookup layer
 - the canonical package directory remains the artifact source of truth
-- the map must be updated on create, upsert, rename, promotion, and delete
-- the map must stay sharded by prefix so it remains practical when the hub grows
+- `sand` should have only one search TOML in the first version
+- the catalog must be updated on create, upsert, rename, promotion, and delete
 
 === Rename history
 
@@ -319,6 +307,8 @@ Suggested first version fields:
 - `version`: required
 - `author`: required
 - `description`: required
+- `title`: optional
+- `icon`: optional
 - `details`: optional
 - `initial_width`: optional
 - `initial_height`: optional
@@ -341,6 +331,7 @@ Rules:
 
 Defaults for metadata-expanded HTML generation:
 
+- `title` defaults to a humanized form of `name`
 - `details` defaults to `description`
 - `initial_width` defaults to `4`
 - `initial_height` defaults to `3`
@@ -376,7 +367,8 @@ The purpose of `<package-name>_metadata.html` is to provide the current embedded
 
 When generating that embedded metadata block:
 
-- manifest `title` should come from `sand.toml` `name`
+- manifest `icon` should come from `sand.toml` `icon`
+- manifest `title` should come from `sand.toml` `title`, or fall back to a humanized form of `name`
 - manifest `author` should come from `sand.toml` `author`
 - manifest `version` should come from `sand.toml` `version`
 - manifest `description` should come from `sand.toml` `description`
@@ -461,12 +453,12 @@ On upsert:
 - require a semantic version bump relative to the current canonical package
 - recompute the checksum
 - overwrite `sha256.txt`
-- update the corresponding TOML map entry
+- update the corresponding catalog entry
 
 On hard delete:
 
 - remove the package directory
-- remove the corresponding TOML map entry
+- remove the corresponding catalog entry
 - leave the filesystem and migrations ledger as the remaining source of truth
 
 === Lounge ingestion
@@ -506,7 +498,7 @@ For creation:
 8. `dna` computes the checksum.
 9. `dna` creates the canonical directory if it does not already exist.
 10. `dna` writes the canonical package into the chosen family and channel.
-11. `dna` writes or updates the corresponding TOML map entry.
+11. `dna` writes or updates the corresponding catalog entry.
 
 This gives the operator the simple workflow of "put it somewhere, run one command, done".
 
@@ -522,7 +514,7 @@ For updates:
 6. `dna` requires the submitted semantic version to be greater than the current canonical version.
 7. `dna` replaces the canonical package at the same path.
 8. `dna` recomputes checksum.
-9. `dna` updates the corresponding TOML map entry.
+9. `dna` updates the corresponding catalog entry.
 
 ==== Rename
 
@@ -533,7 +525,7 @@ For renames:
 3. `dna` moves the canonical package to the new path.
 4. `dna` updates the package metadata name.
 5. `dna` appends a line to the relevant family migration file.
-6. `dna` updates the old and new TOML map entries.
+6. `dna` updates the old and new catalog entries.
 
 This is the main administrative escape hatch for collision handling and curator intervention.
 
@@ -543,12 +535,12 @@ For promotion from `community` to `official`:
 
 1. A maintainer selects the existing community package.
 2. If the target official name is already used by another official package, promotion is rejected.
-3. If the target official name conflicts with a community package, the conflicting community package must be renamed first and that rename must be written to the migration file.
+3. If an official ingest or promotion takes a name currently held by `community`, `dna` should auto-rename the displaced community package, patch-bump it, and write that rename to the migration file.
 4. Promotion must include a semantic version bump because the package metadata changes.
 5. `dna` moves the package from `community` to `official`.
 6. `dna` updates the package metadata channel.
 7. `dna` appends a line to the migration file recording the channel move.
-8. `dna` updates the TOML map entry.
+8. `dna` updates the catalog entry.
 
 Promotion should be a move, not a copy.
 The package keeps the same name unless a maintainer explicitly renames it.
@@ -559,7 +551,7 @@ For deletion:
 
 1. Submit a delete request or invoke an explicit delete command with the family, channel, and package name.
 2. `dna` removes the canonical package directory.
-3. `dna` removes the TOML map entry.
+3. `dna` removes the catalog entry.
 
 The plan does not try to soften the consequences of hard delete.
 
@@ -570,7 +562,7 @@ The most practical direction today is:
 - keep only `sand` and `db`
 - store packages by family, then channel, then two-letter prefix, then package name
 - use `sand.toml`
-- use sharded TOML maps for lookup
+- use one `sand/catalog.toml` file for search
 - treat the package name as the stable id
 - keep package names unique per family, with `official` taking precedence over `community`
 - use `lounge/` as the operator drop zone
@@ -594,7 +586,7 @@ Several criticisms remain even after simplifying the design:
 - The two-letter prefix sharding is practical, but it makes names and path normalization a hard policy boundary instead of a forgiving one.
 - Official widgets like Kanban still need richer runtime metadata than a generic standalone HTML package, even if the storage layout stays simple.
 - A single `sha256.txt` is enough operationally, but it intentionally gives up richer provenance.
-- TOML maps improve lookup, but they add another layer that can drift if ingest tooling is buggy.
+- A single `sand/catalog.toml` is simpler than many map files, but it becomes one shared file that changes on every catalog mutation.
 - Allowing arbitrary assets keeps the system flexible, but it also pushes all asset hygiene and review onto maintainers.
 
 === Concrete decisions
@@ -605,7 +597,7 @@ The remaining policy points should be treated as decided for the current plan:
 - official-widget compatibility metadata is optional, but if present it must pass schema validation during ingest
 - `sand.toml` may later grow `homepage`, `repository`, and compatibility fields without changing the current package identity model
 - every canonical package change requires a semantic version bump, including rename and promotion
-- if `db` later becomes automated, it should get its own TOML metadata file and matching sharded TOML maps
+- if `db` later becomes automated, it should get its own metadata file and, if needed, its own search TOML
 
 === Working conclusion
 
@@ -615,13 +607,305 @@ The current best direction is:
 
 - `sand` and `db` only
 - `sand.toml` drives the automated ingest flow
-- sharded TOML maps avoid full directory scans
+- one `sand/catalog.toml` avoids full directory scans
 - package name as stable id
 - two-letter path sharding
 - one `lounge/` drop zone
 - `dna` owns checksum and canonical writes
 - `official` and `community` stay explicit
 - `sand` gets its channel from `sand.toml`
-- promotion is a move, renames are recorded in migrations, and both update the TOML maps
+- promotion is a move, renames are recorded in migrations, and both update `sand/catalog.toml`
 
 Sand Classes still matter for understanding widget runtime style, but they no longer need to carry any storage burden in this plan.
+
+=== Next board step
+
+After the ingest and catalog rules are in place, the next practical UI step should be board-side package pickup from `github.com/lince-social/dna` on `main`.
+
+The intended direction is:
+
+1. Add one more choice to the existing `Add card` popover for remote catalog pickup.
+2. Label it something direct such as `Hub` or `DNA`.
+3. Keep the existing `Importar` and `Local` flows unchanged.
+4. Open a new Maud-rendered modal instead of navigating away or inventing a second screen.
+
+The modal should follow the same broad shape as the current local catalog modal:
+
+- search field at the top
+- short catalog summary text
+- scrollable list of matching package names
+- one clear action per result to install and add the card
+
+Suggested HTML shape in the page template:
+
+```text
+button#add-card-dna-button
+div#dna-packages-modal-backdrop
+section#import-modal.import-modal--catalog
+input#dna-packages-search
+div#dna-packages-summary
+div#dna-package-list
+```
+
+This should be rendered in Maud next to the existing local catalog modal, not assembled ad-hoc in client JavaScript.
+
+The search path should use one catalog TOML rather than full repository scans.
+
+Practical rule:
+
+1. Normalize the user query to the package-name shape.
+2. Take the first two letters.
+3. Fetch `sand/catalog.toml` from `main`.
+4. Filter the package records in that TOML file on the client or through the backend proxy.
+5. Render the matching package rows in the modal.
+
+The first version can stay simple:
+
+- search by package name first
+- treat empty search as "show nothing yet" or "type at least two letters"
+- only target `sand`
+- prefer `official` entries first when both channels are ever shown together
+
+The fetch source should be the `main` branch of the public `dna` repository.
+The safer runtime path is a backend proxy in `lince`, even if the upstream source is GitHub, because that avoids client-side CORS assumptions and keeps remote fetching inside the server boundary.
+
+Suggested remote sources:
+
+- `sand/catalog.toml` for search
+- `sand/<channel>/<prefix>/<package-name>/sand.toml` for package metadata
+- `sand/<channel>/<prefix>/<package-name>/<package-name>_metadata.html` for installation
+
+The installation path should reuse the current imported-widget flow as much as possible.
+
+Practical direction:
+
+1. The user selects a package row in the modal.
+2. `lince` fetches that package's `sand.toml` and `<package-name>_metadata.html` from `dna/main`.
+3. `lince` turns that into the same preview payload shape already used for local/imported widgets.
+4. The user sees the normal preview and confirms.
+5. On confirm, `lince` stores the downloaded widget into the local package catalog and creates the card.
+
+This means the remote hub pickup should land in the same local installed-catalog path as other widgets after download.
+The hub is the source, but the board still works with a local installed package once the user adds it.
+
+The shortest implementation sequence should be:
+
+1. add `Hub` or `DNA` to the `Add card` popover
+2. add the Maud modal shell
+3. add backend endpoints that proxy GitHub `main` TOML and HTML fetches
+4. add client search + result rendering using `sand/catalog.toml`
+5. add preview + confirm using the existing imported-widget card creation path
+
+==== Board UX plan
+
+The board-side experience should be:
+
+1. Enter edit mode.
+2. Open `Add card`.
+3. Choose `DNA`.
+4. The modal opens with an empty result list and a message such as `Digite pelo menos duas letras para buscar no hub.`
+5. After the user types two or more characters, the board searches the hub.
+6. The modal shows matching package rows with enough metadata to decide quickly.
+7. Selecting a row opens the same preview surface already used for imported widgets.
+8. Confirming the preview downloads the package into the local installed catalog and creates the card.
+
+The first version should keep the interaction narrow:
+
+- one search field
+- one result list
+- one preview-confirm path
+- no multi-select
+- no background synchronization
+
+==== DNA search files
+
+For the board flow, `dna` should expose one TOML search file in `main`:
+
+```text
+sand/catalog.toml
+```
+
+The purpose of `sand/catalog.toml` is:
+
+- provide the search rows for the modal
+- avoid repository directory scans
+- keep one compact lookup file for the whole `sand` family
+
+Suggested shape:
+
+```toml
+[packages.hello_world]
+title = "Hello World"
+description = "Example package"
+path = "official/he/hello_world"
+```
+
+The package name lives in the TOML key.
+The row metadata for search is only:
+
+- `title`
+- `description`
+- `path`
+
+==== Search behavior
+
+The search contract should be simple and deterministic:
+
+1. trim the query
+2. lowercase it
+3. normalize spaces and dashes into `_`
+4. reject characters that do not fit package-name search
+5. if fewer than two characters remain, do not hit the network
+6. fetch `sand/catalog.toml`
+7. filter the package rows by package name first
+8. if desired, also match `title` and `description`
+
+Result ordering should be:
+
+1. exact package-name prefix match
+2. package-name substring match
+3. title match
+4. description match
+5. alphabetical by title
+
+The first version should fetch the whole `sand/catalog.toml` file for each search refresh or from cache.
+That keeps the search contract simple.
+
+==== Modal contents
+
+Each result row in the Maud modal should show:
+
+- icon
+- title
+- package name
+- short description
+
+Each row should have one explicit action:
+
+- `Preview`
+
+The modal should not install immediately from the search list.
+Preview first, then confirm through the existing preview modal.
+
+==== Backend route plan
+
+The backend should own all remote GitHub fetches.
+The browser should never fetch raw GitHub URLs directly.
+
+Suggested new API surface:
+
+```text
+GET  /api/packages/dna/catalog
+GET  /api/packages/dna/search?q=<query>
+GET  /api/packages/dna/{channel}/{package_name}/preview
+POST /api/packages/dna/{channel}/{package_name}/install
+```
+
+Responsibilities:
+
+- `catalog`: fetch and cache `sand/catalog.toml`
+- `search`: normalize the query, fetch `sand/catalog.toml`, filter rows, and return lightweight summaries
+- `preview`: fetch `sand.toml` plus `<package-name>_metadata.html`, parse them into the same preview payload shape already used by `/api/packages/local/{package_id}` and `/api/packages/preview`
+- `install`: fetch the same remote package, persist it into the local widget catalog, and return the installed preview payload
+
+This keeps the remote-hub logic inside the backend and lets the front-end reuse the existing package UI model.
+
+==== Remote source rules
+
+The first version should fetch only from:
+
+- repository: `github.com/lince-social/dna`
+- branch: `main`
+- family: `sand`
+
+The backend should translate those logical paths to raw file fetches from GitHub.
+
+The expected remote files for a package are:
+
+- `sand.toml`
+- `<package-name>_metadata.html`
+
+The board should not download the plain `<package-name>.html` file for installation in the first version.
+The metadata-expanded HTML is the correct transport because it already satisfies the current embedded-manifest package contract used by local install and preview flows.
+
+==== Local install rule
+
+When `lince` installs a package downloaded from `dna`:
+
+1. fetch `<package-name>_metadata.html`
+2. parse it as a normal Lince package
+3. persist it locally under the filename `<package-name>.html`
+
+This rule is important.
+The remote transport file is `<package-name>_metadata.html`, but the local installed filename should still be `<package-name>.html`.
+Otherwise the local package id would drift to `<package-name>_metadata`, which is wrong.
+
+The installed package should land in the same local catalog used today for uploaded widgets:
+
+```text
+~/.config/lince/web/widgets/<package-name>.html
+```
+
+After that, the package behaves like any other locally installed widget.
+
+==== Collision and overwrite rule
+
+For the first version, the simplest local rule should be:
+
+- if the package is already installed locally and the downloaded version is newer, overwrite the local installed copy
+- if the package is already installed locally and the downloaded version is the same, replace it anyway if the user explicitly installs it from the hub
+- if the package exists only as a built-in official sand widget, allow the downloaded local copy to shadow it
+
+This is explicit user intent.
+Choosing a package from the hub is enough reason to let the local installed copy win over the built-in rendered official copy.
+
+==== Caching rule
+
+The backend should cache remote TOML and HTML responses in memory.
+
+The first version can stay simple:
+
+- cache `catalog.toml` for 5 minutes
+- cache preview payloads for 1 minute
+
+Cache invalidation does not need to be perfect.
+The branch is `main`, not a versioned immutable archive, so short-lived stale reads are acceptable for the first version.
+
+==== Error handling
+
+The modal and preview flow should surface short concrete errors:
+
+- `Falha ao buscar o catalogo do hub.`
+- `Nenhum pacote corresponde a essa busca.`
+- `Falha ao baixar o pacote selecionado.`
+- `O pacote remoto nao possui metadados validos para instalacao.`
+- `Falha ao instalar o pacote do hub no catalogo local.`
+
+The modal should stay open on search and preview errors.
+Only a successful install should close the remote modal and continue into the normal add-card success path.
+
+==== Data shape reuse
+
+The implementation should reuse the existing local package data shapes as much as possible.
+
+Practical rule:
+
+- search rows should look like a minimal summary built from package name plus `title`, `description`, and `path`
+- preview responses should look like the existing `PackagePreview`
+- install responses should also return `PackagePreview`
+
+This keeps the new `DNA` path close to the existing local/imported widget path and avoids inventing a second package model in the front-end.
+
+==== Implementation order
+
+The practical implementation order should be:
+
+1. extend `dna` ingest/rebuild so it writes `sand/catalog.toml`
+2. add `DNA` to the add-card popover in Maud
+3. add the Maud modal shell for remote search
+4. add backend routes for `catalog`, `search`, `preview`, and `install`
+5. add backend GitHub fetch + in-memory cache
+6. add client-side search state and result rendering from `sand/catalog.toml`
+7. route row click into the existing preview-confirm flow
+8. persist the downloaded package locally as `<package-name>.html`
+9. create the card using the existing imported-widget card creation path

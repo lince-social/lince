@@ -6,6 +6,7 @@ mod kanban_record_view;
 mod lince_logo_led;
 mod link_chip;
 mod local_terminal;
+#[path = "markdown_notes/mod.rs"]
 mod markdown_notes;
 mod organ_management;
 mod ops_clock;

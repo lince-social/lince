@@ -57,11 +57,11 @@ mprocs \
 """
 
 [tasks.sand-export]
-description = "Export sand widgets as a raw handoff bundle for dna to ingest"
+description = "Export official sand widgets into dna/lounge as index.html plus sand.toml"
 run = "cargo run -p xtask -- sand export"
 
 [tasks.sand-export-dry]
-description = "Preview the sand export without writing files"
+description = "Preview the dna/lounge sand export without writing files"
 run = "cargo run -p xtask -- sand export --dry-run"
 
 [tasks.docs]

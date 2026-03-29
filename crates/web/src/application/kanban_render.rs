@@ -234,16 +234,12 @@ fn render_columns(rows: &[KanbanRow]) -> Markup {
 fn render_lane(lane: Lane, rows: Vec<&KanbanRow>) -> Markup {
     html! {
         section.col data-col=(lane.key) {
+            button.colResizeEdge.colResizeEdge--left type="button" title="Resize column" data-resize-handle=(lane.key) data-resize-side="left" {}
             header.colHead {
                 .colHeadMain {
                     button.laneToggle type="button" title={ "Toggle " (lane.label) } data-lane-toggle=(lane.key) { "-" }
                     .colName { (lane.label) }
                     .count { (rows.len()) }
-                }
-                .colTools {
-                    button.colToolBtn type="button" title="Narrower" data-width-delta="-32" data-col-width=(lane.key) { "-" }
-                    button.colToolBtn type="button" title="Wider" data-width-delta="32" data-col-width=(lane.key) { "+" }
-                    button.colResizeHandle type="button" title="Drag to resize" data-resize-handle=(lane.key) { "|" }
                 }
             }
             .list data-dropzone=(lane.key) {
@@ -255,6 +251,7 @@ fn render_lane(lane: Lane, rows: Vec<&KanbanRow>) -> Markup {
                     }
                 }
             }
+            button.colResizeEdge.colResizeEdge--right type="button" title="Resize column" data-resize-handle=(lane.key) data-resize-side="right" {}
         }
     }
 }
@@ -312,7 +309,7 @@ fn render_card(row: &KanbanRow) -> Markup {
             @if !assignees.is_empty() {
                 .small { "Assignees: " (assignees) }
             }
-            .body data-card-body {} (compact_body)
+            .body data-card-body { (compact_body) }
             @if let Some(comments_count) = row.comments_count.filter(|value| *value > 0) {
                 .small { (comments_count) " comments" }
             }

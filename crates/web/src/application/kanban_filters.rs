@@ -82,14 +82,16 @@ impl KanbanFilterService {
             "SELECT * FROM ({}) base WHERE 1 = 1",
             trim_sql(base_query)
         );
-        let mut bindings = Vec::new();
 
         for row in validated_rows {
-            row.push_sql(&mut sql, &mut bindings);
+            row.push_sql(&mut sql);
         }
 
         sql.push_str(" ORDER BY base.quantity ASC, lower(COALESCE(base.head, '')) ASC, base.id DESC");
-        Ok(DerivedKanbanQuery { sql, bindings })
+        Ok(DerivedKanbanQuery {
+            sql,
+            bindings: Vec::new(),
+        })
     }
 }
 
@@ -174,60 +176,51 @@ impl ValidatedKanbanFilterRow {
     }
 
     #[allow(dead_code)]
-    fn push_sql(&self, sql: &mut String, bindings: &mut Vec<KanbanFilterBinding>) {
+    fn push_sql(&self, sql: &mut String) {
         match (&self.field, &self.operator, &self.value) {
             (&"text_query", &"contains", ValidatedFilterValue::Text(value)) => {
-                sql.push_str(
-                    " AND (lower(COALESCE(base.head, '')) LIKE '%' || lower(?) || '%' OR lower(COALESCE(base.body, '')) LIKE '%' || lower(?) || '%')",
-                );
-                bindings.push(KanbanFilterBinding::Text(value.clone()));
-                bindings.push(KanbanFilterBinding::Text(value.clone()));
+                let like = sql_like_contains_literal(value);
+                sql.push_str(" AND (lower(COALESCE(base.head, '')) LIKE ");
+                sql.push_str(&like);
+                sql.push_str(" ESCAPE '\\' OR lower(COALESCE(base.body, '')) LIKE ");
+                sql.push_str(&like);
+                sql.push_str(" ESCAPE '\\')");
             }
             (&"categories_any_json", &"any_of", ValidatedFilterValue::TextList(values)) => {
                 sql.push_str(
                     " AND EXISTS (SELECT 1 FROM json_each(COALESCE(base.categories_json, '[]')) value WHERE lower(CAST(value.value AS TEXT)) IN (",
                 );
-                push_placeholders(sql, values.len());
-                sql.push_str("))");
-                bindings.extend(
-                    values
+                push_text_literals(
+                    sql,
+                    &values
                         .iter()
-                        .map(|value| KanbanFilterBinding::Text(value.to_lowercase())),
+                        .map(|value| value.to_lowercase())
+                        .collect::<Vec<_>>(),
                 );
+                sql.push_str("))");
             }
             (&"assignee_ids_any_json", &"any_of", ValidatedFilterValue::IntegerList(values)) => {
                 sql.push_str(
                     " AND EXISTS (SELECT 1 FROM json_each(COALESCE(base.assignee_ids_json, '[]')) value WHERE CAST(value.value AS INTEGER) IN (",
                 );
-                push_placeholders(sql, values.len());
+                push_integer_literals(sql, values);
                 sql.push_str("))");
-                bindings.extend(
-                    values
-                        .iter()
-                        .copied()
-                        .map(KanbanFilterBinding::Integer),
-                );
             }
             (&"quantities_json", &"any_of", ValidatedFilterValue::IntegerList(values)) => {
                 sql.push_str(" AND CAST(base.quantity AS INTEGER) IN (");
-                push_placeholders(sql, values.len());
+                push_integer_literals(sql, values);
                 sql.push(')');
-                bindings.extend(
-                    values
-                        .iter()
-                        .copied()
-                        .map(KanbanFilterBinding::Integer),
-                );
             }
             (&"task_types_json", &"any_of", ValidatedFilterValue::TextList(values)) => {
                 sql.push_str(" AND lower(COALESCE(base.task_type, '')) IN (");
-                push_placeholders(sql, values.len());
-                sql.push(')');
-                bindings.extend(
-                    values
+                push_text_literals(
+                    sql,
+                    &values
                         .iter()
-                        .map(|value| KanbanFilterBinding::Text(value.to_lowercase())),
+                        .map(|value| value.to_lowercase())
+                        .collect::<Vec<_>>(),
                 );
+                sql.push(')');
             }
             (&"only_with_open_worklog", &"equals", ValidatedFilterValue::TrueOnly) => {
                 sql.push_str(" AND COALESCE(base.active_worklog_count, 0) > 0");
@@ -414,11 +407,37 @@ fn trim_sql(query: &str) -> String {
 }
 
 #[allow(dead_code)]
-fn push_placeholders(sql: &mut String, count: usize) {
-    for index in 0..count {
+fn push_integer_literals(sql: &mut String, values: &[i64]) {
+    for (index, value) in values.iter().enumerate() {
         if index > 0 {
             sql.push_str(", ");
         }
-        sql.push('?');
+        sql.push_str(&value.to_string());
     }
+}
+
+#[allow(dead_code)]
+fn push_text_literals(sql: &mut String, values: &[String]) {
+    for (index, value) in values.iter().enumerate() {
+        if index > 0 {
+            sql.push_str(", ");
+        }
+        sql.push_str(&sql_text_literal(value));
+    }
+}
+
+#[allow(dead_code)]
+fn sql_text_literal(value: &str) -> String {
+    format!("'{}'", value.replace('\'', "''"))
+}
+
+#[allow(dead_code)]
+fn sql_like_contains_literal(value: &str) -> String {
+    let escaped = value
+        .to_lowercase()
+        .replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
+        .replace('\'', "''");
+    format!("'%{escaped}%'")
 }

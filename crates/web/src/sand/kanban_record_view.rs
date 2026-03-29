@@ -30,13 +30,14 @@ pub(crate) fn source() -> SandWidgetSource {
 
 fn body() -> Markup {
     html! {
-        .widget id="app" data-lince-bridge-root {
+        .widget id="app" data-lince-bridge-root data-signals="{ queryOpen: false }" {
             .widgetSurface {
                 .panel {
                     .header {
                         #kanban-header-meta.headerMeta {
                             .headerTitle id="kanban-header-title" { "Kanban Record View" }
-                            .headerSub id="kanban-header-sub" { "Waiting for widget contract..." }
+                            button.headerSubButton type="button" id="kanban-query-toggle" data-on:click="$queryOpen = !$queryOpen" { "Waiting for widget contract..." }
+                            pre.headerQuery id="kanban-query-copy" data-show="$queryOpen" {}
                         }
                         .headerActions {
                             span.status id="kanban-connection-status" { "Waiting" }
@@ -258,6 +259,36 @@ fn style() -> &'static str {
                 line-height: 1.4;
             }
 
+            .headerSubButton {
+                min-height: 0;
+                padding: 0;
+                margin-top: 4px;
+                border: 0;
+                background: transparent;
+                color: var(--muted);
+                font-size: 11px;
+                line-height: 1.4;
+                text-align: left;
+            }
+
+            .headerSubButton:hover {
+                background: transparent;
+                color: var(--soft);
+            }
+
+            .headerQuery {
+                margin: 8px 0 0;
+                padding: 10px 12px;
+                border: 1px solid var(--line);
+                border-radius: 10px;
+                background: rgba(255, 255, 255, 0.02);
+                color: var(--muted);
+                font-size: 10px;
+                line-height: 1.45;
+                white-space: pre-wrap;
+                word-break: break-word;
+            }
+
             .headerMeta {
                 min-width: 0;
             }
@@ -379,6 +410,7 @@ fn style() -> &'static str {
             }
 
             .col {
+                position: relative;
                 flex: 0 0 auto;
                 width: 260px;
                 min-width: 260px;
@@ -493,6 +525,33 @@ fn style() -> &'static str {
             .colResizeHandle.is-resizing {
                 border-color: rgba(122, 162, 247, 0.4);
                 color: #d9e5ff;
+            }
+
+            .colResizeEdge {
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                width: 10px;
+                min-width: 10px;
+                padding: 0;
+                border: 0;
+                border-radius: 0;
+                background: transparent;
+                cursor: ew-resize;
+                z-index: 3;
+            }
+
+            .colResizeEdge--left {
+                left: -5px;
+            }
+
+            .colResizeEdge--right {
+                right: -5px;
+            }
+
+            .colResizeEdge.is-resizing,
+            .colResizeEdge:hover {
+                background: rgba(122, 162, 247, 0.12);
             }
 
             .list {
@@ -611,12 +670,94 @@ fn style() -> &'static str {
                 color: var(--soft);
                 font-size: 11px;
                 line-height: 1.45;
-                white-space: pre-wrap;
                 overflow: hidden;
             }
 
             .body.is-full {
                 max-height: none;
+            }
+
+            .body :first-child,
+            .kanban-focus-card__body-preview :first-child {
+                margin-top: 0;
+            }
+
+            .body :last-child,
+            .kanban-focus-card__body-preview :last-child {
+                margin-bottom: 0;
+            }
+
+            .body h1,
+            .body h2,
+            .body h3,
+            .body h4,
+            .kanban-focus-card__body-preview h1,
+            .kanban-focus-card__body-preview h2,
+            .kanban-focus-card__body-preview h3,
+            .kanban-focus-card__body-preview h4 {
+                margin: 0.95em 0 0.38em;
+                line-height: 1.2;
+                font-size: 1em;
+            }
+
+            .body p,
+            .body ul,
+            .body ol,
+            .body blockquote,
+            .body pre,
+            .kanban-focus-card__body-preview p,
+            .kanban-focus-card__body-preview ul,
+            .kanban-focus-card__body-preview ol,
+            .kanban-focus-card__body-preview blockquote,
+            .kanban-focus-card__body-preview pre {
+                margin: 0 0 0.65em;
+            }
+
+            .body ul,
+            .body ol,
+            .kanban-focus-card__body-preview ul,
+            .kanban-focus-card__body-preview ol {
+                padding-left: 1.1rem;
+            }
+
+            .body blockquote,
+            .kanban-focus-card__body-preview blockquote {
+                padding-left: 0.8rem;
+                color: var(--muted);
+                border-left: 2px solid rgba(255, 255, 255, 0.12);
+            }
+
+            .body code,
+            .kanban-focus-card__body-preview code {
+                padding: 0.08rem 0.28rem;
+                border-radius: 6px;
+                background: rgba(255, 255, 255, 0.06);
+                font-family: "IBM Plex Mono", "SFMono-Regular", monospace;
+                font-size: 0.92em;
+            }
+
+            .body pre,
+            .kanban-focus-card__body-preview pre {
+                overflow: auto;
+            }
+
+            .body pre code,
+            .kanban-focus-card__body-preview pre code {
+                display: block;
+                padding: 0;
+                background: transparent;
+            }
+
+            .body hr,
+            .kanban-focus-card__body-preview hr {
+                border: 0;
+                border-top: 1px solid var(--line);
+                margin: 0.9em 0;
+            }
+
+            .body a,
+            .kanban-focus-card__body-preview a {
+                color: var(--accent);
             }
 
             .dragOver {
@@ -811,6 +952,12 @@ fn style() -> &'static str {
                 gap: 8px;
             }
 
+            #kanban-active-filters:empty,
+            #kanban-toolbar-state:empty,
+            #kanban-empty-or-error:empty {
+                display: none;
+            }
+
             .kanban-focus-card {
                 display: grid;
                 gap: 14px;
@@ -848,6 +995,15 @@ fn style() -> &'static str {
                 white-space: pre-wrap;
             }
 
+            .kanban-focus-card__body-wrap {
+                display: grid;
+                gap: 8px;
+                padding: 12px;
+                border-radius: 14px;
+                border: 1px solid var(--line);
+                background: rgba(255, 255, 255, 0.03);
+            }
+
             .kanban-focus-card__image {
                 display: block;
                 width: 100%;
@@ -860,6 +1016,10 @@ fn style() -> &'static str {
 
             .warn .small {
                 color: #e8bbc2;
+            }
+
+            [hidden] {
+                display: none !important;
             }
 
             code,
@@ -904,8 +1064,7 @@ fn script() -> &'static str {
             ];
             const DEFAULT_WIDTH = 260;
             const COLLAPSED_WIDTH = 64;
-            const MIN_WIDTH = 180;
-            const MAX_WIDTH = 420;
+            const MIN_WIDTH = 80;
             const DEFAULT_BODY_MODE = "compact";
             const BODY_MODES = new Set(["head", "compact", "full"]);
             const app = document.getElementById("app");
@@ -913,7 +1072,8 @@ fn script() -> &'static str {
             const elements = {
                 headerMeta: document.getElementById("kanban-header-meta"),
                 headerTitle: document.getElementById("kanban-header-title"),
-                headerSub: document.getElementById("kanban-header-sub"),
+                queryToggle: document.getElementById("kanban-query-toggle"),
+                queryCopy: document.getElementById("kanban-query-copy"),
                 status: document.getElementById("kanban-connection-status"),
                 toolbarState: document.getElementById("kanban-toolbar-state"),
                 statusCopy: document.getElementById("kanban-status-copy"),
@@ -1024,7 +1184,7 @@ fn script() -> &'static str {
                 }
                 return Math.max(
                     MIN_WIDTH,
-                    Math.min(MAX_WIDTH, Math.round(parsed)),
+                    Math.round(parsed),
                 );
             }
 
@@ -1307,22 +1467,22 @@ fn script() -> &'static str {
 
             function setHeaderMetaFromContract() {
                 const title =
-                    state.viewMeta?.name ||
                     state.contract?.widget?.title ||
+                    state.hostMeta?.cardState?.title ||
                     "Kanban Record View";
-                const source = state.contract?.source || {};
                 const viewId =
                     state.viewMeta?.view_id ??
                     state.contract?.source?.view_id ??
                     state.hostMeta.viewId;
-                const query =
-                    state.viewMeta?.query ||
-                    (source.server_name
-                        ? `server ${source.server_name} · view ${String(viewId || "")}`
-                        : `view ${String(viewId || "")}`);
-
                 elements.headerTitle.textContent = title;
-                elements.headerSub.textContent = query;
+                setQueryText(
+                    state.viewMeta?.query ||
+                        state.contract?.diagnostics?.effective_sql ||
+                        "",
+                );
+                if (viewId) {
+                    elements.queryToggle.textContent = `View ${String(viewId)} query`;
+                }
             }
 
             function updateStatus() {
@@ -1544,15 +1704,15 @@ fn script() -> &'static str {
                     }
 
                     if (mode === "head") {
-                        body.textContent = "";
+                        body.innerHTML = "";
                         body.style.display = "none";
                         body.classList.remove("is-full");
                     } else if (mode === "full") {
-                        body.textContent = full;
+                        body.innerHTML = renderMarkdown(full);
                         body.style.display = "";
                         body.classList.add("is-full");
                     } else {
-                        body.textContent = compact;
+                        body.innerHTML = renderMarkdown(compact);
                         body.style.display = compact ? "" : "none";
                         body.classList.remove("is-full");
                     }
@@ -1576,6 +1736,173 @@ fn script() -> &'static str {
                             "'": "&#39;",
                         })[char],
                 );
+            }
+
+            function applyInlineMarkdown(text) {
+                return escapeHtml(text)
+                    .replace(/`([^`]+)`/g, "<code>$1</code>")
+                    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+                    .replace(/\*([^*]+)\*/g, "<em>$1</em>")
+                    .replace(
+                        /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+                        '<a href="$2" target="_blank" rel="noreferrer">$1</a>',
+                    );
+            }
+
+            function renderMarkdown(source) {
+                const lines = String(source || "").replace(/\r\n/g, "\n").split("\n");
+                const blocks = [];
+                let paragraph = [];
+                let listItems = [];
+                let listTag = "";
+                let codeFence = [];
+                let inFence = false;
+
+                function flushParagraph() {
+                    if (!paragraph.length) {
+                        return;
+                    }
+                    blocks.push(
+                        "<p>" + applyInlineMarkdown(paragraph.join(" ")) + "</p>",
+                    );
+                    paragraph = [];
+                }
+
+                function flushList() {
+                    if (!listItems.length) {
+                        return;
+                    }
+                    blocks.push(
+                        "<" +
+                            listTag +
+                            ">" +
+                            listItems
+                                .map(
+                                    (item) =>
+                                        "<li>" + applyInlineMarkdown(item) + "</li>",
+                                )
+                                .join("") +
+                            "</" +
+                            listTag +
+                            ">",
+                    );
+                    listItems = [];
+                    listTag = "";
+                }
+
+                function flushFence() {
+                    if (!inFence) {
+                        return;
+                    }
+                    blocks.push(
+                        "<pre><code>" + escapeHtml(codeFence.join("\n")) + "</code></pre>",
+                    );
+                    codeFence = [];
+                    inFence = false;
+                }
+
+                for (const rawLine of lines) {
+                    const line = rawLine.trimEnd();
+                    const trimmed = line.trim();
+
+                    if (trimmed.startsWith("```")) {
+                        flushParagraph();
+                        flushList();
+                        if (inFence) {
+                            flushFence();
+                        } else {
+                            inFence = true;
+                            codeFence = [];
+                        }
+                        continue;
+                    }
+
+                    if (inFence) {
+                        codeFence.push(rawLine);
+                        continue;
+                    }
+
+                    if (!trimmed) {
+                        flushParagraph();
+                        flushList();
+                        continue;
+                    }
+
+                    const heading = trimmed.match(/^(#{1,4})\s+(.+)$/);
+                    if (heading) {
+                        flushParagraph();
+                        flushList();
+                        const level = heading[1].length;
+                        blocks.push(
+                            "<h" +
+                                level +
+                                ">" +
+                                applyInlineMarkdown(heading[2]) +
+                                "</h" +
+                                level +
+                                ">",
+                        );
+                        continue;
+                    }
+
+                    if (trimmed === "---" || trimmed === "***") {
+                        flushParagraph();
+                        flushList();
+                        blocks.push("<hr />");
+                        continue;
+                    }
+
+                    const bullet = trimmed.match(/^[-*]\s+(.+)$/);
+                    if (bullet) {
+                        flushParagraph();
+                        if (listTag && listTag !== "ul") {
+                            flushList();
+                        }
+                        listTag = "ul";
+                        listItems.push(bullet[1]);
+                        continue;
+                    }
+
+                    const ordered = trimmed.match(/^\d+\.\s+(.+)$/);
+                    if (ordered) {
+                        flushParagraph();
+                        if (listTag && listTag !== "ol") {
+                            flushList();
+                        }
+                        listTag = "ol";
+                        listItems.push(ordered[1]);
+                        continue;
+                    }
+
+                    const quote = trimmed.match(/^>\s+(.+)$/);
+                    if (quote) {
+                        flushParagraph();
+                        flushList();
+                        blocks.push(
+                            "<blockquote>" +
+                                applyInlineMarkdown(quote[1]) +
+                                "</blockquote>",
+                        );
+                        continue;
+                    }
+
+                    flushList();
+                    paragraph.push(trimmed);
+                }
+
+                flushParagraph();
+                flushList();
+                flushFence();
+                return blocks.join("");
+            }
+
+            function setQueryText(query) {
+                const text = String(query || "").trim();
+                elements.queryToggle.textContent = text
+                    ? `Query (${text.length} chars)`
+                    : "No query available";
+                elements.queryCopy.textContent = text;
+                elements.queryToggle.disabled = !text;
             }
 
             function isoToInput(value) {
@@ -1965,15 +2292,17 @@ fn script() -> &'static str {
             }
 
             async function openFilterSheet() {
+                openSheet("filter");
+                elements.filterSheetBody.innerHTML = `<p class="small">Loading filter options...</p>`;
                 await ensureFormOptionsLoaded();
                 renderFilterSheet();
-                openSheet("filter");
             }
 
             async function openCreateSheet() {
+                openSheet("create");
+                elements.createSheetBody.innerHTML = `<p class="small">Loading task form...</p>`;
                 await ensureFormOptionsLoaded();
                 renderCreateSheet();
-                openSheet("create");
             }
 
             async function openEditSheet(recordId) {
@@ -1982,10 +2311,20 @@ fn script() -> &'static str {
                 } else if (!state.focusDetail && state.ui.focusedRecordId) {
                     await loadRecordDetail(state.ui.focusedRecordId);
                 }
-                await ensureFormOptionsLoaded();
-                renderEditSheet();
                 elements.focusSheet.hidden = true;
                 openSheet("edit");
+                elements.editSheetBody.innerHTML = `<p class="small">Loading task form...</p>`;
+                await ensureFormOptionsLoaded();
+                renderEditSheet();
+            }
+
+            function hydrateFocusMarkdown() {
+                const raw = elements.focusCard.querySelector("[data-focus-body-raw]");
+                const preview = elements.focusCard.querySelector("[data-focus-body-preview]");
+                if (!raw || !preview) {
+                    return;
+                }
+                preview.innerHTML = renderMarkdown(raw.textContent || "");
             }
 
             async function submitRecordForm(mode) {
@@ -2483,7 +2822,7 @@ fn script() -> &'static str {
                     updateStatus();
                     return;
                 }
-                patchHtml(elements.headerMeta, payload?.html?.header_meta);
+                setHeaderMetaFromContract();
                 patchHtml(elements.toolbarState, payload?.html?.toolbar_state);
                 patchHtml(elements.columns, payload?.html?.columns);
                 patchHtml(elements.emptyOrError, payload?.html?.empty_or_error);
@@ -2638,6 +2977,7 @@ fn script() -> &'static str {
                     stopStream();
                     return;
                 }
+                void ensureFormOptionsLoaded();
                 await flushPendingWorklogStops();
                 if (streamEnabled()) {
                     await connectStream(resetStream !== false);
@@ -2670,6 +3010,7 @@ fn script() -> &'static str {
                 });
                 patchHtml(elements.focusCard, payload?.html);
                 state.focusDetail = payload?.detail || null;
+                hydrateFocusMarkdown();
                 elements.focusSheet.hidden = false;
                 syncHeartbeatFromDetail();
                 if (elements.editSheet.hidden === false) {
@@ -3077,6 +3418,7 @@ fn script() -> &'static str {
                 }
                 state.resize = {
                     key,
+                    side: String(resizeHandle.dataset.resizeSide || "right"),
                     startX: event.clientX,
                     startWidth: clampWidth(lane.width || DEFAULT_WIDTH),
                 };
@@ -3159,8 +3501,10 @@ fn script() -> &'static str {
                 if (!state.resize) {
                     return;
                 }
-                const { key, startX, startWidth } = state.resize;
-                const nextWidth = clampWidth(startWidth + (event.clientX - startX));
+                const { key, side, startX, startWidth } = state.resize;
+                const delta = event.clientX - startX;
+                const signedDelta = side === "left" ? -delta : delta;
+                const nextWidth = clampWidth(startWidth + signedDelta);
                 persistUi({
                     ...state.ui,
                     lanes: {

@@ -2443,7 +2443,18 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                 }
             }
             @if let Some(body) = detail.body.as_deref().filter(|value| !value.trim().is_empty()) {
-                p.kanban-focus-card__body { (body) }
+                section.kanban-focus-card__body-wrap data-signals="{ focusMarkdown: false }" {
+                    .sheetHeader {
+                        .headerMeta {
+                            h3 { "Body" }
+                        }
+                        .headerActions {
+                            button.toolbarBtn type="button" data-on:click="$focusMarkdown = !$focusMarkdown" { "Toggle Markdown" }
+                        }
+                    }
+                    pre.kanban-focus-card__body data-focus-body-raw="" data-show="!$focusMarkdown" { (body) }
+                    article.kanban-focus-card__body-preview data-focus-body-preview="" data-show="$focusMarkdown" {}
+                }
             }
             @if !detail.children.is_empty() {
                 section.kanban-focus-card__children {

@@ -222,6 +222,7 @@ impl WidgetRuntimeService {
                 "load-form-options",
                 "create-record",
                 "update-record",
+                "update-record-body",
                 "move-record",
                 "delete-record",
                 "start-worklog",

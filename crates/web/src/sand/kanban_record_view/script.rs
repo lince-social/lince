@@ -69,6 +69,8 @@ pub(super) fn script() -> String {
                 formOptions: null,
                 formOptionsPromise: null,
                 focusDetail: null,
+                focusPreview: null,
+                focusDetailGeneration: 0,
                 focusAction: null,
                 pendingWorklogStops: [],
                 activeWorklogIntervals: [],
@@ -1277,6 +1279,218 @@ pub(super) fn script() -> String {
                 return elements.focusActionPanel?.querySelector(`[data-focus-action-field="${name}"]`);
             }
 
+            function quantityLabel(quantity) {
+                const lane = columns.find((entry) => Number(entry.value) === Number(quantity));
+                return lane ? lane.label : `Quantity ${Number(quantity) || 0}`;
+            }
+
+            function compactBodyPreview(body) {
+                const trimmed = String(body || "").trim();
+                if (!trimmed) {
+                    return "";
+                }
+
+                const excerpt = [];
+                let length = 0;
+                for (const line of trimmed.split("\n").map((line) => line.trimEnd())) {
+                    excerpt.push(line);
+                    length += line.length;
+                    if (excerpt.length >= 4 || length >= 220) {
+                        break;
+                    }
+                }
+
+                const compact = excerpt.join("\n").trim();
+                if (compact.length < trimmed.length) {
+                    return `${compact}\n...`;
+                }
+                return compact;
+            }
+
+            function readCardPreview(recordId) {
+                const card = elements.columns.querySelector(
+                    `.card[data-record-id="${CSS.escape(String(recordId))}"]`,
+                );
+                if (!card) {
+                    return null;
+                }
+                return {
+                    recordId: Number(recordId),
+                    head: String(card.dataset.head || ""),
+                    body: String(card.dataset.body || ""),
+                    quantity: Number(card.dataset.quantity || 0),
+                };
+            }
+
+            function renderFocusPreviewHtml(preview) {
+                const head = String(preview?.head || "Untitled");
+                const body = String(preview?.body || "");
+                const quantity = quantityLabel(preview?.quantity);
+                const bodyHtml = body.trim()
+                    ? `<section class="kanban-focus-card__body-wrap">
+                            <div class="sheetHeader">
+                                <div class="headerMeta">
+                                    <h3>Body</h3>
+                                </div>
+                                <div class="headerActions">
+                                    <span class="small">Loading more detail...</span>
+                                </div>
+                            </div>
+                            <article
+                                class="kanban-focus-card__body-preview markdownRender"
+                                data-record-id="${escapeHtml(String(preview?.recordId || 0))}"
+                                data-markdown-source="${escapeHtml(body)}"
+                            >${renderMarkdown(body)}</article>
+                        </section>`
+                    : `<p class="small">No body available yet.</p>`;
+                return `
+                    <section class="kanban-focus-card kanban-focus-card--preview">
+                        <header class="kanban-focus-card__header">
+                            <h2 class="kanban-focus-card__title">${escapeHtml(head)}</h2>
+                            <div class="kanban-focus-card__meta">
+                                <span>Quantity: ${escapeHtml(quantity)}</span>
+                                <span>Record #${escapeHtml(String(preview?.recordId || 0))}</span>
+                            </div>
+                        </header>
+                        ${bodyHtml}
+                    </section>
+                `;
+            }
+
+            function markdownTaskToggleRoot(node) {
+                return node?.closest(".card, .kanban-focus-card, #kanban-focus-card") || null;
+            }
+
+            function markdownTaskRecordId(node) {
+                const recordNode = node?.closest("[data-record-id]");
+                const recordId = Number(recordNode?.dataset?.recordId || 0);
+                return Number.isInteger(recordId) && recordId > 0
+                    ? recordId
+                    : Number(state.focusDetail?.record_id || 0) > 0
+                      ? Number(state.focusDetail.record_id)
+                      : Number(state.focusPreview?.recordId || 0) > 0
+                        ? Number(state.focusPreview.recordId)
+                        : null;
+            }
+
+            function syncMarkdownTaskSources(root, nextSource) {
+                if (!root) {
+                    return [];
+                }
+                if (Object.prototype.hasOwnProperty.call(root.dataset || {}, "body")) {
+                    root.dataset.body = nextSource;
+                }
+                const compactSource = Object.prototype.hasOwnProperty.call(root.dataset || {}, "body")
+                    ? compactBodyPreview(nextSource)
+                    : nextSource;
+                const blocks = Array.from(root.querySelectorAll("[data-markdown-source]"));
+                for (const block of blocks) {
+                    block.dataset.markdownSource = block.classList.contains("is-full")
+                        ? nextSource
+                        : compactSource;
+                    block.dataset.markdownRendered = "";
+                }
+                const rawBody = root.querySelector("[data-focus-body-raw]");
+                if (rawBody) {
+                    rawBody.textContent = nextSource;
+                }
+                hydrateMarkdownBlocks(root);
+                return blocks;
+            }
+
+            async function persistMarkdownTaskToggle(checkbox) {
+                const root = markdownTaskToggleRoot(checkbox);
+                if (!root) {
+                    return;
+                }
+                const recordId = markdownTaskRecordId(checkbox);
+                if (!recordId) {
+                    return;
+                }
+
+                const sourceBlock = checkbox.closest("[data-markdown-source]");
+                const previousSource = root.dataset.body
+                    ? String(root.dataset.body || "")
+                    : String(sourceBlock?.dataset.markdownSource || "");
+                if (!previousSource) {
+                    return;
+                }
+
+                const nextSource = toggleMarkdownTaskLine(
+                    previousSource,
+                    checkbox.dataset.markdownTaskLine,
+                    checkbox.checked,
+                );
+                if (nextSource === previousSource) {
+                    return;
+                }
+
+                const previousRawBody = root.querySelector("[data-focus-body-raw]")?.textContent || null;
+
+                state.focusDetailGeneration += 1;
+                syncMarkdownTaskSources(root, nextSource);
+                if (state.focusDetail && Number(state.focusDetail.record_id || 0) === recordId) {
+                    state.focusDetail.body = nextSource;
+                }
+                if (state.focusPreview && Number(state.focusPreview.recordId || 0) === recordId) {
+                    state.focusPreview.body = nextSource;
+                }
+
+                try {
+                    await postAction("update-record-body", {
+                        recordId,
+                        body: nextSource,
+                    });
+                    if (
+                        isSheetVisible(elements.focusSheet) &&
+                        (
+                            Number(state.focusDetail?.record_id || 0) === recordId ||
+                            Number(state.focusPreview?.recordId || 0) === recordId ||
+                            Number(state.ui.focusedRecordId || 0) === recordId
+                        )
+                    ) {
+                        await loadRecordDetail(recordId).catch((reloadError) => {
+                            state.transportError =
+                                reloadError instanceof Error
+                                    ? reloadError.message
+                                    : String(reloadError);
+                            updateStatus();
+                        });
+                    }
+                } catch (error) {
+                    syncMarkdownTaskSources(root, previousSource);
+                    const rawBody = root.querySelector("[data-focus-body-raw]");
+                    if (rawBody && previousRawBody !== null) {
+                        rawBody.textContent = previousRawBody;
+                    }
+                    if (state.focusDetail && Number(state.focusDetail.record_id || 0) === recordId) {
+                        state.focusDetail.body = previousSource;
+                    }
+                    if (state.focusPreview && Number(state.focusPreview.recordId || 0) === recordId) {
+                        state.focusPreview.body = previousSource;
+                    }
+                    state.transportError =
+                        error instanceof Error ? error.message : String(error);
+                    updateStatus();
+                    if (
+                        isSheetVisible(elements.focusSheet) &&
+                        (
+                            Number(state.focusDetail?.record_id || 0) === recordId ||
+                            Number(state.focusPreview?.recordId || 0) === recordId ||
+                            Number(state.ui.focusedRecordId || 0) === recordId
+                        )
+                    ) {
+                        await loadRecordDetail(recordId).catch((reloadError) => {
+                            state.transportError =
+                                reloadError instanceof Error
+                                    ? reloadError.message
+                                    : String(reloadError);
+                            updateStatus();
+                        });
+                    }
+                }
+            }
+
             function renderFocusActionPanel(action) {
                 if (!elements.focusActionPanel) {
                     return;
@@ -1303,7 +1517,7 @@ pub(super) fn script() -> String {
                             </div>
                             <div class="sheetActions">
                                 <button class="toolbarBtn" type="button" data-focus-action-cancel="">Cancel</button>
-                                <button class="toolbarBtn toolbarBtn--accent" type="submit">${kind === "create-comment" ? "Add comment" : "Save comment"}</button>
+                                <button class="toolbarBtn toolbarBtn--accent" type="button" data-focus-action-submit="">${kind === "create-comment" ? "Add comment" : "Save comment"}</button>
                             </div>
                         </form>
                     `;
@@ -1326,7 +1540,7 @@ pub(super) fn script() -> String {
                             </div>
                             <div class="sheetActions">
                                 <button class="toolbarBtn" type="button" data-focus-action-cancel="">Cancel</button>
-                                <button class="toolbarBtn toolbarBtn--accent" type="submit">Link resource</button>
+                                <button class="toolbarBtn toolbarBtn--accent" type="button" data-focus-action-submit="">Link resource</button>
                             </div>
                         </form>
                     `;
@@ -1339,7 +1553,7 @@ pub(super) fn script() -> String {
                             </div>
                             <div class="sheetActions">
                                 <button class="toolbarBtn" type="button" data-focus-action-cancel="">Cancel</button>
-                                <button class="toolbarBtn toolbarBtn--accent" type="submit">Start</button>
+                                <button class="toolbarBtn toolbarBtn--accent" type="button" data-focus-action-submit="">Start</button>
                             </div>
                         </form>
                     `;
@@ -1353,7 +1567,7 @@ pub(super) fn script() -> String {
                             <p data-focus-action-body="">${escapeHtml(body)}</p>
                             <div class="sheetActions">
                                 <button class="toolbarBtn" type="button" data-focus-action-cancel="">Cancel</button>
-                                <button class="toolbarBtn toolbarBtn--danger" type="submit">${kind === "delete-record" ? "Delete record" : "Remove"}</button>
+                                <button class="toolbarBtn toolbarBtn--danger" type="button" data-focus-action-submit="">${kind === "delete-record" ? "Delete record" : "Remove"}</button>
                             </div>
                         </form>
                     `;
@@ -1374,16 +1588,13 @@ pub(super) fn script() -> String {
                     ${formHtml}
                 `;
 
-                elements.focusActionPanel.querySelectorAll("[data-focus-action-close]").forEach((button) => {
-                    button.addEventListener("click", () => {
-                        closeFocusAction();
+                const form = elements.focusActionPanel.querySelector("[data-focus-action-form]");
+                if (form) {
+                    form.addEventListener("submit", async (event) => {
+                        event.preventDefault();
+                        await submitFocusAction();
                     });
-                });
-                elements.focusActionPanel.querySelectorAll("[data-focus-action-cancel]").forEach((button) => {
-                    button.addEventListener("click", () => {
-                        closeFocusAction();
-                    });
-                });
+                }
             }
 
             function setFocusActionMessage(message) {
@@ -2176,17 +2387,26 @@ pub(super) fn script() -> String {
             }
 
             async function loadRecordDetail(recordId) {
+                const generation = ++state.focusDetailGeneration;
+                const preview = readCardPreview(recordId);
+                state.focusPreview = preview;
                 patchHtml(
                     elements.focusCard,
-                    `<section class="kanban-focus-card"><p class="small">Loading task detail...</p></section>`,
+                    preview
+                        ? renderFocusPreviewHtml(preview)
+                        : `<section class="kanban-focus-card"><p class="small">Loading task detail...</p></section>`,
                 );
                 closeFocusAction();
                 openFocusSheet();
                 const payload = await postAction("load-record-detail", {
                     recordId: Number(recordId),
                 });
+                if (generation !== state.focusDetailGeneration) {
+                    return;
+                }
                 patchHtml(elements.focusCard, payload?.html);
                 state.focusDetail = payload?.detail || null;
+                state.focusPreview = null;
                 hydrateFocusMarkdown();
                 syncHeartbeatFromDetail();
                 if (isSheetVisible(elements.editSheet)) {
@@ -2199,11 +2419,13 @@ pub(super) fn script() -> String {
             }
 
             function closeFocus() {
+                state.focusDetailGeneration += 1;
                 closeFocusSheet();
                 elements.focusCard.innerHTML = "";
                 closeFocusAction();
                 closeSheet("edit");
                 state.focusDetail = null;
+                state.focusPreview = null;
                 persistUi({
                     ...state.ui,
                     focusedRecordId: null,
@@ -2383,6 +2605,24 @@ pub(super) fn script() -> String {
                         return;
                     }
 
+                    const focusActionSubmitButton = event.target.closest("[data-focus-action-submit]");
+                    if (focusActionSubmitButton) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        await submitFocusAction();
+                        return;
+                    }
+
+                    const focusActionCancelButton = event.target.closest(
+                        "[data-focus-action-cancel],[data-focus-action-close]",
+                    );
+                    if (focusActionCancelButton) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        closeFocusAction();
+                        return;
+                    }
+
                     const submitDeleteButton = event.target.closest("[data-submit-delete]");
                     if (submitDeleteButton) {
                         event.preventDefault();
@@ -2397,14 +2637,13 @@ pub(super) fn script() -> String {
                 }
             });
 
-            app.addEventListener("submit", async (event) => {
-                const form = event.target.closest("[data-focus-action-form]");
-                if (!form) {
+            app.addEventListener("change", async (event) => {
+                const markdownTaskCheckbox = event.target.closest("input[data-markdown-task-line]");
+                if (!markdownTaskCheckbox) {
                     return;
                 }
 
-                event.preventDefault();
-                await submitFocusAction();
+                await persistMarkdownTaskToggle(markdownTaskCheckbox);
             });
 
             app.addEventListener("pointerdown", (event) => {

@@ -9,6 +9,7 @@ fn default_signals() -> String {
         "activeSheet": "",
         "focusSheetOpen": false,
         "focusMarkdown": false,
+        "focusLayout": "full",
         "shell": {
             "title": "Kanban Record View",
             "queryText": "",
@@ -54,8 +55,8 @@ pub(super) fn body() -> Markup {
             data-on:kanban-open-create="$activeSheet = 'create'"
             data-on:kanban-open-edit="$focusSheetOpen = false; $activeSheet = 'edit'"
             data-on:kanban-close-sheets="$activeSheet = ''"
-            data-on:kanban-open-focus="$activeSheet = ''; $focusMarkdown = true; $focusSheetOpen = true"
-            data-on:kanban-close-focus="$focusMarkdown = false; $focusSheetOpen = false"
+            data-on:kanban-open-focus="$activeSheet = ''; $focusLayout = 'full'; $focusMarkdown = true; $focusSheetOpen = true"
+            data-on:kanban-close-focus="$focusLayout = 'full'; $focusMarkdown = false; $focusSheetOpen = false"
             data-on-signal-patch="window.KanbanWidget?.syncUiFromSignals(patch); window.KanbanWidget?.persistUiFromSignals(patch)"
             data-on-signal-patch-filter="{include: /^ui(\\.|$)/}"
         {
@@ -163,19 +164,35 @@ pub(super) fn body() -> Markup {
                     #kanban-edit-sheet-body {}
                 }
             }
-                .sheetOverlay id="kanban-focus-sheet" data-show="$focusSheetOpen" style="display: none" {
-                    button.sheetBackdrop type="button" data-close-focus="true" data-on:click="$focusMarkdown = false; $focusSheetOpen = false" {}
-                    .sheetPanel {
-                        .sheetHeader {
-                            .headerMeta {
+            .sheetOverlay id="kanban-focus-sheet" data-show="$focusSheetOpen" style="display: none" {
+                button.sheetBackdrop type="button" data-close-focus="true" data-on:click="$focusMarkdown = false; $focusSheetOpen = false" {}
+                .sheetPanel
+                    data-class:focus-layout-full="$focusLayout === 'full'"
+                    data-class:focus-layout-side="$focusLayout === 'side'"
+                {
+                    .sheetHeader {
+                        .headerMeta {
                             .headerTitle { "Task detail" }
-                            .headerSub { "Focused record detail loaded from the host service." }
+                            .headerSub { "Focused record detail loads from the host service." }
                         }
                         .headerActions {
-                            button.toolbarBtn type="button" data-close-focus="true" data-on:click="$focusMarkdown = false; $focusSheetOpen = false" { "Close" }
-                            }
+                            button.toolbarBtn
+                                type="button"
+                                data-show="$focusLayout === 'full'"
+                                data-on:click="$focusLayout = 'side'"
+                            { "Side mode" }
+                            button.toolbarBtn
+                                type="button"
+                                data-show="$focusLayout === 'side'"
+                                data-on:click="$focusLayout = 'full'"
+                            { "Full mode" }
+                            button.toolbarBtn.toolbarBtn--accent
+                                type="button"
+                                data-on:click="$focusLayout = 'full'; $focusMarkdown = false; $focusSheetOpen = false; $activeSheet = ''"
+                            { "Back to kanban" }
                         }
-                        #kanban-focus-action-panel.panel hidden {}
+                    }
+                    #kanban-focus-action-panel.panel hidden {}
                         #kanban-focus-card {}
                     }
                 }

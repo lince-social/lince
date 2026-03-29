@@ -207,6 +207,51 @@ impl KanbanActionService {
         })
     }
 
+    pub async fn update_record_body(
+        &self,
+        session_token: Option<&str>,
+        instance_id: &str,
+        payload: UpdateRecordBodyRequest,
+    ) -> Result<KanbanActionOutcome, KanbanActionError> {
+        let resolved = self
+            .resolve_instance(session_token, instance_id, ActionPermission::WriteRecordsOnly)
+            .await?;
+        self.ensure_record_exists(
+            session_token,
+            &resolved.organ,
+            resolved.bearer_token.as_deref(),
+            payload.record_id,
+        )
+        .await?;
+        let body = payload.body.trim().to_string();
+
+        self.update_table_row(
+            session_token,
+            &resolved.organ,
+            resolved.bearer_token.as_deref(),
+            "record",
+            payload.record_id,
+            json!({
+                "body": if body.is_empty() {
+                    Value::Null
+                } else {
+                    Value::String(body)
+                },
+            }),
+        )
+        .await?;
+
+        Ok(KanbanActionOutcome {
+            action: "update-record-body".into(),
+            message: "Record body updated.".into(),
+            record_id: Some(payload.record_id),
+            await_stream_refresh: true,
+            detail: json!({
+                "record_id": payload.record_id,
+            }),
+        })
+    }
+
     pub async fn move_record(
         &self,
         session_token: Option<&str>,
@@ -1821,6 +1866,13 @@ pub struct UpdateRecordRequest {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct UpdateRecordBodyRequest {
+    pub record_id: i64,
+    pub body: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct MoveRecordRequest {
     pub record_id: i64,
     pub quantity: i64,
@@ -2452,7 +2504,12 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                         }
                     }
                     pre.kanban-focus-card__body data-focus-body-raw="" data-show="!$focusMarkdown" { (body) }
-                    article.kanban-focus-card__body-preview.markdownRender data-focus-body-preview="" data-show="$focusMarkdown" {}
+                    article.kanban-focus-card__body-preview.markdownRender
+                        data-focus-body-preview=""
+                        data-record-id=(detail.record_id)
+                        data-markdown-source=(body)
+                        data-show="$focusMarkdown"
+                    {}
                 }
             }
             @if !detail.children.is_empty() {

@@ -1,6 +1,7 @@
 mod bucket_image_view;
-mod extra_simple;
 mod calendar;
+mod chess;
+mod extra_simple;
 mod general_creation;
 #[path = "kanban_record_view/mod.rs"]
 mod kanban_record_view;
@@ -9,15 +10,15 @@ mod link_chip;
 mod local_terminal;
 #[path = "markdown_notes/mod.rs"]
 mod markdown_notes;
+mod ops_clock;
+mod organ_management;
+mod record_crud;
 #[path = "shared_markdown/mod.rs"]
 mod shared_markdown;
-mod organ_management;
-mod ops_clock;
-mod view_table_editor;
 mod spotify_control;
-mod record_crud;
 mod tasklist;
 mod tasks_table;
+mod view_table_editor;
 mod weather;
 
 use {
@@ -58,10 +59,11 @@ pub(crate) struct SandWidgetSource {
 
 type SandSourceBuilder = fn() -> SandWidgetSource;
 
-const OFFICIAL_WIDGETS: [SandSourceBuilder; 17] = [
+const OFFICIAL_WIDGETS: [SandSourceBuilder; 18] = [
     bucket_image_view::source,
     extra_simple::source,
     calendar::source,
+    chess::source,
     general_creation::source,
     kanban_record_view::source,
     lince_logo_led::source,

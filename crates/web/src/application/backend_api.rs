@@ -2,6 +2,7 @@ use crate::infrastructure::backend_api_store::{ApiTable, BackendApiStore, valida
 use ::application::{
     auth::{AuthService, AuthSubject},
     subscription::{SubscriptionHandle, SubscriptionRegistry},
+    view::ViewReadService,
 };
 use injection::cross_cutting::InjectedServices;
 use persistence::{
@@ -26,6 +27,7 @@ pub struct BackendApiService {
     store: BackendApiStore,
     auth: AuthService,
     subscriptions: SubscriptionRegistry,
+    view_reads: ViewReadService,
     jwt_secret: Arc<String>,
 }
 
@@ -39,7 +41,7 @@ impl BackendApiService {
     pub fn new(services: InjectedServices, jwt_secret: Arc<String>) -> Self {
         let auth = AuthService::new(services.clone(), jwt_secret.clone());
         let view_reads = ::application::view::ViewReadService::new(services.clone());
-        let subscriptions = SubscriptionRegistry::new(view_reads, services.writer.clone());
+        let subscriptions = SubscriptionRegistry::new(view_reads.clone(), services.writer.clone());
         let store = BackendApiStore::new(services.clone());
 
         Self {
@@ -47,6 +49,7 @@ impl BackendApiService {
             store,
             auth,
             subscriptions,
+            view_reads,
             jwt_secret,
         }
     }
@@ -225,6 +228,11 @@ impl BackendApiService {
         view_id: u32,
     ) -> Result<SubscriptionHandle, Error> {
         self.subscriptions.subscribe_view(claims, view_id).await
+    }
+
+    pub async fn read_view_snapshot(&self, _claims: &AuthSubject, view_id: u32) -> Result<Value, Error> {
+        let snapshot = self.view_reads.read_snapshot(view_id).await?;
+        serde_json::to_value(snapshot.snapshot).map_err(Error::other)
     }
 
     pub async fn list_files(

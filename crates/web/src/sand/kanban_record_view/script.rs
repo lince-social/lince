@@ -839,12 +839,6 @@ pub(super) fn script() -> String {
                     : [];
             }
 
-            function parentOptions() {
-                return Array.isArray(state.formOptions?.parentRecords)
-                    ? state.formOptions.parentRecords
-                    : [];
-            }
-
             function renderCheckboxGroup(name, values, selectedValues) {
                 const selected = new Set(selectedValues || []);
                 return values
@@ -855,6 +849,144 @@ pub(super) fn script() -> String {
                         return `<label class="checkRow"><input type="checkbox" name="${escapeHtml(name)}" value="${escapeHtml(value)}" ${checked}> <span>${escapeHtml(label)}</span></label>`;
                     })
                     .join("");
+            }
+
+            function parentOptions() {
+                return Array.isArray(state.formOptions?.parentRecords)
+                    ? state.formOptions.parentRecords
+                    : [];
+            }
+
+            function parentCategoryQuery() {
+                return String(state.formOptions?.parentCategoryQuery || "").trim();
+            }
+
+            function parentCategoryDefault(mode, draft, options) {
+                const fromOptions = String(options.parentCategoryQuery || "").trim();
+                if (fromOptions) {
+                    return fromOptions;
+                }
+                if (mode === "edit") {
+                    return normalizeStringArray(draft.categories || []).join(", ");
+                }
+                return "";
+            }
+
+            function parentRecordMatchesFilters(record, headQuery, categoryTerms, currentRecordId) {
+                const recordId = Number(record?.id || 0);
+                if (Number.isInteger(currentRecordId) && currentRecordId > 0 && recordId === currentRecordId) {
+                    return false;
+                }
+
+                const head = String(record?.head || "").toLowerCase();
+                if (headQuery && !head.includes(headQuery)) {
+                    return false;
+                }
+
+                if (!categoryTerms.length) {
+                    return true;
+                }
+
+                const categories = normalizeStringArray(record?.categories || []).map((entry) => entry.toLowerCase());
+                if (!categories.length) {
+                    return false;
+                }
+
+                return categoryTerms.some((term) =>
+                    categories.some((category) =>
+                        category.includes(term) || term.includes(category),
+                    ),
+                );
+            }
+
+            function renderParentChoices(root) {
+                if (!root) {
+                    return;
+                }
+
+                const options = parentOptions();
+                const picker = root.querySelector("[data-parent-picker]");
+                if (!picker) {
+                    return;
+                }
+
+                const currentRecordId = Number(root.dataset.recordId || 0) || null;
+                const hiddenParent = root.querySelector("[name='parentId']");
+                const selectedParentId = Number(hiddenParent?.value || 0) || null;
+                const headQuery = String(
+                    root.querySelector("[data-parent-search-head]")?.value || "",
+                )
+                    .trim()
+                    .toLowerCase();
+                const categoryTerms = parseTagInput(
+                    root.querySelector("[data-parent-search-categories]")?.value || "",
+                ).map((value) => value.toLowerCase());
+                const filtered = options.filter((record) =>
+                    parentRecordMatchesFilters(record, headQuery, categoryTerms, currentRecordId),
+                );
+
+                const selectedParent = options.find(
+                    (record) => Number(record.id || 0) === selectedParentId,
+                ) || null;
+                const summary = picker.querySelector("[data-parent-selection-summary]");
+                if (summary) {
+                    summary.textContent = selectedParent
+                        ? `Selected: #${selectedParent.id} ${String(selectedParent.head || "Untitled")}`
+                        : selectedParentId > 0
+                          ? `Selected: #${selectedParentId} ${String(root.dataset.parentHead || "Untitled")}`
+                          : "Selected: no parent";
+                }
+
+                const matchCount = picker.querySelector("[data-parent-match-count]");
+                if (matchCount) {
+                    matchCount.textContent = filtered.length
+                        ? `${filtered.length} matches`
+                        : "No matches";
+                }
+
+                if (hiddenParent) {
+                    hiddenParent.value = selectedParentId > 0 ? String(selectedParentId) : "";
+                }
+
+                const list = picker.querySelector("[data-parent-choices]");
+                if (!list) {
+                    return;
+                }
+
+                const categoryChips = (categories) =>
+                    (() => {
+                        const normalizedCategories = normalizeStringArray(categories || []);
+                        return normalizedCategories.length
+                            ? normalizedCategories
+                                  .map((category) => `<span class="chip">${escapeHtml(category)}</span>`)
+                                  .join("")
+                            : `<span class="small">No categories</span>`;
+                    })();
+                const renderedChoices = filtered.length
+                    ? filtered
+                                  .map((record) => {
+                              const recordId = Number(record.id || 0);
+                              const selectedClass =
+                                  recordId > 0 && recordId === selectedParentId
+                                      ? " is-selected"
+                                      : "";
+                              return `
+                                  <button class="parentChoice${selectedClass}" type="button" data-parent-choice="${escapeHtml(String(recordId))}" data-parent-head="${escapeHtml(String(record.head || "Untitled"))}">
+                                      <span class="parentChoice__head">#${escapeHtml(String(recordId))} ${escapeHtml(String(record.head || "Untitled"))}</span>
+                                      <span class="chipBar parentChoice__chips">${categoryChips(record.categories || [])}</span>
+                                  </button>
+                              `;
+                          })
+                          .join("")
+                    : `<p class="small parentChooserEmpty">No possible fathers match these filters.</p>`;
+
+                list.innerHTML = `
+                    <button class="parentChoice${selectedParentId ? "" : " is-selected"}" type="button" data-parent-choice="" data-parent-head="">
+                        <span class="parentChoice__head">No parent</span>
+                        <span class="small">Clear the parent link</span>
+                    </button>
+                    ${renderedChoices}
+                `;
             }
 
             function renderFilterSheet() {
@@ -918,7 +1050,12 @@ pub(super) fn script() -> String {
             }
 
             function formOptionsReady() {
-                return state.formOptions || { assignees: [], categories: [], parentRecords: [] };
+                return state.formOptions || {
+                    assignees: [],
+                    categories: [],
+                    parentRecords: [],
+                    parentCategoryQuery: "",
+                };
             }
 
             function renderRecordForm(mode, draft) {
@@ -930,6 +1067,7 @@ pub(super) fn script() -> String {
                 const categoryInput = (draft.categories || []).join(", ");
                 const currentParentId = draft.parentId == null ? "" : String(draft.parentId);
                 const assigneeIds = new Set((draft.assigneeIds || []).map(Number));
+                const parentCategoryInput = parentCategoryDefault(mode, draft, options);
                 const quantityOptions = columns
                     .map(
                         (column) =>
@@ -951,22 +1089,14 @@ pub(super) fn script() -> String {
                     })),
                     Array.from(assigneeIds).map(String),
                 );
-                const parentChoices = [
-                    `<option value="">(no parent)</option>`,
-                    ...options.parentRecords
-                        .filter((record) => Number(record.id) !== Number(draft.recordId || 0))
-                        .map(
-                            (record) =>
-                                `<option value="${record.id}" ${String(record.id) === currentParentId ? "selected" : ""}>#${record.id} ${escapeHtml(record.head || "Untitled")}</option>`,
-                        ),
-                ].join("");
                 const warning =
                     mode === "edit" && !draft.taskType
                         ? `<p class="small">Saving without task_type will remove this record from the Kanban after refresh.</p>`
                         : "";
+                const categoryOptions = normalizeStringArray(options.categories || []);
 
                 return `
-                    <div class="sheetBody">
+                    <div class="sheetBody" data-record-form-root="" data-record-id="${escapeHtml(String(draft.recordId || ""))}" data-parent-head="${escapeHtml(String(draft.parentHead || ""))}">
                         ${warning}
                         <div class="formGrid">
                             <div class="fieldBlock">
@@ -1006,8 +1136,30 @@ pub(super) fn script() -> String {
                                 <div class="checkGrid">${assigneeChecks}</div>
                             </div>
                             <div class="fieldBlock">
-                                <label class="fieldLabel" for="${mode}-parent-id">Parent</label>
-                                <select class="select" id="${mode}-parent-id" name="parentId">${parentChoices}</select>
+                                <div class="parentChooser" data-parent-picker="">
+                                    <div class="parentChooserHeader">
+                                        <div>
+                                            <div class="fieldLabel">Parent</div>
+                                            <div class="small" data-parent-selection-summary="">Selected: no parent</div>
+                                        </div>
+                                        <div class="small" data-parent-match-count=""></div>
+                                    </div>
+                                    <div class="fieldBlock">
+                                        <label class="fieldLabel" for="${mode}-parent-head-search">Search head</label>
+                                        <input class="field" id="${mode}-parent-head-search" data-parent-search-head="" type="text" value="" placeholder="Search possible fathers by head">
+                                    </div>
+                                    <div class="fieldBlock">
+                                        <label class="fieldLabel" for="${mode}-parent-categories-search">Category filter</label>
+                                        <input class="field" id="${mode}-parent-categories-search" data-parent-search-categories="" type="text" list="${mode}-parent-category-options" value="${escapeHtml(parentCategoryInput)}" placeholder="task, project-1, design">
+                                        <datalist id="${mode}-parent-category-options">
+                                            ${categoryOptions.map((category) => `<option value="${escapeHtml(category)}"></option>`).join("")}
+                                        </datalist>
+                                    </div>
+                                    <input type="hidden" id="${mode}-parent-id" name="parentId" value="${escapeHtml(currentParentId)}">
+                                    <div class="parentChooserList" data-parent-choices="">
+                                        <p class="small">Loading possible fathers...</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="sheetActions">
@@ -1063,6 +1215,7 @@ pub(super) fn script() -> String {
                     assigneeIds: [],
                     parentId: null,
                 });
+                renderParentChoices(elements.createSheetBody);
             }
 
             function renderEditSheet() {
@@ -1082,7 +1235,9 @@ pub(super) fn script() -> String {
                     estimateSeconds: state.focusDetail.estimate_seconds ?? null,
                     assigneeIds: Array.isArray(state.focusDetail.assignees) ? state.focusDetail.assignees.map((entry) => Number(entry.id)).filter(Number.isInteger) : [],
                     parentId: Number(state.focusDetail.parent?.id || 0) || null,
+                    parentHead: state.focusDetail.parent?.head || "",
                 });
+                renderParentChoices(elements.editSheetBody);
             }
 
             async function syncActiveSheet(activeSheet) {
@@ -2596,6 +2751,25 @@ pub(super) fn script() -> String {
                         return;
                     }
 
+                    const parentChoiceButton = event.target.closest("[data-parent-choice]");
+                    if (parentChoiceButton) {
+                        event.preventDefault();
+                        const root = parentChoiceButton.closest("[data-record-form-root]");
+                        if (root) {
+                            const hiddenParent = root.querySelector("[name='parentId']");
+                            if (hiddenParent) {
+                                hiddenParent.value = String(
+                                    parentChoiceButton.dataset.parentChoice || "",
+                                );
+                            }
+                            root.dataset.parentHead = String(
+                                parentChoiceButton.dataset.parentHead || "",
+                            );
+                            renderParentChoices(root);
+                        }
+                        return;
+                    }
+
                     const submitRecordButton = event.target.closest("[data-submit-record]");
                     if (submitRecordButton) {
                         event.preventDefault();
@@ -2635,6 +2809,22 @@ pub(super) fn script() -> String {
                         error instanceof Error ? error.message : String(error);
                     updateStatus();
                 }
+            });
+
+            app.addEventListener("input", (event) => {
+                const parentSearchInput = event.target.closest(
+                    "[data-parent-search-head],[data-parent-search-categories]",
+                );
+                if (!parentSearchInput) {
+                    return;
+                }
+
+                const root = parentSearchInput.closest("[data-record-form-root]");
+                if (!root) {
+                    return;
+                }
+
+                renderParentChoices(root);
             });
 
             app.addEventListener("change", async (event) => {

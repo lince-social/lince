@@ -25,6 +25,6 @@ pub(crate) fn source() -> SandWidgetSource {
         head_links: vec![],
         inline_styles: styles::INLINE_STYLES.to_vec(),
         body: body::body(),
-        body_scripts: vec![crate::sand::WidgetScript::inline(script::SCRIPT)],
+        body_scripts: vec![crate::sand::WidgetScript::inline(script::script())],
     }
 }

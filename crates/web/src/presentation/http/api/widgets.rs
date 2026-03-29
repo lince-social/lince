@@ -44,11 +44,17 @@ pub async fn get_widget_contract(
         session_cookie_name(),
     );
 
-    let contract = state
+    let mut contract = state
         .widget_runtime
         .kanban_contract(session_token.as_deref(), &instance_id)
         .await
         .map_err(map_widget_runtime_error)?;
+    let form_options = state
+        .kanban_actions
+        .load_form_options(session_token.as_deref(), &instance_id)
+        .await
+        .map_err(map_kanban_action_error)?;
+    contract.form_options = Some(form_options);
 
     Ok(Json(contract))
 }

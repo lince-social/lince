@@ -2413,7 +2413,7 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                     }
                 }
                 .headerActions {
-                    button.toolbarBtn type="button" data-open-edit=(detail.record_id) { "Edit" }
+                    button.toolbarBtn type="button" data-open-edit=(detail.record_id) data-on:click="$activeSheet = 'edit'" { "Edit" }
                     button.toolbarBtn type="button" data-delete-record=(detail.record_id) { "Delete" }
                 }
             }
@@ -2438,7 +2438,7 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                 @if let Some(parent_head) = parent.get("head").and_then(Value::as_str) {
                     p.kanban-focus-card__parent {
                         "Parent: "
-                        a href="#" data-record-link=(parent.get("id").and_then(Value::as_i64).unwrap_or_default()) { (parent_head) }
+                        a href="#" data-record-link=(parent.get("id").and_then(Value::as_i64).unwrap_or_default()) data-on:click="$focusSheetOpen = true" { (parent_head) }
                     }
                 }
             }
@@ -2453,7 +2453,7 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                         }
                     }
                     pre.kanban-focus-card__body data-focus-body-raw="" data-show="!$focusMarkdown" { (body) }
-                    article.kanban-focus-card__body-preview data-focus-body-preview="" data-show="$focusMarkdown" {}
+                    article.kanban-focus-card__body-preview.markdownRender data-focus-body-preview="" data-show="$focusMarkdown" {}
                 }
             }
             @if !detail.children.is_empty() {
@@ -2462,7 +2462,7 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                     ul {
                         @for child in &detail.children {
                             li {
-                                a href="#" data-record-link=(child.get("id").and_then(Value::as_i64).unwrap_or_default()) {
+                                a href="#" data-record-link=(child.get("id").and_then(Value::as_i64).unwrap_or_default()) data-on:click="$focusSheetOpen = true" {
                                     (child.get("head").and_then(Value::as_str).unwrap_or("Untitled"))
                                 }
                             }

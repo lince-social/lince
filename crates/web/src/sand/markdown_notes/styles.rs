@@ -1,4 +1,4 @@
-pub(super) const INLINE_STYLES: [&str; 1] = [r#"      :root {
+pub(super) const INLINE_STYLES: [&str; 2] = [r#"      :root {
         color-scheme: dark;
         --bg: transparent;
         --text: #f3f4f6;
@@ -108,82 +108,9 @@ pub(super) const INLINE_STYLES: [&str; 1] = [r#"      :root {
 
       .preview {
         overflow: auto;
-        color: var(--text);
-        line-height: 1.7;
-        word-break: break-word;
-      }
-
-      .preview :first-child {
-        margin-top: 0;
-      }
-
-      .preview :last-child {
-        margin-bottom: 0;
-      }
-
-      .preview h1,
-      .preview h2,
-      .preview h3,
-      .preview h4 {
-        margin: 1.05em 0 0.42em;
-        line-height: 1.2;
-      }
-
-      .preview h1 { font-size: 1.8rem; }
-      .preview h2 { font-size: 1.4rem; }
-      .preview h3 { font-size: 1.1rem; }
-      .preview h4 { font-size: 1rem; }
-
-      .preview p,
-      .preview ul,
-      .preview ol,
-      .preview blockquote,
-      .preview pre {
-        margin: 0 0 0.92em;
-      }
-
-      .preview ul,
-      .preview ol {
-        padding-left: 1.2rem;
-      }
-
-      .preview blockquote {
-        padding-left: 0.9rem;
-        color: var(--muted);
-        border-left: 2px solid rgba(255, 255, 255, 0.14);
-      }
-
-      .preview code {
-        padding: 0.08rem 0.32rem;
-        border-radius: 6px;
-        background: rgba(255, 255, 255, 0.06);
-        font-family: "IBM Plex Mono", "SFMono-Regular", monospace;
-        font-size: 0.92em;
-      }
-
-      .preview pre {
-        padding: 0;
-        background: transparent;
-        overflow: auto;
-      }
-
-      .preview pre code {
-        display: block;
-        padding: 0;
-        background: transparent;
-      }
-
-      .preview hr {
-        border: 0;
-        border-top: 1px solid var(--line);
-        margin: 1.2em 0;
-      }
-
-      .preview a {
-        color: var(--accent);
       }
 
       [hidden] {
         display: none !important;
       }
-    "#];
+    "#, crate::sand::shared_markdown::PREVIEW_STYLES];

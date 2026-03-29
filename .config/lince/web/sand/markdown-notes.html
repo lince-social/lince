@@ -1,23 +1,17 @@
-use crate::{domain::lince_package::PackageManifest, sand::SandWidgetSource};
-use maud::{Markup, html};
-
-pub(crate) fn source() -> SandWidgetSource {
-    SandWidgetSource {
-        filename: r#"markdown-notes.html"#,
-        lang: r#"pt-BR"#,
-        manifest: PackageManifest {
-            icon: r#"✎"#.into(),
-            title: r#"Markdown Notes"#.into(),
-            author: r#"Lince Labs"#.into(),
-            version: r#"0.1.0"#.into(),
-            description: r#"Bloco de notas em Markdown com alternancia entre texto cru e preview renderizado."#.into(),
-            details: r#"Widget minimalista sem moldura: um switch pequeno no topo direito alterna entre edicao raw e renderizacao Markdown."#.into(),
-            initial_width: 4,
-            initial_height: 4,
-            permissions: vec![],
-        },
-        head_links: vec![],
-        inline_styles: vec![r#"      :root {
+<!DOCTYPE html><html lang="pt-BR"><head>
+<script type="application/json" id="lince-manifest">
+{
+  "icon": "✎",
+  "title": "Markdown Notes",
+  "author": "Lince Labs",
+  "version": "0.1.0",
+  "description": "Bloco de notas em Markdown com alternancia entre texto cru e preview renderizado.",
+  "details": "Widget minimalista sem moldura: um switch pequeno no topo direito alterna entre edicao raw e renderizacao Markdown.",
+  "initial_width": 4,
+  "initial_height": 4,
+  "permissions": []
+}
+</script><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Markdown Notes</title><style>      :root {
         color-scheme: dark;
         --bg: transparent;
         --text: #f3f4f6;
@@ -127,52 +121,59 @@ pub(crate) fn source() -> SandWidgetSource {
 
       .preview {
         overflow: auto;
-        color: var(--text);
-        line-height: 1.7;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+    </style><style>
+      .markdownRender {
+        color: var(--text, inherit);
+        line-height: 1.6;
         word-break: break-word;
       }
 
-      .preview :first-child {
+      .markdownRender :first-child {
         margin-top: 0;
       }
 
-      .preview :last-child {
+      .markdownRender :last-child {
         margin-bottom: 0;
       }
 
-      .preview h1,
-      .preview h2,
-      .preview h3,
-      .preview h4 {
+      .markdownRender h1,
+      .markdownRender h2,
+      .markdownRender h3,
+      .markdownRender h4 {
         margin: 1.05em 0 0.42em;
         line-height: 1.2;
       }
 
-      .preview h1 { font-size: 1.8rem; }
-      .preview h2 { font-size: 1.4rem; }
-      .preview h3 { font-size: 1.1rem; }
-      .preview h4 { font-size: 1rem; }
+      .markdownRender h1 { font-size: 1.8rem; }
+      .markdownRender h2 { font-size: 1.4rem; }
+      .markdownRender h3 { font-size: 1.1rem; }
+      .markdownRender h4 { font-size: 1rem; }
 
-      .preview p,
-      .preview ul,
-      .preview ol,
-      .preview blockquote,
-      .preview pre {
+      .markdownRender p,
+      .markdownRender ul,
+      .markdownRender ol,
+      .markdownRender blockquote,
+      .markdownRender pre {
         margin: 0 0 0.92em;
       }
 
-      .preview ul,
-      .preview ol {
+      .markdownRender ul,
+      .markdownRender ol {
         padding-left: 1.2rem;
       }
 
-      .preview blockquote {
+      .markdownRender blockquote {
         padding-left: 0.9rem;
-        color: var(--muted);
+        color: var(--muted, inherit);
         border-left: 2px solid rgba(255, 255, 255, 0.14);
       }
 
-      .preview code {
+      .markdownRender code {
         padding: 0.08rem 0.32rem;
         border-radius: 6px;
         background: rgba(255, 255, 255, 0.06);
@@ -180,74 +181,38 @@ pub(crate) fn source() -> SandWidgetSource {
         font-size: 0.92em;
       }
 
-      .preview pre {
-        padding: 0;
-        background: transparent;
+      .markdownRender pre {
         overflow: auto;
       }
 
-      .preview pre code {
+      .markdownRender pre code {
         display: block;
         padding: 0;
         background: transparent;
       }
 
-      .preview hr {
+      .markdownRender hr {
         border: 0;
-        border-top: 1px solid var(--line);
+        border-top: 1px solid var(--line, rgba(255, 255, 255, 0.14));
         margin: 1.2em 0;
       }
 
-      .preview a {
-        color: var(--accent);
+      .markdownRender a {
+        color: var(--accent, inherit);
       }
+</style></head><body><main class="app" data-signals="{ rendered: false }"><div class="toolbar"><label class="mode-switch"><input id="mode-toggle" type="checkbox" aria-label="Alternar preview markdown" data-bind:rendered><span class="mode-switch__track" aria-hidden="true"></span><span data-text="$rendered ? 'MD' : 'Raw'">Raw</span></label></div><textarea id="raw-input" class="raw" spellcheck="false" placeholder="# Notas
 
-      [hidden] {
-        display: none !important;
-      }
-    "#],
-        body: body(),
-        body_scripts: vec![crate::sand::WidgetScript::inline(r##"      const toggle = document.getElementById("mode-toggle");
-      const modeLabel = document.getElementById("mode-label");
-      const rawInput = document.getElementById("raw-input");
-      const preview = document.getElementById("preview");
-      const instanceId = window.frameElement?.dataset?.packageInstanceId || "preview";
-      const noteKey = "markdown-notes/content/" + instanceId;
-      const modeKey = "markdown-notes/mode/" + instanceId;
-
-      const DEFAULT_TEXT = [
-        "# Notas",
-        "",
-        "Escreva em **Markdown**.",
-        "",
-        "- `Raw` para editar",
-        "- `MD` para renderizar",
-      ].join("\n");
-
+Escreva em Markdown aqui." data-show="!$rendered" style="display: none"></textarea><article id="preview" class="preview markdownRender" data-show="$rendered" style="display: none"></article></main><script>
       function escapeHtml(value) {
-        return String(value)
-          .replaceAll("&", "&amp;")
-          .replaceAll("<", "&lt;")
-          .replaceAll(">", "&gt;")
-          .replaceAll('"', "&quot;")
-          .replaceAll("'", "&#39;");
-      }
-
-      function readStorage(key, fallback) {
-        try {
-          const value = window.localStorage.getItem(key);
-          return value == null ? fallback : value;
-        } catch (error) {
-          return fallback;
-        }
-      }
-
-      function writeStorage(key, value) {
-        try {
-          window.localStorage.setItem(key, value);
-        } catch (error) {
-          return;
-        }
+        return String(value == null ? "" : value).replace(/[&<>\"']/g, (char) =>
+          ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+          })[char],
+        );
       }
 
       function applyInlineMarkdown(text) {
@@ -255,7 +220,10 @@ pub(crate) fn source() -> SandWidgetSource {
           .replace(/`([^`]+)`/g, "<code>$1</code>")
           .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
           .replace(/\*([^*]+)\*/g, "<em>$1</em>")
-          .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>');
+          .replace(
+            /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+            '<a href="$2" target="_blank" rel="noreferrer">$1</a>',
+          );
       }
 
       function renderMarkdown(source) {
@@ -383,23 +351,46 @@ pub(crate) fn source() -> SandWidgetSource {
         flushFence();
         return blocks.join("");
       }
+      const toggle = document.getElementById("mode-toggle");
+      const rawInput = document.getElementById("raw-input");
+      const preview = document.getElementById("preview");
+      const instanceId = window.frameElement?.dataset?.packageInstanceId || "preview";
+      const noteKey = "markdown-notes/content/" + instanceId;
+      const modeKey = "markdown-notes/mode/" + instanceId;
+
+      const DEFAULT_TEXT = [
+        "# Notas",
+        "",
+        "Escreva em **Markdown**.",
+        "",
+        "- `Raw` para editar",
+        "- `MD` para renderizar",
+      ].join("\n");
+
+      function readStorage(key, fallback) {
+        try {
+          const value = window.localStorage.getItem(key);
+          return value == null ? fallback : value;
+        } catch (error) {
+          return fallback;
+        }
+      }
+
+      function writeStorage(key, value) {
+        try {
+          window.localStorage.setItem(key, value);
+        } catch (error) {
+          return;
+        }
+      }
+
+      function syncRenderedSignal() {
+        toggle.dispatchEvent(new Event("input", { bubbles: true }));
+        toggle.dispatchEvent(new Event("change", { bubbles: true }));
+      }
 
       function renderPreview() {
         preview.innerHTML = renderMarkdown(rawInput.value);
-      }
-
-      function setMode(rendered) {
-        toggle.checked = rendered;
-        modeLabel.textContent = rendered ? "MD" : "Raw";
-        rawInput.hidden = rendered;
-        preview.hidden = !rendered;
-        writeStorage(modeKey, rendered ? "rendered" : "raw");
-
-        if (rendered) {
-          renderPreview();
-        } else {
-          rawInput.focus();
-        }
       }
 
       rawInput.value = readStorage(noteKey, DEFAULT_TEXT);
@@ -411,31 +402,19 @@ pub(crate) fn source() -> SandWidgetSource {
       });
 
       toggle.addEventListener("change", () => {
-        setMode(toggle.checked);
+        writeStorage(modeKey, toggle.checked ? "rendered" : "raw");
+        if (toggle.checked) {
+          renderPreview();
+        } else {
+          rawInput.focus();
+        }
       });
 
-      setMode(readStorage(modeKey, "raw") === "rendered");
-    "##)],
-    }
-}
-
-fn body() -> Markup {
-    html! {
-        main class="app" {
-            div class="toolbar" {
-                label class="mode-switch" {
-                    input id="mode-toggle" type="checkbox" aria-label="Alternar preview markdown";
-                    span class="mode-switch__track" aria-hidden="true" {}
-                    span id="mode-label" { "Raw" }
-                }
-            }
-            textarea
-                id="raw-input"
-                class="raw"
-                spellcheck="false"
-                placeholder="# Notas\n\nEscreva em Markdown aqui."
-            {}
-            article id="preview" class="preview" hidden {}
-        }
-    }
-}
+      toggle.checked = readStorage(modeKey, "raw") === "rendered";
+      syncRenderedSignal();
+      if (toggle.checked) {
+        renderPreview();
+      } else {
+        rawInput.focus();
+      }
+    </script></body></html>

@@ -1,0 +1,302 @@
+<!DOCTYPE html><html lang="pt-BR"><head>
+<script type="application/json" id="lince-manifest">
+{
+  "icon": "◴",
+  "title": "Ops clock",
+  "author": "Lince Labs",
+  "version": "0.2.0",
+  "description": "Relogio quadrado no estilo de painel lateral, com face analogica, eventos marcados e horario digital.",
+  "details": "Esse widget aproxima o relogio da referencia visual enviada: mostrador central com marcacoes tecnicas, pequenos acentos coloridos e legenda curta de compromissos. Toda a logica continua local no package.",
+  "initial_width": 3,
+  "initial_height": 4,
+  "permissions": []
+}
+</script><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Ops clock</title><style>
+      :root {
+        color-scheme: dark;
+        font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+        --bg: #171b21;
+        --bg-soft: #1c2129;
+        --ring: #232a34;
+        --line: rgba(255, 255, 255, 0.08);
+        --tick: rgba(194, 202, 214, 0.55);
+        --text: #edf1f7;
+        --text-soft: #c4cbd6;
+        --text-muted: #7f8894;
+        --blue: #4ea1ff;
+        --orange: #ff9f39;
+        --pink: #ef4e8b;
+        --mint: #2fd6a2;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        min-height: 100%;
+      }
+
+      body {
+        margin: 0;
+        display: grid;
+        grid-template-rows: auto 1fr auto auto;
+        gap: 18px;
+        min-height: 100vh;
+        padding: 18px;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .eyebrow {
+        color: var(--text-muted);
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+
+      .clock-shell {
+        display: grid;
+        place-items: center;
+      }
+
+      .clock {
+        position: relative;
+        width: min(100%, 236px);
+        aspect-ratio: 1 / 1;
+      }
+
+      .clock__bezel,
+      .clock__inner {
+        position: absolute;
+        inset: 0;
+        border-radius: 999px;
+      }
+
+      .clock__bezel {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: #1a1f26;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      }
+
+      .clock__inner {
+        inset: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .tick {
+        position: absolute;
+        top: 13px;
+        left: 50%;
+        width: 2px;
+        height: 10px;
+        margin-left: -1px;
+        border-radius: 999px;
+        background: var(--tick);
+        transform-origin: center calc(108px - 13px);
+      }
+
+      .tick--major {
+        height: 13px;
+        background: rgba(221, 228, 238, 0.72);
+      }
+
+      .number {
+        position: absolute;
+        color: #aeb7c2;
+        font-size: 12px;
+        font-weight: 500;
+        transform: translate(-50%, -50%);
+      }
+
+      .hand {
+        position: absolute;
+        left: 50%;
+        bottom: 50%;
+        transform-origin: center calc(100% - 9px);
+        translate: -50% 0;
+        border-radius: 999px;
+      }
+
+      .hand--hour {
+        width: 4px;
+        height: 58px;
+        background: #dfe5ed;
+      }
+
+      .hand--minute {
+        width: 3px;
+        height: 82px;
+        background: #b9c0cb;
+      }
+
+      .hand--second {
+        width: 2px;
+        height: 86px;
+        background: var(--mint);
+      }
+
+      .center-dot {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--mint);
+        translate: -50% -50%;
+      }
+
+      .event-dot {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        border: 3px solid var(--bg);
+        border-radius: 999px;
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+        transform: translate(-50%, -50%);
+      }
+
+      .event-dot--blue {
+        background: var(--blue);
+      }
+
+      .event-dot--orange {
+        background: var(--orange);
+      }
+
+      .event-dot--pink {
+        background: var(--pink);
+      }
+
+      .digital {
+        margin: 0;
+        text-align: center;
+        color: var(--text);
+        font-family: "IBM Plex Mono", "SFMono-Regular", monospace;
+        font-size: 18px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+      }
+
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px 12px;
+      }
+
+      .legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--text-muted);
+        font-size: 11px;
+      }
+
+      .legend-bullet {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+      }
+
+      .legend-bullet--blue {
+        background: var(--blue);
+      }
+
+      .legend-bullet--orange {
+        background: var(--orange);
+      }
+
+      .legend-bullet--pink {
+        background: var(--pink);
+      }
+</style></head><body>
+    <header>
+      <span class="eyebrow">Relogio</span>
+    </header>
+
+    <main class="clock-shell">
+      <section class="clock" aria-hidden="true">
+        <div class="clock__bezel"></div>
+        <div class="clock__inner"></div>
+        <div id="ticks"></div>
+        <div id="numbers"></div>
+        <div class="event-dot event-dot--blue" style="left: 11%; top: 50%"></div>
+        <div class="event-dot event-dot--orange" style="left: 86%; top: 28%"></div>
+        <div class="event-dot event-dot--pink" style="left: 57%; top: 89%"></div>
+        <div id="hour-hand" class="hand hand--hour"></div>
+        <div id="minute-hand" class="hand hand--minute"></div>
+        <div id="second-hand" class="hand hand--second"></div>
+        <div class="center-dot"></div>
+      </section>
+    </main>
+
+    <p id="digital" class="digital">00:00:00</p>
+
+    <footer class="legend">
+      <span class="legend-item"><span class="legend-bullet legend-bullet--blue"></span>9h - Standup</span>
+      <span class="legend-item"><span class="legend-bullet legend-bullet--orange"></span>14h - Reuniao</span>
+      <span class="legend-item"><span class="legend-bullet legend-bullet--pink"></span>17h - Review</span>
+    </footer>
+<script>
+      (() => {
+        const ticks = document.getElementById("ticks");
+        const numbers = document.getElementById("numbers");
+        const hourHand = document.getElementById("hour-hand");
+        const minuteHand = document.getElementById("minute-hand");
+        const secondHand = document.getElementById("second-hand");
+        const digital = document.getElementById("digital");
+
+        ticks.innerHTML = Array.from({ length: 60 }, (_, index) => {
+          const major = index % 5 === 0 ? " tick--major" : "";
+          return `<span class="tick${major}" style="transform: rotate(${index * 6}deg)"></span>`;
+        }).join("");
+
+        const labels = [
+          { value: 12, angle: 0 },
+          { value: 1, angle: 30 },
+          { value: 2, angle: 60 },
+          { value: 3, angle: 90 },
+          { value: 5, angle: 150 },
+          { value: 6, angle: 180 },
+          { value: 7, angle: 210 },
+          { value: 8, angle: 240 },
+          { value: 9, angle: 270 },
+          { value: 10, angle: 300 },
+          { value: 11, angle: 330 },
+        ];
+
+        numbers.innerHTML = labels
+          .map(({ value, angle }) => {
+            const radius = 88;
+            const radians = ((angle - 90) * Math.PI) / 180;
+            const x = 50 + (Math.cos(radians) * radius * 100) / 118;
+            const y = 50 + (Math.sin(radians) * radius * 100) / 118;
+
+            return `<span class="number" style="left:${x}%; top:${y}%">${value}</span>`;
+          })
+          .join("");
+
+        function render() {
+          const now = new Date();
+          const hours = now.getHours();
+          const minutes = now.getMinutes();
+          const seconds = now.getSeconds();
+
+          const hourRotation = (hours % 12) * 30 + minutes * 0.5;
+          const minuteRotation = minutes * 6 + seconds * 0.1;
+          const secondRotation = seconds * 6;
+
+          hourHand.style.transform = `translateX(-50%) rotate(${hourRotation}deg)`;
+          minuteHand.style.transform = `translateX(-50%) rotate(${minuteRotation}deg)`;
+          secondHand.style.transform = `translateX(-50%) rotate(${secondRotation}deg)`;
+          digital.textContent = now.toLocaleTimeString("pt-BR");
+        }
+
+        render();
+        window.setInterval(render, 1000);
+      })();
+</script></body></html>

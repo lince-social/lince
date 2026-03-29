@@ -196,6 +196,17 @@ pub fn render_app(bootstrap: &AppBootstrap) -> String {
                                                     small { "Catalogo instalado" }
                                                 }
                                             }
+                                            button
+                                                id="add-card-dna-button"
+                                                class="add-card-popover__action"
+                                                type="button"
+                                            {
+                                                span class="add-card-popover__icon" { "◌" }
+                                                span class="add-card-popover__copy" {
+                                                    strong { "DNA" }
+                                                    small { "Hub remoto em main" }
+                                                }
+                                            }
                                         }
                                     }
                                     label
@@ -331,6 +342,39 @@ pub fn render_app(bootstrap: &AppBootstrap) -> String {
                             }
                         }
                         div id="local-package-list" class="local-package-list" {}
+                    }
+                }
+                div id="dna-packages-modal-backdrop" class="import-modal-backdrop" hidden="" {
+                    section class="import-modal import-modal--catalog" role="dialog" aria-modal="true" aria-labelledby="dna-packages-modal-title" {
+                        header class="import-modal__header" {
+                            div class="import-modal__lockup" {
+                                div class="import-modal__eyebrow" { "DNA catalog" }
+                                h2 id="dna-packages-modal-title" class="import-modal__title" { "Catalogo remoto do DNA" }
+                                p class="import-modal__description" {
+                                    "Busque widgets publicados em github.com/lince-social/dna na branch main e baixe uma copia para o catalogo local."
+                                }
+                            }
+                            button id="dna-packages-close-button" class="import-close-button" type="button" aria-label="Fechar catalogo remoto do DNA" { "×" }
+                        }
+                        div class="catalog-toolbar" {
+                                div class="catalog-modal__meta" {
+                                    div class="import-modal__details-label" { "DNA" }
+                                    p id="dna-packages-summary" class="import-modal__details-copy" {
+                                        "Carregando o catalogo remoto do DNA..."
+                                    }
+                                }
+                            label class="catalog-search" for="dna-packages-search" {
+                                span class="catalog-search__label" { "Buscar" }
+                                input
+                                    id="dna-packages-search"
+                                    class="catalog-search__input"
+                                    type="search"
+                                    autocomplete="off"
+                                    spellcheck="false"
+                                    placeholder="Nome, titulo ou descricao";
+                            }
+                        }
+                        div id="dna-package-list" class="local-package-list" {}
                     }
                 }
                 div id="delete-card-modal-backdrop" class="confirm-modal-backdrop" hidden="" {

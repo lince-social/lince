@@ -3,15 +3,17 @@ use {
         domain::lince_package::{
             LincePackage, package_id_from_filename, parse_lince_package, validate_package_upload,
         },
-        infrastructure::package_catalog_store::InstalledPackageSummary,
-        presentation::http::api_error::{ApiResult, invalid_multipart},
+        infrastructure::{
+            dna_hub_store::DnaSandSearchMatch, package_catalog_store::InstalledPackageSummary,
+        },
+        presentation::http::api_error::{ApiResult, api_error, invalid_multipart},
     },
     axum::{
         Json,
-        extract::{Multipart, Path, State},
+        extract::{Multipart, Path, Query, State},
         http::StatusCode,
     },
-    serde::Serialize,
+    serde::{Deserialize, Serialize},
 };
 
 #[derive(Debug, Clone, Serialize)]
@@ -28,6 +30,28 @@ pub struct PackagePreview {
     pub initial_height: u8,
     pub permissions: Vec<String>,
     pub html: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DnaCatalogStatus {
+    pub package_count: usize,
+    pub packages: Vec<DnaPackageSummary>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DnaPackageSummary {
+    pub id: String,
+    pub title: String,
+    pub description: String,
+    pub path: String,
+    pub channel: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct DnaPackageSearchQuery {
+    pub q: Option<String>,
 }
 
 impl From<LincePackage> for PackagePreview {
@@ -70,6 +94,83 @@ pub async fn get_local_package(
         crate::presentation::http::api_error::api_error(StatusCode::NOT_FOUND, message)
     })?;
 
+    Ok(Json(PackagePreview::from(package)))
+}
+
+pub async fn get_dna_catalog(
+    State(state): State<crate::application::state::AppState>,
+) -> ApiResult<Json<DnaCatalogStatus>> {
+    let catalog = state.dna_hub.catalog().await.map_err(map_hub_error)?;
+    let package_count = catalog.packages.len();
+    let mut packages = catalog
+        .packages
+        .into_iter()
+        .map(|(id, entry)| {
+            let channel = channel_from_catalog_path(&entry.path)?;
+            Ok(DnaPackageSummary {
+                id,
+                title: entry.title,
+                description: entry.description,
+                path: entry.path,
+                channel,
+            })
+        })
+        .collect::<Result<Vec<_>, String>>()
+        .map_err(map_hub_error)?;
+    packages.sort_by(|left, right| {
+        left.title
+            .to_ascii_lowercase()
+            .cmp(&right.title.to_ascii_lowercase())
+            .then_with(|| left.id.cmp(&right.id))
+    });
+    Ok(Json(DnaCatalogStatus {
+        package_count,
+        packages,
+    }))
+}
+
+pub async fn search_dna_packages(
+    State(state): State<crate::application::state::AppState>,
+    Query(query): Query<DnaPackageSearchQuery>,
+) -> ApiResult<Json<Vec<DnaPackageSummary>>> {
+    let matches = state
+        .dna_hub
+        .search(query.q.as_deref().unwrap_or_default())
+        .await
+        .map_err(map_hub_error)?;
+    Ok(Json(
+        matches
+            .into_iter()
+            .map(DnaPackageSummary::from_search_match)
+            .collect(),
+    ))
+}
+
+pub async fn preview_dna_package(
+    State(state): State<crate::application::state::AppState>,
+    Path((channel, package_name)): Path<(String, String)>,
+) -> ApiResult<Json<PackagePreview>> {
+    let package = state
+        .dna_hub
+        .preview_package(&channel, &package_name)
+        .await
+        .map_err(map_hub_error)?;
+    Ok(Json(PackagePreview::from(package)))
+}
+
+pub async fn install_dna_package(
+    State(state): State<crate::application::state::AppState>,
+    Path((channel, package_name)): Path<(String, String)>,
+) -> ApiResult<Json<PackagePreview>> {
+    let package = state
+        .dna_hub
+        .preview_package(&channel, &package_name)
+        .await
+        .map_err(map_hub_error)?;
+    state
+        .packages
+        .persist_package(&package)
+        .map_err(map_validation_error)?;
     Ok(Json(PackagePreview::from(package)))
 }
 
@@ -123,5 +224,55 @@ fn map_validation_error(
     StatusCode,
     Json<crate::presentation::http::api_error::ApiError>,
 ) {
-    crate::presentation::http::api_error::api_error(StatusCode::UNPROCESSABLE_ENTITY, message)
+    api_error(StatusCode::UNPROCESSABLE_ENTITY, message)
+}
+
+fn map_hub_error(
+    message: String,
+) -> (
+    StatusCode,
+    Json<crate::presentation::http::api_error::ApiError>,
+) {
+    let status = if message.contains("nao encontrado") {
+        StatusCode::NOT_FOUND
+    } else if message.contains("invalido") {
+        StatusCode::BAD_GATEWAY
+    } else {
+        StatusCode::BAD_GATEWAY
+    };
+    api_error(status, message)
+}
+
+impl DnaPackageSummary {
+    fn from_search_match(value: DnaSandSearchMatch) -> Self {
+        Self {
+            id: value.package_name,
+            title: value.title,
+            description: value.description,
+            path: value.path,
+            channel: value.channel,
+        }
+    }
+}
+
+fn channel_from_catalog_path(path: &str) -> Result<String, String> {
+    let mut parts = path.split('/');
+    let channel = parts
+        .next()
+        .ok_or_else(|| "O catalogo remoto de widgets e invalido.".to_string())?;
+    let _prefix = parts
+        .next()
+        .ok_or_else(|| "O catalogo remoto de widgets e invalido.".to_string())?;
+    let _package_name = parts
+        .next()
+        .ok_or_else(|| "O catalogo remoto de widgets e invalido.".to_string())?;
+    if parts.next().is_some() {
+        return Err("O catalogo remoto de widgets e invalido.".to_string());
+    }
+
+    match channel {
+        "official" => Ok("official".to_string()),
+        "community" => Ok("community".to_string()),
+        _ => Err("O catalogo remoto de widgets e invalido.".to_string()),
+    }
 }

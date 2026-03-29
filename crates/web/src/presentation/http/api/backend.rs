@@ -89,6 +89,7 @@ pub fn router() -> Router<AppState> {
                 .put(upload_via_link)
                 .delete(delete_via_link),
         )
+        .route("/view/{view_id}/snapshot", get(view_snapshot))
         .route("/sse/view/{view_id}", get(view_sse))
         .layer(
             CorsLayer::new()
@@ -332,6 +333,20 @@ async fn delete_via_link(
         .await
         .map_err(map_backend_error)?;
     Ok(StatusCode::NO_CONTENT)
+}
+
+async fn view_snapshot(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(view_id): Path<u32>,
+) -> ApiResult<Json<Value>> {
+    let claims = authenticate_request(&state, &headers).await?;
+    let snapshot = state
+        .backend
+        .read_view_snapshot(&claims, view_id)
+        .await
+        .map_err(map_backend_error)?;
+    Ok(Json(snapshot))
 }
 
 async fn view_sse(

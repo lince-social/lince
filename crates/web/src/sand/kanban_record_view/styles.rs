@@ -763,6 +763,18 @@ const STYLE: &str =
                 gap: 6px;
             }
 
+            .parentChooser {
+                display: grid;
+                gap: 10px;
+            }
+
+            .parentChooserHeader {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 10px;
+            }
+
             .fieldLabel {
                 color: var(--muted);
                 font-size: 11px;
@@ -809,6 +821,54 @@ const STYLE: &str =
                 padding: 0;
                 border: 0;
                 background: transparent;
+            }
+
+            .parentChooserList {
+                display: grid;
+                gap: 8px;
+                max-height: 320px;
+                overflow: auto;
+                padding-right: 2px;
+            }
+
+            .parentChoice {
+                display: grid;
+                gap: 6px;
+                width: 100%;
+                padding: 10px 12px;
+                text-align: left;
+                border-radius: 12px;
+                border: 1px solid var(--line);
+                background: rgba(255, 255, 255, 0.03);
+            }
+
+            .parentChoice:hover {
+                border-color: var(--line-strong);
+                background: rgba(255, 255, 255, 0.05);
+            }
+
+            .parentChoice.is-selected {
+                border-color: rgba(122, 162, 247, 0.5);
+                background: rgba(122, 162, 247, 0.14);
+            }
+
+            .parentChoice__head {
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--text);
+            }
+
+            .parentChoice__chips {
+                margin-top: 2px;
+            }
+
+            .parentChooserEmpty {
+                margin: 0;
+                padding: 10px 12px;
+                border-radius: 12px;
+                border: 1px dashed var(--line);
+                color: var(--muted);
+                background: rgba(255, 255, 255, 0.02);
             }
 
             .checkGrid {

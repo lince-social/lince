@@ -2,6 +2,7 @@ use {
     crate::{
         application::{
             backend_api::BackendApiService,
+            kanban_filters::RawKanbanFilterRow,
             kanban_identity::is_supported_kanban_package_filename,
         },
         domain::board::{BoardCard, BoardState},
@@ -18,6 +19,7 @@ use {
     reqwest::Method,
     serde::Deserialize,
     serde_json::{Value, json},
+    std::collections::{BTreeMap, BTreeSet},
 };
 
 const VALID_TASK_TYPES: [&str; 4] = ["epic", "feature", "task", "other"];
@@ -572,20 +574,45 @@ impl KanbanActionService {
         let app_users = self
             .list_app_users(session_token, &resolved.organ, resolved.bearer_token.as_deref())
             .await?;
-        let records = self
-            .list_records(session_token, &resolved.organ, resolved.bearer_token.as_deref())
-            .await?;
         let extensions = self
             .list_record_extensions(session_token, &resolved.organ, resolved.bearer_token.as_deref())
             .await?;
+        let board_state = self.board_state.snapshot().await;
+        let card = find_board_card(&board_state, instance_id).ok_or_else(|| {
+            KanbanActionError::NotFound("Nao encontrei esse widget no board.".into())
+        })?;
+        let parent_category_query = extract_parent_category_query(&card.widget_state);
+        let active_parent_categories = parse_tag_list(&parent_category_query);
+        let active_parent_category_keys = active_parent_categories
+            .iter()
+            .map(|value| value.to_lowercase())
+            .collect::<BTreeSet<_>>();
+        let snapshot_value = self
+            .load_view_snapshot(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+                resolved.view_id,
+            )
+            .await?;
+        let snapshot = serde_json::from_value::<ViewSnapshotPayload>(snapshot_value)
+            .map_err(|error| KanbanActionError::Internal(error.to_string()))?;
 
         let mut categories = Vec::new();
-        let mut seen_categories = std::collections::BTreeSet::new();
-        let mut task_record_ids = std::collections::BTreeSet::new();
+        let mut seen_categories = BTreeSet::new();
+        let mut task_record_ids = BTreeSet::new();
+        let mut categories_by_record_id = BTreeMap::new();
 
         for extension in &extensions {
             if extension.namespace == "task.categories" {
-                for category in extract_categories(&extension.data_json).unwrap_or_default() {
+                let normalized_categories = extract_categories(&extension.data_json)
+                    .map(normalize_categories)
+                    .unwrap_or_default();
+                if !normalized_categories.is_empty() {
+                    categories_by_record_id
+                        .insert(extension.record_id, normalized_categories.clone());
+                }
+                for category in normalized_categories {
                     let normalized = category.trim().to_lowercase();
                     if !normalized.is_empty() && seen_categories.insert(normalized) {
                         categories.push(category);
@@ -599,15 +626,56 @@ impl KanbanActionService {
             }
         }
 
-        let mut parent_records = records
+        let mut parent_records = snapshot
+            .rows
             .iter()
-            .filter(|record| task_record_ids.contains(&record.id))
-            .map(|record| {
-                json!({
-                    "id": record.id,
-                    "head": record.head.clone().unwrap_or_else(|| "Untitled".into()),
-                    "quantity": record.quantity,
-                })
+            .filter_map(|record| {
+                let id = record
+                    .get("id")
+                    .and_then(|value| value.trim().parse::<i64>().ok())?;
+                if !task_record_ids.contains(&id) {
+                    return None;
+                }
+
+                let head = record
+                    .get("head")
+                    .map(|value| value.trim().to_string())
+                    .unwrap_or_default();
+                let head = if head.is_empty() {
+                    "Untitled".to_string()
+                } else {
+                    head
+                };
+                let mut categories = categories_by_record_id
+                    .get(&id)
+                    .cloned()
+                    .unwrap_or_default();
+                if let Some(primary_category) = record
+                    .get("primary_category")
+                    .map(|value| value.trim().to_string())
+                    .filter(|value| !value.is_empty())
+                {
+                    categories.push(primary_category);
+                }
+                if let Some(raw_categories) = record.get("categories_json")
+                    && let Ok(values) = serde_json::from_str::<Vec<String>>(raw_categories)
+                {
+                    categories.extend(values);
+                }
+                categories = normalize_categories(categories);
+                if !active_parent_category_keys.is_empty()
+                    && !categories.iter().any(|category| {
+                        active_parent_category_keys.contains(&category.to_lowercase())
+                    })
+                {
+                    return None;
+                }
+
+                Some(json!({
+                    "id": id,
+                    "head": head,
+                    "categories": categories,
+                }))
             })
             .collect::<Vec<_>>();
         parent_records.sort_by(|left, right| {
@@ -647,7 +715,40 @@ impl KanbanActionService {
             "assignees": assignees,
             "categories": categories,
             "parentRecords": parent_records,
+            "parentCategoryQuery": parent_category_query,
         }))
+    }
+
+    async fn load_view_snapshot(
+        &self,
+        session_token: Option<&str>,
+        organ: &Organ,
+        bearer_token: Option<&str>,
+        view_id: u32,
+    ) -> Result<Value, KanbanActionError> {
+        if !organ_requires_auth(organ, self.local_auth_required) {
+            return self
+                .backend
+                .read_view_snapshot(&local_host_subject(), view_id)
+                .await
+                .map_err(|error| KanbanActionError::Internal(error.to_string()));
+        }
+
+        let bearer_token = bearer_token.ok_or_else(|| {
+            KanbanActionError::Unauthorized("Sessao remota ausente.".into())
+        })?;
+        let response = self
+            .manas
+            .send_backend_request(
+                &organ.base_url,
+                bearer_token,
+                Method::GET,
+                &format!("/api/view/{view_id}/snapshot"),
+                None,
+            )
+            .await
+            .map_err(KanbanActionError::BadGateway)?;
+        self.read_remote_json(session_token, &organ.id, response).await
     }
 
     pub async fn create_comment(
@@ -1475,6 +1576,9 @@ impl KanbanActionService {
                 "Kanban sem server_id configurado no host.".into(),
             ));
         }
+        let view_id = card.view_id.filter(|value| *value > 0).ok_or_else(|| {
+            KanbanActionError::Misconfigured("Kanban sem view_id valido configurado no host.".into())
+        })?;
 
         let organ = self
             .organs
@@ -1509,6 +1613,7 @@ impl KanbanActionService {
             organ,
             bearer_token,
             username_hint,
+            view_id,
         })
     }
 
@@ -2027,6 +2132,12 @@ struct ResolvedActionInstance {
     organ: Organ,
     bearer_token: Option<String>,
     username_hint: Option<String>,
+    view_id: u32,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct ViewSnapshotPayload {
+    rows: Vec<BTreeMap<String, String>>,
 }
 
 struct RecordDetailPayload {
@@ -2242,6 +2353,50 @@ fn normalize_categories(categories: Vec<String>) -> Vec<String> {
         }
     }
     normalized
+}
+
+fn parse_tag_list(value: &str) -> Vec<String> {
+    value
+        .split(',')
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string)
+        .collect()
+}
+
+fn extract_parent_category_query(widget_state: &Value) -> String {
+    let Some(filters) = widget_state.get("filters") else {
+        return String::new();
+    };
+    let Ok(rows) = serde_json::from_value::<Vec<RawKanbanFilterRow>>(filters.clone()) else {
+        return String::new();
+    };
+
+    let mut seen = BTreeSet::new();
+    let mut categories = Vec::new();
+    for row in rows {
+        if row.field.trim() != "categories_any_json" || row.operator.trim() != "any_of" {
+            continue;
+        }
+        let Some(values) = row.value.as_array() else {
+            continue;
+        };
+        for value in values {
+            let Some(category) = value.as_str() else {
+                continue;
+            };
+            let trimmed = category.trim();
+            if trimmed.is_empty() {
+                continue;
+            }
+            let normalized = trimmed.to_lowercase();
+            if seen.insert(normalized) {
+                categories.push(trimmed.to_string());
+            }
+        }
+    }
+
+    categories.join(", ")
 }
 
 fn normalize_integer_ids(values: Vec<i64>) -> Vec<i64> {

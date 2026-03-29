@@ -1,0 +1,461 @@
+Attributes Data attributes are evaluated in the order they appear in the DOM,
+have special casing rules, can be aliased to avoid conflicts with other
+libraries, can contain Datastar expressions, and have runtime error handling.
+The Datastar VSCode extension and IntelliJ plugin provide autocompletion for all
+available data-* attributes. data-attr # Sets the value of any HTML attribute to
+an expression, and keeps it in sync.
+
+<div data-attr:aria-label="$foo"></div>
+
+The data-attr attribute can also be used to set the values of multiple
+attributes on an element using a set of key-value pairs, where the keys
+represent attribute names and the values represent expressions.
+
+<div data-attr="{'aria-label': $foo, disabled: $bar}"></div>
+
+data-bind # Creates a signal (if one doesn’t already exist) and sets up two-way
+data binding between it and an element’s value. This means that the value of the
+element is updated when the signal changes, and the signal value is updated when
+the value of the element changes. The data-bind attribute can be placed on any
+HTML element on which data can be input or choices selected (input, select,
+textarea elements, and web components). Event listeners are added for change and
+input events.
+
+<input data-bind:foo />
+
+The signal name can be specified in the key (as above), or in the value (as
+below). This can be useful depending on the templating language you are using.
+
+<input data-bind="foo" />
+
+Attribute casing rules apply to the signal name.
+
+<!-- Both of these create the signal `$fooBar` -->
+<input data-bind:foo-bar />
+<input data-bind="fooBar" />
+
+The initial value of the signal is set to the value of the element, unless a
+signal has already been defined. So in the example below, $fooBar is set to baz.
+
+<input data-bind:foo-bar value="baz" />
+
+Whereas in the example below, $fooBar inherits the value fizz of the predefined
+signal.
+
+<div data-signals:foo-bar="'fizz'">
+    <input data-bind:foo-bar value="baz" />
+</div>
+
+Predefined Signal Types When you predefine a signal, its type is preserved
+during binding. Whenever the element’s value changes, the signal value is
+automatically converted to match the original type. For example, in the code
+below, $fooBar is set to the number 10 (not the string "10") when the option is
+selected.
+
+<div data-signals:foo-bar="0">
+    <select data-bind:foo-bar>
+        <option value="10">10</option>
+    </select>
+</div>
+
+In the same way, you can assign multiple input values to a single signal by
+predefining it as an array. In the example below, $fooBar becomes ["fizz",
+"baz"] when both checkboxes are checked, and ["", ""] when neither is checked.
+
+<div data-signals:foo-bar="[]">
+    <input data-bind:foo-bar type="checkbox" value="fizz" />
+    <input data-bind:foo-bar type="checkbox" value="baz" />
+</div>
+
+File Uploads Input fields of type file will automatically encode file contents
+in base64. This means that a form is not required.
+
+<input type="file" data-bind:files multiple />
+
+The resulting signal is in the format { name: string, contents: string, mime:
+string }[]. See the file upload example. If you want files to be uploaded to the
+server, rather than be converted to signals, use a form and with
+multipart/form-data in the enctype attribute. See the backend actions reference.
+Modifiers Modifiers allow you to modify behavior when binding signals using a
+key. __case – Converts the casing of the signal name. .camel – Camel case:
+mySignal (default) .kebab – Kebab case: my-signal .snake – Snake case: my_signal
+.pascal – Pascal case: MySignal
+
+<input data-bind:my-signal__case.kebab />
+
+data-class # Adds or removes a class to or from an element based on an
+expression.
+
+<div data-class:font-bold="$foo == 'strong'"></div>
+
+If the expression evaluates to true, the hidden class is added to the element;
+otherwise, it is removed. The data-class attribute can also be used to add or
+remove multiple classes from an element using a set of key-value pairs, where
+the keys represent class names and the values represent expressions.
+
+<div data-class="{success: $foo != '', 'font-bold': $foo == 'strong'}"></div>
+
+Modifiers Modifiers allow you to modify behavior when defining a class name
+using a key. __case – Converts the casing of the class. .camel – Camel case:
+myClass .kebab – Kebab case: my-class (default) .snake – Snake case: my_class
+.pascal – Pascal case: MyClass
+
+<div data-class:my-class__case.camel="$foo"></div>
+
+data-computed # Creates a signal that is computed based on an expression. The
+computed signal is read-only, and its value is automatically updated when any
+signals in the expression are updated.
+
+<div data-computed:foo="$bar + $baz"></div>
+
+Computed signals are useful for memoizing expressions containing other signals.
+Their values can be used in other expressions.
+
+<div data-computed:foo="$bar + $baz"></div>
+<div data-text="$foo"></div>
+
+Computed signal expressions must not be used for performing actions (changing
+other signals, actions, JavaScript functions, etc.). If you need to perform an
+action in response to a signal change, use the data-effect attribute. The
+data-computed attribute can also be used to create computed signals using a set
+of key-value pairs, where the keys represent signal names and the values are
+callables (usually arrow functions) that return a reactive value.
+
+<div data-computed="{foo: () => $bar + $baz}"></div>
+
+Modifiers Modifiers allow you to modify behavior when defining computed signals
+using a key. __case – Converts the casing of the signal name. .camel – Camel
+case: mySignal (default) .kebab – Kebab case: my-signal .snake – Snake case:
+my_signal .pascal – Pascal case: MySignal
+
+<div data-computed:my-signal__case.kebab="$bar + $baz"></div>
+
+data-effect # Executes an expression on page load and whenever any signals in
+the expression change. This is useful for performing side effects, such as
+updating other signals, making requests to the backend, or manipulating the DOM.
+
+<div data-effect="$foo = $bar + $baz"></div>
+
+data-ignore # Datastar walks the entire DOM and applies plugins to each element
+it encounters. It’s possible to tell Datastar to ignore an element and its
+descendants by placing a data-ignore attribute on it. This can be useful for
+preventing naming conflicts with third-party libraries, or when you are unable
+to escape user input.
+
+<div data-ignore data-show-thirdpartylib="">
+    <div>Datastar will not process this element.</div>
+</div>
+
+Modifiers __self – Only ignore the element itself, not its descendants.
+data-ignore-morph # Similar to the data-ignore attribute, the data-ignore-morph
+attribute tells the PatchElements watcher to skip processing an element and its
+children when morphing elements.
+
+<div data-ignore-morph>This element will not be morphed.</div>
+
+To remove the data-ignore-morph attribute from an element, simply patch the
+element with the data-ignore-morph attribute removed. data-indicator # Creates a
+signal and sets its value to true while a fetch request is in flight, otherwise
+false. The signal can be used to show a loading indicator.
+
+<button data-on:click="@get('/endpoint')" data-indicator:fetching></button>
+
+This can be useful for showing a loading spinner, disabling a button, etc.
+
+<button
+    data-on:click="@get('/endpoint')"
+    data-indicator:fetching
+    data-attr:disabled="$fetching"
+></button>
+<div data-show="$fetching">Loading...</div>
+
+The signal name can be specified in the key (as above), or in the value (as
+below). This can be useful depending on the templating language you are using.
+
+<button data-indicator="fetching"></button>
+
+When using data-indicator with a fetch request initiated in a data-init
+attribute, you should ensure that the indicator signal is created before the
+fetch request is initialized.
+
+<div data-indicator:fetching data-init="@get('/endpoint')"></div>
+
+Modifiers Modifiers allow you to modify behavior when defining indicator signals
+using a key. __case – Converts the casing of the signal name. .camel – Camel
+case: mySignal (default) .kebab – Kebab case: my-signal .snake – Snake case:
+my_signal .pascal – Pascal case: MySignal data-init # Runs an expression when
+the attribute is initialized. This can happen on page load, when an element is
+patched into the DOM, and any time the attribute is modified (via a backend
+action or otherwise). The expression contained in the data-init attribute is
+executed when the element attribute is loaded into the DOM. This can happen on
+page load, when an element is patched into the DOM, and any time the attribute
+is modified (via a backend action or otherwise).
+
+<div data-init="$count = 1"></div>
+
+Modifiers Modifiers allow you to add a delay to the event listener. __delay –
+Delay the event listener. .500ms – Delay for 500 milliseconds (accepts any
+integer). .1s – Delay for 1 second (accepts any integer). __viewtransition –
+Wraps the expression in document.startViewTransition() when the View Transition
+API is available.
+
+<div data-init__delay.500ms="$count = 1"></div>
+
+data-json-signals # Sets the text content of an element to a reactive JSON
+stringified version of signals. Useful when troubleshooting an issue.
+
+<!-- Display all signals -->
+<pre data-json-signals></pre>
+
+You can optionally provide a filter object to include or exclude specific
+signals using regular expressions.
+
+<!-- Only show signals that include "user" in their path -->
+<pre data-json-signals="{include: /user/}"></pre>
+
+<!-- Show all signals except those ending in "temp" -->
+<pre data-json-signals="{exclude: /temp$/}"></pre>
+
+<!-- Combine include and exclude filters -->
+<pre data-json-signals="{include: /^app/, exclude: /password/}"></pre>
+
+Modifiers Modifiers allow you to modify the output format. __terse – Outputs a
+more compact JSON format without extra whitespace. Useful for displaying
+filtered data inline.
+
+<!-- Display filtered signals in a compact format -->
+<pre data-json-signals__terse="{include: /counter/}"></pre>
+
+data-on # Attaches an event listener to an element, executing an expression
+whenever the event is triggered.
+
+<button data-on:click="$foo = ''">Reset</button>
+
+An evt variable that represents the event object is available in the expression.
+
+<div data-on:my-event="$foo = evt.detail"></div>
+
+The data-on attribute works with events and custom events. The data-on:submit
+event listener prevents the default submission behavior of forms. Modifiers
+Modifiers allow you to modify behavior when events are triggered. Some modifiers
+have tags to further modify the behavior. __once * – Only trigger the event
+listener once. __passive * – Do not call preventDefault on the event listener.
+__capture * – Use a capture event listener. __case – Converts the casing of the
+event. .camel – Camel case: myEvent .kebab – Kebab case: my-event (default)
+.snake – Snake case: my_event .pascal – Pascal case: MyEvent __delay – Delay the
+event listener. .500ms – Delay for 500 milliseconds (accepts any integer). .1s –
+Delay for 1 second (accepts any integer). __debounce – Debounce the event
+listener. .500ms – Debounce for 500 milliseconds (accepts any integer). .1s –
+Debounce for 1 second (accepts any integer). .leading – Debounce with leading
+edge (must come after timing). .notrailing – Debounce without trailing edge
+(must come after timing). __throttle – Throttle the event listener. .500ms –
+Throttle for 500 milliseconds (accepts any integer). .1s – Throttle for 1 second
+(accepts any integer). .noleading – Throttle without leading edge (must come
+after timing). .trailing – Throttle with trailing edge (must come after timing).
+__viewtransition – Wraps the expression in document.startViewTransition() when
+the View Transition API is available. __window – Attaches the event listener to
+the window element. __outside – Triggers when the event is outside the element.
+__prevent – Calls preventDefault on the event listener. __stop – Calls
+stopPropagation on the event listener. * Only works with built-in events.
+
+<button data-on:click__window__debounce.500ms.leading="$foo = ''"></button>
+<div data-on:my-event__case.camel="$foo = ''"></div>
+
+data-on-intersect # Runs an expression when the element intersects with the
+viewport.
+
+<div data-on-intersect="$intersected = true"></div>
+
+Modifiers Modifiers allow you to modify the element intersection behavior and
+the timing of the event listener. __once – Only triggers the event once. __exit
+– Only triggers the event when the element exits the viewport. __half – Triggers
+when half of the element is visible. __full – Triggers when the full element is
+visible. __threshold – Triggers when the element is visible by a certain
+percentage. .25 – Triggers when 25% of the element is visible. .75 – Triggers
+when 75% of the element is visible. __delay – Delay the event listener. .500ms –
+Delay for 500 milliseconds (accepts any integer). .1s – Delay for 1 second
+(accepts any integer). __debounce – Debounce the event listener. .500ms –
+Debounce for 500 milliseconds (accepts any integer). .1s – Debounce for 1 second
+(accepts any integer). .leading – Debounce with leading edge (must come after
+timing). .notrailing – Debounce without trailing edge (must come after timing).
+__throttle – Throttle the event listener. .500ms – Throttle for 500 milliseconds
+(accepts any integer). .1s – Throttle for 1 second (accepts any integer).
+.noleading – Throttle without leading edge (must come after timing). .trailing –
+Throttle with trailing edge (must come after timing). __viewtransition – Wraps
+the expression in document.startViewTransition() when the View Transition API is
+available.
+
+<div data-on-intersect__once__full="$fullyIntersected = true"></div>
+
+data-on-interval # Runs an expression at a regular interval. The interval
+duration defaults to one second and can be modified using the __duration
+modifier.
+
+<div data-on-interval="$count++"></div>
+
+Modifiers Modifiers allow you to modify the interval duration. __duration – Sets
+the interval duration. .500ms – Interval duration of 500 milliseconds (accepts
+any integer). .1s – Interval duration of 1 second (default). .leading – Execute
+the first interval immediately. __viewtransition – Wraps the expression in
+document.startViewTransition() when the View Transition API is available.
+
+<div data-on-interval__duration.500ms="$count++"></div>
+
+data-on-signal-patch # Runs an expression whenever any signals are patched. This
+is useful for tracking changes, updating computed values, or triggering side
+effects when data updates.
+
+<div data-on-signal-patch="console.log('A signal changed!')"></div>
+
+The patch variable is available in the expression and contains the signal patch
+details.
+
+<div data-on-signal-patch="console.log('Signal patch:', patch)"></div>
+
+You can filter which signals to watch using the data-on-signal-patch-filter
+attribute. Modifiers Modifiers allow you to modify the timing of the event
+listener. __delay – Delay the event listener. .500ms – Delay for 500
+milliseconds (accepts any integer). .1s – Delay for 1 second (accepts any
+integer). __debounce – Debounce the event listener. .500ms – Debounce for 500
+milliseconds (accepts any integer). .1s – Debounce for 1 second (accepts any
+integer). .leading – Debounce with leading edge (must come after timing).
+.notrailing – Debounce without trailing edge (must come after timing).
+__throttle – Throttle the event listener. .500ms – Throttle for 500 milliseconds
+(accepts any integer). .1s – Throttle for 1 second (accepts any integer).
+.noleading – Throttle without leading edge (must come after timing). .trailing –
+Throttle with trailing edge (must come after timing).
+
+<div data-on-signal-patch__debounce.500ms="doSomething()"></div>
+
+data-on-signal-patch-filter # Filters which signals to watch when using the
+data-on-signal-patch attribute. The data-on-signal-patch-filter attribute
+accepts an object with include and/or exclude properties that are regular
+expressions.
+
+<!-- Only react to counter signal changes -->
+<div data-on-signal-patch-filter="{include: /^counter$/}"></div>
+
+<!-- React to all changes except those ending with "changes" -->
+<div data-on-signal-patch-filter="{exclude: /changes$/}"></div>
+
+<!-- Combine include and exclude filters -->
+<div data-on-signal-patch-filter="{include: /user/, exclude: /password/}"></div>
+
+data-preserve-attr # Preserves the value of an attribute when morphing DOM
+elements.
+
+<details open data-preserve-attr="open">
+    <summary>Title</summary>
+    Content
+</details>
+
+You can preserve multiple attributes by separating them with a space.
+
+<details open class="foo" data-preserve-attr="open class">
+    <summary>Title</summary>
+    Content
+</details>
+
+data-ref # Creates a new signal that is a reference to the element on which the
+data attribute is placed.
+
+<div data-ref:foo></div>
+
+The signal name can be specified in the key (as above), or in the value (as
+below). This can be useful depending on the templating language you are using.
+
+<div data-ref="foo"></div>
+
+The signal value can then be used to reference the element. $foo is a reference
+to a <span data-text="$foo.tagName"></span> element Modifiers Modifiers allow
+you to modify behavior when defining references using a key. __case – Converts
+the casing of the signal name. .camel – Camel case: mySignal (default) .kebab –
+Kebab case: my-signal .snake – Snake case: my_signal .pascal – Pascal case:
+MySignal
+
+<div data-ref:my-signal__case.kebab></div>
+
+data-show # Shows or hides an element based on whether an expression evaluates
+to true or false. For anything with custom requirements, use data-class instead.
+
+<div data-show="$foo"></div>
+
+To prevent flickering of the element before Datastar has processed the DOM, you
+can add a display: none style to the element to hide it initially.
+
+<div data-show="$foo" style="display: none"></div>
+
+data-signals # Patches (adds, updates or removes) one or more signals into the
+existing signals. Values defined later in the DOM tree override those defined
+earlier.
+
+<div data-signals:foo="1"></div>
+
+Signals can be nested using dot-notation.
+
+<div data-signals:foo.bar="1"></div>
+
+The data-signals attribute can also be used to patch multiple signals using a
+set of key-value pairs, where the keys represent signal names and the values
+represent expressions.
+
+<div data-signals="{foo: {bar: 1, baz: 2}}"></div>
+
+The value above is written in JavaScript object notation, but JSON, which is a
+subset and which most templating languages have built-in support for, is also
+allowed. Setting a signal’s value to null or undefined removes the signal.
+
+<div data-signals="{foo: null}"></div>
+
+Keys used in data-signals:* are converted to camel case, so the signal name
+mySignal must be written as data-signals:my-signal or data-signals="{mySignal:
+1}". Signals beginning with an underscore are not included in requests to the
+backend by default. You can opt to include them by modifying the value of the
+filterSignals option. Signal names cannot begin with nor contain a double
+underscore (__), due to its use as a modifier delimiter. Modifiers Modifiers
+allow you to modify behavior when patching signals using a key. __case –
+Converts the casing of the signal name. .camel – Camel case: mySignal (default)
+.kebab – Kebab case: my-signal .snake – Snake case: my_signal .pascal – Pascal
+case: MySignal __ifmissing – Only patches signals if their keys do not already
+exist. This is useful for setting defaults without overwriting existing values.
+
+<div
+    data-signals:my-signal__case.kebab="1"
+    data-signals:foo__ifmissing="1"
+></div>
+
+data-style # Sets the value of inline CSS styles on an element based on an
+expression, and keeps them in sync.
+
+<div data-style:display="$hiding && 'none'"></div>
+<div data-style:background-color="$red ? 'red' : 'blue'"></div>
+
+The data-style attribute can also be used to set multiple style properties on an
+element using a set of key-value pairs, where the keys represent CSS property
+names and the values represent expressions.
+
+<div
+    data-style="{
+    display: $hiding ? 'none' : 'flex',
+    'background-color': $red ? 'red' : 'green'
+}"
+></div>
+
+Empty string, null, undefined, or false values will restore the original inline
+style value if one existed, or remove the style property if there was no initial
+value. This allows you to use the logical AND operator (&&) for conditional
+styles: $condition && 'value' will apply the style when the condition is true
+and restore the original value when false.
+
+<!-- When $x is false, color remains red from inline style -->
+<div style="color: red" data-style:color="$x && 'green'"></div>
+
+<!-- When $hiding is true, display becomes none; when false, reverts to flex from inline style -->
+<div style="display: flex" data-style:display="$hiding && 'none'"></div>
+
+The plugin tracks initial inline style values and restores them when data-style
+expressions become falsy or during cleanup. This ensures existing inline styles
+are preserved and only the dynamic changes are managed by Datastar. data-text #
+Binds the text content of an element to an expression.
+
+<div data-text="$foo"></div>

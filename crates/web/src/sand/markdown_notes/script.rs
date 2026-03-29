@@ -46,6 +46,27 @@ pub(super) fn script() -> String {
         toggle.dispatchEvent(new Event("change", { bubbles: true }));
       }
 
+      preview.addEventListener("change", (event) => {
+        const checkbox = event.target.closest("input[data-markdown-task-line]");
+        if (!checkbox) {
+          return;
+        }
+
+        const nextRawText = toggleMarkdownTaskLine(
+          rawInput.value,
+          checkbox.dataset.markdownTaskLine,
+          checkbox.checked,
+        );
+
+        if (nextRawText === rawInput.value) {
+          return;
+        }
+
+        rawInput.value = nextRawText;
+        window.MarkdownNotes?.sync(nextRawText, toggle.checked);
+        syncSignalsFromDom();
+      });
+
       window.MarkdownNotes = {
         sync(rawText, rendered) {
           const nextRawText = String(rawText ?? "");

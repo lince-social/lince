@@ -129,77 +129,11 @@ It should require only:
 
 === Important distinction
 
-There are two possible ways to implement this.
+There are two possible ways to implement this in the abstract, but only one should remain the long-term target in this document.
 
-==== Option A: widget-owned raw provisioning from frontend
+The self-service Chess proof of concept is now documented in `web_components.typ` as a current widget pattern. This file keeps the host-managed direction that should outlive the POC.
 
-The widget itself would:
-
-- create a `record`
-- create or locate a `record_extension`
-- create or locate a `view`
-- persist the discovered ids in `widgetState`
-- start using SSE and generic table patch routes
-
-This is conceptually simple, but it pushes too much infrastructure logic into each widget.
-
-Problems:
-
-- idempotency becomes each widget author's burden
-- naming conventions become inconsistent
-- raw SQL view creation becomes duplicated and fragile
-- host/card rebinding is still awkward
-- permission errors and retries become package-specific
-
-==== Feasible first step
-
-A practical first step is still possible with this model.
-
-The host change would be:
-
-- a widget that declares `read_view_stream` must be allowed to boot with `serverId` set and `viewId = null`
-- the board should treat that state as provisionable, not immediately misconfigured
-
-Then the widget can:
-
-- show "Connect to view" and "Start" actions
-- create a `record`
-- create a `record_extension`
-- create a `view`
-- switch into normal SSE behavior after a `viewId` is known
-
-This is feasible.
-It is the smallest route to a working generic Chess without adding a Chess Rust service.
-
-==== Critique of the self-service path
-
-As a first implementation, this path is good.
-As the final model for many widgets, it is weak.
-
-Main criticisms:
-
-- it makes every widget author solve provisioning orchestration alone
-- it tends to create orphaned rows and views when a multi-step flow fails midway
-- it makes retries and concurrent starts harder to reason about
-- it makes naming conventions part of widget code instead of host policy
-- it forces widgets to know too much about SQL views and infrastructure layout
-
-Using a human-readable game name plus a 4-digit hash is acceptable as a toy bootstrap key, but weak as a durable identity rule.
-
-Problems with that key:
-
-- collisions are possible
-- manual renames can break lookups
-- concurrent creators can race
-- the widget must trust a string lookup where the create response should be enough
-
-If self-service is used, the widget should strongly prefer:
-
-- using returned insert ids directly when available
-- using a longer stable slug for shared discovery
-- treating name lookups as fallback, not the primary identity mechanism
-
-==== Option B: host-managed generic provisioning
+==== Host-managed generic provisioning
 
 The widget asks the host to "ensure my resources".
 

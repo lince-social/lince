@@ -905,6 +905,7 @@ Best fits:
 Definition:
 
 - client-shaped class built from raw data contracts
+- includes widgets like the Chess sand component, where the frontend owns the interaction rules and the host only supplies authenticated CRUD, snapshot, and SSE transport
 
 Transport and shaping:
 
@@ -1013,6 +1014,7 @@ Recommended current mapping:
 - `extra_simple`: `Mercenary` during migration, then `Engineer`
 - `view_table_editor`: `Engineer`
 - `kanban_record_view`: `Engineer with Clown traits`
+- `chess_game`: `Monk`
 - `ops_clock`: `Clown`
 - `local_terminal`: `Astromancer`
 
@@ -1071,6 +1073,15 @@ This appendix maps the current official widgets in `crates/web/src/sand/` to:
     official instance-aware stream plus semantic action endpoints plus sidecar-backed writes
   ], [
     canonical Record board target
+  ],
+  [
+    `chess_game`
+  ], [
+    `Monk`
+  ], [
+    frontend-owned board rules plus host-mediated table CRUD and SSE snapshot/stream transport
+  ], [
+    self-provisioning chess widget; should stay generic and avoid a dedicated Rust service
   ],
   [
     `lince_logo_led`

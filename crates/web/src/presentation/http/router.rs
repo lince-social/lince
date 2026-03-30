@@ -19,7 +19,7 @@ use {
                 board::hydrated_board_state,
                 integrations::{
                     proxy_manas_file, proxy_manas_table_collection, proxy_manas_table_item,
-                    proxy_manas_view,
+                    proxy_manas_view, proxy_manas_view_snapshot,
                 },
                 packages::{
                     get_dna_catalog, get_local_package, install_dna_package, install_package,
@@ -74,6 +74,10 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
         .route(
             "/integrations/servers/{server_id}/views/{view_id}/stream",
             get(proxy_manas_view),
+        )
+        .route(
+            "/integrations/servers/{server_id}/views/{view_id}/snapshot",
+            get(proxy_manas_view_snapshot),
         )
         .route(
             "/integrations/servers/{server_id}/files",

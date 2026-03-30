@@ -46,6 +46,7 @@ fn body() -> Markup {
                 div class="heroMeta" {
                     span id="status" class="status" data-tone="loading" { "Booting" }
                     button id="undo-button" class="button" type="button" { "Undo" }
+                    button id="flip-button" class="button button--ghost" type="button" { "Flip Board" }
                 }
             }
 
@@ -647,6 +648,7 @@ fn script() -> &'static str {
         const historyEl = document.getElementById("history");
         const statusEl = document.getElementById("status");
         const undoButton = document.getElementById("undo-button");
+        const flipButton = document.getElementById("flip-button");
         const sourcePill = document.getElementById("source-pill");
         const selectionPill = document.getElementById("selection-pill");
         const historyCount = document.getElementById("history-count");
@@ -669,6 +671,7 @@ fn script() -> &'static str {
         let streamAbortController = null;
         let persistLock = false;
         let setupLock = false;
+        let boardFlipped = false;
         let committedGame = cloneGame(INITIAL_STATE);
         let displayedGame = cloneGame(INITIAL_STATE);
         let selectedPieceId = null;
@@ -1039,8 +1042,12 @@ fn script() -> &'static str {
           return `${piece.color} ${piece.kind}`;
         }
 
-        function pieceKindGlyph(kind) {
-          switch (kind) {
+        function isBottomSidePiece(piece) {
+          return boardFlipped ? piece.color === "black" : piece.color === "white";
+        }
+
+        function pieceKindGlyph(piece) {
+          switch (piece.kind) {
             case "rook":
               return `<span class="glyph">+</span>`;
             case "bishop":
@@ -1057,7 +1064,7 @@ fn script() -> &'static str {
             case "knight":
               return `<span class="glyph">λ</span>`;
             case "pawn":
-              return `<span class="glyph">v</span>`;
+              return `<span class="glyph">${isBottomSidePiece(piece) ? "v" : "^"}</span>`;
             default:
               return `<span class="glyph">?</span>`;
           }
@@ -1066,7 +1073,7 @@ fn script() -> &'static str {
         function renderMiniPiece(piece) {
           return `
             <span class="piece piece--${escapeHtml(piece.color)} historyMini" aria-hidden="true">
-              ${pieceKindGlyph(piece.kind)}
+              ${pieceKindGlyph(piece)}
             </span>
           `;
         }
@@ -1078,7 +1085,7 @@ fn script() -> &'static str {
               data-piece-id="${escapeHtml(piece.id)}"
               aria-hidden="true"
             >
-              ${pieceKindGlyph(piece.kind)}
+              ${pieceKindGlyph(piece)}
             </span>
           `;
         }
@@ -1238,6 +1245,15 @@ fn script() -> &'static str {
           undoButton.disabled = count === 0 || isLocked();
         }
 
+        function syncBoardFlipButton() {
+          if (!flipButton) {
+            return;
+          }
+
+          flipButton.textContent = boardFlipped ? "White View" : "Black View";
+          flipButton.setAttribute("aria-pressed", boardFlipped ? "true" : "false");
+        }
+
         function syncSetupShell() {
           const hasServer = Boolean(String(currentConfig.serverId || "").trim());
           const activeViewId = parseInteger(currentConfig.viewId);
@@ -1289,10 +1305,12 @@ fn script() -> &'static str {
           const selectedPiece = selectedPieceId ? getPieceById(displayedGame, selectedPieceId) : null;
           const armed = Boolean(selectedPiece);
           const squares = [];
+          const fileOrder = boardFlipped ? [...FILES].reverse() : FILES;
+          const rankOrder = boardFlipped ? [1, 2, 3, 4, 5, 6, 7, 8] : [8, 7, 6, 5, 4, 3, 2, 1];
 
-          for (let rank = 8; rank >= 1; rank -= 1) {
-            for (let fileIndex = 0; fileIndex < FILES.length; fileIndex += 1) {
-              const file = FILES[fileIndex];
+          for (const rank of rankOrder) {
+            for (const file of fileOrder) {
+              const fileIndex = FILES.indexOf(file);
               const square = `${file}${rank}`;
               const piece = piecesBySquare.get(square) || null;
               const isSelectedSquare = Boolean(selectedPiece && selectedPiece.square === square);
@@ -1380,6 +1398,7 @@ fn script() -> &'static str {
           setSelectionPill(selectionText);
           setHistoryCount(displayedGame.history.length);
           setSourcePill(currentConfig.sourceText);
+          syncBoardFlipButton();
           syncSetupShell();
           renderBoard();
           renderHistory();
@@ -1421,6 +1440,11 @@ fn script() -> &'static str {
           selectedPieceId = null;
           lastRowSignature = gameSignature(INITIAL_STATE);
           setStatus("Preview", "idle");
+          renderShell();
+        }
+
+        function flipBoardView() {
+          boardFlipped = !boardFlipped;
           renderShell();
         }
 
@@ -1770,7 +1794,7 @@ fn script() -> &'static str {
 
             const connected = await connectAndRememberSharedGame(serverId, viewId, gameCode);
             if (!connected) {
-              throw new Error("Criei o jogo, mas nao consegui conectar na view nova.");
+              return;
             }
           } catch (error) {
             setStatus(
@@ -2103,6 +2127,10 @@ fn script() -> &'static str {
 
         undoButton.addEventListener("click", () => {
           undoLastMove();
+        });
+
+        flipButton.addEventListener("click", () => {
+          flipBoardView();
         });
 
         startButton.addEventListener("click", () => {

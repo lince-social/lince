@@ -9,6 +9,7 @@
 #import "karma.typ"
 #import "operations.typ"
 #import "record.typ"
+#import "sandbox_website.typ"
 #import "transfer.typ"
 #import "web_components.typ"
 #import "widget_provisioning.typ"
@@ -33,6 +34,7 @@ Explanation of the tables _should_ be mostly focused on the ideas, the solutions
 #operations
 #web_components
 #widget_provisioning
+#sandbox_website
 #kanban
 #transfer
 #history

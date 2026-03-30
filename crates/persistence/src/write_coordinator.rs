@@ -231,9 +231,13 @@ async fn execute_statement(
         .map_err(|error| Error::new(ErrorKind::InvalidInput, error.to_string()))?;
     let rows_affected = result.rows_affected();
     let last_insert_rowid = result.last_insert_rowid();
-    let returned_last_insert_rowid = match dependency_action {
-        ViewDependencyAction::RefreshInsertedView if rows_affected > 0 => Some(last_insert_rowid),
-        _ => None,
+    let returned_last_insert_rowid = if rows_affected > 0
+        && (matches!(dependency_action, ViewDependencyAction::RefreshInsertedView)
+            || is_insert_statement(&sql))
+    {
+        Some(last_insert_rowid)
+    } else {
+        None
     };
 
     if rows_affected > 0 {
@@ -337,4 +341,10 @@ fn count_statements(sql: &str) -> usize {
     }
 
     count
+}
+
+fn is_insert_statement(sql: &str) -> bool {
+    sql.trim_start()
+        .get(..6)
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("insert"))
 }

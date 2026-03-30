@@ -103,6 +103,38 @@ pub async fn proxy_manas_view(
     Ok((headers, axum::body::Body::from_stream(stream)).into_response())
 }
 
+pub async fn proxy_manas_view_snapshot(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path((server_id, view_id)): Path<(String, u64)>,
+) -> ApiResult<(StatusCode, Json<Value>)> {
+    let session_token = current_session_token(&headers);
+    let server = load_organ(&state, &server_id).await?;
+    if !organ_requires_auth(&server, state.local_auth_required) {
+        let snapshot = state
+            .backend
+            .read_view_snapshot(&local_host_subject(), view_id as u32)
+            .await
+            .map_err(map_backend_error)?;
+        return Ok((StatusCode::OK, Json(snapshot)));
+    }
+
+    let bearer_token = extract_manas_token(&state, &headers, &server_id).await?;
+    let response = state
+        .manas
+        .send_backend_request(
+            &server.base_url,
+            &bearer_token,
+            Method::GET,
+            &format!("/api/view/{view_id}/snapshot"),
+            None,
+        )
+        .await
+        .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
+
+    proxy_json_response(&state, session_token.as_deref(), &server_id, response).await
+}
+
 pub async fn proxy_manas_file(
     State(state): State<AppState>,
     headers: HeaderMap,

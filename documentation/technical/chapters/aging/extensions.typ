@@ -6,7 +6,7 @@ Read `web_components.typ` first for:
 
 - runtime contracts
 - host and bridge assumptions
-- Sand Classes
+- runtime shape guidance
 - standalone versus official widget packaging
 
 Read `kanban.typ` for one concrete example of an official widget that is not only "some HTML", but a hybrid runtime surface with a stronger contract.
@@ -36,7 +36,7 @@ The present web component documentation already distinguishes:
 
 - official `sand/` widgets
 - standalone imported widgets
-- different Sand Classes
+- different runtime shapes
 
 But an extension hub has to classify more than runtime style.
 It also has to classify:
@@ -47,7 +47,7 @@ It also has to classify:
 - canonical storage
 - compatibility and runtime expectations
 
-That is why Sand Classes alone are not enough.
+That is why runtime descriptions alone are not enough.
 
 === Primary axes
 
@@ -56,21 +56,21 @@ The extension hub should model at least three different axes:
 #table(
   columns: (1.5fr, 1.7fr, 2.8fr),
   [Axis], [Examples], [Why it matters],
-  [Channel], [`official`, `community`], [This is the hard trust and governance boundary. It should not be inferred from class or runtime style.],
+  [Channel], [`official`, `community`], [This is the hard trust and governance boundary. It should not be inferred from runtime style.],
   [Family], [`sand`, `db`], [Different families have different payloads, validation rules, and user expectations.],
-  [Class hint], [`Engineer`, `Clown`, `Monk`, `Mercenary`, `Astromancer`, hybrids], [Useful for discovery and reasoning about runtime shape, but too abstract to be the main storage category.],
+  [Runtime requirements], [`standalone iframe HTML`, `host-bound stream widget`, `foreign integration`, `engine-driven surface`], [Useful for install warnings and human understanding, but too descriptive to be the main storage category.],
 )
 
 Rules:
 
-- channel is not class
-- family is not class
-- class is not a permission boundary
-- class is descriptive metadata, not the canonical folder layout
+- channel is not runtime shape
+- family is not runtime shape
+- runtime shape is not a permission boundary
+- runtime notes do not define the canonical folder layout
 
-=== Relationship to Sand Classes
+=== Relationship to runtime guidance
 
-Sand Classes remain useful, but only as an abstraction layer for widgets.
+The runtime guidance in `web_components.typ` remains useful, but only as documentation for how a widget behaves.
 
 They help answer:
 
@@ -88,13 +88,13 @@ They do not answer:
 - how deletion or promotion works
 - how the hub should store the artifact on disk
 
-This matters because a class-like label can look like a package type when it is not.
+This matters because a runtime label can look like a package type when it is not.
 
 Examples:
 
-- `kanban` is `Engineer with Clown traits`, but that does not make "Engineer" or "Clown" a package family
-- a `Mercenary` widget and a `Monk` widget may both still be ordinary `sand` packages
-- a database example does not naturally fit any Sand Class at all
+- `kanban` is a server-shaped board with rich local state, but that does not make "server-shaped" a package family
+- a foreign integration widget and a client-owned renderer may both still be ordinary `sand` packages
+- a database example does not need runtime-shape labeling at all
 
 === Kanban as warning
 
@@ -208,7 +208,7 @@ Rules:
 - maintainers may rename community or official packages when needed
 - the prefix is derived from the first two letters of the `lower_snake_case` package name
 - if the package name has fewer than two letters, use the available letters
-- classes do not affect the on-disk layout
+- runtime notes do not affect the on-disk layout
 
 This keeps the hard official versus community split visible while avoiding one flat directory with too many entries.
 
@@ -314,7 +314,6 @@ Suggested first version fields:
 - `initial_height`: optional
 - `permissions`: optional list of strings
 - `tags`: optional list of strings
-- `class`: optional string or hybrid class label
 
 Rules:
 
@@ -566,13 +565,13 @@ The most practical direction today is:
 - treat the package name as the stable id
 - keep package names unique per family, with `official` taking precedence over `community`
 - use `lounge/` as the operator drop zone
-- keep classes only as descriptive metadata
 - keep `official` and `community` as the hard boundary
 - let `dna` own checksum and canonical writes
 - let `lince` remain a producer only
 - require `lower_snake_case` names
 - require semantic versions for `sand`
 - use loose `HTMLHint` validation for `sand`
+- keep runtime expectations in documentation and compatibility fields
 - treat `db` as manual storage for now rather than part of the automated metadata flow
 
 This is much simpler than a generalized hub model, and it matches the current stage of the project better.
@@ -616,7 +615,7 @@ The current best direction is:
 - `sand` gets its channel from `sand.toml`
 - promotion is a move, renames are recorded in migrations, and both update `sand/catalog.toml`
 
-Sand Classes still matter for understanding widget runtime style, but they no longer need to carry any storage burden in this plan.
+Runtime guidance still matters for understanding widget behavior, but it does not need a dedicated taxonomy field or storage role in this plan.
 
 === Next board step
 

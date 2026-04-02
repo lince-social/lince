@@ -1,0 +1,17 @@
+[Unit]
+Description=Lince Social
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lince
+Group=lince
+WorkingDirectory=/var/lib/lince
+Environment=XDG_CONFIG_HOME=/var/lib/lince/.config
+ExecStart=/usr/local/bin/lince --listen-addr 127.0.0.1:6174
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

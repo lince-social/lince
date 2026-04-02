@@ -5,3 +5,4 @@ mprocs.log
 .env
 .config/lince/
 .rustup/
+.codex

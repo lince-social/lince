@@ -42,13 +42,15 @@ use {
     },
     axum::{
         Router,
-        extract::State,
+        extract::{DefaultBodyLimit, State},
         http::{HeaderMap, StatusCode, header},
         response::{Html, IntoResponse},
         routing::{get, patch, post},
     },
     tower_http::services::ServeDir,
 };
+
+const HOST_API_BODY_LIMIT_BYTES: usize = 16 * 1024 * 1024;
 
 pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
     if mode == HttpServeMode::ApiOnly {
@@ -130,7 +132,8 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
         .route(
             "/packages/dna/{channel}/{package_name}/install",
             post(install_dna_package),
-        );
+        )
+        .layer(DefaultBodyLimit::max(HOST_API_BODY_LIMIT_BYTES));
 
     Router::<AppState>::new()
         .route("/", get(index))

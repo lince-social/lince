@@ -12,7 +12,6 @@
 #import "sandbox_website.typ"
 #import "transfer.typ"
 #import "web_components.typ"
-#import "widget_provisioning.typ"
 
 #major(
   "Aging",
@@ -33,7 +32,6 @@ Explanation of the tables _should_ be mostly focused on the ideas, the solutions
 #configuration
 #operations
 #web_components
-#widget_provisioning
 #sandbox_website
 #kanban
 #transfer

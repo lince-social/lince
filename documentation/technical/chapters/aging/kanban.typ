@@ -7,7 +7,7 @@ Read `web_components.typ` first for:
 
 - host/runtime assumptions
 - endpoint contracts
-- Sand Classes
+- runtime shape guidance
 - sidecar-table strategy
 
 === Purpose
@@ -20,13 +20,13 @@ The target is:
 - fed by a view SSE source
 - persisted per widget through host `widgetState`
 - authenticated by the host-owned web login
-- implemented as `Engineer with Clown traits`
+- implemented as a server-shaped board with rich local state
 
-=== Chosen class
+=== Target runtime shape
 
 The official Kanban should be:
 
-- `Engineer with Clown traits`
+- server-shaped board with rich local state
 
 Reason:
 
@@ -37,11 +37,11 @@ Reason:
 - connection/auth clarity matters
 - local display ergonomics matter
 
-Pure `Engineer` is too rigid for the amount of local interaction state.
-Pure `Clown` pushes too much structure into the browser.
-`Monk` makes JS the default rendering model.
-`Mercenary` is not the center of gravity for a Lince-native Kanban.
-`Astromancer` is the wrong class for a DOM-first board.
+A pure server-fragment surface is too rigid for the amount of local interaction state.
+A mostly local reactive shell pushes too much structure into the browser.
+A fully client-owned renderer makes JS the default rendering model.
+A foreign integration shape is not the center of gravity for a Lince-native Kanban.
+An engine-driven surface is the wrong fit for a DOM-first board.
 
 === Responsibility split
 
@@ -1976,8 +1976,8 @@ The official Record Kanban should be built as a server-shaped board with a rich 
 
 That means:
 
-- `Engineer` for structure and data authority
-- `Clown` traits for local board ergonomics
+- server-shaped structure and data authority
+- local reactive state for board ergonomics
 - sidecar tables for richer task metadata
 - normalized relations for users and hierarchy
 - dedicated interval-based worklog storage

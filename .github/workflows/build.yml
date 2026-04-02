@@ -4,7 +4,12 @@ on:
   push:
     branches:
       - main
-    # tags: ["v*"]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -16,6 +21,9 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
+
+          - os: macos-13
+            target: x86_64-apple-darwin
 
           - os: macos-latest
             target: aarch64-apple-darwin
@@ -54,15 +62,16 @@ jobs:
         run: |
           export RUSTFLAGS="-D warnings"
           if [[ "${{ matrix.target }}" == "aarch64-apple-darwin" ]]; then
-            cargo build --release --target ${{ matrix.target }} \
+            cargo build --locked --release --target ${{ matrix.target }} \
               --config "target.aarch64-apple-darwin.rustflags=['-C','target-feature=+neon,+aes,+sha2']"
           else
-            cargo build --release --target ${{ matrix.target }}
+            cargo build --locked --release --target ${{ matrix.target }}
           fi
 
       - name: Package artifacts
         shell: bash
         run: |
+          set -euo pipefail
           BIN=lince
           mkdir -p artifacts
 
@@ -82,6 +91,15 @@ jobs:
               artifacts/${BIN}-${{ matrix.target }}
           fi
 
+          cd artifacts
+          for asset in *; do
+            if command -v sha256sum >/dev/null 2>&1; then
+              sha256sum "$asset" > "${asset}.sha256"
+            else
+              shasum -a 256 "$asset" > "${asset}.sha256"
+            fi
+          done
+
       - name: Upload build artifact (temp)
         uses: actions/upload-artifact@v4
         with:
@@ -90,8 +108,49 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-      - name: Upload assets to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
+  publish-rolling:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download packaged artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: lince-artifacts-*
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Publish rolling release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG=rolling
+
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --target "$GITHUB_SHA" \
+              --title "Rolling build" \
+              --notes "Latest automated build from the main branch."
+          fi
+
+          gh release upload "$TAG" release-artifacts/* --clobber
+
+  publish-tag:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download packaged artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: lince-artifacts-*
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Publish tagged release
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/*
+          files: release-artifacts/*

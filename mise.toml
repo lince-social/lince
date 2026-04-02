@@ -6,217 +6,23 @@ FIRST_STEPS_ROOT = "documentation/first_steps"
 [tools]
 rust = "{{env.RUST_CHANNEL}}"
 
-[tasks.update]
-description = "Update rustup and dependencies"
-run = "rustup self update && rustup update {{env.RUST_CHANNEL}} && cargo upgrade"
-
-[tasks.off]
-description = "Auto-fix code and clippy warnings"
-tools = { "cargo:mprocs" = "latest", "cargo:bacon" = "latest" }
-run = """
-cargo fix --broken-code --allow-dirty
-cargo clippy --fix --allow-dirty --quiet >/dev/null 2>&1
-"""
-
-[tasks.service]
-description = "Create/update the user systemd service from the current repo + service controls + cargo run --release"
-tools = { "cargo:mprocs" = "latest", "cargo:bacon" = "latest" }
-run = """
-set -e
-REPO_DIR=$(pwd)
-SERVICE_DIR="$HOME/.config/systemd/user"
-SERVICE_PATH="$SERVICE_DIR/lince.service"
-CARGO_BIN=$(command -v cargo)
-
-mkdir -p "$SERVICE_DIR"
-
-cat > "$SERVICE_PATH" <<EOF
-[Unit]
-Description=Lince user service
-After=network.target
-
-[Service]
-Type=simple
-WorkingDirectory=$REPO_DIR
-ExecStart=$CARGO_BIN run --release
-Restart=always
-RestartSec=3
-
-[Install]
-WantedBy=default.target
-EOF
-
-systemctl --user daemon-reload
-systemctl --user enable lince.service >/dev/null 2>&1 || true
-
-mprocs \
-"systemctl --user restart lince.service && journalctl --user -u lince.service -f --output=cat" \
-"systemctl --user stop lince.service && journalctl --user -u lince.service -f --output=cat" \
-"cargo run --release" \
-"cargo run" \
-"""
-
-[tasks.sand-export]
-description = "Export official sand widgets into dna/lounge as index.html plus sand.toml"
-run = "cargo run -p xtask -- sand export"
-
-[tasks.sand-export-dry]
-description = "Preview the dna/lounge sand export without writing files"
-run = "cargo run -p xtask -- sand export --dry-run"
-
-[tasks.docs]
-description = "Start typst documentation preview"
-tools = { "tinymist" = "latest", "typst" = "latest" }
-usage = """
-flag "-l --light" help="Use light mode in tinymist preview (default: dark)"
-"""
-run = """
-LINCE_VERSION=$(awk 'BEGIN{in_pkg=0} /^[[]package[]]$/{in_pkg=1;next} /^[[]/{in_pkg=0} in_pkg&&/^version = /{print $3;exit}' crates/lince/Cargo.toml | xargs)
-
-# Default to dark mode, use light if --light flag is passed
-if [ "${usage_light:-false}" = "true" ]; then
-  PREVIEW_DARK="false"
-else
-  PREVIEW_DARK="true"
-fi
-
-compile_docs() {
-    echo '  → Compiling light version...'
-    typst compile --root . --input dark=false --input lince_version="$LINCE_VERSION" {{env.DOCS_ROOT}}/lince-documentation.typ {{env.DOCS_ROOT}}/lince-documentation-light.pdf
-    echo '  → Compiling dark version...'
-    typst compile --root . --input dark=true --input lince_version="$LINCE_VERSION" {{env.DOCS_ROOT}}/lince-documentation.typ {{env.DOCS_ROOT}}/lince-documentation-dark.pdf
-    echo 'Done!'
-}
-
-trap compile_docs EXIT
-
-tinymist preview \
---root . \
---control-plane-host 127.0.0.1:3002 \
---data-plane-host 127.0.0.1:3001 \
---static-file-host 127.0.0.1:3003 \
---input dark=$PREVIEW_DARK \
---input lince_version=$LINCE_VERSION \
-{{env.DOCS_ROOT}}/lince-documentation.typ
-"""
-
-[tasks.first-steps]
-description = "Start first steps typst preview"
-tools = { "tinymist" = "latest", "typst" = "latest" }
-usage = """
-flag "-l --light" help="Use light mode in tinymist preview (default: dark)"
-"""
-run = """
-LINCE_VERSION=$(awk 'BEGIN{in_pkg=0} /^[[]package[]]$/{in_pkg=1;next} /^[[]/{in_pkg=0} in_pkg&&/^version = /{print $3;exit}' crates/lince/Cargo.toml | xargs)
-
-if [ "${usage_light:-false}" = "true" ]; then
-  PREVIEW_DARK="false"
-else
-  PREVIEW_DARK="true"
-fi
-
-compile_first_steps() {
-    echo '  → Compiling first steps light version...'
-    typst compile --root . --input dark=false --input lince_version="$LINCE_VERSION" {{env.FIRST_STEPS_ROOT}}/first_steps.typ {{env.FIRST_STEPS_ROOT}}/first_steps-light.pdf
-    echo '  → Compiling first steps dark version...'
-    typst compile --root . --input dark=true --input lince_version="$LINCE_VERSION" {{env.FIRST_STEPS_ROOT}}/first_steps.typ {{env.FIRST_STEPS_ROOT}}/first_steps-dark.pdf
-    echo 'Done!'
-}
-
-trap compile_first_steps EXIT
-
-tinymist preview \
---root . \
---control-plane-host 127.0.0.1:3012 \
---data-plane-host 127.0.0.1:3011 \
---static-file-host 127.0.0.1:3013 \
---input dark=$PREVIEW_DARK \
---input lince_version=$LINCE_VERSION \
-{{env.FIRST_STEPS_ROOT}}/first_steps.typ
-"""
-
-[tasks.first-steps-all]
-description = "Compile all first steps outputs in English and Portuguese"
-tools = { "typst" = "latest", "pipx:touying" = "latest" }
-run = """
-set -e
-LINCE_VERSION=$(awk 'BEGIN{in_pkg=0} /^[[]package[]]$/{in_pkg=1;next} /^[[]/{in_pkg=0} in_pkg&&/^version = /{print $3;exit}' crates/lince/Cargo.toml | xargs)
-SOURCE_FILE="{{env.FIRST_STEPS_ROOT}}/first_steps.typ"
-
-compile_first_steps() {
-  local lang="$1"
-  local suffix="$2"
-  local lang_input=""
-
-  if [ "$lang" = "pt" ]; then
-    lang_input="--input lang=pt"
-  fi
-
-  echo "  → Compiling ${lang} light version..."
-  typst compile --root . $lang_input --input dark=false --input lince_version="$LINCE_VERSION" "$SOURCE_FILE" "{{env.FIRST_STEPS_ROOT}}/first_steps-light${suffix}.pdf"
-
-  echo "  → Compiling ${lang} dark version..."
-  typst compile --root . $lang_input --input dark=true --input lince_version="$LINCE_VERSION" "$SOURCE_FILE" "{{env.FIRST_STEPS_ROOT}}/first_steps-dark${suffix}.pdf"
-
-  echo "  → Compiling ${lang} slides version..."
-  typst compile --root . $lang_input --input slides=true --input lince_version="$LINCE_VERSION" "$SOURCE_FILE" "{{env.FIRST_STEPS_ROOT}}/first_steps-slides${suffix}.pdf"
-}
-
-compile_first_steps en ""
-compile_first_steps pt "-pt"
-echo "Done!"
-"""
-
-[tasks.first-steps-html]
-description = "Compile first steps HTML outputs in English and Portuguese"
-tools = { "pipx:touying" = "latest" }
-run = """
-set -e
-SOURCE_FILE="{{env.FIRST_STEPS_ROOT}}/first_steps.typ"
-
-echo "  → Compiling English HTML..."
-touying compile --root . --format html --output "{{env.FIRST_STEPS_ROOT}}/first_steps.html" --sys-inputs '{"slides":"true","lang":"en"}' "$SOURCE_FILE"
-
-echo "  → Compiling Portuguese HTML..."
-touying compile --root . --format html --output "{{env.FIRST_STEPS_ROOT}}/first_steps-pt.html" --sys-inputs '{"slides":"true","lang":"pt"}' "$SOURCE_FILE"
-
-echo "Done!"
-"""
-
-[tasks.first-steps-slides]
-description = "Start first steps slides preview"
+[tasks.typst]
+description = "Run Typst and Touying workflows"
 tools = { "tinymist" = "latest", "typst" = "latest", "pipx:touying" = "latest" }
+usage = """
+arg "target" help="Target workflow: docs or first-steps"
+arg "action" help="Action: preview, compile, all, html, or slides"
+flag "-l --light" help="Use light mode in preview flows"
+"""
 run = """
-SOURCE_FILE="{{env.FIRST_STEPS_ROOT}}/first_steps.typ"
-
-trap 'touying compile --root . --format html --sys-inputs '{"slides":"true"}' "$SOURCE_FILE"' EXIT
-trap 'typst compile --root . --input slides=true "$SOURCE_FILE" "{{env.FIRST_STEPS_ROOT}}/first_steps-slides.pdf"' EXIT
-
-tinymist preview \
-  --root . \
-  --control-plane-host 127.0.0.1:3022 \
-  --data-plane-host 127.0.0.1:3021 \
-  --static-file-host 127.0.0.1:3023 \
-  --input slides=true \
-  "$SOURCE_FILE"
+if [ "${usage_light:-false}" = "true" ]; then
+  ./run/typst.sh "$usage_target" "$usage_action" --light
+else
+  ./run/typst.sh "$usage_target" "$usage_action"
+fi
 """
 
 [tasks.version-release]
 description = "Automated release workflow"
 tools = { "cargo:git-cliff" = "latest", "cargo:cargo-edit" = "latest", "gh" = "latest" }
-run = """
-set -e
-[[ $(git rev-parse --abbrev-ref HEAD) != "main" ]] && echo "❌ main only" && exit 1
-gh auth status >/dev/null || { echo "🔑 login required"; exit 1; }
-
-SUGGESTED_VER=$(git cliff --bumped-version 2>/dev/null || echo "0.1.0")
-read -rp "Version (auto: $SUGGESTED_VER): " USER_INPUT
-VERSION=${USER_INPUT:-$SUGGESTED_VER}
-[[ $VERSION != v* ]] && VERSION="v$VERSION"
-
-git cliff --unreleased --bump --tag "$VERSION" -o CHANGELOG.md
-cargo set-version "${VERSION#v}"
-git add . && git commit -m "chore(release): $VERSION" && git tag -a "$VERSION" -m "$VERSION"
-git push origin main "$VERSION"
-gh run list --workflow=build-release --limit 1 --json url -q '.[0].url'
-"""
+run = "./run/release.sh"

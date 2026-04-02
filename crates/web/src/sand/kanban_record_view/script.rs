@@ -442,13 +442,23 @@ pub(super) fn script() -> String {
 
             function scheduleReconnect() {
                 clearReconnectTimer();
-                if (!state.contract || !streamEnabled()) {
+                if (!streamEnabled()) {
                     return;
                 }
                 const delay = Math.min(15000, 1500 * Math.max(1, state.reconnectAttempt + 1));
                 state.reconnectAttempt += 1;
                 state.reconnectTimer = window.setTimeout(() => {
-                    connectStream(false);
+                    if (state.contract) {
+                        connectStream(false);
+                        return;
+                    }
+
+                    refreshRuntime(false).catch((error) => {
+                        state.transportError =
+                            error instanceof Error ? error.message : String(error);
+                        updateStatus();
+                        scheduleReconnect();
+                    });
                 }, delay);
             }
 
@@ -578,6 +588,8 @@ pub(super) fn script() -> String {
                         cache: "no-store",
                     });
                     const payload = await response.json().catch(() => null);
+                    const shouldRetry =
+                        response.status === 404 || response.status >= 500;
                     if (response.status === 401) {
                         window.LinceWidgetHost?.invalidateServerAuth?.(
                             state.hostMeta.serverId || "",
@@ -597,10 +609,15 @@ pub(super) fn script() -> String {
                             payload?.error || "The Kanban contract could not be resolved.",
                             "",
                         );
+                        if (shouldRetry) {
+                            scheduleReconnect();
+                        }
                         return false;
                     }
 
                     state.contract = payload;
+                    state.reconnectAttempt = 0;
+                    clearReconnectTimer();
                     state.formOptions = payload?.formOptions || null;
                     state.draftFilters = parseContractFilters(payload?.filters?.rows);
                     renderActiveFilters();
@@ -621,6 +638,7 @@ pub(super) fn script() -> String {
                         "The widget could not load its host contract.",
                         error instanceof Error ? error.message : String(error),
                     );
+                    scheduleReconnect();
                     return false;
                 } finally {
                     state.loadingContract = false;

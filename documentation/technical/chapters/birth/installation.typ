@@ -41,7 +41,7 @@ One way of running the project is with Mise, the command runner that installs th
 ```bash
 curl https://mise.run | sh
 ```
-Then run `mise docs` for documentation.
+Then run `mise typst docs preview` for the main documentation preview.
 
 *Lince Config*
 Whenever you start Lince, it checks if a `lince.toml` file exists. It is in the config directory of your system, plus the lince/ directory.

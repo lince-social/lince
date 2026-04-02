@@ -12,7 +12,7 @@
   [transfer_time], [TIMESTAMP],
 )
 
-Transfer Proposals are a way of exchanging record quantities between different DNAs. It is thought to be used for executing economic exchanges
+Transfer Proposals are a way of exchanging resources. It has a few steps: a proposal, an agreement and an action. It is designed to work by record quantities between different DNAs. It is thought to be used for executing economic exchanges
 like buying goods and services, donations, organizing events, work tasks...
 
 'records_received' is a collection of records and their quantities that will interact with our records, things you will receive.

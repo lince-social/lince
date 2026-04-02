@@ -1,7 +1,6 @@
 { config, pkgs, self, ... }:
 
 let
-  domain = "manas.lince.social";
   lincePackage = self.packages.${pkgs.system}.lince-http;
 in
 {
@@ -54,9 +53,6 @@ in
 
   services.caddy = {
     enable = true;
-    virtualHosts.${domain}.extraConfig = ''
-      encode gzip zstd
-      reverse_proxy 127.0.0.1:6174
-    '';
+    configFile = ../caddy/manas.lince.social.Caddyfile;
   };
 }

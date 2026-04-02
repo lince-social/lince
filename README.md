@@ -17,27 +17,59 @@ Check the website [lince.social](https://lince.social) for more.
 
 Note that the `dev` branch is always further ahead, sometimes by a lot. But it is more unstable.
 
-After installing Lince, you can run it with Karma and GUI functionalities.
-One can run `lince --headless` as a service to have Karma always running in the background. And run `lince --guiless` to use it through the GUI.
+The default published binary and container target the HTTP frontend with Karma enabled.
 
-### 1. Releases
+### 1. One-line installer
 
-Check the [releases](https://github.com/lince-social/lince/releases), pick the latest one for your operating system. Unzip it, then run:
+The hosted installer is meant for macOS and glibc-based Linux systems. It installs to `~/.local/bin` by default and does not configure `systemd` automatically.
 
 ```bash
-./lince
+curl -fsSL https://lince.social/install.sh | bash
 ```
 
-You can run with no GUI, passing `lince --guiless`, or with no Karma, passing `lince --karmaless`. It's the same running in other ways below.
+Inside this repo, the canonical script lives at `run/install.sh`:
 
-### 2. Cargo install
+```bash
+./run/install.sh
+```
+
+To pin a specific release or install somewhere else:
+
+```bash
+curl -fsSL https://lince.social/install.sh | bash -s -- --version v0.6.1
+curl -fsSL https://lince.social/install.sh | bash -s -- --bin-dir /usr/local/bin --force
+```
+
+### 2. Releases
+
+Check the [releases](https://github.com/lince-social/lince/releases) and download the asset for your operating system. The rolling main-branch binaries live under the [`rolling`](https://github.com/lince-social/lince/releases/tag/rolling) release.
+
+```bash
+./lince --help
+./lince --listen-addr 0.0.0.0:6174
+```
+
+### 3. Docker
+
+The container keeps its state under `/var/lib/lince` and is meant to be run with a persistent volume.
+
+```bash
+docker run -d \
+  --name lince \
+  --restart unless-stopped \
+  -p 6174:6174 \
+  -v lince-data:/var/lib/lince \
+  ghcr.io/lince-social/lince:rolling
+```
+
+### 4. Cargo install
 
 ```bash
 cargo install lince
 lince
 ```
 
-### 3. Compiling yourself
+### 5. Compiling yourself
 
 > Beware! Here be dragons (bugs).
 
@@ -52,6 +84,13 @@ Or with [mise](https://mise.jdx.dev/):
 ```bash
 mise dev
 ```
+
+### Keeping it running
+
+The installer only installs the binary. If you want Lince to stay up after boot, use your own process supervisor.
+
+- On Linux with `systemd`, start from [run/systemd/lince.service](run/systemd/lince.service).
+- With Docker, use `--restart unless-stopped`.
 
 ### Extra
 

@@ -6,8 +6,8 @@ description = "Tool for registry, interconnection and automation of Needs and Co
 license.workspace = true
 repository.workspace = true
 homepage.workspace = true
-# keywords = ["todo"]
-# include = ["/crates", "Cargo.toml", "LICENSE"]
+readme = "README.md"
+keywords = ["registry", "automation", "self-hosted"]
 
 [features]
 default = ["karma", "http"]

@@ -2,6 +2,16 @@
 
 ### 🚀 Features
 
+- *(KarmaView)* Editable
+- *(Active Search)* Working Pre Query Fix
+- *(Active Search)* Query Fix
+- *(Active Search)* Styling
+- *(Active Search)* Done
+- *(Collection)* GPUI refactor to event WIP
+- *(Collection)* GPUI Refactor complete, revert to WeakEntity
+- *(Presentation)* GPUI simple table wip
+- *(GPUI)* Generic ugly table
+- *(Build)* Reinstated GitHub Actions with many platforms
 - *(GPUI)* Table updating on collection change but slow
 - *(Migrations)* Working
 - *(Migrations)* Working final
@@ -61,6 +71,14 @@
 
 ### 🐛 Bug Fixes
 
+- *(HTML)* Small adjustments
+- *(Actions)* Removed mdbook workflow since typst
+- *(Cargo)* Optional true gpui
+- *(Cargo)* Optional true gpui 2
+- *(Build)* Windows default to powershell, made it bash
+- *(Build)* Add targets
+- *(Build)* Install system dependencies for linux
+- *(Build)* Fix windows
 - *(Build)* Only linux until needed
 - *(Build)* Temp artifact for binary
 - *(Build)* Temp artifact for binary
@@ -85,6 +103,7 @@
 
 ### 🚜 Refactor
 
+- *(Presentation)* Remove Kamalie and bevy
 - *(Main)* Clean up a bit
 - *(Crate)* Move to workspace wip
 - *(Crates)* Done + tui init
@@ -94,10 +113,30 @@
 
 ### 📚 Documentation
 
+- *(Typst)* Wip
+- *(Typst)* Wip
+- *(Typst)* Init
+- *(Typst)* This Month In Lince
+- *(TMIL)* 2025-12 "done"
+- *(Posts)* Pre automation
+- *(Posts)* Automation great success
+- *(Legal)* Brazillian Association draft
 - *(Task)* Colorful and grouped status/subject
 
 ### ⚙️ Miscellaneous Tasks
 
+- *(Version)* 0.6.1
+- *(release)* V0.6.2
+- *(release)* V0.6.2
+- *(release)* V0.6.2
+- *(release)* V0.6.2
+- *(release)* V0.6.3
+- *(release)* V0.6.4
+- *(release)* V0.6.5
+- *(release)* V0.6.6
+- *(release)* V0.6.7
+- *(release)* V0.6.8
+- *(release)* V0.6.9
 - *(Tasks)* Add
 - *(Task)* Pre-db fix
 - Add .env
@@ -107,3 +146,4 @@
 - Rm stuff before gitignore
 - *(All)* Docker, flake.nix, script based
 - *(Release)* Fix moving to workspace for crates.io
+- *(release)* V0.7.0

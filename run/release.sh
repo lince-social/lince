@@ -17,7 +17,7 @@ ensure_release_tools() {
 sync_workspace_versions() {
     local release_version="$1"
 
-    perl -0pi -e 's/(\[workspace\.package\]\nversion = ")[^"]+(")/$1'"$release_version"'$2/' Cargo.toml
+    perl -0pi -e 's/(\[workspace\.package\]\nversion = ")[^"]+(")/${1}'"$release_version"'${2}/' Cargo.toml
     perl -0pi -e 's/version = "=[^"]*"/version = "='"$release_version"'"/g' Cargo.toml
 }
 
@@ -60,6 +60,7 @@ esac
 git cliff --unreleased --bump --tag "$version" -o CHANGELOG.md
 cargo set-version --workspace "${version#v}"
 sync_workspace_versions "${version#v}"
+cargo metadata --format-version 1 --no-deps >/dev/null
 git add .
 git commit -m "chore(release): ${version}"
 git tag -a "$version" -m "$version"

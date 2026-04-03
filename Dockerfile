@@ -44,7 +44,8 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/app/target \
     cargo build --release --locked -p lince \
-    && strip /app/target/release/lince
+    && install -Dm755 /app/target/release/lince /out/lince \
+    && strip /out/lince
 
 FROM debian:bookworm-slim AS runtime
 
@@ -56,7 +57,7 @@ RUN apt-get update \
     && mkdir -p /var/lib/lince/.config \
     && chown -R lince:lince /var/lib/lince
 
-COPY --from=build /app/target/release/lince /usr/local/bin/lince
+COPY --from=build /out/lince /usr/local/bin/lince
 
 ENV HOME=/var/lib/lince
 ENV XDG_CONFIG_HOME=/var/lib/lince/.config

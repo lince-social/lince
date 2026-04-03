@@ -172,18 +172,20 @@ jobs:
       - name: Publish rolling release
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
           TAG=rolling
 
-          if ! gh release view "$TAG" >/dev/null 2>&1; then
+          if ! gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
             gh release create "$TAG" \
+              --repo "$GH_REPO" \
               --target "$GITHUB_SHA" \
               --title "Rolling build" \
               --notes "Latest automated build from the main branch."
           fi
 
-          gh release upload "$TAG" release-artifacts/* --clobber
+          gh release upload "$TAG" release-artifacts/* --clobber --repo "$GH_REPO"
 
   publish-tag:
     if: startsWith(github.ref, 'refs/tags/')

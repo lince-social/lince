@@ -22,6 +22,7 @@ COPY crates/utils/Cargo.toml crates/utils/Cargo.toml
 COPY crates/tui/Cargo.toml crates/tui/Cargo.toml
 COPY crates/web/Cargo.toml crates/web/Cargo.toml
 COPY xtask/Cargo.toml xtask/Cargo.toml
+COPY xtask/src/main.rs xtask/src/main.rs
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \

@@ -11,10 +11,12 @@ use {
 
 const MAX_OUTPUT_BYTES: usize = 256 * 1024;
 
+#[cfg(not(target_os = "macos"))]
 fn shell_command(shell: &str) -> String {
     format!("exec {} -i", sh_single_quote(shell))
 }
 
+#[cfg(not(target_os = "macos"))]
 fn sh_single_quote(value: &str) -> String {
     format!("'{}'", value.replace('\'', "'\\''"))
 }

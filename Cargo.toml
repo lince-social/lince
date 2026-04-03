@@ -73,6 +73,3 @@ opt-level = 0        # Fastest compile
 debug = true         # Debug symbols
 incremental = true   # Fast incremental builds
 codegen-units = 256  # Max parallelism
-
-[patch.crates-io]
-ring = { git = "https://github.com/briansmith/ring" }

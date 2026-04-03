@@ -1196,7 +1196,7 @@ async fn handle_operation_mode_key(
 
 async fn handle_cell_insert_mode_key(
     state: &mut TuiState,
-    services: InjectedServices,
+    _services: InjectedServices,
     key: KeyEvent,
 ) -> std::io::Result<bool> {
     match key.code {
@@ -1217,7 +1217,7 @@ async fn handle_cell_insert_mode_key(
 
 async fn handle_visual_mode_key(
     state: &mut TuiState,
-    services: InjectedServices,
+    _services: InjectedServices,
     key: KeyEvent,
 ) -> std::io::Result<bool> {
     match key.code {

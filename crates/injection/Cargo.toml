@@ -1,7 +1,14 @@
 [package]
+name = "lince-injection"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Internal dependency injection layer for the lince binary."
+
+[lib]
 name = "injection"
-version = "0.1.0"
-edition = "2024"
 
 [dependencies]
 persistence = { workspace = true }

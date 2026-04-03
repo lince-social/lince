@@ -12,7 +12,55 @@ permissions:
   contents: write
 
 jobs:
+  check-feature-matrix:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: default
+            args: ""
+          - name: http-only
+            args: "--no-default-features --features http"
+          - name: karma-only
+            args: "--no-default-features --features karma"
+          - name: tui-only
+            args: "--no-default-features --features tui"
+          - name: karma-tui
+            args: "--no-default-features --features karma,tui"
+          - name: gui-only
+            args: "--no-default-features --features gui"
+          - name: karma-gui
+            args: "--no-default-features --features karma,gui"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libxcb1-dev \
+            libxkbcommon-dev \
+            libxkbcommon-x11-dev
+
+      - name: Check feature combination
+        shell: bash
+        run: |
+          set -euo pipefail
+          export RUSTFLAGS="-D warnings"
+          if [[ -n "${{ matrix.args }}" ]]; then
+            cargo check --locked -p lince ${{ matrix.args }}
+          else
+            cargo check --locked -p lince
+          fi
+
   build:
+    needs: check-feature-matrix
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -62,10 +110,10 @@ jobs:
         run: |
           export RUSTFLAGS="-D warnings"
           if [[ "${{ matrix.target }}" == "aarch64-apple-darwin" ]]; then
-            cargo build --locked --release --target ${{ matrix.target }} \
+            cargo build --locked --release --package lince --target ${{ matrix.target }} \
               --config "target.aarch64-apple-darwin.rustflags=['-C','target-feature=+neon,+aes,+sha2']"
           else
-            cargo build --locked --release --target ${{ matrix.target }}
+            cargo build --locked --release --package lince --target ${{ matrix.target }}
           fi
 
       - name: Package artifacts

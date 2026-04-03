@@ -1,9 +1,11 @@
 [package]
 name = "lince"
-version = "0.6.1"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
 description = "Tool for registry, interconnection and automation of Needs and Contributions with open scope"
-license = "GPL-3.0-or-later"
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
 # keywords = ["todo"]
 # include = ["/crates", "Cargo.toml", "LICENSE"]
 

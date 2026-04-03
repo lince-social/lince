@@ -1,7 +1,14 @@
 [package]
+name = "lince-tui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Internal terminal UI for the lince binary."
+
+[lib]
 name = "tui"
-version = "0.1.0"
-edition = "2024"
 
 [features]
 tui = ["dep:ratatui", "dep:color-eyre", "dep:crossterm"]

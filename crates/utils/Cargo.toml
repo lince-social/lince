@@ -1,7 +1,14 @@
 [package]
+name = "lince-utils"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Internal utilities for the lince binary."
+
+[lib]
 name = "utils"
-version = "0.1.0"
-edition = "2024"
 
 [dependencies]
 argon2.workspace = true

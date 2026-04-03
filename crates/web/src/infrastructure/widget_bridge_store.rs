@@ -1,8 +1,4 @@
-use {
-    crate::domain::widget_bridge::WidgetBridgeSnapshot,
-    std::sync::Arc,
-    tokio::sync::RwLock,
-};
+use {crate::domain::widget_bridge::WidgetBridgeSnapshot, std::sync::Arc, tokio::sync::RwLock};
 
 #[derive(Clone, Default)]
 pub struct WidgetBridgeStore {

@@ -10,6 +10,19 @@ use {
 
 const VALID_TASK_TYPES: [&str; 4] = ["epic", "feature", "task", "other"];
 const VALID_QUANTITIES: [i64; 5] = [-3, -2, -1, 0, 1];
+const KANBAN_SETTINGS_KEY: &str = "kanban_settings";
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct KanbanWidgetSettings {
+    pub show_parent_context: bool,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateKanbanSettingsRequest {
+    pub show_parent_context: Option<bool>,
+}
 
 #[derive(Clone)]
 pub struct KanbanFilterService {
@@ -64,27 +77,77 @@ impl KanbanFilterService {
         })
     }
 
+    pub async fn update_settings(
+        &self,
+        instance_id: &str,
+        update: UpdateKanbanSettingsRequest,
+    ) -> Result<KanbanWidgetSettings, KanbanFilterError> {
+        let mut board_state = self.board_state.snapshot().await;
+        let card = find_board_card_mut(&mut board_state, instance_id).ok_or_else(|| {
+            KanbanFilterError::NotFound("Nao encontrei esse widget no board.".into())
+        })?;
+        validate_kanban_card(card)?;
+
+        let mut settings = extract_kanban_settings(&card.widget_state);
+        if let Some(show_parent_context) = update.show_parent_context {
+            settings.show_parent_context = show_parent_context;
+        }
+
+        let widget_state = ensure_object(&mut card.widget_state);
+        let settings_value = widget_state
+            .entry(KANBAN_SETTINGS_KEY)
+            .or_insert_with(|| Value::Object(Map::new()));
+        let settings_object = ensure_object(settings_value);
+        settings_object.insert(
+            "show_parent_context".into(),
+            Value::Bool(settings.show_parent_context),
+        );
+
+        self.board_state
+            .replace(board_state)
+            .await
+            .map_err(KanbanFilterError::Internal)?;
+
+        Ok(settings)
+    }
+
     #[allow(dead_code)]
     pub fn build_filtered_query(
         &self,
         base_query: &str,
         rows: &[RawKanbanFilterRow],
+        settings: &KanbanWidgetSettings,
     ) -> Result<DerivedKanbanQuery, KanbanFilterError> {
         let validated_rows = rows
             .iter()
             .cloned()
             .map(validate_filter_row)
             .collect::<Result<Vec<_>, _>>()?;
-        let mut sql = format!(
-            "SELECT * FROM ({}) base WHERE 1 = 1",
-            trim_sql(base_query)
-        );
+        let trimmed_query = trim_sql(base_query);
+        let mut sql = if settings.show_parent_context {
+            format!(
+                "SELECT base.*, parent_rel.parent_id AS kanban_parent_id, parent_record.head AS kanban_parent_head \
+                 FROM ({trimmed_query}) base \
+                 LEFT JOIN ( \
+                     SELECT rl.record_id, MAX(rl.target_id) AS parent_id \
+                     FROM record_link rl \
+                     WHERE rl.link_type = 'parent' AND rl.target_table = 'record' \
+                     GROUP BY rl.record_id \
+                 ) parent_rel ON parent_rel.record_id = CAST(base.id AS INTEGER) \
+                 LEFT JOIN record parent_record ON parent_record.id = parent_rel.parent_id \
+                 WHERE 1 = 1"
+            )
+        } else {
+            format!("SELECT * FROM ({trimmed_query}) base WHERE 1 = 1")
+        };
 
         for row in validated_rows {
             row.push_sql(&mut sql);
         }
 
-        sql.push_str(" ORDER BY base.quantity ASC, lower(COALESCE(base.head, '')) ASC, base.id DESC");
+        sql.push_str(
+            " ORDER BY base.quantity ASC, lower(COALESCE(base.head, '')) ASC, base.id DESC",
+        );
         Ok(DerivedKanbanQuery {
             sql,
             bindings: Vec::new(),
@@ -104,6 +167,24 @@ pub struct RawKanbanFilterRow {
 #[serde(rename_all = "camelCase")]
 pub struct KanbanFilterApplyOutcome {
     pub filters_version: u64,
+}
+
+pub fn extract_kanban_settings(widget_state: &Value) -> KanbanWidgetSettings {
+    let settings = widget_state
+        .get(KANBAN_SETTINGS_KEY)
+        .or_else(|| widget_state.get("kanbanSettings"))
+        .and_then(Value::as_object);
+
+    KanbanWidgetSettings {
+        show_parent_context: settings
+            .and_then(|settings| {
+                settings
+                    .get("show_parent_context")
+                    .or_else(|| settings.get("showParentContext"))
+                    .and_then(Value::as_bool)
+            })
+            .unwrap_or(true),
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -227,7 +308,9 @@ impl ValidatedKanbanFilterRow {
     }
 }
 
-fn validate_filter_row(row: RawKanbanFilterRow) -> Result<ValidatedKanbanFilterRow, KanbanFilterError> {
+fn validate_filter_row(
+    row: RawKanbanFilterRow,
+) -> Result<ValidatedKanbanFilterRow, KanbanFilterError> {
     let field = row.field.trim();
     let operator = row.operator.trim();
 

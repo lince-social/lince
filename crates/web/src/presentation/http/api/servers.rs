@@ -84,7 +84,9 @@ pub async fn list_servers(
                         .map(|value| value.username_hint.clone())
                         .unwrap_or_default(),
                     connected_at_unix: status.and_then(|value| value.connected_at_unix),
-                    last_error: status.map(|value| value.last_error.clone()).unwrap_or_default(),
+                    last_error: status
+                        .map(|value| value.last_error.clone())
+                        .unwrap_or_default(),
                 }
             })
             .collect(),
@@ -287,7 +289,9 @@ async fn server_profile_response(
         .as_ref()
         .map(|value| value.last_error.clone())
         .unwrap_or_default();
-    let session_state = snapshot.take().map(|value| session_state_name(&value).to_string());
+    let session_state = snapshot
+        .take()
+        .map(|value| session_state_name(&value).to_string());
 
     ServerProfileResponse {
         id: profile.id,

@@ -2,10 +2,7 @@ mod body;
 mod script;
 mod styles;
 
-use crate::{
-    domain::lince_package::PackageManifest,
-    sand::SandWidgetSource,
-};
+use crate::{domain::lince_package::PackageManifest, sand::SandWidgetSource};
 
 pub(crate) fn source() -> SandWidgetSource {
     SandWidgetSource {

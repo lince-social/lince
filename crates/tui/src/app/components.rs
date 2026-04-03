@@ -112,7 +112,8 @@ pub(super) fn render_input(frame: &mut Frame, area: Rect, state: &TuiState) {
         InputMode::Visual => "VISUAL",
     };
     let mode_width = mode_label.len() as u16 + 2;
-    let areas = Layout::horizontal([Constraint::Min(1), Constraint::Length(mode_width)]).split(area);
+    let areas =
+        Layout::horizontal([Constraint::Min(1), Constraint::Length(mode_width)]).split(area);
     let input_area = areas[0];
     let mode_area = areas[1];
 
@@ -217,13 +218,20 @@ pub(super) fn render_create_shortcut_picker(frame: &mut Frame, state: &TuiState,
         .y
         .saturating_sub(height)
         .max(frame.area().y.saturating_add(1));
-    let area = Rect { x, y, width, height };
+    let area = Rect {
+        x,
+        y,
+        width,
+        height,
+    };
     let inner = area.inner(ratatui::layout::Margin {
         vertical: 1,
         horizontal: 1,
     });
 
-    let selected = state.create_shortcut_selection.min(options.len().saturating_sub(1));
+    let selected = state
+        .create_shortcut_selection
+        .min(options.len().saturating_sub(1));
     let start = if selected >= visible_option_count {
         selected + 1 - visible_option_count
     } else {
@@ -238,7 +246,9 @@ pub(super) fn render_create_shortcut_picker(frame: &mut Frame, state: &TuiState,
     };
     lines.push(Line::styled(
         filter_text,
-        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+        Style::default()
+            .fg(Color::Yellow)
+            .add_modifier(Modifier::BOLD),
     ));
 
     if options.is_empty() {
@@ -290,10 +300,7 @@ pub(super) fn render_help(frame: &mut Frame) {
     );
 }
 
-pub(super) fn render_creation_modal(
-    frame: &mut Frame,
-    modal: &CreationModalState,
-) {
+pub(super) fn render_creation_modal(frame: &mut Frame, modal: &CreationModalState) {
     let area = centered_rect(frame.area(), 72, 82);
     let inner = Rect {
         x: area.x.saturating_add(1),
@@ -375,7 +382,10 @@ pub(super) fn render_creation_modal(
             .title(format!("Create {}", modal.table_name())),
         area,
     );
-    frame.render_widget(Paragraph::new(visible_lines).wrap(Wrap { trim: false }), inner);
+    frame.render_widget(
+        Paragraph::new(visible_lines).wrap(Wrap { trim: false }),
+        inner,
+    );
 }
 
 #[derive(Clone, Copy)]
@@ -690,7 +700,12 @@ fn pad_center_to_width(text: &str, width: usize) -> String {
     let total_padding = width - text_width;
     let left_padding = total_padding / 2;
     let right_padding = total_padding - left_padding;
-    format!("{}{}{}", " ".repeat(left_padding), text, " ".repeat(right_padding))
+    format!(
+        "{}{}{}",
+        " ".repeat(left_padding),
+        text,
+        " ".repeat(right_padding)
+    )
 }
 
 pub(super) fn render_sql_table(
@@ -727,20 +742,16 @@ pub(super) fn render_sql_table(
             .fg(Color::Yellow)
             .add_modifier(Modifier::BOLD),
     );
-    let rows = table
-        .rows
-        .iter()
-        .enumerate()
-        .map(|(row_index, row)| {
-            wrapped_table_row(
-                row,
-                state,
-                &widths,
-                &non_wrapping,
-                row_index == table.rows.len().saturating_sub(1),
-                row_index == state.selected_row,
-            )
-        });
+    let rows = table.rows.iter().enumerate().map(|(row_index, row)| {
+        wrapped_table_row(
+            row,
+            state,
+            &widths,
+            &non_wrapping,
+            row_index == table.rows.len().saturating_sub(1),
+            row_index == state.selected_row,
+        )
+    });
     let constraints = widths
         .iter()
         .map(|width| Constraint::Length(*width as u16))
@@ -834,12 +845,7 @@ fn wrapped_table_row(
             }
         })
         .collect::<Vec<_>>();
-    let height = wrapped_cells
-        .iter()
-        .map(Vec::len)
-        .max()
-        .unwrap_or(1)
-        .max(1);
+    let height = wrapped_cells.iter().map(Vec::len).max().unwrap_or(1).max(1);
     let cells = wrapped_cells
         .into_iter()
         .enumerate()
@@ -889,7 +895,13 @@ fn styled_table_cell(
     row_height: usize,
     is_selected: bool,
 ) -> Cell<'static> {
-    let lines = wrapped_cell_lines(value, width, show_left_separator, show_right_separator, non_wrapping);
+    let lines = wrapped_cell_lines(
+        value,
+        width,
+        show_left_separator,
+        show_right_separator,
+        non_wrapping,
+    );
     cell_from_lines(
         lines,
         width,
@@ -969,7 +981,8 @@ fn editor_cell_from_value(
     let content_width =
         width.saturating_sub(show_left_separator as usize + show_right_separator as usize);
     let style = Style::default().bg(Color::DarkGray);
-    let content_lines = rendered_editor_cell_lines(value, content_width, non_wrapping, style, state);
+    let content_lines =
+        rendered_editor_cell_lines(value, content_width, non_wrapping, style, state);
 
     cell_from_rendered_content_lines(
         content_lines,
@@ -1068,7 +1081,10 @@ fn border_line(
         } else {
             "┼"
         };
-        spans.push(Span::styled(left_joint, Style::default().fg(Color::DarkGray)));
+        spans.push(Span::styled(
+            left_joint,
+            Style::default().fg(Color::DarkGray),
+        ));
     }
     spans.push(Span::styled(
         "─".repeat(content_width),
@@ -1082,7 +1098,10 @@ fn border_line(
         } else {
             "┤"
         };
-        spans.push(Span::styled(right_joint, Style::default().fg(Color::DarkGray)));
+        spans.push(Span::styled(
+            right_joint,
+            Style::default().fg(Color::DarkGray),
+        ));
     }
     Line::from(spans)
 }
@@ -1161,7 +1180,11 @@ fn rendered_editor_cell_lines(
         .collect()
 }
 
-fn wrap_editor_lines(value: &str, content_width: usize, non_wrapping: bool) -> Vec<EditorWrappedLine> {
+fn wrap_editor_lines(
+    value: &str,
+    content_width: usize,
+    non_wrapping: bool,
+) -> Vec<EditorWrappedLine> {
     if content_width == 0 {
         return vec![EditorWrappedLine::default()];
     }

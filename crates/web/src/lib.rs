@@ -11,17 +11,16 @@ pub use crate::domain::lince_package::{LincePackage, slugify};
 use {
     crate::{
         application::{
-            ai_builder::AiBuilderState, backend_api::BackendApiService, state::AppState,
-            kanban_actions::KanbanActionService,
-            kanban_filters::KanbanFilterService,
-            kanban_streams::KanbanStreamService,
+            ai_builder::AiBuilderState, backend_api::BackendApiService,
+            kanban_actions::KanbanActionService, kanban_filters::KanbanFilterService,
+            kanban_streams::KanbanStreamService, state::AppState,
             widget_runtime::WidgetRuntimeService,
         },
         infrastructure::{
-            auth::AppAuth, board_state_store::BoardStateStore,
-            dna_hub_store::DnaHubStore, manas::ManasGateway,
-            organ_store::OrganStore, package_catalog_store::PackageCatalogStore,
-            terminal_store::TerminalSessionStore, widget_bridge_store::WidgetBridgeStore,
+            auth::AppAuth, board_state_store::BoardStateStore, dna_hub_store::DnaHubStore,
+            manas::ManasGateway, organ_store::OrganStore,
+            package_catalog_store::PackageCatalogStore, terminal_store::TerminalSessionStore,
+            widget_bridge_store::WidgetBridgeStore,
         },
         presentation::http::router::build_router,
     },
@@ -86,12 +85,7 @@ pub async fn serve(
             manas,
             organs.clone(),
         ),
-        widget_runtime: WidgetRuntimeService::new(
-            auth,
-            board_state,
-            local_auth_required,
-            organs,
-        ),
+        widget_runtime: WidgetRuntimeService::new(auth, board_state, local_auth_required, organs),
     };
 
     let app = axum::Router::new().merge(build_router(app_state, mode));
@@ -99,24 +93,21 @@ pub async fn serve(
     let listen_addr = listen_addr
         .filter(|value| !value.trim().is_empty())
         .unwrap_or_else(|| DEFAULT_WEB_LISTEN_ADDR.to_string());
-    let address = listen_addr
-        .parse::<SocketAddr>()
-        .map_err(|error| {
-            IoError::other(format!("Invalid listen address `{listen_addr}`: {error}"))
-        })?;
-    let listener = tokio::net::TcpListener::bind(address).await.map_err(|error| {
-        if error.kind() == ErrorKind::AddrInUse {
-            IoError::new(
-                ErrorKind::AddrInUse,
-                format!("Address {address} is already in use"),
-            )
-        } else {
-            IoError::new(
-                error.kind(),
-                format!("Failed to bind {address}: {error}"),
-            )
-        }
+    let address = listen_addr.parse::<SocketAddr>().map_err(|error| {
+        IoError::other(format!("Invalid listen address `{listen_addr}`: {error}"))
     })?;
+    let listener = tokio::net::TcpListener::bind(address)
+        .await
+        .map_err(|error| {
+            if error.kind() == ErrorKind::AddrInUse {
+                IoError::new(
+                    ErrorKind::AddrInUse,
+                    format!("Address {address} is already in use"),
+                )
+            } else {
+                IoError::new(error.kind(), format!("Failed to bind {address}: {error}"))
+            }
+        })?;
     let label = match mode {
         HttpServeMode::FullUi => "Web frontend",
         HttpServeMode::ApiOnly => "HTTP API",

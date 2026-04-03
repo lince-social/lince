@@ -183,8 +183,8 @@ pub async fn proxy_manas_file(
     }
 
     if !link_response.status().is_success() {
-        let status =
-            StatusCode::from_u16(link_response.status().as_u16()).unwrap_or(StatusCode::BAD_GATEWAY);
+        let status = StatusCode::from_u16(link_response.status().as_u16())
+            .unwrap_or(StatusCode::BAD_GATEWAY);
         let body = link_response.text().await.unwrap_or_default();
         return Err(api_error(
             status,
@@ -235,8 +235,8 @@ pub async fn proxy_manas_file(
     }
 
     if !file_response.status().is_success() {
-        let status =
-            StatusCode::from_u16(file_response.status().as_u16()).unwrap_or(StatusCode::BAD_GATEWAY);
+        let status = StatusCode::from_u16(file_response.status().as_u16())
+            .unwrap_or(StatusCode::BAD_GATEWAY);
         let body = file_response.text().await.unwrap_or_default();
         return Err(api_error(
             status,

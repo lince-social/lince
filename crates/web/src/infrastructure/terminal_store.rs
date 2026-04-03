@@ -170,7 +170,11 @@ impl TerminalSessionStore {
         })
     }
 
-    pub async fn send_input(&self, id: &str, input: &str) -> Result<TerminalSessionSnapshot, String> {
+    pub async fn send_input(
+        &self,
+        id: &str,
+        input: &str,
+    ) -> Result<TerminalSessionSnapshot, String> {
         let handle = self
             .sessions
             .read()

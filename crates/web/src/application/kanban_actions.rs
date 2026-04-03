@@ -1,8 +1,7 @@
 use {
     crate::{
         application::{
-            backend_api::BackendApiService,
-            kanban_filters::RawKanbanFilterRow,
+            backend_api::BackendApiService, kanban_filters::RawKanbanFilterRow,
             kanban_identity::is_supported_kanban_package_filename,
         },
         domain::board::{BoardCard, BoardState},
@@ -60,20 +59,23 @@ impl KanbanActionService {
         payload: CreateRecordRequest,
     ) -> Result<KanbanActionOutcome, KanbanActionError> {
         let resolved = self
-            .resolve_instance(session_token, instance_id, ActionPermission::WriteRecordAndMaybeTable {
-                needs_table: payload.needs_write_table(),
-            })
+            .resolve_instance(
+                session_token,
+                instance_id,
+                ActionPermission::WriteRecordAndMaybeTable {
+                    needs_table: payload.needs_write_table(),
+                },
+            )
             .await?;
         validate_task_type(payload.task_type.as_deref())?;
         validate_parent_id(payload.parent_id)?;
-        self
-            .validate_assignee_ids(
-                session_token,
-                &resolved.organ,
-                resolved.bearer_token.as_deref(),
-                &payload.assignee_ids,
-            )
-            .await?;
+        self.validate_assignee_ids(
+            session_token,
+            &resolved.organ,
+            resolved.bearer_token.as_deref(),
+            &payload.assignee_ids,
+        )
+        .await?;
         if let Some(parent_id) = payload.parent_id {
             self.ensure_record_exists(
                 session_token,
@@ -99,9 +101,7 @@ impl KanbanActionService {
             )
             .await?;
         let record_id = created.last_insert_rowid.ok_or_else(|| {
-            KanbanActionError::Internal(
-                "Criacao do record nao retornou last_insert_rowid.".into(),
-            )
+            KanbanActionError::Internal("Criacao do record nao retornou last_insert_rowid.".into())
         })?;
 
         self.sync_task_metadata(
@@ -137,9 +137,11 @@ impl KanbanActionService {
         payload: UpdateRecordRequest,
     ) -> Result<KanbanActionOutcome, KanbanActionError> {
         let resolved = self
-            .resolve_instance(session_token, instance_id, ActionPermission::WriteRecordAndMaybeTable {
-                needs_table: true,
-            })
+            .resolve_instance(
+                session_token,
+                instance_id,
+                ActionPermission::WriteRecordAndMaybeTable { needs_table: true },
+            )
             .await?;
         validate_task_type(payload.task_type.as_deref())?;
         validate_parent_id(payload.parent_id)?;
@@ -150,14 +152,13 @@ impl KanbanActionService {
             payload.record_id,
         )
         .await?;
-        self
-            .validate_assignee_ids(
-                session_token,
-                &resolved.organ,
-                resolved.bearer_token.as_deref(),
-                &payload.assignee_ids,
-            )
-            .await?;
+        self.validate_assignee_ids(
+            session_token,
+            &resolved.organ,
+            resolved.bearer_token.as_deref(),
+            &payload.assignee_ids,
+        )
+        .await?;
         if let Some(parent_id) = payload.parent_id {
             self.ensure_record_exists(
                 session_token,
@@ -216,7 +217,11 @@ impl KanbanActionService {
         payload: UpdateRecordBodyRequest,
     ) -> Result<KanbanActionOutcome, KanbanActionError> {
         let resolved = self
-            .resolve_instance(session_token, instance_id, ActionPermission::WriteRecordsOnly)
+            .resolve_instance(
+                session_token,
+                instance_id,
+                ActionPermission::WriteRecordsOnly,
+            )
             .await?;
         self.ensure_record_exists(
             session_token,
@@ -261,7 +266,11 @@ impl KanbanActionService {
         payload: MoveRecordRequest,
     ) -> Result<KanbanActionOutcome, KanbanActionError> {
         let resolved = self
-            .resolve_instance(session_token, instance_id, ActionPermission::WriteRecordsOnly)
+            .resolve_instance(
+                session_token,
+                instance_id,
+                ActionPermission::WriteRecordsOnly,
+            )
             .await?;
         let record_payload = json!({ "quantity": payload.quantity });
         self.update_table_row(
@@ -290,7 +299,11 @@ impl KanbanActionService {
         payload: DeleteRecordRequest,
     ) -> Result<KanbanActionOutcome, KanbanActionError> {
         let resolved = self
-            .resolve_instance(session_token, instance_id, ActionPermission::WriteRecordsOnly)
+            .resolve_instance(
+                session_token,
+                instance_id,
+                ActionPermission::WriteRecordsOnly,
+            )
             .await?;
         self.delete_table_row(
             session_token,
@@ -324,10 +337,21 @@ impl KanbanActionService {
             .await
             .ok();
         let record = self
-            .get_record_detail(session_token, &resolved.organ, resolved.bearer_token.as_deref(), payload.record_id)
+            .get_record_detail(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+                payload.record_id,
+            )
             .await?;
         let detail = self
-            .build_record_detail(session_token, &resolved.organ, resolved.bearer_token.as_deref(), &record, current_user_id)
+            .build_record_detail(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+                &record,
+                current_user_id,
+            )
             .await?;
         let html = render_focus_card_html(&detail).into_string();
 
@@ -365,7 +389,11 @@ impl KanbanActionService {
         .await?;
 
         let existing_intervals = self
-            .list_record_worklogs(session_token, &resolved.organ, resolved.bearer_token.as_deref())
+            .list_record_worklogs(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+            )
             .await?;
         if existing_intervals.iter().any(|row| {
             row.record_id == payload.record_id
@@ -378,7 +406,10 @@ impl KanbanActionService {
         }
 
         let now = now_utc_string();
-        let note = payload.note.map(|value| value.trim().to_string()).filter(|value| !value.is_empty());
+        let note = payload
+            .note
+            .map(|value| value.trim().to_string())
+            .filter(|value| !value.is_empty());
         let created = self
             .create_table_row(
                 session_token,
@@ -397,9 +428,7 @@ impl KanbanActionService {
             )
             .await?;
         let interval_id = created.last_insert_rowid.ok_or_else(|| {
-            KanbanActionError::Internal(
-                "Criacao do worklog nao retornou last_insert_rowid.".into(),
-            )
+            KanbanActionError::Internal("Criacao do worklog nao retornou last_insert_rowid.".into())
         })?;
 
         let interval = self
@@ -459,9 +488,7 @@ impl KanbanActionService {
             ));
         }
 
-        let ended_at = payload
-            .ended_at
-            .unwrap_or_else(now_utc_string);
+        let ended_at = payload.ended_at.unwrap_or_else(now_utc_string);
         let seconds = derive_interval_seconds(&interval.started_at, &ended_at);
         self.update_table_row(
             session_token,
@@ -482,7 +509,11 @@ impl KanbanActionService {
         .await?;
 
         let actual_seconds = self
-            .list_record_worklogs(session_token, &resolved.organ, resolved.bearer_token.as_deref())
+            .list_record_worklogs(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+            )
             .await?
             .into_iter()
             .filter(|row| row.record_id == payload.record_id)
@@ -572,10 +603,18 @@ impl KanbanActionService {
             .resolve_instance(session_token, instance_id, ActionPermission::ReadOnly)
             .await?;
         let app_users = self
-            .list_app_users(session_token, &resolved.organ, resolved.bearer_token.as_deref())
+            .list_app_users(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+            )
             .await?;
         let extensions = self
-            .list_record_extensions(session_token, &resolved.organ, resolved.bearer_token.as_deref())
+            .list_record_extensions(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+            )
             .await?;
         let board_state = self.board_state.snapshot().await;
         let card = find_board_card(&board_state, instance_id).ok_or_else(|| {
@@ -625,7 +664,8 @@ impl KanbanActionService {
         for record in &snapshot.rows {
             let Some(id) = record
                 .get("id")
-                .and_then(|value| value.trim().parse::<i64>().ok()) else {
+                .and_then(|value| value.trim().parse::<i64>().ok())
+            else {
                 continue;
             };
 
@@ -742,9 +782,8 @@ impl KanbanActionService {
                 .map_err(|error| KanbanActionError::Internal(error.to_string()));
         }
 
-        let bearer_token = bearer_token.ok_or_else(|| {
-            KanbanActionError::Unauthorized("Sessao remota ausente.".into())
-        })?;
+        let bearer_token = bearer_token
+            .ok_or_else(|| KanbanActionError::Unauthorized("Sessao remota ausente.".into()))?;
         let response = self
             .manas
             .send_backend_request(
@@ -756,7 +795,8 @@ impl KanbanActionService {
             )
             .await
             .map_err(KanbanActionError::BadGateway)?;
-        self.read_remote_json(session_token, &organ.id, response).await
+        self.read_remote_json(session_token, &organ.id, response)
+            .await
     }
 
     pub async fn create_comment(
@@ -1272,34 +1312,52 @@ impl KanbanActionService {
                 app_users
                     .iter()
                     .find(|user| user.id == link.target_id)
-                    .map(|user| json!({
-                        "id": user.id,
-                        "name": user.name,
-                    }))
+                    .map(|user| {
+                        json!({
+                            "id": user.id,
+                            "name": user.name,
+                        })
+                    })
             })
             .collect::<Vec<_>>();
 
         let parent = links
             .iter()
             .find(|row| {
-                row.record_id == record.id && row.link_type == "parent" && row.target_table == "record"
+                row.record_id == record.id
+                    && row.link_type == "parent"
+                    && row.target_table == "record"
             })
             .and_then(|link| {
-                records.iter().find(|candidate| candidate.id == link.target_id).map(|parent| json!({
-                    "id": parent.id,
-                    "head": parent.head,
-                }))
+                records
+                    .iter()
+                    .find(|candidate| candidate.id == link.target_id)
+                    .map(|parent| {
+                        json!({
+                            "id": parent.id,
+                            "head": parent.head,
+                        })
+                    })
             });
 
         let children = links
             .iter()
-            .filter(|row| row.link_type == "parent" && row.target_table == "record" && row.target_id == record.id)
+            .filter(|row| {
+                row.link_type == "parent"
+                    && row.target_table == "record"
+                    && row.target_id == record.id
+            })
             .filter_map(|link| {
-                records.iter().find(|candidate| candidate.id == link.record_id).map(|child| json!({
-                    "id": child.id,
-                    "head": child.head,
-                    "quantity": child.quantity,
-                }))
+                records
+                    .iter()
+                    .find(|candidate| candidate.id == link.record_id)
+                    .map(|child| {
+                        json!({
+                            "id": child.id,
+                            "head": child.head,
+                            "quantity": child.quantity,
+                        })
+                    })
             })
             .collect::<Vec<_>>();
 
@@ -1411,8 +1469,14 @@ impl KanbanActionService {
         comment_id: i64,
     ) -> Result<RecordCommentRow, KanbanActionError> {
         parse_record_comment_row(
-            self.get_table_row(session_token, organ, bearer_token, "record_comment", comment_id)
-                .await?,
+            self.get_table_row(
+                session_token,
+                organ,
+                bearer_token,
+                "record_comment",
+                comment_id,
+            )
+            .await?,
         )
     }
 
@@ -1446,7 +1510,11 @@ impl KanbanActionService {
         }
 
         let app_users = self
-            .list_app_users(session_token, &resolved.organ, resolved.bearer_token.as_deref())
+            .list_app_users(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+            )
             .await?;
         if app_users.is_empty() {
             return Err(KanbanActionError::Validation(
@@ -1465,12 +1533,11 @@ impl KanbanActionService {
             })
             .or_else(|| app_users.iter().map(|user| user.id).min())
             .ok_or_else(|| {
-                KanbanActionError::Validation(
-                    "Nao foi possivel resolver o app_user atual.".into(),
-                )
+                KanbanActionError::Validation("Nao foi possivel resolver o app_user atual.".into())
             })?;
 
-        self.persist_current_user_id(instance_id, current_user_id).await?;
+        self.persist_current_user_id(instance_id, current_user_id)
+            .await?;
         Ok(current_user_id)
     }
 
@@ -1585,7 +1652,9 @@ impl KanbanActionService {
             ));
         }
         let view_id = card.view_id.filter(|value| *value > 0).ok_or_else(|| {
-            KanbanActionError::Misconfigured("Kanban sem view_id valido configurado no host.".into())
+            KanbanActionError::Misconfigured(
+                "Kanban sem view_id valido configurado no host.".into(),
+            )
         })?;
 
         let organ = self
@@ -1640,15 +1709,22 @@ impl KanbanActionService {
                 .await
                 .map_err(|error| KanbanActionError::Internal(error.to_string()));
         }
-        let bearer_token = bearer_token.ok_or_else(|| {
-            KanbanActionError::Unauthorized("Sessao remota ausente.".into())
-        })?;
+        let bearer_token = bearer_token
+            .ok_or_else(|| KanbanActionError::Unauthorized("Sessao remota ausente.".into()))?;
         let response = self
             .manas
-            .send_table_request(&organ.base_url, bearer_token, Method::GET, table, Some(id), None)
+            .send_table_request(
+                &organ.base_url,
+                bearer_token,
+                Method::GET,
+                table,
+                Some(id),
+                None,
+            )
             .await
             .map_err(KanbanActionError::BadGateway)?;
-        self.read_remote_json(session_token, &organ.id, response).await
+        self.read_remote_json(session_token, &organ.id, response)
+            .await
     }
 
     async fn list_table_rows(
@@ -1665,15 +1741,22 @@ impl KanbanActionService {
                 .await
                 .map_err(|error| KanbanActionError::Internal(error.to_string()));
         }
-        let bearer_token = bearer_token.ok_or_else(|| {
-            KanbanActionError::Unauthorized("Sessao remota ausente.".into())
-        })?;
+        let bearer_token = bearer_token
+            .ok_or_else(|| KanbanActionError::Unauthorized("Sessao remota ausente.".into()))?;
         let response = self
             .manas
-            .send_table_request(&organ.base_url, bearer_token, Method::GET, table, None, None)
+            .send_table_request(
+                &organ.base_url,
+                bearer_token,
+                Method::GET,
+                table,
+                None,
+                None,
+            )
             .await
             .map_err(KanbanActionError::BadGateway)?;
-        self.read_remote_json(session_token, &organ.id, response).await
+        self.read_remote_json(session_token, &organ.id, response)
+            .await
     }
 
     async fn create_table_row(
@@ -1698,9 +1781,8 @@ impl KanbanActionService {
                 last_insert_rowid: outcome.last_insert_rowid,
             });
         }
-        let bearer_token = bearer_token.ok_or_else(|| {
-            KanbanActionError::Unauthorized("Sessao remota ausente.".into())
-        })?;
+        let bearer_token = bearer_token
+            .ok_or_else(|| KanbanActionError::Unauthorized("Sessao remota ausente.".into()))?;
         let response = self
             .manas
             .send_table_request(
@@ -1714,7 +1796,9 @@ impl KanbanActionService {
             .await
             .map_err(KanbanActionError::BadGateway)?;
         parse_mutation_response(
-            &self.read_remote_json(session_token, &organ.id, response).await?,
+            &self
+                .read_remote_json(session_token, &organ.id, response)
+                .await?,
         )
     }
 
@@ -1741,9 +1825,8 @@ impl KanbanActionService {
                 last_insert_rowid: outcome.last_insert_rowid,
             });
         }
-        let bearer_token = bearer_token.ok_or_else(|| {
-            KanbanActionError::Unauthorized("Sessao remota ausente.".into())
-        })?;
+        let bearer_token = bearer_token
+            .ok_or_else(|| KanbanActionError::Unauthorized("Sessao remota ausente.".into()))?;
         let response = self
             .manas
             .send_table_request(
@@ -1757,7 +1840,9 @@ impl KanbanActionService {
             .await
             .map_err(KanbanActionError::BadGateway)?;
         parse_mutation_response(
-            &self.read_remote_json(session_token, &organ.id, response).await?,
+            &self
+                .read_remote_json(session_token, &organ.id, response)
+                .await?,
         )
     }
 
@@ -1780,9 +1865,8 @@ impl KanbanActionService {
                 last_insert_rowid: outcome.last_insert_rowid,
             });
         }
-        let bearer_token = bearer_token.ok_or_else(|| {
-            KanbanActionError::Unauthorized("Sessao remota ausente.".into())
-        })?;
+        let bearer_token = bearer_token
+            .ok_or_else(|| KanbanActionError::Unauthorized("Sessao remota ausente.".into()))?;
         let response = self
             .manas
             .send_table_request(
@@ -1796,7 +1880,9 @@ impl KanbanActionService {
             .await
             .map_err(KanbanActionError::BadGateway)?;
         parse_mutation_response(
-            &self.read_remote_json(session_token, &organ.id, response).await?,
+            &self
+                .read_remote_json(session_token, &organ.id, response)
+                .await?,
         )
     }
 
@@ -1841,7 +1927,10 @@ impl KanbanActionService {
         organ: &Organ,
         bearer_token: Option<&str>,
     ) -> Result<Vec<RecordExtensionRow>, KanbanActionError> {
-        parse_rows(self.list_table_rows(session_token, organ, bearer_token, "record_extension").await?)
+        parse_rows(
+            self.list_table_rows(session_token, organ, bearer_token, "record_extension")
+                .await?,
+        )
     }
 
     async fn list_record_links(
@@ -1850,7 +1939,10 @@ impl KanbanActionService {
         organ: &Organ,
         bearer_token: Option<&str>,
     ) -> Result<Vec<RecordLinkRow>, KanbanActionError> {
-        parse_rows(self.list_table_rows(session_token, organ, bearer_token, "record_link").await?)
+        parse_rows(
+            self.list_table_rows(session_token, organ, bearer_token, "record_link")
+                .await?,
+        )
     }
 
     async fn list_app_users(
@@ -1859,7 +1951,10 @@ impl KanbanActionService {
         organ: &Organ,
         bearer_token: Option<&str>,
     ) -> Result<Vec<AppUserRow>, KanbanActionError> {
-        parse_rows(self.list_table_rows(session_token, organ, bearer_token, "app_user").await?)
+        parse_rows(
+            self.list_table_rows(session_token, organ, bearer_token, "app_user")
+                .await?,
+        )
     }
 
     async fn list_records(
@@ -1868,7 +1963,10 @@ impl KanbanActionService {
         organ: &Organ,
         bearer_token: Option<&str>,
     ) -> Result<Vec<RecordRow>, KanbanActionError> {
-        parse_rows(self.list_table_rows(session_token, organ, bearer_token, "record").await?)
+        parse_rows(
+            self.list_table_rows(session_token, organ, bearer_token, "record")
+                .await?,
+        )
     }
 
     async fn list_record_comments(
@@ -1877,7 +1975,10 @@ impl KanbanActionService {
         organ: &Organ,
         bearer_token: Option<&str>,
     ) -> Result<Vec<RecordCommentRow>, KanbanActionError> {
-        parse_rows(self.list_table_rows(session_token, organ, bearer_token, "record_comment").await?)
+        parse_rows(
+            self.list_table_rows(session_token, organ, bearer_token, "record_comment")
+                .await?,
+        )
     }
 
     async fn list_record_resources(
@@ -1886,7 +1987,10 @@ impl KanbanActionService {
         organ: &Organ,
         bearer_token: Option<&str>,
     ) -> Result<Vec<RecordResourceRefRow>, KanbanActionError> {
-        parse_rows(self.list_table_rows(session_token, organ, bearer_token, "record_resource_ref").await?)
+        parse_rows(
+            self.list_table_rows(session_token, organ, bearer_token, "record_resource_ref")
+                .await?,
+        )
     }
 
     async fn list_record_worklogs(
@@ -1895,7 +1999,10 @@ impl KanbanActionService {
         organ: &Organ,
         bearer_token: Option<&str>,
     ) -> Result<Vec<RecordWorklogRow>, KanbanActionError> {
-        parse_rows(self.list_table_rows(session_token, organ, bearer_token, "record_worklog").await?)
+        parse_rows(
+            self.list_table_rows(session_token, organ, bearer_token, "record_worklog")
+                .await?,
+        )
     }
 
     async fn get_record_worklog_by_id(
@@ -1906,8 +2013,14 @@ impl KanbanActionService {
         interval_id: i64,
     ) -> Result<RecordWorklogRow, KanbanActionError> {
         parse_record_worklog_row(
-            self.get_table_row(session_token, organ, bearer_token, "record_worklog", interval_id)
-                .await?,
+            self.get_table_row(
+                session_token,
+                organ,
+                bearer_token,
+                "record_worklog",
+                interval_id,
+            )
+            .await?,
         )
     }
 }
@@ -2225,20 +2338,23 @@ enum ActionPermission {
 
 impl ActionPermission {
     fn check(&self, card: &BoardCard) -> Result<(), KanbanActionError> {
-        let has_write_records = card.permissions.iter().any(|value| value == "write_records");
+        let has_write_records = card
+            .permissions
+            .iter()
+            .any(|value| value == "write_records");
         let has_write_table = card.permissions.iter().any(|value| value == "write_table");
         match self {
             ActionPermission::ReadOnly => Ok(()),
-            ActionPermission::WriteRecordsOnly if !has_write_records => Err(
-                KanbanActionError::Forbidden(
+            ActionPermission::WriteRecordsOnly if !has_write_records => {
+                Err(KanbanActionError::Forbidden(
                     "Esse Kanban nao declara permissao write_records.".into(),
-                ),
-            ),
-            ActionPermission::WriteTableOnly if !has_write_table => Err(
-                KanbanActionError::Forbidden(
+                ))
+            }
+            ActionPermission::WriteTableOnly if !has_write_table => {
+                Err(KanbanActionError::Forbidden(
                     "Esse Kanban nao declara permissao write_table.".into(),
-                ),
-            ),
+                ))
+            }
             ActionPermission::WriteRecordAndMaybeTable { needs_table }
                 if !has_write_records || (*needs_table && !has_write_table) =>
             {
@@ -2339,9 +2455,7 @@ fn effort_payload(estimate_seconds: Option<i64>) -> Result<Option<Value>, Kanban
 
 fn validate_parent_id(parent_id: Option<i64>) -> Result<(), KanbanActionError> {
     if parent_id.is_some_and(|value| value <= 0) {
-        Err(KanbanActionError::Validation(
-            "parent_id invalido.".into(),
-        ))
+        Err(KanbanActionError::Validation("parent_id invalido.".into()))
     } else {
         Ok(())
     }
@@ -2420,7 +2534,8 @@ fn normalize_integer_ids(values: Vec<i64>) -> Vec<i64> {
 }
 
 fn empty_to_null(value: &Option<String>) -> Value {
-    value.as_deref()
+    value
+        .as_deref()
         .map(str::trim)
         .filter(|value| !value.is_empty())
         .map(|value| Value::String(value.to_string()))
@@ -2456,9 +2571,9 @@ fn parse_record_worklog_row(value: Value) -> Result<RecordWorklogRow, KanbanActi
 }
 
 fn parse_mutation_response(value: &Value) -> Result<MutationResponse, KanbanActionError> {
-    let object = value.as_object().ok_or_else(|| {
-        KanbanActionError::Internal("Resposta invalida de mutacao.".into())
-    })?;
+    let object = value
+        .as_object()
+        .ok_or_else(|| KanbanActionError::Internal("Resposta invalida de mutacao.".into()))?;
     Ok(MutationResponse {
         rows_affected: object
             .get("rows_affected")
@@ -2539,7 +2654,10 @@ fn extract_categories(data_json: &str) -> Option<Vec<String>> {
 
 fn extract_task_type(data_json: &str) -> Option<String> {
     let value = serde_json::from_str::<Value>(data_json).ok()?;
-    value.get("task_type").and_then(Value::as_str).map(str::to_string)
+    value
+        .get("task_type")
+        .and_then(Value::as_str)
+        .map(str::to_string)
 }
 
 fn extract_schedule(data_json: &str) -> (Option<String>, Option<String>) {
@@ -2547,8 +2665,14 @@ fn extract_schedule(data_json: &str) -> (Option<String>, Option<String>) {
         return (None, None);
     };
     (
-        value.get("start_at").and_then(Value::as_str).map(str::to_string),
-        value.get("end_at").and_then(Value::as_str).map(str::to_string),
+        value
+            .get("start_at")
+            .and_then(Value::as_str)
+            .map(str::to_string),
+        value
+            .get("end_at")
+            .and_then(Value::as_str)
+            .map(str::to_string),
     )
 }
 
@@ -2582,11 +2706,7 @@ impl RecordWorklogRow {
             return Some(seconds as i64);
         }
         let started = parse_utc(&self.started_at)?;
-        let ended = self
-            .ended_at
-            .as_deref()
-            .and_then(parse_utc)
-            .or(now)?;
+        let ended = self.ended_at.as_deref().and_then(parse_utc).or(now)?;
         Some((ended - started).num_seconds().max(0))
     }
 

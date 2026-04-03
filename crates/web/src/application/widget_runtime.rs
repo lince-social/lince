@@ -1,5 +1,6 @@
 use {
     crate::{
+        application::kanban_filters::{KanbanWidgetSettings, extract_kanban_settings},
         application::kanban_identity::{
             KANBAN_PACKAGE_FILENAME, is_supported_kanban_package_filename,
         },
@@ -126,6 +127,7 @@ impl WidgetRuntimeService {
                 write_records: has_permission(&card, "write_records"),
                 write_table: has_permission(&card, "write_table"),
             },
+            settings: extract_kanban_settings(&card.widget_state),
             data_contract: KanbanDataContract {
                 required_columns: vec!["id", "quantity", "head", "body"],
                 optional_columns: vec![
@@ -139,6 +141,8 @@ impl WidgetRuntimeService {
                     "assignee_names_json",
                     "parent_id",
                     "parent_head",
+                    "kanban_parent_id",
+                    "kanban_parent_head",
                     "depth",
                     "children_count",
                     "children_json",
@@ -234,6 +238,7 @@ impl WidgetRuntimeService {
                 "create-resource-ref",
                 "delete-resource-ref",
                 "apply-filters",
+                "update-settings",
             ],
             liveness: KanbanLivenessContract {
                 heartbeat_interval_seconds: HEARTBEAT_INTERVAL_SECONDS,
@@ -254,6 +259,7 @@ pub struct KanbanWidgetContract {
     pub widget: KanbanWidgetMeta,
     pub source: KanbanWidgetSource,
     pub permissions: KanbanWidgetPermissions,
+    pub settings: KanbanWidgetSettings,
     pub data_contract: KanbanDataContract,
     pub filters: KanbanFilterContract,
     pub relations: Vec<KanbanRelationContract>,
@@ -400,11 +406,7 @@ fn extract_filters_version(widget_state: &Value) -> u64 {
     widget_state
         .get("filters_version")
         .and_then(Value::as_u64)
-        .or_else(|| {
-            widget_state
-                .get("filtersVersion")
-                .and_then(Value::as_u64)
-        })
+        .or_else(|| widget_state.get("filtersVersion").and_then(Value::as_u64))
         .unwrap_or(0)
 }
 

@@ -117,7 +117,10 @@ const LANES: [Lane; 5] = [
     },
 ];
 
-pub fn render_sync_payload(payload: &str) -> Result<KanbanRenderedSync, KanbanRenderError> {
+pub fn render_sync_payload(
+    payload: &str,
+    show_parent_context: bool,
+) -> Result<KanbanRenderedSync, KanbanRenderError> {
     let snapshot = serde_json::from_str::<ViewSnapshotPayload>(payload)
         .map_err(|error| KanbanRenderError::InvalidPayload(error.to_string()))?;
     if !REQUIRED_COLUMNS
@@ -134,6 +137,13 @@ pub fn render_sync_payload(payload: &str) -> Result<KanbanRenderedSync, KanbanRe
         .rows
         .iter()
         .filter_map(parse_row)
+        .map(|mut row| {
+            if !show_parent_context {
+                row.parent_id = None;
+                row.parent_head = None;
+            }
+            row
+        })
         .collect::<Vec<_>>();
     let active_worklog_count = rows
         .iter()
@@ -193,11 +203,15 @@ fn parse_row(raw: &BTreeMap<String, String>) -> Option<KanbanRow> {
         primary_category: normalize_optional(raw.get("primary_category")),
         categories: parse_json_strings(raw.get("categories_json")),
         assignee_names: parse_json_strings(raw.get("assignee_names_json")),
-        parent_id: raw.get("parent_id").and_then(|value| parse_i64(value)),
-        parent_head: normalize_optional(raw.get("parent_head")),
-        comments_count: raw
-            .get("comments_count")
+        parent_id: raw
+            .get("kanban_parent_id")
+            .or_else(|| raw.get("parent_id"))
             .and_then(|value| parse_i64(value)),
+        parent_head: normalize_optional(
+            raw.get("kanban_parent_head")
+                .or_else(|| raw.get("parent_head")),
+        ),
+        comments_count: raw.get("comments_count").and_then(|value| parse_i64(value)),
         active_worklog_count: raw
             .get("active_worklog_count")
             .and_then(|value| parse_i64(value)),
@@ -239,7 +253,10 @@ fn render_lane(lane: Lane, rows: Vec<&KanbanRow>) -> Markup {
         64,
         lane.key
     );
-    let toggle_expr = format!("$ui.lanes.{}.collapsed = !$ui.lanes.{}.collapsed", lane.key, lane.key);
+    let toggle_expr = format!(
+        "$ui.lanes.{}.collapsed = !$ui.lanes.{}.collapsed",
+        lane.key, lane.key
+    );
     let toggle_label_expr = format!("{} ? '+' : '-'", collapsed_expr.as_str());
     html! {
         section.col
@@ -318,6 +335,13 @@ fn render_card(row: &KanbanRow) -> Markup {
                 { "+" }
                 button.cardAction type="button" data-open-focus=(row.id) data-on:click="window.KanbanWidget?.loadRecordDetail(Number(evt.currentTarget.dataset.openFocus || 0))" title="Focus card" { "[]" }
             }
+            @if let Some(parent_head) = row.parent_head.as_deref() {
+                @if let Some(parent_id) = row.parent_id {
+                    a.cardParentLink href="#" data-record-link=(parent_id) data-on:click__prevent="window.KanbanWidget?.loadRecordDetail(Number(evt.currentTarget.dataset.recordLink || 0))" {
+                        (parent_head)
+                    }
+                }
+            }
             button.head.headButton type="button" data-open-focus=(row.id) data-on:click="window.KanbanWidget?.loadRecordDetail(Number(evt.currentTarget.dataset.openFocus || 0))" {
                 @if row.head.trim().is_empty() {
                     "(no head)"
@@ -336,14 +360,6 @@ fn render_card(row: &KanbanRow) -> Markup {
                 .tagRow {
                     @for category in &categories {
                         span.pill { (category) }
-                    }
-                }
-            }
-            @if let Some(parent_head) = row.parent_head.as_deref() {
-                @if let Some(parent_id) = row.parent_id {
-                    .parentLink {
-                        "Parent "
-                        a href="#" data-record-link=(parent_id) data-on:click__prevent="window.KanbanWidget?.loadRecordDetail(Number(evt.currentTarget.dataset.recordLink || 0))" { (parent_head) }
                     }
                 }
             }
@@ -471,11 +487,7 @@ fn parse_i64(raw: &str) -> Option<i64> {
 
 fn normalize_optional(raw: Option<&String>) -> Option<String> {
     let value = normalize_text(raw);
-    if value.is_empty() {
-        None
-    } else {
-        Some(value)
-    }
+    if value.is_empty() { None } else { Some(value) }
 }
 
 fn normalize_text(raw: Option<&String>) -> String {
@@ -523,7 +535,11 @@ fn parse_json_strings(raw: Option<&String>) -> Vec<String> {
 
 fn categories_for_row(row: &KanbanRow) -> Vec<String> {
     let mut categories = Vec::new();
-    if let Some(primary) = row.primary_category.as_ref().filter(|value| !value.trim().is_empty()) {
+    if let Some(primary) = row
+        .primary_category
+        .as_ref()
+        .filter(|value| !value.trim().is_empty())
+    {
         categories.push(primary.clone());
     }
     for category in &row.categories {

@@ -32,9 +32,9 @@ use std::{
 #[cfg(feature = "tui")]
 use tui::tui_app;
 use utils::auth::hash_password;
-use utils::logging::{LogEntry, error as print_error, log, set_quiet};
 #[cfg(feature = "karma")]
 use utils::logging::status;
+use utils::logging::{LogEntry, error as print_error, log, set_quiet};
 #[cfg(feature = "http")]
 use web::{HttpServeMode, serve as serve_web};
 

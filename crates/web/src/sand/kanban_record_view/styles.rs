@@ -1,7 +1,6 @@
 pub(super) const INLINE_STYLES: [&str; 2] = [STYLE, crate::sand::shared_markdown::PREVIEW_STYLES];
 
-const STYLE: &str =
-    r#"
+const STYLE: &str = r#"
             :root {
                 color-scheme: dark;
                 --bg: #0e1013;
@@ -11,6 +10,7 @@ const STYLE: &str =
                 --line-strong: #394451;
                 --text: #e7edf4;
                 --muted: #91a0b1;
+                --muted-deep: #6f7c8d;
                 --soft: #c1ccd9;
                 --accent: #7aa2f7;
                 --done: #4cc58b;
@@ -666,18 +666,30 @@ const STYLE: &str =
                 gap: 6px;
             }
 
-            .parentLink {
-                font-size: 10px;
-                color: var(--muted);
+            .cardParentLink,
+            .kanban-focus-card a {
+                color: var(--muted-deep);
+                text-decoration: none;
             }
 
-            .parentLink a,
+            .cardParentLink {
+                width: fit-content;
+                max-width: 100%;
+                padding-right: 84px;
+                font-size: 10px;
+                line-height: 1.35;
+                word-break: break-word;
+            }
+
+            .cardParentLink:hover {
+                color: var(--soft);
+            }
+
             .kanban-focus-card a {
                 color: var(--accent);
                 text-decoration: none;
             }
 
-            .parentLink a:hover,
             .kanban-focus-card a:hover {
                 text-decoration: underline;
             }
@@ -761,6 +773,27 @@ const STYLE: &str =
             .fieldBlock {
                 display: grid;
                 gap: 6px;
+            }
+
+            .viewSection {
+                display: grid;
+                gap: 10px;
+                padding: 12px;
+                border-radius: 14px;
+                border: 1px solid var(--line);
+                background: rgba(255, 255, 255, 0.03);
+            }
+
+            .viewPresetGrid {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 8px;
+            }
+
+            .toolbarBtn.is-active {
+                border-color: rgba(122, 162, 247, 0.36);
+                color: #d9e5ff;
+                background: rgba(122, 162, 247, 0.12);
             }
 
             .parentChooser {
@@ -994,5 +1027,4 @@ const STYLE: &str =
                     justify-content: flex-start;
                 }
             }
-    "#
-;
+    "#;

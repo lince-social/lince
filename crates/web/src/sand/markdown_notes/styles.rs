@@ -1,4 +1,5 @@
-pub(super) const INLINE_STYLES: [&str; 2] = [r#"      :root {
+pub(super) const INLINE_STYLES: [&str; 2] = [
+    r#"      :root {
         color-scheme: dark;
         --bg: transparent;
         --text: #f3f4f6;
@@ -113,4 +114,6 @@ pub(super) const INLINE_STYLES: [&str; 2] = [r#"      :root {
       [hidden] {
         display: none !important;
       }
-    "#, crate::sand::shared_markdown::PREVIEW_STYLES];
+    "#,
+    crate::sand::shared_markdown::PREVIEW_STYLES,
+];

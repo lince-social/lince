@@ -230,7 +230,11 @@ impl BackendApiService {
         self.subscriptions.subscribe_view(claims, view_id).await
     }
 
-    pub async fn read_view_snapshot(&self, _claims: &AuthSubject, view_id: u32) -> Result<Value, Error> {
+    pub async fn read_view_snapshot(
+        &self,
+        _claims: &AuthSubject,
+        view_id: u32,
+    ) -> Result<Value, Error> {
         let snapshot = self.view_reads.read_snapshot(view_id).await?;
         serde_json::to_value(snapshot.snapshot).map_err(Error::other)
     }

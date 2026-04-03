@@ -65,9 +65,26 @@ docker run -d \
 ### 4. Cargo install
 
 ```bash
-cargo install lince
+cargo install --locked lince
 lince
 ```
+
+This publishes `lince` plus internal `lince-*` helper crates. Those helper crates exist so the binary can be installed from crates.io; they are implementation details, not a reusable public library surface.
+
+Supported feature shapes for `cargo install`:
+
+- Default HTTP + Karma: `cargo install --locked lince`
+- HTTP only: `cargo install --locked lince --no-default-features --features "http"`
+- Karma only: `cargo install --locked lince --no-default-features --features "karma"`
+- TUI only: `cargo install --locked lince --no-default-features --features "tui"`
+- TUI + Karma: `cargo install --locked lince --no-default-features --features "karma,tui"`
+- GUI only: `cargo install --locked lince --no-default-features --features "gui"`
+- GUI + Karma: `cargo install --locked lince --no-default-features --features "karma,gui"`
+
+Rules:
+
+- `http`, `tui`, and `gui` are mutually exclusive frontend features
+- `karma` can be combined with one frontend, or used on its own
 
 ### 5. Compiling yourself
 
@@ -77,12 +94,6 @@ For those that want to compile the latest and have [cargo](https://www.rust-lang
 
 ```bash
 cargo run
-```
-
-Or with [mise](https://mise.jdx.dev/):
-
-```bash
-mise dev
 ```
 
 ### Keeping it running
@@ -98,6 +109,13 @@ You can also use `mise` to run Lince:
 
 ```bash
 mise exec cargo:lince -- lince
+```
+
+For maintainers, the release flow is:
+
+```bash
+mise release
+mise publish-crates
 ```
 
 # Contributions

@@ -1,6 +1,7 @@
 #import "../../../common/typst/components/chapter.typ": major
 #import "collection.typ"
 #import "configuration.typ"
+#import "crates.typ"
 #import "dna.typ"
 #import "extensions.typ"
 #import "examples.typ"
@@ -30,6 +31,7 @@ Explanation of the tables _should_ be mostly focused on the ideas, the solutions
 #karma
 #examples
 #configuration
+#crates
 #operations
 #web_components
 #sandbox_website

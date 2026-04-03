@@ -45,6 +45,7 @@ async fn main() -> Result<(), Error> {
     }
 
     let bootstrap = bootstrap_config::load_or_init_bootstrap_config()?;
+    #[cfg(feature = "http")]
     let listen_addr = arg_value(&args, "--listen-addr");
 
     let db = Arc::new(connection().await.inspect_err(|e| {
@@ -57,7 +58,7 @@ async fn main() -> Result<(), Error> {
 
     seed(&db).await.map_err(Error::other)?;
 
-    #[cfg(any(feature = "gui", feature = "http", feature = "tui"))]
+    #[cfg(any(feature = "gui", feature = "http", feature = "tui", feature = "karma"))]
     let frontend_enabled = should_start_frontend(&args);
     #[cfg(feature = "karma")]
     let karma_enabled = should_start_karma(&args);
@@ -150,12 +151,13 @@ fn has_arg(args: &[String], expected: &str) -> bool {
     args.iter().any(|arg| arg == expected)
 }
 
+#[cfg(feature = "http")]
 fn arg_value(args: &[String], expected: &str) -> Option<String> {
     args.windows(2)
         .find_map(|window| (window[0] == expected).then(|| window[1].clone()))
 }
 
-#[cfg(any(feature = "gui", feature = "http", feature = "tui"))]
+#[cfg(any(feature = "gui", feature = "http", feature = "tui", feature = "karma"))]
 fn should_start_frontend(args: &[String]) -> bool {
     let explicitly_selected = has_arg(args, "--frontend") || has_arg(args, "--karma");
     if explicitly_selected {
@@ -177,7 +179,16 @@ fn should_start_frontend(args: &[String]) -> bool {
         return false;
     }
 
-    cfg!(any(feature = "gui", feature = "http", feature = "tui"))
+    #[cfg(any(feature = "gui", feature = "http", feature = "tui"))]
+    {
+        return true;
+    }
+
+    #[cfg(not(any(feature = "gui", feature = "http", feature = "tui")))]
+    {
+        let _ = args;
+        return false;
+    }
 }
 
 #[cfg(feature = "karma")]

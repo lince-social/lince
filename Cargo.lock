@@ -92,25 +92,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5f0e0fee31ef5ed1ba1316088939cea399010ed7731dba877ed44aeb407a75ea"
 
 [[package]]
-name = "application"
-version = "0.1.0"
-dependencies = [
- "argon2",
- "async-trait",
- "chrono",
- "domain",
- "injection",
- "jsonwebtoken",
- "persistence",
- "regex",
- "rhai",
- "serde",
- "serde_json",
- "tokio",
- "utils",
-]
-
-[[package]]
 name = "ar_archive_writer"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2398,15 +2379,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "domain"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "serde",
- "sqlx",
-]
-
-[[package]]
 name = "dotenvy"
 version = "0.15.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3701,22 +3673,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gui"
-version = "0.1.0"
-dependencies = [
- "application",
- "domain",
- "gpui",
- "gpui-component",
- "gpui-component-assets",
- "injection",
- "persistence",
- "ropey 1.6.1",
- "tokio",
- "utils",
-]
-
-[[package]]
 name = "h2"
 version = "0.3.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4289,15 +4245,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "injection"
-version = "0.1.0"
-dependencies = [
- "domain",
- "persistence",
- "sqlx",
-]
-
-[[package]]
 name = "inotify"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4653,23 +4600,150 @@ dependencies = [
 name = "lince"
 version = "0.6.1"
 dependencies = [
- "application",
  "chrono",
  "crossterm 0.29.0",
  "dirs 6.0.0",
- "domain",
- "gui",
- "injection",
- "persistence",
+ "lince-application",
+ "lince-domain",
+ "lince-gui",
+ "lince-injection",
+ "lince-persistence",
+ "lince-tui",
+ "lince-utils",
+ "lince-web",
  "serde",
  "serde_json",
  "sqlx",
  "tokio",
  "toml 0.9.12+spec-1.1.0",
- "tui",
- "utils",
  "uuid",
- "web",
+]
+
+[[package]]
+name = "lince-application"
+version = "0.6.1"
+dependencies = [
+ "argon2",
+ "async-trait",
+ "chrono",
+ "jsonwebtoken",
+ "lince-domain",
+ "lince-injection",
+ "lince-persistence",
+ "lince-utils",
+ "regex",
+ "rhai",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "lince-domain"
+version = "0.6.1"
+dependencies = [
+ "chrono",
+ "serde",
+ "sqlx",
+]
+
+[[package]]
+name = "lince-gui"
+version = "0.6.1"
+dependencies = [
+ "gpui",
+ "gpui-component",
+ "gpui-component-assets",
+ "lince-application",
+ "lince-domain",
+ "lince-injection",
+ "lince-persistence",
+ "lince-utils",
+ "ropey 1.6.1",
+ "tokio",
+]
+
+[[package]]
+name = "lince-injection"
+version = "0.6.1"
+dependencies = [
+ "lince-domain",
+ "lince-persistence",
+ "sqlx",
+]
+
+[[package]]
+name = "lince-persistence"
+version = "0.6.1"
+dependencies = [
+ "async-trait",
+ "aws-config",
+ "aws-sdk-s3",
+ "chrono",
+ "dirs 6.0.0",
+ "futures",
+ "lince-domain",
+ "lince-utils",
+ "regex",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "tokio",
+]
+
+[[package]]
+name = "lince-tui"
+version = "0.6.1"
+dependencies = [
+ "color-eyre",
+ "crossterm 0.29.0",
+ "lince-application",
+ "lince-domain",
+ "lince-injection",
+ "lince-persistence",
+ "lince-utils",
+ "ratatui",
+ "sqlx",
+]
+
+[[package]]
+name = "lince-utils"
+version = "0.6.1"
+dependencies = [
+ "argon2",
+ "chrono",
+ "jsonwebtoken",
+ "serde",
+]
+
+[[package]]
+name = "lince-web"
+version = "0.6.1"
+dependencies = [
+ "async-stream",
+ "axum",
+ "chrono",
+ "dirs 6.0.0",
+ "dotenvy",
+ "lince-application",
+ "lince-injection",
+ "lince-persistence",
+ "lince-utils",
+ "maud",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+ "toml 0.9.12+spec-1.1.0",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "urlencoding",
+ "uuid",
+ "zip",
 ]
 
 [[package]]
@@ -5719,25 +5793,6 @@ name = "percent-encoding"
 version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
-
-[[package]]
-name = "persistence"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "aws-config",
- "aws-sdk-s3",
- "chrono",
- "dirs 6.0.0",
- "domain",
- "futures",
- "regex",
- "serde",
- "serde_json",
- "sqlx",
- "tokio",
- "utils",
-]
 
 [[package]]
 name = "pest"
@@ -8818,21 +8873,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tui"
-version = "0.1.0"
-dependencies = [
- "application",
- "color-eyre",
- "crossterm 0.29.0",
- "domain",
- "injection",
- "persistence",
- "ratatui",
- "sqlx",
- "utils",
-]
-
-[[package]]
 name = "typeid"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9046,16 +9086,6 @@ name = "utf8parse"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
-
-[[package]]
-name = "utils"
-version = "0.1.0"
-dependencies = [
- "argon2",
- "chrono",
- "jsonwebtoken",
- "serde",
-]
 
 [[package]]
 name = "uuid"
@@ -9427,36 +9457,6 @@ dependencies = [
  "log",
  "once_cell",
  "pkg-config",
-]
-
-[[package]]
-name = "web"
-version = "0.1.0"
-dependencies = [
- "application",
- "async-stream",
- "axum",
- "chrono",
- "dirs 6.0.0",
- "dotenvy",
- "injection",
- "maud",
- "persistence",
- "reqwest",
- "serde",
- "serde_json",
- "sqlx",
- "tokio",
- "tokio-stream",
- "tokio-util",
- "toml 0.9.12+spec-1.1.0",
- "tower-http",
- "tracing",
- "tracing-subscriber",
- "urlencoding",
- "utils",
- "uuid",
- "zip",
 ]
 
 [[package]]
@@ -10361,11 +10361,11 @@ checksum = "ec7a2a501ed189703dba8b08142f057e887dfc4b2cc4db2d343ac6376ba3e0b9"
 name = "xtask"
 version = "0.1.0"
 dependencies = [
- "domain",
+ "lince-domain",
+ "lince-web",
  "semver",
  "serde",
  "toml 0.9.12+spec-1.1.0",
- "web",
 ]
 
 [[package]]

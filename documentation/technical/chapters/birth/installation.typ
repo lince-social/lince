@@ -9,8 +9,28 @@ Pick the latest one for your machine and operating system. After the download, u
 
 Or you can install from the crates.io repository with:
 ```bash
-cargo install lince
+cargo install --locked lince
 ```
+
+This also publishes internal `lince-*` helper crates that the binary depends on. They are implementation details for installing the binary, not a separate public API.
+
+Supported feature shapes for crates.io installs are:
+
+- default HTTP + Karma: `cargo install --locked lince`
+- HTTP only: `cargo install --locked lince --no-default-features --features "http"`
+- Karma only: `cargo install --locked lince --no-default-features --features "karma"`
+- TUI only: `cargo install --locked lince --no-default-features --features "tui"`
+- TUI + Karma: `cargo install --locked lince --no-default-features --features "karma,tui"`
+- GUI only: `cargo install --locked lince --no-default-features --features "gui"`
+- GUI + Karma: `cargo install --locked lince --no-default-features --features "karma,gui"`
+
+The frontend features are mutually exclusive:
+
+- `http`
+- `tui`
+- `gui`
+
+`karma` can be combined with one of them, or used on its own.
 
 If you prefer to compile the source code, the easiest way is to download the repo and run:
 

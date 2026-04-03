@@ -1,10 +1,9 @@
 [env]
-RUST_CHANNEL = "stable"
 DOCS_ROOT = "documentation/technical"
 FIRST_STEPS_ROOT = "documentation/first_steps"
 
 [tools]
-rust = "{{env.RUST_CHANNEL}}"
+rust = "stable"
 
 [tasks.typst]
 description = "Run Typst and Touying workflows"
@@ -22,7 +21,11 @@ else
 fi
 """
 
-[tasks.version-release]
+[tasks.release]
 description = "Automated release workflow"
 tools = { "cargo:git-cliff" = "latest", "cargo:cargo-edit" = "latest", "gh" = "latest" }
 run = "./run/release.sh"
+
+[tasks.publish-crates]
+description = "Publish the internal crates and the lince binary to crates.io"
+run = "./run/publish-crates.sh"

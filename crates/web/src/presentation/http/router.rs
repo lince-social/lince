@@ -1,4 +1,5 @@
 use {
+    super::static_assets,
     crate::{
         application::state::AppState,
         domain::board::{AppBootstrap, ServerBootstrap},
@@ -135,7 +136,7 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
         )
         .layer(DefaultBodyLimit::max(HOST_API_BODY_LIMIT_BYTES));
 
-    Router::<AppState>::new()
+    let router = Router::<AppState>::new()
         .route("/", get(index))
         .route("/ai", get(ai_builder_page))
         .nest("/api", build_backend_router())
@@ -149,8 +150,13 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
             post(login_server).delete(logout_server),
         )
         .nest("/host", protected_api)
-        .nest_service("/static", ServeDir::new(static_dir))
-        .with_state(state)
+        .with_state(state);
+
+    if static_dir.exists() {
+        router.nest_service("/static", ServeDir::new(static_dir))
+    } else {
+        router.route("/static/{*path}", get(static_assets::serve))
+    }
 }
 
 async fn api_only_index() -> impl IntoResponse {

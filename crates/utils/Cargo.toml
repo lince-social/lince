@@ -13,5 +13,6 @@ name = "utils"
 [dependencies]
 argon2.workspace = true
 chrono.workspace = true
+dirs.workspace = true
 jsonwebtoken.workspace = true
 serde = { workspace = true, features = ["derive"] }

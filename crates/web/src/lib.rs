@@ -26,7 +26,12 @@ use {
         presentation::http::router::build_router,
     },
     injection::cross_cutting::InjectedServices,
-    std::{io::Error as IoError, net::SocketAddr, sync::Arc},
+    std::{
+        io::{Error as IoError, ErrorKind},
+        net::SocketAddr,
+        sync::Arc,
+    },
+    utils::logging::status,
 };
 
 const DEFAULT_WEB_LISTEN_ADDR: &str = "127.0.0.1:6174";
@@ -91,19 +96,34 @@ pub async fn serve(
 
     let app = axum::Router::new().merge(build_router(app_state, mode));
 
-    let address = listen_addr
+    let listen_addr = listen_addr
         .filter(|value| !value.trim().is_empty())
-        .as_deref()
-        .unwrap_or(DEFAULT_WEB_LISTEN_ADDR)
+        .unwrap_or_else(|| DEFAULT_WEB_LISTEN_ADDR.to_string());
+    let address = listen_addr
         .parse::<SocketAddr>()
-        .map_err(|error| IoError::other(format!("Invalid listen addr: {error}")))?;
-    let listener = tokio::net::TcpListener::bind(address)
-        .await
-        .map_err(IoError::other)?;
+        .map_err(|error| {
+            IoError::other(format!("Invalid listen address `{listen_addr}`: {error}"))
+        })?;
+    let listener = tokio::net::TcpListener::bind(address).await.map_err(|error| {
+        if error.kind() == ErrorKind::AddrInUse {
+            IoError::new(
+                ErrorKind::AddrInUse,
+                format!("Address {address} is already in use"),
+            )
+        } else {
+            IoError::new(
+                error.kind(),
+                format!("Failed to bind {address}: {error}"),
+            )
+        }
+    })?;
     let label = match mode {
         HttpServeMode::FullUi => "Web frontend",
         HttpServeMode::ApiOnly => "HTTP API",
     };
-    println!("{label} listening at http://{}", listener.local_addr().map_err(IoError::other)?);
+    status(format!(
+        "{label} listening at http://{}",
+        listener.local_addr().map_err(IoError::other)?
+    ));
     axum::serve(listener, app).await.map_err(IoError::other)
 }

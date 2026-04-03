@@ -3,7 +3,10 @@ use std::{
     fs::{OpenOptions, create_dir_all},
     io::{ErrorKind, Write},
     path::PathBuf,
+    sync::atomic::{AtomicBool, Ordering},
 };
+
+static QUIET: AtomicBool = AtomicBool::new(false);
 
 #[allow(dead_code)]
 pub enum LogEntry {
@@ -11,25 +14,43 @@ pub enum LogEntry {
     Info(String),
 }
 
+pub fn set_quiet(enabled: bool) {
+    QUIET.store(enabled, Ordering::Relaxed);
+}
+
+pub fn status(message: impl AsRef<str>) {
+    if !QUIET.load(Ordering::Relaxed) {
+        println!("{}", message.as_ref());
+    }
+}
+
+pub fn error(message: impl AsRef<str>) {
+    eprintln!("{}", message.as_ref());
+}
+
 pub fn log(entry: LogEntry) {
     let timestamp: DateTime<Utc> = Utc::now();
     let date = timestamp.format("%Y-%m-%d").to_string();
     let time = timestamp.format("%Y-%m-%d %H:%M:%S").to_string();
-
-    let log_dir: PathBuf = [
-        "logs",
-        &timestamp.format("%Y").to_string(),
-        &timestamp.format("%m").to_string(),
-    ]
-    .iter()
-    .collect();
+    let Some(config_dir) = dirs::config_dir() else {
+        error(format!(
+            "{} | [LOG ERROR]: Unable to resolve user config directory",
+            time
+        ));
+        return;
+    };
+    let log_dir: PathBuf = config_dir
+        .join("lince")
+        .join("log")
+        .join(timestamp.format("%Y").to_string())
+        .join(timestamp.format("%m").to_string());
     let log_file = log_dir.join(format!("{}.log", date));
 
     if let Err(e) = create_dir_all(&log_dir) {
-        eprintln!(
+        error(format!(
             "{} | [LOG ERROR]: Failed to create log directory: {}",
             time, e
-        );
+        ));
         return;
     }
 
@@ -44,9 +65,15 @@ pub fn log(entry: LogEntry) {
     match OpenOptions::new().create(true).append(true).open(&log_file) {
         Ok(mut file) => {
             if let Err(e) = writeln!(file, "{}", formatted) {
-                eprintln!("{} | [LOG ERROR]: Failed to write to log file: {}", time, e);
+                error(format!(
+                    "{} | [LOG ERROR]: Failed to write to log file: {}",
+                    time, e
+                ));
             }
         }
-        Err(e) => eprintln!("{} | [LOG ERROR]: Failed to open log file: {}", time, e),
+        Err(e) => error(format!(
+            "{} | [LOG ERROR]: Failed to open log file: {}",
+            time, e
+        )),
     }
 }

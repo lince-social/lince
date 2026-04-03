@@ -32,7 +32,9 @@ use std::{
 #[cfg(feature = "tui")]
 use tui::tui_app;
 use utils::auth::hash_password;
-use utils::logging::{LogEntry, log};
+use utils::logging::{LogEntry, error as print_error, log, set_quiet};
+#[cfg(feature = "karma")]
+use utils::logging::status;
 #[cfg(feature = "http")]
 use web::{HttpServeMode, serve as serve_web};
 
@@ -43,6 +45,7 @@ async fn main() -> Result<(), Error> {
         print_help();
         return Ok(());
     }
+    set_quiet(has_arg(&args, "--quiet"));
 
     let bootstrap = bootstrap_config::load_or_init_bootstrap_config()?;
     #[cfg(feature = "http")]
@@ -94,6 +97,8 @@ async fn main() -> Result<(), Error> {
     #[cfg(feature = "gui")]
     if frontend_enabled && let Err(e) = start_gui(services.clone()).await {
         log(LogEntry::Error(e.kind(), e.to_string()));
+        print_error(format!("Failed to start GUI: {e}"));
+        return Err(e);
     }
 
     #[cfg(feature = "http")]
@@ -106,12 +111,17 @@ async fn main() -> Result<(), Error> {
         )
         .await
     {
-        log(LogEntry::Error(e.kind(), e.to_string()));
+        let message = format!("Failed to start web frontend: {e}");
+        print_error(&message);
+        log(LogEntry::Error(e.kind(), message));
+        return Err(e);
     }
 
     #[cfg(feature = "tui")]
     if frontend_enabled && let Err(e) = start_tui(services.clone()).await {
         log(LogEntry::Error(e.kind(), e.to_string()));
+        print_error(format!("Failed to start TUI: {e}"));
+        return Err(e);
     }
 
     #[cfg(feature = "karma")]
@@ -128,6 +138,7 @@ fn print_help() {
     println!("Options:");
     println!("  -h, --help            Show this help message");
     println!("      --listen-addr <addr>  Override the HTTP listen address");
+    println!("      --quiet          Suppress normal status output");
     #[cfg(feature = "http")]
     println!(
         "      --http-api-only  Serve only the HTTP API. Do not expose the board UI or host widget routes."
@@ -239,7 +250,7 @@ async fn start_html(
 #[cfg(feature = "tui")]
 async fn start_tui(services: InjectedServices) -> Result<(), Error> {
     while let Err(e) = tui_app(services.clone()).await {
-        println!("Tui error: {e}")
+        print_error(format!("TUI error: {e}"));
     }
     Ok(())
 }
@@ -247,14 +258,14 @@ async fn start_tui(services: InjectedServices) -> Result<(), Error> {
 #[cfg(feature = "karma")]
 async fn start_karma(services: InjectedServices) -> Result<(), Error> {
     loop {
-        println!("Delivering Karma");
+        status("Delivering Karma");
         let vec_karma = services.repository.karma.get_active(None).await;
         if let Err(e) = &vec_karma {
             log(LogEntry::Error(e.kind(), e.to_string()));
         } else if let Err(e) = karma_deliver(services.clone(), vec_karma.unwrap()).await {
             log(LogEntry::Error(e.kind(), e.to_string()));
         }
-        println!("Karma Delivered!");
+        status("Karma Delivered!");
         tokio::time::sleep(Duration::from_secs(60)).await;
     }
 }

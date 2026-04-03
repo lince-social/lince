@@ -193,6 +193,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff
+
+      - name: Generate release notes
+        run: git cliff --latest -o RELEASE_NOTES.md
+
       - name: Download packaged artifacts
         uses: actions/download-artifact@v4
         with:
@@ -203,4 +215,5 @@ jobs:
       - name: Publish tagged release
         uses: softprops/action-gh-release@v2
         with:
+          body_path: RELEASE_NOTES.md
           files: release-artifacts/*

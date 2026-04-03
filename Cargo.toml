@@ -15,23 +15,22 @@ members = [
 
 default-members = ["crates/lince"]
 
-[workspace.package]
-version = "0.6.1"
+.7.0"
 edition = "2024"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/lince-social/lince"
 homepage = "https://lince.social"
 
 [workspace.dependencies]
-application = { version = "=0.6.1", path = "crates/application", package = "lince-application" }
-domain = { version = "=0.6.1", path = "crates/domain", package = "lince-domain" }
-injection = { version = "=0.6.1", path = "crates/injection", package = "lince-injection" }
-lince = { version = "=0.6.1", path = "crates/lince" }
-persistence = { version = "=0.6.1", path = "crates/persistence", package = "lince-persistence" }
-gui = { version = "=0.6.1", path = "crates/gui", package = "lince-gui" }
-tui = { version = "=0.6.1", path = "crates/tui", package = "lince-tui" }
-utils = { version = "=0.6.1", path = "crates/utils", package = "lince-utils" }
-web = { version = "=0.6.1", path = "crates/web", package = "lince-web" }
+application = { version = "=0.7.0", path = "crates/application", package = "lince-application" }
+domain = { version = "=0.7.0", path = "crates/domain", package = "lince-domain" }
+injection = { version = "=0.7.0", path = "crates/injection", package = "lince-injection" }
+lince = { version = "=0.7.0", path = "crates/lince" }
+persistence = { version = "=0.7.0", path = "crates/persistence", package = "lince-persistence" }
+gui = { version = "=0.7.0", path = "crates/gui", package = "lince-gui" }
+tui = { version = "=0.7.0", path = "crates/tui", package = "lince-tui" }
+utils = { version = "=0.7.0", path = "crates/utils", package = "lince-utils" }
+web = { version = "=0.7.0", path = "crates/web", package = "lince-web" }
 
 async-trait = "0.1.89"
 argon2 = "0.5.3"

@@ -7,6 +7,40 @@ Pick the latest one for your machine and operating system. After the download, u
 ./lince
 ```
 
+For a fresh Ubuntu VPS, the smallest practical always-on setup is the public container image from `ghcr.io/lince-social/lince`:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y docker.io
+sudo systemctl enable --now docker
+
+sudo docker run -d \
+  --name lince \
+  --restart unless-stopped \
+  -p 6174:6174 \
+  -v lince-data:/var/lib/lince \
+  ghcr.io/lince-social/lince:rolling
+```
+
+This keeps Lince running in the background, stores its state in the `lince-data` volume, and starts it again after reboot. `podman run` can use the same image and flags if you prefer Podman instead of Docker.
+
+If your VPS uses `ufw`, open the HTTP port:
+
+```bash
+sudo ufw allow 6174/tcp
+```
+
+After that, open `http://YOUR_SERVER_IP:6174`.
+
+If you prefer not to use containers, the shortest binary path on a fresh Ubuntu VPS is:
+
+```bash
+curl -fsSL https://lince.social/install.sh | bash
+~/.local/bin/lince --listen-addr 0.0.0.0:6174
+```
+
+The explicit `--listen-addr 0.0.0.0:6174` matters on a VPS because the HTTP frontend defaults to `127.0.0.1:6174`.
+
 Or you can install from the crates.io repository with:
 ```bash
 cargo install --locked lince

@@ -51,7 +51,9 @@ Check the [releases](https://github.com/lince-social/lince/releases) and downloa
 
 ### 3. Docker
 
-The container keeps its state under `/var/lib/lince` and is meant to be run with a persistent volume.
+The published container image is public at `ghcr.io/lince-social/lince`. The container keeps its state under `/var/lib/lince` and is meant to be run with a persistent volume.
+
+To keep Lince running as a background service and bring it back after reboot, run it with `-d` and `--restart unless-stopped`:
 
 ```bash
 docker run -d \
@@ -61,6 +63,8 @@ docker run -d \
   -v lince-data:/var/lib/lince \
   ghcr.io/lince-social/lince:rolling
 ```
+
+This is the recommended container install path for always-on usage on a VPS or personal machine. `podman run` can use the same image and flags.
 
 ### 4. Cargo install
 
@@ -101,7 +105,7 @@ cargo run
 The installer only installs the binary. If you want Lince to stay up after boot, use your own process supervisor.
 
 - On Linux with `systemd`, start from [run/systemd/lince.service](run/systemd/lince.service).
-- With Docker, use `--restart unless-stopped`.
+- With Docker or Podman, use the container command above with `--restart unless-stopped`.
 
 ### Extra
 

@@ -4598,7 +4598,7 @@ dependencies = [
 
 [[package]]
 name = "lince"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "chrono",
  "crossterm 0.29.0",
@@ -4621,7 +4621,7 @@ dependencies = [
 
 [[package]]
 name = "lince-application"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "argon2",
  "async-trait",
@@ -4640,7 +4640,7 @@ dependencies = [
 
 [[package]]
 name = "lince-domain"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "chrono",
  "serde",
@@ -4649,7 +4649,7 @@ dependencies = [
 
 [[package]]
 name = "lince-gui"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "gpui",
  "gpui-component",
@@ -4665,7 +4665,7 @@ dependencies = [
 
 [[package]]
 name = "lince-injection"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "lince-domain",
  "lince-persistence",
@@ -4674,7 +4674,7 @@ dependencies = [
 
 [[package]]
 name = "lince-persistence"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "async-trait",
  "aws-config",
@@ -4693,7 +4693,7 @@ dependencies = [
 
 [[package]]
 name = "lince-tui"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "color-eyre",
  "crossterm 0.29.0",
@@ -4708,7 +4708,7 @@ dependencies = [
 
 [[package]]
 name = "lince-utils"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "argon2",
  "chrono",
@@ -4718,7 +4718,7 @@ dependencies = [
 
 [[package]]
 name = "lince-web"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "async-stream",
  "axum",
@@ -10360,7 +10360,7 @@ checksum = "ec7a2a501ed189703dba8b08142f057e887dfc4b2cc4db2d343ac6376ba3e0b9"
 
 [[package]]
 name = "xtask"
-version = "0.1.0"
+version = "0.7.0"
 dependencies = [
  "lince-domain",
  "lince-web",

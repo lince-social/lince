@@ -7,9 +7,7 @@ pub mod pages;
 use crate::app::app;
 use injection::cross_cutting::InjectedServices;
 use ratatui::crossterm::{
-    event::{
-        KeyboardEnhancementFlags, PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags,
-    },
+    event::{KeyboardEnhancementFlags, PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags},
     execute,
 };
 use std::io::stdout;

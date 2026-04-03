@@ -5,10 +5,10 @@ use {
                 CreateCommentRequest, CreateRecordRequest, CreateResourceRefRequest,
                 DeleteCommentRequest, DeleteRecordRequest, DeleteResourceRefRequest,
                 HeartbeatWorklogRequest, KanbanActionError, LoadRecordDetailRequest,
-                MoveRecordRequest, StartWorklogRequest, StopWorklogRequest,
-                UpdateCommentRequest, UpdateRecordBodyRequest, UpdateRecordRequest,
+                MoveRecordRequest, StartWorklogRequest, StopWorklogRequest, UpdateCommentRequest,
+                UpdateRecordBodyRequest, UpdateRecordRequest,
             },
-            kanban_filters::{KanbanFilterError, RawKanbanFilterRow},
+            kanban_filters::{KanbanFilterError, RawKanbanFilterRow, UpdateKanbanSettingsRequest},
             kanban_render::{
                 KanbanRenderError, render_error_payload, render_mismatch_payload,
                 render_sync_payload,
@@ -25,7 +25,10 @@ use {
         Json,
         extract::{Path, State},
         http::{HeaderMap, StatusCode, header},
-        response::{IntoResponse, Response, sse::{Event, KeepAlive, Sse}},
+        response::{
+            IntoResponse, Response,
+            sse::{Event, KeepAlive, Sse},
+        },
     },
     serde::Deserialize,
     serde_json::{Value, json},
@@ -78,7 +81,10 @@ pub async fn get_widget_stream(
         .map_err(map_kanban_stream_error)?;
 
     let response = match prepared {
-        PreparedKanbanStream::Local { mut handle } => {
+        PreparedKanbanStream::Local {
+            mut handle,
+            settings,
+        } => {
             let stream = stream! {
                 while let Some(frame) = handle.rx.recv().await {
                     let (event_name, data) = match frame {
@@ -90,7 +96,11 @@ pub async fn get_widget_stream(
                         }
                     };
 
-                    for event in render_widget_stream_events(event_name, &data) {
+                    for event in render_widget_stream_events(
+                        event_name,
+                        &data,
+                        settings.show_parent_context,
+                    ) {
                         yield Ok::<_, Infallible>(event);
                     }
                 }
@@ -103,7 +113,7 @@ pub async fn get_widget_stream(
                 )
                 .into_response()
         }
-        PreparedKanbanStream::Remote { response } => {
+        PreparedKanbanStream::Remote { response, settings } => {
             let stream = stream! {
                 let mut response = response;
                 let mut parser = SseEventParser::default();
@@ -111,14 +121,22 @@ pub async fn get_widget_stream(
                     match response.chunk().await {
                         Ok(Some(chunk)) => {
                             for event in parser.push_chunk(&chunk) {
-                                for rendered in render_widget_stream_events(&event.event_name, &event.data) {
+                                for rendered in render_widget_stream_events(
+                                    &event.event_name,
+                                    &event.data,
+                                    settings.show_parent_context,
+                                ) {
                                     yield Ok::<_, Infallible>(rendered);
                                 }
                             }
                         }
                         Ok(None) => {
                             for event in parser.finish() {
-                                for rendered in render_widget_stream_events(&event.event_name, &event.data) {
+                                for rendered in render_widget_stream_events(
+                                    &event.event_name,
+                                    &event.data,
+                                    settings.show_parent_context,
+                                ) {
                                     yield Ok::<_, Infallible>(rendered);
                                 }
                             }
@@ -128,6 +146,7 @@ pub async fn get_widget_stream(
                             for event in render_widget_stream_events(
                                 "error",
                                 &json!({ "error": format!("Nao foi possivel ler o stream remoto da view: {error}") }).to_string(),
+                                settings.show_parent_context,
                             ) {
                                 yield Ok::<_, Infallible>(event);
                             }
@@ -170,9 +189,13 @@ pub async fn post_widget_action(
     );
     match action.as_str() {
         "apply-filters" => {
-            let payload: WidgetActionRequest = serde_json::from_value(payload).map_err(|error| {
-                api_error(StatusCode::BAD_REQUEST, format!("Payload invalido: {error}"))
-            })?;
+            let payload: WidgetActionRequest =
+                serde_json::from_value(payload).map_err(|error| {
+                    api_error(
+                        StatusCode::BAD_REQUEST,
+                        format!("Payload invalido: {error}"),
+                    )
+                })?;
             let outcome = state
                 .kanban_filters
                 .apply_filters(&instance_id, payload.filters)
@@ -189,10 +212,39 @@ pub async fn post_widget_action(
                 }
             })))
         }
+        "update-settings" => {
+            let request = serde_json::from_value::<UpdateKanbanSettingsRequest>(payload).map_err(
+                |error| {
+                    api_error(
+                        StatusCode::BAD_REQUEST,
+                        format!("Payload invalido: {error}"),
+                    )
+                },
+            )?;
+            let settings = state
+                .kanban_filters
+                .update_settings(&instance_id, request)
+                .await
+                .map_err(map_kanban_filter_error)?;
+            Ok(Json(serde_json::json!({
+                "ok": true,
+                "action": action,
+                "message": "Settings updated.",
+                "record_id": Value::Null,
+                "await_stream_refresh": true,
+                "detail": {
+                    "settings": settings
+                }
+            })))
+        }
         "create-record" => {
-            let request = serde_json::from_value::<CreateRecordRequest>(payload).map_err(|error| {
-                api_error(StatusCode::BAD_REQUEST, format!("Payload invalido: {error}"))
-            })?;
+            let request =
+                serde_json::from_value::<CreateRecordRequest>(payload).map_err(|error| {
+                    api_error(
+                        StatusCode::BAD_REQUEST,
+                        format!("Payload invalido: {error}"),
+                    )
+                })?;
             let outcome = state
                 .kanban_actions
                 .create_record(session_token.as_deref(), &instance_id, request)
@@ -201,9 +253,13 @@ pub async fn post_widget_action(
             Ok(Json(outcome.into_json_value()))
         }
         "update-record" => {
-            let request = serde_json::from_value::<UpdateRecordRequest>(payload).map_err(|error| {
-                api_error(StatusCode::BAD_REQUEST, format!("Payload invalido: {error}"))
-            })?;
+            let request =
+                serde_json::from_value::<UpdateRecordRequest>(payload).map_err(|error| {
+                    api_error(
+                        StatusCode::BAD_REQUEST,
+                        format!("Payload invalido: {error}"),
+                    )
+                })?;
             let outcome = state
                 .kanban_actions
                 .update_record(session_token.as_deref(), &instance_id, request)
@@ -214,7 +270,10 @@ pub async fn post_widget_action(
         "update-record-body" => {
             let request =
                 serde_json::from_value::<UpdateRecordBodyRequest>(payload).map_err(|error| {
-                    api_error(StatusCode::BAD_REQUEST, format!("Payload invalido: {error}"))
+                    api_error(
+                        StatusCode::BAD_REQUEST,
+                        format!("Payload invalido: {error}"),
+                    )
                 })?;
             let outcome = state
                 .kanban_actions
@@ -224,9 +283,13 @@ pub async fn post_widget_action(
             Ok(Json(outcome.into_json_value()))
         }
         "move-record" => {
-            let request = serde_json::from_value::<MoveRecordRequest>(payload).map_err(|error| {
-                api_error(StatusCode::BAD_REQUEST, format!("Payload invalido: {error}"))
-            })?;
+            let request =
+                serde_json::from_value::<MoveRecordRequest>(payload).map_err(|error| {
+                    api_error(
+                        StatusCode::BAD_REQUEST,
+                        format!("Payload invalido: {error}"),
+                    )
+                })?;
             let outcome = state
                 .kanban_actions
                 .move_record(session_token.as_deref(), &instance_id, request)
@@ -235,9 +298,13 @@ pub async fn post_widget_action(
             Ok(Json(outcome.into_json_value()))
         }
         "delete-record" => {
-            let request = serde_json::from_value::<DeleteRecordRequest>(payload).map_err(|error| {
-                api_error(StatusCode::BAD_REQUEST, format!("Payload invalido: {error}"))
-            })?;
+            let request =
+                serde_json::from_value::<DeleteRecordRequest>(payload).map_err(|error| {
+                    api_error(
+                        StatusCode::BAD_REQUEST,
+                        format!("Payload invalido: {error}"),
+                    )
+                })?;
             let outcome = state
                 .kanban_actions
                 .delete_record(session_token.as_deref(), &instance_id, request)
@@ -246,9 +313,13 @@ pub async fn post_widget_action(
             Ok(Json(outcome.into_json_value()))
         }
         "load-record-detail" => {
-            let request = serde_json::from_value::<LoadRecordDetailRequest>(payload).map_err(|error| {
-                api_error(StatusCode::BAD_REQUEST, format!("Payload invalido: {error}"))
-            })?;
+            let request =
+                serde_json::from_value::<LoadRecordDetailRequest>(payload).map_err(|error| {
+                    api_error(
+                        StatusCode::BAD_REQUEST,
+                        format!("Payload invalido: {error}"),
+                    )
+                })?;
             let detail = state
                 .kanban_actions
                 .load_record_detail(session_token.as_deref(), &instance_id, request)
@@ -265,9 +336,13 @@ pub async fn post_widget_action(
             Ok(Json(detail))
         }
         "start-worklog" => {
-            let request = serde_json::from_value::<StartWorklogRequest>(payload).map_err(|error| {
-                api_error(StatusCode::BAD_REQUEST, format!("Payload invalido: {error}"))
-            })?;
+            let request =
+                serde_json::from_value::<StartWorklogRequest>(payload).map_err(|error| {
+                    api_error(
+                        StatusCode::BAD_REQUEST,
+                        format!("Payload invalido: {error}"),
+                    )
+                })?;
             let outcome = state
                 .kanban_actions
                 .start_worklog(session_token.as_deref(), &instance_id, request)
@@ -276,9 +351,13 @@ pub async fn post_widget_action(
             Ok(Json(outcome.into_json_value()))
         }
         "stop-worklog" => {
-            let request = serde_json::from_value::<StopWorklogRequest>(payload).map_err(|error| {
-                api_error(StatusCode::BAD_REQUEST, format!("Payload invalido: {error}"))
-            })?;
+            let request =
+                serde_json::from_value::<StopWorklogRequest>(payload).map_err(|error| {
+                    api_error(
+                        StatusCode::BAD_REQUEST,
+                        format!("Payload invalido: {error}"),
+                    )
+                })?;
             let outcome = state
                 .kanban_actions
                 .stop_worklog(session_token.as_deref(), &instance_id, request)
@@ -289,7 +368,10 @@ pub async fn post_widget_action(
         "heartbeat-worklog" => {
             let request =
                 serde_json::from_value::<HeartbeatWorklogRequest>(payload).map_err(|error| {
-                    api_error(StatusCode::BAD_REQUEST, format!("Payload invalido: {error}"))
+                    api_error(
+                        StatusCode::BAD_REQUEST,
+                        format!("Payload invalido: {error}"),
+                    )
                 })?;
             let outcome = state
                 .kanban_actions
@@ -299,9 +381,13 @@ pub async fn post_widget_action(
             Ok(Json(outcome.into_json_value()))
         }
         "create-comment" => {
-            let request = serde_json::from_value::<CreateCommentRequest>(payload).map_err(|error| {
-                api_error(StatusCode::BAD_REQUEST, format!("Payload invalido: {error}"))
-            })?;
+            let request =
+                serde_json::from_value::<CreateCommentRequest>(payload).map_err(|error| {
+                    api_error(
+                        StatusCode::BAD_REQUEST,
+                        format!("Payload invalido: {error}"),
+                    )
+                })?;
             let outcome = state
                 .kanban_actions
                 .create_comment(session_token.as_deref(), &instance_id, request)
@@ -310,9 +396,13 @@ pub async fn post_widget_action(
             Ok(Json(outcome.into_json_value()))
         }
         "update-comment" => {
-            let request = serde_json::from_value::<UpdateCommentRequest>(payload).map_err(|error| {
-                api_error(StatusCode::BAD_REQUEST, format!("Payload invalido: {error}"))
-            })?;
+            let request =
+                serde_json::from_value::<UpdateCommentRequest>(payload).map_err(|error| {
+                    api_error(
+                        StatusCode::BAD_REQUEST,
+                        format!("Payload invalido: {error}"),
+                    )
+                })?;
             let outcome = state
                 .kanban_actions
                 .update_comment(session_token.as_deref(), &instance_id, request)
@@ -321,9 +411,13 @@ pub async fn post_widget_action(
             Ok(Json(outcome.into_json_value()))
         }
         "delete-comment" => {
-            let request = serde_json::from_value::<DeleteCommentRequest>(payload).map_err(|error| {
-                api_error(StatusCode::BAD_REQUEST, format!("Payload invalido: {error}"))
-            })?;
+            let request =
+                serde_json::from_value::<DeleteCommentRequest>(payload).map_err(|error| {
+                    api_error(
+                        StatusCode::BAD_REQUEST,
+                        format!("Payload invalido: {error}"),
+                    )
+                })?;
             let outcome = state
                 .kanban_actions
                 .delete_comment(session_token.as_deref(), &instance_id, request)
@@ -334,7 +428,10 @@ pub async fn post_widget_action(
         "create-resource-ref" => {
             let request =
                 serde_json::from_value::<CreateResourceRefRequest>(payload).map_err(|error| {
-                    api_error(StatusCode::BAD_REQUEST, format!("Payload invalido: {error}"))
+                    api_error(
+                        StatusCode::BAD_REQUEST,
+                        format!("Payload invalido: {error}"),
+                    )
                 })?;
             let outcome = state
                 .kanban_actions
@@ -346,7 +443,10 @@ pub async fn post_widget_action(
         "delete-resource-ref" => {
             let request =
                 serde_json::from_value::<DeleteResourceRefRequest>(payload).map_err(|error| {
-                    api_error(StatusCode::BAD_REQUEST, format!("Payload invalido: {error}"))
+                    api_error(
+                        StatusCode::BAD_REQUEST,
+                        format!("Payload invalido: {error}"),
+                    )
                 })?;
             let outcome = state
                 .kanban_actions
@@ -364,7 +464,10 @@ pub async fn post_widget_action(
 
 fn map_widget_runtime_error(
     error: WidgetRuntimeError,
-) -> (StatusCode, Json<crate::presentation::http::api_error::ApiError>) {
+) -> (
+    StatusCode,
+    Json<crate::presentation::http::api_error::ApiError>,
+) {
     match error {
         WidgetRuntimeError::NotFound(message) => api_error(StatusCode::NOT_FOUND, message),
         WidgetRuntimeError::Misconfigured(message) => {
@@ -381,7 +484,10 @@ fn map_widget_runtime_error(
 
 fn map_kanban_filter_error(
     error: KanbanFilterError,
-) -> (StatusCode, Json<crate::presentation::http::api_error::ApiError>) {
+) -> (
+    StatusCode,
+    Json<crate::presentation::http::api_error::ApiError>,
+) {
     match error {
         KanbanFilterError::NotFound(message) => api_error(StatusCode::NOT_FOUND, message),
         KanbanFilterError::Unsupported(message) => {
@@ -396,7 +502,10 @@ fn map_kanban_filter_error(
 
 fn map_kanban_stream_error(
     error: KanbanStreamError,
-) -> (StatusCode, Json<crate::presentation::http::api_error::ApiError>) {
+) -> (
+    StatusCode,
+    Json<crate::presentation::http::api_error::ApiError>,
+) {
     match error {
         KanbanStreamError::NotFound(message) => api_error(StatusCode::NOT_FOUND, message),
         KanbanStreamError::Misconfigured(message)
@@ -415,7 +524,10 @@ fn map_kanban_stream_error(
 
 fn map_kanban_action_error(
     error: KanbanActionError,
-) -> (StatusCode, Json<crate::presentation::http::api_error::ApiError>) {
+) -> (
+    StatusCode,
+    Json<crate::presentation::http::api_error::ApiError>,
+) {
     match error {
         KanbanActionError::NotFound(message) => api_error(StatusCode::NOT_FOUND, message),
         KanbanActionError::Misconfigured(message) | KanbanActionError::Validation(message) => {
@@ -512,21 +624,26 @@ fn parse_sse_frame(frame: &str) -> Option<DecodedSseEvent> {
     })
 }
 
-fn render_widget_stream_events(event_name: &str, data: &str) -> Vec<Event> {
+fn render_widget_stream_events(
+    event_name: &str,
+    data: &str,
+    show_parent_context: bool,
+) -> Vec<Event> {
     let mut events = vec![Event::default().event(event_name).data(data.to_string())];
 
     match event_name {
-        "snapshot" => match render_sync_payload(data) {
+        "snapshot" => match render_sync_payload(data, show_parent_context) {
             Ok(rendered) => {
                 events.push(
-                    Event::default()
-                        .event("kanban-sync")
-                        .data(json!({
+                    Event::default().event("kanban-sync").data(
+                        json!({
                             "ok": true,
                             "html": rendered.html,
                             "summary": rendered.summary,
                             "view": rendered.view,
-                        }).to_string()),
+                        })
+                        .to_string(),
+                    ),
                 );
             }
             Err(KanbanRenderError::ShapeMismatch {
@@ -560,17 +677,23 @@ fn render_widget_stream_events(event_name: &str, data: &str) -> Vec<Event> {
         "error" => {
             let message = serde_json::from_str::<Value>(data)
                 .ok()
-                .and_then(|value| value.get("error").and_then(Value::as_str).map(str::to_string))
+                .and_then(|value| {
+                    value
+                        .get("error")
+                        .and_then(Value::as_str)
+                        .map(str::to_string)
+                })
                 .unwrap_or_else(|| "The backend stream reported an error.".into());
             events.push(
-                Event::default()
-                    .event("kanban-error")
-                    .data(json!({
+                Event::default().event("kanban-error").data(
+                    json!({
                         "ok": false,
                         "reason": "stream_error",
                         "message": message,
                         "html": render_error_payload(&message),
-                    }).to_string()),
+                    })
+                    .to_string(),
+                ),
             );
         }
         _ => {}

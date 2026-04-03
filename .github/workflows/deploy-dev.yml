@@ -5,27 +5,88 @@ on:
     branches:
       - dev
 
+permissions:
+  contents: read
+
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
-      - name: Deploy to VPS
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libxcb1-dev \
+            libxkbcommon-dev \
+            libxkbcommon-x11-dev
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: deploy-dev-ubuntu-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build deploy binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          export RUSTFLAGS="-D warnings"
+          cargo build --locked --release --package lince
+          install -Dm755 target/release/lince deploy-artifact/lince
+
+      - name: Upload deploy artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lince-deploy-dev
+          path: deploy-artifact/lince
+          if-no-files-found: error
+          retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Download deploy artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: lince-deploy-dev
+          path: deploy-artifact
+
+      - name: Upload binary to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: deploy-artifact/lince
+          target: /tmp/lince-deploy
+          overwrite: true
+
+      - name: Install binary and restart service on VPS
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 10m
           script: |
             set -euo pipefail
             REPO_DIR=/root/git/lince-social/lince
             BRANCH=dev
             SERVICE_NAME=lince
-            SYSTEMD_UNIT_PATH=/etc/systemd/system/${SERVICE_NAME}.service
-
-            if [ -f "$HOME/.cargo/env" ]; then
-              . "$HOME/.cargo/env"
-            fi
+            REMOTE_BINARY=/tmp/lince-deploy/deploy-artifact/lince
 
             cd "$REPO_DIR"
 
@@ -33,25 +94,15 @@ jobs:
             git checkout "$BRANCH"
             git reset --hard "origin/$BRANCH"
 
-            RUSTFLAGS="-D warnings" cargo build --release
+            install -d "$REPO_DIR/target/release"
+            install -m 755 "$REMOTE_BINARY" "$REPO_DIR/target/release/lince"
 
-            cat <<EOF | sudo tee "$SYSTEMD_UNIT_PATH"
-            [Unit]
-            Description=Lince Social HTTP API
-            After=network.target
+            bash ./run/systemd/install-system-service.sh \
+              --service-name "$SERVICE_NAME" \
+              --description "Lince Social HTTP API" \
+              --user root \
+              --working-directory "$REPO_DIR" \
+              --exec-start "$REPO_DIR/target/release/lince --http-api-only"
 
-            [Service]
-            User=root
-            WorkingDirectory=$REPO_DIR
-            ExecStart=$REPO_DIR/target/release/lince --http-api-only
-            Restart=always
-            RestartSec=3
-
-            [Install]
-            WantedBy=multi-user.target
-            EOF
-
-            sudo systemctl daemon-reload
-            sudo systemctl enable "$SERVICE_NAME"
             sudo systemctl restart "$SERVICE_NAME"
             sudo systemctl status "$SERVICE_NAME" --no-pager -l

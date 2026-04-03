@@ -2,8 +2,11 @@ use {
     crate::{
         application::{
             backend_api::BackendApiService,
+            kanban_filters::{
+                KanbanFilterService, KanbanWidgetSettings, RawKanbanFilterRow,
+                extract_kanban_settings,
+            },
             kanban_identity::is_supported_kanban_package_filename,
-            kanban_filters::{KanbanFilterService, RawKanbanFilterRow},
         },
         domain::board::{BoardCard, BoardState},
         infrastructure::{
@@ -13,10 +16,7 @@ use {
             organ_store::{Organ, OrganStore, organ_requires_auth},
         },
     },
-    ::application::{
-        auth::AuthSubject,
-        subscription::SubscriptionHandle,
-    },
+    ::application::{auth::AuthSubject, subscription::SubscriptionHandle},
     persistence::repositories::view::is_special_view_query,
     reqwest::Method,
     serde_json::{Map, Number, Value},
@@ -63,7 +63,12 @@ impl KanbanStreamService {
         instance_id: &str,
     ) -> Result<PreparedKanbanStream, KanbanStreamError> {
         let resolved = self.resolve_instance(session_token, instance_id).await?;
-        if !resolved.card.permissions.iter().any(|value| value == "read_view_stream") {
+        if !resolved
+            .card
+            .permissions
+            .iter()
+            .any(|value| value == "read_view_stream")
+        {
             return Err(KanbanStreamError::Forbidden(
                 "Esse Kanban nao declara permissao read_view_stream.".into(),
             ));
@@ -75,6 +80,7 @@ impl KanbanStreamService {
         }
 
         let filters = parse_filter_rows(&resolved.card.widget_state)?;
+        let settings = extract_kanban_settings(&resolved.card.widget_state);
         let base_view = self
             .load_view_definition(
                 session_token,
@@ -91,15 +97,10 @@ impl KanbanStreamService {
 
         let derived_query = self
             .kanban_filters
-            .build_filtered_query(&base_view.query, &filters)
+            .build_filtered_query(&base_view.query, &filters, &settings)
             .map_err(map_filter_error_to_stream_error)?;
         let derived_view_id = self
-            .ensure_derived_view(
-                session_token,
-                &resolved,
-                &base_view,
-                &derived_query.sql,
-            )
+            .ensure_derived_view(session_token, &resolved, &base_view, &derived_query.sql)
             .await?;
 
         if resolved.is_local {
@@ -108,7 +109,7 @@ impl KanbanStreamService {
                 .subscribe_view(local_host_subject(), derived_view_id as u32)
                 .await
                 .map_err(|error| KanbanStreamError::Internal(error.to_string()))?;
-            Ok(PreparedKanbanStream::Local { handle })
+            Ok(PreparedKanbanStream::Local { handle, settings })
         } else {
             let bearer_token = resolved
                 .bearer_token
@@ -116,7 +117,11 @@ impl KanbanStreamService {
                 .ok_or_else(|| KanbanStreamError::Unauthorized("Sessao remota ausente.".into()))?;
             let response = self
                 .manas
-                .open_view_stream(&resolved.organ.base_url, bearer_token, derived_view_id as u64)
+                .open_view_stream(
+                    &resolved.organ.base_url,
+                    bearer_token,
+                    derived_view_id as u64,
+                )
                 .await
                 .map_err(KanbanStreamError::BadGateway)?;
 
@@ -143,7 +148,7 @@ impl KanbanStreamService {
                 }));
             }
 
-            Ok(PreparedKanbanStream::Remote { response })
+            Ok(PreparedKanbanStream::Remote { response, settings })
         }
     }
 
@@ -172,7 +177,9 @@ impl KanbanStreamService {
             ));
         }
         let view_id = card.view_id.filter(|value| *value > 0).ok_or_else(|| {
-            KanbanStreamError::Misconfigured("Kanban sem view_id valido configurado no host.".into())
+            KanbanStreamError::Misconfigured(
+                "Kanban sem view_id valido configurado no host.".into(),
+            )
         })?;
 
         let organ = self
@@ -229,7 +236,12 @@ impl KanbanStreamService {
             && runtime_state.source_view_id == Some(base_view.id)
             && let Some(existing_id) = runtime_state.derived_view_id
             && let Some(existing_view) = self
-                .load_view_definition(session_token, &resolved.organ, resolved.bearer_token.as_deref(), existing_id)
+                .load_view_definition(
+                    session_token,
+                    &resolved.organ,
+                    resolved.bearer_token.as_deref(),
+                    existing_id,
+                )
                 .await
                 .ok()
             && existing_view.name == derived_name
@@ -312,9 +324,8 @@ impl KanbanStreamService {
             return parse_view_definition(&value);
         }
 
-        let bearer_token = bearer_token.ok_or_else(|| {
-            KanbanStreamError::Unauthorized("Sessao remota ausente.".into())
-        })?;
+        let bearer_token = bearer_token
+            .ok_or_else(|| KanbanStreamError::Unauthorized("Sessao remota ausente.".into()))?;
         let response = self
             .manas
             .send_table_request(
@@ -348,12 +359,18 @@ impl KanbanStreamService {
             return parse_view_list(&value);
         }
 
-        let bearer_token = bearer_token.ok_or_else(|| {
-            KanbanStreamError::Unauthorized("Sessao remota ausente.".into())
-        })?;
+        let bearer_token = bearer_token
+            .ok_or_else(|| KanbanStreamError::Unauthorized("Sessao remota ausente.".into()))?;
         let response = self
             .manas
-            .send_table_request(&organ.base_url, bearer_token, Method::GET, "view", None, None)
+            .send_table_request(
+                &organ.base_url,
+                bearer_token,
+                Method::GET,
+                "view",
+                None,
+                None,
+            )
             .await
             .map_err(KanbanStreamError::BadGateway)?;
         let value = self
@@ -398,9 +415,8 @@ impl KanbanStreamService {
             return Ok(());
         }
 
-        let bearer_token = bearer_token.ok_or_else(|| {
-            KanbanStreamError::Unauthorized("Sessao remota ausente.".into())
-        })?;
+        let bearer_token = bearer_token
+            .ok_or_else(|| KanbanStreamError::Unauthorized("Sessao remota ausente.".into()))?;
         let response = self
             .manas
             .send_table_request(
@@ -413,7 +429,8 @@ impl KanbanStreamService {
             )
             .await
             .map_err(KanbanStreamError::BadGateway)?;
-        self.read_remote_json(session_token, &organ.id, response).await?;
+        self.read_remote_json(session_token, &organ.id, response)
+            .await?;
         Ok(())
     }
 
@@ -439,9 +456,8 @@ impl KanbanStreamService {
             return Ok(());
         }
 
-        let bearer_token = bearer_token.ok_or_else(|| {
-            KanbanStreamError::Unauthorized("Sessao remota ausente.".into())
-        })?;
+        let bearer_token = bearer_token
+            .ok_or_else(|| KanbanStreamError::Unauthorized("Sessao remota ausente.".into()))?;
         let response = self
             .manas
             .send_table_request(
@@ -454,7 +470,8 @@ impl KanbanStreamService {
             )
             .await
             .map_err(KanbanStreamError::BadGateway)?;
-        self.read_remote_json(session_token, &organ.id, response).await?;
+        self.read_remote_json(session_token, &organ.id, response)
+            .await?;
         Ok(())
     }
 
@@ -524,8 +541,14 @@ impl KanbanStreamService {
 }
 
 pub enum PreparedKanbanStream {
-    Local { handle: SubscriptionHandle },
-    Remote { response: reqwest::Response },
+    Local {
+        handle: SubscriptionHandle,
+        settings: KanbanWidgetSettings,
+    },
+    Remote {
+        response: reqwest::Response,
+        settings: KanbanWidgetSettings,
+    },
 }
 
 #[derive(Debug)]
@@ -563,7 +586,9 @@ struct KanbanRuntimeState {
     source_view_id: Option<i64>,
 }
 
-fn map_filter_error_to_stream_error(error: crate::application::kanban_filters::KanbanFilterError) -> KanbanStreamError {
+fn map_filter_error_to_stream_error(
+    error: crate::application::kanban_filters::KanbanFilterError,
+) -> KanbanStreamError {
     match error {
         crate::application::kanban_filters::KanbanFilterError::NotFound(message)
         | crate::application::kanban_filters::KanbanFilterError::Unsupported(message)
@@ -607,8 +632,9 @@ fn parse_filter_rows(widget_state: &Value) -> Result<Vec<RawKanbanFilterRow>, Ka
     let Some(value) = widget_state.get("filters") else {
         return Ok(vec![]);
     };
-    serde_json::from_value::<Vec<RawKanbanFilterRow>>(value.clone())
-        .map_err(|error| KanbanStreamError::Invalid(format!("Filtros invalidos no widgetState: {error}")))
+    serde_json::from_value::<Vec<RawKanbanFilterRow>>(value.clone()).map_err(|error| {
+        KanbanStreamError::Invalid(format!("Filtros invalidos no widgetState: {error}"))
+    })
 }
 
 fn parse_runtime_state(widget_state: &Value) -> KanbanRuntimeState {
@@ -633,9 +659,10 @@ fn parse_view_definition(value: &Value) -> Result<ViewDefinition, KanbanStreamEr
     let object = value.as_object().ok_or_else(|| {
         KanbanStreamError::Internal("Resposta invalida ao carregar a view.".into())
     })?;
-    let id = object.get("id").and_then(Value::as_i64).ok_or_else(|| {
-        KanbanStreamError::Internal("View carregada sem id.".into())
-    })?;
+    let id = object
+        .get("id")
+        .and_then(Value::as_i64)
+        .ok_or_else(|| KanbanStreamError::Internal("View carregada sem id.".into()))?;
     let name = object
         .get("name")
         .and_then(Value::as_str)
@@ -650,9 +677,9 @@ fn parse_view_definition(value: &Value) -> Result<ViewDefinition, KanbanStreamEr
 }
 
 fn parse_view_list(value: &Value) -> Result<Vec<ViewDefinition>, KanbanStreamError> {
-    let list = value.as_array().ok_or_else(|| {
-        KanbanStreamError::Internal("Resposta invalida ao listar views.".into())
-    })?;
+    let list = value
+        .as_array()
+        .ok_or_else(|| KanbanStreamError::Internal("Resposta invalida ao listar views.".into()))?;
     list.iter().map(parse_view_definition).collect()
 }
 
@@ -680,7 +707,9 @@ fn ensure_object(value: &mut Value) -> &mut Map<String, Value> {
     if !value.is_object() {
         *value = Value::Object(Map::new());
     }
-    value.as_object_mut().expect("widget state object should exist")
+    value
+        .as_object_mut()
+        .expect("widget state object should exist")
 }
 
 fn ensure_nested_object<'a>(

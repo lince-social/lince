@@ -1,6 +1,7 @@
 use {
     super::static_assets,
     crate::{
+        HttpServeMode,
         application::state::AppState,
         domain::board::{AppBootstrap, ServerBootstrap},
         infrastructure::auth::{
@@ -8,7 +9,6 @@ use {
             session_cookie_header, session_cookie_name,
         },
         infrastructure::organ_store::organ_requires_auth,
-        HttpServeMode,
         presentation::{
             http::api::{
                 ai::{
@@ -16,16 +16,15 @@ use {
                     update_draft_size,
                 },
                 backend::router as build_backend_router,
-                board::{export_workspace, get_board_state, import_workspace, put_board_state},
                 board::hydrated_board_state,
+                board::{export_workspace, get_board_state, import_workspace, put_board_state},
                 integrations::{
                     proxy_manas_file, proxy_manas_table_collection, proxy_manas_table_item,
                     proxy_manas_view, proxy_manas_view_snapshot,
                 },
                 packages::{
                     get_dna_catalog, get_local_package, install_dna_package, install_package,
-                    list_local_packages, preview_dna_package, preview_package,
-                    search_dna_packages,
+                    list_local_packages, preview_dna_package, preview_package, search_dna_packages,
                 },
                 servers::{
                     create_server, delete_server, list_servers, login_server, logout_server,
@@ -219,7 +218,9 @@ async fn build_bootstrap(state: &AppState, session_token: Option<&str>) -> AppBo
                     .map(|value| value.username_hint.clone())
                     .unwrap_or_default(),
                 connected_at_unix: status.and_then(|value| value.connected_at_unix),
-                last_error: status.map(|value| value.last_error.clone()).unwrap_or_default(),
+                last_error: status
+                    .map(|value| value.last_error.clone())
+                    .unwrap_or_default(),
             }
         })
         .collect();

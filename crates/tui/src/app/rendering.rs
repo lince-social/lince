@@ -9,8 +9,7 @@ use ratatui::{
 use super::{
     components::{
         render_create_shortcut_picker, render_creation_modal, render_error_toasts, render_header,
-        render_help, render_input, render_sql_table,
-        sql_table_row_heights,
+        render_help, render_input, render_sql_table, sql_table_row_heights,
     },
     logic::TuiState,
 };
@@ -108,7 +107,13 @@ fn render_body(frame: &mut Frame, area: ratatui::layout::Rect, state: &mut TuiSt
         row_offset,
     );
 
-    render_vertical_scrollbar(frame, scrollbar_area, &row_heights, row_offset, visible_line_capacity);
+    render_vertical_scrollbar(
+        frame,
+        scrollbar_area,
+        &row_heights,
+        row_offset,
+        visible_line_capacity,
+    );
 }
 
 fn visual_row_offset(
@@ -122,9 +127,8 @@ fn visual_row_offset(
     }
 
     let bottom_aligned_offset = bottom_aligned_row_offset(row_heights, visible_line_capacity);
-    let remaining_from_selected = visual_height(
-        &row_heights[selected_row.min(row_heights.len().saturating_sub(1))..],
-    );
+    let remaining_from_selected =
+        visual_height(&row_heights[selected_row.min(row_heights.len().saturating_sub(1))..]);
     if selected_row >= bottom_aligned_offset || remaining_from_selected <= visible_line_capacity {
         return bottom_aligned_offset;
     }
@@ -146,7 +150,11 @@ fn visual_row_offset(
     offset
 }
 
-fn visible_row_count(row_heights: &[usize], row_offset: usize, visible_line_capacity: usize) -> usize {
+fn visible_row_count(
+    row_heights: &[usize],
+    row_offset: usize,
+    visible_line_capacity: usize,
+) -> usize {
     if visible_line_capacity == 0 || row_offset >= row_heights.len() {
         return 0;
     }
@@ -213,8 +221,7 @@ fn render_vertical_scrollbar(
 
     let max_row_offset = bottom_aligned_row_offset(row_heights, visible_line_capacity);
     let max_scroll = content_length.saturating_sub(visible_line_capacity);
-    let remaining_from_offset =
-        visual_height(&row_heights[row_offset.min(row_heights.len())..]);
+    let remaining_from_offset = visual_height(&row_heights[row_offset.min(row_heights.len())..]);
     let position = if row_offset >= max_row_offset || remaining_from_offset <= visible_line_capacity
     {
         max_scroll

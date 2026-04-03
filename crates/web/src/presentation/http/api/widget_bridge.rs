@@ -1,7 +1,6 @@
 use {
     crate::{
-        application::state::AppState,
-        domain::widget_bridge::WidgetBridgeSnapshot,
+        application::state::AppState, domain::widget_bridge::WidgetBridgeSnapshot,
         presentation::http::api_error::ApiResult,
     },
     axum::{Json, extract::State},

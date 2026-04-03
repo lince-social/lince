@@ -117,19 +117,27 @@ impl DnaHubStore {
             if catalog_name != package_name {
                 return Err("O catalogo remoto de widgets e invalido.".to_string());
             }
-            matches.push((score, DnaSandSearchMatch {
-                package_name: package_name.clone(),
-                title: entry.title.clone(),
-                description: entry.description.clone(),
-                path: entry.path.clone(),
-                channel: channel.to_string(),
-            }));
+            matches.push((
+                score,
+                DnaSandSearchMatch {
+                    package_name: package_name.clone(),
+                    title: entry.title.clone(),
+                    description: entry.description.clone(),
+                    path: entry.path.clone(),
+                    channel: channel.to_string(),
+                },
+            ));
         }
 
         matches.sort_by(|left, right| {
             left.0
                 .cmp(&right.0)
-                .then_with(|| left.1.title.to_lowercase().cmp(&right.1.title.to_lowercase()))
+                .then_with(|| {
+                    left.1
+                        .title
+                        .to_lowercase()
+                        .cmp(&right.1.title.to_lowercase())
+                })
                 .then_with(|| left.1.package_name.cmp(&right.1.package_name))
         });
 
@@ -158,18 +166,22 @@ impl DnaHubStore {
         let prefix = package_prefix(&normalized_name);
         let base = format!("sand/{normalized_channel}/{prefix}/{normalized_name}");
         let sand_toml = self.fetch_text(&format!("{base}/sand.toml")).await?;
-        let sand = toml::from_str::<RemoteSandToml>(&sand_toml)
-            .map_err(|_| "O pacote remoto nao possui metadados validos para instalacao.".to_string())?;
+        let sand = toml::from_str::<RemoteSandToml>(&sand_toml).map_err(|_| {
+            "O pacote remoto nao possui metadados validos para instalacao.".to_string()
+        })?;
         if sand.name != normalized_name || sand.channel != normalized_channel {
-            return Err("O pacote remoto nao possui metadados validos para instalacao.".to_string());
+            return Err(
+                "O pacote remoto nao possui metadados validos para instalacao.".to_string(),
+            );
         }
 
         let html = self
             .fetch_text(&format!("{base}/{normalized_name}_metadata.html"))
             .await?;
         let filename = format!("{normalized_name}.html");
-        let package = parse_lince_package(filename, html.as_bytes())
-            .map_err(|_| "O pacote remoto nao possui metadados validos para instalacao.".to_string())?;
+        let package = parse_lince_package(filename, html.as_bytes()).map_err(|_| {
+            "O pacote remoto nao possui metadados validos para instalacao.".to_string()
+        })?;
 
         let mut cache = self.preview_cache.write().await;
         cache.insert(
@@ -232,7 +244,9 @@ fn validate_package_name(value: &str) -> Result<String, String> {
     for ch in chars {
         let valid = ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '_';
         if !valid || (ch == '_' && previous_was_underscore) {
-            return Err("O pacote remoto nao possui metadados validos para instalacao.".to_string());
+            return Err(
+                "O pacote remoto nao possui metadados validos para instalacao.".to_string(),
+            );
         }
         previous_was_underscore = ch == '_';
     }
@@ -273,11 +287,7 @@ fn normalize_search_query(query: &str) -> String {
     out.trim_matches('_').to_string()
 }
 
-fn search_match_score(
-    package_name: &str,
-    entry: &DnaSandCatalogEntry,
-    query: &str,
-) -> Option<u8> {
+fn search_match_score(package_name: &str, entry: &DnaSandCatalogEntry, query: &str) -> Option<u8> {
     let package_name_lower = package_name.to_ascii_lowercase();
     if package_name_lower.starts_with(query) {
         return Some(0);

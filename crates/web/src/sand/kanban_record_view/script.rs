@@ -30,8 +30,11 @@ pub(super) fn script() -> String {
                 emptyOrError: document.getElementById("kanban-empty-or-error"),
                 activeFilters: document.getElementById("kanban-active-filters"),
                 columns: document.getElementById("kanban-columns"),
+                viewSheet: document.getElementById("kanban-view-sheet"),
+                viewSheetBody: document.getElementById("kanban-view-sheet-body"),
                 toggleUpdates: document.getElementById("kanban-toggle-updates"),
                 openFilters: document.getElementById("kanban-open-filters"),
+                openView: document.getElementById("kanban-open-view"),
                 openCreate: document.getElementById("kanban-open-create"),
                 reconnect: document.getElementById("kanban-reconnect"),
                 toggleStream: document.getElementById("kanban-toggle-stream"),
@@ -77,6 +80,7 @@ pub(super) fn script() -> String {
                 activeWorklogIntervals: [],
                 heartbeatTimer: null,
                 draftFilters: emptyFilterState(),
+                settings: normalizeKanbanSettings(null),
                 updatesPaused: false,
                 shellState: {
                     visible: false,
@@ -236,6 +240,32 @@ pub(super) fn script() -> String {
                             ? focusedRecordId
                             : null,
                 };
+            }
+
+            function normalizeKanbanSettings(rawSettings) {
+                const rawValue =
+                    rawSettings?.showParentContext ??
+                    rawSettings?.show_parent_context;
+                return {
+                    showParentContext: rawValue == null ? true : rawValue === true,
+                };
+            }
+
+            function syncKanbanSettings(rawSettings) {
+                const normalized = normalizeKanbanSettings(rawSettings);
+                state.settings = normalized;
+                if (state.contract) {
+                    state.contract.settings = normalized;
+                }
+                return normalized;
+            }
+
+            function persistKanbanSettingsToHost(settings) {
+                window.LinceWidgetHost?.patchCardState?.({
+                    kanban_settings: {
+                        show_parent_context: Boolean(settings?.showParentContext),
+                    },
+                });
             }
 
             function storageKey() {
@@ -616,6 +646,12 @@ pub(super) fn script() -> String {
                     }
 
                     state.contract = payload;
+                    syncKanbanSettings(
+                        payload?.settings ||
+                            state.hostMeta?.cardState?.kanban_settings ||
+                            state.hostMeta?.cardState?.kanbanSettings ||
+                            null,
+                    );
                     state.reconnectAttempt = 0;
                     clearReconnectTimer();
                     state.formOptions = payload?.formOptions || null;
@@ -627,8 +663,13 @@ pub(super) fn script() -> String {
                         payload.filters.rows.length
                     ) {
                         elements.toolbarState.dataset.filtersVersion = String(
-                            payload.filters.filters_version || 0,
+                            payload.filters.filtersVersion ||
+                                payload.filters.filters_version ||
+                                0,
                         );
+                    }
+                    if (state.activeSheet === "view") {
+                        renderViewSheet();
                     }
                     return true;
                 } catch (error) {
@@ -861,6 +902,10 @@ pub(super) fn script() -> String {
                     state.contract.filters.filtersVersion =
                         outcome?.detail?.filters_version || 0;
                 }
+                window.LinceWidgetHost?.patchCardState?.({
+                    filters: rows,
+                    filters_version: outcome?.detail?.filters_version || 0,
+                });
                 renderActiveFilters();
                 await refreshRuntime(true);
             }
@@ -1081,6 +1126,123 @@ pub(super) fn script() -> String {
                 `;
             }
 
+            function reconnectDisabled() {
+                const source = state.contract?.source || {};
+                return (
+                    !state.contract ||
+                    state.hostMeta.streams.enabled === false ||
+                    (source.requires_auth && source.authenticated === false)
+                );
+            }
+
+            function renderViewSheet() {
+                if (!elements.viewSheetBody) {
+                    return;
+                }
+
+                const settings = normalizeKanbanSettings(state.settings);
+                const activeBodyMode = isBodyMode(state.ui.defaultBodyMode)
+                    ? state.ui.defaultBodyMode
+                    : DEFAULT_BODY_MODE;
+                const toggleUpdatesLabel = state.updatesPaused
+                    ? "Resume updates"
+                    : "Pause updates";
+                const toggleStreamLabel =
+                    state.hostMeta.streams.cardEnabled === false
+                        ? "Connect widget"
+                        : "Disconnect widget";
+                const streamButtonClass =
+                    state.hostMeta.streams.cardEnabled === false
+                        ? "toolbarBtn toolbarBtn--accent"
+                        : "toolbarBtn toolbarBtn--paused";
+                const reconnectAttr = reconnectDisabled() ? "disabled" : "";
+                const presets = [
+                    { mode: "head", label: "All head" },
+                    { mode: "compact", label: "All compact" },
+                    { mode: "full", label: "All full" },
+                ];
+
+                elements.viewSheetBody.innerHTML = `
+                    <div class="sheetBody">
+                        <section class="viewSection">
+                            <div class="fieldBlock">
+                                <div class="fieldLabel">Filters</div>
+                                <p class="small">Open the full filter editor and keep the active chips visible in the header.</p>
+                            </div>
+                            <div class="sheetActions">
+                                <button class="toolbarBtn" type="button" data-open-filters-from-view="true">Open filters</button>
+                            </div>
+                        </section>
+                        <section class="viewSection">
+                            <div class="fieldBlock">
+                                <div class="fieldLabel">Card density</div>
+                                <p class="small">Set the default body mode for every card and clear temporary per-card overrides.</p>
+                            </div>
+                            <div class="viewPresetGrid">
+                                ${presets
+                                    .map((preset) => {
+                                        const activeClass =
+                                            preset.mode === activeBodyMode ? " is-active" : "";
+                                        return `<button class="toolbarBtn${activeClass}" type="button" data-set-default-body-mode="${escapeHtml(preset.mode)}">${escapeHtml(preset.label)}</button>`;
+                                    })
+                                    .join("")}
+                            </div>
+                        </section>
+                        <section class="viewSection">
+                            <div class="fieldBlock">
+                                <div class="fieldLabel">Parent context</div>
+                                <p class="small">Show the parent task above each card title. The derived query only joins parent data while this stays enabled.</p>
+                            </div>
+                            <label class="checkRow"><input type="checkbox" data-setting-show-parent ${settings.showParentContext ? "checked" : ""}> <span>Show parent task above card titles</span></label>
+                        </section>
+                        <section class="viewSection">
+                            <div class="fieldBlock">
+                                <div class="fieldLabel">Live widget</div>
+                                <p class="small">Control local merge behavior and the live stream from the same place.</p>
+                            </div>
+                            <div class="sheetActions">
+                                <button class="toolbarBtn" type="button" data-toggle-updates-from-view="true">${escapeHtml(toggleUpdatesLabel)}</button>
+                                <button class="${streamButtonClass}" type="button" data-toggle-stream-from-view="true">${escapeHtml(toggleStreamLabel)}</button>
+                                <button class="toolbarBtn toolbarBtn--accent" type="button" data-reconnect-from-view="true" ${reconnectAttr}>Reconnect</button>
+                            </div>
+                        </section>
+                    </div>
+                `;
+            }
+
+            async function updateKanbanSettings(nextSettings) {
+                const previous = normalizeKanbanSettings(state.settings);
+                const optimistic = normalizeKanbanSettings({
+                    ...previous,
+                    ...nextSettings,
+                });
+
+                syncKanbanSettings(optimistic);
+                persistKanbanSettingsToHost(optimistic);
+                if (isSheetVisible(elements.viewSheet)) {
+                    renderViewSheet();
+                }
+
+                try {
+                    const outcome = await postAction("update-settings", optimistic);
+                    const resolved = syncKanbanSettings(
+                        outcome?.detail?.settings || optimistic,
+                    );
+                    persistKanbanSettingsToHost(resolved);
+                    if (isSheetVisible(elements.viewSheet)) {
+                        renderViewSheet();
+                    }
+                    await refreshRuntime(true);
+                } catch (error) {
+                    syncKanbanSettings(previous);
+                    persistKanbanSettingsToHost(previous);
+                    if (isSheetVisible(elements.viewSheet)) {
+                        renderViewSheet();
+                    }
+                    throw error;
+                }
+            }
+
             function formOptionsReady() {
                 return state.formOptions || {
                     assignees: [],
@@ -1280,6 +1442,11 @@ pub(super) fn script() -> String {
 
                 state.activeSheet = nextSheet;
 
+                if (nextSheet === "view") {
+                    renderViewSheet();
+                    return;
+                }
+
                 if (nextSheet === "filter") {
                     if (state.formOptions) {
                         renderFilterSheet();
@@ -1316,9 +1483,14 @@ pub(super) fn script() -> String {
                     return;
                 }
 
+                elements.viewSheetBody.innerHTML = "";
                 elements.filterSheetBody.innerHTML = "";
                 elements.createSheetBody.innerHTML = "";
                 elements.editSheetBody.innerHTML = "";
+            }
+
+            async function openViewSheet() {
+                await syncActiveSheet("view");
             }
 
             async function openFilterSheet() {
@@ -2718,6 +2890,26 @@ pub(super) fn script() -> String {
                     syncUiSignals(nextUi);
                 }
 
+                if (
+                    Object.prototype.hasOwnProperty.call(
+                        nextMeta.cardState || {},
+                        "kanban_settings",
+                    ) ||
+                    Object.prototype.hasOwnProperty.call(
+                        nextMeta.cardState || {},
+                        "kanbanSettings",
+                    )
+                ) {
+                    syncKanbanSettings(
+                        nextMeta.cardState?.kanban_settings ||
+                            nextMeta.cardState?.kanbanSettings ||
+                            null,
+                    );
+                    if (state.activeSheet === "view") {
+                        renderViewSheet();
+                    }
+                }
+
                 updateStatus();
                 const nextEnabled = nextMeta.streams.enabled !== false;
                 if (previousEnabled !== nextEnabled) {
@@ -2753,6 +2945,72 @@ pub(super) fn script() -> String {
                     if (toggleButton) {
                         event.preventDefault();
                         toggleWidgetStream();
+                        return;
+                    }
+
+                    const openFiltersFromViewButton = event.target.closest(
+                        "[data-open-filters-from-view]",
+                    );
+                    if (openFiltersFromViewButton) {
+                        event.preventDefault();
+                        await openFilterSheet();
+                        return;
+                    }
+
+                    const setDefaultBodyModeButton = event.target.closest(
+                        "[data-set-default-body-mode]",
+                    );
+                    if (setDefaultBodyModeButton) {
+                        event.preventDefault();
+                        const nextMode = String(
+                            setDefaultBodyModeButton.dataset.setDefaultBodyMode || "",
+                        );
+                        if (isBodyMode(nextMode)) {
+                            persistUi({
+                                ...state.ui,
+                                defaultBodyMode: nextMode,
+                                cardModes: {},
+                            });
+                            if (isSheetVisible(elements.viewSheet)) {
+                                renderViewSheet();
+                            }
+                        }
+                        return;
+                    }
+
+                    const toggleUpdatesFromViewButton = event.target.closest(
+                        "[data-toggle-updates-from-view]",
+                    );
+                    if (toggleUpdatesFromViewButton) {
+                        event.preventDefault();
+                        togglePausedUpdates();
+                        if (isSheetVisible(elements.viewSheet)) {
+                            renderViewSheet();
+                        }
+                        return;
+                    }
+
+                    const toggleStreamFromViewButton = event.target.closest(
+                        "[data-toggle-stream-from-view]",
+                    );
+                    if (toggleStreamFromViewButton) {
+                        event.preventDefault();
+                        toggleWidgetStream();
+                        if (isSheetVisible(elements.viewSheet)) {
+                            renderViewSheet();
+                        }
+                        return;
+                    }
+
+                    const reconnectFromViewButton = event.target.closest(
+                        "[data-reconnect-from-view]",
+                    );
+                    if (reconnectFromViewButton) {
+                        event.preventDefault();
+                        await refreshRuntime(true);
+                        if (isSheetVisible(elements.viewSheet)) {
+                            renderViewSheet();
+                        }
                         return;
                     }
 
@@ -2862,6 +3120,20 @@ pub(super) fn script() -> String {
             });
 
             app.addEventListener("change", async (event) => {
+                const showParentToggle = event.target.closest("[data-setting-show-parent]");
+                if (showParentToggle) {
+                    try {
+                        await updateKanbanSettings({
+                            showParentContext: showParentToggle.checked === true,
+                        });
+                    } catch (error) {
+                        state.transportError =
+                            error instanceof Error ? error.message : String(error);
+                        updateStatus();
+                    }
+                    return;
+                }
+
                 const markdownTaskCheckbox = event.target.closest("input[data-markdown-task-line]");
                 if (!markdownTaskCheckbox) {
                     return;

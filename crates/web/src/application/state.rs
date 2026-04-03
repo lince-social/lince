@@ -7,8 +7,7 @@ use crate::{
     application::widget_runtime::WidgetRuntimeService,
     infrastructure::{
         auth::AppAuth, board_state_store::BoardStateStore, dna_hub_store::DnaHubStore,
-        manas::ManasGateway,
-        organ_store::OrganStore, package_catalog_store::PackageCatalogStore,
+        manas::ManasGateway, organ_store::OrganStore, package_catalog_store::PackageCatalogStore,
         terminal_store::TerminalSessionStore, widget_bridge_store::WidgetBridgeStore,
     },
 };

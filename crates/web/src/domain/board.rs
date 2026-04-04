@@ -15,6 +15,8 @@ pub struct BoardCard {
     pub permissions: Vec<String>,
     pub package_name: String,
     #[serde(default)]
+    pub requires_server: bool,
+    #[serde(default)]
     pub server_id: String,
     #[serde(default)]
     pub view_id: Option<u32>,

@@ -209,6 +209,7 @@ fn hydrate_package_card_from_catalog(state: &AppState, card: &mut BoardCard) {
     card.description = manifest.description;
     card.html = package.html;
     card.author = manifest.author;
+    card.requires_server = manifest.requires_server;
     card.permissions = manifest.permissions;
     card.package_name = archive_filename;
 }

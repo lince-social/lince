@@ -23,10 +23,10 @@ use {
                     proxy_manas_view, proxy_manas_view_snapshot,
                 },
                 packages::{
-                    get_dna_catalog, get_local_package, get_local_package_content,
-                    get_preview_package_content, install_dna_package, install_package,
-                    list_local_packages, preview_dna_package, preview_package, publish_dna_package,
-                    search_dna_packages,
+                    delete_dna_publication, get_dna_catalog, get_local_package,
+                    get_local_package_content, get_preview_package_content, install_dna_package,
+                    install_package, list_local_packages, preview_dna_package, preview_package,
+                    publish_dna_package, search_dna_packages,
                 },
                 servers::{
                     create_server, delete_server, list_servers, login_server, logout_server,
@@ -52,7 +52,7 @@ use {
     tower_http::services::ServeDir,
 };
 
-const HOST_API_BODY_LIMIT_BYTES: usize = 16 * 1024 * 1024;
+const HOST_API_BODY_LIMIT_BYTES: usize = 64 * 1024 * 1024;
 
 pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
     if mode == HttpServeMode::ApiOnly {
@@ -137,12 +137,16 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
         .route("/packages/dna/catalog", get(get_dna_catalog))
         .route("/packages/dna/search", get(search_dna_packages))
         .route(
-            "/packages/dna/{channel}/{package_name}/preview",
+            "/packages/dna/publications/{organ_id}/{record_id}/preview",
             get(preview_dna_package),
         )
         .route(
-            "/packages/dna/{channel}/{package_name}/install",
+            "/packages/dna/publications/{organ_id}/{record_id}/install",
             post(install_dna_package),
+        )
+        .route(
+            "/packages/dna/publications/{organ_id}/{record_id}",
+            axum::routing::delete(delete_dna_publication),
         )
         .layer(DefaultBodyLimit::max(HOST_API_BODY_LIMIT_BYTES));
 

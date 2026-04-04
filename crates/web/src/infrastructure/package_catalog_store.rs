@@ -29,6 +29,7 @@ pub struct InstalledPackageSummary {
     pub details: String,
     pub initial_width: u8,
     pub initial_height: u8,
+    pub requires_server: bool,
     pub permissions: Vec<String>,
 }
 
@@ -137,6 +138,7 @@ pub fn summary_from_package(package: LincePackage) -> InstalledPackageSummary {
         details: manifest.details,
         initial_width: manifest.initial_width,
         initial_height: manifest.initial_height,
+        requires_server: manifest.requires_server,
         permissions: manifest.permissions,
     }
 }

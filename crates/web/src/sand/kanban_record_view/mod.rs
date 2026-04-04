@@ -17,6 +17,7 @@ pub(crate) fn source() -> SandWidgetSource {
             details: "Resolve o contrato do widget pela instancia do host, consome o stream oficial filtrado do Kanban e persiste ergonomia local do board no card.".into(),
             initial_width: 6,
             initial_height: 5,
+            requires_server: true,
             permissions: vec![
                 "bridge_state".into(),
                 "read_view_stream".into(),

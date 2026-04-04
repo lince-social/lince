@@ -398,6 +398,7 @@ fn normalize_generated_widget(
             details,
             initial_width: generated.initial_width.clamp(1, 6),
             initial_height: generated.initial_height.clamp(1, 6),
+            requires_server: false,
             permissions: normalize_permissions(generated.permissions),
         },
         normalize_html(&generated.html)?,

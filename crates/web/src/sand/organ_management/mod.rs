@@ -14,6 +14,7 @@ pub(crate) fn source() -> SandWidgetSource {
             details: r#"Lists organs from /host/servers, surfaces auth and session metadata, and performs create, update, and delete through the host CRUD routes while persisting UI context per card."#.into(),
             initial_width: 6,
             initial_height: 6,
+            requires_server: false,
             permissions: vec![r#"bridge_state"#.into()],
         },
         head_links: vec![],

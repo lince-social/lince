@@ -20,7 +20,7 @@ The git repositories hosted currently in the #link("https://github.com/lince-soc
 
 - #link("https://github.com/lince-social/lince")[lince]: the app's code and this documentation.
 - #link("https://github.com/lince-social/lince-social.github.io")[lince-social.github.io]: the website, at #link("https://lince.social")[lince.social].
-- #link("https://github.com/lince-social/dna")[dna]: the databases for different Lince behaviors.
+- dna publications now live as bucket-backed artifacts plus records inside accessible organs, instead of a dedicated Git repository.
 - #link("https://github.com/lince-social/lingua")[lingua]: A future programming language Lince evaluates to execute karma, transactions and more.
 - #link("https://github.com/lince-social/.github")[.github]: general stuff, like photos, icons and information about GitHub sponsors.
 - #link("https://github.com/lince-social/den")[den]: git submodules for all the repos in one place.

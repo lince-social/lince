@@ -1,7 +1,6 @@
 pub mod auth;
 pub mod backend_api_store;
 pub mod board_state_store;
-pub mod dna_hub_store;
 pub mod manas;
 pub mod organ_store;
 pub mod package_catalog_store;

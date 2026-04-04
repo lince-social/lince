@@ -172,6 +172,7 @@ struct ConfigurationRow {
     delete_confirmation: i64,
     error_toast_seconds: f64,
     keybinding_mode: i64,
+    show_community_sand: i64,
     bucket_enabled: i64,
     bucket_username: Option<String>,
     bucket_password: Option<String>,
@@ -442,7 +443,7 @@ const KARMA_FIELD_SPECS: [FieldSpec; 5] = [
     },
 ];
 
-const CONFIGURATION_FIELD_SPECS: [FieldSpec; 16] = [
+const CONFIGURATION_FIELD_SPECS: [FieldSpec; 17] = [
     FieldSpec {
         name: "quantity",
         kind: FieldKind::NullableInteger,
@@ -482,6 +483,10 @@ const CONFIGURATION_FIELD_SPECS: [FieldSpec; 16] = [
     FieldSpec {
         name: "keybinding_mode",
         kind: FieldKind::Integer,
+    },
+    FieldSpec {
+        name: "show_community_sand",
+        kind: FieldKind::BooleanInteger,
     },
     FieldSpec {
         name: "bucket_enabled",
@@ -619,7 +624,7 @@ impl BackendApiStore {
             ),
             ApiTable::Configuration => serialize_value(
                 sqlx::query_as::<_, ConfigurationRow>(
-                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region FROM configuration ORDER BY id",
+                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, show_community_sand, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region FROM configuration ORDER BY id",
                 )
                 .fetch_all(db)
                 .await
@@ -737,7 +742,7 @@ impl BackendApiStore {
             ),
             ApiTable::Configuration => serialize_value(
                 sqlx::query_as::<_, ConfigurationRow>(
-                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region FROM configuration WHERE id = ?",
+                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, show_community_sand, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region FROM configuration WHERE id = ?",
                 )
                 .bind(id)
                 .fetch_one(db)

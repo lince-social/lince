@@ -449,6 +449,7 @@ pub(crate) fn source() -> SandWidgetSource {
                 "Widget independente de tarefas com estado salvo no proprio package via localStorage. O host so instala, posiciona e persiste o layout; a logica de tarefas continua inteiramente dentro do HTML.".into(),
             initial_width: 4,
             initial_height: 4,
+            requires_server: false,
             permissions: vec!["read_tasks".into(), "write_tasks".into()],
         },
         head_links: vec![],

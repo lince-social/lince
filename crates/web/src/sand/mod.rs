@@ -24,7 +24,10 @@ mod view_table_editor;
 mod weather;
 
 use {
-    crate::domain::lince_package::{LincePackage, PackageManifest, build_lince_archive},
+    crate::domain::lince_package::{
+        LEGACY_PACKAGE_ARCHIVE_EXTENSION, LEGACY_PACKAGE_EXTENSION, LincePackage,
+        PACKAGE_EXTENSION, PackageManifest, build_lince_archive, package_id_from_filename,
+    },
     maud::{DOCTYPE, Markup, PreEscaped, html},
     std::path::Path,
 };
@@ -61,33 +64,41 @@ pub(crate) struct SandWidgetSource {
 
 type SandSourceBuilder = fn() -> SandWidgetSource;
 
-const OFFICIAL_WIDGETS: [SandSourceBuilder; 20] = [
-    bucket_image_view::source,
-    extra_simple::source,
-    calendar::source,
-    chess::source,
-    doom_portal::source,
-    general_creation::source,
-    kanban_record_view::source,
-    lince_logo_led::source,
-    link_chip::source,
-    local_terminal::source,
-    markdown_notes::source,
-    organ_management::source,
-    ops_clock::source,
-    view_table_editor::source,
-    sand_publisher::source,
-    spotify_control::source,
-    record_crud::source,
-    tasklist::source,
-    tasks_table::source,
-    weather::source,
+enum OfficialWidgetBuilder {
+    Html(SandSourceBuilder),
+    Package(fn() -> LincePackage),
+}
+
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 20] = [
+    OfficialWidgetBuilder::Html(bucket_image_view::source),
+    OfficialWidgetBuilder::Html(extra_simple::source),
+    OfficialWidgetBuilder::Html(calendar::source),
+    OfficialWidgetBuilder::Html(chess::source),
+    OfficialWidgetBuilder::Package(doom_portal::package),
+    OfficialWidgetBuilder::Html(general_creation::source),
+    OfficialWidgetBuilder::Html(kanban_record_view::source),
+    OfficialWidgetBuilder::Html(lince_logo_led::source),
+    OfficialWidgetBuilder::Html(link_chip::source),
+    OfficialWidgetBuilder::Html(local_terminal::source),
+    OfficialWidgetBuilder::Html(markdown_notes::source),
+    OfficialWidgetBuilder::Html(organ_management::source),
+    OfficialWidgetBuilder::Html(ops_clock::source),
+    OfficialWidgetBuilder::Html(view_table_editor::source),
+    OfficialWidgetBuilder::Html(sand_publisher::source),
+    OfficialWidgetBuilder::Html(spotify_control::source),
+    OfficialWidgetBuilder::Html(record_crud::source),
+    OfficialWidgetBuilder::Html(tasklist::source),
+    OfficialWidgetBuilder::Html(tasks_table::source),
+    OfficialWidgetBuilder::Html(weather::source),
 ];
 
 pub fn official_packages() -> Vec<LincePackage> {
     OFFICIAL_WIDGETS
         .into_iter()
-        .map(|builder| render_widget(builder()))
+        .map(|builder| match builder {
+            OfficialWidgetBuilder::Html(source_builder) => render_widget(source_builder()),
+            OfficialWidgetBuilder::Package(package_builder) => package_builder(),
+        })
         .collect()
 }
 
@@ -97,7 +108,9 @@ pub fn render_official_widgets(target_dir: &Path) -> Result<(), String> {
 
     for package in official_packages() {
         let bytes = build_lince_archive(&package)?;
-        let path = target_dir.join(package.archive_filename());
+        let archive_filename = package.archive_filename();
+        remove_stale_package_variants(target_dir, &archive_filename)?;
+        let path = target_dir.join(&archive_filename);
         std::fs::write(&path, bytes)
             .map_err(|error| format!("Nao consegui escrever {}: {error}", path.display()))?;
     }
@@ -150,4 +163,29 @@ fn render_widget(source: SandWidgetSource) -> LincePackage {
 
     LincePackage::new(Some(filename.to_string()), manifest, markup)
         .expect("official sand widget should render as valid HTML")
+}
+
+fn remove_stale_package_variants(target_dir: &Path, filename: &str) -> Result<(), String> {
+    let package_id = package_id_from_filename(filename);
+    let expected = target_dir.join(filename);
+
+    for extension in [
+        PACKAGE_EXTENSION,
+        LEGACY_PACKAGE_EXTENSION,
+        LEGACY_PACKAGE_ARCHIVE_EXTENSION,
+    ] {
+        let candidate = target_dir.join(format!("{package_id}{extension}"));
+        if candidate == expected || !candidate.exists() {
+            continue;
+        }
+
+        std::fs::remove_file(&candidate).map_err(|error| {
+            format!(
+                "Nao consegui limpar a versao antiga de {}: {error}",
+                candidate.display()
+            )
+        })?;
+    }
+
+    Ok(())
 }

@@ -1355,8 +1355,8 @@ body.auth-pending .startup-auth-card {
 
 .card-delete-button {
     position: absolute;
-    top: 50%;
-    left: 50%;
+    top: 18px;
+    right: 18px;
     z-index: 4;
     display: inline-flex;
     align-items: center;
@@ -1372,7 +1372,7 @@ body.auth-pending .startup-auth-card {
     color: var(--text-muted);
     box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28);
     cursor: pointer;
-    transform: translate(-50%, -50%) scale(0.96);
+    transform: translateY(-6px) scale(0.96);
     transition:
         opacity var(--transition-fast),
         border-color var(--transition-fast),
@@ -1402,20 +1402,30 @@ body.auth-pending .startup-auth-card {
 .board-shell.is-editing .card-delete-button {
     opacity: 1;
     pointer-events: auto;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translateY(0) scale(1);
 }
 
 .card-delete-button:hover {
     border-color: rgba(255, 177, 187, 0.26);
     background: rgba(61, 20, 26, 0.9);
     color: #ffd8de;
-    transform: translate(-50%, -50%) scale(1.04);
+    transform: translateY(0) scale(1.04);
 }
 
 .card-delete-button--secondary:hover {
     border-color: rgba(209, 221, 245, 0.24);
     background: rgba(20, 26, 38, 0.9);
     color: #eaf0ff;
+}
+
+.card-config-button {
+    right: 164px;
+}
+
+.board-card.is-compact .card-config-button,
+.board-card.is-tiny .card-config-button {
+    top: 68px;
+    right: 18px;
 }
 
 .board-card.is-dragging .card-delete-button,
@@ -1778,6 +1788,39 @@ body.auth-pending .startup-auth-card {
     z-index: 1;
     padding-bottom: 4px;
     background: #0f1217;
+}
+
+.catalog-toolbar--secondary {
+    grid-template-columns: minmax(220px, 320px);
+    justify-content: start;
+    align-items: start;
+    padding-bottom: 8px;
+}
+
+.catalog-filter {
+    display: grid;
+    gap: 8px;
+}
+
+.modal-input {
+    width: 100%;
+    min-height: 42px;
+    padding: 0 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    color: var(--text-strong);
+    background: #15191f;
+    transition:
+        border-color var(--transition-fast),
+        background var(--transition-fast),
+        box-shadow var(--transition-fast);
+}
+
+.modal-input:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.16);
+    background: #171c22;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.04);
 }
 
 .catalog-modal__meta {

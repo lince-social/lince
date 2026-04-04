@@ -458,7 +458,9 @@ fn render_import_modal_preview_pane() -> Markup {
                             class="import-preview-frame"
                             title="Preview do card importado"
                             data-package-instance-id="preview"
-                            sandbox="allow-scripts allow-same-origin"
+                            sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-popups"
+                            allow="fullscreen"
+                            allowfullscreen=""
                         {}
                     }
                 }
@@ -476,7 +478,7 @@ fn render_local_packages_modal_backdrop() -> Markup {
                         div class="import-modal__eyebrow" { "Local catalog" }
                         h2 id="local-packages-modal-title" class="import-modal__title" { "Catalogo de widgets" }
                         p class="import-modal__description" {
-                            "Escolha um widget oficial ou um widget salvo em ~/.config/lince/web/widgets para criar outra copia no workspace atual."
+                            "Escolha um widget oficial ou um widget salvo em ~/.config/lince/web/sand para criar outra copia no workspace atual."
                         }
                     }
                     (render_modal_close_button("local-packages-close-button", "Fechar catalogo local"))
@@ -501,23 +503,31 @@ fn render_dna_packages_modal_backdrop() -> Markup {
                 header class="import-modal__header" {
                     div class="import-modal__lockup" {
                         div class="import-modal__eyebrow" { "DNA catalog" }
-                        h2 id="dna-packages-modal-title" class="import-modal__title" { "Catalogo remoto do DNA" }
+                        h2 id="dna-packages-modal-title" class="import-modal__title" { "Catalogo distribuido de sand" }
                         p class="import-modal__description" {
-                            "Busque widgets publicados em github.com/lince-social/dna na branch main e baixe uma copia para o catalogo local."
+                            "Busque sand publicados nos organs acessiveis, veja a origem de cada um e instale uma copia local no seu catalogo."
                         }
                     }
                     (render_modal_close_button(
                         "dna-packages-close-button",
-                        "Fechar catalogo remoto do DNA",
+                        "Fechar catalogo distribuido de sand",
                     ))
                 }
                 (render_catalog_toolbar(
                     "dna-packages-summary",
                     "DNA",
-                    "Carregando o catalogo remoto do DNA...",
+                    "Carregando o catalogo distribuido de sand...",
                     "dna-packages-search",
-                    "Nome, titulo ou descricao",
+                    "Nome, descricao, slug, origem ou categoria",
                 ))
+                div class="catalog-toolbar catalog-toolbar--secondary" {
+                    label class="catalog-filter" for="dna-origin-filter" {
+                        span class="import-modal__details-label" { "Origem" }
+                        select id="dna-origin-filter" class="modal-input" {
+                            option value="" { "Todas as origens" }
+                        }
+                    }
+                }
                 div id="dna-package-list" class="local-package-list" {}
             }
         }

@@ -16,6 +16,7 @@ pub(crate) fn source() -> SandWidgetSource {
                 "Reads server_id and view_id from the host, normalizes any incoming view payload into a table, and keeps cell edits local to the card state instead of writing back to the source view.".into(),
             initial_width: 7,
             initial_height: 5,
+            requires_server: true,
             permissions: vec!["bridge_state".into(), "read_view_stream".into()],
         },
         head_links: vec![],

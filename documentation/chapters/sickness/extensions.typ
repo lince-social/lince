@@ -619,7 +619,7 @@ Runtime guidance still matters for understanding widget behavior, but it does no
 
 === Next board step
 
-After the ingest and catalog rules are in place, the next practical UI step should be board-side package pickup from `github.com/lince-social/dna` on `main`.
+After the ingest and catalog rules are in place, the next practical UI step should be board-side package pickup from published organ records whose artifacts live in the bucket under the `lince/dna/sand` tree.
 
 The intended direction is:
 
@@ -813,11 +813,11 @@ This keeps the remote-hub logic inside the backend and lets the front-end reuse 
 
 The first version should fetch only from:
 
-- repository: `github.com/lince-social/dna`
-- branch: `main`
-- family: `sand`
+- accessible organs exposed in the local host catalog
+- published `record_extension(namespace = "lince.dna")` entries
+- canonical `record_resource_ref(provider = "bucket", resource_kind = "sand")` artifacts under `lince/dna/sand`
 
-The backend should translate those logical paths to raw file fetches from GitHub.
+The backend should translate those publication records to authenticated bucket fetches.
 
 The expected remote files for a package are:
 

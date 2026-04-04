@@ -17,6 +17,7 @@ pub(crate) fn source() -> SandWidgetSource {
             details: r#"Widget minimalista sem moldura: um switch pequeno no topo direito alterna entre edicao raw e renderizacao Markdown."#.into(),
             initial_width: 4,
             initial_height: 4,
+            requires_server: false,
             permissions: vec![],
         },
         head_links: vec![],

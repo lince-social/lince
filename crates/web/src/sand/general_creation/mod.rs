@@ -89,6 +89,7 @@ const TABLES: [TableOverview; 9] = [
             "delete_confirmation:bool|0|1",
             "error_toast_seconds:number",
             "keybinding_mode:int",
+            "show_community_sand:bool|0|1",
         ],
         notes: &[
             "Send name on create",
@@ -132,6 +133,7 @@ pub(crate) fn source() -> SandWidgetSource {
             details: "Choose a server, pick one of the API-exposed tables, inspect the writable schema and exceptions, then POST a JSON object through the host-mediated backend route.".into(),
             initial_width: 6,
             initial_height: 5,
+            requires_server: true,
             permissions: vec!["bridge_state".into(), "write_table".into()],
         },
         head_links: vec![],
@@ -721,7 +723,8 @@ fn script() -> &'static str {
             { name: "command_notification_seconds", kind: "number", required: false, nullable: false, note: "Defaults to -1." },
             { name: "delete_confirmation", kind: "boolean or 0/1", required: false, nullable: false, note: "Defaults to 1." },
             { name: "error_toast_seconds", kind: "number", required: false, nullable: false, note: "Defaults to 5." },
-            { name: "keybinding_mode", kind: "integer", required: false, nullable: false, note: "Defaults to 0." }
+            { name: "keybinding_mode", kind: "integer", required: false, nullable: false, note: "Defaults to 0." },
+            { name: "show_community_sand", kind: "boolean or 0/1", required: false, nullable: false, note: "Defaults to 0, which hides community sand from the DNA browser." }
           ],
           exceptions: [
             "The id field is not writable.",
@@ -734,7 +737,8 @@ fn script() -> &'static str {
             show_command_notifications: true,
             delete_confirmation: true,
             error_toast_seconds: 5,
-            keybinding_mode: 0
+            keybinding_mode: 0,
+            show_community_sand: false
           }
         },
         app_user: {

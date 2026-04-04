@@ -14,6 +14,7 @@ pub(crate) fn source() -> SandWidgetSource {
             details: r#"Card visual minimalista com a marca da Lince em traço fino, transparente e com modos de luz, fita LED e desenho em loop."#.into(),
             initial_width: 4,
             initial_height: 4,
+            requires_server: false,
             permissions: vec![],
         },
         head_links: vec![],

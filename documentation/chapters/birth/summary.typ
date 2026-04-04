@@ -31,7 +31,7 @@ so users can have a headstart in any endeavor. From production according to a bi
 organization, these activities create Needs for gathering resources and acting out tasks.
 
 Contributions to Lince DNAs are like creating blueprints for others to get up and running. They might not be a perfect fit, but
-allow for great customization. Currently the way of centralizing DNAs is the #link("https://github.com/lince-social/dna")[Github Repository].
+allow for great customization. The current direction is to publish them as organ records whose artifacts are stored in the bucket and discovered through the distributed DNA catalog.
 
 *Interconnection* \
 With great customizability and automation of people's DNAs, the next barrier is the connection of those individual apps, turning

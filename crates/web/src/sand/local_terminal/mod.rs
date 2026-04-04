@@ -14,6 +14,7 @@ pub(crate) fn source() -> SandWidgetSource {
             details: r#"Abre uma sessao de shell persistente no backend local do host usando as rotas /host/terminal/sessions."#.into(),
             initial_width: 5,
             initial_height: 4,
+            requires_server: false,
             permissions: vec![r#"terminal_session"#.into()],
         },
         head_links: vec![crate::sand::HeadLink { rel: r#"stylesheet"#, href: r#"https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css"# }],

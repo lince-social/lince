@@ -1,18 +1,13 @@
-#import "../../../common/typst/components/chapter.typ": major
+#import "../../components/chapter.typ": major
 #import "collection.typ"
 #import "configuration.typ"
-#import "crates.typ"
 #import "dna.typ"
-#import "extensions.typ"
 #import "examples.typ"
 #import "history.typ"
-#import "kanban.typ"
 #import "karma.typ"
 #import "operations.typ"
 #import "record.typ"
-#import "sandbox_website.typ"
 #import "transfer.typ"
-#import "web_components.typ"
 
 #major(
   "Aging",
@@ -31,12 +26,7 @@ Explanation of the tables _should_ be mostly focused on the ideas, the solutions
 #karma
 #examples
 #configuration
-#crates
 #operations
-#web_components
-#sandbox_website
-#kanban
 #transfer
 #history
 #dna
-#extensions

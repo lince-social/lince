@@ -1,5 +1,5 @@
-#import "../common/typst/document.typ": book
-#import "components.typ": idea, major, slides-deck, slides-mode
+#import "../../components/chapter.typ": major
+#import "../../components/components.typ": idea
 
 #let lang = sys.inputs.at("lang", default: "pt")
 #let tr(en, pt) = if lang == "pt" { pt } else { en }
@@ -673,21 +673,9 @@
   ]
 ]
 
+#major(
+  tr("First Steps", "Primeiros Passos"),
+  $$,
+)
 
-#if slides-mode [
-  #slides-deck(
-    [#tr("First Steps", "Primeiros Passos")],
-    subtitle: [#tr("Newbies' Tutorial", "Tutorial para Iniciantes")],
-  )[
-    #content
-  ]
-] else [
-  #book(
-    title: tr("First Steps", "Primeiros Passos"),
-    subtitle: tr("Newbies' Tutorial", "Tutorial para Iniciantes"),
-    start-date: datetime(year: 2026, month: 3, day: 21),
-    [
-      #content
-    ],
-  )
-]
+#content

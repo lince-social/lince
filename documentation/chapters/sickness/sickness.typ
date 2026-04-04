@@ -1,4 +1,11 @@
-#import "../../../common/typst/components/chapter.typ": major
+#import "../../components/chapter.typ": major
+#import "bucket.typ"
+#import "crates.typ"
+#import "extensions.typ"
+#import "kanban.typ"
+#import "sandbox_website.typ"
+#import "web_components.typ"
+
 
 #major(
   "Sickness",
@@ -46,3 +53,9 @@ So Record's heads with Items and Tasks that have negative quantities appear in m
 *Finance*
 Currently not very featureful. You can model in Records your monthly earnings and expenditures
 and make a Karma with a condition of (Records of Earnings) - (Records of Expenditures)
+#bucket
+#crates
+#web_components
+#sandbox_website
+#kanban
+#extensions

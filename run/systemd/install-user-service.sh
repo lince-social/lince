@@ -28,6 +28,5 @@ EOF
 systemctl --user daemon-reload
 systemctl --user enable lince.service >/dev/null 2>&1 || true
 
-systemctl --user stop lince.service && journalctl --user -u lince.service -f --output=cat
-trap 'systemctl --user restart lince.service && journalctl --user -u lince.service -f --output=cat'
-cargo run
+systemctl --user stop lince.service
+trap "systemctl --user restart lince.service && journalctl --user -u lince.service -f --output=cat"

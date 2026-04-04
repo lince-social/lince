@@ -65,6 +65,14 @@ impl BackendApiService {
         self.auth.authenticate_authorization(authorization).await
     }
 
+    pub async fn show_community_sand_enabled(&self) -> Result<bool, Error> {
+        match self.services.repository.configuration.get_active().await {
+            Ok(configuration) => Ok(configuration.show_community_sand > 0),
+            Err(error) if error.kind() == ErrorKind::NotFound => Ok(false),
+            Err(error) => Err(error),
+        }
+    }
+
     pub async fn list_table_rows(
         &self,
         _claims: &AuthSubject,

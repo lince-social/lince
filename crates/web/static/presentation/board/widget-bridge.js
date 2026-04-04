@@ -121,7 +121,27 @@ function createDatastarBootstrapScript() {
 }
 
 function createBridgeBootstrapScript() {
-  return `<script type="module" src="${apiPath("/static/presentation/board/widget-frame-bootstrap.js")}"></script>`;
+  return `<script src="${apiPath("/static/presentation/board/widget-frame-bootstrap.js")}"></script>`;
+}
+
+function injectHostBootstrap(html, injections) {
+  if (html.includes("</head>")) {
+    return html.replace("</head>", `${injections}\n</head>`);
+  }
+
+  if (html.includes("<body")) {
+    return html.replace(/<body([^>]*)>/i, `${injections}\n<body$1>`);
+  }
+
+  if (html.includes("<script")) {
+    return html.replace(/<script/i, `${injections}\n<script`);
+  }
+
+  if (html.includes("</html>")) {
+    return html.replace("</html>", `${injections}\n</html>`);
+  }
+
+  return `${injections}\n${html}`;
 }
 
 export function enhancePackageHtml(rawHtml) {
@@ -142,16 +162,7 @@ export function enhancePackageHtml(rawHtml) {
     ? ""
     : createDatastarBootstrapScript();
   const injections = [datastarScript, bridgeScript].filter(Boolean).join("\n");
-
-  if (html.includes("</body>")) {
-    return html.replace("</body>", `${injections}\n</body>`);
-  }
-
-  if (html.includes("</html>")) {
-    return html.replace("</html>", `${injections}\n</html>`);
-  }
-
-  return `${html}\n${injections}`;
+  return injectHostBootstrap(html, injections);
 }
 
 export function createWidgetBridge({

@@ -310,6 +310,7 @@ pub(crate) fn source() -> SandWidgetSource {
                 "Esse widget aproxima o relogio da referencia visual enviada: mostrador central com marcacoes tecnicas, pequenos acentos coloridos e legenda curta de compromissos. Toda a logica continua local no package.".into(),
             initial_width: 3,
             initial_height: 4,
+            requires_server: false,
             permissions: vec![],
         },
         head_links: vec![],

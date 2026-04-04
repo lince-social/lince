@@ -663,6 +663,7 @@ pub(crate) fn source() -> SandWidgetSource {
                 "Esse widget empurra o package table para mais perto da referencia da imagem: cabecalho tecnico, chips de resumo, linhas com status e prioridade e uma densidade visual de painel serio. O sort continua acontecendo inteiro dentro do proprio HTML.".into(),
             initial_width: 6,
             initial_height: 5,
+            requires_server: false,
             permissions: vec!["read_table".into(), "read_metrics".into()],
         },
         head_links: vec![],

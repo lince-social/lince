@@ -14,6 +14,7 @@ pub struct Configuration {
     pub delete_confirmation: i64,
     pub error_toast_seconds: f64,
     pub keybinding_mode: i64,
+    pub show_community_sand: i64,
     pub bucket_enabled: i64,
     pub bucket_username: Option<String>,
     pub bucket_password: Option<String>,

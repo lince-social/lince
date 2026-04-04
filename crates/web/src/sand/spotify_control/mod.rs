@@ -722,6 +722,7 @@ pub(crate) fn source() -> SandWidgetSource {
                 "Micro frontend autocontido para uma futura integracao de streaming. O host so instala e posiciona o widget; setup, player state, trocas de faixa e persistencia ficam dentro do proprio package HTML.".into(),
             initial_width: 3,
             initial_height: 4,
+            requires_server: false,
             permissions: vec!["read_spotify".into(), "control_spotify".into()],
         },
         head_links: vec![],

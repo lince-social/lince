@@ -14,6 +14,7 @@ pub(crate) fn source() -> SandWidgetSource {
             details: "The card config chooses the organ/server, and the widget stores the bucket object path in the card state so it survives refreshes. It fetches the bytes through the host proxy and renders them as an image preview.".into(),
             initial_width: 4,
             initial_height: 4,
+            requires_server: true,
             permissions: vec!["bridge_state".into(), "read_files".into()],
         },
         head_links: vec![],

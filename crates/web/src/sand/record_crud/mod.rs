@@ -14,6 +14,7 @@ pub(crate) fn source() -> SandWidgetSource {
             details: r#"Esse package le server_id do iframe e usa o proxy local do Lince em /host/integrations/servers/{server_id}/table/record para criar, atualizar e excluir registros com debug completo da requisicao."#.into(),
             initial_width: 4,
             initial_height: 5,
+            requires_server: true,
             permissions: vec![r#"write_records"#.into()],
         },
         head_links: vec![],

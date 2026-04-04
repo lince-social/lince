@@ -105,6 +105,7 @@ export function sanitizeCard(rawCard, index, config) {
       author: kind === "package" ? String(rawCard?.author || "") : "",
       permissions: sanitizePermissions(rawCard?.permissions),
       packageName: kind === "package" ? String(rawCard?.packageName || "") : "",
+      requiresServer: kind === "package" ? rawCard?.requiresServer === true : false,
       serverId: kind === "package" ? String(rawCard?.serverId || "") : "",
       viewId:
         kind === "package" && rawCard?.viewId != null
@@ -168,6 +169,7 @@ export function findOpenPosition(cards, size, config) {
         author: "",
         permissions: [],
         packageName: "",
+        requiresServer: false,
         serverId: "",
         viewId: null,
         streamsEnabled: true,

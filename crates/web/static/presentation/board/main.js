@@ -188,6 +188,7 @@ const dnaPackagesCloseButton = document.getElementById(
 );
 const dnaPackagesSummary = document.getElementById("dna-packages-summary");
 const dnaPackagesSearch = document.getElementById("dna-packages-search");
+const dnaOriginFilter = document.getElementById("dna-origin-filter");
 const dnaPackageList = document.getElementById("dna-package-list");
 const deleteCardModalBackdrop = document.getElementById(
   "delete-card-modal-backdrop",
@@ -331,6 +332,7 @@ if (
   !dnaPackagesCloseButton ||
   !dnaPackagesSummary ||
   !dnaPackagesSearch ||
+  !dnaOriginFilter ||
   !dnaPackageList ||
   !deleteCardModalBackdrop ||
   !deleteCardModalTitle ||
@@ -455,6 +457,7 @@ let dnaCatalogLoaded = false;
 let dnaCatalogPackageCount = 0;
 let dnaCatalogPackages = [];
 let dnaPackageResults = [];
+let dnaCatalogOrigins = [];
 let serverProfiles = Array.isArray(bootstrap?.servers) ? bootstrap.servers : [];
 let pendingServerLogin = null;
 let pendingWidgetConfigCardId = null;
@@ -523,7 +526,14 @@ function getServerProfile(serverId) {
   );
 }
 
+function cardSupportsHostConfiguration(card) {
+  return card?.kind === "package";
+}
+
 function cardRequiresServer(card) {
+  if (card?.requiresServer === true) {
+    return true;
+  }
   const permissions = Array.isArray(card?.permissions) ? card.permissions : [];
   return (
     permissions.includes("read_view_stream") ||
@@ -715,14 +725,14 @@ function renderConfigureIcon() {
 }
 
 function renderConfigureButton(card) {
-  if (!cardRequiresServer(card)) {
+  if (!cardSupportsHostConfiguration(card)) {
     return "";
   }
 
   return `
     <button
       type="button"
-      class="card-delete-button card-delete-button--secondary"
+      class="card-delete-button card-delete-button--secondary card-config-button"
       data-card-action="configure"
       aria-label="Configurar ${escapeHtml(card.title)}"
     >
@@ -842,7 +852,9 @@ function renderPackageBody(card) {
         loading="lazy"
         data-package-instance-id="${escapeHtml(card.id)}"
         ${frameAttributes}
-        sandbox="allow-scripts allow-same-origin"
+        sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-popups"
+        allow="fullscreen"
+        allowfullscreen
         ${frameSrc ? `src="${escapeHtml(frameSrc)}"` : `srcdoc="${escapeHtml(enhancePackageHtml(card.html || ""))}"`}
       ></iframe>
     </div>
@@ -1436,7 +1448,7 @@ function summarizeLocalPackages(filteredPackages) {
 
   localPackagesSummary.textContent = `${totalCount} widget${totalCount > 1 ? "s" : ""} disponivel${
     totalCount > 1 ? "eis" : ""
-  } no catalogo. Os oficiais sao renderizados em ~/.config/lince/web/sand; os locais ficam em ~/.config/lince/web/widgets.`;
+  } no catalogo em ~/.config/lince/web/sand.`;
 }
 
 function renderLocalPackageList() {
@@ -1607,44 +1619,76 @@ function normalizedDnaPackageSearch() {
   return dnaPackagesSearch.value.trim().toLowerCase();
 }
 
+function normalizedDnaOriginFilter() {
+  return dnaOriginFilter.value.trim();
+}
+
+function syncDnaOriginFilterOptions() {
+  const previous = normalizedDnaOriginFilter();
+  const options = [
+    '<option value="">Todas as origens</option>',
+    ...dnaCatalogOrigins.map(
+      (origin) =>
+        `<option value="${escapeHtml(origin.organId)}">${escapeHtml(origin.originName)}</option>`,
+    ),
+  ];
+  dnaOriginFilter.innerHTML = options.join("");
+  dnaOriginFilter.value = dnaCatalogOrigins.some(
+    (origin) => origin.organId === previous,
+  )
+    ? previous
+    : "";
+}
+
 function summarizeDnaPackages() {
   if (!dnaCatalogLoaded) {
-    dnaPackagesSummary.textContent = "Carregando o catalogo remoto do DNA...";
+    dnaPackagesSummary.textContent = "Carregando o catalogo distribuido de sand...";
     return;
   }
 
   const query = normalizedDnaPackageSearch();
+  const originFilter = normalizedDnaOriginFilter();
   if (!dnaCatalogPackageCount) {
-    dnaPackagesSummary.textContent = "Nenhum widget publicado no DNA.";
+    dnaPackagesSummary.textContent =
+      "Nenhum sand publicado nos organs acessiveis.";
     return;
   }
 
-  if (!query) {
+  if (!query && !originFilter) {
     dnaPackagesSummary.textContent = `${dnaCatalogPackageCount} widget${
       dnaCatalogPackageCount === 1 ? "" : "s"
-    } publicados no DNA.`;
+    } publicados nos organs acessiveis.`;
     return;
   }
 
   dnaPackagesSummary.textContent = `${dnaPackageResults.length} de ${dnaCatalogPackageCount} pacote${
     dnaCatalogPackageCount === 1 ? "" : "s"
-  } corresponde${dnaPackageResults.length === 1 ? "" : "m"} a essa busca.`;
+  } corresponde${dnaPackageResults.length === 1 ? "" : "m"} aos filtros.`;
 }
 
-function filterDnaPackageCatalog(query) {
-  if (!query) {
-    return [...dnaCatalogPackages];
-  }
-
-  const normalizedQuery = query.toLowerCase();
+function filterDnaPackageCatalog(query, originFilter) {
+  const normalizedQuery = String(query || "").toLowerCase();
   return dnaCatalogPackages.filter((pkg) => {
-    const id = String(pkg.id || "").toLowerCase();
-    const title = String(pkg.title || "").toLowerCase();
-    const description = String(pkg.description || "").toLowerCase();
-    return (
-      id.includes(normalizedQuery) ||
-      title.includes(normalizedQuery) ||
-      description.includes(normalizedQuery)
+    if (originFilter && String(pkg.organId || "") !== originFilter) {
+      return false;
+    }
+    if (!normalizedQuery) {
+      return true;
+    }
+
+    const fields = [
+      pkg.id,
+      pkg.organId,
+      pkg.originName,
+      pkg.head,
+      pkg.body,
+      pkg.slug,
+      pkg.bucketKey,
+      pkg.channel,
+      ...(Array.isArray(pkg.categories) ? pkg.categories : []),
+    ];
+    return fields.some((value) =>
+      String(value || "").toLowerCase().includes(normalizedQuery),
     );
   });
 }
@@ -1655,19 +1699,22 @@ function renderDnaPackageList() {
     dnaPackageList.innerHTML = `
       <div class="local-package-empty">
         <strong>Carregando catalogo</strong>
-        <span>Buscando os widgets publicados em github.com/lince-social/dna.</span>
+        <span>Buscando os sand publicados nos organs acessiveis.</span>
       </div>
     `;
     return;
   }
 
-  dnaPackageResults = filterDnaPackageCatalog(normalizedDnaPackageSearch());
+  dnaPackageResults = filterDnaPackageCatalog(
+    normalizedDnaPackageSearch(),
+    normalizedDnaOriginFilter(),
+  );
   summarizeDnaPackages();
   if (!dnaCatalogPackageCount) {
     dnaPackageList.innerHTML = `
       <div class="local-package-empty">
         <strong>Catalogo vazio</strong>
-        <span>Nao encontrei widgets publicados no catalogo remoto do DNA.</span>
+        <span>Nao encontrei sand publicados nos organs acessiveis.</span>
       </div>
     `;
     return;
@@ -1677,7 +1724,7 @@ function renderDnaPackageList() {
     dnaPackageList.innerHTML = `
       <div class="local-package-empty">
         <strong>Nenhum resultado</strong>
-        <span>Nao encontrei pacotes com esse nome, titulo ou descricao no catalogo remoto.</span>
+        <span>Nao encontrei sand com esses filtros de origem e texto.</span>
       </div>
     `;
     return;
@@ -1685,28 +1732,48 @@ function renderDnaPackageList() {
 
   dnaPackageList.innerHTML = dnaPackageResults
     .map((pkg) => {
-      const channelLabel = pkg.channel === "official" ? "official" : "community";
+      const isOfficial = pkg.channel === "official";
+      const channelLabel = isOfficial ? "official" : "unsafe community";
       return `
         <button
           type="button"
           class="local-package-card"
-          data-dna-package-id="${escapeHtml(pkg.id)}"
-          data-dna-package-channel="${escapeHtml(pkg.channel)}"
-          aria-label="Abrir preview de ${escapeHtml(pkg.title)}"
+          data-dna-package-organ-id="${escapeHtml(pkg.organId)}"
+          data-dna-package-record-id="${escapeHtml(pkg.recordId)}"
+          aria-label="Abrir preview de ${escapeHtml(pkg.head)}"
         >
           <span class="local-package-card__icon" aria-hidden="true">◧</span>
           <span class="local-package-card__body">
             <span class="local-package-card__topline">
-              <strong class="local-package-card__title">${escapeHtml(pkg.title)}</strong>
+              <strong class="local-package-card__title">${escapeHtml(pkg.head)}</strong>
               <span class="local-package-card__size">${escapeHtml(channelLabel)}</span>
             </span>
             <span class="local-package-card__description">${escapeHtml(
-              pkg.description || "Widget remoto publicado no DNA.",
+              pkg.body || "Sand publicado por um organ acessivel.",
             )}</span>
             <span class="local-package-card__meta">${escapeHtml(
-              `${pkg.id} · ${pkg.path}`,
+              `${pkg.originName} · ${pkg.slug} · ${pkg.packageFormat}`,
             )}</span>
             <span class="local-package-card__footer">
+              <span class="local-package-card__pill">${escapeHtml(
+                pkg.originName || pkg.organId,
+              )}</span>
+              ${
+                isOfficial
+                  ? ""
+                  : '<span class="local-package-card__pill">unsafe</span>'
+              }
+              ${
+                Array.isArray(pkg.categories) && pkg.categories.length
+                  ? pkg.categories
+                      .slice(0, 2)
+                      .map(
+                        (category) =>
+                          `<span class="local-package-card__pill">${escapeHtml(category)}</span>`,
+                      )
+                      .join("")
+                  : ""
+              }
               <span class="local-package-card__pill">preview</span>
             </span>
           </span>
@@ -1722,12 +1789,24 @@ async function loadDnaCatalog() {
   const response = await fetch(apiPath("/api/packages/dna/catalog"));
   const payload = await parseJsonResponse(response);
   if (!response.ok) {
-    throw new Error(payload?.error || "Falha ao buscar o catalogo do hub.");
+    throw new Error(payload?.error || "Falha ao buscar o catalogo distribuido.");
   }
 
   dnaCatalogLoaded = true;
   dnaCatalogPackageCount = Number(payload?.packageCount) || 0;
   dnaCatalogPackages = Array.isArray(payload?.packages) ? payload.packages : [];
+  dnaCatalogOrigins = Array.from(
+    new Map(
+      dnaCatalogPackages.map((pkg) => [
+        String(pkg.organId || ""),
+        {
+          organId: String(pkg.organId || ""),
+          originName: String(pkg.originName || pkg.organId || ""),
+        },
+      ]),
+    ).values(),
+  ).filter((origin) => origin.organId);
+  syncDnaOriginFilterOptions();
   renderDnaPackageList();
   return dnaCatalogPackageCount;
 }
@@ -1738,7 +1817,7 @@ async function requestDnaPackageSearch(query) {
   );
   const payload = await parseJsonResponse(response);
   if (!response.ok) {
-    throw new Error(payload?.error || "Falha ao buscar o catalogo do hub.");
+    throw new Error(payload?.error || "Falha ao buscar o catalogo distribuido.");
   }
 
   return Array.isArray(payload) ? payload : [];
@@ -1747,12 +1826,12 @@ async function requestDnaPackageSearch(query) {
 async function requestDnaPackagePreview(channel, packageId) {
   const response = await fetch(
     apiPath(
-      `/api/packages/dna/${encodeURIComponent(channel)}/${encodeURIComponent(packageId)}/preview`,
+      `/api/packages/dna/publications/${encodeURIComponent(channel)}/${encodeURIComponent(packageId)}/preview`,
     ),
   );
   const payload = await parseJsonResponse(response);
   if (!response.ok) {
-    throw new Error(payload?.error || "Falha ao baixar o pacote selecionado.");
+    throw new Error(payload?.error || "Falha ao baixar o sand selecionado.");
   }
 
   return payload;
@@ -1761,7 +1840,7 @@ async function requestDnaPackagePreview(channel, packageId) {
 async function installDnaPackage(channel, packageId) {
   const response = await fetch(
     apiPath(
-      `/api/packages/dna/${encodeURIComponent(channel)}/${encodeURIComponent(packageId)}/install`,
+      `/api/packages/dna/publications/${encodeURIComponent(channel)}/${encodeURIComponent(packageId)}/install`,
     ),
     {
       method: "POST",
@@ -1770,7 +1849,7 @@ async function installDnaPackage(channel, packageId) {
   const payload = await parseJsonResponse(response);
   if (!response.ok) {
     throw new Error(
-      payload?.error || "Falha ao instalar o pacote do hub no catalogo local.",
+      payload?.error || "Falha ao instalar o sand remoto no catalogo local.",
     );
   }
 
@@ -1786,6 +1865,7 @@ function openDnaPackagesModal({ preserveSearch = false } = {}) {
   setAddCardPopoverOpen(false);
   if (!preserveSearch) {
     dnaPackagesSearch.value = "";
+    dnaOriginFilter.value = "";
   }
   dnaPackagesModalBackdrop.hidden = false;
   syncModalLock();
@@ -1798,18 +1878,20 @@ function openDnaPackagesModal({ preserveSearch = false } = {}) {
     dnaCatalogPackageCount = 0;
     dnaCatalogPackages = [];
     dnaPackageResults = [];
+    dnaCatalogOrigins = [];
+    syncDnaOriginFilterOptions();
     dnaPackageList.innerHTML = `
       <div class="local-package-empty">
         <strong>Catalogo indisponivel</strong>
         <span>${escapeHtml(
           error instanceof Error
             ? error.message
-            : "Falha ao buscar o catalogo do hub.",
+            : "Falha ao buscar o catalogo distribuido.",
         )}</span>
       </div>
     `;
     dnaPackagesSummary.textContent =
-      error instanceof Error ? error.message : "Falha ao buscar o catalogo do hub.";
+      error instanceof Error ? error.message : "Falha ao buscar o catalogo distribuido.";
   });
 }
 
@@ -2167,8 +2249,12 @@ function syncWidgetConfigDebug(card) {
     );
   } else if (cardRequiresServer(card)) {
     parts.push("Escolha um servidor para esse widget.");
+  } else if (cardSupportsHostConfiguration(card)) {
+    parts.push(
+      "Esse widget pode usar um organ opcionalmente. Escolha um servidor se o proprio widget pedir server_id na configuracao do host.",
+    );
   } else {
-    parts.push("Esse widget nao precisa de servidor.");
+    parts.push("Esse widget nao precisa de configuracao de host.");
   }
 
   if (cardSupportsStream(card)) {
@@ -2182,7 +2268,7 @@ function syncWidgetConfigDebug(card) {
 
 function openWidgetConfigModal(cardId) {
   const card = getCardById(cardId);
-  if (!card) {
+  if (!card || !cardSupportsHostConfiguration(card)) {
     flashBoardBlocked();
     return;
   }
@@ -2205,9 +2291,6 @@ function openWidgetConfigModal(cardId) {
     setWidgetConfigHelp(
       "Nenhum orgao configurado. Cadastre um servidor nessa instancia e recarregue a pagina.",
     );
-  } else if (cardRequiresViewId(card)) {
-    widgetConfigSaveButton.disabled = false;
-    syncWidgetConfigDebug(card);
   } else {
     widgetConfigSaveButton.disabled = false;
     syncWidgetConfigDebug(card);
@@ -2216,7 +2299,7 @@ function openWidgetConfigModal(cardId) {
   widgetConfigModalBackdrop.hidden = false;
   syncModalLock();
   window.setTimeout(() => {
-    if (cardRequiresServer(card)) {
+    if (cardSupportsHostConfiguration(card)) {
       widgetConfigServerId.focus();
       return;
     }
@@ -2264,7 +2347,7 @@ function handleWidgetConfigFormSubmit(event) {
     return;
   }
 
-  const nextServerId = cardRequiresServer(card)
+  const nextServerId = cardSupportsHostConfiguration(card)
     ? widgetConfigServerId.value.trim()
     : "";
   if (cardRequiresServer(card) && !nextServerId) {
@@ -2655,6 +2738,9 @@ function resolvePreviewSize(preview, fallback = null) {
 }
 
 function defaultServerIdForPreview(preview) {
+  if (preview?.requires_server === true || preview?.requiresServer === true) {
+    return "";
+  }
   const permissions = Array.isArray(preview?.permissions)
     ? preview.permissions
     : [];
@@ -2676,6 +2762,7 @@ function createCardFromPreview(preview, sizeOverride = null) {
     author: preview.author,
     permissions: preview.permissions,
     packageName: preview.filename,
+    requiresServer: preview?.requires_server === true || preview?.requiresServer === true,
     html: preview.html,
     serverId: defaultServerIdForPreview(preview),
     viewId: null,
@@ -2701,11 +2788,11 @@ async function addLocalPackageToWorkspace(packageId) {
   return created;
 }
 
-async function previewDnaPackage(packageId, channel) {
-  const preview = await requestDnaPackagePreview(channel, packageId);
+async function previewDnaPackage(organId, recordId) {
+  const preview = await requestDnaPackagePreview(organId, recordId);
   closeDnaPackagesModal();
   openImportModal(preview, null, {
-    remotePackage: { packageId, channel },
+    remotePackage: { organId, recordId },
     reopenDnaModal: true,
   });
 }
@@ -2764,8 +2851,8 @@ async function confirmImportCard() {
   try {
     const installedPackage = pendingImportRemotePackage
       ? await installDnaPackage(
-          pendingImportRemotePackage.channel,
-          pendingImportRemotePackage.packageId,
+          pendingImportRemotePackage.organId,
+          pendingImportRemotePackage.recordId,
         )
       : pendingImportFile
         ? await installUploadedPackage(pendingImportFile)
@@ -3084,6 +3171,10 @@ dnaPackagesSearch.addEventListener("input", () => {
   void refreshDnaPackageSearch();
 });
 
+dnaOriginFilter.addEventListener("change", () => {
+  void refreshDnaPackageSearch();
+});
+
 localPackageList.addEventListener("click", (event) => {
   const card = event.target.closest("[data-local-package-id]");
   if (!card?.dataset.localPackageId) {
@@ -3101,19 +3192,19 @@ localPackageList.addEventListener("click", (event) => {
 });
 
 dnaPackageList.addEventListener("click", (event) => {
-  const card = event.target.closest("[data-dna-package-id]");
-  if (!card?.dataset.dnaPackageId || !card?.dataset.dnaPackageChannel) {
+  const card = event.target.closest("[data-dna-package-organ-id]");
+  if (!card?.dataset.dnaPackageOrganId || !card?.dataset.dnaPackageRecordId) {
     return;
   }
 
   void previewDnaPackage(
-    card.dataset.dnaPackageId,
-    card.dataset.dnaPackageChannel,
+    card.dataset.dnaPackageOrganId,
+    Number(card.dataset.dnaPackageRecordId),
   ).catch((error) => {
     dnaPackagesSummary.textContent =
       error instanceof Error
         ? error.message
-        : "Falha ao baixar o pacote selecionado.";
+        : "Falha ao baixar o sand selecionado.";
   });
 });
 

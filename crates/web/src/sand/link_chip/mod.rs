@@ -14,6 +14,7 @@ pub(crate) fn source() -> SandWidgetSource {
             details: r#"Widget minimalista para links: mostra label customizada, favicon do dominio e um editor compacto para trocar URL e texto."#.into(),
             initial_width: 4,
             initial_height: 2,
+            requires_server: false,
             permissions: vec![],
         },
         head_links: vec![],

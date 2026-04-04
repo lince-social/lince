@@ -18,6 +18,7 @@ pub(crate) fn source() -> SandWidgetSource {
                     .into(),
             initial_width: 7,
             initial_height: 6,
+            requires_server: true,
             permissions: vec![
                 "bridge_state".into(),
                 "read_view_stream".into(),

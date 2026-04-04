@@ -354,6 +354,7 @@ pub(crate) fn source() -> SandWidgetSource {
                 "Widget de calendario no mesmo vocabulario do relogio lateral: cabecalho pequeno, navegacao mensal, grade compacta e pequenos acentos de evento por dia. O estado de selecao e navegacao fica salvo localmente por instancia.".into(),
             initial_width: 3,
             initial_height: 3,
+            requires_server: false,
             permissions: vec![],
         },
         head_links: vec![],

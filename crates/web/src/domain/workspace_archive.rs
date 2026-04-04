@@ -154,10 +154,11 @@ pub fn reconstruct_package_from_card(card: &BoardCard) -> Result<LincePackage, S
                 "Widget reconstruido a partir de um card exportado do workspace.",
             ),
             details:
-                "Widget reconstruido automaticamente a partir do estado exportado de um workspace."
+                    "Widget reconstruido automaticamente a partir do estado exportado de um workspace."
                     .into(),
             initial_width: card.w,
             initial_height: card.h,
+            requires_server: card.requires_server,
             permissions: card.permissions.clone(),
         }
     });
@@ -168,6 +169,7 @@ pub fn reconstruct_package_from_card(card: &BoardCard) -> Result<LincePackage, S
         description: fallback_string(&card.description, &manifest.description),
         initial_width: card.w,
         initial_height: card.h,
+        requires_server: card.requires_server || manifest.requires_server,
         permissions: if card.permissions.is_empty() {
             manifest.permissions.clone()
         } else {
@@ -249,6 +251,7 @@ mod tests {
                 author: "Lince".into(),
                 permissions: vec!["demo".into()],
                 package_name: "demo-widget.html".into(),
+                requires_server: false,
                 server_id: String::new(),
                 view_id: None,
                 streams_enabled: true,
@@ -271,6 +274,7 @@ mod tests {
                 details: "Detalhes".into(),
                 initial_width: 4,
                 initial_height: 3,
+                requires_server: false,
                 permissions: vec!["demo".into()],
             },
             "<!doctype html><html><body>demo</body></html>",

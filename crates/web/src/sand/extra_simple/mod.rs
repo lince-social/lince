@@ -14,6 +14,7 @@ pub(crate) fn source() -> SandWidgetSource {
             details: r#"Esse package le server_id e view_id do iframe, monta a rota /host/integrations/servers/{server_id}/views/{view_id}/stream e mostra estados de configuracao, bloqueio e erro sem implementar auth."#.into(),
             initial_width: 4,
             initial_height: 3,
+            requires_server: true,
             permissions: vec![r#"read_view_stream"#.into()],
         },
         head_links: vec![],

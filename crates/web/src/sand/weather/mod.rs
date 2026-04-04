@@ -217,6 +217,7 @@ pub(crate) fn source() -> SandWidgetSource {
                 "Widget de clima pensado como micro frontend visual. O HTML assume toda a superficie do card e entrega uma leitura direta: cidade, temperatura atual e um estado atmosferico sintetico.".into(),
             initial_width: 3,
             initial_height: 4,
+            requires_server: false,
             permissions: vec!["read_weather".into(), "read_location".into()],
         },
         head_links: vec![],

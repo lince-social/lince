@@ -11,7 +11,7 @@ use {
     },
 };
 
-pub const MAX_PACKAGE_BYTES: usize = 768 * 1024;
+pub const MAX_PACKAGE_BYTES: usize = 64 * 1024 * 1024;
 pub const PACKAGE_EXTENSION: &str = ".html";
 pub const LEGACY_PACKAGE_EXTENSION: &str = ".sand";
 pub const LEGACY_PACKAGE_ARCHIVE_EXTENSION: &str = ".lince";
@@ -35,6 +35,8 @@ pub struct PackageManifest {
     pub details: String,
     pub initial_width: u8,
     pub initial_height: u8,
+    #[serde(default)]
+    pub requires_server: bool,
     pub permissions: Vec<String>,
 }
 
@@ -58,6 +60,7 @@ struct RawPackageManifest {
     details: Option<String>,
     initial_width: Option<u8>,
     initial_height: Option<u8>,
+    requires_server: Option<bool>,
     permissions: Option<Vec<String>>,
 }
 
@@ -350,6 +353,7 @@ fn raw_manifest_from_manifest(manifest: &PackageManifest) -> RawPackageManifest 
         details: Some(manifest.details.clone()),
         initial_width: Some(manifest.initial_width),
         initial_height: Some(manifest.initial_height),
+        requires_server: Some(manifest.requires_server),
         permissions: Some(manifest.permissions.clone()),
     }
 }
@@ -368,6 +372,7 @@ fn manifest_from_raw(raw: RawPackageManifest) -> Result<PackageManifest, String>
             .unwrap_or_else(|| "Widget autonomo pronto para virar um card independente.".into()),
         initial_width: raw.initial_width.unwrap_or(3),
         initial_height: raw.initial_height.unwrap_or(2),
+        requires_server: raw.requires_server.unwrap_or(false),
         permissions: raw.permissions.unwrap_or_default(),
     })
 }
@@ -670,6 +675,7 @@ mod tests {
             details: "Roundtrip test".into(),
             initial_width: 3,
             initial_height: 2,
+            requires_server: false,
             permissions: vec!["read_weather".into()],
         }
     }

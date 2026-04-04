@@ -141,6 +141,7 @@ function exportState(state) {
           author,
           permissions,
           packageName,
+          requiresServer,
           serverId,
           viewId,
           streamsEnabled,
@@ -159,6 +160,7 @@ function exportState(state) {
           author,
           permissions,
           packageName,
+          requiresServer,
           serverId,
           viewId,
           streamsEnabled,
@@ -185,6 +187,7 @@ function cardTemplate(index) {
     author: "",
     permissions: [],
     packageName: "",
+    requiresServer: false,
     serverId: "",
     viewId: null,
     streamsEnabled: true,
@@ -387,6 +390,7 @@ export function createBoardStore({
           ? cardDefinition.permissions.map((permission) => String(permission))
           : [],
         packageName: String(cardDefinition?.packageName || ""),
+        requiresServer: cardDefinition?.requiresServer === true,
         serverId: String(cardDefinition?.serverId || ""),
         viewId:
           cardDefinition?.viewId == null

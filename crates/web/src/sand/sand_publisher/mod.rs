@@ -16,6 +16,7 @@ pub(crate) fn source() -> SandWidgetSource {
             details: "The card configuration chooses the organ. This widget previews a .html/.sand/.lince package locally, uploads the canonical artifact and sand.toml into lince/dna/sand/{channel}/{aa}/{slug}/..., and then creates record, record_extension(namespace=lince.dna), and record_resource_ref(provider=bucket, resource_kind=sand).".into(),
             initial_width: 6,
             initial_height: 6,
+            requires_server: true,
             permissions: vec!["bridge_state".into()],
         },
         head_links: vec![],
@@ -106,6 +107,14 @@ fn body() -> Markup {
                     textarea id="body-input" class="field field--textarea" rows="4" maxlength="600" placeholder="Short description shown in the DNA catalog" {}
                 }
 
+                div class="fieldGroup" {
+                    label class="fieldLabel" for="categories-input" { "record.categories" }
+                    input id="categories-input" class="field" type="text" maxlength="280" placeholder="sand, games, doom";
+                    p class="hint" {
+                        "Comma-separated categories. The host also adds sand and sand.{channel} automatically."
+                    }
+                }
+
                 div class="warning" id="channel-warning" {
                     "Official sand is visible by default. Community sand stays unsafe by default and should require explicit user confirmation before consumption."
                 }
@@ -129,6 +138,19 @@ fn body() -> Markup {
                     div id="result-tone" class="pill" { "idle" }
                 }
                 pre id="result-output" class="resultOutput" { "No publication yet." }
+            }
+
+            section class="panel catalogPanel" {
+                div class="sectionHead" {
+                    div {
+                        div class="eyebrow" { "Published sands" }
+                        h2 class="sectionTitle" { "Accessible origins" }
+                    }
+                    button id="catalog-refresh-button" class="button" type="button" { "Refresh list" }
+                }
+                div id="catalog-list" class="catalogList" {
+                    div class="catalogEmpty" { "Loading published sands..." }
+                }
             }
         }
     }
@@ -190,7 +212,8 @@ fn style() -> &'static str {
       .hero,
       .uploadPanel,
       .formPanel,
-      .resultPanel {
+      .resultPanel,
+      .catalogPanel {
         padding: 14px;
       }
 
@@ -372,6 +395,73 @@ fn style() -> &'static str {
         line-height: 1.45;
       }
 
+      .catalogPanel {
+        display: grid;
+        gap: 12px;
+      }
+
+      .catalogList {
+        display: grid;
+        gap: 8px;
+      }
+
+      .catalogCard,
+      .catalogEmpty {
+        padding: 12px;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .catalogCard {
+        display: grid;
+        gap: 8px;
+      }
+
+      .catalogTop,
+      .catalogFooter {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .catalogName {
+        font-size: 0.9rem;
+        font-weight: 700;
+      }
+
+      .catalogMeta,
+      .catalogBody,
+      .catalogEmpty {
+        color: var(--muted);
+        font-size: 0.76rem;
+        line-height: 1.45;
+      }
+
+      .catalogPills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .catalogPill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 28px;
+        padding: 0 10px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        font-family: var(--mono);
+        font-size: 0.7rem;
+      }
+
+      .button--danger {
+        color: var(--danger);
+      }
+
       @media (max-width: 720px) {
         .hero,
         .sectionHead {
@@ -392,7 +482,6 @@ fn style() -> &'static str {
 fn script() -> &'static str {
     r#"
       (() => {
-        const bridge = window.LinceWidgetHost || null;
         const app = document.getElementById("app");
         const frame = window.frameElement || null;
         const serverPill = document.getElementById("server-pill");
@@ -402,6 +491,7 @@ fn script() -> &'static str {
         const channelSelect = document.getElementById("channel-select");
         const headInput = document.getElementById("head-input");
         const bodyInput = document.getElementById("body-input");
+        const categoriesInput = document.getElementById("categories-input");
         const publishButton = document.getElementById("publish-button");
         const refreshButton = document.getElementById("refresh-button");
         const channelPill = document.getElementById("channel-pill");
@@ -414,6 +504,8 @@ fn script() -> &'static str {
         const bucketPreview = document.getElementById("bucket-preview");
         const resultTone = document.getElementById("result-tone");
         const resultOutput = document.getElementById("result-output");
+        const catalogRefreshButton = document.getElementById("catalog-refresh-button");
+        const catalogList = document.getElementById("catalog-list");
 
         const state = {
           serverId: String(frame?.dataset?.linceServerId || ""),
@@ -423,8 +515,55 @@ fn script() -> &'static str {
           preview: null,
           channel: "official",
           published: null,
+          catalog: [],
           busy: false,
         };
+        let bridgeBound = false;
+
+        function bridge() {
+          return window.LinceWidgetHost || null;
+        }
+
+        function requestBridgeState(attempts = 20) {
+          const host = bridge();
+          if (host?.requestState) {
+            host.requestState();
+            return;
+          }
+          if (attempts > 0) {
+            window.setTimeout(() => requestBridgeState(attempts - 1), 60);
+          }
+        }
+
+        function currentBridgeMeta() {
+          try {
+            const meta = bridge()?.getMeta?.();
+            return meta && typeof meta === "object" ? meta : {};
+          } catch (error) {
+            return {};
+          }
+        }
+
+        function currentFrameServerId() {
+          return String(window.frameElement?.dataset?.linceServerId || frame?.dataset?.linceServerId || "").trim();
+        }
+
+        function syncSelectedServer() {
+          state.selectedServer =
+            state.servers.find((server) => server.id === state.serverId) || null;
+        }
+
+        function syncServerFromFrame(force = false) {
+          const nextServerId = currentFrameServerId();
+          if (!force && nextServerId === state.serverId) {
+            return;
+          }
+
+          state.serverId = nextServerId;
+          syncSelectedServer();
+          renderServer();
+          renderPreview();
+        }
 
         function escapeHtml(value) {
           return String(value || "").replace(/[&<>\"']/g, (char) => {
@@ -511,10 +650,12 @@ fn script() -> &'static str {
           publishButton.disabled = state.busy;
           refreshButton.disabled = state.busy;
           authButton.disabled = state.busy;
+          catalogRefreshButton.disabled = state.busy;
           fileInput.disabled = state.busy;
           channelSelect.disabled = state.busy;
           headInput.disabled = state.busy;
           bodyInput.disabled = state.busy;
+          categoriesInput.disabled = state.busy;
         }
 
         async function parseJsonResponse(response) {
@@ -528,9 +669,58 @@ fn script() -> &'static str {
             throw new Error(payload?.error || "Falha ao carregar os organs.");
           }
           state.servers = Array.isArray(payload) ? payload : [];
-          state.selectedServer =
-            state.servers.find((server) => server.id === state.serverId) || null;
+          syncSelectedServer();
           renderServer();
+        }
+
+        function renderCatalog() {
+          const entries = state.catalog;
+          if (!state.catalog.length) {
+            catalogList.innerHTML = '<div class="catalogEmpty">No published sands visible from this host.</div>';
+            return;
+          }
+
+          catalogList.innerHTML = entries
+            .map((entry) => `
+              <article class="catalogCard">
+                <div class="catalogTop">
+                  <div>
+                    <div class="catalogName">${escapeHtml(entry.head || "Unnamed sand")}</div>
+                    <div class="catalogMeta">${escapeHtml(entry.originName || entry.organId)} · ${escapeHtml(entry.slug || "no_slug")} · ${escapeHtml(entry.packageFormat || "html")}</div>
+                  </div>
+                  <div class="catalogPills">
+                    <span class="catalogPill">${escapeHtml(entry.channel === "official" ? "official" : "unsafe community")}</span>
+                    <span class="catalogPill">${escapeHtml(entry.organId || "")}</span>
+                  </div>
+                </div>
+                <div class="catalogBody">${escapeHtml(entry.body || "No body")}</div>
+                <div class="catalogFooter">
+                  <div class="catalogMeta">${escapeHtml(
+                    [entry.bucketKey || ""]
+                      .concat(Array.isArray(entry.categories) ? entry.categories : [])
+                      .join(" · "),
+                  )}</div>
+                  <button
+                    type="button"
+                    class="button button--danger"
+                    data-delete-organ-id="${escapeHtml(entry.organId)}"
+                    data-delete-record-id="${escapeHtml(entry.recordId)}"
+                  >Delete sand</button>
+                </div>
+              </article>
+            `)
+            .join("");
+        }
+
+        async function loadCatalog() {
+          const response = await fetch("/host/packages/dna/catalog");
+          const payload = await parseJsonResponse(response);
+          if (!response.ok) {
+            throw new Error(payload?.error || "Falha ao carregar o catalogo distribuido de sand.");
+          }
+
+          state.catalog = Array.isArray(payload?.packages) ? payload.packages : [];
+          renderCatalog();
         }
 
         function renderServer() {
@@ -585,11 +775,12 @@ fn script() -> &'static str {
         }
 
         function persistDraft() {
-          bridge?.patchCardState?.({
+          bridge()?.patchCardState?.({
             dnaPublisher: {
               channel: state.channel,
               head: headInput.value.trim(),
               body: bodyInput.value.trim(),
+              categories: categoriesInput.value.trim(),
               published: state.published,
             },
           });
@@ -654,10 +845,31 @@ fn script() -> &'static str {
                 `record_id = ${escapeHtml(payload.recordId)}`,
                 `slug = ${escapeHtml(payload.slug)}`,
                 `channel = ${escapeHtml(payload.channel)}`,
+                `categories = ${escapeHtml((payload.categories || []).join(", "))}`,
                 `bucket_key = ${escapeHtml(payload.bucketKey)}`,
                 `sand_toml_key = ${escapeHtml(payload.sandTomlKey)}`,
               ].join("\n")
             : "No publication yet.";
+        }
+
+        async function deletePublication(organId, recordId) {
+          const response = await fetch(
+            `/host/packages/dna/publications/${encodeURIComponent(organId)}/${encodeURIComponent(recordId)}`,
+            {
+              method: "DELETE",
+            },
+          );
+          const payload = await parseJsonResponse(response);
+          if (response.status === 401) {
+            bridge()?.invalidateServerAuth?.(organId);
+            throw new Error(
+              payload?.error || "Authenticate this organ before deleting a sand.",
+            );
+          }
+          if (!response.ok) {
+            throw new Error(payload?.error || "Falha ao apagar o sand publicado.");
+          }
+          return payload;
         }
 
         async function publishPackage() {
@@ -676,6 +888,7 @@ fn script() -> &'static str {
           formData.append("channel", state.channel);
           formData.append("head", headInput.value.trim());
           formData.append("body", bodyInput.value.trim());
+          formData.append("categories", categoriesInput.value.trim());
           formData.append("file", state.upload, state.upload.name);
 
           try {
@@ -685,7 +898,7 @@ fn script() -> &'static str {
             });
             const payload = await parseJsonResponse(response);
             if (response.status === 401) {
-              bridge?.invalidateServerAuth?.(state.serverId);
+              bridge()?.invalidateServerAuth?.(state.serverId);
               throw new Error(
                 payload?.error || "Authenticate this organ before publishing.",
               );
@@ -698,6 +911,7 @@ fn script() -> &'static str {
             renderPublishedResult(payload);
             setStatus("Sand published", "live");
             persistDraft();
+            await loadCatalog();
           } catch (error) {
             renderPublishedResult(null);
             resultTone.textContent = "error";
@@ -711,17 +925,22 @@ fn script() -> &'static str {
         }
 
         function applyBridge(detail) {
-          const meta = detail?.meta && typeof detail.meta === "object" ? detail.meta : {};
+          const fallbackMeta = currentBridgeMeta();
+          const meta = detail?.meta && typeof detail.meta === "object"
+            ? detail.meta
+            : fallbackMeta;
           const cardState = meta.cardState && typeof meta.cardState === "object" ? meta.cardState : {};
           const draft = cardState.dnaPublisher && typeof cardState.dnaPublisher === "object"
             ? cardState.dnaPublisher
             : {};
-          state.serverId = String(meta.serverId || frame?.dataset?.linceServerId || "").trim();
+          state.serverId = String(meta.serverId || currentFrameServerId() || "").trim();
+          syncSelectedServer();
           state.channel = draft.channel === "community" ? "community" : "official";
           channelSelect.value = state.channel;
           channelPill.textContent = state.channel;
           headInput.value = draft.head || headInput.value;
           bodyInput.value = draft.body || bodyInput.value;
+          categoriesInput.value = draft.categories || categoriesInput.value;
           state.published = draft.published || null;
           renderPublishedResult(state.published);
           void refreshServers().catch((error) => {
@@ -730,12 +949,54 @@ fn script() -> &'static str {
             resultOutput.textContent =
               error instanceof Error ? error.message : "Falha ao carregar os organs.";
           });
+          void loadCatalog().catch((error) => {
+            catalogList.innerHTML = `<div class="catalogEmpty">${escapeHtml(
+              error instanceof Error ? error.message : "Falha ao carregar o catalogo distribuido.",
+            )}</div>`;
+          });
           renderPreview();
+        }
+
+        function bindBridgeWhenReady(attempts = 30) {
+          if (bridgeBound) {
+            return true;
+          }
+
+          const host = bridge();
+          if (!host || typeof host.subscribe !== "function") {
+            if (attempts > 0) {
+              window.setTimeout(() => bindBridgeWhenReady(attempts - 1), 60);
+            }
+            return false;
+          }
+
+          bridgeBound = true;
+          host.subscribe((detail) => {
+            applyBridge(detail || {});
+          });
+          applyBridge({ meta: currentBridgeMeta() });
+          host.requestState?.();
+          return true;
+        }
+
+        function bindFrameConfigObserver() {
+          const hostFrame = window.frameElement || frame;
+          if (!hostFrame || typeof MutationObserver !== "function") {
+            return;
+          }
+
+          const observer = new MutationObserver(() => {
+            syncServerFromFrame();
+          });
+          observer.observe(hostFrame, {
+            attributes: true,
+            attributeFilter: ["data-lince-server-id"],
+          });
         }
 
         authButton.addEventListener("click", () => {
           if (state.serverId) {
-            bridge?.invalidateServerAuth?.(state.serverId);
+            bridge()?.invalidateServerAuth?.(state.serverId);
           }
         });
 
@@ -745,6 +1006,19 @@ fn script() -> &'static str {
             resultTone.textContent = "error";
             resultOutput.textContent =
               error instanceof Error ? error.message : "Falha ao carregar os organs.";
+          });
+          void loadCatalog().catch((error) => {
+            catalogList.innerHTML = `<div class="catalogEmpty">${escapeHtml(
+              error instanceof Error ? error.message : "Falha ao carregar o catalogo distribuido.",
+            )}</div>`;
+          });
+        });
+
+        catalogRefreshButton.addEventListener("click", () => {
+          void loadCatalog().catch((error) => {
+            catalogList.innerHTML = `<div class="catalogEmpty">${escapeHtml(
+              error instanceof Error ? error.message : "Falha ao carregar o catalogo distribuido.",
+            )}</div>`;
           });
         });
 
@@ -768,8 +1042,42 @@ fn script() -> &'static str {
           persistDraft();
         });
 
+        categoriesInput.addEventListener("input", () => {
+          persistDraft();
+        });
+
         publishButton.addEventListener("click", () => {
           void publishPackage();
+        });
+
+        catalogList.addEventListener("click", (event) => {
+          const button = event.target.closest("[data-delete-organ-id]");
+          if (!button?.dataset.deleteOrganId || !button?.dataset.deleteRecordId) {
+            return;
+          }
+          void deletePublication(
+            button.dataset.deleteOrganId,
+            Number(button.dataset.deleteRecordId),
+          )
+            .then(() => {
+              if (
+                state.published &&
+                String(state.published.organId) === String(button.dataset.deleteOrganId) &&
+                Number(state.published.recordId) === Number(button.dataset.deleteRecordId)
+              ) {
+                state.published = null;
+                renderPublishedResult(null);
+                persistDraft();
+              }
+              setStatus("Sand deleted", "live");
+              return loadCatalog();
+            })
+            .catch((error) => {
+              resultTone.textContent = "error";
+              resultOutput.textContent =
+                error instanceof Error ? error.message : "Falha ao apagar o sand publicado.";
+              setStatus("Delete failed", "error");
+            });
         });
 
         app.addEventListener("lince-bridge-state", (event) => {
@@ -777,9 +1085,14 @@ fn script() -> &'static str {
         });
 
         renderPublishedResult(null);
+        syncServerFromFrame(true);
         renderPreview();
         renderServer();
-        bridge?.requestState?.();
+        renderCatalog();
+        bindFrameConfigObserver();
+        if (!bindBridgeWhenReady()) {
+          requestBridgeState();
+        }
       })();
     "#
 }

@@ -2,7 +2,8 @@
 #import "chapters/aging/aging.typ"
 #import "chapters/sickness/sickness.typ"
 #import "chapters/death/death.typ"
-#import "../common/typst/document.typ": book
+#import "chapters/first_steps/first_steps.typ"
+#import "components/document.typ": book
 
 #book(
   title: "Instinto",
@@ -10,6 +11,7 @@
   start-date: datetime(year: 2025, month: 12, day: 15),
   [
     #birth
+    #first_steps
     #aging
     #sickness
     #death

@@ -298,6 +298,13 @@ fn render_card(row: &KanbanRow) -> Markup {
     let full_body = row.body.as_str();
     let categories = categories_for_row(row);
     let assignees = row.assignee_names.join(", ");
+    let parent_label = row
+        .parent_head
+        .as_ref()
+        .map(|value| value.trim())
+        .filter(|value| !value.is_empty())
+        .map(str::to_string)
+        .or_else(|| row.parent_id.map(|value| format!("Parent #{value}")));
     let card_class = format!("card {}", quantity_to_lane_key(row.quantity));
     let body_mode_expr = format!("($ui.cardModes['{}'] || $ui.defaultBodyMode)", row.id);
     let head_mode_expr = format!("{body_mode_expr} === 'head'");
@@ -335,10 +342,18 @@ fn render_card(row: &KanbanRow) -> Markup {
                 { "+" }
                 button.cardAction type="button" data-open-focus=(row.id) data-on:click="window.KanbanWidget?.loadRecordDetail(Number(evt.currentTarget.dataset.openFocus || 0))" title="Focus card" { "[]" }
             }
-            @if let Some(parent_head) = row.parent_head.as_deref() {
+            @if let Some(parent_label) = parent_label.as_deref() {
                 @if let Some(parent_id) = row.parent_id {
-                    a.cardParentLink href="#" data-record-link=(parent_id) data-on:click__prevent="window.KanbanWidget?.loadRecordDetail(Number(evt.currentTarget.dataset.recordLink || 0))" {
-                        (parent_head)
+                    a.cardParentLink
+                        href="#"
+                        data-record-link=(parent_id)
+                        data-on:click__prevent="window.KanbanWidget?.loadRecordDetail(Number(evt.currentTarget.dataset.recordLink || 0))"
+                    {
+                        (parent_label)
+                    }
+                } @else {
+                    span.cardParentLink {
+                        (parent_label)
                     }
                 }
             }
@@ -560,4 +575,56 @@ fn query_looks_filtered(query: &str) -> bool {
         || lowered.contains("text_query")
         || lowered.contains("categories_any_json")
         || lowered.contains("assignee_ids_any_json")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::render_sync_payload;
+
+    #[test]
+    fn renders_parent_label_when_parent_metadata_is_present() {
+        let payload = r#"{
+            "view_id": 7,
+            "name": "Board",
+            "query": "SELECT * FROM record WHERE 1 = 1",
+            "columns": ["id", "quantity", "head", "body"],
+            "rows": [
+                {
+                    "id": "1",
+                    "quantity": "0",
+                    "head": "Child",
+                    "body": "",
+                    "kanban_parent_id": "9",
+                    "kanban_parent_head": "Parent task"
+                }
+            ]
+        }"#;
+
+        let rendered = render_sync_payload(payload, true).expect("payload should render");
+        assert!(rendered.html.columns.contains("Parent task"));
+        assert!(rendered.html.columns.contains("cardParentLink"));
+    }
+
+    #[test]
+    fn renders_parent_label_even_without_parent_id() {
+        let payload = r#"{
+            "view_id": 7,
+            "name": "Board",
+            "query": "SELECT * FROM record WHERE 1 = 1",
+            "columns": ["id", "quantity", "head", "body"],
+            "rows": [
+                {
+                    "id": "1",
+                    "quantity": "0",
+                    "head": "Child",
+                    "body": "",
+                    "parent_head": "Parent task"
+                }
+            ]
+        }"#;
+
+        let rendered = render_sync_payload(payload, true).expect("payload should render");
+        assert!(rendered.html.columns.contains("Parent task"));
+        assert!(rendered.html.columns.contains("<span class=\"cardParentLink\">"));
+    }
 }

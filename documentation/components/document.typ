@@ -46,8 +46,8 @@
   author: "Eduardo de Melo Xavier",
   source_url: "https://github.com/lince-social/lince",
   source_label: "Lince",
-  logo_dark: "../media/logo/white.svg",
-  logo_light: "../media/logo/black.svg",
+  logo_dark: "logo/white.svg",
+  logo_light: "logo/black.svg",
 ) = [
   #show: checklist
   #set page(fill: page-background)
@@ -91,7 +91,7 @@
 
   #pagebreak()
   #set page(fill: page-background, footer: outline-page-footer())
-  #outline()
+  #outline(depth: 2)
 ]
 
 #let body(content, source_url: "https://github.com/lince-social/lince") = [
@@ -129,8 +129,8 @@
   author: "Eduardo de Melo Xavier",
   source_url: "https://github.com/lince-social/lince",
   source_label: "Lince",
-  logo_dark: "../media/logo/white.svg",
-  logo_light: "../media/logo/black.svg",
+  logo_dark: "logo/white.svg",
+  logo_light: "logo/black.svg",
 ) = [
   #frontmatter(
     title: title,

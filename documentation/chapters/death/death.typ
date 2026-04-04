@@ -1,4 +1,4 @@
-#import "../../../common/typst/components/chapter.typ": major
+#import "../../components/chapter.typ": major
 
 #major(
   "The Death of Lince",

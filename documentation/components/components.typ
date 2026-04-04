@@ -1,4 +1,4 @@
-#import "../common/typst/components/chapter.typ": major
+#import "chapter.typ": major
 #import "@preview/touying:0.6.1": *
 #import themes.simple: *
 #import "@preview/mmdr:0.2.1": mermaid
@@ -26,7 +26,7 @@
   #slide[
     #align(center + horizon)[
       #v(-4em)
-      #image("../common/media/logo/white.svg", width: 18%)
+      #image("logo/white.svg", width: 18%)
       #v(-2em)
       #text(size: 52pt, weight: "bold")[#title]
       #if subtitle != none [

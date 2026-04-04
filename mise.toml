@@ -1,6 +1,5 @@
 [env]
-DOCS_ROOT = "documentation/technical"
-FIRST_STEPS_ROOT = "documentation/first_steps"
+DOCS_ROOT = "documentation"
 
 [tools]
 rust = "stable"
@@ -9,8 +8,8 @@ rust = "stable"
 description = "Run Typst and Touying workflows"
 tools = { "tinymist" = "latest", "typst" = "latest", "pipx:touying" = "latest" }
 usage = """
-arg "target" help="Target workflow: docs or first-steps"
-arg "action" help="Action: preview, compile, all, html, or slides"
+arg "target" help="Target workflow: docs"
+arg "action" help="Action: preview or compile"
 flag "-l --light" help="Use light mode in preview flows"
 """
 run = """
@@ -29,3 +28,8 @@ run = "./run/release.sh"
 [tasks.publish-crates]
 description = "Publish the internal crates and the lince binary to crates.io"
 run = "./run/publish-crates.sh"
+
+[tasks.backup-rustfs]
+description = "Mirror a RustFS bucket into a backup bucket"
+tools = { "mc" = "latest" }
+run = "bash ./run/backup-rustfs.sh"

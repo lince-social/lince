@@ -1,13 +1,10 @@
 == Web Components
 
-This document is the canonical technical specification for web components in Lince.
-
-Current code is more authoritative than this document when there is conflict.
-This file focuses on ways to get data, ways to use data, and recommended workflows.
+This document is the canonical technical specification for web components in Lince. This file shows you ways to get and use data.
 
 === Basics
 
-There are two families of web components: standalone imported widgets and official `sand/` widgets. Standalone imported widgets are single HTML documents executed inside an iframe through `srcdoc`. Official `sand/` widgets are Lince-maintained components, usually rendered with Rust + Maud, and should move toward one host-managed runtime contract instead of each widget inventing its own transport.
+There are two families of web components: standalone imported widgets and official `sand/` widgets. Standalone imported widgets are either single HTML documents executed inside an iframe through `srcdoc` or .lince files that are a ZIP of an HTML and anything it may need. Official `sand/` widgets are Lince-maintained components, usually rendered with Rust + Maud, and should move toward one host-managed runtime contract instead of each widget inventing its own transport.
 
 The main actors are the backend, which owns persisted business data, generic CRUD, saved views, streaming, and semantic actions; the host, which owns widget instance identity, permissions, auth state, board layout, and persisted `widgetState`; the bridge, which connects host and widget; and external systems such as third-party APIs, foreign sites, files, browser APIs, and WASM runtimes.
 
@@ -226,11 +223,11 @@ CREATE TABLE record_extension (
     record_id INTEGER NOT NULL REFERENCES record(id) ON DELETE CASCADE,
     namespace TEXT NOT NULL,
     version INTEGER NOT NULL DEFAULT 1,
-    data_json TEXT NOT NULL,
+    freestyle_data_structure TEXT NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(record_id, namespace),
-    CHECK (json_valid(data_json))
+    CHECK (json_valid(freestyle_data_structure))
 );
 ```
 
@@ -257,11 +254,11 @@ CREATE TABLE record_link (
     target_table TEXT NOT NULL,
     target_id INTEGER NOT NULL,
     position REAL,
-    data_json TEXT,
+    freestyle_data_structure TEXT,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(record_id, link_type, target_table, target_id),
-    CHECK (data_json IS NULL OR json_valid(data_json))
+    CHECK (freestyle_data_structure IS NULL OR json_valid(freestyle_data_structure))
 );
 ```
 

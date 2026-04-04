@@ -175,13 +175,19 @@ impl DnaHubStore {
             );
         }
 
-        let html = self
-            .fetch_text(&format!("{base}/{normalized_name}_metadata.html"))
-            .await?;
-        let filename = format!("{normalized_name}.html");
-        let package = parse_lince_package(filename, html.as_bytes()).map_err(|_| {
-            "O pacote remoto nao possui metadados validos para instalacao.".to_string()
-        })?;
+        let package = match self.fetch_bytes(&format!("{base}/{normalized_name}.lince")).await {
+            Ok(bytes) => parse_lince_package(format!("{normalized_name}.lince"), &bytes).map_err(
+                |_| "O pacote remoto nao possui metadados validos para instalacao.".to_string(),
+            )?,
+            Err(_) => {
+                let html = self
+                    .fetch_text(&format!("{base}/{normalized_name}_metadata.html"))
+                    .await?;
+                parse_lince_package(format!("{normalized_name}.html"), html.as_bytes()).map_err(
+                    |_| "O pacote remoto nao possui metadados validos para instalacao.".to_string(),
+                )?
+            }
+        };
 
         let mut cache = self.preview_cache.write().await;
         cache.insert(
@@ -195,6 +201,14 @@ impl DnaHubStore {
     }
 
     async fn fetch_text(&self, path: &str) -> Result<String, String> {
+        let bytes = self.fetch_bytes(path).await?;
+        String::from_utf8(bytes).map_err(|error| {
+            tracing::warn!("dna hub body invalid for {path}: {error}");
+            "Falha ao baixar o pacote selecionado.".to_string()
+        })
+    }
+
+    async fn fetch_bytes(&self, path: &str) -> Result<Vec<u8>, String> {
         let url = format!("{DNA_RAW_BASE_URL}/{path}");
         let response = self.http.get(url).send().await.map_err(|error| {
             tracing::warn!("dna hub request failed for {path}: {error}");
@@ -212,7 +226,7 @@ impl DnaHubStore {
             return Err("Falha ao baixar o pacote selecionado.".to_string());
         }
 
-        response.text().await.map_err(|error| {
+        response.bytes().await.map(|bytes| bytes.to_vec()).map_err(|error| {
             tracing::warn!("dna hub body invalid for {path}: {error}");
             "Falha ao baixar o pacote selecionado.".to_string()
         })

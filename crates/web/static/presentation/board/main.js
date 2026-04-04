@@ -9,7 +9,7 @@ const LEGACY_PACKAGE_ARCHIVE_EXTENSION = ".lince";
 const WORKSPACE_ARCHIVE_EXTENSION = ".workspace.sand";
 const LEGACY_WORKSPACE_ARCHIVE_EXTENSION = ".workspace.lince";
 const DEFAULT_DROP_MESSAGE =
-  "Solte um .html de widget ou um .workspace.sand para instalar no backend local.";
+  "Solte um widget .html, .sand ou .lince, ou um .workspace.sand para instalar no backend local.";
 
 function stripPackageExtension(filename) {
   const value = String(filename || "");
@@ -773,9 +773,40 @@ function renderTextBody(card) {
   `;
 }
 
+function buildPackageFrameSrc(card) {
+  const packageName = String(card?.packageName || card?.package_name || "").trim();
+  if (!packageName) {
+    return "";
+  }
+
+  return apiPath(
+    `/api/packages/local/by-filename/${encodeURIComponent(packageName)}/content/index.html`,
+  );
+}
+
+function applyFrameContent(frameNode, { src = "", html = "" } = {}) {
+  if (!frameNode) {
+    return;
+  }
+
+  if (src) {
+    if (frameNode.getAttribute("src") !== src) {
+      frameNode.setAttribute("src", src);
+    }
+    frameNode.removeAttribute("srcdoc");
+    return;
+  }
+
+  const preparedHtml = enhancePackageHtml(html || "");
+  if (frameNode.getAttribute("srcdoc") !== preparedHtml) {
+    frameNode.setAttribute("srcdoc", preparedHtml);
+  }
+  frameNode.removeAttribute("src");
+}
+
 function renderPackageBody(card) {
   const gate = resolveCardServerState(card);
-  const preparedHtml = enhancePackageHtml(card.html || "");
+  const frameSrc = buildPackageFrameSrc(card);
   const frameAttributes =
     `data-lince-server-id="${escapeHtml(card.serverId || "")}" ` +
     `data-lince-view-id="${escapeHtml(card.viewId == null ? "" : String(card.viewId))}"`;
@@ -812,7 +843,7 @@ function renderPackageBody(card) {
         data-package-instance-id="${escapeHtml(card.id)}"
         ${frameAttributes}
         sandbox="allow-scripts allow-same-origin"
-        srcdoc="${escapeHtml(preparedHtml)}"
+        ${frameSrc ? `src="${escapeHtml(frameSrc)}"` : `srcdoc="${escapeHtml(enhancePackageHtml(card.html || ""))}"`}
       ></iframe>
     </div>
   `;
@@ -930,10 +961,10 @@ function syncCardNode(node, card) {
   }
 
   if (frameNode) {
-    const preparedHtml = enhancePackageHtml(card.html || "");
-    if (frameNode.getAttribute("srcdoc") !== preparedHtml) {
-      frameNode.setAttribute("srcdoc", preparedHtml);
-    }
+    applyFrameContent(frameNode, {
+      src: buildPackageFrameSrc(card),
+      html: card.html || "",
+    });
     frameNode.setAttribute("title", card.title || "External card");
     frameNode.dataset.packageInstanceId = card.id || "";
     frameNode.dataset.linceServerId = card.serverId || "";
@@ -1109,7 +1140,7 @@ function renderEmptyState(snapshot) {
 
   workspaceEmptyTitle.textContent = "Sem cards por aqui";
   workspaceEmptyCopy.textContent = editMode
-    ? "Solte um .html ou use Add card para preencher esse espaco."
+    ? "Solte um widget .html, .sand ou .lince, ou use Add card para preencher esse espaco."
     : "Esse espaco esta livre. Entre em modo de edicao ou crie outro pelo seletor.";
 }
 
@@ -1544,7 +1575,7 @@ async function installUploadedPackage(file) {
   const payload = await parseJsonResponse(response);
   if (!response.ok) {
     throw new Error(
-      payload?.error || "Falha ao instalar o widget HTML no backend.",
+      payload?.error || "Falha ao instalar o widget no backend.",
     );
   }
 
@@ -2395,7 +2426,10 @@ function openImportModal(preview, file = null, options = {}) {
   importSize.textContent = `${preview.initial_width} x ${preview.initial_height}`;
   importModalDetails.textContent = preview.details || preview.description;
   renderImportPreview(preview);
-  importPreviewFrame.setAttribute("srcdoc", enhancePackageHtml(preview.html));
+  applyFrameContent(importPreviewFrame, {
+    src: preview.frame_src || preview.frameSrc || "",
+    html: preview.html,
+  });
   renderPermissionsList(preview.permissions);
   importModalBackdrop.hidden = false;
   syncModalLock();
@@ -2408,6 +2442,7 @@ function closeImportModal(options = {}) {
   pendingImportFile = null;
   pendingImportRemotePackage = null;
   reopenDnaModalOnImportClose = false;
+  importPreviewFrame.removeAttribute("src");
   importPreviewFrame.setAttribute("srcdoc", "");
   importModalBackdrop.hidden = true;
   syncModalLock();
@@ -2461,8 +2496,8 @@ function showDropOverlay(message, options = {}) {
     variant === "workspace"
       ? "Solte um arquivo .workspace.sand"
       : variant === "package"
-        ? "Solte um arquivo .html"
-        : "Solte um .html ou .workspace.sand";
+        ? "Solte um arquivo .html, .sand ou .lince"
+        : "Solte um widget .html, .sand ou .lince, ou um .workspace.sand";
   dropZoneOverlayCopy.textContent = message;
 }
 
@@ -2477,7 +2512,8 @@ function hideDropOverlay() {
   dropZoneOverlay.dataset.state = "ready";
   dropZoneOverlay.dataset.variant = "mixed";
   dropZoneOverlayEyebrow.textContent = "Import local file";
-  dropZoneOverlayTitle.textContent = "Solte um .html ou .workspace.sand";
+  dropZoneOverlayTitle.textContent =
+    "Solte um widget .html, .sand ou .lince, ou um .workspace.sand";
   dropZoneOverlayCopy.textContent = DEFAULT_DROP_MESSAGE;
 }
 
@@ -2538,7 +2574,7 @@ async function requestPackagePreview(file) {
   const payload = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new Error(payload?.error || "Nao foi possivel ler o widget HTML.");
+    throw new Error(payload?.error || "Nao foi possivel ler o widget.");
   }
 
   return payload;
@@ -2994,7 +3030,7 @@ boardShell.addEventListener("drop", async (event) => {
 
   if (!linceFile) {
     flashDropOverlayMessage(
-      "Solte um arquivo .html ou .workspace.sand valido.",
+      "Solte um widget .html, .sand ou .lince, ou um .workspace.sand valido.",
     );
     return;
   }

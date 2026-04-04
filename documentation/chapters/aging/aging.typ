@@ -1,4 +1,5 @@
 #import "../../components/chapter.typ": major
+#import "bucket.typ"
 #import "collection.typ"
 #import "configuration.typ"
 #import "dna.typ"
@@ -23,6 +24,7 @@ Explanation of the tables _should_ be mostly focused on the ideas, the solutions
 
 #record
 #collection
+#bucket
 #karma
 #examples
 #configuration

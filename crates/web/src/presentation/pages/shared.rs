@@ -104,20 +104,41 @@ fn render_text_card_body(card: &BoardCard) -> Markup {
 }
 
 pub(crate) fn render_package_body(card: &BoardCard) -> Markup {
+    let frame_src = package_frame_src(card.package_name.as_str());
     html! {
         div class="package-widget" {
-            iframe
-                class="package-widget__frame"
-                title=(card.title.as_str())
-                loading="lazy"
-                data-package-instance-id=(card.id.as_str())
-                data-lince-server-id=(card.server_id.as_str())
-                data-lince-view-id=(card.view_id.map(|value| value.to_string()).unwrap_or_default())
-                sandbox="allow-scripts allow-same-origin"
-                srcdoc=(card.html.as_str())
-            {}
+            @if card.package_name.trim().is_empty() {
+                iframe
+                    class="package-widget__frame"
+                    title=(card.title.as_str())
+                    loading="lazy"
+                    data-package-instance-id=(card.id.as_str())
+                    data-lince-server-id=(card.server_id.as_str())
+                    data-lince-view-id=(card.view_id.map(|value| value.to_string()).unwrap_or_default())
+                    sandbox="allow-scripts allow-same-origin"
+                    srcdoc=(card.html.as_str())
+                {}
+            } @else {
+                iframe
+                    class="package-widget__frame"
+                    title=(card.title.as_str())
+                    loading="lazy"
+                    data-package-instance-id=(card.id.as_str())
+                    data-lince-server-id=(card.server_id.as_str())
+                    data-lince-view-id=(card.view_id.map(|value| value.to_string()).unwrap_or_default())
+                    sandbox="allow-scripts allow-same-origin"
+                    src=(frame_src)
+                {}
+            }
         }
     }
+}
+
+fn package_frame_src(package_name: &str) -> String {
+    format!(
+        "/host/packages/local/by-filename/{}/content/index.html",
+        urlencoding::encode(package_name)
+    )
 }
 
 pub(crate) fn render_card_delete_button(title: &str) -> Markup {

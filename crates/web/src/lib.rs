@@ -19,7 +19,8 @@ use {
         infrastructure::{
             auth::AppAuth, board_state_store::BoardStateStore, dna_hub_store::DnaHubStore,
             manas::ManasGateway, organ_store::OrganStore,
-            package_catalog_store::PackageCatalogStore, terminal_store::TerminalSessionStore,
+            package_catalog_store::PackageCatalogStore,
+            package_preview_store::PackagePreviewStore, terminal_store::TerminalSessionStore,
             widget_bridge_store::WidgetBridgeStore,
         },
         presentation::http::router::build_router,
@@ -65,6 +66,7 @@ pub async fn serve(
         manas: manas.clone(),
         organs: organs.clone(),
         packages: PackageCatalogStore::new().map_err(IoError::other)?,
+        package_previews: PackagePreviewStore::new(),
         terminal: TerminalSessionStore::new(),
         widget_bridge: WidgetBridgeStore::new(),
         kanban_actions: KanbanActionService::new(

@@ -23,8 +23,10 @@ use {
                     proxy_manas_view, proxy_manas_view_snapshot,
                 },
                 packages::{
-                    get_dna_catalog, get_local_package, install_dna_package, install_package,
-                    list_local_packages, preview_dna_package, preview_package, search_dna_packages,
+                    get_dna_catalog, get_local_package, get_local_package_content,
+                    get_preview_package_content, install_dna_package, install_package,
+                    list_local_packages, preview_dna_package, preview_package, publish_dna_package,
+                    search_dna_packages,
                 },
                 servers::{
                     create_server, delete_server, list_servers, login_server, logout_server,
@@ -121,8 +123,17 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
         )
         .route("/packages/preview", post(preview_package))
         .route("/packages/install", post(install_package))
+        .route("/packages/dna/publish", post(publish_dna_package))
         .route("/packages/local", get(list_local_packages))
         .route("/packages/local/{package_id}", get(get_local_package))
+        .route(
+            "/packages/local/by-filename/{filename}/content/{*asset_path}",
+            get(get_local_package_content),
+        )
+        .route(
+            "/packages/previews/{preview_id}/content/{*asset_path}",
+            get(get_preview_package_content),
+        )
         .route("/packages/dna/catalog", get(get_dna_catalog))
         .route("/packages/dna/search", get(search_dna_packages))
         .route(

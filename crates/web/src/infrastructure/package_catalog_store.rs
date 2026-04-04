@@ -35,30 +35,24 @@ pub struct InstalledPackageSummary {
 #[derive(Clone)]
 pub struct PackageCatalogStore {
     dir: Arc<PathBuf>,
-    sand_dir: Arc<PathBuf>,
 }
 
 impl PackageCatalogStore {
     pub fn new() -> Result<Self, String> {
-        let dir = paths::package_dir();
-        let sand_dir = paths::sand_dir();
+        let dir = paths::sand_dir();
         std::fs::create_dir_all(&dir).map_err(|error| {
-            format!("Nao consegui criar a pasta ~/.config/lince/web/widgets: {error}")
+            format!("Nao consegui criar a pasta ~/.config/lince/web/sand: {error}")
         })?;
-        sand::render_official_widgets(&sand_dir)?;
+        sand::render_official_widgets(&dir)?;
 
-        Ok(Self {
-            dir: Arc::new(dir),
-            sand_dir: Arc::new(sand_dir),
-        })
+        Ok(Self { dir: Arc::new(dir) })
     }
 
     pub fn list(&self) -> Result<Vec<InstalledPackageSummary>, String> {
         let mut packages = Vec::new();
-        let mut seen_ids = std::collections::BTreeSet::new();
 
         for entry in std::fs::read_dir(&*self.dir).map_err(|error| {
-            format!("Nao consegui ler a pasta ~/.config/lince/web/widgets: {error}")
+            format!("Nao consegui ler a pasta ~/.config/lince/web/sand: {error}")
         })? {
             let entry = entry
                 .map_err(|error| format!("Nao consegui ler um item da pasta local: {error}"))?;
@@ -78,30 +72,6 @@ impl PackageCatalogStore {
                 .unwrap_or("widget.html");
             let package = parse_lince_package(filename, &bytes)?;
             let summary = summary_from_package(package);
-            seen_ids.insert(summary.id.clone());
-            packages.push(summary);
-        }
-
-        for entry in std::fs::read_dir(&*self.sand_dir).map_err(|error| {
-            format!("Nao consegui ler a pasta ~/.config/lince/web/sand: {error}")
-        })? {
-            let entry = entry
-                .map_err(|error| format!("Nao consegui ler um item da pasta sand: {error}"))?;
-            let path = entry.path();
-            let Some(filename) = path.file_name().and_then(|value| value.to_str()) else {
-                continue;
-            };
-            if !is_package_filename(filename) {
-                continue;
-            }
-
-            let bytes = std::fs::read(&path)
-                .map_err(|error| format!("Nao consegui ler um widget oficial: {error}"))?;
-            let package = parse_lince_package(filename, &bytes)?;
-            let summary = summary_from_package(package);
-            if !seen_ids.insert(summary.id.clone()) {
-                continue;
-            }
             packages.push(summary);
         }
 
@@ -111,11 +81,7 @@ impl PackageCatalogStore {
 
     pub fn load(&self, package_id: &str) -> Result<LincePackage, String> {
         let filename = format!("{}{}", slugify(package_id), PACKAGE_EXTENSION);
-        let path = resolve_package_path(&self.dir, &filename, &filename);
-        if path.exists() {
-            return self.load_by_filename(&filename);
-        }
-        self.load_rendered_sand_by_filename(&filename)
+        self.load_by_filename(&filename)
     }
 
     pub fn load_by_filename(&self, filename: &str) -> Result<LincePackage, String> {
@@ -125,11 +91,8 @@ impl PackageCatalogStore {
             .ok_or_else(|| "Nome de widget local invalido.".to_string())?;
         let normalized = normalize_package_filename(filename);
         let path = resolve_package_path(&self.dir, filename, &normalized);
-        if !path.exists() {
-            return self.load_rendered_sand_by_filename(filename);
-        }
         let bytes = std::fs::read(&path)
-            .map_err(|error| format!("Nao consegui ler o widget local solicitado: {error}"))?;
+            .map_err(|error| format!("Nao consegui ler o sand solicitado: {error}"))?;
         let canonical_name = path
             .file_name()
             .and_then(|value| value.to_str())
@@ -152,17 +115,9 @@ impl PackageCatalogStore {
         let raw_archive = build_lince_archive(package)?;
         let path = self.dir.join(package.archive_filename());
         std::fs::write(&path, raw_archive).map_err(|error| {
-            format!("Nao consegui salvar o widget em ~/.config/lince/web/widgets: {error}")
+            format!("Nao consegui salvar o sand em ~/.config/lince/web/sand: {error}")
         })?;
         Ok(())
-    }
-
-    fn load_rendered_sand_by_filename(&self, filename: &str) -> Result<LincePackage, String> {
-        let normalized = normalize_package_filename(filename);
-        let path = self.sand_dir.join(&normalized);
-        let bytes = std::fs::read(&path)
-            .map_err(|_| "Nao consegui ler o widget solicitado.".to_string())?;
-        parse_lince_package(&normalized, &bytes)
     }
 }
 

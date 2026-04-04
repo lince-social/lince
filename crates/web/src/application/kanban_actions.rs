@@ -645,7 +645,8 @@ impl KanbanActionService {
 
         for extension in &extensions {
             if extension.namespace == "task.categories" {
-                let normalized_categories = extract_categories(&extension.data_json)
+                let normalized_categories =
+                    extract_categories(&extension.freestyle_data_structure)
                     .map(normalize_categories)
                     .unwrap_or_default();
                 if !normalized_categories.is_empty() {
@@ -976,7 +977,7 @@ impl KanbanActionService {
                 "resource_path": resource_path,
                 "title": payload.title.map(|value| value.trim().to_string()).filter(|value| !value.is_empty()),
                 "position": payload.position,
-                "data_json": null,
+                "freestyle_data_structure": null,
             }),
         )
         .await?;
@@ -1094,7 +1095,7 @@ impl KanbanActionService {
             .find_record_extension(session_token, organ, bearer_token, record_id, namespace)
             .await?;
         match (existing, payload) {
-            (Some(row), Some(data_json)) => {
+            (Some(row), Some(freestyle_data_structure)) => {
                 self.update_table_row(
                     session_token,
                     organ,
@@ -1105,12 +1106,12 @@ impl KanbanActionService {
                         "record_id": record_id,
                         "namespace": namespace,
                         "version": 1,
-                        "data_json": data_json.to_string(),
+                        "freestyle_data_structure": freestyle_data_structure.to_string(),
                     }),
                 )
                 .await?;
             }
-            (None, Some(data_json)) => {
+            (None, Some(freestyle_data_structure)) => {
                 self.create_table_row(
                     session_token,
                     organ,
@@ -1120,7 +1121,7 @@ impl KanbanActionService {
                         "record_id": record_id,
                         "namespace": namespace,
                         "version": 1,
-                        "data_json": data_json.to_string(),
+                        "freestyle_data_structure": freestyle_data_structure.to_string(),
                     }),
                 )
                 .await?;
@@ -1182,7 +1183,7 @@ impl KanbanActionService {
                     "target_table": "app_user",
                     "target_id": assignee_id,
                     "position": null,
-                    "data_json": null,
+                    "freestyle_data_structure": null,
                 }),
             )
             .await?;
@@ -1242,7 +1243,7 @@ impl KanbanActionService {
                     "target_table": "record",
                     "target_id": parent_id,
                     "position": null,
-                    "data_json": null,
+                    "freestyle_data_structure": null,
                 }),
             )
             .await?;
@@ -1284,22 +1285,22 @@ impl KanbanActionService {
         let categories = extensions
             .iter()
             .find(|row| row.record_id == record.id && row.namespace == "task.categories")
-            .and_then(|row| extract_categories(&row.data_json))
+            .and_then(|row| extract_categories(&row.freestyle_data_structure))
             .unwrap_or_default();
         let primary_category = categories.first().cloned();
         let task_type = extensions
             .iter()
             .find(|row| row.record_id == record.id && row.namespace == "task.type")
-            .and_then(|row| extract_task_type(&row.data_json));
+            .and_then(|row| extract_task_type(&row.freestyle_data_structure));
         let (start_at, end_at) = extensions
             .iter()
             .find(|row| row.record_id == record.id && row.namespace == "task.schedule")
-            .map(|row| extract_schedule(&row.data_json))
+            .map(|row| extract_schedule(&row.freestyle_data_structure))
             .unwrap_or((None, None));
         let estimate_seconds = extensions
             .iter()
             .find(|row| row.record_id == record.id && row.namespace == "task.effort")
-            .and_then(|row| extract_estimate_seconds(&row.data_json));
+            .and_then(|row| extract_estimate_seconds(&row.freestyle_data_structure));
 
         let assignees = links
             .iter()
@@ -2196,7 +2197,7 @@ struct RecordExtensionRow {
     id: i64,
     record_id: i64,
     namespace: String,
-    data_json: String,
+    freestyle_data_structure: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -2640,8 +2641,8 @@ fn ensure_nested_object<'a>(
     entry.as_object_mut().expect("nested object should exist")
 }
 
-fn extract_categories(data_json: &str) -> Option<Vec<String>> {
-    let value = serde_json::from_str::<Value>(data_json).ok()?;
+fn extract_categories(freestyle_data_structure: &str) -> Option<Vec<String>> {
+    let value = serde_json::from_str::<Value>(freestyle_data_structure).ok()?;
     let categories = value
         .get("categories")
         .and_then(Value::as_array)?
@@ -2652,16 +2653,16 @@ fn extract_categories(data_json: &str) -> Option<Vec<String>> {
     Some(categories)
 }
 
-fn extract_task_type(data_json: &str) -> Option<String> {
-    let value = serde_json::from_str::<Value>(data_json).ok()?;
+fn extract_task_type(freestyle_data_structure: &str) -> Option<String> {
+    let value = serde_json::from_str::<Value>(freestyle_data_structure).ok()?;
     value
         .get("task_type")
         .and_then(Value::as_str)
         .map(str::to_string)
 }
 
-fn extract_schedule(data_json: &str) -> (Option<String>, Option<String>) {
-    let Ok(value) = serde_json::from_str::<Value>(data_json) else {
+fn extract_schedule(freestyle_data_structure: &str) -> (Option<String>, Option<String>) {
+    let Ok(value) = serde_json::from_str::<Value>(freestyle_data_structure) else {
         return (None, None);
     };
     (
@@ -2676,8 +2677,8 @@ fn extract_schedule(data_json: &str) -> (Option<String>, Option<String>) {
     )
 }
 
-fn extract_estimate_seconds(data_json: &str) -> Option<i64> {
-    let value = serde_json::from_str::<Value>(data_json).ok()?;
+fn extract_estimate_seconds(freestyle_data_structure: &str) -> Option<i64> {
+    let value = serde_json::from_str::<Value>(freestyle_data_structure).ok()?;
     value.get("estimate_seconds").and_then(Value::as_i64)
 }
 

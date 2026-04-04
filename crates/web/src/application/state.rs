@@ -8,7 +8,8 @@ use crate::{
     infrastructure::{
         auth::AppAuth, board_state_store::BoardStateStore, dna_hub_store::DnaHubStore,
         manas::ManasGateway, organ_store::OrganStore, package_catalog_store::PackageCatalogStore,
-        terminal_store::TerminalSessionStore, widget_bridge_store::WidgetBridgeStore,
+        package_preview_store::PackagePreviewStore, terminal_store::TerminalSessionStore,
+        widget_bridge_store::WidgetBridgeStore,
     },
 };
 
@@ -23,6 +24,7 @@ pub struct AppState {
     pub manas: ManasGateway,
     pub organs: OrganStore,
     pub packages: PackageCatalogStore,
+    pub package_previews: PackagePreviewStore,
     pub terminal: TerminalSessionStore,
     pub widget_bridge: WidgetBridgeStore,
     pub kanban_actions: KanbanActionService,

@@ -14,7 +14,7 @@ pub(crate) fn source() -> SandWidgetSource {
                 "Shared free-placement chess board that syncs a record_extension row through SSE."
                     .into(),
             details:
-                "The widget reads a dedicated view, parses the chess state out of data_json as { history, current }, and writes moves back through the host table proxy. No Rust chess service or migration is required."
+                "The widget reads a dedicated view, parses the chess state out of freestyle_data_structure as { history, current }, and writes moves back through the host table proxy. No Rust chess service or migration is required."
                     .into(),
             initial_width: 7,
             initial_height: 6,
@@ -920,7 +920,7 @@ fn script() -> &'static str {
             "  re.record_id,",
             "  re.namespace,",
             "  re.version,",
-            "  re.data_json,",
+            "  re.freestyle_data_structure,",
             "  re.created_at,",
             "  re.updated_at,",
             "  r.head AS record_head",
@@ -988,7 +988,7 @@ fn script() -> &'static str {
 
           const rowId = parseInteger(row.id);
           const namespace = String(row.namespace || "").trim();
-          const rawDataJson = String(row.data_json || "").trim();
+          const rawFreestyleDataStructure = String(row.freestyle_data_structure || "").trim();
           const rowLabel = namespace
             ? `row #${rowId ?? "?"} · ${namespace}`
             : `row #${rowId ?? "?"}`;
@@ -996,9 +996,9 @@ fn script() -> &'static str {
           let rawEnvelope = null;
           let needsSeed = false;
 
-          if (rawDataJson && rawDataJson !== "NULL") {
+          if (rawFreestyleDataStructure && rawFreestyleDataStructure !== "NULL") {
             try {
-              rawEnvelope = JSON.parse(rawDataJson);
+              rawEnvelope = JSON.parse(rawFreestyleDataStructure);
             } catch {
               rawEnvelope = null;
               needsSeed = true;
@@ -1532,7 +1532,7 @@ fn script() -> &'static str {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                data_json: JSON.stringify({
+                freestyle_data_structure: JSON.stringify({
                   history: game.history,
                   current: game.current,
                 }),
@@ -1782,7 +1782,7 @@ fn script() -> &'static str {
               record_id: recordId,
               namespace: "sand.chess",
               version: 1,
-              data_json: JSON.stringify({
+              freestyle_data_structure: JSON.stringify({
                 history: INITIAL_STATE.history,
                 current: INITIAL_STATE.current,
               }),

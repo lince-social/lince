@@ -62,7 +62,7 @@ struct RecordExtensionRow {
     record_id: i64,
     namespace: String,
     version: i64,
-    data_json: String,
+    freestyle_data_structure: String,
     created_at: String,
     updated_at: String,
 }
@@ -75,7 +75,7 @@ struct RecordLinkRow {
     target_table: String,
     target_id: i64,
     position: Option<f64>,
-    data_json: Option<String>,
+    freestyle_data_structure: Option<String>,
     created_at: String,
     updated_at: String,
 }
@@ -114,7 +114,7 @@ struct RecordResourceRefRow {
     resource_path: String,
     title: Option<String>,
     position: Option<f64>,
-    data_json: Option<String>,
+    freestyle_data_structure: Option<String>,
     created_at: String,
     updated_at: String,
 }
@@ -237,7 +237,7 @@ const RECORD_EXTENSION_FIELD_SPECS: [FieldSpec; 4] = [
         kind: FieldKind::Integer,
     },
     FieldSpec {
-        name: "data_json",
+        name: "freestyle_data_structure",
         kind: FieldKind::Text,
     },
 ];
@@ -264,7 +264,7 @@ const RECORD_LINK_FIELD_SPECS: [FieldSpec; 6] = [
         kind: FieldKind::NullableReal,
     },
     FieldSpec {
-        name: "data_json",
+        name: "freestyle_data_structure",
         kind: FieldKind::NullableText,
     },
 ];
@@ -345,7 +345,7 @@ const RECORD_RESOURCE_REF_FIELD_SPECS: [FieldSpec; 7] = [
         kind: FieldKind::NullableReal,
     },
     FieldSpec {
-        name: "data_json",
+        name: "freestyle_data_structure",
         kind: FieldKind::NullableText,
     },
 ];
@@ -547,7 +547,7 @@ impl BackendApiStore {
             ),
             ApiTable::RecordExtension => serialize_value(
                 sqlx::query_as::<_, RecordExtensionRow>(
-                    "SELECT id, record_id, namespace, version, data_json, created_at, updated_at FROM record_extension ORDER BY id",
+                    "SELECT id, record_id, namespace, version, freestyle_data_structure, created_at, updated_at FROM record_extension ORDER BY id",
                 )
                 .fetch_all(db)
                 .await
@@ -555,7 +555,7 @@ impl BackendApiStore {
             ),
             ApiTable::RecordLink => serialize_value(
                 sqlx::query_as::<_, RecordLinkRow>(
-                    "SELECT id, record_id, link_type, target_table, target_id, position, data_json, created_at, updated_at FROM record_link ORDER BY id",
+                    "SELECT id, record_id, link_type, target_table, target_id, position, freestyle_data_structure, created_at, updated_at FROM record_link ORDER BY id",
                 )
                 .fetch_all(db)
                 .await
@@ -579,7 +579,7 @@ impl BackendApiStore {
             ),
             ApiTable::RecordResourceRef => serialize_value(
                 sqlx::query_as::<_, RecordResourceRefRow>(
-                    "SELECT id, record_id, provider, resource_kind, resource_path, title, position, data_json, created_at, updated_at FROM record_resource_ref ORDER BY id",
+                    "SELECT id, record_id, provider, resource_kind, resource_path, title, position, freestyle_data_structure, created_at, updated_at FROM record_resource_ref ORDER BY id",
                 )
                 .fetch_all(db)
                 .await
@@ -656,7 +656,7 @@ impl BackendApiStore {
             ),
             ApiTable::RecordExtension => serialize_value(
                 sqlx::query_as::<_, RecordExtensionRow>(
-                    "SELECT id, record_id, namespace, version, data_json, created_at, updated_at FROM record_extension WHERE id = ?",
+                    "SELECT id, record_id, namespace, version, freestyle_data_structure, created_at, updated_at FROM record_extension WHERE id = ?",
                 )
                 .bind(id)
                 .fetch_one(db)
@@ -665,7 +665,7 @@ impl BackendApiStore {
             ),
             ApiTable::RecordLink => serialize_value(
                 sqlx::query_as::<_, RecordLinkRow>(
-                    "SELECT id, record_id, link_type, target_table, target_id, position, data_json, created_at, updated_at FROM record_link WHERE id = ?",
+                    "SELECT id, record_id, link_type, target_table, target_id, position, freestyle_data_structure, created_at, updated_at FROM record_link WHERE id = ?",
                 )
                 .bind(id)
                 .fetch_one(db)
@@ -692,7 +692,7 @@ impl BackendApiStore {
             ),
             ApiTable::RecordResourceRef => serialize_value(
                 sqlx::query_as::<_, RecordResourceRefRow>(
-                    "SELECT id, record_id, provider, resource_kind, resource_path, title, position, data_json, created_at, updated_at FROM record_resource_ref WHERE id = ?",
+                    "SELECT id, record_id, provider, resource_kind, resource_path, title, position, freestyle_data_structure, created_at, updated_at FROM record_resource_ref WHERE id = ?",
                 )
                 .bind(id)
                 .fetch_one(db)

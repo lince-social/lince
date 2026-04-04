@@ -2,8 +2,8 @@ use {
     crate::domain::{
         board::{BoardCard, BoardWorkspace},
         lince_package::{
-            LincePackage, PACKAGE_EXTENSION, build_lince_archive, normalize_package_filename,
-            parse_lince_package, parse_manifest_from_html, slugify,
+            LEGACY_PACKAGE_ARCHIVE_EXTENSION, LincePackage, PACKAGE_EXTENSION,
+            build_lince_archive, parse_lince_package, parse_manifest_from_html, slugify,
         },
     },
     serde::{Deserialize, Serialize},
@@ -133,7 +133,7 @@ pub fn reconstruct_package_from_card(card: &BoardCard) -> Result<LincePackage, S
     } else {
         let package_name = card.package_name.trim();
         if package_name.contains('.') {
-            normalize_package_filename(package_name)
+            package_name.to_string()
         } else {
             format!("{}{}", slugify(package_name), PACKAGE_EXTENSION)
         }
@@ -162,23 +162,28 @@ pub fn reconstruct_package_from_card(card: &BoardCard) -> Result<LincePackage, S
         }
     });
 
-    LincePackage::new(
-        Some(filename),
-        crate::domain::lince_package::PackageManifest {
-            title,
-            author: fallback_string(&card.author, &manifest.author),
-            description: fallback_string(&card.description, &manifest.description),
-            initial_width: card.w,
-            initial_height: card.h,
-            permissions: if card.permissions.is_empty() {
-                manifest.permissions
-            } else {
-                card.permissions.clone()
-            },
-            ..manifest
+    let manifest = crate::domain::lince_package::PackageManifest {
+        title,
+        author: fallback_string(&card.author, &manifest.author),
+        description: fallback_string(&card.description, &manifest.description),
+        initial_width: card.w,
+        initial_height: card.h,
+        permissions: if card.permissions.is_empty() {
+            manifest.permissions.clone()
+        } else {
+            card.permissions.clone()
         },
-        html,
-    )
+        ..manifest
+    };
+
+    if filename
+        .to_ascii_lowercase()
+        .ends_with(LEGACY_PACKAGE_ARCHIVE_EXTENSION)
+    {
+        LincePackage::new_archive(Some(filename), manifest, html, "index.html", Default::default())
+    } else {
+        LincePackage::new(Some(filename), manifest, html)
+    }
 }
 
 fn is_workspace_archive_filename(filename: &str) -> bool {

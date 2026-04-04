@@ -324,11 +324,11 @@ SELECT
     r.quantity,
     r.head,
     r.body,
-    json_extract(categories_ext.data_json, '$.categories[0]') AS primary_category,
-    json_extract(categories_ext.data_json, '$.categories') AS categories_json,
-    json_extract(schedule_ext.data_json, '$.start_at') AS start_at,
-    json_extract(schedule_ext.data_json, '$.end_at') AS end_at,
-    json_extract(effort_ext.data_json, '$.estimate_seconds') AS estimate_seconds,
+    json_extract(categories_ext.freestyle_data_structure, '$.categories[0]') AS primary_category,
+    json_extract(categories_ext.freestyle_data_structure, '$.categories') AS categories_json,
+    json_extract(schedule_ext.freestyle_data_structure, '$.start_at') AS start_at,
+    json_extract(schedule_ext.freestyle_data_structure, '$.end_at') AS end_at,
+    json_extract(effort_ext.freestyle_data_structure, '$.estimate_seconds') AS estimate_seconds,
     COALESCE(worklog_sum.actual_seconds, 0) AS actual_seconds,
     COALESCE(worklog_sum.active_worklog_count, 0) AS active_worklog_count,
     assignee_sum.assignee_ids_json,
@@ -337,7 +337,7 @@ SELECT
     parent_record.head AS parent_head,
     child_sum.children_count,
     child_sum.children_json,
-    json_extract(type_ext.data_json, '$.task_type') AS task_type,
+    json_extract(type_ext.freestyle_data_structure, '$.task_type') AS task_type,
     COALESCE(comment_sum.comments_count, 0) AS comments_count,
     comment_sum.last_comment_preview
 FROM record r
@@ -387,7 +387,7 @@ LEFT JOIN (
                 'id', child.id,
                 'head', child.head,
                 'quantity', child.quantity,
-                'task_type', json_extract(child_type.data_json, '$.task_type')
+                'task_type', json_extract(child_type.freestyle_data_structure, '$.task_type')
             )
         ) AS children_json
     FROM record_link rl
@@ -433,7 +433,7 @@ LEFT JOIN (
     GROUP BY rc.record_id
 ) comment_sum
     ON comment_sum.record_id = r.id
-WHERE json_extract(type_ext.data_json, '$.task_type') IN ('epic', 'feature', 'task', 'other');
+WHERE json_extract(type_ext.freestyle_data_structure, '$.task_type') IN ('epic', 'feature', 'task', 'other');
 ```
 
 Critique of older query shapes:
@@ -916,11 +916,11 @@ CREATE TABLE record_extension (
     record_id INTEGER NOT NULL REFERENCES record(id) ON DELETE CASCADE,
     namespace TEXT NOT NULL,
     version INTEGER NOT NULL DEFAULT 1,
-    data_json TEXT NOT NULL,
+    freestyle_data_structure TEXT NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(record_id, namespace),
-    CHECK (json_valid(data_json))
+    CHECK (json_valid(freestyle_data_structure))
 );
 
 CREATE INDEX idx_record_extension_namespace_record
@@ -933,11 +933,11 @@ CREATE TABLE record_link (
     target_table TEXT NOT NULL,
     target_id INTEGER NOT NULL,
     position REAL,
-    data_json TEXT,
+    freestyle_data_structure TEXT,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(record_id, link_type, target_table, target_id),
-    CHECK (data_json IS NULL OR json_valid(data_json))
+    CHECK (freestyle_data_structure IS NULL OR json_valid(freestyle_data_structure))
 );
 
 CREATE INDEX idx_record_link_record_type
@@ -990,11 +990,11 @@ CREATE TABLE record_resource_ref (
     resource_path TEXT NOT NULL,
     title TEXT,
     position REAL,
-    data_json TEXT,
+    freestyle_data_structure TEXT,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(record_id, provider, resource_path),
-    CHECK (data_json IS NULL OR json_valid(data_json))
+    CHECK (freestyle_data_structure IS NULL OR json_valid(freestyle_data_structure))
 );
 
 CREATE INDEX idx_record_resource_ref_record_position

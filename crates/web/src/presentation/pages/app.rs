@@ -293,7 +293,7 @@ fn render_add_card_popover() -> Markup {
                 span class="add-card-popover__icon" { "↥" }
                 span class="add-card-popover__copy" {
                     strong { "Importar" }
-                    small { "widget HTML do disco" }
+                    small { "widget .html, .sand ou .lince do disco" }
                 }
             }
             button
@@ -349,7 +349,7 @@ fn render_drop_zone_overlay() -> Markup {
         div id="drop-zone-overlay" class="drop-zone-overlay" hidden="" {
             div class="drop-zone-overlay__panel" {
                 div id="drop-zone-overlay-eyebrow" class="drop-zone-overlay__eyebrow" { "Import widget" }
-                h2 id="drop-zone-overlay-title" class="drop-zone-overlay__title" { "Solte um widget .html" }
+                h2 id="drop-zone-overlay-title" class="drop-zone-overlay__title" { "Solte um widget .html, .sand ou .lince" }
                 p id="drop-zone-overlay-copy" class="drop-zone-overlay__copy" {
                     "O widget sera lido no backend e aberto em preview antes de virar um card."
                 }
@@ -386,7 +386,7 @@ fn render_import_modal_backdrop() -> Markup {
                 header class="import-modal__header" {
                     div class="import-modal__lockup" {
                         div class="import-modal__eyebrow" { "External card" }
-                        h2 id="import-modal-title" class="import-modal__title" { "Importar widget HTML" }
+                        h2 id="import-modal-title" class="import-modal__title" { "Importar widget" }
                         p id="import-modal-description" class="import-modal__description" {}
                     }
                     (render_modal_close_button("import-close-button", "Fechar preview do widget"))
@@ -458,7 +458,7 @@ fn render_import_modal_preview_pane() -> Markup {
                             class="import-preview-frame"
                             title="Preview do card importado"
                             data-package-instance-id="preview"
-                            sandbox="allow-scripts"
+                            sandbox="allow-scripts allow-same-origin"
                         {}
                     }
                 }
@@ -476,7 +476,7 @@ fn render_local_packages_modal_backdrop() -> Markup {
                         div class="import-modal__eyebrow" { "Local catalog" }
                         h2 id="local-packages-modal-title" class="import-modal__title" { "Catalogo de widgets" }
                         p class="import-modal__description" {
-                            "Escolha um widget oficial ou um widget HTML salvo em ~/.config/lince/web/widgets para criar outra copia no workspace atual."
+                            "Escolha um widget oficial ou um widget salvo em ~/.config/lince/web/widgets para criar outra copia no workspace atual."
                         }
                     }
                     (render_modal_close_button("local-packages-close-button", "Fechar catalogo local"))

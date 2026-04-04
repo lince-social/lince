@@ -258,6 +258,21 @@ impl BackendApiService {
         self.services.storage.download_object(&key).await
     }
 
+    pub async fn upload_file(
+        &self,
+        key: &str,
+        body: Vec<u8>,
+        content_type: Option<&str>,
+    ) -> Result<(), Error> {
+        let key = validate_file_key(key)?;
+        self.services.storage.upload_object(&key, body, content_type).await
+    }
+
+    pub async fn delete_file(&self, key: &str) -> Result<(), Error> {
+        let key = validate_file_key(key)?;
+        self.services.storage.delete_object(&key).await
+    }
+
     pub fn issue_file_link(
         &self,
         _claims: &AuthSubject,

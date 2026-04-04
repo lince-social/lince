@@ -124,6 +124,36 @@ impl ManasGateway {
             "Nao foi possivel falar com o servidor externo.".to_string()
         })
     }
+
+    pub async fn send_backend_bytes_request(
+        &self,
+        base_url: &str,
+        bearer_token: &str,
+        method: Method,
+        path: &str,
+        body: Vec<u8>,
+        content_type: Option<&str>,
+    ) -> Result<Response, String> {
+        let url = if path.starts_with("http://") || path.starts_with("https://") {
+            path.to_string()
+        } else {
+            format!("{}{}", normalize_base_url(base_url), path)
+        };
+        let mut request = self
+            .http
+            .request(method.clone(), url)
+            .bearer_auth(bearer_token)
+            .body(body);
+
+        if let Some(content_type) = content_type.filter(|value| !value.trim().is_empty()) {
+            request = request.header(reqwest::header::CONTENT_TYPE, content_type);
+        }
+
+        request.send().await.map_err(|error| {
+            tracing::warn!("manas backend bytes request failed ({method} {path}): {error}");
+            "Nao foi possivel falar com o servidor externo.".to_string()
+        })
+    }
 }
 
 fn normalize_base_url(base_url: &str) -> String {

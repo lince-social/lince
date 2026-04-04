@@ -1,17 +1,29 @@
 use {
     serde::{Deserialize, Serialize},
     std::{
-        io::{Cursor, Read},
-        path::Path,
+        collections::BTreeMap,
+        io::{Cursor, Read, Write},
+        path::{Component, Path},
     },
-    zip::ZipArchive,
+    zip::{
+        CompressionMethod, ZipArchive, ZipWriter,
+        write::SimpleFileOptions,
+    },
 };
 
 pub const MAX_PACKAGE_BYTES: usize = 768 * 1024;
 pub const PACKAGE_EXTENSION: &str = ".html";
 pub const LEGACY_PACKAGE_EXTENSION: &str = ".sand";
 pub const LEGACY_PACKAGE_ARCHIVE_EXTENSION: &str = ".lince";
+const ARCHIVE_ENTRY_HTML: &str = "index.html";
+const ARCHIVE_ENTRY_CONFIG: &str = "config.toml";
 const MANIFEST_SCRIPT_ID: &str = "lince-manifest";
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PackageTransport {
+    Html,
+    Archive,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct PackageManifest {
@@ -31,6 +43,9 @@ pub struct LincePackage {
     pub filename: Option<String>,
     pub manifest: PackageManifest,
     pub html: String,
+    entry_path: String,
+    transport: PackageTransport,
+    assets: BTreeMap<String, Vec<u8>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -52,14 +67,39 @@ impl LincePackage {
         manifest: PackageManifest,
         html: impl Into<String>,
     ) -> Result<Self, String> {
+        Self::from_parts(filename, manifest, html, PackageTransport::Html, ARCHIVE_ENTRY_HTML, BTreeMap::new())
+    }
+
+    pub fn new_archive(
+        filename: Option<String>,
+        manifest: PackageManifest,
+        html: impl Into<String>,
+        entry_path: impl Into<String>,
+        assets: BTreeMap<String, Vec<u8>>,
+    ) -> Result<Self, String> {
+        Self::from_parts(filename, manifest, html, PackageTransport::Archive, entry_path, assets)
+    }
+
+    fn from_parts(
+        filename: Option<String>,
+        manifest: PackageManifest,
+        html: impl Into<String>,
+        transport: PackageTransport,
+        entry_path: impl Into<String>,
+        assets: BTreeMap<String, Vec<u8>>,
+    ) -> Result<Self, String> {
         let manifest = normalize_manifest(manifest)?;
         let html = normalize_html(&html.into())?;
         let html = upsert_manifest_script(&html, &manifest);
+        let entry_path = normalize_asset_path(&entry_path.into())?;
 
         Ok(Self {
             filename,
             manifest,
             html,
+            entry_path,
+            transport,
+            assets,
         })
     }
 
@@ -67,12 +107,39 @@ impl LincePackage {
         self.filename
             .as_deref()
             .filter(|filename| is_package_filename(filename))
-            .map(normalize_package_filename)
-            .unwrap_or_else(|| format!("{}{}", slugify(&self.manifest.title), PACKAGE_EXTENSION))
+            .map(|filename| sanitize_package_filename_for_transport(filename, self.transport))
+            .unwrap_or_else(|| {
+                format!(
+                    "{}{}",
+                    slugify(&self.manifest.title),
+                    default_extension_for_transport(self.transport)
+                )
+            })
+    }
+
+    pub fn transport(&self) -> PackageTransport {
+        self.transport
+    }
+
+    pub fn entry_path(&self) -> &str {
+        &self.entry_path
+    }
+
+    pub fn asset_paths(&self) -> impl Iterator<Item = &str> {
+        self.assets.keys().map(String::as_str)
+    }
+
+    pub fn asset_bytes(&self, asset_path: &str) -> Option<&[u8]> {
+        self.assets.get(asset_path).map(Vec::as_slice)
     }
 
     pub fn manifest_json(&self) -> String {
         serde_json::to_string_pretty(&self.manifest).expect("package manifest should serialize")
+    }
+
+    pub fn manifest_toml(&self) -> Result<String, String> {
+        toml::to_string_pretty(&raw_manifest_from_manifest(&self.manifest))
+            .map_err(|error| format!("Nao consegui serializar config.toml do widget: {error}"))
     }
 
     pub fn html_document(&self) -> String {
@@ -96,17 +163,32 @@ pub fn parse_lince_package(
     filename: impl Into<String>,
     bytes: &[u8],
 ) -> Result<LincePackage, String> {
-    let filename = normalize_package_filename(&filename.into());
+    let filename = filename.into();
+    let trimmed = filename.trim();
+    let looks_like_archive = looks_like_zip_archive(bytes);
 
-    if looks_like_zip_archive(bytes) {
-        return parse_archive_package(filename, bytes);
+    if looks_like_archive {
+        return parse_archive_package(
+            sanitize_package_filename_for_transport(trimmed, PackageTransport::Archive),
+            bytes,
+        );
     }
 
-    parse_html_package(filename, bytes)
+    if package_extension(trimmed) == Some(LEGACY_PACKAGE_ARCHIVE_EXTENSION) {
+        return Err("O arquivo .lince precisa ser um zip valido.".into());
+    }
+
+    parse_html_package(
+        sanitize_package_filename_for_transport(trimmed, PackageTransport::Html),
+        bytes,
+    )
 }
 
 pub fn build_lince_archive(package: &LincePackage) -> Result<Vec<u8>, String> {
-    Ok(package.html_document().into_bytes())
+    match package.transport() {
+        PackageTransport::Html => Ok(package.html_document().into_bytes()),
+        PackageTransport::Archive => build_archive_package(package),
+    }
 }
 
 pub fn is_package_filename(filename: &str) -> bool {
@@ -122,6 +204,43 @@ pub fn package_id_from_filename(filename: &str) -> String {
 
 pub fn normalize_package_filename(filename: &str) -> String {
     format!("{}{}", strip_package_extension(filename), PACKAGE_EXTENSION)
+}
+
+fn sanitize_package_filename_for_transport(filename: &str, transport: PackageTransport) -> String {
+    let base = strip_package_extension(filename).trim();
+    let base = if base.is_empty() { "lince-widget" } else { base };
+
+    match transport {
+        PackageTransport::Html => {
+            let extension = match package_extension(filename) {
+                Some(LEGACY_PACKAGE_EXTENSION) => LEGACY_PACKAGE_EXTENSION,
+                _ => PACKAGE_EXTENSION,
+            };
+            format!("{base}{extension}")
+        }
+        PackageTransport::Archive => format!("{base}{LEGACY_PACKAGE_ARCHIVE_EXTENSION}"),
+    }
+}
+
+fn default_extension_for_transport(transport: PackageTransport) -> &'static str {
+    match transport {
+        PackageTransport::Html => PACKAGE_EXTENSION,
+        PackageTransport::Archive => LEGACY_PACKAGE_ARCHIVE_EXTENSION,
+    }
+}
+
+fn package_extension(filename: &str) -> Option<&'static str> {
+    let lowercase = filename.trim().to_ascii_lowercase();
+
+    if lowercase.ends_with(PACKAGE_EXTENSION) {
+        Some(PACKAGE_EXTENSION)
+    } else if lowercase.ends_with(LEGACY_PACKAGE_EXTENSION) {
+        Some(LEGACY_PACKAGE_EXTENSION)
+    } else if lowercase.ends_with(LEGACY_PACKAGE_ARCHIVE_EXTENSION) {
+        Some(LEGACY_PACKAGE_ARCHIVE_EXTENSION)
+    } else {
+        None
+    }
 }
 
 fn strip_package_extension(filename: &str) -> &str {
@@ -221,6 +340,20 @@ pub fn parse_manifest_from_html(html: &str) -> Result<PackageManifest, String> {
     manifest_from_raw(raw_manifest)
 }
 
+fn raw_manifest_from_manifest(manifest: &PackageManifest) -> RawPackageManifest {
+    RawPackageManifest {
+        icon: Some(manifest.icon.clone()),
+        title: manifest.title.clone(),
+        author: manifest.author.clone(),
+        version: Some(manifest.version.clone()),
+        description: Some(manifest.description.clone()),
+        details: Some(manifest.details.clone()),
+        initial_width: Some(manifest.initial_width),
+        initial_height: Some(manifest.initial_height),
+        permissions: Some(manifest.permissions.clone()),
+    }
+}
+
 fn manifest_from_raw(raw: RawPackageManifest) -> Result<PackageManifest, String> {
     normalize_manifest(PackageManifest {
         icon: raw.icon.unwrap_or_else(|| "◧".into()),
@@ -267,19 +400,52 @@ fn normalize_manifest(mut manifest: PackageManifest) -> Result<PackageManifest, 
 fn parse_archive_package(filename: String, bytes: &[u8]) -> Result<LincePackage, String> {
     let cursor = Cursor::new(bytes);
     let mut archive =
-        ZipArchive::new(cursor).map_err(|_| "Nao foi possivel abrir o arquivo .sand.")?;
+        ZipArchive::new(cursor).map_err(|_| "Nao foi possivel abrir o arquivo .lince.")?;
+    let mut files = BTreeMap::new();
 
-    let html = read_archive_entry(&mut archive, "index.html")?;
-    let manifest =
-        if let Some(config_raw) = read_optional_archive_entry(&mut archive, "config.toml")? {
-            let raw_manifest: RawPackageManifest = toml::from_str(&config_raw)
-                .map_err(|_| "config.toml invalido para um package .sand.".to_string())?;
-            manifest_from_raw(raw_manifest)?
-        } else {
-            parse_manifest_from_html(&html)?
-        };
+    for index in 0..archive.len() {
+        let mut file = archive
+            .by_index(index)
+            .map_err(|_| "Nao foi possivel ler os arquivos internos do package.")?;
+        if file.is_dir() {
+            continue;
+        }
 
-    LincePackage::new(Some(filename), manifest, html)
+        let entry_path = enclosed_archive_path(file.name())?;
+        let mut content = Vec::new();
+        file.read_to_end(&mut content)
+            .map_err(|_| format!("Nao foi possivel ler {entry_path} do package .lince."))?;
+        files.insert(entry_path, content);
+    }
+
+    let (entry_path, html_bytes) = select_archive_entry(&files, ARCHIVE_ENTRY_HTML)?.ok_or_else(
+        || format!("O package .lince precisa conter um arquivo {ARCHIVE_ENTRY_HTML}."),
+    )?;
+    let entry_path = entry_path.to_string();
+    let html_bytes = html_bytes.to_vec();
+    let html = std::str::from_utf8(&html_bytes)
+        .map_err(|_| format!("{entry_path} precisa ser texto UTF-8 valido."))?;
+
+    let manifest = if let Some((config_path, config_raw)) =
+        select_archive_entry(&files, ARCHIVE_ENTRY_CONFIG)?
+    {
+        let config_raw = std::str::from_utf8(config_raw)
+            .map_err(|_| format!("{config_path} precisa ser texto UTF-8 valido."))?;
+        let raw_manifest: RawPackageManifest = toml::from_str(config_raw)
+            .map_err(|_| "config.toml invalido para um package .lince.".to_string())?;
+        manifest_from_raw(raw_manifest)?
+    } else {
+        parse_manifest_from_html(html)?
+    };
+
+    let mut assets = files;
+    assets.remove(&entry_path);
+    assets.remove(ARCHIVE_ENTRY_CONFIG);
+    if let Some((config_path, _)) = select_archive_entry(&assets, ARCHIVE_ENTRY_CONFIG)? {
+        assets.remove(&config_path);
+    }
+
+    LincePackage::new_archive(Some(filename), manifest, html, entry_path, assets)
 }
 
 fn parse_html_package(filename: String, bytes: &[u8]) -> Result<LincePackage, String> {
@@ -289,62 +455,102 @@ fn parse_html_package(filename: String, bytes: &[u8]) -> Result<LincePackage, St
     LincePackage::new(Some(filename), manifest, html)
 }
 
-fn read_archive_entry(
-    archive: &mut ZipArchive<Cursor<&[u8]>>,
-    expected_name: &str,
-) -> Result<String, String> {
-    for index in 0..archive.len() {
-        let mut file = archive
-            .by_index(index)
-            .map_err(|_| "Nao foi possivel ler os arquivos internos do package.")?;
+fn build_archive_package(package: &LincePackage) -> Result<Vec<u8>, String> {
+    let cursor = Cursor::new(Vec::new());
+    let mut writer = ZipWriter::new(cursor);
+    let options = SimpleFileOptions::default()
+        .compression_method(CompressionMethod::Deflated)
+        .unix_permissions(0o644);
 
-        let file_name = Path::new(file.name())
-            .file_name()
-            .and_then(|name| name.to_str())
-            .unwrap_or_default();
+    writer
+        .start_file(package.entry_path(), options)
+        .map_err(|error| format!("Nao consegui montar o arquivo .lince: {error}"))?;
+    writer
+        .write_all(package.html_document().as_bytes())
+        .map_err(|error| format!("Nao consegui escrever {}: {error}", package.entry_path()))?;
 
-        if file_name != expected_name {
-            continue;
-        }
+    writer
+        .start_file(ARCHIVE_ENTRY_CONFIG, options)
+        .map_err(|error| format!("Nao consegui adicionar config.toml ao arquivo .lince: {error}"))?;
+    writer
+        .write_all(package.manifest_toml()?.as_bytes())
+        .map_err(|error| format!("Nao consegui escrever config.toml: {error}"))?;
 
-        let mut content = String::new();
-        file.read_to_string(&mut content)
-            .map_err(|_| format!("{expected_name} precisa ser texto UTF-8 valido."))?;
-
-        return Ok(content);
+    for (asset_path, bytes) in &package.assets {
+        writer
+            .start_file(asset_path, options)
+            .map_err(|error| format!("Nao consegui adicionar {asset_path} ao arquivo .lince: {error}"))?;
+        writer
+            .write_all(bytes)
+            .map_err(|error| format!("Nao consegui escrever {asset_path}: {error}"))?;
     }
 
-    Err(format!(
-        "O package .sand precisa conter um arquivo {expected_name}."
-    ))
+    writer
+        .finish()
+        .map(|cursor| cursor.into_inner())
+        .map_err(|error| format!("Nao consegui finalizar o arquivo .lince: {error}"))
 }
 
-fn read_optional_archive_entry(
-    archive: &mut ZipArchive<Cursor<&[u8]>>,
+fn select_archive_entry<'a>(
+    files: &'a BTreeMap<String, Vec<u8>>,
     expected_name: &str,
-) -> Result<Option<String>, String> {
-    for index in 0..archive.len() {
-        let mut file = archive
-            .by_index(index)
-            .map_err(|_| "Nao foi possivel ler os arquivos internos do package.")?;
-
-        let file_name = Path::new(file.name())
-            .file_name()
-            .and_then(|name| name.to_str())
-            .unwrap_or_default();
-
-        if file_name != expected_name {
-            continue;
-        }
-
-        let mut content = String::new();
-        file.read_to_string(&mut content)
-            .map_err(|_| format!("{expected_name} precisa ser texto UTF-8 valido."))?;
-
-        return Ok(Some(content));
+) -> Result<Option<(String, &'a [u8])>, String> {
+    if let Some(content) = files.get(expected_name) {
+        return Ok(Some((expected_name.to_string(), content.as_slice())));
     }
 
-    Ok(None)
+    let mut matches = files
+        .iter()
+        .filter_map(|(path, content)| {
+            Path::new(path)
+                .file_name()
+                .and_then(|name| name.to_str())
+                .filter(|name| *name == expected_name)
+                .map(|_| (path.clone(), content.as_slice()))
+        })
+        .collect::<Vec<_>>();
+
+    if matches.len() > 1 {
+        return Err(format!(
+            "O package .lince contem mais de um arquivo chamado {expected_name}."
+        ));
+    }
+
+    Ok(matches.pop())
+}
+
+fn enclosed_archive_path(raw_path: &str) -> Result<String, String> {
+    let path = Path::new(raw_path);
+    let enclosed = path
+        .components()
+        .map(|component| match component {
+            Component::Normal(value) => value.to_str().map(|value| value.to_string()),
+            Component::CurDir => Some(String::new()),
+            Component::ParentDir | Component::RootDir | Component::Prefix(_) => None,
+        })
+        .collect::<Option<Vec<_>>>()
+        .ok_or_else(|| "O package .lince contem um caminho interno invalido.".to_string())?;
+
+    let normalized = enclosed
+        .into_iter()
+        .filter(|segment| !segment.is_empty())
+        .collect::<Vec<_>>()
+        .join("/");
+
+    if normalized.is_empty() {
+        return Err("O package .lince contem um caminho interno invalido.".into());
+    }
+
+    Ok(normalized)
+}
+
+pub fn normalize_asset_path(asset_path: &str) -> Result<String, String> {
+    let path = asset_path.trim();
+    if path.is_empty() {
+        return Err("Caminho interno do package ausente.".into());
+    }
+
+    enclosed_archive_path(path)
 }
 
 fn looks_like_zip_archive(bytes: &[u8]) -> bool {
@@ -453,23 +659,26 @@ fn fallback_string(value: &str, fallback: &str) -> String {
 mod tests {
     use super::*;
     use std::io::Write;
-    use zip::{CompressionMethod, ZipWriter, write::SimpleFileOptions};
+
+    fn demo_manifest() -> PackageManifest {
+        PackageManifest {
+            icon: "◧".into(),
+            title: "Weather demo".into(),
+            author: "Lince Labs".into(),
+            version: "0.1.0".into(),
+            description: "Preview".into(),
+            details: "Roundtrip test".into(),
+            initial_width: 3,
+            initial_height: 2,
+            permissions: vec!["read_weather".into()],
+        }
+    }
 
     #[test]
     fn html_roundtrip_preserves_manifest_and_html() {
         let package = LincePackage::new(
             Some("demo.html".into()),
-            PackageManifest {
-                icon: "◧".into(),
-                title: "Weather demo".into(),
-                author: "Lince Labs".into(),
-                version: "0.1.0".into(),
-                description: "Preview".into(),
-                details: "Roundtrip test".into(),
-                initial_width: 3,
-                initial_height: 2,
-                permissions: vec!["read_weather".into()],
-            },
+            demo_manifest(),
             "<html><body>ok</body></html>",
         )
         .expect("package should build");
@@ -478,26 +687,46 @@ mod tests {
         let parsed = parse_lince_package("demo.html", &bytes).expect("html should parse");
 
         assert_eq!(parsed.archive_filename(), "demo.html");
+        assert_eq!(parsed.transport(), PackageTransport::Html);
         assert_eq!(parsed.manifest, package.manifest);
         assert!(parsed.html.starts_with("<!doctype html>"));
         assert!(parsed.html.contains("id=\"lince-manifest\""));
     }
 
     #[test]
+    fn archive_roundtrip_preserves_assets_and_filename() {
+        let mut assets = BTreeMap::new();
+        assets.insert("pkg/demo.wasm".into(), vec![0, 97, 115, 109]);
+        assets.insert("assets/theme.css".into(), b"body{background:black;}".to_vec());
+
+        let package = LincePackage::new_archive(
+            Some("demo.lince".into()),
+            demo_manifest(),
+            "<html><body><script type=\"module\">fetch('./pkg/demo.wasm')</script></body></html>",
+            ARCHIVE_ENTRY_HTML,
+            assets.clone(),
+        )
+        .expect("archive package should build");
+
+        let bytes = build_lince_archive(&package).expect("archive should build");
+        assert!(looks_like_zip_archive(&bytes));
+
+        let parsed = parse_lince_package("demo.lince", &bytes).expect("archive should parse");
+        assert_eq!(parsed.archive_filename(), "demo.lince");
+        assert_eq!(parsed.transport(), PackageTransport::Archive);
+        assert_eq!(parsed.entry_path(), ARCHIVE_ENTRY_HTML);
+        assert_eq!(parsed.asset_bytes("pkg/demo.wasm"), Some(&[0, 97, 115, 109][..]));
+        assert_eq!(
+            parsed.asset_bytes("assets/theme.css"),
+            Some(&b"body{background:black;}"[..])
+        );
+    }
+
+    #[test]
     fn legacy_archive_without_config_can_use_embedded_manifest() {
         let package = LincePackage::new(
             Some("demo.html".into()),
-            PackageManifest {
-                icon: "◧".into(),
-                title: "Weather demo".into(),
-                author: "Lince Labs".into(),
-                version: "0.1.0".into(),
-                description: "Preview".into(),
-                details: "Roundtrip test".into(),
-                initial_width: 3,
-                initial_height: 2,
-                permissions: vec!["read_weather".into()],
-            },
+            demo_manifest(),
             "<html><body>ok</body></html>",
         )
         .expect("package should build");
@@ -516,10 +745,18 @@ mod tests {
             .expect("index entry should write");
 
         let archive = writer.finish().expect("archive should finish").into_inner();
-        let parsed = parse_lince_package("demo.sand", &archive).expect("archive should parse");
+        let parsed = parse_lince_package("demo.lince", &archive).expect("archive should parse");
 
-        assert_eq!(parsed.archive_filename(), "demo.html");
+        assert_eq!(parsed.archive_filename(), "demo.lince");
         assert_eq!(parsed.manifest, package.manifest);
+        assert_eq!(parsed.transport(), PackageTransport::Archive);
+    }
+
+    #[test]
+    fn rejects_non_zip_lince_file() {
+        let error = parse_lince_package("demo.lince", b"<!doctype html><html></html>")
+            .expect_err("invalid archive should fail");
+        assert!(error.contains(".lince"));
     }
 
     #[test]

@@ -27,10 +27,6 @@ pub fn board_state_path() -> PathBuf {
     web_config_dir().join("board-state.json")
 }
 
-pub fn package_dir() -> PathBuf {
-    web_config_dir().join("widgets")
-}
-
 pub fn sand_dir() -> PathBuf {
     web_config_dir().join("sand")
 }

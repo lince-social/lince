@@ -13,11 +13,13 @@ mod markdown_notes;
 mod ops_clock;
 mod organ_management;
 mod record_crud;
+mod sand_publisher;
 #[path = "shared_markdown/mod.rs"]
 mod shared_markdown;
 mod spotify_control;
 mod tasklist;
 mod tasks_table;
+mod doom_portal;
 mod view_table_editor;
 mod weather;
 
@@ -59,11 +61,12 @@ pub(crate) struct SandWidgetSource {
 
 type SandSourceBuilder = fn() -> SandWidgetSource;
 
-const OFFICIAL_WIDGETS: [SandSourceBuilder; 18] = [
+const OFFICIAL_WIDGETS: [SandSourceBuilder; 20] = [
     bucket_image_view::source,
     extra_simple::source,
     calendar::source,
     chess::source,
+    doom_portal::source,
     general_creation::source,
     kanban_record_view::source,
     lince_logo_led::source,
@@ -73,6 +76,7 @@ const OFFICIAL_WIDGETS: [SandSourceBuilder; 18] = [
     organ_management::source,
     ops_clock::source,
     view_table_editor::source,
+    sand_publisher::source,
     spotify_control::source,
     record_crud::source,
     tasklist::source,
@@ -91,34 +95,11 @@ pub fn render_official_widgets(target_dir: &Path) -> Result<(), String> {
     std::fs::create_dir_all(target_dir)
         .map_err(|error| format!("Nao consegui criar ~/.config/lince/web/sand: {error}"))?;
 
-    let packages = official_packages();
-    let expected = packages
-        .iter()
-        .map(LincePackage::archive_filename)
-        .collect::<std::collections::BTreeSet<_>>();
-
-    for package in &packages {
-        let bytes = build_lince_archive(package)?;
+    for package in official_packages() {
+        let bytes = build_lince_archive(&package)?;
         let path = target_dir.join(package.archive_filename());
         std::fs::write(&path, bytes)
             .map_err(|error| format!("Nao consegui escrever {}: {error}", path.display()))?;
-    }
-
-    for entry in std::fs::read_dir(target_dir)
-        .map_err(|error| format!("Nao consegui ler ~/.config/lince/web/sand: {error}"))?
-    {
-        let entry = entry.map_err(|error| {
-            format!("Nao consegui ler um item de ~/.config/lince/web/sand: {error}")
-        })?;
-        let path = entry.path();
-        let Some(filename) = path.file_name().and_then(|value| value.to_str()) else {
-            continue;
-        };
-        if !filename.ends_with(".html") || expected.contains(filename) {
-            continue;
-        }
-        std::fs::remove_file(&path)
-            .map_err(|error| format!("Nao consegui limpar {}: {error}", path.display()))?;
     }
 
     Ok(())

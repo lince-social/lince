@@ -38,7 +38,7 @@ body {
     overflow: hidden;
 }
 
-button, input, select {
+button, input, select, textarea {
     font: inherit;
 }
 
@@ -349,6 +349,17 @@ button, input, select {
     background: rgba(255, 255, 255, 0.03);
     color: var(--text);
     padding: 0 10px;
+}
+
+.textarea {
+    width: 100%;
+    min-height: 104px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text);
+    padding: 10px;
+    resize: vertical;
 }
 
 .codeBlock {

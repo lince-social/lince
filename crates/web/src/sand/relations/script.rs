@@ -10,6 +10,7 @@ pub(super) fn script() -> String {
     const sidePanel = document.getElementById("side-panel");
     const panelToggleButton = document.getElementById("panel-toggle");
     const panelCloseButton = document.getElementById("panel-close");
+    const createOpenButton = document.getElementById("create-open");
     const modePill = document.getElementById("mode-pill");
     const originPill = document.getElementById("origin-pill");
     const statusPill = document.getElementById("status-pill");
@@ -19,6 +20,13 @@ pub(super) fn script() -> String {
     const zoomPill = document.getElementById("zoom-pill");
     const emptyState = document.getElementById("empty-state");
     const originText = document.getElementById("origin-text");
+    const createSummary = document.getElementById("create-summary");
+    const createHeadInput = document.getElementById("create-head");
+    const createBodyInput = document.getElementById("create-body");
+    const createQuantityInput = document.getElementById("create-quantity");
+    const createCategoryList = document.getElementById("create-category-list");
+    const createClearButton = document.getElementById("create-clear");
+    const createSubmitButton = document.getElementById("create-submit");
     const selectionPill = document.getElementById("selection-pill");
     const selectionEmpty = document.getElementById("selection-empty");
     const selectionContent = document.getElementById("selection-content");
@@ -82,6 +90,12 @@ pub(super) fn script() -> String {
         selectedId: null,
         selectedParentId: null,
         parentSearchQuery: "",
+        createDraft: {
+            head: "",
+            body: "",
+            quantity: "0",
+        },
+        pendingCreate: false,
         pendingParentMutation: false,
         panelOpen: false,
         stream: null,
@@ -186,6 +200,14 @@ pub(super) fn script() -> String {
         return rows;
     }
 
+    function appliedFilterState() {
+        return normalizeDraftFilters(state.cardState.filters || []);
+    }
+
+    function appliedCreateCategories() {
+        return appliedFilterState().categories.slice();
+    }
+
     function getMeta() {
         return bridge?.getMeta?.() || {};
     }
@@ -278,6 +300,25 @@ pub(super) fn script() -> String {
             categoryInput.value = "";
         }
         renderCategoryChoices();
+    }
+
+    function renderCreateForm() {
+        const categories = appliedCreateCategories();
+        createHeadInput.value = String(state.createDraft.head || "");
+        createBodyInput.value = String(state.createDraft.body || "");
+        createQuantityInput.value = String(state.createDraft.quantity || "0");
+        createCategoryList.innerHTML = categories.length
+            ? categories
+                  .map((category) => `<span class="pill">${escapeHtml(category)}</span>`)
+                  .join("")
+            : '<span class="mutedCopy">No applied categories. New records will be created without category links.</span>';
+        createSummary.textContent = !state.origin.serverId
+            ? "This widget needs a configured server before it can create records."
+            : categories.length
+              ? `New records will inherit ${categories.length} applied categor${categories.length === 1 ? "y" : "ies"} from this view.`
+              : "No category filter is currently applied to this view.";
+        createClearButton.disabled = state.pendingCreate;
+        createSubmitButton.disabled = state.pendingCreate || !state.origin.serverId || !String(state.createDraft.head || "").trim();
     }
 
     function renderPhysicsControls() {
@@ -426,6 +467,7 @@ pub(super) fn script() -> String {
         renderMode();
         renderOrigin();
         renderFilterControls();
+        renderCreateForm();
         renderPhysicsControls();
         renderFilterPill();
         renderPanel();
@@ -494,6 +536,74 @@ pub(super) fn script() -> String {
             nudgeSimulation(0.18);
         }
         requestDraw();
+    }
+
+    function resetCreateDraft() {
+        state.createDraft = {
+            head: "",
+            body: "",
+            quantity: "0",
+        };
+    }
+
+    function openCreatePanel() {
+        state.panelOpen = true;
+        renderPanel();
+        window.requestAnimationFrame(() => {
+            createHeadInput?.focus();
+            createHeadInput?.select?.();
+        });
+    }
+
+    function submitCreateRecord() {
+        if (!state.origin.serverId) {
+            renderStatus("Missing origin", "error", "The widget needs a server binding before it can create records.");
+            renderCreateForm();
+            return;
+        }
+        const head = String(state.createDraft.head || "").trim();
+        if (!head) {
+            renderStatus("Missing head", "error", "A new record needs a head.");
+            renderCreateForm();
+            createHeadInput?.focus();
+            return;
+        }
+
+        const categories = appliedCreateCategories();
+        const quantity = parseOptionalInteger(state.createDraft.quantity);
+        state.pendingCreate = true;
+        renderCreateForm();
+        renderStatus("Creating", "status", "Record creation pending.");
+        postAction("create-record", {
+            record: {
+                head,
+                body: String(state.createDraft.body || "").trim(),
+                quantity: quantity == null ? 0 : quantity,
+            },
+            taskType: null,
+            categories,
+            startAt: null,
+            endAt: null,
+            estimateSeconds: null,
+            assigneeIds: [],
+            parentId: null,
+        })
+            .then((outcome) => {
+                state.pendingCreate = false;
+                const nextRecordId = Number(outcome?.record_id || 0) || null;
+                if (nextRecordId) {
+                    state.selectedId = nextRecordId;
+                }
+                resetCreateDraft();
+                renderCreateForm();
+                renderStatus("Created", "live", "Record created.");
+                restartStream();
+            })
+            .catch((error) => {
+                state.pendingCreate = false;
+                renderCreateForm();
+                renderStatus("Create error", "error", error instanceof Error ? error.message : String(error));
+            });
     }
 
     function parseCell(row, key) {
@@ -1456,6 +1566,7 @@ pub(super) fn script() -> String {
                 });
                 state.cardState.filters = rows;
                 state.cardState.filters_version = filtersVersion;
+                renderCreateForm();
                 renderFilterPill();
                 renderStatus("Saved", "live", "View filters updated.");
                 restartStream();
@@ -1611,6 +1722,34 @@ pub(super) fn script() -> String {
     }
 
     function bindEvents() {
+        createOpenButton.addEventListener("click", openCreatePanel);
+        createHeadInput.addEventListener("input", () => {
+            state.createDraft.head = String(createHeadInput.value || "");
+            renderCreateForm();
+        });
+        createBodyInput.addEventListener("input", () => {
+            state.createDraft.body = String(createBodyInput.value || "");
+        });
+        createQuantityInput.addEventListener("input", () => {
+            state.createDraft.quantity = String(createQuantityInput.value || "0");
+        });
+        createClearButton.addEventListener("click", () => {
+            resetCreateDraft();
+            renderCreateForm();
+        });
+        createSubmitButton.addEventListener("click", submitCreateRecord);
+        createHeadInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+                event.preventDefault();
+                submitCreateRecord();
+            }
+        });
+        createBodyInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+                event.preventDefault();
+                submitCreateRecord();
+            }
+        });
         categoryFilterList.addEventListener("change", updateCategoryStateFromControls);
         categoryAddButton?.addEventListener("click", addCategoryFromInput);
         categoryInput?.addEventListener("keydown", (event) => {
@@ -1708,6 +1847,7 @@ pub(super) fn script() -> String {
         syncFromBridge();
         bridge?.subscribe?.(() => syncFromBridge());
         bridge?.requestState?.();
+        renderCreateForm();
         renderPhysicsControls();
         renderFilterControls();
         renderSelection();

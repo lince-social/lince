@@ -20,6 +20,8 @@ use {
         http::{HeaderMap, HeaderValue, StatusCode, header},
         response::{IntoResponse, Response},
     },
+    chrono::{Duration, NaiveDateTime, Utc},
+    semver::Version,
     serde::{Deserialize, Serialize},
     serde_json::{Value, json},
     std::{
@@ -36,6 +38,8 @@ const DNA_BUCKET_PREFIX: &str = "lince/dna/sand";
 const DNA_RESOURCE_NAMESPACE: &str = "lince.dna";
 const DNA_CATEGORY_NAMESPACE: &str = "record.categories";
 const DNA_BASE_CATEGORY: &str = "sand";
+const DNA_CHANNEL_OFFICIAL: &str = "official";
+const DNA_CHANNEL_COMMUNITY: &str = "community";
 const HTML_TRANSPORT_FILENAME_SUFFIX: &str = "_metadata.html";
 const SAND_TOML_FILENAME: &str = "sand.toml";
 
@@ -61,7 +65,16 @@ pub struct PackagePreview {
 #[serde(rename_all = "camelCase")]
 pub struct DnaCatalogStatus {
     pub package_count: usize,
+    pub origins: Vec<DnaCatalogOrigin>,
     pub packages: Vec<DnaPackageSummary>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DnaCatalogOrigin {
+    pub organ_id: String,
+    pub origin_name: String,
+    pub package_count: usize,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -74,8 +87,9 @@ pub struct DnaPackageSummary {
     pub head: String,
     pub body: String,
     pub slug: String,
-    pub bucket_key: String,
     pub channel: String,
+    pub version: String,
+    pub bucket_key: String,
     pub package_format: String,
     pub categories: Vec<String>,
 }
@@ -97,6 +111,7 @@ pub struct DnaPublishResponse {
     pub body: String,
     pub slug: String,
     pub channel: String,
+    pub version: String,
     pub package_prefix: String,
     pub bucket_key: String,
     pub sand_toml_key: String,
@@ -153,6 +168,7 @@ struct DnaRecordRow {
 
 #[derive(Debug, Clone, Deserialize)]
 struct DnaRecordExtensionRow {
+    id: i64,
     record_id: i64,
     #[serde(default, deserialize_with = "deserialize_nullable_string")]
     namespace: String,
@@ -172,6 +188,8 @@ struct DnaResourceRefRow {
     resource_path: String,
     #[serde(default)]
     freestyle_data_structure: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_nullable_string")]
+    created_at: String,
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
@@ -179,29 +197,50 @@ struct DnaExtensionMeta {
     #[serde(default)]
     published: bool,
     #[serde(default, deserialize_with = "deserialize_nullable_string")]
+    slug: String,
+    #[serde(default, deserialize_with = "deserialize_nullable_string")]
     channel: String,
     #[serde(default, deserialize_with = "deserialize_nullable_string")]
-    slug: String,
+    version: String,
     #[serde(default)]
     canonical_resource_ref_id: Option<i64>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize, Default)]
 struct DnaResourceMeta {
     #[serde(default, deserialize_with = "deserialize_nullable_string")]
     slug: String,
     #[serde(default, deserialize_with = "deserialize_nullable_string")]
     channel: String,
+    #[serde(default, deserialize_with = "deserialize_nullable_string")]
+    version: String,
+    #[serde(default, deserialize_with = "deserialize_nullable_string")]
+    package_prefix: String,
+    #[serde(default, deserialize_with = "deserialize_nullable_string")]
+    transport_filename: String,
     #[serde(default)]
     package_format: Option<String>,
     #[serde(default)]
     sand_toml_key: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_nullable_string")]
+    role: String,
 }
 
 #[derive(Debug, Clone)]
 struct DnaPublication {
     summary: DnaPackageSummary,
-    sand_toml_key: Option<String>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+struct DnaPublicationState {
+    record_id: i64,
+    record_extension_id: i64,
+    categories_extension_id: Option<i64>,
+    version: String,
+    canonical_resource_ref: Option<DnaResourceRefRow>,
+    resource_refs: Vec<DnaResourceRefRow>,
 }
 
 impl PackagePreview {
@@ -272,11 +311,8 @@ pub async fn get_dna_catalog(
     State(state): State<AppState>,
     headers: HeaderMap,
 ) -> ApiResult<Json<DnaCatalogStatus>> {
-    let packages = load_dna_catalog_packages(&state, &headers, None).await?;
-    Ok(Json(DnaCatalogStatus {
-        package_count: packages.len(),
-        packages,
-    }))
+    let snapshot = load_dna_catalog_snapshot(&state, &headers).await?;
+    Ok(Json(snapshot))
 }
 
 pub async fn search_dna_packages(
@@ -317,15 +353,18 @@ pub async fn delete_dna_publication(
     headers: HeaderMap,
     Path((organ_id, record_id)): Path<(String, i64)>,
 ) -> ApiResult<Json<DnaDeleteResponse>> {
-    let publication = load_dna_publication(&state, &headers, &organ_id, record_id).await?;
+    let _publication = load_dna_publication(&state, &headers, &organ_id, record_id).await?;
     let organ = load_publish_organ(&state, &organ_id).await?;
-    let mut deleted_bucket_keys = Vec::new();
+    let mut deleted_bucket_keys = std::collections::BTreeSet::new();
 
-    delete_bucket_object_if_exists(&state, &headers, &organ, &publication.summary.bucket_key).await?;
-    deleted_bucket_keys.push(publication.summary.bucket_key.clone());
-    if let Some(sand_toml_key) = publication.sand_toml_key.as_deref() {
-        delete_bucket_object_if_exists(&state, &headers, &organ, sand_toml_key).await?;
-        deleted_bucket_keys.push(sand_toml_key.to_string());
+    for resource_ref in list_sand_resource_refs_for_record(&state, &headers, &organ, record_id).await? {
+        delete_bucket_object_if_exists(&state, &headers, &organ, &resource_ref.resource_path).await?;
+        deleted_bucket_keys.insert(resource_ref.resource_path.clone());
+        let resource_meta = parse_resource_meta(resource_ref.freestyle_data_structure.as_deref());
+        if let Some(sand_toml_key) = resource_meta.sand_toml_key.as_deref() {
+            delete_bucket_object_if_exists(&state, &headers, &organ, sand_toml_key).await?;
+            deleted_bucket_keys.insert(sand_toml_key.to_string());
+        }
     }
 
     delete_table_row(&state, &headers, &organ, "record", record_id).await?;
@@ -334,7 +373,7 @@ pub async fn delete_dna_publication(
         ok: true,
         organ_id,
         record_id,
-        deleted_bucket_keys,
+        deleted_bucket_keys: deleted_bucket_keys.into_iter().collect(),
     }))
 }
 
@@ -388,13 +427,82 @@ async fn load_dna_catalog_packages(
     headers: &HeaderMap,
     query: Option<&str>,
 ) -> ApiResult<Vec<DnaPackageSummary>> {
-    let include_community = show_community_sand_enabled(state).await?;
+    let mut packages = load_dna_catalog_snapshot(state, headers).await?.packages;
     let normalized_query = query
         .map(str::trim)
         .filter(|value| !value.is_empty())
         .map(|value| value.to_ascii_lowercase());
-    let mut publications = Vec::new();
 
+    if let Some(query) = normalized_query.as_deref() {
+        packages.retain(|package| matches_dna_query(package, query));
+    }
+
+    packages.sort_by(|left, right| {
+        channel_sort_rank(&left.channel)
+            .cmp(&channel_sort_rank(&right.channel))
+            .then_with(|| {
+                left.head
+                    .to_ascii_lowercase()
+                    .cmp(&right.head.to_ascii_lowercase())
+            })
+            .then_with(|| left.origin_name.to_ascii_lowercase().cmp(&right.origin_name.to_ascii_lowercase()))
+            .then_with(|| left.record_id.cmp(&right.record_id))
+    });
+
+    Ok(packages)
+}
+
+async fn load_dna_catalog_snapshot(
+    state: &AppState,
+    headers: &HeaderMap,
+) -> ApiResult<DnaCatalogStatus> {
+    let mut packages = Vec::new();
+    let mut origins = Vec::new();
+
+    for organ in accessible_dna_organs(state, headers).await? {
+        let mut organ_publications = collect_organ_publications(state, headers, &organ).await?;
+        let package_count = organ_publications.len();
+        origins.push(DnaCatalogOrigin {
+            organ_id: organ.id.clone(),
+            origin_name: organ.name.clone(),
+            package_count,
+        });
+        packages.append(&mut organ_publications);
+    }
+
+    packages.sort_by(|left, right| {
+        channel_sort_rank(&left.summary.channel)
+            .cmp(&channel_sort_rank(&right.summary.channel))
+            .then_with(|| {
+                left.summary
+                    .head
+                    .to_ascii_lowercase()
+                    .cmp(&right.summary.head.to_ascii_lowercase())
+            })
+            .then_with(|| {
+                left.summary
+                    .origin_name
+                    .to_ascii_lowercase()
+                    .cmp(&right.summary.origin_name.to_ascii_lowercase())
+            })
+            .then_with(|| left.summary.record_id.cmp(&right.summary.record_id))
+    });
+    origins.sort_by(|left, right| {
+        left.origin_name
+            .to_ascii_lowercase()
+            .cmp(&right.origin_name.to_ascii_lowercase())
+            .then_with(|| left.organ_id.cmp(&right.organ_id))
+    });
+
+    Ok(DnaCatalogStatus {
+        package_count: packages.len(),
+        origins,
+        packages: packages.into_iter().map(|publication| publication.summary).collect(),
+    })
+}
+
+async fn accessible_dna_organs(state: &AppState, headers: &HeaderMap) -> ApiResult<Vec<Organ>> {
+    let mut organs = Vec::new();
     for organ in state
         .organs
         .list()
@@ -411,25 +519,10 @@ async fn load_dna_catalog_packages(
             continue;
         }
 
-        let mut organ_publications =
-            collect_organ_publications(state, headers, &organ, include_community).await?;
-        publications.append(&mut organ_publications);
+        organs.push(organ);
     }
 
-    if let Some(query) = normalized_query.as_deref() {
-        publications.retain(|publication| matches_dna_query(&publication.summary, query));
-    }
-
-    publications.sort_by(|left, right| {
-        left.summary
-            .head
-            .to_ascii_lowercase()
-            .cmp(&right.summary.head.to_ascii_lowercase())
-            .then_with(|| left.summary.origin_name.to_ascii_lowercase().cmp(&right.summary.origin_name.to_ascii_lowercase()))
-            .then_with(|| left.summary.record_id.cmp(&right.summary.record_id))
-    });
-
-    Ok(publications.into_iter().map(|publication| publication.summary).collect())
+    Ok(organs)
 }
 
 async fn load_dna_publication(
@@ -438,7 +531,6 @@ async fn load_dna_publication(
     organ_id: &str,
     record_id: i64,
 ) -> ApiResult<DnaPublication> {
-    let include_community = show_community_sand_enabled(state).await?;
     let organ = load_publish_organ(state, organ_id).await?;
     if organ_requires_auth(&organ, state.local_auth_required)
         && state
@@ -453,7 +545,7 @@ async fn load_dna_publication(
         ));
     }
 
-    collect_organ_publications(state, headers, &organ, include_community)
+    collect_organ_publications(state, headers, &organ)
         .await?
         .into_iter()
         .find(|publication| publication.summary.record_id == record_id)
@@ -464,7 +556,6 @@ async fn collect_organ_publications(
     state: &AppState,
     headers: &HeaderMap,
     organ: &Organ,
-    include_community: bool,
 ) -> ApiResult<Vec<DnaPublication>> {
     let records = list_table_rows::<DnaRecordRow>(state, headers, organ, "record").await?;
     let extensions =
@@ -534,21 +625,23 @@ async fn collect_organ_publications(
         ])
         .map(normalize_package_slug)
         .unwrap_or_else(|| "lince_sand".to_string());
-        let channel = first_non_empty(&[meta.channel.as_str(), resource_meta.channel.as_str()])
-            .unwrap_or("official")
-            .to_string();
-        if channel != "official" && !include_community {
-            continue;
-        }
         let package_format = resource_meta
             .package_format
             .clone()
             .unwrap_or_else(|| infer_package_format_from_path(&resource_ref.resource_path).to_string());
+        let channel = normalize_publication_channel_or_default(
+            first_non_empty(&[meta.channel.as_str(), resource_meta.channel.as_str()])
+                .or_else(|| infer_channel_from_path(&resource_ref.resource_path)),
+        );
+        let version = first_non_empty(&[meta.version.as_str(), resource_meta.version.as_str()])
+            .unwrap_or("0.1.0")
+            .trim()
+            .to_string();
         let categories = categories_by_record
             .get(&record.id)
             .cloned()
             .filter(|entries| !entries.is_empty())
-            .unwrap_or_else(|| publication_categories(&channel, Vec::new()));
+            .unwrap_or_else(|| publication_categories(Vec::new()));
 
         publications.push(DnaPublication {
             summary: DnaPackageSummary {
@@ -559,24 +652,16 @@ async fn collect_organ_publications(
                 head: record.head.clone(),
                 body: record.body.clone(),
                 slug,
-                bucket_key: resource_ref.resource_path.clone(),
                 channel,
+                version,
+                bucket_key: resource_ref.resource_path.clone(),
                 package_format,
                 categories,
             },
-            sand_toml_key: resource_meta.sand_toml_key.clone(),
         });
     }
 
     Ok(publications)
-}
-
-async fn show_community_sand_enabled(state: &AppState) -> ApiResult<bool> {
-    state
-        .backend
-        .show_community_sand_enabled()
-        .await
-        .map_err(map_backend_error)
 }
 
 async fn list_table_rows<T: serde::de::DeserializeOwned>(
@@ -646,8 +731,9 @@ fn matches_dna_query(summary: &DnaPackageSummary, query: &str) -> bool {
         summary.head.as_str(),
         summary.body.as_str(),
         summary.slug.as_str(),
-        summary.bucket_key.as_str(),
         summary.channel.as_str(),
+        summary.version.as_str(),
+        summary.bucket_key.as_str(),
     ]
     .into_iter()
     .chain(summary.categories.iter().map(String::as_str))
@@ -675,7 +761,7 @@ async fn load_publication_package(
 
 async fn parse_publish_multipart(multipart: &mut Multipart) -> ApiResult<PublishMultipartPayload> {
     let mut server_id = String::new();
-    let mut channel = "official".to_string();
+    let mut channel = DNA_CHANNEL_OFFICIAL.to_string();
     let mut head = String::new();
     let mut body = String::new();
     let mut categories = Vec::new();
@@ -698,7 +784,7 @@ async fn parse_publish_multipart(multipart: &mut Multipart) -> ApiResult<Publish
         let value = field.text().await.map_err(invalid_multipart)?;
         match field_name.as_str() {
             "serverId" => server_id = value.trim().to_string(),
-            "channel" => channel = value.trim().to_string(),
+            "channel" => channel = normalize_publication_channel(&value).map_err(map_validation_error)?,
             "head" => head = value.trim().to_string(),
             "body" => body = value.trim().to_string(),
             "categories" => categories = parse_categories_field(&value),
@@ -800,17 +886,6 @@ fn package_prefix_letters(slug: &str) -> String {
     format!("{first}{second}")
 }
 
-fn validate_publish_channel(raw: &str) -> ApiResult<String> {
-    match raw.trim() {
-        "official" => Ok("official".to_string()),
-        "community" => Ok("community".to_string()),
-        _ => Err(api_error(
-            StatusCode::BAD_REQUEST,
-            "Channel invalido. Use official ou community.",
-        )),
-    }
-}
-
 fn canonical_transport_filename(slug: &str, transport: PackageTransport) -> String {
     match transport {
         PackageTransport::Archive => format!("{slug}.lince"),
@@ -832,8 +907,8 @@ fn package_content_type(transport: PackageTransport) -> &'static str {
     }
 }
 
-fn build_remote_sand_toml(slug: &str, channel: &str) -> String {
-    format!("name = {slug:?}\nchannel = {channel:?}\n")
+fn build_remote_sand_toml(slug: &str, version: &str, channel: &str) -> String {
+    format!("name = {slug:?}\nversion = {version:?}\nchannel = {channel:?}\n")
 }
 
 fn build_lince_transport_bytes(package: &LincePackage) -> Result<Vec<u8>, String> {
@@ -876,22 +951,298 @@ async fn upload_package_artifacts(
     Ok(())
 }
 
-async fn persist_dna_publication(
+async fn upsert_dna_publication(
     state: &AppState,
     headers: &HeaderMap,
     server: &Organ,
     head: &str,
     body: &str,
-    channel: &str,
     slug: &str,
+    channel: &str,
     categories: &[String],
     package_prefix: &str,
     bucket_key: &str,
     sand_toml_key: &str,
     transport_filename: &str,
     package: &LincePackage,
+    package_bytes: &[u8],
+    sand_toml_bytes: &[u8],
 ) -> ApiResult<(i64, i64, i64)> {
-    let record_id = create_table_row(
+    let desired_version = parse_release_version(&package.manifest.version)?;
+    let existing = find_existing_publication_state(state, headers, server, slug, channel).await?;
+    let resource_meta = build_resource_meta_json(
+        "canonical_transport",
+        slug,
+        channel,
+        &package.manifest.version,
+        package_prefix,
+        transport_filename,
+        sand_toml_key,
+        package,
+    );
+
+    if let Some(existing) = existing {
+        let current_ref = existing.canonical_resource_ref.clone();
+        let current_version = parse_release_version(&existing.version)?;
+        if desired_version < current_version {
+            return Err(api_error(
+                StatusCode::CONFLICT,
+                format!(
+                    "Esse sand ja foi publicado com a versao {}. Downgrade para {} foi bloqueado.",
+                    existing.version, package.manifest.version
+                ),
+            ));
+        }
+
+        let current_bytes = if let Some(current_ref) = current_ref.as_ref() {
+            match download_bucket_object(state, headers, server, &current_ref.resource_path).await {
+                Ok(bytes) => Some(bytes),
+                Err((StatusCode::NOT_FOUND, _)) => None,
+                Err(other) => return Err(other),
+            }
+        } else {
+            None
+        };
+
+        if desired_version == current_version
+            && current_bytes
+                .as_deref()
+                .is_some_and(|bytes| bytes != package_bytes)
+        {
+            return Err(api_error(
+                StatusCode::CONFLICT,
+                format!(
+                    "A versao {} ja existe com bytes diferentes. Publique uma nova versao antes de trocar o artefato.",
+                    package.manifest.version
+                ),
+            ));
+        }
+
+        update_table_row(
+            state,
+            headers,
+            server,
+            "record",
+            existing.record_id,
+            json!({
+                "quantity": 1,
+                "head": head,
+                "body": body,
+            }),
+        )
+        .await?;
+
+        let reuse_current_canonical = current_ref.as_ref().is_some_and(|row| {
+            row.resource_path == bucket_key && desired_version == current_version
+        });
+
+        if reuse_current_canonical && current_bytes.is_none() {
+            upload_package_artifacts(
+                state,
+                headers,
+                server,
+                bucket_key,
+                package_bytes.to_vec(),
+                package_content_type(package.transport()),
+                sand_toml_key,
+                sand_toml_bytes.to_vec(),
+            )
+            .await?;
+        }
+
+        if reuse_current_canonical {
+            let canonical_resource_ref_id = current_ref.as_ref().map(|row| row.id).ok_or_else(|| {
+                api_error(
+                    StatusCode::BAD_GATEWAY,
+                    "Nao encontrei a referencia canonica desse sand publicado.",
+                )
+            })?;
+            update_table_row(
+                state,
+                headers,
+                server,
+                "record_resource_ref",
+                canonical_resource_ref_id,
+                json!({
+                    "record_id": existing.record_id,
+                    "provider": "bucket",
+                    "resource_kind": "sand",
+                    "resource_path": bucket_key,
+                    "title": package.manifest.title.clone(),
+                    "position": 1,
+                    "freestyle_data_structure": resource_meta,
+                }),
+            )
+            .await?;
+            update_table_row(
+                state,
+                headers,
+                server,
+                "record_extension",
+                existing.record_extension_id,
+                json!({
+                    "record_id": existing.record_id,
+                    "namespace": DNA_RESOURCE_NAMESPACE,
+                    "version": 1,
+                    "freestyle_data_structure": build_extension_meta_json(
+                        slug,
+                        channel,
+                        &package.manifest.version,
+                        canonical_resource_ref_id,
+                        package_prefix,
+                        package,
+                    ),
+                }),
+            )
+            .await?;
+            upsert_categories_extension(
+                state,
+                headers,
+                server,
+                existing.record_id,
+                existing.categories_extension_id,
+                categories,
+            )
+            .await?;
+            return Ok((
+                existing.record_id,
+                existing.record_extension_id,
+                canonical_resource_ref_id,
+            ));
+        }
+
+        upload_package_artifacts(
+            state,
+            headers,
+            server,
+            bucket_key,
+            package_bytes.to_vec(),
+            package_content_type(package.transport()),
+            sand_toml_key,
+            sand_toml_bytes.to_vec(),
+        )
+        .await?;
+
+        let new_resource_ref_id = match create_table_row(
+            state,
+            headers,
+            server,
+            "record_resource_ref",
+            json!({
+                "record_id": existing.record_id,
+                "provider": "bucket",
+                "resource_kind": "sand",
+                "resource_path": bucket_key,
+                "title": package.manifest.title.clone(),
+                "position": 1,
+                "freestyle_data_structure": resource_meta,
+            }),
+        )
+        .await
+        {
+            Ok(value) => value,
+            Err(error) => {
+                let _ = delete_bucket_object(state, headers, server, bucket_key).await;
+                let _ = delete_bucket_object(state, headers, server, sand_toml_key).await;
+                return Err(error);
+            }
+        };
+
+        if let Err(error) = update_table_row(
+            state,
+            headers,
+            server,
+            "record_extension",
+            existing.record_extension_id,
+            json!({
+                "record_id": existing.record_id,
+                "namespace": DNA_RESOURCE_NAMESPACE,
+                "version": 1,
+                "freestyle_data_structure": build_extension_meta_json(
+                    slug,
+                    channel,
+                    &package.manifest.version,
+                    new_resource_ref_id,
+                    package_prefix,
+                    package,
+                ),
+            }),
+        )
+        .await
+        {
+            let _ = delete_table_row(
+                state,
+                headers,
+                server,
+                "record_resource_ref",
+                new_resource_ref_id,
+            )
+            .await;
+            let _ = delete_bucket_object(state, headers, server, bucket_key).await;
+            let _ = delete_bucket_object(state, headers, server, sand_toml_key).await;
+            return Err(error);
+        }
+
+        if let Some(previous_ref) = current_ref.as_ref() {
+            let mut previous_meta_value = previous_ref
+                .freestyle_data_structure
+                .as_deref()
+                .and_then(|raw| serde_json::from_str::<Value>(raw).ok())
+                .unwrap_or_else(|| json!({}));
+            if let Some(object) = previous_meta_value.as_object_mut() {
+                object.insert("role".into(), Value::String("archived_release".into()));
+            }
+            update_table_row(
+                state,
+                headers,
+                server,
+                "record_resource_ref",
+                previous_ref.id,
+                json!({
+                    "record_id": existing.record_id,
+                    "provider": "bucket",
+                    "resource_kind": "sand",
+                    "resource_path": previous_ref.resource_path.clone(),
+                    "title": package.manifest.title.clone(),
+                    "position": 2,
+                    "freestyle_data_structure": serde_json::to_string(&previous_meta_value)
+                        .unwrap_or_else(|_| "{}".to_string()),
+                }),
+            )
+            .await?;
+        }
+
+        upsert_categories_extension(
+            state,
+            headers,
+            server,
+            existing.record_id,
+            existing.categories_extension_id,
+            categories,
+        )
+        .await?;
+        prune_old_releases(state, headers, server, existing.record_id, new_resource_ref_id).await?;
+
+        return Ok((
+            existing.record_id,
+            existing.record_extension_id,
+            new_resource_ref_id,
+        ));
+    }
+
+    upload_package_artifacts(
+        state,
+        headers,
+        server,
+        bucket_key,
+        package_bytes.to_vec(),
+        package_content_type(package.transport()),
+        sand_toml_key,
+        sand_toml_bytes.to_vec(),
+    )
+    .await?;
+
+    let record_id = match create_table_row(
         state,
         headers,
         server,
@@ -902,9 +1253,17 @@ async fn persist_dna_publication(
             "body": body,
         }),
     )
-    .await?;
+    .await
+    {
+        Ok(value) => value,
+        Err(error) => {
+            let _ = delete_bucket_object(state, headers, server, bucket_key).await;
+            let _ = delete_bucket_object(state, headers, server, sand_toml_key).await;
+            return Err(error);
+        }
+    };
 
-    let resource_ref_result = create_table_row(
+    let resource_ref_id = match create_table_row(
         state,
         headers,
         server,
@@ -916,32 +1275,30 @@ async fn persist_dna_publication(
             "resource_path": bucket_key,
             "title": package.manifest.title.clone(),
             "position": 1,
-            "freestyle_data_structure": serde_json::to_string(&json!({
-                "role": "canonical_transport",
-                "slug": slug,
-                "channel": channel,
-                "package_prefix": package_prefix,
-                "transport_filename": transport_filename,
-                "package_format": package_format_label(package.transport()),
-                "mime_type": package_content_type(package.transport()),
-                "entry_path": package.entry_path(),
-                "sand_toml_key": sand_toml_key,
-                "available_files": [transport_filename, SAND_TOML_FILENAME],
-            }))
-            .unwrap_or_else(|_| "{}".to_string()),
+            "freestyle_data_structure": build_resource_meta_json(
+                "canonical_transport",
+                slug,
+                channel,
+                &package.manifest.version,
+                package_prefix,
+                transport_filename,
+                sand_toml_key,
+                package,
+            ),
         }),
     )
-    .await;
-
-    let resource_ref_id = match resource_ref_result {
+    .await
+    {
         Ok(value) => value,
         Err(error) => {
             let _ = delete_table_row(state, headers, server, "record", record_id).await;
+            let _ = delete_bucket_object(state, headers, server, bucket_key).await;
+            let _ = delete_bucket_object(state, headers, server, sand_toml_key).await;
             return Err(error);
         }
     };
 
-    let extension_result = create_table_row(
+    let record_extension_id = match create_table_row(
         state,
         headers,
         server,
@@ -950,51 +1307,36 @@ async fn persist_dna_publication(
             "record_id": record_id,
             "namespace": DNA_RESOURCE_NAMESPACE,
             "version": 1,
-            "freestyle_data_structure": serde_json::to_string(&json!({
-                "published": true,
-                "channel": channel,
-                "slug": slug,
-                "version": package.manifest.version.clone(),
-                "canonical_resource_ref_id": resource_ref_id,
-                "package_prefix": package_prefix,
-                "default_transport": package_format_label(package.transport()),
-            }))
-            .unwrap_or_else(|_| "{}".to_string()),
+            "freestyle_data_structure": build_extension_meta_json(
+                slug,
+                channel,
+                &package.manifest.version,
+                resource_ref_id,
+                package_prefix,
+                package,
+            ),
         }),
     )
-    .await;
-
-    let record_extension_id = match extension_result {
+    .await
+    {
         Ok(value) => value,
         Err(error) => {
             let _ = delete_table_row(state, headers, server, "record", record_id).await;
+            let _ = delete_bucket_object(state, headers, server, bucket_key).await;
+            let _ = delete_bucket_object(state, headers, server, sand_toml_key).await;
             return Err(error);
         }
     };
 
-    if !categories.is_empty() {
-        let categories_result = create_table_row(
-            state,
-            headers,
-            server,
-            "record_extension",
-            json!({
-                "record_id": record_id,
-                "namespace": DNA_CATEGORY_NAMESPACE,
-                "version": 1,
-                "freestyle_data_structure": serde_json::to_string(&json!({
-                    "categories": categories,
-                }))
-                .unwrap_or_else(|_| "{}".to_string()),
-            }),
-        )
-        .await;
-
-        if let Err(error) = categories_result {
-            let _ = delete_table_row(state, headers, server, "record", record_id).await;
-            return Err(error);
-        }
-    }
+    upsert_categories_extension(
+        state,
+        headers,
+        server,
+        record_id,
+        None,
+        categories,
+    )
+    .await?;
 
     Ok((record_id, record_extension_id, resource_ref_id))
 }
@@ -1042,6 +1384,42 @@ async fn create_table_row(
             "O organ remoto nao retornou o id da linha criada.",
         )
     })
+}
+
+async fn update_table_row(
+    state: &AppState,
+    headers: &HeaderMap,
+    server: &Organ,
+    table_name: &str,
+    id: i64,
+    payload: Value,
+) -> ApiResult<()> {
+    if !organ_requires_auth(server, state.local_auth_required) {
+        state
+            .backend
+            .update_table_row(&local_host_subject(), table_name, id, payload_object(&payload)?)
+            .await
+            .map_err(map_backend_error)?;
+        return Ok(());
+    }
+
+    let session_token = current_session_token(headers);
+    let bearer_token = extract_remote_token(state, headers, &server.id).await?;
+    let response = state
+        .manas
+        .send_table_request(
+            &server.base_url,
+            &bearer_token,
+            reqwest::Method::PATCH,
+            table_name,
+            Some(id),
+            Some(payload),
+        )
+        .await
+        .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
+    let _: MutationPayload =
+        proxy_remote_json_response(state, session_token.as_deref(), &server.id, response).await?;
+    Ok(())
 }
 
 async fn delete_table_row(
@@ -1228,6 +1606,279 @@ async fn delete_bucket_object_if_exists(
         Err((StatusCode::NOT_FOUND, _)) => Ok(()),
         Err(other) => Err(other),
     }
+}
+
+async fn find_existing_publication_state(
+    state: &AppState,
+    headers: &HeaderMap,
+    server: &Organ,
+    slug: &str,
+    channel: &str,
+) -> ApiResult<Option<DnaPublicationState>> {
+    let records = list_table_rows::<DnaRecordRow>(state, headers, server, "record").await?;
+    let extensions =
+        list_table_rows::<DnaRecordExtensionRow>(state, headers, server, "record_extension").await?;
+    let resource_refs =
+        list_table_rows::<DnaResourceRefRow>(state, headers, server, "record_resource_ref").await?;
+
+    let record_by_id = records
+        .into_iter()
+        .filter(|record| record.quantity > 0.0)
+        .map(|record| (record.id, record))
+        .collect::<BTreeMap<_, _>>();
+    let refs_by_record =
+        resource_refs
+            .into_iter()
+            .fold(BTreeMap::<i64, Vec<DnaResourceRefRow>>::new(), |mut acc, row| {
+                acc.entry(row.record_id).or_default().push(row);
+                acc
+            });
+    let categories_extension_by_record = extensions
+        .iter()
+        .filter(|row| row.namespace == DNA_CATEGORY_NAMESPACE)
+        .fold(BTreeMap::<i64, i64>::new(), |mut acc, row| {
+            acc.entry(row.record_id).or_insert(row.id);
+            acc
+        });
+
+    for extension in extensions
+        .into_iter()
+        .filter(|row| row.namespace == DNA_RESOURCE_NAMESPACE)
+    {
+        let meta = parse_extension_meta(&extension.freestyle_data_structure);
+        if !meta.published {
+            continue;
+        }
+
+        let Some(record) = record_by_id.get(&extension.record_id) else {
+            continue;
+        };
+        let resource_refs = refs_by_record
+            .get(&record.id)
+            .cloned()
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|row| row.provider == "bucket" && row.resource_kind == "sand")
+            .collect::<Vec<_>>();
+        let canonical_resource_ref = meta
+            .canonical_resource_ref_id
+            .and_then(|resource_id| resource_refs.iter().find(|row| row.id == resource_id).cloned())
+            .or_else(|| {
+                resource_refs
+                    .iter()
+                    .find(|row| parse_resource_meta(row.freestyle_data_structure.as_deref()).role == "canonical_transport")
+                    .cloned()
+            })
+            .or_else(|| resource_refs.first().cloned());
+        let canonical_meta =
+            parse_resource_meta(canonical_resource_ref.as_ref().and_then(|row| row.freestyle_data_structure.as_deref()));
+        let publication_slug = first_non_empty(&[
+            meta.slug.as_str(),
+            canonical_meta.slug.as_str(),
+            record.head.as_str(),
+        ])
+        .map(normalize_package_slug)
+        .unwrap_or_else(|| "lince_sand".to_string());
+        let publication_channel = normalize_publication_channel_or_default(
+            first_non_empty(&[meta.channel.as_str(), canonical_meta.channel.as_str()]).or_else(
+                || {
+                    canonical_resource_ref
+                        .as_ref()
+                        .and_then(|row| infer_channel_from_path(&row.resource_path))
+                },
+            ),
+        );
+
+        if publication_slug != slug || publication_channel != channel {
+            continue;
+        }
+
+        return Ok(Some(DnaPublicationState {
+            record_id: record.id,
+            record_extension_id: extension.id,
+            categories_extension_id: categories_extension_by_record.get(&record.id).copied(),
+            version: first_non_empty(&[meta.version.as_str(), canonical_meta.version.as_str()])
+                .unwrap_or("0.1.0")
+                .trim()
+                .to_string(),
+            canonical_resource_ref,
+            resource_refs,
+        }));
+    }
+
+    Ok(None)
+}
+
+async fn list_sand_resource_refs_for_record(
+    state: &AppState,
+    headers: &HeaderMap,
+    server: &Organ,
+    record_id: i64,
+) -> ApiResult<Vec<DnaResourceRefRow>> {
+    Ok(list_table_rows::<DnaResourceRefRow>(state, headers, server, "record_resource_ref")
+        .await?
+        .into_iter()
+        .filter(|row| {
+            row.record_id == record_id && row.provider == "bucket" && row.resource_kind == "sand"
+        })
+        .collect())
+}
+
+fn build_resource_meta_json(
+    role: &str,
+    slug: &str,
+    channel: &str,
+    version: &str,
+    package_prefix: &str,
+    transport_filename: &str,
+    sand_toml_key: &str,
+    package: &LincePackage,
+) -> String {
+    serde_json::to_string(&json!({
+        "role": role,
+        "slug": slug,
+        "channel": channel,
+        "version": version,
+        "package_prefix": package_prefix,
+        "transport_filename": transport_filename,
+        "package_format": package_format_label(package.transport()),
+        "mime_type": package_content_type(package.transport()),
+        "entry_path": package.entry_path(),
+        "sand_toml_key": sand_toml_key,
+        "available_files": [transport_filename, SAND_TOML_FILENAME],
+    }))
+    .unwrap_or_else(|_| "{}".to_string())
+}
+
+fn build_extension_meta_json(
+    slug: &str,
+    channel: &str,
+    version: &str,
+    canonical_resource_ref_id: i64,
+    package_prefix: &str,
+    package: &LincePackage,
+) -> String {
+    serde_json::to_string(&json!({
+        "published": true,
+        "slug": slug,
+        "channel": channel,
+        "version": version,
+        "canonical_resource_ref_id": canonical_resource_ref_id,
+        "package_prefix": package_prefix,
+        "default_transport": package_format_label(package.transport()),
+    }))
+    .unwrap_or_else(|_| "{}".to_string())
+}
+
+fn parse_release_version(version: &str) -> ApiResult<Version> {
+    Version::parse(version.trim()).map_err(|error| {
+        api_error(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            format!("A versao do sand precisa ser SemVer valida: {error}"),
+        )
+    })
+}
+
+fn normalize_publication_channel(raw: &str) -> Result<String, String> {
+    let channel = raw.trim().to_ascii_lowercase();
+    match channel.as_str() {
+        DNA_CHANNEL_OFFICIAL | DNA_CHANNEL_COMMUNITY => Ok(channel),
+        _ => Err("O canal do sand precisa ser official ou community.".into()),
+    }
+}
+
+fn normalize_publication_channel_or_default(raw: Option<&str>) -> String {
+    raw.and_then(|value| normalize_publication_channel(value).ok())
+        .unwrap_or_else(|| DNA_CHANNEL_COMMUNITY.to_string())
+}
+
+fn infer_channel_from_path(path: &str) -> Option<&str> {
+    let prefix = format!("{DNA_BUCKET_PREFIX}/");
+    path.strip_prefix(&prefix)
+        .and_then(|value| value.split('/').next())
+        .filter(|value| matches!(*value, DNA_CHANNEL_OFFICIAL | DNA_CHANNEL_COMMUNITY))
+}
+
+fn channel_sort_rank(channel: &str) -> u8 {
+    match channel.trim().to_ascii_lowercase().as_str() {
+        DNA_CHANNEL_OFFICIAL => 0,
+        DNA_CHANNEL_COMMUNITY => 1,
+        _ => 2,
+    }
+}
+
+fn resource_created_at(row: &DnaResourceRefRow) -> Option<NaiveDateTime> {
+    NaiveDateTime::parse_from_str(row.created_at.trim(), "%Y-%m-%d %H:%M:%S").ok()
+}
+
+fn should_prune_release(row: &DnaResourceRefRow) -> bool {
+    resource_created_at(row)
+        .map(|created_at| created_at <= Utc::now().naive_utc() - Duration::days(30))
+        .unwrap_or(false)
+}
+
+async fn upsert_categories_extension(
+    state: &AppState,
+    headers: &HeaderMap,
+    server: &Organ,
+    record_id: i64,
+    categories_extension_id: Option<i64>,
+    categories: &[String],
+) -> ApiResult<()> {
+    let payload = json!({
+        "record_id": record_id,
+        "namespace": DNA_CATEGORY_NAMESPACE,
+        "version": 1,
+        "freestyle_data_structure": serde_json::to_string(&json!({
+            "categories": categories,
+        }))
+        .unwrap_or_else(|_| "{}".to_string()),
+    });
+
+    if let Some(extension_id) = categories_extension_id {
+        update_table_row(state, headers, server, "record_extension", extension_id, payload).await
+    } else {
+        let _ = create_table_row(state, headers, server, "record_extension", payload).await?;
+        Ok(())
+    }
+}
+
+async fn prune_old_releases(
+    state: &AppState,
+    headers: &HeaderMap,
+    server: &Organ,
+    record_id: i64,
+    canonical_resource_ref_id: i64,
+) -> ApiResult<()> {
+    let mut archived = list_sand_resource_refs_for_record(state, headers, server, record_id)
+        .await?
+        .into_iter()
+        .filter(|row| row.id != canonical_resource_ref_id)
+        .collect::<Vec<_>>();
+    archived.sort_by(|left, right| {
+        let left_meta = parse_resource_meta(left.freestyle_data_structure.as_deref());
+        let right_meta = parse_resource_meta(right.freestyle_data_structure.as_deref());
+        let left_version = Version::parse(left_meta.version.trim()).ok();
+        let right_version = Version::parse(right_meta.version.trim()).ok();
+        right_version
+            .cmp(&left_version)
+            .then_with(|| resource_created_at(right).cmp(&resource_created_at(left)))
+            .then_with(|| right.id.cmp(&left.id))
+    });
+
+    for row in archived.into_iter().skip(2) {
+        if !should_prune_release(&row) {
+            continue;
+        }
+        let meta = parse_resource_meta(row.freestyle_data_structure.as_deref());
+        delete_bucket_object_if_exists(state, headers, server, &row.resource_path).await?;
+        if let Some(sand_toml_key) = meta.sand_toml_key.as_deref() {
+            delete_bucket_object_if_exists(state, headers, server, sand_toml_key).await?;
+        }
+        delete_table_row(state, headers, server, "record_resource_ref", row.id).await?;
+    }
+
+    Ok(())
 }
 
 fn current_session_token(headers: &HeaderMap) -> Option<String> {
@@ -1439,61 +2090,48 @@ pub async fn publish_dna_package(
 ) -> ApiResult<Json<DnaPublishResponse>> {
     let payload = parse_publish_multipart(&mut multipart).await?;
     let server = load_publish_organ(&state, &payload.server_id).await?;
+    let channel = payload.channel.clone();
     let package = parse_lince_package(&payload.upload.filename, &payload.upload.bytes)
         .map_err(map_validation_error)?;
     let head = fallback_text(&payload.head, &package.manifest.title);
     let body = fallback_text(&payload.body, &package.manifest.description);
     let slug = normalize_package_slug(&package_name_seed(&payload.upload.filename, &package));
-    let channel = validate_publish_channel(&payload.channel)?;
-    let categories = publication_categories(&channel, payload.categories);
+    let categories = publication_categories(payload.categories);
     let package_prefix = format!(
-        "{DNA_BUCKET_PREFIX}/{channel}/{}/{slug}",
-        package_prefix_letters(&slug)
+        "{DNA_BUCKET_PREFIX}/{channel}/{}/{slug}/{}",
+        package_prefix_letters(&slug),
+        package.manifest.version
     );
     let transport_filename = canonical_transport_filename(&slug, package.transport());
     let bucket_key = format!("{package_prefix}/{transport_filename}");
     let sand_toml_key = format!("{package_prefix}/{SAND_TOML_FILENAME}");
     let package_format = package_format_label(package.transport()).to_string();
     let package_bytes = build_lince_transport_bytes(&package).map_err(map_validation_error)?;
-    let transport_content_type = package_content_type(package.transport());
-    let sand_toml = build_remote_sand_toml(&slug, &channel);
+    let sand_toml = build_remote_sand_toml(&slug, &package.manifest.version, &channel);
+    let sand_toml_bytes = sand_toml.into_bytes();
 
-    upload_package_artifacts(
-        &state,
-        &headers,
-        &server,
-        &bucket_key,
-        package_bytes,
-        transport_content_type,
-        &sand_toml_key,
-        sand_toml.into_bytes(),
-    )
-    .await?;
-
-    let record_result = persist_dna_publication(
+    let record_result = upsert_dna_publication(
         &state,
         &headers,
         &server,
         &head,
         &body,
-        &channel,
         &slug,
+        &channel,
         &categories,
         &package_prefix,
         &bucket_key,
         &sand_toml_key,
         &transport_filename,
         &package,
+        &package_bytes,
+        &sand_toml_bytes,
     )
     .await;
 
     let (record_id, record_extension_id, resource_ref_id) = match record_result {
         Ok(value) => value,
-        Err(error) => {
-            let _ = delete_bucket_object(&state, &headers, &server, &bucket_key).await;
-            let _ = delete_bucket_object(&state, &headers, &server, &sand_toml_key).await;
-            return Err(error);
-        }
+        Err(error) => return Err(error),
     };
 
     Ok(Json(DnaPublishResponse {
@@ -1506,6 +2144,7 @@ pub async fn publish_dna_package(
         body,
         slug,
         channel,
+        version: package.manifest.version.clone(),
         package_prefix,
         bucket_key,
         sand_toml_key,
@@ -1754,10 +2393,9 @@ fn extract_categories(freestyle_data_structure: &str) -> Option<Vec<String>> {
     Some(categories)
 }
 
-fn publication_categories(channel: &str, categories: Vec<String>) -> Vec<String> {
+fn publication_categories(categories: Vec<String>) -> Vec<String> {
     normalize_categories(
         std::iter::once(DNA_BASE_CATEGORY.to_string())
-            .chain(std::iter::once(format!("{DNA_BASE_CATEGORY}.{channel}")))
             .chain(categories)
             .collect(),
     )

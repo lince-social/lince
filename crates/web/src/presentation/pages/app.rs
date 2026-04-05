@@ -315,7 +315,7 @@ fn render_add_card_popover() -> Markup {
                 span class="add-card-popover__icon" { "◌" }
                 span class="add-card-popover__copy" {
                     strong { "DNA" }
-                    small { "Hub remoto em main" }
+                    small { "Sand publicados nos organs conectados" }
                 }
             }
         }
@@ -518,7 +518,7 @@ fn render_dna_packages_modal_backdrop() -> Markup {
                     "DNA",
                     "Carregando o catalogo distribuido de sand...",
                     "dna-packages-search",
-                    "Nome, descricao, slug, origem ou categoria",
+                    "Nome, body, slug, origem ou categoria",
                 ))
                 div class="catalog-toolbar catalog-toolbar--secondary" {
                     label class="catalog-filter" for="dna-origin-filter" {

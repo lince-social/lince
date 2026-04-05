@@ -1,6 +1,6 @@
 use {
     crate::{
-        application::kanban_identity::is_supported_kanban_package_filename,
+        application::kanban_identity::is_supported_graph_widget_filename,
         domain::board::{BoardCard, BoardState},
         infrastructure::board_state_store::BoardStateStore,
     },
@@ -116,7 +116,7 @@ impl KanbanFilterService {
         &self,
         base_query: &str,
         rows: &[RawKanbanFilterRow],
-        settings: &KanbanWidgetSettings,
+        _settings: &KanbanWidgetSettings,
     ) -> Result<DerivedKanbanQuery, KanbanFilterError> {
         let validated_rows = rows
             .iter()
@@ -124,22 +124,21 @@ impl KanbanFilterService {
             .map(validate_filter_row)
             .collect::<Result<Vec<_>, _>>()?;
         let trimmed_query = trim_sql(base_query);
-        let mut sql = if settings.show_parent_context {
-            format!(
-                "SELECT base.*, parent_rel.parent_id AS kanban_parent_id, parent_record.head AS kanban_parent_head \
-                 FROM ({trimmed_query}) base \
+        let mut sql = format!(
+            "SELECT base.* \
+             FROM ( \
+                 SELECT raw.*, CAST(parent_rel.parent_id AS TEXT) AS parent_id, parent_record.head AS parent_head \
+                 FROM ({trimmed_query}) raw \
                  LEFT JOIN ( \
                      SELECT rl.record_id, MAX(rl.target_id) AS parent_id \
                      FROM record_link rl \
                      WHERE rl.link_type = 'parent' AND rl.target_table = 'record' \
                      GROUP BY rl.record_id \
-                 ) parent_rel ON parent_rel.record_id = CAST(base.id AS INTEGER) \
+                 ) parent_rel ON parent_rel.record_id = CAST(raw.id AS INTEGER) \
                  LEFT JOIN record parent_record ON parent_record.id = parent_rel.parent_id \
-                 WHERE 1 = 1"
-            )
-        } else {
-            format!("SELECT * FROM ({trimmed_query}) base WHERE 1 = 1")
-        };
+             ) base \
+             WHERE 1 = 1"
+        );
 
         for row in validated_rows {
             row.push_sql(&mut sql);
@@ -300,6 +299,12 @@ impl ValidatedKanbanFilterRow {
                 );
                 sql.push(')');
             }
+            (&"parent_head_query", &"contains", ValidatedFilterValue::Text(value)) => {
+                let like = sql_like_contains_literal(value);
+                sql.push_str(" AND lower(COALESCE(base.parent_head, '')) LIKE ");
+                sql.push_str(&like);
+                sql.push_str(" ESCAPE '\\'");
+            }
             (&"only_with_open_worklog", &"equals", ValidatedFilterValue::TrueOnly) => {
                 sql.push_str(" AND COALESCE(base.active_worklog_count, 0) > 0");
             }
@@ -369,6 +374,24 @@ fn validate_filter_row(
                 "Filtro de task_type aceita apenas epic, feature, task ou other.",
             )?),
         }),
+        ("parent_head_query", "contains") => {
+            let value = row
+                .value
+                .as_str()
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .map(str::to_string)
+                .ok_or_else(|| {
+                    KanbanFilterError::Invalid(
+                        "Filtro parent_head_query precisa de uma string nao vazia.".into(),
+                    )
+                })?;
+            Ok(ValidatedKanbanFilterRow {
+                field: "parent_head_query",
+                operator: "contains",
+                value: ValidatedFilterValue::Text(value),
+            })
+        }
         ("only_with_open_worklog", "equals") => {
             if row.value.as_bool() != Some(true) {
                 return Err(KanbanFilterError::Invalid(
@@ -472,9 +495,9 @@ fn validate_kanban_card(card: &BoardCard) -> Result<(), KanbanFilterError> {
         ));
     }
 
-    if !is_supported_kanban_package_filename(&card.package_name) {
+    if !is_supported_graph_widget_filename(&card.package_name) {
         return Err(KanbanFilterError::Unsupported(
-            "Esse widget nao usa o package oficial do Kanban.".into(),
+            "Esse widget nao usa um package oficial suportado.".into(),
         ));
     }
 

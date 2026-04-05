@@ -1,6 +1,8 @@
 use crate::{domain::lince_package::PackageManifest, sand::SandWidgetSource};
 use maud::{Markup, html};
 
+pub(crate) const FEATURE_FLAG: &str = "sand.sand_publisher";
+
 pub(crate) fn source() -> SandWidgetSource {
     SandWidgetSource {
         filename: "sand-publisher.html",
@@ -13,7 +15,7 @@ pub(crate) fn source() -> SandWidgetSource {
             description:
                 "Publishes a local sand into the configured organ bucket and creates the record-focused DNA rows."
                     .into(),
-            details: "The card configuration chooses the organ. This widget previews a .html/.sand/.lince package locally, uploads the canonical artifact and sand.toml into lince/dna/sand/{channel}/{aa}/{slug}/..., and then creates record, record_extension(namespace=lince.dna), and record_resource_ref(provider=bucket, resource_kind=sand).".into(),
+            details: "The card configuration chooses the organ. This widget previews a .html/.sand/.lince package locally, uploads the canonical artifact and sand.toml into lince/dna/sand/{channel}/{aa}/{slug}/{version}/..., and then upserts the record, record_extension(namespace=lince.dna), and record_resource_ref(provider=bucket, resource_kind=sand).".into(),
             initial_width: 6,
             initial_height: 6,
             requires_server: true,
@@ -39,6 +41,7 @@ fn body() -> Markup {
                 }
                 div class="heroMeta" {
                     div id="server-pill" class="pill" { "server unset" }
+                    div id="channel-pill" class="pill" { "official" }
                     div id="status-pill" class="pill pill--status" data-tone="idle" { "Waiting for config" }
                     button id="auth-button" class="button" type="button" hidden="" { "Authenticate organ" }
                 }
@@ -86,13 +89,12 @@ fn body() -> Markup {
                         div class="eyebrow" { "Publication" }
                         h2 class="sectionTitle" { "Record-first contract" }
                     }
-                    div id="channel-pill" class="pill" { "official" }
                 }
 
                 div class="fieldGroup" {
-                    label class="fieldLabel" for="channel-select" { "Channel" }
+                    label class="fieldLabel" for="channel-select" { "publication.channel" }
                     select id="channel-select" class="field" {
-                        option value="official" { "official" }
+                        option value="official" selected { "official" }
                         option value="community" { "community" }
                     }
                 }
@@ -111,12 +113,12 @@ fn body() -> Markup {
                     label class="fieldLabel" for="categories-input" { "record.categories" }
                     input id="categories-input" class="field" type="text" maxlength="280" placeholder="sand, games, doom";
                     p class="hint" {
-                        "Comma-separated categories. The host also adds sand and sand.{channel} automatically."
+                        "Comma-separated categories. The host also adds sand automatically."
                     }
                 }
 
                 div class="warning" id="channel-warning" {
-                    "Official sand is visible by default. Community sand stays unsafe by default and should require explicit user confirmation before consumption."
+                    "Official and community are publication channels. They are labels for now, not cryptographic trust proofs."
                 }
 
                 div id="bucket-preview" class="bucketPreview" {
@@ -509,11 +511,11 @@ fn script() -> &'static str {
 
         const state = {
           serverId: String(frame?.dataset?.linceServerId || ""),
+          channel: "official",
           servers: [],
           selectedServer: null,
           upload: null,
           preview: null,
-          channel: "official",
           published: null,
           catalog: [],
           busy: false,
@@ -637,7 +639,8 @@ fn script() -> &'static str {
             return "";
           }
           const slug = packageSlug();
-          return `lince/dna/sand/${state.channel}/${packagePrefixLetters(slug)}/${slug}/${transportFilename()}`;
+          const version = String(state.preview?.version || "0.1.0").trim() || "0.1.0";
+          return `lince/dna/sand/${state.channel}/${packagePrefixLetters(slug)}/${slug}/${version}/${transportFilename()}`;
         }
 
         function setStatus(text, tone = "idle") {
@@ -689,7 +692,8 @@ fn script() -> &'static str {
                     <div class="catalogMeta">${escapeHtml(entry.originName || entry.organId)} · ${escapeHtml(entry.slug || "no_slug")} · ${escapeHtml(entry.packageFormat || "html")}</div>
                   </div>
                   <div class="catalogPills">
-                    <span class="catalogPill">${escapeHtml(entry.channel === "official" ? "official" : "unsafe community")}</span>
+                    <span class="catalogPill">${escapeHtml(entry.channel || "community")}</span>
+                    <span class="catalogPill">${escapeHtml(entry.version || "0.1.0")}</span>
                     <span class="catalogPill">${escapeHtml(entry.organId || "")}</span>
                   </div>
                 </div>
@@ -730,6 +734,7 @@ fn script() -> &'static str {
             : state.serverId
               ? `server: ${state.serverId}`
               : "server unset";
+          channelPill.textContent = state.channel;
           authButton.hidden = !server?.requiresAuth || Boolean(server?.authenticated);
           if (!state.serverId) {
             setStatus("Choose a server in the card config first", "idle");
@@ -743,7 +748,6 @@ fn script() -> &'static str {
         }
 
         function renderPreview() {
-          channelPill.textContent = state.channel;
           packageKindPill.textContent = state.preview
             ? state.preview.filename.toLowerCase().endsWith(".lince")
               ? ".lince archive"
@@ -842,9 +846,10 @@ fn script() -> &'static str {
           resultOutput.innerHTML = payload
             ? [
                 `organ_id = ${escapeHtml(payload.organId)}`,
+                `channel = ${escapeHtml(payload.channel || "community")}`,
+                `version = ${escapeHtml(payload.version || "0.1.0")}`,
                 `record_id = ${escapeHtml(payload.recordId)}`,
                 `slug = ${escapeHtml(payload.slug)}`,
-                `channel = ${escapeHtml(payload.channel)}`,
                 `categories = ${escapeHtml((payload.categories || []).join(", "))}`,
                 `bucket_key = ${escapeHtml(payload.bucketKey)}`,
                 `sand_toml_key = ${escapeHtml(payload.sandTomlKey)}`,
@@ -934,10 +939,9 @@ fn script() -> &'static str {
             ? cardState.dnaPublisher
             : {};
           state.serverId = String(meta.serverId || currentFrameServerId() || "").trim();
-          syncSelectedServer();
           state.channel = draft.channel === "community" ? "community" : "official";
           channelSelect.value = state.channel;
-          channelPill.textContent = state.channel;
+          syncSelectedServer();
           headInput.value = draft.head || headInput.value;
           bodyInput.value = draft.body || bodyInput.value;
           categoriesInput.value = draft.categories || categoriesInput.value;
@@ -978,6 +982,13 @@ fn script() -> &'static str {
           host.requestState?.();
           return true;
         }
+
+        channelSelect.addEventListener("change", () => {
+          state.channel = channelSelect.value === "community" ? "community" : "official";
+          channelPill.textContent = state.channel;
+          renderPreview();
+          persistDraft();
+        });
 
         function bindFrameConfigObserver() {
           const hostFrame = window.frameElement || frame;
@@ -1024,12 +1035,6 @@ fn script() -> &'static str {
 
         fileInput.addEventListener("change", () => {
           void handleFileChange();
-        });
-
-        channelSelect.addEventListener("change", () => {
-          state.channel = channelSelect.value === "community" ? "community" : "official";
-          renderPreview();
-          persistDraft();
         });
 
         headInput.addEventListener("input", () => {

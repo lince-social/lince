@@ -1,9 +1,7 @@
 use {
     crate::{
         application::kanban_filters::{KanbanWidgetSettings, extract_kanban_settings},
-        application::kanban_identity::{
-            KANBAN_PACKAGE_FILENAME, is_supported_kanban_package_filename,
-        },
+        application::kanban_identity::is_supported_graph_widget_filename,
         domain::board::{BoardCard, BoardState},
         infrastructure::{
             auth::{AppAuth, RemoteServerSessionSnapshot, RemoteServerSessionState},
@@ -100,7 +98,7 @@ impl WidgetRuntimeService {
                 instance_id: card.id.clone(),
                 title: card.title.clone(),
                 description: card.description.clone(),
-                package_name: KANBAN_PACKAGE_FILENAME.into(),
+                package_name: card.package_name.clone(),
                 sand_class: "engineer_with_clown_traits",
             },
             source: KanbanWidgetSource {
@@ -141,8 +139,6 @@ impl WidgetRuntimeService {
                     "assignee_names_json",
                     "parent_id",
                     "parent_head",
-                    "kanban_parent_id",
-                    "kanban_parent_head",
                     "depth",
                     "children_count",
                     "children_json",
@@ -377,9 +373,9 @@ fn validate_kanban_card(card: &BoardCard) -> Result<(), WidgetRuntimeError> {
         ));
     }
 
-    if !is_supported_kanban_package_filename(&card.package_name) {
+    if !is_supported_graph_widget_filename(&card.package_name) {
         return Err(WidgetRuntimeError::Unsupported(
-            "Esse widget nao usa o package oficial do Kanban.".into(),
+            "Esse widget nao usa um package oficial suportado.".into(),
         ));
     }
 

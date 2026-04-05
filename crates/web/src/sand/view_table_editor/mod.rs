@@ -1,6 +1,8 @@
 use crate::{domain::lince_package::PackageManifest, sand::SandWidgetSource};
 use maud::{Markup, html};
 
+pub(crate) const FEATURE_FLAG: &str = "sand.view_table_editor";
+
 pub(crate) fn source() -> SandWidgetSource {
     SandWidgetSource {
         filename: "view-table-editor.html",

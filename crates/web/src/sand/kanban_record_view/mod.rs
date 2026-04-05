@@ -4,6 +4,8 @@ mod styles;
 
 use crate::{domain::lince_package::PackageManifest, sand::SandWidgetSource};
 
+pub(crate) const FEATURE_FLAG: &str = "sand.kanban_record_view";
+
 pub(crate) fn source() -> SandWidgetSource {
     SandWidgetSource {
         filename: "kanban-record-view.html",

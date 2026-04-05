@@ -6,7 +6,7 @@ use {
                 KanbanFilterService, KanbanWidgetSettings, RawKanbanFilterRow,
                 extract_kanban_settings,
             },
-            kanban_identity::is_supported_kanban_package_filename,
+            kanban_identity::is_supported_graph_widget_filename,
         },
         domain::board::{BoardCard, BoardState},
         infrastructure::{
@@ -22,7 +22,8 @@ use {
     serde_json::{Map, Number, Value},
 };
 
-const KANBAN_RUNTIME_STATE_KEY: &str = "kanban_runtime";
+const GRAPH_RUNTIME_STATE_KEY: &str = "graph_runtime";
+const LEGACY_GRAPH_RUNTIME_STATE_KEY: &str = "kanban_runtime";
 const KANBAN_DERIVED_VIEW_NAME_PREFIX: &str = "__lince_web_kanban_";
 
 #[derive(Clone)]
@@ -522,7 +523,8 @@ impl KanbanStreamService {
             KanbanStreamError::NotFound("Nao encontrei esse widget no board.".into())
         })?;
         let widget_state = ensure_object(&mut card.widget_state);
-        let runtime_state = ensure_nested_object(widget_state, KANBAN_RUNTIME_STATE_KEY);
+        widget_state.remove(LEGACY_GRAPH_RUNTIME_STATE_KEY);
+        let runtime_state = ensure_nested_object(widget_state, GRAPH_RUNTIME_STATE_KEY);
         runtime_state.insert(
             "derived_view_id".into(),
             Value::Number(Number::from(derived_view_id)),
@@ -620,9 +622,9 @@ fn validate_kanban_card(card: &BoardCard) -> Result<(), KanbanStreamError> {
             "Esse widget nao e um package oficial.".into(),
         ));
     }
-    if !is_supported_kanban_package_filename(&card.package_name) {
+    if !is_supported_graph_widget_filename(&card.package_name) {
         return Err(KanbanStreamError::Misconfigured(
-            "Esse widget nao usa o package oficial do Kanban.".into(),
+            "Esse widget nao usa um package oficial suportado.".into(),
         ));
     }
     Ok(())
@@ -639,7 +641,8 @@ fn parse_filter_rows(widget_state: &Value) -> Result<Vec<RawKanbanFilterRow>, Ka
 
 fn parse_runtime_state(widget_state: &Value) -> KanbanRuntimeState {
     let Some(runtime_state) = widget_state
-        .get(KANBAN_RUNTIME_STATE_KEY)
+        .get(GRAPH_RUNTIME_STATE_KEY)
+        .or_else(|| widget_state.get(LEGACY_GRAPH_RUNTIME_STATE_KEY))
         .and_then(Value::as_object)
     else {
         return KanbanRuntimeState::default();

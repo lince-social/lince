@@ -13,8 +13,7 @@ use {
         application::{
             ai_builder::AiBuilderState, backend_api::BackendApiService,
             kanban_actions::KanbanActionService, kanban_filters::KanbanFilterService,
-            kanban_streams::KanbanStreamService, state::AppState,
-            widget_runtime::WidgetRuntimeService,
+            kanban_streams::KanbanStreamService, state::AppState, widget_runtime::WidgetRuntimeService,
         },
         infrastructure::{
             auth::AppAuth, board_state_store::BoardStateStore, manas::ManasGateway,

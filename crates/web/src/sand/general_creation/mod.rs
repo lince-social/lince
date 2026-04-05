@@ -1,6 +1,8 @@
 use crate::{domain::lince_package::PackageManifest, sand::SandWidgetSource};
 use maud::{Markup, html};
 
+pub(crate) const FEATURE_FLAG: &str = "sand.general_creation";
+
 struct TableOverview {
     key: &'static str,
     label: &'static str,
@@ -89,7 +91,6 @@ const TABLES: [TableOverview; 9] = [
             "delete_confirmation:bool|0|1",
             "error_toast_seconds:number",
             "keybinding_mode:int",
-            "show_community_sand:bool|0|1",
         ],
         notes: &[
             "Send name on create",
@@ -723,8 +724,7 @@ fn script() -> &'static str {
             { name: "command_notification_seconds", kind: "number", required: false, nullable: false, note: "Defaults to -1." },
             { name: "delete_confirmation", kind: "boolean or 0/1", required: false, nullable: false, note: "Defaults to 1." },
             { name: "error_toast_seconds", kind: "number", required: false, nullable: false, note: "Defaults to 5." },
-            { name: "keybinding_mode", kind: "integer", required: false, nullable: false, note: "Defaults to 0." },
-            { name: "show_community_sand", kind: "boolean or 0/1", required: false, nullable: false, note: "Defaults to 0, which hides community sand from the DNA browser." }
+            { name: "keybinding_mode", kind: "integer", required: false, nullable: false, note: "Defaults to 0." }
           ],
           exceptions: [
             "The id field is not writable.",
@@ -737,8 +737,7 @@ fn script() -> &'static str {
             show_command_notifications: true,
             delete_confirmation: true,
             error_toast_seconds: 5,
-            keybinding_mode: 0,
-            show_community_sand: false
+            keybinding_mode: 0
           }
         },
         app_user: {

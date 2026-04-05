@@ -1,6 +1,8 @@
 use crate::{domain::lince_package::PackageManifest, sand::SandWidgetSource};
 use maud::{Markup, html};
 
+pub(crate) const FEATURE_FLAG: &str = "sand.link_chip";
+
 pub(crate) fn source() -> SandWidgetSource {
     SandWidgetSource {
         filename: r#"link-chip.html"#,

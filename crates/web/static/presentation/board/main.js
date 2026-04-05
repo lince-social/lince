@@ -1623,13 +1623,27 @@ function normalizedDnaOriginFilter() {
   return dnaOriginFilter.value.trim();
 }
 
+function currentDnaOriginMetadata() {
+  const originId = normalizedDnaOriginFilter();
+  if (!originId) {
+    return null;
+  }
+
+  return (
+    dnaCatalogOrigins.find((origin) => origin.organId === originId) || null
+  );
+}
+
 function syncDnaOriginFilterOptions() {
   const previous = normalizedDnaOriginFilter();
   const options = [
     '<option value="">Todas as origens</option>',
     ...dnaCatalogOrigins.map(
-      (origin) =>
-        `<option value="${escapeHtml(origin.organId)}">${escapeHtml(origin.originName)}</option>`,
+      (origin) => {
+        const packageCount = Number(origin.packageCount) || 0;
+        const packageLabel = packageCount === 1 ? "sand" : "sands";
+        return `<option value="${escapeHtml(origin.organId)}">${escapeHtml(origin.originName)} · ${packageCount} ${packageLabel}</option>`;
+      },
     ),
   ];
   dnaOriginFilter.innerHTML = options.join("");
@@ -1647,17 +1661,29 @@ function summarizeDnaPackages() {
   }
 
   const query = normalizedDnaPackageSearch();
-  const originFilter = normalizedDnaOriginFilter();
+  const originMetadata = currentDnaOriginMetadata();
   if (!dnaCatalogPackageCount) {
-    dnaPackagesSummary.textContent =
-      "Nenhum sand publicado nos organs acessiveis.";
+    if (!dnaCatalogOrigins.length) {
+      dnaPackagesSummary.textContent =
+        "Nenhum organ acessivel apareceu no catalogo distribuido.";
+      return;
+    }
+
+    dnaPackagesSummary.textContent = `${dnaCatalogOrigins.length} organ${
+      dnaCatalogOrigins.length === 1 ? "" : "s"
+    } acessive${dnaCatalogOrigins.length === 1 ? "l" : "is"}, mas nenhum sand publicado.`;
     return;
   }
 
-  if (!query && !originFilter) {
-    dnaPackagesSummary.textContent = `${dnaCatalogPackageCount} widget${
+  if (!query && !originMetadata) {
+    dnaPackagesSummary.textContent = `${dnaCatalogPackageCount} sand${
       dnaCatalogPackageCount === 1 ? "" : "s"
     } publicados nos organs acessiveis.`;
+    return;
+  }
+
+  if (originMetadata && !query && !dnaPackageResults.length) {
+    dnaPackagesSummary.textContent = `${originMetadata.originName} ainda nao publicou sand.`;
     return;
   }
 
@@ -1683,8 +1709,9 @@ function filterDnaPackageCatalog(query, originFilter) {
       pkg.head,
       pkg.body,
       pkg.slug,
-      pkg.bucketKey,
       pkg.channel,
+      pkg.version,
+      pkg.bucketKey,
       ...(Array.isArray(pkg.categories) ? pkg.categories : []),
     ];
     return fields.some((value) =>
@@ -1710,11 +1737,27 @@ function renderDnaPackageList() {
     normalizedDnaOriginFilter(),
   );
   summarizeDnaPackages();
+  const originMetadata = currentDnaOriginMetadata();
+  const query = normalizedDnaPackageSearch();
   if (!dnaCatalogPackageCount) {
     dnaPackageList.innerHTML = `
       <div class="local-package-empty">
         <strong>Catalogo vazio</strong>
-        <span>Nao encontrei sand publicados nos organs acessiveis.</span>
+        <span>${
+          dnaCatalogOrigins.length
+            ? "Os organs acessiveis ainda nao publicaram sand."
+            : "Nenhum organ acessivel apareceu no catalogo distribuido."
+        }</span>
+      </div>
+    `;
+    return;
+  }
+
+  if (originMetadata && !originMetadata.packageCount && !query) {
+    dnaPackageList.innerHTML = `
+      <div class="local-package-empty">
+        <strong>Origem sem sand</strong>
+        <span>${escapeHtml(originMetadata.originName)} ainda nao publicou sand.</span>
       </div>
     `;
     return;
@@ -1732,8 +1775,7 @@ function renderDnaPackageList() {
 
   dnaPackageList.innerHTML = dnaPackageResults
     .map((pkg) => {
-      const isOfficial = pkg.channel === "official";
-      const channelLabel = isOfficial ? "official" : "unsafe community";
+      const channelLabel = String(pkg.channel || "community");
       return `
         <button
           type="button"
@@ -1752,17 +1794,13 @@ function renderDnaPackageList() {
               pkg.body || "Sand publicado por um organ acessivel.",
             )}</span>
             <span class="local-package-card__meta">${escapeHtml(
-              `${pkg.originName} · ${pkg.slug} · ${pkg.packageFormat}`,
+              `${pkg.originName} · ${pkg.slug} · ${pkg.version || "0.1.0"} · ${pkg.packageFormat}`,
             )}</span>
             <span class="local-package-card__footer">
               <span class="local-package-card__pill">${escapeHtml(
                 pkg.originName || pkg.organId,
               )}</span>
-              ${
-                isOfficial
-                  ? ""
-                  : '<span class="local-package-card__pill">unsafe</span>'
-              }
+              <span class="local-package-card__pill">${escapeHtml(channelLabel)}</span>
               ${
                 Array.isArray(pkg.categories) && pkg.categories.length
                   ? pkg.categories
@@ -1795,17 +1833,26 @@ async function loadDnaCatalog() {
   dnaCatalogLoaded = true;
   dnaCatalogPackageCount = Number(payload?.packageCount) || 0;
   dnaCatalogPackages = Array.isArray(payload?.packages) ? payload.packages : [];
-  dnaCatalogOrigins = Array.from(
-    new Map(
-      dnaCatalogPackages.map((pkg) => [
-        String(pkg.organId || ""),
-        {
-          organId: String(pkg.organId || ""),
-          originName: String(pkg.originName || pkg.organId || ""),
-        },
-      ]),
-    ).values(),
-  ).filter((origin) => origin.organId);
+  dnaCatalogOrigins = Array.isArray(payload?.origins)
+    ? payload.origins
+        .map((origin) => ({
+          organId: String(origin?.organId || ""),
+          originName: String(origin?.originName || origin?.organId || ""),
+          packageCount: Number(origin?.packageCount) || 0,
+        }))
+        .filter((origin) => origin.organId)
+    : Array.from(
+        new Map(
+          dnaCatalogPackages.map((pkg) => [
+            String(pkg.organId || ""),
+            {
+              organId: String(pkg.organId || ""),
+              originName: String(pkg.originName || pkg.organId || ""),
+              packageCount: 0,
+            },
+          ]),
+        ).values(),
+      ).filter((origin) => origin.organId);
   syncDnaOriginFilterOptions();
   renderDnaPackageList();
   return dnaCatalogPackageCount;
@@ -1823,10 +1870,10 @@ async function requestDnaPackageSearch(query) {
   return Array.isArray(payload) ? payload : [];
 }
 
-async function requestDnaPackagePreview(channel, packageId) {
+async function requestDnaPackagePreview(organId, recordId) {
   const response = await fetch(
     apiPath(
-      `/api/packages/dna/publications/${encodeURIComponent(channel)}/${encodeURIComponent(packageId)}/preview`,
+      `/api/packages/dna/publications/${encodeURIComponent(organId)}/${encodeURIComponent(recordId)}/preview`,
     ),
   );
   const payload = await parseJsonResponse(response);
@@ -1837,10 +1884,10 @@ async function requestDnaPackagePreview(channel, packageId) {
   return payload;
 }
 
-async function installDnaPackage(channel, packageId) {
+async function installDnaPackage(organId, recordId) {
   const response = await fetch(
     apiPath(
-      `/api/packages/dna/publications/${encodeURIComponent(channel)}/${encodeURIComponent(packageId)}/install`,
+      `/api/packages/dna/publications/${encodeURIComponent(organId)}/${encodeURIComponent(recordId)}/install`,
     ),
     {
       method: "POST",

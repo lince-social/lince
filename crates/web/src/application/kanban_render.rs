@@ -203,14 +203,8 @@ fn parse_row(raw: &BTreeMap<String, String>) -> Option<KanbanRow> {
         primary_category: normalize_optional(raw.get("primary_category")),
         categories: parse_json_strings(raw.get("categories_json")),
         assignee_names: parse_json_strings(raw.get("assignee_names_json")),
-        parent_id: raw
-            .get("kanban_parent_id")
-            .or_else(|| raw.get("parent_id"))
-            .and_then(|value| parse_i64(value)),
-        parent_head: normalize_optional(
-            raw.get("kanban_parent_head")
-                .or_else(|| raw.get("parent_head")),
-        ),
+        parent_id: raw.get("parent_id").and_then(|value| parse_i64(value)),
+        parent_head: normalize_optional(raw.get("parent_head")),
         comments_count: raw.get("comments_count").and_then(|value| parse_i64(value)),
         active_worklog_count: raw
             .get("active_worklog_count")
@@ -594,8 +588,8 @@ mod tests {
                     "quantity": "0",
                     "head": "Child",
                     "body": "",
-                    "kanban_parent_id": "9",
-                    "kanban_parent_head": "Parent task"
+                    "parent_id": "9",
+                    "parent_head": "Parent task"
                 }
             ]
         }"#;

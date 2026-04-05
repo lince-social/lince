@@ -5,5 +5,6 @@ pub mod kanban_filters;
 pub mod kanban_identity;
 pub mod kanban_render;
 pub mod kanban_streams;
+pub mod relations_identity;
 pub mod state;
 pub mod widget_runtime;

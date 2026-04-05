@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Obsidian-like Graph</title>
+        <script src="d3.v7.min.js"></script>
+        <style>
+            body {
+                margin: 0;
+                background: #1a1a1a;
+                overflow: hidden;
+                font-family: sans-serif;
+            }
+            canvas {
+                cursor: move;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="graph"></canvas>
+        <script>
+            const canvas = document.querySelector("#graph");
+            const ctx = canvas.getContext("2d");
+            let width, height;
+
+            // Mock data: 50 nodes and 60 random links
+            const nodes = Array.from({ length: 50 }, (_, i) => ({
+                id: i,
+                name: `Note ${i}`,
+            }));
+            const links = Array.from({ length: 60 }, () => ({
+                source: Math.floor(Math.random() * 50),
+                target: Math.floor(Math.random() * 50),
+            }));
+
+            const simulation = d3
+                .forceSimulation(nodes)
+                .force(
+                    "link",
+                    d3
+                        .forceLink(links)
+                        .id((d) => d.id)
+                        .distance(50),
+                )
+                .force("charge", d3.forceManyBody().strength(-150))
+                .force("center", d3.forceCenter())
+                .on("tick", ticked);
+
+            function resize() {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = width;
+                canvas.height = height;
+                simulation
+                    .force("center", d3.forceCenter(width / 2, height / 2))
+                    .alpha(0.3)
+                    .restart();
+            }
+
+            window.addEventListener("resize", resize);
+            resize();
+
+            function ticked() {
+                ctx.clearRect(0, 0, width, height);
+                ctx.strokeStyle = "#444";
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                links.forEach((d) => {
+                    ctx.moveTo(d.source.x, d.source.y);
+                    ctx.lineTo(d.target.x, d.target.y);
+                });
+                ctx.stroke();
+
+                nodes.forEach((d) => {
+                    ctx.beginPath();
+                    ctx.arc(d.x, d.y, 4, 0, 2 * Math.PI);
+                    ctx.fillStyle = "#8b5cf6"; // Purple node color
+                    ctx.fill();
+                });
+            }
+
+            // Dragging functionality
+            d3.select(canvas).call(
+                d3
+                    .drag()
+                    .container(canvas)
+                    .subject((event) => simulation.find(event.x, event.y))
+                    .on("start", (event) => {
+                        if (!event.active)
+                            simulation.alphaTarget(0.3).restart();
+                        event.subject.fx = event.subject.x;
+                        event.subject.fy = event.subject.y;
+                    })
+                    .on("drag", (event) => {
+                        event.subject.fx = event.x;
+                        event.subject.fy = event.y;
+                    })
+                    .on("end", (event) => {
+                        if (!event.active) simulation.alphaTarget(0);
+                        event.subject.fx = null;
+                        event.subject.fy = null;
+                    }),
+            );
+        </script>
+    </body>
+</html>

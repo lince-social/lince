@@ -4734,6 +4734,7 @@ dependencies = [
  "lince-utils",
  "maud",
  "reqwest",
+ "semver",
  "serde",
  "serde_json",
  "sqlx",

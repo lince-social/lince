@@ -1,6 +1,8 @@
 use crate::{domain::lince_package::PackageManifest, sand::SandWidgetSource};
 use maud::{Markup, html};
 
+pub(crate) const FEATURE_FLAG: &str = "sand.bucket_image_view";
+
 pub(crate) fn source() -> SandWidgetSource {
     SandWidgetSource {
         filename: "bucket-image-view.html",

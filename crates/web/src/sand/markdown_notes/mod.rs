@@ -4,6 +4,8 @@ mod styles;
 
 use crate::{domain::lince_package::PackageManifest, sand::SandWidgetSource};
 
+pub(crate) const FEATURE_FLAG: &str = "sand.markdown_notes";
+
 pub(crate) fn source() -> SandWidgetSource {
     SandWidgetSource {
         filename: r#"markdown-notes.html"#,

@@ -2,6 +2,7 @@
 #import "crates.typ"
 #import "extensions.typ"
 #import "kanban.typ"
+#import "relations.typ"
 #import "sandbox_website.typ"
 #import "web_components.typ"
 
@@ -56,4 +57,5 @@ and make a Karma with a condition of (Records of Earnings) - (Records of Expendi
 #web_components
 #sandbox_website
 #kanban
+#relations
 #extensions

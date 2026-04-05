@@ -1,4 +1,5 @@
 use crate::domain::lince_package::normalize_package_filename;
+use crate::application::relations_identity::is_supported_relations_package_filename;
 
 pub(crate) const KANBAN_PACKAGE_FILENAME: &str = "kanban-record-view.html";
 
@@ -10,6 +11,11 @@ pub(crate) fn is_supported_kanban_package_filename(package_name: &str) -> bool {
     KANBAN_PACKAGE_FILENAME_ALIASES
         .iter()
         .any(|candidate| normalized == *candidate)
+}
+
+pub(crate) fn is_supported_graph_widget_filename(package_name: &str) -> bool {
+    is_supported_kanban_package_filename(package_name)
+        || is_supported_relations_package_filename(package_name)
 }
 
 #[cfg(test)]
@@ -33,5 +39,10 @@ mod tests {
     #[test]
     fn rejects_other_widgets() {
         assert!(!is_supported_kanban_package_filename("tasklist.html"));
+    }
+
+    #[test]
+    fn graph_widget_accepts_relations_package() {
+        assert!(super::is_supported_graph_widget_filename("relations.lince"));
     }
 }

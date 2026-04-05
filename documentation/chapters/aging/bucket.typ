@@ -24,31 +24,38 @@ This section records the current agreement for moving away from the GitHub `dna`
 - The host should aggregate those organ-level DNA catalogs for the web UI.
 - After approval, installed widgets should land in one shared local directory: `~/.config/lince/web/sand`.
 - The older split between `~/.config/lince/web/widgets` and `~/.config/lince/web/sand` is not the desired end state.
-- Community sand packages should be hidden by default.
-- Community sand visibility should require an explicit user opt-in stored in the active `configuration`.
 - The UI should always show which organ a sand package comes from.
 - The canonical source identifier should be the organ id, not the display name.
-- `official` and `community` are publication channels inside an organ's `sand/` tree.
-- Anything that is not `official` should be treated as unsafe by default, even if it comes from a known organ such as Manas.
+- The publication channel should remain explicit as `official` or `community`.
+- `official/community` should remain a publication label for now, not a cryptographic trust proof.
+- The UI should show both the source organ and the publication channel.
+- All built-in official sands should be created locally at startup.
+- Built-in official sands should not be pushed into the bucket automatically in any startup flow.
+- Bucket publication should be a manual action through the sand export or sand publisher flow.
+- If startup creation fails for one sand, the process should log it and continue booting.
+- Published sand packages should use versioned bucket paths.
+- Version comparison should be driven by package metadata, not by filename alone.
+- Same version plus different bytes should be treated as a hard failure during publication.
+- Signature-based official verification should be documented as the future trust model, but it should not be required in the current runtime flow.
 
 === Package layout
 
 Preferred package prefix layout:
 
 ```text
-lince/dna/sand/{channel}/{first_two_letters}/{package_name_lower_snake_case}/
+lince/dna/sand/{channel}/{first_two_letters}/{package_name_lower_snake_case}/{version}/
 ```
 
 Example:
 
 ```text
-lince/dna/sand/official/ka/kanban_record_view/
+lince/dna/sand/official/ka/kanban_record_view/1.4.0/
 ```
 
 Recommended object layout inside that package prefix:
 
 ```text
-lince/dna/sand/official/ka/kanban_record_view/
+lince/dna/sand/official/ka/kanban_record_view/1.4.0/
   sand.toml
   kanban_record_view_metadata.html
   kanban_record_view.lince
@@ -85,7 +92,7 @@ Suggested `record_extension.freestyle_data_structure` shape:
 {
   "published": true,
   "channel": "official",
-  "version": "0.1.0"
+  "version": "1.4.0"
 }
 ```
 
@@ -94,7 +101,7 @@ Recommended package reference:
 ```text
 record_resource_ref.provider = "bucket"
 record_resource_ref.resource_kind = "sand"
-record_resource_ref.resource_path = "lince/dna/sand/official/ka/kanban_record_view/kanban_record_view_metadata.html"
+record_resource_ref.resource_path = "lince/dna/sand/official/ka/kanban_record_view/1.4.0/kanban_record_view_metadata.html"
 ```
 
 Suggested `record_resource_ref.freestyle_data_structure` shape:
@@ -102,7 +109,9 @@ Suggested `record_resource_ref.freestyle_data_structure` shape:
 ```json
 {
   "slug": "kanban_record_view",
-  "package_prefix": "lince/dna/sand/official/ka/kanban_record_view/",
+  "channel": "official",
+  "version": "1.4.0",
+  "package_prefix": "lince/dna/sand/official/ka/kanban_record_view/1.4.0/",
   "transport_filename": "kanban_record_view_metadata.html",
   "available_files": [
     "kanban_record_view_metadata.html",
@@ -190,11 +199,10 @@ Suggested item shape:
   "head": "Kanban Record View",
   "body": "Record-centric board with comments, worklog, and resources.",
   "slug": "kanban_record_view",
-  "version": "0.1.0",
   "channel": "official",
-  "unsafe": false,
-  "bucket_key": "lince/dna/sand/official/ka/kanban_record_view/kanban_record_view_metadata.html",
-  "package_prefix": "lince/dna/sand/official/ka/kanban_record_view/",
+  "version": "1.4.0",
+  "bucket_key": "lince/dna/sand/official/ka/kanban_record_view/1.4.0/kanban_record_view_metadata.html",
+  "package_prefix": "lince/dna/sand/official/ka/kanban_record_view/1.4.0/",
   "transport_filename": "kanban_record_view_metadata.html",
   "available_files": [
     "kanban_record_view_metadata.html",
@@ -224,31 +232,96 @@ Preferred preview/install behavior:
 - unzip `.lince` as needed during preview or install
 - keep enough metadata to remember which transport file was the source
 
-=== Community packages
+=== Channel semantics
 
-Only `official` sand packages should be shown before the user opts in.
-
-Community packages should require an explicit confirmation and that choice should be stored in the active `configuration`.
-
-Suggested configuration flag:
-
-```text
-configuration.show_community_sand = 0 | 1
-```
+The web UI should keep `official/community` as an explicit publication channel.
 
 Preferred behavior:
 
-- default `0`
-- show only `official` when `0`
-- allow `official` and `community` when `1`
-- surface a clear confirmation before the first change from `0` to `1`
-- always show the source organ name beside the channel
-- use `organ_id` as the canonical source key in state, cache, and provenance records
-- render `community` as unsafe regardless of which organ published it
+- the DNA browser should always show the source organ name beside the package channel
+- the publication channel should be returned directly by the catalog endpoint
+- `official` should be treated as a publisher claim in the current model
+- `community` should remain the fallback for everything that is not intentionally published as `official`
+- the canonical source key in state, cache, and provenance remains `organ_id`
 
-This is a trust and UX gate, not a security boundary.
+This is a publication and browsing distinction, not a trust proof.
 
-If a stronger trust model is needed later, publisher verification or per-organ trust policy would be separate concerns.
+The web version should not hardcode a list of official hosts in the preferred current direction.
+
+If a stronger trust model is needed later, signature-based release verification should be layered on top of the same record and bucket structure rather than replacing it.
+
+=== Signature-based official verification
+
+This is the preferred future trust model, but it should not be required in the current runtime flow.
+
+The goal is to preserve the current `official/community` publication model while adding a cryptographic way to confirm that an `official` release was signed by a trusted publisher.
+
+Recommended shape:
+
+- keep `record` as the publication root
+- keep `record_extension(namespace = "lince.dna")` for release metadata
+- add `record_extension(namespace = "lince.signature")` for signature metadata
+- keep `record_resource_ref` as the canonical artifact pointer
+
+Recommended signing model:
+
+- `Ed25519` key pairs
+- a stable `publisher_id`
+- a `key_id` for rotation
+- a signed release payload that includes artifact hash and release metadata
+
+Recommended signed payload shape:
+
+```json
+{
+  "schema": "lince.dna.release.v1",
+  "publisher_id": "lince:manas:official",
+  "slug": "kanban_record_view",
+  "channel": "official",
+  "version": "1.4.0",
+  "package_format": "lince",
+  "entry_path": "index.html",
+  "sha256": "artifact-content-hash",
+  "created_at": "2026-04-04T12:00:00Z"
+}
+```
+
+Recommended `record_extension(namespace = "lince.signature")` payload shape:
+
+```json
+{
+  "algorithm": "ed25519",
+  "schema": "lince.signature.v1",
+  "publisher_id": "lince:manas:official",
+  "key_id": "ed25519:lince:manas:2026-04",
+  "signature": "base64-signature",
+  "signed_payload": {
+    "schema": "lince.dna.release.v1",
+    "publisher_id": "lince:manas:official",
+    "slug": "kanban_record_view",
+    "channel": "official",
+    "version": "1.4.0",
+    "package_format": "lince",
+    "entry_path": "index.html",
+    "sha256": "artifact-content-hash",
+    "created_at": "2026-04-04T12:00:00Z"
+  }
+}
+```
+
+Key storage model:
+
+- private signing keys stay outside the database and outside the repository
+- public verification keys live in trusted client configuration or the shipped web build
+- signature metadata lives with the publication record so mirrors do not need a second trust database
+
+Verification model:
+
+- verification should be automatic during catalog view, preview, and install
+- there should be no user approval step for signature checking itself
+- if a release claims `official` but the signature is missing or invalid, the UI should not bless it as verified official
+
+The stable long-term design point is that `official/community` remains the publication channel, while signature validation becomes the separate proof layer.
 
 === Local install direction
 
@@ -269,6 +342,78 @@ Useful source labels include:
 - imported from organ DNA catalog
 
 That distinction should live in metadata, not in separate directories.
+
+=== Startup local creation
+
+Built-in official sands should be regenerated locally on every startup.
+
+Automatic startup creation should only target the local machine's `~/.config/lince/web/sand`.
+
+It should not publish into the bucket automatically.
+
+Preferred startup behavior:
+
+- build or render every built-in official sand into the local `sand` directory
+- overwrite or upsert the local generated copies
+- if one package fails to build or write, log it and continue startup
+
+There should be no startup decision point around bucket publication in the current simplified model.
+
+=== Manual publication direction
+
+Bucket publication should be explicit and manual.
+
+Preferred behavior:
+
+- the user chooses a local sand package in the sand export or sand publisher widget
+- the host validates the package automatically
+- if publication succeeds, the host uploads the versioned package to the bucket and upserts the publication record
+- no startup flow should publish into the bucket on the user's behalf
+
+=== Versioning direction
+
+Published sands should use versioned bucket paths while keeping one stable canonical publication record per slug.
+
+Preferred model:
+
+- stable record identity per slug
+- package version from the widget manifest
+- versioned bucket prefix per release
+- canonical `record_resource_ref` points to the current release
+- `record_extension(namespace = "lince.dna")` stores the current canonical version
+
+Recommended release policy:
+
+- same version and same bytes: no-op
+- same version and different bytes: hard fail
+- newer version: upload new versioned files and repoint the canonical resource ref
+- older version: refuse downgrade
+
+This preserves stable discovery while still allowing historical artifact paths.
+
+=== Automatic verification
+
+Sand verification should be automatic.
+
+That means:
+
+- parse and validate package metadata automatically during preview, install, and publish
+- verify package format automatically for both `.html` and `.lince`
+- if signature-based official verification is later enabled, perform that verification automatically too
+- do not require extra user approval for package or signature validation steps
+
+=== Retention and pruning
+
+Recommended default retention policy for published sand artifacts:
+
+- keep the current canonical version
+- keep the previous two versions
+- never prune versions younger than 30 days
+- prune only after a successful publish of a newer version
+
+Local built-in sand copies under `~/.config/lince/web/sand` are reproducible artifacts.
+
+Those local generated copies do not need the same historical retention as bucket-published releases.
 
 === Migration boundary
 

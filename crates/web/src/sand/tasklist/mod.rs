@@ -1,6 +1,8 @@
 use crate::{domain::lince_package::PackageManifest, sand::SandWidgetSource};
 use maud::{Markup, PreEscaped, html};
 
+pub(crate) const FEATURE_FLAG: &str = "sand.tasklist";
+
 const STYLE: &str = r#"
       :root {
         color-scheme: dark;

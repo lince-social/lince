@@ -19,3 +19,7 @@ In root of project there is the SQLite migrations/ directory.
 
 In /documentation/technical/chapters/ look at aging/ for theory on Lince, look at sickness for Web focused implementation subjects. When you are asked to create a document its always a .typ file that go in one of those two (probably sickness/); Dont forget to reference them inside the chapter.
 The documentation contains information about current implementations but also ideas from other past implementations of Lince, so take it with a grain of salt. The current code is supposed to be a more up to date reference to the functioning of the app, but might not be the desired behavior, so consider it higher than the documentation for validation of business rules, but not as perfect.
+
+# Sand widgets
+
+When constructing a sand widget that vendors code or assets with a license that requires a copy of the license, keep the required license and credit files alongside the sand package and bundle them with the widget assets. Do not ship the vendored asset alone if its license expects the notice to travel with it.

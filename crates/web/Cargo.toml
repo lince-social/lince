@@ -21,6 +21,7 @@ injection = { workspace = true }
 maud = "0.27.0"
 persistence = { workspace = true }
 reqwest = { version = "0.12.24", default-features = false, features = ["json", "rustls-tls"] }
+semver = "1.0.27"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"
 sqlx = { workspace = true }

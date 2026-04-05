@@ -6,7 +6,7 @@ use {
                 DeleteCommentRequest, DeleteRecordRequest, DeleteResourceRefRequest,
                 HeartbeatWorklogRequest, KanbanActionError, LoadRecordDetailRequest,
                 MoveRecordRequest, StartWorklogRequest, StopWorklogRequest, UpdateCommentRequest,
-                UpdateRecordBodyRequest, UpdateRecordRequest,
+                UpdateParentRelationRequest, UpdateRecordBodyRequest, UpdateRecordRequest,
             },
             kanban_filters::{KanbanFilterError, RawKanbanFilterRow, UpdateKanbanSettingsRequest},
             kanban_render::{
@@ -278,6 +278,22 @@ pub async fn post_widget_action(
             let outcome = state
                 .kanban_actions
                 .update_record_body(session_token.as_deref(), &instance_id, request)
+                .await
+                .map_err(map_kanban_action_error)?;
+            Ok(Json(outcome.into_json_value()))
+        }
+        "set-parent" => {
+            let request = serde_json::from_value::<UpdateParentRelationRequest>(payload).map_err(
+                |error| {
+                    api_error(
+                        StatusCode::BAD_REQUEST,
+                        format!("Payload invalido: {error}"),
+                    )
+                },
+            )?;
+            let outcome = state
+                .kanban_actions
+                .set_parent_relation(session_token.as_deref(), &instance_id, request)
                 .await
                 .map_err(map_kanban_action_error)?;
             Ok(Json(outcome.into_json_value()))

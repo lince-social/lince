@@ -2,7 +2,7 @@ use {
     crate::{
         application::{
             backend_api::BackendApiService, kanban_filters::RawKanbanFilterRow,
-            kanban_identity::is_supported_kanban_package_filename,
+            kanban_identity::is_supported_graph_widget_filename,
         },
         domain::board::{BoardCard, BoardState},
         infrastructure::{
@@ -22,6 +22,8 @@ use {
 };
 
 const VALID_TASK_TYPES: [&str; 4] = ["epic", "feature", "task", "other"];
+const GRAPH_RUNTIME_STATE_KEY: &str = "graph_runtime";
+const LEGACY_GRAPH_RUNTIME_STATE_KEY: &str = "kanban_runtime";
 
 #[derive(Clone)]
 pub struct KanbanActionService {
@@ -255,6 +257,57 @@ impl KanbanActionService {
             await_stream_refresh: true,
             detail: json!({
                 "record_id": payload.record_id,
+            }),
+        })
+    }
+
+    pub async fn set_parent_relation(
+        &self,
+        session_token: Option<&str>,
+        instance_id: &str,
+        payload: UpdateParentRelationRequest,
+    ) -> Result<KanbanActionOutcome, KanbanActionError> {
+        let resolved = self
+            .resolve_instance(
+                session_token,
+                instance_id,
+                ActionPermission::WriteTableOnly,
+            )
+            .await?;
+        validate_parent_id(payload.parent_id)?;
+        self.ensure_record_exists(
+            session_token,
+            &resolved.organ,
+            resolved.bearer_token.as_deref(),
+            payload.record_id,
+        )
+        .await?;
+        if let Some(parent_id) = payload.parent_id {
+            self.ensure_record_exists(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+                parent_id,
+            )
+            .await?;
+        }
+
+        self.sync_parent_link(
+            session_token,
+            &resolved.organ,
+            resolved.bearer_token.as_deref(),
+            payload.record_id,
+            payload.parent_id,
+        )
+        .await?;
+
+        Ok(KanbanActionOutcome {
+            action: "set-parent".into(),
+            message: "Parent relation updated.".into(),
+            record_id: Some(payload.record_id),
+            await_stream_refresh: true,
+            detail: json!({
+                "parent_id": payload.parent_id,
             }),
         })
     }
@@ -1552,7 +1605,8 @@ impl KanbanActionService {
         };
         Ok(card
             .widget_state
-            .get("kanban_runtime")
+            .get(GRAPH_RUNTIME_STATE_KEY)
+            .or_else(|| card.widget_state.get(LEGACY_GRAPH_RUNTIME_STATE_KEY))
             .and_then(Value::as_object)
             .and_then(|object| object.get("current_user_id"))
             .and_then(Value::as_i64)
@@ -1569,7 +1623,8 @@ impl KanbanActionService {
             KanbanActionError::NotFound("Nao encontrei esse widget no board.".into())
         })?;
         let widget_state = ensure_object(&mut card.widget_state);
-        let runtime = ensure_nested_object(widget_state, "kanban_runtime");
+        widget_state.remove(LEGACY_GRAPH_RUNTIME_STATE_KEY);
+        let runtime = ensure_nested_object(widget_state, GRAPH_RUNTIME_STATE_KEY);
         runtime.insert("current_user_id".into(), json!(current_user_id));
         self.board_state
             .replace(board_state)
@@ -2100,6 +2155,13 @@ pub struct UpdateRecordBodyRequest {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct UpdateParentRelationRequest {
+    pub record_id: i64,
+    pub parent_id: Option<i64>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct MoveRecordRequest {
     pub record_id: i64,
     pub quantity: i64,
@@ -2394,9 +2456,9 @@ fn validate_kanban_card(card: &BoardCard) -> Result<(), KanbanActionError> {
             "Esse widget nao e um package oficial.".into(),
         ));
     }
-    if !is_supported_kanban_package_filename(&card.package_name) {
+    if !is_supported_graph_widget_filename(&card.package_name) {
         return Err(KanbanActionError::Misconfigured(
-            "Esse widget nao usa o package oficial do Kanban.".into(),
+            "Esse widget nao usa um package oficial suportado.".into(),
         ));
     }
     Ok(())

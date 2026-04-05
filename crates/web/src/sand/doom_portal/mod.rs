@@ -3,6 +3,8 @@ use {
     std::collections::BTreeMap,
 };
 
+pub(crate) const FEATURE_FLAG: &str = "sand.doom_portal";
+
 const ENGINE_JS: &[u8] = include_bytes!("vendor/websockets-doom.js");
 const ENGINE_WASM: &[u8] = include_bytes!("vendor/websockets-doom.wasm");
 const FREEDOOM_WAD: &[u8] = include_bytes!("vendor/doom1.wad");

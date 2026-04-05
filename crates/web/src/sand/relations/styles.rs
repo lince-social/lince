@@ -290,39 +290,49 @@ button, input, select {
 .sideSection {
     min-width: 0;
     min-height: 0;
-    display: grid;
-    align-content: start;
+    display: flex;
+    flex-direction: column;
     gap: 14px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.02);
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
 }
 
 .sidePanelBody {
     min-width: 0;
     min-height: 0;
-    overflow: auto;
-    display: grid;
-    align-content: start;
+    overflow-x: hidden;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
     gap: 16px;
     padding-right: 4px;
 }
 
 #details {
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--line);
+    flex: 0 0 auto;
 }
 
 #editor {
-    padding-top: 0;
+    flex: 0 0 auto;
 }
 
 #selection-content {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 12px;
-    align-content: start;
+    min-width: 0;
 }
 
 .section {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 10px;
+    min-width: 0;
 }
 
 .fieldLabel, .sliderLabel {
@@ -429,11 +439,13 @@ button, input, select {
 }
 
 .parentChoiceList {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 8px;
     max-height: 220px;
     padding-right: 4px;
     overflow: auto;
+    min-width: 0;
 }
 
 .parentChoice {

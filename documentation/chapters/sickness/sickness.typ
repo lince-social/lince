@@ -5,7 +5,7 @@
 #import "relations.typ"
 #import "sandbox_website.typ"
 #import "web_components.typ"
-
+#import "bucket.typ"
 
 #major(
   "Sickness",
@@ -55,6 +55,7 @@ Currently not very featureful. You can model in Records your monthly earnings an
 and make a Karma with a condition of (Records of Earnings) - (Records of Expenditures)
 #crates
 #web_components
+#bucket
 #sandbox_website
 #kanban
 #relations

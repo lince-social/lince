@@ -5,7 +5,7 @@ const STYLE: &str = r#"
     color-scheme: dark;
     --bg: #071017;
     --panel: rgba(14, 19, 24, 0.96);
-    --panel-alt: rgba(17, 23, 30, 0.96);
+    --panel-soft: rgba(17, 23, 30, 0.96);
     --line: rgba(255, 255, 255, 0.08);
     --line-strong: rgba(255, 255, 255, 0.16);
     --text: #e6edf3;
@@ -19,7 +19,9 @@ const STYLE: &str = r#"
     --mono: "SFMono-Regular", "IBM Plex Mono", Consolas, monospace;
 }
 
-* { box-sizing: border-box; }
+* {
+    box-sizing: border-box;
+}
 
 html, body {
     height: 100%;
@@ -32,7 +34,9 @@ html, body {
     font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-body { overflow: hidden; }
+body {
+    overflow: hidden;
+}
 
 button, input, select {
     font: inherit;
@@ -50,7 +54,7 @@ button, input, select {
     gap: 10px;
 }
 
-.panel, .hero {
+.panel, .hero, .sidePanel {
     border: 1px solid var(--line);
     border-radius: 16px;
     background: linear-gradient(180deg, var(--panel), rgba(8, 12, 16, 0.98));
@@ -65,7 +69,7 @@ button, input, select {
     align-items: flex-start;
 }
 
-.heroCopy, .heroMeta, .panelHead, .sectionHead, .sliderRow, .actionRow {
+.heroCopy, .heroMeta, .panelHead, .panelToolbar, .panelChips, .toolbarButtons, .sectionHead, .sliderRow, .actionRow, .sidePanelHead, .sidePanelActions {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -77,8 +81,11 @@ button, input, select {
     min-width: 0;
 }
 
-.heroMeta {
+.heroMeta, .panelChips, .toolbarButtons, .panelToolbar, .sidePanelActions {
     flex-wrap: wrap;
+}
+
+.heroMeta, .panelChips {
     justify-content: flex-end;
 }
 
@@ -90,7 +97,7 @@ button, input, select {
     text-transform: uppercase;
 }
 
-.title, .panelTitle {
+.title, .panelTitle, .sectionTitle {
     margin: 0;
     letter-spacing: -0.03em;
 }
@@ -102,6 +109,11 @@ button, input, select {
 
 .panelTitle {
     font-size: 0.96rem;
+    font-weight: 700;
+}
+
+.sectionTitle {
+    font-size: 0.88rem;
     font-weight: 700;
 }
 
@@ -163,42 +175,41 @@ button, input, select {
     color: var(--muted);
 }
 
-.layout {
-    min-height: 0;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 340px;
-    gap: 10px;
-}
-
-.graphPanel, .editorPanel, .detailPanel {
-    padding: 12px;
+.graphPanel {
     min-width: 0;
     min-height: 0;
-}
-
-.graphPanel {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
     gap: 10px;
+    padding: 12px;
 }
 
 .panelHead {
     justify-content: space-between;
+    gap: 12px;
     flex-wrap: wrap;
 }
 
-.panelChips {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
+.panelHeadCopy {
+    min-width: 0;
+}
+
+.panelToolbar {
     justify-content: flex-end;
+    min-width: 0;
+}
+
+.graphWorkspace {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
 }
 
 .graphStage {
     position: relative;
-    min-height: 0;
     min-width: 0;
+    min-height: 0;
+    height: 100%;
     border-radius: 14px;
     overflow: hidden;
     border: 1px solid var(--line);
@@ -211,7 +222,26 @@ button, input, select {
     display: block;
     width: 100%;
     height: 100%;
-    cursor: crosshair;
+    cursor: grab;
+    touch-action: none;
+}
+
+#graph.is-dragging {
+    cursor: grabbing;
+}
+
+.graphHint {
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.graphHint__pill {
+    background: rgba(8, 12, 18, 0.72);
 }
 
 .emptyState {
@@ -237,29 +267,51 @@ button, input, select {
     letter-spacing: -0.03em;
 }
 
-.sidebar {
-    min-width: 0;
-    min-height: 0;
-    display: grid;
-    grid-template-rows: minmax(240px, 0.92fr) minmax(320px, 1.08fr);
-    gap: 10px;
-    align-content: stretch;
-}
-
-.editorPanel {
-    display: grid;
-    gap: 14px;
-    min-height: 0;
-    overflow: auto;
-}
-
-.detailPanel {
-    order: -1;
+.sidePanel {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    bottom: 12px;
+    width: min(380px, calc(100% - 24px));
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
     gap: 14px;
+    padding: 14px;
+    overflow: hidden;
+    background: linear-gradient(180deg, rgba(14, 19, 24, 0.98), rgba(6, 10, 14, 0.98));
+    backdrop-filter: blur(14px);
+}
+
+.sidePanelHead {
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.sideSection {
+    min-width: 0;
+    min-height: 0;
+    display: grid;
+    align-content: start;
+    gap: 14px;
+}
+
+.sidePanelBody {
+    min-width: 0;
     min-height: 0;
     overflow: auto;
+    display: grid;
+    align-content: start;
+    gap: 16px;
+    padding-right: 4px;
+}
+
+#details {
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+}
+
+#editor {
+    padding-top: 0;
 }
 
 #selection-content {
@@ -271,12 +323,6 @@ button, input, select {
 .section {
     display: grid;
     gap: 10px;
-}
-
-.sectionTitle {
-    margin: 0;
-    font-size: 0.88rem;
-    letter-spacing: -0.02em;
 }
 
 .fieldLabel, .sliderLabel {
@@ -382,6 +428,48 @@ button, input, select {
     max-width: 28ch;
 }
 
+.parentChoiceList {
+    display: grid;
+    gap: 8px;
+    max-height: 220px;
+    padding-right: 4px;
+    overflow: auto;
+}
+
+.parentChoice {
+    width: 100%;
+    text-align: left;
+    display: grid;
+    gap: 6px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text);
+    cursor: pointer;
+}
+
+.parentChoice:hover {
+    border-color: var(--line-strong);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.parentChoice.is-selected {
+    border-color: rgba(120, 215, 255, 0.36);
+    background: rgba(120, 215, 255, 0.10);
+}
+
+.parentChoice__head {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.parentChoice__meta {
+    color: var(--muted);
+    font-size: 0.72rem;
+    line-height: 1.45;
+}
+
 @media (max-width: 980px) {
     body {
         overflow: auto;
@@ -392,12 +480,17 @@ button, input, select {
         min-height: 100%;
     }
 
-    .layout {
-        grid-template-columns: minmax(0, 1fr);
+    .graphPanel {
+        min-height: 72vh;
     }
 
-    .sidebar {
-        grid-template-rows: minmax(240px, auto) minmax(320px, auto);
+    .panelToolbar {
+        justify-content: flex-start;
+    }
+
+    .sidePanel {
+        inset: 8px;
+        width: auto;
     }
 }
 "#;

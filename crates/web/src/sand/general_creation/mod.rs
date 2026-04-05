@@ -780,6 +780,8 @@ fn script() -> &'static str {
         }
       };
 
+      const bridge = window.LinceWidgetHost || null;
+      const frame = window.frameElement;
       const app = document.getElementById("app");
       const statusEl = document.getElementById("status");
       const tableSelect = document.getElementById("table-select");
@@ -795,14 +797,18 @@ fn script() -> &'static str {
 
       const DEFAULT_TABLE = "record";
       const CARD_STATE_KEY = "generalCreation";
-      let hostMeta = normalizeMeta(null);
+      let hostMeta = normalizeMeta(bridge?.getMeta?.() || null);
       let cardState = normalizeCardState(null);
       let persistTimer = null;
       let bridgeBound = false;
 
+      function currentFrameServerId() {
+        return String(frame?.dataset?.linceServerId || "").trim();
+      }
+
       function normalizeMeta(rawMeta) {
         return {
-          serverId: String(rawMeta?.serverId || "").trim(),
+          serverId: String(rawMeta?.serverId || rawMeta?.server_id || currentFrameServerId() || "").trim(),
           mode: rawMeta?.mode === "edit" ? "edit" : "view"
         };
       }
@@ -833,7 +839,8 @@ fn script() -> &'static str {
 
       function getDraft(tableKey) {
         const raw = cardState.drafts[tableKey];
-        if (typeof raw === "string" && raw.trim()) {
+        const trimmed = typeof raw === "string" ? raw.trim() : "";
+        if (trimmed && trimmed !== "{}" && trimmed.toLowerCase() !== "null") {
           return raw;
         }
         return JSON.stringify(TABLES[tableKey].example, null, 2);
@@ -845,7 +852,7 @@ fn script() -> &'static str {
         }
         persistTimer = window.setTimeout(() => {
           persistTimer = null;
-          window.LinceWidgetHost?.patchCardState?.({
+          bridge?.patchCardState?.({
             [CARD_STATE_KEY]: {
               selectedTable: cardState.selectedTable,
               drafts: cardState.drafts
@@ -855,8 +862,14 @@ fn script() -> &'static str {
       }
 
       function applyBridgeDetail(detail) {
-        hostMeta = normalizeMeta(detail?.meta || null);
-        const nextCardState = normalizeCardState(detail?.meta?.cardState || null);
+        const sourceMeta = detail?.meta && typeof detail.meta === "object"
+          ? detail.meta
+          : detail && typeof detail === "object" && !Array.isArray(detail)
+            ? detail
+            : bridge?.getMeta?.() ?? null;
+        const rawCardState = sourceMeta?.cardState ?? detail?.cardState ?? bridge?.getCardState?.() ?? null;
+        hostMeta = normalizeMeta(sourceMeta);
+        const nextCardState = normalizeCardState(rawCardState);
         const previousTable = cardState.selectedTable;
         cardState = nextCardState;
         tableSelect.value = cardState.selectedTable;
@@ -999,7 +1012,7 @@ fn script() -> &'static str {
           }
 
           if (response.status === 401) {
-            window.LinceWidgetHost?.invalidateServerAuth?.(hostMeta.serverId);
+            bridge?.invalidateServerAuth?.(hostMeta.serverId);
             throw new Error("Server locked. Authenticate that server in the host first.");
           }
 
@@ -1055,20 +1068,24 @@ fn script() -> &'static str {
       });
 
       function bindBridgeWhenReady() {
-        if (bridgeBound || !window.LinceWidgetHost || typeof window.LinceWidgetHost.subscribe !== "function") {
+        if (bridgeBound || !bridge || typeof bridge.subscribe !== "function") {
           return false;
         }
 
         bridgeBound = true;
-        window.LinceWidgetHost.subscribe((detail) => {
+        bridge.subscribe((detail) => {
           applyBridgeDetail(detail);
         });
-        window.LinceWidgetHost.requestState?.();
+        bridge.requestState?.();
         return true;
       }
 
       tableSelect.value = cardState.selectedTable;
       ensureDraftLoaded(cardState.selectedTable);
+      applyBridgeDetail({
+        meta: bridge?.getMeta?.() || null,
+        cardState: bridge?.getCardState?.() || null
+      });
       syncUI();
       resultOutput.textContent = JSON.stringify({
         selected_table: cardState.selectedTable,

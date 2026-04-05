@@ -32,10 +32,11 @@ pub(super) fn body() -> Markup {
                             span id="zoom-pill" class="pill" { "100%" }
                         }
                         div class="toolbarButtons" {
+                            button id="create-open" class="button button--primary" type="button" { "Create" }
                             button id="zoom-out" class="button button--ghost" type="button" aria-label="Zoom out" { "-" }
                             button id="zoom-fit" class="button button--ghost" type="button" { "Fit" }
                             button id="zoom-in" class="button button--ghost" type="button" aria-label="Zoom in" { "+" }
-                            button id="panel-toggle" class="button button--primary" type="button" { "Panel" }
+                            button id="panel-toggle" class="button button--ghost" type="button" { "Panel" }
                         }
                     }
                 }
@@ -71,6 +72,62 @@ pub(super) fn body() -> Markup {
                         }
 
                         div class="sidePanelBody" {
+                            section id="creator" class="sideSection" {
+                                div class="sectionHead" {
+                                    div {
+                                        div class="sectionLabel" { "create" }
+                                        h3 class="sectionTitle" { "Record" }
+                                    }
+                                }
+                                p id="create-summary" class="mutedCopy" {
+                                    "New records inherit the categories currently applied to this view."
+                                }
+
+                                div class="section" {
+                                    label class="fieldLabel" for="create-head" { "Head" }
+                                    input
+                                        id="create-head"
+                                        class="input"
+                                        type="text"
+                                        autocomplete="off"
+                                        spellcheck="false"
+                                        placeholder="Record head"
+                                    ;
+                                }
+
+                                div class="section" {
+                                    label class="fieldLabel" for="create-body" { "Body" }
+                                    textarea
+                                        id="create-body"
+                                        class="textarea"
+                                        rows="5"
+                                        spellcheck="true"
+                                        placeholder="Optional body"
+                                    {}
+                                }
+
+                                div class="section" {
+                                    label class="fieldLabel" for="create-quantity" { "Quantity" }
+                                    input
+                                        id="create-quantity"
+                                        class="input"
+                                        type="number"
+                                        step="1"
+                                        value="0"
+                                    ;
+                                }
+
+                                div class="section" {
+                                    div class="sectionLabel" { "Applied categories" }
+                                    div id="create-category-list" class="chipList" {}
+                                }
+
+                                div class="actionRow actionRow--split" {
+                                    button id="create-clear" class="button button--ghost" type="button" { "Clear" }
+                                    button id="create-submit" class="button button--primary" type="button" { "Create record" }
+                                }
+                            }
+
                             section id="details" class="sideSection" {
                                 div class="sectionHead" {
                                     div {

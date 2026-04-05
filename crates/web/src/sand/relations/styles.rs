@@ -165,10 +165,27 @@ button, input, select, textarea {
     background: rgba(255, 255, 255, 0.06);
 }
 
+.button:disabled,
+.linkChip[aria-disabled="true"] {
+    opacity: 0.55;
+    cursor: default;
+}
+
 .button--primary {
     border-color: rgba(120, 215, 255, 0.26);
     background: rgba(120, 215, 255, 0.10);
     color: #d8f3ff;
+}
+
+.button--danger {
+    border-color: rgba(255, 143, 163, 0.28);
+    background: rgba(255, 143, 163, 0.10);
+    color: #ffe1e8;
+}
+
+.button--danger:hover {
+    border-color: rgba(255, 143, 163, 0.4);
+    background: rgba(255, 143, 163, 0.16);
 }
 
 .button--ghost {
@@ -313,6 +330,18 @@ button, input, select, textarea {
     padding-right: 4px;
 }
 
+.sidePanelBody--create {
+    padding-right: 8px;
+    padding-bottom: 16px;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+}
+
+.sideSection--create {
+    min-height: max-content;
+    overflow: visible;
+}
+
 #details {
     flex: 0 0 auto;
 }
@@ -440,6 +469,15 @@ button, input, select, textarea {
     justify-content: space-between;
 }
 
+.actionRow--sticky {
+    position: sticky;
+    bottom: -14px;
+    padding-top: 12px;
+    padding-bottom: 2px;
+    background: linear-gradient(180deg, rgba(14, 19, 24, 0), rgba(14, 19, 24, 0.94) 32%, rgba(14, 19, 24, 0.98) 100%);
+    z-index: 1;
+}
+
 .selectionEmpty {
     display: grid;
     gap: 8px;
@@ -457,6 +495,10 @@ button, input, select, textarea {
     padding-right: 4px;
     overflow: auto;
     min-width: 0;
+}
+
+.parentChoiceList--compact {
+    max-height: 168px;
 }
 
 .parentChoice {

@@ -59,20 +59,19 @@ pub(super) fn body() -> Markup {
                         }
                     }
 
-                    aside id="side-panel" class="sidePanel" hidden="" {
+                    aside id="create-panel" class="sidePanel sidePanel--create" hidden="" {
                         div class="sidePanelHead" {
                             div {
-                                div class="eyebrow" { "panel" }
-                                h2 class="panelTitle" { "Relations controls" }
+                                div class="eyebrow" { "create" }
+                                h2 class="panelTitle" { "Create record" }
                             }
                             div class="sidePanelActions" {
-                                a class="linkChip" href="LICENSE.txt" target="_blank" rel="noreferrer" { "License" }
-                                button id="panel-close" class="button button--ghost" type="button" { "Close" }
+                                button id="create-close" class="button button--ghost" type="button" { "Close" }
                             }
                         }
 
-                        div class="sidePanelBody" {
-                            section id="creator" class="sideSection" {
+                        div class="sidePanelBody sidePanelBody--create" {
+                            section id="creator" class="sideSection sideSection--create" {
                                 div class="sectionHead" {
                                     div {
                                         div class="sectionLabel" { "create" }
@@ -100,7 +99,7 @@ pub(super) fn body() -> Markup {
                                     textarea
                                         id="create-body"
                                         class="textarea"
-                                        rows="5"
+                                        rows="4"
                                         spellcheck="true"
                                         placeholder="Optional body"
                                     {}
@@ -118,16 +117,52 @@ pub(super) fn body() -> Markup {
                                 }
 
                                 div class="section" {
+                                    div class="sectionHead" {
+                                        div {
+                                            label class="fieldLabel" for="create-parent-search" { "Parent" }
+                                            p id="create-parent-summary" class="mutedCopy" {
+                                                "Selected: no parent"
+                                            }
+                                        }
+                                        button id="create-parent-clear" class="button button--ghost" type="button" { "No parent" }
+                                    }
+                                    input
+                                        id="create-parent-search"
+                                        class="input"
+                                        type="text"
+                                        autocomplete="off"
+                                        spellcheck="false"
+                                        placeholder="Search possible fathers by head"
+                                    ;
+                                    div id="create-parent-choice-list" class="parentChoiceList parentChoiceList--compact" {}
+                                }
+
+                                div class="section" {
                                     div class="sectionLabel" { "Applied categories" }
                                     div id="create-category-list" class="chipList" {}
                                 }
 
-                                div class="actionRow actionRow--split" {
+                                div class="actionRow actionRow--split actionRow--sticky" {
                                     button id="create-clear" class="button button--ghost" type="button" { "Clear" }
                                     button id="create-submit" class="button button--primary" type="button" { "Create record" }
                                 }
                             }
+                        }
+                    }
 
+                    aside id="side-panel" class="sidePanel" hidden="" {
+                        div class="sidePanelHead" {
+                            div {
+                                div class="eyebrow" { "panel" }
+                                h2 class="panelTitle" { "Relations controls" }
+                            }
+                            div class="sidePanelActions" {
+                                a class="linkChip" href="LICENSE.txt" target="_blank" rel="noreferrer" { "License" }
+                                button id="panel-close" class="button button--ghost" type="button" { "Close" }
+                            }
+                        }
+
+                        div class="sidePanelBody" {
                             section id="details" class="sideSection" {
                                 div class="sectionHead" {
                                     div {
@@ -145,6 +180,69 @@ pub(super) fn body() -> Markup {
 
                                 div id="selection-content" hidden="" {
                                     pre id="selection-summary" class="codeBlock" {}
+
+                                    div class="section" {
+                                        div class="sectionHead" {
+                                            div {
+                                                div class="sectionLabel" { "record" }
+                                                h3 class="sectionTitle" { "Edit record" }
+                                            }
+                                        }
+                                        p id="record-editor-copy" class="mutedCopy" {
+                                            "Load the selected record before editing it."
+                                        }
+                                        label class="fieldLabel" for="record-head" { "Head" }
+                                        input
+                                            id="record-head"
+                                            class="input"
+                                            type="text"
+                                            autocomplete="off"
+                                            spellcheck="false"
+                                            placeholder="Record head"
+                                        ;
+                                        label class="fieldLabel" for="record-body" { "Body" }
+                                        textarea
+                                            id="record-body"
+                                            class="textarea"
+                                            rows="4"
+                                            spellcheck="true"
+                                            placeholder="Optional body"
+                                        {}
+                                        label class="fieldLabel" for="record-quantity" { "Quantity" }
+                                        input
+                                            id="record-quantity"
+                                            class="input"
+                                            type="number"
+                                            step="1"
+                                            value="0"
+                                        ;
+                                        div class="sectionHead" {
+                                            div {
+                                                div class="sectionLabel" { "Categories" }
+                                                p class="mutedCopy" {
+                                                    "Changing categories updates the record itself."
+                                                }
+                                            }
+                                        }
+                                        div class="actionRow actionRow--split" {
+                                            input
+                                                id="record-category-input"
+                                                class="input"
+                                                type="text"
+                                                autocomplete="off"
+                                                spellcheck="false"
+                                                placeholder="Add category"
+                                            ;
+                                            button id="record-category-add" class="button button--ghost" type="button" { "Add" }
+                                        }
+                                        div id="record-category-list" class="chipList" {}
+                                        div class="sectionLabel" { "Available categories" }
+                                        div id="record-category-choice-list" class="checkList" {}
+                                        div class="actionRow actionRow--split" {
+                                            button id="record-save" class="button button--primary" type="button" { "Save record" }
+                                            button id="record-delete" class="button button--danger" type="button" { "Delete record" }
+                                        }
+                                    }
 
                                     div class="actionRow actionRow--split" {
                                         button id="connect-parent" class="button button--primary" type="button" { "Set parent" }

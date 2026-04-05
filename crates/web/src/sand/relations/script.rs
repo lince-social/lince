@@ -6,6 +6,8 @@ pub(super) fn script() -> String {
     const app = document.getElementById("app");
     const canvas = document.getElementById("graph");
     const ctx = canvas.getContext("2d");
+    const createPanel = document.getElementById("create-panel");
+    const createCloseButton = document.getElementById("create-close");
     const editor = document.getElementById("editor");
     const sidePanel = document.getElementById("side-panel");
     const panelToggleButton = document.getElementById("panel-toggle");
@@ -24,6 +26,10 @@ pub(super) fn script() -> String {
     const createHeadInput = document.getElementById("create-head");
     const createBodyInput = document.getElementById("create-body");
     const createQuantityInput = document.getElementById("create-quantity");
+    const createParentSearchInput = document.getElementById("create-parent-search");
+    const createParentSummary = document.getElementById("create-parent-summary");
+    const createParentChoiceList = document.getElementById("create-parent-choice-list");
+    const createParentClearButton = document.getElementById("create-parent-clear");
     const createCategoryList = document.getElementById("create-category-list");
     const createClearButton = document.getElementById("create-clear");
     const createSubmitButton = document.getElementById("create-submit");
@@ -31,6 +37,16 @@ pub(super) fn script() -> String {
     const selectionEmpty = document.getElementById("selection-empty");
     const selectionContent = document.getElementById("selection-content");
     const selectionSummary = document.getElementById("selection-summary");
+    const recordEditorCopy = document.getElementById("record-editor-copy");
+    const recordHeadInput = document.getElementById("record-head");
+    const recordBodyInput = document.getElementById("record-body");
+    const recordQuantityInput = document.getElementById("record-quantity");
+    const recordCategoryInput = document.getElementById("record-category-input");
+    const recordCategoryAddButton = document.getElementById("record-category-add");
+    const recordCategoryList = document.getElementById("record-category-list");
+    const recordCategoryChoiceList = document.getElementById("record-category-choice-list");
+    const recordSaveButton = document.getElementById("record-save");
+    const recordDeleteButton = document.getElementById("record-delete");
     const parentSearchInput = document.getElementById("parent-search-query");
     const parentSearchSummary = document.getElementById("parent-search-summary");
     const parentChoiceList = document.getElementById("parent-choice-list");
@@ -63,6 +79,7 @@ pub(super) fn script() -> String {
         collisionRadius: 24,
         centerForce: 0.18,
     };
+    const CARD_STATE_KEY = "relations";
     const MIN_ZOOM = 0.35;
     const MAX_ZOOM = 3.5;
     const INITIAL_TICKS = 140;
@@ -90,19 +107,38 @@ pub(super) fn script() -> String {
         selectedId: null,
         selectedParentId: null,
         parentSearchQuery: "",
+        recordDetail: null,
+        recordDetailLoading: false,
+        recordDetailError: "",
+        recordDetailRequestId: 0,
+        recordDraft: {
+            recordId: null,
+            head: "",
+            body: "",
+            quantity: "0",
+            categories: [],
+        },
+        recordDraftDirty: false,
+        recordCategoryInput: "",
+        pendingRecordSave: false,
+        pendingRecordDelete: false,
+        recordDeleteArmed: false,
         createDraft: {
             head: "",
             body: "",
             quantity: "0",
+            parentId: null,
         },
+        createParentSearchQuery: "",
         pendingCreate: false,
         pendingParentMutation: false,
-        panelOpen: false,
+        activePanel: null,
         stream: null,
         streamGeneration: 0,
         error: "",
         width: 0,
         height: 0,
+        physicsPersistTimer: null,
         resizeObserver: null,
         simulation: null,
         needsRedraw: false,
@@ -164,6 +200,80 @@ pub(super) fn script() -> String {
         };
     }
 
+    function asObject(value) {
+        return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+    }
+
+    function readCardState(detail, sourceMeta) {
+        const fromMeta = asObject(sourceMeta).cardState;
+        const fromDetail = asObject(detail).cardState;
+        const fromBridge = bridge?.getCardState?.();
+        return asObject(fromMeta || fromDetail || fromBridge);
+    }
+
+    function readRelationsState(cardState) {
+        return asObject(asObject(cardState)[CARD_STATE_KEY]);
+    }
+
+    function localPhysicsStorageKey() {
+        return `lince.widget.relations.${instanceId()}.physics`;
+    }
+
+    function readLocalPhysics() {
+        try {
+            const raw = window.localStorage?.getItem?.(localPhysicsStorageKey());
+            if (!raw) {
+                return null;
+            }
+            const parsed = JSON.parse(raw);
+            return parsed && typeof parsed === "object" ? parsed : null;
+        } catch {
+            return null;
+        }
+    }
+
+    function writeLocalPhysics(physics) {
+        try {
+            window.localStorage?.setItem?.(
+                localPhysicsStorageKey(),
+                JSON.stringify({ ...normalizePhysics(physics) }),
+            );
+        } catch {
+        }
+    }
+
+    function readHostPhysics(cardState) {
+        const scoped = readRelationsState(cardState);
+        return (
+            scoped.physics ||
+            scoped.relations_physics ||
+            scoped.relationsPhysics ||
+            asObject(cardState).relations_physics ||
+            asObject(cardState).physics ||
+            asObject(cardState).relationsPhysics ||
+            null
+        );
+    }
+
+    function samePhysics(left, right) {
+        const a = normalizePhysics(left);
+        const b = normalizePhysics(right);
+        return (
+            a.charge === b.charge &&
+            a.linkDistance === b.linkDistance &&
+            a.collisionRadius === b.collisionRadius &&
+            a.centerForce === b.centerForce
+        );
+    }
+
+    function readPersistedPhysics(cardState) {
+        const local = readLocalPhysics();
+        if (local) {
+            return normalizePhysics(local);
+        }
+        return normalizePhysics(readHostPhysics(cardState));
+    }
+
     function normalizeDraftFilters(raw) {
         const next = {
             categories: [],
@@ -206,6 +316,71 @@ pub(super) fn script() -> String {
 
     function appliedCreateCategories() {
         return appliedFilterState().categories.slice();
+    }
+
+    function resetRecordEditorState() {
+        state.recordDetail = null;
+        state.recordDetailLoading = false;
+        state.recordDetailError = "";
+        state.recordDraft = {
+            recordId: null,
+            head: "",
+            body: "",
+            quantity: "0",
+            categories: [],
+        };
+        state.recordDraftDirty = false;
+        state.recordCategoryInput = "";
+        state.pendingRecordSave = false;
+        state.pendingRecordDelete = false;
+        state.recordDeleteArmed = false;
+    }
+
+    function buildRecordDraft(node, detail) {
+        const quantitySource = detail?.quantity ?? node?.quantity ?? 0;
+        const categoriesSource = Array.isArray(detail?.categories)
+            ? detail.categories
+            : Array.isArray(node?.categories)
+              ? node.categories
+              : [];
+        return {
+            recordId: Number(node?.id || detail?.record_id || 0) || null,
+            head: String(detail?.head ?? node?.head ?? ""),
+            body: String(detail?.body ?? node?.body ?? ""),
+            quantity: String(parseOptionalInteger(quantitySource) ?? 0),
+            categories: uniqueStrings(categoriesSource),
+        };
+    }
+
+    function recordAvailableCategories() {
+        return uniqueStrings([
+            ...state.availableCategories,
+            ...(Array.isArray(state.recordDraft.categories) ? state.recordDraft.categories : []),
+        ]);
+    }
+
+    function sortedParentCandidates(needle, excludeIds) {
+        const blocked = excludeIds instanceof Set ? excludeIds : new Set();
+        const loweredNeedle = String(needle || "").trim().toLowerCase();
+        return state.nodes
+            .filter((candidate) => !blocked.has(candidate.id))
+            .filter((candidate) => {
+                if (!loweredNeedle) {
+                    return true;
+                }
+                const haystacks = [
+                    String(candidate.head || ""),
+                    ...(Array.isArray(candidate.categories) ? candidate.categories : []),
+                ];
+                return haystacks.some((value) => String(value || "").toLowerCase().includes(loweredNeedle));
+            })
+            .slice()
+            .sort((left, right) =>
+                String(left.head || "")
+                    .toLowerCase()
+                    .localeCompare(String(right.head || "").toLowerCase()) ||
+                left.id - right.id,
+            );
     }
 
     function getMeta() {
@@ -253,9 +428,13 @@ pub(super) fn script() -> String {
     }
 
     function renderPanel() {
-        sidePanel.hidden = !state.panelOpen;
-        panelToggleButton.textContent = state.panelOpen ? "Hide panel" : "Panel";
-        panelToggleButton.dataset.open = state.panelOpen ? "true" : "false";
+        const controlsOpen = state.activePanel === "controls";
+        const createOpen = state.activePanel === "create";
+        sidePanel.hidden = !controlsOpen;
+        createPanel.hidden = !createOpen;
+        panelToggleButton.textContent = controlsOpen ? "Hide panel" : "Panel";
+        panelToggleButton.dataset.open = controlsOpen ? "true" : "false";
+        createOpenButton.dataset.open = createOpen ? "true" : "false";
     }
 
     function renderCategoryChoices() {
@@ -304,21 +483,51 @@ pub(super) fn script() -> String {
 
     function renderCreateForm() {
         const categories = appliedCreateCategories();
+        const draftParent = state.nodes.find((node) => node.id === state.createDraft.parentId) || null;
         createHeadInput.value = String(state.createDraft.head || "");
         createBodyInput.value = String(state.createDraft.body || "");
         createQuantityInput.value = String(state.createDraft.quantity || "0");
+        createParentSearchInput.value = String(state.createParentSearchQuery || "");
         createCategoryList.innerHTML = categories.length
             ? categories
                   .map((category) => `<span class="pill">${escapeHtml(category)}</span>`)
                   .join("")
             : '<span class="mutedCopy">No applied categories. New records will be created without category links.</span>';
+        createParentSummary.textContent = draftParent
+            ? `Selected: #${draftParent.id} ${draftParent.head || "Untitled"}`
+            : "Selected: no parent";
         createSummary.textContent = !state.origin.serverId
             ? "This widget needs a configured server before it can create records."
             : categories.length
               ? `New records will inherit ${categories.length} applied categor${categories.length === 1 ? "y" : "ies"} from this view.`
               : "No category filter is currently applied to this view.";
+        renderCreateParentChoices();
+        createParentClearButton.disabled = state.pendingCreate || state.createDraft.parentId == null;
         createClearButton.disabled = state.pendingCreate;
         createSubmitButton.disabled = state.pendingCreate || !state.origin.serverId || !String(state.createDraft.head || "").trim();
+    }
+
+    function renderCreateParentChoices() {
+        const candidates = sortedParentCandidates(state.createParentSearchQuery, new Set());
+        if (!candidates.length) {
+            createParentChoiceList.innerHTML = '<p class="mutedCopy">No possible fathers match the current search.</p>';
+            return;
+        }
+
+        createParentChoiceList.innerHTML = candidates
+            .map((candidate) => {
+                const isSelected = candidate.id === state.createDraft.parentId;
+                const categories = Array.isArray(candidate.categories) && candidate.categories.length
+                    ? candidate.categories.join(", ")
+                    : "No categories";
+                return `
+                    <button class="parentChoice${isSelected ? " is-selected" : ""}" type="button" data-create-parent-choice="${candidate.id}">
+                        <span class="parentChoice__head">#${candidate.id} ${escapeHtml(candidate.head || "Untitled")}</span>
+                        <span class="parentChoice__meta">${escapeHtml(categories)}</span>
+                    </button>
+                `;
+            })
+            .join("");
     }
 
     function renderPhysicsControls() {
@@ -332,6 +541,91 @@ pub(super) fn script() -> String {
         centerValue.textContent = String(state.physics.centerForce.toFixed(2));
     }
 
+    function renderRecordCategoryChoices() {
+        const selected = Array.isArray(state.recordDraft.categories) ? state.recordDraft.categories : [];
+        recordCategoryList.innerHTML = selected.length
+            ? selected
+                  .map((category) => {
+                      const safe = escapeHtml(category);
+                      return `
+                          <button class="chipButton" type="button" data-record-category-remove="${safe}" title="Remove category">
+                              <span>${safe}</span>
+                              <span aria-hidden="true">×</span>
+                          </button>
+                      `;
+                  })
+                  .join("")
+            : '<span class="mutedCopy">No categories on this record.</span>';
+
+        const available = recordAvailableCategories();
+        if (!available.length) {
+            recordCategoryChoiceList.innerHTML = '<span class="mutedCopy">No categories available yet.</span>';
+            return;
+        }
+
+        const selectedSet = new Set(selected.map((value) => String(value || "").toLowerCase()));
+        recordCategoryChoiceList.innerHTML = available
+            .map((category) => {
+                const safe = escapeHtml(category);
+                const checked = selectedSet.has(category.toLowerCase()) ? "checked" : "";
+                return `
+                    <label class="checkItem">
+                        <input type="checkbox" value="${safe}" ${checked}>
+                        <span>${safe}</span>
+                    </label>
+                `;
+            })
+            .join("");
+    }
+
+    function renderRecordEditor(node) {
+        const detail = Number(state.recordDetail?.record_id || 0) === Number(node?.id || 0)
+            ? state.recordDetail
+            : null;
+        const ready = Boolean(node) && Boolean(detail);
+        const pending = state.pendingRecordSave || state.pendingRecordDelete;
+        const assigneeCount = Array.isArray(detail?.assignees) ? detail.assignees.length : 0;
+        const hasSchedule = Boolean(detail?.start_at || detail?.end_at);
+        const estimate = Number.isInteger(detail?.estimate_seconds) ? detail.estimate_seconds : null;
+
+        recordHeadInput.value = String(state.recordDraft.head || "");
+        recordBodyInput.value = String(state.recordDraft.body || "");
+        recordQuantityInput.value = String(state.recordDraft.quantity || "0");
+        recordCategoryInput.value = String(state.recordCategoryInput || "");
+
+        if (!node) {
+            recordEditorCopy.textContent = "Select a record to edit or delete it.";
+        } else if (state.recordDetailLoading && !ready) {
+            recordEditorCopy.textContent = "Loading the full record metadata so this edit preserves task data.";
+        } else if (state.recordDetailError && !ready) {
+            recordEditorCopy.textContent = state.recordDetailError;
+        } else if (state.recordDeleteArmed) {
+            recordEditorCopy.textContent = "Click delete again to confirm record removal.";
+        } else {
+            recordEditorCopy.textContent = [
+                detail?.task_type ? `Type: ${detail.task_type}` : "Type: none",
+                `Assignees: ${assigneeCount}`,
+                hasSchedule ? "Schedule preserved" : "No schedule",
+                estimate == null ? "No estimate" : `Estimate: ${estimate}s`,
+            ].join(" · ");
+        }
+
+        renderRecordCategoryChoices();
+
+        const disabled = !node || pending;
+        recordHeadInput.disabled = disabled;
+        recordBodyInput.disabled = disabled;
+        recordQuantityInput.disabled = disabled;
+        recordCategoryInput.disabled = disabled;
+        recordCategoryAddButton.disabled = disabled;
+        for (const input of recordCategoryChoiceList.querySelectorAll("input[type='checkbox']")) {
+            input.disabled = disabled;
+        }
+        recordSaveButton.disabled = disabled || !ready || !String(state.recordDraft.head || "").trim();
+        recordDeleteButton.disabled = !node || pending;
+        recordDeleteButton.textContent = state.recordDeleteArmed ? "Confirm delete" : "Delete record";
+    }
+
     function renderParentChoices(node) {
         if (!node) {
             parentChoiceList.innerHTML = "";
@@ -340,26 +634,10 @@ pub(super) fn script() -> String {
         }
 
         const blockedIds = collectDescendantIds(node.id);
-        const needle = String(state.parentSearchQuery || "").trim().toLowerCase();
-        const candidates = state.nodes
-            .filter((candidate) => candidate.id !== node.id && !blockedIds.has(candidate.id))
-            .filter((candidate) => {
-                if (!needle) {
-                    return true;
-                }
-                const haystacks = [
-                    String(candidate.head || ""),
-                    ...(Array.isArray(candidate.categories) ? candidate.categories : []),
-                ];
-                return haystacks.some((value) => String(value || "").toLowerCase().includes(needle));
-            })
-            .slice()
-            .sort((left, right) =>
-                String(left.head || "")
-                    .toLowerCase()
-                    .localeCompare(String(right.head || "").toLowerCase()) ||
-                left.id - right.id,
-            );
+        const candidates = sortedParentCandidates(
+            state.parentSearchQuery,
+            new Set([...blockedIds, node.id]),
+        );
 
         const selectedParent = state.nodes.find((candidate) => candidate.id === state.selectedParentId) || null;
         parentSearchSummary.textContent = selectedParent
@@ -389,8 +667,72 @@ pub(super) fn script() -> String {
             .join("");
     }
 
+    function loadRecordDetail(recordId) {
+        const targetId = Number(recordId || 0);
+        if (!targetId) {
+            return;
+        }
+        const requestId = state.recordDetailRequestId + 1;
+        state.recordDetailRequestId = requestId;
+        state.recordDetailLoading = true;
+        state.recordDetailError = "";
+        renderRecordEditor(state.nodes.find((item) => item.id === state.selectedId) || null);
+
+        postAction("load-record-detail", { recordId: targetId })
+            .then((detail) => {
+                if (state.recordDetailRequestId !== requestId || state.selectedId !== targetId) {
+                    return;
+                }
+                state.recordDetail = detail && typeof detail === "object" ? detail : null;
+                state.recordDetailLoading = false;
+                state.recordDetailError = "";
+                if (!state.recordDraftDirty || state.recordDraft.recordId !== targetId) {
+                    const node = state.nodes.find((item) => item.id === targetId) || null;
+                    state.recordDraft = buildRecordDraft(node, state.recordDetail);
+                    state.recordDraftDirty = false;
+                }
+                renderSelection();
+            })
+            .catch((error) => {
+                if (state.recordDetailRequestId !== requestId || state.selectedId !== targetId) {
+                    return;
+                }
+                state.recordDetailLoading = false;
+                state.recordDetailError = error instanceof Error ? error.message : String(error);
+                renderSelection();
+            });
+    }
+
+    function syncSelectionRecordEditor(node) {
+        if (!node) {
+            if (state.recordDraft.recordId != null || state.recordDetail || state.recordDetailLoading || state.recordDetailError) {
+                resetRecordEditorState();
+            }
+            return;
+        }
+
+        if (state.recordDraft.recordId !== node.id) {
+            state.recordDetail = null;
+            state.recordDetailLoading = false;
+            state.recordDetailError = "";
+            state.recordDraft = buildRecordDraft(node, null);
+            state.recordDraftDirty = false;
+            state.recordCategoryInput = "";
+            state.pendingRecordSave = false;
+            state.pendingRecordDelete = false;
+            state.recordDeleteArmed = false;
+            loadRecordDetail(node.id);
+            return;
+        }
+
+        if (!state.recordDetail && !state.recordDetailLoading && !state.recordDetailError) {
+            loadRecordDetail(node.id);
+        }
+    }
+
     function renderSelection() {
         const node = state.nodes.find((item) => item.id === state.selectedId) || null;
+        syncSelectionRecordEditor(node);
         if (!node) {
             selectionPill.textContent = "None";
             selectionEmpty.hidden = false;
@@ -400,6 +742,7 @@ pub(super) fn script() -> String {
             parentSearchSummary.textContent = "Choose a possible father from the current graph.";
             connectParentButton.disabled = true;
             disconnectParentButton.disabled = true;
+            renderRecordEditor(null);
             return;
         }
 
@@ -444,6 +787,7 @@ pub(super) fn script() -> String {
                   .join("")
             : '<span class="mutedCopy">No children.</span>';
 
+        renderRecordEditor(node);
         connectParentButton.disabled = state.pendingParentMutation || !draftParent || draftParent.id === node.parentId;
         disconnectParentButton.disabled = state.pendingParentMutation || !node.parentId;
         renderParentChoices(node);
@@ -453,15 +797,15 @@ pub(super) fn script() -> String {
         renderCounters();
     }
 
-    function syncFromBridge() {
-        const meta = getMeta();
-        const cardState = bridge?.getCardState?.() || {};
+    function syncFromBridge(detail) {
+        const rawDetail = asObject(detail);
+        const meta = rawDetail.meta && typeof rawDetail.meta === "object" ? rawDetail.meta : getMeta();
+        const cardState = readCardState(rawDetail, meta);
+        const hostPhysics = normalizePhysics(readHostPhysics(cardState));
         state.mode = meta.mode === "edit" ? "edit" : "view";
-        state.cardState = cardState && typeof cardState === "object" ? cardState : {};
+        state.cardState = cardState;
         state.draftFilters = normalizeDraftFilters(state.cardState.filters || []);
-        state.physics = normalizePhysics(
-            state.cardState.relations_physics || state.cardState.physics || state.cardState.relationsPhysics,
-        );
+        state.physics = readPersistedPhysics(state.cardState);
         state.origin.serverId = String(meta.serverId || state.origin.serverId || frame?.dataset?.linceServerId || "").trim();
         state.origin.viewId = Number(meta.viewId || state.origin.viewId || frame?.dataset?.linceViewId || 0) || null;
         renderMode();
@@ -471,6 +815,9 @@ pub(super) fn script() -> String {
         renderPhysicsControls();
         renderFilterPill();
         renderPanel();
+        if (!samePhysics(state.physics, hostPhysics)) {
+            persistPhysicsSoon();
+        }
         requestDraw();
     }
 
@@ -514,10 +861,190 @@ pub(super) fn script() -> String {
         renderFilterPill();
     }
 
+    function updateRecordCategoriesFromControls() {
+        const next = [];
+        for (const input of recordCategoryChoiceList.querySelectorAll("input[type='checkbox']")) {
+            if (input.checked) {
+                next.push(input.value);
+            }
+        }
+        state.recordDraft.categories = uniqueStrings(next);
+        state.recordDraftDirty = true;
+        state.recordDeleteArmed = false;
+        renderRecordEditor(state.nodes.find((item) => item.id === state.selectedId) || null);
+    }
+
+    function addRecordCategoryFromInput() {
+        const value = String(recordCategoryInput?.value || "").trim();
+        if (!value) {
+            return;
+        }
+        state.recordDraft.categories = uniqueStrings([
+            ...state.recordDraft.categories,
+            value,
+        ]);
+        state.recordCategoryInput = "";
+        state.recordDraftDirty = true;
+        state.recordDeleteArmed = false;
+        renderRecordEditor(state.nodes.find((item) => item.id === state.selectedId) || null);
+    }
+
+    function removeRecordCategory(value) {
+        const needle = String(value || "").trim().toLowerCase();
+        if (!needle) {
+            return;
+        }
+        state.recordDraft.categories = state.recordDraft.categories.filter(
+            (category) => category.toLowerCase() !== needle,
+        );
+        state.recordDraftDirty = true;
+        state.recordDeleteArmed = false;
+        renderRecordEditor(state.nodes.find((item) => item.id === state.selectedId) || null);
+    }
+
+    function applyOptimisticRecordDraft(node, draft) {
+        if (!node || !draft) {
+            return;
+        }
+        node.head = String(draft.head || "").trim() || "Untitled";
+        node.body = String(draft.body || "");
+        node.quantity = parseOptionalInteger(draft.quantity) ?? 0;
+        node.categories = uniqueStrings(draft.categories);
+        state.categories = collectCategories(state.nodes);
+        state.availableCategories = state.categories;
+        renderCategoryChoices();
+        renderCreateForm();
+        renderCounters();
+        requestDraw();
+    }
+
+    function saveSelectedRecord() {
+        const node = state.nodes.find((item) => item.id === state.selectedId) || null;
+        const detail = Number(state.recordDetail?.record_id || 0) === Number(node?.id || 0)
+            ? state.recordDetail
+            : null;
+        if (!node || !detail) {
+            renderStatus("Record not ready", "error", "Load the selected record before saving edits.");
+            return;
+        }
+
+        const head = String(state.recordDraft.head || "").trim();
+        if (!head) {
+            renderStatus("Missing head", "error", "A record needs a head.");
+            recordHeadInput?.focus();
+            return;
+        }
+
+        const quantity = parseOptionalInteger(state.recordDraft.quantity) ?? 0;
+        const assigneeIds = Array.isArray(detail.assignees)
+            ? detail.assignees
+                  .map((entry) => Number(entry?.id || 0))
+                  .filter((value) => Number.isInteger(value) && value > 0)
+            : [];
+
+        state.pendingRecordSave = true;
+        state.recordDeleteArmed = false;
+        renderRecordEditor(node);
+        renderStatus("Saving", "status", "Record update pending.");
+        postAction("update-record", {
+            recordId: node.id,
+            head,
+            body: String(state.recordDraft.body || "").trim(),
+            quantity,
+            taskType: detail.task_type || null,
+            categories: state.recordDraft.categories.slice(),
+            startAt: detail.start_at || null,
+            endAt: detail.end_at || null,
+            estimateSeconds: Number.isInteger(detail.estimate_seconds) ? detail.estimate_seconds : null,
+            assigneeIds,
+            parentId: Number.isInteger(node.parentId) && node.parentId > 0 ? node.parentId : null,
+        })
+            .then(() => {
+                state.pendingRecordSave = false;
+                state.recordDraftDirty = false;
+                state.recordDeleteArmed = false;
+                applyOptimisticRecordDraft(node, state.recordDraft);
+                state.recordDetail = {
+                    ...detail,
+                    head,
+                    body: String(state.recordDraft.body || "").trim() || null,
+                    quantity,
+                    categories: state.recordDraft.categories.slice(),
+                    primary_category: state.recordDraft.categories[0] || null,
+                };
+                renderSelection();
+                renderStatus("Saved", "live", "Record updated.");
+                restartStream();
+            })
+            .catch((error) => {
+                state.pendingRecordSave = false;
+                state.recordDeleteArmed = false;
+                renderRecordEditor(node);
+                renderStatus("Update error", "error", error instanceof Error ? error.message : String(error));
+            });
+    }
+
+    function deleteSelectedRecord() {
+        const node = state.nodes.find((item) => item.id === state.selectedId) || null;
+        if (!node) {
+            return;
+        }
+        if (!state.recordDeleteArmed) {
+            state.recordDeleteArmed = true;
+            renderRecordEditor(node);
+            renderStatus("Confirm delete", "status", "Click delete again to remove the selected record.");
+            return;
+        }
+
+        state.pendingRecordDelete = true;
+        state.recordDeleteArmed = false;
+        renderRecordEditor(node);
+        renderStatus("Deleting", "status", "Record deletion pending.");
+        postAction("delete-record", { recordId: node.id })
+            .then(() => {
+                state.pendingRecordDelete = false;
+                state.selectedId = null;
+                state.selectedParentId = null;
+                state.parentSearchQuery = "";
+                resetRecordEditorState();
+                renderSelection();
+                renderStatus("Deleted", "live", "Record removed.");
+                restartStream();
+            })
+            .catch((error) => {
+                state.pendingRecordDelete = false;
+                renderRecordEditor(node);
+                renderStatus("Delete error", "error", error instanceof Error ? error.message : String(error));
+            });
+    }
+
     function persistPhysics() {
+        if (state.physicsPersistTimer) {
+            window.clearTimeout(state.physicsPersistTimer);
+            state.physicsPersistTimer = null;
+        }
+        writeLocalPhysics(state.physics);
+        const nextRelationsState = {
+            ...readRelationsState(state.cardState),
+            physics: { ...state.physics },
+        };
+        state.cardState = {
+            ...asObject(state.cardState),
+            [CARD_STATE_KEY]: nextRelationsState,
+        };
         bridge?.patchCardState?.({
-            relations_physics: { ...state.physics },
+            [CARD_STATE_KEY]: nextRelationsState,
         });
+    }
+
+    function persistPhysicsSoon() {
+        if (state.physicsPersistTimer) {
+            window.clearTimeout(state.physicsPersistTimer);
+        }
+        state.physicsPersistTimer = window.setTimeout(() => {
+            state.physicsPersistTimer = null;
+            persistPhysics();
+        }, 140);
     }
 
     function applyPhysicsToUi() {
@@ -543,13 +1070,20 @@ pub(super) fn script() -> String {
             head: "",
             body: "",
             quantity: "0",
+            parentId: null,
         };
+        state.createParentSearchQuery = "";
     }
 
     function openCreatePanel() {
-        state.panelOpen = true;
+        if (state.createDraft.parentId == null && state.selectedId && state.nodes.some((node) => node.id === state.selectedId)) {
+            state.createDraft.parentId = state.selectedId;
+        }
+        state.activePanel = "create";
         renderPanel();
+        renderCreateForm();
         window.requestAnimationFrame(() => {
+            document.getElementById("creator")?.scrollIntoView?.({ block: "start", behavior: "auto" });
             createHeadInput?.focus();
             createHeadInput?.select?.();
         });
@@ -586,7 +1120,9 @@ pub(super) fn script() -> String {
             endAt: null,
             estimateSeconds: null,
             assigneeIds: [],
-            parentId: null,
+            parentId: Number.isInteger(state.createDraft.parentId) && state.createDraft.parentId > 0
+                ? state.createDraft.parentId
+                : null,
         })
             .then((outcome) => {
                 state.pendingCreate = false;
@@ -1486,8 +2022,8 @@ pub(super) fn script() -> String {
         state.selectedId = node.id;
         state.selectedParentId = node.parentId || null;
         state.parentSearchQuery = "";
-        if (!state.panelOpen) {
-            state.panelOpen = true;
+        if (state.activePanel !== "controls") {
+            state.activePanel = "controls";
             renderPanel();
         }
         renderSelection();
@@ -1727,29 +2263,94 @@ pub(super) fn script() -> String {
             state.createDraft.head = String(createHeadInput.value || "");
             renderCreateForm();
         });
+        createHeadInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                submitCreateRecord();
+            }
+        });
         createBodyInput.addEventListener("input", () => {
             state.createDraft.body = String(createBodyInput.value || "");
         });
         createQuantityInput.addEventListener("input", () => {
             state.createDraft.quantity = String(createQuantityInput.value || "0");
         });
+        createParentSearchInput.addEventListener("input", () => {
+            state.createParentSearchQuery = String(createParentSearchInput.value || "").trim();
+            renderCreateForm();
+        });
+        createParentChoiceList.addEventListener("click", (event) => {
+            const button = event.target?.closest?.("[data-create-parent-choice]");
+            if (!button) {
+                return;
+            }
+            state.createDraft.parentId = Number(button.getAttribute("data-create-parent-choice") || 0) || null;
+            renderCreateForm();
+        });
+        createParentClearButton.addEventListener("click", () => {
+            state.createDraft.parentId = null;
+            renderCreateForm();
+        });
         createClearButton.addEventListener("click", () => {
             resetCreateDraft();
             renderCreateForm();
         });
         createSubmitButton.addEventListener("click", submitCreateRecord);
-        createHeadInput.addEventListener("keydown", (event) => {
-            if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
-                event.preventDefault();
-                submitCreateRecord();
-            }
-        });
         createBodyInput.addEventListener("keydown", (event) => {
             if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
                 event.preventDefault();
                 submitCreateRecord();
             }
         });
+        recordHeadInput.addEventListener("input", () => {
+            state.recordDraft.head = String(recordHeadInput.value || "");
+            state.recordDraftDirty = true;
+            state.recordDeleteArmed = false;
+            renderRecordEditor(state.nodes.find((item) => item.id === state.selectedId) || null);
+        });
+        recordHeadInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                saveSelectedRecord();
+            }
+        });
+        recordBodyInput.addEventListener("input", () => {
+            state.recordDraft.body = String(recordBodyInput.value || "");
+            state.recordDraftDirty = true;
+            state.recordDeleteArmed = false;
+        });
+        recordBodyInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+                event.preventDefault();
+                saveSelectedRecord();
+            }
+        });
+        recordQuantityInput.addEventListener("input", () => {
+            state.recordDraft.quantity = String(recordQuantityInput.value || "0");
+            state.recordDraftDirty = true;
+            state.recordDeleteArmed = false;
+        });
+        recordCategoryInput.addEventListener("input", () => {
+            state.recordCategoryInput = String(recordCategoryInput.value || "");
+            state.recordDeleteArmed = false;
+        });
+        recordCategoryInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                addRecordCategoryFromInput();
+            }
+        });
+        recordCategoryAddButton.addEventListener("click", addRecordCategoryFromInput);
+        recordCategoryList.addEventListener("click", (event) => {
+            const button = event.target?.closest?.("[data-record-category-remove]");
+            if (!button) {
+                return;
+            }
+            removeRecordCategory(button.getAttribute("data-record-category-remove"));
+        });
+        recordCategoryChoiceList.addEventListener("change", updateRecordCategoriesFromControls);
+        recordSaveButton.addEventListener("click", saveSelectedRecord);
+        recordDeleteButton.addEventListener("click", deleteSelectedRecord);
         categoryFilterList.addEventListener("change", updateCategoryStateFromControls);
         categoryAddButton?.addEventListener("click", addCategoryFromInput);
         categoryInput?.addEventListener("keydown", (event) => {
@@ -1788,11 +2389,19 @@ pub(super) fn script() -> String {
         connectParentButton.addEventListener("click", connectParent);
         disconnectParentButton.addEventListener("click", disconnectParent);
         panelToggleButton.addEventListener("click", () => {
-            state.panelOpen = !state.panelOpen;
+            state.activePanel = state.activePanel === "controls" ? null : "controls";
             renderPanel();
         });
         panelCloseButton.addEventListener("click", () => {
-            state.panelOpen = false;
+            if (state.activePanel === "controls") {
+                state.activePanel = null;
+            }
+            renderPanel();
+        });
+        createCloseButton.addEventListener("click", () => {
+            if (state.activePanel === "create") {
+                state.activePanel = null;
+            }
             renderPanel();
         });
         zoomInButton.addEventListener("click", () => {
@@ -1813,6 +2422,7 @@ pub(super) fn script() -> String {
                 state.physics[key] = Number(input.value);
                 applyPhysicsToUi();
                 applySimulationForces();
+                persistPhysicsSoon();
                 nudgeSimulation(0.08);
                 requestDraw();
             });
@@ -1845,7 +2455,7 @@ pub(super) fn script() -> String {
         renderStatus("Booting", "status", "Waiting for the widget stream.");
         bindEvents();
         syncFromBridge();
-        bridge?.subscribe?.(() => syncFromBridge());
+        bridge?.subscribe?.((detail) => syncFromBridge(detail));
         bridge?.requestState?.();
         renderCreateForm();
         renderPhysicsControls();

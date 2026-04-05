@@ -23,3 +23,4 @@ The documentation contains information about current implementations but also id
 # Sand widgets
 
 When constructing a sand widget that vendors code or assets with a license that requires a copy of the license, keep the required license and credit files alongside the sand package and bundle them with the widget assets. Do not ship the vendored asset alone if its license expects the notice to travel with it.
+When constructing or substantially refactoring a sand widget, split large `body` and `script` implementations into their own directories with multiple focused files instead of letting a single monolithic file keep growing. Apply that structure to new sands and to sands you are already touching when the work is large enough to justify it.

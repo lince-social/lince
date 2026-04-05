@@ -23,6 +23,7 @@ pub(crate) fn package() -> crate::domain::lince_package::LincePackage {
         permissions: vec![
             "bridge_state".into(),
             "read_view_stream".into(),
+            "write_records".into(),
             "write_table".into(),
         ],
     };
@@ -90,6 +91,7 @@ fn source() -> SandWidgetSource {
             permissions: vec![
                 "bridge_state".into(),
                 "read_view_stream".into(),
+                "write_records".into(),
                 "write_table".into(),
             ],
         },

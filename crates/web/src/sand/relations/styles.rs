@@ -241,18 +241,31 @@ button, input, select {
     min-width: 0;
     min-height: 0;
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: minmax(240px, 0.92fr) minmax(320px, 1.08fr);
     gap: 10px;
+    align-content: stretch;
 }
 
 .editorPanel {
     display: grid;
     gap: 14px;
+    min-height: 0;
     overflow: auto;
 }
 
 .detailPanel {
+    order: -1;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 14px;
+    min-height: 0;
     overflow: auto;
+}
+
+#selection-content {
+    display: grid;
+    gap: 12px;
+    align-content: start;
 }
 
 .section {
@@ -381,6 +394,10 @@ button, input, select {
 
     .layout {
         grid-template-columns: minmax(0, 1fr);
+    }
+
+    .sidebar {
+        grid-template-rows: minmax(240px, auto) minmax(320px, auto);
     }
 }
 "#;

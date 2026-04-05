@@ -141,14 +141,14 @@ pub(super) fn body() -> Markup {
                         div class="sectionHead" {
                             div {
                                 div class="eyebrow" { "selection" }
-                                h2 class="panelTitle" { "Node" }
+                                h2 class="panelTitle" { "Parent Link" }
                             }
                             span id="selection-pill" class="pill" { "None" }
                         }
 
                         div id="selection-empty" class="selectionEmpty" {
                             p class="mutedCopy" {
-                                "Click a node to inspect it, then use the parent picker to connect or disconnect."
+                                "Select a node. Set parent replaces only its parent link. Remove parent clears only that parent link and keeps its children untouched."
                             }
                         }
 
@@ -159,8 +159,8 @@ pub(super) fn body() -> Markup {
                             select id="parent-select" class="select" {}
 
                             div class="actionRow actionRow--split" {
-                                button id="connect-parent" class="button button--primary" type="button" { "Connect" }
-                                button id="disconnect-parent" class="button button--ghost" type="button" { "Disconnect" }
+                                button id="connect-parent" class="button button--primary" type="button" { "Set parent" }
+                                button id="disconnect-parent" class="button button--ghost" type="button" { "Remove parent" }
                             }
 
                             div class="section" {

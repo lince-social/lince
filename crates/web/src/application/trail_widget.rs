@@ -308,6 +308,13 @@ impl TrailWidgetService {
         let view_id = self
             .ensure_derived_view(session_token, &resolved, request.trail_root_record_id)
             .await?;
+        self.persist_runtime_state(
+            &resolved.card.id,
+            &resolved.organ.id,
+            request.trail_root_record_id,
+            view_id,
+        )
+        .await?;
         let sync = self
             .load_trail_sync_metadata(
                 session_token,
@@ -421,6 +428,8 @@ impl TrailWidgetService {
         .await?;
         let view_id = self
             .ensure_derived_view(session_token, &resolved, copied_root_id)
+            .await?;
+        self.persist_runtime_state(&resolved.card.id, &resolved.organ.id, copied_root_id, view_id)
             .await?;
         let initialization = self
             .initialize_trail_progression(

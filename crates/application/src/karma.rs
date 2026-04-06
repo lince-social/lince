@@ -74,6 +74,10 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
                     error.kind(),
                     format!("sync consequence error on karma id {}: {}", karma.id, error),
                 ));
+                return Err(Error::new(
+                    error.kind(),
+                    format!("sync consequence error on karma id {}: {}", karma.id, error),
+                ));
             }
             continue;
         }
@@ -334,7 +338,8 @@ async fn execute_sync_consequence(
     services: InjectedServices,
     token: &SyncToken,
 ) -> Result<(), Error> {
-    let context = load_sync_context(&services, token.record_id).await?;
+    let mut context = load_sync_context(&services, token.record_id).await?;
+    let source_root_record_id = context.source_root_record_id;
     let root_categories = context
         .categories_by_record
         .get(&context.trail_root_record_id)
@@ -349,9 +354,9 @@ async fn execute_sync_consequence(
     if token.scope.includes_node() {
         sync_existing_record_fields(
             services.clone(),
-            &context,
+            &mut context,
             token.record_id,
-            context.source_root_record_id,
+            source_root_record_id,
             token.fields,
         )
         .await?;
@@ -360,9 +365,9 @@ async fn execute_sync_consequence(
     if token.scope.includes_tree() {
         sync_descendants(
             services,
-            &context,
+            &mut context,
             token.record_id,
-            context.source_root_record_id,
+            source_root_record_id,
             token.fields,
             &root_categories,
             &root_assignees,
@@ -447,7 +452,7 @@ async fn load_sync_context(
 
 async fn sync_existing_record_fields(
     services: InjectedServices,
-    context: &SyncContext,
+    context: &mut SyncContext,
     copied_record_id: i64,
     source_record_id: i64,
     fields: SyncFields,
@@ -455,11 +460,13 @@ async fn sync_existing_record_fields(
     let source = context
         .records_by_id
         .get(&source_record_id)
-        .ok_or_else(|| Error::new(ErrorKind::NotFound, "Missing source record for sync"))?;
+        .ok_or_else(|| Error::new(ErrorKind::NotFound, "Missing source record for sync"))?
+        .clone();
     let copy = context
         .records_by_id
         .get(&copied_record_id)
-        .ok_or_else(|| Error::new(ErrorKind::NotFound, "Missing copied record for sync"))?;
+        .ok_or_else(|| Error::new(ErrorKind::NotFound, "Missing copied record for sync"))?
+        .clone();
 
     let mut assignments = Vec::new();
     let mut params = Vec::new();
@@ -493,13 +500,24 @@ async fn sync_existing_record_fields(
         format!("UPDATE record SET {} WHERE id = ?", assignments.join(", ")),
         params,
     )
-    .await
-    .map(|_| ())
+    .await?;
+    if let Some(copy_row) = context.records_by_id.get_mut(&copied_record_id) {
+        if fields.quantity {
+            copy_row.quantity = source.quantity;
+        }
+        if fields.head {
+            copy_row.head = source.head.clone();
+        }
+        if fields.body {
+            copy_row.body = source.body.clone();
+        }
+    }
+    Ok(())
 }
 
 async fn sync_descendants(
     services: InjectedServices,
-    context: &SyncContext,
+    context: &mut SyncContext,
     copied_root_id: i64,
     source_root_id: i64,
     fields: SyncFields,
@@ -532,14 +550,16 @@ async fn sync_descendants(
                 .await?;
                 sync_categories(
                     services.clone(),
-                    &context.all_extensions,
+                    &mut context.all_extensions,
+                    &mut context.categories_by_record,
                     existing_id,
                     root_categories,
                 )
                 .await?;
                 sync_assignees(
                     services.clone(),
-                    &context.all_links,
+                    &mut context.all_links,
+                    &mut context.assignees_by_record,
                     existing_id,
                     root_assignees,
                 )
@@ -580,7 +600,7 @@ async fn sync_descendants(
 
 async fn create_copied_record(
     services: InjectedServices,
-    context: &SyncContext,
+    context: &mut SyncContext,
     source_record_id: i64,
     trail_root_record_id: i64,
     fields: SyncFields,
@@ -590,7 +610,8 @@ async fn create_copied_record(
     let source = context
         .records_by_id
         .get(&source_record_id)
-        .ok_or_else(|| Error::new(ErrorKind::NotFound, "Missing source record for copied node"))?;
+        .ok_or_else(|| Error::new(ErrorKind::NotFound, "Missing source record for copied node"))?
+        .clone();
     let quantity = if fields.quantity {
         source.quantity
     } else {
@@ -618,10 +639,19 @@ async fn create_copied_record(
             "Insert into record did not return last_insert_rowid",
         )
     })?;
+    context.records_by_id.insert(
+        copied_record_id,
+        SqlRecordRow {
+            id: copied_record_id,
+            quantity,
+            head: source.head.clone(),
+            body: source.body.clone(),
+        },
+    );
 
     upsert_extension(
         services.clone(),
-        &context.all_extensions,
+        &mut context.all_extensions,
         copied_record_id,
         "trail.sync",
         &json!({
@@ -631,14 +661,31 @@ async fn create_copied_record(
         .to_string(),
     )
     .await?;
-    sync_categories(services.clone(), &context.all_extensions, copied_record_id, root_categories).await?;
-    sync_assignees(services, &context.all_links, copied_record_id, root_assignees).await?;
+    context
+        .copies_by_source_id
+        .insert(source_record_id, copied_record_id);
+    sync_categories(
+        services.clone(),
+        &mut context.all_extensions,
+        &mut context.categories_by_record,
+        copied_record_id,
+        root_categories,
+    )
+    .await?;
+    sync_assignees(
+        services,
+        &mut context.all_links,
+        &mut context.assignees_by_record,
+        copied_record_id,
+        root_assignees,
+    )
+    .await?;
     Ok(copied_record_id)
 }
 
 async fn ensure_parent_link(
     services: InjectedServices,
-    context: &SyncContext,
+    context: &mut SyncContext,
     child_id: i64,
     parent_id: i64,
 ) -> Result<(), Error> {
@@ -651,25 +698,45 @@ async fn ensure_parent_link(
     if exists {
         return Ok(());
     }
-    execute_statement(
+    let inserted = execute_statement(
         services,
         "INSERT INTO record_link(record_id, link_type, target_table, target_id, position, freestyle_data_structure) VALUES (?, 'parent', 'record', ?, NULL, NULL)",
         vec![SqlParameter::Integer(child_id), SqlParameter::Integer(parent_id)],
     )
-    .await
-    .map(|_| ())
+    .await?;
+    let row = SqlRecordLinkRow {
+        id: inserted.last_insert_rowid.ok_or_else(|| {
+            Error::new(
+                ErrorKind::InvalidData,
+                "Insert into record_link did not return last_insert_rowid",
+            )
+        })?,
+        record_id: child_id,
+        link_type: "parent".into(),
+        target_table: "record".into(),
+        target_id: parent_id,
+    };
+    context.parent_links.push(row.clone());
+    context.all_links.push(row);
+    Ok(())
 }
 
 async fn repair_parent_links(
     services: InjectedServices,
-    context: &SyncContext,
+    context: &mut SyncContext,
     current_copy_id: i64,
     expected_copy_children: &BTreeSet<i64>,
     trail_root_record_id: i64,
 ) -> Result<(), Error> {
-    for link in context.all_links.iter().filter(|row| {
+    let candidate_links = context
+        .all_links
+        .iter()
+        .filter(|row| {
         row.link_type == "parent" && row.target_table == "record" && row.target_id == current_copy_id
-    }) {
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+    for link in candidate_links {
         let belongs_to_same_trail = context
             .all_extensions
             .iter()
@@ -683,6 +750,8 @@ async fn repair_parent_links(
                 vec![SqlParameter::Integer(link.id)],
             )
             .await?;
+            context.all_links.retain(|row| row.id != link.id);
+            context.parent_links.retain(|row| row.id != link.id);
         }
     }
     Ok(())
@@ -690,7 +759,7 @@ async fn repair_parent_links(
 
 async fn upsert_extension(
     services: InjectedServices,
-    extensions: &[SqlRecordExtensionRow],
+    extensions: &mut Vec<SqlRecordExtensionRow>,
     record_id: i64,
     namespace: &str,
     freestyle_data_structure: &str,
@@ -708,9 +777,16 @@ async fn upsert_extension(
             ],
         )
         .await
-        .map(|_| ())
+        .map(|_| {
+            if let Some(row) = extensions
+                .iter_mut()
+                .find(|row| row.record_id == record_id && row.namespace == namespace)
+            {
+                row.freestyle_data_structure = freestyle_data_structure.to_string();
+            }
+        })
     } else {
-        execute_statement(
+        let inserted = execute_statement(
             services,
             "INSERT INTO record_extension(record_id, namespace, version, freestyle_data_structure) VALUES (?, ?, 1, ?)",
             vec![
@@ -719,14 +795,26 @@ async fn upsert_extension(
                 SqlParameter::Text(freestyle_data_structure.to_string()),
             ],
         )
-        .await
-        .map(|_| ())
+        .await?;
+        extensions.push(SqlRecordExtensionRow {
+            id: inserted.last_insert_rowid.ok_or_else(|| {
+                Error::new(
+                    ErrorKind::InvalidData,
+                    "Insert into record_extension did not return last_insert_rowid",
+                )
+            })?,
+            record_id,
+            namespace: namespace.to_string(),
+            freestyle_data_structure: freestyle_data_structure.to_string(),
+        });
+        Ok(())
     }
 }
 
 async fn sync_categories(
     services: InjectedServices,
-    extensions: &[SqlRecordExtensionRow],
+    extensions: &mut Vec<SqlRecordExtensionRow>,
+    categories_by_record: &mut BTreeMap<i64, Vec<String>>,
     record_id: i64,
     categories: &[String],
 ) -> Result<(), Error> {
@@ -741,12 +829,15 @@ async fn sync_categories(
         "task.categories",
         &json!({ "categories": normalized }).to_string(),
     )
-    .await
+    .await?;
+    categories_by_record.insert(record_id, normalized);
+    Ok(())
 }
 
 async fn sync_assignees(
     services: InjectedServices,
-    links: &[SqlRecordLinkRow],
+    links: &mut Vec<SqlRecordLinkRow>,
+    assignees_by_record: &mut BTreeMap<i64, Vec<i64>>,
     record_id: i64,
     assignee_ids: &[i64],
 ) -> Result<(), Error> {
@@ -762,7 +853,9 @@ async fn sync_assignees(
                 && row.link_type == "assigned_to"
                 && row.target_table == "app_user"
         })
+        .cloned()
         .collect::<Vec<_>>();
+    let existing_ids = existing.iter().map(|row| row.target_id).collect::<BTreeSet<_>>();
     for row in &existing {
         if !desired.contains(&row.target_id) {
             execute_statement(
@@ -771,13 +864,14 @@ async fn sync_assignees(
                 vec![SqlParameter::Integer(row.id)],
             )
             .await?;
+            links.retain(|candidate| candidate.id != row.id);
         }
     }
     for assignee_id in desired {
-        if existing.iter().any(|row| row.target_id == assignee_id) {
+        if existing_ids.contains(&assignee_id) {
             continue;
         }
-        execute_statement(
+        let inserted = execute_statement(
             services.clone(),
             "INSERT INTO record_link(record_id, link_type, target_table, target_id, position, freestyle_data_structure) VALUES (?, 'assigned_to', 'app_user', ?, NULL, NULL)",
             vec![
@@ -786,7 +880,31 @@ async fn sync_assignees(
             ],
         )
         .await?;
+        links.push(SqlRecordLinkRow {
+            id: inserted.last_insert_rowid.ok_or_else(|| {
+                Error::new(
+                    ErrorKind::InvalidData,
+                    "Insert into record_link did not return last_insert_rowid",
+                )
+            })?,
+            record_id,
+            link_type: "assigned_to".into(),
+            target_table: "app_user".into(),
+            target_id: assignee_id,
+        });
     }
+    assignees_by_record.insert(
+        record_id,
+        links
+            .iter()
+            .filter(|row| {
+                row.record_id == record_id
+                    && row.link_type == "assigned_to"
+                    && row.target_table == "app_user"
+            })
+            .map(|row| row.target_id)
+            .collect(),
+    );
     Ok(())
 }
 

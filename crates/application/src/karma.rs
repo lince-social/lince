@@ -330,7 +330,9 @@ struct SqlRecordExtensionRow {
 
 #[derive(Debug, Clone, Deserialize)]
 struct TrailSyncExtension {
+    #[serde(alias = "trailRootRecordId")]
     trail_root_record_id: i64,
+    #[serde(alias = "syncSourceRecordId")]
     sync_source_record_id: i64,
 }
 

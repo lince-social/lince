@@ -1060,9 +1060,7 @@ impl TrailWidgetService {
             resolved.bearer_token.as_deref(),
             copied_root_id,
             "trail.sync",
-            Some(serde_json::to_value(&sync).map_err(|error| {
-                TrailWidgetError::Internal(format!("Nao consegui serializar trail.sync: {error}"))
-            })?),
+            Some(build_trail_sync_extension_value(&sync)),
         )
         .await?;
         Ok(sync)
@@ -1848,14 +1846,21 @@ struct SetTrailQuantityRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TrailSyncMetadata {
+    #[serde(alias = "trail_root_record_id")]
     pub trail_root_record_id: i64,
+    #[serde(alias = "sync_source_record_id")]
     pub sync_source_record_id: i64,
     pub scope: String,
     pub fields: String,
+    #[serde(alias = "sync_karma_id")]
     pub sync_karma_id: Option<i64>,
+    #[serde(alias = "sync_condition_id")]
     pub sync_condition_id: Option<i64>,
+    #[serde(alias = "sync_consequence_id")]
     pub sync_consequence_id: Option<i64>,
+    #[serde(alias = "condition_token")]
     pub condition_token: Option<String>,
+    #[serde(alias = "consequence_token")]
     pub consequence_token: Option<String>,
     pub operator: Option<String>,
 }
@@ -2006,6 +2011,21 @@ fn build_sr_token(scope: &str, fields: &str, record_id: i64) -> String {
     } else {
         format!("sr{scope}{fields}{record_id}")
     }
+}
+
+fn build_trail_sync_extension_value(sync: &TrailSyncMetadata) -> Value {
+    json!({
+        "trail_root_record_id": sync.trail_root_record_id,
+        "sync_source_record_id": sync.sync_source_record_id,
+        "scope": sync.scope,
+        "fields": sync.fields,
+        "sync_karma_id": sync.sync_karma_id,
+        "sync_condition_id": sync.sync_condition_id,
+        "sync_consequence_id": sync.sync_consequence_id,
+        "condition_token": sync.condition_token,
+        "consequence_token": sync.consequence_token,
+        "operator": sync.operator,
+    })
 }
 
 fn normalize_scope(scope: &str) -> String {
@@ -2160,8 +2180,18 @@ fn build_trail_view_query(trail_root_record_id: i64) -> String {
         sync_meta AS (
             SELECT
                 re.record_id,
-                CAST(json_extract(re.freestyle_data_structure, '$.sync_source_record_id') AS INTEGER) AS sync_source_record_id,
-                CAST(json_extract(re.freestyle_data_structure, '$.trail_root_record_id') AS INTEGER) AS trail_root_record_id
+                CAST(
+                    COALESCE(
+                        json_extract(re.freestyle_data_structure, '$.sync_source_record_id'),
+                        json_extract(re.freestyle_data_structure, '$.syncSourceRecordId')
+                    ) AS INTEGER
+                ) AS sync_source_record_id,
+                CAST(
+                    COALESCE(
+                        json_extract(re.freestyle_data_structure, '$.trail_root_record_id'),
+                        json_extract(re.freestyle_data_structure, '$.trailRootRecordId')
+                    ) AS INTEGER
+                ) AS trail_root_record_id
             FROM record_extension re
             WHERE re.namespace = 'trail.sync'
         )

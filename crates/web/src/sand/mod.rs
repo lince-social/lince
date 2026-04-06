@@ -22,6 +22,8 @@ mod shared_markdown;
 mod spotify_control;
 mod tasklist;
 mod tasks_table;
+#[path = "trail_relation/mod.rs"]
+mod trail_relation;
 mod view_table_editor;
 mod weather;
 
@@ -94,7 +96,7 @@ impl OfficialWidgetBuilder {
     }
 }
 
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 21] = [
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 22] = [
     OfficialWidgetBuilder::Html {
         feature_flag: bucket_image_view::FEATURE_FLAG,
         source_builder: bucket_image_view::source,
@@ -126,6 +128,10 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 21] = [
     OfficialWidgetBuilder::Package {
         feature_flag: relations::FEATURE_FLAG,
         package_builder: relations::package,
+    },
+    OfficialWidgetBuilder::Html {
+        feature_flag: trail_relation::FEATURE_FLAG,
+        source_builder: trail_relation::source,
     },
     OfficialWidgetBuilder::Html {
         feature_flag: lince_logo_led::FEATURE_FLAG,

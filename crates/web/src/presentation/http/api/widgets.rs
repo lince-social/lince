@@ -9,14 +9,18 @@ use {
                 UpdateParentRelationRequest, UpdateRecordBodyRequest, UpdateRecordRequest,
             },
             kanban_filters::{KanbanFilterError, RawKanbanFilterRow, UpdateKanbanSettingsRequest},
+            kanban_identity::is_supported_graph_widget_filename,
             kanban_render::{
                 KanbanRenderError, render_error_payload, render_mismatch_payload,
                 render_sync_payload,
             },
             kanban_streams::{KanbanStreamError, PreparedKanbanStream},
+            trail_identity::is_supported_trail_package_filename,
+            trail_widget::{PreparedTrailStream, TrailBindingPayload, TrailWidgetError},
             state::AppState,
             widget_runtime::WidgetRuntimeError,
         },
+        domain::board::BoardState,
         infrastructure::auth::{parse_cookie_header, session_cookie_name},
         presentation::http::api_error::{ApiResult, api_error},
     },
@@ -39,7 +43,7 @@ pub async fn get_widget_contract(
     State(state): State<AppState>,
     headers: HeaderMap,
     Path(instance_id): Path<String>,
-) -> ApiResult<Json<crate::application::widget_runtime::KanbanWidgetContract>> {
+) -> ApiResult<Json<Value>> {
     let session_token = parse_cookie_header(
         headers
             .get(header::COOKIE)
@@ -47,19 +51,34 @@ pub async fn get_widget_contract(
         session_cookie_name(),
     );
 
-    let mut contract = state
-        .widget_runtime
-        .kanban_contract(session_token.as_deref(), &instance_id)
-        .await
-        .map_err(map_widget_runtime_error)?;
-    let form_options = state
-        .kanban_actions
-        .load_form_options(session_token.as_deref(), &instance_id)
-        .await
-        .map_err(map_kanban_action_error)?;
-    contract.form_options = Some(form_options);
-
-    Ok(Json(contract))
+    match widget_kind(&state.board_state.snapshot().await, &instance_id)? {
+        WidgetKind::Kanban => {
+            let mut contract = state
+                .widget_runtime
+                .kanban_contract(session_token.as_deref(), &instance_id)
+                .await
+                .map_err(map_widget_runtime_error)?;
+            let form_options = state
+                .kanban_actions
+                .load_form_options(session_token.as_deref(), &instance_id)
+                .await
+                .map_err(map_kanban_action_error)?;
+            contract.form_options = Some(form_options);
+            Ok(Json(serde_json::to_value(contract).map_err(|error| {
+                api_error(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Falha ao serializar o contract do widget: {error}"),
+                )
+            })?))
+        }
+        WidgetKind::Trail => Ok(Json(
+            state
+                .trail_widget
+                .contract(session_token.as_deref(), &instance_id)
+                .await
+                .map_err(map_trail_widget_error)?,
+        )),
+    }
 }
 
 pub async fn get_widget_stream(
@@ -74,95 +93,21 @@ pub async fn get_widget_stream(
         session_cookie_name(),
     );
 
-    let prepared = state
-        .kanban_streams
-        .prepare_stream(session_token.as_deref(), &instance_id)
-        .await
-        .map_err(map_kanban_stream_error)?;
-
-    let response = match prepared {
-        PreparedKanbanStream::Local {
-            mut handle,
-            settings,
-        } => {
-            let stream = stream! {
-                while let Some(frame) = handle.rx.recv().await {
-                    let (event_name, data) = match frame {
-                        ::application::subscription::SseFrame::Snapshot { payload } => {
-                            ("snapshot", payload)
-                        }
-                        ::application::subscription::SseFrame::Error { payload } => {
-                            ("error", payload)
-                        }
-                    };
-
-                    for event in render_widget_stream_events(
-                        event_name,
-                        &data,
-                        settings.show_parent_context,
-                    ) {
-                        yield Ok::<_, Infallible>(event);
-                    }
-                }
-            };
-            Sse::new(stream)
-                .keep_alive(
-                    KeepAlive::new()
-                        .interval(Duration::from_secs(15))
-                        .text("heartbeat"),
-                )
-                .into_response()
-        }
-        PreparedKanbanStream::Remote { response, settings } => {
-            let stream = stream! {
-                let mut response = response;
-                let mut parser = SseEventParser::default();
-                loop {
-                    match response.chunk().await {
-                        Ok(Some(chunk)) => {
-                            for event in parser.push_chunk(&chunk) {
-                                for rendered in render_widget_stream_events(
-                                    &event.event_name,
-                                    &event.data,
-                                    settings.show_parent_context,
-                                ) {
-                                    yield Ok::<_, Infallible>(rendered);
-                                }
-                            }
-                        }
-                        Ok(None) => {
-                            for event in parser.finish() {
-                                for rendered in render_widget_stream_events(
-                                    &event.event_name,
-                                    &event.data,
-                                    settings.show_parent_context,
-                                ) {
-                                    yield Ok::<_, Infallible>(rendered);
-                                }
-                            }
-                            break;
-                        }
-                        Err(error) => {
-                            for event in render_widget_stream_events(
-                                "error",
-                                &json!({ "error": format!("Nao foi possivel ler o stream remoto da view: {error}") }).to_string(),
-                                settings.show_parent_context,
-                            ) {
-                                yield Ok::<_, Infallible>(event);
-                            }
-                            break;
-                        }
-                    }
-                }
-            };
-            Sse::new(stream)
-                .keep_alive(
-                    KeepAlive::new()
-                        .interval(Duration::from_secs(15))
-                        .text("heartbeat"),
-                )
-                .into_response()
-        }
+    let response = match widget_kind(&state.board_state.snapshot().await, &instance_id)? {
+        WidgetKind::Kanban => render_kanban_stream(
+            state
+                .kanban_streams
+                .prepare_stream(session_token.as_deref(), &instance_id)
+                .await
+                .map_err(map_kanban_stream_error)?,
+        ),
+        WidgetKind::Trail => render_trail_stream(
+            state
+                .trail_widget
+                .prepare_stream(session_token.as_deref(), &instance_id)
+                .await
+                .map_err(map_trail_widget_error)?,
+        ),
     };
 
     Ok(response)
@@ -187,6 +132,18 @@ pub async fn post_widget_action(
             .and_then(|value| value.to_str().ok()),
         session_cookie_name(),
     );
+    match widget_kind(&state.board_state.snapshot().await, &instance_id)? {
+        WidgetKind::Trail => {
+            let outcome = state
+                .trail_widget
+                .action(session_token.as_deref(), &instance_id, &action, payload)
+                .await
+                .map_err(map_trail_widget_error)?;
+            return Ok(Json(outcome));
+        }
+        WidgetKind::Kanban => {}
+    }
+
     match action.as_str() {
         "apply-filters" => {
             let payload: WidgetActionRequest =
@@ -558,6 +515,55 @@ fn map_kanban_action_error(
     }
 }
 
+fn map_trail_widget_error(
+    error: TrailWidgetError,
+) -> (
+    StatusCode,
+    Json<crate::presentation::http::api_error::ApiError>,
+) {
+    match error {
+        TrailWidgetError::NotFound(message) => api_error(StatusCode::NOT_FOUND, message),
+        TrailWidgetError::Misconfigured(message)
+        | TrailWidgetError::Disabled(message)
+        | TrailWidgetError::Invalid(message) => {
+            api_error(StatusCode::UNPROCESSABLE_ENTITY, message)
+        }
+        TrailWidgetError::Unauthorized(message) => api_error(StatusCode::UNAUTHORIZED, message),
+        TrailWidgetError::Forbidden(message) => api_error(StatusCode::FORBIDDEN, message),
+        TrailWidgetError::BadGateway(message) => api_error(StatusCode::BAD_GATEWAY, message),
+        TrailWidgetError::Internal(message) => {
+            api_error(StatusCode::INTERNAL_SERVER_ERROR, message)
+        }
+    }
+}
+
+enum WidgetKind {
+    Kanban,
+    Trail,
+}
+
+fn widget_kind(
+    board_state: &BoardState,
+    instance_id: &str,
+) -> ApiResult<WidgetKind> {
+    let card = board_state
+        .workspaces
+        .iter()
+        .flat_map(|workspace| workspace.cards.iter())
+        .find(|card| card.id == instance_id)
+        .ok_or_else(|| api_error(StatusCode::NOT_FOUND, "Nao encontrei esse widget no board."))?;
+    if is_supported_graph_widget_filename(&card.package_name) {
+        Ok(WidgetKind::Kanban)
+    } else if is_supported_trail_package_filename(&card.package_name) {
+        Ok(WidgetKind::Trail)
+    } else {
+        Err(api_error(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "Esse widget nao usa um package oficial suportado.",
+        ))
+    }
+}
+
 impl crate::application::kanban_actions::KanbanActionOutcome {
     fn into_json_value(self) -> Value {
         serde_json::json!({
@@ -638,6 +644,213 @@ fn parse_sse_frame(frame: &str) -> Option<DecodedSseEvent> {
             .unwrap_or_else(|| "message".into()),
         data: data_lines.join("\n"),
     })
+}
+
+fn render_kanban_stream(prepared: PreparedKanbanStream) -> Response {
+    match prepared {
+        PreparedKanbanStream::Local {
+            mut handle,
+            settings,
+        } => {
+            let stream = stream! {
+                while let Some(frame) = handle.rx.recv().await {
+                    let (event_name, data) = match frame {
+                        ::application::subscription::SseFrame::Snapshot { payload } => {
+                            ("snapshot", payload)
+                        }
+                        ::application::subscription::SseFrame::Error { payload } => {
+                            ("error", payload)
+                        }
+                    };
+
+                    for event in render_widget_stream_events(
+                        event_name,
+                        &data,
+                        settings.show_parent_context,
+                    ) {
+                        yield Ok::<_, Infallible>(event);
+                    }
+                }
+            };
+            Sse::new(stream)
+                .keep_alive(
+                    KeepAlive::new()
+                        .interval(Duration::from_secs(15))
+                        .text("heartbeat"),
+                )
+                .into_response()
+        }
+        PreparedKanbanStream::Remote { response, settings } => {
+            let stream = stream! {
+                let mut response = response;
+                let mut parser = SseEventParser::default();
+                loop {
+                    match response.chunk().await {
+                        Ok(Some(chunk)) => {
+                            for event in parser.push_chunk(&chunk) {
+                                for rendered in render_widget_stream_events(
+                                    &event.event_name,
+                                    &event.data,
+                                    settings.show_parent_context,
+                                ) {
+                                    yield Ok::<_, Infallible>(rendered);
+                                }
+                            }
+                        }
+                        Ok(None) => {
+                            for event in parser.finish() {
+                                for rendered in render_widget_stream_events(
+                                    &event.event_name,
+                                    &event.data,
+                                    settings.show_parent_context,
+                                ) {
+                                    yield Ok::<_, Infallible>(rendered);
+                                }
+                            }
+                            break;
+                        }
+                        Err(error) => {
+                            for event in render_widget_stream_events(
+                                "error",
+                                &json!({ "error": format!("Nao foi possivel ler o stream remoto da view: {error}") }).to_string(),
+                                settings.show_parent_context,
+                            ) {
+                                yield Ok::<_, Infallible>(event);
+                            }
+                            break;
+                        }
+                    }
+                }
+            };
+            Sse::new(stream)
+                .keep_alive(
+                    KeepAlive::new()
+                        .interval(Duration::from_secs(15))
+                        .text("heartbeat"),
+                )
+                .into_response()
+        }
+    }
+}
+
+fn render_trail_stream(prepared: PreparedTrailStream) -> Response {
+    match prepared {
+        PreparedTrailStream::Local { mut handle, binding } => {
+            let stream = stream! {
+                while let Some(frame) = handle.rx.recv().await {
+                    let (event_name, data) = match frame {
+                        ::application::subscription::SseFrame::Snapshot { payload } => {
+                            ("snapshot", payload)
+                        }
+                        ::application::subscription::SseFrame::Error { payload } => {
+                            ("error", payload)
+                        }
+                    };
+                    for event in render_trail_stream_events(event_name, &data, &binding) {
+                        yield Ok::<_, Infallible>(event);
+                    }
+                }
+            };
+            Sse::new(stream)
+                .keep_alive(
+                    KeepAlive::new()
+                        .interval(Duration::from_secs(15))
+                        .text("heartbeat"),
+                )
+                .into_response()
+        }
+        PreparedTrailStream::Remote { response, binding } => {
+            let stream = stream! {
+                let mut response = response;
+                let mut parser = SseEventParser::default();
+                loop {
+                    match response.chunk().await {
+                        Ok(Some(chunk)) => {
+                            for event in parser.push_chunk(&chunk) {
+                                for rendered in render_trail_stream_events(
+                                    &event.event_name,
+                                    &event.data,
+                                    &binding,
+                                ) {
+                                    yield Ok::<_, Infallible>(rendered);
+                                }
+                            }
+                        }
+                        Ok(None) => {
+                            for event in parser.finish() {
+                                for rendered in render_trail_stream_events(
+                                    &event.event_name,
+                                    &event.data,
+                                    &binding,
+                                ) {
+                                    yield Ok::<_, Infallible>(rendered);
+                                }
+                            }
+                            break;
+                        }
+                        Err(error) => {
+                            for event in render_trail_stream_events(
+                                "error",
+                                &json!({ "error": format!("Nao foi possivel ler o stream remoto da trail view: {error}") }).to_string(),
+                                &binding,
+                            ) {
+                                yield Ok::<_, Infallible>(event);
+                            }
+                            break;
+                        }
+                    }
+                }
+            };
+            Sse::new(stream)
+                .keep_alive(
+                    KeepAlive::new()
+                        .interval(Duration::from_secs(15))
+                        .text("heartbeat"),
+                )
+                .into_response()
+        }
+    }
+}
+
+fn render_trail_stream_events(
+    event_name: &str,
+    data: &str,
+    binding: &TrailBindingPayload,
+) -> Vec<Event> {
+    let mut events = vec![Event::default().event(event_name).data(data.to_string())];
+    match event_name {
+        "snapshot" => {
+            let payload = serde_json::from_str::<Value>(data).unwrap_or_else(|_| json!({}));
+            events.push(
+                Event::default().event("trail-sync").data(
+                    json!({
+                        "ok": true,
+                        "snapshot": payload,
+                        "binding": binding,
+                    })
+                    .to_string(),
+                ),
+            );
+        }
+        "error" => {
+            let message = serde_json::from_str::<Value>(data)
+                .ok()
+                .and_then(|value| value.get("error").and_then(Value::as_str).map(str::to_string))
+                .unwrap_or_else(|| "The trail stream reported an error.".into());
+            events.push(
+                Event::default().event("trail-error").data(
+                    json!({
+                        "ok": false,
+                        "message": message,
+                        "binding": binding,
+                    })
+                    .to_string(),
+                ),
+            );
+        }
+        _ => {}
+    }
+    events
 }
 
 fn render_widget_stream_events(

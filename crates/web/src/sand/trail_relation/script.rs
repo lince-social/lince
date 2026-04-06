@@ -1024,7 +1024,6 @@ pub(crate) fn script() -> String {
                     updateScopeCopy();
                     renderBinding();
                     renderSelectedOriginal();
-                    return refreshDiscoverResults();
                 })
                 .then(() => {
                     if (state.binding?.trailRootRecordId) {
@@ -1037,6 +1036,9 @@ pub(crate) fn script() -> String {
                         }
                         setStatus("Ready");
                     }
+                    return refreshDiscoverResults().catch((error) => {
+                        console.error(error);
+                    });
                 });
         }
 

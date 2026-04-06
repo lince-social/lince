@@ -13,7 +13,8 @@ use {
         application::{
             ai_builder::AiBuilderState, backend_api::BackendApiService,
             kanban_actions::KanbanActionService, kanban_filters::KanbanFilterService,
-            kanban_streams::KanbanStreamService, state::AppState, widget_runtime::WidgetRuntimeService,
+            kanban_streams::KanbanStreamService, state::AppState,
+            trail_widget::TrailWidgetService, widget_runtime::WidgetRuntimeService,
         },
         infrastructure::{
             auth::AppAuth, board_state_store::BoardStateStore, manas::ManasGateway,
@@ -76,11 +77,19 @@ pub async fn serve(
         kanban_filters: kanban_filters.clone(),
         kanban_streams: KanbanStreamService::new(
             auth.clone(),
-            backend,
+            backend.clone(),
             board_state.clone(),
             kanban_filters,
             local_auth_required,
-            manas,
+            manas.clone(),
+            organs.clone(),
+        ),
+        trail_widget: TrailWidgetService::new(
+            auth.clone(),
+            backend.clone(),
+            board_state.clone(),
+            local_auth_required,
+            manas.clone(),
             organs.clone(),
         ),
         widget_runtime: WidgetRuntimeService::new(auth, board_state, local_auth_required, organs),

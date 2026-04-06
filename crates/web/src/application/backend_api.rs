@@ -1,4 +1,7 @@
-use crate::infrastructure::backend_api_store::{ApiTable, BackendApiStore, validate_file_key};
+use crate::infrastructure::backend_api_store::{
+    ApiTable, BackendApiStore, TableListQuery, validate_file_key,
+};
+use ::application::karma::karma_deliver;
 use ::application::{
     auth::{AuthService, AuthSubject},
     subscription::{SubscriptionHandle, SubscriptionRegistry},
@@ -7,10 +10,12 @@ use ::application::{
 use injection::cross_cutting::InjectedServices;
 use persistence::{
     storage::{DownloadedObject, StorageList},
-    write_coordinator::WriteOutcome,
+    write_coordinator::{SqlParameter, WriteOutcome},
 };
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::{
+    collections::{BTreeMap, BTreeSet, VecDeque},
     io::{Error, ErrorKind},
     sync::Arc,
     time::Duration,
@@ -35,6 +40,27 @@ pub struct FileLink {
     pub method: &'static str,
     pub url: String,
     pub expires_in: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TrailProgressionRequest {
+    pub trail_root_record_id: i64,
+    pub record_id: i64,
+    pub quantity: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TrailProgressionOutcome {
+    pub changed: Vec<TrailQuantityChange>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TrailQuantityChange {
+    pub record_id: i64,
+    pub quantity: i64,
 }
 
 impl BackendApiService {
@@ -70,8 +96,18 @@ impl BackendApiService {
         _claims: &AuthSubject,
         table_name: &str,
     ) -> Result<Value, Error> {
+        self.list_table_rows_filtered(_claims, table_name, &TableListQuery::default())
+            .await
+    }
+
+    pub async fn list_table_rows_filtered(
+        &self,
+        _claims: &AuthSubject,
+        table_name: &str,
+        query: &TableListQuery,
+    ) -> Result<Value, Error> {
         let table = self.store.parse_table(table_name)?;
-        self.store.list_table_rows(table).await
+        self.store.list_table_rows_filtered(table, query).await
     }
 
     pub async fn get_table_row(
@@ -239,6 +275,110 @@ impl BackendApiService {
         serde_json::to_value(snapshot.snapshot).map_err(Error::other)
     }
 
+    pub async fn execute_karma(&self, _claims: &AuthSubject, karma_id: i64) -> Result<(), Error> {
+        let karma = self
+            .services
+            .repository
+            .karma
+            .get(None)
+            .await?
+            .into_iter()
+            .find(|entry| i64::from(entry.id) == karma_id)
+            .ok_or_else(|| Error::new(ErrorKind::NotFound, "Karma not found"))?;
+        karma_deliver(self.services.clone(), vec![karma]).await
+    }
+
+    pub async fn apply_trail_progression(
+        &self,
+        _claims: &AuthSubject,
+        request: TrailProgressionRequest,
+    ) -> Result<TrailProgressionOutcome, Error> {
+        if request.trail_root_record_id <= 0 || request.record_id <= 0 {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "Trail root and record id must be positive",
+            ));
+        }
+        if !matches!(request.quantity, -1..=1) {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "Trail quantity must stay within -1, 0, or 1",
+            ));
+        }
+
+        let subtree_ids =
+            load_trail_subtree_ids(&*self.services.db, request.trail_root_record_id).await?;
+        if !subtree_ids.contains(&request.record_id) {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "Record does not belong to the selected trail subtree",
+            ));
+        }
+
+        let links = load_trail_parent_links(&*self.services.db, &subtree_ids).await?;
+        let quantities = load_record_quantities(&*self.services.db, &subtree_ids).await?;
+        let mut next_quantities = quantities.clone();
+        next_quantities.insert(request.record_id, request.quantity);
+
+        if request.record_id != request.trail_root_record_id
+            && request.quantity == 1
+            && !parents_complete(request.record_id, &links, &next_quantities)
+        {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "All parents must be 1 before this record can be completed",
+            ));
+        }
+
+        let children = build_child_map(&links);
+        let mut queue = VecDeque::from([request.record_id]);
+        let mut visited = BTreeSet::new();
+        while let Some(current) = queue.pop_front() {
+            if !visited.insert(current) {
+                continue;
+            }
+            if let Some(descendants) = children.get(&current) {
+                for child_id in descendants {
+                    if !subtree_ids.contains(child_id) {
+                        continue;
+                    }
+                    let existing = *next_quantities.get(child_id).unwrap_or(&0);
+                    if parents_complete(*child_id, &links, &next_quantities) {
+                        if existing == 0 {
+                            next_quantities.insert(*child_id, -1);
+                        }
+                    } else if existing != 1 {
+                        next_quantities.insert(*child_id, 0);
+                    }
+                    queue.push_back(*child_id);
+                }
+            }
+        }
+
+        let mut changed = next_quantities
+            .iter()
+            .filter_map(|(record_id, quantity)| {
+                let current = quantities.get(record_id).copied().unwrap_or(0);
+                if current == *quantity {
+                    None
+                } else {
+                    Some(TrailQuantityChange {
+                        record_id: *record_id,
+                        quantity: *quantity,
+                    })
+                }
+            })
+            .collect::<Vec<_>>();
+        changed.sort_by_key(|entry| entry.record_id);
+
+        if !changed.is_empty() {
+            let (sql, params) = build_trail_progression_update(&changed);
+            self.services.writer.execute_statement(sql, params).await?;
+        }
+
+        Ok(TrailProgressionOutcome { changed })
+    }
+
     pub async fn list_files(
         &self,
         _claims: &AuthSubject,
@@ -372,4 +512,116 @@ fn parse_text_value(field_name: &str, value: &Value) -> Result<String, Error> {
             format!("Expected string for field {field_name}"),
         )
     })
+}
+
+async fn load_trail_subtree_ids(
+    db: &sqlx::Pool<sqlx::Sqlite>,
+    trail_root_record_id: i64,
+) -> Result<BTreeSet<i64>, Error> {
+    let rows = sqlx::query_scalar::<_, i64>(
+        "
+        WITH RECURSIVE walk(id) AS (
+            SELECT ?
+            UNION
+            SELECT rl.record_id
+            FROM record_link rl
+            JOIN walk ON walk.id = rl.target_id
+            WHERE rl.link_type = 'parent' AND rl.target_table = 'record'
+        )
+        SELECT id FROM walk
+        ",
+    )
+    .bind(trail_root_record_id)
+    .fetch_all(db)
+    .await
+    .map_err(Error::other)?;
+    Ok(rows.into_iter().collect())
+}
+
+async fn load_trail_parent_links(
+    db: &sqlx::Pool<sqlx::Sqlite>,
+    subtree_ids: &BTreeSet<i64>,
+) -> Result<Vec<(i64, i64)>, Error> {
+    if subtree_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let placeholders = vec!["?"; subtree_ids.len()].join(", ");
+    let sql = format!(
+        "SELECT record_id, target_id \
+         FROM record_link \
+         WHERE link_type = 'parent' \
+           AND target_table = 'record' \
+           AND record_id IN ({placeholders}) \
+           AND target_id IN ({placeholders})"
+    );
+    let mut query = sqlx::query_as::<_, (i64, i64)>(&sql);
+    for record_id in subtree_ids {
+        query = query.bind(*record_id);
+    }
+    for record_id in subtree_ids {
+        query = query.bind(*record_id);
+    }
+    query.fetch_all(db).await.map_err(Error::other)
+}
+
+async fn load_record_quantities(
+    db: &sqlx::Pool<sqlx::Sqlite>,
+    subtree_ids: &BTreeSet<i64>,
+) -> Result<BTreeMap<i64, i64>, Error> {
+    if subtree_ids.is_empty() {
+        return Ok(BTreeMap::new());
+    }
+    let placeholders = vec!["?"; subtree_ids.len()].join(", ");
+    let sql = format!("SELECT id, CAST(quantity AS INTEGER) FROM record WHERE id IN ({placeholders})");
+    let mut query = sqlx::query_as::<_, (i64, i64)>(&sql);
+    for record_id in subtree_ids {
+        query = query.bind(*record_id);
+    }
+    let rows = query.fetch_all(db).await.map_err(Error::other)?;
+    Ok(rows.into_iter().collect())
+}
+
+fn build_child_map(links: &[(i64, i64)]) -> BTreeMap<i64, Vec<i64>> {
+    let mut children = BTreeMap::<i64, Vec<i64>>::new();
+    for (child_id, parent_id) in links {
+        children.entry(*parent_id).or_default().push(*child_id);
+    }
+    children
+}
+
+fn parents_complete(
+    record_id: i64,
+    links: &[(i64, i64)],
+    quantities: &BTreeMap<i64, i64>,
+) -> bool {
+    let parent_ids = links
+        .iter()
+        .filter_map(|(child_id, parent_id)| (*child_id == record_id).then_some(*parent_id))
+        .collect::<Vec<_>>();
+    if parent_ids.is_empty() {
+        return true;
+    }
+    parent_ids
+        .iter()
+        .all(|parent_id| quantities.get(parent_id).copied().unwrap_or(0) == 1)
+}
+
+fn build_trail_progression_update(changed: &[TrailQuantityChange]) -> (String, Vec<SqlParameter>) {
+    let mut sql = String::from("UPDATE record SET quantity = CASE id ");
+    let mut params = Vec::with_capacity(changed.len() * 3);
+    for entry in changed {
+        sql.push_str("WHEN ? THEN ? ");
+        params.push(SqlParameter::Integer(entry.record_id));
+        params.push(SqlParameter::Integer(entry.quantity));
+    }
+    sql.push_str("END WHERE id IN (");
+    for (index, entry) in changed.iter().enumerate() {
+        if index > 0 {
+            sql.push_str(", ");
+        }
+        sql.push('?');
+        params.push(SqlParameter::Integer(entry.record_id));
+    }
+    sql.push(')');
+    (sql, params)
 }

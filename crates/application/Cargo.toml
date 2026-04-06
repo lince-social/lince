@@ -28,3 +28,4 @@ serde_json.workspace = true
 tokio = {workspace = true, features = ["rt-multi-thread", "process", "sync", "io-util"] }
 rhai.workspace = true
 regex.workspace = true
+sqlx.workspace = true

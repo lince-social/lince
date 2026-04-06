@@ -7,4 +7,6 @@ pub mod kanban_render;
 pub mod kanban_streams;
 pub mod relations_identity;
 pub mod state;
+pub mod trail_identity;
+pub mod trail_widget;
 pub mod widget_runtime;

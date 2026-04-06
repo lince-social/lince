@@ -4,6 +4,7 @@ use crate::{
     application::kanban_actions::KanbanActionService,
     application::kanban_filters::KanbanFilterService,
     application::kanban_streams::KanbanStreamService,
+    application::trail_widget::TrailWidgetService,
     application::widget_runtime::WidgetRuntimeService,
     infrastructure::{
         auth::AppAuth, board_state_store::BoardStateStore, manas::ManasGateway,
@@ -29,6 +30,7 @@ pub struct AppState {
     pub kanban_actions: KanbanActionService,
     pub kanban_filters: KanbanFilterService,
     pub kanban_streams: KanbanStreamService,
+    pub trail_widget: TrailWidgetService,
     pub widget_runtime: WidgetRuntimeService,
 }
 

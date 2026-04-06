@@ -1,6 +1,7 @@
 use ::application::auth::AuthSubject;
 use injection::cross_cutting::InjectedServices;
 use persistence::write_coordinator::SqlParameter;
+use serde::Deserialize;
 use serde::Serialize;
 use serde_json::{Map, Value};
 use sqlx::{FromRow, Pool, Sqlite};
@@ -22,6 +23,38 @@ pub enum ApiTable {
     Configuration,
     AppUser,
     Role,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct TableListQuery {
+    pub head_contains: Option<String>,
+    pub category: Option<String>,
+    pub assignee_id: Option<i64>,
+}
+
+impl TableListQuery {
+    fn normalized_head_contains(&self) -> Option<String> {
+        self.head_contains
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(str::to_lowercase)
+    }
+
+    fn normalized_categories(&self) -> Vec<String> {
+        self.category
+            .as_deref()
+            .unwrap_or_default()
+            .split(',')
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(str::to_lowercase)
+            .collect()
+    }
+
+    fn normalized_assignee_id(&self) -> Option<i64> {
+        self.assignee_id.filter(|value| *value > 0)
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -54,6 +87,10 @@ struct RecordRow {
     quantity: f64,
     head: Option<String>,
     body: Option<String>,
+    primary_category: Option<String>,
+    categories_json: String,
+    assignee_ids_json: String,
+    assignee_names_json: String,
 }
 
 #[derive(Debug, Serialize, FromRow)]
@@ -528,7 +565,11 @@ impl BackendApiStore {
         parse_api_table(table_name)
     }
 
-    pub async fn list_table_rows(&self, table: ApiTable) -> Result<Value, Error> {
+    pub async fn list_table_rows_filtered(
+        &self,
+        table: ApiTable,
+        query: &TableListQuery,
+    ) -> Result<Value, Error> {
         let db = &*self.services.db;
         match table {
             ApiTable::View => serialize_value(
@@ -537,14 +578,7 @@ impl BackendApiStore {
                     .await
                     .map_err(map_sqlx_error)?,
             ),
-            ApiTable::Record => serialize_value(
-                sqlx::query_as::<_, RecordRow>(
-                    "SELECT id, quantity, head, body FROM record ORDER BY id",
-                )
-                .fetch_all(db)
-                .await
-                .map_err(map_sqlx_error)?,
-            ),
+            ApiTable::Record => serialize_value(self.list_record_rows(db, query).await?),
             ApiTable::RecordExtension => serialize_value(
                 sqlx::query_as::<_, RecordExtensionRow>(
                     "SELECT id, record_id, namespace, version, freestyle_data_structure, created_at, updated_at FROM record_extension ORDER BY id",
@@ -645,15 +679,7 @@ impl BackendApiStore {
                     .await
                     .map_err(map_sqlx_error)?,
             ),
-            ApiTable::Record => serialize_value(
-                sqlx::query_as::<_, RecordRow>(
-                    "SELECT id, quantity, head, body FROM record WHERE id = ?",
-                )
-                .bind(id)
-                .fetch_one(db)
-                .await
-                .map_err(map_sqlx_error)?,
-            ),
+            ApiTable::Record => serialize_value(self.get_record_row(db, id).await?),
             ApiTable::RecordExtension => serialize_value(
                 sqlx::query_as::<_, RecordExtensionRow>(
                     "SELECT id, record_id, namespace, version, freestyle_data_structure, created_at, updated_at FROM record_extension WHERE id = ?",
@@ -753,6 +779,118 @@ impl BackendApiStore {
                     .map_err(map_sqlx_error)?,
             ),
         }
+    }
+
+    async fn list_record_rows(
+        &self,
+        db: &Pool<Sqlite>,
+        query: &TableListQuery,
+    ) -> Result<Vec<RecordRow>, Error> {
+        let mut sql = String::from(
+            "SELECT \
+                r.id, \
+                r.quantity, \
+                r.head, \
+                r.body, \
+                json_extract(cat.categories_json, '$[0]') AS primary_category, \
+                COALESCE(cat.categories_json, '[]') AS categories_json, \
+                COALESCE(assignments.assignee_ids_json, '[]') AS assignee_ids_json, \
+                COALESCE(assignments.assignee_names_json, '[]') AS assignee_names_json \
+             FROM record r \
+             LEFT JOIN ( \
+                SELECT \
+                    re.record_id, \
+                    json_extract(re.freestyle_data_structure, '$.categories') AS categories_json \
+                FROM record_extension re \
+                WHERE re.namespace = 'task.categories' \
+             ) cat ON cat.record_id = r.id \
+             LEFT JOIN ( \
+                SELECT \
+                    rl.record_id, \
+                    json_group_array(rl.target_id) AS assignee_ids_json, \
+                    json_group_array(au.name) AS assignee_names_json \
+                FROM record_link rl \
+                JOIN app_user au ON au.id = rl.target_id \
+                WHERE rl.link_type = 'assigned_to' AND rl.target_table = 'app_user' \
+                GROUP BY rl.record_id \
+             ) assignments ON assignments.record_id = r.id \
+             WHERE 1 = 1",
+        );
+
+        let mut params = Vec::new();
+
+        if let Some(head_contains) = query.normalized_head_contains() {
+            sql.push_str(" AND lower(COALESCE(r.head, '')) LIKE ? ESCAPE '\\'");
+            params.push(SqlParameter::Text(sql_like_contains(&head_contains)));
+        }
+
+        let categories = query.normalized_categories();
+        if !categories.is_empty() {
+            sql.push_str(
+                " AND EXISTS ( \
+                    SELECT 1 \
+                    FROM json_each(COALESCE(cat.categories_json, '[]')) value \
+                    WHERE lower(CAST(value.value AS TEXT)) IN (",
+            );
+            for (index, category) in categories.iter().enumerate() {
+                if index > 0 {
+                    sql.push_str(", ");
+                }
+                sql.push('?');
+                params.push(SqlParameter::Text(category.clone()));
+            }
+            sql.push_str("))");
+        }
+
+        if let Some(assignee_id) = query.normalized_assignee_id() {
+            sql.push_str(
+                " AND EXISTS ( \
+                    SELECT 1 \
+                    FROM record_link rl \
+                    WHERE rl.record_id = r.id \
+                      AND rl.link_type = 'assigned_to' \
+                      AND rl.target_table = 'app_user' \
+                      AND rl.target_id = ? \
+                )",
+            );
+            params.push(SqlParameter::Integer(assignee_id));
+        }
+
+        sql.push_str(" ORDER BY lower(COALESCE(r.head, '')) ASC, r.id DESC");
+        execute_query_as::<RecordRow>(db, &sql, params).await
+    }
+
+    async fn get_record_row(&self, db: &Pool<Sqlite>, id: i64) -> Result<RecordRow, Error> {
+        let sql =
+            "SELECT \
+                r.id, \
+                r.quantity, \
+                r.head, \
+                r.body, \
+                json_extract(cat.categories_json, '$[0]') AS primary_category, \
+                COALESCE(cat.categories_json, '[]') AS categories_json, \
+                COALESCE(assignments.assignee_ids_json, '[]') AS assignee_ids_json, \
+                COALESCE(assignments.assignee_names_json, '[]') AS assignee_names_json \
+             FROM record r \
+             LEFT JOIN ( \
+                SELECT \
+                    re.record_id, \
+                    json_extract(re.freestyle_data_structure, '$.categories') AS categories_json \
+                FROM record_extension re \
+                WHERE re.namespace = 'task.categories' \
+             ) cat ON cat.record_id = r.id \
+             LEFT JOIN ( \
+                SELECT \
+                    rl.record_id, \
+                    json_group_array(rl.target_id) AS assignee_ids_json, \
+                    json_group_array(au.name) AS assignee_names_json \
+                FROM record_link rl \
+                JOIN app_user au ON au.id = rl.target_id \
+                WHERE rl.link_type = 'assigned_to' AND rl.target_table = 'app_user' \
+                GROUP BY rl.record_id \
+             ) assignments ON assignments.record_id = r.id \
+             WHERE r.id = ?";
+        execute_query_one_as::<RecordRow>(db, sql, vec![SqlParameter::Integer(id)]).await
     }
 
     pub fn build_standard_insert(
@@ -1066,6 +1204,54 @@ fn parse_api_table(table_name: &str) -> Result<ApiTable, Error> {
 
 fn serialize_value<T: Serialize>(value: T) -> Result<Value, Error> {
     serde_json::to_value(value).map_err(Error::other)
+}
+
+async fn execute_query_as<T>(
+    db: &Pool<Sqlite>,
+    sql: &str,
+    params: Vec<SqlParameter>,
+) -> Result<Vec<T>, Error>
+where
+    for<'r> T: FromRow<'r, sqlx::sqlite::SqliteRow> + Send + Unpin,
+{
+    let mut query = sqlx::query_as::<_, T>(sql);
+    for param in params {
+        query = match param {
+            SqlParameter::Null => query.bind(None::<String>),
+            SqlParameter::Integer(value) => query.bind(value),
+            SqlParameter::Real(value) => query.bind(value),
+            SqlParameter::Text(value) => query.bind(value),
+        };
+    }
+    query.fetch_all(db).await.map_err(map_sqlx_error)
+}
+
+async fn execute_query_one_as<T>(
+    db: &Pool<Sqlite>,
+    sql: &str,
+    params: Vec<SqlParameter>,
+) -> Result<T, Error>
+where
+    for<'r> T: FromRow<'r, sqlx::sqlite::SqliteRow> + Send + Unpin,
+{
+    let mut query = sqlx::query_as::<_, T>(sql);
+    for param in params {
+        query = match param {
+            SqlParameter::Null => query.bind(None::<String>),
+            SqlParameter::Integer(value) => query.bind(value),
+            SqlParameter::Real(value) => query.bind(value),
+            SqlParameter::Text(value) => query.bind(value),
+        };
+    }
+    query.fetch_one(db).await.map_err(map_sqlx_error)
+}
+
+fn sql_like_contains(value: &str) -> String {
+    let escaped = value
+        .replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_");
+    format!("%{escaped}%")
 }
 
 async fn fetch_public_users(db: &Pool<Sqlite>) -> Result<Vec<PublicAppUserRow>, Error> {

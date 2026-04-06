@@ -3,7 +3,7 @@ use {
         domain::lince_package::{
             LEGACY_PACKAGE_ARCHIVE_EXTENSION, LEGACY_PACKAGE_EXTENSION, LincePackage,
             MAX_PACKAGE_BYTES, PACKAGE_EXTENSION, build_lince_archive, is_package_filename,
-            normalize_package_filename, package_id_from_filename, parse_lince_package, slugify,
+            normalize_package_filename, package_id_from_filename, parse_lince_package,
             validate_package_upload,
         },
         infrastructure::paths,
@@ -81,7 +81,7 @@ impl PackageCatalogStore {
     }
 
     pub fn load(&self, package_id: &str) -> Result<LincePackage, String> {
-        let filename = format!("{}{}", slugify(package_id), PACKAGE_EXTENSION);
+        let filename = normalize_package_filename(package_id);
         self.load_by_filename(&filename)
     }
 

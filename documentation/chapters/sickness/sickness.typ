@@ -1,5 +1,6 @@
 #import "../../components/chapter.typ": major
 #import "crates.typ"
+#import "documentation.typ"
 #import "extensions.typ"
 #import "kanban.typ"
 #import "relations.typ"
@@ -54,6 +55,7 @@ So Record's heads with Items and Tasks that have negative quantities appear in m
 Currently not very featureful. You can model in Records your monthly earnings and expenditures
 and make a Karma with a condition of (Records of Earnings) - (Records of Expenditures)
 #crates
+#documentation
 #web_components
 #bucket
 #sandbox_website

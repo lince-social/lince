@@ -129,9 +129,9 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 22] = [
         feature_flag: relations::FEATURE_FLAG,
         package_builder: relations::package,
     },
-    OfficialWidgetBuilder::Html {
+    OfficialWidgetBuilder::Package {
         feature_flag: trail_relation::FEATURE_FLAG,
-        source_builder: trail_relation::source,
+        package_builder: trail_relation::package,
     },
     OfficialWidgetBuilder::Html {
         feature_flag: lince_logo_led::FEATURE_FLAG,

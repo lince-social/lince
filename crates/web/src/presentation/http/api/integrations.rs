@@ -474,6 +474,19 @@ async fn local_table_collection(
                 "last_insert_rowid": outcome.last_insert_rowid,
             })
         }
+        Method::PATCH => {
+            let objects = payload_array_of_objects(body.as_ref())?;
+            let outcome = state
+                .backend
+                .update_table_rows(&claims, table_name, &objects)
+                .await
+                .map_err(map_backend_error)?;
+            serde_json::json!({
+                "ok": true,
+                "rows_affected": outcome.rows_affected,
+                "last_insert_rowid": outcome.last_insert_rowid,
+            })
+        }
         _ => {
             return Err(api_error(
                 StatusCode::METHOD_NOT_ALLOWED,
@@ -545,6 +558,31 @@ fn local_host_subject() -> AuthSubject {
         role_id: 0,
         role: "admin".into(),
     }
+}
+
+fn payload_array_of_objects(payload: Option<&Value>) -> ApiResult<Vec<serde_json::Map<String, Value>>> {
+    let value = payload.ok_or_else(|| {
+        api_error(
+            StatusCode::BAD_REQUEST,
+            "Expected a JSON array payload.",
+        )
+    })?;
+    let rows = value.as_array().ok_or_else(|| {
+        api_error(
+            StatusCode::BAD_REQUEST,
+            "Expected a JSON array payload.",
+        )
+    })?;
+    rows.iter()
+        .map(|entry| {
+            entry.as_object().cloned().ok_or_else(|| {
+                api_error(
+                    StatusCode::BAD_REQUEST,
+                    "Expected every batch item to be a JSON object.",
+                )
+            })
+        })
+        .collect()
 }
 
 async fn request_json_body(request: Request) -> ApiResult<Option<Value>> {

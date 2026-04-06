@@ -89,7 +89,9 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
         )
         .route(
             "/integrations/servers/{server_id}/table/{table}",
-            get(proxy_manas_table_collection).post(proxy_manas_table_collection),
+            get(proxy_manas_table_collection)
+                .post(proxy_manas_table_collection)
+                .patch(proxy_manas_table_collection),
         )
         .route(
             "/integrations/servers/{server_id}/table/{table}/{id}",

@@ -1,5 +1,8 @@
 use crate::{
-    application::backend_api::{FileLink, TrailProgressionRequest},
+    application::backend_api::{
+        FileLink, RecordQuantityBatchUpdateRequest, TrailInitializeRequest,
+        TrailProgressionRequest,
+    },
     application::state::AppState,
     infrastructure::backend_api_store::TableListQuery,
     presentation::http::api_error::{ApiResult, api_error},
@@ -72,7 +75,9 @@ pub fn router() -> Router<AppState> {
         .route("/auth/login", post(login))
         .route(
             "/table/{table}",
-            get(list_table_rows).post(create_table_row),
+            get(list_table_rows)
+                .post(create_table_row)
+                .patch(update_table_rows),
         )
         .route(
             "/table/{table}/{id}",
@@ -80,7 +85,9 @@ pub fn router() -> Router<AppState> {
                 .patch(update_table_row)
                 .delete(delete_table_row),
         )
+        .route("/table/record/quantities", post(batch_update_record_quantities))
         .route("/karma/{id}/execute", post(execute_karma))
+        .route("/trail/initialize", post(initialize_trail_progression))
         .route("/trail/progression", post(apply_trail_progression))
         .route("/files", get(list_files))
         .route("/files/upload-link", post(upload_link))
@@ -171,6 +178,27 @@ async fn create_table_row(
     ))
 }
 
+async fn update_table_rows(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(table_name): Path<String>,
+    Json(payload): Json<Value>,
+) -> ApiResult<Json<MutationResponse>> {
+    let claims = authenticate_request(&state, &headers).await?;
+    let objects = payload_object_array(&payload)?;
+    let outcome = state
+        .backend
+        .update_table_rows(&claims, &table_name, &objects)
+        .await
+        .map_err(map_backend_error)?;
+
+    Ok(Json(MutationResponse {
+        ok: true,
+        rows_affected: outcome.rows_affected,
+        last_insert_rowid: outcome.last_insert_rowid,
+    }))
+}
+
 async fn update_table_row(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -201,6 +229,25 @@ async fn delete_table_row(
     let outcome = state
         .backend
         .delete_table_row(&claims, &table_name, id)
+        .await
+        .map_err(map_backend_error)?;
+
+    Ok(Json(MutationResponse {
+        ok: true,
+        rows_affected: outcome.rows_affected,
+        last_insert_rowid: outcome.last_insert_rowid,
+    }))
+}
+
+async fn batch_update_record_quantities(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(request): Json<RecordQuantityBatchUpdateRequest>,
+) -> ApiResult<Json<MutationResponse>> {
+    let claims = authenticate_request(&state, &headers).await?;
+    let outcome = state
+        .backend
+        .batch_update_record_quantities(&claims, request)
         .await
         .map_err(map_backend_error)?;
 
@@ -244,6 +291,25 @@ async fn apply_trail_progression(
         api_error(
             StatusCode::INTERNAL_SERVER_ERROR,
             format!("Failed to serialize trail progression outcome: {error}"),
+        )
+    })?))
+}
+
+async fn initialize_trail_progression(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(request): Json<TrailInitializeRequest>,
+) -> ApiResult<Json<Value>> {
+    let claims = authenticate_request(&state, &headers).await?;
+    let outcome = state
+        .backend
+        .initialize_trail_progression(&claims, request)
+        .await
+        .map_err(map_backend_error)?;
+    Ok(Json(serde_json::to_value(outcome).map_err(|error| {
+        api_error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to serialize trail initialization outcome: {error}"),
         )
     })?))
 }
@@ -437,6 +503,22 @@ fn payload_object(payload: &Value) -> ApiResult<&Map<String, Value>> {
     payload
         .as_object()
         .ok_or_else(|| api_error(StatusCode::BAD_REQUEST, "Expected a JSON object payload"))
+}
+
+fn payload_object_array(payload: &Value) -> ApiResult<Vec<Map<String, Value>>> {
+    let rows = payload
+        .as_array()
+        .ok_or_else(|| api_error(StatusCode::BAD_REQUEST, "Expected a JSON array payload"))?;
+    rows.iter()
+        .map(|value| {
+            value.as_object().cloned().ok_or_else(|| {
+                api_error(
+                    StatusCode::BAD_REQUEST,
+                    "Expected every batch item to be a JSON object",
+                )
+            })
+        })
+        .collect()
 }
 
 fn map_file_link(link: FileLink) -> FileLinkResponse {

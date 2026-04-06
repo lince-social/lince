@@ -1,7 +1,10 @@
 use {
     crate::{
         application::{
-            backend_api::{BackendApiService, TrailProgressionOutcome, TrailProgressionRequest},
+            backend_api::{
+                BackendApiService, TrailProgressionOutcome, TrailProgressionRequest,
+                TrailQuantityChange,
+            },
             trail_identity::is_supported_trail_package_filename,
         },
         domain::board::{BoardCard, BoardState},
@@ -123,6 +126,7 @@ impl TrailWidgetService {
                 "search-assignees",
                 "bind-trail",
                 "create-trail",
+                "initialize-trail",
                 "run-trail-sync",
                 "set-trail-quantity"
             ],
@@ -215,6 +219,11 @@ impl TrailWidgetService {
                 let request = serde_json::from_value::<CreateTrailRequest>(payload)
                     .map_err(|error| TrailWidgetError::Invalid(format!("Payload invalido: {error}")))?;
                 self.create_trail(session_token, instance_id, request).await
+            }
+            "initialize-trail" => {
+                let request = serde_json::from_value::<InitializeTrailActionRequest>(payload)
+                    .map_err(|error| TrailWidgetError::Invalid(format!("Payload invalido: {error}")))?;
+                self.initialize_trail(session_token, instance_id, request).await
             }
             "run-trail-sync" => {
                 let request = serde_json::from_value::<RunTrailSyncRequest>(payload)
@@ -413,6 +422,15 @@ impl TrailWidgetService {
         let view_id = self
             .ensure_derived_view(session_token, &resolved, copied_root_id)
             .await?;
+        let initialization = self
+            .initialize_trail_progression(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+                view_id,
+                copied_root_id,
+            )
+            .await?;
 
         Ok(json!({
             "ok": true,
@@ -424,7 +442,42 @@ impl TrailWidgetService {
                 "trailRootRecordId": copied_root_id,
                 "viewId": view_id,
                 "sync": sync,
+                "initialization": initialization,
             }
+        }))
+    }
+
+    async fn initialize_trail(
+        &self,
+        session_token: Option<&str>,
+        instance_id: &str,
+        request: InitializeTrailActionRequest,
+    ) -> Result<Value, TrailWidgetError> {
+        let resolved = self
+            .resolve_instance(session_token, instance_id, TrailPermission::Write)
+            .await?;
+        let runtime = parse_runtime_state(&resolved.card.widget_state);
+        let trail_root_record_id = request
+            .trail_root_record_id
+            .or(runtime.trail_root_record_id)
+            .ok_or_else(|| TrailWidgetError::Invalid("Nenhum trail root foi escolhido.".into()))?;
+        let view_id = self
+            .ensure_derived_view(session_token, &resolved, trail_root_record_id)
+            .await?;
+        let outcome = self
+            .initialize_trail_progression(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+                view_id,
+                trail_root_record_id,
+            )
+            .await?;
+        Ok(json!({
+            "ok": true,
+            "action": "initialize-trail",
+            "await_stream_refresh": true,
+            "detail": outcome,
         }))
     }
 
@@ -756,6 +809,34 @@ impl TrailWidgetService {
             .map_err(TrailWidgetError::BadGateway)?;
         let value = self.read_remote_json(session_token, &organ.id, response).await?;
         parse_view_list(&value)
+    }
+
+    async fn load_view_snapshot(
+        &self,
+        session_token: Option<&str>,
+        organ: &Organ,
+        bearer_token: Option<&str>,
+        view_id: u32,
+    ) -> Result<Value, TrailWidgetError> {
+        if !organ_requires_auth(organ, self.local_auth_required) {
+            return self
+                .backend
+                .read_view_snapshot(&local_host_subject(), view_id)
+                .await
+                .map_err(|error| TrailWidgetError::Internal(error.to_string()));
+        }
+        let response = self
+            .manas
+            .send_backend_request(
+                &organ.base_url,
+                bearer_token.ok_or_else(|| TrailWidgetError::Unauthorized("Sessao remota ausente.".into()))?,
+                Method::GET,
+                &format!("/api/view/{view_id}/snapshot"),
+                None,
+            )
+            .await
+            .map_err(TrailWidgetError::BadGateway)?;
+        self.read_remote_json(session_token, &organ.id, response).await
     }
 
     async fn find_view_id_by_name(
@@ -1247,6 +1328,39 @@ impl TrailWidgetService {
         parse_mutation_response(&self.read_remote_json(session_token, &organ.id, response).await?)
     }
 
+    async fn update_record_rows(
+        &self,
+        session_token: Option<&str>,
+        organ: &Organ,
+        bearer_token: Option<&str>,
+        rows: &[Map<String, Value>],
+    ) -> Result<MutationResponse, TrailWidgetError> {
+        let payload = Value::Array(rows.iter().cloned().map(Value::Object).collect());
+        if !organ_requires_auth(organ, self.local_auth_required) {
+            let outcome = self
+                .backend
+                .update_table_rows(&local_host_subject(), "record", rows)
+                .await
+                .map_err(|error| TrailWidgetError::Internal(error.to_string()))?;
+            return Ok(MutationResponse {
+                last_insert_rowid: outcome.last_insert_rowid,
+            });
+        }
+        let response = self
+            .manas
+            .send_table_request(
+                &organ.base_url,
+                bearer_token.ok_or_else(|| TrailWidgetError::Unauthorized("Sessao remota ausente.".into()))?,
+                Method::PATCH,
+                "record",
+                None,
+                Some(payload),
+            )
+            .await
+            .map_err(TrailWidgetError::BadGateway)?;
+        parse_mutation_response(&self.read_remote_json(session_token, &organ.id, response).await?)
+    }
+
     async fn delete_table_row(
         &self,
         session_token: Option<&str>,
@@ -1552,6 +1666,60 @@ impl TrailWidgetService {
         })
     }
 
+    async fn initialize_trail_progression(
+        &self,
+        session_token: Option<&str>,
+        organ: &Organ,
+        bearer_token: Option<&str>,
+        view_id: i64,
+        trail_root_record_id: i64,
+    ) -> Result<TrailProgressionOutcome, TrailWidgetError> {
+        let snapshot = self
+            .load_view_snapshot(
+                session_token,
+                organ,
+                bearer_token,
+                u32::try_from(view_id).map_err(|_| {
+                    TrailWidgetError::Internal("view_id invalido para reset do trail.".into())
+                })?,
+            )
+            .await?;
+        let record_ids = extract_snapshot_record_ids(&snapshot)?;
+        if record_ids.is_empty() {
+            return Ok(TrailProgressionOutcome { changed: Vec::new() });
+        }
+
+        let rows = record_ids
+            .iter()
+            .map(|record_id| {
+                let mut row = Map::new();
+                row.insert("id".into(), Value::Number(Number::from(*record_id)));
+                row.insert(
+                    "quantity".into(),
+                    Value::Number(Number::from(if *record_id == trail_root_record_id {
+                        -1
+                    } else {
+                        0
+                    })),
+                );
+                row
+            })
+            .collect::<Vec<_>>();
+
+        self.update_record_rows(session_token, organ, bearer_token, &rows)
+            .await?;
+
+        Ok(TrailProgressionOutcome {
+            changed: record_ids
+                .into_iter()
+                .map(|record_id| TrailQuantityChange {
+                    record_id,
+                    quantity: if record_id == trail_root_record_id { -1 } else { 0 },
+                })
+                .collect(),
+        })
+    }
+
     async fn read_remote_json(
         &self,
         session_token: Option<&str>,
@@ -1644,6 +1812,12 @@ struct CreateTrailRequest {
     assignee: String,
     scope: Option<String>,
     fields: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct InitializeTrailActionRequest {
+    trail_root_record_id: Option<i64>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -2054,6 +2228,23 @@ fn parse_runtime_state(widget_state: &Value) -> TrailRuntimeState {
             .or_else(|| runtime.get("derivedViewId"))
             .and_then(Value::as_i64),
     }
+}
+
+fn extract_snapshot_record_ids(snapshot: &Value) -> Result<Vec<i64>, TrailWidgetError> {
+    let rows = snapshot
+        .get("rows")
+        .and_then(Value::as_array)
+        .ok_or_else(|| {
+            TrailWidgetError::Internal("Snapshot da trail view nao trouxe rows.".into())
+        })?;
+    let mut ids = rows
+        .iter()
+        .filter_map(|row| row.get("id").and_then(Value::as_i64))
+        .filter(|id| *id > 0)
+        .collect::<Vec<_>>();
+    ids.sort_unstable();
+    ids.dedup();
+    Ok(ids)
 }
 
 fn find_board_card(board_state: &BoardState, instance_id: &str) -> Option<BoardCard> {

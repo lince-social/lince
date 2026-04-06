@@ -5,7 +5,10 @@ use serde::Deserialize;
 use serde::Serialize;
 use serde_json::{Map, Value};
 use sqlx::{FromRow, Pool, Sqlite};
-use std::io::{Error, ErrorKind};
+use std::{
+    collections::BTreeMap,
+    io::{Error, ErrorKind},
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ApiTable {
@@ -846,16 +849,16 @@ impl BackendApiStore {
                 " AND EXISTS ( \
                     SELECT 1 \
                     FROM json_each(COALESCE(cat.categories_json, '[]')) value \
-                    WHERE lower(CAST(value.value AS TEXT)) IN (",
+                    WHERE ",
             );
             for (index, category) in categories.iter().enumerate() {
                 if index > 0 {
-                    sql.push_str(", ");
+                    sql.push_str(" OR ");
                 }
-                sql.push('?');
-                params.push(SqlParameter::Text(category.clone()));
+                sql.push_str("lower(CAST(value.value AS TEXT)) LIKE ? ESCAPE '\\'");
+                params.push(SqlParameter::Text(sql_like_contains(category)));
             }
-            sql.push_str("))");
+            sql.push_str(")");
         }
 
         if let Some(assignee_query) = query.normalized_assignee_query() {
@@ -1036,6 +1039,87 @@ impl BackendApiStore {
             format!(
                 "UPDATE {} SET {assignments} WHERE id = ?",
                 table.as_table_name()
+            ),
+            params,
+        ))
+    }
+
+    pub fn build_record_batch_update(
+        &self,
+        rows: &[Map<String, Value>],
+    ) -> Result<(String, Vec<SqlParameter>), Error> {
+        if rows.is_empty() {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "At least one record row is required",
+            ));
+        }
+
+        let mut merged = BTreeMap::<i64, BTreeMap<String, SqlParameter>>::new();
+        for object in rows {
+            reject_unknown_fields(object, &["id", "quantity", "head", "body"])?;
+            let record_id = object
+                .get("id")
+                .ok_or_else(|| Error::new(ErrorKind::InvalidInput, "Missing required field: id"))
+                .and_then(|value| parse_i64_value("id", value))?;
+            if record_id <= 0 {
+                return Err(Error::new(
+                    ErrorKind::InvalidInput,
+                    "Record id must be positive",
+                ));
+            }
+
+            let entry = merged.entry(record_id).or_default();
+            for spec in RECORD_FIELD_SPECS {
+                if let Some(value) = object.get(spec.name) {
+                    entry.insert(spec.name.to_string(), parse_parameter(spec.name, value, spec.kind)?);
+                }
+            }
+            if entry.is_empty() {
+                return Err(Error::new(
+                    ErrorKind::InvalidInput,
+                    "At least one writable field is required per record row",
+                ));
+            }
+        }
+
+        let fields = RECORD_FIELD_SPECS
+            .iter()
+            .filter(|spec| merged.values().any(|row| row.contains_key(spec.name)))
+            .map(|spec| spec.name)
+            .collect::<Vec<_>>();
+        if fields.is_empty() {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "At least one writable field is required",
+            ));
+        }
+
+        let mut assignments = Vec::new();
+        let mut params = Vec::new();
+        for field in &fields {
+            let mut case_sql = format!("{field} = CASE id ");
+            for (record_id, row) in &merged {
+                if let Some(value) = row.get(*field) {
+                    case_sql.push_str("WHEN ? THEN ? ");
+                    params.push(SqlParameter::Integer(*record_id));
+                    params.push(value.clone());
+                }
+            }
+            case_sql.push_str(&format!("ELSE {field} END"));
+            assignments.push(case_sql);
+        }
+
+        let record_ids = merged.keys().copied().collect::<Vec<_>>();
+        let placeholders = vec!["?"; record_ids.len()].join(", ");
+        for record_id in &record_ids {
+            params.push(SqlParameter::Integer(*record_id));
+        }
+
+        Ok((
+            format!(
+                "UPDATE record SET {} WHERE id IN ({placeholders})",
+                assignments.join(", ")
             ),
             params,
         ))

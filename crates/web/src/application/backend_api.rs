@@ -52,6 +52,12 @@ pub struct TrailProgressionRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct TrailInitializeRequest {
+    pub trail_root_record_id: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TrailProgressionOutcome {
     pub changed: Vec<TrailQuantityChange>,
 }
@@ -61,6 +67,19 @@ pub struct TrailProgressionOutcome {
 pub struct TrailQuantityChange {
     pub record_id: i64,
     pub quantity: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RecordQuantityBatchUpdateRequest {
+    pub rows: Vec<RecordQuantityBatchUpdateRow>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RecordQuantityBatchUpdateRow {
+    pub id: i64,
+    pub quantity: f64,
 }
 
 impl BackendApiService {
@@ -226,6 +245,42 @@ impl BackendApiService {
         }
     }
 
+    pub async fn update_table_rows(
+        &self,
+        _claims: &AuthSubject,
+        table_name: &str,
+        rows: &[Map<String, Value>],
+    ) -> Result<WriteOutcome, Error> {
+        let table = self.store.parse_table(table_name)?;
+        match table {
+            ApiTable::Record => {
+                let (sql, params) = self.store.build_record_batch_update(rows)?;
+                self.services.writer.execute_statement(sql, params).await
+            }
+            _ => Err(Error::new(
+                ErrorKind::InvalidInput,
+                "Batch update over collection is currently supported only for record",
+            )),
+        }
+    }
+
+    pub async fn batch_update_record_quantities(
+        &self,
+        _claims: &AuthSubject,
+        request: RecordQuantityBatchUpdateRequest,
+    ) -> Result<WriteOutcome, Error> {
+        let updates = normalize_record_quantity_batch_rows(request.rows)?;
+        if updates.is_empty() {
+            return Ok(WriteOutcome {
+                rows_affected: 0,
+                changed_tables: BTreeSet::new(),
+                last_insert_rowid: None,
+            });
+        }
+        let (sql, params) = build_record_quantity_batch_update(&updates);
+        self.services.writer.execute_statement(sql, params).await
+    }
+
     pub async fn delete_table_row(
         &self,
         claims: &AuthSubject,
@@ -372,8 +427,77 @@ impl BackendApiService {
         changed.sort_by_key(|entry| entry.record_id);
 
         if !changed.is_empty() {
-            let (sql, params) = build_trail_progression_update(&changed);
-            self.services.writer.execute_statement(sql, params).await?;
+            self.batch_update_record_quantities(
+                _claims,
+                RecordQuantityBatchUpdateRequest {
+                    rows: changed
+                        .iter()
+                        .map(|entry| RecordQuantityBatchUpdateRow {
+                            id: entry.record_id,
+                            quantity: entry.quantity as f64,
+                        })
+                        .collect(),
+                },
+            )
+            .await?;
+        }
+
+        Ok(TrailProgressionOutcome { changed })
+    }
+
+    pub async fn initialize_trail_progression(
+        &self,
+        _claims: &AuthSubject,
+        request: TrailInitializeRequest,
+    ) -> Result<TrailProgressionOutcome, Error> {
+        if request.trail_root_record_id <= 0 {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "Trail root id must be positive",
+            ));
+        }
+
+        let subtree_ids =
+            load_trail_subtree_ids(&*self.services.db, request.trail_root_record_id).await?;
+        if subtree_ids.is_empty() {
+            return Err(Error::new(
+                ErrorKind::NotFound,
+                "Trail root does not resolve to any records",
+            ));
+        }
+
+        let quantities = load_record_quantities(&*self.services.db, &subtree_ids).await?;
+        let mut changed = subtree_ids
+            .iter()
+            .filter_map(|record_id| {
+                let next_quantity = if *record_id == request.trail_root_record_id {
+                    -1
+                } else {
+                    0
+                };
+                let current = quantities.get(record_id).copied().unwrap_or(0);
+                (current != next_quantity).then_some(TrailQuantityChange {
+                    record_id: *record_id,
+                    quantity: next_quantity,
+                })
+            })
+            .collect::<Vec<_>>();
+        changed.sort_by_key(|entry| entry.record_id);
+
+        if !changed.is_empty() {
+            self.batch_update_record_quantities(
+                _claims,
+                RecordQuantityBatchUpdateRequest {
+                    rows: changed
+                        .iter()
+                        .map(|entry| RecordQuantityBatchUpdateRow {
+                            id: entry.record_id,
+                            quantity: entry.quantity as f64,
+                        })
+                        .collect(),
+                },
+            )
+            .await?;
         }
 
         Ok(TrailProgressionOutcome { changed })
@@ -606,21 +730,48 @@ fn parents_complete(
         .all(|parent_id| quantities.get(parent_id).copied().unwrap_or(0) == 1)
 }
 
-fn build_trail_progression_update(changed: &[TrailQuantityChange]) -> (String, Vec<SqlParameter>) {
+fn normalize_record_quantity_batch_rows(
+    rows: Vec<RecordQuantityBatchUpdateRow>,
+) -> Result<Vec<RecordQuantityBatchUpdateRow>, Error> {
+    let mut deduped = BTreeMap::<i64, f64>::new();
+    for row in rows {
+        if row.id <= 0 {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "Record id must be positive",
+            ));
+        }
+        if !row.quantity.is_finite() {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "Record quantity must be finite",
+            ));
+        }
+        deduped.insert(row.id, row.quantity);
+    }
+    Ok(deduped
+        .into_iter()
+        .map(|(id, quantity)| RecordQuantityBatchUpdateRow { id, quantity })
+        .collect())
+}
+
+fn build_record_quantity_batch_update(
+    rows: &[RecordQuantityBatchUpdateRow],
+) -> (String, Vec<SqlParameter>) {
     let mut sql = String::from("UPDATE record SET quantity = CASE id ");
-    let mut params = Vec::with_capacity(changed.len() * 3);
-    for entry in changed {
+    let mut params = Vec::with_capacity(rows.len() * 3);
+    for entry in rows {
         sql.push_str("WHEN ? THEN ? ");
-        params.push(SqlParameter::Integer(entry.record_id));
-        params.push(SqlParameter::Integer(entry.quantity));
+        params.push(SqlParameter::Integer(entry.id));
+        params.push(SqlParameter::Real(entry.quantity));
     }
     sql.push_str("END WHERE id IN (");
-    for (index, entry) in changed.iter().enumerate() {
+    for (index, entry) in rows.iter().enumerate() {
         if index > 0 {
             sql.push_str(", ");
         }
         sql.push('?');
-        params.push(SqlParameter::Integer(entry.record_id));
+        params.push(SqlParameter::Integer(entry.id));
     }
     sql.push(')');
     (sql, params)

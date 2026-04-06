@@ -29,7 +29,8 @@ pub enum ApiTable {
 pub struct TableListQuery {
     pub head_contains: Option<String>,
     pub category: Option<String>,
-    pub assignee_id: Option<i64>,
+    pub assignee: Option<String>,
+    pub identity: Option<String>,
 }
 
 impl TableListQuery {
@@ -52,8 +53,20 @@ impl TableListQuery {
             .collect()
     }
 
-    fn normalized_assignee_id(&self) -> Option<i64> {
-        self.assignee_id.filter(|value| *value > 0)
+    fn normalized_assignee_query(&self) -> Option<String> {
+        self.assignee
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(str::to_lowercase)
+    }
+
+    fn normalized_identity_query(&self) -> Option<String> {
+        self.identity
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(str::to_lowercase)
     }
 }
 
@@ -91,6 +104,7 @@ struct RecordRow {
     categories_json: String,
     assignee_ids_json: String,
     assignee_names_json: String,
+    assignee_usernames_json: String,
 }
 
 #[derive(Debug, Serialize, FromRow)]
@@ -659,7 +673,7 @@ impl BackendApiStore {
                 .await
                 .map_err(map_sqlx_error)?,
             ),
-            ApiTable::AppUser => serialize_value(fetch_public_users(db).await?),
+            ApiTable::AppUser => serialize_value(self.list_app_user_rows(db, query).await?),
             ApiTable::Role => serialize_value(
                 sqlx::query_as::<_, RoleRow>("SELECT id, name FROM role ORDER BY id")
                     .fetch_all(db)
@@ -795,7 +809,8 @@ impl BackendApiStore {
                 json_extract(cat.categories_json, '$[0]') AS primary_category, \
                 COALESCE(cat.categories_json, '[]') AS categories_json, \
                 COALESCE(assignments.assignee_ids_json, '[]') AS assignee_ids_json, \
-                COALESCE(assignments.assignee_names_json, '[]') AS assignee_names_json \
+                COALESCE(assignments.assignee_names_json, '[]') AS assignee_names_json, \
+                COALESCE(assignments.assignee_usernames_json, '[]') AS assignee_usernames_json \
              FROM record r \
              LEFT JOIN ( \
                 SELECT \
@@ -808,7 +823,8 @@ impl BackendApiStore {
                 SELECT \
                     rl.record_id, \
                     json_group_array(rl.target_id) AS assignee_ids_json, \
-                    json_group_array(au.name) AS assignee_names_json \
+                    json_group_array(au.name) AS assignee_names_json, \
+                    json_group_array(au.username) AS assignee_usernames_json \
                 FROM record_link rl \
                 JOIN app_user au ON au.id = rl.target_id \
                 WHERE rl.link_type = 'assigned_to' AND rl.target_table = 'app_user' \
@@ -842,18 +858,26 @@ impl BackendApiStore {
             sql.push_str("))");
         }
 
-        if let Some(assignee_id) = query.normalized_assignee_id() {
+        if let Some(assignee_query) = query.normalized_assignee_query() {
             sql.push_str(
                 " AND EXISTS ( \
                     SELECT 1 \
                     FROM record_link rl \
+                    JOIN app_user au ON au.id = rl.target_id \
                     WHERE rl.record_id = r.id \
                       AND rl.link_type = 'assigned_to' \
                       AND rl.target_table = 'app_user' \
-                      AND rl.target_id = ? \
+                      AND ( \
+                          CAST(au.id AS TEXT) = ? \
+                          OR lower(COALESCE(au.name, '')) LIKE ? ESCAPE '\\' \
+                          OR lower(COALESCE(au.username, '')) LIKE ? ESCAPE '\\' \
+                      ) \
                 )",
             );
-            params.push(SqlParameter::Integer(assignee_id));
+            let assignee_like = sql_like_contains(&assignee_query);
+            params.push(SqlParameter::Text(assignee_query));
+            params.push(SqlParameter::Text(assignee_like.clone()));
+            params.push(SqlParameter::Text(assignee_like));
         }
 
         sql.push_str(" ORDER BY lower(COALESCE(r.head, '')) ASC, r.id DESC");
@@ -870,7 +894,8 @@ impl BackendApiStore {
                 json_extract(cat.categories_json, '$[0]') AS primary_category, \
                 COALESCE(cat.categories_json, '[]') AS categories_json, \
                 COALESCE(assignments.assignee_ids_json, '[]') AS assignee_ids_json, \
-                COALESCE(assignments.assignee_names_json, '[]') AS assignee_names_json \
+                COALESCE(assignments.assignee_names_json, '[]') AS assignee_names_json, \
+                COALESCE(assignments.assignee_usernames_json, '[]') AS assignee_usernames_json \
              FROM record r \
              LEFT JOIN ( \
                 SELECT \
@@ -883,7 +908,8 @@ impl BackendApiStore {
                 SELECT \
                     rl.record_id, \
                     json_group_array(rl.target_id) AS assignee_ids_json, \
-                    json_group_array(au.name) AS assignee_names_json \
+                    json_group_array(au.name) AS assignee_names_json, \
+                    json_group_array(au.username) AS assignee_usernames_json \
                 FROM record_link rl \
                 JOIN app_user au ON au.id = rl.target_id \
                 WHERE rl.link_type = 'assigned_to' AND rl.target_table = 'app_user' \
@@ -891,6 +917,53 @@ impl BackendApiStore {
              ) assignments ON assignments.record_id = r.id \
              WHERE r.id = ?";
         execute_query_one_as::<RecordRow>(db, sql, vec![SqlParameter::Integer(id)]).await
+    }
+
+    async fn list_app_user_rows(
+        &self,
+        db: &Pool<Sqlite>,
+        query: &TableListQuery,
+    ) -> Result<Vec<PublicAppUserRow>, Error> {
+        let Some(identity_query) = query.normalized_identity_query() else {
+            return fetch_public_users(db).await;
+        };
+
+        let identity_like = sql_like_contains(&identity_query);
+        sqlx::query_as::<_, PublicAppUserRow>(
+            "
+            SELECT
+                u.id,
+                u.name,
+                u.username,
+                u.role_id,
+                r.name AS role,
+                u.created_at,
+                u.updated_at
+            FROM app_user u
+            JOIN role r ON r.id = u.role_id
+            WHERE
+                CAST(u.id AS TEXT) = ?
+                OR lower(COALESCE(u.name, '')) LIKE ? ESCAPE '\\'
+                OR lower(COALESCE(u.username, '')) LIKE ? ESCAPE '\\'
+            ORDER BY
+                CASE WHEN CAST(u.id AS TEXT) = ? THEN 0 ELSE 1 END,
+                CASE WHEN lower(COALESCE(u.username, '')) = ? THEN 0 ELSE 1 END,
+                CASE WHEN lower(COALESCE(u.name, '')) = ? THEN 0 ELSE 1 END,
+                lower(u.name),
+                lower(u.username),
+                u.id
+            LIMIT 20
+            ",
+        )
+        .bind(identity_query.clone())
+        .bind(identity_like.clone())
+        .bind(identity_like)
+        .bind(identity_query.clone())
+        .bind(identity_query.clone())
+        .bind(identity_query)
+        .fetch_all(db)
+        .await
+        .map_err(map_sqlx_error)
     }
 
     pub fn build_standard_insert(

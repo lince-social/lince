@@ -105,6 +105,7 @@ impl TrailWidgetService {
                     "categories_json",
                     "assignee_ids_json",
                     "assignee_names_json",
+                    "assignee_usernames_json",
                     "parent_ids_json",
                     "parent_heads_json",
                     "children_count",
@@ -115,10 +116,11 @@ impl TrailWidgetService {
             },
             "search": {
                 "recordEndpoint": "/api/table/record",
-                "supportedFilters": ["assignee_id", "category", "head_contains"],
+                "supportedFilters": ["assignee", "category", "head_contains"],
             },
             "actions": [
                 "search-trails",
+                "search-assignees",
                 "bind-trail",
                 "create-trail",
                 "run-trail-sync",
@@ -199,6 +201,11 @@ impl TrailWidgetService {
                     .map_err(|error| TrailWidgetError::Invalid(format!("Payload invalido: {error}")))?;
                 self.search_trails(session_token, instance_id, request).await
             }
+            "search-assignees" => {
+                let request = serde_json::from_value::<SearchAssigneesRequest>(payload)
+                    .map_err(|error| TrailWidgetError::Invalid(format!("Payload invalido: {error}")))?;
+                self.search_assignees(session_token, instance_id, request).await
+            }
             "bind-trail" => {
                 let request = serde_json::from_value::<BindTrailRequest>(payload)
                     .map_err(|error| TrailWidgetError::Invalid(format!("Payload invalido: {error}")))?;
@@ -245,6 +252,30 @@ impl TrailWidgetService {
         Ok(json!({
             "ok": true,
             "action": "search-trails",
+            "results": rows,
+        }))
+    }
+
+    async fn search_assignees(
+        &self,
+        session_token: Option<&str>,
+        instance_id: &str,
+        request: SearchAssigneesRequest,
+    ) -> Result<Value, TrailWidgetError> {
+        let resolved = self
+            .resolve_instance(session_token, instance_id, TrailPermission::Read)
+            .await?;
+        let rows = self
+            .list_app_users_filtered(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+                request.query.as_deref(),
+            )
+            .await?;
+        Ok(json!({
+            "ok": true,
+            "action": "search-assignees",
             "results": rows,
         }))
     }
@@ -299,9 +330,9 @@ impl TrailWidgetService {
             .await?;
         validate_scope(&request.scope)?;
         validate_fields(&request.fields)?;
-        if request.assignee_id <= 0 {
+        if request.assignee.trim().is_empty() {
             return Err(TrailWidgetError::Invalid(
-                "assigneeId precisa ser positivo.".into(),
+                "assignee precisa ser informado.".into(),
             ));
         }
 
@@ -313,14 +344,14 @@ impl TrailWidgetService {
                 request.source_record_id,
             )
             .await?;
-        self.ensure_app_user_exists(
-            session_token,
-            &resolved.organ,
-            resolved.bearer_token.as_deref(),
-            request.assignee_id,
-        )
-        .await?;
-
+        let assignee_id = self
+            .resolve_app_user_id(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+                &request.assignee,
+            )
+            .await?;
         let created = self
             .create_table_row(
                 session_token,
@@ -358,7 +389,7 @@ impl TrailWidgetService {
             &resolved.organ,
             resolved.bearer_token.as_deref(),
             copied_root_id,
-            &[request.assignee_id],
+            &[assignee_id],
         )
         .await?;
 
@@ -989,7 +1020,8 @@ impl TrailWidgetService {
                     &crate::infrastructure::backend_api_store::TableListQuery {
                         head_contains: request.head_contains.clone(),
                         category: request.category.clone(),
-                        assignee_id: request.assignee_id,
+                        assignee: request.assignee.clone(),
+                        ..Default::default()
                     },
                 )
                 .await
@@ -1074,15 +1106,40 @@ impl TrailWidgetService {
         })
     }
 
-    async fn list_app_users(
+    async fn list_app_users_filtered(
         &self,
         session_token: Option<&str>,
         organ: &Organ,
         bearer_token: Option<&str>,
+        query: Option<&str>,
     ) -> Result<Vec<AppUserRow>, TrailWidgetError> {
-        let value = self
-            .list_table_rows(session_token, organ, bearer_token, "app_user")
-            .await?;
+        let value = if !organ_requires_auth(organ, self.local_auth_required) {
+            self.backend
+                .list_table_rows_filtered(
+                    &local_host_subject(),
+                    "app_user",
+                    &crate::infrastructure::backend_api_store::TableListQuery {
+                        identity: query.map(str::to_string),
+                        ..Default::default()
+                    },
+                )
+                .await
+                .map_err(|error| TrailWidgetError::Internal(error.to_string()))?
+        } else {
+            let path = build_filtered_app_user_path(query);
+            let response = self
+                .manas
+                .send_backend_request(
+                    &organ.base_url,
+                    bearer_token.ok_or_else(|| TrailWidgetError::Unauthorized("Sessao remota ausente.".into()))?,
+                    Method::GET,
+                    &path,
+                    None,
+                )
+                .await
+                .map_err(TrailWidgetError::BadGateway)?;
+            self.read_remote_json(session_token, &organ.id, response).await?
+        };
         serde_json::from_value(value).map_err(|error| {
             TrailWidgetError::Internal(format!("Resposta invalida de app_user: {error}"))
         })
@@ -1362,24 +1419,69 @@ impl TrailWidgetService {
             .map(|_| ())
     }
 
-    async fn ensure_app_user_exists(
+    async fn resolve_app_user_id(
         &self,
         session_token: Option<&str>,
         organ: &Organ,
         bearer_token: Option<&str>,
-        app_user_id: i64,
-    ) -> Result<(), TrailWidgetError> {
-        let exists = self
-            .list_app_users(session_token, organ, bearer_token)
-            .await?
+        assignee_query: &str,
+    ) -> Result<i64, TrailWidgetError> {
+        let normalized = assignee_query.trim();
+        if normalized.is_empty() {
+            return Err(TrailWidgetError::Invalid(
+                "assignee precisa ser informado.".into(),
+            ));
+        }
+        let normalized_lower = normalized.to_lowercase();
+        let users = self
+            .list_app_users_filtered(session_token, organ, bearer_token, Some(normalized))
+            .await?;
+
+        if let Ok(exact_id) = normalized.parse::<i64>()
+            && exact_id > 0
+            && let Some(user) = users.iter().find(|user| user.id == exact_id)
+        {
+            return Ok(user.id);
+        }
+
+        let exact_username = users
+            .iter()
+            .find(|user| user.username.eq_ignore_ascii_case(normalized))
+            .map(|user| user.id);
+        if let Some(user_id) = exact_username {
+            return Ok(user_id);
+        }
+
+        let exact_name_matches = users
+            .iter()
+            .filter(|user| user.name.eq_ignore_ascii_case(normalized))
+            .map(|user| user.id)
+            .collect::<Vec<_>>();
+        if exact_name_matches.len() == 1 {
+            return Ok(exact_name_matches[0]);
+        }
+        if exact_name_matches.len() > 1 {
+            return Err(TrailWidgetError::Invalid(
+                "Mais de um app_user possui esse nome. Use username ou id.".into(),
+            ));
+        }
+
+        let fuzzy_matches = users
             .into_iter()
-            .any(|user| user.id == app_user_id);
-        if exists {
-            Ok(())
-        } else {
-            Err(TrailWidgetError::Invalid(
-                "app_user escolhido nao existe.".into(),
-            ))
+            .filter(|user| {
+                user.name.to_lowercase().contains(&normalized_lower)
+                    || user.username.to_lowercase().contains(&normalized_lower)
+            })
+            .map(|user| user.id)
+            .collect::<Vec<_>>();
+        match fuzzy_matches.as_slice() {
+            [user_id] => Ok(*user_id),
+            [] => Err(TrailWidgetError::Invalid(
+                "Nenhum app_user corresponde a esse assignee.".into(),
+            )),
+            _ => Err(TrailWidgetError::Invalid(
+                "Mais de um app_user corresponde a esse assignee. Refine com username ou id.".into(),
+            )),
         }
     }
 
@@ -1520,7 +1622,13 @@ pub enum TrailWidgetError {
 struct SearchTrailRequest {
     head_contains: Option<String>,
     category: Option<String>,
-    assignee_id: Option<i64>,
+    assignee: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SearchAssigneesRequest {
+    query: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -1533,7 +1641,7 @@ struct BindTrailRequest {
 #[serde(rename_all = "camelCase")]
 struct CreateTrailRequest {
     source_record_id: i64,
-    assignee_id: i64,
+    assignee: String,
     scope: Option<String>,
     fields: Option<String>,
 }
@@ -1590,13 +1698,19 @@ struct TrailRuntimeState {
 #[serde(rename_all = "camelCase")]
 struct RecordSearchRow {
     id: i64,
-    quantity: i64,
+    quantity: f64,
     head: Option<String>,
     body: Option<String>,
+    #[serde(alias = "primary_category")]
     primary_category: Option<String>,
+    #[serde(alias = "categories_json")]
     categories_json: Option<String>,
+    #[serde(alias = "assignee_ids_json")]
     assignee_ids_json: Option<String>,
+    #[serde(alias = "assignee_names_json")]
     assignee_names_json: Option<String>,
+    #[serde(alias = "assignee_usernames_json")]
+    assignee_usernames_json: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -1616,9 +1730,11 @@ struct RecordLinkRow {
     target_id: i64,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 struct AppUserRow {
     id: i64,
+    name: String,
+    username: String,
 }
 
 #[derive(Debug, Clone)]
@@ -1674,14 +1790,29 @@ fn build_filtered_record_path(request: &SearchTrailRequest) -> String {
     {
         query.push(format!("category={}", encode(category)));
     }
-    if let Some(assignee_id) = request.assignee_id.filter(|value| *value > 0) {
-        query.push(format!("assignee_id={assignee_id}"));
+    if let Some(assignee) = request
+        .assignee
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        query.push(format!("assignee={}", encode(assignee)));
     }
     if query.is_empty() {
         "/api/table/record".into()
     } else {
         format!("/api/table/record?{}", query.join("&"))
     }
+}
+
+fn build_filtered_app_user_path(query: Option<&str>) -> String {
+    let Some(identity) = query
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    else {
+        return "/api/table/app_user".into();
+    };
+    format!("/api/table/app_user?identity={}", encode(identity))
 }
 
 fn build_sr_token(scope: &str, fields: &str, record_id: i64) -> String {

@@ -4,6 +4,7 @@
 #import "extensions.typ"
 #import "kanban.typ"
 #import "relations.typ"
+#import "trail.typ"
 #import "sandbox_website.typ"
 #import "web_components.typ"
 #import "bucket.typ"
@@ -61,4 +62,5 @@ and make a Karma with a condition of (Records of Earnings) - (Records of Expendi
 #sandbox_website
 #kanban
 #relations
+#trail
 #extensions

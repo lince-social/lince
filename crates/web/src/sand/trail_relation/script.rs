@@ -11,6 +11,7 @@ pub(crate) fn script() -> String {
 
         const state = {
             binding: null,
+            sourceServerId: null,
             snapshot: null,
             stream: null,
             discoverResults: [],
@@ -27,6 +28,7 @@ pub(crate) fn script() -> String {
                 create: [],
             },
             physics: { ...DEFAULT_PHYSICS },
+            quantityOverrides: new Map(),
             graph: {
                 svg: null,
                 viewport: null,
@@ -95,6 +97,10 @@ pub(crate) fn script() -> String {
             return window.frameElement?.dataset?.packageInstanceId || "preview";
         }
 
+        function currentFrameServerId() {
+            return String(window.frameElement?.dataset?.linceServerId || "").trim();
+        }
+
         function contractUrl() {
             return "/host/widgets/" + encodeURIComponent(instanceId()) + "/contract";
         }
@@ -105,6 +111,14 @@ pub(crate) fn script() -> String {
 
         function actionUrl(action) {
             return "/host/widgets/" + encodeURIComponent(instanceId()) + "/actions/" + encodeURIComponent(action);
+        }
+
+        function recordCollectionUrl() {
+            const serverId = String(state.sourceServerId || currentFrameServerId() || "").trim();
+            if (!serverId) {
+                return null;
+            }
+            return "/host/integrations/servers/" + encodeURIComponent(serverId) + "/table/record";
         }
 
         function boundTrailStorageKey() {
@@ -201,6 +215,87 @@ pub(crate) fn script() -> String {
             return parseJsonArray(valueOf(row, "parentIdsJson", "parent_ids_json")).map((value) => Number(value)).filter(Number.isFinite);
         }
 
+        function trailMaps(rows) {
+            const recordIds = new Set((Array.isArray(rows) ? rows : []).map((row) => nodeIdFromRow(row)));
+            const parentMap = new Map();
+            const childMap = new Map();
+            const quantities = new Map();
+
+            (Array.isArray(rows) ? rows : []).forEach((row) => {
+                const recordId = nodeIdFromRow(row);
+                const parents = rowParentIds(row).filter((parentId) => recordIds.has(parentId));
+                parentMap.set(recordId, parents);
+                quantities.set(recordId, normalizedQuantity(valueOf(row, "quantity")));
+                parents.forEach((parentId) => {
+                    if (!childMap.has(parentId)) {
+                        childMap.set(parentId, []);
+                    }
+                    childMap.get(parentId).push(recordId);
+                });
+            });
+
+            return { parentMap, childMap, quantities };
+        }
+
+        function parentsComplete(recordId, parentMap, quantities) {
+            const parentIds = parentMap.get(recordId) || [];
+            if (!parentIds.length) {
+                return true;
+            }
+            return parentIds.every((parentId) => normalizedQuantity(quantities.get(parentId)) === 1);
+        }
+
+        function computeTrailQuantityChanges(recordId, quantity) {
+            if (!Array.isArray(state.snapshot?.rows) || !state.binding?.trailRootRecordId) {
+                return { changes: [], error: "Trail snapshot is not loaded yet." };
+            }
+
+            const nextQuantity = normalizedQuantity(quantity);
+            const { parentMap, childMap, quantities } = trailMaps(state.snapshot.rows);
+            const nextQuantities = new Map(quantities);
+            nextQuantities.set(recordId, nextQuantity);
+
+            const trailRootRecordId = Number(state.binding.trailRootRecordId);
+            if (recordId !== trailRootRecordId && nextQuantity === 1 && !parentsComplete(recordId, parentMap, nextQuantities)) {
+                return { changes: [], error: "All parents must be 1 before this record can be completed." };
+            }
+
+            const queue = [recordId];
+            const visited = new Set();
+            while (queue.length) {
+                const current = queue.shift();
+                if (visited.has(current)) {
+                    continue;
+                }
+                visited.add(current);
+                const childIds = childMap.get(current) || [];
+                childIds.forEach((childId) => {
+                    const existing = normalizedQuantity(nextQuantities.get(childId));
+                    if (parentsComplete(childId, parentMap, nextQuantities)) {
+                        if (existing === 0) {
+                            nextQuantities.set(childId, -1);
+                        }
+                    } else if (existing !== 1) {
+                        nextQuantities.set(childId, 0);
+                    }
+                    queue.push(childId);
+                });
+            }
+
+            const changes = [];
+            nextQuantities.forEach((resolvedQuantity, changedRecordId) => {
+                const currentQuantity = normalizedQuantity(quantities.get(changedRecordId));
+                if (currentQuantity !== resolvedQuantity) {
+                    changes.push({
+                        recordId: changedRecordId,
+                        quantity: resolvedQuantity,
+                    });
+                }
+            });
+            changes.sort((left, right) => left.recordId - right.recordId);
+            return { changes, error: null };
+        }
+
         function selectedNode() {
             return state.graph.nodes.find((node) => node.id === Number(state.selectedNodeId)) || null;
         }
@@ -228,6 +323,23 @@ pub(crate) fn script() -> String {
             return "Locked";
         }
 
+        function normalizedQuantity(value) {
+            const parsed = Number(value);
+            if (!Number.isFinite(parsed)) {
+                return 0;
+            }
+            if (Math.abs(parsed - 1) < 0.000001) {
+                return 1;
+            }
+            if (Math.abs(parsed + 1) < 0.000001) {
+                return -1;
+            }
+            if (Math.abs(parsed) < 0.000001) {
+                return 0;
+            }
+            return parsed;
+        }
+
         function scopeCopy(scope) {
             if (scope === "n") return "Node syncs a single record.";
             if (scope === "nt") return "Both syncs the record and its children.";
@@ -238,6 +350,27 @@ pub(crate) fn script() -> String {
             const resolved = Number.isFinite(scale) ? scale : state.graph.zoomScale || 1;
             state.graph.zoomScale = resolved;
             elements.zoomPill.textContent = Math.round(resolved * 100) + "%";
+        }
+
+        function resetLocalTrailProjection() {
+            state.snapshot = null;
+            state.selectedNodeId = null;
+            state.quantityOverrides = new Map();
+            renderSelection();
+            renderGraph();
+        }
+
+        function upsertQuantityOverrides(changes, replace = false) {
+            if (replace) {
+                state.quantityOverrides = new Map();
+            }
+            for (const entry of Array.isArray(changes) ? changes : []) {
+                const recordId = Number(entry?.recordId);
+                if (!Number.isFinite(recordId) || recordId <= 0) {
+                    continue;
+                }
+                state.quantityOverrides.set(recordId, normalizedQuantity(entry?.quantity));
+            }
         }
 
         function truncateLabel(value, limit = 18) {
@@ -264,6 +397,42 @@ pub(crate) fn script() -> String {
                 credentials: "same-origin",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload || {}),
+            }).then(async (response) => {
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(data?.message || data?.error || ("Request failed with " + response.status));
+                }
+                return data;
+            });
+        }
+
+        function patchRecordRows(rows) {
+            const url = recordCollectionUrl();
+            if (!url) {
+                return Promise.reject(new Error("Trail widget has no serverId bound."));
+            }
+            return fetch(url, {
+                method: "PATCH",
+                credentials: "same-origin",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(rows || []),
+            }).then(async (response) => {
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(data?.message || data?.error || ("Request failed with " + response.status));
+                }
+                return data;
+            });
+        }
+
+        function fetchViewSnapshot(viewId) {
+            const url = viewSnapshotUrl(viewId);
+            if (!url) {
+                return Promise.reject(new Error("Trail widget has no serverId/viewId bound."));
+            }
+            return fetch(url, {
+                method: "GET",
+                credentials: "same-origin",
             }).then(async (response) => {
                 const data = await response.json().catch(() => ({}));
                 if (!response.ok) {
@@ -601,6 +770,17 @@ pub(crate) fn script() -> String {
             }
         }
 
+        function visibleTrailRows(rows) {
+            const boundRootId = Number(state.binding?.trailRootRecordId || 0);
+            return (Array.isArray(rows) ? rows : []).filter((row) => {
+                const recordId = nodeIdFromRow(row);
+                if (boundRootId > 0 && recordId === boundRootId) {
+                    return true;
+                }
+                return normalizedQuantity(valueOf(row, "quantity")) !== 0;
+            });
+        }
+
         function buildGraphData(rows) {
             const previous = new Map(state.graph.nodes.map((node) => [node.id, node]));
             const nodes = rows.map((row) => {
@@ -610,7 +790,7 @@ pub(crate) fn script() -> String {
                     id,
                     head: rowHead(row),
                     body: rowBody(row),
-                    quantity: Number(valueOf(row, "quantity") || 0),
+                    quantity: normalizedQuantity(valueOf(row, "quantity")),
                     categories: rowCategories(row),
                     assigneeNames: rowAssigneeNames(row),
                     assigneeUsernames: rowAssigneeUsernames(row),
@@ -767,7 +947,7 @@ pub(crate) fn script() -> String {
             if (!state.graph.svg) {
                 return;
             }
-            const rows = Array.isArray(state.snapshot?.rows) ? state.snapshot.rows : [];
+            const rows = visibleTrailRows(state.snapshot?.rows);
             const { nodes, links } = buildGraphData(rows);
 
             state.graph.nodes = nodes;
@@ -866,6 +1046,7 @@ pub(crate) fn script() -> String {
             source.addEventListener("trail-sync", (event) => {
                 const payload = JSON.parse(event.data);
                 state.binding = payload.binding || state.binding;
+                state.quantityOverrides = new Map();
                 state.snapshot = payload.snapshot || null;
                 writeStoredTrailRoot(state.binding?.trailRootRecordId);
                 renderBinding();
@@ -883,11 +1064,13 @@ pub(crate) fn script() -> String {
 
         function bindTrailRoot(recordId) {
             state.graph.needsFit = true;
+            resetLocalTrailProjection();
             setStatus("Binding trail");
             return postJson("bind-trail", {
                 trailRootRecordId: Number(recordId),
             }).then((result) => {
                 state.binding = result.detail || null;
+                state.sourceServerId = state.sourceServerId || currentFrameServerId() || null;
                 writeStoredTrailRoot(state.binding?.trailRootRecordId);
                 renderBinding();
                 connectStream();
@@ -903,6 +1086,7 @@ pub(crate) fn script() -> String {
             }
             setStatus("Creating");
             state.graph.needsFit = true;
+            resetLocalTrailProjection();
             postJson("create-trail", {
                 sourceRecordId: nodeIdFromRow(state.selectedOriginal),
                 assignee: elements.createAssignee.value.trim(),
@@ -910,6 +1094,7 @@ pub(crate) fn script() -> String {
                 fields: currentFields(),
             }).then((result) => {
                 state.binding = result.detail || null;
+                state.sourceServerId = state.sourceServerId || currentFrameServerId() || null;
                 writeStoredTrailRoot(state.binding?.trailRootRecordId);
                 renderBinding();
                 connectStream();
@@ -925,7 +1110,7 @@ pub(crate) fn script() -> String {
             }
             const byId = new Map(
                 (Array.isArray(changes) ? changes : [])
-                    .map((entry) => [Number(entry.recordId), Number(entry.quantity)]),
+                    .map((entry) => [Number(entry.recordId), normalizedQuantity(entry.quantity)]),
             );
             if (!byId.size) {
                 return;
@@ -951,16 +1136,16 @@ pub(crate) fn script() -> String {
                 recordId: nodeIdFromRow(row),
                 quantity: nodeIdFromRow(row) === Number(state.binding.trailRootRecordId) ? -1 : 0,
             }));
+            upsertQuantityOverrides(optimisticChanges, true);
             applyQuantityChanges(optimisticChanges);
             renderGraph();
             setStatus("Resetting trail");
             postJson("initialize-trail", {
                 trailRootRecordId: state.binding.trailRootRecordId,
-            }).then((result) => {
-                applyQuantityChanges(result?.detail?.changed || []);
-                renderGraph();
+            }).then(() => {
                 setStatus("Trail reset");
             }).catch((error) => {
+                state.quantityOverrides = new Map();
                 state.snapshot.rows = previousRows;
                 renderGraph();
                 setStatus(error.message);
@@ -990,17 +1175,33 @@ pub(crate) fn script() -> String {
 
         function setSelectedNodeQuantity(quantity) {
             const node = selectedNode();
-            if (!node || !state.binding?.trailRootRecordId) {
+            if (!node || !state.binding?.trailRootRecordId || !Array.isArray(state.snapshot?.rows)) {
                 return;
             }
+            const progression = computeTrailQuantityChanges(node.id, quantity);
+            if (progression.error) {
+                setStatus(progression.error);
+                return;
+            }
+            const changed = progression.changes || [];
+            if (!changed.length) {
+                setStatus("Node already up to date");
+                return;
+            }
+            const previousRows = state.snapshot.rows.map((row) => ({ ...row }));
+            upsertQuantityOverrides(changed);
+            applyQuantityChanges(changed);
+            renderGraph();
             setStatus("Updating node");
-            postJson("set-trail-quantity", {
-                trailRootRecordId: state.binding.trailRootRecordId,
-                recordId: node.id,
-                quantity,
-            }).then(() => {
+            patchRecordRows(changed.map((entry) => ({
+                id: entry.recordId,
+                quantity: entry.quantity,
+            }))).then(() => {
                 setStatus("Node updated");
             }).catch((error) => {
+                state.quantityOverrides = new Map();
+                state.snapshot.rows = previousRows;
+                renderGraph();
                 setStatus(error.message);
             });
         }
@@ -1014,6 +1215,8 @@ pub(crate) fn script() -> String {
                         throw new Error(data?.message || data?.error || "Failed to load contract.");
                     }
                     state.binding = data?.binding || null;
+                    state.sourceServerId = data?.source?.serverId || currentFrameServerId() || null;
+                    resetLocalTrailProjection();
                     if (state.binding?.sync) {
                         elements.syncScope.value = state.binding.sync.scope || "t";
                         applyFields(state.binding.sync.fields || "hb");

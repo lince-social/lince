@@ -74,6 +74,20 @@ impl TrailWidgetService {
         } else {
             None
         };
+        let snapshot = if let Some(view_id) = runtime.derived_view_id {
+            self.load_view_snapshot(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+                u32::try_from(view_id).map_err(|_| {
+                    TrailWidgetError::Internal("view_id invalido no binding da trail.".into())
+                })?,
+            )
+            .await
+            .ok()
+        } else {
+            None
+        };
 
         Ok(json!({
             "widget": {
@@ -99,6 +113,7 @@ impl TrailWidgetService {
                 "trailRootRecordId": runtime.trail_root_record_id,
                 "viewId": runtime.derived_view_id,
                 "sync": sync,
+                "snapshot": snapshot,
             },
             "dataContract": {
                 "requiredColumns": ["id", "quantity", "head", "body"],
@@ -323,6 +338,16 @@ impl TrailWidgetService {
                 request.trail_root_record_id,
             )
             .await?;
+        let snapshot = self
+            .load_view_snapshot(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+                u32::try_from(view_id).map_err(|_| {
+                    TrailWidgetError::Internal("view_id invalido ao vincular trail.".into())
+                })?,
+            )
+            .await?;
         Ok(json!({
             "ok": true,
             "action": "bind-trail",
@@ -331,6 +356,7 @@ impl TrailWidgetService {
                 "trailRootRecordId": request.trail_root_record_id,
                 "viewId": view_id,
                 "sync": sync,
+                "snapshot": snapshot,
             }
         }))
     }
@@ -440,6 +466,16 @@ impl TrailWidgetService {
                 copied_root_id,
             )
             .await?;
+        let snapshot = self
+            .load_view_snapshot(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+                u32::try_from(view_id).map_err(|_| {
+                    TrailWidgetError::Internal("view_id invalido ao criar trail.".into())
+                })?,
+            )
+            .await?;
 
         Ok(json!({
             "ok": true,
@@ -452,6 +488,7 @@ impl TrailWidgetService {
                 "viewId": view_id,
                 "sync": sync,
                 "initialization": initialization,
+                "snapshot": snapshot,
             }
         }))
     }

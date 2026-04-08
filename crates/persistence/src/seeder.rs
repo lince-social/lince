@@ -76,13 +76,51 @@ pub async fn seed(db: &Pool<Sqlite>) -> Result<(), Error> {
 
     if configuration_with_style == 0 {
         sqlx::query(
-            "INSERT INTO configuration(quantity, name, language, timezone, style)
-                VALUES (1, 'Default', 'en', 0, 'catppuccin_macchiato')",
+            "INSERT INTO configuration(
+                quantity,
+                name,
+                language,
+                timezone,
+                style,
+                bucket_enabled,
+                bucket_username,
+                bucket_password,
+                bucket_uri,
+                bucket_name,
+                bucket_region
+            )
+            VALUES (
+                1,
+                'Default',
+                'en',
+                0,
+                'catppuccin_macchiato',
+                1,
+                'rustfsadmin',
+                'rustfsadmin',
+                'http://localhost:9000',
+                'lince',
+                'us-east-1'
+            )",
         )
         .execute(&*db)
         .await
         .map_err(Error::other)?;
     }
+
+    sqlx::query(
+        "UPDATE configuration
+         SET bucket_enabled = 1,
+             bucket_username = 'ACCESS_KEY',
+             bucket_password = 'SECRET_KEY',
+             bucket_uri = 'http://localhost:9000',
+             bucket_name = 'lince',
+             bucket_region = 'us-east-1'
+         WHERE quantity = 1",
+    )
+    .execute(&*db)
+    .await
+    .map_err(Error::other)?;
 
     sqlx::query(
         "INSERT INTO organ(id, name, base_url)

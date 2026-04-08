@@ -4,22 +4,6 @@ DOCS_ROOT = "documentation"
 [tools]
 rust = "stable"
 
-[tasks.typst]
-description = "Run Typst and Touying workflows"
-tools = { "tinymist" = "latest", "typst" = "latest", "pipx:touying" = "latest" }
-usage = """
-arg "target" help="Target workflow: docs"
-arg "action" help="Action: preview or compile"
-flag "-l --light" help="Use light mode in preview flows"
-"""
-run = """
-if [ "${usage_light:-false}" = "true" ]; then
-  ./run/typst.sh "$usage_target" "$usage_action" --light
-else
-  ./run/typst.sh "$usage_target" "$usage_action"
-fi
-"""
-
 [tasks.release]
 description = "Automated release workflow"
 tools = { "cargo:git-cliff" = "latest", "cargo:cargo-edit" = "latest", "gh" = "latest" }

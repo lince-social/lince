@@ -95,7 +95,7 @@ pub async fn seed(db: &Pool<Sqlite>) -> Result<(), Error> {
                 'en',
                 0,
                 'catppuccin_macchiato',
-                1,
+                0,
                 'rustfsadmin',
                 'rustfsadmin',
                 'http://localhost:9000',

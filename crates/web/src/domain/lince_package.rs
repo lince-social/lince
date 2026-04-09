@@ -5,10 +5,7 @@ use {
         io::{Cursor, Read, Write},
         path::{Component, Path},
     },
-    zip::{
-        CompressionMethod, ZipArchive, ZipWriter,
-        write::SimpleFileOptions,
-    },
+    zip::{CompressionMethod, ZipArchive, ZipWriter, write::SimpleFileOptions},
 };
 
 pub const MAX_PACKAGE_BYTES: usize = 64 * 1024 * 1024;
@@ -70,7 +67,14 @@ impl LincePackage {
         manifest: PackageManifest,
         html: impl Into<String>,
     ) -> Result<Self, String> {
-        Self::from_parts(filename, manifest, html, PackageTransport::Html, ARCHIVE_ENTRY_HTML, BTreeMap::new())
+        Self::from_parts(
+            filename,
+            manifest,
+            html,
+            PackageTransport::Html,
+            ARCHIVE_ENTRY_HTML,
+            BTreeMap::new(),
+        )
     }
 
     pub fn new_archive(
@@ -80,7 +84,14 @@ impl LincePackage {
         entry_path: impl Into<String>,
         assets: BTreeMap<String, Vec<u8>>,
     ) -> Result<Self, String> {
-        Self::from_parts(filename, manifest, html, PackageTransport::Archive, entry_path, assets)
+        Self::from_parts(
+            filename,
+            manifest,
+            html,
+            PackageTransport::Archive,
+            entry_path,
+            assets,
+        )
     }
 
     fn from_parts(
@@ -211,7 +222,11 @@ pub fn normalize_package_filename(filename: &str) -> String {
 
 fn sanitize_package_filename_for_transport(filename: &str, transport: PackageTransport) -> String {
     let base = strip_package_extension(filename).trim();
-    let base = if base.is_empty() { "lince-widget" } else { base };
+    let base = if base.is_empty() {
+        "lince-widget"
+    } else {
+        base
+    };
 
     match transport {
         PackageTransport::Html => {
@@ -423,9 +438,10 @@ fn parse_archive_package(filename: String, bytes: &[u8]) -> Result<LincePackage,
         files.insert(entry_path, content);
     }
 
-    let (entry_path, html_bytes) = select_archive_entry(&files, ARCHIVE_ENTRY_HTML)?.ok_or_else(
-        || format!("O package .lince precisa conter um arquivo {ARCHIVE_ENTRY_HTML}."),
-    )?;
+    let (entry_path, html_bytes) =
+        select_archive_entry(&files, ARCHIVE_ENTRY_HTML)?.ok_or_else(|| {
+            format!("O package .lince precisa conter um arquivo {ARCHIVE_ENTRY_HTML}.")
+        })?;
     let entry_path = entry_path.to_string();
     let html_bytes = html_bytes.to_vec();
     let html = std::str::from_utf8(&html_bytes)
@@ -476,15 +492,17 @@ fn build_archive_package(package: &LincePackage) -> Result<Vec<u8>, String> {
 
     writer
         .start_file(ARCHIVE_ENTRY_CONFIG, options)
-        .map_err(|error| format!("Nao consegui adicionar config.toml ao arquivo .lince: {error}"))?;
+        .map_err(|error| {
+            format!("Nao consegui adicionar config.toml ao arquivo .lince: {error}")
+        })?;
     writer
         .write_all(package.manifest_toml()?.as_bytes())
         .map_err(|error| format!("Nao consegui escrever config.toml: {error}"))?;
 
     for (asset_path, bytes) in &package.assets {
-        writer
-            .start_file(asset_path, options)
-            .map_err(|error| format!("Nao consegui adicionar {asset_path} ao arquivo .lince: {error}"))?;
+        writer.start_file(asset_path, options).map_err(|error| {
+            format!("Nao consegui adicionar {asset_path} ao arquivo .lince: {error}")
+        })?;
         writer
             .write_all(bytes)
             .map_err(|error| format!("Nao consegui escrever {asset_path}: {error}"))?;
@@ -703,7 +721,10 @@ mod tests {
     fn archive_roundtrip_preserves_assets_and_filename() {
         let mut assets = BTreeMap::new();
         assets.insert("pkg/demo.wasm".into(), vec![0, 97, 115, 109]);
-        assets.insert("assets/theme.css".into(), b"body{background:black;}".to_vec());
+        assets.insert(
+            "assets/theme.css".into(),
+            b"body{background:black;}".to_vec(),
+        );
 
         let package = LincePackage::new_archive(
             Some("demo.lince".into()),
@@ -721,7 +742,10 @@ mod tests {
         assert_eq!(parsed.archive_filename(), "demo.lince");
         assert_eq!(parsed.transport(), PackageTransport::Archive);
         assert_eq!(parsed.entry_path(), ARCHIVE_ENTRY_HTML);
-        assert_eq!(parsed.asset_bytes("pkg/demo.wasm"), Some(&[0, 97, 115, 109][..]));
+        assert_eq!(
+            parsed.asset_bytes("pkg/demo.wasm"),
+            Some(&[0, 97, 115, 109][..])
+        );
         assert_eq!(
             parsed.asset_bytes("assets/theme.css"),
             Some(&b"body{background:black;}"[..])

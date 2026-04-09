@@ -29,7 +29,10 @@ pub(crate) fn package() -> crate::domain::lince_package::LincePackage {
     };
 
     let mut assets = BTreeMap::new();
-    assets.insert("d3.v7.min.js".into(), include_bytes!("d3.v7.min.js").to_vec());
+    assets.insert(
+        "d3.v7.min.js".into(),
+        include_bytes!("d3.v7.min.js").to_vec(),
+    );
     assets.insert("LICENSE.txt".into(), include_bytes!("LICENSE.txt").to_vec());
 
     crate::domain::lince_package::LincePackage::new_archive(

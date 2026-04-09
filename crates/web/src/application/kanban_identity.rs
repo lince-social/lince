@@ -1,5 +1,5 @@
-use crate::domain::lince_package::normalize_package_filename;
 use crate::application::relations_identity::is_supported_relations_package_filename;
+use crate::domain::lince_package::normalize_package_filename;
 
 pub(crate) const KANBAN_PACKAGE_FILENAME: &str = "kanban-record-view.html";
 

@@ -1,8 +1,5 @@
 use crate::{
-    application::backend_api::{
-        FileLink, RecordQuantityBatchUpdateRequest, TrailInitializeRequest,
-        TrailProgressionRequest,
-    },
+    application::backend_api::{FileLink, RecordQuantityBatchUpdateRequest},
     application::state::AppState,
     infrastructure::backend_api_store::TableListQuery,
     presentation::http::api_error::{ApiResult, api_error},
@@ -85,10 +82,21 @@ pub fn router() -> Router<AppState> {
                 .patch(update_table_row)
                 .delete(delete_table_row),
         )
-        .route("/table/record/quantities", post(batch_update_record_quantities))
+        .route(
+            "/table/record/quantities",
+            post(batch_update_record_quantities),
+        )
+        .route(
+            "/karma",
+            get(list_karma_rows).post(create_karma_row),
+        )
+        .route(
+            "/karma/{id}",
+            get(get_karma_row)
+                .patch(update_karma_row)
+                .delete(delete_karma_row),
+        )
         .route("/karma/{id}/execute", post(execute_karma))
-        .route("/trail/initialize", post(initialize_trail_progression))
-        .route("/trail/progression", post(apply_trail_progression))
         .route("/files", get(list_files))
         .route("/files/upload-link", post(upload_link))
         .route("/files/download-link", post(download_link))
@@ -258,6 +266,97 @@ async fn batch_update_record_quantities(
     }))
 }
 
+async fn list_karma_rows(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Query(query): Query<TableListQuery>,
+) -> ApiResult<Json<Value>> {
+    let claims = authenticate_request(&state, &headers).await?;
+    let value = state
+        .backend
+        .list_table_rows_filtered(&claims, "karma", &query)
+        .await
+        .map_err(map_backend_error)?;
+    Ok(Json(value))
+}
+
+async fn get_karma_row(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+) -> ApiResult<Json<Value>> {
+    let claims = authenticate_request(&state, &headers).await?;
+    let value = state
+        .backend
+        .get_table_row(&claims, "karma", id)
+        .await
+        .map_err(map_backend_error)?;
+    Ok(Json(value))
+}
+
+async fn create_karma_row(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(payload): Json<Value>,
+) -> ApiResult<(StatusCode, Json<MutationResponse>)> {
+    let claims = authenticate_request(&state, &headers).await?;
+    let object = payload_object(&payload)?;
+    let outcome = state
+        .backend
+        .create_table_row(&claims, "karma", object)
+        .await
+        .map_err(map_backend_error)?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(MutationResponse {
+            ok: true,
+            rows_affected: outcome.rows_affected,
+            last_insert_rowid: outcome.last_insert_rowid,
+        }),
+    ))
+}
+
+async fn update_karma_row(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+    Json(payload): Json<Value>,
+) -> ApiResult<Json<MutationResponse>> {
+    let claims = authenticate_request(&state, &headers).await?;
+    let object = payload_object(&payload)?;
+    let outcome = state
+        .backend
+        .update_table_row(&claims, "karma", id, object)
+        .await
+        .map_err(map_backend_error)?;
+
+    Ok(Json(MutationResponse {
+        ok: true,
+        rows_affected: outcome.rows_affected,
+        last_insert_rowid: outcome.last_insert_rowid,
+    }))
+}
+
+async fn delete_karma_row(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+) -> ApiResult<Json<MutationResponse>> {
+    let claims = authenticate_request(&state, &headers).await?;
+    let outcome = state
+        .backend
+        .delete_table_row(&claims, "karma", id)
+        .await
+        .map_err(map_backend_error)?;
+
+    Ok(Json(MutationResponse {
+        ok: true,
+        rows_affected: outcome.rows_affected,
+        last_insert_rowid: outcome.last_insert_rowid,
+    }))
+}
+
 async fn execute_karma(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -274,44 +373,6 @@ async fn execute_karma(
         rows_affected: 0,
         last_insert_rowid: None,
     }))
-}
-
-async fn apply_trail_progression(
-    State(state): State<AppState>,
-    headers: HeaderMap,
-    Json(request): Json<TrailProgressionRequest>,
-) -> ApiResult<Json<Value>> {
-    let claims = authenticate_request(&state, &headers).await?;
-    let outcome = state
-        .backend
-        .apply_trail_progression(&claims, request)
-        .await
-        .map_err(map_backend_error)?;
-    Ok(Json(serde_json::to_value(outcome).map_err(|error| {
-        api_error(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to serialize trail progression outcome: {error}"),
-        )
-    })?))
-}
-
-async fn initialize_trail_progression(
-    State(state): State<AppState>,
-    headers: HeaderMap,
-    Json(request): Json<TrailInitializeRequest>,
-) -> ApiResult<Json<Value>> {
-    let claims = authenticate_request(&state, &headers).await?;
-    let outcome = state
-        .backend
-        .initialize_trail_progression(&claims, request)
-        .await
-        .map_err(map_backend_error)?;
-    Ok(Json(serde_json::to_value(outcome).map_err(|error| {
-        api_error(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to serialize trail initialization outcome: {error}"),
-        )
-    })?))
 }
 
 async fn list_files(

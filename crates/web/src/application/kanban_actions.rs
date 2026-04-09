@@ -268,11 +268,7 @@ impl KanbanActionService {
         payload: UpdateParentRelationRequest,
     ) -> Result<KanbanActionOutcome, KanbanActionError> {
         let resolved = self
-            .resolve_instance(
-                session_token,
-                instance_id,
-                ActionPermission::WriteTableOnly,
-            )
+            .resolve_instance(session_token, instance_id, ActionPermission::WriteTableOnly)
             .await?;
         validate_parent_id(payload.parent_id)?;
         self.ensure_record_exists(
@@ -698,8 +694,7 @@ impl KanbanActionService {
 
         for extension in &extensions {
             if extension.namespace == "task.categories" {
-                let normalized_categories =
-                    extract_categories(&extension.freestyle_data_structure)
+                let normalized_categories = extract_categories(&extension.freestyle_data_structure)
                     .map(normalize_categories)
                     .unwrap_or_default();
                 if !normalized_categories.is_empty() {

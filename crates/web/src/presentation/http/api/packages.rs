@@ -257,7 +257,9 @@ impl PackagePreview {
     }
 }
 
-pub async fn list_local_packages(State(state): State<AppState>) -> ApiResult<Json<Vec<InstalledPackageSummary>>> {
+pub async fn list_local_packages(
+    State(state): State<AppState>,
+) -> ApiResult<Json<Vec<InstalledPackageSummary>>> {
     let packages = state.packages.list().map_err(|message| {
         crate::presentation::http::api_error::api_error(StatusCode::BAD_GATEWAY, message)
     })?;
@@ -280,9 +282,12 @@ pub async fn get_local_package_content(
     State(state): State<AppState>,
     Path((filename, asset_path)): Path<(String, String)>,
 ) -> ApiResult<impl IntoResponse> {
-    let package = state.packages.load_by_filename(&filename).map_err(|message| {
-        crate::presentation::http::api_error::api_error(StatusCode::NOT_FOUND, message)
-    })?;
+    let package = state
+        .packages
+        .load_by_filename(&filename)
+        .map_err(|message| {
+            crate::presentation::http::api_error::api_error(StatusCode::NOT_FOUND, message)
+        })?;
     let content_root_url = format!(
         "/host/packages/local/by-filename/{}/content",
         urlencoding::encode(&filename)
@@ -294,12 +299,16 @@ pub async fn get_preview_package_content(
     State(state): State<AppState>,
     Path((preview_id, asset_path)): Path<(String, String)>,
 ) -> ApiResult<impl IntoResponse> {
-    let package = state.package_previews.get(&preview_id).await.ok_or_else(|| {
-        crate::presentation::http::api_error::api_error(
-            StatusCode::NOT_FOUND,
-            "Esse preview de widget expirou.",
-        )
-    })?;
+    let package = state
+        .package_previews
+        .get(&preview_id)
+        .await
+        .ok_or_else(|| {
+            crate::presentation::http::api_error::api_error(
+                StatusCode::NOT_FOUND,
+                "Esse preview de widget expirou.",
+            )
+        })?;
     let content_root_url = format!(
         "/host/packages/previews/{}/content",
         urlencoding::encode(&preview_id)
@@ -357,8 +366,11 @@ pub async fn delete_dna_publication(
     let organ = load_publish_organ(&state, &organ_id).await?;
     let mut deleted_bucket_keys = std::collections::BTreeSet::new();
 
-    for resource_ref in list_sand_resource_refs_for_record(&state, &headers, &organ, record_id).await? {
-        delete_bucket_object_if_exists(&state, &headers, &organ, &resource_ref.resource_path).await?;
+    for resource_ref in
+        list_sand_resource_refs_for_record(&state, &headers, &organ, record_id).await?
+    {
+        delete_bucket_object_if_exists(&state, &headers, &organ, &resource_ref.resource_path)
+            .await?;
         deleted_bucket_keys.insert(resource_ref.resource_path.clone());
         let resource_meta = parse_resource_meta(resource_ref.freestyle_data_structure.as_deref());
         if let Some(sand_toml_key) = resource_meta.sand_toml_key.as_deref() {
@@ -445,7 +457,11 @@ async fn load_dna_catalog_packages(
                     .to_ascii_lowercase()
                     .cmp(&right.head.to_ascii_lowercase())
             })
-            .then_with(|| left.origin_name.to_ascii_lowercase().cmp(&right.origin_name.to_ascii_lowercase()))
+            .then_with(|| {
+                left.origin_name
+                    .to_ascii_lowercase()
+                    .cmp(&right.origin_name.to_ascii_lowercase())
+            })
             .then_with(|| left.record_id.cmp(&right.record_id))
     });
 
@@ -497,7 +513,10 @@ async fn load_dna_catalog_snapshot(
     Ok(DnaCatalogStatus {
         package_count: packages.len(),
         origins,
-        packages: packages.into_iter().map(|publication| publication.summary).collect(),
+        packages: packages
+            .into_iter()
+            .map(|publication| publication.summary)
+            .collect(),
     })
 }
 
@@ -625,10 +644,9 @@ async fn collect_organ_publications(
         ])
         .map(normalize_package_slug)
         .unwrap_or_else(|| "lince_sand".to_string());
-        let package_format = resource_meta
-            .package_format
-            .clone()
-            .unwrap_or_else(|| infer_package_format_from_path(&resource_ref.resource_path).to_string());
+        let package_format = resource_meta.package_format.clone().unwrap_or_else(|| {
+            infer_package_format_from_path(&resource_ref.resource_path).to_string()
+        });
         let channel = normalize_publication_channel_or_default(
             first_non_empty(&[meta.channel.as_str(), resource_meta.channel.as_str()])
                 .or_else(|| infer_channel_from_path(&resource_ref.resource_path)),
@@ -746,7 +764,8 @@ async fn load_publication_package(
     publication: &DnaPublication,
 ) -> ApiResult<LincePackage> {
     let organ = load_publish_organ(state, &publication.summary.organ_id).await?;
-    let bytes = download_bucket_object(state, headers, &organ, &publication.summary.bucket_key).await?;
+    let bytes =
+        download_bucket_object(state, headers, &organ, &publication.summary.bucket_key).await?;
     parse_lince_package(
         publication
             .summary
@@ -784,7 +803,9 @@ async fn parse_publish_multipart(multipart: &mut Multipart) -> ApiResult<Publish
         let value = field.text().await.map_err(invalid_multipart)?;
         match field_name.as_str() {
             "serverId" => server_id = value.trim().to_string(),
-            "channel" => channel = normalize_publication_channel(&value).map_err(map_validation_error)?,
+            "channel" => {
+                channel = normalize_publication_channel(&value).map_err(map_validation_error)?
+            }
             "head" => head = value.trim().to_string(),
             "body" => body = value.trim().to_string(),
             "categories" => categories = parse_categories_field(&value),
@@ -1051,12 +1072,13 @@ async fn upsert_dna_publication(
         }
 
         if reuse_current_canonical {
-            let canonical_resource_ref_id = current_ref.as_ref().map(|row| row.id).ok_or_else(|| {
-                api_error(
-                    StatusCode::BAD_GATEWAY,
-                    "Nao encontrei a referencia canonica desse sand publicado.",
-                )
-            })?;
+            let canonical_resource_ref_id =
+                current_ref.as_ref().map(|row| row.id).ok_or_else(|| {
+                    api_error(
+                        StatusCode::BAD_GATEWAY,
+                        "Nao encontrei a referencia canonica desse sand publicado.",
+                    )
+                })?;
             update_table_row(
                 state,
                 headers,
@@ -1221,7 +1243,14 @@ async fn upsert_dna_publication(
             categories,
         )
         .await?;
-        prune_old_releases(state, headers, server, existing.record_id, new_resource_ref_id).await?;
+        prune_old_releases(
+            state,
+            headers,
+            server,
+            existing.record_id,
+            new_resource_ref_id,
+        )
+        .await?;
 
         return Ok((
             existing.record_id,
@@ -1328,15 +1357,7 @@ async fn upsert_dna_publication(
         }
     };
 
-    upsert_categories_extension(
-        state,
-        headers,
-        server,
-        record_id,
-        None,
-        categories,
-    )
-    .await?;
+    upsert_categories_extension(state, headers, server, record_id, None, categories).await?;
 
     Ok((record_id, record_extension_id, resource_ref_id))
 }
@@ -1397,7 +1418,12 @@ async fn update_table_row(
     if !organ_requires_auth(server, state.local_auth_required) {
         state
             .backend
-            .update_table_row(&local_host_subject(), table_name, id, payload_object(&payload)?)
+            .update_table_row(
+                &local_host_subject(),
+                table_name,
+                id,
+                payload_object(&payload)?,
+            )
             .await
             .map_err(map_backend_error)?;
         return Ok(());
@@ -1487,7 +1513,8 @@ async fn upload_bucket_object(
         )
         .await
         .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
-    let link = extract_remote_link(state, session_token.as_deref(), &server.id, link_response).await?;
+    let link =
+        extract_remote_link(state, session_token.as_deref(), &server.id, link_response).await?;
     let upload_response = state
         .manas
         .send_backend_bytes_request(
@@ -1500,7 +1527,14 @@ async fn upload_bucket_object(
         )
         .await
         .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
-    ensure_empty_remote_success(state, session_token.as_deref(), &server.id, upload_response, "Nao foi possivel enviar o sand para o bucket remoto.").await
+    ensure_empty_remote_success(
+        state,
+        session_token.as_deref(),
+        &server.id,
+        upload_response,
+        "Nao foi possivel enviar o sand para o bucket remoto.",
+    )
+    .await
 }
 
 async fn download_bucket_object(
@@ -1510,7 +1544,11 @@ async fn download_bucket_object(
     key: &str,
 ) -> ApiResult<Vec<u8>> {
     if !organ_requires_auth(server, state.local_auth_required) {
-        let downloaded = state.backend.download_file(key).await.map_err(map_backend_error)?;
+        let downloaded = state
+            .backend
+            .download_file(key)
+            .await
+            .map_err(map_backend_error)?;
         return download_object_bytes(downloaded)
             .await
             .map_err(|error| api_error(StatusCode::BAD_GATEWAY, error.to_string()));
@@ -1529,7 +1567,8 @@ async fn download_bucket_object(
         )
         .await
         .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
-    let link = extract_remote_link(state, session_token.as_deref(), &server.id, link_response).await?;
+    let link =
+        extract_remote_link(state, session_token.as_deref(), &server.id, link_response).await?;
     let response = state
         .manas
         .send_backend_request(
@@ -1563,7 +1602,11 @@ async fn delete_bucket_object(
     key: &str,
 ) -> ApiResult<()> {
     if !organ_requires_auth(server, state.local_auth_required) {
-        state.backend.delete_file(key).await.map_err(map_backend_error)?;
+        state
+            .backend
+            .delete_file(key)
+            .await
+            .map_err(map_backend_error)?;
         return Ok(());
     }
 
@@ -1580,7 +1623,8 @@ async fn delete_bucket_object(
         )
         .await
         .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
-    let link = extract_remote_link(state, session_token.as_deref(), &server.id, link_response).await?;
+    let link =
+        extract_remote_link(state, session_token.as_deref(), &server.id, link_response).await?;
     let delete_response = state
         .manas
         .send_backend_request(
@@ -1592,7 +1636,14 @@ async fn delete_bucket_object(
         )
         .await
         .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
-    ensure_empty_remote_success(state, session_token.as_deref(), &server.id, delete_response, "Nao foi possivel limpar os arquivos publicados no bucket remoto.").await
+    ensure_empty_remote_success(
+        state,
+        session_token.as_deref(),
+        &server.id,
+        delete_response,
+        "Nao foi possivel limpar os arquivos publicados no bucket remoto.",
+    )
+    .await
 }
 
 async fn delete_bucket_object_if_exists(
@@ -1617,7 +1668,8 @@ async fn find_existing_publication_state(
 ) -> ApiResult<Option<DnaPublicationState>> {
     let records = list_table_rows::<DnaRecordRow>(state, headers, server, "record").await?;
     let extensions =
-        list_table_rows::<DnaRecordExtensionRow>(state, headers, server, "record_extension").await?;
+        list_table_rows::<DnaRecordExtensionRow>(state, headers, server, "record_extension")
+            .await?;
     let resource_refs =
         list_table_rows::<DnaResourceRefRow>(state, headers, server, "record_resource_ref").await?;
 
@@ -1626,13 +1678,13 @@ async fn find_existing_publication_state(
         .filter(|record| record.quantity > 0.0)
         .map(|record| (record.id, record))
         .collect::<BTreeMap<_, _>>();
-    let refs_by_record =
-        resource_refs
-            .into_iter()
-            .fold(BTreeMap::<i64, Vec<DnaResourceRefRow>>::new(), |mut acc, row| {
-                acc.entry(row.record_id).or_default().push(row);
-                acc
-            });
+    let refs_by_record = resource_refs.into_iter().fold(
+        BTreeMap::<i64, Vec<DnaResourceRefRow>>::new(),
+        |mut acc, row| {
+            acc.entry(row.record_id).or_default().push(row);
+            acc
+        },
+    );
     let categories_extension_by_record = extensions
         .iter()
         .filter(|row| row.namespace == DNA_CATEGORY_NAMESPACE)
@@ -1662,16 +1714,27 @@ async fn find_existing_publication_state(
             .collect::<Vec<_>>();
         let canonical_resource_ref = meta
             .canonical_resource_ref_id
-            .and_then(|resource_id| resource_refs.iter().find(|row| row.id == resource_id).cloned())
+            .and_then(|resource_id| {
+                resource_refs
+                    .iter()
+                    .find(|row| row.id == resource_id)
+                    .cloned()
+            })
             .or_else(|| {
                 resource_refs
                     .iter()
-                    .find(|row| parse_resource_meta(row.freestyle_data_structure.as_deref()).role == "canonical_transport")
+                    .find(|row| {
+                        parse_resource_meta(row.freestyle_data_structure.as_deref()).role
+                            == "canonical_transport"
+                    })
                     .cloned()
             })
             .or_else(|| resource_refs.first().cloned());
-        let canonical_meta =
-            parse_resource_meta(canonical_resource_ref.as_ref().and_then(|row| row.freestyle_data_structure.as_deref()));
+        let canonical_meta = parse_resource_meta(
+            canonical_resource_ref
+                .as_ref()
+                .and_then(|row| row.freestyle_data_structure.as_deref()),
+        );
         let publication_slug = first_non_empty(&[
             meta.slug.as_str(),
             canonical_meta.slug.as_str(),
@@ -1715,13 +1778,17 @@ async fn list_sand_resource_refs_for_record(
     server: &Organ,
     record_id: i64,
 ) -> ApiResult<Vec<DnaResourceRefRow>> {
-    Ok(list_table_rows::<DnaResourceRefRow>(state, headers, server, "record_resource_ref")
-        .await?
-        .into_iter()
-        .filter(|row| {
-            row.record_id == record_id && row.provider == "bucket" && row.resource_kind == "sand"
-        })
-        .collect())
+    Ok(
+        list_table_rows::<DnaResourceRefRow>(state, headers, server, "record_resource_ref")
+            .await?
+            .into_iter()
+            .filter(|row| {
+                row.record_id == record_id
+                    && row.provider == "bucket"
+                    && row.resource_kind == "sand"
+            })
+            .collect(),
+    )
 }
 
 fn build_resource_meta_json(
@@ -1836,7 +1903,15 @@ async fn upsert_categories_extension(
     });
 
     if let Some(extension_id) = categories_extension_id {
-        update_table_row(state, headers, server, "record_extension", extension_id, payload).await
+        update_table_row(
+            state,
+            headers,
+            server,
+            "record_extension",
+            extension_id,
+            payload,
+        )
+        .await
     } else {
         let _ = create_table_row(state, headers, server, "record_extension", payload).await?;
         Ok(())
@@ -2187,8 +2262,12 @@ fn serve_package_asset(
     let (bytes, content_type) = if asset_path == "index.html" || asset_path == package.entry_path()
     {
         (
-            inject_package_html(&package.html_document(), package.entry_path(), content_root_url)
-                .into_bytes(),
+            inject_package_html(
+                &package.html_document(),
+                package.entry_path(),
+                content_root_url,
+            )
+            .into_bytes(),
             "text/html; charset=utf-8",
         )
     } else if asset_path == "config.toml" {
@@ -2209,10 +2288,7 @@ fn serve_package_asset(
     };
 
     let mut headers = HeaderMap::new();
-    headers.insert(
-        header::CONTENT_TYPE,
-        HeaderValue::from_static(content_type),
-    );
+    headers.insert(header::CONTENT_TYPE, HeaderValue::from_static(content_type));
     Ok((headers, Body::from(bytes)).into_response())
 }
 

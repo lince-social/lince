@@ -46,7 +46,9 @@ impl PackagePreviewStore {
     pub async fn get(&self, preview_id: &str) -> Option<LincePackage> {
         let mut previews = self.previews.write().await;
         retain_fresh(&mut previews);
-        previews.get(preview_id).map(|preview| preview.package.clone())
+        previews
+            .get(preview_id)
+            .map(|preview| preview.package.clone())
     }
 }
 

@@ -888,8 +888,7 @@ impl BackendApiStore {
     }
 
     async fn get_record_row(&self, db: &Pool<Sqlite>, id: i64) -> Result<RecordRow, Error> {
-        let sql =
-            "SELECT \
+        let sql = "SELECT \
                 r.id, \
                 r.quantity, \
                 r.head, \
@@ -1072,7 +1071,10 @@ impl BackendApiStore {
             let entry = merged.entry(record_id).or_default();
             for spec in RECORD_FIELD_SPECS {
                 if let Some(value) = object.get(spec.name) {
-                    entry.insert(spec.name.to_string(), parse_parameter(spec.name, value, spec.kind)?);
+                    entry.insert(
+                        spec.name.to_string(),
+                        parse_parameter(spec.name, value, spec.kind)?,
+                    );
                 }
             }
             if entry.is_empty() {

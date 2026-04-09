@@ -292,13 +292,19 @@ struct SyncToken {
 }
 
 fn parse_sync_token(regex: &Regex, input: &str) -> Option<SyncToken> {
-    regex.captures(input).and_then(|caps| parse_sync_captures(&caps))
+    regex
+        .captures(input)
+        .and_then(|caps| parse_sync_captures(&caps))
 }
 
 fn parse_sync_captures(caps: &regex::Captures<'_>) -> Option<SyncToken> {
     Some(SyncToken {
         scope: SyncScope::from_segment(caps.name("scope")?.as_str())?,
-        fields: SyncFields::from_segment(caps.name("fields").map(|value| value.as_str()).unwrap_or(""))?,
+        fields: SyncFields::from_segment(
+            caps.name("fields")
+                .map(|value| value.as_str())
+                .unwrap_or(""),
+        )?,
         record_id: caps.name("id")?.as_str().parse::<i64>().ok()?,
     })
 }
@@ -414,13 +420,17 @@ async fn load_sync_context(
     .await
     .map_err(Error::other)?;
 
-    let records_by_id = records.into_iter().map(|row| (row.id, row)).collect::<BTreeMap<_, _>>();
+    let records_by_id = records
+        .into_iter()
+        .map(|row| (row.id, row))
+        .collect::<BTreeMap<_, _>>();
     let trail_extension = all_extensions
         .iter()
         .find(|row| row.record_id == copied_root_id && row.namespace == "trail.sync")
         .ok_or_else(|| Error::new(ErrorKind::InvalidData, "Missing trail.sync extension"))?;
-    let trail_sync = serde_json::from_str::<TrailSyncExtension>(&trail_extension.freestyle_data_structure)
-        .map_err(Error::other)?;
+    let trail_sync =
+        serde_json::from_str::<TrailSyncExtension>(&trail_extension.freestyle_data_structure)
+            .map_err(Error::other)?;
 
     let parent_links = all_links
         .iter()
@@ -433,7 +443,8 @@ async fn load_sync_context(
         .iter()
         .filter(|row| row.namespace == "trail.sync")
         .filter_map(|row| {
-            let parsed = serde_json::from_str::<TrailSyncExtension>(&row.freestyle_data_structure).ok()?;
+            let parsed =
+                serde_json::from_str::<TrailSyncExtension>(&row.freestyle_data_structure).ok()?;
             (parsed.trail_root_record_id == trail_sync.trail_root_record_id)
                 .then_some((parsed.sync_source_record_id, row.record_id))
         })
@@ -541,46 +552,47 @@ async fn sync_descendants(
         let mut expected_copy_children = BTreeSet::new();
 
         for child_source_id in expected_source_children.iter().copied() {
-            let child_copy_id = if let Some(existing_id) = copies_by_source.get(&child_source_id).copied() {
-                sync_existing_record_fields(
-                    services.clone(),
-                    context,
-                    existing_id,
-                    child_source_id,
-                    fields,
-                )
-                .await?;
-                sync_categories(
-                    services.clone(),
-                    &mut context.all_extensions,
-                    &mut context.categories_by_record,
-                    existing_id,
-                    root_categories,
-                )
-                .await?;
-                sync_assignees(
-                    services.clone(),
-                    &mut context.all_links,
-                    &mut context.assignees_by_record,
-                    existing_id,
-                    root_assignees,
-                )
-                .await?;
-                existing_id
-            } else {
-                let created_id = create_copied_record(
-                    services.clone(),
-                    context,
-                    child_source_id,
-                    context.trail_root_record_id,
-                    fields,
-                    root_categories,
-                    root_assignees,
-                )
-                .await?;
-                copies_by_source.insert(child_source_id, created_id);
-                created_id
-            };
+            let child_copy_id =
+                if let Some(existing_id) = copies_by_source.get(&child_source_id).copied() {
+                    sync_existing_record_fields(
+                        services.clone(),
+                        context,
+                        existing_id,
+                        child_source_id,
+                        fields,
+                    )
+                    .await?;
+                    sync_categories(
+                        services.clone(),
+                        &mut context.all_extensions,
+                        &mut context.categories_by_record,
+                        existing_id,
+                        root_categories,
+                    )
+                    .await?;
+                    sync_assignees(
+                        services.clone(),
+                        &mut context.all_links,
+                        &mut context.assignees_by_record,
+                        existing_id,
+                        root_assignees,
+                    )
+                    .await?;
+                    existing_id
+                } else {
+                    let created_id = create_copied_record(
+                        services.clone(),
+                        context,
+                        child_source_id,
+                        context.trail_root_record_id,
+                        fields,
+                        root_categories,
+                        root_assignees,
+                    )
+                    .await?;
+                    copies_by_source.insert(child_source_id, created_id);
+                    created_id
+                };
 
             ensure_parent_link(services.clone(), context, child_copy_id, current_copy_id).await?;
             expected_copy_children.insert(child_copy_id);
@@ -734,7 +746,9 @@ async fn repair_parent_links(
         .all_links
         .iter()
         .filter(|row| {
-        row.link_type == "parent" && row.target_table == "record" && row.target_id == current_copy_id
+            row.link_type == "parent"
+                && row.target_table == "record"
+                && row.target_id == current_copy_id
         })
         .cloned()
         .collect::<Vec<_>>();
@@ -742,8 +756,12 @@ async fn repair_parent_links(
         let belongs_to_same_trail = context
             .all_extensions
             .iter()
-            .find(|extension| extension.record_id == link.record_id && extension.namespace == "trail.sync")
-            .and_then(|extension| serde_json::from_str::<TrailSyncExtension>(&extension.freestyle_data_structure).ok())
+            .find(|extension| {
+                extension.record_id == link.record_id && extension.namespace == "trail.sync"
+            })
+            .and_then(|extension| {
+                serde_json::from_str::<TrailSyncExtension>(&extension.freestyle_data_structure).ok()
+            })
             .is_some_and(|meta| meta.trail_root_record_id == trail_root_record_id);
         if belongs_to_same_trail && !expected_copy_children.contains(&link.record_id) {
             execute_statement(
@@ -857,7 +875,10 @@ async fn sync_assignees(
         })
         .cloned()
         .collect::<Vec<_>>();
-    let existing_ids = existing.iter().map(|row| row.target_id).collect::<BTreeSet<_>>();
+    let existing_ids = existing
+        .iter()
+        .map(|row| row.target_id)
+        .collect::<BTreeSet<_>>();
     for row in &existing {
         if !desired.contains(&row.target_id) {
             execute_statement(
@@ -910,9 +931,7 @@ async fn sync_assignees(
     Ok(())
 }
 
-fn build_categories_by_record(
-    extensions: &[SqlRecordExtensionRow],
-) -> BTreeMap<i64, Vec<String>> {
+fn build_categories_by_record(extensions: &[SqlRecordExtensionRow]) -> BTreeMap<i64, Vec<String>> {
     extensions
         .iter()
         .filter(|row| row.namespace == "task.categories")
@@ -930,9 +949,7 @@ fn build_categories_by_record(
         .collect()
 }
 
-fn build_assignees_by_record(
-    links: &[SqlRecordLinkRow],
-) -> BTreeMap<i64, Vec<i64>> {
+fn build_assignees_by_record(links: &[SqlRecordLinkRow]) -> BTreeMap<i64, Vec<i64>> {
     let mut map = BTreeMap::<i64, Vec<i64>>::new();
     for link in links {
         if link.link_type == "assigned_to" && link.target_table == "app_user" {

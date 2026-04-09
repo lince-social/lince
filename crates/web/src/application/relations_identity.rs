@@ -22,6 +22,8 @@ mod tests {
 
     #[test]
     fn rejects_other_packages() {
-        assert!(!is_supported_relations_package_filename("kanban-record-view.html"));
+        assert!(!is_supported_relations_package_filename(
+            "kanban-record-view.html"
+        ));
     }
 }

@@ -91,7 +91,9 @@ impl OfficialWidgetBuilder {
     fn build_package(&self) -> LincePackage {
         match self {
             Self::Html { source_builder, .. } => render_widget(source_builder()),
-            Self::Package { package_builder, .. } => package_builder(),
+            Self::Package {
+                package_builder, ..
+            } => package_builder(),
         }
     }
 }
@@ -258,7 +260,11 @@ fn render_widget(source: SandWidgetSource) -> LincePackage {
         .expect("official sand widget should render as valid HTML")
 }
 
-fn remove_package_variants(target_dir: &Path, filename: &str, keep_expected: bool) -> Result<(), String> {
+fn remove_package_variants(
+    target_dir: &Path,
+    filename: &str,
+    keep_expected: bool,
+) -> Result<(), String> {
     let package_id = package_id_from_filename(filename);
     let expected = target_dir.join(filename);
 

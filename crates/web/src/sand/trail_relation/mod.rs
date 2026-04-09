@@ -1,6 +1,8 @@
 mod body;
 mod script;
 mod styles;
+#[cfg(test)]
+mod tests;
 
 use {
     crate::{domain::lince_package::PackageManifest, sand::SandWidgetSource},
@@ -81,7 +83,6 @@ fn document() -> String {
 }
 
 fn source() -> SandWidgetSource {
-    
     SandWidgetSource {
         filename: "trail_relation.lince",
         lang: "en",

@@ -81,9 +81,11 @@ async fn main() -> Result<(), Error> {
                 log(LogEntry::Error(e.kind(), e.to_string()));
             })?,
     );
-    storage.ensure_bucket_exists().await.inspect_err(|e| {
-        log(LogEntry::Error(e.kind(), e.to_string()));
-    })?;
+    if storage.is_enabled()
+        && let Err(error) = storage.ensure_bucket_exists().await
+    {
+        log(LogEntry::Error(error.kind(), error.to_string()));
+    }
 
     let services = dependency_injection(read_db.clone(), storage, writer.clone());
 

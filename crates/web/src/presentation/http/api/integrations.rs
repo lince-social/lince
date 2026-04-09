@@ -560,19 +560,14 @@ fn local_host_subject() -> AuthSubject {
     }
 }
 
-fn payload_array_of_objects(payload: Option<&Value>) -> ApiResult<Vec<serde_json::Map<String, Value>>> {
-    let value = payload.ok_or_else(|| {
-        api_error(
-            StatusCode::BAD_REQUEST,
-            "Expected a JSON array payload.",
-        )
-    })?;
-    let rows = value.as_array().ok_or_else(|| {
-        api_error(
-            StatusCode::BAD_REQUEST,
-            "Expected a JSON array payload.",
-        )
-    })?;
+fn payload_array_of_objects(
+    payload: Option<&Value>,
+) -> ApiResult<Vec<serde_json::Map<String, Value>>> {
+    let value = payload
+        .ok_or_else(|| api_error(StatusCode::BAD_REQUEST, "Expected a JSON array payload."))?;
+    let rows = value
+        .as_array()
+        .ok_or_else(|| api_error(StatusCode::BAD_REQUEST, "Expected a JSON array payload."))?;
     rows.iter()
         .map(|entry| {
             entry.as_object().cloned().ok_or_else(|| {

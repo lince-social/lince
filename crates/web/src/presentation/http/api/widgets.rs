@@ -15,9 +15,9 @@ use {
                 render_sync_payload,
             },
             kanban_streams::{KanbanStreamError, PreparedKanbanStream},
+            state::AppState,
             trail_identity::is_supported_trail_package_filename,
             trail_widget::{PreparedTrailStream, TrailBindingPayload, TrailWidgetError},
-            state::AppState,
             widget_runtime::WidgetRuntimeError,
         },
         domain::board::BoardState,
@@ -542,10 +542,7 @@ enum WidgetKind {
     Trail,
 }
 
-fn widget_kind(
-    board_state: &BoardState,
-    instance_id: &str,
-) -> ApiResult<WidgetKind> {
+fn widget_kind(board_state: &BoardState, instance_id: &str) -> ApiResult<WidgetKind> {
     let card = board_state
         .workspaces
         .iter()
@@ -735,7 +732,10 @@ fn render_kanban_stream(prepared: PreparedKanbanStream) -> Response {
 
 fn render_trail_stream(prepared: PreparedTrailStream) -> Response {
     match prepared {
-        PreparedTrailStream::Local { mut handle, binding } => {
+        PreparedTrailStream::Local {
+            mut handle,
+            binding,
+        } => {
             let stream = stream! {
                 while let Some(frame) = handle.rx.recv().await {
                     let (event_name, data) = match frame {
@@ -835,7 +835,12 @@ fn render_trail_stream_events(
         "error" => {
             let message = serde_json::from_str::<Value>(data)
                 .ok()
-                .and_then(|value| value.get("error").and_then(Value::as_str).map(str::to_string))
+                .and_then(|value| {
+                    value
+                        .get("error")
+                        .and_then(Value::as_str)
+                        .map(str::to_string)
+                })
                 .unwrap_or_else(|| "The trail stream reported an error.".into());
             events.push(
                 Event::default().event("trail-error").data(

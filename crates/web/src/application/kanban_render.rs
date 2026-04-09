@@ -619,6 +619,11 @@ mod tests {
 
         let rendered = render_sync_payload(payload, true).expect("payload should render");
         assert!(rendered.html.columns.contains("Parent task"));
-        assert!(rendered.html.columns.contains("<span class=\"cardParentLink\">"));
+        assert!(
+            rendered
+                .html
+                .columns
+                .contains("<span class=\"cardParentLink\">")
+        );
     }
 }

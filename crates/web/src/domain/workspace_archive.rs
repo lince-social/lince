@@ -2,8 +2,8 @@ use {
     crate::domain::{
         board::{BoardCard, BoardWorkspace},
         lince_package::{
-            LEGACY_PACKAGE_ARCHIVE_EXTENSION, LincePackage, PACKAGE_EXTENSION,
-            build_lince_archive, parse_lince_package, parse_manifest_from_html, slugify,
+            LEGACY_PACKAGE_ARCHIVE_EXTENSION, LincePackage, PACKAGE_EXTENSION, build_lince_archive,
+            parse_lince_package, parse_manifest_from_html, slugify,
         },
     },
     serde::{Deserialize, Serialize},
@@ -154,7 +154,7 @@ pub fn reconstruct_package_from_card(card: &BoardCard) -> Result<LincePackage, S
                 "Widget reconstruido a partir de um card exportado do workspace.",
             ),
             details:
-                    "Widget reconstruido automaticamente a partir do estado exportado de um workspace."
+                "Widget reconstruido automaticamente a partir do estado exportado de um workspace."
                     .into(),
             initial_width: card.w,
             initial_height: card.h,
@@ -182,7 +182,13 @@ pub fn reconstruct_package_from_card(card: &BoardCard) -> Result<LincePackage, S
         .to_ascii_lowercase()
         .ends_with(LEGACY_PACKAGE_ARCHIVE_EXTENSION)
     {
-        LincePackage::new_archive(Some(filename), manifest, html, "index.html", Default::default())
+        LincePackage::new_archive(
+            Some(filename),
+            manifest,
+            html,
+            "index.html",
+            Default::default(),
+        )
     } else {
         LincePackage::new(Some(filename), manifest, html)
     }

@@ -15,6 +15,7 @@ const DEFAULT_BUCKET_REGION: &str = "us-east-1";
 pub struct StorageService {
     client: Option<Client>,
     bucket: String,
+    enabled: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -79,6 +80,7 @@ impl StorageService {
                     .filter(|value| !value.is_empty())
                     .unwrap_or(DEFAULT_BUCKET_NAME)
                     .to_string(),
+                enabled: false,
             });
         }
 
@@ -127,7 +129,12 @@ impl StorageService {
         Ok(Self {
             client: Some(Client::from_conf(config)),
             bucket,
+            enabled: true,
         })
+    }
+
+    pub fn is_enabled(&self) -> bool {
+        self.enabled
     }
 
     pub async fn ensure_bucket_exists(&self) -> Result<(), Error> {

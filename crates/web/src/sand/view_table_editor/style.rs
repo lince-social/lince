@@ -50,10 +50,12 @@ const STYLE: &str = r#"
   }
 
   .tableWidget {
-    min-height: 100vh;
+    height: 100vh;
+    max-height: 100vh;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
     gap: 0;
+    overflow: hidden;
   }
 
   .topLine {
@@ -79,9 +81,13 @@ const STYLE: &str = r#"
 
   .contentShell {
     min-height: 0;
+    min-width: 0;
+    height: 100%;
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+    grid-template-rows: minmax(0, 1fr);
     gap: 0;
+    overflow: hidden;
   }
 
   .detailsPanel {
@@ -96,10 +102,34 @@ const STYLE: &str = r#"
     min-width: 0;
     min-height: 0;
     overflow: auto;
+    justify-self: start;
+    width: fit-content;
+    max-width: 100%;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .tablePanel::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+
+  .tablePanel[data-scrolling="true"] {
+    scrollbar-width: thin;
+    -ms-overflow-style: auto;
+  }
+
+  .tablePanel[data-scrolling="true"]::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
   }
 
   .tableFrame {
-    min-height: 100%;
+    min-height: 0;
+    min-width: 0;
+    display: inline-block;
+    width: max-content;
   }
 
   .detailStack {
@@ -233,24 +263,25 @@ const STYLE: &str = r#"
   }
 
   .table {
-    width: 100%;
+    display: inline-table;
+    width: max-content;
     border-collapse: collapse;
     border-spacing: 0;
+    table-layout: auto;
   }
 
-  .table thead th {
+  .table thead {
     position: sticky;
     top: 0;
     z-index: 1;
-    padding: 8px 8px 6px;
-    border-bottom: 1px solid var(--line);
     background: rgba(12, 15, 20, 0.95);
-    text-align: left;
-    vertical-align: bottom;
   }
 
-  .rowHeaderCell {
-    width: 220px;
+  .table thead th {
+    padding: 8px 8px 6px;
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    vertical-align: bottom;
   }
 
   .columnName {
@@ -258,31 +289,6 @@ const STYLE: &str = r#"
     font-size: 0.8rem;
     font-weight: 700;
     letter-spacing: -0.02em;
-  }
-
-  .columnKey,
-  .rowLabel {
-    color: var(--muted);
-    font-family: var(--mono);
-    font-size: 0.66rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-  }
-
-  .rowHeaderCell {
-    padding: 6px 8px 4px 0;
-    vertical-align: top;
-  }
-
-  .rowSummary {
-    display: grid;
-    gap: 4px;
-  }
-
-  .rowIndex {
-    color: var(--text);
-    font-size: 0.8rem;
-    font-weight: 700;
   }
 
   .cell {

@@ -4,6 +4,7 @@ pub(super) fn script() -> String {
         const frame = window.frameElement;
         const statusPill = document.getElementById("table-status");
         const bootstrap = document.getElementById("table-stream-bootstrap");
+        const tablePanel = document.getElementById("table-body");
         const datastarReady = import("/static/vendored/datastar.js").catch(() => null);
         const serverId = String(frame?.dataset?.linceServerId || "").trim();
         const viewId = Number(String(frame?.dataset?.linceViewId || "").trim());
@@ -12,6 +13,7 @@ pub(super) fn script() -> String {
           controller: null,
           reconnectTimer: null,
           reconnectAttempt: 0,
+          scrollTimer: null,
           streamGeneration: 0,
           streamUrl: "",
         };
@@ -89,8 +91,37 @@ pub(super) fn script() -> String {
           }
         }
 
+        function stopScrollTimer() {
+          if (state.scrollTimer) {
+            window.clearTimeout(state.scrollTimer);
+            state.scrollTimer = null;
+          }
+        }
+
+        function setScrolling(active) {
+          if (!tablePanel) {
+            return;
+          }
+
+          if (active) {
+            tablePanel.dataset.scrolling = "true";
+            stopScrollTimer();
+            state.scrollTimer = window.setTimeout(() => {
+              if (tablePanel.dataset.scrolling === "true") {
+                delete tablePanel.dataset.scrolling;
+              }
+              state.scrollTimer = null;
+            }, 160);
+            return;
+          }
+
+          delete tablePanel.dataset.scrolling;
+          stopScrollTimer();
+        }
+
         function clearStream() {
           stopReconnectTimer();
+          setScrolling(false);
 
           if (state.controller) {
             state.controller.abort();
@@ -225,6 +256,15 @@ pub(super) fn script() -> String {
         };
 
         datastarReady.then(() => {
+          if (tablePanel) {
+            const onScrollActivity = () => setScrolling(true);
+            tablePanel.addEventListener("scroll", onScrollActivity, { passive: true });
+            tablePanel.addEventListener("wheel", onScrollActivity, { passive: true });
+            tablePanel.addEventListener("touchstart", onScrollActivity, { passive: true });
+            tablePanel.addEventListener("touchmove", onScrollActivity, { passive: true });
+            window.addEventListener("blur", () => setScrolling(false), { passive: true });
+          }
+
           state.streamUrl = buildStreamUrl();
           if (!state.streamUrl) {
             setStatus("Configurar", "idle");

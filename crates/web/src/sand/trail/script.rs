@@ -1,10 +1,18 @@
 pub(crate) fn script() -> String {
-    let mut script = String::from(include_str!("logic.js"));
+    let mut script = String::new();
     script.push_str(
-        r####"
+    r####"
     (() => {
         const d3 = window.d3;
         const TrailRelationLogic = globalThis.TrailRelationLogic;
+        let datastarApi = null;
+        const datastarReady = import("/static/vendored/datastar.js")
+            .then((module) => {
+                datastarApi = module;
+                return module;
+            })
+            .catch(() => null);
+        const trailBootstrap = document.getElementById("trail-stream-bootstrap");
 
         const DEFAULT_PHYSICS = {
             charge: -200,
@@ -30,6 +38,7 @@ pub(crate) fn script() -> String {
                 discover: [],
                 create: [],
             },
+            pendingQuantityChanges: new Map(),
             physics: { ...DEFAULT_PHYSICS },
             graph: {
                 svg: null,
@@ -158,6 +167,46 @@ pub(crate) fn script() -> String {
                 .replaceAll("'", "&#39;");
         }
 
+        function cloneJsonValue(value, fallback = null) {
+            try {
+                if (value === undefined) {
+                    return fallback;
+                }
+                return JSON.parse(JSON.stringify(value));
+            } catch (_error) {
+                return fallback;
+            }
+        }
+
+        function withDatastar(callback) {
+            if (datastarApi) {
+                callback(datastarApi);
+                return;
+            }
+            void datastarReady.then((module) => {
+                if (module) {
+                    callback(module);
+                }
+            });
+        }
+
+        function readSignalPath(path) {
+            if (datastarApi?.getPath) {
+                return cloneJsonValue(datastarApi.getPath(path), null);
+            }
+            return null;
+        }
+
+        function patchTrailSignals(patch) {
+            const safePatch = cloneJsonValue(patch, null);
+            if (!safePatch || typeof safePatch !== "object") {
+                return;
+            }
+            withDatastar((module) => {
+                module?.mergePatch?.(safePatch);
+            });
+        }
+
         function parseJsonArray(value) {
             try {
                 const parsed = JSON.parse(value || "[]");
@@ -263,6 +312,10 @@ pub(crate) fn script() -> String {
             return "Tree syncs children only.";
         }
 
+        function updateScopeCopy() {
+            elements.syncScopeCopy.textContent = scopeCopy(elements.syncScope.value || "t");
+        }
+
         function renderZoomPill(scale) {
             const resolved = Number.isFinite(scale) ? scale : state.graph.zoomScale || 1;
             state.graph.zoomScale = resolved;
@@ -270,10 +323,155 @@ pub(crate) fn script() -> String {
         }
 
         function resetLocalTrailProjection() {
+            state.pendingQuantityChanges.clear();
             state.snapshot = null;
             state.selectedNodeId = null;
             renderSelection();
             renderGraph();
+        }
+
+        function cloneSnapshot(snapshot) {
+            return snapshot
+                ? {
+                    ...snapshot,
+                    rows: Array.isArray(snapshot.rows)
+                        ? snapshot.rows.map((row) => ({ ...row }))
+                        : [],
+                }
+                : null;
+        }
+
+        function projectLoadedTrailSnapshot() {
+            if (!state.binding?.trailRootRecordId || !Array.isArray(state.snapshot?.rows)) {
+                return;
+            }
+            const rootRecordId = Number(state.binding.trailRootRecordId);
+            const rootRow = state.snapshot.rows.find((row) => nodeIdFromRow(row) === rootRecordId) || null;
+            if (!rootRow || normalizedQuantity(valueOf(rootRow, "quantity")) !== 1) {
+                return;
+            }
+
+            const projection = TrailRelationLogic.computeTrailQuantityChanges(
+                state.snapshot.rows,
+                rootRecordId,
+                rootRecordId,
+                1,
+            );
+            if (projection.error || !Array.isArray(projection.changes) || !projection.changes.length) {
+                return;
+            }
+
+            applyQuantityChanges(projection.changes);
+        }
+
+        function syncFromSignals(patch = null) {
+            const trail = patch?.trail && typeof patch.trail === "object"
+                ? patch.trail
+                : readSignalPath("trail");
+            if (!trail) {
+                return false;
+            }
+
+            state.sourceServerId =
+                String(trail?.source?.serverId || state.sourceServerId || currentFrameServerId() || "").trim() || null;
+            state.binding = trail?.binding ? cloneJsonValue(trail.binding, null) : null;
+            state.snapshot = cloneSnapshot(state.binding?.snapshot);
+
+            if (state.binding?.sync) {
+                elements.syncScope.value = state.binding.sync.scope || "t";
+                applyFields(state.binding.sync.fields || "hb");
+            } else {
+                elements.syncScope.value = "t";
+                applyFields("qhb");
+            }
+
+            projectLoadedTrailSnapshot();
+            reconcilePendingQuantityChanges();
+            updateScopeCopy();
+            renderBinding();
+            renderSelectedOriginal();
+            renderSyncInputs();
+            renderGraph();
+
+            if (trail?.stream?.status === "error") {
+                setStatus(trail.stream.error || "Stream error");
+            } else if (state.binding?.trailRootRecordId) {
+                setStatus("Live");
+            } else {
+                setStatus("Ready");
+            }
+
+            return true;
+        }
+
+        function applyTrailPatchToState(patch) {
+            if (!patch || typeof patch !== "object") {
+                return;
+            }
+
+            const trail = patch.trail;
+            if (!trail || typeof trail !== "object") {
+                return;
+            }
+
+            if (trail.binding && typeof trail.binding === "object") {
+                state.binding = {
+                    ...(state.binding || {}),
+                    ...cloneJsonValue(trail.binding, {}),
+                };
+                if (trail.binding.snapshot) {
+                    state.snapshot = cloneSnapshot(trail.binding.snapshot);
+                }
+            }
+
+            if (trail.stream && typeof trail.stream === "object") {
+                state.binding = state.binding
+                    ? {
+                        ...(state.binding || {}),
+                        stream: {
+                            ...(state.binding.stream || {}),
+                            ...cloneJsonValue(trail.stream, {}),
+                        },
+                    }
+                    : state.binding;
+            }
+        }
+
+        function recordPendingQuantityChanges(changes) {
+            (Array.isArray(changes) ? changes : []).forEach((entry) => {
+                state.pendingQuantityChanges.set(
+                    Number(entry.recordId),
+                    normalizedQuantity(entry.quantity),
+                );
+            });
+        }
+
+        function reconcilePendingQuantityChanges() {
+            if (!Array.isArray(state.snapshot?.rows) || !state.pendingQuantityChanges.size) {
+                return;
+            }
+            const rowsById = new Map(
+                state.snapshot.rows.map((row) => [nodeIdFromRow(row), row]),
+            );
+            for (const [recordId, quantity] of state.pendingQuantityChanges.entries()) {
+                const row = rowsById.get(recordId);
+                if (row && normalizedQuantity(valueOf(row, "quantity")) === quantity) {
+                    state.pendingQuantityChanges.delete(recordId);
+                }
+            }
+            if (!state.pendingQuantityChanges.size) {
+                return;
+            }
+            state.snapshot.rows = state.snapshot.rows.map((row) => {
+                const recordId = nodeIdFromRow(row);
+                if (!state.pendingQuantityChanges.has(recordId)) {
+                    return row;
+                }
+                return {
+                    ...row,
+                    quantity: state.pendingQuantityChanges.get(recordId),
+                };
+            });
         }
 
         function truncateLabel(value, limit = 18) {
@@ -334,6 +532,23 @@ pub(crate) fn script() -> String {
                 return Promise.reject(new Error("Trail widget has no serverId/viewId bound."));
             }
             return fetch(url, {
+                method: "GET",
+                credentials: "same-origin",
+            }).then(async (response) => {
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(data?.message || data?.error || ("Request failed with " + response.status));
+                }
+                return data;
+            });
+        }
+
+        function fetchRecordRow(recordId) {
+            const url = recordCollectionUrl();
+            if (!url) {
+                return Promise.reject(new Error("Trail widget has no serverId bound."));
+            }
+            return fetch(url + "/" + Number(recordId), {
                 method: "GET",
                 credentials: "same-origin",
             }).then(async (response) => {
@@ -461,14 +676,14 @@ pub(crate) fn script() -> String {
                 const excerpt = rowBody(row).trim();
                 const isSelected = state.selectedOriginal && nodeIdFromRow(state.selectedOriginal) === id;
                 return `
-                    <article class="resultCard${isSelected ? " isSelected" : ""}" data-original-id="${id}">
+                    <article class="resultCard${isSelected ? " isSelected" : ""}" data-original-id="${id}" data-testid="trail-discover-card">
                         <div class="sectionHead">
                             <div>
                                 <div class="selectionTitle">#${id} ${escapeHtml(rowHead(row) || "(untitled)")}</div>
                             </div>
                             <div class="actionRow">
-                                <button class="button buttonGhost" type="button" data-open-root="${id}">Open trail</button>
-                                <button class="button buttonPrimary" type="button" data-use-original="${id}">Use as original</button>
+                                <button class="button buttonGhost" type="button" data-testid="trail-open-root">Open trail</button>
+                                <button class="button buttonPrimary" type="button" data-testid="trail-use-original">Use as original</button>
                             </div>
                         </div>
                         ${excerpt ? `<p class="resultExcerpt">${escapeHtml(excerpt)}</p>` : ""}
@@ -888,6 +1103,7 @@ pub(crate) fn script() -> String {
                 .data(nodes, (node) => node.id)
                 .join((enter) => {
                     const group = enter.append("g");
+                    group.attr("data-node-id", (node) => node.id);
                     group.append("circle").attr("class", "node-circle");
                     group.on("click", (event, node) => {
                         event.stopPropagation();
@@ -902,6 +1118,7 @@ pub(crate) fn script() -> String {
             nodeSelection.select("circle")
                 .attr("r", (node) => nodeRadius(node))
                 .attr("fill", (node) => nodeFill(node.quantity));
+            nodeSelection.attr("data-node-id", (node) => node.id);
 
             const labelSelection = state.graph.labelLayer
                 .selectAll("text")
@@ -940,17 +1157,36 @@ pub(crate) fn script() -> String {
             state.stream = source;
             setStatus("Connecting");
             source.addEventListener("trail-sync", (event) => {
-                const payload = JSON.parse(event.data);
-                state.binding = payload.binding || state.binding;
-                state.snapshot = payload.snapshot || null;
-                writeStoredTrailRoot(state.binding?.trailRootRecordId);
-                renderBinding();
-                renderGraph();
-                setStatus("Live");
+                try {
+                    const payload = JSON.parse(event.data || "{}");
+                    state.binding = payload.binding || state.binding;
+                    state.snapshot = cloneSnapshot(payload.snapshot);
+                    reconcilePendingQuantityChanges();
+                    writeStoredTrailRoot(state.binding?.trailRootRecordId);
+                    updateScopeCopy();
+                    renderBinding();
+                    renderSelectedOriginal();
+                    renderSyncInputs();
+                    renderGraph();
+                    setStatus(state.binding?.trailRootRecordId ? "Live" : "Ready");
+                } catch (error) {
+                    setStatus(error.message || "Stream error");
+                }
             });
-            source.addEventListener("trail-error", (event) => {
-                const payload = JSON.parse(event.data);
-                setStatus(payload.message || "Stream error");
+            source.addEventListener("datastar-patch-signals", (event) => {
+                try {
+                    const patch = JSON.parse(event.data || "{}");
+                    if (datastarApi?.mergePatch) {
+                        datastarApi.mergePatch(patch);
+                    } else {
+                        applyTrailPatchToState(patch);
+                    }
+                    syncFromSignals(patch);
+                    writeStoredTrailRoot(state.binding?.trailRootRecordId);
+                    setStatus(state.binding?.trailRootRecordId ? "Live" : "Ready");
+                } catch (error) {
+                    setStatus(error.message || "Stream error");
+                }
             });
             source.onerror = () => {
                 setStatus("Stream disconnected");
@@ -961,14 +1197,43 @@ pub(crate) fn script() -> String {
             state.graph.needsFit = true;
             resetLocalTrailProjection();
             setStatus("Binding trail");
+            const trailRootRecordId = Number(recordId);
             return postJson("bind-trail", {
-                trailRootRecordId: Number(recordId),
+                trailRootRecordId,
             }).then((result) => {
-                state.binding = result.detail || null;
+                const detail = result.detail || null;
+                state.binding = detail || null;
                 state.sourceServerId = state.sourceServerId || currentFrameServerId() || null;
-                writeStoredTrailRoot(state.binding?.trailRootRecordId);
-                renderBinding();
-                connectStream();
+                state.snapshot = detail?.snapshot
+                    ? {
+                        ...detail.snapshot,
+                        rows: Array.isArray(detail.snapshot.rows)
+                            ? detail.snapshot.rows.map((row) => ({ ...row }))
+                            : [],
+                        }
+                    : null;
+                patchTrailSignals({
+                    binding: detail,
+                });
+                return fetchRecordRow(trailRootRecordId)
+                    .then((rootRow) => {
+                        const rootQuantity = normalizedQuantity(valueOf(rootRow, "quantity"));
+                        const snapshotRow = state.snapshot?.rows?.find((row) => nodeIdFromRow(row) === trailRootRecordId) || null;
+                        if (snapshotRow && normalizedQuantity(valueOf(snapshotRow, "quantity")) !== rootQuantity) {
+                            snapshotRow.quantity = rootQuantity;
+                            recordPendingQuantityChanges([{
+                                recordId: trailRootRecordId,
+                                quantity: rootQuantity,
+                            }]);
+                        }
+                    })
+                    .catch(() => null)
+                    .then(() => {
+                        writeStoredTrailRoot(state.binding?.trailRootRecordId);
+                        renderBinding();
+                        renderGraph();
+                        connectStream();
+                    });
             }).catch((error) => {
                 setStatus(error.message);
             });
@@ -1004,8 +1269,12 @@ pub(crate) fn script() -> String {
                     state.binding?.trailRootRecordId,
                 );
                 state.snapshot = snapshot;
+                patchTrailSignals({
+                    binding: detail,
+                });
                 if (initializationChanges.length) {
                     applyQuantityChanges(initializationChanges);
+                    recordPendingQuantityChanges(initializationChanges);
                     renderGraph();
                 }
                 const persistInitialization = initializationChanges.length
@@ -1021,6 +1290,7 @@ pub(crate) fn script() -> String {
                     setStatus("Trail created");
                 }).catch((error) => {
                     state.snapshot = snapshot;
+                    state.pendingQuantityChanges.clear();
                     renderGraph();
                     setStatus(error.message);
                 });
@@ -1066,6 +1336,7 @@ pub(crate) fn script() -> String {
             const previousRows = state.snapshot.rows.map((row) => ({ ...row }));
             const optimisticChanges = trailResetChanges(state.snapshot.rows, state.binding.trailRootRecordId);
             applyQuantityChanges(optimisticChanges);
+            recordPendingQuantityChanges(optimisticChanges);
             renderGraph();
             setStatus("Resetting trail");
             patchRecordRows(optimisticChanges.map((entry) => ({
@@ -1075,6 +1346,7 @@ pub(crate) fn script() -> String {
                 setStatus("Trail reset");
             }).catch((error) => {
                 state.snapshot.rows = previousRows;
+                state.pendingQuantityChanges.clear();
                 renderGraph();
                 setStatus(error.message);
             });
@@ -1094,6 +1366,11 @@ pub(crate) fn script() -> String {
                     ...(state.binding || {}),
                     ...(result.detail || {}),
                 };
+                patchTrailSignals({
+                    binding: {
+                        ...(state.binding || {}),
+                    },
+                });
                 renderBinding();
                 setStatus("Sync requested");
             }).catch((error) => {
@@ -1118,6 +1395,7 @@ pub(crate) fn script() -> String {
             }
             const previousRows = state.snapshot.rows.map((row) => ({ ...row }));
             applyQuantityChanges(changed);
+            recordPendingQuantityChanges(changed);
             renderGraph();
             setStatus("Updating node");
             patchRecordRows(changed.map((entry) => ({
@@ -1127,6 +1405,7 @@ pub(crate) fn script() -> String {
                 setStatus("Node updated");
             }).catch((error) => {
                 state.snapshot.rows = previousRows;
+                state.pendingQuantityChanges.clear();
                 renderGraph();
                 setStatus(error.message);
             });
@@ -1134,41 +1413,52 @@ pub(crate) fn script() -> String {
 
         function loadContract() {
             setStatus("Loading");
-            return fetch(contractUrl(), { credentials: "same-origin" })
-                .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
-                .then(({ ok, data }) => {
-                    if (!ok) {
-                        throw new Error(data?.message || data?.error || "Failed to load contract.");
-                    }
-                    state.binding = data?.binding || null;
-                    state.sourceServerId = data?.source?.serverId || currentFrameServerId() || null;
-                    resetLocalTrailProjection();
-                    if (state.binding?.sync) {
-                        elements.syncScope.value = state.binding.sync.scope || "t";
-                        applyFields(state.binding.sync.fields || "hb");
-                    } else {
-                        elements.syncScope.value = "t";
-                        applyFields("hb");
-                    }
-                    updateScopeCopy();
-                    renderBinding();
-                    renderSelectedOriginal();
-                })
-                .then(() => {
+            return datastarReady.then(() => {
+                if ((trailBootstrap || readSignalPath("trail")) && syncFromSignals()) {
                     if (state.binding?.trailRootRecordId) {
                         writeStoredTrailRoot(state.binding.trailRootRecordId);
-                        connectStream();
-                    } else {
-                        const storedTrailRoot = readStoredTrailRoot();
-                        if (storedTrailRoot) {
-                            return bindTrailRoot(storedTrailRoot);
-                        }
-                        setStatus("Ready");
                     }
                     return refreshDiscoverResults().catch((error) => {
                         console.error(error);
                     });
-                });
+                }
+
+                return fetch(contractUrl(), { credentials: "same-origin" })
+                    .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
+                    .then(({ ok, data }) => {
+                        if (!ok) {
+                            throw new Error(data?.message || data?.error || "Failed to load contract.");
+                        }
+                        state.binding = data?.binding || null;
+                        state.sourceServerId = data?.source?.serverId || currentFrameServerId() || null;
+                        resetLocalTrailProjection();
+                        if (state.binding?.sync) {
+                            elements.syncScope.value = state.binding.sync.scope || "t";
+                            applyFields(state.binding.sync.fields || "hb");
+                        } else {
+                            elements.syncScope.value = "t";
+                            applyFields("qhb");
+                        }
+                        updateScopeCopy();
+                        renderBinding();
+                        renderSelectedOriginal();
+                    })
+                    .then(() => {
+                        if (state.binding?.trailRootRecordId) {
+                            writeStoredTrailRoot(state.binding.trailRootRecordId);
+                            connectStream();
+                        } else {
+                            const storedTrailRoot = readStoredTrailRoot();
+                            if (storedTrailRoot) {
+                                return bindTrailRoot(storedTrailRoot);
+                            }
+                            setStatus("Ready");
+                        }
+                        return refreshDiscoverResults().catch((error) => {
+                            console.error(error);
+                        });
+                    });
+            });
         }
 
         function applyFields(fields) {
@@ -1177,6 +1467,10 @@ pub(crate) fn script() -> String {
             elements.syncFieldH.checked = normalized.includes("h");
             elements.syncFieldB.checked = normalized.includes("b");
         }
+
+        window.TrailWidget = window.TrailWidget || {};
+        window.TrailWidget.syncFromSignals = syncFromSignals;
+        window.TrailWidget.patchTrailSignals = patchTrailSignals;
 
         initializeGraph();
         renderSelection();
@@ -1189,18 +1483,24 @@ pub(crate) fn script() -> String {
         });
 
         elements.discoverResults.addEventListener("click", (event) => {
-            const openButton = event.target.closest("[data-open-root]");
-            if (openButton) {
-                bindTrailRoot(openButton.getAttribute("data-open-root"));
-                return;
-            }
-            const useOriginalButton = event.target.closest("[data-use-original]");
-            if (useOriginalButton) {
-                const recordId = Number(useOriginalButton.getAttribute("data-use-original"));
-                state.selectedOriginal = state.discoverResults.find((row) => nodeIdFromRow(row) === recordId) || null;
-                renderSelectedOriginal();
-                renderDiscoverResults();
-                return;
+            const button = event.target.closest("button");
+            if (button) {
+                const card = button.closest("[data-original-id]");
+                if (!card) {
+                    return;
+                }
+                const recordId = Number(card.getAttribute("data-original-id"));
+                const label = button.textContent.trim();
+                if (label === "Open trail") {
+                    bindTrailRoot(String(recordId));
+                    return;
+                }
+                if (label === "Use as original") {
+                    state.selectedOriginal = state.discoverResults.find((row) => nodeIdFromRow(row) === recordId) || null;
+                    renderSelectedOriginal();
+                    renderDiscoverResults();
+                    return;
+                }
             }
             const card = event.target.closest("[data-original-id]");
             if (!card) {

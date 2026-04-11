@@ -77,14 +77,7 @@ globalThis.TrailRelationLogic = (() => {
     }
 
     function visibleTrailRows(rows, boundRootId) {
-        const normalizedBoundRootId = Number(boundRootId || 0);
-        return (Array.isArray(rows) ? rows : []).filter((row) => {
-            const recordId = nodeIdFromRow(row);
-            if (normalizedBoundRootId > 0 && recordId === normalizedBoundRootId) {
-                return true;
-            }
-            return normalizedQuantity(valueOf(row, "quantity")) !== 0;
-        });
+        return Array.isArray(rows) ? rows : [];
     }
 
     function computeTrailQuantityChanges(rows, trailRootRecordId, recordId, quantity) {

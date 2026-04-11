@@ -675,7 +675,7 @@ fn render_server_login_form() -> Markup {
 fn render_widget_config_modal_backdrop() -> Markup {
     html! {
         div id="widget-config-modal-backdrop" class="import-modal-backdrop" hidden="" {
-            section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="widget-config-modal-title" {
+            section class="confirm-modal confirm-modal--fullscreen widget-config-modal" role="dialog" aria-modal="true" aria-labelledby="widget-config-modal-title" {
                 header class="confirm-modal__header" {
                     div class="confirm-modal__lockup" {
                         div class="confirm-modal__eyebrow" { "Widget settings" }
@@ -689,7 +689,7 @@ fn render_widget_config_modal_backdrop() -> Markup {
                         "Fechar modal de configuracao",
                     ))
                 }
-                div class="confirm-modal__body" {
+                div class="confirm-modal__body confirm-modal__body--scroll widget-config-modal__body" {
                     (render_widget_config_form())
                 }
                 (render_modal_footer(
@@ -708,39 +708,143 @@ fn render_widget_config_modal_backdrop() -> Markup {
 
 fn render_widget_config_form() -> Markup {
     html! {
-        form id="widget-config-form" class="startup-login-form" autocomplete="off" {
-            label class="startup-field" for="widget-config-server-id" {
-                select id="widget-config-server-id" class="startup-field__input" name="server_id" {
-                    option value="" { "Escolha um servidor" }
+        form id="widget-config-form" class="widget-config-form" autocomplete="off" {
+            div class="widget-config-grid" {
+                section class="widget-config-section" {
+                    div class="widget-config-section__head" {
+                        div class="import-modal__details-label" { "Host" }
+                        p class="import-modal__details-copy" { "Escolha o servidor, conecte se preciso e selecione uma view." }
+                    }
+                    label id="widget-config-server-id-field" class="startup-field" for="widget-config-server-id" {
+                        select id="widget-config-server-id" class="startup-field__input" name="server_id" {
+                            option value="" { "Escolha um servidor" }
+                        }
+                    }
+                    div id="widget-config-auth-field" class="startup-field startup-field--stack" hidden="" {
+                        label class="startup-field startup-field--checkbox" for="widget-config-auth-enabled" {
+                            input
+                                id="widget-config-auth-enabled"
+                                class="startup-field__checkbox"
+                                type="checkbox"
+                                name="auth_required"
+                                disabled="";
+                            span class="startup-field__checkbox-copy" {
+                                strong { "Server requires login" }
+                                small { "Enter credentials here only if the selected server is not connected yet." }
+                            }
+                        }
+                        label class="startup-field" for="widget-config-auth-username" {
+                            input
+                                id="widget-config-auth-username"
+                                class="startup-field__input"
+                                type="text"
+                                autocomplete="username"
+                                placeholder="Login";
+                        }
+                        label class="startup-field" for="widget-config-auth-password" {
+                            div class="startup-password-field" {
+                                input
+                                    id="widget-config-auth-password"
+                                    class="startup-field__input startup-field__input--password"
+                                    type="password"
+                                    autocomplete="current-password"
+                                    placeholder="Senha";
+                                button
+                                    id="widget-config-auth-password-toggle"
+                                    class="startup-password-toggle"
+                                    type="button"
+                                    aria-label="Mostrar senha"
+                                    aria-pressed="false"
+                                {
+                                    (eye_icon())
+                                }
+                            }
+                        }
+                        button
+                            id="widget-config-auth-login"
+                            class="modal-button modal-button--primary"
+                            type="button"
+                        {
+                            "Conectar"
+                        }
+                        p id="widget-config-auth-help" class="startup-error-message" hidden="" {}
+                    }
+                }
+                section class="widget-config-section" {
+                    div class="widget-config-section__head" {
+                        div class="import-modal__details-label" { "Views" }
+                        p class="import-modal__details-copy" { "Busque por nome ou id. A lista filtra no cliente enquanto voce digita." }
+                    }
+                    div id="widget-config-view-field" class="startup-field startup-field--stack" hidden="" {
+                        label class="startup-field" for="widget-config-view-search" {
+                            input
+                                id="widget-config-view-search"
+                                class="startup-field__input"
+                                type="search"
+                                autocomplete="off"
+                                spellcheck="false"
+                                placeholder="Buscar views por nome ou id";
+                        }
+                        div class="startup-field__meta" id="widget-config-view-summary" {}
+                        div id="widget-config-view-list" class="widget-config-view-list" aria-live="polite" {}
+                        p id="widget-config-view-help" class="startup-error-message" hidden="" {}
+                    }
+                    label id="widget-config-view-id-field" class="startup-field" for="widget-config-view-id" hidden="" {
+                        input
+                            id="widget-config-view-id"
+                            class="startup-field__input"
+                            type="number"
+                            min="1"
+                            step="1"
+                            name="view_id"
+                            placeholder="View id";
+                    }
+                }
+                section class="widget-config-section" {
+                    div class="widget-config-section__head" {
+                        div class="import-modal__details-label" { "Behavior" }
+                        p class="import-modal__details-copy" { "Mantenha o stream e o preview compilado sob seu controle." }
+                    }
+                    label
+                        id="widget-config-streams-field"
+                        class="startup-field startup-field--checkbox"
+                        for="widget-config-streams-enabled"
+                    {
+                        input
+                            id="widget-config-streams-enabled"
+                            class="startup-field__checkbox"
+                            type="checkbox"
+                            name="streams_enabled"
+                            checked="";
+                        span class="startup-field__checkbox-copy" {
+                            strong { "Manter stream ativo" }
+                            small { "Desative para pausar apenas esse widget sem perder sua configuracao." }
+                        }
+                    }
+                    div id="widget-config-preview-field" class="startup-field startup-field--stack" hidden="" {
+                        label class="startup-field startup-field--checkbox" for="widget-config-watch-enabled" {
+                            input
+                                id="widget-config-watch-enabled"
+                                class="startup-field__checkbox"
+                                type="checkbox"
+                                name="watch_compiled_html";
+                            span class="startup-field__checkbox-copy" {
+                                strong { "Auto swap compiled HTML" }
+                                small { "When edit mode is active, reload this package iframe when the Rust-compiled HTML changes." }
+                            }
+                        }
+                        button
+                            id="widget-config-refresh-button"
+                            class="modal-button modal-button--ghost"
+                            type="button"
+                        {
+                            "Swap once"
+                        }
+                        p id="widget-config-preview-help" class="startup-error-message" hidden="" {}
+                    }
+                    p id="widget-config-help" class="startup-error-message" hidden="" {}
                 }
             }
-            label id="widget-config-view-id-field" class="startup-field" for="widget-config-view-id" {
-                input
-                    id="widget-config-view-id"
-                    class="startup-field__input"
-                    type="number"
-                    min="1"
-                    step="1"
-                    name="view_id"
-                    placeholder="View id";
-            }
-            label
-                id="widget-config-streams-field"
-                class="startup-field startup-field--checkbox"
-                for="widget-config-streams-enabled"
-            {
-                input
-                    id="widget-config-streams-enabled"
-                    class="startup-field__checkbox"
-                    type="checkbox"
-                    name="streams_enabled"
-                    checked="";
-                span class="startup-field__checkbox-copy" {
-                    strong { "Manter stream ativo" }
-                    small { "Desative para pausar apenas esse widget sem perder sua configuracao." }
-                }
-            }
-            p id="widget-config-help" class="startup-error-message" hidden="" {}
         }
     }
 }

@@ -10,6 +10,9 @@ description = "Internal web frontend for the lince binary."
 [lib]
 name = "web"
 
+[features]
+browser-watch = []
+
 [dependencies]
 application = { workspace = true }
 async-stream = "0.3.6"

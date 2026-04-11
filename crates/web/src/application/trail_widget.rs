@@ -164,7 +164,7 @@ impl TrailWidgetService {
             ));
         }
         let view_id = self
-            .ensure_derived_view(session_token, &resolved, trail_root_record_id)
+            .ensure_derived_view(session_token, &resolved, trail_root_record_id, None)
             .await?;
         let sync = self
             .load_trail_sync_metadata(
@@ -318,7 +318,12 @@ impl TrailWidgetService {
         )
         .await?;
         let view_id = self
-            .ensure_derived_view(session_token, &resolved, request.trail_root_record_id)
+            .ensure_derived_view(
+                session_token,
+                &resolved,
+                request.trail_root_record_id,
+                None,
+            )
             .await?;
         self.persist_runtime_state(
             &resolved.card.id,
@@ -442,6 +447,14 @@ impl TrailWidgetService {
                 request.fields.as_deref().unwrap_or("hb"),
             )
             .await?;
+        let view_id = self
+            .ensure_derived_view(
+                session_token,
+                &resolved,
+                copied_root_id,
+                request.view_name.as_deref(),
+            )
+            .await?;
         self.execute_karma(
             session_token,
             &resolved.organ,
@@ -449,9 +462,6 @@ impl TrailWidgetService {
             sync.sync_karma_id.unwrap_or_default(),
         )
         .await?;
-        let view_id = self
-            .ensure_derived_view(session_token, &resolved, copied_root_id)
-            .await?;
         self.persist_runtime_state(
             &resolved.card.id,
             &resolved.organ.id,
@@ -534,12 +544,16 @@ impl TrailWidgetService {
             sync.sync_karma_id.unwrap_or_default(),
         )
         .await?;
+        let view_id = self
+            .ensure_derived_view(session_token, &resolved, trail_root_record_id, None)
+            .await?;
         Ok(json!({
             "ok": true,
             "action": "run-trail-sync",
             "await_stream_refresh": true,
             "detail": {
                 "trailRootRecordId": trail_root_record_id,
+                "viewId": view_id,
                 "sync": sync,
             }
         }))
@@ -611,9 +625,10 @@ impl TrailWidgetService {
         session_token: Option<&str>,
         resolved: &ResolvedTrailInstance,
         trail_root_record_id: i64,
+        view_name: Option<&str>,
     ) -> Result<i64, TrailWidgetError> {
         let runtime = parse_runtime_state(&resolved.card.widget_state);
-        let derived_name = derived_view_name(&resolved.card.id);
+        let derived_name = derived_view_name(&resolved.card.id, view_name);
         let query = build_trail_view_query(trail_root_record_id);
 
         let derived_view_id = match runtime.derived_view_id {
@@ -1723,6 +1738,7 @@ struct BindTrailRequest {
 struct CreateTrailRequest {
     source_record_id: i64,
     assignee: String,
+    view_name: Option<String>,
     scope: Option<String>,
     fields: Option<String>,
 }
@@ -2115,8 +2131,13 @@ fn build_trail_view_query(trail_root_record_id: i64) -> String {
     )
 }
 
-fn derived_view_name(instance_id: &str) -> String {
-    format!("{TRAIL_DERIVED_VIEW_NAME_PREFIX}{instance_id}")
+fn derived_view_name(instance_id: &str, view_name: Option<&str>) -> String {
+    let custom = view_name.map(str::trim).filter(|value| !value.is_empty());
+    if let Some(custom) = custom {
+        custom.to_string()
+    } else {
+        format!("{TRAIL_DERIVED_VIEW_NAME_PREFIX}{instance_id}")
+    }
 }
 
 fn has_permission(card: &BoardCard, permission: &str) -> bool {

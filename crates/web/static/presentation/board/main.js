@@ -245,7 +245,38 @@ const widgetConfigModalDescription = document.getElementById(
   "widget-config-modal-description",
 );
 const widgetConfigForm = document.getElementById("widget-config-form");
+const widgetConfigServerIdField = document.getElementById(
+  "widget-config-server-id-field",
+);
 const widgetConfigServerId = document.getElementById("widget-config-server-id");
+const widgetConfigAuthField = document.getElementById(
+  "widget-config-auth-field",
+);
+const widgetConfigAuthEnabled = document.getElementById(
+  "widget-config-auth-enabled",
+);
+const widgetConfigAuthUsername = document.getElementById(
+  "widget-config-auth-username",
+);
+const widgetConfigAuthPassword = document.getElementById(
+  "widget-config-auth-password",
+);
+const widgetConfigAuthPasswordToggle = document.getElementById(
+  "widget-config-auth-password-toggle",
+);
+const widgetConfigAuthLogin = document.getElementById(
+  "widget-config-auth-login",
+);
+const widgetConfigAuthHelp = document.getElementById("widget-config-auth-help");
+const widgetConfigViewField = document.getElementById("widget-config-view-field");
+const widgetConfigViewSearch = document.getElementById(
+  "widget-config-view-search",
+);
+const widgetConfigViewSummary = document.getElementById(
+  "widget-config-view-summary",
+);
+const widgetConfigViewList = document.getElementById("widget-config-view-list");
+const widgetConfigViewHelp = document.getElementById("widget-config-view-help");
 const widgetConfigViewIdField = document.getElementById(
   "widget-config-view-id-field",
 );
@@ -255,6 +286,18 @@ const widgetConfigStreamsField = document.getElementById(
 );
 const widgetConfigStreamsEnabled = document.getElementById(
   "widget-config-streams-enabled",
+);
+const widgetConfigPreviewField = document.getElementById(
+  "widget-config-preview-field",
+);
+const widgetConfigWatchEnabled = document.getElementById(
+  "widget-config-watch-enabled",
+);
+const widgetConfigRefreshButton = document.getElementById(
+  "widget-config-refresh-button",
+);
+const widgetConfigPreviewHelp = document.getElementById(
+  "widget-config-preview-help",
 );
 const widgetConfigHelp = document.getElementById("widget-config-help");
 const widgetConfigCancelButton = document.getElementById(
@@ -355,13 +398,30 @@ if (
   !widgetConfigModalBackdrop ||
   !widgetConfigModalDescription ||
   !widgetConfigForm ||
+  !widgetConfigServerIdField ||
   !widgetConfigServerId ||
+  !widgetConfigAuthField ||
+  !widgetConfigAuthEnabled ||
+  !widgetConfigAuthUsername ||
+  !widgetConfigAuthPassword ||
+  !widgetConfigAuthPasswordToggle ||
+  !widgetConfigAuthLogin ||
+  !widgetConfigAuthHelp ||
+  !widgetConfigViewField ||
+  !widgetConfigViewSearch ||
+  !widgetConfigViewSummary ||
+  !widgetConfigViewList ||
+  !widgetConfigViewHelp ||
   !widgetConfigViewIdField ||
   !widgetConfigViewId ||
   !widgetConfigHelp ||
   !widgetConfigCancelButton ||
   !widgetConfigSaveButton ||
   !widgetConfigCloseButton ||
+  !widgetConfigPreviewField ||
+  !widgetConfigWatchEnabled ||
+  !widgetConfigRefreshButton ||
+  !widgetConfigPreviewHelp ||
   !packageImportInput ||
   !workspaceImportInput ||
   !cardsLayer
@@ -461,6 +521,14 @@ let dnaCatalogOrigins = [];
 let serverProfiles = Array.isArray(bootstrap?.servers) ? bootstrap.servers : [];
 let pendingServerLogin = null;
 let pendingWidgetConfigCardId = null;
+let pendingWidgetConfigServerId = "";
+let pendingWidgetConfigViewId = null;
+let pendingWidgetConfigViewSearch = "";
+const widgetConfigViewsByServer = new Map();
+const PACKAGE_PREVIEW_WATCH_INTERVAL_MS = 2500;
+const packagePreviewRefreshState = new Map();
+let packagePreviewWatchTimer = null;
+let packagePreviewWatchInFlight = false;
 
 const startupPaths = Array.from(startupScreen.querySelectorAll(".s0"));
 const cardNodes = new Map(
@@ -526,7 +594,134 @@ function getServerProfile(serverId) {
   );
 }
 
+function normalizeViewDefinition(rawView) {
+  return {
+    id: Number(rawView?.id) || 0,
+    name: String(rawView?.name || ""),
+    query: String(rawView?.query || ""),
+  };
+}
+
+function viewSearchTokens(view) {
+  return [
+    String(view.id || ""),
+    view.name || "",
+    view.query || "",
+  ]
+    .join(" ")
+    .toLowerCase();
+}
+
+function normalizeViewSearchQuery(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function filterViewCatalog(views, query) {
+  const normalized = normalizeViewSearchQuery(query);
+  const list = Array.isArray(views) ? views : [];
+  if (!normalized) {
+    return list;
+  }
+
+  return list.filter((view) => viewSearchTokens(view).includes(normalized));
+}
+
+function renderWidgetConfigViewList(card, views) {
+  const filteredViews = filterViewCatalog(views, pendingWidgetConfigViewSearch);
+
+  widgetConfigViewSummary.textContent = filteredViews.length
+    ? `${filteredViews.length} view${filteredViews.length === 1 ? "" : "s"}`
+    : "Nenhuma view encontrada";
+
+  if (!filteredViews.length) {
+    widgetConfigViewList.innerHTML = `
+      <div class="local-package-empty">
+        <strong>Nenhuma view</strong>
+        <span>Ajuste a busca por id ou nome para refinar a lista.</span>
+      </div>
+    `;
+    return;
+  }
+
+  widgetConfigViewList.innerHTML = filteredViews
+    .map((view) => {
+      const isSelected =
+        Number(card?.viewId) === view.id || pendingWidgetConfigViewId === view.id;
+      return `
+        <button
+          type="button"
+          class="local-package-card${isSelected ? " is-selected" : ""}"
+          data-widget-config-view-id="${escapeHtml(String(view.id))}"
+        >
+          <span class="local-package-card__title">
+            <strong>#${escapeHtml(String(view.id))}</strong>
+            <span>${escapeHtml(view.name || "View")}</span>
+          </span>
+          <span class="local-package-card__meta">${escapeHtml(view.query || "")}</span>
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function syncWidgetConfigViewState(card) {
+  const views = widgetConfigViewsByServer.get(pendingWidgetConfigServerId) || [];
+  renderWidgetConfigViewList(card, views);
+}
+
+async function requestServerViews(serverId) {
+  const response = await fetch(
+    apiPath(`/api/integrations/servers/${encodeURIComponent(serverId)}/table/view`),
+  );
+  const payload = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(payload?.error || "Falha ao carregar a lista de views.");
+  }
+
+  return Array.isArray(payload)
+    ? payload.map(normalizeViewDefinition).filter((view) => view.id > 0)
+    : [];
+}
+
+async function ensureWidgetConfigServerViews(serverId) {
+  const key = String(serverId || "").trim();
+  if (!key) {
+    widgetConfigViewsByServer.set("", []);
+    return [];
+  }
+
+  if (!widgetConfigViewsByServer.has(key)) {
+    widgetConfigViewsByServer.set(key, []);
+    const views = await requestServerViews(key);
+    widgetConfigViewsByServer.set(key, views);
+  }
+
+  return widgetConfigViewsByServer.get(key) || [];
+}
+
+async function refreshWidgetConfigViews() {
+  const card = pendingWidgetConfigCardId
+    ? getCardById(pendingWidgetConfigCardId)
+    : null;
+  if (!card || !pendingWidgetConfigServerId) {
+    widgetConfigViewSummary.textContent = "0 views";
+    widgetConfigViewList.innerHTML = "";
+    return [];
+  }
+
+  setWidgetConfigViewHelp("Carregando views...");
+  const views = await ensureWidgetConfigServerViews(pendingWidgetConfigServerId);
+  widgetConfigViewSearch.value = pendingWidgetConfigViewSearch;
+  renderWidgetConfigViewList(card, views);
+  setWidgetConfigViewHelp("");
+  return views;
+}
+
 function cardSupportsHostConfiguration(card) {
+  return card?.kind === "package";
+}
+
+function cardSupportsPackagePreview(card) {
   return card?.kind === "package";
 }
 
@@ -725,7 +920,7 @@ function renderConfigureIcon() {
 }
 
 function renderConfigureButton(card) {
-  if (!cardSupportsHostConfiguration(card)) {
+  if (!cardSupportsHostConfiguration(card) && !cardSupportsPackagePreview(card)) {
     return "";
   }
 
@@ -794,16 +989,95 @@ function buildPackageFrameSrc(card) {
   );
 }
 
-function applyFrameContent(frameNode, { src = "", html = "" } = {}) {
+function applyCacheBust(url) {
+  const base = String(url || "");
+  if (!base) {
+    return "";
+  }
+
+  const separator = base.includes("?") ? "&" : "?";
+  return `${base}${separator}lince_refresh=${Date.now()}`;
+}
+
+function hashString(value) {
+  let hash = 2166136261;
+  const text = String(value || "");
+
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return (hash >>> 0).toString(16);
+}
+
+function getPackagePreviewSettings(card) {
+  const settings = card?.widgetState?.packagePreview;
+  return isPlainObject(settings) ? settings : {};
+}
+
+function isPackagePreviewWatchEnabled(card) {
+  return (
+    card?.kind === "package" &&
+    Boolean(buildPackageFrameSrc(card)) &&
+    getPackagePreviewSettings(card).watchCompiledHtml === true
+  );
+}
+
+function clearFrameRefreshState(frameNode) {
+  if (!frameNode) {
+    return;
+  }
+
+  delete frameNode.dataset.packageRefreshActive;
+  delete frameNode.dataset.packageRefreshBaseSrc;
+  delete frameNode.dataset.packageRefreshDigest;
+}
+
+function markFrameRefreshState(frameNode, baseSrc, digest) {
+  if (!frameNode) {
+    return;
+  }
+
+  frameNode.dataset.packageRefreshActive = "true";
+  frameNode.dataset.packageRefreshBaseSrc = String(baseSrc || "");
+  frameNode.dataset.packageRefreshDigest = String(digest || "");
+}
+
+function getPackageFrameNode(cardId) {
+  return cardNodes.get(cardId)?.querySelector(".package-widget__frame") || null;
+}
+
+function applyFrameContent(
+  frameNode,
+  { src = "", html = "", preserveRefreshState = false } = {},
+) {
   if (!frameNode) {
     return;
   }
 
   if (src) {
+    const currentSrc = frameNode.getAttribute("src") || "";
+    const currentBaseSrc = currentSrc.split("?")[0];
+    const refreshActive = frameNode.dataset.packageRefreshActive === "true";
+    const refreshBaseSrc = frameNode.dataset.packageRefreshBaseSrc || "";
+
+    if (
+      preserveRefreshState &&
+      refreshActive &&
+      refreshBaseSrc === src &&
+      currentBaseSrc === src
+    ) {
+      return;
+    }
+
     if (frameNode.getAttribute("src") !== src) {
       frameNode.setAttribute("src", src);
     }
     frameNode.removeAttribute("srcdoc");
+    if (refreshActive && refreshBaseSrc && refreshBaseSrc !== src) {
+      clearFrameRefreshState(frameNode);
+    }
     return;
   }
 
@@ -812,6 +1086,134 @@ function applyFrameContent(frameNode, { src = "", html = "" } = {}) {
     frameNode.setAttribute("srcdoc", preparedHtml);
   }
   frameNode.removeAttribute("src");
+  clearFrameRefreshState(frameNode);
+}
+
+function setCardPackagePreviewWatchEnabled(cardId, enabled) {
+  return store.updateCard(
+    cardId,
+    (card) => ({
+      ...card,
+      widgetState: applyJsonMergePatch(card.widgetState, {
+        packagePreview: {
+          watchCompiledHtml: Boolean(enabled),
+        },
+      }),
+    }),
+    { persist: true },
+  );
+}
+
+async function fetchPackageFrameHtml(card) {
+  const src = buildPackageFrameSrc(card);
+  if (!src) {
+    return "";
+  }
+
+  const response = await fetch(src, {
+    cache: "no-store",
+    headers: {
+      Accept: "text/html,application/xhtml+xml",
+    },
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    throw new Error(
+      payload?.error || `Falha ao carregar o HTML compilado de ${card.title}.`,
+    );
+  }
+
+  return response.text();
+}
+
+async function refreshPackageFrame(cardId, { force = false } = {}) {
+  const card = getCardById(cardId);
+  if (!card || card.kind !== "package") {
+    return false;
+  }
+
+  const baseSrc = buildPackageFrameSrc(card);
+  if (!baseSrc) {
+    return false;
+  }
+
+  const html = await fetchPackageFrameHtml(card);
+  const digest = hashString(html);
+  const knownState = packagePreviewRefreshState.get(cardId) || null;
+  packagePreviewRefreshState.set(cardId, {
+    digest,
+    source: baseSrc,
+    updatedAt: Date.now(),
+  });
+
+  if (!force && !knownState) {
+    return false;
+  }
+
+  if (!force && knownState?.digest === digest) {
+    return false;
+  }
+
+  const frameNode = getPackageFrameNode(cardId);
+  if (frameNode) {
+    markFrameRefreshState(frameNode, baseSrc, digest);
+    frameNode.setAttribute("src", applyCacheBust(baseSrc));
+    frameNode.removeAttribute("srcdoc");
+  }
+
+  return true;
+}
+
+async function syncWatchedPackageFrames() {
+  if (!editMode || packagePreviewWatchInFlight) {
+    return;
+  }
+
+  const snapshot = store.getSnapshot();
+  const watchedCards = snapshot.workspaces.flatMap((workspace) =>
+    workspace.cards.filter(isPackagePreviewWatchEnabled),
+  );
+
+  if (!watchedCards.length) {
+    return;
+  }
+
+  packagePreviewWatchInFlight = true;
+  try {
+    await Promise.allSettled(
+      watchedCards.map((card) => refreshPackageFrame(card.id)),
+    );
+  } finally {
+    packagePreviewWatchInFlight = false;
+  }
+}
+
+function updatePackagePreviewWatchTimer() {
+  const snapshot = store.getSnapshot();
+  const hasWatchedCards = snapshot.workspaces.some((workspace) =>
+    workspace.cards.some(isPackagePreviewWatchEnabled),
+  );
+
+  if (!editMode || !hasWatchedCards) {
+    if (packagePreviewWatchTimer) {
+      window.clearInterval(packagePreviewWatchTimer);
+      packagePreviewWatchTimer = null;
+    }
+    return;
+  }
+
+  if (packagePreviewWatchTimer) {
+    return;
+  }
+
+  packagePreviewWatchTimer = window.setInterval(() => {
+    void syncWatchedPackageFrames();
+  }, PACKAGE_PREVIEW_WATCH_INTERVAL_MS);
+}
+
+function refreshSinglePackagePreview(cardId) {
+  return refreshPackageFrame(cardId, { force: true });
 }
 
 function renderPackageBody(card) {
@@ -896,6 +1298,7 @@ function ensureCardNode(card) {
   if (node && node.dataset.cardKind !== (card.kind || "text")) {
     node.remove();
     cardNodes.delete(card.id);
+    packagePreviewRefreshState.delete(card.id);
     node = null;
   }
 
@@ -976,6 +1379,7 @@ function syncCardNode(node, card) {
     applyFrameContent(frameNode, {
       src: buildPackageFrameSrc(card),
       html: card.html || "",
+      preserveRefreshState: true,
     });
     frameNode.setAttribute("title", card.title || "External card");
     frameNode.dataset.packageInstanceId = card.id || "";
@@ -1028,6 +1432,7 @@ function renderCards(cards, allCardIds) {
     if (!resolvedAllCardIds.has(cardId)) {
       node.remove();
       cardNodes.delete(cardId);
+      packagePreviewRefreshState.delete(cardId);
       continue;
     }
 
@@ -1185,6 +1590,7 @@ function renderSnapshot(snapshot) {
   renderCards(snapshot.cards, allCardIds);
   ensureBackgroundPackageCards(snapshot);
   widgetBridge.syncFrames();
+  updatePackagePreviewWatchTimer();
   renderEmptyState(snapshot);
 
   if (workspaceChanged && pendingWorkspaceTransitionDirection) {
@@ -1968,6 +2374,10 @@ function setEditMode(nextEditMode) {
   }
 
   widgetBridge.syncFrames();
+  updatePackagePreviewWatchTimer();
+  if (editMode) {
+    void syncWatchedPackageFrames();
+  }
 }
 
 function isTypingTarget(target) {
@@ -2283,6 +2693,24 @@ function setWidgetConfigHelp(message) {
   widgetConfigHelp.hidden = !text;
 }
 
+function setWidgetConfigAuthHelp(message) {
+  const text = String(message || "").trim();
+  widgetConfigAuthHelp.textContent = text;
+  widgetConfigAuthHelp.hidden = !text;
+}
+
+function setWidgetConfigPreviewHelp(message) {
+  const text = String(message || "").trim();
+  widgetConfigPreviewHelp.textContent = text;
+  widgetConfigPreviewHelp.hidden = !text;
+}
+
+function setWidgetConfigViewHelp(message) {
+  const text = String(message || "").trim();
+  widgetConfigViewHelp.textContent = text;
+  widgetConfigViewHelp.hidden = !text;
+}
+
 function syncWidgetConfigDebug(card) {
   if (!card) {
     return;
@@ -2290,15 +2718,11 @@ function syncWidgetConfigDebug(card) {
 
   const parts = [];
 
-  if (cardRequiresViewId(card)) {
-    parts.push(
-      "Escolha um servidor. O view id e opcional aqui e pode ser conectado depois dentro do widget.",
-    );
-  } else if (cardRequiresServer(card)) {
+  if (cardRequiresServer(card)) {
     parts.push("Escolha um servidor para esse widget.");
   } else if (cardSupportsHostConfiguration(card)) {
     parts.push(
-      "Esse widget pode usar um organ opcionalmente. Escolha um servidor se o proprio widget pedir server_id na configuracao do host.",
+      "Escolha um servidor e conecte a conta se ele exigir auth.",
     );
   } else {
     parts.push("Esse widget nao precisa de configuracao de host.");
@@ -2310,72 +2734,202 @@ function syncWidgetConfigDebug(card) {
     );
   }
 
+  if (cardSupportsHostConfiguration(card)) {
+    parts.push(
+      "Depois de conectar, pesquise a view por nome ou id e selecione uma linha da lista.",
+    );
+  }
+
+  if (cardSupportsPackagePreview(card)) {
+    const packageSrc = buildPackageFrameSrc(card);
+    if (packageSrc) {
+      parts.push(
+        "Ative auto swap para manter o iframe sincronizado com o HTML compilado pelo Rust.",
+      );
+    } else {
+      parts.push(
+        "Esse widget nao possui um source compilado para watch mode.",
+      );
+    }
+  }
+
   setWidgetConfigHelp(parts.join(" "));
 }
 
 function openWidgetConfigModal(cardId) {
   const card = getCardById(cardId);
-  if (!card || !cardSupportsHostConfiguration(card)) {
+  if (
+    !card ||
+    (!cardSupportsHostConfiguration(card) && !cardSupportsPackagePreview(card))
+  ) {
     flashBoardBlocked();
     return;
   }
 
   pendingWidgetConfigCardId = card.id;
-  widgetConfigModalDescription.textContent = `Defina o servidor e os parametros usados por ${card.title}.`;
-  syncServerOptions(card.serverId || "");
-  widgetConfigViewIdField.hidden = !cardRequiresViewId(card);
-  widgetConfigViewId.value =
-    card.viewId == null ? "" : String(card.viewId || "");
+  pendingWidgetConfigServerId = String(card.serverId || "");
+  pendingWidgetConfigViewId =
+    card.viewId == null ? null : Number(card.viewId) || null;
+  pendingWidgetConfigViewSearch = "";
+  widgetConfigModalDescription.textContent = cardSupportsHostConfiguration(card)
+    ? `Escolha um servidor, conecte se preciso e selecione uma view para ${card.title}.`
+    : `Controle o preview compilado usado por ${card.title}.`;
+  widgetConfigServerIdField.hidden = !cardSupportsHostConfiguration(card);
+  syncServerOptions(pendingWidgetConfigServerId || "");
+  widgetConfigViewSearch.value = "";
+  widgetConfigViewField.hidden = true;
+  widgetConfigViewIdField.hidden = true;
+  widgetConfigViewId.value = "";
   if (widgetConfigStreamsField) {
     widgetConfigStreamsField.hidden = !cardSupportsStream(card);
   }
   if (widgetConfigStreamsEnabled) {
     widgetConfigStreamsEnabled.checked = card.streamsEnabled !== false;
   }
-
-  if (!serverProfiles.length && cardRequiresServer(card)) {
-    widgetConfigSaveButton.disabled = true;
-    setWidgetConfigHelp(
-      "Nenhum orgao configurado. Cadastre um servidor nessa instancia e recarregue a pagina.",
-    );
-  } else {
-    widgetConfigSaveButton.disabled = false;
-    syncWidgetConfigDebug(card);
+  const hasCompiledSource = Boolean(buildPackageFrameSrc(card));
+  widgetConfigPreviewField.hidden = !cardSupportsPackagePreview(card);
+  if (widgetConfigWatchEnabled) {
+    widgetConfigWatchEnabled.checked = isPackagePreviewWatchEnabled(card);
+    widgetConfigWatchEnabled.disabled = !hasCompiledSource;
   }
+  widgetConfigRefreshButton.disabled =
+    !cardSupportsPackagePreview(card) || !hasCompiledSource;
+  setWidgetConfigPreviewHelp(
+    hasCompiledSource
+      ? "Auto swap troca o iframe quando o HTML compilado do Rust muda. O botao abaixo faz um swap imediato."
+      : "Esse widget nao expõe um HTML compilado recarregavel.",
+  );
 
   widgetConfigModalBackdrop.hidden = false;
   syncModalLock();
+  widgetConfigSaveButton.disabled = false;
+  syncWidgetConfigDebug(card);
+  void refreshWidgetConfigModalState();
   window.setTimeout(() => {
-    if (cardSupportsHostConfiguration(card)) {
+    const server = getServerProfile(pendingWidgetConfigServerId);
+    if (server?.requiresAuth && !server.authenticated) {
+      widgetConfigAuthUsername.focus();
+      widgetConfigAuthUsername.select();
+      return;
+    }
+
+    if (cardSupportsHostConfiguration(card) && !pendingWidgetConfigServerId) {
       widgetConfigServerId.focus();
       return;
     }
 
-    widgetConfigViewId.focus();
+    widgetConfigViewSearch.focus();
+    widgetConfigViewSearch.select();
   }, 0);
 }
 
 function closeWidgetConfigModal() {
   pendingWidgetConfigCardId = null;
+  pendingWidgetConfigServerId = "";
+  pendingWidgetConfigViewId = null;
+  pendingWidgetConfigViewSearch = "";
   widgetConfigModalBackdrop.hidden = true;
   widgetConfigSaveButton.disabled = false;
   setWidgetConfigHelp("");
+  setWidgetConfigAuthHelp("");
+  setWidgetConfigViewHelp("");
+  widgetConfigViewList.innerHTML = "";
+  widgetConfigViewSummary.textContent = "";
+  widgetConfigViewSearch.value = "";
+  setWidgetConfigPreviewHelp("");
   syncModalLock();
+}
+
+async function refreshWidgetConfigModalState() {
+  const card = pendingWidgetConfigCardId
+    ? getCardById(pendingWidgetConfigCardId)
+    : null;
+  if (!card) {
+    return;
+  }
+
+  widgetConfigViewSearch.value = pendingWidgetConfigViewSearch;
+  const server = getServerProfile(pendingWidgetConfigServerId);
+  const requiresAuth = Boolean(server?.requiresAuth);
+  const authenticated = Boolean(server?.authenticated);
+  const canShowViews = Boolean(pendingWidgetConfigServerId) && (!requiresAuth || authenticated);
+  const needsHostSelection =
+    cardSupportsHostConfiguration(card) &&
+    (!pendingWidgetConfigServerId ||
+      (requiresAuth && !authenticated) ||
+      (canShowViews && pendingWidgetConfigViewId == null));
+
+  widgetConfigAuthField.hidden = !requiresAuth || authenticated;
+  widgetConfigAuthEnabled.checked = requiresAuth && !authenticated;
+  widgetConfigAuthUsername.value = server?.usernameHint || "";
+  widgetConfigAuthPassword.value = "";
+  widgetConfigAuthLogin.disabled = !pendingWidgetConfigServerId || !requiresAuth || authenticated;
+  widgetConfigSaveButton.disabled = needsHostSelection;
+  setWidgetConfigAuthHelp(
+    !pendingWidgetConfigServerId
+      ? "Escolha um servidor primeiro."
+      : requiresAuth && !authenticated
+        ? "Digite as credenciais do servidor aqui."
+        : "",
+  );
+
+  widgetConfigViewField.hidden = !canShowViews;
+  widgetConfigViewIdField.hidden = true;
+
+  if (!canShowViews) {
+    widgetConfigViewSummary.textContent = "0 views";
+    widgetConfigViewList.innerHTML = "";
+    setWidgetConfigViewHelp(
+      pendingWidgetConfigServerId
+        ? "Conecte para carregar a lista de views."
+        : "Escolha um servidor para carregar as views.",
+    );
+    return;
+  }
+
+  try {
+    const views = await ensureWidgetConfigServerViews(pendingWidgetConfigServerId);
+    renderWidgetConfigViewList(card, views);
+    setWidgetConfigViewHelp("");
+  } catch (error) {
+    widgetConfigViewSummary.textContent = "0 views";
+    widgetConfigViewList.innerHTML = "";
+    setWidgetConfigViewHelp(
+      error instanceof Error
+        ? error.message
+        : "Falha ao carregar a lista de views.",
+    );
+  }
 }
 
 function saveWidgetConfig(cardId, nextServerId, nextViewId) {
   const nextStreamsEnabled = widgetConfigStreamsEnabled
     ? widgetConfigStreamsEnabled.checked
     : null;
+  const nextWatchEnabled = widgetConfigWatchEnabled
+    ? widgetConfigWatchEnabled.checked
+    : null;
   store.updateCard(
     cardId,
     (card) => ({
       ...card,
-      serverId: nextServerId,
-      viewId: nextViewId,
+      serverId: cardSupportsHostConfiguration(card)
+        ? nextServerId
+        : card.serverId,
+      viewId: cardSupportsHostConfiguration(card)
+        ? nextViewId
+        : card.viewId,
       streamsEnabled: cardSupportsStream(card)
         ? (nextStreamsEnabled ?? card.streamsEnabled !== false)
         : card.streamsEnabled !== false,
+      widgetState: cardSupportsPackagePreview(card)
+        ? applyJsonMergePatch(card.widgetState, {
+            packagePreview: {
+              watchCompiledHtml:
+                nextWatchEnabled ?? isPackagePreviewWatchEnabled(card),
+            },
+          })
+        : card.widgetState,
     }),
     { persist: true },
   );
@@ -2394,32 +2948,143 @@ function handleWidgetConfigFormSubmit(event) {
     return;
   }
 
-  const nextServerId = cardSupportsHostConfiguration(card)
-    ? widgetConfigServerId.value.trim()
-    : "";
-  if (cardRequiresServer(card) && !nextServerId) {
-    setWidgetConfigHelp("Escolha um servidor para esse widget.");
-    widgetConfigServerId.focus();
-    return;
-  }
-
-  let nextViewId = null;
-  if (cardRequiresViewId(card)) {
-    const rawViewId = widgetConfigViewId.value.trim();
-    if (rawViewId) {
-      const parsedViewId = Number(rawViewId);
-      if (!Number.isInteger(parsedViewId) || parsedViewId <= 0) {
-        setWidgetConfigHelp("Informe um view id inteiro maior que zero.");
-        widgetConfigViewId.focus();
-        return;
-      }
-
-      nextViewId = parsedViewId;
+  if (cardSupportsHostConfiguration(card)) {
+    const nextServerId = pendingWidgetConfigServerId.trim();
+    if (cardRequiresServer(card) && !nextServerId) {
+      setWidgetConfigHelp("Escolha um servidor para esse widget.");
+      widgetConfigServerId.focus();
+      return;
     }
   }
 
-  saveWidgetConfig(pendingWidgetConfigCardId, nextServerId, nextViewId);
+  saveWidgetConfig(
+    pendingWidgetConfigCardId,
+    pendingWidgetConfigServerId.trim(),
+    pendingWidgetConfigViewId,
+  );
   closeWidgetConfigModal();
+}
+
+function syncWidgetConfigPasswordVisibility(visible) {
+  widgetConfigAuthPassword.type = visible ? "text" : "password";
+  widgetConfigAuthPasswordToggle.setAttribute(
+    "aria-label",
+    visible ? "Ocultar senha" : "Mostrar senha",
+  );
+  widgetConfigAuthPasswordToggle.setAttribute("aria-pressed", String(visible));
+  widgetConfigAuthPasswordToggle.classList.toggle("is-active", visible);
+}
+
+function updateWidgetConfigCardServer(serverId) {
+  if (!pendingWidgetConfigCardId) {
+    return;
+  }
+
+  pendingWidgetConfigServerId = String(serverId || "").trim();
+  pendingWidgetConfigViewId = null;
+  pendingWidgetConfigViewSearch = "";
+  widgetConfigViewSearch.value = "";
+  widgetConfigViewList.innerHTML = "";
+  widgetConfigViewSummary.textContent = "0 views";
+  setWidgetConfigViewHelp("");
+  store.updateCard(
+    pendingWidgetConfigCardId,
+    (card) => ({
+      ...card,
+      serverId: pendingWidgetConfigServerId,
+      viewId: null,
+    }),
+    { persist: true },
+  );
+}
+
+async function handleWidgetConfigServerChange() {
+  const card = pendingWidgetConfigCardId
+    ? getCardById(pendingWidgetConfigCardId)
+    : null;
+  if (!card) {
+    return;
+  }
+
+  updateWidgetConfigCardServer(widgetConfigServerId.value.trim());
+  await refreshWidgetConfigModalState();
+}
+
+async function handleWidgetConfigAuthLogin() {
+  const card = pendingWidgetConfigCardId
+    ? getCardById(pendingWidgetConfigCardId)
+    : null;
+  if (!card || !pendingWidgetConfigServerId) {
+    return;
+  }
+
+  const username = widgetConfigAuthUsername.value.trim();
+  const password = widgetConfigAuthPassword.value;
+  if (!username || !password) {
+    setWidgetConfigAuthHelp("Preencha login e senha do servidor.");
+    widgetConfigAuthUsername.focus();
+    return;
+  }
+
+  setWidgetConfigAuthHelp("Conectando...");
+  widgetConfigAuthLogin.disabled = true;
+  try {
+    await submitServerLogin(pendingWidgetConfigServerId, username, password);
+    await refreshServerProfiles();
+    await refreshWidgetConfigModalState();
+    setWidgetConfigAuthHelp("");
+  } catch (error) {
+    setWidgetConfigAuthHelp(
+      error instanceof Error
+        ? error.message
+        : "Falha ao autenticar nesse servidor remoto.",
+    );
+    widgetConfigAuthPassword.focus();
+  } finally {
+    widgetConfigAuthLogin.disabled = false;
+  }
+}
+
+async function handleWidgetConfigViewSearchInput() {
+  const card = pendingWidgetConfigCardId
+    ? getCardById(pendingWidgetConfigCardId)
+    : null;
+  if (!card) {
+    return;
+  }
+
+  pendingWidgetConfigViewSearch = widgetConfigViewSearch.value;
+  const views = widgetConfigViewsByServer.get(pendingWidgetConfigServerId) || [];
+  renderWidgetConfigViewList(card, views);
+}
+
+function selectWidgetConfigView(viewId) {
+  const card = pendingWidgetConfigCardId
+    ? getCardById(pendingWidgetConfigCardId)
+    : null;
+  if (!card) {
+    return;
+  }
+
+  const parsedViewId = Number(viewId) || null;
+  if (!parsedViewId) {
+    return;
+  }
+
+  pendingWidgetConfigViewId = parsedViewId;
+  widgetConfigViewId.value = String(parsedViewId);
+  widgetConfigViewSummary.textContent = `View selecionada #${parsedViewId}`;
+  widgetConfigSaveButton.disabled = false;
+  store.updateCard(
+    card.id,
+    (nextCard) => ({
+      ...nextCard,
+      viewId: parsedViewId,
+    }),
+    { persist: true },
+  );
+  const views = widgetConfigViewsByServer.get(pendingWidgetConfigServerId) || [];
+  renderWidgetConfigViewList(card, views);
 }
 
 async function bootWorkspace() {
@@ -3089,7 +3754,7 @@ cardsLayer.addEventListener("click", (event) => {
     const card = getCardById(cardId);
     const gate = card ? resolveCardServerState(card) : null;
     if (gate?.server) {
-      openServerLoginModal(gate.server.id);
+      openWidgetConfigModal(cardId);
     } else {
       flashBoardBlocked();
     }
@@ -3314,17 +3979,28 @@ widgetConfigModalBackdrop.addEventListener("click", (event) => {
 });
 
 widgetConfigServerId.addEventListener("change", () => {
-  const card = pendingWidgetConfigCardId
-    ? getCardById(pendingWidgetConfigCardId)
-    : null;
-  syncWidgetConfigDebug(card);
+  void handleWidgetConfigServerChange();
 });
 
-widgetConfigViewId.addEventListener("input", () => {
-  const card = pendingWidgetConfigCardId
-    ? getCardById(pendingWidgetConfigCardId)
-    : null;
-  syncWidgetConfigDebug(card);
+widgetConfigAuthPasswordToggle.addEventListener("click", () => {
+  syncWidgetConfigPasswordVisibility(widgetConfigAuthPassword.type === "password");
+});
+
+widgetConfigAuthLogin.addEventListener("click", () => {
+  void handleWidgetConfigAuthLogin();
+});
+
+widgetConfigViewSearch.addEventListener("input", () => {
+  void handleWidgetConfigViewSearchInput();
+});
+
+widgetConfigViewList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-widget-config-view-id]");
+  if (!button?.dataset.widgetConfigViewId) {
+    return;
+  }
+
+  selectWidgetConfigView(button.dataset.widgetConfigViewId);
 });
 
 if (widgetConfigStreamsEnabled) {
@@ -3335,6 +4011,47 @@ if (widgetConfigStreamsEnabled) {
     syncWidgetConfigDebug(card);
   });
 }
+
+widgetConfigWatchEnabled.addEventListener("change", () => {
+  const card = pendingWidgetConfigCardId
+    ? getCardById(pendingWidgetConfigCardId)
+    : null;
+  if (card) {
+    setWidgetConfigPreviewHelp(
+      widgetConfigWatchEnabled.checked
+        ? "Auto swap ligado."
+        : "Auto swap desligado.",
+    );
+    syncWidgetConfigDebug(card);
+  }
+});
+
+widgetConfigRefreshButton.addEventListener("click", () => {
+  if (!pendingWidgetConfigCardId) {
+    return;
+  }
+
+  widgetConfigRefreshButton.disabled = true;
+  setWidgetConfigPreviewHelp("Swap em andamento...");
+  void refreshPackageFrame(pendingWidgetConfigCardId, { force: true })
+    .then((changed) => {
+      setWidgetConfigPreviewHelp(
+        changed
+          ? "Preview recompilado atualizado."
+          : "Preview atualizado com o estado atual do compilado.",
+      );
+    })
+    .catch((error) => {
+      setWidgetConfigPreviewHelp(
+        error instanceof Error
+          ? error.message
+          : "Falha ao atualizar o preview compilado.",
+      );
+    })
+    .finally(() => {
+      widgetConfigRefreshButton.disabled = !pendingWidgetConfigCardId;
+    });
+});
 
 packageImportInput.addEventListener("change", () => {
   const file = packageImportInput.files?.[0];

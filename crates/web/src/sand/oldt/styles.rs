@@ -44,10 +44,11 @@ button, input, select {
 }
 
 .trailApp {
+    position: relative;
     height: 100%;
     padding: 10px;
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
     gap: 10px;
 }
 
@@ -59,11 +60,18 @@ button, input, select {
 }
 
 .hero {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    left: auto;
+    z-index: 10;
+    width: min(980px, calc(100% - 20px));
     display: flex;
     justify-content: space-between;
     gap: 12px;
-    padding: 14px 15px;
-    align-items: flex-start;
+    padding: 10px 14px;
+    align-items: center;
+    backdrop-filter: blur(16px);
 }
 
 .heroCopy, .heroMeta, .panelHead, .panelToolbar, .panelChips, .toolbarButtons, .sectionHead, .actionRow {
@@ -73,9 +81,11 @@ button, input, select {
 }
 
 .heroCopy {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
     min-width: 0;
+    gap: 8px;
 }
 
 .heroMeta, .panelChips, .toolbarButtons, .panelToolbar {
@@ -174,45 +184,111 @@ button, input, select {
 .graphPanel {
     min-width: 0;
     min-height: 0;
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-    gap: 10px;
-    padding: 12px;
-}
-
-.panelHead {
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.panelHeadCopy {
-    min-width: 0;
-}
-
-.panelToolbar {
-    justify-content: flex-end;
-    min-width: 0;
+    display: block;
+    height: 100%;
+    padding: 0;
 }
 
 .graphWorkspace {
+    position: relative;
     min-width: 0;
     min-height: 0;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 360px;
-    gap: 12px;
+    width: 100%;
+    height: 100%;
 }
 
 .graphStage {
     position: relative;
     min-width: 0;
     min-height: 0;
-    border-radius: 14px;
+    width: 100%;
+    height: 100%;
+    border-radius: 20px;
     overflow: hidden;
     border: 1px solid var(--line);
     background:
         radial-gradient(circle at 20% 20%, rgba(120, 215, 255, 0.06), transparent 30%),
         linear-gradient(180deg, rgba(8, 12, 18, 0.96), rgba(5, 7, 12, 0.98));
+}
+
+.graphOverlay {
+    position: absolute;
+    z-index: 8;
+}
+
+.graphOverlay--title {
+    top: 12px;
+    left: 12px;
+    padding: 0;
+    border: 0;
+    background: none;
+    backdrop-filter: none;
+    pointer-events: none;
+}
+
+.graphOverlay--title .title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.graphHud--topRight {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    z-index: 9;
+}
+
+.graphHud--topRight .panelToolbar {
+    padding: 0;
+    border: 0;
+    background: none;
+    backdrop-filter: none;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+.graphHud--topRight .panelChips,
+.graphHud--topRight .toolbarButtons {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+.graphHud--topRight .pill,
+.graphHud--topRight .button {
+    min-height: 26px;
+    padding: 0 9px;
+    font-size: 0.68rem;
+}
+
+.graphHud--topRight .buttonGhost {
+    color: #f2bb78;
+}
+
+.overlayDeck {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    z-index: 9;
+}
+
+.quantityDock {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
 }
 
 .graphSvg {
@@ -273,6 +349,71 @@ button, input, select {
     display: flex;
     flex-direction: column;
     gap: 12px;
+}
+
+.section--dock {
+    position: relative;
+    overflow: visible;
+    width: 44px;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+}
+
+.sectionDockPanel {
+    position: absolute;
+    right: 52px;
+    bottom: 0;
+    width: min(320px, calc(100vw - 80px));
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: rgba(14, 19, 24, 0.96);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px) scale(0.98);
+    transform-origin: bottom right;
+    transition: transform 160ms ease, opacity 160ms ease, box-shadow 160ms ease;
+}
+
+.section--dock:hover .sectionDockPanel,
+.section--dock:focus-within .sectionDockPanel,
+.section--dock.is-open .sectionDockPanel {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+}
+
+.sectionDockButton {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 14px;
+    color: var(--accent-2);
+    border-color: rgba(126, 240, 198, 0.20);
+    background: rgba(126, 240, 198, 0.10);
+    flex: 0 0 auto;
+}
+
+.sectionDockButton::before {
+    content: "";
+    width: 12px;
+    height: 12px;
+    border: 1px solid currentColor;
+    border-radius: 3px;
+    opacity: 0.82;
+}
+
+.sectionDockButton:hover {
+    border-color: rgba(126, 240, 198, 0.34);
+    background: rgba(126, 240, 198, 0.18);
 }
 
 .sectionGrid {
@@ -341,6 +482,53 @@ button, input, select {
     font-size: 0.9rem;
     font-weight: 700;
     color: var(--soft);
+}
+
+.quantityButton {
+    min-height: 28px;
+    padding: 0 10px;
+    font-size: 0.70rem;
+    transition:
+        border-color 120ms ease,
+        background 120ms ease,
+        color 120ms ease,
+        box-shadow 120ms ease,
+        transform 120ms ease;
+}
+
+.quantityButton--pass {
+    color: var(--accent-2);
+    border-color: rgba(126, 240, 198, 0.22);
+    background: rgba(126, 240, 198, 0.06);
+}
+
+.quantityButton--far {
+    color: var(--soft);
+    border-color: rgba(255, 255, 255, 0.10);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.quantityButton--step {
+    color: var(--warn);
+    border-color: rgba(242, 187, 120, 0.24);
+    background: rgba(242, 187, 120, 0.08);
+}
+
+.quantityButton.is-active {
+    box-shadow: 0 0 0 1px currentColor inset;
+    transform: translateY(-1px);
+}
+
+.quantityButton--pass.is-active {
+    background: rgba(126, 240, 198, 0.16);
+}
+
+.quantityButton--far.is-active {
+    background: rgba(255, 255, 255, 0.09);
+}
+
+.quantityButton--step.is-active {
+    background: rgba(242, 187, 120, 0.16);
 }
 
 .resultShell {

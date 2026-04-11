@@ -138,6 +138,7 @@ impl TrailWidgetService {
                 "bind-trail",
                 "create-trail",
                 "run-trail-sync",
+                "set-trail-node-quantity",
             ],
             "diagnostics": {
                 "trailRootRecordId": runtime.trail_root_record_id,
@@ -245,6 +246,14 @@ impl TrailWidgetService {
                         TrailWidgetError::Invalid(format!("Payload invalido: {error}"))
                     })?;
                 self.run_trail_sync(session_token, instance_id, request)
+                    .await
+            }
+            "set-trail-node-quantity" => {
+                let request = serde_json::from_value::<SetTrailNodeQuantityRequest>(payload)
+                    .map_err(|error| {
+                        TrailWidgetError::Invalid(format!("Payload invalido: {error}"))
+                    })?;
+                self.set_trail_node_quantity(session_token, instance_id, request)
                     .await
             }
             _ => Err(TrailWidgetError::Invalid(
@@ -555,6 +564,67 @@ impl TrailWidgetService {
                 "trailRootRecordId": trail_root_record_id,
                 "viewId": view_id,
                 "sync": sync,
+            }
+        }))
+    }
+
+    async fn set_trail_node_quantity(
+        &self,
+        session_token: Option<&str>,
+        instance_id: &str,
+        request: SetTrailNodeQuantityRequest,
+    ) -> Result<Value, TrailWidgetError> {
+        let resolved = self
+            .resolve_instance(session_token, instance_id, TrailPermission::Write)
+            .await?;
+        let runtime = parse_runtime_state(&resolved.card.widget_state);
+        let trail_root_record_id = runtime.trail_root_record_id.ok_or_else(|| {
+            TrailWidgetError::Invalid("Nenhum trail root foi escolhido.".into())
+        })?;
+        let view_id = match runtime.derived_view_id {
+            Some(view_id) => view_id,
+            None => self
+                .ensure_derived_view(session_token, &resolved, trail_root_record_id, None)
+                .await?,
+        };
+        let snapshot = self
+            .load_view_snapshot(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+                u32::try_from(view_id).map_err(|_| {
+                    TrailWidgetError::Internal("view_id invalido ao atualizar quantidade.".into())
+                })?,
+            )
+            .await?;
+        let rows = parse_view_snapshot_rows(&snapshot)?;
+        let changes = compute_trail_quantity_changes(
+            &rows,
+            trail_root_record_id,
+            request.record_id,
+            request.quantity,
+        )?;
+        for change in &changes {
+            self.update_table_row(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+                "record",
+                change.record_id,
+                json!({
+                    "quantity": change.quantity,
+                }),
+            )
+            .await?;
+        }
+        Ok(json!({
+            "ok": true,
+            "action": "set-trail-node-quantity",
+            "await_stream_refresh": true,
+            "detail": {
+                "recordId": request.record_id,
+                "quantity": request.quantity,
+                "changes": changes,
             }
         }))
     }
@@ -1751,6 +1821,18 @@ struct RunTrailSyncRequest {
     fields: Option<String>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SetTrailNodeQuantityRequest {
+    record_id: i64,
+    quantity: f64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct ViewSnapshotPayload {
+    rows: Vec<std::collections::BTreeMap<String, String>>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TrailSyncMetadata {
@@ -1807,6 +1889,15 @@ struct RecordSearchRow {
     assignee_names_json: Option<String>,
     #[serde(alias = "assignee_usernames_json")]
     assignee_usernames_json: Option<String>,
+    #[serde(alias = "parent_ids_json")]
+    parent_ids_json: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TrailQuantityChange {
+    record_id: i64,
+    quantity: i64,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -2019,6 +2110,166 @@ fn parse_view_list(value: &Value) -> Result<Vec<ViewDefinition>, TrailWidgetErro
         .as_array()
         .ok_or_else(|| TrailWidgetError::Internal("Resposta invalida ao listar views.".into()))?;
     array.iter().map(parse_view_definition).collect()
+}
+
+fn parse_view_snapshot_rows(
+    value: &Value,
+) -> Result<Vec<std::collections::BTreeMap<String, String>>, TrailWidgetError> {
+    serde_json::from_value::<ViewSnapshotPayload>(value.clone())
+        .map(|snapshot| snapshot.rows)
+        .map_err(|error| {
+            TrailWidgetError::Internal(format!("Resposta invalida ao ler snapshot da view: {error}"))
+        })
+}
+
+fn compute_trail_quantity_changes(
+    rows: &[std::collections::BTreeMap<String, String>],
+    trail_root_record_id: i64,
+    record_id: i64,
+    quantity: f64,
+) -> Result<Vec<TrailQuantityChange>, TrailWidgetError> {
+    if rows.is_empty() || trail_root_record_id <= 0 {
+        return Err(TrailWidgetError::Invalid(
+            "Snapshot da trail ainda nao foi carregado.".into(),
+        ));
+    }
+
+    let next_quantity = normalized_trail_quantity(quantity);
+    let mut quantities = std::collections::HashMap::new();
+    let mut parent_map = std::collections::HashMap::<i64, Vec<i64>>::new();
+    let mut child_map = std::collections::HashMap::<i64, Vec<i64>>::new();
+    let row_ids = rows
+        .iter()
+        .filter_map(|row| trail_snapshot_record_id(row))
+        .collect::<std::collections::HashSet<_>>();
+
+    for row in rows {
+        let Some(row_id) = trail_snapshot_record_id(row) else {
+            continue;
+        };
+        let parents = trail_snapshot_parent_ids(row)
+            .into_iter()
+            .filter(|parent_id| row_ids.contains(parent_id))
+            .collect::<Vec<_>>();
+        parent_map.insert(row_id, parents.clone());
+        quantities.insert(row_id, trail_snapshot_quantity(row));
+        for parent_id in parents {
+            child_map.entry(parent_id).or_default().push(row_id);
+        }
+    }
+
+    let mut next_quantities = quantities.clone();
+    let root_id = trail_root_record_id;
+
+    if record_id == root_id {
+        next_quantities.insert(record_id, next_quantity);
+    } else if next_quantity == 1 {
+        if !trail_parents_complete(record_id, &parent_map, &next_quantities) {
+            return Err(TrailWidgetError::Invalid(
+                "All parents must be 1 before this record can be completed.".into(),
+            ));
+        }
+        next_quantities.insert(record_id, 1);
+    } else if next_quantity == -1 {
+        next_quantities.insert(
+            record_id,
+            if trail_parents_complete(record_id, &parent_map, &next_quantities) {
+                -1
+            } else {
+                0
+            },
+        );
+    } else {
+        next_quantities.insert(record_id, 0);
+    }
+
+    let mut queue = std::collections::VecDeque::from([record_id]);
+    let mut visited = std::collections::HashSet::new();
+    while let Some(current) = queue.pop_front() {
+        if !visited.insert(current) {
+            continue;
+        }
+        if let Some(children) = child_map.get(&current) {
+            for child_id in children.iter().copied() {
+                let existing = next_quantities
+                    .get(&child_id)
+                    .copied()
+                    .map(|value| normalized_trail_quantity(value as f64))
+                    .unwrap_or_default();
+                if trail_parents_complete(child_id, &parent_map, &next_quantities) {
+                    if existing == 0 {
+                        next_quantities.insert(child_id, -1);
+                    }
+                } else if existing != 1 {
+                    next_quantities.insert(child_id, 0);
+                }
+                queue.push_back(child_id);
+            }
+        }
+    }
+
+    let mut changes = Vec::new();
+    for (changed_record_id, resolved_quantity) in next_quantities {
+        let current = quantities.get(&changed_record_id).copied().unwrap_or_default();
+        if current != resolved_quantity {
+            changes.push(TrailQuantityChange {
+                record_id: changed_record_id,
+                quantity: resolved_quantity,
+            });
+        }
+    }
+    changes.sort_by_key(|change| change.record_id);
+
+    Ok(changes)
+}
+
+fn trail_snapshot_record_id(row: &std::collections::BTreeMap<String, String>) -> Option<i64> {
+    row.get("id")
+        .and_then(|value| value.trim().parse::<i64>().ok())
+}
+
+fn trail_snapshot_quantity(row: &std::collections::BTreeMap<String, String>) -> i64 {
+    row.get("quantity")
+        .and_then(|value| value.trim().parse::<f64>().ok())
+        .map(normalized_trail_quantity)
+        .unwrap_or_default()
+}
+
+fn trail_snapshot_parent_ids(row: &std::collections::BTreeMap<String, String>) -> Vec<i64> {
+    serde_json::from_str::<Vec<i64>>(row.get("parent_ids_json").map(String::as_str).unwrap_or("[]"))
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|value| *value > 0)
+        .collect()
+}
+
+fn trail_parents_complete(
+    record_id: i64,
+    parent_map: &std::collections::HashMap<i64, Vec<i64>>,
+    quantities: &std::collections::HashMap<i64, i64>,
+) -> bool {
+    let parent_ids = parent_map.get(&record_id).cloned().unwrap_or_default();
+    if parent_ids.is_empty() {
+        return true;
+    }
+    parent_ids.into_iter().all(|parent_id| {
+        quantities.get(&parent_id).copied().unwrap_or_default() == 1
+    })
+}
+
+fn normalized_trail_quantity(value: f64) -> i64 {
+    if !value.is_finite() {
+        return 0;
+    }
+    if (value - 1.0).abs() < 0.000001 {
+        1
+    } else if (value + 1.0).abs() < 0.000001 {
+        -1
+    } else if value.abs() < 0.000001 {
+        0
+    } else {
+        value.round() as i64
+    }
 }
 
 fn build_trail_view_query(trail_root_record_id: i64) -> String {

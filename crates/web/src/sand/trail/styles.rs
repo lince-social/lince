@@ -434,13 +434,14 @@ button, input, select {
 }
 
 .node-circle {
-    stroke: rgba(6, 10, 14, 0.92);
-    stroke-width: 2px;
+    fill: #182733;
+    stroke: rgba(120, 215, 255, 0.4);
+    stroke-width: 1.3px;
 }
 
 .node-circle.is-selected {
     stroke: rgba(255, 255, 255, 0.92);
-    stroke-width: 3px;
+    stroke-width: 2.4px;
 }
 
 .node-label {

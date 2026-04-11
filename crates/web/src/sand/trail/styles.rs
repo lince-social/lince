@@ -616,8 +616,8 @@ button, input, select {
 }
 
 .node-link {
-    stroke: rgba(120, 215, 255, 0.52);
-    stroke-width: 1.85px;
+    stroke: rgba(120, 215, 255, 0.34);
+    stroke-width: 1.8px;
     stroke-linecap: round;
 }
 

@@ -880,15 +880,20 @@ pub(crate) fn script() -> String {
             const defs = svg.append("defs");
             defs.append("marker")
                 .attr("id", "trail-arrow")
-                .attr("viewBox", "0 -5 10 10")
-                .attr("refX", 20)
+                .attr("viewBox", "0 -4 8 8")
+                .attr("refX", 8)
                 .attr("refY", 0)
-                .attr("markerWidth", 7)
-                .attr("markerHeight", 7)
+                .attr("markerUnits", "userSpaceOnUse")
+                .attr("markerWidth", 8)
+                .attr("markerHeight", 8)
                 .attr("orient", "auto")
                 .append("path")
-                .attr("fill", "rgba(120, 215, 255, 0.78)")
-                .attr("d", "M0,-5L10,0L0,5");
+                .attr("fill", "none")
+                .attr("stroke", "rgba(120, 215, 255, 0.34)")
+                .attr("stroke-width", 1.8)
+                .attr("stroke-linecap", "round")
+                .attr("stroke-linejoin", "round")
+                .attr("d", "M0,-4L8,0L0,4");
 
             const viewport = svg.append("g").attr("class", "viewport");
             const linkLayer = viewport.append("g");
@@ -973,20 +978,20 @@ pub(crate) fn script() -> String {
             const links = [];
 
             rows.forEach((row) => {
-                const childId = nodeIdFromRow(row);
+                const sourceId = nodeIdFromRow(row);
                 rowParentIds(row).forEach((parentId) => {
                     if (!nodeIds.has(parentId)) {
                         return;
                     }
-                    const key = parentId + "->" + childId;
+                    const key = sourceId + "->" + parentId;
                     if (seenLinks.has(key)) {
                         return;
                     }
                     seenLinks.add(key);
                     links.push({
                         id: key,
-                        source: parentId,
-                        target: childId,
+                        source: sourceId,
+                        target: parentId,
                     });
                 });
             });
@@ -1074,24 +1079,6 @@ pub(crate) fn script() -> String {
                 .translate(centerX - ((centerX - current.x) / current.k) * nextScale, centerY - ((centerY - current.y) / current.k) * nextScale)
                 .scale(nextScale);
             state.graph.svg.transition().duration(180).call(state.graph.zoom.transform, transform);
-        }
-
-        function trimmedLinkCoordinates(link) {
-            const source = link.source;
-            const target = link.target;
-            const dx = target.x - source.x;
-            const dy = target.y - source.y;
-            const distance = Math.hypot(dx, dy) || 1;
-            const ux = dx / distance;
-            const uy = dy / distance;
-            const sourceRadius = nodeRadius(source) + 2;
-            const targetRadius = nodeRadius(target) + 8;
-            return {
-                x1: source.x + ux * sourceRadius,
-                y1: source.y + uy * sourceRadius,
-                x2: target.x - ux * targetRadius,
-                y2: target.y - uy * targetRadius,
-            };
         }
 
         function applyPhysics() {
@@ -1184,10 +1171,10 @@ pub(crate) fn script() -> String {
 
             simulation.on("tick", () => {
                 linkSelection
-                    .attr("x1", (link) => trimmedLinkCoordinates(link).x1)
-                    .attr("y1", (link) => trimmedLinkCoordinates(link).y1)
-                    .attr("x2", (link) => trimmedLinkCoordinates(link).x2)
-                    .attr("y2", (link) => trimmedLinkCoordinates(link).y2);
+                    .attr("x1", (link) => link.source.x)
+                    .attr("y1", (link) => link.source.y)
+                    .attr("x2", (link) => link.target.x)
+                    .attr("y2", (link) => link.target.y);
 
                 nodeSelection.attr("transform", (node) => `translate(${node.x},${node.y})`);
                 labelSelection

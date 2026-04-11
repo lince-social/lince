@@ -1,13 +1,20 @@
 use {
     crate::{
         application::state::AppState,
+        application::view_table_render::{
+            ViewTableRenderContext, ViewTableRenderedHtml, render_error_payload,
+            render_sync_payload,
+        },
         infrastructure::{
             auth::{parse_cookie_header, session_cookie_name},
             organ_store::{Organ, organ_requires_auth},
         },
         presentation::http::api_error::{ApiResult, api_error},
     },
-    ::application::{auth::AuthSubject, subscription::SseFrame},
+    ::application::{
+        auth::AuthSubject,
+        subscription::{SseFrame, SubscriptionHandle},
+    },
     async_stream::stream,
     axum::{
         Json,
@@ -15,11 +22,14 @@ use {
         extract::Request,
         extract::{Path, Query, State},
         http::{HeaderMap, HeaderValue, Method, StatusCode, header},
-        response::{IntoResponse, Response},
+        response::{
+            IntoResponse, Response,
+            sse::{Event, KeepAlive, Sse},
+        },
     },
     serde::Deserialize,
     serde_json::{Value, json},
-    std::{convert::Infallible, io::Error, io::ErrorKind},
+    std::{convert::Infallible, io::Error, io::ErrorKind, time::Duration},
     tokio_stream::{StreamExt, wrappers::UnboundedReceiverStream},
     tokio_util::io::ReaderStream,
 };
@@ -133,6 +143,63 @@ pub async fn proxy_manas_view_snapshot(
         .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
 
     proxy_json_response(&state, session_token.as_deref(), &server_id, response).await
+}
+
+pub async fn proxy_manas_view_table_stream(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path((server_id, view_id)): Path<(String, u64)>,
+) -> ApiResult<Response> {
+    let session_token = current_session_token(&headers);
+    let server = load_organ(&state, &server_id).await?;
+
+    if !organ_requires_auth(&server, state.local_auth_required) {
+        return local_view_table_stream(&state, &server_id, view_id).await;
+    }
+
+    let bearer_token = extract_manas_token(&state, &headers, &server_id).await?;
+    let response = state
+        .manas
+        .open_view_stream(&server.base_url, &bearer_token, view_id)
+        .await
+        .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
+
+    if response.status() == reqwest::StatusCode::UNAUTHORIZED {
+        state
+            .auth
+            .expire_server_session(
+                session_token.as_deref(),
+                &server_id,
+                "Sessao remota expirada. Conecte esse servidor novamente.",
+            )
+            .await;
+        return Err(api_error(
+            StatusCode::UNAUTHORIZED,
+            "Sessao remota expirada. Conecte esse servidor novamente.",
+        ));
+    }
+
+    if !response.status().is_success() {
+        let status =
+            StatusCode::from_u16(response.status().as_u16()).unwrap_or(StatusCode::BAD_GATEWAY);
+        let body = response.text().await.unwrap_or_default();
+        return Err(api_error(
+            status,
+            if body.trim().is_empty() {
+                format!("Stream remoto recusou a conexao com status {status}.")
+            } else {
+                body
+            },
+        ));
+    }
+
+    Ok(render_view_table_stream(
+        ViewTableStreamSource::Remote { response },
+        ViewTableRenderContext {
+            server_id,
+            view_id,
+        },
+    ))
 }
 
 pub async fn proxy_manas_file(
@@ -446,6 +513,234 @@ async fn local_view_stream(state: &AppState, view_id: u64) -> ApiResult<Response
     Ok(axum::response::Sse::new(stream)
         .keep_alive(axum::response::sse::KeepAlive::default())
         .into_response())
+}
+
+async fn local_view_table_stream(
+    state: &AppState,
+    server_id: &str,
+    view_id: u64,
+) -> ApiResult<Response> {
+    let handle = state
+        .backend
+        .subscribe_view(local_host_subject(), view_id as u32)
+        .await
+        .map_err(map_backend_error)?;
+
+    Ok(render_view_table_stream(
+        ViewTableStreamSource::Local { handle },
+        ViewTableRenderContext {
+            server_id: server_id.to_string(),
+            view_id,
+        },
+    ))
+}
+
+fn render_view_table_stream(
+    source: ViewTableStreamSource,
+    context: ViewTableRenderContext,
+) -> Response {
+    match source {
+        ViewTableStreamSource::Local { mut handle } => {
+            let stream = stream! {
+                while let Some(frame) = handle.rx.recv().await {
+                    for event in render_view_table_frame(context.clone(), frame) {
+                        yield Ok::<_, Infallible>(event);
+                    }
+                }
+            };
+
+            Sse::new(stream)
+                .keep_alive(
+                    KeepAlive::new()
+                        .interval(Duration::from_secs(15))
+                        .text("heartbeat"),
+                )
+                .into_response()
+        }
+        ViewTableStreamSource::Remote { response } => {
+            let stream = stream! {
+                let mut response = response;
+                let mut parser = SseParser::default();
+                loop {
+                    match response.chunk().await {
+                        Ok(Some(chunk)) => {
+                            for frame in parser.push_chunk(&chunk) {
+                                for event in render_view_table_remote_frame(context.clone(), &frame) {
+                                    yield Ok::<_, Infallible>(event);
+                                }
+                            }
+                        }
+                        Ok(None) => {
+                            for frame in parser.finish() {
+                                for event in render_view_table_remote_frame(context.clone(), &frame) {
+                                    yield Ok::<_, Infallible>(event);
+                                }
+                            }
+                            break;
+                        }
+                        Err(error) => {
+                            for event in render_view_table_error_events(
+                                context.clone(),
+                                format!("Nao foi possivel ler o stream remoto da view: {error}"),
+                            ) {
+                                yield Ok::<_, Infallible>(event);
+                            }
+                            break;
+                        }
+                    }
+                }
+            };
+
+            Sse::new(stream)
+                .keep_alive(
+                    KeepAlive::new()
+                        .interval(Duration::from_secs(15))
+                        .text("heartbeat"),
+                )
+                .into_response()
+        }
+    }
+}
+
+fn render_view_table_frame(context: ViewTableRenderContext, frame: SseFrame) -> Vec<Event> {
+    match frame {
+        SseFrame::Snapshot { payload } => match render_sync_payload(context.clone(), &payload) {
+            Ok(rendered) => render_view_table_html_events(rendered.html),
+            Err(error) => render_view_table_error_events(context, error.to_string()),
+        },
+        SseFrame::Error { payload } => {
+            render_view_table_error_events(context, extract_error_message(&payload))
+        }
+    }
+}
+
+fn render_view_table_remote_frame(
+    context: ViewTableRenderContext,
+    frame: &DecodedSseEvent,
+) -> Vec<Event> {
+    match frame.event_name.as_str() {
+        "snapshot" => match render_sync_payload(context.clone(), &frame.data) {
+            Ok(rendered) => render_view_table_html_events(rendered.html),
+            Err(error) => render_view_table_error_events(context, error.to_string()),
+        },
+        "error" => render_view_table_error_events(context, extract_error_message(&frame.data)),
+        _ => Vec::new(),
+    }
+}
+
+fn render_view_table_html_events(html: ViewTableRenderedHtml) -> Vec<Event> {
+    vec![
+        render_datastar_patch_event("#table-status", "outer", html.status_pill),
+        render_datastar_patch_event("#table-details", "inner", html.details_panel),
+        render_datastar_patch_event("#table-body", "inner", html.table_body),
+    ]
+}
+
+fn render_view_table_error_events(
+    context: ViewTableRenderContext,
+    message: String,
+) -> Vec<Event> {
+    render_view_table_html_events(render_error_payload(context, &message))
+}
+
+fn render_datastar_patch_event(selector: &str, mode: &str, elements: String) -> Event {
+    Event::default()
+        .event("datastar-patch-elements")
+        .data(
+            json!({
+                "selector": selector,
+                "mode": mode,
+                "namespace": "html",
+                "elements": elements,
+            })
+            .to_string(),
+        )
+}
+
+fn extract_error_message(payload: &str) -> String {
+    serde_json::from_str::<Value>(payload)
+        .ok()
+        .and_then(|value| value.get("error").and_then(Value::as_str).map(str::to_string))
+        .unwrap_or_else(|| payload.to_string())
+}
+
+enum ViewTableStreamSource {
+    Local {
+        handle: SubscriptionHandle,
+    },
+    Remote {
+        response: reqwest::Response,
+    },
+}
+
+#[derive(Default)]
+struct SseParser {
+    buffer: String,
+}
+
+impl SseParser {
+    fn push_chunk(&mut self, chunk: &[u8]) -> Vec<DecodedSseEvent> {
+        self.buffer.push_str(&String::from_utf8_lossy(chunk));
+        self.drain_events(false)
+    }
+
+    fn finish(&mut self) -> Vec<DecodedSseEvent> {
+        self.drain_events(true)
+    }
+
+    fn drain_events(&mut self, flush_tail: bool) -> Vec<DecodedSseEvent> {
+        let mut normalized = self.buffer.replace("\r\n", "\n");
+        let mut events = Vec::new();
+
+        while let Some(index) = normalized.find("\n\n") {
+            let frame = normalized[..index].to_string();
+            normalized.drain(..index + 2);
+            if let Some(event) = parse_sse_frame(&frame) {
+                events.push(event);
+            }
+        }
+
+        if flush_tail {
+            if let Some(event) = parse_sse_frame(normalized.trim_end_matches('\n')) {
+                events.push(event);
+            }
+            self.buffer.clear();
+        } else {
+            self.buffer = normalized;
+        }
+
+        events
+    }
+}
+
+#[derive(Debug, Clone)]
+struct DecodedSseEvent {
+    event_name: String,
+    data: String,
+}
+
+fn parse_sse_frame(frame: &str) -> Option<DecodedSseEvent> {
+    let mut event_name = None;
+    let mut data_lines = Vec::new();
+
+    for line in frame.lines() {
+        if let Some(rest) = line.strip_prefix("event:") {
+            event_name = Some(rest.trim().to_string());
+        } else if let Some(rest) = line.strip_prefix("data:") {
+            data_lines.push(rest.trim_start().to_string());
+        }
+    }
+
+    if data_lines.is_empty() {
+        return None;
+    }
+
+    Some(DecodedSseEvent {
+        event_name: event_name
+            .filter(|name| !name.is_empty())
+            .unwrap_or_else(|| "message".into()),
+        data: data_lines.join("\n"),
+    })
 }
 
 async fn local_table_collection(

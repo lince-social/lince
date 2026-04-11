@@ -4,6 +4,10 @@ DOCS_ROOT = "documentation"
 [tools]
 rust = "stable"
 
+[tasks.please]
+tools = { "cargo:cargo-watch" = "latest" }
+run = "./run/watch.sh"
+
 [tasks.release]
 description = "Automated release workflow"
 tools = { "cargo:git-cliff" = "latest", "cargo:cargo-edit" = "latest", "gh" = "latest" }

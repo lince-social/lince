@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use domain::clean::view::View;
 use regex::Regex;
 use serde::Serialize;
-use sqlx::{Column, Executor, Pool, Row, Sqlite, SqliteConnection, TypeInfo};
+use sqlx::{Column, Executor, Pool, Row, Sqlite, SqliteConnection};
 use std::{
     collections::{BTreeMap, BTreeSet},
     io::{Error, ErrorKind},
@@ -102,19 +102,7 @@ impl ViewRepository for ViewRepositoryImpl {
         for row in rows {
             let mut serialized = BTreeMap::new();
             for (index, column) in row.columns().iter().enumerate() {
-                let value = match column.type_info().name().to_uppercase().as_str() {
-                    "INTEGER" => row
-                        .try_get::<i64, _>(index)
-                        .map(|value| value.to_string())
-                        .unwrap_or_else(|_| "NULL".to_string()),
-                    "REAL" | "FLOAT" => row
-                        .try_get::<f64, _>(index)
-                        .map(|value| value.to_string())
-                        .unwrap_or_else(|_| "NULL".to_string()),
-                    _ => row
-                        .try_get::<String, _>(index)
-                        .unwrap_or_else(|_| "NULL".to_string()),
-                };
+                let value = serialize_sqlite_value(&row, index);
                 serialized.insert(column.name().to_string(), value);
             }
             serialized_rows.push(serialized);
@@ -128,6 +116,19 @@ impl ViewRepository for ViewRepositoryImpl {
             rows: serialized_rows,
         })
     }
+}
+
+fn serialize_sqlite_value(row: &sqlx::sqlite::SqliteRow, index: usize) -> String {
+    if let Ok(Some(value)) = row.try_get::<Option<i64>, _>(index) {
+        return value.to_string();
+    }
+    if let Ok(Some(value)) = row.try_get::<Option<f64>, _>(index) {
+        return value.to_string();
+    }
+    if let Ok(Some(value)) = row.try_get::<Option<String>, _>(index) {
+        return value;
+    }
+    "NULL".to_string()
 }
 
 pub fn is_special_view_query(query: &str) -> bool {

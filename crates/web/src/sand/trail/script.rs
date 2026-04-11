@@ -302,6 +302,12 @@ pub(crate) fn script() -> String {
             return "Locked";
         }
 
+        function quantityText(quantity) {
+            const value = normalizedQuantity(quantity);
+            if (value > 0) return "+" + value;
+            return String(value);
+        }
+
         function normalizedQuantity(value) {
             return TrailRelationLogic.normalizedQuantity(value);
         }
@@ -486,10 +492,31 @@ pub(crate) fn script() -> String {
             return 18 + Math.min(Number(node.childrenCount || 0), 6);
         }
 
-        function nodeFill(quantity) {
-            if (quantity === 1) return "#7ef0c6";
-            if (quantity === -1) return "#f2bb78";
-            return "#64748b";
+        function nodeFill(node) {
+            if (node.id === Number(state.selectedNodeId)) {
+                return "#d8f5e8";
+            }
+            return "#182733";
+        }
+
+        function nodeStroke(node) {
+            if (node.id === Number(state.selectedNodeId)) {
+                return "#78d7ff";
+            }
+            if (node.quantity > 0) {
+                return "#7ef0c6";
+            }
+            if (node.quantity < 0) {
+                return "#f2bb78";
+            }
+            return "rgba(120, 215, 255, 0.4)";
+        }
+
+        function nodeStrokeWidth(node) {
+            if (node.id === Number(state.selectedNodeId)) {
+                return 2.4;
+            }
+            return 1.3;
         }
 
         function postJson(action, payload) {
@@ -1117,7 +1144,10 @@ pub(crate) fn script() -> String {
 
             nodeSelection.select("circle")
                 .attr("r", (node) => nodeRadius(node))
-                .attr("fill", (node) => nodeFill(node.quantity));
+                .attr("class", "node-circle")
+                .style("fill", (node) => nodeFill(node))
+                .style("stroke", (node) => nodeStroke(node))
+                .style("stroke-width", (node) => nodeStrokeWidth(node));
             nodeSelection.attr("data-node-id", (node) => node.id);
 
             const labelSelection = state.graph.labelLayer
@@ -1125,7 +1155,7 @@ pub(crate) fn script() -> String {
                 .data(nodes, (node) => node.id)
                 .join("text")
                 .attr("class", "node-label")
-                .text((node) => truncateLabel(node.head));
+                .text((node) => truncateLabel(node.head) + " · " + quantityText(node.quantity));
 
             simulation.on("tick", () => {
                 linkSelection

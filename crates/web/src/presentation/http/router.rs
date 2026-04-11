@@ -36,6 +36,7 @@ use {
                     create_terminal_session, delete_terminal_session, get_terminal_output,
                     post_terminal_input,
                 },
+                trail::{get_trail_page, get_trail_stream},
                 widget_bridge::{get_widget_bridge_state, post_widget_bridge_print},
                 widgets::{get_widget_contract, get_widget_stream, post_widget_action},
             },
@@ -99,6 +100,10 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
                 .patch(proxy_manas_table_item)
                 .delete(proxy_manas_table_item),
         )
+        .route("/trail/{instance_id}", get(get_trail_page))
+        .route("/trail/{instance_id}/stream", get(get_trail_stream))
+        .route("/widgets/{instance_id}/trail", get(get_trail_page))
+        .route("/widgets/{instance_id}/trail/stream", get(get_trail_stream))
         .route("/terminal/sessions", post(create_terminal_session))
         .route(
             "/terminal/sessions/{session_id}/output",
@@ -169,9 +174,13 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
         .with_state(state);
 
     if static_dir.exists() {
-        router.nest_service("/static", ServeDir::new(static_dir))
+        router
+            .nest_service("/static", ServeDir::new(&static_dir))
+            .nest_service("/host/static", ServeDir::new(&static_dir))
     } else {
-        router.route("/static/{*path}", get(static_assets::serve))
+        router
+            .route("/static/{*path}", get(static_assets::serve))
+            .route("/host/static/{*path}", get(static_assets::serve))
     }
 }
 

@@ -158,6 +158,8 @@ For those that want to compile the latest and have [cargo](https://www.rust-lang
 cargo run
 ```
 
+To run the trail browser regression mode locally, use `./run/browser-watch-tests.sh --jobs 10` to execute all browser tests in headed Chromium with `browser-watch`; if you want the raw command, use `cargo test -p lince-web --features browser-watch browser_ -- --nocapture --test-threads=10`.
+
 ### Keeping it running
 
 The installer only installs the binary. If you want Lince to stay up after boot, use your own process supervisor.

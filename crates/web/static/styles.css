@@ -186,6 +186,10 @@ html.modal-open body {
     display: grid;
 }
 
+.startup-field--stack {
+    gap: 12px;
+}
+
 .startup-field--checkbox {
     grid-template-columns: auto minmax(0, 1fr);
     align-items: start;
@@ -243,6 +247,14 @@ html.modal-open body {
     border-color: var(--border-strong);
     background: rgba(255, 255, 255, 0.03);
     box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.04);
+}
+
+.startup-field__meta {
+    color: var(--text-muted);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
 }
 
 .startup-field__input--password {
@@ -1633,6 +1645,15 @@ body.auth-pending .startup-auth-card {
     box-shadow: 0 30px 90px rgba(0, 0, 0, 0.42);
 }
 
+.confirm-modal--fullscreen {
+    width: min(calc(100vw - 24px), 1600px);
+    height: min(calc(100vh - 24px), 980px);
+    max-height: none;
+    padding: 20px;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    overflow: hidden;
+}
+
 .import-modal__header,
 .import-modal__footer {
     display: flex;
@@ -1678,6 +1699,63 @@ body.auth-pending .startup-auth-card {
 .confirm-modal__body {
     display: grid;
     gap: 8px;
+}
+
+.confirm-modal__body--scroll {
+    min-height: 0;
+    overflow: auto;
+    padding-right: 4px;
+}
+
+.widget-config-modal {
+    background:
+        radial-gradient(circle at top left, rgba(255, 255, 255, 0.04), transparent 24%),
+        radial-gradient(circle at bottom right, rgba(130, 158, 255, 0.05), transparent 22%),
+        #0f1217;
+}
+
+.widget-config-form {
+    min-height: 0;
+}
+
+.widget-config-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 16px;
+    align-items: start;
+}
+
+.widget-config-section {
+    display: grid;
+    gap: 14px;
+    min-width: 0;
+    padding: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    background: rgba(15, 18, 23, 0.92);
+}
+
+.widget-config-section:nth-child(1) {
+    grid-column: span 5;
+}
+
+.widget-config-section:nth-child(2) {
+    grid-column: span 4;
+}
+
+.widget-config-section:nth-child(3) {
+    grid-column: span 3;
+}
+
+.widget-config-section__head {
+    display: grid;
+    gap: 4px;
+}
+
+.widget-config-stack {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
 }
 
 .import-close-button,
@@ -1896,6 +1974,12 @@ body.auth-pending .startup-auth-card {
     transform: translateY(-1px);
 }
 
+.local-package-card.is-selected {
+    border-color: rgba(255, 255, 255, 0.22);
+    background: #1b2026;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+}
+
 .local-package-card__icon {
     display: inline-grid;
     place-items: center;
@@ -2000,6 +2084,15 @@ body.auth-pending .startup-auth-card {
 .local-package-empty strong {
     color: var(--text-strong);
     font-size: 1rem;
+}
+
+.widget-config-view-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    max-height: min(44vh, 520px);
+    overflow: auto;
+    padding-right: 4px;
 }
 
 .import-preview-frame {
@@ -2362,6 +2455,12 @@ body.auth-pending .startup-auth-card {
     .catalog-toolbar {
         grid-template-columns: 1fr;
     }
+
+    .widget-config-section:nth-child(1),
+    .widget-config-section:nth-child(2),
+    .widget-config-section:nth-child(3) {
+        grid-column: 1 / -1;
+    }
 }
 
 @media (max-width: 720px) {
@@ -2421,11 +2520,39 @@ body.auth-pending .startup-auth-card {
         padding: 18px;
     }
 
+    .confirm-modal--fullscreen {
+        width: 100vw;
+        height: 100vh;
+        border-radius: 0;
+        padding: 16px;
+    }
+
+    .import-modal-backdrop {
+        padding: 0;
+    }
+
     .import-modal__header,
     .import-modal__footer,
     .confirm-modal__header,
     .confirm-modal__footer {
         flex-direction: column;
+    }
+
+    .confirm-modal__header,
+    .confirm-modal__footer {
+        position: sticky;
+        z-index: 1;
+        background: #0f1217;
+    }
+
+    .confirm-modal__header {
+        top: 0;
+        padding-bottom: 12px;
+    }
+
+    .confirm-modal__footer {
+        bottom: 0;
+        padding-top: 12px;
     }
 
     .import-modal__meta {
@@ -2434,6 +2561,10 @@ body.auth-pending .startup-auth-card {
 
     .import-modal__preview-stage {
         min-height: 380px;
+    }
+
+    .widget-config-grid {
+        grid-template-columns: 1fr;
     }
 
     .local-package-list {

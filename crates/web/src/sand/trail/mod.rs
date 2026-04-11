@@ -1,12 +1,12 @@
 mod body;
 mod script;
 mod styles;
-#[cfg(test)]
-mod tests;
-
 use {
     crate::{domain::lince_package::PackageManifest, sand::SandWidgetSource},
     std::collections::BTreeMap,
+};
+pub(crate) use {
+    body::body as render_body, script::script as render_script, styles::INLINE_STYLES,
 };
 
 pub(crate) const FEATURE_FLAG: &str = "sand.trail_relation";

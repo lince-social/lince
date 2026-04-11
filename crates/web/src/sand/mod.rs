@@ -16,14 +16,14 @@ mod organ_management;
 mod record_crud;
 #[path = "relations/mod.rs"]
 mod relations;
+mod oldt;
 mod sand_publisher;
 #[path = "shared_markdown/mod.rs"]
 mod shared_markdown;
 mod spotify_control;
 mod tasklist;
 mod tasks_table;
-#[path = "trail_relation/mod.rs"]
-mod trail_relation;
+mod trail;
 mod view_table_editor;
 mod weather;
 
@@ -45,6 +45,11 @@ pub(crate) enum WidgetScript {
     Src(&'static str),
     Inline(String),
 }
+
+pub(crate) use trail::{
+    INLINE_STYLES as TRAIL_INLINE_STYLES, render_body as render_trail_body,
+    render_script as render_trail_script,
+};
 
 impl WidgetScript {
     pub(crate) fn src(value: &'static str) -> Self {
@@ -98,7 +103,7 @@ impl OfficialWidgetBuilder {
     }
 }
 
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 22] = [
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 23] = [
     OfficialWidgetBuilder::Html {
         feature_flag: bucket_image_view::FEATURE_FLAG,
         source_builder: bucket_image_view::source,
@@ -132,8 +137,12 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 22] = [
         package_builder: relations::package,
     },
     OfficialWidgetBuilder::Package {
-        feature_flag: trail_relation::FEATURE_FLAG,
-        package_builder: trail_relation::package,
+        feature_flag: trail::FEATURE_FLAG,
+        package_builder: trail::package,
+    },
+    OfficialWidgetBuilder::Package {
+        feature_flag: oldt::FEATURE_FLAG,
+        package_builder: oldt::package,
     },
     OfficialWidgetBuilder::Html {
         feature_flag: lince_logo_led::FEATURE_FLAG,

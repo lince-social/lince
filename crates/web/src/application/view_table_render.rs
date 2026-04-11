@@ -59,7 +59,6 @@ struct TableColumn {
 #[derive(Debug, Clone)]
 struct TableRow {
     key: String,
-    label: String,
     values: BTreeMap<String, String>,
 }
 
@@ -330,7 +329,6 @@ fn normalize_rows(rows: &[Value], columns: &[TableColumn]) -> Vec<TableRow> {
         .enumerate()
         .map(|(index, row)| {
             let key = pick_row_key(row, index);
-            let label = build_row_label(row, index);
             let mut values = BTreeMap::new();
 
             if let Some(array) = row.as_array() {
@@ -353,7 +351,7 @@ fn normalize_rows(rows: &[Value], columns: &[TableColumn]) -> Vec<TableRow> {
                 values.insert("value".into(), format_cell_value(row));
             }
 
-            TableRow { key, label, values }
+            TableRow { key, values }
         })
         .collect()
 }
@@ -376,26 +374,6 @@ fn pick_row_key(row: &Value, index: usize) -> String {
     }
 
     format!("row-{index}-{}", fingerprint(row))
-}
-
-fn build_row_label(row: &Value, index: usize) -> String {
-    if let Some(object) = row.as_object() {
-        for key in ["id", "key", "uuid", "slug", "name"] {
-            if let Some(value) = object.get(key).and_then(Value::as_str) {
-                let trimmed = value.trim();
-                if !trimmed.is_empty() {
-                    return format!("{key}: {trimmed}");
-                }
-            } else if let Some(value) = object.get(key) {
-                let text = format_cell_value(value);
-                if !text.trim().is_empty() {
-                    return format!("{key}: {text}");
-                }
-            }
-        }
-    }
-
-    format!("Row {}", index + 1)
 }
 
 fn format_cell_value(value: &Value) -> String {
@@ -516,27 +494,16 @@ fn render_table_body_inner(table: &NormalizedTable) -> Markup {
             table class="table" {
                 thead {
                     tr {
-                        th scope="col" class="rowHeaderCell" {
-                            div class="columnName" { "Row" }
-                            div class="columnKey" { "Identity" }
-                        }
                         @for column in &table.columns {
                             th scope="col" {
                                 div class="columnName" { (&column.label) }
-                                div class="columnKey" { (&column.key) }
                             }
                         }
                     }
                 }
                 tbody {
-                    @for (index, row) in table.rows.iter().enumerate() {
+                    @for row in &table.rows {
                         tr data-row-key=(row.key.as_str()) {
-                            th scope="row" class="rowHeaderCell" {
-                                div class="rowSummary" {
-                                    div class="rowIndex" { (index + 1) }
-                                    div class="rowLabel" { (&row.label) }
-                                }
-                            }
                             @for column in &table.columns {
                                 td class="cell" {
                                     div class="cellValue" {

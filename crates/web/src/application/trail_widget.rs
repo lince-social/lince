@@ -59,18 +59,10 @@ impl TrailWidgetService {
             .resolve_instance(session_token, instance_id, TrailPermission::Read)
             .await?;
         let runtime = parse_runtime_state(&resolved.card.widget_state);
-        let sync = if let Some(root_id) = runtime.trail_root_record_id {
-            self.load_trail_sync_metadata(
-                session_token,
-                &resolved.organ,
-                resolved.bearer_token.as_deref(),
-                root_id,
-            )
-            .await?
-        } else {
-            None
-        };
-        let snapshot = if let Some(view_id) = runtime.derived_view_id {
+        let effective_view_id = runtime
+            .derived_view_id
+            .or_else(|| resolved.card.view_id.map(i64::from));
+        let snapshot = if let Some(view_id) = effective_view_id {
             self.load_view_snapshot(
                 session_token,
                 &resolved.organ,
@@ -81,6 +73,28 @@ impl TrailWidgetService {
             )
             .await
             .ok()
+        } else {
+            None
+        };
+        let trail_root_record_id = runtime
+            .trail_root_record_id
+            .or_else(|| snapshot.as_ref().and_then(snapshot_trail_root_record_id));
+        if runtime.trail_root_record_id.is_none()
+            && runtime.derived_view_id.is_none()
+            && let (Some(root_id), Some(view_id)) = (trail_root_record_id, effective_view_id)
+        {
+            let _ = self
+                .persist_runtime_state(&resolved.card.id, &resolved.organ.id, root_id, view_id)
+                .await;
+        }
+        let sync = if let Some(root_id) = trail_root_record_id {
+            self.load_trail_sync_metadata(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+                root_id,
+            )
+            .await?
         } else {
             None
         };
@@ -106,8 +120,8 @@ impl TrailWidgetService {
                 "writeTable": has_permission(&resolved.card, "write_table"),
             },
             "binding": {
-                "trailRootRecordId": runtime.trail_root_record_id,
-                "viewId": runtime.derived_view_id,
+                "trailRootRecordId": trail_root_record_id,
+                "viewId": effective_view_id,
                 "sync": sync,
                 "snapshot": snapshot,
             },
@@ -141,8 +155,8 @@ impl TrailWidgetService {
                 "set-trail-node-quantity",
             ],
             "diagnostics": {
-                "trailRootRecordId": runtime.trail_root_record_id,
-                "viewId": runtime.derived_view_id,
+                "trailRootRecordId": trail_root_record_id,
+                "viewId": effective_view_id,
             }
         }))
     }
@@ -156,17 +170,38 @@ impl TrailWidgetService {
             .resolve_instance(session_token, instance_id, TrailPermission::Read)
             .await?;
         let runtime = parse_runtime_state(&resolved.card.widget_state);
-        let trail_root_record_id = runtime.trail_root_record_id.ok_or_else(|| {
-            TrailWidgetError::Disabled("Trail ainda nao foi vinculado a um root record.".into())
-        })?;
         if !(resolved.card.streams_enabled && resolved.global_streams_enabled) {
             return Err(TrailWidgetError::Disabled(
                 "Streams desativados para esse widget.".into(),
             ));
         }
-        let view_id = self
-            .ensure_derived_view(session_token, &resolved, trail_root_record_id, None)
+        let view_id = runtime
+            .derived_view_id
+            .or_else(|| resolved.card.view_id.map(i64::from))
+            .ok_or_else(|| {
+            TrailWidgetError::Disabled("Trail ainda nao foi vinculado a um root record.".into())
+        })?;
+        let snapshot = self
+            .load_view_snapshot(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+                u32::try_from(view_id).map_err(|_| {
+                    TrailWidgetError::Internal("view_id invalido no binding da trail.".into())
+                })?,
+            )
             .await?;
+        let trail_root_record_id = runtime
+            .trail_root_record_id
+            .or_else(|| snapshot_trail_root_record_id(&snapshot))
+            .ok_or_else(|| {
+                TrailWidgetError::Disabled("Trail ainda nao foi vinculado a um root record.".into())
+            })?;
+        if runtime.trail_root_record_id.is_none() && runtime.derived_view_id.is_none() {
+            let _ = self
+                .persist_runtime_state(&resolved.card.id, &resolved.organ.id, trail_root_record_id, view_id)
+                .await;
+        }
         let sync = self
             .load_trail_sync_metadata(
                 session_token,
@@ -2119,6 +2154,18 @@ fn parse_view_snapshot_rows(
         .map(|snapshot| snapshot.rows)
         .map_err(|error| {
             TrailWidgetError::Internal(format!("Resposta invalida ao ler snapshot da view: {error}"))
+        })
+}
+
+fn snapshot_trail_root_record_id(snapshot: &Value) -> Option<i64> {
+    parse_view_snapshot_rows(snapshot)
+        .ok()?
+        .into_iter()
+        .find_map(|row| {
+            row.get("trail_root_record_id")
+                .or_else(|| row.get("trailRootRecordId"))
+                .and_then(|value| value.trim().parse::<i64>().ok())
+                .filter(|value| *value > 0)
         })
 }
 

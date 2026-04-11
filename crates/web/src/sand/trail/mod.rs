@@ -1,12 +1,21 @@
 mod body;
 mod script;
 mod styles;
+#[cfg(test)]
+mod browser_tests;
+#[cfg(test)]
+mod tests;
+
+#[allow(unused_imports)]
+pub(crate) use {
+    body::body as render_body,
+    script::script as render_script,
+    styles::INLINE_STYLES as INLINE_STYLES,
+};
+
 use {
     crate::{domain::lince_package::PackageManifest, sand::SandWidgetSource},
     std::collections::BTreeMap,
-};
-pub(crate) use {
-    body::body as render_body, script::script as render_script, styles::INLINE_STYLES,
 };
 
 pub(crate) const FEATURE_FLAG: &str = "sand.trail_relation";
@@ -17,8 +26,8 @@ pub(crate) fn package() -> crate::domain::lince_package::LincePackage {
         title: "Trail Relation".into(),
         author: "Lince Labs".into(),
         version: "0.1.0".into(),
-        description: "Per-user record trails with root discovery, sync, and progression.".into(),
-        details: "Search records by assignee/category/head, bind or create a trail root, inspect overwrite rules from sync metadata, and progress the copied tree with host-backed updates.".into(),
+        description: "Per-user record trails with named views and graph physics.".into(),
+        details: "Select an original record, create a copied trail root with a named view, and connect the view from the host side without the old discovery or sync/reset workflow.".into(),
         initial_width: 7,
         initial_height: 6,
         requires_server: true,
@@ -91,8 +100,8 @@ fn source() -> SandWidgetSource {
             title: "Trail Relation".into(),
             author: "Lince Labs".into(),
             version: "0.1.0".into(),
-            description: "Per-user record trails with root discovery, sync, and progression.".into(),
-            details: "Search records by assignee/category/head, bind or create a trail root, inspect overwrite rules from sync metadata, and progress the copied tree with host-backed updates.".into(),
+            description: "Per-user record trails with named views and graph physics.".into(),
+            details: "Select an original record, create a copied trail root with a named view, and connect the view from the host side without the old discovery or sync/reset workflow.".into(),
             initial_width: 7,
             initial_height: 6,
             requires_server: true,

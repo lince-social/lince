@@ -71,7 +71,6 @@ pub(crate) fn script() -> String {
             zoomOutButton: document.getElementById("trail-zoom-out"),
             zoomInButton: document.getElementById("trail-zoom-in"),
             fitButton: document.getElementById("trail-fit"),
-            centerButton: document.getElementById("trail-center"),
             originalRecordInput: document.getElementById("trail-original-record"),
             originalRecordSuggestions: document.getElementById("trail-original-record-suggestions"),
             selectedOriginalTitle: document.getElementById("trail-selected-original"),
@@ -80,10 +79,17 @@ pub(crate) fn script() -> String {
             createAssigneeSuggestions: document.getElementById("trail-create-assignee-suggestions"),
             viewName: document.getElementById("trail-view-name"),
             createSubmit: document.getElementById("trail-create-submit"),
+            selectedNodeTitle: document.getElementById("trail-selected-node"),
+            selectedNodeCopy: document.getElementById("trail-selected-node-copy"),
+            quantityPass: document.getElementById("trail-quantity-pass"),
+            quantityFar: document.getElementById("trail-quantity-far"),
+            quantityStep: document.getElementById("trail-quantity-step"),
             physicsCharge: document.getElementById("trail-physics-charge"),
             physicsDistance: document.getElementById("trail-physics-distance"),
             physicsCollision: document.getElementById("trail-physics-collision"),
         };
+
+        const dockCloseTimers = new WeakMap();
 
         function instanceId() {
             return window.frameElement?.dataset?.packageInstanceId || "preview";
@@ -137,6 +143,60 @@ pub(crate) fn script() -> String {
 
         function setStatus(text) {
             elements.statusPill.textContent = text;
+        }
+
+        function setDockOpen(dock, open) {
+            if (!dock) {
+                return;
+            }
+            dock.classList.toggle("is-open", !!open);
+        }
+
+        function clearDockCloseTimer(dock) {
+            const timer = dockCloseTimers.get(dock);
+            if (timer) {
+                window.clearTimeout(timer);
+                dockCloseTimers.delete(dock);
+            }
+        }
+
+        function scheduleDockClose(dock) {
+            if (!dock) {
+                return;
+            }
+            clearDockCloseTimer(dock);
+            dockCloseTimers.set(dock, window.setTimeout(() => {
+                dock.classList.remove("is-open");
+                dockCloseTimers.delete(dock);
+            }, 300));
+        }
+
+        function wireDockHover(dock) {
+            const panel = dock.querySelector(".sectionDockPanel");
+            const button = dock.querySelector(".sectionDockButton");
+            if (!panel || !button) {
+                return;
+            }
+
+            const open = () => {
+                clearDockCloseTimer(dock);
+                setDockOpen(dock, true);
+            };
+            const close = () => {
+                scheduleDockClose(dock);
+            };
+
+            [dock, button, panel].forEach((target) => {
+                target.addEventListener("pointerenter", open);
+                target.addEventListener("pointerleave", close);
+                target.addEventListener("focusin", open);
+            });
+
+            dock.addEventListener("focusout", (event) => {
+                if (!dock.contains(event.relatedTarget)) {
+                    scheduleDockClose(dock);
+                }
+            });
         }
 
         function escapeHtml(value) {
@@ -274,9 +334,9 @@ pub(crate) fn script() -> String {
         }
 
         function quantityLabel(quantity) {
-            if (quantity === 1) return "Done";
-            if (quantity === -1) return "Ready";
-            return "Locked";
+            if (quantity === 1) return "Passed";
+            if (quantity === -1) return "Step";
+            return "Far";
         }
 
         function normalizedQuantity(value) {
@@ -442,10 +502,8 @@ pub(crate) fn script() -> String {
 
         function truncateLabel(value, limit = 18) {
             const text = String(value || "").trim();
-            if (text.length <= limit) {
-                return text || "(untitled)";
-            }
-            return text.slice(0, limit - 1).trimEnd() + "…";
+            void limit;
+            return text || "(untitled)";
         }
 
         function nodeRadius(node) {
@@ -704,6 +762,28 @@ pub(crate) fn script() -> String {
                 !elements.createAssignee.value.trim() || !elements.viewName.value.trim();
         }
 
+        function renderSelectedNodeControls() {
+            const node = selectedNode();
+            const enabled = !!node;
+            elements.quantityPass.disabled = !enabled;
+            elements.quantityFar.disabled = !enabled;
+            elements.quantityStep.disabled = !enabled;
+            elements.quantityPass.classList.toggle("is-active", !!node && normalizedQuantity(node.quantity) === 1);
+            elements.quantityFar.classList.toggle("is-active", !!node && normalizedQuantity(node.quantity) === 0);
+            elements.quantityStep.classList.toggle("is-active", !!node && normalizedQuantity(node.quantity) === -1);
+
+            if (!node) {
+                elements.selectedNodeTitle.textContent = "No node selected";
+                elements.selectedNodeCopy.textContent = "Click a graph node, then set its quantity.";
+                return;
+            }
+
+            elements.selectedNodeTitle.textContent =
+                "#" + node.id + " " + (node.head || "(untitled)");
+            elements.selectedNodeCopy.textContent =
+                "Current quantity: " + quantityLabel(node.quantity);
+        }
+
         function renderBinding() {
             if (!state.binding?.trailRootRecordId) {
                 elements.boundPill.textContent = "No trail bound";
@@ -717,7 +797,7 @@ pub(crate) fn script() -> String {
         }
 
         function renderSelection() {
-            return;
+            renderSelectedNodeControls();
         }
 
         function suggestionElements() {
@@ -1247,8 +1327,20 @@ pub(crate) fn script() -> String {
         }
 
         function setSelectedNodeQuantity(quantity) {
-            void quantity;
-            setStatus("Trail progression is disabled");
+            const node = selectedNode();
+            if (!node) {
+                setStatus("Select a graph node first");
+                return;
+            }
+            setStatus("Updating quantity");
+            postJson("set-trail-node-quantity", {
+                recordId: node.id,
+                quantity,
+            }).then(() => {
+                setStatus("Waiting for stream update");
+            }).catch((error) => {
+                setStatus(error.message || "Quantity update failed");
+            });
         }
 
         function loadContract() {
@@ -1358,6 +1450,9 @@ pub(crate) fn script() -> String {
         });
 
         elements.createSubmit.addEventListener("click", createTrail);
+        elements.quantityPass.addEventListener("click", () => setSelectedNodeQuantity(1));
+        elements.quantityFar.addEventListener("click", () => setSelectedNodeQuantity(0));
+        elements.quantityStep.addEventListener("click", () => setSelectedNodeQuantity(-1));
 
         elements.physicsCharge.addEventListener("input", () => {
             state.physics.charge = Number(elements.physicsCharge.value);
@@ -1373,9 +1468,13 @@ pub(crate) fn script() -> String {
         });
 
         elements.fitButton.addEventListener("click", fitGraph);
-        elements.centerButton.addEventListener("click", centerGraph);
+        elements.zoomPill.addEventListener("click", centerGraph);
         elements.zoomOutButton.addEventListener("click", () => zoomBy(1 / 1.18));
         elements.zoomInButton.addEventListener("click", () => zoomBy(1.18));
+
+        document.querySelectorAll(".section--dock").forEach((dock) => {
+            wireDockHover(dock);
+        });
 
         document.addEventListener("click", (event) => {
             if (!event.target.closest(".field.autocompleteHost")) {

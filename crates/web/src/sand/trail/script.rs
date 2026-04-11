@@ -1,5 +1,5 @@
 pub(crate) fn script() -> String {
-    let mut script = String::new();
+    let mut script = String::from(include_str!("logic.js"));
     script.push_str(
     r####"
     (() => {
@@ -25,17 +25,17 @@ pub(crate) fn script() -> String {
             sourceServerId: null,
             snapshot: null,
             stream: null,
-            discoverResults: [],
             selectedOriginal: null,
             selectedNodeId: null,
-            discoverRequestSeq: 0,
-            discoverRefreshTimer: null,
+            originalRecordRequestSeq: 0,
+            originalRecordCatalogLoaded: false,
+            originalRecordCatalogLoadPromise: null,
+            originalRecordCatalog: [],
+            originalRecordSuggestions: [],
             assigneeRequestSeq: {
-                discover: 0,
                 create: 0,
             },
             assigneeSuggestions: {
-                discover: [],
                 create: [],
             },
             pendingQuantityChanges: new Map(),
@@ -63,7 +63,7 @@ pub(crate) fn script() -> String {
             boundPill: document.getElementById("trail-bound-pill"),
             rowPill: document.getElementById("trail-row-pill"),
             linkPill: document.getElementById("trail-link-pill"),
-            syncPill: document.getElementById("trail-sync-pill"),
+            viewPill: document.getElementById("trail-view-pill"),
             zoomPill: document.getElementById("trail-zoom-pill"),
             graphStage: document.getElementById("trail-graph-stage"),
             graph: document.getElementById("trail-graph"),
@@ -71,38 +71,25 @@ pub(crate) fn script() -> String {
             zoomOutButton: document.getElementById("trail-zoom-out"),
             zoomInButton: document.getElementById("trail-zoom-in"),
             fitButton: document.getElementById("trail-fit"),
-            centerButton: document.getElementById("trail-center"),
-            searchHead: document.getElementById("trail-search-head"),
-            searchCategory: document.getElementById("trail-search-category"),
-            searchAssignee: document.getElementById("trail-search-assignee"),
-            searchAssigneeSuggestions: document.getElementById("trail-search-assignee-suggestions"),
-            discoverSummary: document.getElementById("trail-discover-summary"),
-            discoverResults: document.getElementById("trail-discover-results"),
+            originalRecordInput: document.getElementById("trail-original-record"),
+            originalRecordSuggestions: document.getElementById("trail-original-record-suggestions"),
             selectedOriginalTitle: document.getElementById("trail-selected-original"),
             selectedOriginalCopy: document.getElementById("trail-selected-original-copy"),
             createAssignee: document.getElementById("trail-create-assignee"),
             createAssigneeSuggestions: document.getElementById("trail-create-assignee-suggestions"),
-            syncScope: document.getElementById("trail-sync-scope"),
-            syncScopeCopy: document.getElementById("trail-sync-scope-copy"),
-            syncFieldQ: document.getElementById("trail-sync-field-q"),
-            syncFieldH: document.getElementById("trail-sync-field-h"),
-            syncFieldB: document.getElementById("trail-sync-field-b"),
+            viewName: document.getElementById("trail-view-name"),
             createSubmit: document.getElementById("trail-create-submit"),
-            bindingTitle: document.getElementById("trail-binding-title"),
-            bindingCopy: document.getElementById("trail-binding-copy"),
-            overwriteCopy: document.getElementById("trail-overwrite-copy"),
-            initializeTrail: document.getElementById("trail-initialize"),
-            runSync: document.getElementById("trail-run-sync"),
-            bindSelected: document.getElementById("trail-bind-selected"),
+            selectedNodeTitle: document.getElementById("trail-selected-node"),
+            selectedNodeCopy: document.getElementById("trail-selected-node-copy"),
+            quantityPass: document.getElementById("trail-quantity-pass"),
+            quantityFar: document.getElementById("trail-quantity-far"),
+            quantityStep: document.getElementById("trail-quantity-step"),
             physicsCharge: document.getElementById("trail-physics-charge"),
             physicsDistance: document.getElementById("trail-physics-distance"),
             physicsCollision: document.getElementById("trail-physics-collision"),
-            selectionTitle: document.getElementById("trail-selection-title"),
-            selectionCopy: document.getElementById("trail-selection-copy"),
-            setLocked: document.getElementById("trail-set-locked"),
-            setReady: document.getElementById("trail-set-ready"),
-            setDone: document.getElementById("trail-set-done"),
         };
+
+        const dockCloseTimers = new WeakMap();
 
         function instanceId() {
             return window.frameElement?.dataset?.packageInstanceId || "preview";
@@ -156,6 +143,60 @@ pub(crate) fn script() -> String {
 
         function setStatus(text) {
             elements.statusPill.textContent = text;
+        }
+
+        function setDockOpen(dock, open) {
+            if (!dock) {
+                return;
+            }
+            dock.classList.toggle("is-open", !!open);
+        }
+
+        function clearDockCloseTimer(dock) {
+            const timer = dockCloseTimers.get(dock);
+            if (timer) {
+                window.clearTimeout(timer);
+                dockCloseTimers.delete(dock);
+            }
+        }
+
+        function scheduleDockClose(dock) {
+            if (!dock) {
+                return;
+            }
+            clearDockCloseTimer(dock);
+            dockCloseTimers.set(dock, window.setTimeout(() => {
+                dock.classList.remove("is-open");
+                dockCloseTimers.delete(dock);
+            }, 300));
+        }
+
+        function wireDockHover(dock) {
+            const panel = dock.querySelector(".sectionDockPanel");
+            const button = dock.querySelector(".sectionDockButton");
+            if (!panel || !button) {
+                return;
+            }
+
+            const open = () => {
+                clearDockCloseTimer(dock);
+                setDockOpen(dock, true);
+            };
+            const close = () => {
+                scheduleDockClose(dock);
+            };
+
+            [dock, button, panel].forEach((target) => {
+                target.addEventListener("pointerenter", open);
+                target.addEventListener("pointerleave", close);
+                target.addEventListener("focusin", open);
+            });
+
+            dock.addEventListener("focusout", (event) => {
+                if (!dock.contains(event.relatedTarget)) {
+                    scheduleDockClose(dock);
+                }
+            });
         }
 
         function escapeHtml(value) {
@@ -289,23 +330,13 @@ pub(crate) fn script() -> String {
         }
 
         function currentFields() {
-            let fields = "";
-            if (elements.syncFieldQ.checked) fields += "q";
-            if (elements.syncFieldH.checked) fields += "h";
-            if (elements.syncFieldB.checked) fields += "b";
-            return fields || "hb";
+            return "hb";
         }
 
         function quantityLabel(quantity) {
-            if (quantity === 1) return "Done";
-            if (quantity === -1) return "Ready";
-            return "Locked";
-        }
-
-        function quantityText(quantity) {
-            const value = normalizedQuantity(quantity);
-            if (value > 0) return "+" + value;
-            return String(value);
+            if (quantity === 1) return "Passed";
+            if (quantity === -1) return "Step";
+            return "Far";
         }
 
         function normalizedQuantity(value) {
@@ -313,13 +344,11 @@ pub(crate) fn script() -> String {
         }
 
         function scopeCopy(scope) {
-            if (scope === "n") return "Node syncs a single record.";
-            if (scope === "nt") return "Both syncs the record and its children.";
-            return "Tree syncs children only.";
+            return scope ? String(scope) : "";
         }
 
         function updateScopeCopy() {
-            elements.syncScopeCopy.textContent = scopeCopy(elements.syncScope.value || "t");
+            return;
         }
 
         function renderZoomPill(scale) {
@@ -382,21 +411,12 @@ pub(crate) fn script() -> String {
                 String(trail?.source?.serverId || state.sourceServerId || currentFrameServerId() || "").trim() || null;
             state.binding = trail?.binding ? cloneJsonValue(trail.binding, null) : null;
             state.snapshot = cloneSnapshot(state.binding?.snapshot);
-
-            if (state.binding?.sync) {
-                elements.syncScope.value = state.binding.sync.scope || "t";
-                applyFields(state.binding.sync.fields || "hb");
-            } else {
-                elements.syncScope.value = "t";
-                applyFields("qhb");
-            }
+            mergeOriginalRecordCatalog(state.snapshot?.rows);
 
             projectLoadedTrailSnapshot();
             reconcilePendingQuantityChanges();
-            updateScopeCopy();
             renderBinding();
             renderSelectedOriginal();
-            renderSyncInputs();
             renderGraph();
 
             if (trail?.stream?.status === "error") {
@@ -452,6 +472,12 @@ pub(crate) fn script() -> String {
             });
         }
 
+        function clearPendingQuantityChanges(changes) {
+            (Array.isArray(changes) ? changes : []).forEach((entry) => {
+                state.pendingQuantityChanges.delete(Number(entry.recordId));
+            });
+        }
+
         function reconcilePendingQuantityChanges() {
             if (!Array.isArray(state.snapshot?.rows) || !state.pendingQuantityChanges.size) {
                 return;
@@ -482,41 +508,18 @@ pub(crate) fn script() -> String {
 
         function truncateLabel(value, limit = 18) {
             const text = String(value || "").trim();
-            if (text.length <= limit) {
-                return text || "(untitled)";
-            }
-            return text.slice(0, limit - 1).trimEnd() + "…";
+            void limit;
+            return text || "(untitled)";
         }
 
         function nodeRadius(node) {
             return 18 + Math.min(Number(node.childrenCount || 0), 6);
         }
 
-        function nodeFill(node) {
-            if (node.id === Number(state.selectedNodeId)) {
-                return "#d8f5e8";
-            }
-            return "#182733";
-        }
-
-        function nodeStroke(node) {
-            if (node.id === Number(state.selectedNodeId)) {
-                return "#78d7ff";
-            }
-            if (node.quantity > 0) {
-                return "#7ef0c6";
-            }
-            if (node.quantity < 0) {
-                return "#f2bb78";
-            }
-            return "rgba(120, 215, 255, 0.4)";
-        }
-
-        function nodeStrokeWidth(node) {
-            if (node.id === Number(state.selectedNodeId)) {
-                return 2.4;
-            }
-            return 1.3;
+        function nodeFill(quantity) {
+            if (quantity === 1) return "#7ef0c6";
+            if (quantity === -1) return "#f2bb78";
+            return "#64748b";
         }
 
         function postJson(action, payload) {
@@ -587,10 +590,170 @@ pub(crate) fn script() -> String {
             });
         }
 
+        function originalRecordSuggestionElements() {
+            return {
+                input: elements.originalRecordInput,
+                panel: elements.originalRecordSuggestions,
+            };
+        }
+
+        function hideOriginalRecordSuggestions() {
+            const { panel } = originalRecordSuggestionElements();
+            panel.hidden = true;
+            panel.innerHTML = "";
+            state.originalRecordSuggestions = [];
+        }
+
+        function mergeOriginalRecordCatalog(rows) {
+            const catalog = new Map(
+                (Array.isArray(state.originalRecordCatalog) ? state.originalRecordCatalog : [])
+                    .map((row) => [nodeIdFromRow(row), { ...row }]),
+            );
+            (Array.isArray(rows) ? rows : []).forEach((row) => {
+                const recordId = nodeIdFromRow(row);
+                if (recordId > 0) {
+                    catalog.set(recordId, { ...row });
+                }
+            });
+            state.originalRecordCatalog = Array.from(catalog.values());
+        }
+
+        function originalRecordLabel(row) {
+            return "#" + nodeIdFromRow(row) + " " + (rowHead(row) || "(untitled)");
+        }
+
+        function originalRecordMeta(row) {
+            const categories = rowCategories(row);
+            const assignees = rowAssigneeNames(row);
+            const meta = [];
+            if (categories.length) {
+                meta.push("Categories: " + categories.join(", "));
+            }
+            if (assignees.length) {
+                meta.push("Assignees: " + assignees.join(", "));
+            }
+            return meta;
+        }
+
+        function originalRecordMatchesQuery(row, query) {
+            const needle = normalizeText(query);
+            if (!needle) {
+                return true;
+            }
+            const idText = String(nodeIdFromRow(row));
+            const head = normalizeText(rowHead(row));
+            const body = normalizeText(rowBody(row));
+            const categories = normalizeText(rowCategories(row).join(" "));
+            return (
+                idText.includes(needle) ||
+                head.includes(needle) ||
+                body.includes(needle) ||
+                categories.includes(needle)
+            );
+        }
+
+        function filteredOriginalRecordSuggestions() {
+            const query = elements.originalRecordInput.value.trim();
+            const rows = Array.isArray(state.originalRecordCatalog) ? state.originalRecordCatalog : [];
+            const filtered = rows
+                .filter((row) => originalRecordMatchesQuery(row, query))
+                .sort((left, right) => {
+                    const needle = normalizeText(query);
+                    const leftId = String(nodeIdFromRow(left));
+                    const rightId = String(nodeIdFromRow(right));
+                    const leftHead = normalizeText(rowHead(left));
+                    const rightHead = normalizeText(rowHead(right));
+                    const leftExact = leftId === needle || leftHead === needle;
+                    const rightExact = rightId === needle || rightHead === needle;
+                    if (leftExact !== rightExact) {
+                        return leftExact ? -1 : 1;
+                    }
+                    const leftPrefix = leftHead.startsWith(needle) || leftId.startsWith(needle);
+                    const rightPrefix = rightHead.startsWith(needle) || rightId.startsWith(needle);
+                    if (leftPrefix !== rightPrefix) {
+                        return leftPrefix ? -1 : 1;
+                    }
+                    return Number(leftId) - Number(rightId);
+                });
+            return filtered.slice(0, 12);
+        }
+
+        function renderOriginalRecordSuggestions() {
+            const { panel } = originalRecordSuggestionElements();
+            const rows = filteredOriginalRecordSuggestions();
+            state.originalRecordSuggestions = rows;
+            if (!rows.length) {
+                hideOriginalRecordSuggestions();
+                return;
+            }
+            panel.innerHTML = rows.map((row) => `
+                <button
+                    class="suggestionButton"
+                    type="button"
+                    data-original-record-id="${escapeHtml(String(nodeIdFromRow(row)))}"
+                >
+                    <strong>${escapeHtml(originalRecordLabel(row))}</strong>
+                    <span class="suggestionMeta">${escapeHtml(originalRecordMeta(row).join(" · ") || "Type to narrow the list.")}</span>
+                </button>
+            `).join("");
+            panel.hidden = false;
+        }
+
+        function selectOriginalRecord(row) {
+            if (!row) {
+                return;
+            }
+            state.selectedOriginal = {
+                ...row,
+                categories: rowCategories(row),
+                assigneeNames: rowAssigneeNames(row),
+                assigneeUsernames: rowAssigneeUsernames(row),
+            };
+            elements.originalRecordInput.value = originalRecordLabel(row);
+            hideOriginalRecordSuggestions();
+            renderSelectedOriginal();
+        }
+
+        function loadOriginalRecordCatalog() {
+            if (state.originalRecordCatalogLoaded) {
+                renderOriginalRecordSuggestions();
+                return Promise.resolve(state.originalRecordCatalog);
+            }
+            if (state.originalRecordCatalogLoadPromise) {
+                return state.originalRecordCatalogLoadPromise;
+            }
+            const url = recordCollectionUrl();
+            if (!url) {
+                return Promise.resolve([]);
+            }
+            const requestSeq = ++state.originalRecordRequestSeq;
+            state.originalRecordCatalogLoadPromise = postJson("search-trails", {
+                headContains: null,
+                category: null,
+                assignee: null,
+            }).then((result) => {
+                if (requestSeq !== state.originalRecordRequestSeq) {
+                    return [];
+                }
+                state.originalRecordCatalogLoaded = true;
+                state.originalRecordCatalog = Array.isArray(result.results)
+                    ? result.results.map((row) => ({ ...row }))
+                    : [];
+                renderOriginalRecordSuggestions();
+                return state.originalRecordCatalog;
+            }).catch((error) => {
+                console.error(error);
+                return [];
+            }).finally(() => {
+                state.originalRecordCatalogLoadPromise = null;
+            });
+            return state.originalRecordCatalogLoadPromise;
+        }
+
         function renderSelectedOriginal() {
             if (!state.selectedOriginal) {
                 elements.selectedOriginalTitle.textContent = "No original selected";
-                elements.selectedOriginalCopy.textContent = "Choose an original record from Discover.";
+                elements.selectedOriginalCopy.textContent = "Select a graph node or type a record above to use it as the original record.";
                 elements.createSubmit.disabled = true;
                 return;
             }
@@ -601,169 +764,73 @@ pub(crate) fn script() -> String {
             elements.selectedOriginalCopy.textContent = categories.length
                 ? "Categories: " + categories.join(", ")
                 : "No categories on the selected original.";
-            elements.createSubmit.disabled = !elements.createAssignee.value.trim();
+            elements.createSubmit.disabled =
+                !elements.createAssignee.value.trim() || !elements.viewName.value.trim();
+        }
+
+        function renderSelectedNodeControls() {
+            const node = selectedNode();
+            const enabled = !!node;
+            elements.quantityPass.disabled = !enabled;
+            elements.quantityFar.disabled = !enabled;
+            elements.quantityStep.disabled = !enabled;
+            elements.quantityPass.classList.toggle("is-active", !!node && normalizedQuantity(node.quantity) === 1);
+            elements.quantityFar.classList.toggle("is-active", !!node && normalizedQuantity(node.quantity) === 0);
+            elements.quantityStep.classList.toggle("is-active", !!node && normalizedQuantity(node.quantity) === -1);
+
+            if (!node) {
+                elements.selectedNodeTitle.textContent = "No node selected";
+                elements.selectedNodeCopy.textContent = "Click a graph node, then set its quantity.";
+                return;
+            }
+
+            elements.selectedNodeTitle.textContent =
+                "#" + node.id + " " + (node.head || "(untitled)");
+            elements.selectedNodeCopy.textContent =
+                "Current quantity: " + quantityLabel(node.quantity);
         }
 
         function renderBinding() {
             if (!state.binding?.trailRootRecordId) {
                 elements.boundPill.textContent = "No trail bound";
-                elements.bindingTitle.textContent = "No copied trail root bound";
-                elements.bindingCopy.textContent = "Use Open trail in Discover, or select a graph node and bind it as the trail root.";
-                elements.syncPill.textContent = "No sync";
-                elements.overwriteCopy.textContent = "";
-                elements.initializeTrail.disabled = true;
-                elements.runSync.disabled = true;
+                elements.viewPill.textContent = "No view";
                 return;
             }
 
             writeStoredTrailRoot(state.binding.trailRootRecordId);
             elements.boundPill.textContent = "Trail root #" + state.binding.trailRootRecordId;
-            elements.bindingTitle.textContent =
-                "Bound copied trail root #" + state.binding.trailRootRecordId;
-            elements.bindingCopy.textContent =
-                "Streaming view " + (state.binding.viewId ?? "?") + ". Open trail on a copied root rebinds the SSE view to that record tree.";
-            elements.initializeTrail.disabled = false;
-            elements.runSync.disabled = false;
-
-            if (state.binding.sync) {
-                const fields = normalizeFields(state.binding.sync.fields || "hb");
-                const overwritten = [];
-                const preserved = [];
-                if (fields.includes("q")) overwritten.push("quantity"); else preserved.push("quantity");
-                if (fields.includes("h")) overwritten.push("head"); else preserved.push("head");
-                if (fields.includes("b")) overwritten.push("body"); else preserved.push("body");
-                elements.syncPill.textContent =
-                    "Sync from #" + state.binding.sync.syncSourceRecordId +
-                    " · " + (state.binding.sync.scope || "t") +
-                    " · " + fields;
-                elements.overwriteCopy.textContent =
-                    "Overwrite: " + overwritten.join(", ") + ". Preserve: " + preserved.join(", ") + ".";
-                elements.syncScope.value = state.binding.sync.scope || "t";
-                applyFields(fields);
-            } else {
-                elements.syncPill.textContent = "No sync";
-                elements.overwriteCopy.textContent = "";
-            }
-        }
-
-        function renderSyncInputs() {
-            updateScopeCopy();
-            if (!state.binding?.sync?.syncSourceRecordId) {
-                return;
-            }
-            const fields = currentFields();
-            const overwritten = [];
-            const preserved = [];
-            if (fields.includes("q")) overwritten.push("quantity"); else preserved.push("quantity");
-            if (fields.includes("h")) overwritten.push("head"); else preserved.push("head");
-            if (fields.includes("b")) overwritten.push("body"); else preserved.push("body");
-            elements.overwriteCopy.textContent =
-                "Sync source #" + state.binding.sync.syncSourceRecordId +
-                " would overwrite " + overwritten.join(", ") +
-                " and preserve " + preserved.join(", ") + ".";
+            elements.viewPill.textContent = "View #" + (state.binding.viewId ?? "?");
         }
 
         function renderSelection() {
-            const node = selectedNode();
-            const canAct = Boolean(node && state.binding?.trailRootRecordId);
-            elements.bindSelected.disabled = !node;
-            elements.setLocked.disabled = !canAct;
-            elements.setReady.disabled = !canAct;
-            elements.setDone.disabled = !canAct;
-
-            if (!node) {
-                elements.selectionTitle.textContent = "No node selected";
-                elements.selectionCopy.textContent = "Click a node in the graph to inspect it and update its trail quantity.";
-                return;
-            }
-
-            const categoryCopy = node.categories.length
-                ? "Categories: " + node.categories.join(", ")
-                : "No categories";
-            const assigneeCopy = node.assigneeNames.length
-                ? " · Assignees: " + node.assigneeNames.join(", ")
-                : "";
-            elements.selectionTitle.textContent =
-                "#" + node.id + " " + (node.head || "(untitled)") + " · " + quantityLabel(node.quantity);
-            elements.selectionCopy.textContent = categoryCopy + assigneeCopy;
+            renderSelectedNodeControls();
         }
 
-        function renderDiscoverResults() {
-            if (!state.discoverResults.length) {
-                elements.discoverResults.innerHTML =
-                    "<p class=\"copy\">No records match the current filters.</p>";
-                return;
-            }
-
-            elements.discoverResults.innerHTML = state.discoverResults.map((row) => {
-                const id = nodeIdFromRow(row);
-                const categories = rowCategories(row);
-                const assigneeNames = rowAssigneeNames(row);
-                const assigneeUsernames = rowAssigneeUsernames(row);
-                const excerpt = rowBody(row).trim();
-                const isSelected = state.selectedOriginal && nodeIdFromRow(state.selectedOriginal) === id;
-                return `
-                    <article class="resultCard${isSelected ? " isSelected" : ""}" data-original-id="${id}" data-testid="trail-discover-card">
-                        <div class="sectionHead">
-                            <div>
-                                <div class="selectionTitle">#${id} ${escapeHtml(rowHead(row) || "(untitled)")}</div>
-                            </div>
-                            <div class="actionRow">
-                                <button class="button buttonGhost" type="button" data-testid="trail-open-root">Open trail</button>
-                                <button class="button buttonPrimary" type="button" data-testid="trail-use-original">Use as original</button>
-                            </div>
-                        </div>
-                        ${excerpt ? `<p class="resultExcerpt">${escapeHtml(excerpt)}</p>` : ""}
-                        <div class="resultMeta">
-                            ${categories.map((value) => `<span class="pill">${escapeHtml(value)}</span>`).join(" ")}
-                            ${assigneeNames.map((value, index) => {
-                                const username = assigneeUsernames[index];
-                                const label = username ? `${value} (@${username})` : value;
-                                return `<span class="pill">${escapeHtml(label)}</span>`;
-                            }).join(" ")}
-                        </div>
-                    </article>
-                `;
-            }).join("");
-        }
-
-        function renderDiscoverSummary() {
-            elements.discoverSummary.textContent =
-                "Showing " + state.discoverResults.length + " matching records. Open trail binds the selected copied root as the live SSE source.";
-        }
-
-        function suggestionElements(kind) {
-            if (kind === "discover") {
-                return {
-                    input: elements.searchAssignee,
-                    panel: elements.searchAssigneeSuggestions,
-                };
-            }
+        function suggestionElements() {
             return {
                 input: elements.createAssignee,
                 panel: elements.createAssigneeSuggestions,
             };
         }
 
-        function hideAssigneeSuggestions(kind) {
-            const { panel } = suggestionElements(kind);
+        function hideAssigneeSuggestions() {
+            const { panel } = suggestionElements();
             panel.hidden = true;
             panel.innerHTML = "";
-            state.assigneeSuggestions[kind] = [];
+            state.assigneeSuggestions.create = [];
         }
 
-        function renderAssigneeSuggestions(kind) {
-            const rows = state.assigneeSuggestions[kind] || [];
-            const { panel } = suggestionElements(kind);
+        function renderAssigneeSuggestions() {
+            const rows = state.assigneeSuggestions.create || [];
+            const { panel } = suggestionElements();
             if (!rows.length) {
-                hideAssigneeSuggestions(kind);
+                hideAssigneeSuggestions();
                 return;
             }
             panel.innerHTML = rows.map((row) => `
                 <button
                     class="suggestionButton"
                     type="button"
-                    data-assignee-kind="${kind}"
                     data-assignee-value="${escapeHtml(row.username || String(row.id))}"
                 >
                     <strong>#${escapeHtml(row.id)} ${escapeHtml(row.name)}</strong>
@@ -773,72 +840,32 @@ pub(crate) fn script() -> String {
             panel.hidden = false;
         }
 
-        function requestAssigneeSuggestions(kind) {
-            const { input } = suggestionElements(kind);
+        function requestAssigneeSuggestions() {
+            const { input } = suggestionElements();
             const query = input.value.trim();
             if (!query) {
-                hideAssigneeSuggestions(kind);
+                hideAssigneeSuggestions();
                 return;
             }
-            const requestSeq = ++state.assigneeRequestSeq[kind];
+            const requestSeq = ++state.assigneeRequestSeq.create;
             postJson("search-assignees", { query })
                 .then((result) => {
-                    if (requestSeq !== state.assigneeRequestSeq[kind]) {
+                    if (requestSeq !== state.assigneeRequestSeq.create) {
                         return;
                     }
-                    state.assigneeSuggestions[kind] = Array.isArray(result.results) ? result.results : [];
-                    renderAssigneeSuggestions(kind);
+                    state.assigneeSuggestions.create = Array.isArray(result.results) ? result.results : [];
+                    renderAssigneeSuggestions();
                 })
                 .catch((error) => {
                     console.error(error);
                 });
         }
 
-        function applyAssigneeSuggestion(kind, value) {
-            const { input } = suggestionElements(kind);
+        function applyAssigneeSuggestion(value) {
+            const { input } = suggestionElements();
             input.value = value;
-            hideAssigneeSuggestions(kind);
-            if (kind === "discover") {
-                refreshDiscoverResults().catch((error) => setStatus(error.message));
-            } else {
-                renderSelectedOriginal();
-            }
-        }
-
-        function scheduleDiscoverRefresh(delayMs) {
-            clearTimeout(state.discoverRefreshTimer);
-            state.discoverRefreshTimer = window.setTimeout(() => {
-                refreshDiscoverResults().catch((error) => setStatus(error.message));
-            }, delayMs);
-        }
-
-        function discoverPayload() {
-            return {
-                headContains: elements.searchHead.value.trim() || null,
-                category: elements.searchCategory.value.trim() || null,
-                assignee: elements.searchAssignee.value.trim() || null,
-            };
-        }
-
-        function refreshDiscoverResults() {
-            const requestSeq = ++state.discoverRequestSeq;
-            setStatus("Searching");
-            return postJson("search-trails", discoverPayload()).then((result) => {
-                if (requestSeq !== state.discoverRequestSeq) {
-                    return;
-                }
-                state.discoverResults = Array.isArray(result.results) ? result.results : [];
-                if (state.selectedOriginal) {
-                    const replacement = state.discoverResults.find((row) => nodeIdFromRow(row) === nodeIdFromRow(state.selectedOriginal));
-                    if (replacement) {
-                        state.selectedOriginal = replacement;
-                    }
-                }
-                renderSelectedOriginal();
-                renderDiscoverSummary();
-                renderDiscoverResults();
-                setStatus(state.binding?.trailRootRecordId ? "Live" : "Ready");
-            });
+            hideAssigneeSuggestions();
+            renderSelectedOriginal();
         }
 
         function initializeGraph() {
@@ -916,7 +943,7 @@ pub(crate) fn script() -> String {
         }
 
         function visibleTrailRows(rows) {
-            return TrailRelationLogic.visibleTrailRows(rows, state.binding?.trailRootRecordId);
+            return Array.isArray(rows) ? rows : [];
         }
 
         function buildGraphData(rows) {
@@ -1086,6 +1113,7 @@ pub(crate) fn script() -> String {
                 return;
             }
             const rows = visibleTrailRows(state.snapshot?.rows);
+            mergeOriginalRecordCatalog(rows);
             const { nodes, links } = buildGraphData(rows);
 
             state.graph.nodes = nodes;
@@ -1144,10 +1172,7 @@ pub(crate) fn script() -> String {
 
             nodeSelection.select("circle")
                 .attr("r", (node) => nodeRadius(node))
-                .attr("class", "node-circle")
-                .style("fill", (node) => nodeFill(node))
-                .style("stroke", (node) => nodeStroke(node))
-                .style("stroke-width", (node) => nodeStrokeWidth(node));
+                .attr("fill", (node) => nodeFill(node.quantity));
             nodeSelection.attr("data-node-id", (node) => node.id);
 
             const labelSelection = state.graph.labelLayer
@@ -1155,7 +1180,7 @@ pub(crate) fn script() -> String {
                 .data(nodes, (node) => node.id)
                 .join("text")
                 .attr("class", "node-label")
-                .text((node) => truncateLabel(node.head) + " · " + quantityText(node.quantity));
+                .text((node) => truncateLabel(node.head));
 
             simulation.on("tick", () => {
                 linkSelection
@@ -1193,10 +1218,8 @@ pub(crate) fn script() -> String {
                     state.snapshot = cloneSnapshot(payload.snapshot);
                     reconcilePendingQuantityChanges();
                     writeStoredTrailRoot(state.binding?.trailRootRecordId);
-                    updateScopeCopy();
                     renderBinding();
                     renderSelectedOriginal();
-                    renderSyncInputs();
                     renderGraph();
                     setStatus(state.binding?.trailRootRecordId ? "Live" : "Ready");
                 } catch (error) {
@@ -1224,49 +1247,10 @@ pub(crate) fn script() -> String {
         }
 
         function bindTrailRoot(recordId) {
-            state.graph.needsFit = true;
-            resetLocalTrailProjection();
-            setStatus("Binding trail");
             const trailRootRecordId = Number(recordId);
-            return postJson("bind-trail", {
-                trailRootRecordId,
-            }).then((result) => {
-                const detail = result.detail || null;
-                state.binding = detail || null;
-                state.sourceServerId = state.sourceServerId || currentFrameServerId() || null;
-                state.snapshot = detail?.snapshot
-                    ? {
-                        ...detail.snapshot,
-                        rows: Array.isArray(detail.snapshot.rows)
-                            ? detail.snapshot.rows.map((row) => ({ ...row }))
-                            : [],
-                        }
-                    : null;
-                patchTrailSignals({
-                    binding: detail,
-                });
-                return fetchRecordRow(trailRootRecordId)
-                    .then((rootRow) => {
-                        const rootQuantity = normalizedQuantity(valueOf(rootRow, "quantity"));
-                        const snapshotRow = state.snapshot?.rows?.find((row) => nodeIdFromRow(row) === trailRootRecordId) || null;
-                        if (snapshotRow && normalizedQuantity(valueOf(snapshotRow, "quantity")) !== rootQuantity) {
-                            snapshotRow.quantity = rootQuantity;
-                            recordPendingQuantityChanges([{
-                                recordId: trailRootRecordId,
-                                quantity: rootQuantity,
-                            }]);
-                        }
-                    })
-                    .catch(() => null)
-                    .then(() => {
-                        writeStoredTrailRoot(state.binding?.trailRootRecordId);
-                        renderBinding();
-                        renderGraph();
-                        connectStream();
-                    });
-            }).catch((error) => {
-                setStatus(error.message);
-            });
+            setStatus(Number.isFinite(trailRootRecordId) && trailRootRecordId > 0
+                ? "Trail binding moved to edit mode"
+                : "Invalid trail root");
         }
 
         function createTrail() {
@@ -1274,14 +1258,16 @@ pub(crate) fn script() -> String {
                 setStatus("Select an original");
                 return;
             }
+            const viewName = elements.viewName.value.trim();
+            if (!viewName) {
+                setStatus("Type a view name");
+                return;
+            }
             setStatus("Creating");
-            state.graph.needsFit = true;
-            resetLocalTrailProjection();
             postJson("create-trail", {
                 sourceRecordId: nodeIdFromRow(state.selectedOriginal),
                 assignee: elements.createAssignee.value.trim(),
-                scope: elements.syncScope.value || "t",
-                fields: currentFields(),
+                viewName,
             }).then((result) => {
                 const detail = result.detail || null;
                 state.binding = detail || null;
@@ -1294,36 +1280,15 @@ pub(crate) fn script() -> String {
                             : [],
                     }
                     : null;
-                const initializationChanges = trailResetChanges(
-                    snapshot?.rows || [],
-                    state.binding?.trailRootRecordId,
-                );
                 state.snapshot = snapshot;
                 patchTrailSignals({
                     binding: detail,
                 });
-                if (initializationChanges.length) {
-                    applyQuantityChanges(initializationChanges);
-                    recordPendingQuantityChanges(initializationChanges);
-                    renderGraph();
-                }
-                const persistInitialization = initializationChanges.length
-                    ? patchRecordRows(initializationChanges.map((entry) => ({
-                        id: entry.recordId,
-                        quantity: entry.quantity,
-                    })))
-                    : Promise.resolve();
-                persistInitialization.then(() => {
-                    writeStoredTrailRoot(state.binding?.trailRootRecordId);
-                    renderBinding();
-                    connectStream();
-                    setStatus("Trail created");
-                }).catch((error) => {
-                    state.snapshot = snapshot;
-                    state.pendingQuantityChanges.clear();
-                    renderGraph();
-                    setStatus(error.message);
-                });
+                writeStoredTrailRoot(state.binding?.trailRootRecordId);
+                renderBinding();
+                renderGraph();
+                connectStream();
+                setStatus("Trail created");
             }).catch((error) => {
                 setStatus(error.message);
             });
@@ -1360,84 +1325,49 @@ pub(crate) fn script() -> String {
         }
 
         function initializeTrail() {
-            if (!state.binding?.trailRootRecordId || !Array.isArray(state.snapshot?.rows)) {
-                return;
-            }
-            const previousRows = state.snapshot.rows.map((row) => ({ ...row }));
-            const optimisticChanges = trailResetChanges(state.snapshot.rows, state.binding.trailRootRecordId);
-            applyQuantityChanges(optimisticChanges);
-            recordPendingQuantityChanges(optimisticChanges);
-            renderGraph();
-            setStatus("Resetting trail");
-            patchRecordRows(optimisticChanges.map((entry) => ({
-                id: entry.recordId,
-                quantity: entry.quantity,
-            }))).then(() => {
-                setStatus("Trail reset");
-            }).catch((error) => {
-                state.snapshot.rows = previousRows;
-                state.pendingQuantityChanges.clear();
-                renderGraph();
-                setStatus(error.message);
-            });
+            setStatus("Trail reset is disabled");
         }
 
         function runSync() {
-            if (!state.binding?.trailRootRecordId) {
-                return;
-            }
-            setStatus("Syncing");
-            postJson("run-trail-sync", {
-                trailRootRecordId: state.binding.trailRootRecordId,
-                scope: elements.syncScope.value || "t",
-                fields: currentFields(),
-            }).then((result) => {
-                state.binding = {
-                    ...(state.binding || {}),
-                    ...(result.detail || {}),
-                };
-                patchTrailSignals({
-                    binding: {
-                        ...(state.binding || {}),
-                    },
-                });
-                renderBinding();
-                setStatus("Sync requested");
-            }).catch((error) => {
-                setStatus(error.message);
-            });
+            setStatus("Trail sync is disabled");
         }
 
         function setSelectedNodeQuantity(quantity) {
             const node = selectedNode();
-            if (!node || !state.binding?.trailRootRecordId || !Array.isArray(state.snapshot?.rows)) {
+            if (!node || !Array.isArray(state.snapshot?.rows)) {
+                setStatus("Select a graph node first");
                 return;
             }
-            const progression = computeTrailQuantityChanges(node.id, quantity);
-            if (progression.error) {
-                setStatus(progression.error);
+            const projection = TrailRelationLogic.computeTrailQuantityChanges(
+                state.snapshot.rows,
+                state.binding?.trailRootRecordId,
+                node.id,
+                quantity,
+            );
+            if (projection.error) {
+                setStatus(projection.error);
                 return;
             }
-            const changed = progression.changes || [];
+            const changed = projection.changes || [];
             if (!changed.length) {
                 setStatus("Node already up to date");
                 return;
             }
-            const previousRows = state.snapshot.rows.map((row) => ({ ...row }));
-            applyQuantityChanges(changed);
             recordPendingQuantityChanges(changed);
+            applyQuantityChanges(changed);
             renderGraph();
-            setStatus("Updating node");
-            patchRecordRows(changed.map((entry) => ({
-                id: entry.recordId,
-                quantity: entry.quantity,
-            }))).then(() => {
-                setStatus("Node updated");
+            setStatus("Updating quantity");
+            postJson("set-trail-node-quantity", {
+                recordId: node.id,
+                quantity,
+            }).then(() => {
+                setStatus("Waiting for stream update");
             }).catch((error) => {
-                state.snapshot.rows = previousRows;
-                state.pendingQuantityChanges.clear();
+                clearPendingQuantityChanges(changed);
+                state.snapshot = cloneSnapshot(state.binding?.snapshot);
+                reconcilePendingQuantityChanges();
                 renderGraph();
-                setStatus(error.message);
+                setStatus(error.message || "Quantity update failed");
             });
         }
 
@@ -1445,12 +1375,11 @@ pub(crate) fn script() -> String {
             setStatus("Loading");
             return datastarReady.then(() => {
                 if ((trailBootstrap || readSignalPath("trail")) && syncFromSignals()) {
+                    void loadOriginalRecordCatalog();
                     if (state.binding?.trailRootRecordId) {
                         writeStoredTrailRoot(state.binding.trailRootRecordId);
                     }
-                    return refreshDiscoverResults().catch((error) => {
-                        console.error(error);
-                    });
+                    return;
                 }
 
                 return fetch(contractUrl(), { credentials: "same-origin" })
@@ -1461,41 +1390,19 @@ pub(crate) fn script() -> String {
                         }
                         state.binding = data?.binding || null;
                         state.sourceServerId = data?.source?.serverId || currentFrameServerId() || null;
-                        resetLocalTrailProjection();
-                        if (state.binding?.sync) {
-                            elements.syncScope.value = state.binding.sync.scope || "t";
-                            applyFields(state.binding.sync.fields || "hb");
-                        } else {
-                            elements.syncScope.value = "t";
-                            applyFields("qhb");
-                        }
-                        updateScopeCopy();
                         renderBinding();
                         renderSelectedOriginal();
                     })
+                    .then(() => loadOriginalRecordCatalog())
                     .then(() => {
                         if (state.binding?.trailRootRecordId) {
                             writeStoredTrailRoot(state.binding.trailRootRecordId);
                             connectStream();
                         } else {
-                            const storedTrailRoot = readStoredTrailRoot();
-                            if (storedTrailRoot) {
-                                return bindTrailRoot(storedTrailRoot);
-                            }
                             setStatus("Ready");
                         }
-                        return refreshDiscoverResults().catch((error) => {
-                            console.error(error);
-                        });
                     });
             });
-        }
-
-        function applyFields(fields) {
-            const normalized = normalizeFields(fields);
-            elements.syncFieldQ.checked = normalized.includes("q");
-            elements.syncFieldH.checked = normalized.includes("h");
-            elements.syncFieldB.checked = normalized.includes("b");
         }
 
         window.TrailWidget = window.TrailWidget || {};
@@ -1505,84 +1412,75 @@ pub(crate) fn script() -> String {
         initializeGraph();
         renderSelection();
 
-        elements.searchHead.addEventListener("input", () => scheduleDiscoverRefresh(200));
-        elements.searchCategory.addEventListener("input", () => scheduleDiscoverRefresh(200));
-        elements.searchAssignee.addEventListener("input", () => {
-            requestAssigneeSuggestions("discover");
-            refreshDiscoverResults().catch((error) => setStatus(error.message));
-        });
-
-        elements.discoverResults.addEventListener("click", (event) => {
-            const button = event.target.closest("button");
-            if (button) {
-                const card = button.closest("[data-original-id]");
-                if (!card) {
-                    return;
-                }
-                const recordId = Number(card.getAttribute("data-original-id"));
-                const label = button.textContent.trim();
-                if (label === "Open trail") {
-                    bindTrailRoot(String(recordId));
-                    return;
-                }
-                if (label === "Use as original") {
-                    state.selectedOriginal = state.discoverResults.find((row) => nodeIdFromRow(row) === recordId) || null;
-                    renderSelectedOriginal();
-                    renderDiscoverResults();
-                    return;
-                }
-            }
-            const card = event.target.closest("[data-original-id]");
-            if (!card) {
+        elements.originalRecordInput.addEventListener("input", () => {
+            if (!elements.originalRecordInput.value.trim()) {
+                hideOriginalRecordSuggestions();
+                renderSelectedOriginal();
                 return;
             }
-            const recordId = Number(card.getAttribute("data-original-id"));
-            state.selectedOriginal = state.discoverResults.find((row) => nodeIdFromRow(row) === recordId) || null;
-            renderSelectedOriginal();
-            renderDiscoverResults();
+            if (!state.originalRecordCatalogLoaded) {
+                loadOriginalRecordCatalog().finally(() => {
+                    renderOriginalRecordSuggestions();
+                });
+                return;
+            }
+            renderOriginalRecordSuggestions();
+        });
+        elements.originalRecordInput.addEventListener("keydown", (event) => {
+            if (event.key !== "Enter") {
+                return;
+            }
+            event.preventDefault();
+            const query = elements.originalRecordInput.value.trim();
+            if (!query) {
+                return;
+            }
+            const exactId = Number(query.replace(/^#/, ""));
+            const exactRow = Number.isFinite(exactId) && exactId > 0
+                ? state.originalRecordCatalog.find((candidate) => nodeIdFromRow(candidate) === exactId) || null
+                : null;
+            if (exactRow) {
+                selectOriginalRecord(exactRow);
+                return;
+            }
+            const firstRow = filteredOriginalRecordSuggestions()[0] || null;
+            if (firstRow) {
+                selectOriginalRecord(firstRow);
+            }
         });
 
         elements.createAssignee.addEventListener("input", () => {
             renderSelectedOriginal();
-            requestAssigneeSuggestions("create");
+            requestAssigneeSuggestions();
         });
-
-        elements.searchAssigneeSuggestions.addEventListener("click", (event) => {
-            const button = event.target.closest("[data-assignee-kind]");
-            if (!button) {
-                return;
-            }
-            applyAssigneeSuggestion(
-                button.getAttribute("data-assignee-kind"),
-                button.getAttribute("data-assignee-value") || "",
-            );
+        elements.viewName.addEventListener("input", () => {
+            renderSelectedOriginal();
         });
 
         elements.createAssigneeSuggestions.addEventListener("click", (event) => {
-            const button = event.target.closest("[data-assignee-kind]");
+            const button = event.target.closest("[data-assignee-value]");
             if (!button) {
                 return;
             }
-            applyAssigneeSuggestion(
-                button.getAttribute("data-assignee-kind"),
-                button.getAttribute("data-assignee-value") || "",
-            );
+            applyAssigneeSuggestion(button.getAttribute("data-assignee-value") || "");
+        });
+
+        elements.originalRecordSuggestions.addEventListener("click", (event) => {
+            const button = event.target.closest("[data-original-record-id]");
+            if (!button) {
+                return;
+            }
+            const recordId = Number(button.getAttribute("data-original-record-id") || 0);
+            const row = state.originalRecordCatalog.find((candidate) => nodeIdFromRow(candidate) === recordId) || null;
+            if (row) {
+                selectOriginalRecord(row);
+            }
         });
 
         elements.createSubmit.addEventListener("click", createTrail);
-        elements.initializeTrail.addEventListener("click", initializeTrail);
-        elements.runSync.addEventListener("click", runSync);
-        elements.bindSelected.addEventListener("click", () => {
-            const node = selectedNode();
-            if (!node) {
-                return;
-            }
-            bindTrailRoot(node.id);
-        });
-
-        elements.setLocked.addEventListener("click", () => setSelectedNodeQuantity(0));
-        elements.setReady.addEventListener("click", () => setSelectedNodeQuantity(-1));
-        elements.setDone.addEventListener("click", () => setSelectedNodeQuantity(1));
+        elements.quantityPass.addEventListener("click", () => setSelectedNodeQuantity(1));
+        elements.quantityFar.addEventListener("click", () => setSelectedNodeQuantity(0));
+        elements.quantityStep.addEventListener("click", () => setSelectedNodeQuantity(-1));
 
         elements.physicsCharge.addEventListener("input", () => {
             state.physics.charge = Number(elements.physicsCharge.value);
@@ -1598,19 +1496,20 @@ pub(crate) fn script() -> String {
         });
 
         elements.fitButton.addEventListener("click", fitGraph);
-        elements.centerButton.addEventListener("click", centerGraph);
+        elements.zoomPill.addEventListener("click", centerGraph);
         elements.zoomOutButton.addEventListener("click", () => zoomBy(1 / 1.18));
         elements.zoomInButton.addEventListener("click", () => zoomBy(1.18));
 
-        elements.syncScope.addEventListener("change", updateScopeCopy);
-        [elements.syncFieldQ, elements.syncFieldH, elements.syncFieldB].forEach((input) => {
-            input.addEventListener("change", renderSyncInputs);
+        document.querySelectorAll(".section--dock").forEach((dock) => {
+            wireDockHover(dock);
         });
 
         document.addEventListener("click", (event) => {
+            if (!event.target.closest(".field.autocompleteHost")) {
+                hideOriginalRecordSuggestions();
+            }
             if (!event.target.closest(".autocompleteHost")) {
-                hideAssigneeSuggestions("discover");
-                hideAssigneeSuggestions("create");
+                hideAssigneeSuggestions();
             }
         });
 

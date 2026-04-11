@@ -16,7 +16,6 @@ mod organ_management;
 mod record_crud;
 #[path = "relations/mod.rs"]
 mod relations;
-mod oldt;
 mod sand_publisher;
 #[path = "shared_markdown/mod.rs"]
 mod shared_markdown;
@@ -103,7 +102,7 @@ impl OfficialWidgetBuilder {
     }
 }
 
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 23] = [
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 22] = [
     OfficialWidgetBuilder::Html {
         feature_flag: bucket_image_view::FEATURE_FLAG,
         source_builder: bucket_image_view::source,
@@ -139,10 +138,6 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 23] = [
     OfficialWidgetBuilder::Package {
         feature_flag: trail::FEATURE_FLAG,
         package_builder: trail::package,
-    },
-    OfficialWidgetBuilder::Package {
-        feature_flag: oldt::FEATURE_FLAG,
-        package_builder: oldt::package,
     },
     OfficialWidgetBuilder::Html {
         feature_flag: lince_logo_led::FEATURE_FLAG,

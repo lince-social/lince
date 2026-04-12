@@ -51,7 +51,7 @@ fn render_details_placeholder() -> Markup {
                 div class="eyebrow" { "todo" }
                 div class="detailTitle" { "Head-only list" }
                 div class="detailCopy" {
-                    "The backend streams HTML fragments into this panel. Only the head column is visible here. Use j / k to move and space to set the focused row quantity to zero."
+                    "The backend streams HTML fragments into this panel. Only the head column is visible here. Use j / k to move, space to set the focused row quantity to zero, u to undo, and Shift-U to redo."
                 }
             }
 

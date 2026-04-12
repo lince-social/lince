@@ -21,7 +21,11 @@ pub(super) fn script() -> String {
           streamUrl: "",
           focusedRowIndex: 0,
           nerdMode: false,
+          quantityHistory: [],
+          quantityHistoryCursor: -1,
         };
+
+        const MAX_HISTORY = 100;
 
         function clamp(value, min, max) {
           return Math.min(max, Math.max(min, value));
@@ -213,6 +217,66 @@ pub(super) fn script() -> String {
           return Number.isFinite(recordId) ? recordId : null;
         }
 
+        function findRowByRecordId(recordId) {
+          if (!tablePanel || !Number.isFinite(recordId)) {
+            return null;
+          }
+
+          return tablePanel.querySelector(
+            'tbody tr[data-record-id="' + String(recordId) + '"]',
+          );
+        }
+
+        function readRowQuantity(row) {
+          if (!row) {
+            return null;
+          }
+
+          const raw = String(row.dataset.rowQuantity || "").trim();
+          if (raw) {
+            const parsed = Number(raw);
+            if (Number.isFinite(parsed)) {
+              return parsed;
+            }
+          }
+
+          const cell = row.querySelector('td[data-column-key="quantity"] .cellValue');
+          const fallback = Number(String(cell?.textContent || "").trim());
+          return Number.isFinite(fallback) ? fallback : null;
+        }
+
+        function applyRowQuantity(row, quantity) {
+          if (!row || !Number.isFinite(quantity)) {
+            return;
+          }
+
+          row.dataset.rowQuantity = String(quantity);
+          const quantityCell = row.querySelector('td[data-column-key="quantity"] .cellValue');
+          if (quantityCell) {
+            quantityCell.textContent = String(quantity);
+          }
+        }
+
+        function pruneQuantityHistoryTail() {
+          if (state.quantityHistoryCursor >= state.quantityHistory.length - 1) {
+            return;
+          }
+
+          state.quantityHistory.splice(state.quantityHistoryCursor + 1);
+        }
+
+        function pushQuantityHistory(entry) {
+          pruneQuantityHistoryTail();
+          state.quantityHistory.push(entry);
+
+          if (state.quantityHistory.length > MAX_HISTORY) {
+            const overflow = state.quantityHistory.length - MAX_HISTORY;
+            state.quantityHistory.splice(0, overflow);
+          }
+
+          state.quantityHistoryCursor = state.quantityHistory.length - 1;
+        }
+
         function syncSelection() {
           if (!tablePanel) {
             return;
@@ -269,15 +333,17 @@ pub(super) fn script() -> String {
           syncSelection();
         }
 
-        async function zeroFocusedQuantity() {
-          const row = focusedRow();
-          const recordId = focusedRecordId();
-          if (!row || !Number.isFinite(recordId)) {
+        async function patchRecordQuantity(recordId, quantity, options = {}) {
+          if (!Number.isFinite(recordId) || !Number.isFinite(quantity)) {
             return;
           }
 
+          const row = findRowByRecordId(recordId);
+          const fromQuantity = Number.isFinite(options.fromQuantity)
+            ? options.fromQuantity
+            : readRowQuantity(row);
+
           try {
-            setStatus("Updating", "loading");
             const response = await fetch(
               "/host/integrations/servers/" +
                 encodeURIComponent(serverId) +
@@ -288,7 +354,7 @@ pub(super) fn script() -> String {
                 headers: {
                   "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ quantity: 0 }),
+                body: JSON.stringify({ quantity }),
               },
             );
 
@@ -303,20 +369,61 @@ pub(super) fn script() -> String {
               throw new Error(raw || "Nao foi possivel atualizar o record.");
             }
 
-            row.dataset.rowQuantity = "0";
-            const quantityCell = row.querySelector('td[data-column-key="quantity"] .cellValue');
-            if (quantityCell) {
-              quantityCell.textContent = "0";
+            applyRowQuantity(row, quantity);
+
+            if (options.action === "record" && Number.isFinite(fromQuantity) && fromQuantity !== quantity) {
+              pushQuantityHistory({
+                recordId,
+                from: fromQuantity,
+                to: quantity,
+              });
+            } else if (options.action === "undo") {
+              state.quantityHistoryCursor = Math.max(-1, options.historyIndex - 1);
+            } else if (options.action === "redo") {
+              state.quantityHistoryCursor = Math.min(
+                state.quantityHistory.length - 1,
+                options.historyIndex,
+              );
             }
 
-            setStatus("Live", "live");
             syncSelection();
+            return true;
           } catch (error) {
-            setStatus("Offline", "error");
             if (error instanceof Error) {
               console.error(error);
             }
+
+            return false;
           }
+        }
+
+        async function zeroFocusedQuantity() {
+          const recordId = focusedRecordId();
+          if (!Number.isFinite(recordId)) {
+            return false;
+          }
+
+          const row = focusedRow();
+          const fromQuantity = readRowQuantity(row);
+          return patchRecordQuantity(recordId, 0, {
+            action: "record",
+            fromQuantity,
+          });
+        }
+
+        async function applyQuantityHistoryStep(direction) {
+          const entryIndex =
+            direction < 0 ? state.quantityHistoryCursor : state.quantityHistoryCursor + 1;
+          const entry = state.quantityHistory[entryIndex];
+          if (!entry) {
+            return false;
+          }
+
+          return patchRecordQuantity(entry.recordId, direction < 0 ? entry.from : entry.to, {
+            action: direction < 0 ? "undo" : "redo",
+            historyIndex: entryIndex,
+            fromQuantity: direction < 0 ? entry.to : entry.from,
+          });
         }
 
         function handleTableKeydown(event) {
@@ -338,6 +445,20 @@ pub(super) fn script() -> String {
           if (key === "k" || key === "ArrowUp") {
             event.preventDefault();
             moveFocus(-1);
+            return;
+          }
+
+          if (key === "u" && !event.shiftKey) {
+            event.preventDefault();
+            event.stopPropagation();
+            void applyQuantityHistoryStep(-1);
+            return;
+          }
+
+          if (key === "U" || (key === "u" && event.shiftKey)) {
+            event.preventDefault();
+            event.stopPropagation();
+            void applyQuantityHistoryStep(1);
             return;
           }
 

@@ -347,6 +347,10 @@ const STYLE: &str = r#"
     vertical-align: bottom;
   }
 
+  .table tbody tr:first-child td {
+    padding-top: 12px;
+  }
+
   .columnName {
     color: var(--text);
     font-size: 0.8rem;

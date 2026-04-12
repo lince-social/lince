@@ -2,30 +2,27 @@ use maud::{Markup, html};
 
 pub(super) fn body() -> Markup {
     html! {
-        main id="app" class="tableWidget" data-signals="{ ui: { detailsOpen: false } }" {
+        main id="app" class="todoWidget" {
             (render_top_line())
 
             div class="contentShell" {
                 aside
                     id="todo-details"
                     class="detailsPanel"
-                    data-show="$ui.detailsOpen"
-                    style="display: none"
+                    hidden
                 {
-                    (render_blob_settings())
-                    div id="table-details" {
-                        (render_details_placeholder())
-                    }
+                    (render_details_placeholder())
                 }
 
-                div id="todo-blob-layer" class="blobLayer" aria-hidden="true" {}
-
-                section id="table-body" class="tablePanel" tabindex="0" aria-label="Todo data" {
-                    (render_body_placeholder())
+                section
+                    id="todo-list-panel"
+                    class="listPanel"
+                    tabindex="0"
+                    aria-label="Todo items"
+                {
+                    (render_list_placeholder())
                 }
             }
-
-            div id="table-stream-bootstrap" hidden="" {}
         }
     }
 }
@@ -33,54 +30,15 @@ pub(super) fn body() -> Markup {
 fn render_top_line() -> Markup {
     html! {
         header class="topLine" {
+            div class="topLineSpacer" {}
             div class="topLineActions" {
                 button
-                    id="table-status"
+                    id="todo-status"
                     class="statusDot"
                     type="button"
-                    data-tone="idle"
-                    aria-label="Waiting"
-                    title="Waiting"
-                    data-on:click="$ui.detailsOpen = !$ui.detailsOpen"
+                    aria-label="Connecting"
+                    title="Connecting"
                 {}
-            }
-        }
-    }
-}
-
-fn render_blob_settings() -> Markup {
-    html! {
-        div class="detailStack detailStack--settings" {
-            section class="detailCard detailCard--setting" {
-                div class="eyebrow" { "blob" }
-                div class="settingRow" {
-                    label class="toggleRow" for="blob-enabled" {
-                        input id="blob-enabled" type="checkbox" checked;
-                        span { "Liquid cursor" }
-                    }
-                    a class="licenseLink" href="blob.wgsl" target="_blank" rel="noreferrer" {
-                        "WGSL source"
-                    }
-                }
-
-                label class="settingBlock" for="blob-viscosity" {
-                    span class="settingLabel" { "Viscosity" }
-                    input id="blob-viscosity" type="range" min="0" max="100" value="62";
-                }
-
-                label class="settingBlock" for="blob-energy" {
-                    span class="settingLabel" { "Energy" }
-                    input id="blob-energy" type="range" min="0" max="100" value="56";
-                }
-
-                div class="settingBlock" {
-                    span class="settingLabel" { "Palette" }
-                    div class="colorTools" {
-                        input id="blob-color-input" class="colorInput" type="color" value="#51f3d2";
-                        button id="blob-add-color" class="button button--ghost" type="button" { "Add" }
-                    }
-                    div id="blob-palette" class="palette" aria-label="Blob color palette" {}
-                }
             }
         }
     }
@@ -91,46 +49,45 @@ fn render_details_placeholder() -> Markup {
         div class="detailStack" {
             section class="detailCard" {
                 div class="eyebrow" { "todo" }
-                div class="detailTitle" { "Head-only list" }
+                div id="todo-detail-source" class="detailTitle" { "Waiting for a list stream" }
                 div class="detailCopy" {
-                    "The backend streams HTML fragments into this panel. Only the head column is visible here. Use j / k to move, space to set the focused row quantity to zero, u to undo, and Shift-U to redo."
+                    "This widget listens to the normal view SSE stream and renders the active item as a list."
                 }
             }
 
             section class="detailCard" {
-                div class="eyebrow" { "todo" }
-                div class="detailTitle" { "Waiting for a snapshot" }
-                div class="detailCopy" {
-                    "The backend will stream HTML fragments into this panel after the first view snapshot arrives."
+                div class="eyebrow" { "active" }
+                div id="todo-detail-active" class="detailTitle" { "No active item" }
+                div id="todo-detail-preview" class="detailCopy" {
+                    "Open the stream to see the current item."
                 }
             }
 
             section class="detailCard" {
-                div class="eyebrow" { "metrics" }
+                div class="eyebrow" { "stream" }
+                div id="todo-detail-endpoint" class="codeBlock" {
+                    "Waiting for connection."
+                }
+            }
+
+            section class="detailCard" {
+                div class="eyebrow" { "stats" }
                 div class="detailGrid" {
-                    span class="pill" { "server: loading" }
-                    span class="pill" { "view: loading" }
-                    span class="pill" { "rows: 0" }
-                    span class="pill" { "columns: 0" }
-                    span class="pill" { "kind: loading" }
+                    span id="todo-detail-count" class="pill" { "items: 0" }
+                    span id="todo-detail-source-count" class="pill" { "active: 0" }
                 }
-            }
-
-            section class="detailCard" {
-                div class="eyebrow" { "sql" }
-                pre class="codeBlock" { "Waiting for the first snapshot." }
             }
         }
     }
 }
 
-fn render_body_placeholder() -> Markup {
+fn render_list_placeholder() -> Markup {
     html! {
-        div class="tableFrame" {
+        div class="listFrame" {
             div class="emptyState" {
-                div class="stateTitle" { "Opening stream" }
+                div class="stateTitle" { "Waiting for items" }
                 div class="stateCopy" {
-                    "The table markup is rendered on the backend and patched into this area as HTML fragments."
+                    "The normal view SSE stream will populate this list and keep one item active."
                 }
             }
         }

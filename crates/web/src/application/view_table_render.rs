@@ -432,6 +432,18 @@ fn render_details_panel_inner(
 ) -> Markup {
     html! {
         div class="detailStack" {
+            section class="detailCard detailCard--setting" {
+                div class="detailCopy" { "Mode" }
+                select
+                    id="table-mode"
+                    class="field field--select"
+                    aria-label="Mode"
+                {
+                    option value="common" { "Common" }
+                    option value="helix" { "Helix" }
+                }
+            }
+
             section class="detailCard" {
                 div class="eyebrow" { "table" }
                 div class="detailTitle" { (&table.title) }
@@ -464,6 +476,18 @@ fn render_error_details_inner(
 ) -> Markup {
     html! {
         div class="detailStack" {
+            section class="detailCard detailCard--setting" {
+                div class="detailCopy" { "Mode" }
+                select
+                    id="table-mode"
+                    class="field field--select"
+                    aria-label="Mode"
+                {
+                    option value="common" { "Common" }
+                    option value="helix" { "Helix" }
+                }
+            }
+
             section class="detailCard detailCard--error" {
                 div class="eyebrow" { "table" }
                 div class="detailTitle" { (&table.title) }
@@ -494,18 +518,27 @@ fn render_table_body_inner(table: &NormalizedTable) -> Markup {
             table class="table" {
                 thead {
                     tr {
-                        @for column in &table.columns {
-                            th scope="col" {
+                        @for (column_index, column) in table.columns.iter().enumerate() {
+                            th scope="col" data-column-index=(column_index) data-column-key=(column.key.as_str()) {
                                 div class="columnName" { (&column.label) }
                             }
                         }
                     }
                 }
                 tbody {
-                    @for row in &table.rows {
-                        tr data-row-key=(row.key.as_str()) {
-                            @for column in &table.columns {
-                                td class="cell" {
+                    @for (row_index, row) in table.rows.iter().enumerate() {
+                        tr
+                            data-row-key=(row.key.as_str())
+                            data-record-id=(row.key.strip_prefix("id:").unwrap_or(""))
+                            data-row-index=(row_index)
+                            data-row-quantity=(row.values.get("quantity").map(|value| value.as_str()).unwrap_or(""))
+                        {
+                            @for (column_index, column) in table.columns.iter().enumerate() {
+                                td
+                                    class="cell"
+                                    data-column-index=(column_index)
+                                    data-column-key=(column.key.as_str())
+                                {
                                     div class="cellValue" {
                                         (row.values
                                             .get(&column.key)

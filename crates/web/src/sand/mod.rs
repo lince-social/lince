@@ -160,9 +160,9 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 19] = [
         feature_flag: table::FEATURE_FLAG,
         source_builder: table::source,
     },
-    OfficialWidgetBuilder::Package {
+    OfficialWidgetBuilder::Html {
         feature_flag: todo::FEATURE_FLAG,
-        package_builder: todo::package,
+        source_builder: todo::source,
     },
     OfficialWidgetBuilder::Html {
         feature_flag: sand_publisher::FEATURE_FLAG,

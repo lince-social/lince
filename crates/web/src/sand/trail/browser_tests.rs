@@ -4,8 +4,8 @@ use {
         application::{
             ai_builder::AiBuilderState, backend_api::BackendApiService,
             kanban_actions::KanbanActionService, kanban_filters::KanbanFilterService,
-            kanban_streams::KanbanStreamService, state::AppState,
-            trail_widget::TrailWidgetService, widget_runtime::WidgetRuntimeService,
+            kanban_streams::KanbanStreamService, state::AppState, trail_widget::TrailWidgetService,
+            widget_runtime::WidgetRuntimeService,
         },
         domain::board::{BoardCard, BoardState, BoardWorkspace},
         infrastructure::{
@@ -23,15 +23,16 @@ use {
     },
     sqlx::SqlitePool,
     std::{env, error::Error, net::SocketAddr, path::PathBuf, process::Stdio, sync::Arc},
+    tokio::time::{Duration, sleep},
     tokio::{
         io::{AsyncBufReadExt, BufReader},
         process::Command as TokioCommand,
     },
-    tokio::time::{Duration, sleep},
 };
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-async fn browser_trail_open_keeps_done_and_children_visible() -> Result<(), Box<dyn Error + Send + Sync>> {
+async fn browser_trail_open_keeps_done_and_children_visible()
+-> Result<(), Box<dyn Error + Send + Sync>> {
     let _env_guard = TestEnvGuard::prepare()?;
     let db = Arc::new(connection().await?);
     sqlx::migrate!("../../migrations").run(&*db).await?;
@@ -46,7 +47,10 @@ async fn browser_trail_open_keeps_done_and_children_visible() -> Result<(), Box<
     let auth = AppAuth::new();
     let board_state = BoardStateStore::new().map_err(std::io::Error::other)?;
     let organs = OrganStore::new(db.clone(), writer.clone());
-    let backend = BackendApiService::new(services.clone(), Arc::new("trail-browser-test-secret".into()));
+    let backend = BackendApiService::new(
+        services.clone(),
+        Arc::new("trail-browser-test-secret".into()),
+    );
     let manas = ManasGateway::new()?;
     let package_catalog = PackageCatalogStore::new().map_err(std::io::Error::other)?;
     let app_state = AppState {
@@ -107,12 +111,10 @@ async fn browser_trail_open_keeps_done_and_children_visible() -> Result<(), Box<
 
     server_task.abort();
 
-    if chromium_output.trim() != "pass"
-    {
+    if chromium_output.trim() != "pass" {
         return Err(format!(
             "browser trail regression failed\nstdout:\n{}\nstderr:\n{}",
-            chromium_output,
-            ""
+            chromium_output, ""
         )
         .into());
     }
@@ -120,7 +122,9 @@ async fn browser_trail_open_keeps_done_and_children_visible() -> Result<(), Box<
     Ok(())
 }
 
-async fn seed_browser_board(board_state: &BoardStateStore) -> Result<(), Box<dyn Error + Send + Sync>> {
+async fn seed_browser_board(
+    board_state: &BoardStateStore,
+) -> Result<(), Box<dyn Error + Send + Sync>> {
     let trail_package_html = String::new();
 
     let next_state = BoardState {
@@ -130,33 +134,31 @@ async fn seed_browser_board(board_state: &BoardStateStore) -> Result<(), Box<dyn
         workspaces: vec![BoardWorkspace {
             id: "space-1".into(),
             name: "Area 1".into(),
-            cards: vec![
-                BoardCard {
-                    id: "trail-browser-widget".into(),
-                    kind: "package".into(),
-                    title: "Trail Relation".into(),
-                    description: "Browser regression trail".into(),
-                    text: String::new(),
-                    html: trail_package_html,
-                    author: "Lince Labs".into(),
-                    permissions: vec![
-                        "bridge_state".into(),
-                        "read_view_stream".into(),
-                        "write_records".into(),
-                        "write_table".into(),
-                    ],
-                    package_name: "trail_relation.lince".into(),
-                    requires_server: true,
-                    server_id: "local-dev".into(),
-                    view_id: None,
-                    streams_enabled: true,
-                    widget_state: serde_json::json!({}),
-                    x: 1,
-                    y: 1,
-                    w: 7,
-                    h: 6,
-                },
-            ],
+            cards: vec![BoardCard {
+                id: "trail-browser-widget".into(),
+                kind: "package".into(),
+                title: "Trail Relation".into(),
+                description: "Browser regression trail".into(),
+                text: String::new(),
+                html: trail_package_html,
+                author: "Lince Labs".into(),
+                permissions: vec![
+                    "bridge_state".into(),
+                    "read_view_stream".into(),
+                    "write_records".into(),
+                    "write_table".into(),
+                ],
+                package_name: "trail_relation.lince".into(),
+                requires_server: true,
+                server_id: "local-dev".into(),
+                view_id: None,
+                streams_enabled: true,
+                widget_state: serde_json::json!({}),
+                x: 1,
+                y: 1,
+                w: 7,
+                h: 6,
+            }],
         }],
     };
 
@@ -170,12 +172,42 @@ async fn seed_browser_board(board_state: &BoardStateStore) -> Result<(), Box<dyn
 
 async fn seed_browser_records(db: &SqlitePool) -> Result<(), Box<dyn Error + Send + Sync>> {
     let inserts = [
-        (1_i64, 1_f64, "Alpha Root", "Root record that should stay Done"),
-        (2_i64, 0_f64, "Alpha Child", "Child should appear when the root is done"),
-        (30_i64, 1_f64, "Chain Root", "Root record used to test recursive reveal"),
-        (31_i64, 0_f64, "Chain Child", "Child should become Ready after the root is done"),
-        (32_i64, 0_f64, "Chain Grandchild", "Grandchild should become Ready after its parent is done"),
-        (33_i64, 0_f64, "Chain Great-Grandchild", "This should become visible after the chain propagates"),
+        (
+            1_i64,
+            1_f64,
+            "Alpha Root",
+            "Root record that should stay Done",
+        ),
+        (
+            2_i64,
+            0_f64,
+            "Alpha Child",
+            "Child should appear when the root is done",
+        ),
+        (
+            30_i64,
+            1_f64,
+            "Chain Root",
+            "Root record used to test recursive reveal",
+        ),
+        (
+            31_i64,
+            0_f64,
+            "Chain Child",
+            "Child should become Ready after the root is done",
+        ),
+        (
+            32_i64,
+            0_f64,
+            "Chain Grandchild",
+            "Grandchild should become Ready after its parent is done",
+        ),
+        (
+            33_i64,
+            0_f64,
+            "Chain Great-Grandchild",
+            "This should become visible after the chain propagates",
+        ),
     ];
 
     for (id, quantity, head, body) in inserts {
@@ -269,9 +301,10 @@ async fn run_chromium(addr: SocketAddr) -> Result<String, Box<dyn Error + Send +
         .spawn()
         .map_err(|error| format!("failed to launch chromium: {error}"))?;
 
-    let stderr = chromium.stderr.take().ok_or_else(|| {
-        std::io::Error::other("chromium stderr was not piped")
-    })?;
+    let stderr = chromium
+        .stderr
+        .take()
+        .ok_or_else(|| std::io::Error::other("chromium stderr was not piped"))?;
     let mut stderr_lines = BufReader::new(stderr).lines();
     let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
     let mut remote_debug_port = None;

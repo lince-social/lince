@@ -37,7 +37,9 @@ fn embedded_asset(path: &str) -> Option<EmbeddedAsset> {
         "presentation/board/widget-bridge.js" => Some(js(include_bytes!(
             "../../../static/presentation/board/widget-bridge.js"
         ))),
-        "vendored/d3.v7.min.js" => Some(js(include_bytes!("../../../src/sand/relations/d3.v7.min.js"))),
+        "vendored/d3.v7.min.js" => Some(js(include_bytes!(
+            "../../../src/sand/relations/d3.v7.min.js"
+        ))),
         "vendored/datastar.js" => Some(js(include_bytes!("../../../static/vendored/datastar.js"))),
         "vendored/DatastarReference" => Some(text(include_bytes!(
             "../../../static/vendored/DatastarReference"

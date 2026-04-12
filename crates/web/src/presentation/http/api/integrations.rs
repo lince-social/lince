@@ -195,10 +195,7 @@ pub async fn proxy_manas_view_table_stream(
 
     Ok(render_view_table_stream(
         ViewTableStreamSource::Remote { response },
-        ViewTableRenderContext {
-            server_id,
-            view_id,
-        },
+        ViewTableRenderContext { server_id, view_id },
     ))
 }
 
@@ -636,41 +633,37 @@ fn render_view_table_html_events(html: ViewTableRenderedHtml) -> Vec<Event> {
     ]
 }
 
-fn render_view_table_error_events(
-    context: ViewTableRenderContext,
-    message: String,
-) -> Vec<Event> {
+fn render_view_table_error_events(context: ViewTableRenderContext, message: String) -> Vec<Event> {
     render_view_table_html_events(render_error_payload(context, &message))
 }
 
 fn render_datastar_patch_event(selector: &str, mode: &str, elements: String) -> Event {
-    Event::default()
-        .event("datastar-patch-elements")
-        .data(
-            json!({
-                "selector": selector,
-                "mode": mode,
-                "namespace": "html",
-                "elements": elements,
-            })
-            .to_string(),
-        )
+    Event::default().event("datastar-patch-elements").data(
+        json!({
+            "selector": selector,
+            "mode": mode,
+            "namespace": "html",
+            "elements": elements,
+        })
+        .to_string(),
+    )
 }
 
 fn extract_error_message(payload: &str) -> String {
     serde_json::from_str::<Value>(payload)
         .ok()
-        .and_then(|value| value.get("error").and_then(Value::as_str).map(str::to_string))
+        .and_then(|value| {
+            value
+                .get("error")
+                .and_then(Value::as_str)
+                .map(str::to_string)
+        })
         .unwrap_or_else(|| payload.to_string())
 }
 
 enum ViewTableStreamSource {
-    Local {
-        handle: SubscriptionHandle,
-    },
-    Remote {
-        response: reqwest::Response,
-    },
+    Local { handle: SubscriptionHandle },
+    Remote { response: reqwest::Response },
 }
 
 #[derive(Default)]

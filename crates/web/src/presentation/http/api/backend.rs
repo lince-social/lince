@@ -86,10 +86,7 @@ pub fn router() -> Router<AppState> {
             "/table/record/quantities",
             post(batch_update_record_quantities),
         )
-        .route(
-            "/karma",
-            get(list_karma_rows).post(create_karma_row),
-        )
+        .route("/karma", get(list_karma_rows).post(create_karma_row))
         .route(
             "/karma/{id}",
             get(get_karma_row)

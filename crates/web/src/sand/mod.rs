@@ -2,7 +2,6 @@ mod bucket_image_view;
 mod calendar;
 mod chess;
 mod doom_portal;
-mod extra_simple;
 mod general_creation;
 #[path = "kanban_record_view/mod.rs"]
 mod kanban_record_view;
@@ -13,18 +12,15 @@ mod local_terminal;
 mod markdown_notes;
 mod ops_clock;
 mod organ_management;
-mod record_crud;
 #[path = "relations/mod.rs"]
 mod relations;
 mod sand_publisher;
 #[path = "shared_markdown/mod.rs"]
 mod shared_markdown;
 mod spotify_control;
-mod tasklist;
-mod tasks_table;
-mod trail;
 mod table;
 mod todo;
+mod trail;
 mod weather;
 
 use {
@@ -103,14 +99,10 @@ impl OfficialWidgetBuilder {
     }
 }
 
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 23] = [
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 19] = [
     OfficialWidgetBuilder::Html {
         feature_flag: bucket_image_view::FEATURE_FLAG,
         source_builder: bucket_image_view::source,
-    },
-    OfficialWidgetBuilder::Html {
-        feature_flag: extra_simple::FEATURE_FLAG,
-        source_builder: extra_simple::source,
     },
     OfficialWidgetBuilder::Html {
         feature_flag: calendar::FEATURE_FLAG,
@@ -168,9 +160,9 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 23] = [
         feature_flag: table::FEATURE_FLAG,
         source_builder: table::source,
     },
-    OfficialWidgetBuilder::Html {
+    OfficialWidgetBuilder::Package {
         feature_flag: todo::FEATURE_FLAG,
-        source_builder: todo::source,
+        package_builder: todo::package,
     },
     OfficialWidgetBuilder::Html {
         feature_flag: sand_publisher::FEATURE_FLAG,
@@ -179,18 +171,6 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 23] = [
     OfficialWidgetBuilder::Html {
         feature_flag: spotify_control::FEATURE_FLAG,
         source_builder: spotify_control::source,
-    },
-    OfficialWidgetBuilder::Html {
-        feature_flag: record_crud::FEATURE_FLAG,
-        source_builder: record_crud::source,
-    },
-    OfficialWidgetBuilder::Html {
-        feature_flag: tasklist::FEATURE_FLAG,
-        source_builder: tasklist::source,
-    },
-    OfficialWidgetBuilder::Html {
-        feature_flag: tasks_table::FEATURE_FLAG,
-        source_builder: tasks_table::source,
     },
     OfficialWidgetBuilder::Html {
         feature_flag: weather::FEATURE_FLAG,

@@ -3,11 +3,14 @@ pub(super) fn script() -> String {
       (() => {
         const frame = window.frameElement;
         const statusPill = document.getElementById("table-status");
+        const tableDetails = document.getElementById("table-details");
         const bootstrap = document.getElementById("table-stream-bootstrap");
         const tablePanel = document.getElementById("table-body");
         const datastarReady = import("/static/vendored/datastar.js").catch(() => null);
         const serverId = String(frame?.dataset?.linceServerId || "").trim();
         const viewId = Number(String(frame?.dataset?.linceViewId || "").trim());
+        const instanceId = String(frame?.dataset?.packageInstanceId || "preview").trim() || "preview";
+        const settingsKey = "table-nerd/" + instanceId;
 
         const state = {
           controller: null,
@@ -16,7 +19,14 @@ pub(super) fn script() -> String {
           scrollTimer: null,
           streamGeneration: 0,
           streamUrl: "",
+          nerdMode: false,
+          focusedRowIndex: 0,
+          focusedColumnIndex: 0,
         };
+
+        function clamp(value, min, max) {
+          return Math.min(max, Math.max(min, value));
+        }
 
         function setStatus(text, tone = "idle") {
           if (!statusPill) {
@@ -25,6 +35,52 @@ pub(super) fn script() -> String {
 
           statusPill.textContent = text;
           statusPill.dataset.tone = tone;
+        }
+
+        function readSettings() {
+          try {
+            const raw = window.localStorage?.getItem?.(settingsKey);
+            if (!raw) {
+              return null;
+            }
+
+            const parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== "object") {
+              return null;
+            }
+
+            return {
+              nerdMode: String(parsed.mode || "common") === "helix",
+            };
+          } catch {
+            return null;
+          }
+        }
+
+        function writeSettings() {
+          try {
+            window.localStorage?.setItem?.(
+              settingsKey,
+              JSON.stringify({
+                mode: state.nerdMode ? "helix" : "common",
+              }),
+            );
+          } catch {
+            // ignore storage failures
+          }
+        }
+
+        function currentModeSelect() {
+          return document.getElementById("table-mode");
+        }
+
+        function syncModeSelect() {
+          const select = currentModeSelect();
+          if (!select) {
+            return;
+          }
+
+          select.value = state.nerdMode ? "helix" : "common";
         }
 
         function buildStreamUrl() {
@@ -107,9 +163,7 @@ pub(super) fn script() -> String {
             tablePanel.dataset.scrolling = "true";
             stopScrollTimer();
             state.scrollTimer = window.setTimeout(() => {
-              if (tablePanel.dataset.scrolling === "true") {
-                delete tablePanel.dataset.scrolling;
-              }
+              delete tablePanel.dataset.scrolling;
               state.scrollTimer = null;
             }, 160);
             return;
@@ -117,6 +171,154 @@ pub(super) fn script() -> String {
 
           delete tablePanel.dataset.scrolling;
           stopScrollTimer();
+        }
+
+        function clearSelectionAttributes() {
+          if (!tablePanel) {
+            return;
+          }
+
+          tablePanel
+            .querySelectorAll("[data-row-focused], [data-focused-cell]")
+            .forEach((node) => {
+              delete node.dataset.rowFocused;
+              delete node.dataset.focusedCell;
+            });
+        }
+
+        function rows() {
+          return tablePanel
+            ? Array.from(tablePanel.querySelectorAll("tbody tr"))
+            : [];
+        }
+
+        function columns() {
+          return tablePanel
+            ? Array.from(tablePanel.querySelectorAll("thead th"))
+            : [];
+        }
+
+        function focusedRow() {
+          return rows()[state.focusedRowIndex] || null;
+        }
+
+        function focusedCell() {
+          const row = focusedRow();
+          if (!row) {
+            return null;
+          }
+
+          return row.querySelectorAll("td")[state.focusedColumnIndex] || null;
+        }
+
+        function syncSelection() {
+          if (!tablePanel) {
+            return;
+          }
+
+          const currentRows = rows();
+          const currentColumns = columns();
+          if (!currentRows.length) {
+            state.focusedRowIndex = 0;
+            state.focusedColumnIndex = 0;
+            delete tablePanel.dataset.mode;
+            clearSelectionAttributes();
+            return;
+          }
+
+          state.focusedRowIndex = clamp(state.focusedRowIndex, 0, currentRows.length - 1);
+          state.focusedColumnIndex = clamp(
+            state.focusedColumnIndex,
+            0,
+            Math.max(0, currentColumns.length - 1),
+          );
+
+          clearSelectionAttributes();
+          syncModeSelect();
+
+          if (state.nerdMode) {
+            tablePanel.dataset.mode = "helix";
+            currentRows.forEach((row, rowIndex) => {
+              row.dataset.rowIndex = String(rowIndex);
+              if (rowIndex === state.focusedRowIndex) {
+                row.dataset.rowFocused = "true";
+                row.scrollIntoView({ block: "nearest", inline: "nearest" });
+              }
+            });
+
+          } else {
+            delete tablePanel.dataset.mode;
+            currentRows.forEach((row, rowIndex) => {
+              row.dataset.rowIndex = String(rowIndex);
+            });
+          }
+        }
+
+        function setNerdMode(enabled) {
+          state.nerdMode = enabled === true;
+          writeSettings();
+          syncSelection();
+        }
+
+        function moveFocus(rowDelta, columnDelta) {
+          const currentRows = rows();
+          const currentColumns = columns();
+          if (!currentRows.length) {
+            return;
+          }
+
+          if (rowDelta !== 0) {
+            state.focusedRowIndex = clamp(
+              state.focusedRowIndex + rowDelta,
+              0,
+              currentRows.length - 1,
+            );
+          }
+
+          if (columnDelta !== 0 && currentColumns.length) {
+            state.focusedColumnIndex = clamp(
+              state.focusedColumnIndex + columnDelta,
+              0,
+              currentColumns.length - 1,
+            );
+          }
+
+          syncSelection();
+        }
+
+        function handleTableKeydown(event) {
+          if (!state.nerdMode || !tablePanel) {
+            return;
+          }
+
+          if (event.metaKey || event.ctrlKey || event.altKey) {
+            return;
+          }
+
+          const key = event.key;
+          if (key === "j" || key === "ArrowDown") {
+            event.preventDefault();
+            moveFocus(1, 0);
+            return;
+          }
+
+          if (key === "k" || key === "ArrowUp") {
+            event.preventDefault();
+            moveFocus(-1, 0);
+            return;
+          }
+
+          if (key === "h" || key === "ArrowLeft") {
+            event.preventDefault();
+            moveFocus(0, -1);
+            return;
+          }
+
+          if (key === "l" || key === "ArrowRight") {
+            event.preventDefault();
+            moveFocus(0, 1);
+            return;
+          }
         }
 
         function clearStream() {
@@ -255,24 +457,64 @@ pub(super) fn script() -> String {
           },
         };
 
-        datastarReady.then(() => {
-          if (tablePanel) {
-            const onScrollActivity = () => setScrolling(true);
-            tablePanel.addEventListener("scroll", onScrollActivity, { passive: true });
-            tablePanel.addEventListener("wheel", onScrollActivity, { passive: true });
-            tablePanel.addEventListener("touchstart", onScrollActivity, { passive: true });
-            tablePanel.addEventListener("touchmove", onScrollActivity, { passive: true });
-            window.addEventListener("blur", () => setScrolling(false), { passive: true });
+        if (tablePanel) {
+          tablePanel.tabIndex = 0;
+          tablePanel.addEventListener("keydown", handleTableKeydown);
+          tablePanel.addEventListener("pointerdown", () => {
+            if (!state.nerdMode) {
+              return;
+            }
+            window.requestAnimationFrame(() => {
+              tablePanel.focus({ preventScroll: true });
+            });
+          });
+          tablePanel.addEventListener("focus", () => {
+            if (state.nerdMode) {
+              syncSelection();
+            }
+          });
+
+          const observer = new MutationObserver(() => {
+            syncSelection();
+          });
+          observer.observe(tablePanel, { childList: true, subtree: true });
+        }
+
+        const storedSettings = readSettings();
+        if (storedSettings) {
+          state.nerdMode = storedSettings.nerdMode;
+        }
+        syncModeSelect();
+
+        document.addEventListener("change", (event) => {
+          const target = event.target;
+          if (!(target instanceof HTMLSelectElement) || target.id !== "table-mode") {
+            return;
           }
 
+          setNerdMode(target.value === "helix");
+          if (state.nerdMode && tablePanel) {
+            tablePanel.focus({ preventScroll: true });
+          }
+        });
+
+        datastarReady.then(() => {
           state.streamUrl = buildStreamUrl();
           if (!state.streamUrl) {
             setStatus("Configurar", "idle");
             return;
           }
 
+          syncSelection();
           connectStream(false);
         });
+
+        if (tableDetails) {
+          const observer = new MutationObserver(() => {
+            syncModeSelect();
+          });
+          observer.observe(tableDetails, { childList: true, subtree: true });
+        }
       })();
     "#.to_string()
 }

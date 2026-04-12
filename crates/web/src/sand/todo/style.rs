@@ -84,17 +84,26 @@ const STYLE: &str = r#"
     min-width: 0;
     height: 100%;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
     gap: 0;
+    position: relative;
     overflow: hidden;
   }
 
   .detailsPanel {
     min-height: 0;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(360px, 100%);
     padding: 12px 12px 14px;
     border-left: 1px solid var(--line);
-    background: rgba(255, 255, 255, 0.014);
+    background: #0b1017;
+    box-shadow: -28px 0 48px rgba(0, 0, 0, 0.35);
+    opacity: 1;
+    z-index: 2;
     overflow: auto;
   }
 
@@ -108,6 +117,7 @@ const STYLE: &str = r#"
     overscroll-behavior: contain;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    outline: none;
   }
 
   .tablePanel::-webkit-scrollbar {
@@ -132,6 +142,27 @@ const STYLE: &str = r#"
     width: max-content;
   }
 
+  .tablePanel[data-mode="helix"] tr[data-row-focused="true"] td[data-column-key="head"] {
+    position: relative;
+  }
+
+  .tablePanel[data-mode="helix"] tr[data-row-focused="true"] td[data-column-key="head"]::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--accent);
+    border-radius: 999px;
+    opacity: 1;
+  }
+
+  .tablePanel thead th[data-column-key]:not([data-column-key="head"]),
+  .tablePanel tbody td[data-column-key]:not([data-column-key="head"]) {
+    display: none;
+  }
+
   .detailStack {
     display: grid;
     gap: 12px;
@@ -143,12 +174,17 @@ const STYLE: &str = r#"
     padding: 10px 12px 12px;
     border: 1px solid var(--line);
     border-radius: 14px;
-    background: rgba(255, 255, 255, 0.03);
+    background: #111720;
+  }
+
+  .detailCard--setting {
+    gap: 10px;
+    align-items: start;
   }
 
   .detailCard--error {
     border-color: rgba(255, 151, 168, 0.24);
-    background: rgba(74, 28, 42, 0.16);
+    background: #201018;
   }
 
   .eyebrow {
@@ -189,9 +225,24 @@ const STYLE: &str = r#"
     padding: 0 11px;
     border: 1px solid var(--line);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.03);
+    background: #121923;
     color: var(--text);
     white-space: nowrap;
+  }
+
+  .field {
+    width: 100%;
+    min-height: 32px;
+    padding: 0 11px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--text);
+    background: #121923;
+  }
+
+  .field:focus {
+    border-color: var(--line-strong);
+    outline: none;
   }
 
   .pill {
@@ -209,31 +260,43 @@ const STYLE: &str = r#"
   .status[data-tone="live"] {
     color: #daf7e6;
     border-color: rgba(141, 240, 185, 0.22);
-    background: rgba(19, 46, 32, 0.72);
+    background: #102017;
   }
 
   .status[data-tone="loading"] {
     color: #f7e6bf;
     border-color: rgba(243, 199, 123, 0.22);
-    background: rgba(44, 34, 15, 0.72);
+    background: #231a10;
   }
 
   .status[data-tone="error"] {
     color: #ffd9df;
     border-color: rgba(255, 151, 168, 0.22);
-    background: rgba(57, 21, 31, 0.72);
+    background: #231017;
   }
 
   .button {
     cursor: pointer;
     color: var(--text);
-    background: rgba(255, 255, 255, 0.03);
+    background: #121923;
     transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+  }
+
+  .button--ghost {
+    border-color: transparent;
+    color: var(--muted);
+    background: #121923;
+  }
+
+  .button--ghost:hover:not(:disabled),
+  .button--ghost:focus-visible {
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.04);
   }
 
   .button:hover:not(:disabled) {
     border-color: var(--line-strong);
-    background: rgba(255, 255, 255, 0.06);
+    background: #18202d;
   }
 
   .button:disabled {
@@ -244,7 +307,7 @@ const STYLE: &str = r#"
   .button--accent {
     color: #dfebff;
     border-color: rgba(138, 180, 255, 0.24);
-    background: rgba(47, 66, 104, 0.28);
+    background: #22314d;
   }
 
   .codeBlock {
@@ -252,7 +315,7 @@ const STYLE: &str = r#"
     padding: 10px 12px;
     border-radius: 12px;
     border: 1px solid var(--line);
-    background: rgba(0, 0, 0, 0.22);
+    background: #0a0f15;
     color: #d7e3f2;
     font-family: var(--mono);
     font-size: 0.72rem;
@@ -303,6 +366,20 @@ const STYLE: &str = r#"
     line-height: 1.45;
     white-space: pre-wrap;
     word-break: break-word;
+  }
+
+  .field--select {
+    appearance: none;
+    min-width: 0;
+    padding-right: 28px;
+    background-image:
+      linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+      linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position:
+      calc(100% - 14px) 52%,
+      calc(100% - 9px) 52%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
   }
 
   .emptyState,

@@ -15,7 +15,7 @@ pub(super) fn body() -> Markup {
                     (render_details_placeholder())
                 }
 
-                section id="table-body" class="tablePanel" {
+                section id="table-body" class="tablePanel" tabindex="0" aria-label="Todo data" {
                     (render_body_placeholder())
                 }
             }
@@ -28,7 +28,7 @@ pub(super) fn body() -> Markup {
 fn render_top_line() -> Markup {
     html! {
         header class="topLine" {
-            div class="topLineTitle" { "Table" }
+            div class="topLineTitle" { "Todo" }
             div class="topLineActions" {
                 span id="table-status" class="status" data-tone="idle" { "Waiting" }
                 button
@@ -48,7 +48,15 @@ fn render_details_placeholder() -> Markup {
     html! {
         div class="detailStack" {
             section class="detailCard" {
-                div class="eyebrow" { "table" }
+                div class="eyebrow" { "todo" }
+                div class="detailTitle" { "Head-only list" }
+                div class="detailCopy" {
+                    "The backend streams HTML fragments into this panel. Only the head column is visible here. Use j / k to move and space to set the focused row quantity to zero."
+                }
+            }
+
+            section class="detailCard" {
+                div class="eyebrow" { "todo" }
                 div class="detailTitle" { "Waiting for a snapshot" }
                 div class="detailCopy" {
                     "The backend will stream HTML fragments into this panel after the first view snapshot arrives."

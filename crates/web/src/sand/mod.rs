@@ -23,7 +23,8 @@ mod spotify_control;
 mod tasklist;
 mod tasks_table;
 mod trail;
-mod view_table_editor;
+mod table;
+mod todo;
 mod weather;
 
 use {
@@ -102,7 +103,7 @@ impl OfficialWidgetBuilder {
     }
 }
 
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 22] = [
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 23] = [
     OfficialWidgetBuilder::Html {
         feature_flag: bucket_image_view::FEATURE_FLAG,
         source_builder: bucket_image_view::source,
@@ -164,8 +165,12 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 22] = [
         source_builder: ops_clock::source,
     },
     OfficialWidgetBuilder::Html {
-        feature_flag: view_table_editor::FEATURE_FLAG,
-        source_builder: view_table_editor::source,
+        feature_flag: table::FEATURE_FLAG,
+        source_builder: table::source,
+    },
+    OfficialWidgetBuilder::Html {
+        feature_flag: todo::FEATURE_FLAG,
+        source_builder: todo::source,
     },
     OfficialWidgetBuilder::Html {
         feature_flag: sand_publisher::FEATURE_FLAG,

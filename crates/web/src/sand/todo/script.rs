@@ -6,6 +6,13 @@ pub(super) fn script() -> String {
   const statusDot = document.getElementById("todo-status");
   const detailsPanel = document.getElementById("todo-details");
   const listPanel = document.getElementById("todo-list-panel");
+  const blobLayer = document.getElementById("todo-blob-layer");
+  const blobEnabledInput = document.getElementById("blob-enabled");
+  const blobViscosityInput = document.getElementById("blob-viscosity");
+  const blobEnergyInput = document.getElementById("blob-energy");
+  const blobColorInput = document.getElementById("blob-color-input");
+  const blobAddColorButton = document.getElementById("blob-add-color");
+  const blobPalette = document.getElementById("blob-palette");
   const detailSource = document.getElementById("todo-detail-source");
   const detailActive = document.getElementById("todo-detail-active");
   const detailPreview = document.getElementById("todo-detail-preview");
@@ -14,6 +21,10 @@ pub(super) fn script() -> String {
   const detailSourceCount = document.getElementById("todo-detail-source-count");
   const serverId = String(frame?.dataset?.linceServerId || "").trim();
   const viewId = Number(String(frame?.dataset?.linceViewId || "").trim());
+  const instanceId = String(frame?.dataset?.packageInstanceId || "preview").trim() || "preview";
+  const blobSettingsKey = "todo-blob/" + instanceId;
+  const defaultBlobColors = ["#51f3d2", "#7cc7ff", "#f5d36a"];
+  const MAX_HISTORY = 100;
 
   const state = {
     controller: null,
@@ -24,8 +35,39 @@ pub(super) fn script() -> String {
     items: [],
     activeIndex: -1,
     snapshot: null,
+    quantityHistory: [],
+    quantityHistoryCursor: -1,
     detailsOpen: false,
     chromeTimer: null,
+    chromeHovered: false,
+    blobSettings: {
+      enabled: false,
+      viscosity: 0.62,
+      energy: 0.56,
+      colors: defaultBlobColors.slice(),
+    },
+    blob: {
+      adapter: null,
+      device: null,
+      context: null,
+      canvas: null,
+      pipeline: null,
+      bindGroup: null,
+      uniformBuffer: null,
+      uniformData: new Float32Array(24),
+      ready: false,
+      setupPending: false,
+      frameId: 0,
+      visible: 0,
+      current: { x: 0, y: 0 },
+      target: { x: 0, y: 0 },
+      phase: "idle",
+      phaseStarted: 0,
+      origin: null,
+      width: 0,
+      height: 0,
+      dpr: 1,
+    },
   };
 
   function clamp(value, min, max) {
@@ -53,10 +95,9 @@ pub(super) fn script() -> String {
       if (state.chromeTimer) {
         window.clearTimeout(state.chromeTimer);
       }
-      state.chromeTimer = window.setTimeout(() => {
-        delete appRoot.dataset.pointerActive;
-        state.chromeTimer = null;
-      }, 900);
+      if (!state.chromeHovered) {
+        scheduleChromeHide();
+      }
       return;
     }
 
@@ -67,10 +108,137 @@ pub(super) fn script() -> String {
     }
   }
 
+  function scheduleChromeHide() {
+    if (!appRoot) {
+      return;
+    }
+
+    if (state.chromeTimer) {
+      window.clearTimeout(state.chromeTimer);
+    }
+
+    if (state.chromeHovered) {
+      appRoot.dataset.pointerActive = "true";
+      state.chromeTimer = null;
+      return;
+    }
+
+    state.chromeTimer = window.setTimeout(() => {
+      if (state.chromeHovered) {
+        return;
+      }
+      delete appRoot.dataset.pointerActive;
+      state.chromeTimer = null;
+    }, 900);
+  }
+
   function setDetailsOpen(open) {
     state.detailsOpen = Boolean(open);
     if (detailsPanel) {
       detailsPanel.hidden = !state.detailsOpen;
+    }
+  }
+
+  function lerp(from, to, amount) {
+    return from + (to - from) * amount;
+  }
+
+  function easeOutCubic(value) {
+    const next = clamp(value, 0, 1) - 1;
+    return next * next * next + 1;
+  }
+
+  function normalizeHexColor(value) {
+    const match = String(value || "").trim().match(/^#?([0-9a-f]{6})$/i);
+    return match ? "#" + match[1].toLowerCase() : null;
+  }
+
+  function hexToRgb(color) {
+    const normalized = normalizeHexColor(color) || defaultBlobColors[0];
+    const value = Number.parseInt(normalized.slice(1), 16);
+    return [
+      ((value >> 16) & 255) / 255,
+      ((value >> 8) & 255) / 255,
+      (value & 255) / 255,
+    ];
+  }
+
+  function readBlobSettings() {
+    try {
+      const raw = window.localStorage?.getItem?.(blobSettingsKey);
+      if (!raw) {
+        return null;
+      }
+
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") {
+        return null;
+      }
+
+      const colors = Array.isArray(parsed.colors)
+        ? parsed.colors.map(normalizeHexColor).filter(Boolean).slice(0, 8)
+        : [];
+
+      return {
+        enabled: parsed.enabled === true,
+        viscosity: clamp(Number(parsed.viscosity ?? 0.62), 0, 1),
+        energy: clamp(Number(parsed.energy ?? 0.56), 0, 1),
+        colors: colors.length ? colors : defaultBlobColors.slice(),
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  function writeBlobSettings() {
+    try {
+      window.localStorage?.setItem?.(
+        blobSettingsKey,
+        JSON.stringify({
+          enabled: state.blobSettings.enabled,
+          viscosity: state.blobSettings.viscosity,
+          energy: state.blobSettings.energy,
+          colors: state.blobSettings.colors,
+        }),
+      );
+    } catch {
+      // ignore storage failures
+    }
+  }
+
+  function syncBlobControls() {
+    if (blobEnabledInput instanceof HTMLInputElement) {
+      blobEnabledInput.checked = state.blobSettings.enabled;
+    }
+
+    if (blobViscosityInput instanceof HTMLInputElement) {
+      blobViscosityInput.value = String(Math.round(state.blobSettings.viscosity * 100));
+    }
+
+    if (blobEnergyInput instanceof HTMLInputElement) {
+      blobEnergyInput.value = String(Math.round(state.blobSettings.energy * 100));
+    }
+
+    if (blobColorInput instanceof HTMLInputElement) {
+      blobColorInput.value = state.blobSettings.colors[0] || defaultBlobColors[0];
+    }
+  }
+
+  function renderBlobPalette() {
+    if (!blobPalette) {
+      return;
+    }
+
+    blobPalette.replaceChildren();
+    for (const color of state.blobSettings.colors) {
+      const swatch = document.createElement("button");
+      swatch.type = "button";
+      swatch.className = "paletteSwatch";
+      swatch.dataset.color = color;
+      swatch.style.background = color;
+      swatch.title = "Remove " + color;
+      swatch.setAttribute("aria-label", "Remove blob color " + color);
+      blobPalette.appendChild(swatch);
     }
   }
 
@@ -199,7 +367,7 @@ pub(super) fn script() -> String {
 
   function normalizeItem(raw, index) {
     const object = asObject(raw);
-    const id = readString(
+    const recordId = readString(
       object.record_id,
       object.recordId,
       object.todo_id,
@@ -217,6 +385,13 @@ pub(super) fn script() -> String {
       object.value,
       typeof raw === "string" || typeof raw === "number" ? raw : "",
     );
+    const quantity = readNumber(
+      object.quantity,
+      object.qty,
+      object.amount,
+      object.row_quantity,
+      object.rowQuantity,
+    );
     const body = readString(
       object.body,
       object.description,
@@ -224,16 +399,16 @@ pub(super) fn script() -> String {
       object.note,
       object.details,
     );
-    const quantity = readNumber(object.quantity, object.amount, object.count);
     const active = Boolean(
       object.active ?? object.is_active ?? object.focused ?? object.selected,
     );
 
     return {
-      id,
+      id: recordId,
+      recordId,
       title: title || `Item ${index + 1}`,
-      body,
       quantity,
+      body,
       active,
       raw,
     };
@@ -245,6 +420,167 @@ pub(super) fn script() -> String {
     }
 
     return String(item.id || item.title || "");
+  }
+
+  function focusedItem() {
+    if (state.activeIndex < 0 || state.activeIndex >= state.items.length) {
+      return null;
+    }
+
+    return state.items[state.activeIndex] || null;
+  }
+
+  function focusedRecordId() {
+    const item = focusedItem();
+    if (!item) {
+      return null;
+    }
+
+    const recordId = String(item.recordId || item.id || "").trim();
+    return recordId || null;
+  }
+
+  function readItemQuantity(item) {
+    if (!item) {
+      return null;
+    }
+
+    const quantity = Number(item.quantity);
+    return Number.isFinite(quantity) ? quantity : null;
+  }
+
+  function applyItemQuantity(item, quantity) {
+    if (!item || !Number.isFinite(quantity)) {
+      return;
+    }
+
+    item.quantity = quantity;
+
+    if (item.raw && typeof item.raw === "object") {
+      item.raw.quantity = quantity;
+    }
+  }
+
+  function pruneQuantityHistoryTail() {
+    if (state.quantityHistoryCursor >= state.quantityHistory.length - 1) {
+      return;
+    }
+
+    state.quantityHistory.splice(state.quantityHistoryCursor + 1);
+  }
+
+  function pushQuantityHistory(entry) {
+    pruneQuantityHistoryTail();
+    state.quantityHistory.push(entry);
+
+    if (state.quantityHistory.length > MAX_HISTORY) {
+      const overflow = state.quantityHistory.length - MAX_HISTORY;
+      state.quantityHistory.splice(0, overflow);
+    }
+
+    state.quantityHistoryCursor = state.quantityHistory.length - 1;
+  }
+
+  function applyQuantityHistoryStep(direction) {
+    const entryIndex =
+      direction < 0 ? state.quantityHistoryCursor : state.quantityHistoryCursor + 1;
+    const entry = state.quantityHistory[entryIndex];
+    if (!entry) {
+      return false;
+    }
+
+    const quantity = direction < 0 ? entry.from : entry.to;
+    return patchRecordQuantity(entry.recordId, quantity, {
+      action: direction < 0 ? "undo" : "redo",
+      historyIndex: entryIndex,
+      fromQuantity: direction < 0 ? entry.to : entry.from,
+    });
+  }
+
+  async function zeroFocusedQuantity() {
+    const recordId = focusedRecordId();
+    if (!recordId) {
+      return false;
+    }
+
+    const item = focusedItem();
+    const fromQuantity = readItemQuantity(item);
+    const updated = await patchRecordQuantity(recordId, 0, {
+      action: "record",
+      fromQuantity,
+    });
+
+    if (updated && state.items.length === 1) {
+      startCompletionBlob(blobPointForRow(activeBlobRow()));
+    }
+
+    return updated;
+  }
+
+  async function patchRecordQuantity(recordId, quantity, options = {}) {
+    const recordKey = String(recordId || "").trim();
+    if (!recordKey || !Number.isFinite(quantity)) {
+      return false;
+    }
+
+    const fromQuantity = Number.isFinite(options.fromQuantity)
+      ? Number(options.fromQuantity)
+      : readItemQuantity(state.items.find((item) => String(item.recordId || item.id || "") === recordKey));
+
+    try {
+      const response = await fetch(
+        "/host/integrations/servers/" +
+          encodeURIComponent(serverId) +
+          "/table/record/" +
+          encodeURIComponent(recordKey),
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ quantity }),
+        },
+      );
+
+      if (response.status === 401) {
+        window.LinceWidgetHost?.invalidateServerAuth?.(serverId);
+        setStatus("Bloqueado", "error");
+        return false;
+      }
+
+      if (!response.ok) {
+        const raw = await response.text().catch(() => "");
+        throw new Error(raw || "Nao foi possivel atualizar o record.");
+      }
+
+      const item = state.items.find((entry) => String(entry.recordId || entry.id || "") === recordKey);
+      applyItemQuantity(item, quantity);
+
+      if (options.action === "record" && Number.isFinite(fromQuantity) && fromQuantity !== quantity) {
+        pushQuantityHistory({
+          recordId: recordKey,
+          from: fromQuantity,
+          to: quantity,
+        });
+      } else if (options.action === "undo") {
+        state.quantityHistoryCursor = Math.max(-1, options.historyIndex - 1);
+      } else if (options.action === "redo") {
+        state.quantityHistoryCursor = Math.min(
+          state.quantityHistory.length - 1,
+          options.historyIndex,
+        );
+      }
+
+      renderItems(state.items, state.activeIndex);
+      updateDetails(state.snapshot, state.items, state.activeIndex);
+      return true;
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(error);
+      }
+
+      return false;
+    }
   }
 
   function resolveActiveIndex(snapshot, items) {
@@ -350,18 +686,9 @@ pub(super) fn script() -> String {
     }
 
     if (detailPreview) {
-      if (active) {
-        const bits = [];
-        if (active.body) {
-          bits.push(active.body);
-        }
-        if (active.quantity != null) {
-          bits.push(`quantity ${active.quantity}`);
-        }
-        detailPreview.textContent = bits.length ? bits.join(" · ") : "Selected item is active.";
-      } else {
-        detailPreview.textContent = "Open the stream to see the current item.";
-      }
+      detailPreview.textContent = active
+        ? active.title
+        : "Open the stream to see the current item.";
     }
 
     if (detailEndpoint) {
@@ -437,6 +764,11 @@ pub(super) fn script() -> String {
       button.className = "todoItem";
       button.dataset.index = String(index);
       button.dataset.itemId = item.id;
+      button.dataset.recordId = item.recordId;
+
+      if (Number.isFinite(item.quantity)) {
+        button.dataset.rowQuantity = String(item.quantity);
+      }
 
       if (index === activeIndex) {
         button.dataset.active = "true";
@@ -450,21 +782,7 @@ pub(super) fn script() -> String {
       title.textContent = item.title;
       main.appendChild(title);
 
-      if (item.body) {
-        const body = document.createElement("span");
-        body.className = "todoItemBody";
-        body.textContent = item.body;
-        main.appendChild(body);
-      }
-
       button.appendChild(main);
-
-      if (item.quantity != null) {
-        const meta = document.createElement("span");
-        meta.className = "todoItemMeta";
-        meta.textContent = String(item.quantity);
-        button.appendChild(meta);
-      }
 
       list.appendChild(button);
     });
@@ -528,6 +846,33 @@ pub(super) fn script() -> String {
       return;
     }
 
+    if (key === "u" && !event.shiftKey) {
+      event.preventDefault();
+      event.stopPropagation();
+      void applyQuantityHistoryStep(-1);
+      return;
+    }
+
+    if (key === "U" || (key === "u" && event.shiftKey)) {
+      event.preventDefault();
+      event.stopPropagation();
+      void applyQuantityHistoryStep(1);
+      return;
+    }
+
+    const isSpace =
+      key === " " ||
+      key === "Spacebar" ||
+      key === "Space" ||
+      event.code === "Space";
+
+    if (isSpace) {
+      event.preventDefault();
+      event.stopPropagation();
+      void zeroFocusedQuantity();
+      return;
+    }
+
     if (key === "Home") {
       event.preventDefault();
       setActiveIndex(0);
@@ -537,6 +882,411 @@ pub(super) fn script() -> String {
     if (key === "End") {
       event.preventDefault();
       setActiveIndex(state.items.length - 1);
+    }
+  }
+
+  function activeBlobRow() {
+    if (!listPanel) {
+      return null;
+    }
+
+    return listPanel.querySelector('[data-active="true"]');
+  }
+
+  function syncBlobState() {
+    if (!blobLayer) {
+      return;
+    }
+
+    if (!state.blobSettings.enabled) {
+      blobLayer.hidden = true;
+      if (state.blob.frameId) {
+        window.cancelAnimationFrame(state.blob.frameId);
+        state.blob.frameId = 0;
+      }
+      state.blob.phase = "idle";
+      state.blob.visible = 0;
+      state.blob.origin = null;
+      if (state.blob.device && state.blob.canvas) {
+        state.blob.device.queue.writeBuffer(
+          state.blob.uniformBuffer,
+          0,
+          new Float32Array(state.blob.uniformData.length),
+        );
+      }
+      return;
+    }
+
+    blobLayer.hidden = false;
+    if (!navigator.gpu) {
+      blobLayer.hidden = true;
+      setStatus("WebGPU required", "error");
+      return;
+    }
+
+    if (state.blob.ready) {
+      if (!state.blob.frameId) {
+        state.blob.frameId = window.requestAnimationFrame(renderBlobFrame);
+      }
+      return;
+    }
+
+    void setupBlobLayer();
+  }
+
+  function resizeBlobCanvas() {
+    if (!blobLayer || !state.blob.canvas) {
+      return { width: 0, height: 0 };
+    }
+
+    const rect = blobLayer.getBoundingClientRect();
+    const cssWidth = Math.max(1, rect.width);
+    const cssHeight = Math.max(1, rect.height);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const pixelWidth = Math.max(1, Math.round(cssWidth * dpr));
+    const pixelHeight = Math.max(1, Math.round(cssHeight * dpr));
+
+    state.blob.canvas.style.width = cssWidth + "px";
+    state.blob.canvas.style.height = cssHeight + "px";
+
+    if (state.blob.canvas.width !== pixelWidth || state.blob.canvas.height !== pixelHeight) {
+      state.blob.canvas.width = pixelWidth;
+      state.blob.canvas.height = pixelHeight;
+    }
+
+    state.blob.width = cssWidth;
+    state.blob.height = cssHeight;
+    state.blob.dpr = dpr;
+    return { width: cssWidth, height: cssHeight };
+  }
+
+  function blobPointForRow(row) {
+    if (!blobLayer || !row) {
+      return null;
+    }
+
+    const cellRect = row.getBoundingClientRect();
+    const layerRect = blobLayer.getBoundingClientRect();
+
+    if (cellRect.height <= 0 || cellRect.width <= 0) {
+      return null;
+    }
+
+    return {
+      x: cellRect.left - layerRect.left + 2,
+      y: cellRect.top - layerRect.top + cellRect.height / 2,
+    };
+  }
+
+  function startCompletionBlob(origin) {
+    if (!blobLayer || !state.blobSettings.enabled || !origin) {
+      return;
+    }
+
+    state.blob.phase = "completion";
+    state.blob.phaseStarted = performance.now();
+    state.blob.origin = { x: origin.x, y: origin.y };
+    state.blob.current = { x: origin.x, y: origin.y };
+    state.blob.target = { x: origin.x, y: origin.y };
+    state.blob.visible = 1;
+    void setupBlobLayer();
+  }
+
+  function updateCursorBlobTarget() {
+    if (!state.blobSettings.enabled) {
+      if (state.blob.phase === "cursor") {
+        state.blob.phase = "idle";
+      }
+      return false;
+    }
+
+    const target = blobPointForRow(activeBlobRow());
+    if (!target) {
+      if (state.blob.phase === "cursor") {
+        state.blob.phase = "idle";
+      }
+      return false;
+    }
+
+    if (state.blob.phase !== "cursor" || state.blob.visible < 0.05) {
+      state.blob.current = { x: target.x, y: target.y };
+    }
+
+    state.blob.phase = "cursor";
+    state.blob.target = target;
+    return true;
+  }
+
+  function colorsForUniform() {
+    const colors = state.blobSettings.colors.length
+      ? state.blobSettings.colors
+      : defaultBlobColors;
+
+    return [
+      hexToRgb(colors[0] || defaultBlobColors[0]),
+      hexToRgb(colors[1] || colors[0] || defaultBlobColors[1]),
+      hexToRgb(colors[2] || colors[1] || colors[0] || defaultBlobColors[2]),
+    ];
+  }
+
+  function writeBlobUniforms(now, width, height, completion) {
+    const data = state.blob.uniformData;
+    const colors = colorsForUniform();
+
+    data[0] = width;
+    data[1] = height;
+    data[2] = now / 1000;
+    data[3] = state.blob.visible;
+    data[4] = state.blob.current.x;
+    data[5] = state.blob.current.y;
+    data[6] = state.blob.target.x;
+    data[7] = state.blob.target.y;
+    data[8] = state.blobSettings.viscosity;
+    data[9] = state.blobSettings.energy;
+    data[10] = state.blob.phase === "completion" ? 1 : 0;
+    data[11] = completion;
+
+    for (let index = 0; index < 3; index += 1) {
+      const base = 12 + index * 4;
+      data[base] = colors[index][0];
+      data[base + 1] = colors[index][1];
+      data[base + 2] = colors[index][2];
+      data[base + 3] = 1;
+    }
+
+    state.blob.device.queue.writeBuffer(state.blob.uniformBuffer, 0, data);
+  }
+
+  function renderBlobFrame(now) {
+    if (!state.blob.ready || !state.blobSettings.enabled) {
+      return;
+    }
+
+    const { width, height } = resizeBlobCanvas();
+    let active = false;
+    let completion = 0;
+    let targetVisible = 0;
+
+    if (state.blob.phase === "completion") {
+      const age = now - state.blob.phaseStarted;
+      const origin = state.blob.origin || state.blob.current;
+      const center = { x: width / 2, y: height / 2 };
+      active = true;
+
+      if (age <= 2600) {
+        completion = easeOutCubic(age / 2600);
+        state.blob.target = {
+          x: lerp(origin.x, center.x, completion),
+          y: lerp(origin.y, center.y, completion),
+        };
+        targetVisible = 1;
+      } else if (age <= 4300) {
+        completion = 1;
+        state.blob.target = center;
+        targetVisible = 1 - clamp((age - 2600) / 1700, 0, 1);
+      } else {
+        state.blob.phase = "idle";
+        state.blob.origin = null;
+        active = false;
+      }
+    } else {
+      active = updateCursorBlobTarget();
+      targetVisible = active && state.blobSettings.enabled ? 1 : 0;
+    }
+
+    state.blob.visible += (targetVisible - state.blob.visible) * (targetVisible > state.blob.visible ? 0.18 : 0.1);
+
+    const follow = state.blob.phase === "completion"
+      ? 0.12 + state.blobSettings.energy * 0.04
+      : 0.06 + (1 - state.blobSettings.viscosity) * 0.22;
+    state.blob.current.x += (state.blob.target.x - state.blob.current.x) * follow;
+    state.blob.current.y += (state.blob.target.y - state.blob.current.y) * follow;
+
+    writeBlobUniforms(now, width, height, completion);
+
+    const encoder = state.blob.device.createCommandEncoder();
+    const textureView = state.blob.context.getCurrentTexture().createView();
+    const pass = encoder.beginRenderPass({
+      colorAttachments: [
+        {
+          view: textureView,
+          clearValue: { r: 0, g: 0, b: 0, a: 0 },
+          loadOp: "clear",
+          storeOp: "store",
+        },
+      ],
+    });
+
+    pass.setPipeline(state.blob.pipeline);
+    pass.setBindGroup(0, state.blob.bindGroup);
+    pass.draw(3);
+    pass.end();
+    state.blob.device.queue.submit([encoder.finish()]);
+
+    state.blob.frameId = window.requestAnimationFrame(renderBlobFrame);
+  }
+
+  async function setupBlobLayer() {
+    if (!blobLayer || state.blob.ready || state.blob.setupPending || !state.blobSettings.enabled) {
+      return;
+    }
+
+    if (!navigator.gpu) {
+      setStatus("WebGPU required", "error");
+      return;
+    }
+
+    state.blob.setupPending = true;
+
+    try {
+      const adapter = await navigator.gpu.requestAdapter();
+      if (!adapter) {
+        return;
+      }
+
+      const device = await adapter.requestDevice();
+      device.addEventListener?.("uncapturederror", (event) => {
+        console.error("Todo WebGPU error", event.error);
+      });
+      device.lost.then((info) => {
+        console.error("Todo WebGPU device lost", info);
+      });
+
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("webgpu");
+      if (!context) {
+        return;
+      }
+
+      canvas.setAttribute("aria-hidden", "true");
+      blobLayer.replaceChildren(canvas);
+      state.blob.canvas = canvas;
+      resizeBlobCanvas();
+
+      const format = navigator.gpu.getPreferredCanvasFormat();
+      context.configure({
+        device,
+        format,
+        alphaMode: "premultiplied",
+        usage: GPUTextureUsage.RENDER_ATTACHMENT,
+      });
+
+      const shaderResponse = await fetch("blob.wgsl", { cache: "no-store" });
+      if (!shaderResponse.ok) {
+        throw new Error("Unable to load blob.wgsl.");
+      }
+
+      const shaderSource = await shaderResponse.text();
+      const shaderModule = device.createShaderModule({ code: shaderSource });
+      if (typeof shaderModule.getCompilationInfo === "function") {
+        const compilationInfo = await shaderModule.getCompilationInfo();
+        const errors = compilationInfo.messages.filter((message) => message.type === "error");
+        if (errors.length) {
+          throw new Error(
+            errors
+              .map((message) => {
+                return (
+                  "WGSL " +
+                  message.lineNum +
+                  ":" +
+                  message.linePos +
+                  " " +
+                  message.message
+                );
+              })
+              .join("\n"),
+          );
+        }
+      }
+
+      const uniformBuffer = device.createBuffer({
+        size: state.blob.uniformData.byteLength,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+
+      const bindGroupLayout = device.createBindGroupLayout({
+        entries: [
+          {
+            binding: 0,
+            visibility: GPUShaderStage.FRAGMENT,
+            buffer: { type: "uniform" },
+          },
+        ],
+      });
+
+      const pipelineDescriptor = {
+        layout: device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] }),
+        vertex: {
+          module: shaderModule,
+          entryPoint: "vs_main",
+        },
+        fragment: {
+          module: shaderModule,
+          entryPoint: "fs_main",
+          targets: [
+            {
+              format,
+              blend: {
+                color: {
+                  srcFactor: "one",
+                  dstFactor: "one-minus-src-alpha",
+                  operation: "add",
+                },
+                alpha: {
+                  srcFactor: "one",
+                  dstFactor: "one-minus-src-alpha",
+                  operation: "add",
+                },
+              },
+            },
+          ],
+        },
+        primitive: {
+          topology: "triangle-list",
+        },
+      };
+
+      let pipeline;
+      if (typeof device.createRenderPipelineAsync === "function") {
+        pipeline = await device.createRenderPipelineAsync(pipelineDescriptor);
+      } else {
+        device.pushErrorScope("validation");
+        pipeline = device.createRenderPipeline(pipelineDescriptor);
+        const validationError = await device.popErrorScope();
+        if (validationError) {
+          throw validationError;
+        }
+      }
+
+      const bindGroup = device.createBindGroup({
+        layout: bindGroupLayout,
+        entries: [
+          {
+            binding: 0,
+            resource: { buffer: uniformBuffer },
+          },
+        ],
+      });
+
+      state.blob.adapter = adapter;
+      state.blob.device = device;
+      state.blob.context = context;
+      state.blob.pipeline = pipeline;
+      state.blob.bindGroup = bindGroup;
+      state.blob.uniformBuffer = uniformBuffer;
+      state.blob.ready = true;
+      blobLayer.hidden = false;
+
+      if (!state.blob.frameId) {
+        state.blob.frameId = window.requestAnimationFrame(renderBlobFrame);
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(error);
+      }
+      setStatus("WebGPU required", "error");
+    } finally {
+      state.blob.setupPending = false;
     }
   }
 
@@ -667,8 +1417,74 @@ pub(super) fn script() -> String {
   };
 
   if (statusDot) {
+    statusDot.addEventListener("pointerenter", () => {
+      state.chromeHovered = true;
+      setChromeVisible(true);
+    });
+    statusDot.addEventListener("pointerleave", () => {
+      state.chromeHovered = false;
+      scheduleChromeHide();
+    });
     statusDot.addEventListener("click", () => {
       setDetailsOpen(!state.detailsOpen);
+    });
+  }
+
+  if (blobEnabledInput instanceof HTMLInputElement) {
+    blobEnabledInput.addEventListener("change", () => {
+      state.blobSettings.enabled = blobEnabledInput.checked;
+      writeBlobSettings();
+      syncBlobState();
+    });
+  }
+
+  if (blobViscosityInput instanceof HTMLInputElement) {
+    blobViscosityInput.addEventListener("input", () => {
+      state.blobSettings.viscosity = clamp(Number(blobViscosityInput.value) / 100, 0, 1);
+      writeBlobSettings();
+    });
+  }
+
+  if (blobEnergyInput instanceof HTMLInputElement) {
+    blobEnergyInput.addEventListener("input", () => {
+      state.blobSettings.energy = clamp(Number(blobEnergyInput.value) / 100, 0, 1);
+      writeBlobSettings();
+    });
+  }
+
+  if (blobAddColorButton) {
+    blobAddColorButton.addEventListener("click", () => {
+      const color = normalizeHexColor(blobColorInput?.value);
+      if (!color) {
+        return;
+      }
+
+      const colors = state.blobSettings.colors.filter((item) => item !== color);
+      colors.unshift(color);
+      state.blobSettings.colors = colors.slice(0, 8);
+      writeBlobSettings();
+      syncBlobControls();
+      renderBlobPalette();
+    });
+  }
+
+  if (blobPalette) {
+    blobPalette.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+
+      const swatch = target.closest("[data-color]");
+      const color = swatch instanceof HTMLElement ? swatch.dataset.color : "";
+      if (!color || state.blobSettings.colors.length <= 1) {
+        return;
+      }
+
+      state.blobSettings.colors = state.blobSettings.colors.filter((item) => item !== color);
+      writeBlobSettings();
+      syncBlobControls();
+      renderBlobPalette();
     });
   }
 
@@ -684,15 +1500,27 @@ pub(super) fn script() -> String {
 
   if (appRoot) {
     appRoot.addEventListener("pointermove", () => {
+      state.chromeHovered = false;
       setChromeVisible(true);
+      scheduleChromeHide();
     });
     appRoot.addEventListener("pointerleave", () => {
+      state.chromeHovered = false;
       setChromeVisible(false);
     });
   }
 
   state.streamUrl = buildStreamUrl();
   setDetailsOpen(false);
+  const storedBlobSettings = readBlobSettings();
+  if (storedBlobSettings) {
+    state.blobSettings = storedBlobSettings;
+  }
+
+  syncBlobControls();
+  renderBlobPalette();
+  syncBlobState();
+
   if (!state.streamUrl) {
     setStatus("Configurar", "idle");
     renderEmptyState("The widget needs a server and view id.");

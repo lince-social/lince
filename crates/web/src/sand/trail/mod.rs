@@ -1,16 +1,14 @@
 mod body;
-mod script;
-mod styles;
 #[cfg(test)]
 mod browser_tests;
+mod script;
+mod styles;
 #[cfg(test)]
 mod tests;
 
 #[allow(unused_imports)]
 pub(crate) use {
-    body::body as render_body,
-    script::script as render_script,
-    styles::INLINE_STYLES as INLINE_STYLES,
+    body::body as render_body, script::script as render_script, styles::INLINE_STYLES,
 };
 
 use {

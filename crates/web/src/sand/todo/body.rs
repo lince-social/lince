@@ -7,13 +7,18 @@ pub(super) fn body() -> Markup {
 
             div class="contentShell" {
                 aside
-                    id="table-details"
+                    id="todo-details"
                     class="detailsPanel"
                     data-show="$ui.detailsOpen"
                     style="display: none"
                 {
-                    (render_details_placeholder())
+                    (render_blob_settings())
+                    div id="table-details" {
+                        (render_details_placeholder())
+                    }
                 }
+
+                div id="todo-blob-layer" class="blobLayer" aria-hidden="true" {}
 
                 section id="table-body" class="tablePanel" tabindex="0" aria-label="Todo data" {
                     (render_body_placeholder())
@@ -28,16 +33,53 @@ pub(super) fn body() -> Markup {
 fn render_top_line() -> Markup {
     html! {
         header class="topLine" {
-            div class="topLineTitle" { "Todo" }
             div class="topLineActions" {
-                span id="table-status" class="status" data-tone="idle" { "Waiting" }
                 button
-                    class="button button--accent"
+                    id="table-status"
+                    class="statusDot"
                     type="button"
+                    data-tone="idle"
+                    aria-label="Waiting"
+                    title="Waiting"
                     data-on:click="$ui.detailsOpen = !$ui.detailsOpen"
-                    data-text="$ui.detailsOpen ? 'Hide details' : 'Details'"
-                {
-                    "Details"
+                {}
+            }
+        }
+    }
+}
+
+fn render_blob_settings() -> Markup {
+    html! {
+        div class="detailStack detailStack--settings" {
+            section class="detailCard detailCard--setting" {
+                div class="eyebrow" { "blob" }
+                div class="settingRow" {
+                    label class="toggleRow" for="blob-enabled" {
+                        input id="blob-enabled" type="checkbox" checked;
+                        span { "Liquid cursor" }
+                    }
+                    a class="licenseLink" href="blob.wgsl" target="_blank" rel="noreferrer" {
+                        "WGSL source"
+                    }
+                }
+
+                label class="settingBlock" for="blob-viscosity" {
+                    span class="settingLabel" { "Viscosity" }
+                    input id="blob-viscosity" type="range" min="0" max="100" value="62";
+                }
+
+                label class="settingBlock" for="blob-energy" {
+                    span class="settingLabel" { "Energy" }
+                    input id="blob-energy" type="range" min="0" max="100" value="56";
+                }
+
+                div class="settingBlock" {
+                    span class="settingLabel" { "Palette" }
+                    div class="colorTools" {
+                        input id="blob-color-input" class="colorInput" type="color" value="#51f3d2";
+                        button id="blob-add-color" class="button button--ghost" type="button" { "Add" }
+                    }
+                    div id="blob-palette" class="palette" aria-label="Blob color palette" {}
                 }
             }
         }

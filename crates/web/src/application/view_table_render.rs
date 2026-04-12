@@ -79,7 +79,10 @@ pub fn render_sync_payload(
     })
 }
 
-pub fn render_error_payload(context: ViewTableRenderContext, message: &str) -> ViewTableRenderedHtml {
+pub fn render_error_payload(
+    context: ViewTableRenderContext,
+    message: &str,
+) -> ViewTableRenderedHtml {
     let summary = NormalizedTable {
         title: "Stream unavailable".into(),
         subtitle: message.to_string(),
@@ -118,7 +121,9 @@ fn normalize_table_payload(value: &Value) -> NormalizedTable {
         })
         .unwrap_or_else(|| "Generic table".into());
     let rows_source = extract_rows_source(value);
-    let columns_source = root.and_then(|object| object.get("columns")).and_then(Value::as_array);
+    let columns_source = root
+        .and_then(|object| object.get("columns"))
+        .and_then(Value::as_array);
     let columns = infer_columns(&rows_source, columns_source);
     let rows = normalize_rows(&rows_source, &columns);
     let kind = determine_kind(value);
@@ -213,7 +218,10 @@ fn infer_columns(rows: &[Value], explicit_columns: Option<&Vec<Value>>) -> Vec<T
     let mut columns = Vec::new();
     let mut seen = BTreeSet::new();
 
-    let push_column = |columns: &mut Vec<TableColumn>, seen: &mut BTreeSet<String>, key: String, label: String| {
+    let push_column = |columns: &mut Vec<TableColumn>,
+                       seen: &mut BTreeSet<String>,
+                       key: String,
+                       label: String| {
         let normalized_key = key.trim().to_string();
         if normalized_key.is_empty() || !seen.insert(normalized_key.clone()) {
             return;
@@ -224,7 +232,9 @@ fn infer_columns(rows: &[Value], explicit_columns: Option<&Vec<Value>>) -> Vec<T
         });
     };
 
-    if let Some(raw_columns) = explicit_columns && !raw_columns.is_empty() {
+    if let Some(raw_columns) = explicit_columns
+        && !raw_columns.is_empty()
+    {
         for (index, raw_column) in raw_columns.iter().enumerate() {
             let spec = column_spec_from_value(raw_column, index);
             push_column(&mut columns, &mut seen, spec.key, spec.label);
@@ -251,7 +261,10 @@ fn infer_columns(rows: &[Value], explicit_columns: Option<&Vec<Value>>) -> Vec<T
         return columns;
     }
 
-    let object_rows = rows.iter().filter(|row| row.is_object()).collect::<Vec<_>>();
+    let object_rows = rows
+        .iter()
+        .filter(|row| row.is_object())
+        .collect::<Vec<_>>();
     if !object_rows.is_empty() {
         let mut keys = BTreeSet::new();
         for row in object_rows {
@@ -426,10 +439,7 @@ fn render_status_pill(text: &str, tone: &str) -> Markup {
     }
 }
 
-fn render_details_panel_inner(
-    context: &ViewTableRenderContext,
-    table: &NormalizedTable,
-) -> Markup {
+fn render_details_panel_inner(context: &ViewTableRenderContext, table: &NormalizedTable) -> Markup {
     html! {
         div class="detailStack" {
             section class="detailCard detailCard--setting" {
@@ -513,14 +523,23 @@ fn render_table_body_inner(table: &NormalizedTable) -> Markup {
         return render_empty_state_inner("No rows or columns were produced by this snapshot.");
     }
 
+    let hide_header_row = table.columns.len() == 1
+        && table
+            .columns
+            .first()
+            .map(|column| column.key.as_str() == "head")
+            .unwrap_or(false);
+
     html! {
         div class="tableFrame" {
             table class="table" {
-                thead {
-                    tr {
-                        @for (column_index, column) in table.columns.iter().enumerate() {
-                            th scope="col" data-column-index=(column_index) data-column-key=(column.key.as_str()) {
-                                div class="columnName" { (&column.label) }
+                @if !hide_header_row {
+                    thead {
+                        tr {
+                            @for (column_index, column) in table.columns.iter().enumerate() {
+                                th scope="col" data-column-index=(column_index) data-column-key=(column.key.as_str()) {
+                                    div class="columnName" { (&column.label) }
+                                }
                             }
                         }
                     }

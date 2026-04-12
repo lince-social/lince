@@ -459,7 +459,7 @@ fn render_import_modal_preview_pane() -> Markup {
                             title="Preview do card importado"
                             data-package-instance-id="preview"
                             sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-popups"
-                            allow="fullscreen"
+                            allow="fullscreen; webgpu"
                             allowfullscreen=""
                         {}
                     }

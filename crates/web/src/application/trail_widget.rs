@@ -179,8 +179,8 @@ impl TrailWidgetService {
             .derived_view_id
             .or_else(|| resolved.card.view_id.map(i64::from))
             .ok_or_else(|| {
-            TrailWidgetError::Disabled("Trail ainda nao foi vinculado a um root record.".into())
-        })?;
+                TrailWidgetError::Disabled("Trail ainda nao foi vinculado a um root record.".into())
+            })?;
         let snapshot = self
             .load_view_snapshot(
                 session_token,
@@ -199,7 +199,12 @@ impl TrailWidgetService {
             })?;
         if runtime.trail_root_record_id.is_none() && runtime.derived_view_id.is_none() {
             let _ = self
-                .persist_runtime_state(&resolved.card.id, &resolved.organ.id, trail_root_record_id, view_id)
+                .persist_runtime_state(
+                    &resolved.card.id,
+                    &resolved.organ.id,
+                    trail_root_record_id,
+                    view_id,
+                )
                 .await;
         }
         let sync = self
@@ -362,12 +367,7 @@ impl TrailWidgetService {
         )
         .await?;
         let view_id = self
-            .ensure_derived_view(
-                session_token,
-                &resolved,
-                request.trail_root_record_id,
-                None,
-            )
+            .ensure_derived_view(session_token, &resolved, request.trail_root_record_id, None)
             .await?;
         self.persist_runtime_state(
             &resolved.card.id,
@@ -613,14 +613,15 @@ impl TrailWidgetService {
             .resolve_instance(session_token, instance_id, TrailPermission::Write)
             .await?;
         let runtime = parse_runtime_state(&resolved.card.widget_state);
-        let trail_root_record_id = runtime.trail_root_record_id.ok_or_else(|| {
-            TrailWidgetError::Invalid("Nenhum trail root foi escolhido.".into())
-        })?;
+        let trail_root_record_id = runtime
+            .trail_root_record_id
+            .ok_or_else(|| TrailWidgetError::Invalid("Nenhum trail root foi escolhido.".into()))?;
         let view_id = match runtime.derived_view_id {
             Some(view_id) => view_id,
-            None => self
-                .ensure_derived_view(session_token, &resolved, trail_root_record_id, None)
-                .await?,
+            None => {
+                self.ensure_derived_view(session_token, &resolved, trail_root_record_id, None)
+                    .await?
+            }
         };
         let snapshot = self
             .load_view_snapshot(
@@ -2153,7 +2154,9 @@ fn parse_view_snapshot_rows(
     serde_json::from_value::<ViewSnapshotPayload>(value.clone())
         .map(|snapshot| snapshot.rows)
         .map_err(|error| {
-            TrailWidgetError::Internal(format!("Resposta invalida ao ler snapshot da view: {error}"))
+            TrailWidgetError::Internal(format!(
+                "Resposta invalida ao ler snapshot da view: {error}"
+            ))
         })
 }
 
@@ -2257,7 +2260,10 @@ fn compute_trail_quantity_changes(
 
     let mut changes = Vec::new();
     for (changed_record_id, resolved_quantity) in next_quantities {
-        let current = quantities.get(&changed_record_id).copied().unwrap_or_default();
+        let current = quantities
+            .get(&changed_record_id)
+            .copied()
+            .unwrap_or_default();
         if current != resolved_quantity {
             changes.push(TrailQuantityChange {
                 record_id: changed_record_id,
@@ -2283,11 +2289,15 @@ fn trail_snapshot_quantity(row: &std::collections::BTreeMap<String, String>) -> 
 }
 
 fn trail_snapshot_parent_ids(row: &std::collections::BTreeMap<String, String>) -> Vec<i64> {
-    serde_json::from_str::<Vec<i64>>(row.get("parent_ids_json").map(String::as_str).unwrap_or("[]"))
-        .unwrap_or_default()
-        .into_iter()
-        .filter(|value| *value > 0)
-        .collect()
+    serde_json::from_str::<Vec<i64>>(
+        row.get("parent_ids_json")
+            .map(String::as_str)
+            .unwrap_or("[]"),
+    )
+    .unwrap_or_default()
+    .into_iter()
+    .filter(|value| *value > 0)
+    .collect()
 }
 
 fn trail_parents_complete(
@@ -2299,9 +2309,9 @@ fn trail_parents_complete(
     if parent_ids.is_empty() {
         return true;
     }
-    parent_ids.into_iter().all(|parent_id| {
-        quantities.get(&parent_id).copied().unwrap_or_default() == 1
-    })
+    parent_ids
+        .into_iter()
+        .all(|parent_id| quantities.get(&parent_id).copied().unwrap_or_default() == 1)
 }
 
 fn normalized_trail_quantity(value: f64) -> i64 {

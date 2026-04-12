@@ -66,17 +66,12 @@ const STYLE: &str = r#"
     padding: 10px 12px 8px;
   }
 
-  .topLineTitle {
-    font-size: 0.92rem;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-  }
-
   .topLineActions {
     display: flex;
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
+    margin-left: auto;
   }
 
   .contentShell {
@@ -91,6 +86,24 @@ const STYLE: &str = r#"
     overflow: hidden;
   }
 
+  .blobLayer {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .blobLayer canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    filter:
+      contrast(1.25)
+      saturate(1.35)
+      drop-shadow(0 0 10px rgba(81, 243, 210, 0.24));
+  }
+
   .detailsPanel {
     min-height: 0;
     position: absolute;
@@ -103,7 +116,7 @@ const STYLE: &str = r#"
     background: #0b1017;
     box-shadow: -28px 0 48px rgba(0, 0, 0, 0.35);
     opacity: 1;
-    z-index: 2;
+    z-index: 3;
     overflow: auto;
   }
 
@@ -118,21 +131,13 @@ const STYLE: &str = r#"
     scrollbar-width: none;
     -ms-overflow-style: none;
     outline: none;
+    position: relative;
+    z-index: 1;
   }
 
   .tablePanel::-webkit-scrollbar {
     width: 0;
     height: 0;
-  }
-
-  .tablePanel[data-scrolling="true"] {
-    scrollbar-width: thin;
-    -ms-overflow-style: auto;
-  }
-
-  .tablePanel[data-scrolling="true"]::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
   }
 
   .tableFrame {
@@ -144,6 +149,8 @@ const STYLE: &str = r#"
 
   .tablePanel[data-mode="helix"] tr[data-row-focused="true"] td[data-column-key="head"] {
     position: relative;
+    background: transparent !important;
+    box-shadow: none !important;
   }
 
   .tablePanel[data-mode="helix"] tr[data-row-focused="true"] td[data-column-key="head"]::before {
@@ -158,6 +165,19 @@ const STYLE: &str = r#"
     opacity: 1;
   }
 
+  .tablePanel[data-mode="helix"][data-blob="true"] tr[data-row-focused="true"] td[data-column-key="head"]::before {
+    opacity: 0;
+  }
+
+  .tablePanel[data-mode="helix"][data-blob="true"] thead th[data-column-key="head"],
+  .tablePanel[data-mode="helix"][data-blob="true"] tbody td[data-column-key="head"] {
+    padding-left: 2rem;
+  }
+
+  .tablePanel tr[data-row-dispersing="true"] {
+    opacity: 0;
+  }
+
   .tablePanel thead th[data-column-key]:not([data-column-key="head"]),
   .tablePanel tbody td[data-column-key]:not([data-column-key="head"]) {
     display: none;
@@ -166,6 +186,10 @@ const STYLE: &str = r#"
   .detailStack {
     display: grid;
     gap: 12px;
+  }
+
+  .detailStack--settings {
+    margin-bottom: 12px;
   }
 
   .detailCard {
@@ -180,6 +204,88 @@ const STYLE: &str = r#"
   .detailCard--setting {
     gap: 10px;
     align-items: start;
+  }
+
+  .settingRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .settingBlock {
+    display: grid;
+    gap: 7px;
+    width: 100%;
+  }
+
+  .settingLabel {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .toggleRow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  .toggleRow input {
+    accent-color: var(--accent);
+  }
+
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+
+  .colorTools {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .colorInput {
+    width: 42px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #121923;
+  }
+
+  .palette {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    min-height: 24px;
+  }
+
+  .paletteSwatch {
+    width: 22px;
+    height: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 7px;
+    box-shadow: 0 0 12px rgba(81, 243, 210, 0.14);
+    cursor: pointer;
+  }
+
+  .licenseLink {
+    color: var(--muted);
+    font-size: 0.7rem;
+    text-decoration: none;
+  }
+
+  .licenseLink:hover,
+  .licenseLink:focus-visible {
+    color: var(--text);
   }
 
   .detailCard--error {
@@ -216,7 +322,6 @@ const STYLE: &str = r#"
   }
 
   .pill,
-  .status,
   .button {
     display: inline-flex;
     align-items: center;
@@ -250,29 +355,40 @@ const STYLE: &str = r#"
     font-size: 0.7rem;
   }
 
-  .status {
-    color: var(--muted);
-    font-size: 0.7rem;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+  .statusDot {
+    width: 16px;
+    height: 16px;
+    min-height: 16px;
+    padding: 0;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: #3c4652;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.14) inset;
+    opacity: 0;
+    transform: scale(0.85);
+    pointer-events: none;
+    transition: opacity 140ms ease, transform 140ms ease, box-shadow 140ms ease;
   }
 
-  .status[data-tone="live"] {
-    color: #daf7e6;
-    border-color: rgba(141, 240, 185, 0.22);
-    background: #102017;
+  .tableWidget[data-pointer-active="true"] .statusDot {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
   }
 
-  .status[data-tone="loading"] {
-    color: #f7e6bf;
-    border-color: rgba(243, 199, 123, 0.22);
-    background: #231a10;
+  .statusDot[data-tone="live"] {
+    background: #1f7c49;
+    box-shadow: 0 0 0 1px rgba(141, 240, 185, 0.25) inset, 0 0 12px rgba(141, 240, 185, 0.26);
   }
 
-  .status[data-tone="error"] {
-    color: #ffd9df;
-    border-color: rgba(255, 151, 168, 0.22);
-    background: #231017;
+  .statusDot[data-tone="loading"] {
+    background: #9a7420;
+    box-shadow: 0 0 0 1px rgba(243, 199, 123, 0.24) inset, 0 0 12px rgba(243, 199, 123, 0.18);
+  }
+
+  .statusDot[data-tone="error"] {
+    background: #9b2e3c;
+    box-shadow: 0 0 0 1px rgba(255, 151, 168, 0.24) inset, 0 0 12px rgba(255, 151, 168, 0.18);
   }
 
   .button {
@@ -288,12 +404,6 @@ const STYLE: &str = r#"
     background: #121923;
   }
 
-  .button--ghost:hover:not(:disabled),
-  .button--ghost:focus-visible {
-    color: var(--text);
-    background: rgba(255, 255, 255, 0.04);
-  }
-
   .button:hover:not(:disabled) {
     border-color: var(--line-strong);
     background: #18202d;
@@ -302,12 +412,6 @@ const STYLE: &str = r#"
   .button:disabled {
     opacity: 0.55;
     cursor: not-allowed;
-  }
-
-  .button--accent {
-    color: #dfebff;
-    border-color: rgba(138, 180, 255, 0.24);
-    background: #22314d;
   }
 
   .codeBlock {

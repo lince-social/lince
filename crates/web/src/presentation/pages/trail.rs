@@ -1,5 +1,5 @@
 use {
-    crate::sand::{render_trail_body, render_trail_script, TRAIL_INLINE_STYLES},
+    crate::sand::{TRAIL_INLINE_STYLES, render_trail_body, render_trail_script},
     maud::{DOCTYPE, Markup, PreEscaped, html},
     serde_json::Value,
 };

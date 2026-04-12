@@ -40,10 +40,7 @@ pub async fn get_trail_page(
         .await
         .map_err(map_trail_widget_error)?;
 
-    Ok(Html(render_trail_page(
-        &instance_id,
-        &contract,
-    )))
+    Ok(Html(render_trail_page(&instance_id, &contract)))
 }
 
 pub async fn get_trail_stream(
@@ -174,7 +171,12 @@ fn trail_patch_event(patch: Value) -> Event {
 fn extract_error_message(payload: &str) -> String {
     serde_json::from_str::<Value>(payload)
         .ok()
-        .and_then(|value| value.get("error").and_then(Value::as_str).map(str::to_string))
+        .and_then(|value| {
+            value
+                .get("error")
+                .and_then(Value::as_str)
+                .map(str::to_string)
+        })
         .unwrap_or_else(|| payload.to_string())
 }
 

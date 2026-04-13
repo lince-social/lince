@@ -6,6 +6,8 @@ use std::{
     io::{Error, ErrorKind},
 };
 
+use crate::karma::{deliver_record_karma, refresh_karma_cache};
+
 pub async fn execute_sql(
     services: InjectedServices,
     sql: impl Into<String>,
@@ -31,14 +33,26 @@ pub async fn table_patch_row(
     let table = validate_identifier(&table)?;
     let column = validate_identifier(&column)?;
     let id = parse_i64(&id)?;
+    let needs_karma_refresh = matches!(
+        table.as_str(),
+        "karma" | "karma_condition" | "karma_consequence"
+    );
 
-    execute_statement(
-        services,
+    let _outcome = execute_statement(
+        services.clone(),
         format!("UPDATE {table} SET {column} = ? WHERE id = ?"),
         vec![SqlParameter::Text(value), SqlParameter::Integer(id)],
     )
-    .await
-    .map(|_| ())
+    .await?;
+
+    if table == "record" && _outcome.rows_affected > 0 {
+        deliver_record_karma(services.clone(), [id as u32]).await?;
+    }
+    if needs_karma_refresh && _outcome.rows_affected > 0 {
+        refresh_karma_cache(services.clone()).await?;
+    }
+
+    Ok(())
 }
 
 pub async fn table_delete_row(
@@ -48,14 +62,26 @@ pub async fn table_delete_row(
 ) -> Result<(), Error> {
     let table = validate_identifier(&table)?;
     let id = parse_i64(&id)?;
+    let needs_karma_refresh = matches!(
+        table.as_str(),
+        "karma" | "karma_condition" | "karma_consequence"
+    );
 
-    execute_statement(
-        services,
+    let _outcome = execute_statement(
+        services.clone(),
         format!("DELETE FROM {table} WHERE id = ?"),
         vec![SqlParameter::Integer(id)],
     )
-    .await
-    .map(|_| ())
+    .await?;
+
+    if table == "record" && _outcome.rows_affected > 0 {
+        deliver_record_karma(services.clone(), [id as u32]).await?;
+    }
+    if needs_karma_refresh && _outcome.rows_affected > 0 {
+        refresh_karma_cache(services.clone()).await?;
+    }
+
+    Ok(())
 }
 
 pub async fn table_insert_row(
@@ -64,14 +90,27 @@ pub async fn table_insert_row(
     values: HashMap<String, String>,
 ) -> Result<(), Error> {
     let table = validate_identifier(&table)?;
+    let needs_karma_refresh = matches!(
+        table.as_str(),
+        "karma" | "karma_condition" | "karma_consequence"
+    );
     if values.is_empty() {
-        return execute_statement(
-            services,
+        let outcome = execute_statement(
+            services.clone(),
             format!("INSERT INTO {table} DEFAULT VALUES"),
             vec![],
         )
-        .await
-        .map(|_| ());
+        .await?;
+        if table == "record"
+            && outcome.rows_affected > 0
+            && let Some(id) = outcome.last_insert_rowid
+        {
+            deliver_record_karma(services.clone(), [id as u32]).await?;
+        }
+        if needs_karma_refresh && outcome.rows_affected > 0 {
+            refresh_karma_cache(services.clone()).await?;
+        }
+        return Ok(());
     }
 
     let mut entries = values
@@ -90,16 +129,27 @@ pub async fn table_insert_row(
         .map(|(_, value)| SqlParameter::Text(value))
         .collect::<Vec<_>>();
 
-    execute_statement(
-        services,
+    let outcome = execute_statement(
+        services.clone(),
         format!(
             "INSERT INTO {table} ({}) VALUES ({placeholders})",
             columns.join(", ")
         ),
         params,
     )
-    .await
-    .map(|_| ())
+    .await?;
+
+    if table == "record"
+        && outcome.rows_affected > 0
+        && let Some(id) = outcome.last_insert_rowid
+    {
+        deliver_record_karma(services.clone(), [id as u32]).await?;
+    }
+    if needs_karma_refresh && outcome.rows_affected > 0 {
+        refresh_karma_cache(services.clone()).await?;
+    }
+
+    Ok(())
 }
 
 pub async fn set_active_collection(services: InjectedServices, id: &str) -> Result<(), Error> {
@@ -179,16 +229,27 @@ pub async fn set_record_quantity(
     id: u32,
     quantity: f64,
 ) -> Result<(), Error> {
-    execute_statement(
-        services,
+    if let Ok(record) = services.repository.record.get_by_id(id).await
+        && (record.quantity - quantity).abs() < f64::EPSILON
+    {
+        return Ok(());
+    }
+
+    let outcome = execute_statement(
+        services.clone(),
         "UPDATE record SET quantity = ? WHERE id = ?",
         vec![
             SqlParameter::Real(quantity),
             SqlParameter::Integer(id as i64),
         ],
     )
-    .await
-    .map(|_| ())
+    .await?;
+
+    if outcome.rows_affected > 0 {
+        deliver_record_karma(services.clone(), [id]).await?;
+    }
+
+    Ok(())
 }
 
 pub async fn update_frequency(

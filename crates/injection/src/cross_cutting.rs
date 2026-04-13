@@ -1,3 +1,4 @@
+use domain::clean::karma::Karma;
 use persistence::repositories::{
     collection::{CollectionRepository, CollectionRepositoryImpl},
     command::{CommandRepository, CommandRepositoryImpl},
@@ -14,7 +15,10 @@ use persistence::repositories::{
 use persistence::storage::StorageService;
 use persistence::write_coordinator::WriteCoordinatorHandle;
 use sqlx::{Pool, Sqlite};
-use std::sync::Arc;
+use std::{
+    collections::HashMap,
+    sync::{Arc, RwLock},
+};
 
 pub struct Repositories {
     pub configuration: Arc<dyn ConfigurationRepository>,
@@ -35,9 +39,33 @@ pub struct Injected {
     pub repository: Repositories,
     pub storage: Arc<StorageService>,
     pub writer: WriteCoordinatorHandle,
+    pub karma_cache: Arc<KarmaCache>,
 }
 
 pub type InjectedServices = Arc<Injected>;
+
+#[derive(Default)]
+pub struct KarmaCache {
+    karma_by_record: RwLock<HashMap<u32, Vec<Karma>>>,
+}
+
+impl KarmaCache {
+    pub fn replace(&self, karma_by_record: HashMap<u32, Vec<Karma>>) {
+        *self
+            .karma_by_record
+            .write()
+            .unwrap_or_else(|poisoned| poisoned.into_inner()) = karma_by_record;
+    }
+
+    pub fn karma_for_record(&self, record_id: u32) -> Vec<Karma> {
+        self.karma_by_record
+            .read()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .get(&record_id)
+            .cloned()
+            .unwrap_or_default()
+    }
+}
 
 pub fn dependency_injection(
     db: Arc<Pool<Sqlite>>,
@@ -61,6 +89,7 @@ pub fn dependency_injection(
         },
         storage,
         writer,
+        karma_cache: Arc::new(KarmaCache::default()),
     });
 
     services

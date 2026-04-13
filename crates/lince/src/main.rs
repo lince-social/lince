@@ -11,6 +11,7 @@ compile_error!("Enable only one frontend feature at a time: `gui`, `tui`, or `ht
 
 #[cfg(feature = "karma")]
 use application::karma::karma_deliver;
+use application::karma::refresh_karma_cache;
 use crossterm::{
     event::{Event, KeyCode, KeyEventKind, read},
     terminal::{disable_raw_mode, enable_raw_mode},
@@ -88,6 +89,7 @@ async fn main() -> Result<(), Error> {
     }
 
     let services = dependency_injection(read_db.clone(), storage, writer.clone());
+    refresh_karma_cache(services.clone()).await?;
 
     #[cfg(feature = "karma")]
     let karma_handle = if karma_enabled {

@@ -1,7 +1,4 @@
-use crate::{
-    command::{CommandOrigin, spawn_command_buffer_session_by_id},
-    karma::karma_deliver,
-};
+use crate::command::{CommandOrigin, spawn_command_buffer_session_by_id};
 use domain::dirty::operation::{DatabaseTable, OperationActions, ParsedOperation};
 use injection::cross_cutting::InjectedServices;
 use utils::logging::{LogEntry, log};
@@ -150,15 +147,6 @@ pub async fn operation_execute(
         let _ = crate::write::set_record_quantity(services.clone(), id, 0.0)
             .await
             .inspect_err(|e| log(LogEntry::Error(e.kind(), e.to_string())));
-
-        let vec_karma = services.repository.karma.get_active(Some(id)).await;
-        if let Err(e) = vec_karma {
-            log(LogEntry::Error(e.kind(), e.to_string()))
-        } else {
-            let _ = karma_deliver(services.clone(), vec_karma.unwrap())
-                .await
-                .inspect_err(|e| log(LogEntry::Error(e.kind(), e.to_string())));
-        }
     }
 
     parse_operation_and_execute(services.clone(), operation.clone()).await;

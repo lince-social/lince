@@ -1,7 +1,7 @@
 use crate::infrastructure::backend_api_store::{
     ApiTable, BackendApiStore, TableListQuery, validate_file_key,
 };
-use ::application::karma::karma_deliver;
+use ::application::karma::{deliver_record_karma, karma_deliver, refresh_karma_cache};
 use ::application::{
     auth::{AuthService, AuthSubject},
     subscription::{SubscriptionHandle, SubscriptionRegistry},
@@ -137,7 +137,22 @@ impl BackendApiService {
             | ApiTable::Karma
             | ApiTable::Configuration => {
                 let (sql, params) = self.store.build_standard_insert(table, object)?;
-                self.services.writer.execute_statement(sql, params).await
+                let outcome = self.services.writer.execute_statement(sql, params).await?;
+                if outcome.rows_affected > 0
+                    && matches!(
+                        table,
+                        ApiTable::Karma | ApiTable::KarmaCondition | ApiTable::KarmaConsequence
+                    )
+                {
+                    refresh_karma_cache(self.services.clone()).await?;
+                }
+                if outcome.rows_affected > 0
+                    && matches!(table, ApiTable::Record)
+                    && let Some(id) = outcome.last_insert_rowid
+                {
+                    deliver_record_karma(self.services.clone(), [id as u32]).await?;
+                }
+                Ok(outcome)
             }
             ApiTable::AppUser => {
                 require_admin(claims)?;
@@ -190,7 +205,19 @@ impl BackendApiService {
             | ApiTable::Karma
             | ApiTable::Configuration => {
                 let (sql, params) = self.store.build_standard_update(table, id, object)?;
-                self.services.writer.execute_statement(sql, params).await
+                let outcome = self.services.writer.execute_statement(sql, params).await?;
+                if outcome.rows_affected > 0
+                    && matches!(
+                        table,
+                        ApiTable::Karma | ApiTable::KarmaCondition | ApiTable::KarmaConsequence
+                    )
+                {
+                    refresh_karma_cache(self.services.clone()).await?;
+                }
+                if outcome.rows_affected > 0 && matches!(table, ApiTable::Record) {
+                    deliver_record_karma(self.services.clone(), [id as u32]).await?;
+                }
+                Ok(outcome)
             }
             ApiTable::AppUser => {
                 ensure_self_or_admin(claims, id)?;
@@ -228,7 +255,12 @@ impl BackendApiService {
         match table {
             ApiTable::Record => {
                 let (sql, params) = self.store.build_record_batch_update(rows)?;
-                self.services.writer.execute_statement(sql, params).await
+                let record_ids = collect_record_ids_from_rows(rows)?;
+                let outcome = self.services.writer.execute_statement(sql, params).await?;
+                if outcome.rows_affected > 0 {
+                    deliver_record_karma(self.services.clone(), record_ids).await?;
+                }
+                Ok(outcome)
             }
             _ => Err(Error::new(
                 ErrorKind::InvalidInput,
@@ -250,8 +282,13 @@ impl BackendApiService {
                 last_insert_rowid: None,
             });
         }
+        let record_ids = updates.iter().map(|row| row.id as u32).collect::<Vec<_>>();
         let (sql, params) = build_record_quantity_batch_update(&updates);
-        self.services.writer.execute_statement(sql, params).await
+        let outcome = self.services.writer.execute_statement(sql, params).await?;
+        if outcome.rows_affected > 0 {
+            deliver_record_karma(self.services.clone(), record_ids).await?;
+        }
+        Ok(outcome)
     }
 
     pub async fn delete_table_row(
@@ -279,6 +316,17 @@ impl BackendApiService {
             _ => self.services.writer.execute_statement(sql, params).await,
         }?;
 
+        if outcome.rows_affected > 0 && matches!(table, ApiTable::Record) {
+            deliver_record_karma(self.services.clone(), [id as u32]).await?;
+        }
+        if outcome.rows_affected > 0
+            && matches!(
+                table,
+                ApiTable::Karma | ApiTable::KarmaCondition | ApiTable::KarmaConsequence
+            )
+        {
+            refresh_karma_cache(self.services.clone()).await?;
+        }
         if matches!(table, ApiTable::AppUser | ApiTable::Role) {
             self.auth.refresh_cache().await?;
         }
@@ -452,6 +500,28 @@ fn parse_text_value(field_name: &str, value: &Value) -> Result<String, Error> {
             format!("Expected string for field {field_name}"),
         )
     })
+}
+
+fn collect_record_ids_from_rows(rows: &[Map<String, Value>]) -> Result<Vec<u32>, Error> {
+    let mut record_ids = BTreeSet::<u32>::new();
+
+    for row in rows {
+        let id = row
+            .get("id")
+            .ok_or_else(|| Error::new(ErrorKind::InvalidInput, "Missing required field: id"))?;
+        let id = id
+            .as_i64()
+            .ok_or_else(|| Error::new(ErrorKind::InvalidInput, "Expected integer for field id"))?;
+        if id <= 0 {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "Record id must be positive",
+            ));
+        }
+        record_ids.insert(id as u32);
+    }
+
+    Ok(record_ids.into_iter().collect())
 }
 
 fn normalize_record_quantity_batch_rows(

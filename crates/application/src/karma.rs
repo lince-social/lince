@@ -20,6 +20,54 @@ use std::{
     io::{Error, ErrorKind},
 };
 
+pub async fn refresh_karma_cache(services: InjectedServices) -> Result<(), Error> {
+    let regex_record_quantity = Regex::new(r"rq(\d+)").unwrap();
+    let regex_sync = Regex::new(r"sr(?:nt|t|n)(?:q?h?b?)(\d+)").unwrap();
+    let vec_karma = services.repository.karma.get(None).await?;
+
+    let mut karma_by_record: HashMap<u32, Vec<Karma>> = HashMap::new();
+
+    for karma in vec_karma {
+        let mut ids =
+            extract_karma_record_ids(&regex_record_quantity, &regex_sync, &karma.condition);
+        ids.sort_unstable();
+        ids.dedup();
+        for record_id in ids {
+            karma_by_record
+                .entry(record_id)
+                .or_default()
+                .push(karma.clone());
+        }
+    }
+
+    for vec_karma in karma_by_record.values_mut() {
+        vec_karma.sort_by_key(|karma| karma.id);
+        vec_karma.dedup_by_key(|karma| karma.id);
+    }
+
+    services.karma_cache.replace(karma_by_record);
+    Ok(())
+}
+
+pub async fn deliver_record_karma(
+    services: InjectedServices,
+    record_ids: impl IntoIterator<Item = u32>,
+) -> Result<(), Error> {
+    let mut ordered_record_ids = record_ids.into_iter().collect::<Vec<_>>();
+    ordered_record_ids.sort_unstable();
+    ordered_record_ids.dedup();
+
+    for record_id in ordered_record_ids {
+        let vec_karma = services.karma_cache.karma_for_record(record_id);
+        if vec_karma.is_empty() {
+            continue;
+        }
+        karma_deliver(services.clone(), vec_karma).await?;
+    }
+
+    Ok(())
+}
+
 pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) -> Result<(), Error> {
     let regex_record_quantity = Regex::new(r"rq(\d+)").unwrap();
     let regex_frequency = Regex::new(r"f(\d+)").unwrap();
@@ -84,8 +132,15 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
 
         if let Some(caps) = regex_record_quantity.captures(&karma.consequence) {
             if let Ok(id) = caps[1].parse::<u32>() {
-                if let Err(e) =
-                    crate::write::set_record_quantity(services.clone(), id, condition).await
+                if let Err(e) = execute_statement(
+                    services.clone(),
+                    "UPDATE record SET quantity = ? WHERE id = ?",
+                    vec![
+                        SqlParameter::Real(condition),
+                        SqlParameter::Integer(id as i64),
+                    ],
+                )
+                .await
                 {
                     log(LogEntry::Error(
                         e.kind(),
@@ -134,6 +189,28 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
     }
 
     Ok(())
+}
+
+fn extract_karma_record_ids(
+    regex_record_quantity: &Regex,
+    regex_sync: &Regex,
+    condition: &str,
+) -> Vec<u32> {
+    let mut record_ids = Vec::new();
+
+    for caps in regex_record_quantity.captures_iter(condition) {
+        if let Ok(id) = caps[1].parse::<u32>() {
+            record_ids.push(id);
+        }
+    }
+
+    for caps in regex_sync.captures_iter(condition) {
+        if let Ok(id) = caps[1].parse::<u32>() {
+            record_ids.push(id);
+        }
+    }
+
+    record_ids
 }
 
 async fn replace_record_quantities(

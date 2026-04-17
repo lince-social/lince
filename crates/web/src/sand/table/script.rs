@@ -101,6 +101,101 @@ pub(super) fn script() -> String {
           );
         }
 
+        function buildDeleteRowUrl(tableName, rowId) {
+          if (!serverId) {
+            return "";
+          }
+
+          const trimmedTableName = String(tableName || "").trim();
+          const numericRowId = Number(rowId);
+          if (!trimmedTableName || !Number.isInteger(numericRowId) || numericRowId <= 0) {
+            return "";
+          }
+
+          return (
+            "/host/integrations/servers/" +
+            encodeURIComponent(serverId) +
+            "/table/" +
+            encodeURIComponent(trimmedTableName) +
+            "/" +
+            encodeURIComponent(String(numericRowId))
+          );
+        }
+
+        async function deleteRowFromTable(button) {
+          if (!(button instanceof HTMLElement)) {
+            return;
+          }
+
+          const rowId = Number(button.dataset.deleteRowId || 0);
+          const tableName = String(
+            button.dataset.deleteTableName ||
+              button.closest("tbody")?.dataset.sourceTable ||
+              button.closest("table")?.dataset.sourceTable ||
+              "",
+          ).trim();
+          const deleteUrl = buildDeleteRowUrl(tableName, rowId);
+          if (!deleteUrl) {
+            return;
+          }
+
+          const previousLabel = button.textContent || "";
+          button.disabled = true;
+          button.dataset.deleting = "true";
+          setStatus("Deleting", "loading");
+
+          try {
+            const response = await fetch(deleteUrl, {
+              method: "DELETE",
+              headers: {
+                Accept: "application/json",
+              },
+              cache: "no-store",
+            });
+
+            if (response.status === 401) {
+              window.LinceWidgetHost?.invalidateServerAuth?.(serverId);
+              setStatus("Bloqueado", "error");
+              return;
+            }
+
+            const rawBody = await response.text().catch(() => "");
+            let payload = null;
+            if (rawBody) {
+              try {
+                payload = JSON.parse(rawBody);
+              } catch {
+                payload = null;
+              }
+            }
+
+            if (!response.ok) {
+              throw new Error(
+                (payload && typeof payload.message === "string" && payload.message) ||
+                  rawBody ||
+                  `Nao foi possivel excluir a linha (${response.status}).`,
+              );
+            }
+
+            if (!payload || Number(payload.rows_affected || 0) <= 0) {
+              throw new Error("A linha nao foi encontrada na tabela consultada.");
+            }
+
+            setStatus("Live", "live");
+          } catch (error) {
+            setStatus("Delete failed", "error");
+            if (error instanceof Error) {
+              console.error(error);
+            } else {
+              console.error(new Error("Nao foi possivel excluir a linha."));
+            }
+          } finally {
+            button.disabled = false;
+            delete button.dataset.deleting;
+            button.textContent = previousLabel;
+          }
+        }
+
         function parseEventBlock(block) {
           const lines = block.split("\n");
           let eventName = "message";
@@ -460,6 +555,21 @@ pub(super) fn script() -> String {
         if (tablePanel) {
           tablePanel.tabIndex = 0;
           tablePanel.addEventListener("keydown", handleTableKeydown);
+          tablePanel.addEventListener("click", (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) {
+              return;
+            }
+
+            const button = target.closest("[data-delete-row-id][data-delete-table-name]");
+            if (!button || !(button instanceof HTMLElement)) {
+              return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+            deleteRowFromTable(button);
+          });
           tablePanel.addEventListener("pointerdown", () => {
             if (!state.nerdMode) {
               return;

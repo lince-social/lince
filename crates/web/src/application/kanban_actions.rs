@@ -270,7 +270,13 @@ impl KanbanActionService {
         let resolved = self
             .resolve_instance(session_token, instance_id, ActionPermission::WriteTableOnly)
             .await?;
+        if payload.parent_id.is_some() && payload.remove_parent_id.is_some() {
+            return Err(KanbanActionError::Validation(
+                "Nao e possivel adicionar e remover parent ao mesmo tempo.".into(),
+            ));
+        }
         validate_parent_id(payload.parent_id)?;
+        validate_parent_id(payload.remove_parent_id)?;
         self.ensure_record_exists(
             session_token,
             &resolved.organ,
@@ -288,12 +294,13 @@ impl KanbanActionService {
             .await?;
         }
 
-        self.sync_parent_link(
+        self.sync_parent_links(
             session_token,
             &resolved.organ,
             resolved.bearer_token.as_deref(),
             payload.record_id,
             payload.parent_id,
+            payload.remove_parent_id,
         )
         .await?;
 
@@ -304,6 +311,7 @@ impl KanbanActionService {
             await_stream_refresh: true,
             detail: json!({
                 "parent_id": payload.parent_id,
+                "remove_parent_id": payload.remove_parent_id,
             }),
         })
     }
@@ -1124,7 +1132,14 @@ impl KanbanActionService {
                 .await?;
         }
         if let Some(parent_id) = input.parent_id {
-            self.sync_parent_link(session_token, organ, bearer_token, record_id, parent_id)
+            self.sync_parent_links(
+                session_token,
+                organ,
+                bearer_token,
+                record_id,
+                parent_id,
+                None,
+            )
                 .await?;
         }
         Ok(())
@@ -1240,17 +1255,70 @@ impl KanbanActionService {
         Ok(())
     }
 
-    async fn sync_parent_link(
+    async fn sync_parent_links(
         &self,
         session_token: Option<&str>,
         organ: &Organ,
         bearer_token: Option<&str>,
         record_id: i64,
         parent_id: Option<i64>,
+        remove_parent_id: Option<i64>,
     ) -> Result<(), KanbanActionError> {
         let all_links = self
             .list_record_links(session_token, organ, bearer_token)
             .await?;
+        if let Some(remove_parent_id) = remove_parent_id {
+            let existing = all_links
+                .iter()
+                .filter(|row| {
+                    row.record_id == record_id
+                        && row.link_type == "parent"
+                        && row.target_table == "record"
+                        && row.target_id == remove_parent_id
+                })
+                .cloned()
+                .collect::<Vec<_>>();
+            for row in existing {
+                self.delete_table_row(session_token, organ, bearer_token, "record_link", row.id)
+                    .await?;
+            }
+            return Ok(());
+        }
+
+        if let Some(parent_id) = parent_id {
+            if record_id == parent_id {
+                return Err(KanbanActionError::Validation(
+                    "Uma task nao pode ser pai dela mesma.".into(),
+                ));
+            }
+            ensure_no_parent_cycle(record_id, parent_id, &all_links)?;
+
+            let already_linked = all_links.iter().any(|row| {
+                row.record_id == record_id
+                    && row.link_type == "parent"
+                    && row.target_table == "record"
+                    && row.target_id == parent_id
+            });
+            if !already_linked {
+                self.create_table_row(
+                    session_token,
+                    organ,
+                    bearer_token,
+                    "record_link",
+                    json!({
+                        "record_id": record_id,
+                        "link_type": "parent",
+                        "target_table": "record",
+                        "target_id": parent_id,
+                        "position": null,
+                        "freestyle_data_structure": null,
+                    }),
+                )
+                .await?;
+            }
+            return Ok(());
+        }
+
         let existing = all_links
             .iter()
             .filter(|row| {
@@ -1260,41 +1328,9 @@ impl KanbanActionService {
             })
             .cloned()
             .collect::<Vec<_>>();
-
-        if let Some(parent_id) = parent_id {
-            if record_id == parent_id {
-                return Err(KanbanActionError::Validation(
-                    "Uma task nao pode ser pai dela mesma.".into(),
-                ));
-            }
-            ensure_no_parent_cycle(record_id, parent_id, &all_links)?;
-        }
-
-        for row in &existing {
-            if Some(row.target_id) != parent_id {
-                self.delete_table_row(session_token, organ, bearer_token, "record_link", row.id)
-                    .await?;
-            }
-        }
-
-        if let Some(parent_id) = parent_id
-            && !existing.iter().any(|row| row.target_id == parent_id)
-        {
-            self.create_table_row(
-                session_token,
-                organ,
-                bearer_token,
-                "record_link",
-                json!({
-                    "record_id": record_id,
-                    "link_type": "parent",
-                    "target_table": "record",
-                    "target_id": parent_id,
-                    "position": null,
-                    "freestyle_data_structure": null,
-                }),
-            )
-            .await?;
+        for row in existing {
+            self.delete_table_row(session_token, organ, bearer_token, "record_link", row.id)
+                .await?;
         }
 
         Ok(())
@@ -1370,14 +1406,14 @@ impl KanbanActionService {
             })
             .collect::<Vec<_>>();
 
-        let parent = links
+        let parents = links
             .iter()
-            .find(|row| {
+            .filter(|row| {
                 row.record_id == record.id
                     && row.link_type == "parent"
                     && row.target_table == "record"
             })
-            .and_then(|link| {
+            .filter_map(|link| {
                 records
                     .iter()
                     .find(|candidate| candidate.id == link.target_id)
@@ -1387,7 +1423,23 @@ impl KanbanActionService {
                             "head": parent.head,
                         })
                     })
-            });
+            })
+            .collect::<Vec<_>>();
+        let mut parents = parents;
+        parents.sort_by(|left, right| {
+            let left_head = left.get("head").and_then(Value::as_str).unwrap_or("");
+            let right_head = right.get("head").and_then(Value::as_str).unwrap_or("");
+            left_head
+                .to_lowercase()
+                .cmp(&right_head.to_lowercase())
+                .then_with(|| {
+                    left.get("id")
+                        .and_then(Value::as_i64)
+                        .unwrap_or_default()
+                        .cmp(&right.get("id").and_then(Value::as_i64).unwrap_or_default())
+                })
+        });
+        let parent = parents.first().cloned();
 
         let children = links
             .iter()
@@ -1486,6 +1538,7 @@ impl KanbanActionService {
             estimate_seconds,
             assignees,
             parent,
+            parents,
             children,
             comments: comment_values,
             resources: resource_values,
@@ -2153,6 +2206,7 @@ pub struct UpdateRecordBodyRequest {
 pub struct UpdateParentRelationRequest {
     pub record_id: i64,
     pub parent_id: Option<i64>,
+    pub remove_parent_id: Option<i64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -2332,6 +2386,7 @@ struct RecordDetailPayload {
     estimate_seconds: Option<i64>,
     assignees: Vec<Value>,
     parent: Option<Value>,
+    parents: Vec<Value>,
     children: Vec<Value>,
     comments: Vec<Value>,
     resources: Vec<Value>,
@@ -2357,6 +2412,7 @@ impl RecordDetailPayload {
             "estimate_seconds": self.estimate_seconds,
             "assignees": self.assignees,
             "parent": self.parent,
+            "parents": self.parents,
             "children": self.children,
             "comments": self.comments,
             "resources": self.resources,
@@ -2646,23 +2702,31 @@ fn ensure_no_parent_cycle(
     parent_id: i64,
     all_links: &[RecordLinkRow],
 ) -> Result<(), KanbanActionError> {
-    let mut parent_map = std::collections::BTreeMap::new();
+    let mut child_map = std::collections::BTreeMap::<i64, Vec<i64>>::new();
     for row in all_links {
         if row.link_type == "parent" && row.target_table == "record" {
-            parent_map.insert(row.record_id, row.target_id);
+            child_map.entry(row.target_id).or_default().push(row.record_id);
         }
     }
-    parent_map.insert(record_id, parent_id);
 
-    let mut cursor = Some(parent_id);
+    let mut queue = std::collections::VecDeque::from([record_id]);
     let mut visited = std::collections::BTreeSet::new();
-    while let Some(current) = cursor {
-        if current == record_id || !visited.insert(current) {
+    while let Some(current) = queue.pop_front() {
+        if !visited.insert(current) {
+            continue;
+        }
+        if current == parent_id {
             return Err(KanbanActionError::Validation(
                 "A hierarquia de tasks criaria um ciclo.".into(),
             ));
         }
-        cursor = parent_map.get(&current).copied();
+        if let Some(children) = child_map.get(&current) {
+            for child_id in children {
+                if *child_id > 0 {
+                    queue.push_back(*child_id);
+                }
+            }
+        }
     }
     Ok(())
 }
@@ -2826,7 +2890,17 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                     }
                 }
             }
-            @if let Some(parent) = &detail.parent {
+            @if !detail.parents.is_empty() {
+                p.kanban-focus-card__parent {
+                    "Parents: "
+                    @for (index, parent) in detail.parents.iter().enumerate() {
+                        @if index > 0 { ", " }
+                        @if let Some(parent_head) = parent.get("head").and_then(Value::as_str) {
+                            a href="#" data-record-link=(parent.get("id").and_then(Value::as_i64).unwrap_or_default()) data-on:click__prevent="window.KanbanWidget?.loadRecordDetail(Number(evt.currentTarget.dataset.recordLink || 0))" { (parent_head) }
+                        }
+                    }
+                }
+            } @else if let Some(parent) = &detail.parent {
                 @if let Some(parent_head) = parent.get("head").and_then(Value::as_str) {
                     p.kanban-focus-card__parent {
                         "Parent: "

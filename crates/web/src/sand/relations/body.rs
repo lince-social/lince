@@ -174,7 +174,7 @@ pub(super) fn body() -> Markup {
 
                                 div id="selection-empty" class="selectionEmpty" {
                                     p class="mutedCopy" {
-                                        "Select a node. Setting a parent replaces only that node's parent link. Removing parent clears only that parent link and keeps its children untouched."
+                                        "Select a node. Add parents without replacing the existing ones, or click a current parent to remove only that link. Leave nothing selected to remove all parents."
                                     }
                                 }
 
@@ -247,6 +247,14 @@ pub(super) fn body() -> Markup {
                                     div class="actionRow actionRow--split" {
                                         button id="connect-parent" class="button button--primary" type="button" { "Set parent" }
                                         button id="disconnect-parent" class="button button--ghost" type="button" { "Remove parent" }
+                                    }
+
+                                    div class="section" {
+                                        div class="sectionLabel" { "Current parents" }
+                                        p class="mutedCopy" {
+                                            "Click a parent chip to remove just that link. If nothing is selected, removing clears every parent link."
+                                        }
+                                        div id="current-parent-list" class="chipList" {}
                                     }
 
                                     div class="section" {

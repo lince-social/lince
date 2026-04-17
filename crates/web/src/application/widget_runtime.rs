@@ -139,6 +139,8 @@ impl WidgetRuntimeService {
                     "assignee_names_json",
                     "parent_id",
                     "parent_head",
+                    "parent_ids_json",
+                    "parent_heads_json",
                     "depth",
                     "children_count",
                     "children_json",

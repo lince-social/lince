@@ -50,6 +50,7 @@ pub(super) fn script() -> String {
     const parentSearchInput = document.getElementById("parent-search-query");
     const parentSearchSummary = document.getElementById("parent-search-summary");
     const parentChoiceList = document.getElementById("parent-choice-list");
+    const currentParentList = document.getElementById("current-parent-list");
     const childList = document.getElementById("child-list");
     const parentHeadQuery = document.getElementById("parent-head-query");
     const categoryInput = document.getElementById("category-input");
@@ -106,6 +107,7 @@ pub(super) fn script() -> String {
         physics: { ...DEFAULT_PHYSICS },
         selectedId: null,
         selectedParentId: null,
+        selectedRemovalParentId: null,
         parentSearchQuery: "",
         recordDetail: null,
         recordDetailLoading: false,
@@ -185,6 +187,23 @@ pub(super) fn script() -> String {
                 continue;
             }
             seen.add(key);
+            out.push(value);
+        }
+        return out;
+    }
+
+    function uniqueIntegers(values) {
+        const seen = new Set();
+        const out = [];
+        for (const raw of Array.isArray(values) ? values : []) {
+            const value = Number(raw);
+            if (!Number.isFinite(value) || value <= 0) {
+                continue;
+            }
+            if (seen.has(value)) {
+                continue;
+            }
+            seen.add(value);
             out.push(value);
         }
         return out;
@@ -659,17 +678,18 @@ pub(super) fn script() -> String {
         }
 
         const blockedIds = collectDescendantIds(node.id);
+        const currentParentIds = uniqueIntegers(
+            Array.isArray(node.parentIds) ? node.parentIds : [node.parentId],
+        );
         const candidates = sortedParentCandidates(
             state.parentSearchQuery,
-            new Set([...blockedIds, node.id]),
+            new Set([...blockedIds, node.id, ...currentParentIds]),
         );
 
         const selectedParent = state.nodes.find((candidate) => candidate.id === state.selectedParentId) || null;
         parentSearchSummary.textContent = selectedParent
             ? `Target father: #${selectedParent.id} ${selectedParent.head || "Untitled"}`
-            : node.parentId
-              ? `Current father: #${node.parentId} ${node.parentHead || "Untitled"}`
-              : "No father selected.";
+            : "Choose a possible father from the current graph.";
 
         if (!candidates.length) {
             parentChoiceList.innerHTML = '<p class="mutedCopy">No possible fathers match the current search.</p>';
@@ -690,6 +710,38 @@ pub(super) fn script() -> String {
                 `;
             })
             .join("");
+    }
+
+    function renderCurrentParentList(node) {
+        if (!currentParentList) {
+            return [];
+        }
+        const parentIds = uniqueIntegers(
+            node ? (Array.isArray(node.parentIds) ? node.parentIds : [node.parentId]) : [],
+        );
+        const currentParents = parentIds
+            .map((parentId) => state.nodes.find((candidate) => candidate.id === parentId) || null)
+            .filter(Boolean);
+        if (!currentParents.length) {
+            currentParentList.innerHTML = '<span class="mutedCopy">No current parents.</span>';
+            return currentParents;
+        }
+
+        currentParentList.innerHTML = currentParents
+            .map((parent) => {
+                const isSelected = parent.id === state.selectedRemovalParentId;
+                const categories = Array.isArray(parent.categories) && parent.categories.length
+                    ? parent.categories.join(", ")
+                    : "No categories";
+                return `
+                    <button class="chipButton${isSelected ? " is-selected" : ""}" type="button" data-parent-remove="${parent.id}" title="Remove this parent">
+                        <span>#${parent.id} ${escapeHtml(parent.head || "Untitled")}</span>
+                        <span class="chipButton__meta">${escapeHtml(categories)}</span>
+                    </button>
+                `;
+            })
+            .join("");
+        return currentParents;
     }
 
     function loadRecordDetail(recordId) {
@@ -762,7 +814,11 @@ pub(super) fn script() -> String {
             selectionPill.textContent = "None";
             selectionEmpty.hidden = false;
             selectionContent.hidden = true;
+            selectionSummary.textContent = "";
             childList.innerHTML = "";
+            if (currentParentList) {
+                currentParentList.innerHTML = "";
+            }
             parentChoiceList.innerHTML = "";
             parentSearchSummary.textContent = "Choose a possible father from the current graph.";
             connectParentButton.disabled = true;
@@ -772,10 +828,10 @@ pub(super) fn script() -> String {
         }
 
         if (state.selectedParentId != null && !state.nodes.some((item) => item.id === state.selectedParentId)) {
-            state.selectedParentId = node.parentId || null;
+            state.selectedParentId = null;
         }
-        if (state.selectedParentId == null) {
-            state.selectedParentId = node.parentId || null;
+        if (state.selectedRemovalParentId != null && !state.nodes.some((item) => item.id === state.selectedRemovalParentId)) {
+            state.selectedRemovalParentId = null;
         }
 
         selectionPill.textContent = `#${node.id}`;
@@ -783,25 +839,30 @@ pub(super) fn script() -> String {
         selectionContent.hidden = false;
         parentSearchInput.value = state.parentSearchQuery;
 
-        const parent = state.nodes.find((item) => item.id === node.parentId) || null;
+        const currentParents = renderCurrentParentList(node);
         const draftParent = state.nodes.find((item) => item.id === state.selectedParentId) || null;
         const children = Array.isArray(node.children) ? node.children : [];
         const categories = Array.isArray(node.categories) ? node.categories : [];
-        const parentLabel = parent
-            ? `#${parent.id} ${parent.head}`
-            : node.parentHead || "none";
+        const parentLabel = currentParents.length
+            ? currentParents
+                  .map((parent) => `#${parent.id} ${parent.head || "Untitled"}`)
+                  .join(", ")
+            : "none";
         const targetLabel = draftParent
             ? `#${draftParent.id} ${draftParent.head}`
-            : node.parentId
-              ? parentLabel
-              : "none";
+            : "none";
+        const removalParent = state.nodes.find((item) => item.id === state.selectedRemovalParentId) || null;
+        const removalLabel = removalParent
+            ? `#${removalParent.id} ${removalParent.head || "Untitled"}`
+            : "none";
 
         selectionSummary.textContent = [
             `id: ${node.id}`,
             `head: ${node.head || "Untitled"}`,
             `quantity: ${node.quantity}`,
-            `current parent: ${parentLabel}`,
+            `current parents: ${parentLabel}`,
             `target parent: ${targetLabel}`,
+            `removal target: ${removalLabel}`,
             `depth: ${node.depth == null ? "n/a" : node.depth}`,
             `categories: ${categories.length ? categories.join(", ") : "none"}`,
         ].join("\n");
@@ -813,8 +874,10 @@ pub(super) fn script() -> String {
             : '<span class="mutedCopy">No children.</span>';
 
         renderRecordEditor(node);
-        connectParentButton.disabled = state.pendingParentMutation || !draftParent || draftParent.id === node.parentId;
-        disconnectParentButton.disabled = state.pendingParentMutation || !node.parentId;
+        const currentParentIds = new Set(currentParents.map((parent) => parent.id));
+        connectParentButton.disabled =
+            state.pendingParentMutation || !draftParent || currentParentIds.has(draftParent.id);
+        disconnectParentButton.disabled = state.pendingParentMutation || !currentParents.length;
         renderParentChoices(node);
     }
 
@@ -1198,6 +1261,10 @@ pub(super) fn script() -> String {
         }
     }
 
+    function parseIntegerArray(raw) {
+        return uniqueIntegers(parseJsonArray(raw));
+    }
+
     function parseRow(row) {
         const id = Number(parseCell(row, "id"));
         const quantity = Number(parseCell(row, "quantity"));
@@ -1217,9 +1284,16 @@ pub(super) fn script() -> String {
                 taskType: child?.task_type == null ? null : String(child.task_type),
             }))
             .filter((child) => Number.isFinite(child.id));
-        const parsedParentId = parseOptionalInteger(parseCell(row, "parent_id"));
-        const parentId = parsedParentId && parsedParentId > 0 ? parsedParentId : null;
-        const parentHead = parseCell(row, "parent_head") || null;
+        const parentIds = uniqueIntegers([
+            ...parseIntegerArray(parseCell(row, "parent_ids_json")),
+            parseOptionalInteger(parseCell(row, "parent_id")),
+        ]);
+        const parentHeads = uniqueStrings([
+            ...parseStringArray(parseCell(row, "parent_heads_json")),
+            parseCell(row, "parent_head"),
+        ]);
+        const parentId = parentIds[0] || null;
+        const parentHead = parentHeads[0] || null;
 
         return {
             id,
@@ -1228,6 +1302,8 @@ pub(super) fn script() -> String {
             body: parseCell(row, "body"),
             taskType: parseCell(row, "task_type") || null,
             categories,
+            parentIds,
+            parentHeads,
             parentId,
             parentHead,
             declaredChildren,
@@ -1271,29 +1347,51 @@ pub(super) fn script() -> String {
         });
     }
 
-    function inferParentIdFromHead(node, nodesById) {
-        if (node.parentId || !node.parentHead) {
-            return node.parentId;
-        }
-        const needle = String(node.parentHead || "").trim().toLowerCase();
-        if (!needle) {
-            return null;
+    function inferParentIdsFromNode(node, nodesById) {
+        const explicitIds = uniqueIntegers([
+            ...(Array.isArray(node.parentIds) ? node.parentIds : []),
+            node.parentId,
+        ]);
+        if (explicitIds.length) {
+            return explicitIds;
         }
 
-        let matchId = null;
-        for (const candidate of nodesById.values()) {
-            if (candidate.id === node.id) {
-                continue;
-            }
-            if (String(candidate.head || "").trim().toLowerCase() !== needle) {
-                continue;
-            }
-            if (matchId != null) {
-                return null;
-            }
-            matchId = candidate.id;
+        const heads = uniqueStrings([
+            ...(Array.isArray(node.parentHeads) ? node.parentHeads : []),
+            node.parentHead,
+        ]);
+        if (!heads.length) {
+            return [];
         }
-        return matchId;
+
+        const inferred = [];
+        for (const head of heads) {
+            const needle = String(head || "").trim().toLowerCase();
+            if (!needle) {
+                continue;
+            }
+
+            let matchId = null;
+            for (const candidate of nodesById.values()) {
+                if (candidate.id === node.id) {
+                    continue;
+                }
+                if (String(candidate.head || "").trim().toLowerCase() !== needle) {
+                    continue;
+                }
+                if (matchId != null) {
+                    matchId = null;
+                    break;
+                }
+                matchId = candidate.id;
+            }
+
+            if (matchId != null) {
+                inferred.push(matchId);
+            }
+        }
+
+        return uniqueIntegers(inferred);
     }
 
     function resolveDepths(nodes, nodesById) {
@@ -1315,10 +1413,27 @@ pub(super) fn script() -> String {
             }
 
             visiting.add(node.id);
-            let nextDepth = 0;
-            if (node.parentId && nodesById.has(node.parentId)) {
-                const parentDepth = visit(nodesById.get(node.parentId));
-                nextDepth = parentDepth == null ? null : parentDepth + 1;
+            const parentIds = uniqueIntegers(
+                Array.isArray(node.parentIds) ? node.parentIds : [node.parentId],
+            );
+            let nextDepth = null;
+            if (!parentIds.length) {
+                nextDepth = 0;
+            } else {
+                for (const parentId of parentIds) {
+                    if (!nodesById.has(parentId)) {
+                        continue;
+                    }
+                    const parentDepth = visit(nodesById.get(parentId));
+                    if (parentDepth == null) {
+                        continue;
+                    }
+                    const candidateDepth = parentDepth + 1;
+                    nextDepth = nextDepth == null ? candidateDepth : Math.min(nextDepth, candidateDepth);
+                }
+                if (nextDepth == null) {
+                    nextDepth = 0;
+                }
             }
             visiting.delete(node.id);
             memo.set(node.id, nextDepth);
@@ -1338,12 +1453,19 @@ pub(super) fn script() -> String {
 
         for (const node of parsedRows) {
             node.children = [];
-            node.parentId = inferParentIdFromHead(node, nodesById);
+            node.parentIds = inferParentIdsFromNode(node, nodesById);
+            node.parentId = node.parentIds[0] || null;
+            node.parentHead = node.parentHeads && node.parentHeads.length
+                ? node.parentHeads[0]
+                : node.parentHead;
         }
 
         for (const node of parsedRows) {
-            if (node.parentId && nodesById.has(node.parentId)) {
-                const parent = nodesById.get(node.parentId);
+            for (const parentId of uniqueIntegers(node.parentIds)) {
+                const parent = nodesById.get(parentId);
+                if (!parent || parent.id === node.id) {
+                    continue;
+                }
                 links.push({
                     sourceId: node.id,
                     targetId: parent.id,
@@ -1475,13 +1597,24 @@ pub(super) fn script() -> String {
         }
 
         for (const node of state.nodes) {
-            const parent = node.parentId ? nodesById.get(node.parentId) || null : null;
-            if (parent && parent.id !== node.id) {
-                node.parentHead = parent.head || null;
+            const parentIds = uniqueIntegers(
+                Array.isArray(node.parentIds) ? node.parentIds : [node.parentId],
+            );
+            node.parentIds = parentIds;
+            node.parentId = parentIds[0] || null;
+            if (!parentIds.length) {
+                node.parentHead = null;
+            } else {
+                const firstParent = nodesById.get(parentIds[0]) || null;
+                node.parentHead = firstParent ? firstParent.head || null : node.parentHead || null;
+            }
+            for (const parentId of parentIds) {
+                const parent = nodesById.get(parentId) || null;
+                if (!parent || parent.id === node.id) {
+                    continue;
+                }
                 links.push({ source: node, target: parent });
                 mergeChild(parent, node);
-            } else if (!node.parentId) {
-                node.parentHead = null;
             }
         }
 
@@ -1507,11 +1640,14 @@ pub(super) fn script() -> String {
     function captureParentState() {
         return {
             selectedParentId: state.selectedParentId,
+            selectedRemovalParentId: state.selectedRemovalParentId,
             pendingParentMutation: state.pendingParentMutation,
             nodes: state.nodes.map((node) => ({
                 id: node.id,
+                parentIds: Array.isArray(node.parentIds) ? node.parentIds.slice() : [],
                 parentId: node.parentId,
                 parentHead: node.parentHead,
+                parentHeads: Array.isArray(node.parentHeads) ? node.parentHeads.slice() : [],
             })),
         };
     }
@@ -1523,10 +1659,13 @@ pub(super) fn script() -> String {
             if (!saved) {
                 continue;
             }
+            node.parentIds = Array.isArray(saved.parentIds) ? saved.parentIds.slice() : [];
             node.parentId = saved.parentId;
             node.parentHead = saved.parentHead;
+            node.parentHeads = Array.isArray(saved.parentHeads) ? saved.parentHeads.slice() : [];
         }
         state.selectedParentId = snapshot?.selectedParentId ?? null;
+        state.selectedRemovalParentId = snapshot?.selectedRemovalParentId ?? null;
         state.pendingParentMutation = Boolean(snapshot?.pendingParentMutation);
         rebuildCurrentRelations();
     }
@@ -1537,9 +1676,32 @@ pub(super) fn script() -> String {
             return false;
         }
         const parent = parentId ? state.nodes.find((item) => item.id === parentId) || null : null;
-        node.parentId = parent ? parent.id : null;
-        node.parentHead = parent ? parent.head || null : null;
-        state.selectedParentId = parent ? parent.id : null;
+        const parentIds = uniqueIntegers([
+            ...(Array.isArray(node.parentIds) ? node.parentIds : []),
+            parent ? parent.id : null,
+        ]);
+        node.parentIds = parentIds;
+        node.parentId = parentIds[0] || null;
+        node.parentHead = parentIds.length ? parent?.head || node.parentHead || null : null;
+        rebuildCurrentRelations();
+        return true;
+    }
+
+    function applyOptimisticParentRemoval(recordId, parentId) {
+        const node = state.nodes.find((item) => item.id === recordId) || null;
+        if (!node) {
+            return false;
+        }
+        if (parentId) {
+            node.parentIds = uniqueIntegers(
+                (Array.isArray(node.parentIds) ? node.parentIds : []).filter((value) => value !== parentId),
+            );
+        } else {
+            node.parentIds = [];
+        }
+        node.parentId = node.parentIds[0] || null;
+        node.parentHead = node.parentIds.length ? node.parentHead || null : null;
+        state.selectedRemovalParentId = null;
         rebuildCurrentRelations();
         return true;
     }
@@ -1557,8 +1719,10 @@ pub(super) fn script() -> String {
                 existing.body = rawNode.body;
                 existing.taskType = rawNode.taskType;
                 existing.categories = rawNode.categories;
+                existing.parentIds = rawNode.parentIds;
                 existing.parentId = rawNode.parentId;
                 existing.parentHead = rawNode.parentHead;
+                existing.parentHeads = rawNode.parentHeads;
                 existing.declaredChildren = rawNode.declaredChildren;
                 existing.children = rawNode.children;
                 existing.childrenCount = rawNode.childrenCount;
@@ -1606,6 +1770,7 @@ pub(super) fn script() -> String {
         if (!state.nodes.some((node) => node.id === state.selectedId)) {
             state.selectedId = state.nodes.length ? state.nodes[0].id : null;
             state.selectedParentId = null;
+            state.selectedRemovalParentId = null;
             state.parentSearchQuery = "";
         }
     }
@@ -2038,6 +2203,7 @@ pub(super) fn script() -> String {
         if (!node) {
             state.selectedId = null;
             state.selectedParentId = null;
+            state.selectedRemovalParentId = null;
             state.parentSearchQuery = "";
             renderSelection();
             requestDraw();
@@ -2045,7 +2211,8 @@ pub(super) fn script() -> String {
         }
 
         state.selectedId = node.id;
-        state.selectedParentId = node.parentId || null;
+        state.selectedParentId = null;
+        state.selectedRemovalParentId = null;
         state.parentSearchQuery = "";
         if (state.activePanel !== "controls") {
             state.activePanel = "controls";
@@ -2079,6 +2246,8 @@ pub(super) fn script() -> String {
         })
             .then(() => {
                 state.pendingParentMutation = false;
+                state.selectedParentId = null;
+                state.selectedRemovalParentId = null;
                 renderSelection();
                 renderStatus("Saved", "live", "Parent relation updated.");
                 restartStream();
@@ -2094,18 +2263,29 @@ pub(super) fn script() -> String {
         if (!node) {
             return;
         }
+        const removalParentId = Number(state.selectedRemovalParentId || 0) || null;
         const relationSnapshot = captureParentState();
         state.pendingParentMutation = true;
-        applyOptimisticParentChange(node.id, null);
-        renderStatus("Saving", "status", "Parent relation removal pending.");
+        applyOptimisticParentRemoval(node.id, removalParentId);
+        renderStatus(
+            "Saving",
+            "status",
+            removalParentId ? "Parent relation removal pending." : "Removing all parent relations.",
+        );
         postAction("set-parent", {
             recordId: node.id,
             parentId: null,
+            removeParentId: removalParentId,
         })
             .then(() => {
                 state.pendingParentMutation = false;
+                state.selectedParentId = null;
                 renderSelection();
-                renderStatus("Saved", "live", "Parent relation removed.");
+                renderStatus(
+                    "Saved",
+                    "live",
+                    removalParentId ? "Parent relation removed." : "All parent relations removed.",
+                );
                 restartStream();
             })
             .catch((error) => {
@@ -2406,6 +2586,16 @@ pub(super) fn script() -> String {
                 return;
             }
             state.selectedParentId = Number(button.getAttribute("data-parent-choice") || 0) || null;
+            state.selectedRemovalParentId = null;
+            renderSelection();
+        });
+        currentParentList?.addEventListener("click", (event) => {
+            const button = event.target?.closest?.("[data-parent-remove]");
+            if (!button) {
+                return;
+            }
+            state.selectedRemovalParentId = Number(button.getAttribute("data-parent-remove") || 0) || null;
+            state.selectedParentId = null;
             renderSelection();
         });
         applyFiltersButton.addEventListener("click", applyFilters);

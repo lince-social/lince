@@ -82,6 +82,8 @@ struct KanbanRow {
     primary_category: Option<String>,
     categories: Vec<String>,
     assignee_names: Vec<String>,
+    parent_ids_json: Vec<i64>,
+    parent_heads_json: Vec<String>,
     parent_id: Option<i64>,
     parent_head: Option<String>,
     comments_count: Option<i64>,
@@ -203,8 +205,14 @@ fn parse_row(raw: &BTreeMap<String, String>) -> Option<KanbanRow> {
         primary_category: normalize_optional(raw.get("primary_category")),
         categories: parse_json_strings(raw.get("categories_json")),
         assignee_names: parse_json_strings(raw.get("assignee_names_json")),
-        parent_id: raw.get("parent_id").and_then(|value| parse_i64(value)),
-        parent_head: normalize_optional(raw.get("parent_head")),
+        parent_ids_json: parse_json_i64s(raw.get("parent_ids_json")),
+        parent_heads_json: parse_json_strings(raw.get("parent_heads_json")),
+        parent_id: raw
+            .get("parent_id")
+            .and_then(|value| parse_i64(value))
+            .or_else(|| parse_json_i64s(raw.get("parent_ids_json")).first().copied()),
+        parent_head: normalize_optional(raw.get("parent_head"))
+            .or_else(|| parse_json_strings(raw.get("parent_heads_json")).first().cloned()),
         comments_count: raw.get("comments_count").and_then(|value| parse_i64(value)),
         active_worklog_count: raw
             .get("active_worklog_count")
@@ -292,13 +300,24 @@ fn render_card(row: &KanbanRow) -> Markup {
     let full_body = row.body.as_str();
     let categories = categories_for_row(row);
     let assignees = row.assignee_names.join(", ");
-    let parent_label = row
-        .parent_head
-        .as_ref()
-        .map(|value| value.trim())
-        .filter(|value| !value.is_empty())
-        .map(str::to_string)
-        .or_else(|| row.parent_id.map(|value| format!("Parent #{value}")));
+    let parent_label = if !row.parent_heads_json.is_empty() {
+        Some(
+            row.parent_heads_json
+                .iter()
+                .map(|value| value.trim())
+                .filter(|value| !value.is_empty())
+                .map(str::to_string)
+                .collect::<Vec<_>>()
+                .join(", "),
+        )
+    } else {
+        row.parent_head
+            .as_ref()
+            .map(|value| value.trim())
+            .filter(|value| !value.is_empty())
+            .map(str::to_string)
+            .or_else(|| row.parent_id.map(|value| format!("Parent #{value}")))
+    };
     let card_class = format!("card {}", quantity_to_lane_key(row.quantity));
     let body_mode_expr = format!("($ui.cardModes['{}'] || $ui.defaultBodyMode)", row.id);
     let head_mode_expr = format!("{body_mode_expr} === 'head'");
@@ -337,7 +356,19 @@ fn render_card(row: &KanbanRow) -> Markup {
                 button.cardAction type="button" data-open-focus=(row.id) data-on:click="window.KanbanWidget?.loadRecordDetail(Number(evt.currentTarget.dataset.openFocus || 0))" title="Focus card" { "[]" }
             }
             @if let Some(parent_label) = parent_label.as_deref() {
-                @if let Some(parent_id) = row.parent_id {
+                @if !row.parent_ids_json.is_empty() && !row.parent_heads_json.is_empty() {
+                    span.cardParentLink {
+                        "Parents: "
+                        @for (index, parent_head) in row.parent_heads_json.iter().enumerate() {
+                            @if index > 0 { ", " }
+                            @if let Some(parent_id) = row.parent_ids_json.get(index) {
+                                a href="#" data-record-link=(parent_id) data-on:click__prevent="window.KanbanWidget?.loadRecordDetail(Number(evt.currentTarget.dataset.recordLink || 0))" { (parent_head) }
+                            } @else {
+                                span { (parent_head) }
+                            }
+                        }
+                    }
+                } @else if let Some(parent_id) = row.parent_id {
                     a.cardParentLink
                         href="#"
                         data-record-link=(parent_id)
@@ -539,6 +570,20 @@ fn parse_json_strings(raw: Option<&String>) -> Vec<String> {
                 })
                 .collect::<Vec<_>>()
         })
+        .unwrap_or_default()
+}
+
+fn parse_json_i64s(raw: Option<&String>) -> Vec<i64> {
+    let Some(raw) = raw else {
+        return Vec::new();
+    };
+    let trimmed = raw.trim();
+    if trimmed.is_empty() || trimmed.eq_ignore_ascii_case("null") {
+        return Vec::new();
+    }
+
+    serde_json::from_str::<Vec<i64>>(trimmed)
+        .map(|values| values.into_iter().filter(|value| *value > 0).collect())
         .unwrap_or_default()
 }
 

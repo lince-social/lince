@@ -127,11 +127,18 @@ impl KanbanFilterService {
         let mut sql = format!(
             "SELECT base.* \
              FROM ( \
-                 SELECT raw.*, CAST(parent_rel.parent_id AS TEXT) AS parent_id, parent_record.head AS parent_head \
+                 SELECT raw.*, CAST(parent_rel.parent_id AS TEXT) AS parent_id, parent_record.head AS parent_head, \
+                        COALESCE(parent_rel.parent_ids_json, '[]') AS parent_ids_json, \
+                        COALESCE(parent_rel.parent_heads_json, '[]') AS parent_heads_json \
                  FROM ({trimmed_query}) raw \
                  LEFT JOIN ( \
-                     SELECT rl.record_id, MAX(rl.target_id) AS parent_id \
+                     SELECT \
+                         rl.record_id, \
+                         json_group_array(rl.target_id) AS parent_ids_json, \
+                         json_group_array(COALESCE(parent_record.head, '')) AS parent_heads_json, \
+                         MIN(rl.target_id) AS parent_id \
                      FROM record_link rl \
+                     LEFT JOIN record parent_record ON parent_record.id = rl.target_id \
                      WHERE rl.link_type = 'parent' AND rl.target_table = 'record' \
                      GROUP BY rl.record_id \
                  ) parent_rel ON parent_rel.record_id = CAST(raw.id AS INTEGER) \
@@ -301,9 +308,11 @@ impl ValidatedKanbanFilterRow {
             }
             (&"parent_head_query", &"contains", ValidatedFilterValue::Text(value)) => {
                 let like = sql_like_contains_literal(value);
-                sql.push_str(" AND lower(COALESCE(base.parent_head, '')) LIKE ");
+                sql.push_str(" AND (lower(COALESCE(base.parent_head, '')) LIKE ");
                 sql.push_str(&like);
-                sql.push_str(" ESCAPE '\\'");
+                sql.push_str(" ESCAPE '\\' OR EXISTS (SELECT 1 FROM json_each(COALESCE(base.parent_heads_json, '[]')) value WHERE lower(CAST(value.value AS TEXT)) LIKE ");
+                sql.push_str(&like);
+                sql.push_str(" ESCAPE '\\'))");
             }
             (&"only_with_open_worklog", &"equals", ValidatedFilterValue::TrueOnly) => {
                 sql.push_str(" AND COALESCE(base.active_worklog_count, 0) > 0");

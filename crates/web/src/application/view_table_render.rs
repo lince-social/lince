@@ -1,9 +1,11 @@
 use {
     maud::{Markup, html},
+    regex::Regex,
     serde_json::Value,
     std::{
         collections::{BTreeMap, BTreeSet},
         hash::{Hash, Hasher},
+        sync::OnceLock,
     },
 };
 
@@ -46,6 +48,7 @@ struct NormalizedTable {
     subtitle: String,
     sql: String,
     kind: String,
+    source_table: Option<String>,
     columns: Vec<TableColumn>,
     rows: Vec<TableRow>,
 }
@@ -88,6 +91,7 @@ pub fn render_error_payload(
         subtitle: message.to_string(),
         sql: String::new(),
         kind: "error".into(),
+        source_table: None,
         columns: vec![],
         rows: vec![],
     };
@@ -127,6 +131,7 @@ fn normalize_table_payload(value: &Value) -> NormalizedTable {
     let columns = infer_columns(&rows_source, columns_source);
     let rows = normalize_rows(&rows_source, &columns);
     let kind = determine_kind(value);
+    let source_table = extract_primary_table_name(&query);
     let subtitle = build_subtitle(root, &kind, rows.len(), &query);
 
     NormalizedTable {
@@ -134,6 +139,7 @@ fn normalize_table_payload(value: &Value) -> NormalizedTable {
         subtitle,
         sql: query,
         kind,
+        source_table,
         columns,
         rows,
     }
@@ -544,33 +550,177 @@ fn render_table_body_inner(table: &NormalizedTable) -> Markup {
                         }
                     }
                 }
-                tbody {
-                    @for (row_index, row) in table.rows.iter().enumerate() {
-                        tr
-                            data-row-key=(row.key.as_str())
-                            data-record-id=(row.key.strip_prefix("id:").unwrap_or(""))
-                            data-row-index=(row_index)
-                            data-row-quantity=(row.values.get("quantity").map(|value| value.as_str()).unwrap_or(""))
-                        {
-                            @for (column_index, column) in table.columns.iter().enumerate() {
-                                td
-                                    class="cell"
-                                    data-column-index=(column_index)
-                                    data-column-key=(column.key.as_str())
-                                {
-                                    div class="cellValue" {
-                                        (row.values
-                                            .get(&column.key)
-                                            .map(|value| value.as_str())
-                                            .unwrap_or(""))
-                                    }
-                                }
-                            }
+                @if let Some(source_table) = table.source_table.as_deref() {
+                    tbody data-source-table=(source_table) {
+                        @for (row_index, row) in table.rows.iter().enumerate() {
+                            (render_table_row(row_index, row, &table.columns, table.source_table.as_deref()))
+                        }
+                    }
+                } @else {
+                    tbody {
+                        @for (row_index, row) in table.rows.iter().enumerate() {
+                            (render_table_row(row_index, row, &table.columns, table.source_table.as_deref()))
                         }
                     }
                 }
             }
         }
+    }
+}
+
+fn render_table_row(
+    row_index: usize,
+    row: &TableRow,
+    columns: &[TableColumn],
+    source_table: Option<&str>,
+) -> Markup {
+    let row_id = row
+        .values
+        .get("id")
+        .and_then(|value| parse_row_id(value));
+
+    html! {
+        tr
+            data-row-key=(row.key.as_str())
+            data-record-id=(row.key.strip_prefix("id:").unwrap_or(""))
+            data-row-index=(row_index)
+            data-row-quantity=(row.values.get("quantity").map(|value| value.as_str()).unwrap_or(""))
+        {
+            @for (column_index, column) in columns.iter().enumerate() {
+                (render_table_cell(column_index, column, row, row_id, source_table))
+            }
+        }
+    }
+}
+
+fn render_table_cell(
+    column_index: usize,
+    column: &TableColumn,
+    row: &TableRow,
+    row_id: Option<i64>,
+    source_table: Option<&str>,
+) -> Markup {
+    let cell_value = row
+        .values
+        .get(&column.key)
+        .map(|value| value.as_str())
+        .unwrap_or("");
+    let is_id_column = column.key == "id";
+
+    if is_id_column && let (Some(row_id), Some(source_table)) = (row_id, source_table) {
+        return html! {
+            td
+                class="cell cell--id"
+                data-column-index=(column_index)
+                data-column-key=(column.key.as_str())
+                data-row-id=(row_id)
+            {
+                div class="cellValue cellValue--id" { (cell_value) }
+                button
+                    class="button button--danger rowDeleteButton"
+                    type="button"
+                    data-delete-row-id=(row_id)
+                    data-delete-table-name=(source_table)
+                    title="Delete row"
+                    aria-label=(format!("Delete row {} from {}", row_id, source_table))
+                {
+                    "Delete"
+                }
+            }
+        };
+    }
+
+    if is_id_column {
+        if let Some(row_id) = row_id {
+            return html! {
+                td
+                    class="cell cell--id"
+                    data-column-index=(column_index)
+                    data-column-key=(column.key.as_str())
+                    data-row-id=(row_id)
+                {
+                    div class="cellValue cellValue--id" { (cell_value) }
+                }
+            };
+        }
+
+        return html! {
+            td
+                class="cell cell--id"
+                data-column-index=(column_index)
+                data-column-key=(column.key.as_str())
+            {
+                div class="cellValue cellValue--id" { (cell_value) }
+            }
+        };
+    }
+
+    html! {
+        td
+            class="cell"
+            data-column-index=(column_index)
+            data-column-key=(column.key.as_str())
+        {
+            div class="cellValue" {
+                (cell_value)
+            }
+        }
+    }
+}
+
+fn parse_row_id(value: &str) -> Option<i64> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    trimmed.parse::<i64>().ok()
+}
+
+fn extract_primary_table_name(query: &str) -> Option<String> {
+    static PRIMARY_TABLE_REGEX: OnceLock<Regex> = OnceLock::new();
+    let regex = PRIMARY_TABLE_REGEX.get_or_init(|| {
+        Regex::new(
+            r#"(?i)\bfrom\s+(?:`(?P<backtick>[^`]+)`|\[(?P<bracket>[^\]]+)\]|"(?P<quoted>[^"]+)"|(?P<bare>[a-zA-Z_][a-zA-Z0-9_]*))"#,
+        )
+        .expect("valid primary table regex")
+    });
+
+    let captures = regex.captures(query)?;
+    let table = captures
+        .name("backtick")
+        .or_else(|| captures.name("bracket"))
+        .or_else(|| captures.name("quoted"))
+        .or_else(|| captures.name("bare"))?
+        .as_str()
+        .trim()
+        .to_lowercase();
+
+    if table.is_empty() {
+        None
+    } else {
+        Some(table)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::extract_primary_table_name;
+
+    #[test]
+    fn extracts_primary_table_from_basic_selects() {
+        assert_eq!(
+            extract_primary_table_name("SELECT * FROM record JOIN frequency ON frequency.id = record.id"),
+            Some("record".into())
+        );
+    }
+
+    #[test]
+    fn extracts_primary_table_from_quoted_and_bracketed_queries() {
+        assert_eq!(
+            extract_primary_table_name("SELECT * FROM [view] JOIN `collection_view` ON `collection_view`.view_id = [view].id"),
+            Some("view".into())
+        );
     }
 }
 

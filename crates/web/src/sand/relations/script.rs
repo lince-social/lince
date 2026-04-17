@@ -190,6 +190,31 @@ pub(super) fn script() -> String {
         return out;
     }
 
+    function normalizeStringArray(values) {
+        return uniqueStrings(Array.isArray(values) ? values : []);
+    }
+
+    function parseStringArray(raw) {
+        if (Array.isArray(raw)) {
+            return normalizeStringArray(raw);
+        }
+
+        const text = String(raw || "").trim();
+        if (!text) {
+            return [];
+        }
+
+        try {
+            const parsed = JSON.parse(text);
+            if (Array.isArray(parsed)) {
+                return normalizeStringArray(parsed);
+            }
+        } catch {
+        }
+
+        return normalizeStringArray(text.split(","));
+    }
+
     function normalizePhysics(raw) {
         const next = raw && typeof raw === "object" ? raw : {};
         return {
@@ -1180,9 +1205,9 @@ pub(super) fn script() -> String {
             return null;
         }
         const categories = uniqueStrings([
-            ...parseJsonArray(parseCell(row, "categories_json")),
-            ...parseJsonArray(parseCell(row, "categories")),
-            parseCell(row, "primary_category"),
+            ...parseStringArray(parseCell(row, "categories_json")),
+            ...parseStringArray(parseCell(row, "categories")),
+            ...parseStringArray(parseCell(row, "primary_category")),
         ]);
         const declaredChildren = parseJsonArray(parseCell(row, "children_json"))
             .map((child) => ({

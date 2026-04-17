@@ -4734,6 +4734,7 @@ dependencies = [
  "lince-persistence",
  "lince-utils",
  "maud",
+ "regex",
  "reqwest",
  "semver",
  "serde",

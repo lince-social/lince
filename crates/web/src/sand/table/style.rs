@@ -305,6 +305,18 @@ const STYLE: &str = r#"
     background: #22314d;
   }
 
+  .button--danger {
+    color: #ffe0e6;
+    border-color: rgba(255, 151, 168, 0.24);
+    background: #261018;
+  }
+
+  .button--danger:hover:not(:disabled),
+  .button--danger:focus-visible {
+    border-color: rgba(255, 151, 168, 0.38);
+    background: #34131f;
+  }
+
   .codeBlock {
     margin: 0;
     padding: 10px 12px;
@@ -354,6 +366,14 @@ const STYLE: &str = r#"
     vertical-align: top;
   }
 
+  .cell--id {
+    position: relative;
+  }
+
+  .cellValue--id {
+    padding-right: 74px;
+  }
+
   .cellValue {
     display: block;
     color: var(--text);
@@ -361,6 +381,28 @@ const STYLE: &str = r#"
     line-height: 1.45;
     white-space: pre-wrap;
     word-break: break-word;
+  }
+
+  .rowDeleteButton {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    min-height: 24px;
+    padding: 0 9px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    line-height: 1;
+    opacity: 0;
+    transform: translateY(-2px);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .cell--id:hover .rowDeleteButton,
+  .cell--id:focus-within .rowDeleteButton {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
   }
 
   .field--select {

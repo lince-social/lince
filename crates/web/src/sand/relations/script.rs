@@ -1045,7 +1045,6 @@ pub(super) fn script() -> String {
             endAt: detail.end_at || null,
             estimateSeconds: Number.isInteger(detail.estimate_seconds) ? detail.estimate_seconds : null,
             assigneeIds,
-            parentId: Number.isInteger(node.parentId) && node.parentId > 0 ? node.parentId : null,
         })
             .then(() => {
                 state.pendingRecordSave = false;

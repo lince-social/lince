@@ -33,8 +33,8 @@ use {
                     update_server,
                 },
                 terminal::{
-                    create_terminal_session, delete_terminal_session, get_terminal_output,
-                    post_terminal_input,
+                    connect_terminal_socket, create_terminal_session, delete_terminal_session,
+                    get_terminal_output, post_terminal_input, post_terminal_resize,
                 },
                 trail::{get_trail_page, get_trail_stream},
                 widget_bridge::{get_widget_bridge_state, post_widget_bridge_print},
@@ -109,6 +109,7 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
         .route("/widgets/{instance_id}/trail", get(get_trail_page))
         .route("/widgets/{instance_id}/trail/stream", get(get_trail_stream))
         .route("/terminal/sessions", post(create_terminal_session))
+        .route("/terminal/stream", get(connect_terminal_socket))
         .route(
             "/terminal/sessions/{session_id}/output",
             get(get_terminal_output),
@@ -116,6 +117,10 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
         .route(
             "/terminal/sessions/{session_id}/input",
             post(post_terminal_input),
+        )
+        .route(
+            "/terminal/sessions/{session_id}/resize",
+            post(post_terminal_resize),
         )
         .route(
             "/terminal/sessions/{session_id}",

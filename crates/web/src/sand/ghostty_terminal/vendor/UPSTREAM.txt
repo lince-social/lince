@@ -1,0 +1,13 @@
+Ghostty upstream
+Repository: https://github.com/ghostty-org/ghostty
+Commit: ca7516bea60190ee2e9a4f9182b61d318d107c6e
+
+Bundled asset:
+- vendor/ghostty-vt.wasm
+
+Local build command used for this asset:
+PATH=/tmp/zig-0.15.2:$PATH zig build -Demit-lib-vt -Dtarget=wasm32-freestanding -Doptimize=ReleaseSmall
+
+Output checksums:
+- ghostty-vt.wasm sha256: 281a8aa06a8a341b97aebf0a39a0134997ae148871b9ddda84dba1e390b7da96
+- LICENSE sha256: 386211873e5b7a02f663ae4d7adf96285999f91608f8f9f31fecfd0f4095e6f1

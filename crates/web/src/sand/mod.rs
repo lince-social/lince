@@ -3,6 +3,7 @@ mod calendar;
 mod chess;
 mod doom_portal;
 mod general_creation;
+mod ghostty_terminal;
 #[path = "kanban_record_view/mod.rs"]
 mod kanban_record_view;
 mod lince_logo_led;
@@ -99,7 +100,7 @@ impl OfficialWidgetBuilder {
     }
 }
 
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 19] = [
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 20] = [
     OfficialWidgetBuilder::Html {
         feature_flag: bucket_image_view::FEATURE_FLAG,
         source_builder: bucket_image_view::source,
@@ -119,6 +120,10 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 19] = [
     OfficialWidgetBuilder::Html {
         feature_flag: general_creation::FEATURE_FLAG,
         source_builder: general_creation::source,
+    },
+    OfficialWidgetBuilder::Package {
+        feature_flag: ghostty_terminal::FEATURE_FLAG,
+        package_builder: ghostty_terminal::package,
     },
     OfficialWidgetBuilder::Html {
         feature_flag: kanban_record_view::FEATURE_FLAG,

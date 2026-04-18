@@ -16,12 +16,14 @@ const KANBAN_SETTINGS_KEY: &str = "kanban_settings";
 #[serde(rename_all = "camelCase")]
 pub struct KanbanWidgetSettings {
     pub show_parent_context: bool,
+    pub view_name: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateKanbanSettingsRequest {
     pub show_parent_context: Option<bool>,
+    pub view_name: Option<String>,
 }
 
 #[derive(Clone)]
@@ -92,6 +94,13 @@ impl KanbanFilterService {
         if let Some(show_parent_context) = update.show_parent_context {
             settings.show_parent_context = show_parent_context;
         }
+        if let Some(view_name) = update.view_name {
+            settings.view_name = Some(
+                normalize_optional_name(Some(&view_name)).ok_or_else(|| {
+                    KanbanFilterError::Invalid("Kanban precisa de um view_name nao vazio.".into())
+                })?,
+            );
+        }
 
         let widget_state = ensure_object(&mut card.widget_state);
         let settings_value = widget_state
@@ -102,6 +111,16 @@ impl KanbanFilterService {
             "show_parent_context".into(),
             Value::Bool(settings.show_parent_context),
         );
+        match settings.view_name.as_deref() {
+            Some(view_name) => {
+                settings_object.insert("view_name".into(), Value::String(view_name.to_string()));
+                settings_object.remove("viewName");
+            }
+            None => {
+                settings_object.remove("view_name");
+                settings_object.remove("viewName");
+            }
+        }
 
         self.board_state
             .replace(board_state)
@@ -178,18 +197,53 @@ pub struct KanbanFilterApplyOutcome {
 pub fn extract_kanban_settings(widget_state: &Value) -> KanbanWidgetSettings {
     let settings = widget_state
         .get(KANBAN_SETTINGS_KEY)
-        .or_else(|| widget_state.get("kanbanSettings"))
         .and_then(Value::as_object);
 
     KanbanWidgetSettings {
         show_parent_context: settings
-            .and_then(|settings| {
-                settings
-                    .get("show_parent_context")
-                    .or_else(|| settings.get("showParentContext"))
-                    .and_then(Value::as_bool)
-            })
+            .and_then(|settings| settings.get("show_parent_context").and_then(Value::as_bool))
             .unwrap_or(true),
+        view_name: settings
+            .and_then(|settings| settings.get("view_name").and_then(Value::as_str))
+            .and_then(|value| normalize_optional_name(Some(value))),
+    }
+}
+
+fn normalize_optional_name(value: Option<&str>) -> Option<String> {
+    value
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::extract_kanban_settings;
+    use serde_json::json;
+
+    #[test]
+    fn extracts_view_name_from_snake_case_settings() {
+        let settings = extract_kanban_settings(&json!({
+            "kanban_settings": {
+                "show_parent_context": false,
+                "view_name": "My Kanban"
+            }
+        }));
+
+        assert!(!settings.show_parent_context);
+        assert_eq!(settings.view_name.as_deref(), Some("My Kanban"));
+    }
+
+    #[test]
+    fn trims_blank_view_name_and_defaults_to_none() {
+        let settings = extract_kanban_settings(&json!({
+            "kanban_settings": {
+                "view_name": "   "
+            }
+        }));
+
+        assert!(settings.show_parent_context);
+        assert_eq!(settings.view_name, None);
     }
 }
 

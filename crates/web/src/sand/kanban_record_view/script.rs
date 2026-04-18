@@ -243,12 +243,17 @@ pub(super) fn script() -> String {
             }
 
             function normalizeKanbanSettings(rawSettings) {
-                const rawValue =
-                    rawSettings?.showParentContext ??
-                    rawSettings?.show_parent_context;
+                const rawShowParent = rawSettings?.show_parent_context;
+                const rawViewName = rawSettings?.view_name;
                 return {
-                    showParentContext: rawValue == null ? true : rawValue === true,
+                    showParentContext: rawShowParent == null ? true : rawShowParent === true,
+                    viewName: normalizeViewName(rawViewName),
                 };
+            }
+
+            function normalizeViewName(rawValue) {
+                const value = String(rawValue || "").trim();
+                return value;
             }
 
             function syncKanbanSettings(rawSettings) {
@@ -264,6 +269,7 @@ pub(super) fn script() -> String {
                 window.LinceWidgetHost?.patchCardState?.({
                     kanban_settings: {
                         show_parent_context: Boolean(settings?.showParentContext),
+                        view_name: normalizeViewName(settings?.viewName) || null,
                     },
                 });
             }
@@ -649,7 +655,6 @@ pub(super) fn script() -> String {
                     syncKanbanSettings(
                         payload?.settings ||
                             state.hostMeta?.cardState?.kanban_settings ||
-                            state.hostMeta?.cardState?.kanbanSettings ||
                             null,
                     );
                     state.reconnectAttempt = 0;
@@ -1144,6 +1149,7 @@ pub(super) fn script() -> String {
                 const activeBodyMode = isBodyMode(state.ui.defaultBodyMode)
                     ? state.ui.defaultBodyMode
                     : DEFAULT_BODY_MODE;
+                const viewName = String(settings.viewName || "");
                 const toggleUpdatesLabel = state.updatesPaused
                     ? "Resume updates"
                     : "Pause updates";
@@ -1164,6 +1170,16 @@ pub(super) fn script() -> String {
 
                 elements.viewSheetBody.innerHTML = `
                     <div class="sheetBody">
+                        <section class="viewSection">
+                            <div class="fieldBlock">
+                                <div class="fieldLabel">Derived view name</div>
+                                <p class="small">Set a human-readable name so this board reuses the same view instead of generating a generic one.</p>
+                                <input class="field" id="kanban-view-name" type="text" value="${escapeHtml(viewName)}" placeholder="My Kanban">
+                            </div>
+                            <div class="sheetActions">
+                                <button class="toolbarBtn toolbarBtn--accent" type="button" data-save-view-name="true">Save name</button>
+                            </div>
+                        </section>
                         <section class="viewSection">
                             <div class="fieldBlock">
                                 <div class="fieldLabel">Filters</div>
@@ -1212,6 +1228,12 @@ pub(super) fn script() -> String {
 
             async function updateKanbanSettings(nextSettings) {
                 const previous = normalizeKanbanSettings(state.settings);
+                if (
+                    Object.prototype.hasOwnProperty.call(nextSettings || {}, "viewName") &&
+                    !normalizeViewName(nextSettings.viewName)
+                ) {
+                    throw new Error("Kanban view name is required.");
+                }
                 const optimistic = normalizeKanbanSettings({
                     ...previous,
                     ...nextSettings,
@@ -2894,17 +2916,9 @@ pub(super) fn script() -> String {
                     Object.prototype.hasOwnProperty.call(
                         nextMeta.cardState || {},
                         "kanban_settings",
-                    ) ||
-                    Object.prototype.hasOwnProperty.call(
-                        nextMeta.cardState || {},
-                        "kanbanSettings",
                     )
                 ) {
-                    syncKanbanSettings(
-                        nextMeta.cardState?.kanban_settings ||
-                            nextMeta.cardState?.kanbanSettings ||
-                            null,
-                    );
+                    syncKanbanSettings(nextMeta.cardState?.kanban_settings || null);
                     if (state.activeSheet === "view") {
                         renderViewSheet();
                     }
@@ -2974,6 +2988,21 @@ pub(super) fn script() -> String {
                             if (isSheetVisible(elements.viewSheet)) {
                                 renderViewSheet();
                             }
+                        }
+                        return;
+                    }
+
+                    const saveViewNameButton = event.target.closest(
+                        "[data-save-view-name]",
+                    );
+                    if (saveViewNameButton) {
+                        event.preventDefault();
+                        const input = elements.viewSheetBody?.querySelector("#kanban-view-name");
+                        await updateKanbanSettings({
+                            viewName: normalizeViewName(input?.value || ""),
+                        });
+                        if (isSheetVisible(elements.viewSheet)) {
+                            renderViewSheet();
                         }
                         return;
                     }
@@ -3131,6 +3160,11 @@ pub(super) fn script() -> String {
                             error instanceof Error ? error.message : String(error);
                         updateStatus();
                     }
+                    return;
+                }
+
+                const viewNameInput = event.target.closest("#kanban-view-name");
+                if (viewNameInput) {
                     return;
                 }
 

@@ -146,7 +146,6 @@ impl KanbanActionService {
             )
             .await?;
         validate_task_type(payload.task_type.as_deref())?;
-        validate_parent_id(payload.parent_id)?;
         self.ensure_record_exists(
             session_token,
             &resolved.organ,
@@ -161,16 +160,6 @@ impl KanbanActionService {
             &payload.assignee_ids,
         )
         .await?;
-        if let Some(parent_id) = payload.parent_id {
-            self.ensure_record_exists(
-                session_token,
-                &resolved.organ,
-                resolved.bearer_token.as_deref(),
-                parent_id,
-            )
-            .await?;
-        }
-
         let record_payload = json!({
             "quantity": payload.quantity,
             "head": empty_to_null(&payload.head),
@@ -198,7 +187,7 @@ impl KanbanActionService {
                 end_at: payload.end_at,
                 estimate_seconds: payload.estimate_seconds,
                 assignee_ids: Some(payload.assignee_ids),
-                parent_id: Some(payload.parent_id),
+                parent_id: None,
             },
         )
         .await?;
@@ -2191,7 +2180,6 @@ pub struct UpdateRecordRequest {
     pub estimate_seconds: Option<i64>,
     #[serde(default)]
     pub assignee_ids: Vec<i64>,
-    pub parent_id: Option<i64>,
 }
 
 #[derive(Debug, Deserialize)]

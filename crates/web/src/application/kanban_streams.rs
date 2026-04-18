@@ -24,8 +24,6 @@ use {
 
 const GRAPH_RUNTIME_STATE_KEY: &str = "graph_runtime";
 const LEGACY_GRAPH_RUNTIME_STATE_KEY: &str = "kanban_runtime";
-const KANBAN_DERIVED_VIEW_NAME_PREFIX: &str = "__lince_web_kanban_";
-
 #[derive(Clone)]
 pub struct KanbanStreamService {
     auth: AppAuth,
@@ -101,7 +99,13 @@ impl KanbanStreamService {
             .build_filtered_query(&base_view.query, &filters, &settings)
             .map_err(map_filter_error_to_stream_error)?;
         let derived_view_id = self
-            .ensure_derived_view(session_token, &resolved, &base_view, &derived_query.sql)
+            .ensure_derived_view(
+                session_token,
+                &resolved,
+                &base_view,
+                &derived_query.sql,
+                &settings,
+            )
             .await?;
 
         if resolved.is_local {
@@ -228,15 +232,24 @@ impl KanbanStreamService {
         resolved: &ResolvedKanbanInstance,
         base_view: &ViewDefinition,
         filtered_query: &str,
+        settings: &KanbanWidgetSettings,
     ) -> Result<i64, KanbanStreamError> {
-        let derived_name = derived_view_name(&resolved.card.id);
+        let derived_name = settings
+            .view_name
+            .as_deref()
+            .map(derived_view_name)
+            .ok_or_else(|| {
+                KanbanStreamError::Misconfigured(
+                    "Kanban precisa definir um view_name nao vazio.".into(),
+                )
+            })?;
         let runtime_state = parse_runtime_state(&resolved.card.widget_state);
         let mut derived_view_id = None;
 
         if runtime_state.server_id.as_deref() == Some(resolved.server_id.as_str())
             && runtime_state.source_view_id == Some(base_view.id)
             && let Some(existing_id) = runtime_state.derived_view_id
-            && let Some(existing_view) = self
+            && self
                 .load_view_definition(
                     session_token,
                     &resolved.organ,
@@ -245,7 +258,7 @@ impl KanbanStreamService {
                 )
                 .await
                 .ok()
-            && existing_view.name == derived_name
+                .is_some()
         {
             derived_view_id = Some(existing_id);
         }
@@ -603,8 +616,18 @@ fn map_filter_error_to_stream_error(
     }
 }
 
-fn derived_view_name(instance_id: &str) -> String {
-    format!("{KANBAN_DERIVED_VIEW_NAME_PREFIX}{instance_id}")
+fn derived_view_name(view_name: &str) -> String {
+    view_name.trim().to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::derived_view_name;
+
+    #[test]
+    fn trims_custom_view_name() {
+        assert_eq!(derived_view_name(" My Board "), "My Board");
+    }
 }
 
 fn local_host_subject() -> AuthSubject {

@@ -4,7 +4,7 @@ use {
             backend_api::BackendApiService,
             kanban_filters::{
                 KanbanFilterService, KanbanWidgetSettings, RawKanbanFilterRow,
-                extract_kanban_settings,
+                derived_kanban_view_name, effective_kanban_view_id, extract_kanban_settings,
             },
             kanban_identity::is_supported_graph_widget_filename,
         },
@@ -181,7 +181,7 @@ impl KanbanStreamService {
                 "Kanban sem server_id configurado no host.".into(),
             ));
         }
-        let view_id = card.view_id.filter(|value| *value > 0).ok_or_else(|| {
+        let view_id = effective_kanban_view_id(&card.widget_state, card.view_id).ok_or_else(|| {
             KanbanStreamError::Misconfigured(
                 "Kanban sem view_id valido configurado no host.".into(),
             )
@@ -234,15 +234,7 @@ impl KanbanStreamService {
         filtered_query: &str,
         settings: &KanbanWidgetSettings,
     ) -> Result<i64, KanbanStreamError> {
-        let derived_name = settings
-            .view_name
-            .as_deref()
-            .map(derived_view_name)
-            .ok_or_else(|| {
-                KanbanStreamError::Misconfigured(
-                    "Kanban precisa definir um view_name nao vazio.".into(),
-                )
-            })?;
+        let derived_name = derived_kanban_view_name(&resolved.card.id, settings.view_name.as_deref());
         let runtime_state = parse_runtime_state(&resolved.card.widget_state);
         let mut derived_view_id = None;
 
@@ -316,6 +308,7 @@ impl KanbanStreamService {
             &resolved.server_id,
             base_view.id,
             derived_view_id,
+            &derived_name,
         )
         .await?;
 
@@ -530,6 +523,7 @@ impl KanbanStreamService {
         server_id: &str,
         source_view_id: i64,
         derived_view_id: i64,
+        derived_view_name: &str,
     ) -> Result<(), KanbanStreamError> {
         let mut board_state = self.board_state.snapshot().await;
         let card = find_board_card_mut(&mut board_state, instance_id).ok_or_else(|| {
@@ -537,6 +531,23 @@ impl KanbanStreamService {
         })?;
         let widget_state = ensure_object(&mut card.widget_state);
         widget_state.remove(LEGACY_GRAPH_RUNTIME_STATE_KEY);
+        let settings = ensure_object(
+            widget_state
+                .entry("kanban_settings")
+                .or_insert_with(|| Value::Object(Map::new())),
+        );
+        let current_view_name = settings
+            .get("view_name")
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|value| !value.is_empty());
+        if current_view_name.is_none() {
+            settings.insert(
+                "view_name".into(),
+                Value::String(derived_view_name.to_string()),
+            );
+            settings.remove("viewName");
+        }
         let runtime_state = ensure_nested_object(widget_state, GRAPH_RUNTIME_STATE_KEY);
         runtime_state.insert(
             "derived_view_id".into(),
@@ -616,17 +627,21 @@ fn map_filter_error_to_stream_error(
     }
 }
 
-fn derived_view_name(view_name: &str) -> String {
-    view_name.trim().to_string()
-}
-
 #[cfg(test)]
 mod tests {
-    use super::derived_view_name;
+    use super::derived_kanban_view_name;
 
     #[test]
     fn trims_custom_view_name() {
-        assert_eq!(derived_view_name(" My Board "), "My Board");
+        assert_eq!(
+            derived_kanban_view_name("card-1", Some(" My Board ")),
+            "My Board"
+        );
+    }
+
+    #[test]
+    fn falls_back_to_instance_based_view_name() {
+        assert_eq!(derived_kanban_view_name("card-1", None), "kanban-card-1");
     }
 }
 

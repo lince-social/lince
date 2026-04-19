@@ -246,8 +246,9 @@ pub(super) fn script() -> String {
             }
 
             function normalizeKanbanSettings(rawSettings) {
-                const rawShowParent = rawSettings?.show_parent_context;
-                const rawViewName = rawSettings?.view_name;
+                const rawShowParent =
+                    rawSettings?.show_parent_context ?? rawSettings?.showParentContext;
+                const rawViewName = rawSettings?.view_name ?? rawSettings?.viewName;
                 return {
                     showParentContext: rawShowParent == null ? true : rawShowParent === true,
                     viewName: normalizeViewName(rawViewName),
@@ -269,10 +270,12 @@ pub(super) fn script() -> String {
                 if (state.contract) {
                     state.contract.settings = normalized;
                 }
+                persistStoredKanbanSettings(normalized);
                 return normalized;
             }
 
             function persistKanbanSettingsToHost(settings) {
+                persistStoredKanbanSettings(settings);
                 window.LinceWidgetHost?.patchCardState?.({
                     kanban_settings: {
                         show_parent_context: Boolean(settings?.showParentContext),
@@ -281,8 +284,23 @@ pub(super) fn script() -> String {
                 });
             }
 
+            function kanbanSettingsPayload(settings) {
+                const payload = {
+                    show_parent_context: Boolean(settings?.showParentContext),
+                };
+                const normalizedViewName = normalizeViewName(settings?.viewName);
+                if (normalizedViewName) {
+                    payload.view_name = normalizedViewName;
+                }
+                return payload;
+            }
+
             function storageKey() {
                 return "lince.widget.kanban." + instanceId() + ".ui";
+            }
+
+            function kanbanSettingsStorageKey() {
+                return "lince.widget.kanban." + instanceId() + ".settings";
             }
 
             function loadPreviewUi() {
@@ -301,6 +319,29 @@ pub(super) fn script() -> String {
             function persistPreviewUi(ui) {
                 try {
                     localStorage.setItem(storageKey(), JSON.stringify({ ui }));
+                } catch {
+                }
+            }
+
+            function readStoredKanbanSettings() {
+                try {
+                    const raw = localStorage.getItem(kanbanSettingsStorageKey());
+                    if (!raw) {
+                        return null;
+                    }
+                    const parsed = JSON.parse(raw);
+                    return normalizeKanbanSettings(parsed?.settings || parsed);
+                } catch {
+                    return null;
+                }
+            }
+
+            function persistStoredKanbanSettings(settings) {
+                try {
+                    localStorage.setItem(
+                        kanbanSettingsStorageKey(),
+                        JSON.stringify({ settings: normalizeKanbanSettings(settings) }),
+                    );
                 } catch {
                 }
             }
@@ -3198,6 +3239,8 @@ pub(super) fn script() -> String {
                     if (state.activeSheet === "view") {
                         renderViewSheet();
                     }
+                } else if (state.settings.viewName) {
+                    persistKanbanSettingsToHost(state.settings);
                 }
 
                 updateStatus();
@@ -3668,13 +3711,32 @@ pub(super) fn script() -> String {
                 closeFocus,
             };
 
-            syncUiSignals(state.ui);
-            updateStatus();
-            refreshRuntime(true).then(() => {
-                if (state.ui.focusedRecordId) {
-                    loadRecordDetail(state.ui.focusedRecordId).catch(() => {});
+            (async () => {
+                try {
+                    const hostSettings = state.hostMeta?.cardState?.kanban_settings || null;
+                    const storedSettings = readStoredKanbanSettings();
+                    const nextSettings = hostSettings || storedSettings;
+
+                    if (nextSettings) {
+                        syncKanbanSettings(nextSettings);
+                        if (!hostSettings) {
+                            await postAction("update-settings", kanbanSettingsPayload(nextSettings));
+                            persistKanbanSettingsToHost(nextSettings);
+                        }
+                    }
+
+                    syncUiSignals(state.ui);
+                    updateStatus();
+                    await refreshRuntime(true);
+                    if (state.ui.focusedRecordId) {
+                        loadRecordDetail(state.ui.focusedRecordId).catch(() => {});
+                    }
+                } catch (error) {
+                    state.transportError =
+                        error instanceof Error ? error.message : String(error);
+                    updateStatus();
                 }
-            });
+            })();
     "##,
     );
     script

@@ -2,7 +2,9 @@ use {
     crate::{
         application::{
             backend_api::BackendApiService,
-            kanban_filters::{extract_kanban_settings, RawKanbanFilterRow},
+            kanban_filters::{
+                effective_kanban_view_id, extract_kanban_settings, RawKanbanFilterRow,
+            },
             kanban_identity::is_supported_graph_widget_filename,
         },
         domain::board::{BoardCard, BoardState},
@@ -1971,7 +1973,7 @@ impl KanbanActionService {
                 "Kanban sem server_id configurado no host.".into(),
             ));
         }
-        let view_id = card.view_id.filter(|value| *value > 0).ok_or_else(|| {
+        let view_id = effective_kanban_view_id(&card.widget_state, card.view_id).ok_or_else(|| {
             KanbanActionError::Misconfigured(
                 "Kanban sem view_id valido configurado no host.".into(),
             )

@@ -8,18 +8,17 @@ pub(super) fn script() -> String {
     const ctx = canvas.getContext("2d");
     const createPanel = document.getElementById("create-panel");
     const createCloseButton = document.getElementById("create-close");
-    const editor = document.getElementById("editor");
-    const sidePanel = document.getElementById("side-panel");
+    const controlsPanel = document.getElementById("controls-panel");
+    const recordPanel = document.getElementById("record-panel");
     const panelToggleButton = document.getElementById("panel-toggle");
     const panelCloseButton = document.getElementById("panel-close");
+    const recordCloseButton = document.getElementById("record-close");
     const createOpenButton = document.getElementById("create-open");
     const modePill = document.getElementById("mode-pill");
     const originPill = document.getElementById("origin-pill");
-    const statusPill = document.getElementById("status-pill");
     const rowPill = document.getElementById("row-pill");
     const linkPill = document.getElementById("link-pill");
     const filterPill = document.getElementById("filter-pill");
-    const zoomPill = document.getElementById("zoom-pill");
     const emptyState = document.getElementById("empty-state");
     const originText = document.getElementById("origin-text");
     const createSummary = document.getElementById("create-summary");
@@ -33,18 +32,12 @@ pub(super) fn script() -> String {
     const createCategoryList = document.getElementById("create-category-list");
     const createClearButton = document.getElementById("create-clear");
     const createSubmitButton = document.getElementById("create-submit");
-    const selectionPill = document.getElementById("selection-pill");
-    const selectionEmpty = document.getElementById("selection-empty");
-    const selectionContent = document.getElementById("selection-content");
-    const selectionSummary = document.getElementById("selection-summary");
-    const recordEditorCopy = document.getElementById("record-editor-copy");
+    const recordIdDisplay = document.getElementById("record-id");
     const recordHeadInput = document.getElementById("record-head");
     const recordBodyInput = document.getElementById("record-body");
     const recordQuantityInput = document.getElementById("record-quantity");
     const recordCategoryInput = document.getElementById("record-category-input");
-    const recordCategoryAddButton = document.getElementById("record-category-add");
     const recordCategoryList = document.getElementById("record-category-list");
-    const recordCategoryChoiceList = document.getElementById("record-category-choice-list");
     const recordSaveButton = document.getElementById("record-save");
     const recordDeleteButton = document.getElementById("record-delete");
     const parentSearchInput = document.getElementById("parent-search-query");
@@ -68,8 +61,8 @@ pub(super) fn script() -> String {
     const applyFiltersButton = document.getElementById("apply-filters");
     const clearFiltersButton = document.getElementById("clear-filters");
     const resetPhysicsButton = document.getElementById("reset-physics");
-    const connectParentButton = document.getElementById("connect-parent");
-    const disconnectParentButton = document.getElementById("disconnect-parent");
+    const controlsResizer = document.getElementById("controls-resizer");
+    const recordResizer = document.getElementById("record-resizer");
     const zoomInButton = document.getElementById("zoom-in");
     const zoomOutButton = document.getElementById("zoom-out");
     const zoomFitButton = document.getElementById("zoom-fit");
@@ -81,6 +74,9 @@ pub(super) fn script() -> String {
         centerForce: 0.18,
     };
     const CARD_STATE_KEY = "relations";
+    const DEFAULT_PANEL_WIDTH = 380;
+    const MIN_PANEL_WIDTH = 280;
+    const MAX_PANEL_RATIO = 0.47;
     const MIN_ZOOM = 0.35;
     const MAX_ZOOM = 3.5;
     const INITIAL_TICKS = 140;
@@ -92,6 +88,7 @@ pub(super) fn script() -> String {
         origin: {
             serverId: String(frame?.dataset?.linceServerId || "").trim(),
             viewId: Number(frame?.dataset?.linceViewId || 0) || null,
+            viewName: String(frame?.dataset?.linceViewName || "").trim(),
         },
         cardState: {},
         snapshot: null,
@@ -134,7 +131,14 @@ pub(super) fn script() -> String {
         createParentSearchQuery: "",
         pendingCreate: false,
         pendingParentMutation: false,
-        activePanel: null,
+        panelWidths: {
+            controls: readLocalPanelWidth("controls"),
+            record: readLocalPanelWidth("record"),
+        },
+        panelResize: null,
+        controlsPanelOpen: false,
+        recordPanelOpen: false,
+        createPanelOpen: false,
         stream: null,
         streamGeneration: 0,
         error: "",
@@ -286,6 +290,45 @@ pub(super) fn script() -> String {
         }
     }
 
+    function localPanelWidthStorageKey(side) {
+        return `lince.widget.relations.${instanceId()}.panel-width.${side}`;
+    }
+
+    function panelWidthLimit() {
+        const sandboxWidth = Math.max(
+            0,
+            Number(app?.getBoundingClientRect?.().width || 0) || Number(window.innerWidth || 0),
+        );
+        const ratioLimit = Math.floor(sandboxWidth * MAX_PANEL_RATIO);
+        if (!Number.isFinite(ratioLimit) || ratioLimit <= 0) {
+            return DEFAULT_PANEL_WIDTH;
+        }
+        return Math.max(MIN_PANEL_WIDTH, ratioLimit);
+    }
+
+    function normalizePanelWidth(value) {
+        return clampNumber(value, MIN_PANEL_WIDTH, panelWidthLimit(), DEFAULT_PANEL_WIDTH);
+    }
+
+    function readLocalPanelWidth(side) {
+        try {
+            const raw = window.localStorage?.getItem?.(localPanelWidthStorageKey(side));
+            if (!raw) {
+                return DEFAULT_PANEL_WIDTH;
+            }
+            return normalizePanelWidth(Number(raw));
+        } catch {
+            return DEFAULT_PANEL_WIDTH;
+        }
+    }
+
+    function writeLocalPanelWidth(side, width) {
+        try {
+            window.localStorage?.setItem?.(localPanelWidthStorageKey(side), String(normalizePanelWidth(width)));
+        } catch {
+        }
+    }
+
     function readHostPhysics(cardState) {
         const scoped = readRelationsState(cardState);
         return (
@@ -396,13 +439,6 @@ pub(super) fn script() -> String {
         };
     }
 
-    function recordAvailableCategories() {
-        return uniqueStrings([
-            ...state.availableCategories,
-            ...(Array.isArray(state.recordDraft.categories) ? state.recordDraft.categories : []),
-        ]);
-    }
-
     function sortedParentCandidates(needle, excludeIds) {
         const blocked = excludeIds instanceof Set ? excludeIds : new Set();
         const loweredNeedle = String(needle || "").trim().toLowerCase();
@@ -445,20 +481,24 @@ pub(super) fn script() -> String {
     function renderMode() {
         document.body.dataset.mode = state.mode;
         modePill.textContent = state.mode === "edit" ? "origin" : "view";
-        editor.hidden = false;
     }
 
     function renderOrigin() {
         const serverId = state.origin.serverId || "local";
         const viewId = state.origin.viewId == null ? "none" : String(state.origin.viewId);
-        originPill.textContent = `${serverId} / view ${viewId}`;
-        originText.textContent = `serverId: ${serverId}\nviewId: ${viewId}\nmode: ${state.mode}`;
+        const viewName = state.origin.viewName || "";
+        originPill.textContent = viewName ? `${serverId} / ${viewName}` : `${serverId} / view ${viewId}`;
+        originText.textContent = `serverId: ${serverId}\nviewId: ${viewId}\nviewName: ${viewName || "none"}\nmode: ${state.mode}`;
     }
 
     function renderStatus(label, tone, detail) {
-        statusPill.textContent = label;
-        statusPill.dataset.tone = tone || "neutral";
-        statusPill.dataset.detail = detail || "";
+        const safeLabel = String(label || "Status").trim() || "Status";
+        const safeDetail = String(detail || "").trim();
+        panelToggleButton.dataset.tone = tone || "neutral";
+        panelToggleButton.dataset.detail = safeDetail;
+        panelToggleButton.dataset.label = safeLabel;
+        panelToggleButton.setAttribute("aria-label", safeDetail ? `${safeLabel}: ${safeDetail}` : safeLabel);
+        panelToggleButton.title = safeDetail ? `${safeLabel}: ${safeDetail}` : safeLabel;
     }
 
     function renderCounters() {
@@ -468,17 +508,74 @@ pub(super) fn script() -> String {
     }
 
     function renderZoomPill() {
-        zoomPill.textContent = `${Math.round(state.viewport.scale * 100)}%`;
+        zoomFitButton.textContent = `${Math.round(state.viewport.scale * 100)}%`;
+        zoomFitButton.setAttribute("aria-label", "Fit to nodes");
+        zoomFitButton.title = "Fit to nodes";
+    }
+
+    function applyPanelWidths() {
+        if ((window.innerWidth || 0) <= 980) {
+            controlsPanel?.style.removeProperty("width");
+            recordPanel?.style.removeProperty("width");
+            return;
+        }
+        if (controlsPanel) {
+            controlsPanel.style.width = `${normalizePanelWidth(state.panelWidths.controls)}px`;
+        }
+        if (recordPanel) {
+            recordPanel.style.width = `${normalizePanelWidth(state.panelWidths.record)}px`;
+        }
     }
 
     function renderPanel() {
-        const controlsOpen = state.activePanel === "controls";
-        const createOpen = state.activePanel === "create";
-        sidePanel.hidden = !controlsOpen;
-        createPanel.hidden = !createOpen;
-        panelToggleButton.textContent = controlsOpen ? "Hide panel" : "Panel";
-        panelToggleButton.dataset.open = controlsOpen ? "true" : "false";
-        createOpenButton.dataset.open = createOpen ? "true" : "false";
+        applyPanelWidths();
+        controlsPanel.hidden = !state.controlsPanelOpen;
+        recordPanel.hidden = !state.recordPanelOpen || !state.selectedId;
+        createPanel.hidden = !state.createPanelOpen;
+        panelToggleButton.dataset.open = state.controlsPanelOpen ? "true" : "false";
+        createOpenButton.dataset.open = state.createPanelOpen ? "true" : "false";
+    }
+
+    function startPanelResize(side, event) {
+        if (!side) {
+            return;
+        }
+        if ((window.innerWidth || 0) <= 980) {
+            return;
+        }
+        event.preventDefault();
+        state.panelResize = {
+            side,
+            pointerId: event.pointerId,
+            startX: event.clientX,
+            startWidth: state.panelWidths[side] || DEFAULT_PANEL_WIDTH,
+        };
+        document.body.classList.add("is-resizing-panels");
+    }
+
+    function updatePanelResize(event) {
+        const resize = state.panelResize;
+        if (!resize || resize.pointerId !== event.pointerId) {
+            return;
+        }
+        const delta = event.clientX - resize.startX;
+        const nextWidth = resize.side === "controls"
+            ? resize.startWidth + delta
+            : resize.startWidth - delta;
+        state.panelWidths[resize.side] = normalizePanelWidth(nextWidth);
+        applyPanelWidths();
+    }
+
+    function endPanelResize(event) {
+        const resize = state.panelResize;
+        if (!resize || resize.pointerId !== event.pointerId) {
+            return;
+        }
+        state.panelResize = null;
+        document.body.classList.remove("is-resizing-panels");
+        state.panelWidths[resize.side] = normalizePanelWidth(state.panelWidths[resize.side]);
+        writeLocalPanelWidth(resize.side, state.panelWidths[resize.side]);
+        applyPanelWidths();
     }
 
     function renderCategoryChoices() {
@@ -585,7 +682,7 @@ pub(super) fn script() -> String {
         centerValue.textContent = String(state.physics.centerForce.toFixed(2));
     }
 
-    function renderRecordCategoryChoices() {
+    function renderRecordCategories() {
         const selected = Array.isArray(state.recordDraft.categories) ? state.recordDraft.categories : [];
         recordCategoryList.innerHTML = selected.length
             ? selected
@@ -599,27 +696,7 @@ pub(super) fn script() -> String {
                       `;
                   })
                   .join("")
-            : '<span class="mutedCopy">No categories on this record.</span>';
-
-        const available = recordAvailableCategories();
-        if (!available.length) {
-            recordCategoryChoiceList.innerHTML = '<span class="mutedCopy">No categories available yet.</span>';
-            return;
-        }
-
-        const selectedSet = new Set(selected.map((value) => String(value || "").toLowerCase()));
-        recordCategoryChoiceList.innerHTML = available
-            .map((category) => {
-                const safe = escapeHtml(category);
-                const checked = selectedSet.has(category.toLowerCase()) ? "checked" : "";
-                return `
-                    <label class="checkItem">
-                        <input type="checkbox" value="${safe}" ${checked}>
-                        <span>${safe}</span>
-                    </label>
-                `;
-            })
-            .join("");
+            : "";
     }
 
     function renderRecordEditor(node) {
@@ -628,43 +705,21 @@ pub(super) fn script() -> String {
             : null;
         const ready = Boolean(node) && Boolean(detail);
         const pending = state.pendingRecordSave || state.pendingRecordDelete;
-        const assigneeCount = Array.isArray(detail?.assignees) ? detail.assignees.length : 0;
-        const hasSchedule = Boolean(detail?.start_at || detail?.end_at);
-        const estimate = Number.isInteger(detail?.estimate_seconds) ? detail.estimate_seconds : null;
 
+        if (recordIdDisplay) {
+            recordIdDisplay.textContent = node ? String(node.id) : "-";
+        }
         recordHeadInput.value = String(state.recordDraft.head || "");
         recordBodyInput.value = String(state.recordDraft.body || "");
         recordQuantityInput.value = String(state.recordDraft.quantity || "0");
         recordCategoryInput.value = String(state.recordCategoryInput || "");
-
-        if (!node) {
-            recordEditorCopy.textContent = "Select a record to edit or delete it.";
-        } else if (state.recordDetailLoading && !ready) {
-            recordEditorCopy.textContent = "Loading the full record metadata so this edit preserves task data.";
-        } else if (state.recordDetailError && !ready) {
-            recordEditorCopy.textContent = state.recordDetailError;
-        } else if (state.recordDeleteArmed) {
-            recordEditorCopy.textContent = "Click delete again to confirm record removal.";
-        } else {
-            recordEditorCopy.textContent = [
-                detail?.task_type ? `Type: ${detail.task_type}` : "Type: none",
-                `Assignees: ${assigneeCount}`,
-                hasSchedule ? "Schedule preserved" : "No schedule",
-                estimate == null ? "No estimate" : `Estimate: ${estimate}s`,
-            ].join(" · ");
-        }
-
-        renderRecordCategoryChoices();
+        renderRecordCategories();
 
         const disabled = !node || pending;
         recordHeadInput.disabled = disabled;
         recordBodyInput.disabled = disabled;
         recordQuantityInput.disabled = disabled;
         recordCategoryInput.disabled = disabled;
-        recordCategoryAddButton.disabled = disabled;
-        for (const input of recordCategoryChoiceList.querySelectorAll("input[type='checkbox']")) {
-            input.disabled = disabled;
-        }
         recordSaveButton.disabled = disabled || !ready || !String(state.recordDraft.head || "").trim();
         recordDeleteButton.disabled = !node || pending;
         recordDeleteButton.textContent = state.recordDeleteArmed ? "Confirm delete" : "Delete record";
@@ -703,10 +758,15 @@ pub(super) fn script() -> String {
                     ? candidate.categories.join(", ")
                     : "No categories";
                 return `
-                    <button class="parentChoice${isSelected ? " is-selected" : ""}" type="button" data-parent-choice="${candidate.id}">
-                        <span class="parentChoice__head">#${candidate.id} ${escapeHtml(candidate.head || "Untitled")}</span>
-                        <span class="parentChoice__meta">${escapeHtml(categories)}</span>
-                    </button>
+                    <div class="relationRow parentChoice${isSelected ? " is-selected" : ""}">
+                        <div class="relationRow__body">
+                            <span class="relationRow__head">#${candidate.id} ${escapeHtml(candidate.head || "Untitled")}</span>
+                            <span class="relationRow__meta">${escapeHtml(categories)}</span>
+                        </div>
+                        <button class="relationRow__action relationRow__action--add" type="button" data-parent-choice="${candidate.id}" aria-label="Set parent ${escapeHtml(candidate.head || "Untitled")}" title="Set parent">
+                            +
+                        </button>
+                    </div>
                 `;
             })
             .join("");
@@ -734,10 +794,15 @@ pub(super) fn script() -> String {
                     ? parent.categories.join(", ")
                     : "No categories";
                 return `
-                    <button class="chipButton${isSelected ? " is-selected" : ""}" type="button" data-parent-remove="${parent.id}" title="Remove this parent">
-                        <span>#${parent.id} ${escapeHtml(parent.head || "Untitled")}</span>
-                        <span class="chipButton__meta">${escapeHtml(categories)}</span>
-                    </button>
+                    <div class="relationRow currentParent${isSelected ? " is-selected" : ""}">
+                        <div class="relationRow__body">
+                            <span class="relationRow__head">#${parent.id} ${escapeHtml(parent.head || "Untitled")}</span>
+                            <span class="relationRow__meta">${escapeHtml(categories)}</span>
+                        </div>
+                        <button class="relationRow__action relationRow__action--remove" type="button" data-parent-remove="${parent.id}" aria-label="Remove parent ${escapeHtml(parent.head || "Untitled")}" title="Remove parent">
+                            ×
+                        </button>
+                    </div>
                 `;
             })
             .join("");
@@ -811,19 +876,15 @@ pub(super) fn script() -> String {
         const node = state.nodes.find((item) => item.id === state.selectedId) || null;
         syncSelectionRecordEditor(node);
         if (!node) {
-            selectionPill.textContent = "None";
-            selectionEmpty.hidden = false;
-            selectionContent.hidden = true;
-            selectionSummary.textContent = "";
+            state.recordPanelOpen = false;
             childList.innerHTML = "";
             if (currentParentList) {
                 currentParentList.innerHTML = "";
             }
             parentChoiceList.innerHTML = "";
             parentSearchSummary.textContent = "Choose a possible father from the current graph.";
-            connectParentButton.disabled = true;
-            disconnectParentButton.disabled = true;
             renderRecordEditor(null);
+            renderPanel();
             return;
         }
 
@@ -834,38 +895,10 @@ pub(super) fn script() -> String {
             state.selectedRemovalParentId = null;
         }
 
-        selectionPill.textContent = `#${node.id}`;
-        selectionEmpty.hidden = true;
-        selectionContent.hidden = false;
         parentSearchInput.value = state.parentSearchQuery;
 
-        const currentParents = renderCurrentParentList(node);
-        const draftParent = state.nodes.find((item) => item.id === state.selectedParentId) || null;
+        renderCurrentParentList(node);
         const children = Array.isArray(node.children) ? node.children : [];
-        const categories = Array.isArray(node.categories) ? node.categories : [];
-        const parentLabel = currentParents.length
-            ? currentParents
-                  .map((parent) => `#${parent.id} ${parent.head || "Untitled"}`)
-                  .join(", ")
-            : "none";
-        const targetLabel = draftParent
-            ? `#${draftParent.id} ${draftParent.head}`
-            : "none";
-        const removalParent = state.nodes.find((item) => item.id === state.selectedRemovalParentId) || null;
-        const removalLabel = removalParent
-            ? `#${removalParent.id} ${removalParent.head || "Untitled"}`
-            : "none";
-
-        selectionSummary.textContent = [
-            `id: ${node.id}`,
-            `head: ${node.head || "Untitled"}`,
-            `quantity: ${node.quantity}`,
-            `current parents: ${parentLabel}`,
-            `target parent: ${targetLabel}`,
-            `removal target: ${removalLabel}`,
-            `depth: ${node.depth == null ? "n/a" : node.depth}`,
-            `categories: ${categories.length ? categories.join(", ") : "none"}`,
-        ].join("\n");
 
         childList.innerHTML = children.length
             ? children
@@ -874,10 +907,6 @@ pub(super) fn script() -> String {
             : '<span class="mutedCopy">No children.</span>';
 
         renderRecordEditor(node);
-        const currentParentIds = new Set(currentParents.map((parent) => parent.id));
-        connectParentButton.disabled =
-            state.pendingParentMutation || !draftParent || currentParentIds.has(draftParent.id);
-        disconnectParentButton.disabled = state.pendingParentMutation || !currentParents.length;
         renderParentChoices(node);
     }
 
@@ -896,6 +925,12 @@ pub(super) fn script() -> String {
         state.physics = readPersistedPhysics(state.cardState);
         state.origin.serverId = String(meta.serverId || state.origin.serverId || frame?.dataset?.linceServerId || "").trim();
         state.origin.viewId = Number(meta.viewId || state.origin.viewId || frame?.dataset?.linceViewId || 0) || null;
+        state.origin.viewName = String(
+            meta.viewName ||
+                state.origin.viewName ||
+                frame?.dataset?.linceViewName ||
+                "",
+        ).trim();
         renderMode();
         renderOrigin();
         renderFilterControls();
@@ -905,6 +940,9 @@ pub(super) fn script() -> String {
         renderPanel();
         if (!samePhysics(state.physics, hostPhysics)) {
             persistPhysicsSoon();
+        }
+        if (!state.stream && state.origin.serverId) {
+            connectStream();
         }
         requestDraw();
     }
@@ -949,34 +987,6 @@ pub(super) fn script() -> String {
         renderFilterPill();
     }
 
-    function updateRecordCategoriesFromControls() {
-        const next = [];
-        for (const input of recordCategoryChoiceList.querySelectorAll("input[type='checkbox']")) {
-            if (input.checked) {
-                next.push(input.value);
-            }
-        }
-        state.recordDraft.categories = uniqueStrings(next);
-        state.recordDraftDirty = true;
-        state.recordDeleteArmed = false;
-        renderRecordEditor(state.nodes.find((item) => item.id === state.selectedId) || null);
-    }
-
-    function addRecordCategoryFromInput() {
-        const value = String(recordCategoryInput?.value || "").trim();
-        if (!value) {
-            return;
-        }
-        state.recordDraft.categories = uniqueStrings([
-            ...state.recordDraft.categories,
-            value,
-        ]);
-        state.recordCategoryInput = "";
-        state.recordDraftDirty = true;
-        state.recordDeleteArmed = false;
-        renderRecordEditor(state.nodes.find((item) => item.id === state.selectedId) || null);
-    }
-
     function removeRecordCategory(value) {
         const needle = String(value || "").trim().toLowerCase();
         if (!needle) {
@@ -1006,6 +1016,27 @@ pub(super) fn script() -> String {
         requestDraw();
     }
 
+    function commitRecordCategoryInput() {
+        const raw = String(recordCategoryInput?.value || "").trim();
+        if (!raw) {
+            return false;
+        }
+
+        const nextCategories = uniqueStrings([
+            ...state.recordDraft.categories,
+            ...raw.split(","),
+        ]);
+        state.recordDraft.categories = nextCategories;
+        state.recordCategoryInput = "";
+        if (recordCategoryInput) {
+            recordCategoryInput.value = "";
+        }
+        state.recordDraftDirty = true;
+        state.recordDeleteArmed = false;
+        renderRecordCategories();
+        return true;
+    }
+
     function saveSelectedRecord() {
         const node = state.nodes.find((item) => item.id === state.selectedId) || null;
         const detail = Number(state.recordDetail?.record_id || 0) === Number(node?.id || 0)
@@ -1013,6 +1044,11 @@ pub(super) fn script() -> String {
             : null;
         if (!node || !detail) {
             renderStatus("Record not ready", "error", "Load the selected record before saving edits.");
+            return;
+        }
+
+        commitRecordCategoryInput();
+        if (!state.recordDraftDirty) {
             return;
         }
 
@@ -1166,7 +1202,7 @@ pub(super) fn script() -> String {
         if (state.createDraft.parentId == null && state.selectedId && state.nodes.some((node) => node.id === state.selectedId)) {
             state.createDraft.parentId = state.selectedId;
         }
-        state.activePanel = "create";
+        state.createPanelOpen = true;
         renderPanel();
         renderCreateForm();
         window.requestAnimationFrame(() => {
@@ -1775,9 +1811,18 @@ pub(super) fn script() -> String {
     }
 
     function updateOriginFromSnapshot(snapshot) {
-        const viewId = snapshot?.view_id ?? snapshot?.viewId ?? state.origin.viewId;
-        const name = snapshot?.name ? String(snapshot.name) : "Relations";
-        const query = snapshot?.query ? String(snapshot.query) : "";
+        const view = asObject(snapshot?.view);
+        const viewId = snapshot?.view_id ?? snapshot?.viewId ?? view?.view_id ?? view?.viewId ?? state.origin.viewId;
+        const name = String(
+            snapshot?.viewName ||
+                snapshot?.view_name ||
+                view?.name ||
+                state.origin.viewName ||
+                snapshot?.name ||
+                "Relation",
+        ).trim() || "Relation";
+        const query = String(snapshot?.query || view?.query || "").trim();
+        state.origin.viewName = name;
         originText.textContent = [
             `serverId: ${state.origin.serverId || "local"}`,
             `viewId: ${viewId == null ? "none" : viewId}`,
@@ -2204,6 +2249,7 @@ pub(super) fn script() -> String {
             state.selectedParentId = null;
             state.selectedRemovalParentId = null;
             state.parentSearchQuery = "";
+            state.recordPanelOpen = false;
             renderSelection();
             requestDraw();
             return;
@@ -2213,10 +2259,8 @@ pub(super) fn script() -> String {
         state.selectedParentId = null;
         state.selectedRemovalParentId = null;
         state.parentSearchQuery = "";
-        if (state.activePanel !== "controls") {
-            state.activePanel = "controls";
-            renderPanel();
-        }
+        state.recordPanelOpen = true;
+        renderPanel();
         renderSelection();
         requestDraw();
     }
@@ -2512,39 +2556,42 @@ pub(super) fn script() -> String {
             state.recordDeleteArmed = false;
             renderRecordEditor(state.nodes.find((item) => item.id === state.selectedId) || null);
         });
-        recordHeadInput.addEventListener("keydown", (event) => {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                saveSelectedRecord();
-            }
-        });
+        recordHeadInput.addEventListener("blur", saveSelectedRecord);
         recordBodyInput.addEventListener("input", () => {
             state.recordDraft.body = String(recordBodyInput.value || "");
             state.recordDraftDirty = true;
             state.recordDeleteArmed = false;
         });
-        recordBodyInput.addEventListener("keydown", (event) => {
-            if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
-                event.preventDefault();
-                saveSelectedRecord();
-            }
-        });
+        recordBodyInput.addEventListener("blur", saveSelectedRecord);
         recordQuantityInput.addEventListener("input", () => {
             state.recordDraft.quantity = String(recordQuantityInput.value || "0");
             state.recordDraftDirty = true;
             state.recordDeleteArmed = false;
         });
+        recordQuantityInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                saveSelectedRecord();
+            }
+        });
+        recordQuantityInput.addEventListener("blur", saveSelectedRecord);
         recordCategoryInput.addEventListener("input", () => {
             state.recordCategoryInput = String(recordCategoryInput.value || "");
             state.recordDeleteArmed = false;
         });
         recordCategoryInput.addEventListener("keydown", (event) => {
-            if (event.key === "Enter") {
+            if (event.key === "Enter" || event.key === ",") {
                 event.preventDefault();
-                addRecordCategoryFromInput();
+                if (commitRecordCategoryInput()) {
+                    saveSelectedRecord();
+                }
             }
         });
-        recordCategoryAddButton.addEventListener("click", addRecordCategoryFromInput);
+        recordCategoryInput.addEventListener("blur", () => {
+            if (commitRecordCategoryInput()) {
+                saveSelectedRecord();
+            }
+        });
         recordCategoryList.addEventListener("click", (event) => {
             const button = event.target?.closest?.("[data-record-category-remove]");
             if (!button) {
@@ -2552,7 +2599,6 @@ pub(super) fn script() -> String {
             }
             removeRecordCategory(button.getAttribute("data-record-category-remove"));
         });
-        recordCategoryChoiceList.addEventListener("change", updateRecordCategoriesFromControls);
         recordSaveButton.addEventListener("click", saveSelectedRecord);
         recordDeleteButton.addEventListener("click", deleteSelectedRecord);
         categoryFilterList.addEventListener("change", updateCategoryStateFromControls);
@@ -2586,7 +2632,7 @@ pub(super) fn script() -> String {
             }
             state.selectedParentId = Number(button.getAttribute("data-parent-choice") || 0) || null;
             state.selectedRemovalParentId = null;
-            renderSelection();
+            connectParent();
         });
         currentParentList?.addEventListener("click", (event) => {
             const button = event.target?.closest?.("[data-parent-remove]");
@@ -2595,27 +2641,34 @@ pub(super) fn script() -> String {
             }
             state.selectedRemovalParentId = Number(button.getAttribute("data-parent-remove") || 0) || null;
             state.selectedParentId = null;
-            renderSelection();
+            disconnectParent();
         });
         applyFiltersButton.addEventListener("click", applyFilters);
         clearFiltersButton.addEventListener("click", clearFilters);
         resetPhysicsButton.addEventListener("click", resetPhysics);
-        connectParentButton.addEventListener("click", connectParent);
-        disconnectParentButton.addEventListener("click", disconnectParent);
+        controlsResizer?.addEventListener("pointerdown", (event) => {
+            startPanelResize("controls", event);
+        });
+        recordResizer?.addEventListener("pointerdown", (event) => {
+            startPanelResize("record", event);
+        });
+        window.addEventListener("pointermove", updatePanelResize);
+        window.addEventListener("pointerup", endPanelResize);
+        window.addEventListener("pointercancel", endPanelResize);
         panelToggleButton.addEventListener("click", () => {
-            state.activePanel = state.activePanel === "controls" ? null : "controls";
+            state.controlsPanelOpen = !state.controlsPanelOpen;
             renderPanel();
         });
         panelCloseButton.addEventListener("click", () => {
-            if (state.activePanel === "controls") {
-                state.activePanel = null;
-            }
+            state.controlsPanelOpen = false;
+            renderPanel();
+        });
+        recordCloseButton.addEventListener("click", () => {
+            state.recordPanelOpen = false;
             renderPanel();
         });
         createCloseButton.addEventListener("click", () => {
-            if (state.activePanel === "create") {
-                state.activePanel = null;
-            }
+            state.createPanelOpen = false;
             renderPanel();
         });
         zoomInButton.addEventListener("click", () => {
@@ -2660,7 +2713,10 @@ pub(super) fn script() -> String {
         canvas.addEventListener("pointermove", handlePointerMove);
         canvas.addEventListener("pointerup", handlePointerUp);
         canvas.addEventListener("pointercancel", handlePointerUp);
-        window.addEventListener("resize", resizeCanvas);
+        window.addEventListener("resize", () => {
+            applyPanelWidths();
+            resizeCanvas();
+        });
     }
 
     function start() {

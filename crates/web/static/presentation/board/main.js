@@ -592,6 +592,23 @@ function normalizeViewDefinition(rawView) {
   };
 }
 
+function resolveCardViewName(card) {
+  const widgetState = card?.widgetState && typeof card.widgetState === "object"
+    ? card.widgetState
+    : {};
+  const runtimeState = widgetState?.graph_runtime || widgetState?.kanban_runtime || {};
+  const directName = String(
+    runtimeState?.source_view_name ||
+      runtimeState?.view_name ||
+      runtimeState?.viewName ||
+      widgetState?.source_view_name ||
+      widgetState?.view_name ||
+      widgetState?.viewName ||
+      "",
+  ).trim();
+  return directName;
+}
+
 function viewSearchTokens(view) {
   return [
     String(view.id || ""),
@@ -763,6 +780,7 @@ function getCardBridgeMeta(cardId) {
     mode: editMode ? "edit" : "view",
     serverId: card?.serverId || "",
     viewId: card?.viewId ?? null,
+    viewName: resolveCardViewName(card),
     cardState: cloneJsonValue(card?.widgetState, {}),
     streams: {
       globalEnabled,
@@ -1376,6 +1394,7 @@ function syncCardNode(node, card) {
     frameNode.dataset.linceServerId = card.serverId || "";
     frameNode.dataset.linceViewId =
       card.viewId == null ? "" : String(card.viewId);
+    frameNode.dataset.linceViewName = resolveCardViewName(card);
   }
 
   if (deleteButton) {
@@ -2900,6 +2919,12 @@ function saveWidgetConfig(cardId, nextServerId, nextViewId) {
   const nextWatchEnabled = widgetConfigWatchEnabled
     ? widgetConfigWatchEnabled.checked
     : null;
+  const serverKey = String(nextServerId || "").trim();
+  const selectedView =
+    (widgetConfigViewsByServer.get(serverKey) || []).find(
+      (view) => Number(view.id) === Number(nextViewId || 0),
+    ) || null;
+  const selectedViewName = String(selectedView?.name || "").trim();
   store.updateCard(
     cardId,
     (card) => ({
@@ -2918,6 +2943,10 @@ function saveWidgetConfig(cardId, nextServerId, nextViewId) {
             packagePreview: {
               watchCompiledHtml:
                 nextWatchEnabled ?? isPackagePreviewWatchEnabled(card),
+            },
+            graph_runtime: {
+              source_view_id: nextViewId == null ? null : Number(nextViewId) || null,
+              source_view_name: selectedViewName || null,
             },
           })
         : card.widgetState,

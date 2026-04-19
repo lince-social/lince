@@ -38,6 +38,12 @@ body {
     overflow: hidden;
 }
 
+body.is-resizing-panels,
+body.is-resizing-panels * {
+    cursor: ew-resize !important;
+    user-select: none !important;
+}
+
 button, input, select, textarea {
     font: inherit;
 }
@@ -48,13 +54,20 @@ button, input, select, textarea {
 
 .app {
     height: 100%;
-    padding: 10px;
+    padding: 0;
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-    gap: 10px;
+    grid-template-rows: minmax(0, 1fr);
+    gap: 0;
 }
 
-.panel, .hero, .sidePanel {
+.panel, .hero {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.sidePanel {
     border: 1px solid var(--line);
     border-radius: 16px;
     background: linear-gradient(180deg, var(--panel), rgba(8, 12, 16, 0.98));
@@ -83,6 +96,10 @@ button, input, select, textarea {
 
 .heroMeta, .panelChips, .toolbarButtons, .panelToolbar, .sidePanelActions {
     flex-wrap: wrap;
+}
+
+.sidePanelActions {
+    justify-content: flex-end;
 }
 
 .heroMeta, .panelChips {
@@ -149,6 +166,12 @@ button, input, select, textarea {
     background: rgba(20, 44, 34, 0.72);
 }
 
+.pill--origin {
+    color: #d7ecff;
+    border-color: rgba(120, 215, 255, 0.22);
+    background: rgba(15, 32, 43, 0.72);
+}
+
 .pill--status {
     color: #d7ecff;
     border-color: rgba(120, 215, 255, 0.22);
@@ -195,10 +218,10 @@ button, input, select, textarea {
 .graphPanel {
     min-width: 0;
     min-height: 0;
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-    gap: 10px;
-    padding: 12px;
+    display: block;
+    position: relative;
+    height: 100%;
+    padding: 0;
 }
 
 .panelHead {
@@ -220,6 +243,7 @@ button, input, select, textarea {
     position: relative;
     min-width: 0;
     min-height: 0;
+    height: 100%;
 }
 
 .graphStage {
@@ -227,12 +251,132 @@ button, input, select, textarea {
     min-width: 0;
     min-height: 0;
     height: 100%;
-    border-radius: 14px;
+    border-radius: 0;
     overflow: hidden;
-    border: 1px solid var(--line);
+    border: 0;
     background:
         radial-gradient(circle at 20% 20%, rgba(120, 215, 255, 0.06), transparent 30%),
         linear-gradient(180deg, rgba(8, 12, 18, 0.96), rgba(5, 7, 12, 0.98));
+}
+
+.graphOverlay, .graphHud {
+    position: absolute;
+    z-index: 3;
+}
+
+.graphOverlay {
+    pointer-events: none;
+}
+
+.graphOverlay > *,
+.graphHud > * {
+    pointer-events: auto;
+}
+
+.graphOverlay--title {
+    top: 14px;
+    left: 14px;
+    opacity: 0;
+    transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.graphOverlay--status {
+    top: 14px;
+    right: 14px;
+}
+
+.graphHud--topRight {
+    top: 14px;
+    right: 46px;
+}
+
+.graphHud .panelToolbar {
+    gap: 8px;
+}
+
+.graphTitle {
+    cursor: help;
+    opacity: 1;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+.graphOverlay--title:hover,
+.graphOverlay--title:focus-within {
+    opacity: 1;
+}
+
+.graphOverlay--title:hover .graphTitle {
+    transform: translateY(-1px);
+}
+
+.statusBall {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    min-height: 18px;
+    padding: 0;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background:
+        radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55), transparent 34%),
+        rgba(102, 112, 122, 0.95);
+    box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.22),
+        0 8px 24px rgba(0, 0, 0, 0.24);
+    transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease, background 140ms ease;
+}
+
+.statusBall:hover {
+    transform: scale(1.05);
+}
+
+.statusBall[data-open="true"] {
+    box-shadow:
+        0 0 0 3px rgba(120, 215, 255, 0.12),
+        0 8px 24px rgba(0, 0, 0, 0.24);
+}
+
+.statusBall[data-tone="live"] {
+    border-color: rgba(126, 240, 198, 0.5);
+    background:
+        radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.68), transparent 34%),
+        rgba(37, 194, 106, 0.98);
+    box-shadow:
+        0 0 0 1px rgba(18, 58, 34, 0.56),
+        0 0 24px rgba(37, 194, 106, 0.28);
+}
+
+.statusBall[data-tone="status"] {
+    border-color: rgba(120, 215, 255, 0.36);
+    background:
+        radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.58), transparent 34%),
+        rgba(84, 146, 255, 0.96);
+    box-shadow:
+        0 0 0 1px rgba(18, 43, 82, 0.5),
+        0 0 22px rgba(84, 146, 255, 0.24);
+}
+
+.statusBall[data-tone="error"] {
+    border-color: rgba(255, 143, 163, 0.36);
+    background:
+        radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.58), transparent 34%),
+        rgba(255, 99, 123, 0.96);
+    box-shadow:
+        0 0 0 1px rgba(74, 19, 28, 0.5),
+        0 0 22px rgba(255, 99, 123, 0.24);
+}
+
+.statusBall[data-tone="neutral"] {
+    border-color: rgba(255, 255, 255, 0.14);
+    background:
+        radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.45), transparent 34%),
+        rgba(102, 112, 122, 0.95);
+}
+
+.pillRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 #graph {
@@ -245,20 +389,6 @@ button, input, select, textarea {
 
 #graph.is-dragging {
     cursor: grabbing;
-}
-
-.graphHint {
-    position: absolute;
-    left: 16px;
-    bottom: 16px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    pointer-events: none;
-}
-
-.graphHint__pill {
-    background: rgba(8, 12, 18, 0.72);
 }
 
 .emptyState {
@@ -284,12 +414,18 @@ button, input, select, textarea {
     letter-spacing: -0.03em;
 }
 
+.graphPanel .button--ghost,
+.graphPanel .button {
+    backdrop-filter: blur(12px);
+}
+
 .sidePanel {
     position: absolute;
-    top: 12px;
-    right: 12px;
-    bottom: 12px;
-    width: min(380px, calc(100% - 24px));
+    top: 62px;
+    right: 0;
+    bottom: 0;
+    width: min(380px, calc(100% * 0.47));
+    max-width: 47%;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
     gap: 14px;
@@ -297,6 +433,64 @@ button, input, select, textarea {
     overflow: hidden;
     background: linear-gradient(180deg, rgba(14, 19, 24, 0.98), rgba(6, 10, 14, 0.98));
     backdrop-filter: blur(14px);
+}
+
+.sidePanel--controls {
+    left: 0;
+    right: auto;
+}
+
+.sidePanel--record {
+    right: 0;
+    left: auto;
+}
+
+.sidePanelResizer {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 12px;
+    z-index: 4;
+    cursor: ew-resize;
+    touch-action: none;
+}
+
+.sidePanelResizer::after {
+    content: "";
+    position: absolute;
+    top: 16px;
+    bottom: 16px;
+    width: 2px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    opacity: 0;
+    transition: opacity 120ms ease, background 120ms ease;
+}
+
+.sidePanelResizer:hover::after,
+body.is-resizing-panels .sidePanelResizer::after {
+    opacity: 1;
+}
+
+.sidePanelResizer--controls {
+    right: 0;
+}
+
+.sidePanelResizer--controls::after {
+    right: 5px;
+}
+
+.sidePanelResizer--record {
+    left: 0;
+}
+
+.sidePanelResizer--record::after {
+    left: 5px;
+}
+
+.sidePanel--controls .sidePanelBody {
+    overflow-y: hidden;
+    padding-right: 0;
 }
 
 .sidePanelHead {
@@ -335,6 +529,10 @@ button, input, select, textarea {
     padding-bottom: 16px;
     overscroll-behavior: contain;
     scrollbar-gutter: stable;
+}
+
+.sidePanelBody--record {
+    padding-right: 8px;
 }
 
 .sideSection--create {
@@ -389,6 +587,17 @@ button, input, select, textarea {
     color: var(--text);
     padding: 10px;
     resize: vertical;
+}
+
+.textarea--compact {
+    min-height: 58px;
+}
+
+.recordId {
+    color: var(--soft);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
 }
 
 .codeBlock {
@@ -469,15 +678,6 @@ button, input, select, textarea {
     justify-content: space-between;
 }
 
-.actionRow--sticky {
-    position: sticky;
-    bottom: -14px;
-    padding-top: 12px;
-    padding-bottom: 2px;
-    background: linear-gradient(180deg, rgba(14, 19, 24, 0), rgba(14, 19, 24, 0.94) 32%, rgba(14, 19, 24, 0.98) 100%);
-    z-index: 1;
-}
-
 .selectionEmpty {
     display: grid;
     gap: 8px;
@@ -487,12 +687,30 @@ button, input, select, textarea {
     max-width: 28ch;
 }
 
-.parentChoiceList {
+.recordEditor {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+}
+
+.fieldGroup {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    max-height: 220px;
-    padding-right: 4px;
+    min-width: 0;
+}
+
+.fieldGroup--id {
+    gap: 6px;
+}
+
+.parentChoiceList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 260px;
+    padding-right: 6px;
     overflow: auto;
     min-width: 0;
 }
@@ -501,16 +719,16 @@ button, input, select, textarea {
     max-height: 168px;
 }
 
+.relationRowList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
 .parentChoice {
     width: 100%;
     text-align: left;
-    display: grid;
-    gap: 6px;
-    padding: 10px 12px;
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.03);
-    color: var(--text);
     cursor: pointer;
 }
 
@@ -522,6 +740,101 @@ button, input, select, textarea {
 .parentChoice.is-selected {
     border-color: rgba(120, 215, 255, 0.36);
     background: rgba(120, 215, 255, 0.10);
+}
+
+.relationRow {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    min-width: 0;
+    min-height: 52px;
+    padding: 11px 44px 11px 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text);
+    overflow: hidden;
+}
+
+.relationRow:hover,
+.relationRow:focus-within {
+    border-color: var(--line-strong);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.relationRow.is-selected {
+    border-color: rgba(120, 215, 255, 0.36);
+    background: rgba(120, 215, 255, 0.10);
+}
+
+.relationRow__body {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    flex: 1;
+}
+
+.relationRow__head {
+    font-size: 0.8rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.relationRow__meta {
+    color: var(--muted);
+    font-size: 0.72rem;
+    line-height: 1.45;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+}
+
+.relationRow__action {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    min-height: 24px;
+    padding: 0;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    line-height: 1;
+    transform: translateY(-50%) scale(0.96);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease, transform 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.relationRow:hover .relationRow__action,
+.relationRow:focus-within .relationRow__action {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+    pointer-events: auto;
+}
+
+.relationRow__action:hover {
+    border-color: var(--line-strong);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.relationRow__action--add {
+    color: #d8f3ff;
+    border-color: rgba(120, 215, 255, 0.28);
+    background: rgba(120, 215, 255, 0.08);
+}
+
+.relationRow__action--remove {
+    color: #ffe1e8;
+    border-color: rgba(255, 143, 163, 0.28);
+    background: rgba(255, 143, 163, 0.08);
 }
 
 .parentChoice__head {

@@ -14,6 +14,13 @@ pub async fn serve(Path(path): Path<String>) -> Response {
     embedded_asset(&path).map_or_else(not_found, asset_response)
 }
 
+pub async fn favicon() -> Response {
+    asset_response(EmbeddedAsset {
+        bytes: include_bytes!("../../../../../assets/black_in_white.ico"),
+        content_type: "image/x-icon",
+    })
+}
+
 fn embedded_asset(path: &str) -> Option<EmbeddedAsset> {
     match path {
         "styles.css" => Some(css(include_bytes!("../../../static/styles.css"))),

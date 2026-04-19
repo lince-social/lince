@@ -431,16 +431,6 @@ if (
 
 const bootstrap = JSON.parse(bootstrapElement.textContent || "{}");
 const config = createGridConfig(bootstrap);
-const hiddenCardCache = document.createElement("div");
-hiddenCardCache.setAttribute("aria-hidden", "true");
-hiddenCardCache.style.position = "fixed";
-hiddenCardCache.style.width = "1px";
-hiddenCardCache.style.height = "1px";
-hiddenCardCache.style.overflow = "hidden";
-hiddenCardCache.style.opacity = "0";
-hiddenCardCache.style.pointerEvents = "none";
-hiddenCardCache.style.inset = "-9999px auto auto -9999px";
-document.body.append(hiddenCardCache);
 const store = createBoardStore({
   seedCards: Array.isArray(bootstrap.cards) ? bootstrap.cards : [],
   initialBoardState: bootstrap.boardState,
@@ -1401,6 +1391,15 @@ function syncCardNode(node, card) {
   }
 }
 
+function setPackageNodeVisibility(node, visible) {
+  if (!node || node.dataset.cardKind !== "package") {
+    return;
+  }
+
+  node.classList.toggle("is-inactive-workspace", !visible);
+  node.hidden = !visible ? true : false;
+}
+
 function resolveAllCardIds(allCardIds) {
   if (allCardIds instanceof Set) {
     return allCardIds;
@@ -1422,6 +1421,7 @@ function renderCards(cards, allCardIds) {
   for (const card of cards) {
     const node = ensureCardNode(card);
     syncCardNode(node, card);
+    setPackageNodeVisibility(node, true);
   }
 
   for (const [cardId, node] of cardNodes.entries()) {
@@ -1437,7 +1437,7 @@ function renderCards(cards, allCardIds) {
     }
 
     if (node.dataset.cardKind === "package") {
-      hiddenCardCache.appendChild(node);
+      setPackageNodeVisibility(node, false);
       continue;
     }
 
@@ -1448,10 +1448,6 @@ function renderCards(cards, allCardIds) {
 
 function ensureBackgroundPackageCards(snapshot) {
   for (const workspace of snapshot.workspaces) {
-    if (workspace.id === snapshot.activeWorkspaceId) {
-      continue;
-    }
-
     for (const card of workspace.cards) {
       if (card.kind !== "package") {
         continue;
@@ -1459,9 +1455,7 @@ function ensureBackgroundPackageCards(snapshot) {
 
       const node = ensureCardNode(card);
       syncCardNode(node, card);
-      if (node.parentElement !== hiddenCardCache) {
-        hiddenCardCache.appendChild(node);
-      }
+      setPackageNodeVisibility(node, workspace.id === snapshot.activeWorkspaceId);
     }
   }
 }
@@ -2984,15 +2978,6 @@ function updateWidgetConfigCardServer(serverId) {
   widgetConfigViewList.innerHTML = "";
   widgetConfigViewSummary.textContent = "0 views";
   setWidgetConfigViewHelp("");
-  store.updateCard(
-    pendingWidgetConfigCardId,
-    (card) => ({
-      ...card,
-      serverId: pendingWidgetConfigServerId,
-      viewId: null,
-    }),
-    { persist: true },
-  );
 }
 
 async function handleWidgetConfigServerChange() {
@@ -3027,7 +3012,9 @@ async function handleWidgetConfigAuthLogin() {
   widgetConfigAuthLogin.disabled = true;
   try {
     await submitServerLogin(pendingWidgetConfigServerId, username, password);
-    await refreshServerProfiles();
+    const profiles = await requestServerProfiles();
+    syncServerProfiles(profiles);
+    syncServerOptions(pendingWidgetConfigServerId);
     await refreshWidgetConfigModalState();
     setWidgetConfigAuthHelp("");
   } catch (error) {
@@ -3072,14 +3059,6 @@ function selectWidgetConfigView(viewId) {
   widgetConfigViewId.value = String(parsedViewId);
   widgetConfigViewSummary.textContent = `View selecionada #${parsedViewId}`;
   widgetConfigSaveButton.disabled = false;
-  store.updateCard(
-    card.id,
-    (nextCard) => ({
-      ...nextCard,
-      viewId: parsedViewId,
-    }),
-    { persist: true },
-  );
   const views = widgetConfigViewsByServer.get(pendingWidgetConfigServerId) || [];
   renderWidgetConfigViewList(card, views);
 }

@@ -35,6 +35,8 @@ fn render_app_head(asset_version: u64) -> Markup {
             meta charset="utf-8";
             meta name="viewport" content="width=device-width, initial-scale=1";
             title { "Lince" }
+            link rel="icon" href="/favicon.ico";
+            link rel="shortcut icon" href="/favicon.ico";
             link rel="stylesheet" href=(format!("/static/styles.css?v={asset_version}"));
             script type="module" src=(format!("/static/vendored/datastar.js?v={asset_version}")) {}
             script type="module" src=(format!("/static/presentation/board/main.js?v={asset_version}")) {}

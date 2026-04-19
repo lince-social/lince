@@ -168,6 +168,7 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
 
     let router = Router::<AppState>::new()
         .route("/", get(index))
+        .route("/favicon.ico", get(static_assets::favicon))
         .route("/ai", get(ai_builder_page))
         .nest("/api", build_backend_router())
         .route("/host/servers", get(list_servers).post(create_server))

@@ -1,6 +1,9 @@
 use {
     crate::{
-        application::kanban_filters::{KanbanWidgetSettings, extract_kanban_settings},
+        application::kanban_filters::{
+            KanbanWidgetSettings, derived_kanban_view_name, effective_kanban_view_id,
+            extract_kanban_settings,
+        },
         application::kanban_identity::is_supported_graph_widget_filename,
         domain::board::{BoardCard, BoardState},
         infrastructure::{
@@ -65,7 +68,7 @@ impl WidgetRuntimeService {
             ));
         }
 
-        let Some(view_id) = card.view_id.filter(|value| *value > 0) else {
+        let Some(view_id) = effective_kanban_view_id(&card.widget_state, card.view_id) else {
             return Err(WidgetRuntimeError::Misconfigured(
                 "Kanban sem view_id valido configurado no host.".into(),
             ));
@@ -92,6 +95,14 @@ impl WidgetRuntimeService {
         let authenticated = !requires_auth || session.as_ref().is_some_and(is_connected);
         let filters = extract_filter_rows(&card.widget_state);
         let filters_version = extract_filters_version(&card.widget_state);
+        let extracted_settings = extract_kanban_settings(&card.widget_state);
+        let settings = KanbanWidgetSettings {
+            view_name: Some(derived_kanban_view_name(
+                &card.id,
+                extracted_settings.view_name.as_deref(),
+            )),
+            ..extracted_settings
+        };
 
         Ok(KanbanWidgetContract {
             widget: KanbanWidgetMeta {
@@ -125,7 +136,7 @@ impl WidgetRuntimeService {
                 write_records: has_permission(&card, "write_records"),
                 write_table: has_permission(&card, "write_table"),
             },
-            settings: extract_kanban_settings(&card.widget_state),
+            settings,
             data_contract: KanbanDataContract {
                 required_columns: vec!["id", "quantity", "head", "body"],
                 optional_columns: vec![

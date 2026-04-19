@@ -4,6 +4,7 @@ use {
         domain::board::{BoardCard, BoardState},
         infrastructure::board_state_store::BoardStateStore,
     },
+    std::convert::TryFrom,
     serde::{Deserialize, Serialize},
     serde_json::{Map, Number, Value},
 };
@@ -11,6 +12,8 @@ use {
 const VALID_TASK_TYPES: [&str; 4] = ["epic", "feature", "task", "other"];
 const VALID_QUANTITIES: [i64; 5] = [-3, -2, -1, 0, 1];
 const KANBAN_SETTINGS_KEY: &str = "kanban_settings";
+const GRAPH_RUNTIME_STATE_KEY: &str = "graph_runtime";
+const LEGACY_GRAPH_RUNTIME_STATE_KEY: &str = "kanban_runtime";
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -199,14 +202,60 @@ pub fn extract_kanban_settings(widget_state: &Value) -> KanbanWidgetSettings {
         .get(KANBAN_SETTINGS_KEY)
         .and_then(Value::as_object);
 
+    let show_parent_context = settings
+        .and_then(|settings| {
+            settings
+                .get("show_parent_context")
+                .or_else(|| settings.get("showParentContext"))
+                .and_then(Value::as_bool)
+        })
+        .or_else(|| {
+            widget_state
+                .get("show_parent_context")
+                .or_else(|| widget_state.get("showParentContext"))
+                .and_then(Value::as_bool)
+        })
+        .unwrap_or(true);
+
+    let view_name = settings
+        .and_then(|settings| {
+            settings
+                .get("view_name")
+                .or_else(|| settings.get("viewName"))
+                .and_then(Value::as_str)
+        })
+        .or_else(|| {
+            widget_state
+                .get("view_name")
+                .or_else(|| widget_state.get("viewName"))
+                .and_then(Value::as_str)
+        })
+        .and_then(|value| normalize_optional_name(Some(value)));
+
     KanbanWidgetSettings {
-        show_parent_context: settings
-            .and_then(|settings| settings.get("show_parent_context").and_then(Value::as_bool))
-            .unwrap_or(true),
-        view_name: settings
-            .and_then(|settings| settings.get("view_name").and_then(Value::as_str))
-            .and_then(|value| normalize_optional_name(Some(value))),
+        show_parent_context,
+        view_name,
     }
+}
+
+pub fn derived_kanban_view_name(instance_id: &str, view_name: Option<&str>) -> String {
+    normalize_optional_name(view_name)
+        .unwrap_or_else(|| format!("kanban-{}", instance_id.trim()))
+}
+
+pub fn effective_kanban_view_id(widget_state: &Value, view_id: Option<u32>) -> Option<u32> {
+    view_id
+        .filter(|value| *value > 0)
+        .or_else(|| {
+            widget_state
+                .get(GRAPH_RUNTIME_STATE_KEY)
+                .or_else(|| widget_state.get(LEGACY_GRAPH_RUNTIME_STATE_KEY))
+                .and_then(Value::as_object)
+                .and_then(|runtime| runtime.get("source_view_id"))
+                .and_then(Value::as_i64)
+                .and_then(|value| u32::try_from(value).ok())
+                .filter(|value| *value > 0)
+        })
 }
 
 fn normalize_optional_name(value: Option<&str>) -> Option<String> {
@@ -244,6 +293,38 @@ mod tests {
 
         assert!(settings.show_parent_context);
         assert_eq!(settings.view_name, None);
+    }
+
+    #[test]
+    fn extracts_view_name_from_camel_case_settings() {
+        let settings = extract_kanban_settings(&json!({
+            "kanban_settings": {
+                "showParentContext": false,
+                "viewName": "My Kanban"
+            }
+        }));
+
+        assert!(!settings.show_parent_context);
+        assert_eq!(settings.view_name.as_deref(), Some("My Kanban"));
+    }
+
+    #[test]
+    fn extracts_view_name_from_top_level_fallback() {
+        let settings = extract_kanban_settings(&json!({
+            "viewName": "Fallback Kanban",
+            "showParentContext": false
+        }));
+
+        assert!(!settings.show_parent_context);
+        assert_eq!(settings.view_name.as_deref(), Some("Fallback Kanban"));
+    }
+
+    #[test]
+    fn derives_fallback_view_name_from_instance_id() {
+        assert_eq!(
+            super::derived_kanban_view_name("card-123", None),
+            "kanban-card-123"
+        );
     }
 }
 

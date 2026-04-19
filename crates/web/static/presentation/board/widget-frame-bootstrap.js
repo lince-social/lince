@@ -91,6 +91,7 @@ const WIDGET_ERROR = "lince:bridge-error";
         serverId: String(nextMeta.serverId || ""),
         viewId:
           nextMeta.viewId == null ? null : Number(nextMeta.viewId) || null,
+        viewName: String(nextMeta.viewName || ""),
         cardState: cloneJsonValue(nextMeta.cardState, {}),
         streams: {
           globalEnabled: nextMeta.streams?.globalEnabled !== false,

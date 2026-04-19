@@ -775,6 +775,10 @@ const STYLE: &str = r#"
                 gap: 6px;
             }
 
+            .autocompleteHost {
+                position: relative;
+            }
+
             .viewSection {
                 display: grid;
                 gap: 10px;
@@ -915,6 +919,47 @@ const STYLE: &str = r#"
                 gap: 8px;
                 color: var(--soft);
                 font-size: 12px;
+            }
+
+            .suggestionPanel {
+                position: absolute;
+                top: calc(100% + 6px);
+                left: 0;
+                right: 0;
+                z-index: 20;
+                display: grid;
+                gap: 6px;
+                max-height: 220px;
+                overflow: auto;
+                padding: 8px;
+                border: 1px solid var(--line);
+                border-radius: 12px;
+                background: rgba(17, 21, 27, 0.98);
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.28);
+            }
+
+            .suggestionButton {
+                width: 100%;
+                text-align: left;
+                border-radius: 10px;
+                border: 1px solid var(--line);
+                background: rgba(255, 255, 255, 0.03);
+                color: var(--text);
+                padding: 10px 12px;
+                cursor: pointer;
+            }
+
+            .suggestionButton:hover,
+            .suggestionButton.is-selected {
+                border-color: rgba(122, 162, 247, 0.36);
+                background: rgba(122, 162, 247, 0.12);
+            }
+
+            .suggestionMeta {
+                display: block;
+                margin-top: 4px;
+                color: var(--muted);
+                font-size: 0.84rem;
             }
 
             .sheetActions {

@@ -194,6 +194,41 @@ pub async fn post_widget_action(
                 }
             })))
         }
+        "update-source-view" => {
+            let request =
+                serde_json::from_value::<crate::application::kanban_actions::UpdateSourceViewRequest>(
+                    payload,
+                )
+                .map_err(|error| {
+                    api_error(
+                        StatusCode::BAD_REQUEST,
+                        format!("Payload invalido: {error}"),
+                    )
+                })?;
+            let outcome = state
+                .kanban_actions
+                .update_source_view(session_token.as_deref(), &instance_id, request)
+                .await
+                .map_err(map_kanban_action_error)?;
+            Ok(Json(outcome.into_json_value()))
+        }
+        "update-view-config" => {
+            let request = serde_json::from_value::<
+                crate::application::kanban_actions::UpdateViewConfigRequest,
+            >(payload)
+            .map_err(|error| {
+                api_error(
+                    StatusCode::BAD_REQUEST,
+                    format!("Payload invalido: {error}"),
+                )
+            })?;
+            let outcome = state
+                .kanban_actions
+                .update_view_config(session_token.as_deref(), &instance_id, request)
+                .await
+                .map_err(map_kanban_action_error)?;
+            Ok(Json(outcome.into_json_value()))
+        }
         "create-record" => {
             let request =
                 serde_json::from_value::<CreateRecordRequest>(payload).map_err(|error| {

@@ -2115,7 +2115,6 @@ function filterDnaPackageCatalog(query, originFilter) {
       pkg.head,
       pkg.body,
       pkg.slug,
-      pkg.channel,
       pkg.version,
       pkg.bucketKey,
       ...(Array.isArray(pkg.categories) ? pkg.categories : []),
@@ -2181,7 +2180,6 @@ function renderDnaPackageList() {
 
   dnaPackageList.innerHTML = dnaPackageResults
     .map((pkg) => {
-      const channelLabel = String(pkg.channel || "community");
       return `
         <button
           type="button"
@@ -2194,7 +2192,7 @@ function renderDnaPackageList() {
           <span class="local-package-card__body">
             <span class="local-package-card__topline">
               <strong class="local-package-card__title">${escapeHtml(pkg.head)}</strong>
-              <span class="local-package-card__size">${escapeHtml(channelLabel)}</span>
+              <span class="local-package-card__size">${escapeHtml(pkg.packageFormat || "html")}</span>
             </span>
             <span class="local-package-card__description">${escapeHtml(
               pkg.body || "Sand publicado por um organ acessivel.",
@@ -2206,7 +2204,6 @@ function renderDnaPackageList() {
               <span class="local-package-card__pill">${escapeHtml(
                 pkg.originName || pkg.organId,
               )}</span>
-              <span class="local-package-card__pill">${escapeHtml(channelLabel)}</span>
               ${
                 Array.isArray(pkg.categories) && pkg.categories.length
                   ? pkg.categories

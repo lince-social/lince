@@ -1,7 +1,8 @@
 use {
     crate::{
         application::{
-            backend_api::BackendApiService, kanban_filters::RawKanbanFilterRow,
+            backend_api::BackendApiService,
+            kanban_filters::{extract_kanban_settings, RawKanbanFilterRow},
             kanban_identity::is_supported_graph_widget_filename,
         },
         domain::board::{BoardCard, BoardState},
@@ -20,6 +21,7 @@ use {
     serde_json::{Value, json},
     std::collections::{BTreeMap, BTreeSet},
 };
+use persistence::repositories::view::is_special_view_query;
 
 const VALID_TASK_TYPES: [&str; 4] = ["epic", "feature", "task", "other"];
 const GRAPH_RUNTIME_STATE_KEY: &str = "graph_runtime";
@@ -682,6 +684,26 @@ impl KanbanActionService {
             .await?;
         let snapshot = serde_json::from_value::<ViewSnapshotPayload>(snapshot_value)
             .map_err(|error| KanbanActionError::Internal(error.to_string()))?;
+        let current_source_view = self
+            .load_view_definition(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+                i64::from(resolved.view_id),
+            )
+            .await?;
+        let mut views = self
+            .list_views(session_token, &resolved.organ, resolved.bearer_token.as_deref())
+            .await?
+            .into_iter()
+            .filter(|view| !is_special_view_query(&view.query))
+            .collect::<Vec<_>>();
+        views.sort_by(|left, right| {
+            left.name
+                .to_lowercase()
+                .cmp(&right.name.to_lowercase())
+                .then(left.id.cmp(&right.id))
+        });
 
         let mut categories = Vec::new();
         let mut seen_categories = BTreeSet::new();
@@ -805,12 +827,146 @@ impl KanbanActionService {
             "assignees": assignees,
             "categories": categories,
             "parentRecords": parent_records,
+            "views": views
+                .into_iter()
+                .map(|view| json!({
+                    "id": view.id,
+                    "name": view.name,
+                }))
+                .collect::<Vec<_>>(),
+            "sourceView": {
+                "id": current_source_view.id,
+                "name": current_source_view.name,
+            },
             "parentCategoryQuery": if parent_records_have_categories {
                 parent_category_query
             } else {
                 String::new()
             },
         }))
+    }
+
+    pub async fn update_source_view(
+        &self,
+        session_token: Option<&str>,
+        instance_id: &str,
+        payload: UpdateSourceViewRequest,
+    ) -> Result<KanbanActionOutcome, KanbanActionError> {
+        let resolved = self
+            .resolve_instance(session_token, instance_id, ActionPermission::ReadOnly)
+            .await?;
+        let view = self
+            .load_view_definition(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+                i64::from(payload.view_id),
+            )
+            .await?;
+        if is_special_view_query(&view.query) {
+            return Err(KanbanActionError::Validation(
+                "Kanban precisa de uma view SQL normal como origem.".into(),
+            ));
+        }
+
+        let mut board_state = self.board_state.snapshot().await;
+        let card = find_board_card_mut(&mut board_state, instance_id).ok_or_else(|| {
+            KanbanActionError::NotFound("Nao encontrei esse widget no board.".into())
+        })?;
+        validate_kanban_card(card)?;
+        card.view_id = Some(payload.view_id);
+        self.board_state
+            .replace(board_state)
+            .await
+            .map_err(KanbanActionError::Internal)?;
+
+        Ok(KanbanActionOutcome {
+            action: "update-source-view".into(),
+            message: "Source view updated.".into(),
+            record_id: None,
+            await_stream_refresh: true,
+            detail: json!({
+                "viewId": payload.view_id,
+                "sourceView": {
+                    "id": view.id,
+                    "name": view.name,
+                },
+            }),
+        })
+    }
+
+    pub async fn update_view_config(
+        &self,
+        session_token: Option<&str>,
+        instance_id: &str,
+        payload: UpdateViewConfigRequest,
+    ) -> Result<KanbanActionOutcome, KanbanActionError> {
+        let resolved = self
+            .resolve_instance(session_token, instance_id, ActionPermission::ReadOnly)
+            .await?;
+        let source_view = self
+            .load_view_definition(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+                i64::from(payload.view_id),
+            )
+            .await?;
+        if is_special_view_query(&source_view.query) {
+            return Err(KanbanActionError::Validation(
+                "Kanban precisa de uma view SQL normal como origem.".into(),
+            ));
+        }
+
+        let view_name = payload.view_name.trim();
+        if view_name.is_empty() {
+            return Err(KanbanActionError::Validation(
+                "Kanban precisa de um view_name nao vazio.".into(),
+            ));
+        }
+
+        let mut board_state = self.board_state.snapshot().await;
+        let card = find_board_card_mut(&mut board_state, instance_id).ok_or_else(|| {
+            KanbanActionError::NotFound("Nao encontrei esse widget no board.".into())
+        })?;
+        validate_kanban_card(card)?;
+
+        let existing_settings = extract_kanban_settings(&card.widget_state);
+        card.view_id = Some(payload.view_id);
+        let widget_state = ensure_object(&mut card.widget_state);
+        let settings = widget_state
+            .entry("kanban_settings")
+            .or_insert_with(|| Value::Object(Default::default()));
+        let settings_object = ensure_object(settings);
+        settings_object.insert(
+            "show_parent_context".into(),
+            Value::Bool(existing_settings.show_parent_context),
+        );
+        settings_object.insert(
+            "view_name".into(),
+            Value::String(view_name.to_string()),
+        );
+        settings_object.remove("viewName");
+
+        self.board_state
+            .replace(board_state)
+            .await
+            .map_err(KanbanActionError::Internal)?;
+
+        Ok(KanbanActionOutcome {
+            action: "update-view-config".into(),
+            message: "View config updated.".into(),
+            record_id: None,
+            await_stream_refresh: true,
+            detail: json!({
+                "viewId": payload.view_id,
+                "viewName": view_name,
+                "sourceView": {
+                    "id": source_view.id,
+                    "name": source_view.name,
+                },
+            }),
+        })
     }
 
     async fn load_view_snapshot(
@@ -843,6 +999,77 @@ impl KanbanActionService {
             .map_err(KanbanActionError::BadGateway)?;
         self.read_remote_json(session_token, &organ.id, response)
             .await
+    }
+
+    async fn list_views(
+        &self,
+        session_token: Option<&str>,
+        organ: &Organ,
+        bearer_token: Option<&str>,
+    ) -> Result<Vec<ViewDefinition>, KanbanActionError> {
+        if !organ_requires_auth(organ, self.local_auth_required) {
+            let value = self
+                .backend
+                .list_table_rows(&local_host_subject(), "view")
+                .await
+                .map_err(|error| KanbanActionError::Internal(error.to_string()))?;
+            return parse_view_list(&value);
+        }
+
+        let bearer_token = bearer_token
+            .ok_or_else(|| KanbanActionError::Unauthorized("Sessao remota ausente.".into()))?;
+        let response = self
+            .manas
+            .send_table_request(
+                &organ.base_url,
+                bearer_token,
+                Method::GET,
+                "view",
+                None,
+                None,
+            )
+            .await
+            .map_err(KanbanActionError::BadGateway)?;
+        let value = self
+            .read_remote_json(session_token, &organ.id, response)
+            .await?;
+        parse_view_list(&value)
+    }
+
+    async fn load_view_definition(
+        &self,
+        session_token: Option<&str>,
+        organ: &Organ,
+        bearer_token: Option<&str>,
+        view_id: i64,
+    ) -> Result<ViewDefinition, KanbanActionError> {
+        if !organ_requires_auth(organ, self.local_auth_required) {
+            let value = self
+                .backend
+                .get_table_row(&local_host_subject(), "view", view_id)
+                .await
+                .map_err(|error| KanbanActionError::Internal(error.to_string()))?;
+            return parse_view_definition(&value);
+        }
+
+        let bearer_token = bearer_token
+            .ok_or_else(|| KanbanActionError::Unauthorized("Sessao remota ausente.".into()))?;
+        let response = self
+            .manas
+            .send_table_request(
+                &organ.base_url,
+                bearer_token,
+                Method::GET,
+                "view",
+                Some(view_id),
+                None,
+            )
+            .await
+            .map_err(KanbanActionError::BadGateway)?;
+        let value = self
+            .read_remote_json(session_token, &organ.id, response)
+            .await?;
+        parse_view_definition(&value)
     }
 
     pub async fn create_comment(
@@ -2431,6 +2658,26 @@ struct TaskMetadataInput {
     parent_id: Option<Option<i64>>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct UpdateSourceViewRequest {
+    view_id: u32,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct UpdateViewConfigRequest {
+    view_id: u32,
+    view_name: String,
+}
+
+#[derive(Debug, Clone)]
+struct ViewDefinition {
+    id: i64,
+    name: String,
+    query: String,
+}
+
 enum ActionPermission {
     ReadOnly,
     WriteRecordsOnly,
@@ -2501,6 +2748,34 @@ fn validate_kanban_card(card: &BoardCard) -> Result<(), KanbanActionError> {
         ));
     }
     Ok(())
+}
+
+fn parse_view_definition(value: &Value) -> Result<ViewDefinition, KanbanActionError> {
+    let object = value.as_object().ok_or_else(|| {
+        KanbanActionError::Internal("Resposta invalida ao carregar a view.".into())
+    })?;
+    let id = object
+        .get("id")
+        .and_then(Value::as_i64)
+        .ok_or_else(|| KanbanActionError::Internal("View carregada sem id.".into()))?;
+    let name = object
+        .get("name")
+        .and_then(Value::as_str)
+        .map(str::to_string)
+        .ok_or_else(|| KanbanActionError::Internal("View carregada sem name.".into()))?;
+    let query = object
+        .get("query")
+        .and_then(Value::as_str)
+        .map(str::to_string)
+        .ok_or_else(|| KanbanActionError::Internal("View carregada sem query.".into()))?;
+    Ok(ViewDefinition { id, name, query })
+}
+
+fn parse_view_list(value: &Value) -> Result<Vec<ViewDefinition>, KanbanActionError> {
+    let list = value
+        .as_array()
+        .ok_or_else(|| KanbanActionError::Internal("Resposta invalida ao listar views.".into()))?;
+    list.iter().map(parse_view_definition).collect()
 }
 
 fn validate_task_type(task_type: Option<&str>) -> Result<(), KanbanActionError> {

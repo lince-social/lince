@@ -32,6 +32,8 @@ pub(super) fn script() -> String {
                 columns: document.getElementById("kanban-columns"),
                 viewSheet: document.getElementById("kanban-view-sheet"),
                 viewSheetBody: document.getElementById("kanban-view-sheet-body"),
+                sourceViewInput: null,
+                sourceViewSuggestions: null,
                 toggleUpdates: document.getElementById("kanban-toggle-updates"),
                 openFilters: document.getElementById("kanban-open-filters"),
                 openView: document.getElementById("kanban-open-view"),
@@ -72,6 +74,7 @@ pub(super) fn script() -> String {
                 formOptions: null,
                 formOptionsPromise: null,
                 formOptionsRequestId: 0,
+                sourceViewQuery: "",
                 focusDetail: null,
                 focusPreview: null,
                 focusDetailGeneration: 0,
@@ -254,6 +257,10 @@ pub(super) fn script() -> String {
             function normalizeViewName(rawValue) {
                 const value = String(rawValue || "").trim();
                 return value;
+            }
+
+            function normalizeText(rawValue) {
+                return String(rawValue || "").trim().toLowerCase();
             }
 
             function syncKanbanSettings(rawSettings) {
@@ -561,7 +568,7 @@ pub(super) fn script() -> String {
                 const title =
                     state.contract?.widget?.title ||
                     state.hostMeta?.cardState?.title ||
-                    "Kanban Record View";
+                    "Kanban";
                 const queryText = String(
                     state.viewMeta?.query ||
                         state.contract?.diagnostics?.effective_sql ||
@@ -1131,6 +1138,177 @@ pub(super) fn script() -> String {
                 `;
             }
 
+            function viewOptions() {
+                return Array.isArray(state.formOptions?.views)
+                    ? state.formOptions.views
+                    : [];
+            }
+
+            function currentSourceViewId() {
+                const candidate =
+                    Number(state.contract?.source?.view_id || state.hostMeta.viewId || 0) || 0;
+                return candidate > 0 ? candidate : null;
+            }
+
+            function viewLabel(view) {
+                const id = Number(view?.id || 0);
+                const name = String(view?.name || "").trim() || "Untitled";
+                return `#${id} ${name}`;
+            }
+
+            function findViewById(viewId) {
+                const id = Number(viewId || 0);
+                if (!Number.isInteger(id) || id <= 0) {
+                    return null;
+                }
+                return viewOptions().find((view) => Number(view?.id || 0) === id) || null;
+            }
+
+            function currentSourceView() {
+                const currentId = currentSourceViewId();
+                return currentId ? findViewById(currentId) : null;
+            }
+
+            function sourceViewSuggestionElements() {
+                return {
+                    input: elements.viewSheetBody?.querySelector("#kanban-source-view"),
+                    panel: elements.viewSheetBody?.querySelector("#kanban-source-view-suggestions"),
+                    summary: elements.viewSheetBody?.querySelector("#kanban-source-view-summary"),
+                    saveButton: elements.viewSheetBody?.querySelector("[data-save-view-config]"),
+                };
+            }
+
+            function sourceViewMatchesQuery(view, query) {
+                const needle = normalizeText(query);
+                if (!needle) {
+                    return true;
+                }
+
+                const idText = String(Number(view?.id || 0));
+                const label = normalizeText(viewLabel(view));
+                const name = normalizeText(view?.name || "");
+                return (
+                    idText.includes(needle) ||
+                    name.includes(needle) ||
+                    label.includes(needle)
+                );
+            }
+
+            function filteredSourceViewSuggestions() {
+                const { input } = sourceViewSuggestionElements();
+                const query = String(input?.value || "").trim();
+                const rows = viewOptions()
+                    .filter((view) => sourceViewMatchesQuery(view, query))
+                    .sort((left, right) => {
+                        const leftName = normalizeText(left?.name || "");
+                        const rightName = normalizeText(right?.name || "");
+                        if (leftName !== rightName) {
+                            return leftName.localeCompare(rightName);
+                        }
+                        return Number(left?.id || 0) - Number(right?.id || 0);
+                    });
+                return rows.slice(0, 12);
+            }
+
+            function hideSourceViewSuggestions() {
+                const { panel } = sourceViewSuggestionElements();
+                if (!panel) {
+                    return;
+                }
+                panel.hidden = true;
+                panel.innerHTML = "";
+            }
+
+            function renderSourceViewSuggestions() {
+                const { panel, input } = sourceViewSuggestionElements();
+                if (!panel || !input) {
+                    return;
+                }
+                const rows = filteredSourceViewSuggestions();
+                if (!rows.length) {
+                    hideSourceViewSuggestions();
+                    return;
+                }
+                panel.innerHTML = rows
+                    .map((view) => {
+                        const selectedClass =
+                            Number(view?.id || 0) === currentSourceViewId()
+                                ? " is-selected"
+                                : "";
+                        const meta =
+                            Number(view?.id || 0) === currentSourceViewId()
+                                ? "Current source view"
+                                : "Type to narrow the list.";
+                        return `
+                            <button
+                                class="suggestionButton${selectedClass}"
+                                type="button"
+                                data-source-view-id="${escapeHtml(String(view?.id || 0))}"
+                                data-source-view-name="${escapeHtml(String(view?.name || ""))}"
+                            >
+                                <strong>${escapeHtml(viewLabel(view))}</strong>
+                                <span class="suggestionMeta">${escapeHtml(meta)}</span>
+                            </button>
+                        `;
+                    })
+                    .join("");
+                panel.hidden = false;
+            }
+
+            function updateSourceViewSummary() {
+                const { summary, saveButton } = sourceViewSuggestionElements();
+                if (!summary) {
+                    return;
+                }
+                const current = currentSourceView();
+                const currentLabel = current
+                    ? viewLabel(current)
+                    : currentSourceViewId()
+                      ? `#${currentSourceViewId()}`
+                      : "";
+                const draft = String(sourceViewSuggestionElements().input?.value || "").trim();
+                if (draft && normalizeText(draft) !== normalizeText(currentLabel)) {
+                    summary.textContent = `Selected source view: ${draft}`;
+                } else if (currentLabel) {
+                    summary.textContent = `Current source view: ${currentLabel}`;
+                } else {
+                    summary.textContent = "Pick a plain SQL view to derive this board from.";
+                }
+                if (saveButton) {
+                    const sourceValue = String(
+                        sourceViewSuggestionElements().input?.value || "",
+                    ).trim();
+                    const viewNameValue = String(
+                        elements.viewSheetBody?.querySelector("#kanban-view-name")?.value || "",
+                    ).trim();
+                    saveButton.disabled = !sourceValue || !viewNameValue;
+                }
+            }
+
+            function resolveSourceViewFromInput(rawValue) {
+                const query = String(rawValue || "").trim();
+                if (!query) {
+                    return null;
+                }
+                const exactId = Number(query.replace(/^#/, ""));
+                if (Number.isInteger(exactId) && exactId > 0) {
+                    const exact = findViewById(exactId);
+                    if (exact) {
+                        return exact;
+                    }
+                }
+                const normalizedQuery = normalizeText(query);
+                const exactName = viewOptions().find((view) => {
+                    const name = normalizeText(view?.name || "");
+                    const label = normalizeText(viewLabel(view));
+                    return name === normalizedQuery || label === normalizedQuery;
+                }) || null;
+                if (exactName) {
+                    return exactName;
+                }
+                return filteredSourceViewSuggestions()[0] || null;
+            }
+
             function reconnectDisabled() {
                 const source = state.contract?.source || {};
                 return (
@@ -1150,6 +1328,15 @@ pub(super) fn script() -> String {
                     ? state.ui.defaultBodyMode
                     : DEFAULT_BODY_MODE;
                 const viewName = String(settings.viewName || "");
+                const currentSource = currentSourceView();
+                const sourceViewQuery = String(
+                    state.sourceViewQuery ||
+                        (currentSource
+                            ? viewLabel(currentSource)
+                            : currentSourceViewId()
+                              ? `#${currentSourceViewId()}`
+                              : ""),
+                );
                 const toggleUpdatesLabel = state.updatesPaused
                     ? "Resume updates"
                     : "Pause updates";
@@ -1172,14 +1359,25 @@ pub(super) fn script() -> String {
                     <div class="sheetBody">
                         <section class="viewSection">
                             <div class="fieldBlock">
+                                <div class="fieldLabel">Source view</div>
+                                <p class="small">Choose the plain SQL view this board will derive from.</p>
+                                <div class="autocompleteHost">
+                                    <input class="field" id="kanban-source-view" type="text" autocomplete="off" spellcheck="false" placeholder="name or id" value="${escapeHtml(sourceViewQuery)}">
+                                    <div id="kanban-source-view-suggestions" class="suggestionPanel" hidden></div>
+                                </div>
+                                <p class="small" id="kanban-source-view-summary"></p>
+                            </div>
+                        </section>
+                        <section class="viewSection">
+                            <div class="fieldBlock">
                                 <div class="fieldLabel">Derived view name</div>
                                 <p class="small">Set a human-readable name so this board reuses the same view instead of generating a generic one.</p>
                                 <input class="field" id="kanban-view-name" type="text" value="${escapeHtml(viewName)}" placeholder="My Kanban">
                             </div>
-                            <div class="sheetActions">
-                                <button class="toolbarBtn toolbarBtn--accent" type="button" data-save-view-name="true">Save name</button>
-                            </div>
                         </section>
+                        <div class="sheetActions">
+                            <button class="toolbarBtn toolbarBtn--accent" type="button" data-save-view-config="true">Save view</button>
+                        </div>
                         <section class="viewSection">
                             <div class="fieldBlock">
                                 <div class="fieldLabel">Filters</div>
@@ -1224,6 +1422,10 @@ pub(super) fn script() -> String {
                         </section>
                     </div>
                 `;
+                elements.sourceViewInput = elements.viewSheetBody.querySelector("#kanban-source-view");
+                elements.sourceViewSuggestions = elements.viewSheetBody.querySelector("#kanban-source-view-suggestions");
+                updateSourceViewSummary();
+                renderSourceViewSuggestions();
             }
 
             async function updateKanbanSettings(nextSettings) {
@@ -1238,6 +1440,13 @@ pub(super) fn script() -> String {
                     ...previous,
                     ...nextSettings,
                 });
+                const payload = {
+                    show_parent_context: Boolean(optimistic.showParentContext),
+                };
+                const normalizedViewName = normalizeViewName(optimistic.viewName);
+                if (normalizedViewName) {
+                    payload.view_name = normalizedViewName;
+                }
 
                 syncKanbanSettings(optimistic);
                 persistKanbanSettingsToHost(optimistic);
@@ -1246,7 +1455,7 @@ pub(super) fn script() -> String {
                 }
 
                 try {
-                    const outcome = await postAction("update-settings", optimistic);
+                    const outcome = await postAction("update-settings", payload);
                     const resolved = syncKanbanSettings(
                         outcome?.detail?.settings || optimistic,
                     );
@@ -1265,12 +1474,70 @@ pub(super) fn script() -> String {
                 }
             }
 
+            async function saveViewConfig() {
+                const previousSourceId = currentSourceViewId();
+                const { input } = sourceViewSuggestionElements();
+                const selectedView = resolveSourceViewFromInput(input?.value || "");
+                const viewNameInput = elements.viewSheetBody?.querySelector("#kanban-view-name");
+                const viewName = normalizeViewName(viewNameInput?.value || "");
+
+                if (!selectedView) {
+                    throw new Error("Choose a plain SQL source view first.");
+                }
+                if (!viewName) {
+                    throw new Error("Kanban view name is required.");
+                }
+
+                const optimisticLabel = viewLabel(selectedView);
+                if (input) {
+                    input.value = optimisticLabel;
+                }
+                state.sourceViewQuery = optimisticLabel;
+                updateSourceViewSummary();
+
+                try {
+                    const outcome = await postAction("update-view-config", {
+                        viewId: Number(selectedView.id || 0),
+                        viewName,
+                    });
+                    const resolvedView =
+                        outcome?.detail?.sourceView || {
+                            id: Number(selectedView.id || 0),
+                            name: String(selectedView.name || ""),
+                        };
+                    state.sourceViewQuery = viewLabel(resolvedView);
+                    if (input) {
+                        input.value = state.sourceViewQuery;
+                    }
+                    if (viewNameInput) {
+                        viewNameInput.value = viewName;
+                    }
+                    updateSourceViewSummary();
+                    hideSourceViewSuggestions();
+                } catch (error) {
+                    state.sourceViewQuery =
+                        previousSourceId && findViewById(previousSourceId)
+                            ? viewLabel(findViewById(previousSourceId))
+                            : "";
+                    if (input) {
+                        input.value = state.sourceViewQuery || "";
+                    }
+                    updateSourceViewSummary();
+                    hideSourceViewSuggestions();
+                    throw error;
+                }
+
+                await refreshRuntime(true);
+            }
+
             function formOptionsReady() {
                 return state.formOptions || {
                     assignees: [],
                     categories: [],
                     parentRecords: [],
+                    views: [],
                     parentCategoryQuery: "",
+                    sourceView: null,
                 };
             }
 
@@ -1465,7 +1732,16 @@ pub(super) fn script() -> String {
                 state.activeSheet = nextSheet;
 
                 if (nextSheet === "view") {
-                    renderViewSheet();
+                    if (state.formOptions) {
+                        renderViewSheet();
+                        void ensureFormOptionsLoaded();
+                        return;
+                    }
+                    elements.viewSheetBody.innerHTML = `<p class="small">Loading view options...</p>`;
+                    await ensureFormOptionsLoaded();
+                    if (state.activeSheet === nextSheet) {
+                        renderViewSheet();
+                    }
                     return;
                 }
 
@@ -2992,17 +3268,35 @@ pub(super) fn script() -> String {
                         return;
                     }
 
-                    const saveViewNameButton = event.target.closest(
-                        "[data-save-view-name]",
+                    const saveViewConfigButton = event.target.closest(
+                        "[data-save-view-config]",
                     );
-                    if (saveViewNameButton) {
+                    if (saveViewConfigButton) {
                         event.preventDefault();
-                        const input = elements.viewSheetBody?.querySelector("#kanban-view-name");
-                        await updateKanbanSettings({
-                            viewName: normalizeViewName(input?.value || ""),
-                        });
+                        await saveViewConfig();
                         if (isSheetVisible(elements.viewSheet)) {
                             renderViewSheet();
+                        }
+                        return;
+                    }
+
+                    const sourceViewChoiceButton = event.target.closest(
+                        "[data-source-view-id]",
+                    );
+                    if (sourceViewChoiceButton) {
+                        event.preventDefault();
+                        const input = elements.viewSheetBody?.querySelector("#kanban-source-view");
+                        if (input) {
+                            const id = Number(sourceViewChoiceButton.dataset.sourceViewId || 0);
+                            const view = findViewById(id) || {
+                                id,
+                                name: String(sourceViewChoiceButton.dataset.sourceViewName || ""),
+                            };
+                            const label = viewLabel(view);
+                            input.value = label;
+                            state.sourceViewQuery = label;
+                            updateSourceViewSummary();
+                            hideSourceViewSuggestions();
                         }
                         return;
                     }
@@ -3125,6 +3419,10 @@ pub(super) fn script() -> String {
                         return;
                     }
 
+                    if (!event.target.closest(".autocompleteHost")) {
+                        hideSourceViewSuggestions();
+                    }
+
                 } catch (error) {
                     state.transportError =
                         error instanceof Error ? error.message : String(error);
@@ -3133,6 +3431,20 @@ pub(super) fn script() -> String {
             });
 
             app.addEventListener("input", (event) => {
+                const sourceViewInput = event.target.closest("#kanban-source-view");
+                if (sourceViewInput) {
+                    state.sourceViewQuery = String(sourceViewInput.value || "");
+                    updateSourceViewSummary();
+                    renderSourceViewSuggestions();
+                    return;
+                }
+
+                const viewNameInput = event.target.closest("#kanban-view-name");
+                if (viewNameInput) {
+                    updateSourceViewSummary();
+                    return;
+                }
+
                 const parentSearchInput = event.target.closest(
                     "[data-parent-search-head],[data-parent-search-categories]",
                 );
@@ -3146,6 +3458,33 @@ pub(super) fn script() -> String {
                 }
 
                 renderParentChoices(root);
+            });
+
+            app.addEventListener("keydown", (event) => {
+                const sourceViewInput = event.target.closest("#kanban-source-view");
+                if (!sourceViewInput) {
+                    return;
+                }
+
+                if (event.key === "Escape") {
+                    hideSourceViewSuggestions();
+                    return;
+                }
+
+                if (event.key !== "Enter") {
+                    return;
+                }
+
+                event.preventDefault();
+                const selected = resolveSourceViewFromInput(sourceViewInput.value);
+                if (!selected) {
+                    return;
+                }
+                const label = viewLabel(selected);
+                sourceViewInput.value = label;
+                state.sourceViewQuery = label;
+                updateSourceViewSummary();
+                hideSourceViewSuggestions();
             });
 
             app.addEventListener("change", async (event) => {

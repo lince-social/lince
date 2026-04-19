@@ -38,8 +38,6 @@ const DNA_BUCKET_PREFIX: &str = "lince/dna/sand";
 const DNA_RESOURCE_NAMESPACE: &str = "lince.dna";
 const DNA_CATEGORY_NAMESPACE: &str = "record.categories";
 const DNA_BASE_CATEGORY: &str = "sand";
-const DNA_CHANNEL_OFFICIAL: &str = "official";
-const DNA_CHANNEL_COMMUNITY: &str = "community";
 const HTML_TRANSPORT_FILENAME_SUFFIX: &str = "_metadata.html";
 const SAND_TOML_FILENAME: &str = "sand.toml";
 
@@ -87,7 +85,6 @@ pub struct DnaPackageSummary {
     pub head: String,
     pub body: String,
     pub slug: String,
-    pub channel: String,
     pub version: String,
     pub bucket_key: String,
     pub package_format: String,
@@ -110,7 +107,6 @@ pub struct DnaPublishResponse {
     pub head: String,
     pub body: String,
     pub slug: String,
-    pub channel: String,
     pub version: String,
     pub package_prefix: String,
     pub bucket_key: String,
@@ -129,7 +125,6 @@ struct PublishUpload {
 #[derive(Debug)]
 struct PublishMultipartPayload {
     server_id: String,
-    channel: String,
     head: String,
     body: String,
     categories: Vec<String>,
@@ -199,8 +194,6 @@ struct DnaExtensionMeta {
     #[serde(default, deserialize_with = "deserialize_nullable_string")]
     slug: String,
     #[serde(default, deserialize_with = "deserialize_nullable_string")]
-    channel: String,
-    #[serde(default, deserialize_with = "deserialize_nullable_string")]
     version: String,
     #[serde(default)]
     canonical_resource_ref_id: Option<i64>,
@@ -211,8 +204,6 @@ struct DnaExtensionMeta {
 struct DnaResourceMeta {
     #[serde(default, deserialize_with = "deserialize_nullable_string")]
     slug: String,
-    #[serde(default, deserialize_with = "deserialize_nullable_string")]
-    channel: String,
     #[serde(default, deserialize_with = "deserialize_nullable_string")]
     version: String,
     #[serde(default, deserialize_with = "deserialize_nullable_string")]
@@ -450,13 +441,9 @@ async fn load_dna_catalog_packages(
     }
 
     packages.sort_by(|left, right| {
-        channel_sort_rank(&left.channel)
-            .cmp(&channel_sort_rank(&right.channel))
-            .then_with(|| {
-                left.head
-                    .to_ascii_lowercase()
-                    .cmp(&right.head.to_ascii_lowercase())
-            })
+        left.head
+            .to_ascii_lowercase()
+            .cmp(&right.head.to_ascii_lowercase())
             .then_with(|| {
                 left.origin_name
                     .to_ascii_lowercase()
@@ -487,14 +474,10 @@ async fn load_dna_catalog_snapshot(
     }
 
     packages.sort_by(|left, right| {
-        channel_sort_rank(&left.summary.channel)
-            .cmp(&channel_sort_rank(&right.summary.channel))
-            .then_with(|| {
-                left.summary
-                    .head
-                    .to_ascii_lowercase()
-                    .cmp(&right.summary.head.to_ascii_lowercase())
-            })
+        left.summary
+            .head
+            .to_ascii_lowercase()
+            .cmp(&right.summary.head.to_ascii_lowercase())
             .then_with(|| {
                 left.summary
                     .origin_name
@@ -647,10 +630,6 @@ async fn collect_organ_publications(
         let package_format = resource_meta.package_format.clone().unwrap_or_else(|| {
             infer_package_format_from_path(&resource_ref.resource_path).to_string()
         });
-        let channel = normalize_publication_channel_or_default(
-            first_non_empty(&[meta.channel.as_str(), resource_meta.channel.as_str()])
-                .or_else(|| infer_channel_from_path(&resource_ref.resource_path)),
-        );
         let version = first_non_empty(&[meta.version.as_str(), resource_meta.version.as_str()])
             .unwrap_or("0.1.0")
             .trim()
@@ -670,7 +649,6 @@ async fn collect_organ_publications(
                 head: record.head.clone(),
                 body: record.body.clone(),
                 slug,
-                channel,
                 version,
                 bucket_key: resource_ref.resource_path.clone(),
                 package_format,
@@ -749,7 +727,6 @@ fn matches_dna_query(summary: &DnaPackageSummary, query: &str) -> bool {
         summary.head.as_str(),
         summary.body.as_str(),
         summary.slug.as_str(),
-        summary.channel.as_str(),
         summary.version.as_str(),
         summary.bucket_key.as_str(),
     ]
@@ -780,7 +757,6 @@ async fn load_publication_package(
 
 async fn parse_publish_multipart(multipart: &mut Multipart) -> ApiResult<PublishMultipartPayload> {
     let mut server_id = String::new();
-    let mut channel = DNA_CHANNEL_OFFICIAL.to_string();
     let mut head = String::new();
     let mut body = String::new();
     let mut categories = Vec::new();
@@ -803,9 +779,6 @@ async fn parse_publish_multipart(multipart: &mut Multipart) -> ApiResult<Publish
         let value = field.text().await.map_err(invalid_multipart)?;
         match field_name.as_str() {
             "serverId" => server_id = value.trim().to_string(),
-            "channel" => {
-                channel = normalize_publication_channel(&value).map_err(map_validation_error)?
-            }
             "head" => head = value.trim().to_string(),
             "body" => body = value.trim().to_string(),
             "categories" => categories = parse_categories_field(&value),
@@ -830,7 +803,6 @@ async fn parse_publish_multipart(multipart: &mut Multipart) -> ApiResult<Publish
 
     Ok(PublishMultipartPayload {
         server_id,
-        channel,
         head,
         body,
         categories,
@@ -928,8 +900,8 @@ fn package_content_type(transport: PackageTransport) -> &'static str {
     }
 }
 
-fn build_remote_sand_toml(slug: &str, version: &str, channel: &str) -> String {
-    format!("name = {slug:?}\nversion = {version:?}\nchannel = {channel:?}\n")
+fn build_remote_sand_toml(slug: &str, version: &str) -> String {
+    format!("name = {slug:?}\nversion = {version:?}\n")
 }
 
 fn build_lince_transport_bytes(package: &LincePackage) -> Result<Vec<u8>, String> {
@@ -979,7 +951,6 @@ async fn upsert_dna_publication(
     head: &str,
     body: &str,
     slug: &str,
-    channel: &str,
     categories: &[String],
     package_prefix: &str,
     bucket_key: &str,
@@ -990,11 +961,10 @@ async fn upsert_dna_publication(
     sand_toml_bytes: &[u8],
 ) -> ApiResult<(i64, i64, i64)> {
     let desired_version = parse_release_version(&package.manifest.version)?;
-    let existing = find_existing_publication_state(state, headers, server, slug, channel).await?;
+    let existing = find_existing_publication_state(state, headers, server, slug).await?;
     let resource_meta = build_resource_meta_json(
         "canonical_transport",
         slug,
-        channel,
         &package.manifest.version,
         package_prefix,
         transport_filename,
@@ -1108,7 +1078,6 @@ async fn upsert_dna_publication(
                     "version": 1,
                     "freestyle_data_structure": build_extension_meta_json(
                         slug,
-                        channel,
                         &package.manifest.version,
                         canonical_resource_ref_id,
                         package_prefix,
@@ -1182,7 +1151,6 @@ async fn upsert_dna_publication(
                 "version": 1,
                 "freestyle_data_structure": build_extension_meta_json(
                     slug,
-                    channel,
                     &package.manifest.version,
                     new_resource_ref_id,
                     package_prefix,
@@ -1307,7 +1275,6 @@ async fn upsert_dna_publication(
             "freestyle_data_structure": build_resource_meta_json(
                 "canonical_transport",
                 slug,
-                channel,
                 &package.manifest.version,
                 package_prefix,
                 transport_filename,
@@ -1338,7 +1305,6 @@ async fn upsert_dna_publication(
             "version": 1,
             "freestyle_data_structure": build_extension_meta_json(
                 slug,
-                channel,
                 &package.manifest.version,
                 resource_ref_id,
                 package_prefix,
@@ -1664,7 +1630,6 @@ async fn find_existing_publication_state(
     headers: &HeaderMap,
     server: &Organ,
     slug: &str,
-    channel: &str,
 ) -> ApiResult<Option<DnaPublicationState>> {
     let records = list_table_rows::<DnaRecordRow>(state, headers, server, "record").await?;
     let extensions =
@@ -1742,17 +1707,7 @@ async fn find_existing_publication_state(
         ])
         .map(normalize_package_slug)
         .unwrap_or_else(|| "lince_sand".to_string());
-        let publication_channel = normalize_publication_channel_or_default(
-            first_non_empty(&[meta.channel.as_str(), canonical_meta.channel.as_str()]).or_else(
-                || {
-                    canonical_resource_ref
-                        .as_ref()
-                        .and_then(|row| infer_channel_from_path(&row.resource_path))
-                },
-            ),
-        );
-
-        if publication_slug != slug || publication_channel != channel {
+        if publication_slug != slug {
             continue;
         }
 
@@ -1794,7 +1749,6 @@ async fn list_sand_resource_refs_for_record(
 fn build_resource_meta_json(
     role: &str,
     slug: &str,
-    channel: &str,
     version: &str,
     package_prefix: &str,
     transport_filename: &str,
@@ -1804,7 +1758,6 @@ fn build_resource_meta_json(
     serde_json::to_string(&json!({
         "role": role,
         "slug": slug,
-        "channel": channel,
         "version": version,
         "package_prefix": package_prefix,
         "transport_filename": transport_filename,
@@ -1819,7 +1772,6 @@ fn build_resource_meta_json(
 
 fn build_extension_meta_json(
     slug: &str,
-    channel: &str,
     version: &str,
     canonical_resource_ref_id: i64,
     package_prefix: &str,
@@ -1828,7 +1780,6 @@ fn build_extension_meta_json(
     serde_json::to_string(&json!({
         "published": true,
         "slug": slug,
-        "channel": channel,
         "version": version,
         "canonical_resource_ref_id": canonical_resource_ref_id,
         "package_prefix": package_prefix,
@@ -1844,34 +1795,6 @@ fn parse_release_version(version: &str) -> ApiResult<Version> {
             format!("A versao do sand precisa ser SemVer valida: {error}"),
         )
     })
-}
-
-fn normalize_publication_channel(raw: &str) -> Result<String, String> {
-    let channel = raw.trim().to_ascii_lowercase();
-    match channel.as_str() {
-        DNA_CHANNEL_OFFICIAL | DNA_CHANNEL_COMMUNITY => Ok(channel),
-        _ => Err("O canal do sand precisa ser official ou community.".into()),
-    }
-}
-
-fn normalize_publication_channel_or_default(raw: Option<&str>) -> String {
-    raw.and_then(|value| normalize_publication_channel(value).ok())
-        .unwrap_or_else(|| DNA_CHANNEL_COMMUNITY.to_string())
-}
-
-fn infer_channel_from_path(path: &str) -> Option<&str> {
-    let prefix = format!("{DNA_BUCKET_PREFIX}/");
-    path.strip_prefix(&prefix)
-        .and_then(|value| value.split('/').next())
-        .filter(|value| matches!(*value, DNA_CHANNEL_OFFICIAL | DNA_CHANNEL_COMMUNITY))
-}
-
-fn channel_sort_rank(channel: &str) -> u8 {
-    match channel.trim().to_ascii_lowercase().as_str() {
-        DNA_CHANNEL_OFFICIAL => 0,
-        DNA_CHANNEL_COMMUNITY => 1,
-        _ => 2,
-    }
 }
 
 fn resource_created_at(row: &DnaResourceRefRow) -> Option<NaiveDateTime> {
@@ -2165,7 +2088,6 @@ pub async fn publish_dna_package(
 ) -> ApiResult<Json<DnaPublishResponse>> {
     let payload = parse_publish_multipart(&mut multipart).await?;
     let server = load_publish_organ(&state, &payload.server_id).await?;
-    let channel = payload.channel.clone();
     let package = parse_lince_package(&payload.upload.filename, &payload.upload.bytes)
         .map_err(map_validation_error)?;
     let head = fallback_text(&payload.head, &package.manifest.title);
@@ -2173,7 +2095,7 @@ pub async fn publish_dna_package(
     let slug = normalize_package_slug(&package_name_seed(&payload.upload.filename, &package));
     let categories = publication_categories(payload.categories);
     let package_prefix = format!(
-        "{DNA_BUCKET_PREFIX}/{channel}/{}/{slug}/{}",
+        "{DNA_BUCKET_PREFIX}/{}/{slug}/{}",
         package_prefix_letters(&slug),
         package.manifest.version
     );
@@ -2182,7 +2104,7 @@ pub async fn publish_dna_package(
     let sand_toml_key = format!("{package_prefix}/{SAND_TOML_FILENAME}");
     let package_format = package_format_label(package.transport()).to_string();
     let package_bytes = build_lince_transport_bytes(&package).map_err(map_validation_error)?;
-    let sand_toml = build_remote_sand_toml(&slug, &package.manifest.version, &channel);
+    let sand_toml = build_remote_sand_toml(&slug, &package.manifest.version);
     let sand_toml_bytes = sand_toml.into_bytes();
 
     let record_result = upsert_dna_publication(
@@ -2192,7 +2114,6 @@ pub async fn publish_dna_package(
         &head,
         &body,
         &slug,
-        &channel,
         &categories,
         &package_prefix,
         &bucket_key,
@@ -2218,7 +2139,6 @@ pub async fn publish_dna_package(
         head,
         body,
         slug,
-        channel,
         version: package.manifest.version.clone(),
         package_prefix,
         bucket_key,

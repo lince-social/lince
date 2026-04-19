@@ -12,7 +12,7 @@ pub(crate) fn source() -> SandWidgetSource {
         lang: "en",
         manifest: PackageManifest {
             icon: "▥".into(),
-            title: "Kanban Record View".into(),
+            title: "Kanban".into(),
             author: "Lince Labs".into(),
             version: "1.0.0".into(),
             description: "Kanban oficial para acompanhar uma view SSE da tabela record.".into(),

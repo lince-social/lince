@@ -11,7 +11,7 @@ fn default_signals() -> String {
         "focusMarkdown": false,
         "focusLayout": "full",
         "shell": {
-            "title": "Kanban Record View",
+            "title": "Kanban",
             "queryText": "",
             "queryLabel": "Waiting for widget contract...",
             "queryDisabled": true,
@@ -65,7 +65,7 @@ pub(super) fn body() -> Markup {
             .panel {
                 .header {
                     #kanban-header-meta.headerMeta {
-                        .headerTitle id="kanban-header-title" data-text="$shell.title" { "Kanban Record View" }
+                        .headerTitle id="kanban-header-title" data-text="$shell.title" { "Kanban" }
                         button.headerSubButton
                             type="button"
                             id="kanban-query-toggle"

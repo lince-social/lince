@@ -488,11 +488,6 @@ body.is-resizing-panels .sidePanelResizer::after {
     left: 5px;
 }
 
-.sidePanel--controls .sidePanelBody {
-    overflow-y: hidden;
-    padding-right: 0;
-}
-
 .sidePanelHead {
     justify-content: space-between;
     align-items: flex-start;
@@ -522,6 +517,10 @@ body.is-resizing-panels .sidePanelResizer::after {
     flex-direction: column;
     gap: 16px;
     padding-right: 4px;
+}
+
+.sidePanelBody > .sideSection {
+    flex: 0 0 auto;
 }
 
 .sidePanelBody--create {

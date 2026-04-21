@@ -58,31 +58,6 @@ pub(super) fn body() -> Markup {
                             section class="sideSection" {
                                 div class="sectionHead" {
                                     div {
-                                        div class="sectionLabel" { "view" }
-                                        h3 class="sectionTitle" { "Graph view" }
-                                    }
-                                    div class="pillRow" {
-                                        span id="mode-pill" class="pill pill--mode" { "view" }
-                                        span id="origin-pill" class="pill pill--origin" { "local / view none" }
-                                    }
-                                }
-                                div class="pillRow" {
-                                    span id="row-pill" class="pill" { "0 nodes" }
-                                    span id="link-pill" class="pill" { "0 links" }
-                                    span id="filter-pill" class="pill" { "0 filters" }
-                                }
-                                div class="section" {
-                                    div class="sectionLabel" { "view name" }
-                                    p id="origin-copy" class="mutedCopy" {
-                                        "The current view name, source binding, and stream origin live here."
-                                    }
-                                    pre id="origin-text" class="codeBlock" { "Waiting for host metadata..." }
-                                }
-                            }
-
-                            section class="sideSection" {
-                                div class="sectionHead" {
-                                    div {
                                         div class="sectionLabel" { "filters" }
                                         h3 class="sectionTitle" { "Persistent view filters" }
                                     }
@@ -151,6 +126,33 @@ pub(super) fn body() -> Markup {
                                     span id="physics-center-value" class="sliderValue" { "0.18" }
                                 }
                                 input id="physics-center" class="slider" type="range" min="0" max="1" step="0.01" value="0.18";
+                            }
+
+                            section class="sideSection" {
+                                div class="sectionHead" {
+                                    div {
+                                        div class="sectionLabel" { "view" }
+                                        h3 class="sectionTitle" { "Graph view" }
+                                    }
+                                    div class="pillRow" {
+                                        span id="mode-pill" class="pill pill--mode" { "view" }
+                                        span id="origin-pill" class="pill pill--origin" { "local / view none" }
+                                    }
+                                }
+                                div class="pillRow" {
+                                    span id="row-pill" class="pill" { "0 nodes" }
+                                    span id="link-pill" class="pill" { "0 links" }
+                                    span id="filter-pill" class="pill" { "0 filters" }
+                                }
+                                div class="section" {
+                                    div class="sectionLabel" { "view name" }
+                                    p id="origin-copy" class="mutedCopy" {
+                                        "The current view name, source binding, and stream origin live here."
+                                    }
+                                    pre id="origin-text" class="codeBlock" { "Waiting for host metadata..." }
+                                    div class="sectionLabel" { "view sql" }
+                                    pre id="view-sql" class="codeBlock" { "Waiting for view SQL..." }
+                                }
                             }
                         }
                     }

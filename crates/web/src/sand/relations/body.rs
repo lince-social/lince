@@ -63,14 +63,14 @@ pub(super) fn body() -> Markup {
                                     }
                                     button id="clear-filters" class="button button--ghost" type="button" { "Clear" }
                                 }
-                                label class="fieldLabel" for="parent-head-query" { "Parent head" }
+                                label class="fieldLabel" for="need-head-query" { "Need head" }
                                 input
-                                    id="parent-head-query"
+                                    id="need-head-query"
                                     class="input"
                                     type="text"
                                     autocomplete="off"
                                     spellcheck="false"
-                                    placeholder="Match parent head text"
+                                    placeholder="Match need head text"
                                 ;
                                 div class="sectionLabel" { "Categories" }
                                 p class="mutedCopy" {
@@ -221,24 +221,24 @@ pub(super) fn body() -> Markup {
                                     ;
                                 }
                                 div class="fieldGroup" {
-                                    div class="fieldLabel" { "current parents" }
-                                    div id="current-parent-list" class="relationRowList" {}
+                                    div class="fieldLabel" { "Contributes to:" }
+                                    div id="current-need-list" class="relationRowList" {}
                                 }
                                 div class="fieldGroup" {
-                                    label class="fieldLabel" for="parent-search-query" { "find parent" }
+                                    label class="fieldLabel" for="need-search-query" { "Find need" }
                                     input
-                                        id="parent-search-query"
+                                        id="need-search-query"
                                         class="input"
                                         type="text"
                                         autocomplete="off"
                                         spellcheck="false"
-                                        placeholder="Search possible fathers by head"
+                                        placeholder="Search possible needs by head"
                                     ;
-                                    div id="parent-search-summary" class="mutedCopy" {}
-                                    div id="parent-choice-list" class="parentChoiceList" {}
+                                    div id="need-search-summary" class="mutedCopy" {}
+                                    div id="need-choice-list" class="needChoiceList" {}
                                 }
                                 div class="fieldGroup" {
-                                    div class="fieldLabel" { "children" }
+                                    div class="fieldLabel" { "Needs:" }
                                     div id="child-list" class="chipList" {}
                                 }
                             }
@@ -305,22 +305,22 @@ pub(super) fn body() -> Markup {
                                 div class="section" {
                                     div class="sectionHead" {
                                         div {
-                                            label class="fieldLabel" for="create-parent-search" { "Parent" }
-                                            p id="create-parent-summary" class="mutedCopy" {
-                                                "Selected: no parent"
+                                            label class="fieldLabel" for="create-need-search" { "Need" }
+                                            p id="create-need-summary" class="mutedCopy" {
+                                                "Selected: no need"
                                             }
                                         }
-                                        button id="create-parent-clear" class="button button--ghost" type="button" { "No parent" }
+                                        button id="create-need-clear" class="button button--ghost" type="button" { "No need" }
                                     }
                                     input
-                                        id="create-parent-search"
+                                        id="create-need-search"
                                         class="input"
                                         type="text"
                                         autocomplete="off"
                                         spellcheck="false"
-                                        placeholder="Search possible fathers by head"
+                                        placeholder="Search possible needs by head"
                                     ;
-                                    div id="create-parent-choice-list" class="parentChoiceList parentChoiceList--compact" {}
+                                    div id="create-need-choice-list" class="needChoiceList needChoiceList--compact" {}
                                 }
 
                                 div class="section" {

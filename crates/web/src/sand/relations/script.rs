@@ -26,10 +26,10 @@ pub(super) fn script() -> String {
     const createHeadInput = document.getElementById("create-head");
     const createBodyInput = document.getElementById("create-body");
     const createQuantityInput = document.getElementById("create-quantity");
-    const createParentSearchInput = document.getElementById("create-parent-search");
-    const createParentSummary = document.getElementById("create-parent-summary");
-    const createParentChoiceList = document.getElementById("create-parent-choice-list");
-    const createParentClearButton = document.getElementById("create-parent-clear");
+    const createNeedSearchInput = document.getElementById("create-need-search");
+    const createNeedSummary = document.getElementById("create-need-summary");
+    const createNeedChoiceList = document.getElementById("create-need-choice-list");
+    const createNeedClearButton = document.getElementById("create-need-clear");
     const createCategoryList = document.getElementById("create-category-list");
     const createClearButton = document.getElementById("create-clear");
     const createSubmitButton = document.getElementById("create-submit");
@@ -41,12 +41,12 @@ pub(super) fn script() -> String {
     const recordCategoryList = document.getElementById("record-category-list");
     const recordSaveButton = document.getElementById("record-save");
     const recordDeleteButton = document.getElementById("record-delete");
-    const parentSearchInput = document.getElementById("parent-search-query");
-    const parentSearchSummary = document.getElementById("parent-search-summary");
-    const parentChoiceList = document.getElementById("parent-choice-list");
-    const currentParentList = document.getElementById("current-parent-list");
+    const needSearchInput = document.getElementById("need-search-query");
+    const needSearchSummary = document.getElementById("need-search-summary");
+    const needChoiceList = document.getElementById("need-choice-list");
+    const currentNeedList = document.getElementById("current-need-list");
     const childList = document.getElementById("child-list");
-    const parentHeadQuery = document.getElementById("parent-head-query");
+    const needHeadQuery = document.getElementById("need-head-query");
     const categoryInput = document.getElementById("category-input");
     const categoryAddButton = document.getElementById("category-add");
     const selectedCategoryList = document.getElementById("selected-category-list");
@@ -616,7 +616,7 @@ pub(super) fn script() -> String {
     }
 
     function renderFilterControls() {
-        parentHeadQuery.value = state.draftFilters.parentHeadQuery || "";
+        needHeadQuery.value = state.draftFilters.parentHeadQuery || "";
         if (categoryInput) {
             categoryInput.value = "";
         }
@@ -629,22 +629,22 @@ pub(super) fn script() -> String {
         createHeadInput.value = String(state.createDraft.head || "");
         createBodyInput.value = String(state.createDraft.body || "");
         createQuantityInput.value = String(state.createDraft.quantity || "0");
-        createParentSearchInput.value = String(state.createParentSearchQuery || "");
+        createNeedSearchInput.value = String(state.createParentSearchQuery || "");
         createCategoryList.innerHTML = categories.length
             ? categories
                   .map((category) => `<span class="pill">${escapeHtml(category)}</span>`)
                   .join("")
             : '<span class="mutedCopy">No applied categories. New records will be created without category links.</span>';
-        createParentSummary.textContent = draftParent
+        createNeedSummary.textContent = draftParent
             ? `Selected: #${draftParent.id} ${draftParent.head || "Untitled"}`
-            : "Selected: no parent";
+            : "Selected: no need";
         createSummary.textContent = !state.origin.serverId
             ? "This widget needs a configured server before it can create records."
             : categories.length
               ? `New records will inherit ${categories.length} applied categor${categories.length === 1 ? "y" : "ies"} from this view.`
               : "No category filter is currently applied to this view.";
         renderCreateParentChoices();
-        createParentClearButton.disabled = state.pendingCreate || state.createDraft.parentId == null;
+        createNeedClearButton.disabled = state.pendingCreate || state.createDraft.parentId == null;
         createClearButton.disabled = state.pendingCreate;
         createSubmitButton.disabled = state.pendingCreate || !state.origin.serverId || !String(state.createDraft.head || "").trim();
     }
@@ -652,20 +652,20 @@ pub(super) fn script() -> String {
     function renderCreateParentChoices() {
         const candidates = sortedParentCandidates(state.createParentSearchQuery, new Set());
         if (!candidates.length) {
-            createParentChoiceList.innerHTML = '<p class="mutedCopy">No possible fathers match the current search.</p>';
+            createNeedChoiceList.innerHTML = '<p class="mutedCopy">No possible needs match the current search.</p>';
             return;
         }
 
-        createParentChoiceList.innerHTML = candidates
+        createNeedChoiceList.innerHTML = candidates
             .map((candidate) => {
                 const isSelected = candidate.id === state.createDraft.parentId;
                 const categories = Array.isArray(candidate.categories) && candidate.categories.length
                     ? candidate.categories.join(", ")
                     : "No categories";
                 return `
-                    <button class="parentChoice${isSelected ? " is-selected" : ""}" type="button" data-create-parent-choice="${candidate.id}">
-                        <span class="parentChoice__head">#${candidate.id} ${escapeHtml(candidate.head || "Untitled")}</span>
-                        <span class="parentChoice__meta">${escapeHtml(categories)}</span>
+                    <button class="needChoice${isSelected ? " is-selected" : ""}" type="button" data-create-parent-choice="${candidate.id}">
+                        <span class="needChoice__head">#${candidate.id} ${escapeHtml(candidate.head || "Untitled")}</span>
+                        <span class="needChoice__meta">${escapeHtml(categories)}</span>
                     </button>
                 `;
             })
@@ -728,43 +728,42 @@ pub(super) fn script() -> String {
 
     function renderParentChoices(node) {
         if (!node) {
-            parentChoiceList.innerHTML = "";
-            parentSearchSummary.textContent = "Choose a possible father from the current graph.";
+            needChoiceList.innerHTML = "";
+            needSearchSummary.textContent = "Choose a possible need from the current graph.";
             return;
         }
 
-        const blockedIds = collectDescendantIds(node.id);
         const currentParentIds = uniqueIntegers(
             Array.isArray(node.parentIds) ? node.parentIds : [node.parentId],
         );
         const candidates = sortedParentCandidates(
             state.parentSearchQuery,
-            new Set([...blockedIds, node.id, ...currentParentIds]),
+            new Set([node.id, ...currentParentIds]),
         );
 
         const selectedParent = state.nodes.find((candidate) => candidate.id === state.selectedParentId) || null;
-        parentSearchSummary.textContent = selectedParent
-            ? `Target father: #${selectedParent.id} ${selectedParent.head || "Untitled"}`
-            : "Choose a possible father from the current graph.";
+        needSearchSummary.textContent = selectedParent
+            ? `Target need: #${selectedParent.id} ${selectedParent.head || "Untitled"}`
+            : "Choose a possible need from the current graph.";
 
         if (!candidates.length) {
-            parentChoiceList.innerHTML = '<p class="mutedCopy">No possible fathers match the current search.</p>';
+            needChoiceList.innerHTML = '<p class="mutedCopy">No possible needs match the current search.</p>';
             return;
         }
 
-        parentChoiceList.innerHTML = candidates
+        needChoiceList.innerHTML = candidates
             .map((candidate) => {
                 const isSelected = candidate.id === state.selectedParentId;
                 const categories = Array.isArray(candidate.categories) && candidate.categories.length
                     ? candidate.categories.join(", ")
                     : "No categories";
                 return `
-                    <div class="relationRow parentChoice${isSelected ? " is-selected" : ""}">
+                    <div class="relationRow needChoice${isSelected ? " is-selected" : ""}">
                         <div class="relationRow__body">
                             <span class="relationRow__head">#${candidate.id} ${escapeHtml(candidate.head || "Untitled")}</span>
                             <span class="relationRow__meta">${escapeHtml(categories)}</span>
                         </div>
-                        <button class="relationRow__action relationRow__action--add" type="button" data-parent-choice="${candidate.id}" aria-label="Set parent ${escapeHtml(candidate.head || "Untitled")}" title="Set parent">
+                    <button class="relationRow__action relationRow__action--add" type="button" data-parent-choice="${candidate.id}" aria-label="Set need ${escapeHtml(candidate.head || "Untitled")}" title="Set need">
                             +
                         </button>
                     </div>
@@ -774,7 +773,7 @@ pub(super) fn script() -> String {
     }
 
     function renderCurrentParentList(node) {
-        if (!currentParentList) {
+        if (!currentNeedList) {
             return [];
         }
         const parentIds = uniqueIntegers(
@@ -784,23 +783,23 @@ pub(super) fn script() -> String {
             .map((parentId) => state.nodes.find((candidate) => candidate.id === parentId) || null)
             .filter(Boolean);
         if (!currentParents.length) {
-            currentParentList.innerHTML = '<span class="mutedCopy">No current parents.</span>';
+            currentNeedList.innerHTML = '<span class="mutedCopy">No current needs.</span>';
             return currentParents;
         }
 
-        currentParentList.innerHTML = currentParents
+        currentNeedList.innerHTML = currentParents
             .map((parent) => {
                 const isSelected = parent.id === state.selectedRemovalParentId;
                 const categories = Array.isArray(parent.categories) && parent.categories.length
                     ? parent.categories.join(", ")
                     : "No categories";
                 return `
-                    <div class="relationRow currentParent${isSelected ? " is-selected" : ""}">
+                    <div class="relationRow currentNeed${isSelected ? " is-selected" : ""}">
                         <div class="relationRow__body">
                             <span class="relationRow__head">#${parent.id} ${escapeHtml(parent.head || "Untitled")}</span>
                             <span class="relationRow__meta">${escapeHtml(categories)}</span>
                         </div>
-                        <button class="relationRow__action relationRow__action--remove" type="button" data-parent-remove="${parent.id}" aria-label="Remove parent ${escapeHtml(parent.head || "Untitled")}" title="Remove parent">
+                        <button class="relationRow__action relationRow__action--remove" type="button" data-parent-remove="${parent.id}" aria-label="Remove need ${escapeHtml(parent.head || "Untitled")}" title="Remove need">
                             ×
                         </button>
                     </div>
@@ -879,11 +878,11 @@ pub(super) fn script() -> String {
         if (!node) {
             state.recordPanelOpen = false;
             childList.innerHTML = "";
-            if (currentParentList) {
-                currentParentList.innerHTML = "";
+            if (currentNeedList) {
+                currentNeedList.innerHTML = "";
             }
-            parentChoiceList.innerHTML = "";
-            parentSearchSummary.textContent = "Choose a possible father from the current graph.";
+            needChoiceList.innerHTML = "";
+            needSearchSummary.textContent = "Choose a possible need from the current graph.";
             renderRecordEditor(null);
             renderPanel();
             return;
@@ -896,7 +895,7 @@ pub(super) fn script() -> String {
             state.selectedRemovalParentId = null;
         }
 
-        parentSearchInput.value = state.parentSearchQuery;
+        needSearchInput.value = state.parentSearchQuery;
 
         renderCurrentParentList(node);
         const children = Array.isArray(node.children) ? node.children : [];
@@ -905,7 +904,7 @@ pub(super) fn script() -> String {
             ? children
                   .map((child) => `<span class="pill">#${escapeHtml(child.id)} ${escapeHtml(child.head || "Untitled")}</span>`)
                   .join("")
-            : '<span class="mutedCopy">No children.</span>';
+            : '<span class="mutedCopy">No needs.</span>';
 
         renderRecordEditor(node);
         renderParentChoices(node);
@@ -2291,18 +2290,18 @@ pub(super) fn script() -> String {
         }
         const parentId = Number(state.selectedParentId || 0) || null;
         if (!parentId) {
-            renderStatus("Choose father", "error", "Select a father before saving the relation.");
+            renderStatus("Choose need", "error", "Select a need before saving the relation.");
             return;
         }
         if (parentId === node.id) {
-            renderStatus("Invalid father", "error", "A node cannot parent itself.");
+            renderStatus("Invalid need", "error", "A node cannot point to itself.");
             return;
         }
         const relationSnapshot = captureParentState();
         state.pendingParentMutation = true;
         applyOptimisticParentChange(node.id, parentId);
-        renderStatus("Saving", "status", "Parent relation update pending.");
-        postAction("set-parent", {
+        renderStatus("Saving", "status", "Need relation update pending.");
+        postAction("set-need", {
             recordId: node.id,
             parentId,
         })
@@ -2311,7 +2310,7 @@ pub(super) fn script() -> String {
                 state.selectedParentId = null;
                 state.selectedRemovalParentId = null;
                 renderSelection();
-                renderStatus("Saved", "live", "Parent relation updated.");
+                renderStatus("Saved", "live", "Need relation updated.");
                 restartStream();
             })
             .catch((error) => {
@@ -2332,9 +2331,9 @@ pub(super) fn script() -> String {
         renderStatus(
             "Saving",
             "status",
-            removalParentId ? "Parent relation removal pending." : "Removing all parent relations.",
+            removalParentId ? "Need relation removal pending." : "Removing all need relations.",
         );
-        postAction("set-parent", {
+        postAction("set-need", {
             recordId: node.id,
             parentId: null,
             removeParentId: removalParentId,
@@ -2346,7 +2345,7 @@ pub(super) fn script() -> String {
                 renderStatus(
                     "Saved",
                     "live",
-                    removalParentId ? "Parent relation removed." : "All parent relations removed.",
+                    removalParentId ? "Need relation removed." : "All need relations removed.",
                 );
                 restartStream();
             })
@@ -2358,7 +2357,7 @@ pub(super) fn script() -> String {
 
     function applyFilters() {
         updateCategoryStateFromControls();
-        state.draftFilters.parentHeadQuery = String(parentHeadQuery.value || "").trim();
+        state.draftFilters.parentHeadQuery = String(needHeadQuery.value || "").trim();
         const rows = buildFilterRows();
         postAction("apply-filters", { filters: rows })
             .then((outcome) => {
@@ -2547,11 +2546,11 @@ pub(super) fn script() -> String {
         createQuantityInput.addEventListener("input", () => {
             state.createDraft.quantity = String(createQuantityInput.value || "0");
         });
-        createParentSearchInput.addEventListener("input", () => {
-            state.createParentSearchQuery = String(createParentSearchInput.value || "").trim();
+        createNeedSearchInput.addEventListener("input", () => {
+            state.createParentSearchQuery = String(createNeedSearchInput.value || "").trim();
             renderCreateForm();
         });
-        createParentChoiceList.addEventListener("click", (event) => {
+        createNeedChoiceList.addEventListener("click", (event) => {
             const button = event.target?.closest?.("[data-create-parent-choice]");
             if (!button) {
                 return;
@@ -2559,7 +2558,7 @@ pub(super) fn script() -> String {
             state.createDraft.parentId = Number(button.getAttribute("data-create-parent-choice") || 0) || null;
             renderCreateForm();
         });
-        createParentClearButton.addEventListener("click", () => {
+        createNeedClearButton.addEventListener("click", () => {
             state.createDraft.parentId = null;
             renderCreateForm();
         });
@@ -2640,16 +2639,16 @@ pub(super) fn script() -> String {
             }
             removeCategory(button.getAttribute("data-category-remove"));
         });
-        parentHeadQuery.addEventListener("input", () => {
-            state.draftFilters.parentHeadQuery = String(parentHeadQuery.value || "").trim();
+        needHeadQuery.addEventListener("input", () => {
+            state.draftFilters.parentHeadQuery = String(needHeadQuery.value || "").trim();
             renderFilterPill();
         });
-        parentSearchInput.addEventListener("input", () => {
-            state.parentSearchQuery = String(parentSearchInput.value || "").trim();
+        needSearchInput.addEventListener("input", () => {
+            state.parentSearchQuery = String(needSearchInput.value || "").trim();
             const node = state.nodes.find((item) => item.id === state.selectedId) || null;
             renderParentChoices(node);
         });
-        parentChoiceList.addEventListener("click", (event) => {
+        needChoiceList.addEventListener("click", (event) => {
             const button = event.target?.closest?.("[data-parent-choice]");
             if (!button) {
                 return;
@@ -2658,7 +2657,7 @@ pub(super) fn script() -> String {
             state.selectedRemovalParentId = null;
             connectParent();
         });
-        currentParentList?.addEventListener("click", (event) => {
+        currentNeedList?.addEventListener("click", (event) => {
             const button = event.target?.closest?.("[data-parent-remove]");
             if (!button) {
                 return;

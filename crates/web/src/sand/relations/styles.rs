@@ -704,7 +704,7 @@ body.is-resizing-panels .sidePanelResizer::after {
     gap: 6px;
 }
 
-.parentChoiceList {
+.needChoiceList {
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -714,7 +714,7 @@ body.is-resizing-panels .sidePanelResizer::after {
     min-width: 0;
 }
 
-.parentChoiceList--compact {
+.needChoiceList--compact {
     max-height: 168px;
 }
 
@@ -725,18 +725,18 @@ body.is-resizing-panels .sidePanelResizer::after {
     min-width: 0;
 }
 
-.parentChoice {
+.needChoice {
     width: 100%;
     text-align: left;
     cursor: pointer;
 }
 
-.parentChoice:hover {
+.needChoice:hover {
     border-color: var(--line-strong);
     background: rgba(255, 255, 255, 0.06);
 }
 
-.parentChoice.is-selected {
+.needChoice.is-selected {
     border-color: rgba(120, 215, 255, 0.36);
     background: rgba(120, 215, 255, 0.10);
 }
@@ -836,12 +836,12 @@ body.is-resizing-panels .sidePanelResizer::after {
     background: rgba(255, 143, 163, 0.08);
 }
 
-.parentChoice__head {
+.needChoice__head {
     font-size: 0.8rem;
     font-weight: 600;
 }
 
-.parentChoice__meta {
+.needChoice__meta {
     color: var(--muted);
     font-size: 0.72rem;
     line-height: 1.45;

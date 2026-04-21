@@ -21,7 +21,7 @@ use {
     reqwest::Method,
     serde::Deserialize,
     serde_json::{Value, json},
-    std::collections::{BTreeMap, BTreeSet},
+    std::collections::{BTreeMap, BTreeSet, HashMap},
 };
 use persistence::repositories::view::is_special_view_query;
 
@@ -265,7 +265,7 @@ impl KanbanActionService {
             .await?;
         if payload.parent_id.is_some() && payload.remove_parent_id.is_some() {
             return Err(KanbanActionError::Validation(
-                "Nao e possivel adicionar e remover parent ao mesmo tempo.".into(),
+                "Cannot add and remove a need at the same time.".into(),
             ));
         }
         validate_parent_id(payload.parent_id)?;
@@ -298,8 +298,8 @@ impl KanbanActionService {
         .await?;
 
         Ok(KanbanActionOutcome {
-            action: "set-parent".into(),
-            message: "Parent relation updated.".into(),
+            action: "set-need".into(),
+            message: "Need relation updated.".into(),
             record_id: Some(payload.record_id),
             await_stream_refresh: true,
             detail: json!({
@@ -1506,10 +1506,9 @@ impl KanbanActionService {
         if let Some(parent_id) = parent_id {
             if record_id == parent_id {
                 return Err(KanbanActionError::Validation(
-                    "Uma task nao pode ser pai dela mesma.".into(),
+                    "Uma task nao pode apontar para si mesma.".into(),
                 ));
             }
-            ensure_no_parent_cycle(record_id, parent_id, &all_links)?;
 
             let already_linked = all_links.iter().any(|row| {
                 row.record_id == record_id
@@ -1603,6 +1602,11 @@ impl KanbanActionService {
             .iter()
             .find(|row| row.record_id == record.id && row.namespace == "task.effort")
             .and_then(|row| extract_estimate_seconds(&row.freestyle_data_structure));
+        let record_lookup = records
+            .iter()
+            .map(|candidate| (candidate.id, candidate))
+            .collect::<HashMap<_, _>>();
+        let (parents_by_record, children_by_record) = build_record_relation_maps(&links);
 
         let assignees = links
             .iter()
@@ -1620,27 +1624,21 @@ impl KanbanActionService {
                             "id": user.id,
                             "name": user.name,
                         })
-                    })
+                })
             })
             .collect::<Vec<_>>();
 
-        let parents = links
-            .iter()
-            .filter(|row| {
-                row.record_id == record.id
-                    && row.link_type == "parent"
-                    && row.target_table == "record"
-            })
-            .filter_map(|link| {
-                records
-                    .iter()
-                    .find(|candidate| candidate.id == link.target_id)
-                    .map(|parent| {
-                        json!({
-                            "id": parent.id,
-                            "head": parent.head,
-                        })
+        let parents = parents_by_record
+            .get(&record.id)
+            .into_iter()
+            .flat_map(|parent_ids| parent_ids.iter())
+            .filter_map(|parent_id| {
+                record_lookup.get(parent_id).map(|parent| {
+                    json!({
+                        "id": parent.id,
+                        "head": parent.head,
                     })
+                })
             })
             .collect::<Vec<_>>();
         let mut parents = parents;
@@ -1659,24 +1657,18 @@ impl KanbanActionService {
         });
         let parent = parents.first().cloned();
 
-        let children = links
-            .iter()
-            .filter(|row| {
-                row.link_type == "parent"
-                    && row.target_table == "record"
-                    && row.target_id == record.id
-            })
-            .filter_map(|link| {
-                records
-                    .iter()
-                    .find(|candidate| candidate.id == link.record_id)
-                    .map(|child| {
-                        json!({
-                            "id": child.id,
-                            "head": child.head,
-                            "quantity": child.quantity,
-                        })
+        let children = children_by_record
+            .get(&record.id)
+            .into_iter()
+            .flat_map(|child_ids| child_ids.iter())
+            .filter_map(|child_id| {
+                record_lookup.get(child_id).map(|child| {
+                    json!({
+                        "id": child.id,
+                        "head": child.head,
+                        "quantity": child.quantity,
                     })
+                })
             })
             .collect::<Vec<_>>();
 
@@ -2834,7 +2826,7 @@ fn effort_payload(estimate_seconds: Option<i64>) -> Result<Option<Value>, Kanban
 
 fn validate_parent_id(parent_id: Option<i64>) -> Result<(), KanbanActionError> {
     if parent_id.is_some_and(|value| value <= 0) {
-        Err(KanbanActionError::Validation("parent_id invalido.".into()))
+        Err(KanbanActionError::Validation("need_id invalid.".into()))
     } else {
         Ok(())
     }
@@ -2962,38 +2954,27 @@ fn parse_mutation_response(value: &Value) -> Result<MutationResponse, KanbanActi
     })
 }
 
-fn ensure_no_parent_cycle(
-    record_id: i64,
-    parent_id: i64,
-    all_links: &[RecordLinkRow],
-) -> Result<(), KanbanActionError> {
-    let mut child_map = std::collections::BTreeMap::<i64, Vec<i64>>::new();
-    for row in all_links {
-        if row.link_type == "parent" && row.target_table == "record" {
-            child_map.entry(row.target_id).or_default().push(row.record_id);
-        }
-    }
+fn build_record_relation_maps(
+    links: &[RecordLinkRow],
+) -> (HashMap<i64, BTreeSet<i64>>, HashMap<i64, BTreeSet<i64>>) {
+    let mut parents_by_record = HashMap::<i64, BTreeSet<i64>>::new();
+    let mut children_by_record = HashMap::<i64, BTreeSet<i64>>::new();
 
-    let mut queue = std::collections::VecDeque::from([record_id]);
-    let mut visited = std::collections::BTreeSet::new();
-    while let Some(current) = queue.pop_front() {
-        if !visited.insert(current) {
+    for row in links {
+        if row.link_type != "parent" || row.target_table != "record" {
             continue;
         }
-        if current == parent_id {
-            return Err(KanbanActionError::Validation(
-                "A hierarquia de tasks criaria um ciclo.".into(),
-            ));
-        }
-        if let Some(children) = child_map.get(&current) {
-            for child_id in children {
-                if *child_id > 0 {
-                    queue.push_back(*child_id);
-                }
-            }
-        }
+        parents_by_record
+            .entry(row.record_id)
+            .or_default()
+            .insert(row.target_id);
+        children_by_record
+            .entry(row.target_id)
+            .or_default()
+            .insert(row.record_id);
     }
-    Ok(())
+
+    (parents_by_record, children_by_record)
 }
 
 fn local_host_subject() -> AuthSubject {
@@ -3156,8 +3137,8 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                 }
             }
             @if !detail.parents.is_empty() {
-                p.kanban-focus-card__parent {
-                    "Parents: "
+                p.kanban-focus-card__need {
+                    "Contributes to: "
                     @for (index, parent) in detail.parents.iter().enumerate() {
                         @if index > 0 { ", " }
                         @if let Some(parent_head) = parent.get("head").and_then(Value::as_str) {
@@ -3167,8 +3148,8 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                 }
             } @else if let Some(parent) = &detail.parent {
                 @if let Some(parent_head) = parent.get("head").and_then(Value::as_str) {
-                    p.kanban-focus-card__parent {
-                        "Parent: "
+                    p.kanban-focus-card__need {
+                        "Contributes to: "
                         a href="#" data-record-link=(parent.get("id").and_then(Value::as_i64).unwrap_or_default()) data-on:click__prevent="window.KanbanWidget?.loadRecordDetail(Number(evt.currentTarget.dataset.recordLink || 0))" { (parent_head) }
                     }
                 }
@@ -3193,8 +3174,8 @@ fn render_focus_card_html(detail: &RecordDetailPayload) -> maud::Markup {
                 }
             }
             @if !detail.children.is_empty() {
-                section.kanban-focus-card__children {
-                    h3 { "Children" }
+                section.kanban-focus-card__needs {
+                    h3 { "Needs" }
                     ul {
                         @for child in &detail.children {
                             li {

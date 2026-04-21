@@ -666,13 +666,13 @@ const STYLE: &str = r#"
                 gap: 6px;
             }
 
-            .cardParentLink,
+            .cardNeedLink,
             .kanban-focus-card a {
                 color: var(--muted-deep);
                 text-decoration: none;
             }
 
-            .cardParentLink {
+            .cardNeedLink {
                 width: fit-content;
                 max-width: 100%;
                 padding-right: 84px;
@@ -681,7 +681,7 @@ const STYLE: &str = r#"
                 word-break: break-word;
             }
 
-            .cardParentLink:hover {
+            .cardNeedLink:hover {
                 color: var(--soft);
             }
 
@@ -800,12 +800,12 @@ const STYLE: &str = r#"
                 background: rgba(122, 162, 247, 0.12);
             }
 
-            .parentChooser {
+            .needChooser {
                 display: grid;
                 gap: 10px;
             }
 
-            .parentChooserHeader {
+            .needChooserHeader {
                 display: flex;
                 align-items: flex-start;
                 justify-content: space-between;
@@ -860,7 +860,7 @@ const STYLE: &str = r#"
                 background: transparent;
             }
 
-            .parentChooserList {
+            .needChooserList {
                 display: grid;
                 gap: 8px;
                 max-height: 320px;
@@ -868,7 +868,7 @@ const STYLE: &str = r#"
                 padding-right: 2px;
             }
 
-            .parentChoice {
+            .needChoice {
                 display: grid;
                 gap: 6px;
                 width: 100%;
@@ -879,27 +879,27 @@ const STYLE: &str = r#"
                 background: rgba(255, 255, 255, 0.03);
             }
 
-            .parentChoice:hover {
+            .needChoice:hover {
                 border-color: var(--line-strong);
                 background: rgba(255, 255, 255, 0.05);
             }
 
-            .parentChoice.is-selected {
+            .needChoice.is-selected {
                 border-color: rgba(122, 162, 247, 0.5);
                 background: rgba(122, 162, 247, 0.14);
             }
 
-            .parentChoice__head {
+            .needChoice__head {
                 font-size: 12px;
                 font-weight: 600;
                 color: var(--text);
             }
 
-            .parentChoice__chips {
+            .needChoice__chips {
                 margin-top: 2px;
             }
 
-            .parentChooserEmpty {
+            .needChooserEmpty {
                 margin: 0;
                 padding: 10px 12px;
                 border-radius: 12px;
@@ -987,7 +987,7 @@ const STYLE: &str = r#"
             }
 
             .kanban-focus-card__header,
-            .kanban-focus-card__children,
+            .kanban-focus-card__needs,
             .kanban-focus-card__comments,
             .kanban-focus-card__resources,
             .kanban-focus-card__worklog {

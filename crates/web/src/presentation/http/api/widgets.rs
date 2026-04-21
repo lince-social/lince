@@ -274,7 +274,7 @@ pub async fn post_widget_action(
                 .map_err(map_kanban_action_error)?;
             Ok(Json(outcome.into_json_value()))
         }
-        "set-parent" => {
+        "set-need" | "set-parent" => {
             let request = serde_json::from_value::<UpdateParentRelationRequest>(payload).map_err(
                 |error| {
                     api_error(

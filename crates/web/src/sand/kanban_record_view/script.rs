@@ -1064,7 +1064,7 @@ pub(super) fn script() -> String {
                         ? `Selected: #${selectedParent.id} ${String(selectedParent.head || "Untitled")}`
                         : selectedParentId > 0
                           ? `Selected: #${selectedParentId} ${String(root.dataset.parentHead || "Untitled")}`
-                          : "Selected: no parent";
+                          : "Selected: no need";
                 }
 
                 const matchCount = picker.querySelector("[data-parent-match-count]");
@@ -1101,19 +1101,19 @@ pub(super) fn script() -> String {
                                       ? " is-selected"
                                       : "";
                               return `
-                                  <button class="parentChoice${selectedClass}" type="button" data-parent-choice="${escapeHtml(String(recordId))}" data-parent-head="${escapeHtml(String(record.head || "Untitled"))}">
-                                      <span class="parentChoice__head">#${escapeHtml(String(recordId))} ${escapeHtml(String(record.head || "Untitled"))}</span>
-                                      <span class="chipBar parentChoice__chips">${categoryChips(record.categories || [])}</span>
+                                  <button class="needChoice${selectedClass}" type="button" data-parent-choice="${escapeHtml(String(recordId))}" data-parent-head="${escapeHtml(String(record.head || "Untitled"))}">
+                                      <span class="needChoice__head">#${escapeHtml(String(recordId))} ${escapeHtml(String(record.head || "Untitled"))}</span>
+                                      <span class="chipBar needChoice__chips">${categoryChips(record.categories || [])}</span>
                                   </button>
                               `;
                           })
                           .join("")
-                    : `<p class="small parentChooserEmpty">No possible fathers match these filters.</p>`;
+                    : `<p class="small needChooserEmpty">No possible needs match these filters.</p>`;
 
                 list.innerHTML = `
-                    <button class="parentChoice${selectedParentId ? "" : " is-selected"}" type="button" data-parent-choice="" data-parent-head="">
-                        <span class="parentChoice__head">No parent</span>
-                        <span class="small">Clear the parent link</span>
+                    <button class="needChoice${selectedParentId ? "" : " is-selected"}" type="button" data-parent-choice="" data-parent-head="">
+                        <span class="needChoice__head">No need</span>
+                        <span class="small">Clear the need link</span>
                     </button>
                     ${renderedChoices}
                 `;
@@ -1445,10 +1445,10 @@ pub(super) fn script() -> String {
                         </section>
                         <section class="viewSection">
                             <div class="fieldBlock">
-                                <div class="fieldLabel">Parent context</div>
-                                <p class="small">Show the parent task above each card title. The derived query only joins parent data while this stays enabled.</p>
+                                <div class="fieldLabel">Need context</div>
+                                <p class="small">Show the need above each card title. The derived query only joins need data while this stays enabled.</p>
                             </div>
-                            <label class="checkRow"><input type="checkbox" data-setting-show-parent ${settings.showParentContext ? "checked" : ""}> <span>Show parent task above card titles</span></label>
+                            <label class="checkRow"><input type="checkbox" data-setting-show-parent ${settings.showParentContext ? "checked" : ""}> <span>Show need above card titles</span></label>
                         </section>
                         <section class="viewSection">
                             <div class="fieldBlock">
@@ -1660,17 +1660,17 @@ pub(super) fn script() -> String {
                                 <div class="checkGrid">${assigneeChecks}</div>
                             </div>
                             <div class="fieldBlock">
-                                <div class="parentChooser" data-parent-picker="">
-                                    <div class="parentChooserHeader">
+                                <div class="needChooser" data-parent-picker="">
+                                    <div class="needChooserHeader">
                                         <div>
-                                            <div class="fieldLabel">Parent</div>
-                                            <div class="small" data-parent-selection-summary="">Selected: no parent</div>
+                                            <div class="fieldLabel">Need</div>
+                                            <div class="small" data-parent-selection-summary="">Selected: no need</div>
                                         </div>
                                         <div class="small" data-parent-match-count=""></div>
                                     </div>
                                     <div class="fieldBlock">
                                         <label class="fieldLabel" for="${mode}-parent-head-search">Search head</label>
-                                        <input class="field" id="${mode}-parent-head-search" data-parent-search-head="" type="text" value="" placeholder="Search possible fathers by head">
+                                        <input class="field" id="${mode}-parent-head-search" data-parent-search-head="" type="text" value="" placeholder="Search possible needs by head">
                                     </div>
                                     <div class="fieldBlock">
                                         <label class="fieldLabel" for="${mode}-parent-categories-search">Category filter</label>
@@ -1680,8 +1680,8 @@ pub(super) fn script() -> String {
                                         </datalist>
                                     </div>
                                     <input type="hidden" id="${mode}-parent-id" name="parentId" value="${escapeHtml(currentParentId)}">
-                                    <div class="parentChooserList" data-parent-choices="">
-                                        <p class="small">Loading possible fathers...</p>
+                                    <div class="needChooserList" data-parent-choices="">
+                                        <p class="small">Loading possible needs...</p>
                                     </div>
                                 </div>
                             </div>

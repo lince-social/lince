@@ -468,6 +468,7 @@ struct SyncContext {
     parent_links: Vec<SqlRecordLinkRow>,
     all_links: Vec<SqlRecordLinkRow>,
     all_extensions: Vec<SqlRecordExtensionRow>,
+    children_by_parent: HashMap<i64, BTreeSet<i64>>,
     trail_root_record_id: i64,
     source_root_record_id: i64,
     copies_by_source_id: BTreeMap<i64, i64>,
@@ -514,6 +515,13 @@ async fn load_sync_context(
         .filter(|row| row.link_type == "parent" && row.target_table == "record")
         .cloned()
         .collect::<Vec<_>>();
+    let mut children_by_parent = HashMap::<i64, BTreeSet<i64>>::new();
+    for row in &parent_links {
+        children_by_parent
+            .entry(row.target_id)
+            .or_default()
+            .insert(row.record_id);
+    }
     let categories_by_record = build_categories_by_record(&all_extensions);
     let assignees_by_record = build_assignees_by_record(&all_links);
     let copies_by_source_id = all_extensions
@@ -532,6 +540,7 @@ async fn load_sync_context(
         parent_links,
         all_links,
         all_extensions,
+        children_by_parent,
         trail_root_record_id: trail_sync.trail_root_record_id,
         source_root_record_id: trail_sync.sync_source_record_id,
         copies_by_source_id,
@@ -618,13 +627,16 @@ async fn sync_descendants(
     copies_by_source.insert(source_root_id, copied_root_id);
 
     let mut queue = VecDeque::from([(source_root_id, copied_root_id)]);
+    let mut visited_sources = BTreeSet::new();
     while let Some((current_source_id, current_copy_id)) = queue.pop_front() {
+        if !visited_sources.insert(current_source_id) {
+            continue;
+        }
         let expected_source_children = context
-            .parent_links
-            .iter()
-            .filter(|row| row.target_id == current_source_id)
-            .map(|row| row.record_id)
-            .collect::<Vec<_>>();
+            .children_by_parent
+            .get(&current_source_id)
+            .cloned()
+            .unwrap_or_default();
 
         let mut expected_copy_children = BTreeSet::new();
 

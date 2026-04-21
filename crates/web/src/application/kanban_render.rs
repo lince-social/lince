@@ -316,7 +316,7 @@ fn render_card(row: &KanbanRow) -> Markup {
             .map(|value| value.trim())
             .filter(|value| !value.is_empty())
             .map(str::to_string)
-            .or_else(|| row.parent_id.map(|value| format!("Parent #{value}")))
+            .or_else(|| row.parent_id.map(|value| format!("Need #{value}")))
     };
     let card_class = format!("card {}", quantity_to_lane_key(row.quantity));
     let body_mode_expr = format!("($ui.cardModes['{}'] || $ui.defaultBodyMode)", row.id);
@@ -357,8 +357,8 @@ fn render_card(row: &KanbanRow) -> Markup {
             }
             @if let Some(parent_label) = parent_label.as_deref() {
                 @if !row.parent_ids_json.is_empty() && !row.parent_heads_json.is_empty() {
-                    span.cardParentLink {
-                        "Parents: "
+                    span.cardNeedLink {
+                        "Contributes to: "
                         @for (index, parent_head) in row.parent_heads_json.iter().enumerate() {
                             @if index > 0 { ", " }
                             @if let Some(parent_id) = row.parent_ids_json.get(index) {
@@ -369,7 +369,7 @@ fn render_card(row: &KanbanRow) -> Markup {
                         }
                     }
                 } @else if let Some(parent_id) = row.parent_id {
-                    a.cardParentLink
+                    a.cardNeedLink
                         href="#"
                         data-record-link=(parent_id)
                         data-on:click__prevent="window.KanbanWidget?.loadRecordDetail(Number(evt.currentTarget.dataset.recordLink || 0))"
@@ -377,7 +377,7 @@ fn render_card(row: &KanbanRow) -> Markup {
                         (parent_label)
                     }
                 } @else {
-                    span.cardParentLink {
+                    span.cardNeedLink {
                         (parent_label)
                     }
                 }
@@ -621,7 +621,7 @@ mod tests {
     use super::render_sync_payload;
 
     #[test]
-    fn renders_parent_label_when_parent_metadata_is_present() {
+    fn renders_need_label_when_need_metadata_is_present() {
         let payload = r#"{
             "view_id": 7,
             "name": "Board",
@@ -631,21 +631,21 @@ mod tests {
                 {
                     "id": "1",
                     "quantity": "0",
-                    "head": "Child",
+                    "head": "Need",
                     "body": "",
                     "parent_id": "9",
-                    "parent_head": "Parent task"
+                    "parent_head": "Need task"
                 }
             ]
         }"#;
 
         let rendered = render_sync_payload(payload, true).expect("payload should render");
-        assert!(rendered.html.columns.contains("Parent task"));
-        assert!(rendered.html.columns.contains("cardParentLink"));
+        assert!(rendered.html.columns.contains("Need task"));
+        assert!(rendered.html.columns.contains("cardNeedLink"));
     }
 
     #[test]
-    fn renders_parent_label_even_without_parent_id() {
+    fn renders_need_label_even_without_need_id() {
         let payload = r#"{
             "view_id": 7,
             "name": "Board",
@@ -655,20 +655,20 @@ mod tests {
                 {
                     "id": "1",
                     "quantity": "0",
-                    "head": "Child",
+                    "head": "Need",
                     "body": "",
-                    "parent_head": "Parent task"
+                    "parent_head": "Need task"
                 }
             ]
         }"#;
 
         let rendered = render_sync_payload(payload, true).expect("payload should render");
-        assert!(rendered.html.columns.contains("Parent task"));
+        assert!(rendered.html.columns.contains("Need task"));
         assert!(
             rendered
                 .html
                 .columns
-                .contains("<span class=\"cardParentLink\">")
+                .contains("<span class=\"cardNeedLink\">")
         );
     }
 }

@@ -21,6 +21,7 @@ pub(super) fn script() -> String {
     const filterPill = document.getElementById("filter-pill");
     const emptyState = document.getElementById("empty-state");
     const originText = document.getElementById("origin-text");
+    const viewSqlText = document.getElementById("view-sql");
     const createSummary = document.getElementById("create-summary");
     const createHeadInput = document.getElementById("create-head");
     const createBodyInput = document.getElementById("create-body");
@@ -71,7 +72,7 @@ pub(super) fn script() -> String {
         charge: -220,
         linkDistance: 110,
         collisionRadius: 24,
-        centerForce: 0.18,
+        centerForce: 0.04,
     };
     const CARD_STATE_KEY = "relations";
     const DEFAULT_PANEL_WIDTH = 380;
@@ -1827,8 +1828,8 @@ pub(super) fn script() -> String {
             `serverId: ${state.origin.serverId || "local"}`,
             `viewId: ${viewId == null ? "none" : viewId}`,
             `view: ${name}`,
-            `query: ${query || "(none)"}`,
         ].join("\n");
+        viewSqlText.textContent = query || "(none)";
     }
 
     function updateStatusFromSnapshot() {
@@ -2228,15 +2229,33 @@ pub(super) fn script() -> String {
         }
     }
 
+    function nodeHitRadius(node) {
+        return nodeRadius(node) + 8 / state.viewport.scale;
+    }
+
+    function isPointInsideNode(node, worldPoint) {
+        if (!node || !worldPoint) {
+            return false;
+        }
+        const dx = node.x - worldPoint.x;
+        const dy = node.y - worldPoint.y;
+        return Math.hypot(dx, dy) <= nodeHitRadius(node);
+    }
+
     function findNodeAtPoint(screenX, screenY) {
         const point = screenToWorld(screenX, screenY);
         if (state.simulation && typeof state.simulation.find === "function") {
-            return state.simulation.find(point.x, point.y, 22 / state.viewport.scale) || null;
+            const searchRadius = Math.max(
+                ...state.nodes.map((node) => nodeHitRadius(node)),
+                24 / state.viewport.scale,
+            );
+            const candidate = state.simulation.find(point.x, point.y, searchRadius) || null;
+            if (candidate && isPointInsideNode(candidate, point)) {
+                return candidate;
+            }
         }
         for (const node of state.nodes) {
-            const dx = node.x - point.x;
-            const dy = node.y - point.y;
-            if (Math.hypot(dx, dy) <= nodeRadius(node) + 4 / state.viewport.scale) {
+            if (isPointInsideNode(node, point)) {
                 return node;
             }
         }
@@ -2415,12 +2434,15 @@ pub(super) fn script() -> String {
         const screenY = event.clientY - rect.top;
         const node = event.button === 0 ? findNodeAtPoint(screenX, screenY) : null;
         if (node) {
+            const world = screenToWorld(screenX, screenY);
             state.pointer = {
                 kind: "node",
                 pointerId: event.pointerId,
                 node,
                 startX: screenX,
                 startY: screenY,
+                grabOffsetX: world.x - node.x,
+                grabOffsetY: world.y - node.y,
                 moved: false,
             };
             node.fx = node.x;
@@ -2466,10 +2488,12 @@ pub(super) fn script() -> String {
 
         if (pointer.kind === "node") {
             const world = screenToWorld(screenX, screenY);
-            pointer.node.x = world.x;
-            pointer.node.y = world.y;
-            pointer.node.fx = world.x;
-            pointer.node.fy = world.y;
+            const nextX = world.x - (pointer.grabOffsetX || 0);
+            const nextY = world.y - (pointer.grabOffsetY || 0);
+            pointer.node.x = nextX;
+            pointer.node.y = nextY;
+            pointer.node.fx = nextX;
+            pointer.node.fy = nextY;
             pointer.node.vx = 0;
             pointer.node.vy = 0;
             requestDraw();

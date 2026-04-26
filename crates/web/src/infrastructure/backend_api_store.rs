@@ -9,7 +9,7 @@ use std::{
     collections::BTreeMap,
     io::{Error, ErrorKind},
 };
-use utoipa::IntoParams;
+use utoipa::{IntoParams, ToSchema};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ApiTable {
@@ -27,6 +27,24 @@ pub enum ApiTable {
     Configuration,
     AppUser,
     Role,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct TableCreateFieldSchema {
+    pub name: String,
+    pub input_kind: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct TableCreateSchema {
+    pub name: String,
+    pub fields: Vec<TableCreateFieldSchema>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct TableCreateSchemaResponse {
+    pub preferred_table: String,
+    pub tables: Vec<TableCreateSchema>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize, IntoParams)]
@@ -582,6 +600,13 @@ impl BackendApiStore {
 
     pub fn parse_table(&self, table_name: &str) -> Result<ApiTable, Error> {
         parse_api_table(table_name)
+    }
+
+    pub fn table_create_schema_response(
+        &self,
+        preferred_table: Option<&str>,
+    ) -> TableCreateSchemaResponse {
+        build_table_create_schema_response(preferred_table)
     }
 
     pub async fn list_table_rows_filtered(
@@ -1305,6 +1330,25 @@ impl BackendApiStore {
 }
 
 impl ApiTable {
+    pub fn all() -> [ApiTable; 14] {
+        [
+            ApiTable::Record,
+            ApiTable::AppUser,
+            ApiTable::Configuration,
+            ApiTable::Frequency,
+            ApiTable::Karma,
+            ApiTable::KarmaCondition,
+            ApiTable::KarmaConsequence,
+            ApiTable::RecordComment,
+            ApiTable::RecordExtension,
+            ApiTable::RecordLink,
+            ApiTable::RecordResourceRef,
+            ApiTable::RecordWorklog,
+            ApiTable::Role,
+            ApiTable::View,
+        ]
+    }
+
     pub fn as_table_name(self) -> &'static str {
         match self {
             ApiTable::View => "view",
@@ -1339,6 +1383,141 @@ impl ApiTable {
             ApiTable::Karma => Some(KARMA_FIELD_SPECS.to_vec()),
             ApiTable::Configuration => Some(CONFIGURATION_FIELD_SPECS.to_vec()),
             ApiTable::AppUser | ApiTable::Role => None,
+        }
+    }
+
+    fn create_field_schemas(self) -> Vec<TableCreateFieldSchema> {
+        match self {
+            ApiTable::View => VIEW_FIELD_SPECS
+                .iter()
+                .map(|spec| table_create_field_schema(spec.name, spec.kind))
+                .collect(),
+            ApiTable::Record => RECORD_FIELD_SPECS
+                .iter()
+                .map(|spec| table_create_field_schema(spec.name, spec.kind))
+                .collect(),
+            ApiTable::RecordExtension => RECORD_EXTENSION_FIELD_SPECS
+                .iter()
+                .map(|spec| table_create_field_schema(spec.name, spec.kind))
+                .collect(),
+            ApiTable::RecordLink => RECORD_LINK_FIELD_SPECS
+                .iter()
+                .map(|spec| table_create_field_schema(spec.name, spec.kind))
+                .collect(),
+            ApiTable::RecordComment => RECORD_COMMENT_FIELD_SPECS
+                .iter()
+                .map(|spec| table_create_field_schema(spec.name, spec.kind))
+                .collect(),
+            ApiTable::RecordWorklog => RECORD_WORKLOG_FIELD_SPECS
+                .iter()
+                .map(|spec| table_create_field_schema(spec.name, spec.kind))
+                .collect(),
+            ApiTable::RecordResourceRef => RECORD_RESOURCE_REF_FIELD_SPECS
+                .iter()
+                .map(|spec| table_create_field_schema(spec.name, spec.kind))
+                .collect(),
+            ApiTable::Frequency => FREQUENCY_FIELD_SPECS
+                .iter()
+                .map(|spec| table_create_field_schema(spec.name, spec.kind))
+                .collect(),
+            ApiTable::KarmaCondition => KARMA_CONDITION_FIELD_SPECS
+                .iter()
+                .map(|spec| table_create_field_schema(spec.name, spec.kind))
+                .collect(),
+            ApiTable::KarmaConsequence => KARMA_CONSEQUENCE_FIELD_SPECS
+                .iter()
+                .map(|spec| table_create_field_schema(spec.name, spec.kind))
+                .collect(),
+            ApiTable::Karma => KARMA_FIELD_SPECS
+                .iter()
+                .map(|spec| table_create_field_schema(spec.name, spec.kind))
+                .collect(),
+            ApiTable::Configuration => CONFIGURATION_FIELD_SPECS
+                .iter()
+                .map(|spec| table_create_field_schema(spec.name, spec.kind))
+                .collect(),
+            ApiTable::AppUser => vec![
+                table_create_field_schema("name", FieldKind::Text),
+                table_create_field_schema("username", FieldKind::Text),
+                table_create_field_schema("password", FieldKind::Text),
+                table_create_field_schema("role_id", FieldKind::NullableInteger),
+            ],
+            ApiTable::Role => vec![table_create_field_schema("name", FieldKind::Text)],
+        }
+    }
+}
+
+pub fn build_table_create_schema_response(
+    preferred_table: Option<&str>,
+) -> TableCreateSchemaResponse {
+    let preferred = preferred_table
+        .and_then(|table_name| parse_api_table(&table_name.trim().to_lowercase()).ok())
+        .unwrap_or(ApiTable::Record);
+
+    let mut tables = ApiTable::all().to_vec();
+    tables.sort_by(|left, right| compare_table_order(*left, *right, preferred));
+
+    TableCreateSchemaResponse {
+        preferred_table: preferred.as_table_name().to_string(),
+        tables: tables
+            .into_iter()
+            .map(|table| TableCreateSchema {
+                name: table.as_table_name().to_string(),
+                fields: table.create_field_schemas(),
+            })
+            .collect(),
+    }
+}
+
+fn compare_table_order(left: ApiTable, right: ApiTable, preferred: ApiTable) -> std::cmp::Ordering {
+    let left_rank = if left == preferred {
+        0
+    } else if left == ApiTable::Record {
+        1
+    } else {
+        2
+    };
+    let right_rank = if right == preferred {
+        0
+    } else if right == ApiTable::Record {
+        1
+    } else {
+        2
+    };
+
+    left_rank
+        .cmp(&right_rank)
+        .then_with(|| left.as_table_name().cmp(right.as_table_name()))
+}
+
+fn table_create_field_schema(name: &'static str, kind: FieldKind) -> TableCreateFieldSchema {
+    TableCreateFieldSchema {
+        name: name.to_string(),
+        input_kind: field_kind_to_input_kind(name, kind).to_string(),
+    }
+}
+
+fn field_kind_to_input_kind(name: &str, kind: FieldKind) -> &'static str {
+    match kind {
+        FieldKind::BooleanInteger => "boolean",
+        FieldKind::Integer | FieldKind::NullableInteger => "integer",
+        FieldKind::Real | FieldKind::NullableReal => "number",
+        FieldKind::Text | FieldKind::NullableText => {
+            if name == "password" {
+                "password"
+            } else if matches!(
+                name,
+                "body"
+                    | "condition"
+                    | "consequence"
+                    | "freestyle_data_structure"
+                    | "note"
+                    | "query"
+            ) {
+                "textarea"
+            } else {
+                "text"
+            }
         }
     }
 }

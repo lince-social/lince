@@ -4,7 +4,13 @@ pub(super) fn script() -> String {
         const frame = window.frameElement;
         const statusPill = document.getElementById("table-status");
         const tableDetails = document.getElementById("table-details");
+        const contentShell = document.getElementById("content-shell");
         const bootstrap = document.getElementById("table-stream-bootstrap");
+        const createOpenButton = document.getElementById("create-open");
+        const createPanel = document.getElementById("create-panel");
+        const createTableSelect = document.getElementById("create-table-select");
+        const createFields = document.getElementById("create-fields");
+        const createSubmitButton = document.getElementById("create-submit");
         const tablePanel = document.getElementById("table-body");
         const datastarReady = import("/static/vendored/datastar.js").catch(() => null);
         const serverId = String(frame?.dataset?.linceServerId || "").trim();
@@ -22,6 +28,11 @@ pub(super) fn script() -> String {
           nerdMode: false,
           focusedRowIndex: 0,
           focusedColumnIndex: 0,
+          createOpen: false,
+          createLoading: false,
+          createSchemas: [],
+          createSelectedTable: "record",
+          createDrafts: {},
         };
 
         function clamp(value, min, max) {
@@ -81,6 +92,464 @@ pub(super) fn script() -> String {
           }
 
           select.value = state.nerdMode ? "helix" : "common";
+        }
+
+        function currentViewSql() {
+          return String(tableDetails?.querySelector("pre.codeBlock")?.textContent || "").trim();
+        }
+
+        function detectPreferredTableName() {
+          const tbodyTable = String(tablePanel?.querySelector("tbody[data-source-table]")?.dataset.sourceTable || "").trim();
+          if (tbodyTable) {
+            return tbodyTable.toLowerCase();
+          }
+
+          const sql = currentViewSql();
+          if (!sql) {
+            return "record";
+          }
+
+          const match = sql.match(/\bfrom\s+(?:`([^`]+)`|\[([^\]]+)\]|"([^"]+)"|([a-zA-Z_][a-zA-Z0-9_]*))/i);
+          const table = String((match && (match[1] || match[2] || match[3] || match[4])) || "").trim();
+          return table ? table.toLowerCase() : "record";
+        }
+
+        function buildSchemaUrl(preferredTable) {
+          if (!serverId) {
+            return "";
+          }
+
+          const table = String(preferredTable || "record").trim() || "record";
+          return (
+            "/host/integrations/servers/" +
+            encodeURIComponent(serverId) +
+            "/table/schema?preferred_table=" +
+            encodeURIComponent(table)
+          );
+        }
+
+        function schemaFieldInputKind(fieldKind) {
+          switch (String(fieldKind || "")) {
+            case "boolean":
+              return "boolean";
+            case "integer":
+              return "integer";
+            case "number":
+              return "number";
+            case "textarea":
+              return "textarea";
+            case "password":
+              return "password";
+            default:
+              return "text";
+          }
+        }
+
+        function escapeHtml(value) {
+          return String(value)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#39;");
+        }
+
+        function currentCreateSchema() {
+          return (
+            state.createSchemas.find((schema) => schema.name === state.createSelectedTable) ||
+            state.createSchemas[0] ||
+            null
+          );
+        }
+
+        function createDraftFor(tableName) {
+          const draft = state.createDrafts[tableName];
+          return draft && typeof draft === "object" ? draft : {};
+        }
+
+        function snapshotCreateDraft(tableName) {
+          if (!createFields) {
+            return;
+          }
+
+          const draft = {};
+          createFields.querySelectorAll("[data-create-field-name]").forEach((element) => {
+            if (!(element instanceof HTMLElement)) {
+              return;
+            }
+
+            const fieldName = String(element.dataset.createFieldName || "").trim();
+            const inputKind = String(element.dataset.createFieldKind || "text");
+            if (!fieldName) {
+              return;
+            }
+
+            if (inputKind === "boolean") {
+              const value = String(element.value || "").trim();
+              if (value) {
+                draft[fieldName] = value;
+              }
+              return;
+            }
+
+            if (inputKind === "textarea" || inputKind === "text" || inputKind === "password") {
+              const value = String(element.value || "");
+              if (value.trim()) {
+                draft[fieldName] = value;
+              }
+              return;
+            }
+
+            const value = String(element.value || "").trim();
+            if (value) {
+              draft[fieldName] = value;
+            }
+          });
+
+          state.createDrafts[tableName] = draft;
+        }
+
+        function renderCreateFields() {
+          if (!createFields) {
+            return;
+          }
+
+          const schema = currentCreateSchema();
+          if (!schema) {
+            createFields.innerHTML = "";
+            return;
+          }
+
+          const draft = createDraftFor(schema.name);
+          createFields.innerHTML = schema.fields
+            .map((field) => {
+              const inputKind = schemaFieldInputKind(field.input_kind);
+              const inputId = `create-${schema.name}-${field.name}`;
+              const fieldValue = draft[field.name] ?? "";
+
+              if (inputKind === "boolean") {
+                const booleanValue = String(fieldValue ?? "").trim();
+                return `
+                  <div class="createField">
+                    <label class="fieldLabel" for="${escapeHtml(inputId)}">${escapeHtml(field.name)}</label>
+                    <select
+                      id="${escapeHtml(inputId)}"
+                      class="field field--select"
+                      data-create-field-name="${escapeHtml(field.name)}"
+                      data-create-field-kind="${escapeHtml(inputKind)}"
+                    >
+                      <option value=""${booleanValue ? "" : " selected"}></option>
+                      <option value="true"${booleanValue === "true" ? " selected" : ""}>true</option>
+                      <option value="false"${booleanValue === "false" ? " selected" : ""}>false</option>
+                    </select>
+                  </div>
+                `;
+              }
+
+              const fieldClass = inputKind === "textarea" ? "field field--textarea" : "field";
+              const inputType =
+                inputKind === "password"
+                  ? "password"
+                  : inputKind === "integer" || inputKind === "number"
+                    ? "number"
+                    : "text";
+              const extraAttrs = inputKind === "integer" ? ' step="1"' : "";
+              if (inputKind === "textarea") {
+                return `
+                  <div class="createField">
+                    <label class="fieldLabel" for="${escapeHtml(inputId)}">${escapeHtml(field.name)}</label>
+                    <textarea
+                      id="${escapeHtml(inputId)}"
+                      class="${fieldClass}"
+                      rows="3"
+                      spellcheck="false"
+                      data-create-field-name="${escapeHtml(field.name)}"
+                      data-create-field-kind="${escapeHtml(inputKind)}"
+                    >${escapeHtml(fieldValue)}</textarea>
+                  </div>
+                `;
+              }
+
+              return `
+                <div class="createField">
+                  <label class="fieldLabel" for="${escapeHtml(inputId)}">${escapeHtml(field.name)}</label>
+                  <input
+                    id="${escapeHtml(inputId)}"
+                    class="${fieldClass}"
+                    type="${escapeHtml(inputType)}"
+                    ${extraAttrs}
+                    autocomplete="off"
+                    spellcheck="false"
+                    value="${escapeHtml(fieldValue)}"
+                    data-create-field-name="${escapeHtml(field.name)}"
+                    data-create-field-kind="${escapeHtml(inputKind)}"
+                  />
+                </div>
+              `;
+            })
+            .join("");
+
+          if (createTableSelect) {
+            createTableSelect.value = schema.name;
+          }
+
+          if (createSubmitButton) {
+            createSubmitButton.disabled = !serverId || state.createLoading;
+          }
+        }
+
+        function syncCreatePanelVisibility() {
+          if (createPanel) {
+            createPanel.hidden = !state.createOpen;
+          }
+
+          if (contentShell) {
+            contentShell.dataset.createOpen = state.createOpen ? "true" : "false";
+          }
+
+          if (createOpenButton) {
+            createOpenButton.textContent = state.createOpen ? "Close" : "Create";
+            createOpenButton.disabled = !serverId;
+          }
+
+          if (createTableSelect) {
+            createTableSelect.disabled = !state.createOpen || state.createLoading;
+          }
+
+          if (createSubmitButton) {
+            createSubmitButton.disabled = !state.createOpen || !serverId || state.createLoading;
+          }
+        }
+
+        function renderCreateTableSelect() {
+          if (!createTableSelect) {
+            return;
+          }
+
+          const tables = Array.isArray(state.createSchemas) ? state.createSchemas : [];
+          createTableSelect.innerHTML = tables
+            .map(
+              (schema) =>
+                `<option value="${escapeHtml(schema.name)}">${escapeHtml(schema.name)}</option>`,
+            )
+            .join("");
+          createTableSelect.value =
+            tables.some((schema) => schema.name === state.createSelectedTable)
+              ? state.createSelectedTable
+              : tables[0]?.name || "record";
+        }
+
+        function loadCreateSelection(tableName) {
+          const nextTable = String(tableName || "record").trim() || "record";
+          snapshotCreateDraft(state.createSelectedTable);
+          state.createSelectedTable = nextTable;
+          renderCreateTableSelect();
+          renderCreateFields();
+        }
+
+        async function loadCreateSchemas(preferredTable) {
+          if (!serverId) {
+            setStatus("Configure server", "error");
+            return;
+          }
+
+          state.createLoading = true;
+          syncCreatePanelVisibility();
+          setStatus("Loading schema", "loading");
+
+          try {
+            const response = await fetch(buildSchemaUrl(preferredTable), {
+              headers: { Accept: "application/json" },
+              cache: "no-store",
+            });
+
+            const raw = await response.text().catch(() => "");
+            let payload = null;
+            try {
+              payload = raw ? JSON.parse(raw) : null;
+            } catch {
+              payload = null;
+            }
+
+            if (response.status === 401) {
+              window.LinceWidgetHost?.invalidateServerAuth?.(serverId);
+              throw new Error("Server locked. Authenticate that server in the host first.");
+            }
+
+            if (!response.ok) {
+              throw new Error(
+                (payload && typeof payload.error === "string" && payload.error) ||
+                  raw ||
+                  `Nao foi possivel ler o schema (${response.status}).`,
+              );
+            }
+
+            const nextTables = Array.isArray(payload?.tables) ? payload.tables : [];
+            state.createSchemas = nextTables;
+            const nextSelectedTable = String(payload?.preferred_table || nextTables[0]?.name || "record")
+              .trim()
+              .toLowerCase() || "record";
+            state.createSelectedTable = nextSelectedTable;
+            renderCreateTableSelect();
+            renderCreateFields();
+            setStatus("Ready to create " + nextSelectedTable, "ok");
+          } catch (error) {
+            setStatus("Schema failed", "error");
+            console.error(error);
+            state.createSchemas = [];
+            state.createSelectedTable = "record";
+            renderCreateTableSelect();
+            renderCreateFields();
+          } finally {
+            state.createLoading = false;
+            syncCreatePanelVisibility();
+          }
+        }
+
+        function toggleCreatePanel(forceOpen) {
+          const nextOpen = typeof forceOpen === "boolean" ? forceOpen : !state.createOpen;
+          state.createOpen = nextOpen;
+          syncCreatePanelVisibility();
+
+          if (!nextOpen) {
+            return;
+          }
+
+          renderCreateTableSelect();
+          renderCreateFields();
+          void loadCreateSchemas(detectPreferredTableName());
+        }
+
+        function buildCreateEndpoint(tableName) {
+          if (!serverId) {
+            return "";
+          }
+
+          const trimmed = String(tableName || "record").trim() || "record";
+          return (
+            "/host/integrations/servers/" +
+            encodeURIComponent(serverId) +
+            "/table/" +
+            encodeURIComponent(trimmed)
+          );
+        }
+
+        function readCreatePayload() {
+          const schema = currentCreateSchema();
+          if (!schema || !createFields) {
+            return {};
+          }
+
+          const payload = {};
+          createFields.querySelectorAll("[data-create-field-name]").forEach((element) => {
+            if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement)) {
+              return;
+            }
+
+            const fieldName = String(element.dataset.createFieldName || "").trim();
+            const fieldKind = String(element.dataset.createFieldKind || "text");
+            if (!fieldName) {
+              return;
+            }
+
+            if (fieldKind === "boolean") {
+              const raw = String(element.value || "").trim();
+              if (raw === "true") {
+                payload[fieldName] = true;
+              } else if (raw === "false") {
+                payload[fieldName] = false;
+              }
+              return;
+            }
+
+            const raw = String(element.value || "");
+            if (!raw.trim()) {
+              return;
+            }
+
+            if (fieldKind === "integer") {
+              const parsed = Number.parseInt(raw, 10);
+              if (!Number.isNaN(parsed)) {
+                payload[fieldName] = parsed;
+              }
+              return;
+            }
+
+            if (fieldKind === "number") {
+              const parsed = Number(raw);
+              if (!Number.isNaN(parsed)) {
+                payload[fieldName] = parsed;
+              }
+              return;
+            }
+
+            payload[fieldName] = raw;
+          });
+
+          return payload;
+        }
+
+        async function submitCreate() {
+          if (!serverId) {
+            setStatus("Configure server", "error");
+            return;
+          }
+
+          snapshotCreateDraft(state.createSelectedTable);
+          const tableName = state.createSelectedTable || detectPreferredTableName() || "record";
+          const endpoint = buildCreateEndpoint(tableName);
+          const payload = readCreatePayload();
+          if (!endpoint) {
+            setStatus("Configure server", "error");
+            return;
+          }
+
+          state.createLoading = true;
+          syncCreatePanelVisibility();
+          setStatus("Creating row", "loading");
+
+          try {
+            const response = await fetch(endpoint, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+              cache: "no-store",
+            });
+
+            const raw = await response.text().catch(() => "");
+            let parsed = null;
+            try {
+              parsed = raw ? JSON.parse(raw) : null;
+            } catch {
+              parsed = null;
+            }
+
+            if (response.status === 401) {
+              window.LinceWidgetHost?.invalidateServerAuth?.(serverId);
+              throw new Error("Server locked. Authenticate that server in the host first.");
+            }
+
+            if (!response.ok) {
+              throw new Error(
+                (parsed && typeof parsed.error === "string" && parsed.error) ||
+                  raw ||
+                  `Create failed (${response.status}).`,
+              );
+            }
+
+            setStatus("Created " + tableName, "live");
+            window.TableWidget?.reconnect?.();
+          } catch (error) {
+            setStatus("Create failed", "error");
+            if (error instanceof Error) {
+              console.error(error);
+            } else {
+              console.error(new Error("Nao foi possivel criar a linha."));
+            }
+          } finally {
+            state.createLoading = false;
+            syncCreatePanelVisibility();
+          }
         }
 
         function buildStreamUrl() {
@@ -590,11 +1059,45 @@ pub(super) fn script() -> String {
           observer.observe(tablePanel, { childList: true, subtree: true });
         }
 
+        if (createOpenButton) {
+          createOpenButton.addEventListener("click", () => {
+            toggleCreatePanel();
+          });
+        }
+
+        if (createTableSelect) {
+          createTableSelect.addEventListener("change", () => {
+            const nextTable = String(createTableSelect.value || "record").trim() || "record";
+            snapshotCreateDraft(state.createSelectedTable);
+            state.createSelectedTable = nextTable;
+            renderCreateTableSelect();
+            renderCreateFields();
+          });
+        }
+
+        if (createSubmitButton) {
+          createSubmitButton.addEventListener("click", () => {
+            void submitCreate();
+          });
+        }
+
+        if (createFields) {
+          createFields.addEventListener("input", () => {
+            snapshotCreateDraft(state.createSelectedTable);
+          });
+          createFields.addEventListener("change", () => {
+            snapshotCreateDraft(state.createSelectedTable);
+          });
+        }
+
         const storedSettings = readSettings();
         if (storedSettings) {
           state.nerdMode = storedSettings.nerdMode;
         }
         syncModeSelect();
+        syncCreatePanelVisibility();
+        renderCreateTableSelect();
+        renderCreateFields();
 
         document.addEventListener("change", (event) => {
           const target = event.target;

@@ -5,14 +5,26 @@ pub(super) fn body() -> Markup {
         main id="app" class="tableWidget" data-signals="{ ui: { detailsOpen: false } }" {
             (render_top_line())
 
-            div class="contentShell" {
+            div id="content-shell" class="contentShell" {
                 aside
                     id="table-details"
                     class="detailsPanel"
-                    data-show="$ui.detailsOpen"
-                    style="display: none"
                 {
                     (render_details_placeholder())
+                }
+
+                aside id="create-panel" class="createPanel" hidden="" {
+                    div class="createForm" {
+                        select
+                            id="create-table-select"
+                            class="field field--select"
+                            aria-label="Table"
+                        {}
+                        div id="create-fields" class="createFields" {}
+                        button id="create-submit" class="button button--accent" type="button" {
+                            "Create"
+                        }
+                    }
                 }
 
                 section id="table-body" class="tablePanel" tabindex="0" aria-label="Table data" {
@@ -31,14 +43,7 @@ fn render_top_line() -> Markup {
             div class="topLineTitle" { "Table" }
             div class="topLineActions" {
                 span id="table-status" class="status" data-tone="idle" { "Waiting" }
-                button
-                    class="button button--accent"
-                    type="button"
-                    data-on:click="$ui.detailsOpen = !$ui.detailsOpen"
-                    data-text="$ui.detailsOpen ? 'Hide details' : 'Details'"
-                {
-                    "Details"
-                }
+                button id="create-open" class="button button--accent" type="button" { "Create" }
             }
         }
     }

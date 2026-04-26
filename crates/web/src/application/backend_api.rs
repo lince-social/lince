@@ -1,5 +1,5 @@
 use crate::infrastructure::backend_api_store::{
-    ApiTable, BackendApiStore, TableListQuery, validate_file_key,
+    ApiTable, BackendApiStore, TableCreateSchemaResponse, TableListQuery, validate_file_key,
 };
 use ::application::karma::{deliver_record_karma, karma_deliver, refresh_karma_cache};
 use ::application::{
@@ -110,6 +110,13 @@ impl BackendApiService {
     ) -> Result<Value, Error> {
         let table = self.store.parse_table(table_name)?;
         self.store.get_table_row(table, id).await
+    }
+
+    pub fn table_create_schema_response(
+        &self,
+        preferred_table: Option<&str>,
+    ) -> TableCreateSchemaResponse {
+        self.store.table_create_schema_response(preferred_table)
     }
 
     pub async fn create_table_row(

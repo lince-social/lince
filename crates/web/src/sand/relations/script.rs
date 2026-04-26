@@ -2579,13 +2579,13 @@ pub(super) fn script() -> String {
             state.recordDeleteArmed = false;
             renderRecordEditor(state.nodes.find((item) => item.id === state.selectedId) || null);
         });
-        recordHeadInput.addEventListener("blur", saveSelectedRecord);
+        // recordHeadInput.addEventListener("blur", saveSelectedRecord);
         recordBodyInput.addEventListener("input", () => {
             state.recordDraft.body = String(recordBodyInput.value || "");
             state.recordDraftDirty = true;
             state.recordDeleteArmed = false;
         });
-        recordBodyInput.addEventListener("blur", saveSelectedRecord);
+        // recordBodyInput.addEventListener("blur", saveSelectedRecord);
         recordQuantityInput.addEventListener("input", () => {
             state.recordDraft.quantity = String(recordQuantityInput.value || "0");
             state.recordDraftDirty = true;
@@ -2597,7 +2597,7 @@ pub(super) fn script() -> String {
                 saveSelectedRecord();
             }
         });
-        recordQuantityInput.addEventListener("blur", saveSelectedRecord);
+        // recordQuantityInput.addEventListener("blur", saveSelectedRecord);
         recordCategoryInput.addEventListener("input", () => {
             state.recordCategoryInput = String(recordCategoryInput.value || "");
             state.recordDeleteArmed = false;
@@ -2610,11 +2610,11 @@ pub(super) fn script() -> String {
                 }
             }
         });
-        recordCategoryInput.addEventListener("blur", () => {
-            if (commitRecordCategoryInput()) {
-                saveSelectedRecord();
-            }
-        });
+        // recordCategoryInput.addEventListener("blur", () => {
+        //     if (commitRecordCategoryInput()) {
+        //         saveSelectedRecord();
+        //     }
+        // });
         recordCategoryList.addEventListener("click", (event) => {
             const button = event.target?.closest?.("[data-record-category-remove]");
             if (!button) {

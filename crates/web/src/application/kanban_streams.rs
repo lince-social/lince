@@ -3,8 +3,9 @@ use {
         application::{
             backend_api::BackendApiService,
             kanban_filters::{
-                KanbanFilterService, KanbanWidgetSettings, RawKanbanFilterRow,
-                derived_kanban_view_name, effective_kanban_view_id, extract_kanban_settings,
+                KanbanFilterApplyOutcome, KanbanFilterService, KanbanWidgetSettings,
+                RawKanbanFilterRow, derived_kanban_view_name, effective_kanban_view_id,
+                extract_kanban_settings,
             },
             kanban_identity::is_supported_graph_widget_filename,
         },
@@ -157,6 +158,48 @@ impl KanbanStreamService {
         }
     }
 
+    pub async fn apply_filters(
+        &self,
+        session_token: Option<&str>,
+        instance_id: &str,
+        rows: Vec<RawKanbanFilterRow>,
+    ) -> Result<KanbanFilterApplyOutcome, KanbanStreamError> {
+        let resolved = self.resolve_instance(session_token, instance_id).await?;
+        let settings = extract_kanban_settings(&resolved.card.widget_state);
+        let base_view = self
+            .load_view_definition(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+                i64::from(resolved.view_id),
+            )
+            .await?;
+        if is_special_view_query(&base_view.query) {
+            return Err(KanbanStreamError::Misconfigured(
+                "A view configurada nao e uma query SQL streamable.".into(),
+            ));
+        }
+
+        let derived_query = self
+            .kanban_filters
+            .build_filtered_query(&base_view.query, &rows, &settings)
+            .map_err(map_filter_error_to_stream_error)?;
+
+        self.ensure_derived_view(
+            session_token,
+            &resolved,
+            &base_view,
+            &derived_query.sql,
+            &settings,
+        )
+        .await?;
+
+        self.kanban_filters
+            .persist_filters(instance_id, rows)
+            .await
+            .map_err(map_filter_error_to_stream_error)
+    }
+
     async fn resolve_instance(
         &self,
         session_token: Option<&str>,
@@ -181,11 +224,12 @@ impl KanbanStreamService {
                 "Kanban sem server_id configurado no host.".into(),
             ));
         }
-        let view_id = effective_kanban_view_id(&card.widget_state, card.view_id).ok_or_else(|| {
-            KanbanStreamError::Misconfigured(
-                "Kanban sem view_id valido configurado no host.".into(),
-            )
-        })?;
+        let view_id =
+            effective_kanban_view_id(&card.widget_state, card.view_id).ok_or_else(|| {
+                KanbanStreamError::Misconfigured(
+                    "Kanban sem view_id valido configurado no host.".into(),
+                )
+            })?;
 
         let organ = self
             .organs
@@ -234,7 +278,8 @@ impl KanbanStreamService {
         filtered_query: &str,
         settings: &KanbanWidgetSettings,
     ) -> Result<i64, KanbanStreamError> {
-        let derived_name = derived_kanban_view_name(&resolved.card.id, settings.view_name.as_deref());
+        let derived_name =
+            derived_kanban_view_name(&resolved.card.id, settings.view_name.as_deref());
         let runtime_state = parse_runtime_state(&resolved.card.widget_state);
         let mut derived_view_id = None;
 

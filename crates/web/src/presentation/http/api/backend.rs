@@ -46,6 +46,8 @@ struct MutationResponse {
     ok: bool,
     rows_affected: u64,
     last_insert_rowid: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    row: Option<Value>,
 }
 
 #[derive(Deserialize)]
@@ -172,6 +174,7 @@ async fn create_table_row(
         .create_table_row(&claims, &table_name, object)
         .await
         .map_err(map_backend_error)?;
+    let row = load_mutation_row(&state, &claims, &table_name, outcome.last_insert_rowid).await;
 
     Ok((
         StatusCode::CREATED,
@@ -179,6 +182,7 @@ async fn create_table_row(
             ok: true,
             rows_affected: outcome.rows_affected,
             last_insert_rowid: outcome.last_insert_rowid,
+            row,
         }),
     ))
 }
@@ -201,6 +205,7 @@ async fn update_table_rows(
         ok: true,
         rows_affected: outcome.rows_affected,
         last_insert_rowid: outcome.last_insert_rowid,
+        row: None,
     }))
 }
 
@@ -217,11 +222,13 @@ async fn update_table_row(
         .update_table_row(&claims, &table_name, id, object)
         .await
         .map_err(map_backend_error)?;
+    let row = load_mutation_row(&state, &claims, &table_name, Some(id)).await;
 
     Ok(Json(MutationResponse {
         ok: true,
         rows_affected: outcome.rows_affected,
         last_insert_rowid: outcome.last_insert_rowid,
+        row,
     }))
 }
 
@@ -241,6 +248,7 @@ async fn delete_table_row(
         ok: true,
         rows_affected: outcome.rows_affected,
         last_insert_rowid: outcome.last_insert_rowid,
+        row: None,
     }))
 }
 
@@ -260,6 +268,7 @@ async fn batch_update_record_quantities(
         ok: true,
         rows_affected: outcome.rows_affected,
         last_insert_rowid: outcome.last_insert_rowid,
+        row: None,
     }))
 }
 
@@ -303,6 +312,7 @@ async fn create_karma_row(
         .create_table_row(&claims, "karma", object)
         .await
         .map_err(map_backend_error)?;
+    let row = load_mutation_row(&state, &claims, "karma", outcome.last_insert_rowid).await;
 
     Ok((
         StatusCode::CREATED,
@@ -310,6 +320,7 @@ async fn create_karma_row(
             ok: true,
             rows_affected: outcome.rows_affected,
             last_insert_rowid: outcome.last_insert_rowid,
+            row,
         }),
     ))
 }
@@ -327,11 +338,13 @@ async fn update_karma_row(
         .update_table_row(&claims, "karma", id, object)
         .await
         .map_err(map_backend_error)?;
+    let row = load_mutation_row(&state, &claims, "karma", Some(id)).await;
 
     Ok(Json(MutationResponse {
         ok: true,
         rows_affected: outcome.rows_affected,
         last_insert_rowid: outcome.last_insert_rowid,
+        row,
     }))
 }
 
@@ -351,6 +364,7 @@ async fn delete_karma_row(
         ok: true,
         rows_affected: outcome.rows_affected,
         last_insert_rowid: outcome.last_insert_rowid,
+        row: None,
     }))
 }
 
@@ -369,6 +383,7 @@ async fn execute_karma(
         ok: true,
         rows_affected: 0,
         last_insert_rowid: None,
+        row: None,
     }))
 }
 
@@ -555,6 +570,20 @@ async fn authenticate_request(
         .authenticate_authorization(header_str)
         .await
         .map_err(|error| api_error(StatusCode::UNAUTHORIZED, error.to_string()))
+}
+
+async fn load_mutation_row(
+    state: &AppState,
+    claims: &::application::auth::AuthSubject,
+    table_name: &str,
+    row_id: Option<i64>,
+) -> Option<Value> {
+    let row_id = row_id?;
+    state
+        .backend
+        .get_table_row(claims, table_name, row_id)
+        .await
+        .ok()
 }
 
 fn payload_object(payload: &Value) -> ApiResult<&Map<String, Value>> {

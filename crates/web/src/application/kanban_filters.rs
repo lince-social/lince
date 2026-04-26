@@ -4,9 +4,9 @@ use {
         domain::board::{BoardCard, BoardState},
         infrastructure::board_state_store::BoardStateStore,
     },
-    std::convert::TryFrom,
     serde::{Deserialize, Serialize},
     serde_json::{Map, Number, Value},
+    std::convert::TryFrom,
 };
 
 const VALID_TASK_TYPES: [&str; 4] = ["epic", "feature", "task", "other"];
@@ -39,7 +39,7 @@ impl KanbanFilterService {
         Self { board_state }
     }
 
-    pub async fn apply_filters(
+    pub async fn persist_filters(
         &self,
         instance_id: &str,
         rows: Vec<RawKanbanFilterRow>,
@@ -98,11 +98,10 @@ impl KanbanFilterService {
             settings.show_parent_context = show_parent_context;
         }
         if let Some(view_name) = update.view_name {
-            settings.view_name = Some(
-                normalize_optional_name(Some(&view_name)).ok_or_else(|| {
+            settings.view_name =
+                Some(normalize_optional_name(Some(&view_name)).ok_or_else(|| {
                     KanbanFilterError::Invalid("Kanban precisa de um view_name nao vazio.".into())
-                })?,
-            );
+                })?);
         }
 
         let widget_state = ensure_object(&mut card.widget_state);
@@ -239,23 +238,20 @@ pub fn extract_kanban_settings(widget_state: &Value) -> KanbanWidgetSettings {
 }
 
 pub fn derived_kanban_view_name(instance_id: &str, view_name: Option<&str>) -> String {
-    normalize_optional_name(view_name)
-        .unwrap_or_else(|| format!("kanban-{}", instance_id.trim()))
+    normalize_optional_name(view_name).unwrap_or_else(|| format!("kanban-{}", instance_id.trim()))
 }
 
 pub fn effective_kanban_view_id(widget_state: &Value, view_id: Option<u32>) -> Option<u32> {
-    view_id
-        .filter(|value| *value > 0)
-        .or_else(|| {
-            widget_state
-                .get(GRAPH_RUNTIME_STATE_KEY)
-                .or_else(|| widget_state.get(LEGACY_GRAPH_RUNTIME_STATE_KEY))
-                .and_then(Value::as_object)
-                .and_then(|runtime| runtime.get("source_view_id"))
-                .and_then(Value::as_i64)
-                .and_then(|value| u32::try_from(value).ok())
-                .filter(|value| *value > 0)
-        })
+    view_id.filter(|value| *value > 0).or_else(|| {
+        widget_state
+            .get(GRAPH_RUNTIME_STATE_KEY)
+            .or_else(|| widget_state.get(LEGACY_GRAPH_RUNTIME_STATE_KEY))
+            .and_then(Value::as_object)
+            .and_then(|runtime| runtime.get("source_view_id"))
+            .and_then(Value::as_i64)
+            .and_then(|value| u32::try_from(value).ok())
+            .filter(|value| *value > 0)
+    })
 }
 
 fn normalize_optional_name(value: Option<&str>) -> Option<String> {

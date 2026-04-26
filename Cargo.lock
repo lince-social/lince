@@ -4701,12 +4701,22 @@ dependencies = [
  "dirs 6.0.0",
  "futures",
  "lince-domain",
+ "lince-persistence-table-derive",
  "lince-utils",
  "regex",
  "serde",
  "serde_json",
  "sqlx",
  "tokio",
+]
+
+[[package]]
+name = "lince-persistence-table-derive"
+version = "0.7.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
 ]
 
 [[package]]

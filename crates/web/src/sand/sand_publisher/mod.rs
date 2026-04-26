@@ -649,7 +649,7 @@ fn script() -> &'static str {
         }
 
         async function refreshServers() {
-          const response = await fetch("/host/servers");
+          const response = await fetch("/organ");
           const payload = await parseJsonResponse(response);
           if (!response.ok) {
             throw new Error(payload?.error || "Falha ao carregar os organs.");

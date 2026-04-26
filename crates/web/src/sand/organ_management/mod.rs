@@ -13,7 +13,7 @@ pub(crate) fn source() -> SandWidgetSource {
             author: r#"Lince Labs"#.into(),
             version: r#"0.1.0"#.into(),
             description: r#"Hyper-specific control surface for organ profiles and connection state."#.into(),
-            details: r#"Lists organs from /host/servers, surfaces auth and session metadata, and performs create, update, and delete through the host CRUD routes while persisting UI context per card."#.into(),
+            details: r#"Lists organs from /organ, surfaces auth and session metadata, and performs create, update, and delete through the organ CRUD routes while persisting UI context per card."#.into(),
             initial_width: 6,
             initial_height: 6,
             requires_server: false,
@@ -768,7 +768,7 @@ pub(crate) fn source() -> SandWidgetSource {
         state.ui.selectedId = "";
         state.ui.draftMode = "create";
         state.ui.draft = { ...DEFAULT_FORM };
-        requestPreviewFor("POST", "/host/servers", { id: null, name: "", base_url: "" });
+        requestPreviewFor("POST", "/organ", { id: null, name: "", base_url: "" });
         persistUiSoon();
         render();
         formNameEl.focus();
@@ -796,7 +796,7 @@ pub(crate) fn source() -> SandWidgetSource {
         setStatus("Loading organ roster from host...", "warn");
         renderFooter();
         try {
-          const response = await fetch("/host/servers");
+          const response = await fetch("/organ");
           const raw = await response.text().catch(() => "");
           const parsed = raw ? JSON.parse(raw) : [];
           if (!response.ok) {
@@ -872,7 +872,7 @@ pub(crate) fn source() -> SandWidgetSource {
         const selected = selectedOrgan();
         const isCreate = state.ui.draftMode === "create" || !selected;
         const method = isCreate ? "POST" : "PATCH";
-        const url = isCreate ? "/host/servers" : "/host/servers/" + encodeURIComponent(selected.id);
+        const url = isCreate ? "/organ" : "/organ/" + encodeURIComponent(selected.id);
         requestPreviewFor(method, url, payload);
         setStatus(isCreate ? "Creating organ..." : "Updating organ...", "warn");
 
@@ -912,7 +912,7 @@ pub(crate) fn source() -> SandWidgetSource {
           setStatus("Select an organ before deleting.", "error");
           return;
         }
-        const url = "/host/servers/" + encodeURIComponent(selected.id);
+        const url = "/organ/" + encodeURIComponent(selected.id);
         requestPreviewFor("DELETE", url, null);
         setStatus("Deleting organ...", "warn");
         try {
@@ -957,15 +957,15 @@ pub(crate) fn source() -> SandWidgetSource {
       formIdEl.addEventListener("input", () => {
         state.ui.draftMode = "create";
         patchDraft({ ...state.ui.draft, id: formIdEl.value });
-        requestPreviewFor("POST", "/host/servers", buildPayload());
+        requestPreviewFor("POST", "/organ", buildPayload());
       });
       formNameEl.addEventListener("input", () => {
         patchDraft({ ...state.ui.draft, name: formNameEl.value });
-        requestPreviewFor(state.ui.draftMode === "create" ? "POST" : "PATCH", state.ui.draftMode === "create" ? "/host/servers" : "/host/servers/" + encodeURIComponent(state.ui.selectedId || "{server_id}"), buildPayload());
+        requestPreviewFor(state.ui.draftMode === "create" ? "POST" : "PATCH", state.ui.draftMode === "create" ? "/organ" : "/organ/" + encodeURIComponent(state.ui.selectedId || "{organ_id}"), buildPayload());
       });
       formBaseUrlEl.addEventListener("input", () => {
         patchDraft({ ...state.ui.draft, baseUrl: formBaseUrlEl.value });
-        requestPreviewFor(state.ui.draftMode === "create" ? "POST" : "PATCH", state.ui.draftMode === "create" ? "/host/servers" : "/host/servers/" + encodeURIComponent(state.ui.selectedId || "{server_id}"), buildPayload());
+        requestPreviewFor(state.ui.draftMode === "create" ? "POST" : "PATCH", state.ui.draftMode === "create" ? "/organ" : "/organ/" + encodeURIComponent(state.ui.selectedId || "{organ_id}"), buildPayload());
       });
 
       refreshButton.addEventListener("click", () => {
@@ -1000,7 +1000,7 @@ pub(crate) fn source() -> SandWidgetSource {
       }
 
       searchInput.value = state.ui.search;
-      requestPreviewFor("GET", "/host/servers", null);
+      requestPreviewFor("GET", "/organ", null);
       responseEl.textContent = state.lastResponse;
       render();
       if (!bindBridgeWhenReady()) {

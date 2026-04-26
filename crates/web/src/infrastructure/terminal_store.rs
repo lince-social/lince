@@ -361,10 +361,7 @@ impl TerminalSessionStore {
         Ok(handle.snapshot().await)
     }
 
-    pub async fn subscribe_stream(
-        &self,
-        id: &str,
-    ) -> Result<TerminalStreamSubscription, String> {
+    pub async fn subscribe_stream(&self, id: &str) -> Result<TerminalStreamSubscription, String> {
         let handle = self
             .sessions
             .read()
@@ -505,10 +502,7 @@ mod tests {
     #[tokio::test]
     async fn terminal_session_round_trips_output() {
         let store = TerminalSessionStore::new();
-        let session = store
-            .create_session()
-            .await
-            .expect("session should start");
+        let session = store.create_session().await.expect("session should start");
         let session_id = session.id.clone();
 
         let mut cursor = 0;
@@ -549,11 +543,7 @@ mod tests {
             .expect("session should terminate");
     }
 
-    async fn reply_to_cursor_queries(
-        store: &TerminalSessionStore,
-        session_id: &str,
-        output: &str,
-    ) {
+    async fn reply_to_cursor_queries(store: &TerminalSessionStore, session_id: &str, output: &str) {
         for _ in output.match_indices("\u{1b}[6n") {
             store
                 .send_input_text(session_id, "\u{1b}[1;1R")

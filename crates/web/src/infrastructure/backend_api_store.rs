@@ -980,7 +980,10 @@ impl BackendApiStore {
         let fields = parse_fields(object, &specs)?;
         if fields.is_empty() {
             return Ok((
-                format!("INSERT INTO {} DEFAULT VALUES", table.as_table_name()),
+                format!(
+                    "INSERT INTO {} DEFAULT VALUES RETURNING id",
+                    table.as_table_name()
+                ),
                 vec![],
             ));
         }
@@ -998,7 +1001,7 @@ impl BackendApiStore {
 
         Ok((
             format!(
-                "INSERT INTO {} ({columns}) VALUES ({placeholders})",
+                "INSERT INTO {} ({columns}) VALUES ({placeholders}) RETURNING id",
                 table.as_table_name()
             ),
             params,
@@ -1147,7 +1150,7 @@ impl BackendApiStore {
         reject_unknown_fields(object, &["name", "username", "password", "role_id"])?;
 
         Ok((
-            "INSERT INTO app_user(name, username, password_hash, role_id) VALUES (?, ?, ?, ?)"
+            "INSERT INTO app_user(name, username, password_hash, role_id) VALUES (?, ?, ?, ?) RETURNING id"
                 .to_string(),
             vec![
                 SqlParameter::Text(name),
@@ -1240,7 +1243,7 @@ impl BackendApiStore {
             .collect::<Vec<_>>();
 
         Ok((
-            format!("INSERT INTO role ({columns}) VALUES ({placeholders})"),
+            format!("INSERT INTO role ({columns}) VALUES ({placeholders}) RETURNING id"),
             params,
         ))
     }

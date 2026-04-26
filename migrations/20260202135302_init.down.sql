@@ -1,6 +1,5 @@
 -- Add down migration script here
 DROP TABLE IF EXISTS query;
-DROP TABLE IF EXISTS dna;
 DROP TABLE IF EXISTS history;
 DROP TABLE IF EXISTS sum;
 DROP TABLE IF EXISTS transfer;

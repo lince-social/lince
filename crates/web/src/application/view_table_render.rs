@@ -574,10 +574,7 @@ fn render_table_row(
     columns: &[TableColumn],
     source_table: Option<&str>,
 ) -> Markup {
-    let row_id = row
-        .values
-        .get("id")
-        .and_then(|value| parse_row_id(value));
+    let row_id = row.values.get("id").and_then(|value| parse_row_id(value));
 
     html! {
         tr
@@ -696,11 +693,7 @@ fn extract_primary_table_name(query: &str) -> Option<String> {
         .trim()
         .to_lowercase();
 
-    if table.is_empty() {
-        None
-    } else {
-        Some(table)
-    }
+    if table.is_empty() { None } else { Some(table) }
 }
 
 #[cfg(test)]
@@ -710,7 +703,9 @@ mod tests {
     #[test]
     fn extracts_primary_table_from_basic_selects() {
         assert_eq!(
-            extract_primary_table_name("SELECT * FROM record JOIN frequency ON frequency.id = record.id"),
+            extract_primary_table_name(
+                "SELECT * FROM record JOIN frequency ON frequency.id = record.id"
+            ),
             Some("record".into())
         );
     }
@@ -718,7 +713,9 @@ mod tests {
     #[test]
     fn extracts_primary_table_from_quoted_and_bracketed_queries() {
         assert_eq!(
-            extract_primary_table_name("SELECT * FROM [view] JOIN `collection_view` ON `collection_view`.view_id = [view].id"),
+            extract_primary_table_name(
+                "SELECT * FROM [view] JOIN `collection_view` ON `collection_view`.view_id = [view].id"
+            ),
             Some("view".into())
         );
     }

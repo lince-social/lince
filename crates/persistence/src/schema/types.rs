@@ -1,56 +1,35 @@
-#[derive(Debug, Clone, PartialEq, Eq)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ColumnDef {
-    pub name: &'static str,
-    pub sql_type: &'static str,
+    pub name: String,
+    pub sql_type: String,
     pub nullable: bool,
     pub primary_key: bool,
     pub unique: bool,
-    pub default_sql: Option<&'static str>,
-    pub references_sql: Option<&'static str>,
-    pub check_sql: Option<&'static str>,
+    pub default_sql: Option<String>,
+    pub references_sql: Option<String>,
+    pub check_sql: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct IndexDef {
-    pub name: &'static str,
-    pub columns: Vec<&'static str>,
+    pub name: String,
+    pub columns: Vec<String>,
     pub unique: bool,
-    pub where_sql: Option<&'static str>,
+    pub where_sql: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TableSchema {
-    pub name: &'static str,
+    pub name: String,
     pub strict: bool,
     pub columns: Vec<ColumnDef>,
     pub indexes: Vec<IndexDef>,
-    pub checks: Vec<&'static str>,
-    pub composite_primary_key: Option<Vec<&'static str>>,
+    pub checks: Vec<String>,
+    pub composite_primary_key: Option<Vec<String>>,
 }
 
 pub trait Table {
     fn schema() -> TableSchema;
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LiveColumn {
-    pub name: String,
-    pub sql_type: String,
-    pub nullable: bool,
-    pub primary_key_position: i64,
-    pub default_sql: Option<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LiveIndex {
-    pub name: String,
-    pub unique: bool,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LiveTable {
-    pub name: String,
-    pub strict: bool,
-    pub columns: Vec<LiveColumn>,
-    pub indexes: Vec<LiveIndex>,
 }

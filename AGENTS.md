@@ -13,7 +13,7 @@ Injection: Dependency Injection.
 Application: Main application logic.
 Web: Web HTML version.
 
-In root of project there is the SQLite migrations/ directory.
+In this repository the schema is owned by Rust structs in persistence, and the repo-root `migrations/` directory is embedded into the binary at compile time via `sqlx::migrate!`.
 
 # Sand widgets
 

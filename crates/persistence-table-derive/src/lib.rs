@@ -59,23 +59,23 @@ fn expand_table(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
         let default_sql = field_attrs
             .default
             .as_ref()
-            .map(|value| quote! { Some(#value) })
+            .map(|value| quote! { Some(#value.to_string()) })
             .unwrap_or_else(|| quote! { None });
         let references_sql = field_attrs
             .references
             .as_ref()
-            .map(|value| quote! { Some(#value) })
+            .map(|value| quote! { Some(#value.to_string()) })
             .unwrap_or_else(|| quote! { None });
         let check_sql = field_attrs
             .check
             .as_ref()
-            .map(|value| quote! { Some(#value) })
+            .map(|value| quote! { Some(#value.to_string()) })
             .unwrap_or_else(|| quote! { None });
 
         column_defs.push(quote! {
             crate::schema::types::ColumnDef {
-                name: #field_name,
-                sql_type: #sql_type,
+                name: #field_name.to_string(),
+                sql_type: #sql_type.to_string(),
                 nullable: #nullable,
                 primary_key: #primary_key,
                 unique: #unique,
@@ -93,12 +93,12 @@ fn expand_table(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
         let where_sql = index
             .where_sql
             .as_ref()
-            .map(|value| quote! { Some(#value) })
+            .map(|value| quote! { Some(#value.to_string()) })
             .unwrap_or_else(|| quote! { None });
         quote! {
             crate::schema::types::IndexDef {
-                name: #name,
-                columns: vec![#(#columns),*],
+                name: #name.to_string(),
+                columns: vec![#(#columns.to_string()),*],
                 unique: #unique,
                 where_sql: #where_sql,
             }
@@ -112,7 +112,7 @@ fn expand_table(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
         .collect::<Vec<_>>();
     let composite_primary_key = struct_attrs.composite_primary_key.as_ref().map(|columns| {
         let columns = columns.iter().map(String::as_str).collect::<Vec<_>>();
-        quote! { Some(vec![#(#columns),*]) }
+        quote! { Some(vec![#(#columns.to_string()),*]) }
     });
 
     let strict = struct_attrs.strict;
@@ -122,11 +122,11 @@ fn expand_table(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
         impl crate::schema::types::Table for #ident {
             fn schema() -> crate::schema::types::TableSchema {
                 crate::schema::types::TableSchema {
-                    name: #table_name,
+                    name: #table_name.to_string(),
                     strict: #strict,
                     columns: vec![#(#column_defs),*],
                     indexes: vec![#(#index_defs),*],
-                    checks: vec![#(#checks),*],
+                    checks: vec![#(#checks.to_string()),*],
                     composite_primary_key: #composite_primary_key,
                 }
             }

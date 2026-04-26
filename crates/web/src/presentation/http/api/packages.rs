@@ -139,6 +139,18 @@ struct LinkPayload {
 #[derive(Debug, Deserialize)]
 struct MutationPayload {
     last_insert_rowid: Option<i64>,
+    row: Option<Value>,
+}
+
+impl MutationPayload {
+    fn created_row_id(&self) -> Option<i64> {
+        self.row
+            .as_ref()
+            .and_then(Value::as_object)
+            .and_then(|row| row.get("id"))
+            .and_then(Value::as_i64)
+            .or(self.last_insert_rowid)
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -1365,7 +1377,7 @@ async fn create_table_row(
         .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
     let payload: MutationPayload =
         proxy_remote_json_response(state, session_token.as_deref(), &server.id, response).await?;
-    payload.last_insert_rowid.ok_or_else(|| {
+    payload.created_row_id().ok_or_else(|| {
         api_error(
             StatusCode::BAD_GATEWAY,
             "O organ remoto nao retornou o id da linha criada.",

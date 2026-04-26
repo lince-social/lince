@@ -453,7 +453,7 @@ impl TrailWidgetService {
                 }),
             )
             .await?;
-        let copied_root_id = created.last_insert_rowid.ok_or_else(|| {
+        let copied_root_id = created.created_row_id().ok_or_else(|| {
             TrailWidgetError::Internal("Criacao do root copiado nao retornou id.".into())
         })?;
 
@@ -1108,7 +1108,7 @@ impl TrailWidgetService {
                     }),
                 )
                 .await?;
-            let condition_id = condition.last_insert_rowid.ok_or_else(|| {
+            let condition_id = condition.created_row_id().ok_or_else(|| {
                 TrailWidgetError::Internal("Criacao da condition nao retornou id.".into())
             })?;
             let consequence = self
@@ -1123,7 +1123,7 @@ impl TrailWidgetService {
                     }),
                 )
                 .await?;
-            let consequence_id = consequence.last_insert_rowid.ok_or_else(|| {
+            let consequence_id = consequence.created_row_id().ok_or_else(|| {
                 TrailWidgetError::Internal("Criacao da consequence nao retornou id.".into())
             })?;
             let karma = self
@@ -1140,7 +1140,7 @@ impl TrailWidgetService {
                     }),
                 )
                 .await?;
-            let karma_id = karma.last_insert_rowid.ok_or_else(|| {
+            let karma_id = karma.created_row_id().ok_or_else(|| {
                 TrailWidgetError::Internal("Criacao da karma nao retornou id.".into())
             })?;
             (condition_id, consequence_id, karma_id)
@@ -1399,6 +1399,7 @@ impl TrailWidgetService {
                 .map_err(|error| TrailWidgetError::Internal(error.to_string()))?;
             return Ok(MutationResponse {
                 last_insert_rowid: outcome.last_insert_rowid,
+                row_id: None,
             });
         }
         let response = self
@@ -1442,6 +1443,7 @@ impl TrailWidgetService {
                 .map_err(|error| TrailWidgetError::Internal(error.to_string()))?;
             return Ok(MutationResponse {
                 last_insert_rowid: outcome.last_insert_rowid,
+                row_id: None,
             });
         }
         let response = self
@@ -1481,6 +1483,7 @@ impl TrailWidgetService {
                 .map_err(|error| TrailWidgetError::Internal(error.to_string()))?;
             return Ok(MutationResponse {
                 last_insert_rowid: outcome.last_insert_rowid,
+                row_id: None,
             });
         }
         let response = self
@@ -1969,6 +1972,13 @@ struct ViewDefinition {
 #[derive(Debug, Clone)]
 struct MutationResponse {
     last_insert_rowid: Option<i64>,
+    row_id: Option<i64>,
+}
+
+impl MutationResponse {
+    fn created_row_id(&self) -> Option<i64> {
+        self.row_id.or(self.last_insert_rowid)
+    }
 }
 
 enum TrailPermission {
@@ -2121,6 +2131,11 @@ fn parse_mutation_response(value: &Value) -> Result<MutationResponse, TrailWidge
         .ok_or_else(|| TrailWidgetError::Internal("Resposta invalida de mutacao.".into()))?;
     Ok(MutationResponse {
         last_insert_rowid: object.get("last_insert_rowid").and_then(Value::as_i64),
+        row_id: object
+            .get("row")
+            .and_then(Value::as_object)
+            .and_then(|row| row.get("id"))
+            .and_then(Value::as_i64),
     })
 }
 

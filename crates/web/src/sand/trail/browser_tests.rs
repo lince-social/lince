@@ -18,7 +18,7 @@ use {
     },
     injection::cross_cutting::dependency_injection,
     persistence::{
-        connection::connection, seeder::seed, storage::StorageService,
+        bootstrap_database, connection::connection, storage::StorageService,
         write_coordinator::spawn_write_coordinator,
     },
     sqlx::SqlitePool,
@@ -35,8 +35,7 @@ async fn browser_trail_open_keeps_done_and_children_visible()
 -> Result<(), Box<dyn Error + Send + Sync>> {
     let _env_guard = TestEnvGuard::prepare()?;
     let db = Arc::new(connection().await?);
-    sqlx::migrate!("../../migrations").run(&*db).await?;
-    seed(&*db).await?;
+    bootstrap_database(&db).await?;
     sqlx::query("UPDATE configuration SET bucket_enabled = 0 WHERE quantity = 1")
         .execute(&*db)
         .await?;

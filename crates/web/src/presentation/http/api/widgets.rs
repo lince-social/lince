@@ -154,14 +154,14 @@ pub async fn post_widget_action(
                     )
                 })?;
             let outcome = state
-                .kanban_filters
-                .apply_filters(&instance_id, payload.filters)
+                .kanban_streams
+                .apply_filters(session_token.as_deref(), &instance_id, payload.filters)
                 .await
-                .map_err(map_kanban_filter_error)?;
+                .map_err(map_kanban_stream_error)?;
             Ok(Json(serde_json::json!({
                 "ok": true,
                 "action": action,
-                "message": "Filters applied.",
+                "message": "Filters applied and derived view updated.",
                 "record_id": Value::Null,
                 "await_stream_refresh": true,
                 "detail": {
@@ -195,16 +195,15 @@ pub async fn post_widget_action(
             })))
         }
         "update-source-view" => {
-            let request =
-                serde_json::from_value::<crate::application::kanban_actions::UpdateSourceViewRequest>(
-                    payload,
+            let request = serde_json::from_value::<
+                crate::application::kanban_actions::UpdateSourceViewRequest,
+            >(payload)
+            .map_err(|error| {
+                api_error(
+                    StatusCode::BAD_REQUEST,
+                    format!("Payload invalido: {error}"),
                 )
-                .map_err(|error| {
-                    api_error(
-                        StatusCode::BAD_REQUEST,
-                        format!("Payload invalido: {error}"),
-                    )
-                })?;
+            })?;
             let outcome = state
                 .kanban_actions
                 .update_source_view(session_token.as_deref(), &instance_id, request)

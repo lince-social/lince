@@ -127,12 +127,15 @@ pub async fn post_terminal_resize(
 ) -> ApiResult<Json<TerminalSessionSnapshot>> {
     let session = state
         .terminal
-        .resize(&session_id, resize_from_parts(
-            payload.cols,
-            payload.rows,
-            payload.pixel_width,
-            payload.pixel_height,
-        ))
+        .resize(
+            &session_id,
+            resize_from_parts(
+                payload.cols,
+                payload.rows,
+                payload.pixel_width,
+                payload.pixel_height,
+            ),
+        )
         .await
         .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
 
@@ -167,7 +170,10 @@ async fn run_terminal_socket(
     store: TerminalSessionStore,
     query: TerminalSocketQuery,
 ) {
-    let session = match store.create_session_with_size(Some(query_resize(query))).await {
+    let session = match store
+        .create_session_with_size(Some(query_resize(query)))
+        .await
+    {
         Ok(session) => session,
         Err(message) => {
             let _ = send_socket_frame(&mut socket, TerminalSocketFrame::Error { message }).await;
@@ -272,7 +278,8 @@ async fn run_terminal_output_stream(
                 {
                     return;
                 }
-                let _ = send_socket_frame(&mut sender, TerminalSocketFrame::Closed { session }).await;
+                let _ =
+                    send_socket_frame(&mut sender, TerminalSocketFrame::Closed { session }).await;
                 return;
             }
             Err(broadcast::error::RecvError::Closed) => return,
@@ -359,10 +366,7 @@ async fn stream_terminal_delta(
     Ok(())
 }
 
-async fn send_socket_frame<S>(
-    sender: &mut S,
-    frame: TerminalSocketFrame,
-) -> Result<(), ()>
+async fn send_socket_frame<S>(sender: &mut S, frame: TerminalSocketFrame) -> Result<(), ()>
 where
     S: Sink<Message> + Unpin,
 {
@@ -374,7 +378,12 @@ where
 }
 
 fn query_resize(query: TerminalSocketQuery) -> TerminalResize {
-    resize_from_parts(query.cols.unwrap_or(80), query.rows.unwrap_or(24), query.pixel_width, query.pixel_height)
+    resize_from_parts(
+        query.cols.unwrap_or(80),
+        query.rows.unwrap_or(24),
+        query.pixel_width,
+        query.pixel_height,
+    )
 }
 
 fn resize_from_parts(

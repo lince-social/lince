@@ -1505,7 +1505,7 @@ fn script() -> &'static str {
             throw new Error(payload?.error || `Falha ao criar ${table}.`);
           }
 
-          const createdId = parseInteger(payload?.last_insert_rowid);
+          const createdId = parseInteger(payload?.row?.id ?? payload?.last_insert_rowid);
           if (createdId == null || createdId <= 0) {
             throw new Error(`O backend nao devolveu o id da nova row de ${table}.`);
           }

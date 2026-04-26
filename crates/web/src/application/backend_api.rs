@@ -123,7 +123,10 @@ impl BackendApiService {
         match table {
             ApiTable::View => {
                 let (sql, params) = self.store.build_standard_insert(table, object)?;
-                self.services.writer.execute_view_insert(sql, params).await
+                self.services
+                    .writer
+                    .execute_view_insert_returning_id(sql, params)
+                    .await
             }
             ApiTable::Record
             | ApiTable::RecordExtension
@@ -137,7 +140,11 @@ impl BackendApiService {
             | ApiTable::Karma
             | ApiTable::Configuration => {
                 let (sql, params) = self.store.build_standard_insert(table, object)?;
-                let outcome = self.services.writer.execute_statement(sql, params).await?;
+                let outcome = self
+                    .services
+                    .writer
+                    .execute_statement_returning_id(sql, params)
+                    .await?;
                 if outcome.rows_affected > 0
                     && matches!(
                         table,
@@ -162,14 +169,22 @@ impl BackendApiService {
                     .store
                     .build_app_user_insert(object, password_hash)
                     .await?;
-                let outcome = self.services.writer.execute_statement(sql, params).await?;
+                let outcome = self
+                    .services
+                    .writer
+                    .execute_statement_returning_id(sql, params)
+                    .await?;
                 self.auth.refresh_cache().await?;
                 Ok(outcome)
             }
             ApiTable::Role => {
                 require_admin(claims)?;
                 let (sql, params) = self.store.build_role_insert(object)?;
-                let outcome = self.services.writer.execute_statement(sql, params).await?;
+                let outcome = self
+                    .services
+                    .writer
+                    .execute_statement_returning_id(sql, params)
+                    .await?;
                 self.auth.refresh_cache().await?;
                 Ok(outcome)
             }

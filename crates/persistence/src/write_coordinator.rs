@@ -43,6 +43,12 @@ enum WriteRequest {
         dependency_action: ViewDependencyAction,
         reply: oneshot::Sender<Result<WriteOutcome, Error>>,
     },
+    ExecuteStatementReturningId {
+        sql: String,
+        params: Vec<SqlParameter>,
+        dependency_action: ViewDependencyAction,
+        reply: oneshot::Sender<Result<WriteOutcome, Error>>,
+    },
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -103,6 +109,28 @@ impl WriteCoordinatorHandle {
             .await
     }
 
+    pub async fn execute_statement_returning_id(
+        &self,
+        sql: String,
+        params: Vec<SqlParameter>,
+    ) -> Result<WriteOutcome, Error> {
+        self.execute_statement_returning_id_with_action(sql, params, ViewDependencyAction::None)
+            .await
+    }
+
+    pub async fn execute_view_insert_returning_id(
+        &self,
+        sql: String,
+        params: Vec<SqlParameter>,
+    ) -> Result<WriteOutcome, Error> {
+        self.execute_statement_returning_id_with_action(
+            sql,
+            params,
+            ViewDependencyAction::RefreshInsertedView,
+        )
+        .await
+    }
+
     async fn execute_statement_with_action(
         &self,
         sql: String,
@@ -112,6 +140,28 @@ impl WriteCoordinatorHandle {
         let (reply_tx, reply_rx) = oneshot::channel();
         self.request_tx
             .send(WriteRequest::ExecuteStatement {
+                sql,
+                params,
+                dependency_action,
+                reply: reply_tx,
+            })
+            .await
+            .map_err(|_| Error::new(ErrorKind::BrokenPipe, "Write coordinator stopped"))?;
+
+        reply_rx
+            .await
+            .map_err(|_| Error::new(ErrorKind::BrokenPipe, "Write coordinator dropped reply"))?
+    }
+
+    async fn execute_statement_returning_id_with_action(
+        &self,
+        sql: String,
+        params: Vec<SqlParameter>,
+        dependency_action: ViewDependencyAction,
+    ) -> Result<WriteOutcome, Error> {
+        let (reply_tx, reply_rx) = oneshot::channel();
+        self.request_tx
+            .send(WriteRequest::ExecuteStatementReturningId {
                 sql,
                 params,
                 dependency_action,
@@ -178,6 +228,23 @@ pub async fn spawn_write_coordinator() -> Result<WriteCoordinatorHandle, Error> 
                     reply,
                 } => {
                     let result = execute_statement(
+                        &mut connection,
+                        &hook_state,
+                        &invalidation_sender,
+                        sql,
+                        params,
+                        dependency_action,
+                    )
+                    .await;
+                    let _ = reply.send(result);
+                }
+                WriteRequest::ExecuteStatementReturningId {
+                    sql,
+                    params,
+                    dependency_action,
+                    reply,
+                } => {
+                    let result = execute_statement_returning_id(
                         &mut connection,
                         &hook_state,
                         &invalidation_sender,
@@ -257,6 +324,59 @@ async fn execute_statement(
         rows_affected,
         changed_tables,
         last_insert_rowid: returned_last_insert_rowid,
+    })
+}
+
+async fn execute_statement_returning_id(
+    connection: &mut SqliteConnection,
+    hook_state: &Arc<Mutex<HookState>>,
+    invalidation_tx: &broadcast::Sender<InvalidationEvent>,
+    sql: String,
+    params: Vec<SqlParameter>,
+    dependency_action: ViewDependencyAction,
+) -> Result<WriteOutcome, Error> {
+    if count_statements(&sql) != 1 {
+        return Err(Error::new(
+            ErrorKind::InvalidInput,
+            "Exactly one SQL statement is allowed per request",
+        ));
+    }
+
+    reset_hook_state(hook_state)?;
+
+    let mut query = sqlx::query_scalar::<_, i64>(&sql);
+    for param in params {
+        query = match param {
+            SqlParameter::Null => query.bind(None::<String>),
+            SqlParameter::Integer(value) => query.bind(value),
+            SqlParameter::Real(value) => query.bind(value),
+            SqlParameter::Text(value) => query.bind(value),
+        };
+    }
+
+    let returned_id = query
+        .fetch_optional(&mut *connection)
+        .await
+        .map_err(|error| Error::new(ErrorKind::InvalidInput, error.to_string()))?;
+    let rows_affected = u64::from(returned_id.is_some());
+
+    if let Some(returned_id_value) = returned_id {
+        apply_view_dependency_action(connection, dependency_action, returned_id_value).await?;
+    }
+
+    let (committed, mut changed_tables) = take_hook_state(hook_state)?;
+    changed_tables.remove("view_dependency");
+
+    if committed && !changed_tables.is_empty() {
+        let _ = invalidation_tx.send(InvalidationEvent {
+            changed_tables: changed_tables.clone(),
+        });
+    }
+
+    Ok(WriteOutcome {
+        rows_affected,
+        changed_tables,
+        last_insert_rowid: returned_id,
     })
 }
 

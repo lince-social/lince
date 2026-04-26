@@ -211,8 +211,11 @@ fn parse_row(raw: &BTreeMap<String, String>) -> Option<KanbanRow> {
             .get("parent_id")
             .and_then(|value| parse_i64(value))
             .or_else(|| parse_json_i64s(raw.get("parent_ids_json")).first().copied()),
-        parent_head: normalize_optional(raw.get("parent_head"))
-            .or_else(|| parse_json_strings(raw.get("parent_heads_json")).first().cloned()),
+        parent_head: normalize_optional(raw.get("parent_head")).or_else(|| {
+            parse_json_strings(raw.get("parent_heads_json"))
+                .first()
+                .cloned()
+        }),
         comments_count: raw.get("comments_count").and_then(|value| parse_i64(value)),
         active_worklog_count: raw
             .get("active_worklog_count")

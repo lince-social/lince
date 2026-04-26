@@ -5,10 +5,11 @@ use std::io::Error;
 /// Idempotent database seeder.
 ///
 /// This will insert default rows only when they don't already exist.
-/// It's safe to run multiple times after migrations have been applied.
+/// It's safe to run multiple times after schema bootstrap has completed.
 ///
 /// Usage:
-/// - call `persistence::seeder::seed(&*db).await?` after running migrations.
+/// - call `persistence::bootstrap_database(&db).await?` in the normal app path
+/// - or call `persistence::seeder::seed(&*db).await?` only after schema bootstrap
 ///
 /// This implementation avoids using workspace macros so it doesn't require
 /// compile-time query macros or macro imports; all queries are executed at runtime.
@@ -228,6 +229,15 @@ pub async fn seed(db: &Pool<Sqlite>) -> Result<(), Error> {
         .await
         .map_err(Error::other)?;
         sqlx::query("INSERT INTO collection_view(quantity, collection_id, view_id) VALUES (1, 1, (SELECT id FROM view WHERE name='Frequency'))")
+            .execute(&*db)
+            .await
+            .map_err(Error::other)?;
+
+        sqlx::query("INSERT INTO view(name, query) VALUES ('Organ', 'SELECT * FROM organ')")
+            .execute(&*db)
+            .await
+            .map_err(Error::other)?;
+        sqlx::query("INSERT INTO collection_view(quantity, collection_id, view_id) VALUES (1, 1, (SELECT id FROM view WHERE name='Organ'))")
             .execute(&*db)
             .await
             .map_err(Error::other)?;

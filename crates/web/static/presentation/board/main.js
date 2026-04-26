@@ -2545,7 +2545,7 @@ function showStartupLoadingState(
 }
 
 async function requestServerProfiles() {
-  const response = await fetch("/host/servers");
+  const response = await fetch("/organ");
   const payload = await parseJsonResponse(response);
   if (!response.ok) {
     throw new Error(payload?.error || "Falha ao carregar os servidores.");
@@ -2641,7 +2641,7 @@ function closeServerLoginModal() {
 
 async function submitServerLogin(serverId, username, password) {
   const response = await fetch(
-    `/host/servers/${encodeURIComponent(serverId)}/session`,
+    `/organ/${encodeURIComponent(serverId)}/session`,
     {
       method: "POST",
       headers: {

@@ -18,8 +18,8 @@ use crossterm::{
 };
 use injection::cross_cutting::{InjectedServices, dependency_injection};
 use persistence::{
+    bootstrap_database,
     connection::{connection, read_only_connection},
-    seeder::seed,
     storage::StorageService,
     write_coordinator::{SqlParameter, WriteCoordinatorHandle, spawn_write_coordinator},
 };
@@ -55,12 +55,7 @@ async fn main() -> Result<(), Error> {
     let db = Arc::new(connection().await.inspect_err(|e| {
         log(LogEntry::Error(e.kind(), e.to_string()));
     })?);
-    sqlx::migrate!("../../migrations")
-        .run(&*db)
-        .await
-        .map_err(Error::other)?;
-
-    seed(&db).await.map_err(Error::other)?;
+    bootstrap_database(&db).await.map_err(Error::other)?;
 
     #[cfg(any(feature = "gui", feature = "http", feature = "tui", feature = "karma"))]
     let frontend_enabled = should_start_frontend(&args);

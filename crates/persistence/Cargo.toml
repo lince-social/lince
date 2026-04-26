@@ -13,6 +13,7 @@ name = "persistence"
 [dependencies]
 domain = { workspace = true }
 utils = { workspace = true }
+lince-persistence-table-derive = { path = "../persistence-table-derive" }
 aws-config.workspace = true
 aws-sdk-s3.workspace = true
 sqlx = {workspace = true, features = ["runtime-tokio", "sqlite", "macros"]}

@@ -756,10 +756,12 @@ async fn local_table_collection(
                 .create_table_row(&claims, table_name, object)
                 .await
                 .map_err(map_backend_error)?;
+            let row = load_local_mutation_row(state, table_name, outcome.last_insert_rowid).await;
             serde_json::json!({
                 "ok": true,
                 "rows_affected": outcome.rows_affected,
                 "last_insert_rowid": outcome.last_insert_rowid,
+                "row": row,
             })
         }
         Method::PATCH => {
@@ -811,10 +813,12 @@ async fn local_table_item(
                 .update_table_row(&claims, table_name, id, object)
                 .await
                 .map_err(map_backend_error)?;
+            let row = load_local_mutation_row(state, table_name, Some(id)).await;
             serde_json::json!({
                 "ok": true,
                 "rows_affected": outcome.rows_affected,
                 "last_insert_rowid": outcome.last_insert_rowid,
+                "row": row,
             })
         }
         Method::DELETE => {
@@ -846,6 +850,19 @@ fn local_host_subject() -> AuthSubject {
         role_id: 0,
         role: "admin".into(),
     }
+}
+
+async fn load_local_mutation_row(
+    state: &AppState,
+    table_name: &str,
+    row_id: Option<i64>,
+) -> Option<Value> {
+    let row_id = row_id?;
+    state
+        .backend
+        .get_table_row(&local_host_subject(), table_name, row_id)
+        .await
+        .ok()
 }
 
 fn payload_array_of_objects(

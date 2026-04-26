@@ -96,13 +96,6 @@ CREATE TABLE history (
     new_quantity REAL NOT NULL
 );
 
-CREATE TABLE dna (
-    id INTEGER PRIMARY KEY,
-    name TEXT NOT NULL,
-    origin TEXT NOT NULL,
-    quantity INTEGER NOT NULL DEFAULT 0
-);
-
 CREATE TABLE query (
     id INTEGER PRIMARY KEY,
     name TEXT,

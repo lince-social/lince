@@ -4,8 +4,8 @@ mod chess;
 mod doom_portal;
 mod general_creation;
 mod ghostty_terminal;
-#[path = "kanban_record_view/mod.rs"]
-mod kanban_record_view;
+#[path = "kanban/mod.rs"]
+mod kanban;
 mod lince_logo_led;
 mod link_chip;
 mod local_terminal;
@@ -126,8 +126,8 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 20] = [
         package_builder: ghostty_terminal::package,
     },
     OfficialWidgetBuilder::Html {
-        feature_flag: kanban_record_view::FEATURE_FLAG,
-        source_builder: kanban_record_view::source,
+        feature_flag: kanban::FEATURE_FLAG,
+        source_builder: kanban::source,
     },
     OfficialWidgetBuilder::Package {
         feature_flag: relations::FEATURE_FLAG,

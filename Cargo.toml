@@ -6,6 +6,7 @@ members = [
     "crates/domain",
     "crates/injection",
     "crates/persistence",
+    "crates/persistence-table-derive",
     "crates/gui",
     "crates/utils",
     "crates/tui",

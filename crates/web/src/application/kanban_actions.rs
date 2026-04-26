@@ -1,9 +1,10 @@
+use persistence::repositories::view::is_special_view_query;
 use {
     crate::{
         application::{
             backend_api::BackendApiService,
             kanban_filters::{
-                effective_kanban_view_id, extract_kanban_settings, RawKanbanFilterRow,
+                RawKanbanFilterRow, effective_kanban_view_id, extract_kanban_settings,
             },
             kanban_identity::is_supported_graph_widget_filename,
         },
@@ -23,7 +24,6 @@ use {
     serde_json::{Value, json},
     std::collections::{BTreeMap, BTreeSet, HashMap},
 };
-use persistence::repositories::view::is_special_view_query;
 
 const VALID_TASK_TYPES: [&str; 4] = ["epic", "feature", "task", "other"];
 const GRAPH_RUNTIME_STATE_KEY: &str = "graph_runtime";
@@ -106,8 +106,8 @@ impl KanbanActionService {
                 record_payload,
             )
             .await?;
-        let record_id = created.last_insert_rowid.ok_or_else(|| {
-            KanbanActionError::Internal("Criacao do record nao retornou last_insert_rowid.".into())
+        let record_id = created.created_row_id().ok_or_else(|| {
+            KanbanActionError::Internal("Criacao do record nao retornou id.".into())
         })?;
 
         self.sync_task_metadata(
@@ -477,8 +477,8 @@ impl KanbanActionService {
                 }),
             )
             .await?;
-        let interval_id = created.last_insert_rowid.ok_or_else(|| {
-            KanbanActionError::Internal("Criacao do worklog nao retornou last_insert_rowid.".into())
+        let interval_id = created.created_row_id().ok_or_else(|| {
+            KanbanActionError::Internal("Criacao do worklog nao retornou id.".into())
         })?;
 
         let interval = self
@@ -695,7 +695,11 @@ impl KanbanActionService {
             )
             .await?;
         let mut views = self
-            .list_views(session_token, &resolved.organ, resolved.bearer_token.as_deref())
+            .list_views(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+            )
             .await?
             .into_iter()
             .filter(|view| !is_special_view_query(&view.query))
@@ -944,10 +948,7 @@ impl KanbanActionService {
             "show_parent_context".into(),
             Value::Bool(existing_settings.show_parent_context),
         );
-        settings_object.insert(
-            "view_name".into(),
-            Value::String(view_name.to_string()),
-        );
+        settings_object.insert("view_name".into(), Value::String(view_name.to_string()));
         settings_object.remove("viewName");
 
         self.board_state
@@ -1358,7 +1359,7 @@ impl KanbanActionService {
                 parent_id,
                 None,
             )
-                .await?;
+            .await?;
         }
         Ok(())
     }
@@ -1624,7 +1625,7 @@ impl KanbanActionService {
                             "id": user.id,
                             "name": user.name,
                         })
-                })
+                    })
             })
             .collect::<Vec<_>>();
 
@@ -1965,11 +1966,12 @@ impl KanbanActionService {
                 "Kanban sem server_id configurado no host.".into(),
             ));
         }
-        let view_id = effective_kanban_view_id(&card.widget_state, card.view_id).ok_or_else(|| {
-            KanbanActionError::Misconfigured(
-                "Kanban sem view_id valido configurado no host.".into(),
-            )
-        })?;
+        let view_id =
+            effective_kanban_view_id(&card.widget_state, card.view_id).ok_or_else(|| {
+                KanbanActionError::Misconfigured(
+                    "Kanban sem view_id valido configurado no host.".into(),
+                )
+            })?;
 
         let organ = self
             .organs
@@ -2093,6 +2095,7 @@ impl KanbanActionService {
             return Ok(MutationResponse {
                 rows_affected: outcome.rows_affected,
                 last_insert_rowid: outcome.last_insert_rowid,
+                row_id: None,
             });
         }
         let bearer_token = bearer_token
@@ -2137,6 +2140,7 @@ impl KanbanActionService {
             return Ok(MutationResponse {
                 rows_affected: outcome.rows_affected,
                 last_insert_rowid: outcome.last_insert_rowid,
+                row_id: None,
             });
         }
         let bearer_token = bearer_token
@@ -2177,6 +2181,7 @@ impl KanbanActionService {
             return Ok(MutationResponse {
                 rows_affected: outcome.rows_affected,
                 last_insert_rowid: outcome.last_insert_rowid,
+                row_id: None,
             });
         }
         let bearer_token = bearer_token
@@ -2640,6 +2645,13 @@ struct MutationResponse {
     #[allow(dead_code)]
     rows_affected: u64,
     last_insert_rowid: Option<i64>,
+    row_id: Option<i64>,
+}
+
+impl MutationResponse {
+    fn created_row_id(&self) -> Option<i64> {
+        self.row_id.or(self.last_insert_rowid)
+    }
 }
 
 struct TaskMetadataInput {
@@ -2951,6 +2963,11 @@ fn parse_mutation_response(value: &Value) -> Result<MutationResponse, KanbanActi
             .and_then(Value::as_u64)
             .unwrap_or(0),
         last_insert_rowid: object.get("last_insert_rowid").and_then(Value::as_i64),
+        row_id: object
+            .get("row")
+            .and_then(Value::as_object)
+            .and_then(|row| row.get("id"))
+            .and_then(Value::as_i64),
     })
 }
 

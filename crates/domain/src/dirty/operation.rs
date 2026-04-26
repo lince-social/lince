@@ -22,8 +22,7 @@ pub enum DatabaseTable {
     Frequency = 9,
     Sum = 10,
     History = 11,
-    DNA = 12,
-    Transfer = 13,
+    Transfer = 12,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum OperationActions {
@@ -49,8 +48,7 @@ impl DatabaseTable {
             9 => Some(Self::Frequency),
             10 => Some(Self::Sum),
             11 => Some(Self::History),
-            12 => Some(Self::DNA),
-            13 => Some(Self::Transfer),
+            12 => Some(Self::Transfer),
             _ => None,
         }
     }
@@ -69,7 +67,6 @@ impl DatabaseTable {
             Self::Frequency => "frequency",
             Self::Sum => "sum",
             Self::History => "history",
-            Self::DNA => "dna",
             Self::Transfer => "transfer",
         }
     }
@@ -110,7 +107,6 @@ impl FromStr for DatabaseTable {
             "frequency" | "frequencies" => Ok(Self::Frequency),
             "sum" | "sums" => Ok(Self::Sum),
             "history" => Ok(Self::History),
-            "dna" => Ok(Self::DNA),
             "transfer" | "transfers" => Ok(Self::Transfer),
             _ => Err(format!("Unknown operation table: {s}")),
         }

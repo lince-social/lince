@@ -171,13 +171,13 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
         .route("/favicon.ico", get(static_assets::favicon))
         .route("/ai", get(ai_builder_page))
         .nest("/api", build_backend_router())
-        .route("/host/servers", get(list_servers).post(create_server))
+        .route("/organ", get(list_servers).post(create_server))
         .route(
-            "/host/servers/{server_id}",
+            "/organ/{server_id}",
             patch(update_server).delete(delete_server),
         )
         .route(
-            "/host/servers/{server_id}/session",
+            "/organ/{server_id}/session",
             post(login_server).delete(logout_server),
         )
         .nest("/host", protected_api)

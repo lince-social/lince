@@ -12,7 +12,10 @@ use {
 };
 
 pub async fn bootstrap_database(db: &Pool<Sqlite>) -> Result<(), Error> {
-    schema::ensure_schema(db).await?;
+    sqlx::migrate!("../../migrations")
+        .run(db)
+        .await
+        .map_err(Error::other)?;
     seeder::seed(db).await?;
     Ok(())
 }

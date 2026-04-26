@@ -6,6 +6,7 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 description = "Internal persistence layer for the lince binary."
+build = "build.rs"
 
 [lib]
 name = "persistence"
@@ -16,7 +17,7 @@ utils = { workspace = true }
 lince-persistence-table-derive = { path = "../persistence-table-derive" }
 aws-config.workspace = true
 aws-sdk-s3.workspace = true
-sqlx = {workspace = true, features = ["runtime-tokio", "sqlite", "macros"]}
+sqlx = {workspace = true, features = ["runtime-tokio", "sqlite", "macros", "migrate"]}
 tokio.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -25,3 +26,10 @@ async-trait.workspace = true
 futures.workspace = true
 dirs.workspace = true
 regex.workspace = true
+
+[build-dependencies]
+chrono.workspace = true
+lince-persistence-table-derive = { path = "../persistence-table-derive" }
+serde.workspace = true
+serde_json.workspace = true
+sqlx = {workspace = true, features = ["macros", "sqlite"] }

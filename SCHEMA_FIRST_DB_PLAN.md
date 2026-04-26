@@ -5,7 +5,7 @@
 - SQLite only.
 - `sqlx` stays.
 - Business queries stay mostly raw, bound SQL.
-- Schema ownership moves from `migrations/*.sql` to Rust table structs.
+- Schema ownership moves from SQL files to Rust table structs.
 - Schema upgrades run automatically at startup. No migration CLI in the normal path.
 - `domain` is renamed to `structure`.
 - All DB-facing row types, schema metadata, reconciliation, and SQLite DDL live in `persistence`.
@@ -214,8 +214,7 @@ Decision:
 Decision:
 
 - `#[derive(Table)]` / `TableSchema` should render core Lince tables as `CREATE TABLE ... STRICT`
-- existing compatibility work can still use bridge migrations while the Rust-owned schema layer is being introduced
-- the first bridge slice is already represented by `[migrations/20260426183000_sqlite_strict_sidecars_and_checks.up.sql](/home/user/git/lince-social/lince/migrations/20260426183000_sqlite_strict_sidecars_and_checks.up.sql)`
+- existing compatibility work is no longer part of the repo
 
 ### FTS5
 
@@ -589,13 +588,12 @@ The schema endpoint response types belong in the HTTP layer, not in persistence.
 
 ## Existing File Changes
 
-### `migrations/`
+### Legacy SQL
 
 End state:
 
-- not the primary path
-- either removed after stabilization
-- or kept only as temporary compatibility/import material
+- removed from the repo
+- schema now comes from Rust structs in `persistence`
 
 ### `crates/persistence/src/repositories/table.rs`
 

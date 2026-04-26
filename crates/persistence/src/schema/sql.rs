@@ -33,6 +33,7 @@ pub fn render_create_index(table_name: &str, index: &IndexDef) -> String {
     let unique_prefix = if index.unique { "UNIQUE " } else { "" };
     let where_clause = index
         .where_sql
+        .as_ref()
         .map(|value| format!(" WHERE {value}"))
         .unwrap_or_default();
     format!(
@@ -43,7 +44,7 @@ pub fn render_create_index(table_name: &str, index: &IndexDef) -> String {
 }
 
 fn render_column(column: &ColumnDef, allow_inline_primary_key: bool) -> String {
-    let mut parts = vec![column.name.to_string(), column.sql_type.to_string()];
+    let mut parts = vec![column.name.clone(), column.sql_type.clone()];
 
     if column.primary_key && allow_inline_primary_key {
         parts.push("PRIMARY KEY".into());
@@ -54,13 +55,13 @@ fn render_column(column: &ColumnDef, allow_inline_primary_key: bool) -> String {
     if column.unique {
         parts.push("UNIQUE".into());
     }
-    if let Some(default_sql) = column.default_sql {
+    if let Some(default_sql) = &column.default_sql {
         parts.push(format!("DEFAULT {default_sql}"));
     }
-    if let Some(references_sql) = column.references_sql {
+    if let Some(references_sql) = &column.references_sql {
         parts.push(format!("REFERENCES {references_sql}"));
     }
-    if let Some(check_sql) = column.check_sql {
+    if let Some(check_sql) = &column.check_sql {
         parts.push(format!("CHECK ({check_sql})"));
     }
 

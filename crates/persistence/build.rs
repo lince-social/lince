@@ -133,14 +133,23 @@ fn initial_migration_statements(declared_tables: &[TableSchema]) -> Vec<String> 
 }
 
 fn create_table_and_indexes_statements(schema: &TableSchema) -> Vec<String> {
-    let mut statements = vec![schema::sql::render_create_table(schema, schema.name.as_str())];
+    let mut statements = vec![schema::sql::render_create_table(
+        schema,
+        schema.name.as_str(),
+    )];
     for index in &schema.indexes {
-        statements.push(schema::sql::render_create_index(schema.name.as_str(), index));
+        statements.push(schema::sql::render_create_index(
+            schema.name.as_str(),
+            index,
+        ));
     }
     statements
 }
 
-fn plan_schema_diff(previous: &[TableSchema], current: &[TableSchema]) -> Result<Vec<String>, Error> {
+fn plan_schema_diff(
+    previous: &[TableSchema],
+    current: &[TableSchema],
+) -> Result<Vec<String>, Error> {
     let previous_by_name = previous
         .iter()
         .map(|table| (table.name.as_str(), table))
@@ -172,10 +181,7 @@ fn plan_schema_diff(previous: &[TableSchema], current: &[TableSchema]) -> Result
     Ok(statements)
 }
 
-fn plan_table_diff(
-    previous: &TableSchema,
-    current: &TableSchema,
-) -> Result<Vec<String>, Error> {
+fn plan_table_diff(previous: &TableSchema, current: &TableSchema) -> Result<Vec<String>, Error> {
     if previous.strict != current.strict {
         return Err(Error::other(format!(
             "table `{}` changed strictness; write a manual migration",

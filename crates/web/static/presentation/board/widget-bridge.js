@@ -5,11 +5,15 @@ const WIDGET_ACTION = "lince:widget-action";
 const WIDGET_ERROR = "lince:bridge-error";
 
 function apiPath(path) {
-  if (path.startsWith("/api/")) {
-    return `/host/${path.slice("/api/".length)}`;
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
   }
 
-  return path;
+  if (path.startsWith("/host/")) {
+    return path;
+  }
+
+  return `/host${path.startsWith("/") ? path : `/${path}`}`;
 }
 
 function cloneJsonValue(value, fallback = null) {
@@ -97,7 +101,7 @@ function postBridgeState(frame, state, meta) {
 }
 
 async function requestBridgePrint(instanceId, label) {
-  const response = await fetch(apiPath("/api/widget-bridge/actions/print"), {
+  const response = await fetch(apiPath("/widget-bridge/actions/print"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

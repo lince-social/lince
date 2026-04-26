@@ -40,6 +40,7 @@ use {
                 widget_bridge::{get_widget_bridge_state, post_widget_bridge_print},
                 widgets::{get_widget_contract, get_widget_stream, post_widget_action},
             },
+            http::docs::{openapi_json, swagger_ui},
             pages::{render_ai_builder, render_app},
         },
     },
@@ -59,7 +60,9 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
     if mode == HttpServeMode::ApiOnly {
         return Router::<AppState>::new()
             .route("/", get(api_only_index))
-            .nest("/api", build_backend_router())
+            .route("/openapi.json", get(openapi_json))
+            .route("/swagger-ui", get(swagger_ui))
+            .merge(build_backend_router())
             .with_state(state);
     }
 
@@ -170,7 +173,9 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
         .route("/", get(index))
         .route("/favicon.ico", get(static_assets::favicon))
         .route("/ai", get(ai_builder_page))
-        .nest("/api", build_backend_router())
+        .route("/openapi.json", get(openapi_json))
+        .route("/swagger-ui", get(swagger_ui))
+        .merge(build_backend_router())
         .route("/organ", get(list_servers).post(create_server))
         .route(
             "/organ/{server_id}",

@@ -1,9 +1,10 @@
 use {
     axum::{Json, http::StatusCode},
     serde::Serialize,
+    utoipa::ToSchema,
 };
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct ApiError {
     pub error: String,
 }

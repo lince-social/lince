@@ -12,11 +12,15 @@ const state = {
 
 const elements = {};
 function apiPath(path) {
-  if (path.startsWith("/api/")) {
-    return `/host/${path.slice("/api/".length)}`;
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
   }
 
-  return path;
+  if (path.startsWith("/host/")) {
+    return path;
+  }
+
+  return `/host${path.startsWith("/") ? path : `/${path}`}`;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -127,7 +131,7 @@ async function hydrate() {
   renderPreviewMode();
 
   try {
-    const status = await requestJson(apiPath("/api/ai/status"));
+    const status = await requestJson(apiPath("/ai/status"));
     state.status = status;
     state.configured = status.configured;
     state.selectedModel = status.model;
@@ -149,7 +153,7 @@ async function handleKeySubmit(event) {
   renderKeyFeedback("Salvando chave no backend...", false);
 
   try {
-    const status = await requestJson(apiPath("/api/ai/key"), {
+    const status = await requestJson(apiPath("/ai/key"), {
       method: "POST",
       body: JSON.stringify({ api_key: apiKey }),
     });
@@ -190,7 +194,7 @@ async function handleGenerateSubmit(event) {
   clearError();
 
   try {
-    const response = await requestJson(apiPath("/api/ai/generate"), {
+    const response = await requestJson(apiPath("/ai/generate"), {
       method: "POST",
       body: JSON.stringify({
         prompt,
@@ -612,7 +616,7 @@ async function persistDraftSize(width, height, previous) {
 
   try {
     const response = await requestJson(
-      apiPath(`/api/ai/drafts/${state.draft.id}/size`),
+      apiPath(`/ai/drafts/${state.draft.id}/size`),
       {
         method: "POST",
         body: JSON.stringify({

@@ -17,9 +17,10 @@ use {
         response::IntoResponse,
     },
     serde::{Deserialize, Serialize},
+    utoipa::ToSchema,
 };
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ServerProfileResponse {
     pub id: String,
@@ -33,19 +34,28 @@ pub struct ServerProfileResponse {
     pub last_error: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct ServerLoginRequest {
     pub username: String,
     pub password: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct UpsertServerProfileRequest {
     pub id: Option<String>,
     pub name: String,
     pub base_url: String,
 }
 
+#[utoipa::path(
+    get,
+    path = "/organ",
+    tag = "organ",
+    responses(
+        (status = 200, description = "List organ profiles", body = [ServerProfileResponse]),
+        (status = 502, description = "Backend failure", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 pub async fn list_servers(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -93,6 +103,16 @@ pub async fn list_servers(
     ))
 }
 
+#[utoipa::path(
+    post,
+    path = "/organ",
+    tag = "organ",
+    request_body = UpsertServerProfileRequest,
+    responses(
+        (status = 200, description = "Created organ profile", body = ServerProfileResponse),
+        (status = 400, description = "Invalid profile", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 pub async fn create_server(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -113,6 +133,18 @@ pub async fn create_server(
     ))
 }
 
+#[utoipa::path(
+    post,
+    path = "/organ/{server_id}/session",
+    tag = "organ",
+    params(("server_id" = String, Path, description = "Organ identifier")),
+    request_body = ServerLoginRequest,
+    responses(
+        (status = 200, description = "Login successful", body = ServerProfileResponse),
+        (status = 400, description = "Invalid login request", body = crate::presentation::http::api_error::ApiError),
+        (status = 401, description = "Login rejected", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 pub async fn login_server(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -185,6 +217,15 @@ pub async fn login_server(
     ))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/organ/{server_id}/session",
+    tag = "organ",
+    params(("server_id" = String, Path, description = "Organ identifier")),
+    responses(
+        (status = 204, description = "Session cleared")
+    )
+)]
 pub async fn logout_server(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -204,6 +245,17 @@ pub async fn logout_server(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    patch,
+    path = "/organ/{server_id}",
+    tag = "organ",
+    params(("server_id" = String, Path, description = "Organ identifier")),
+    request_body = UpsertServerProfileRequest,
+    responses(
+        (status = 200, description = "Updated organ profile", body = ServerProfileResponse),
+        (status = 400, description = "Invalid profile", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 pub async fn update_server(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -225,6 +277,16 @@ pub async fn update_server(
     ))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/organ/{server_id}",
+    tag = "organ",
+    params(("server_id" = String, Path, description = "Organ identifier")),
+    responses(
+        (status = 204, description = "Deleted organ"),
+        (status = 404, description = "Organ not found", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 pub async fn delete_server(
     State(state): State<AppState>,
     headers: HeaderMap,

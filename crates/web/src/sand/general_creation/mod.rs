@@ -921,7 +921,7 @@ fn script() -> &'static str {
       function renderExceptions() {
         const table = activeTable();
         exceptionsPanel.innerHTML = [
-          "Route: POST /api/table/" + table.label + " through the host proxy.",
+          "Route: POST /table/" + table.label + " through the host proxy.",
           "Auth profile: " + table.auth + ".",
           ...table.exceptions
         ].map((line) => `<li>${escapeHtml(line)}</li>`).join("");

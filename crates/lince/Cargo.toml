@@ -32,5 +32,5 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 chrono = { workspace = true }
 dirs = { workspace = true }
-toml = "0.9.8"
-uuid = { version = "1.18.1", features = ["v4"] }
+toml = { workspace = true }
+uuid = { workspace = true, features = ["v4"] }

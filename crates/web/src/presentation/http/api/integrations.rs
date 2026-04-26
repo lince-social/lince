@@ -136,7 +136,7 @@ pub async fn proxy_manas_view_snapshot(
             &server.base_url,
             &bearer_token,
             Method::GET,
-            &format!("/api/view/{view_id}/snapshot"),
+            &format!("/view/{view_id}/snapshot"),
             None,
         )
         .await
@@ -225,7 +225,7 @@ pub async fn proxy_manas_file(
             &server.base_url,
             &bearer_token,
             Method::POST,
-            "/api/files/download-link",
+            "/files/download-link",
             Some(json!({ "key": path })),
         )
         .await

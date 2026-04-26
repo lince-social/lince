@@ -26,7 +26,7 @@ impl ManasGateway {
         username: &str,
         password: &str,
     ) -> Result<String, String> {
-        let login_url = format!("{}/api/auth/login", normalize_base_url(base_url));
+        let login_url = format!("{}/auth/login", normalize_base_url(base_url));
         let response = self
             .http
             .post(login_url)
@@ -62,7 +62,7 @@ impl ManasGateway {
         bearer_token: &str,
         view_id: u64,
     ) -> Result<reqwest::Response, String> {
-        let url = format!("{}/api/sse/view/{view_id}", normalize_base_url(base_url));
+        let url = format!("{}/sse/view/{view_id}", normalize_base_url(base_url));
         let response = self
             .http
             .get(url)
@@ -87,7 +87,7 @@ impl ManasGateway {
         id: Option<i64>,
         body: Option<Value>,
     ) -> Result<Response, String> {
-        let mut path = format!("/api/table/{table_name}");
+        let mut path = format!("/table/{table_name}");
         if let Some(id) = id {
             path.push('/');
             path.push_str(&id.to_string());

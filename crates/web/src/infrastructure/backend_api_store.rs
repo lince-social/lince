@@ -9,6 +9,7 @@ use std::{
     collections::BTreeMap,
     io::{Error, ErrorKind},
 };
+use utoipa::IntoParams;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ApiTable {
@@ -28,7 +29,8 @@ pub enum ApiTable {
     Role,
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
 pub struct TableListQuery {
     pub head_contains: Option<String>,
     pub category: Option<String>,

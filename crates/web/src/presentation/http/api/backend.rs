@@ -26,23 +26,24 @@ use tokio_stream::{Stream, StreamExt, wrappers::UnboundedReceiverStream};
 use tokio_util::io::ReaderStream;
 use tower_http::cors::{Any, CorsLayer};
 use utils::file_access::FileAccessAction;
+use utoipa::{IntoParams, ToSchema};
 
 const MAX_FILE_UPLOAD_BYTES: usize = 1024 * 1024 * 1024;
 
-#[derive(Deserialize)]
-struct LoginRequest {
+#[derive(Deserialize, ToSchema)]
+pub struct LoginRequest {
     username: String,
     password: String,
 }
 
-#[derive(Serialize)]
-struct LoginResponse {
+#[derive(Serialize, ToSchema)]
+pub struct LoginResponse {
     token: String,
     token_type: &'static str,
 }
 
-#[derive(Serialize)]
-struct MutationResponse {
+#[derive(Serialize, ToSchema)]
+pub struct MutationResponse {
     ok: bool,
     rows_affected: u64,
     last_insert_rowid: Option<i64>,
@@ -50,20 +51,21 @@ struct MutationResponse {
     row: Option<Value>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
 struct FileListQuery {
     prefix: Option<String>,
     limit: Option<i32>,
     cursor: Option<String>,
 }
 
-#[derive(Deserialize)]
-struct FileKeyRequest {
+#[derive(Deserialize, ToSchema)]
+pub struct FileKeyRequest {
     key: String,
 }
 
-#[derive(Serialize)]
-struct FileLinkResponse {
+#[derive(Serialize, ToSchema)]
+pub struct FileLinkResponse {
     method: &'static str,
     url: String,
     expires_in: u64,
@@ -116,6 +118,16 @@ pub fn router() -> Router<AppState> {
         )
 }
 
+#[utoipa::path(
+    post,
+    path = "/auth/login",
+    tag = "auth",
+    request_body = LoginRequest,
+    responses(
+        (status = 200, description = "Bearer token issued", body = LoginResponse),
+        (status = 401, description = "Invalid credentials", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 async fn login(
     State(state): State<AppState>,
     Json(request): Json<LoginRequest>,
@@ -132,6 +144,19 @@ async fn login(
     }))
 }
 
+#[utoipa::path(
+    get,
+    path = "/table/{table_name}",
+    tag = "table",
+    params(
+        ("table_name" = String, Path, description = "Table name"),
+        TableListQuery
+    ),
+    responses(
+        (status = 200, description = "Rows returned as JSON"),
+        (status = 401, description = "Missing or invalid authorization", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 async fn list_table_rows(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -147,6 +172,20 @@ async fn list_table_rows(
     Ok(Json(value))
 }
 
+#[utoipa::path(
+    get,
+    path = "/table/{table_name}/{id}",
+    tag = "table",
+    params(
+        ("table_name" = String, Path, description = "Table name"),
+        ("id" = i64, Path, description = "Row identifier")
+    ),
+    responses(
+        (status = 200, description = "Single row returned as JSON"),
+        (status = 401, description = "Missing or invalid authorization", body = crate::presentation::http::api_error::ApiError),
+        (status = 404, description = "Row not found", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 async fn get_table_row(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -161,6 +200,18 @@ async fn get_table_row(
     Ok(Json(value))
 }
 
+#[utoipa::path(
+    post,
+    path = "/table/{table_name}",
+    tag = "table",
+    params(("table_name" = String, Path, description = "Table name")),
+    request_body = serde_json::Value,
+    responses(
+        (status = 201, description = "Row created", body = MutationResponse),
+        (status = 400, description = "Invalid payload", body = crate::presentation::http::api_error::ApiError),
+        (status = 401, description = "Missing or invalid authorization", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 async fn create_table_row(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -187,6 +238,18 @@ async fn create_table_row(
     ))
 }
 
+#[utoipa::path(
+    patch,
+    path = "/table/{table_name}",
+    tag = "table",
+    params(("table_name" = String, Path, description = "Table name")),
+    request_body = serde_json::Value,
+    responses(
+        (status = 200, description = "Rows updated", body = MutationResponse),
+        (status = 400, description = "Invalid payload", body = crate::presentation::http::api_error::ApiError),
+        (status = 401, description = "Missing or invalid authorization", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 async fn update_table_rows(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -209,6 +272,22 @@ async fn update_table_rows(
     }))
 }
 
+#[utoipa::path(
+    patch,
+    path = "/table/{table_name}/{id}",
+    tag = "table",
+    params(
+        ("table_name" = String, Path, description = "Table name"),
+        ("id" = i64, Path, description = "Row identifier")
+    ),
+    request_body = serde_json::Value,
+    responses(
+        (status = 200, description = "Row updated", body = MutationResponse),
+        (status = 400, description = "Invalid payload", body = crate::presentation::http::api_error::ApiError),
+        (status = 401, description = "Missing or invalid authorization", body = crate::presentation::http::api_error::ApiError),
+        (status = 404, description = "Row not found", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 async fn update_table_row(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -232,6 +311,20 @@ async fn update_table_row(
     }))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/table/{table_name}/{id}",
+    tag = "table",
+    params(
+        ("table_name" = String, Path, description = "Table name"),
+        ("id" = i64, Path, description = "Row identifier")
+    ),
+    responses(
+        (status = 200, description = "Row deleted", body = MutationResponse),
+        (status = 401, description = "Missing or invalid authorization", body = crate::presentation::http::api_error::ApiError),
+        (status = 404, description = "Row not found", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 async fn delete_table_row(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -252,6 +345,16 @@ async fn delete_table_row(
     }))
 }
 
+#[utoipa::path(
+    post,
+    path = "/table/record/quantities",
+    tag = "table",
+    responses(
+        (status = 200, description = "Quantities updated", body = MutationResponse),
+        (status = 400, description = "Invalid payload", body = crate::presentation::http::api_error::ApiError),
+        (status = 401, description = "Missing or invalid authorization", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 async fn batch_update_record_quantities(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -272,6 +375,16 @@ async fn batch_update_record_quantities(
     }))
 }
 
+#[utoipa::path(
+    get,
+    path = "/karma",
+    tag = "karma",
+    params(TableListQuery),
+    responses(
+        (status = 200, description = "Karma rows returned as JSON"),
+        (status = 401, description = "Missing or invalid authorization", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 async fn list_karma_rows(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -286,6 +399,17 @@ async fn list_karma_rows(
     Ok(Json(value))
 }
 
+#[utoipa::path(
+    get,
+    path = "/karma/{id}",
+    tag = "karma",
+    params(("id" = i64, Path, description = "Karma row identifier")),
+    responses(
+        (status = 200, description = "Karma row returned as JSON"),
+        (status = 401, description = "Missing or invalid authorization", body = crate::presentation::http::api_error::ApiError),
+        (status = 404, description = "Row not found", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 async fn get_karma_row(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -300,6 +424,17 @@ async fn get_karma_row(
     Ok(Json(value))
 }
 
+#[utoipa::path(
+    post,
+    path = "/karma",
+    tag = "karma",
+    request_body = serde_json::Value,
+    responses(
+        (status = 201, description = "Karma row created", body = MutationResponse),
+        (status = 400, description = "Invalid payload", body = crate::presentation::http::api_error::ApiError),
+        (status = 401, description = "Missing or invalid authorization", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 async fn create_karma_row(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -325,6 +460,19 @@ async fn create_karma_row(
     ))
 }
 
+#[utoipa::path(
+    patch,
+    path = "/karma/{id}",
+    tag = "karma",
+    params(("id" = i64, Path, description = "Karma row identifier")),
+    request_body = serde_json::Value,
+    responses(
+        (status = 200, description = "Karma row updated", body = MutationResponse),
+        (status = 400, description = "Invalid payload", body = crate::presentation::http::api_error::ApiError),
+        (status = 401, description = "Missing or invalid authorization", body = crate::presentation::http::api_error::ApiError),
+        (status = 404, description = "Row not found", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 async fn update_karma_row(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -348,6 +496,17 @@ async fn update_karma_row(
     }))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/karma/{id}",
+    tag = "karma",
+    params(("id" = i64, Path, description = "Karma row identifier")),
+    responses(
+        (status = 200, description = "Karma row deleted", body = MutationResponse),
+        (status = 401, description = "Missing or invalid authorization", body = crate::presentation::http::api_error::ApiError),
+        (status = 404, description = "Row not found", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 async fn delete_karma_row(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -368,6 +527,17 @@ async fn delete_karma_row(
     }))
 }
 
+#[utoipa::path(
+    post,
+    path = "/karma/{id}/execute",
+    tag = "karma",
+    params(("id" = i64, Path, description = "Karma row identifier")),
+    responses(
+        (status = 200, description = "Karma rule executed", body = MutationResponse),
+        (status = 401, description = "Missing or invalid authorization", body = crate::presentation::http::api_error::ApiError),
+        (status = 404, description = "Row not found", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 async fn execute_karma(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -387,6 +557,16 @@ async fn execute_karma(
     }))
 }
 
+#[utoipa::path(
+    get,
+    path = "/files",
+    tag = "files",
+    params(FileListQuery),
+    responses(
+        (status = 200, description = "File listing returned"),
+        (status = 401, description = "Missing or invalid authorization", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 async fn list_files(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -406,6 +586,16 @@ async fn list_files(
     Ok(Json(listing))
 }
 
+#[utoipa::path(
+    post,
+    path = "/files/upload-link",
+    tag = "files",
+    request_body = FileKeyRequest,
+    responses(
+        (status = 200, description = "Upload link issued", body = FileLinkResponse),
+        (status = 401, description = "Missing or invalid authorization", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 async fn upload_link(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -420,6 +610,16 @@ async fn upload_link(
     )))
 }
 
+#[utoipa::path(
+    post,
+    path = "/files/download-link",
+    tag = "files",
+    request_body = FileKeyRequest,
+    responses(
+        (status = 200, description = "Download link issued", body = FileLinkResponse),
+        (status = 401, description = "Missing or invalid authorization", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 async fn download_link(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -434,6 +634,16 @@ async fn download_link(
     )))
 }
 
+#[utoipa::path(
+    post,
+    path = "/files/delete-link",
+    tag = "files",
+    request_body = FileKeyRequest,
+    responses(
+        (status = 200, description = "Delete link issued", body = FileLinkResponse),
+        (status = 401, description = "Missing or invalid authorization", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 async fn delete_link(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -448,6 +658,16 @@ async fn delete_link(
     )))
 }
 
+#[utoipa::path(
+    put,
+    path = "/files/access/{token}",
+    tag = "files",
+    params(("token" = String, Path, description = "Access token")),
+    responses(
+        (status = 204, description = "File uploaded"),
+        (status = 400, description = "Invalid upload", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 async fn upload_via_link(
     State(state): State<AppState>,
     Path(token): Path<String>,
@@ -469,6 +689,16 @@ async fn upload_via_link(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    get,
+    path = "/files/access/{token}",
+    tag = "files",
+    params(("token" = String, Path, description = "Access token")),
+    responses(
+        (status = 200, description = "File downloaded"),
+        (status = 404, description = "Token not found", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 async fn download_via_link(
     State(state): State<AppState>,
     Path(token): Path<String>,
@@ -503,6 +733,16 @@ async fn download_via_link(
     Ok(response)
 }
 
+#[utoipa::path(
+    delete,
+    path = "/files/access/{token}",
+    tag = "files",
+    params(("token" = String, Path, description = "Access token")),
+    responses(
+        (status = 204, description = "File link deleted"),
+        (status = 404, description = "Token not found", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 async fn delete_via_link(
     State(state): State<AppState>,
     Path(token): Path<String>,
@@ -515,6 +755,17 @@ async fn delete_via_link(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[utoipa::path(
+    get,
+    path = "/view/{view_id}/snapshot",
+    tag = "view",
+    params(("view_id" = u32, Path, description = "View identifier")),
+    responses(
+        (status = 200, description = "View snapshot returned as JSON"),
+        (status = 401, description = "Missing or invalid authorization", body = crate::presentation::http::api_error::ApiError),
+        (status = 404, description = "View not found", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 async fn view_snapshot(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -529,6 +780,17 @@ async fn view_snapshot(
     Ok(Json(snapshot))
 }
 
+#[utoipa::path(
+    get,
+    path = "/sse/view/{view_id}",
+    tag = "view",
+    params(("view_id" = u32, Path, description = "View identifier")),
+    responses(
+        (status = 200, description = "Server-sent events stream"),
+        (status = 401, description = "Missing or invalid authorization", body = crate::presentation::http::api_error::ApiError),
+        (status = 404, description = "View not found", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
 async fn view_sse(
     State(state): State<AppState>,
     headers: HeaderMap,

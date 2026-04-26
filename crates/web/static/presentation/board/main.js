@@ -436,7 +436,7 @@ const store = createBoardStore({
   initialBoardState: bootstrap.boardState,
   config,
   async persistState(nextState) {
-    const response = await fetch(apiPath("/api/board/state"), {
+    const response = await fetch(apiPath("/board/state"), {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -542,11 +542,15 @@ function formatWorkspaceNumber(index) {
 }
 
 function apiPath(path) {
-  if (path.startsWith("/api/")) {
-    return `/host/${path.slice("/api/".length)}`;
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
   }
 
-  return path;
+  if (path.startsWith("/host/")) {
+    return path;
+  }
+
+  return `/host${path.startsWith("/") ? path : `/${path}`}`;
 }
 
 function normalizeServerProfile(rawServer) {
@@ -678,7 +682,7 @@ function syncWidgetConfigViewState(card) {
 
 async function requestServerViews(serverId) {
   const response = await fetch(
-    apiPath(`/api/integrations/servers/${encodeURIComponent(serverId)}/table/view`),
+    apiPath(`/integrations/servers/${encodeURIComponent(serverId)}/table/view`),
   );
   const payload = await parseJsonResponse(response);
   if (!response.ok) {
@@ -993,7 +997,7 @@ function buildPackageFrameSrc(card) {
   }
 
   return apiPath(
-    `/api/packages/local/by-filename/${encodeURIComponent(packageName)}/content/index.html`,
+    `/packages/local/by-filename/${encodeURIComponent(packageName)}/content/index.html`,
   );
 }
 
@@ -1970,7 +1974,7 @@ function upsertInstalledPackage(pkg) {
 }
 
 async function loadInstalledPackages() {
-  const response = await fetch(apiPath("/api/packages/local"));
+  const response = await fetch(apiPath("/packages/local"));
   const payload = await parseJsonResponse(response);
   if (!response.ok) {
     throw new Error(
@@ -1985,7 +1989,7 @@ async function loadInstalledPackages() {
 
 async function requestInstalledPackage(packageId) {
   const response = await fetch(
-    apiPath(`/api/packages/local/${encodeURIComponent(packageId)}`),
+    apiPath(`/packages/local/${encodeURIComponent(packageId)}`),
   );
   const payload = await parseJsonResponse(response);
   if (!response.ok) {
@@ -1999,7 +2003,7 @@ async function installUploadedPackage(file) {
   const formData = new FormData();
   formData.append("package", file);
 
-  const response = await fetch(apiPath("/api/packages/install"), {
+  const response = await fetch(apiPath("/packages/install"), {
     method: "POST",
     body: formData,
   });
@@ -2240,7 +2244,7 @@ function renderDnaPackageList() {
 async function loadDnaCatalog() {
   dnaCatalogLoaded = false;
   renderDnaPackageList();
-  const response = await fetch(apiPath("/api/packages/dna/catalog"));
+  const response = await fetch(apiPath("/packages/dna/catalog"));
   const payload = await parseJsonResponse(response);
   if (!response.ok) {
     throw new Error(payload?.error || "Falha ao buscar o catalogo distribuido.");
@@ -2276,7 +2280,7 @@ async function loadDnaCatalog() {
 
 async function requestDnaPackageSearch(query) {
   const response = await fetch(
-    apiPath(`/api/packages/dna/search?q=${encodeURIComponent(query)}`),
+    apiPath(`/packages/dna/search?q=${encodeURIComponent(query)}`),
   );
   const payload = await parseJsonResponse(response);
   if (!response.ok) {
@@ -2289,7 +2293,7 @@ async function requestDnaPackageSearch(query) {
 async function requestDnaPackagePreview(organId, recordId) {
   const response = await fetch(
     apiPath(
-      `/api/packages/dna/publications/${encodeURIComponent(organId)}/${encodeURIComponent(recordId)}/preview`,
+      `/packages/dna/publications/${encodeURIComponent(organId)}/${encodeURIComponent(recordId)}/preview`,
     ),
   );
   const payload = await parseJsonResponse(response);
@@ -2303,7 +2307,7 @@ async function requestDnaPackagePreview(organId, recordId) {
 async function installDnaPackage(organId, recordId) {
   const response = await fetch(
     apiPath(
-      `/api/packages/dna/publications/${encodeURIComponent(organId)}/${encodeURIComponent(recordId)}/install`,
+      `/packages/dna/publications/${encodeURIComponent(organId)}/${encodeURIComponent(recordId)}/install`,
     ),
     {
       method: "POST",
@@ -3367,7 +3371,7 @@ async function requestPackagePreview(file) {
   const formData = new FormData();
   formData.append("package", file);
 
-  const response = await fetch(apiPath("/api/packages/preview"), {
+  const response = await fetch(apiPath("/packages/preview"), {
     method: "POST",
     body: formData,
   });
@@ -3401,7 +3405,7 @@ async function requestWorkspaceImport(file) {
   const formData = new FormData();
   formData.append("workspace", file);
 
-  const response = await fetch(apiPath("/api/board/workspaces/import"), {
+  const response = await fetch(apiPath("/board/workspaces/import"), {
     method: "POST",
     body: formData,
   });
@@ -3526,7 +3530,7 @@ function triggerWorkspaceExport() {
 
   const anchor = document.createElement("a");
   anchor.href = apiPath(
-    `/api/board/workspaces/${encodeURIComponent(activeWorkspace.id)}/export`,
+    `/board/workspaces/${encodeURIComponent(activeWorkspace.id)}/export`,
   );
   anchor.download = `${activeWorkspace.name || "workspace"}.workspace.sand`;
   anchor.rel = "noreferrer";
@@ -3553,7 +3557,7 @@ function workspaceExportPayload() {
 
   return {
     filename: `${slug}.workspace.sand`,
-    url: `${window.location.origin}${apiPath(`/api/board/workspaces/${encodeURIComponent(activeWorkspace.id)}/export`)}`,
+    url: `${window.location.origin}${apiPath(`/board/workspaces/${encodeURIComponent(activeWorkspace.id)}/export`)}`,
   };
 }
 

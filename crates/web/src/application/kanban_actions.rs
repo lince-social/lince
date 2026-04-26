@@ -995,7 +995,7 @@ impl KanbanActionService {
                 &organ.base_url,
                 bearer_token,
                 Method::GET,
-                &format!("/api/view/{view_id}/snapshot"),
+                &format!("/view/{view_id}/snapshot"),
                 None,
             )
             .await

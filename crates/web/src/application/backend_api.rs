@@ -432,7 +432,7 @@ impl BackendApiService {
 
         Ok(FileLink {
             method: action.method(),
-            url: format!("/api/files/access/{token}"),
+            url: format!("/files/access/{token}"),
             expires_in: FILE_LINK_TTL_SECS,
         })
     }

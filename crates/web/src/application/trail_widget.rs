@@ -143,7 +143,7 @@ impl TrailWidgetService {
                 ]
             },
             "search": {
-                "recordEndpoint": "/api/table/record",
+                "recordEndpoint": "/table/record",
                 "supportedFilters": ["assignee", "category", "head_contains"],
             },
             "actions": [
@@ -940,7 +940,7 @@ impl TrailWidgetService {
                     TrailWidgetError::Unauthorized("Sessao remota ausente.".into())
                 })?,
                 Method::GET,
-                &format!("/api/view/{view_id}/snapshot"),
+                &format!("/view/{view_id}/snapshot"),
                 None,
             )
             .await
@@ -1746,7 +1746,7 @@ impl TrailWidgetService {
                     TrailWidgetError::Unauthorized("Sessao remota ausente.".into())
                 })?,
                 Method::POST,
-                &format!("/api/karma/{karma_id}/execute"),
+                &format!("/karma/{karma_id}/execute"),
                 None,
             )
             .await
@@ -2032,17 +2032,17 @@ fn build_filtered_record_path(request: &SearchTrailRequest) -> String {
         query.push(format!("assignee={}", encode(assignee)));
     }
     if query.is_empty() {
-        "/api/table/record".into()
+        "/table/record".into()
     } else {
-        format!("/api/table/record?{}", query.join("&"))
+        format!("/table/record?{}", query.join("&"))
     }
 }
 
 fn build_filtered_app_user_path(query: Option<&str>) -> String {
     let Some(identity) = query.map(str::trim).filter(|value| !value.is_empty()) else {
-        return "/api/table/app_user".into();
+        return "/table/app_user".into();
     };
-    format!("/api/table/app_user?identity={}", encode(identity))
+    format!("/table/app_user?identity={}", encode(identity))
 }
 
 fn build_sr_token(scope: &str, fields: &str, record_id: i64) -> String {

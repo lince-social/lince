@@ -1486,7 +1486,7 @@ async fn upload_bucket_object(
             &server.base_url,
             &bearer_token,
             reqwest::Method::POST,
-            "/api/files/upload-link",
+            "/files/upload-link",
             Some(json!({ "key": key })),
         )
         .await
@@ -1540,7 +1540,7 @@ async fn download_bucket_object(
             &server.base_url,
             &bearer_token,
             reqwest::Method::POST,
-            "/api/files/download-link",
+            "/files/download-link",
             Some(json!({ "key": key })),
         )
         .await
@@ -1596,7 +1596,7 @@ async fn delete_bucket_object(
             &server.base_url,
             &bearer_token,
             reqwest::Method::POST,
-            "/api/files/delete-link",
+            "/files/delete-link",
             Some(json!({ "key": key })),
         )
         .await

@@ -1,7 +1,7 @@
 use crate::{
     application::backend_api::{FileLink, RecordQuantityBatchUpdateRequest},
     application::state::AppState,
-    infrastructure::backend_api_store::TableListQuery,
+    infrastructure::backend_api_store::{TableCreateSchemaResponse, TableListQuery},
     presentation::http::api_error::{ApiResult, api_error},
 };
 use ::application::subscription::SseFrame;
@@ -59,6 +59,12 @@ struct FileListQuery {
     cursor: Option<String>,
 }
 
+#[derive(Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+struct TableSchemaQuery {
+    preferred_table: Option<String>,
+}
+
 #[derive(Deserialize, ToSchema)]
 pub struct FileKeyRequest {
     key: String,
@@ -74,6 +80,7 @@ pub struct FileLinkResponse {
 pub fn router() -> Router<AppState> {
     Router::<AppState>::new()
         .route("/auth/login", post(login))
+        .route("/table/schema", get(list_table_create_schemas))
         .route(
             "/table/{table}",
             get(list_table_rows)
@@ -142,6 +149,28 @@ async fn login(
         token,
         token_type: "Bearer",
     }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/table/schema",
+    tag = "table",
+    params(TableSchemaQuery),
+    responses(
+        (status = 200, description = "Writable table schemas returned", body = TableCreateSchemaResponse),
+        (status = 401, description = "Missing or invalid authorization", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
+async fn list_table_create_schemas(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Query(query): Query<TableSchemaQuery>,
+) -> ApiResult<Json<TableCreateSchemaResponse>> {
+    let _claims = authenticate_request(&state, &headers).await?;
+    let response = state
+        .backend
+        .table_create_schema_response(query.preferred_table.as_deref());
+    Ok(Json(response))
 }
 
 #[utoipa::path(

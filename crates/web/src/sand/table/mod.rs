@@ -17,12 +17,16 @@ pub(crate) fn source() -> SandWidgetSource {
             version: "1.0.0".into(),
             description: "Server-rendered table for arbitrary view snapshots.".into(),
             details:
-                "Reads server_id and view_id from the host, streams datastar HTML fragments from the backend, and keeps the table markup on the server instead of building it in JavaScript."
+                "Reads server_id and view_id from the host, streams datastar HTML fragments from the backend, keeps the table markup on the server, and opens a minimal create panel when you want to add a new row."
                     .into(),
             initial_width: 7,
             initial_height: 5,
             requires_server: true,
-            permissions: vec!["bridge_state".into(), "read_view_stream".into()],
+            permissions: vec![
+                "bridge_state".into(),
+                "read_view_stream".into(),
+                "write_table".into(),
+            ],
         },
         head_links: vec![],
         inline_styles: style::INLINE_STYLES.to_vec(),

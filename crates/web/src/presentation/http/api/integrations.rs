@@ -7,6 +7,7 @@ use {
         },
         infrastructure::{
             auth::{parse_cookie_header, session_cookie_name},
+            backend_api_store::TableCreateSchemaResponse,
             organ_store::{Organ, organ_requires_auth},
         },
         presentation::http::api_error::{ApiResult, api_error},
@@ -343,6 +344,79 @@ pub async fn proxy_manas_table_collection(
         .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
 
     proxy_json_response(&state, session_token.as_deref(), &server_id, response).await
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TableSchemaQuery {
+    preferred_table: Option<String>,
+}
+
+pub async fn proxy_manas_table_schema(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Query(query): Query<TableSchemaQuery>,
+    Path(server_id): Path<String>,
+) -> ApiResult<(StatusCode, Json<TableCreateSchemaResponse>)> {
+    let session_token = current_session_token(&headers);
+    let server = load_organ(&state, &server_id).await?;
+
+    if !organ_requires_auth(&server, state.local_auth_required) {
+        let response = state
+            .backend
+            .table_create_schema_response(query.preferred_table.as_deref());
+        return Ok((StatusCode::OK, Json(response)));
+    }
+
+    let bearer_token = extract_manas_token(&state, &headers, &server_id).await?;
+    let mut path = String::from("/table/schema");
+    if let Some(preferred_table) = query
+        .preferred_table
+        .as_deref()
+        .filter(|value| !value.trim().is_empty())
+    {
+        path.push_str("?preferred_table=");
+        path.push_str(preferred_table);
+    }
+    let response = state
+        .manas
+        .send_backend_request(&server.base_url, &bearer_token, Method::GET, &path, None)
+        .await
+        .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
+
+    if response.status() == reqwest::StatusCode::UNAUTHORIZED {
+        state
+            .auth
+            .expire_server_session(
+                session_token.as_deref(),
+                &server_id,
+                "Sessao remota expirada. Conecte esse servidor novamente.",
+            )
+            .await;
+        return Err(api_error(
+            StatusCode::UNAUTHORIZED,
+            "Sessao remota expirada. Conecte esse servidor novamente.",
+        ));
+    }
+
+    if !response.status().is_success() {
+        let status =
+            StatusCode::from_u16(response.status().as_u16()).unwrap_or(StatusCode::BAD_GATEWAY);
+        let body = response.text().await.unwrap_or_default();
+        return Err(api_error(
+            status,
+            if body.trim().is_empty() {
+                format!("Servidor remoto recusou o schema com status {status}.")
+            } else {
+                body
+            },
+        ));
+    }
+
+    let payload = response
+        .json::<TableCreateSchemaResponse>()
+        .await
+        .map_err(|error| api_error(StatusCode::BAD_GATEWAY, error.to_string()))?;
+    Ok((StatusCode::OK, Json(payload)))
 }
 
 pub async fn proxy_manas_table_item(

@@ -5,13 +5,15 @@ use crate::presentation::http::api::backend::{
     __path_batch_update_record_quantities, __path_create_karma_row, __path_create_table_row,
     __path_delete_karma_row, __path_delete_link, __path_delete_table_row, __path_delete_via_link,
     __path_download_link, __path_download_via_link, __path_execute_karma, __path_get_karma_row,
-    __path_get_table_row, __path_list_files, __path_list_karma_rows, __path_list_table_rows,
-    __path_login, __path_update_karma_row, __path_update_table_row, __path_update_table_rows,
-    __path_upload_link, __path_upload_via_link, __path_view_snapshot, __path_view_sse,
+    __path_get_table_row, __path_list_files, __path_list_karma_rows,
+    __path_list_table_create_schemas, __path_list_table_rows, __path_login,
+    __path_update_karma_row, __path_update_table_row, __path_update_table_rows, __path_upload_link,
+    __path_upload_via_link, __path_view_snapshot, __path_view_sse,
 };
 use crate::presentation::http::api::backend::{
     FileKeyRequest, FileLinkResponse, LoginRequest, LoginResponse, MutationResponse,
 };
+use crate::infrastructure::backend_api_store::TableCreateSchemaResponse;
 use crate::presentation::http::api::servers::{
     __path_create_server, __path_delete_server, __path_list_servers, __path_login_server,
     __path_logout_server, __path_update_server, ServerLoginRequest, ServerProfileResponse,
@@ -24,6 +26,7 @@ use crate::presentation::http::api_error::ApiError;
 #[openapi(
     paths(
         login,
+        list_table_create_schemas,
         list_table_rows,
         get_table_row,
         create_table_row,
@@ -60,6 +63,7 @@ use crate::presentation::http::api_error::ApiError;
         LoginRequest,
         LoginResponse,
         MutationResponse,
+        TableCreateSchemaResponse,
         ServerLoginRequest,
         ServerProfileResponse,
         UpsertServerProfileRequest

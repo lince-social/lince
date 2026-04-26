@@ -107,6 +107,49 @@ const STYLE: &str = r#"
     overflow: auto;
   }
 
+  .contentShell[data-create-open="true"] .detailsPanel {
+    display: none;
+  }
+
+  .createPanel {
+    min-height: 0;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(360px, 100%);
+    border-left: 1px solid var(--line);
+    background: #0b1017;
+    box-shadow: -28px 0 48px rgba(0, 0, 0, 0.35);
+    z-index: 3;
+    overflow: auto;
+  }
+
+  .createForm {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .createFields {
+    display: grid;
+    gap: 10px;
+  }
+
+  .createField {
+    display: grid;
+    gap: 4px;
+  }
+
+  .fieldLabel {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
   .tablePanel {
     min-width: 0;
     min-height: 0;
@@ -238,6 +281,16 @@ const STYLE: &str = r#"
   .field:focus {
     border-color: var(--line-strong);
     outline: none;
+  }
+
+  .field--textarea {
+    min-height: 100px;
+    padding-top: 9px;
+    padding-bottom: 9px;
+    border-radius: 14px;
+    resize: vertical;
+    font-family: var(--mono);
+    line-height: 1.5;
   }
 
   .pill {

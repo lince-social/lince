@@ -19,9 +19,9 @@ use {
                 board::hydrated_board_state,
                 board::{export_workspace, get_board_state, import_workspace, put_board_state},
                 integrations::{
-                    proxy_manas_file, proxy_manas_table_collection, proxy_manas_table_item,
-                    proxy_manas_table_schema, proxy_manas_view, proxy_manas_view_snapshot,
-                    proxy_manas_view_table_stream,
+                    proxy_manas_file, proxy_manas_organ, proxy_manas_table_collection,
+                    proxy_manas_table_item, proxy_manas_table_schema, proxy_manas_view,
+                    proxy_manas_view_snapshot, proxy_manas_view_table_stream,
                 },
                 packages::{
                     delete_dna_publication, get_dna_catalog, get_local_package,
@@ -99,6 +99,10 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
         .route(
             "/integrations/servers/{server_id}/table/schema",
             get(proxy_manas_table_schema),
+        )
+        .route(
+            "/integrations/servers/{server_id}/organ",
+            post(proxy_manas_organ),
         )
         .route(
             "/integrations/servers/{server_id}/table/{table}",

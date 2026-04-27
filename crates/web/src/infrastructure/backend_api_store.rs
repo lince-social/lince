@@ -1451,35 +1451,48 @@ pub fn build_table_create_schema_response(
     preferred_table: Option<&str>,
 ) -> TableCreateSchemaResponse {
     let preferred = preferred_table
-        .and_then(|table_name| parse_api_table(&table_name.trim().to_lowercase()).ok())
-        .unwrap_or(ApiTable::Record);
+        .map(|table_name| table_name.trim().to_lowercase())
+        .filter(|table_name| !table_name.is_empty())
+        .filter(|table_name| table_name == "organ" || parse_api_table(table_name).is_ok())
+        .unwrap_or_else(|| "record".to_string());
 
-    let mut tables = ApiTable::all().to_vec();
-    tables.sort_by(|left, right| compare_table_order(*left, *right, preferred));
+    let mut tables = ApiTable::all()
+        .into_iter()
+        .map(|table| TableCreateSchema {
+            name: table.as_table_name().to_string(),
+            fields: table.create_field_schemas(),
+        })
+        .collect::<Vec<_>>();
+    tables.push(TableCreateSchema {
+        name: "organ".to_string(),
+        fields: vec![
+            table_create_field_schema("name", FieldKind::Text),
+            table_create_field_schema("base_url", FieldKind::Text),
+        ],
+    });
+    tables.sort_by(|left, right| compare_create_schema_order(left, right, &preferred));
 
     TableCreateSchemaResponse {
-        preferred_table: preferred.as_table_name().to_string(),
-        tables: tables
-            .into_iter()
-            .map(|table| TableCreateSchema {
-                name: table.as_table_name().to_string(),
-                fields: table.create_field_schemas(),
-            })
-            .collect(),
+        preferred_table: preferred,
+        tables,
     }
 }
 
-fn compare_table_order(left: ApiTable, right: ApiTable, preferred: ApiTable) -> std::cmp::Ordering {
-    let left_rank = if left == preferred {
+fn compare_create_schema_order(
+    left: &TableCreateSchema,
+    right: &TableCreateSchema,
+    preferred: &str,
+) -> std::cmp::Ordering {
+    let left_rank = if left.name == preferred {
         0
-    } else if left == ApiTable::Record {
+    } else if left.name == "record" {
         1
     } else {
         2
     };
-    let right_rank = if right == preferred {
+    let right_rank = if right.name == preferred {
         0
-    } else if right == ApiTable::Record {
+    } else if right.name == "record" {
         1
     } else {
         2
@@ -1487,7 +1500,7 @@ fn compare_table_order(left: ApiTable, right: ApiTable, preferred: ApiTable) -> 
 
     left_rank
         .cmp(&right_rank)
-        .then_with(|| left.as_table_name().cmp(right.as_table_name()))
+        .then_with(|| left.name.cmp(&right.name))
 }
 
 fn table_create_field_schema(name: &'static str, kind: FieldKind) -> TableCreateFieldSchema {

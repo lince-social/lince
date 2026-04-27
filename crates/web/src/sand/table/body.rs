@@ -9,12 +9,20 @@ pub(super) fn body() -> Markup {
                 aside
                     id="table-details"
                     class="detailsPanel"
+                    hidden=""
+                    aria-hidden="true"
                 {
                     (render_details_placeholder())
                 }
 
-                aside id="create-panel" class="createPanel" hidden="" {
+                aside id="create-panel" class="createPanel" hidden="" aria-hidden="true" {
                     div class="createForm" {
+                        div class="panelHeader" {
+                            div class="panelTitle" { "Create row" }
+                            button id="create-close" class="button button--ghost" type="button" {
+                                "Close"
+                            }
+                        }
                         select
                             id="create-table-select"
                             class="field field--select"
@@ -43,6 +51,7 @@ fn render_top_line() -> Markup {
             div class="topLineTitle" { "Table" }
             div class="topLineActions" {
                 span id="table-status" class="status" data-tone="idle" { "Waiting" }
+                button id="info-open" class="button button--ghost" type="button" { "Info" }
                 button id="create-open" class="button button--accent" type="button" { "Create" }
             }
         }
@@ -52,6 +61,12 @@ fn render_top_line() -> Markup {
 fn render_details_placeholder() -> Markup {
     html! {
         div class="detailStack" {
+            div class="panelHeader" {
+                div class="panelTitle" { "Table info" }
+                button id="info-close" class="button button--ghost" type="button" {
+                    "Close"
+                }
+            }
             section class="detailCard detailCard--setting" {
                 div class="detailCopy" { "Mode" }
                 select

@@ -1,6 +1,7 @@
 use axum::{Json, response::Html};
 use utoipa::OpenApi;
 
+use crate::infrastructure::backend_api_store::TableCreateSchemaResponse;
 use crate::presentation::http::api::backend::{
     __path_batch_update_record_quantities, __path_create_karma_row, __path_create_table_row,
     __path_delete_karma_row, __path_delete_link, __path_delete_table_row, __path_delete_via_link,
@@ -13,7 +14,6 @@ use crate::presentation::http::api::backend::{
 use crate::presentation::http::api::backend::{
     FileKeyRequest, FileLinkResponse, LoginRequest, LoginResponse, MutationResponse,
 };
-use crate::infrastructure::backend_api_store::TableCreateSchemaResponse;
 use crate::presentation::http::api::servers::{
     __path_create_server, __path_delete_server, __path_list_servers, __path_login_server,
     __path_logout_server, __path_update_server, ServerLoginRequest, ServerProfileResponse,

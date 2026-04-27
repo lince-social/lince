@@ -6,7 +6,10 @@ pub(super) fn script() -> String {
         const tableDetails = document.getElementById("table-details");
         const contentShell = document.getElementById("content-shell");
         const bootstrap = document.getElementById("table-stream-bootstrap");
+        const infoOpenButton = document.getElementById("info-open");
+        const infoCloseButton = document.getElementById("info-close");
         const createOpenButton = document.getElementById("create-open");
+        const createCloseButton = document.getElementById("create-close");
         const createPanel = document.getElementById("create-panel");
         const createTableSelect = document.getElementById("create-table-select");
         const createFields = document.getElementById("create-fields");
@@ -29,9 +32,11 @@ pub(super) fn script() -> String {
           focusedRowIndex: 0,
           focusedColumnIndex: 0,
           createOpen: false,
+          infoOpen: false,
           createLoading: false,
           createSchemas: [],
           createSelectedTable: "record",
+          createPreferredTable: "record",
           createDrafts: {},
         };
 
@@ -112,6 +117,39 @@ pub(super) fn script() -> String {
           const match = sql.match(/\bfrom\s+(?:`([^`]+)`|\[([^\]]+)\]|"([^"]+)"|([a-zA-Z_][a-zA-Z0-9_]*))/i);
           const table = String((match && (match[1] || match[2] || match[3] || match[4])) || "").trim();
           return table ? table.toLowerCase() : "record";
+        }
+
+        function syncPanelVisibility() {
+          if (tableDetails) {
+            tableDetails.hidden = !state.infoOpen;
+            tableDetails.setAttribute("aria-hidden", state.infoOpen ? "false" : "true");
+          }
+
+          if (contentShell) {
+            contentShell.dataset.infoOpen = state.infoOpen ? "true" : "false";
+          }
+
+          if (infoOpenButton) {
+            infoOpenButton.setAttribute("aria-expanded", state.infoOpen ? "true" : "false");
+          }
+
+          if (infoCloseButton) {
+            infoCloseButton.disabled = !state.infoOpen;
+          }
+        }
+
+        function refreshCreateSchemaIfNeeded() {
+          if (!state.createOpen || state.createLoading) {
+            return;
+          }
+
+          const preferredTable = detectPreferredTableName();
+          if (!preferredTable || preferredTable === state.createPreferredTable) {
+            return;
+          }
+
+          state.createPreferredTable = preferredTable;
+          void loadCreateSchemas(preferredTable);
         }
 
         function buildSchemaUrl(preferredTable) {
@@ -301,6 +339,7 @@ pub(super) fn script() -> String {
         function syncCreatePanelVisibility() {
           if (createPanel) {
             createPanel.hidden = !state.createOpen;
+            createPanel.setAttribute("aria-hidden", state.createOpen ? "false" : "true");
           }
 
           if (contentShell) {
@@ -308,8 +347,13 @@ pub(super) fn script() -> String {
           }
 
           if (createOpenButton) {
-            createOpenButton.textContent = state.createOpen ? "Close" : "Create";
+            createOpenButton.textContent = "Create";
             createOpenButton.disabled = !serverId;
+            createOpenButton.setAttribute("aria-expanded", state.createOpen ? "true" : "false");
+          }
+
+          if (createCloseButton) {
+            createCloseButton.disabled = !state.createOpen;
           }
 
           if (createTableSelect) {
@@ -339,20 +383,13 @@ pub(super) fn script() -> String {
               : tables[0]?.name || "record";
         }
 
-        function loadCreateSelection(tableName) {
-          const nextTable = String(tableName || "record").trim() || "record";
-          snapshotCreateDraft(state.createSelectedTable);
-          state.createSelectedTable = nextTable;
-          renderCreateTableSelect();
-          renderCreateFields();
-        }
-
         async function loadCreateSchemas(preferredTable) {
           if (!serverId) {
             setStatus("Configure server", "error");
             return;
           }
 
+          state.createPreferredTable = String(preferredTable || "record").trim() || "record";
           state.createLoading = true;
           syncCreatePanelVisibility();
           setStatus("Loading schema", "loading");
@@ -389,6 +426,7 @@ pub(super) fn script() -> String {
             const nextSelectedTable = String(payload?.preferred_table || nextTables[0]?.name || "record")
               .trim()
               .toLowerCase() || "record";
+            state.createPreferredTable = nextSelectedTable;
             state.createSelectedTable = nextSelectedTable;
             renderCreateTableSelect();
             renderCreateFields();
@@ -409,6 +447,10 @@ pub(super) fn script() -> String {
         function toggleCreatePanel(forceOpen) {
           const nextOpen = typeof forceOpen === "boolean" ? forceOpen : !state.createOpen;
           state.createOpen = nextOpen;
+          if (nextOpen) {
+            state.infoOpen = false;
+          }
+          syncPanelVisibility();
           syncCreatePanelVisibility();
 
           if (!nextOpen) {
@@ -420,12 +462,35 @@ pub(super) fn script() -> String {
           void loadCreateSchemas(detectPreferredTableName());
         }
 
+        function openInfoPanel(forceOpen) {
+          const nextOpen = typeof forceOpen === "boolean" ? forceOpen : true;
+          state.infoOpen = nextOpen;
+          if (nextOpen) {
+            state.createOpen = false;
+          }
+          syncPanelVisibility();
+          syncCreatePanelVisibility();
+        }
+
+        function closeCreatePanel() {
+          state.createOpen = false;
+          syncCreatePanelVisibility();
+        }
+
+        function closeInfoPanel() {
+          state.infoOpen = false;
+          syncPanelVisibility();
+        }
+
         function buildCreateEndpoint(tableName) {
           if (!serverId) {
             return "";
           }
 
           const trimmed = String(tableName || "record").trim() || "record";
+          if (trimmed === "organ") {
+            return "/host/integrations/servers/" + encodeURIComponent(serverId) + "/organ";
+          }
           return (
             "/host/integrations/servers/" +
             encodeURIComponent(serverId) +
@@ -1055,13 +1120,32 @@ pub(super) fn script() -> String {
 
           const observer = new MutationObserver(() => {
             syncSelection();
+            refreshCreateSchemaIfNeeded();
           });
           observer.observe(tablePanel, { childList: true, subtree: true });
         }
 
         if (createOpenButton) {
           createOpenButton.addEventListener("click", () => {
-            toggleCreatePanel();
+            toggleCreatePanel(true);
+          });
+        }
+
+        if (infoOpenButton) {
+          infoOpenButton.addEventListener("click", () => {
+            openInfoPanel(true);
+          });
+        }
+
+        if (createCloseButton) {
+          createCloseButton.addEventListener("click", () => {
+            closeCreatePanel();
+          });
+        }
+
+        if (infoCloseButton) {
+          infoCloseButton.addEventListener("click", () => {
+            closeInfoPanel();
           });
         }
 
@@ -1070,6 +1154,7 @@ pub(super) fn script() -> String {
             const nextTable = String(createTableSelect.value || "record").trim() || "record";
             snapshotCreateDraft(state.createSelectedTable);
             state.createSelectedTable = nextTable;
+            state.createPreferredTable = nextTable;
             renderCreateTableSelect();
             renderCreateFields();
           });
@@ -1090,11 +1175,24 @@ pub(super) fn script() -> String {
           });
         }
 
+        if (tableDetails || tablePanel) {
+          const observer = new MutationObserver(() => {
+            refreshCreateSchemaIfNeeded();
+          });
+          if (tableDetails) {
+            observer.observe(tableDetails, { childList: true, subtree: true });
+          }
+          if (tablePanel) {
+            observer.observe(tablePanel, { childList: true, subtree: true });
+          }
+        }
+
         const storedSettings = readSettings();
         if (storedSettings) {
           state.nerdMode = storedSettings.nerdMode;
         }
         syncModeSelect();
+        syncPanelVisibility();
         syncCreatePanelVisibility();
         renderCreateTableSelect();
         renderCreateFields();

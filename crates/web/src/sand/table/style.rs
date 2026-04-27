@@ -94,9 +94,9 @@ const STYLE: &str = r#"
   .detailsPanel {
     min-height: 0;
     position: absolute;
-    top: 0;
+    top: 12px;
     right: 0;
-    bottom: 0;
+    bottom: 12px;
     width: min(360px, 100%);
     padding: 12px 12px 14px;
     border-left: 1px solid var(--line);
@@ -107,16 +107,12 @@ const STYLE: &str = r#"
     overflow: auto;
   }
 
-  .contentShell[data-create-open="true"] .detailsPanel {
-    display: none;
-  }
-
   .createPanel {
     min-height: 0;
     position: absolute;
-    top: 0;
+    top: 12px;
     right: 0;
-    bottom: 0;
+    bottom: 12px;
     width: min(360px, 100%);
     border-left: 1px solid var(--line);
     background: #0b1017;
@@ -125,10 +121,42 @@ const STYLE: &str = r#"
     overflow: auto;
   }
 
+  .contentShell[data-create-open="false"] .createPanel {
+    display: none;
+  }
+
+  .contentShell[data-create-open="true"] .createPanel {
+    display: block;
+  }
+
+  .contentShell[data-info-open="false"] .detailsPanel {
+    display: none;
+  }
+
+  .contentShell[data-info-open="true"] .detailsPanel {
+    display: block;
+  }
+
   .createForm {
     display: grid;
     gap: 10px;
     padding: 12px;
+  }
+
+  .panelHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 2px;
+  }
+
+  .panelTitle {
+    color: var(--text);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
   }
 
   .createFields {

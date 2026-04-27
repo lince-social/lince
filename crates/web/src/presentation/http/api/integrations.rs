@@ -419,6 +419,67 @@ pub async fn proxy_manas_table_schema(
     Ok((StatusCode::OK, Json(payload)))
 }
 
+pub async fn proxy_manas_organ(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(server_id): Path<String>,
+    Json(payload): Json<Value>,
+) -> ApiResult<impl IntoResponse> {
+    let session_token = current_session_token(&headers);
+    let server = load_organ(&state, &server_id).await?;
+
+    if !organ_requires_auth(&server, state.local_auth_required) {
+        let data = payload_object(Some(&payload))?;
+        let name = data
+            .get("name")
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .ok_or_else(|| api_error(StatusCode::BAD_REQUEST, "Preencha o nome do orgao."))?;
+        let base_url = data
+            .get("base_url")
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .ok_or_else(|| api_error(StatusCode::BAD_REQUEST, "Preencha a base URL do orgao."))?;
+        let id = data
+            .get("id")
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .unwrap_or_default();
+
+        let profile = state
+            .organs
+            .upsert(Organ {
+                id: id.to_string(),
+                name: name.to_string(),
+                base_url: base_url.to_string(),
+            })
+            .await
+            .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
+
+        return Ok((
+            StatusCode::OK,
+            Json(serde_json::to_value(profile).unwrap_or(json!({}))),
+        ));
+    }
+
+    let bearer_token = extract_manas_token(&state, &headers, &server_id).await?;
+    let response = state
+        .manas
+        .send_backend_request(
+            &server.base_url,
+            &bearer_token,
+            Method::POST,
+            "/organ",
+            Some(payload),
+        )
+        .await
+        .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
+
+    proxy_json_response(&state, session_token.as_deref(), &server_id, response).await
+}
+
 pub async fn proxy_manas_table_item(
     State(state): State<AppState>,
     headers: HeaderMap,

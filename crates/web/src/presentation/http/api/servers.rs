@@ -23,7 +23,7 @@ use {
 #[derive(Debug, Clone, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ServerProfileResponse {
-    pub id: String,
+    pub id: i64,
     pub name: String,
     pub base_url: String,
     pub requires_auth: bool,
@@ -42,7 +42,6 @@ pub struct ServerLoginRequest {
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct UpsertServerProfileRequest {
-    pub id: Option<String>,
     pub name: String,
     pub base_url: String,
 }
@@ -80,7 +79,7 @@ pub async fn list_servers(
         servers
             .into_iter()
             .map(|server| {
-                let status = statuses.get(&server.id);
+                let status = statuses.get(&server.id.to_string());
                 let requires_auth = organ_requires_auth(&server, state.local_auth_required);
                 let authenticated = !requires_auth || status.is_some_and(is_connected);
                 ServerProfileResponse {
@@ -120,11 +119,7 @@ pub async fn create_server(
 ) -> ApiResult<Json<ServerProfileResponse>> {
     let profile = state
         .organs
-        .upsert(Organ {
-            id: payload.id.unwrap_or_default(),
-            name: payload.name,
-            base_url: payload.base_url,
-        })
+        .create(payload.name, payload.base_url)
         .await
         .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
 
@@ -178,7 +173,7 @@ pub async fn login_server(
         .auth
         .set_server_session(
             &session_token,
-            server.id.clone(),
+            server.id,
             username.to_string(),
             bearer_token,
         )
@@ -199,7 +194,7 @@ pub async fn login_server(
         .auth
         .remote_server_snapshots(Some(&session_token))
         .await
-        .remove(&server.id);
+        .remove(&server.id.to_string());
 
     Ok((
         response_headers,
@@ -262,13 +257,10 @@ pub async fn update_server(
     Path(server_id): Path<String>,
     Json(payload): Json<UpsertServerProfileRequest>,
 ) -> ApiResult<Json<ServerProfileResponse>> {
+    let _existing = load_organ(&state, &server_id).await?;
     let profile = state
         .organs
-        .upsert(Organ {
-            id: server_id,
-            name: payload.name,
-            base_url: payload.base_url,
-        })
+        .update(server_id, payload.name, payload.base_url)
         .await
         .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
 
@@ -339,7 +331,7 @@ async fn server_profile_response(
         .auth
         .remote_server_snapshots(session_token.as_deref())
         .await
-        .remove(&profile.id);
+        .remove(&profile.id.to_string());
     let requires_auth = organ_requires_auth(&profile, state.local_auth_required);
     let authenticated = !requires_auth || snapshot.as_ref().is_some_and(is_connected);
     let username_hint = snapshot

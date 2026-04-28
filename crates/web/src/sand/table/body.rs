@@ -41,6 +41,7 @@ pub(super) fn body() -> Markup {
             }
 
             div id="table-stream-bootstrap" hidden="" {}
+            div id="table-toasts" class="toastLayer" aria-live="polite" aria-atomic="true" {}
         }
     }
 }

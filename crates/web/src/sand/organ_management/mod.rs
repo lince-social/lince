@@ -474,7 +474,6 @@ pub(crate) fn source() -> SandWidgetSource {
       const connectedEl = document.getElementById("metric-connected");
       const lockedEl = document.getElementById("metric-locked");
       const formModeEl = document.getElementById("form-mode");
-      const formIdEl = document.getElementById("field-id");
       const formNameEl = document.getElementById("field-name");
       const formBaseUrlEl = document.getElementById("field-base-url");
       const footerEl = document.getElementById("footer-meta");
@@ -538,7 +537,7 @@ pub(crate) fn source() -> SandWidgetSource {
       }
 
       function hasDraftContent(draft) {
-        return Boolean(String(draft?.id || "").trim() || String(draft?.name || "").trim() || String(draft?.baseUrl || "").trim());
+        return Boolean(String(draft?.name || "").trim() || String(draft?.baseUrl || "").trim());
       }
 
       function formatSessionState(value) {
@@ -682,10 +681,10 @@ pub(crate) fn source() -> SandWidgetSource {
         const draft = state.ui.draft;
         const isCreate = state.ui.draftMode === "create";
 
-        if (isCreate && !hasDraftContent(draft)) {
-          detailNameEl.textContent = "New organ";
-          detailIdEl.textContent = "ID will be slugified from the name when empty.";
-          detailUrlEl.textContent = "Prepare a new organ profile and save through the host.";
+        if (isCreate) {
+          detailNameEl.textContent = String(draft.name || "").trim() || "New organ";
+          detailIdEl.textContent = "Id will be assigned by the host.";
+          detailUrlEl.textContent = String(draft.baseUrl || "").trim() || "Prepare a new organ profile and save through the host.";
           detailChipsEl.innerHTML = chip("Create mode", "accent");
           detailAuthEl.textContent = "Unknown until saved";
           detailSessionEl.textContent = "No session yet";
@@ -715,7 +714,6 @@ pub(crate) fn source() -> SandWidgetSource {
         }
 
         formModeEl.textContent = isCreate ? "Create organ" : "Edit organ";
-        formIdEl.value = draft.id || "";
         formNameEl.value = draft.name || "";
         formBaseUrlEl.value = draft.baseUrl || "";
         deleteButton.disabled = isCreate || !organ || state.loading;
@@ -768,7 +766,7 @@ pub(crate) fn source() -> SandWidgetSource {
         state.ui.selectedId = "";
         state.ui.draftMode = "create";
         state.ui.draft = { ...DEFAULT_FORM };
-        requestPreviewFor("POST", "/organ", { id: null, name: "", base_url: "" });
+        requestPreviewFor("POST", "/organ", { name: "", base_url: "" });
         persistUiSoon();
         render();
         formNameEl.focus();
@@ -847,7 +845,6 @@ pub(crate) fn source() -> SandWidgetSource {
 
       function buildPayload() {
         return {
-          id: state.ui.draftMode === "create" ? optionalTrimmed(formIdEl.value) : undefined,
           name: formNameEl.value.trim(),
           base_url: formBaseUrlEl.value.trim(),
         };
@@ -952,12 +949,6 @@ pub(crate) fn source() -> SandWidgetSource {
         state.ui.draftMode = "edit";
         persistUiSoon();
         render();
-      });
-
-      formIdEl.addEventListener("input", () => {
-        state.ui.draftMode = "create";
-        patchDraft({ ...state.ui.draft, id: formIdEl.value });
-        requestPreviewFor("POST", "/organ", buildPayload());
       });
       formNameEl.addEventListener("input", () => {
         patchDraft({ ...state.ui.draft, name: formNameEl.value });
@@ -1102,11 +1093,6 @@ fn body() -> Markup {
                             }
 
                             section class="formGrid" {
-                                div class="fieldWrap" {
-                                    label class="label" for="field-id" { "Organ id" }
-                                    input id="field-id" class="field mono" type="text" placeholder="Optional on create, host slugifies it";
-                                    div class="fieldHint" { "On create, leave empty to derive the identifier from the organ name. On update, the current route id stays authoritative." }
-                                }
                                 div class="fieldWrap" {
                                     label class="label" for="field-name" { "Name" }
                                     input id="field-name" class="field" type="text" placeholder="North District Organ";

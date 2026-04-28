@@ -8,6 +8,8 @@ const STYLE: &str = r#"
     --panel-soft: rgba(14, 19, 25, 0.96);
     --line: rgba(255, 255, 255, 0.08);
     --line-strong: rgba(255, 255, 255, 0.16);
+    --cell-line: rgba(255, 255, 255, 0.045);
+    --cell-line-focus: rgba(255, 255, 255, 0.12);
     --text: #edf2f7;
     --muted: #91a0b1;
     --accent: #8ab4ff;
@@ -430,9 +432,10 @@ const STYLE: &str = r#"
 
   .table thead th {
     padding: 8px 8px 6px;
-    border-bottom: 1px solid var(--line);
+    border: 1px solid var(--cell-line);
     text-align: left;
     vertical-align: bottom;
+    background: rgba(12, 15, 20, 0.95);
   }
 
   .columnName {
@@ -443,12 +446,20 @@ const STYLE: &str = r#"
   }
 
   .cell {
-    padding: 6px 8px 4px 0;
+    padding: 7px 8px 5px;
+    border: 1px solid var(--cell-line);
     vertical-align: top;
+    background: rgba(255, 255, 255, 0.01);
+    transition: box-shadow 120ms ease, border-color 120ms ease;
   }
 
   .cell--id {
     position: relative;
+  }
+
+  .cell[data-focused-cell="true"] {
+    border-color: var(--cell-line-focus);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
   }
 
   .cellValue--id {
@@ -462,6 +473,12 @@ const STYLE: &str = r#"
     line-height: 1.45;
     white-space: pre-wrap;
     word-break: break-word;
+  }
+
+  .cellValue[contenteditable] {
+    outline: none;
+    cursor: text;
+    caret-color: var(--text);
   }
 
   .rowDeleteButton {
@@ -498,6 +515,30 @@ const STYLE: &str = r#"
       calc(100% - 9px) 52%;
     background-size: 5px 5px, 5px 5px;
     background-repeat: no-repeat;
+  }
+
+  .toastLayer {
+    position: fixed;
+    left: 12px;
+    bottom: 12px;
+    z-index: 20;
+    display: grid;
+    gap: 8px;
+    pointer-events: none;
+  }
+
+  .toast {
+    min-width: min(320px, calc(100vw - 24px));
+    max-width: min(420px, calc(100vw - 24px));
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 151, 168, 0.28);
+    border-radius: 12px;
+    background: rgba(32, 16, 23, 0.96);
+    color: #ffd9df;
+    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.32);
+    font-size: 0.78rem;
+    line-height: 1.45;
+    pointer-events: auto;
   }
 
   .emptyState,

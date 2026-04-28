@@ -40,8 +40,8 @@ pub struct AppUserRow {
 #[table(name = "organ")]
 #[table(strict)]
 pub struct OrganRow {
-    #[table(primary_key, check = "length(trim(id)) > 0")]
-    pub id: String,
+    #[table(primary_key)]
+    pub id: i64,
     #[table(check = "length(trim(name)) > 0")]
     pub name: String,
     #[table(check = "length(trim(base_url)) > 0")]

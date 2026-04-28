@@ -478,7 +478,7 @@ async fn load_dna_catalog_snapshot(
         let mut organ_publications = collect_organ_publications(state, headers, &organ).await?;
         let package_count = organ_publications.len();
         origins.push(DnaCatalogOrigin {
-            organ_id: organ.id.clone(),
+            organ_id: organ.id.to_string(),
             origin_name: organ.name.clone(),
             package_count,
         });
@@ -656,7 +656,7 @@ async fn collect_organ_publications(
             summary: DnaPackageSummary {
                 id: format!("{}:{}", organ.id, record.id),
                 record_id: record.id,
-                organ_id: organ.id.clone(),
+                organ_id: organ.id.to_string(),
                 origin_name: organ.name.clone(),
                 head: record.head.clone(),
                 body: record.body.clone(),
@@ -1903,7 +1903,7 @@ fn current_session_token(headers: &HeaderMap) -> Option<String> {
 async fn extract_remote_token(
     state: &AppState,
     headers: &HeaderMap,
-    server_id: &str,
+    server_id: impl ToString,
 ) -> ApiResult<String> {
     let session_token = current_session_token(headers);
     let Some(session) = state
@@ -1923,7 +1923,7 @@ async fn extract_remote_token(
 async fn extract_remote_link(
     state: &AppState,
     session_token: Option<&str>,
-    server_id: &str,
+    server_id: impl ToString,
     response: reqwest::Response,
 ) -> ApiResult<LinkPayload> {
     let payload: LinkPayload =
@@ -1940,7 +1940,7 @@ async fn extract_remote_link(
 async fn ensure_empty_remote_success(
     state: &AppState,
     session_token: Option<&str>,
-    server_id: &str,
+    server_id: impl ToString,
     response: reqwest::Response,
     default_message: &str,
 ) -> ApiResult<()> {
@@ -1979,7 +1979,7 @@ async fn ensure_empty_remote_success(
 async fn ensure_remote_response_success(
     state: &AppState,
     session_token: Option<&str>,
-    server_id: &str,
+    server_id: impl ToString,
     response: reqwest::Response,
     default_message: &str,
 ) -> ApiResult<reqwest::Response> {
@@ -2018,7 +2018,7 @@ async fn ensure_remote_response_success(
 async fn proxy_remote_json_response<T: serde::de::DeserializeOwned>(
     state: &AppState,
     session_token: Option<&str>,
-    server_id: &str,
+    server_id: impl ToString,
     response: reqwest::Response,
 ) -> ApiResult<T> {
     let status =
@@ -2144,7 +2144,7 @@ pub async fn publish_dna_package(
 
     Ok(Json(DnaPublishResponse {
         ok: true,
-        organ_id: server.id,
+        organ_id: server.id.to_string(),
         record_id,
         record_extension_id,
         resource_ref_id,

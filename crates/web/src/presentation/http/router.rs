@@ -254,11 +254,11 @@ async fn build_bootstrap(state: &AppState, session_token: Option<&str>) -> AppBo
         .unwrap_or_default()
         .into_iter()
         .map(|server| {
-            let status = server_statuses.get(&server.id);
+            let status = server_statuses.get(&server.id.to_string());
             let requires_auth = organ_requires_auth(&server, state.local_auth_required);
             let authenticated = !requires_auth || status.is_some_and(is_connected);
             ServerBootstrap {
-                id: server.id,
+                id: server.id.to_string(),
                 name: server.name,
                 base_url: server.base_url,
                 requires_auth,

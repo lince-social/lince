@@ -1,7 +1,10 @@
 mod body;
 
 use {
-    crate::domain::lince_package::{LincePackage, PackageManifest},
+    crate::{
+        domain::lince_package::{LincePackage, PackageManifest},
+        sand::{SandWidgetSource, WidgetScript},
+    },
     maud::{DOCTYPE, Markup, html},
     std::collections::BTreeMap,
 };
@@ -18,6 +21,30 @@ const APP_QUERY_REPLIES_JS: &str = include_str!("app/query-replies.js");
 const GHOSTTY_WASM: &[u8] = include_bytes!("vendor/ghostty-vt.wasm");
 const LICENSE_TEXT: &str = include_str!("vendor/LICENSE.txt");
 const UPSTREAM_TEXT: &str = include_str!("vendor/UPSTREAM.txt");
+const INLINE_STYLES: &[&str] = &[include_str!("styles.css")];
+
+pub(crate) fn source() -> SandWidgetSource {
+    SandWidgetSource {
+        filename: "terminal.html",
+        lang: "en",
+        manifest: PackageManifest {
+            icon: "G".into(),
+            title: "Local Terminal".into(),
+            author: "Lince Labs".into(),
+            version: "0.1.0".into(),
+            description: "Browser terminal sand powered by Ghostty's VT core compiled to WebAssembly.".into(),
+            details: "Renders the terminal shell in the app shell and streams keyboard input through the host terminal session API.".into(),
+            initial_width: 6,
+            initial_height: 5,
+            requires_server: false,
+            permissions: vec!["terminal_session".into()],
+        },
+        head_links: vec![],
+        inline_styles: INLINE_STYLES.to_vec(),
+        body: body::body(),
+        body_scripts: vec![WidgetScript::src("app/main.js")],
+    }
+}
 
 pub(crate) fn package() -> LincePackage {
     let manifest = PackageManifest {

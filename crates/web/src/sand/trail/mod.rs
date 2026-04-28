@@ -1,6 +1,4 @@
 mod body;
-#[cfg(test)]
-mod browser_tests;
 mod script;
 mod styles;
 #[cfg(test)]

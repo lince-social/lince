@@ -125,9 +125,9 @@ pub async fn seed(db: &Pool<Sqlite>) -> Result<(), Error> {
 
     sqlx::query(
         "INSERT INTO organ(id, name, base_url)
-         SELECT 'local-dev', 'Local Lince', 'http://127.0.0.1:6174'
+         SELECT 1, 'Local Lince', 'http://127.0.0.1:6174'
          WHERE NOT EXISTS (
-            SELECT 1 FROM organ WHERE id = 'local-dev'
+            SELECT 1 FROM organ WHERE id = 1
          )",
     )
     .execute(&*db)

@@ -442,19 +442,10 @@ pub async fn proxy_manas_organ(
             .map(str::trim)
             .filter(|value| !value.is_empty())
             .ok_or_else(|| api_error(StatusCode::BAD_REQUEST, "Preencha a base URL do orgao."))?;
-        let id = data
-            .get("id")
-            .and_then(Value::as_str)
-            .map(str::trim)
-            .unwrap_or_default();
 
         let profile = state
             .organs
-            .upsert(Organ {
-                id: id.to_string(),
-                name: name.to_string(),
-                base_url: base_url.to_string(),
-            })
+            .create(name.to_string(), base_url.to_string())
             .await
             .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
 

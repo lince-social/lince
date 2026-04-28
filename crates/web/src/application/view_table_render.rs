@@ -62,7 +62,22 @@ struct TableColumn {
 #[derive(Debug, Clone)]
 struct TableRow {
     key: String,
-    values: BTreeMap<String, String>,
+    cells: BTreeMap<String, TableCell>,
+}
+
+#[derive(Debug, Clone)]
+struct TableCell {
+    text: String,
+    kind: CellKind,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum CellKind {
+    Null,
+    String,
+    Number,
+    Boolean,
+    Json,
 }
 
 pub fn render_sync_payload(
@@ -348,29 +363,35 @@ fn normalize_rows(rows: &[Value], columns: &[TableColumn]) -> Vec<TableRow> {
         .enumerate()
         .map(|(index, row)| {
             let key = pick_row_key(row, index);
-            let mut values = BTreeMap::new();
+            let mut cells = BTreeMap::new();
 
             if let Some(array) = row.as_array() {
                 for (column_index, column) in columns.iter().enumerate() {
-                    let text = array
+                    let cell = array
                         .get(column_index)
-                        .map(format_cell_value)
-                        .unwrap_or_default();
-                    values.insert(column.key.clone(), text);
+                        .map(cell_value)
+                        .unwrap_or_else(|| TableCell {
+                            text: String::new(),
+                            kind: CellKind::Null,
+                        });
+                    cells.insert(column.key.clone(), cell);
                 }
             } else if let Some(object) = row.as_object() {
                 for column in columns {
-                    let text = object
+                    let cell = object
                         .get(&column.key)
-                        .map(format_cell_value)
-                        .unwrap_or_default();
-                    values.insert(column.key.clone(), text);
+                        .map(cell_value)
+                        .unwrap_or_else(|| TableCell {
+                            text: String::new(),
+                            kind: CellKind::Null,
+                        });
+                    cells.insert(column.key.clone(), cell);
                 }
             } else {
-                values.insert("value".into(), format_cell_value(row));
+                cells.insert("value".into(), cell_value(row));
             }
 
-            TableRow { key, values }
+            TableRow { key, cells }
         })
         .collect()
 }
@@ -384,7 +405,7 @@ fn pick_row_key(row: &Value, index: usize) -> String {
                     return format!("{key}:{trimmed}");
                 }
             } else if let Some(value) = object.get(key) {
-                let text = format_cell_value(value);
+                let text = cell_value(value).text;
                 if !text.trim().is_empty() {
                     return format!("{key}:{text}");
                 }
@@ -395,14 +416,41 @@ fn pick_row_key(row: &Value, index: usize) -> String {
     format!("row-{index}-{}", fingerprint(row))
 }
 
-fn format_cell_value(value: &Value) -> String {
+fn cell_value(value: &Value) -> TableCell {
     match value {
-        Value::Null => String::new(),
-        Value::String(text) => text.clone(),
-        Value::Number(number) => number.to_string(),
-        Value::Bool(boolean) => boolean.to_string(),
-        Value::Array(_) | Value::Object(_) => serde_json::to_string_pretty(value)
-            .unwrap_or_else(|_| serde_json::to_string(value).unwrap_or_default()),
+        Value::Null => TableCell {
+            text: String::new(),
+            kind: CellKind::Null,
+        },
+        Value::String(text) => TableCell {
+            text: text.clone(),
+            kind: CellKind::String,
+        },
+        Value::Number(number) => TableCell {
+            text: number.to_string(),
+            kind: CellKind::Number,
+        },
+        Value::Bool(boolean) => TableCell {
+            text: boolean.to_string(),
+            kind: CellKind::Boolean,
+        },
+        Value::Array(_) | Value::Object(_) => TableCell {
+            text: serde_json::to_string_pretty(value)
+                .unwrap_or_else(|_| serde_json::to_string(value).unwrap_or_default()),
+            kind: CellKind::Json,
+        },
+    }
+}
+
+impl CellKind {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Null => "null",
+            Self::String => "string",
+            Self::Number => "number",
+            Self::Boolean => "boolean",
+            Self::Json => "json",
+        }
     }
 }
 
@@ -574,17 +622,37 @@ fn render_table_row(
     columns: &[TableColumn],
     source_table: Option<&str>,
 ) -> Markup {
-    let row_id = row.values.get("id").and_then(|value| parse_row_id(value));
+    let row_id_text = row
+        .cells
+        .get("id")
+        .map(|cell| cell.text.as_str())
+        .unwrap_or("");
+    let row_id = parse_row_id(row_id_text);
 
-    html! {
-        tr
-            data-row-key=(row.key.as_str())
-            data-record-id=(row.key.strip_prefix("id:").unwrap_or(""))
-            data-row-index=(row_index)
-            data-row-quantity=(row.values.get("quantity").map(|value| value.as_str()).unwrap_or(""))
-        {
-            @for (column_index, column) in columns.iter().enumerate() {
-                (render_table_cell(column_index, column, row, row_id, source_table))
+    if let Some(row_id) = row_id {
+        html! {
+            tr
+                data-row-key=(row.key.as_str())
+                data-row-index=(row_index)
+                data-row-id=(row_id_text)
+                data-row-quantity=(row.cells.get("quantity").map(|cell| cell.text.as_str()).unwrap_or(""))
+            {
+                @for (column_index, column) in columns.iter().enumerate() {
+                    (render_table_cell(column_index, column, row, Some(row_id), source_table))
+                }
+            }
+        }
+    } else {
+        html! {
+            tr
+                data-row-key=(row.key.as_str())
+                data-row-index=(row_index)
+                data-row-id=(row_id_text)
+                data-row-quantity=(row.cells.get("quantity").map(|cell| cell.text.as_str()).unwrap_or(""))
+            {
+                @for (column_index, column) in columns.iter().enumerate() {
+                    (render_table_cell(column_index, column, row, row_id, source_table))
+                }
             }
         }
     }
@@ -598,10 +666,13 @@ fn render_table_cell(
     source_table: Option<&str>,
 ) -> Markup {
     let cell_value = row
-        .values
+        .cells
         .get(&column.key)
-        .map(|value| value.as_str())
-        .unwrap_or("");
+        .cloned()
+        .unwrap_or(TableCell {
+            text: String::new(),
+            kind: CellKind::Null,
+        });
     let is_id_column = column.key == "id";
 
     if is_id_column && let (Some(row_id), Some(source_table)) = (row_id, source_table) {
@@ -611,8 +682,9 @@ fn render_table_cell(
                 data-column-index=(column_index)
                 data-column-key=(column.key.as_str())
                 data-row-id=(row_id)
+                data-cell-kind="number"
             {
-                div class="cellValue cellValue--id" { (cell_value) }
+                div class="cellValue cellValue--id" { (cell_value.text.as_str()) }
                 button
                     class="button button--danger rowDeleteButton"
                     type="button"
@@ -636,7 +708,7 @@ fn render_table_cell(
                     data-column-key=(column.key.as_str())
                     data-row-id=(row_id)
                 {
-                    div class="cellValue cellValue--id" { (cell_value) }
+                    div class="cellValue cellValue--id" { (cell_value.text.as_str()) }
                 }
             };
         }
@@ -646,8 +718,9 @@ fn render_table_cell(
                 class="cell cell--id"
                 data-column-index=(column_index)
                 data-column-key=(column.key.as_str())
+                data-cell-kind="number"
             {
-                div class="cellValue cellValue--id" { (cell_value) }
+                div class="cellValue cellValue--id" { (cell_value.text.as_str()) }
             }
         };
     }
@@ -657,9 +730,10 @@ fn render_table_cell(
             class="cell"
             data-column-index=(column_index)
             data-column-key=(column.key.as_str())
+            data-cell-kind=(cell_value.kind.as_str())
         {
             div class="cellValue" {
-                (cell_value)
+                (cell_value.text.as_str())
             }
         }
     }

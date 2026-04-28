@@ -15,6 +15,7 @@ pub(super) fn script() -> String {
         const createFields = document.getElementById("create-fields");
         const createSubmitButton = document.getElementById("create-submit");
         const tablePanel = document.getElementById("table-body");
+        const toastLayer = document.getElementById("table-toasts");
         const datastarReady = import("/static/vendored/datastar.js").catch(() => null);
         const serverId = String(frame?.dataset?.linceServerId || "").trim();
         const viewId = Number(String(frame?.dataset?.linceViewId || "").trim());
@@ -26,11 +27,16 @@ pub(super) fn script() -> String {
           reconnectTimer: null,
           reconnectAttempt: 0,
           scrollTimer: null,
+          editDebounceTimer: null,
+          editSaveController: null,
           streamGeneration: 0,
           streamUrl: "",
           nerdMode: false,
           focusedRowIndex: 0,
           focusedColumnIndex: 0,
+          focusedRowId: "",
+          focusedColumnKey: "",
+          editingCell: null,
           createOpen: false,
           infoOpen: false,
           createLoading: false,
@@ -51,6 +57,89 @@ pub(super) fn script() -> String {
 
           statusPill.textContent = text;
           statusPill.dataset.tone = tone;
+        }
+
+        function showErrorToast(reason) {
+          if (!toastLayer) {
+            return;
+          }
+
+          const message = "couldnt save (" + String(reason || "unknown error").trim() + ")";
+          const toast = document.createElement("div");
+          toast.className = "toast";
+          toast.textContent = message;
+          toastLayer.appendChild(toast);
+
+          window.setTimeout(() => {
+            toast.remove();
+          }, 5000);
+        }
+
+        function stopEditDebounceTimer() {
+          if (state.editDebounceTimer) {
+            window.clearTimeout(state.editDebounceTimer);
+            state.editDebounceTimer = null;
+          }
+        }
+
+        function stopEditSaveRequest() {
+          if (state.editSaveController) {
+            state.editSaveController.abort();
+            state.editSaveController = null;
+          }
+        }
+
+        function currentSourceTableName() {
+          const tbodyTable = String(tablePanel?.querySelector("tbody[data-source-table]")?.dataset.sourceTable || "").trim();
+          return tbodyTable;
+        }
+
+        function escapeCssSelector(value) {
+          if (window.CSS?.escape) {
+            return window.CSS.escape(String(value));
+          }
+
+          return String(value).replaceAll("\\", "\\\\").replaceAll('"', '\\"');
+        }
+
+        function currentFocusedRowElement() {
+          return rows()[state.focusedRowIndex] || null;
+        }
+
+        function cellAt(rowIndex, columnIndex) {
+          const row = rows()[rowIndex] || null;
+          if (!row) {
+            return null;
+          }
+
+          return row.querySelectorAll("td")[columnIndex] || null;
+        }
+
+        function currentFocusedCellElement() {
+          return cellAt(state.focusedRowIndex, state.focusedColumnIndex);
+        }
+
+        function cellValueElement(cell) {
+          if (!(cell instanceof HTMLElement)) {
+            return null;
+          }
+
+          return cell.querySelector(".cellValue");
+        }
+
+        function parseFocusedRowId(cell) {
+          if (!(cell instanceof HTMLElement)) {
+            return "";
+          }
+
+          const row = cell.closest("tr");
+          const directRowId = String(row?.dataset.rowId || "").trim();
+          if (directRowId) {
+            return directRowId;
+          }
+
+          const cellRowId = String(cell.dataset.rowId || "").trim();
+          return cellRowId;
         }
 
         function readSettings() {
@@ -832,12 +921,120 @@ pub(super) fn script() -> String {
         }
 
         function focusedCell() {
-          const row = focusedRow();
-          if (!row) {
+          return cellAt(state.focusedRowIndex, state.focusedColumnIndex);
+        }
+
+        function cellByIdentity(rowId, columnKey) {
+          const trimmedRowId = String(rowId || "").trim();
+          const trimmedColumnKey = String(columnKey || "").trim();
+          if (!trimmedRowId || !trimmedColumnKey) {
             return null;
           }
 
-          return row.querySelectorAll("td")[state.focusedColumnIndex] || null;
+          const row = rows().find(
+            (candidate) => String(candidate.dataset.rowId || "").trim() === trimmedRowId,
+          );
+          if (!(row instanceof HTMLElement)) {
+            return null;
+          }
+
+          const safeColumnKey = escapeCssSelector(trimmedColumnKey);
+          return row.querySelector(`td[data-column-key="${safeColumnKey}"]`);
+        }
+
+        function focusedCellContext() {
+          const cell = focusedCell();
+          if (!(cell instanceof HTMLElement)) {
+            return null;
+          }
+
+          const row = cell.closest("tr");
+          if (!(row instanceof HTMLElement)) {
+            return null;
+          }
+
+          return {
+            cell,
+            row,
+            rowId: String(row.dataset.rowId || "").trim(),
+            tableName: String(row.closest("tbody")?.dataset.sourceTable || currentSourceTableName() || "").trim(),
+            columnKey: String(cell.dataset.columnKey || "").trim(),
+            kind: String(cell.dataset.cellKind || "string").trim() || "string",
+          };
+        }
+
+        function syncFocusedCellAttributes() {
+          const cell = focusedCell();
+          if (!(cell instanceof HTMLElement)) {
+            return;
+          }
+
+          cell.dataset.focusedCell = "true";
+          if (state.editingCell && cell === state.editingCell.cell) {
+            applyEditingCellState();
+          }
+        }
+
+        function applyEditingCellState() {
+          const editingCell = state.editingCell?.cell;
+          const valueElement = state.editingCell?.valueElement;
+          if (!(editingCell instanceof HTMLElement) || !(valueElement instanceof HTMLElement)) {
+            return;
+          }
+
+          valueElement.dataset.editingCell = "true";
+          valueElement.setAttribute("contenteditable", "plaintext-only");
+          valueElement.spellcheck = false;
+          valueElement.setAttribute("role", "textbox");
+          valueElement.setAttribute("aria-multiline", "true");
+          editingCell.dataset.focusedCell = "true";
+          editingCell.dataset.editingCell = "true";
+        }
+
+        function clearEditingCellState() {
+          const editingCell = state.editingCell?.cell;
+          const valueElement = state.editingCell?.valueElement;
+          if (valueElement instanceof HTMLElement) {
+            delete valueElement.dataset.editingCell;
+            valueElement.removeAttribute("contenteditable");
+            valueElement.removeAttribute("role");
+            valueElement.removeAttribute("aria-multiline");
+          }
+
+          if (editingCell instanceof HTMLElement) {
+            delete editingCell.dataset.editingCell;
+          }
+
+          state.editingCell = null;
+          stopEditDebounceTimer();
+          stopEditSaveRequest();
+        }
+
+        function restoreEditingCellIfNeeded() {
+          const editing = state.editingCell;
+          if (!editing) {
+            return;
+          }
+
+          const cell = cellByIdentity(editing.rowId, editing.columnKey) || cellAt(editing.rowIndex, editing.columnIndex);
+          if (!(cell instanceof HTMLElement)) {
+            clearEditingCellState();
+            return;
+          }
+
+          const valueElement = cellValueElement(cell);
+          if (!(valueElement instanceof HTMLElement)) {
+            clearEditingCellState();
+            return;
+          }
+
+          state.editingCell = {
+            ...editing,
+            cell,
+            valueElement,
+          };
+          applyEditingCellState();
+          focusCellValue(valueElement, { selectAll: false });
         }
 
         function syncSelection() {
@@ -850,9 +1047,30 @@ pub(super) fn script() -> String {
           if (!currentRows.length) {
             state.focusedRowIndex = 0;
             state.focusedColumnIndex = 0;
+            state.focusedRowId = "";
+            state.focusedColumnKey = "";
             delete tablePanel.dataset.mode;
             clearSelectionAttributes();
+            clearEditingCellState();
             return;
+          }
+
+          if (state.focusedRowId) {
+            const preferredRowIndex = currentRows.findIndex(
+              (row) => String(row.dataset.rowId || "").trim() === state.focusedRowId,
+            );
+            if (preferredRowIndex >= 0) {
+              state.focusedRowIndex = preferredRowIndex;
+            }
+          }
+
+          if (state.focusedColumnKey) {
+            const preferredColumnIndex = currentColumns.findIndex(
+              (column) => String(column.dataset.columnKey || "").trim() === state.focusedColumnKey,
+            );
+            if (preferredColumnIndex >= 0) {
+              state.focusedColumnIndex = preferredColumnIndex;
+            }
           }
 
           state.focusedRowIndex = clamp(state.focusedRowIndex, 0, currentRows.length - 1);
@@ -862,25 +1080,33 @@ pub(super) fn script() -> String {
             Math.max(0, currentColumns.length - 1),
           );
 
+          const focused = focusedCellContext();
+          state.focusedRowId = focused?.rowId || "";
+          state.focusedColumnKey = focused?.columnKey || "";
+
           clearSelectionAttributes();
           syncModeSelect();
 
+          currentRows.forEach((row, rowIndex) => {
+            row.dataset.rowIndex = String(rowIndex);
+            if (state.nerdMode && rowIndex === state.focusedRowIndex) {
+              row.dataset.rowFocused = "true";
+              row.scrollIntoView({ block: "nearest", inline: "nearest" });
+            }
+          });
+
           if (state.nerdMode) {
             tablePanel.dataset.mode = "helix";
-            currentRows.forEach((row, rowIndex) => {
-              row.dataset.rowIndex = String(rowIndex);
-              if (rowIndex === state.focusedRowIndex) {
-                row.dataset.rowFocused = "true";
-                row.scrollIntoView({ block: "nearest", inline: "nearest" });
-              }
-            });
-
           } else {
             delete tablePanel.dataset.mode;
-            currentRows.forEach((row, rowIndex) => {
-              row.dataset.rowIndex = String(rowIndex);
-            });
           }
+
+          const cell = focusedCell();
+          if (cell instanceof HTMLElement) {
+            cell.dataset.focusedCell = "true";
+          }
+
+          restoreEditingCellIfNeeded();
         }
 
         function setNerdMode(enabled) {
@@ -915,8 +1141,363 @@ pub(super) fn script() -> String {
           syncSelection();
         }
 
+        function selectEditableText(element, selectAll) {
+          if (!(element instanceof HTMLElement)) {
+            return;
+          }
+
+          const selection = window.getSelection?.();
+          if (!selection) {
+            return;
+          }
+
+          const range = document.createRange();
+          range.selectNodeContents(element);
+          if (!selectAll) {
+            range.collapse(false);
+          }
+
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+
+        function focusCellValue(element, options = {}) {
+          if (!(element instanceof HTMLElement)) {
+            return;
+          }
+
+          element.focus({ preventScroll: true });
+          const selectAll = options.selectAll === true;
+          window.requestAnimationFrame(() => {
+            if (!element.isConnected) {
+              return;
+            }
+
+            if (selectAll) {
+              selectEditableText(element, true);
+              return;
+            }
+
+            if (options.preserveExistingSelection === true) {
+              return;
+            }
+
+            selectEditableText(element, false);
+          });
+        }
+
+        function beginEditOnCell(cell, options = {}) {
+          if (!(cell instanceof HTMLElement)) {
+            return;
+          }
+
+          const row = cell.closest("tr");
+          const valueElement = cellValueElement(cell);
+          if (!(row instanceof HTMLElement) || !(valueElement instanceof HTMLElement)) {
+            return;
+          }
+
+          const columnKey = String(cell.dataset.columnKey || "").trim();
+          if (!columnKey) {
+            return;
+          }
+
+          if (columnKey === "id") {
+            showErrorToast("id column is read-only");
+            return;
+          }
+
+          const rowId = String(row.dataset.rowId || "").trim();
+          const tableName = String(row.closest("tbody")?.dataset.sourceTable || currentSourceTableName() || "").trim();
+          const rowIndex = Number.parseInt(String(row.dataset.rowIndex || state.focusedRowIndex || 0), 10);
+          const columnIndex = Number.parseInt(String(cell.dataset.columnIndex || state.focusedColumnIndex || 0), 10);
+          const kind = String(cell.dataset.cellKind || "string").trim() || "string";
+          const text = String(valueElement.textContent || "");
+
+          state.focusedRowIndex = Number.isInteger(rowIndex) && rowIndex >= 0 ? rowIndex : state.focusedRowIndex;
+          state.focusedColumnIndex = Number.isInteger(columnIndex) && columnIndex >= 0 ? columnIndex : state.focusedColumnIndex;
+          state.focusedRowId = rowId;
+          state.focusedColumnKey = columnKey;
+
+          state.editingCell = {
+            cell,
+            valueElement,
+            rowIndex: state.focusedRowIndex,
+            columnIndex: state.focusedColumnIndex,
+            rowId,
+            tableName,
+            columnKey,
+            kind,
+            originalText: text,
+            lastSavedText: text,
+          };
+
+          syncSelection();
+          applyEditingCellState();
+
+          if (options.selectAll === true) {
+            focusCellValue(valueElement, { selectAll: true });
+          } else {
+            focusCellValue(valueElement, { preserveExistingSelection: false });
+          }
+        }
+
+        function normalizeCellEditValue(editing, rawText) {
+          const kind = String(editing?.kind || "string").trim() || "string";
+          const text = String(rawText ?? "");
+          const trimmed = text.trim();
+
+          if (kind === "number") {
+            if (!trimmed) {
+              return null;
+            }
+            const parsed = Number(text);
+            if (Number.isNaN(parsed)) {
+              throw new Error("expected a number");
+            }
+            return parsed;
+          }
+
+          if (kind === "boolean") {
+            if (!trimmed) {
+              return null;
+            }
+            if (["true", "1", "yes", "on"].includes(trimmed.toLowerCase())) {
+              return true;
+            }
+            if (["false", "0", "no", "off"].includes(trimmed.toLowerCase())) {
+              return false;
+            }
+            throw new Error("expected true or false");
+          }
+
+          if (kind === "null") {
+            return trimmed ? text : null;
+          }
+
+          return text;
+        }
+
+        function readEditingCellText(editing) {
+          const valueElement = editing?.valueElement;
+          if (!(valueElement instanceof HTMLElement)) {
+            return "";
+          }
+
+          return String(valueElement.textContent || "");
+        }
+
+        function readRowCellText(row, columnKey) {
+          if (!(row instanceof HTMLElement)) {
+            return "";
+          }
+
+          const safeColumnKey = escapeCssSelector(String(columnKey || "").trim());
+          if (!safeColumnKey) {
+            return "";
+          }
+
+          return String(
+            row.querySelector(`td[data-column-key="${safeColumnKey}"] .cellValue`)?.textContent || "",
+          );
+        }
+
+        function buildOrganSavePayload(editing, rawText) {
+          const row = editing?.cell?.closest("tr");
+          if (!(row instanceof HTMLElement)) {
+            throw new Error("row is missing");
+          }
+
+          const payload = {
+            name: readRowCellText(row, "name"),
+            base_url: readRowCellText(row, "base_url"),
+          };
+
+          if (editing.columnKey === "name") {
+            payload.name = rawText;
+          } else if (editing.columnKey === "base_url") {
+            payload.base_url = rawText;
+          }
+
+          return payload;
+        }
+
+        function buildSaveTarget(editing, rawText) {
+          const currentTableName = String(editing?.tableName || "").trim();
+          const currentRowId = String(editing?.rowId || "").trim();
+          const currentColumnKey = String(editing?.columnKey || "").trim();
+
+          if (!currentTableName) {
+            throw new Error("table is unknown");
+          }
+
+          if (!currentRowId) {
+            throw new Error("row id is missing");
+          }
+
+          if (!currentColumnKey || currentColumnKey === "id") {
+            throw new Error("id column is read-only");
+          }
+
+          if (currentTableName === "organ") {
+            return {
+              url: "/organ/" + encodeURIComponent(currentRowId),
+              payload: buildOrganSavePayload(editing, rawText),
+            };
+          }
+
+          if (!serverId) {
+            throw new Error("server is not configured");
+          }
+
+          if (!/^[0-9]+$/.test(currentRowId)) {
+            throw new Error("row id is missing");
+          }
+
+          return {
+            url:
+              "/host/integrations/servers/" +
+              encodeURIComponent(serverId) +
+              "/table/" +
+              encodeURIComponent(currentTableName) +
+              "/" +
+              encodeURIComponent(currentRowId),
+            payload: { [currentColumnKey]: normalizeCellEditValue(editing, rawText) },
+          };
+        }
+
+        async function saveEditingCell(editing, options = {}) {
+          if (!editing) {
+            return;
+          }
+
+          const rawText = readEditingCellText(editing);
+          if (rawText === editing.lastSavedText) {
+            if (options.exit === true) {
+              clearEditingCellState();
+            }
+            return;
+          }
+
+          let target;
+          try {
+            target = buildSaveTarget(editing, rawText);
+          } catch (error) {
+            if (error instanceof Error) {
+              showErrorToast(error.message);
+            } else {
+              showErrorToast("invalid value");
+            }
+            return;
+          }
+
+          const controller = new AbortController();
+          state.editSaveController = controller;
+          const requestBody = JSON.stringify(target.payload);
+
+          try {
+            setStatus("Saving", "loading");
+            const response = await fetch(target.url, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              body: requestBody,
+              cache: "no-store",
+              signal: controller.signal,
+            });
+
+            const rawBody = await response.text().catch(() => "");
+            let payload = null;
+            if (rawBody) {
+              try {
+                payload = JSON.parse(rawBody);
+              } catch {
+                payload = null;
+              }
+            }
+
+            if (response.status === 401) {
+              window.LinceWidgetHost?.invalidateServerAuth?.(serverId);
+              setStatus("Bloqueado", "error");
+              throw new Error("server auth expired");
+            }
+
+            if (!response.ok) {
+              throw new Error(
+                (payload && typeof payload.message === "string" && payload.message) ||
+                  (payload && typeof payload.error === "string" && payload.error) ||
+                  rawBody ||
+                  `patch failed (${response.status})`,
+              );
+            }
+
+            editing.lastSavedText = rawText;
+            setStatus("Live", "live");
+            if (options.exit === true) {
+              clearEditingCellState();
+            }
+          } catch (error) {
+            if (controller.signal.aborted) {
+              return;
+            }
+
+            const reason = error instanceof Error ? error.message : "patch failed";
+            setStatus("Save failed", "error");
+            showErrorToast(reason);
+          } finally {
+            if (state.editSaveController === controller) {
+              state.editSaveController = null;
+            }
+          }
+        }
+
+        function scheduleEditingCellSave() {
+          if (!state.editingCell) {
+            return;
+          }
+
+          stopEditDebounceTimer();
+          stopEditSaveRequest();
+          state.editDebounceTimer = window.setTimeout(() => {
+            const editing = state.editingCell;
+            if (!editing) {
+              return;
+            }
+
+            void saveEditingCell(editing, { exit: false });
+          }, 300);
+        }
+
         function handleTableKeydown(event) {
-          if (!state.nerdMode || !tablePanel) {
+          if (!tablePanel) {
+            return;
+          }
+
+          if (state.editingCell) {
+            if (event.key === "Escape") {
+              event.preventDefault();
+              const editing = state.editingCell;
+              if (editing) {
+                editing.valueElement.textContent = editing.lastSavedText;
+              }
+              clearEditingCellState();
+              syncSelection();
+              return;
+            }
+
+            return;
+          }
+
+          if (!state.nerdMode) {
+            if (event.key === "F2") {
+              const cell = focusedCell();
+              if (cell instanceof HTMLElement) {
+                event.preventDefault();
+                beginEditOnCell(cell, { selectAll: false });
+              }
+            }
             return;
           }
 
@@ -947,6 +1528,14 @@ pub(super) fn script() -> String {
             event.preventDefault();
             moveFocus(0, 1);
             return;
+          }
+
+          if (key === "F2") {
+            event.preventDefault();
+            const cell = focusedCell();
+            if (cell instanceof HTMLElement) {
+              beginEditOnCell(cell, { selectAll: false });
+            }
           }
         }
 
@@ -1096,13 +1685,33 @@ pub(super) fn script() -> String {
             }
 
             const button = target.closest("[data-delete-row-id][data-delete-table-name]");
-            if (!button || !(button instanceof HTMLElement)) {
+            if (button instanceof HTMLElement) {
+              event.preventDefault();
+              event.stopPropagation();
+              deleteRowFromTable(button);
+              return;
+            }
+
+            const cell = target.closest("td[data-column-key]");
+            if (!(cell instanceof HTMLElement)) {
+              return;
+            }
+
+            const row = cell.closest("tr");
+            if (row instanceof HTMLElement) {
+              state.focusedRowIndex = Number.parseInt(String(row.dataset.rowIndex || state.focusedRowIndex || 0), 10);
+              state.focusedColumnIndex = Number.parseInt(String(cell.dataset.columnIndex || state.focusedColumnIndex || 0), 10);
+              state.focusedRowId = String(row.dataset.rowId || "").trim();
+              state.focusedColumnKey = String(cell.dataset.columnKey || "").trim();
+              syncSelection();
+            }
+
+            if (state.nerdMode) {
               return;
             }
 
             event.preventDefault();
-            event.stopPropagation();
-            deleteRowFromTable(button);
+            beginEditOnCell(cell, { selectAll: false });
           });
           tablePanel.addEventListener("pointerdown", () => {
             if (!state.nerdMode) {
@@ -1112,10 +1721,56 @@ pub(super) fn script() -> String {
               tablePanel.focus({ preventScroll: true });
             });
           });
-          tablePanel.addEventListener("focus", () => {
-            if (state.nerdMode) {
+          tablePanel.addEventListener("focusin", (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) {
+              return;
+            }
+
+            const cell = target.closest("td[data-column-key]");
+            if (!(cell instanceof HTMLElement)) {
+              return;
+            }
+
+            const row = cell.closest("tr");
+            if (row instanceof HTMLElement) {
+              state.focusedRowIndex = Number.parseInt(String(row.dataset.rowIndex || state.focusedRowIndex || 0), 10);
+              state.focusedColumnIndex = Number.parseInt(String(cell.dataset.columnIndex || state.focusedColumnIndex || 0), 10);
+              state.focusedRowId = String(row.dataset.rowId || "").trim();
+              state.focusedColumnKey = String(cell.dataset.columnKey || "").trim();
+            }
+
+            if (state.nerdMode || state.editingCell) {
               syncSelection();
             }
+          });
+          tablePanel.addEventListener("focusout", (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) {
+              return;
+            }
+
+            const editing = state.editingCell;
+            if (!editing || target !== editing.valueElement) {
+              return;
+            }
+
+            const snapshot = { ...editing };
+            clearEditingCellState();
+            void saveEditingCell(snapshot, { exit: false });
+          });
+          tablePanel.addEventListener("input", (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) {
+              return;
+            }
+
+            const editing = state.editingCell;
+            if (!editing || target !== editing.valueElement) {
+              return;
+            }
+
+            scheduleEditingCellSave();
           });
 
           const observer = new MutationObserver(() => {

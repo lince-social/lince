@@ -736,10 +736,11 @@ impl TrailWidgetService {
         let runtime = parse_runtime_state(&resolved.card.widget_state);
         let derived_name = derived_view_name(&resolved.card.id, view_name);
         let query = build_trail_view_query(trail_root_record_id);
+        let organ_id = resolved.organ.id.to_string();
 
         let derived_view_id = match runtime.derived_view_id {
             Some(view_id)
-                if runtime.server_id.as_deref() == Some(resolved.organ.id.as_str())
+                if runtime.server_id.as_deref() == Some(organ_id.as_str())
                     && runtime.trail_root_record_id == Some(trail_root_record_id) =>
             {
                 if self
@@ -996,7 +997,7 @@ impl TrailWidgetService {
     async fn persist_runtime_state(
         &self,
         instance_id: &str,
-        server_id: &str,
+        server_id: impl ToString,
         trail_root_record_id: i64,
         derived_view_id: i64,
     ) -> Result<(), TrailWidgetError> {
@@ -1760,7 +1761,7 @@ impl TrailWidgetService {
     async fn read_remote_json(
         &self,
         session_token: Option<&str>,
-        server_id: &str,
+        server_id: impl ToString,
         response: reqwest::Response,
     ) -> Result<Value, TrailWidgetError> {
         if response.status() == reqwest::StatusCode::UNAUTHORIZED {

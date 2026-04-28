@@ -2208,7 +2208,7 @@ impl KanbanActionService {
     async fn read_remote_json(
         &self,
         session_token: Option<&str>,
-        server_id: &str,
+        server_id: impl ToString,
         response: reqwest::Response,
     ) -> Result<Value, KanbanActionError> {
         if response.status() == reqwest::StatusCode::UNAUTHORIZED {

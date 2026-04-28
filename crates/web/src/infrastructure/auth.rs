@@ -87,7 +87,7 @@ impl AppAuth {
     pub async fn set_server_session(
         &self,
         token: &str,
-        server_id: impl Into<String>,
+        server_id: impl ToString,
         username_hint: impl Into<String>,
         bearer_token: impl Into<String>,
     ) -> Result<(), String> {
@@ -101,7 +101,7 @@ impl AppAuth {
             return Err("Sessao local ausente.".into());
         };
         session.server_sessions.insert(
-            server_id.into(),
+            server_id.to_string(),
             RemoteServerSession {
                 session_state: RemoteServerSessionState::Connected,
                 username_hint: username_hint.into(),
@@ -113,16 +113,17 @@ impl AppAuth {
         Ok(())
     }
 
-    pub async fn clear_server_session(&self, token: Option<&str>, server_id: &str) {
+    pub async fn clear_server_session(&self, token: Option<&str>, server_id: impl ToString) {
         let Some(token) = token.map(str::trim).filter(|value| !value.is_empty()) else {
             return;
         };
+        let server_id = server_id.to_string();
 
         let mut sessions = self.sessions.write().await;
         let Some(session) = sessions.get_mut(token) else {
             return;
         };
-        if let Some(server_session) = session.server_sessions.get_mut(server_id) {
+        if let Some(server_session) = session.server_sessions.get_mut(&server_id) {
             server_session.session_state = RemoteServerSessionState::LoggedOut;
             server_session.bearer_token.clear();
             server_session.connected_at_unix = None;
@@ -133,18 +134,19 @@ impl AppAuth {
     pub async fn expire_server_session(
         &self,
         token: Option<&str>,
-        server_id: &str,
+        server_id: impl ToString,
         message: impl Into<String>,
     ) {
         let Some(token) = token.map(str::trim).filter(|value| !value.is_empty()) else {
             return;
         };
+        let server_id = server_id.to_string();
 
         let mut sessions = self.sessions.write().await;
         let Some(session) = sessions.get_mut(token) else {
             return;
         };
-        if let Some(server_session) = session.server_sessions.get_mut(server_id) {
+        if let Some(server_session) = session.server_sessions.get_mut(&server_id) {
             server_session.session_state = RemoteServerSessionState::Expired;
             server_session.bearer_token.clear();
             server_session.connected_at_unix = None;
@@ -155,11 +157,12 @@ impl AppAuth {
     pub async fn server_session(
         &self,
         token: Option<&str>,
-        server_id: &str,
+        server_id: impl ToString,
     ) -> Option<RemoteServerSession> {
+        let server_id = server_id.to_string();
         self.session(token)
             .await
-            .and_then(|record| record.server_sessions.get(server_id).cloned())
+            .and_then(|record| record.server_sessions.get(&server_id).cloned())
             .filter(|session| {
                 session.session_state == RemoteServerSessionState::Connected
                     && !session.bearer_token.trim().is_empty()

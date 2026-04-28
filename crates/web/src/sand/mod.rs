@@ -1,14 +1,11 @@
 mod bucket_image_view;
 mod calendar;
 mod chess;
-mod doom_portal;
+mod freedoom;
 mod general_creation;
-mod ghostty_terminal;
 #[path = "kanban/mod.rs"]
 mod kanban;
 mod lince_logo_led;
-mod link_chip;
-mod local_terminal;
 #[path = "markdown_notes/mod.rs"]
 mod markdown_notes;
 mod ops_clock;
@@ -20,6 +17,7 @@ mod sand_publisher;
 mod shared_markdown;
 mod spotify_control;
 mod table;
+mod terminal;
 mod todo;
 mod trail;
 mod weather;
@@ -100,7 +98,7 @@ impl OfficialWidgetBuilder {
     }
 }
 
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 20] = [
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 18] = [
     OfficialWidgetBuilder::Html {
         feature_flag: bucket_image_view::FEATURE_FLAG,
         source_builder: bucket_image_view::source,
@@ -114,16 +112,16 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 20] = [
         source_builder: chess::source,
     },
     OfficialWidgetBuilder::Package {
-        feature_flag: doom_portal::FEATURE_FLAG,
-        package_builder: doom_portal::package,
+        feature_flag: freedoom::FEATURE_FLAG,
+        package_builder: freedoom::package,
     },
     OfficialWidgetBuilder::Html {
         feature_flag: general_creation::FEATURE_FLAG,
         source_builder: general_creation::source,
     },
     OfficialWidgetBuilder::Package {
-        feature_flag: ghostty_terminal::FEATURE_FLAG,
-        package_builder: ghostty_terminal::package,
+        feature_flag: terminal::FEATURE_FLAG,
+        package_builder: terminal::package,
     },
     OfficialWidgetBuilder::Html {
         feature_flag: kanban::FEATURE_FLAG,
@@ -140,14 +138,6 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 20] = [
     OfficialWidgetBuilder::Html {
         feature_flag: lince_logo_led::FEATURE_FLAG,
         source_builder: lince_logo_led::source,
-    },
-    OfficialWidgetBuilder::Html {
-        feature_flag: link_chip::FEATURE_FLAG,
-        source_builder: link_chip::source,
-    },
-    OfficialWidgetBuilder::Html {
-        feature_flag: local_terminal::FEATURE_FLAG,
-        source_builder: local_terminal::source,
     },
     OfficialWidgetBuilder::Html {
         feature_flag: markdown_notes::FEATURE_FLAG,

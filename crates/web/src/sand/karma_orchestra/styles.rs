@@ -15,10 +15,7 @@ const STYLE: &str = r#"
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; overflow: hidden; }
 body {
-    background:
-        radial-gradient(circle at 20% 10%, rgba(231,183,95,.18), transparent 28%),
-        radial-gradient(circle at 80% 90%, rgba(120,105,78,.22), transparent 32%),
-        linear-gradient(135deg, #181512, #080807);
+    background: linear-gradient(135deg, #15120f, #090807);
     color: var(--text);
     font-family: ui-serif, Georgia, "Times New Roman", serif;
 }
@@ -104,6 +101,37 @@ button, input { font: inherit; }
 .modalHead { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
 .modalHead h2 { margin: 2px 0 0; font-size: 1rem; }
 .field { display: grid; gap: 7px; margin-top: 10px; color: var(--muted); font-size: .78rem; }
+.physicsHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sliderRow { display: flex; justify-content: space-between; align-items: center; gap: 10px; color: var(--text); }
+.sliderLabel { font-size: .76rem; color: var(--muted); }
+.sliderValue { font-family: var(--mono); font-size: .72rem; color: var(--soft); }
+.slider {
+    width: 100%;
+    appearance: none;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.12);
+    outline: none;
+}
+.slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #e6edf3;
+    border: 2px solid rgba(0,0,0,.2);
+    cursor: pointer;
+}
+.slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #e6edf3;
+    border: 2px solid rgba(0,0,0,.2);
+    cursor: pointer;
+}
+.colorGrid { display: grid; gap: 8px; }
+.colorRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .input {
     width: 100%;
     border: 1px solid var(--line);
@@ -112,6 +140,13 @@ button, input { font: inherit; }
     color: var(--text);
     min-height: 36px;
     padding: 0 10px;
+}
+.colorRow .input[type="color"] {
+    width: 52px;
+    min-height: 32px;
+    padding: 0;
+    border: 0;
+    background: transparent;
 }
 .viewList { display: grid; gap: 8px; max-height: 240px; overflow: auto; }
 .viewRow { width: 100%; text-align: left; border-radius: 12px; padding: 10px; }
@@ -122,12 +157,40 @@ button, input { font: inherit; }
 .summaryGrid div { border: 1px solid var(--line); border-radius: 12px; padding: 9px; display: grid; gap: 3px; }
 .summaryGrid span { color: var(--muted); font-size: .72rem; }
 
-.nodeLabel { font: 12px ui-sans-serif, system-ui; color: var(--text); pointer-events: none; }
-.nodeLabel .human { font-weight: 700; }
-.nodeLabel .meta { display: flex; gap: 8px; justify-content: space-between; color: var(--muted); font-size: 10px; margin-top: 2px; }
+.nodeLabel { pointer-events: none; overflow: visible; }
+.nodeLabelBox {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    align-items: center;
+    padding: 0;
+    font: 9px ui-sans-serif, system-ui;
+    text-align: center;
+}
+.nodeLabelBox .human,
+.nodeLabelBox .meta {
+    position: relative;
+    z-index: 1;
+    padding: 1px 2px;
+    border-radius: 3px;
+    white-space: nowrap;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+.nodeLabelBox .human { font-weight: 700; color: var(--text); font-size: 8px; }
+.nodeLabelBox .meta {
+    color: var(--muted);
+    font-size: 6.5px;
+}
 .nodeShape { stroke: rgba(255,255,255,.78); stroke-width: 2; }
 .bridgeInner { fill: rgba(241,236,226,.82); stroke: rgba(17,16,14,.8); stroke-width: 1.5; }
-.link { fill: none; stroke: rgba(241,236,226,.45); stroke-width: 1.6; marker-end: url(#arrow); }
-.link.fulfillment { stroke: rgba(231,183,95,.76); stroke-dasharray: 4 4; }
+.link { fill: none; stroke: rgba(255,255,255,.84); stroke-width: 1.6; }
+.link.fulfillment { stroke-dasharray: 4 4; }
+.link.inactive { stroke: rgba(155,155,155,.45); }
+.link.inactive.fulfillment { stroke: rgba(155,155,155,.45); }
 .link.loop { stroke-width: 2.2; }
+.arrowHead { stroke: none; }
 "#;

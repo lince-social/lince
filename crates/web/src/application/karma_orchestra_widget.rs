@@ -471,6 +471,7 @@ impl KarmaOrchestraWidgetService {
                 karma_quantity: row.quantity as i32,
                 karma_parallel: row.parallel.unwrap_or_default() != 0,
                 karma_timeout_seconds: row.timeout_seconds.unwrap_or_default(),
+                active: false,
                 condition_id: condition.id as u32,
                 condition_name: condition.name.clone(),
                 condition_quantity: condition.quantity as i32,

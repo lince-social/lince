@@ -67,6 +67,47 @@ pub(crate) fn body() -> Markup {
                                 button data-distinctness="both" class="segment" type="button" { "Both" }
                             }
                         }
+                        div.field {
+                            span { "Physics" }
+                            div.physicsHead {
+                                span class="muted" { "Live D3 forces" }
+                                button #karma-physics-reset.button type="button" { "Reset" }
+                            }
+                            label.sliderRow for="karma-physics-center-expulsion" {
+                                span.sliderLabel { "Center expulsion" }
+                                span #karma-physics-center-expulsion-value.sliderValue { "2.3" }
+                            }
+                            input #karma-physics-center-expulsion.slider type="range" min="0" max="6" step="0.1" value="2.3";
+
+                            label.sliderRow for="karma-physics-condition-pulling" {
+                                span.sliderLabel { "Condition pulling" }
+                                span #karma-physics-condition-pulling-value.sliderValue { "0.25" }
+                            }
+                            input #karma-physics-condition-pulling.slider type="range" min="0" max="1" step="0.01" value="0.25";
+
+                            label.sliderRow for="karma-physics-node-repulsion" {
+                                span.sliderLabel { "Repulsion node-by-node" }
+                                span #karma-physics-node-repulsion-value.sliderValue { "-640" }
+                            }
+                            input #karma-physics-node-repulsion.slider type="range" min="-1200" max="-40" step="10" value="-640";
+                        }
+                        div.field {
+                            span { "Colors" }
+                            div.colorGrid {
+                                label.colorRow {
+                                    span { "Conditions" }
+                                    input #karma-condition-color.input type="color" value="#f1ece2";
+                                }
+                                label.colorRow {
+                                    span { "Consequences" }
+                                    input #karma-consequence-color.input type="color" value="#6f2e2b";
+                                }
+                                label.colorRow {
+                                    span { "Inactive" }
+                                    input #karma-inactive-color.input type="color" value="#9b9b9b";
+                                }
+                            }
+                        }
                         div.summaryGrid {
                             div { span { "Rules" } strong #karma-summary-rules { "0" } }
                             div { span { "Conditions" } strong #karma-summary-conditions { "0" } }

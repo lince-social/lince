@@ -11,6 +11,7 @@ pub struct KarmaOrchestraRuleInput {
     pub karma_quantity: i32,
     pub karma_parallel: bool,
     pub karma_timeout_seconds: f64,
+    pub active: bool,
     pub condition_id: u32,
     pub condition_name: String,
     pub condition_quantity: i32,
@@ -172,7 +173,14 @@ pub fn build_karma_orchestra_snapshot(
     KarmaOrchestraSnapshot {
         view_id,
         view_name: view_name.into(),
-        karma_rows: rules,
+        karma_rows: evaluated
+            .into_iter()
+            .map(|entry| {
+                let mut rule = entry.rule;
+                rule.active = entry.triggers;
+                rule
+            })
+            .collect(),
         nodes,
         links,
         check: KarmaCheckReport {
@@ -208,35 +216,16 @@ fn evaluate_rule(rule: KarmaOrchestraRuleInput, catalog: &KarmaTokenCatalog) -> 
             "=*" => true,
             _ => false,
         };
-    let mut consequence = expression_display(&rule.consequence_code, catalog, false);
+    let consequence_numeric_records = !record_ids_in_expression(&rule.consequence_code).is_empty();
+    let mut consequence = expression_display(&rule.consequence_code, catalog, consequence_numeric_records);
     if let Some(record_id) = first_record_quantity_token(&rule.consequence_code) {
-        let text = if triggers {
-            condition.value.text.clone()
-        } else {
-            "not executed".into()
-        };
-        consequence.value = KarmaDisplayValue {
-            text,
-            numeric: if triggers {
-                condition.value.numeric
-            } else {
-                None
-            },
-            complete: triggers && condition.value.complete,
-        };
         if consequence.human == rule.consequence_code {
             consequence.human = catalog
                 .records
                 .get(&record_id)
-                .map(|record| format!("{}'s Qty", record.head))
-                .unwrap_or_else(|| format!("Record #{record_id} Qty"));
+                .map(|record| record.head.clone())
+                .unwrap_or_else(|| format!("Record #{record_id}"));
         }
-    } else if !triggers {
-        consequence.value = KarmaDisplayValue {
-            text: "not executed".into(),
-            numeric: None,
-            complete: false,
-        };
     }
 
     EvaluatedRule {
@@ -265,7 +254,7 @@ pub fn expression_display(
         let name = record
             .map(|record| record.head.clone())
             .unwrap_or_else(|| format!("Record #{id}"));
-        human = human.replace(&token, &format!("{name}'s Qty"));
+        human = human.replace(&token, &name);
         if numeric_records {
             symbolic = symbolic.replace(&token, &quantity.to_string());
         }
@@ -273,7 +262,7 @@ pub fn expression_display(
             token,
             kind: "record_quantity".into(),
             id,
-            human: format!("{name}'s Qty"),
+            human: name.clone(),
             numeric: Some(quantity),
             display_only: !numeric_records,
         });

@@ -5,6 +5,7 @@ mod freedoom;
 mod general_creation;
 #[path = "kanban/mod.rs"]
 mod kanban;
+mod karma_orchestra;
 mod lince_logo_led;
 #[path = "markdown_notes/mod.rs"]
 mod markdown_notes;
@@ -98,7 +99,7 @@ impl OfficialWidgetBuilder {
     }
 }
 
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 18] = [
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 19] = [
     OfficialWidgetBuilder::Html {
         feature_flag: bucket_image_view::FEATURE_FLAG,
         source_builder: bucket_image_view::source,
@@ -134,6 +135,10 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 18] = [
     OfficialWidgetBuilder::Package {
         feature_flag: trail::FEATURE_FLAG,
         package_builder: trail::package,
+    },
+    OfficialWidgetBuilder::Package {
+        feature_flag: karma_orchestra::FEATURE_FLAG,
+        package_builder: karma_orchestra::package,
     },
     OfficialWidgetBuilder::Html {
         feature_flag: lince_logo_led::FEATURE_FLAG,

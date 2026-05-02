@@ -21,8 +21,10 @@ const APP_QUERY_REPLIES_JS: &str = include_str!("app/query-replies.js");
 const GHOSTTY_WASM: &[u8] = include_bytes!("vendor/ghostty-vt.wasm");
 const LICENSE_TEXT: &str = include_str!("vendor/LICENSE.txt");
 const UPSTREAM_TEXT: &str = include_str!("vendor/UPSTREAM.txt");
+#[allow(dead_code)]
 const INLINE_STYLES: &[&str] = &[include_str!("styles.css")];
 
+#[allow(dead_code)]
 pub(crate) fn source() -> SandWidgetSource {
     SandWidgetSource {
         filename: "terminal.html",

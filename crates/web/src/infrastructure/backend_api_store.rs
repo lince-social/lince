@@ -20,6 +20,8 @@ pub enum ApiTable {
     RecordComment,
     RecordWorklog,
     RecordResourceRef,
+    Command,
+    Query,
     Frequency,
     KarmaCondition,
     KarmaConsequence,
@@ -208,6 +210,21 @@ struct FrequencyRow {
 }
 
 #[derive(Debug, Serialize, FromRow)]
+struct CommandRow {
+    id: i64,
+    quantity: f64,
+    name: String,
+    command: String,
+}
+
+#[derive(Debug, Serialize, FromRow)]
+struct QueryRow {
+    id: i64,
+    name: Option<String>,
+    query: String,
+}
+
+#[derive(Debug, Serialize, FromRow)]
 struct KarmaConditionRow {
     id: i64,
     quantity: i64,
@@ -231,6 +248,8 @@ struct KarmaRow {
     condition_id: i64,
     operator: String,
     consequence_id: i64,
+    parallel: i64,
+    timeout_seconds: f64,
 }
 
 #[derive(Debug, Serialize, FromRow)]
@@ -463,6 +482,32 @@ const FREQUENCY_FIELD_SPECS: [FieldSpec; 9] = [
     },
 ];
 
+const COMMAND_FIELD_SPECS: [FieldSpec; 3] = [
+    FieldSpec {
+        name: "quantity",
+        kind: FieldKind::Real,
+    },
+    FieldSpec {
+        name: "name",
+        kind: FieldKind::Text,
+    },
+    FieldSpec {
+        name: "command",
+        kind: FieldKind::Text,
+    },
+];
+
+const QUERY_FIELD_SPECS: [FieldSpec; 2] = [
+    FieldSpec {
+        name: "name",
+        kind: FieldKind::NullableText,
+    },
+    FieldSpec {
+        name: "query",
+        kind: FieldKind::Text,
+    },
+];
+
 const KARMA_CONDITION_FIELD_SPECS: [FieldSpec; 3] = [
     FieldSpec {
         name: "quantity",
@@ -493,7 +538,7 @@ const KARMA_CONSEQUENCE_FIELD_SPECS: [FieldSpec; 3] = [
     },
 ];
 
-const KARMA_FIELD_SPECS: [FieldSpec; 5] = [
+const KARMA_FIELD_SPECS: [FieldSpec; 7] = [
     FieldSpec {
         name: "quantity",
         kind: FieldKind::Integer,
@@ -513,6 +558,14 @@ const KARMA_FIELD_SPECS: [FieldSpec; 5] = [
     FieldSpec {
         name: "consequence_id",
         kind: FieldKind::Integer,
+    },
+    FieldSpec {
+        name: "parallel",
+        kind: FieldKind::BooleanInteger,
+    },
+    FieldSpec {
+        name: "timeout_seconds",
+        kind: FieldKind::Real,
     },
 ];
 
@@ -671,6 +724,20 @@ impl BackendApiStore {
                 .await
                 .map_err(map_sqlx_error)?,
             ),
+            ApiTable::Command => serialize_value(
+                sqlx::query_as::<_, CommandRow>(
+                    "SELECT id, quantity, name, command FROM command ORDER BY id",
+                )
+                .fetch_all(db)
+                .await
+                .map_err(map_sqlx_error)?,
+            ),
+            ApiTable::Query => serialize_value(
+                sqlx::query_as::<_, QueryRow>("SELECT id, name, query FROM query ORDER BY id")
+                    .fetch_all(db)
+                    .await
+                    .map_err(map_sqlx_error)?,
+            ),
             ApiTable::KarmaCondition => serialize_value(
                 sqlx::query_as::<_, KarmaConditionRow>(
                     "SELECT id, quantity, name, condition FROM karma_condition ORDER BY id",
@@ -689,7 +756,7 @@ impl BackendApiStore {
             ),
             ApiTable::Karma => serialize_value(
                 sqlx::query_as::<_, KarmaRow>(
-                    "SELECT id, quantity, name, condition_id, operator, consequence_id FROM karma ORDER BY id",
+                    "SELECT id, quantity, name, condition_id, operator, consequence_id, parallel, timeout_seconds FROM karma ORDER BY id",
                 )
                 .fetch_all(db)
                 .await
@@ -778,6 +845,22 @@ impl BackendApiStore {
                 .await
                 .map_err(map_sqlx_error)?,
             ),
+            ApiTable::Command => serialize_value(
+                sqlx::query_as::<_, CommandRow>(
+                    "SELECT id, quantity, name, command FROM command WHERE id = ?",
+                )
+                .bind(id)
+                .fetch_one(db)
+                .await
+                .map_err(map_sqlx_error)?,
+            ),
+            ApiTable::Query => serialize_value(
+                sqlx::query_as::<_, QueryRow>("SELECT id, name, query FROM query WHERE id = ?")
+                    .bind(id)
+                    .fetch_one(db)
+                    .await
+                    .map_err(map_sqlx_error)?,
+            ),
             ApiTable::KarmaCondition => serialize_value(
                 sqlx::query_as::<_, KarmaConditionRow>(
                     "SELECT id, quantity, name, condition FROM karma_condition WHERE id = ?",
@@ -798,7 +881,7 @@ impl BackendApiStore {
             ),
             ApiTable::Karma => serialize_value(
                 sqlx::query_as::<_, KarmaRow>(
-                    "SELECT id, quantity, name, condition_id, operator, consequence_id FROM karma WHERE id = ?",
+                    "SELECT id, quantity, name, condition_id, operator, consequence_id, parallel, timeout_seconds FROM karma WHERE id = ?",
                 )
                 .bind(id)
                 .fetch_one(db)
@@ -1330,15 +1413,17 @@ impl BackendApiStore {
 }
 
 impl ApiTable {
-    pub fn all() -> [ApiTable; 14] {
+    pub fn all() -> [ApiTable; 16] {
         [
             ApiTable::Record,
             ApiTable::AppUser,
+            ApiTable::Command,
             ApiTable::Configuration,
             ApiTable::Frequency,
             ApiTable::Karma,
             ApiTable::KarmaCondition,
             ApiTable::KarmaConsequence,
+            ApiTable::Query,
             ApiTable::RecordComment,
             ApiTable::RecordExtension,
             ApiTable::RecordLink,
@@ -1358,6 +1443,8 @@ impl ApiTable {
             ApiTable::RecordComment => "record_comment",
             ApiTable::RecordWorklog => "record_worklog",
             ApiTable::RecordResourceRef => "record_resource_ref",
+            ApiTable::Command => "command",
+            ApiTable::Query => "query",
             ApiTable::Frequency => "frequency",
             ApiTable::KarmaCondition => "karma_condition",
             ApiTable::KarmaConsequence => "karma_consequence",
@@ -1377,6 +1464,8 @@ impl ApiTable {
             ApiTable::RecordComment => Some(RECORD_COMMENT_FIELD_SPECS.to_vec()),
             ApiTable::RecordWorklog => Some(RECORD_WORKLOG_FIELD_SPECS.to_vec()),
             ApiTable::RecordResourceRef => Some(RECORD_RESOURCE_REF_FIELD_SPECS.to_vec()),
+            ApiTable::Command => Some(COMMAND_FIELD_SPECS.to_vec()),
+            ApiTable::Query => Some(QUERY_FIELD_SPECS.to_vec()),
             ApiTable::Frequency => Some(FREQUENCY_FIELD_SPECS.to_vec()),
             ApiTable::KarmaCondition => Some(KARMA_CONDITION_FIELD_SPECS.to_vec()),
             ApiTable::KarmaConsequence => Some(KARMA_CONSEQUENCE_FIELD_SPECS.to_vec()),
@@ -1413,6 +1502,14 @@ impl ApiTable {
                 .map(|spec| table_create_field_schema(spec.name, spec.kind))
                 .collect(),
             ApiTable::RecordResourceRef => RECORD_RESOURCE_REF_FIELD_SPECS
+                .iter()
+                .map(|spec| table_create_field_schema(spec.name, spec.kind))
+                .collect(),
+            ApiTable::Command => COMMAND_FIELD_SPECS
+                .iter()
+                .map(|spec| table_create_field_schema(spec.name, spec.kind))
+                .collect(),
+            ApiTable::Query => QUERY_FIELD_SPECS
                 .iter()
                 .map(|spec| table_create_field_schema(spec.name, spec.kind))
                 .collect(),
@@ -1544,6 +1641,8 @@ fn parse_api_table(table_name: &str) -> Result<ApiTable, Error> {
         "record_comment" => Ok(ApiTable::RecordComment),
         "record_worklog" => Ok(ApiTable::RecordWorklog),
         "record_resource_ref" => Ok(ApiTable::RecordResourceRef),
+        "command" => Ok(ApiTable::Command),
+        "query" => Ok(ApiTable::Query),
         "frequency" => Ok(ApiTable::Frequency),
         "karma_condition" => Ok(ApiTable::KarmaCondition),
         "karma_consequence" => Ok(ApiTable::KarmaConsequence),

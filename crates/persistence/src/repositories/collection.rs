@@ -4,7 +4,8 @@ use domain::{
         collection::Collection,
         table::{Row as RowEntity, Table},
     },
-    dirty::{collection::CollectionRow, operation::DatabaseTable, view::QueriedView},
+    dirty::{collection::CollectionRow, view::QueriedView},
+    special_views,
 };
 use futures::future::join_all;
 use sqlx::{Column, Pool, Row, Sqlite, TypeInfo};
@@ -12,7 +13,6 @@ use std::{
     collections::HashMap,
     io::{Error, ErrorKind},
     iter::once,
-    str::FromStr,
     sync::Arc,
 };
 use utils::ok;
@@ -54,24 +54,7 @@ impl CollectionRepositoryImpl {
 }
 
 fn is_special_query(query: &str) -> bool {
-    if parse_creation_view_query(query).is_some() {
-        return true;
-    }
-    matches!(
-        query,
-        "karma_orchestra" | "karma_view" | "testing" | "command_buffer"
-    )
-}
-
-fn parse_creation_view_query(query: &str) -> Option<DatabaseTable> {
-    let normalized = query.trim().to_lowercase().replace(['-', ' '], "_");
-    let table_name = normalized
-        .strip_prefix("create_view_")
-        .or_else(|| normalized.strip_prefix("creation_view_"))
-        .or_else(|| normalized.strip_prefix("create_modal_"))
-        .or_else(|| normalized.strip_prefix("creation_modal_"))
-        .or_else(|| normalized.strip_prefix("cv_"))?;
-    DatabaseTable::from_str(table_name).ok()
+    special_views::is_special_view_query(query)
 }
 
 #[derive(sqlx::FromRow)]

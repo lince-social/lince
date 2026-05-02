@@ -36,4 +36,8 @@ pub struct KarmaRow {
     pub condition_id: i64,
     pub operator: String,
     pub consequence_id: i64,
+    #[table(default = "0")]
+    pub parallel: i64,
+    #[table(default = "0")]
+    pub timeout_seconds: f64,
 }

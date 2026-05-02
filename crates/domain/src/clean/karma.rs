@@ -9,4 +9,6 @@ pub struct Karma {
     pub condition: String,
     pub operator: String,
     pub consequence: String,
+    pub parallel: i32,
+    pub timeout_seconds: f64,
 }

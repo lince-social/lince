@@ -15,6 +15,8 @@ use {
                 render_sync_payload,
             },
             kanban_streams::{KanbanStreamError, PreparedKanbanStream},
+            karma_orchestra_identity::is_supported_karma_orchestra_package_filename,
+            karma_orchestra_widget::KarmaOrchestraWidgetError,
             state::AppState,
             trail_identity::is_supported_trail_package_filename,
             trail_widget::{PreparedTrailStream, TrailBindingPayload, TrailWidgetError},
@@ -78,6 +80,13 @@ pub async fn get_widget_contract(
                 .await
                 .map_err(map_trail_widget_error)?,
         )),
+        WidgetKind::KarmaOrchestra => Ok(Json(
+            state
+                .karma_orchestra_widget
+                .contract(session_token.as_deref(), &instance_id)
+                .await
+                .map_err(map_karma_orchestra_widget_error)?,
+        )),
     }
 }
 
@@ -108,6 +117,12 @@ pub async fn get_widget_stream(
                 .await
                 .map_err(map_trail_widget_error)?,
         ),
+        WidgetKind::KarmaOrchestra => {
+            return Err(api_error(
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "Karma Orchestra nao usa stream nesta versao.",
+            ));
+        }
     };
 
     Ok(response)
@@ -139,6 +154,14 @@ pub async fn post_widget_action(
                 .action(session_token.as_deref(), &instance_id, &action, payload)
                 .await
                 .map_err(map_trail_widget_error)?;
+            return Ok(Json(outcome));
+        }
+        WidgetKind::KarmaOrchestra => {
+            let outcome = state
+                .karma_orchestra_widget
+                .action(session_token.as_deref(), &instance_id, &action, payload)
+                .await
+                .map_err(map_karma_orchestra_widget_error)?;
             return Ok(Json(outcome));
         }
         WidgetKind::Kanban => {}
@@ -571,9 +594,35 @@ fn map_trail_widget_error(
     }
 }
 
+fn map_karma_orchestra_widget_error(
+    error: KarmaOrchestraWidgetError,
+) -> (
+    StatusCode,
+    Json<crate::presentation::http::api_error::ApiError>,
+) {
+    match error {
+        KarmaOrchestraWidgetError::NotFound(message) => api_error(StatusCode::NOT_FOUND, message),
+        KarmaOrchestraWidgetError::Misconfigured(message)
+        | KarmaOrchestraWidgetError::Invalid(message) => {
+            api_error(StatusCode::UNPROCESSABLE_ENTITY, message)
+        }
+        KarmaOrchestraWidgetError::Unauthorized(message) => {
+            api_error(StatusCode::UNAUTHORIZED, message)
+        }
+        KarmaOrchestraWidgetError::Forbidden(message) => api_error(StatusCode::FORBIDDEN, message),
+        KarmaOrchestraWidgetError::BadGateway(message) => {
+            api_error(StatusCode::BAD_GATEWAY, message)
+        }
+        KarmaOrchestraWidgetError::Internal(message) => {
+            api_error(StatusCode::INTERNAL_SERVER_ERROR, message)
+        }
+    }
+}
+
 enum WidgetKind {
     Kanban,
     Trail,
+    KarmaOrchestra,
 }
 
 fn widget_kind(board_state: &BoardState, instance_id: &str) -> ApiResult<WidgetKind> {
@@ -587,6 +636,8 @@ fn widget_kind(board_state: &BoardState, instance_id: &str) -> ApiResult<WidgetK
         Ok(WidgetKind::Kanban)
     } else if is_supported_trail_package_filename(&card.package_name) {
         Ok(WidgetKind::Trail)
+    } else if is_supported_karma_orchestra_package_filename(&card.package_name) {
+        Ok(WidgetKind::KarmaOrchestra)
     } else {
         Err(api_error(
             StatusCode::UNPROCESSABLE_ENTITY,

@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use domain::clean::view::View;
+use domain::{clean::view::View, special_views};
 use regex::Regex;
 use serde::Serialize;
 use sqlx::{Column, Executor, Pool, Row, Sqlite, SqliteConnection};
@@ -67,7 +67,7 @@ impl ViewRepository for ViewRepositoryImpl {
 
     async fn read_snapshot(&self, view_id: u32) -> Result<ViewSnapshot, Error> {
         let view = self.get_by_id(view_id).await?;
-        if is_special_view_query(&view.query) {
+        if special_views::is_special_view_query(&view.query) {
             return Err(Error::new(
                 ErrorKind::InvalidInput,
                 format!(
@@ -131,30 +131,8 @@ fn serialize_sqlite_value(row: &sqlx::sqlite::SqliteRow, index: usize) -> String
     "NULL".to_string()
 }
 
-pub fn is_special_view_query(query: &str) -> bool {
-    if parse_creation_view_query(query).is_some() {
-        return true;
-    }
-
-    matches!(
-        query,
-        "karma_orchestra" | "karma_view" | "testing" | "command_buffer"
-    )
-}
-
-fn parse_creation_view_query(query: &str) -> Option<String> {
-    let normalized = query.trim().to_lowercase().replace(['-', ' '], "_");
-    normalized
-        .strip_prefix("create_view_")
-        .or_else(|| normalized.strip_prefix("creation_view_"))
-        .or_else(|| normalized.strip_prefix("create_modal_"))
-        .or_else(|| normalized.strip_prefix("creation_modal_"))
-        .or_else(|| normalized.strip_prefix("cv_"))
-        .map(str::to_string)
-}
-
 pub fn infer_view_dependencies(query: &str) -> BTreeSet<String> {
-    if is_special_view_query(query) {
+    if special_views::is_special_view_query(query) {
         return BTreeSet::new();
     }
 
@@ -170,6 +148,10 @@ pub fn infer_view_dependencies(query: &str) -> BTreeSet<String> {
         .map(|matched| matched.as_str().to_lowercase())
         .filter(|name| !name.is_empty())
         .collect()
+}
+
+pub fn is_special_view_query(query: &str) -> bool {
+    special_views::is_special_view_query(query)
 }
 
 pub async fn sync_all_view_dependencies_in_pool(db: &Pool<Sqlite>) -> Result<(), Error> {

@@ -7,6 +7,7 @@ pub mod engine;
 pub mod frequency;
 pub mod gpui;
 pub mod karma;
+pub mod karma_analysis;
 pub mod mosca;
 pub mod operation;
 pub mod query;

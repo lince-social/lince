@@ -62,7 +62,9 @@ impl KarmaRepository for KarmaRepositoryImpl {
                 k.name,
                 kcd.condition,
                 k.operator,
-                kcs.consequence
+                kcs.consequence,
+                k.parallel,
+                k.timeout_seconds
             FROM karma k
             JOIN karma_condition kcd ON kcd.id = k.condition_id
             JOIN karma_consequence kcs ON kcs.id = k.consequence_id
@@ -93,7 +95,9 @@ impl KarmaRepository for KarmaRepositoryImpl {
                 k.name,
                 kcd.condition,
                 k.operator,
-                kcs.consequence
+                kcs.consequence,
+                k.parallel,
+                k.timeout_seconds
             FROM karma k
             JOIN karma_condition kcd ON kcd.id = k.condition_id
             JOIN karma_consequence kcs ON kcs.id = k.consequence_id

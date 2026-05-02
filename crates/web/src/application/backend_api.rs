@@ -12,6 +12,7 @@ use persistence::{
     storage::{DownloadedObject, StorageList},
     write_coordinator::{SqlParameter, WriteOutcome},
 };
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::{
@@ -141,12 +142,17 @@ impl BackendApiService {
             | ApiTable::RecordComment
             | ApiTable::RecordWorklog
             | ApiTable::RecordResourceRef
+            | ApiTable::Command
+            | ApiTable::Query
             | ApiTable::Frequency
             | ApiTable::KarmaCondition
             | ApiTable::KarmaConsequence
             | ApiTable::Karma
             | ApiTable::Configuration => {
-                let (sql, params) = self.store.build_standard_insert(table, object)?;
+                let (object, confirmed) = strip_karma_confirmation(table, object);
+                self.require_karma_loop_confirmation(table, None, &object, confirmed)
+                    .await?;
+                let (sql, params) = self.store.build_standard_insert(table, &object)?;
                 let outcome = self
                     .services
                     .writer
@@ -221,12 +227,17 @@ impl BackendApiService {
             | ApiTable::RecordComment
             | ApiTable::RecordWorklog
             | ApiTable::RecordResourceRef
+            | ApiTable::Command
+            | ApiTable::Query
             | ApiTable::Frequency
             | ApiTable::KarmaCondition
             | ApiTable::KarmaConsequence
             | ApiTable::Karma
             | ApiTable::Configuration => {
-                let (sql, params) = self.store.build_standard_update(table, id, object)?;
+                let (object, confirmed) = strip_karma_confirmation(table, object);
+                self.require_karma_loop_confirmation(table, Some(id), &object, confirmed)
+                    .await?;
+                let (sql, params) = self.store.build_standard_update(table, id, &object)?;
                 let outcome = self.services.writer.execute_statement(sql, params).await?;
                 if outcome.rows_affected > 0
                     && matches!(
@@ -384,6 +395,125 @@ impl BackendApiService {
             .find(|entry| i64::from(entry.id) == karma_id)
             .ok_or_else(|| Error::new(ErrorKind::NotFound, "Karma not found"))?;
         karma_deliver(self.services.clone(), vec![karma]).await
+    }
+
+    async fn require_karma_loop_confirmation(
+        &self,
+        table: ApiTable,
+        row_id: Option<i64>,
+        object: &Map<String, Value>,
+        confirmed: bool,
+    ) -> Result<(), Error> {
+        if confirmed
+            || !matches!(
+                table,
+                ApiTable::Karma | ApiTable::KarmaCondition | ApiTable::KarmaConsequence
+            )
+            || !self
+                .karma_has_potential_record_loop_after(table, row_id, object)
+                .await?
+        {
+            return Ok(());
+        }
+        Err(Error::new(
+            ErrorKind::WouldBlock,
+            r#"{"status":"confirmation_required","confirmationKind":"karma_check_loop"}"#,
+        ))
+    }
+
+    async fn karma_has_potential_record_loop_after(
+        &self,
+        table: ApiTable,
+        row_id: Option<i64>,
+        object: &Map<String, Value>,
+    ) -> Result<bool, Error> {
+        let mut karmas = serde_json::from_value::<Vec<LoopKarmaRow>>(
+            self.store
+                .list_table_rows_filtered(ApiTable::Karma, &TableListQuery::default())
+                .await?,
+        )
+        .map_err(Error::other)?;
+        let mut conditions = serde_json::from_value::<Vec<LoopConditionRow>>(
+            self.store
+                .list_table_rows_filtered(ApiTable::KarmaCondition, &TableListQuery::default())
+                .await?,
+        )
+        .map_err(Error::other)?;
+        let mut consequences = serde_json::from_value::<Vec<LoopConsequenceRow>>(
+            self.store
+                .list_table_rows_filtered(ApiTable::KarmaConsequence, &TableListQuery::default())
+                .await?,
+        )
+        .map_err(Error::other)?;
+
+        match table {
+            ApiTable::Karma => apply_loop_karma_mutation(&mut karmas, row_id, object),
+            ApiTable::KarmaCondition => {
+                apply_loop_condition_mutation(&mut conditions, row_id, object)
+            }
+            ApiTable::KarmaConsequence => {
+                apply_loop_consequence_mutation(&mut consequences, row_id, object)
+            }
+            _ => {}
+        }
+
+        let regex = Regex::new(r"rq(\d+)").map_err(Error::other)?;
+        let condition_by_id = conditions
+            .into_iter()
+            .map(|row| (row.id, row))
+            .collect::<BTreeMap<_, _>>();
+        let consequence_by_id = consequences
+            .into_iter()
+            .map(|row| (row.id, row))
+            .collect::<BTreeMap<_, _>>();
+        let mut condition_refs = BTreeMap::<i64, BTreeSet<u32>>::new();
+        for karma in &karmas {
+            let Some(condition) = condition_by_id.get(&karma.condition_id) else {
+                continue;
+            };
+            let refs = regex
+                .captures_iter(&condition.condition)
+                .filter_map(|caps| caps.get(1)?.as_str().parse::<u32>().ok())
+                .collect::<BTreeSet<_>>();
+            condition_refs.insert(karma.id, refs);
+        }
+
+        let mut edges = BTreeMap::<i64, Vec<i64>>::new();
+        for source in &karmas {
+            if source.quantity <= 0 {
+                continue;
+            }
+            let Some(source_consequence) = consequence_by_id.get(&source.consequence_id) else {
+                continue;
+            };
+            if source_consequence.quantity <= 0 {
+                continue;
+            }
+            let Some(record_id) = regex
+                .captures(&source_consequence.consequence)
+                .and_then(|caps| caps.get(1)?.as_str().parse::<u32>().ok())
+            else {
+                continue;
+            };
+            for target in &karmas {
+                if target.quantity <= 0 {
+                    continue;
+                }
+                let Some(target_condition) = condition_by_id.get(&target.condition_id) else {
+                    continue;
+                };
+                if target_condition.quantity <= 0 {
+                    continue;
+                }
+                if condition_refs
+                    .get(&target.id)
+                    .is_some_and(|refs| refs.contains(&record_id))
+                {
+                    edges.entry(source.id).or_default().push(target.id);
+                }
+            }
+        }
+        Ok(has_rule_cycle(&edges))
     }
 
     pub async fn list_files(
@@ -591,4 +721,205 @@ fn build_record_quantity_batch_update(
     }
     sql.push(')');
     (sql, params)
+}
+
+fn strip_karma_confirmation(
+    table: ApiTable,
+    object: &Map<String, Value>,
+) -> (Map<String, Value>, bool) {
+    let mut object = object.clone();
+    let confirmed = if matches!(
+        table,
+        ApiTable::Karma | ApiTable::KarmaCondition | ApiTable::KarmaConsequence
+    ) {
+        object
+            .remove("confirmKarmaCheckLoops")
+            .or_else(|| object.remove("confirm_karma_check_loops"))
+            .and_then(|value| value.as_bool())
+            .unwrap_or(false)
+    } else {
+        false
+    };
+    (object, confirmed)
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct LoopKarmaRow {
+    id: i64,
+    quantity: i64,
+    condition_id: i64,
+    consequence_id: i64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct LoopConditionRow {
+    id: i64,
+    quantity: i64,
+    condition: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct LoopConsequenceRow {
+    id: i64,
+    quantity: i64,
+    consequence: String,
+}
+
+fn apply_loop_karma_mutation(
+    rows: &mut Vec<LoopKarmaRow>,
+    row_id: Option<i64>,
+    object: &Map<String, Value>,
+) {
+    if let Some(id) = row_id {
+        if let Some(row) = rows.iter_mut().find(|row| row.id == id) {
+            if let Some(value) = optional_i64_field(object, "quantity") {
+                row.quantity = value;
+            }
+            if let Some(value) = optional_i64_field(object, "condition_id") {
+                row.condition_id = value;
+            }
+            if let Some(value) = optional_i64_field(object, "consequence_id") {
+                row.consequence_id = value;
+            }
+        }
+        return;
+    }
+
+    let Some(condition_id) = optional_i64_field(object, "condition_id") else {
+        return;
+    };
+    let Some(consequence_id) = optional_i64_field(object, "consequence_id") else {
+        return;
+    };
+    let id = optional_i64_field(object, "id").unwrap_or_else(|| next_loop_row_id(rows));
+    rows.push(LoopKarmaRow {
+        id,
+        quantity: optional_i64_field(object, "quantity").unwrap_or(1),
+        condition_id,
+        consequence_id,
+    });
+}
+
+fn apply_loop_condition_mutation(
+    rows: &mut Vec<LoopConditionRow>,
+    row_id: Option<i64>,
+    object: &Map<String, Value>,
+) {
+    if let Some(id) = row_id {
+        if let Some(row) = rows.iter_mut().find(|row| row.id == id) {
+            if let Some(value) = optional_i64_field(object, "quantity") {
+                row.quantity = value;
+            }
+            if let Some(value) = optional_string_field(object, "condition") {
+                row.condition = value;
+            }
+        }
+        return;
+    }
+
+    let Some(condition) = optional_string_field(object, "condition") else {
+        return;
+    };
+    let id = optional_i64_field(object, "id").unwrap_or_else(|| next_loop_row_id(rows));
+    rows.push(LoopConditionRow {
+        id,
+        quantity: optional_i64_field(object, "quantity").unwrap_or(1),
+        condition,
+    });
+}
+
+fn apply_loop_consequence_mutation(
+    rows: &mut Vec<LoopConsequenceRow>,
+    row_id: Option<i64>,
+    object: &Map<String, Value>,
+) {
+    if let Some(id) = row_id {
+        if let Some(row) = rows.iter_mut().find(|row| row.id == id) {
+            if let Some(value) = optional_i64_field(object, "quantity") {
+                row.quantity = value;
+            }
+            if let Some(value) = optional_string_field(object, "consequence") {
+                row.consequence = value;
+            }
+        }
+        return;
+    }
+
+    let Some(consequence) = optional_string_field(object, "consequence") else {
+        return;
+    };
+    let id = optional_i64_field(object, "id").unwrap_or_else(|| next_loop_row_id(rows));
+    rows.push(LoopConsequenceRow {
+        id,
+        quantity: optional_i64_field(object, "quantity").unwrap_or(1),
+        consequence,
+    });
+}
+
+fn optional_i64_field(object: &Map<String, Value>, name: &str) -> Option<i64> {
+    object
+        .get(name)
+        .and_then(|value| value.as_i64().or_else(|| value.as_str()?.parse().ok()))
+}
+
+fn optional_string_field(object: &Map<String, Value>, name: &str) -> Option<String> {
+    object.get(name).and_then(Value::as_str).map(str::to_string)
+}
+
+trait LoopRowId {
+    fn loop_row_id(&self) -> i64;
+}
+
+impl LoopRowId for LoopKarmaRow {
+    fn loop_row_id(&self) -> i64 {
+        self.id
+    }
+}
+
+impl LoopRowId for LoopConditionRow {
+    fn loop_row_id(&self) -> i64 {
+        self.id
+    }
+}
+
+impl LoopRowId for LoopConsequenceRow {
+    fn loop_row_id(&self) -> i64 {
+        self.id
+    }
+}
+
+fn next_loop_row_id(rows: &[impl LoopRowId]) -> i64 {
+    rows.iter().map(LoopRowId::loop_row_id).max().unwrap_or(0) + 1
+}
+
+fn has_rule_cycle(edges: &BTreeMap<i64, Vec<i64>>) -> bool {
+    fn visit(
+        node: i64,
+        edges: &BTreeMap<i64, Vec<i64>>,
+        visiting: &mut BTreeSet<i64>,
+        visited: &mut BTreeSet<i64>,
+    ) -> bool {
+        if visiting.contains(&node) {
+            return true;
+        }
+        if visited.contains(&node) {
+            return false;
+        }
+        visiting.insert(node);
+        for next in edges.get(&node).into_iter().flatten().copied() {
+            if visit(next, edges, visiting, visited) {
+                return true;
+            }
+        }
+        visiting.remove(&node);
+        visited.insert(node);
+        false
+    }
+
+    let mut visiting = BTreeSet::new();
+    let mut visited = BTreeSet::new();
+    edges
+        .keys()
+        .copied()
+        .any(|node| visit(node, edges, &mut visiting, &mut visited))
 }

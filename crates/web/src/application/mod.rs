@@ -5,6 +5,8 @@ pub mod kanban_filters;
 pub mod kanban_identity;
 pub mod kanban_render;
 pub mod kanban_streams;
+pub mod karma_orchestra_identity;
+pub mod karma_orchestra_widget;
 pub mod relations_identity;
 pub mod state;
 pub mod trail_identity;

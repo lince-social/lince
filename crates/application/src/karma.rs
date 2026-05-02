@@ -16,7 +16,7 @@ use crate::{
     write::execute_statement,
 };
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, VecDeque},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque},
     io::{Error, ErrorKind},
 };
 
@@ -78,9 +78,30 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
         Regex::new(r"^sr(?P<scope>nt|t|n)(?P<fields>q?h?b?)(?P<id>\d+)$").unwrap();
 
     let mut frequencies_to_update: HashMap<u32, Frequency> = HashMap::new();
-    let mut prepared = Vec::with_capacity(vec_karma.len());
+    let active_rule_count = services
+        .repository
+        .karma
+        .get_active(None)
+        .await
+        .map(|rules| rules.len())
+        .unwrap_or(vec_karma.len());
+    let max_cascade_steps = std::cmp::max(32, active_rule_count * 4);
+    let mut queue = VecDeque::from(vec_karma);
+    let mut seen_states = HashSet::<(u32, u32, String)>::new();
+    let mut steps = 0usize;
 
-    for karma in vec_karma {
+    while let Some(karma) = queue.pop_front() {
+        if steps >= max_cascade_steps {
+            log(LogEntry::Error(
+                ErrorKind::Other,
+                format!(
+                    "Karma cascade stopped after {max_cascade_steps} steps to avoid an infinite loop"
+                ),
+            ));
+            break;
+        }
+        steps += 1;
+
         let mut condition = karma.condition.clone();
 
         condition = replace_record_quantities(&services, &regex_record_quantity, condition).await?;
@@ -94,23 +115,14 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
         condition = replace_commands(&services, &regex_command, condition).await?;
         condition = replace_sync_tokens(&services, &regex_sync, condition).await?;
 
-        prepared.push((karma, format!("({condition}) * 1.0")));
-    }
+        let expr = format!("({condition}) * 1.0");
+        let condition = tokio::task::spawn_blocking(move || {
+            let engine = return_engine();
+            engine.eval::<f64>(&expr).unwrap_or(0.0)
+        })
+        .await
+        .map_err(Error::other)?;
 
-    let evaluated = tokio::task::spawn_blocking(move || {
-        let engine = return_engine();
-        prepared
-            .into_iter()
-            .map(|(karma, expr)| {
-                let value = engine.eval::<f64>(&expr).unwrap_or(0.0);
-                (karma, value)
-            })
-            .collect::<Vec<_>>()
-    })
-    .await
-    .map_err(Error::other)?;
-
-    for (karma, condition) in evaluated {
         let operator = karma.operator.as_str();
         if !((operator == "=" && condition != 0.0) || operator == "=*") {
             continue;
@@ -146,6 +158,21 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
                         e.kind(),
                         format!("record quantity error on karma id {}", karma.id),
                     ));
+                } else {
+                    let state = (karma.id, id, format!("{condition:.6}"));
+                    if !seen_states.insert(state) {
+                        log(LogEntry::Error(
+                            ErrorKind::Other,
+                            format!(
+                                "Karma cascade repeated state for karma id {} and record {}",
+                                karma.id, id
+                            ),
+                        ));
+                        continue;
+                    }
+                    for dependent in services.karma_cache.karma_for_record(id) {
+                        queue.push_back(dependent);
+                    }
                 }
             }
         }

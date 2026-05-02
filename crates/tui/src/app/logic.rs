@@ -6,6 +6,7 @@ use domain::{
         },
         view::QueriedView,
     },
+    special_views,
 };
 use injection::cross_cutting::InjectedServices;
 use persistence::connection::sqlite_connect_options;
@@ -1580,15 +1581,7 @@ fn table_rows(table: &Table) -> Vec<Vec<String>> {
 }
 
 fn is_special_query(query: &str) -> bool {
-    let normalized = query.trim().to_lowercase().replace(['-', ' '], "_");
-    matches!(
-        normalized.as_str(),
-        "karma_orchestra" | "karma_view" | "testing" | "command_buffer"
-    ) || normalized.starts_with("create_view_")
-        || normalized.starts_with("creation_view_")
-        || normalized.starts_with("create_modal_")
-        || normalized.starts_with("creation_modal_")
-        || normalized.starts_with("cv_")
+    special_views::is_special_view_query(query)
 }
 
 fn is_quit_shortcut(key: &KeyEvent) -> bool {

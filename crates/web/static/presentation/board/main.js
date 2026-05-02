@@ -2575,7 +2575,9 @@ function syncServerOptions(selectedId = "") {
 async function refreshServerProfiles() {
   const profiles = await requestServerProfiles();
   syncServerProfiles(profiles);
-  syncServerOptions(widgetConfigServerId.value);
+  if (document.activeElement !== widgetConfigServerId) {
+    syncServerOptions(widgetConfigServerId.value);
+  }
   renderSnapshot(store.getSnapshot());
   return serverProfiles;
 }
@@ -2749,9 +2751,13 @@ function syncWidgetConfigDebug(card) {
   }
 
   if (cardSupportsHostConfiguration(card)) {
-    parts.push(
-      "Depois de conectar, pesquise a view por nome ou id e selecione uma linha da lista.",
-    );
+    if (cardRequiresViewId(card)) {
+      parts.push(
+        "Depois de conectar, pesquise a view por nome ou id e selecione uma linha da lista.",
+      );
+    } else {
+      parts.push("Depois de escolher o servidor, salve a configuracao.");
+    }
   }
 
   if (cardSupportsPackagePreview(card)) {
@@ -2770,7 +2776,7 @@ function syncWidgetConfigDebug(card) {
   setWidgetConfigHelp(parts.join(" "));
 }
 
-function openWidgetConfigModal(cardId) {
+async function openWidgetConfigModal(cardId) {
   const card = getCardById(cardId);
   if (
     !card ||
@@ -2791,7 +2797,7 @@ function openWidgetConfigModal(cardId) {
   widgetConfigServerIdField.hidden = !cardSupportsHostConfiguration(card);
   syncServerOptions(pendingWidgetConfigServerId || "");
   widgetConfigViewSearch.value = "";
-  widgetConfigViewField.hidden = true;
+  widgetConfigViewField.hidden = !cardRequiresViewId(card);
   widgetConfigViewIdField.hidden = true;
   widgetConfigViewId.value = "";
   if (widgetConfigStreamsField) {
@@ -2814,6 +2820,14 @@ function openWidgetConfigModal(cardId) {
       : "Esse widget nao expõe um HTML compilado recarregavel.",
   );
 
+  if (cardSupportsHostConfiguration(card)) {
+    try {
+      await refreshServerProfiles();
+    } catch {
+      // Keep the bootstrap copy if the refresh fails.
+    }
+  }
+
   widgetConfigModalBackdrop.hidden = false;
   syncModalLock();
   widgetConfigSaveButton.disabled = false;
@@ -2832,8 +2846,13 @@ function openWidgetConfigModal(cardId) {
       return;
     }
 
-    widgetConfigViewSearch.focus();
-    widgetConfigViewSearch.select();
+    if (cardRequiresViewId(card)) {
+      widgetConfigViewSearch.focus();
+      widgetConfigViewSearch.select();
+      return;
+    }
+
+    widgetConfigSaveButton.focus();
   }, 0);
 }
 
@@ -2866,12 +2885,18 @@ async function refreshWidgetConfigModalState() {
   const server = getServerProfile(pendingWidgetConfigServerId);
   const requiresAuth = Boolean(server?.requiresAuth);
   const authenticated = Boolean(server?.authenticated);
-  const canShowViews = Boolean(pendingWidgetConfigServerId) && (!requiresAuth || authenticated);
+  const requiresViewSelection = cardRequiresViewId(card);
+  const canShowViews =
+    requiresViewSelection &&
+    Boolean(pendingWidgetConfigServerId) &&
+    (!requiresAuth || authenticated);
   const needsHostSelection =
     cardSupportsHostConfiguration(card) &&
-    (!pendingWidgetConfigServerId ||
-      (requiresAuth && !authenticated) ||
-      (canShowViews && pendingWidgetConfigViewId == null));
+      (!pendingWidgetConfigServerId ||
+        (requiresAuth && !authenticated) ||
+      (requiresViewSelection &&
+        canShowViews &&
+        pendingWidgetConfigViewId == null));
 
   widgetConfigAuthField.hidden = !requiresAuth || authenticated;
   widgetConfigAuthEnabled.checked = requiresAuth && !authenticated;
@@ -2894,9 +2919,11 @@ async function refreshWidgetConfigModalState() {
     widgetConfigViewSummary.textContent = "0 views";
     widgetConfigViewList.innerHTML = "";
     setWidgetConfigViewHelp(
-      pendingWidgetConfigServerId
-        ? "Conecte para carregar a lista de views."
-        : "Escolha um servidor para carregar as views.",
+      requiresViewSelection
+        ? pendingWidgetConfigServerId
+          ? "Conecte para carregar a lista de views."
+          : "Escolha um servidor para carregar as views."
+        : "",
     );
     return;
   }
@@ -3103,17 +3130,7 @@ async function bootWorkspace() {
   setStartupError("");
 
   showStartupLoadingState("Loading local workspace", 0.14);
-
-  try {
-    showStartupLoadingState("Loading server profiles", 0.34);
-    await refreshServerProfiles();
-  } catch (error) {
-    setStartupError(
-      error instanceof Error
-        ? error.message
-        : "Falha ao carregar os servidores configurados.",
-    );
-  }
+  syncServerProfiles(Array.isArray(bootstrap?.servers) ? bootstrap.servers : []);
 
   try {
     showStartupLoadingState("Loading local widgets", 0.68);
@@ -3755,7 +3772,7 @@ cardsLayer.addEventListener("click", (event) => {
 
   const action = actionButton.dataset.cardAction;
   if (action === "configure") {
-    openWidgetConfigModal(cardId);
+    void openWidgetConfigModal(cardId);
     return;
   }
 
@@ -3763,7 +3780,7 @@ cardsLayer.addEventListener("click", (event) => {
     const card = getCardById(cardId);
     const gate = card ? resolveCardServerState(card) : null;
     if (gate?.server) {
-      openWidgetConfigModal(cardId);
+      void openWidgetConfigModal(cardId);
     } else {
       flashBoardBlocked();
     }

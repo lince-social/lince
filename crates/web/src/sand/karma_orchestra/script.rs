@@ -13,8 +13,8 @@ pub(crate) fn script() -> String {
     };
     const DEFAULT_PHYSICS = {
         centerExpulsion: 2.3,
-        conditionPulling: 0.25,
-        nodeRepulsion: -640,
+        linkDistance: 240,
+        nodeRepulsion: 520,
     };
     const LABEL_ROW_PADDING_X = 2;
     const LABEL_ROW_PADDING_Y = 1;
@@ -23,7 +23,9 @@ pub(crate) fn script() -> String {
     const state = {
         contract: null,
         graph: null,
-        distinctness: "none",
+        layoutMode: "list",
+        distinctCondition: false,
+        distinctConsequence: false,
         palette: { ...DEFAULT_PALETTE },
         physics: { ...DEFAULT_PHYSICS },
         width: 0,
@@ -51,12 +53,16 @@ pub(crate) fn script() -> String {
         adjustments: document.getElementById("karma-adjustments"),
         adjustClose: document.getElementById("karma-adjust-close"),
         physicsReset: document.getElementById("karma-physics-reset"),
+        physicsCenterExpulsionField: document.getElementById("karma-physics-center-expulsion-field"),
         physicsCenterExpulsion: document.getElementById("karma-physics-center-expulsion"),
         physicsCenterExpulsionValue: document.getElementById("karma-physics-center-expulsion-value"),
-        physicsConditionPulling: document.getElementById("karma-physics-condition-pulling"),
-        physicsConditionPullingValue: document.getElementById("karma-physics-condition-pulling-value"),
+        physicsLinkDistanceInput: document.getElementById("karma-physics-link-distance-input"),
+        physicsNodeRepulsionInput: document.getElementById("karma-physics-node-repulsion-input"),
+        physicsLinkDistance: document.getElementById("karma-physics-link-distance"),
+        physicsLinkDistanceValue: document.getElementById("karma-physics-link-distance-value"),
         physicsNodeRepulsion: document.getElementById("karma-physics-node-repulsion"),
-        physicsNodeRepulsionValue: document.getElementById("karma-physics-node-repulsion-value"),
+        distinctCondition: document.getElementById("karma-distinct-condition"),
+        distinctConsequence: document.getElementById("karma-distinct-consequence"),
         conditionColor: document.getElementById("karma-condition-color"),
         consequenceColor: document.getElementById("karma-consequence-color"),
         inactiveColor: document.getElementById("karma-inactive-color"),
@@ -68,29 +74,10 @@ pub(crate) fn script() -> String {
 
     const svg = d3.select(el.svg);
     const root = svg.append("g");
-    const defs = svg.append("defs");
-    const linkMask = defs.append("mask")
-        .attr("id", "karma-link-mask")
-        .attr("maskUnits", "userSpaceOnUse")
-        .attr("maskContentUnits", "userSpaceOnUse")
-        .attr("x", -5000)
-        .attr("y", -5000)
-        .attr("width", 10000)
-        .attr("height", 10000);
-    const nodeMask = defs.append("mask")
-        .attr("id", "karma-node-mask")
-        .attr("maskUnits", "userSpaceOnUse")
-        .attr("maskContentUnits", "userSpaceOnUse")
-        .attr("x", -5000)
-        .attr("y", -5000)
-        .attr("width", 10000)
-        .attr("height", 10000);
     const linkLayer = root.append("g");
     const nodeLayer = root.append("g");
     const arrowLayer = root.append("g");
     const labelLayer = root.append("g");
-    linkLayer.attr("mask", "url(#karma-link-mask)");
-    nodeLayer.attr("mask", "url(#karma-node-mask)");
     const labelMeasureCanvas = document.createElement("canvas");
     const labelMeasureContext = labelMeasureCanvas.getContext("2d");
     const zoom = d3.zoom().scaleExtent([0.25, 3]).on("zoom", (event) => {
@@ -124,10 +111,13 @@ pub(crate) fn script() -> String {
         const data = await response.json();
         if (!response.ok) throw new Error(data?.message || "Contract failed");
         state.contract = data;
-        state.distinctness = data?.state?.distinctness || "none";
+        loadDistinctness(data?.state?.distinctness || "none");
+        state.layoutMode = loadLayoutMode();
         state.palette = loadPalette();
         state.physics = loadPhysics();
-        setDistinctnessButtons();
+        setLayoutModeButtons();
+        syncLayoutModePhysicsVisibility();
+        syncDistinctnessInputs();
         syncPaletteInputs();
         syncPhysicsInputs();
         updateBinding(data.binding);
@@ -179,6 +169,48 @@ pub(crate) fn script() -> String {
         render();
     }
 
+    function layoutModeStorageKey() {
+        return "karma-orchestra:layout-mode";
+    }
+
+    function loadLayoutMode() {
+        try {
+            const value = window.localStorage.getItem(layoutModeStorageKey());
+            return value === "circle" ? "circle" : "list";
+        } catch (_error) {
+            return "list";
+        }
+    }
+
+    function saveLayoutMode() {
+        try {
+            window.localStorage.setItem(layoutModeStorageKey(), state.layoutMode);
+        } catch (_error) {}
+    }
+
+    function syncLayoutModePhysicsVisibility() {
+        if (el.physicsCenterExpulsionField) {
+            el.physicsCenterExpulsionField.hidden = state.layoutMode === "list";
+        }
+    }
+
+    function loadDistinctness(value) {
+        state.distinctCondition = value === "condition" || value === "both";
+        state.distinctConsequence = value === "consequence" || value === "both";
+    }
+
+    function distinctnessValue() {
+        if (state.distinctCondition && state.distinctConsequence) return "both";
+        if (state.distinctCondition) return "condition";
+        if (state.distinctConsequence) return "consequence";
+        return "none";
+    }
+
+    function syncDistinctnessInputs() {
+        if (el.distinctCondition) el.distinctCondition.checked = state.distinctCondition;
+        if (el.distinctConsequence) el.distinctConsequence.checked = state.distinctConsequence;
+    }
+
     function physicsStorageKey() {
         return "karma-orchestra:physics";
     }
@@ -189,11 +221,11 @@ pub(crate) fn script() -> String {
             if (!raw) return { ...DEFAULT_PHYSICS };
             const parsed = JSON.parse(raw);
             const centerExpulsion = Number(parsed?.centerExpulsion);
-            const conditionPulling = Number(parsed?.conditionPulling);
-            const nodeRepulsion = Number(parsed?.nodeRepulsion);
+            const linkDistance = Number(parsed?.linkDistance ?? parsed?.conditionPulling);
+            const nodeRepulsion = Math.abs(Number(parsed?.nodeRepulsion));
             return {
                 centerExpulsion: Number.isFinite(centerExpulsion) ? centerExpulsion : DEFAULT_PHYSICS.centerExpulsion,
-                conditionPulling: Number.isFinite(conditionPulling) ? conditionPulling : DEFAULT_PHYSICS.conditionPulling,
+                linkDistance: Number.isFinite(linkDistance) ? linkDistance : DEFAULT_PHYSICS.linkDistance,
                 nodeRepulsion: Number.isFinite(nodeRepulsion) ? nodeRepulsion : DEFAULT_PHYSICS.nodeRepulsion,
             };
         } catch (_error) {
@@ -210,16 +242,21 @@ pub(crate) fn script() -> String {
     function syncPhysicsInputs() {
         if (el.physicsCenterExpulsion) el.physicsCenterExpulsion.value = String(state.physics.centerExpulsion);
         if (el.physicsCenterExpulsionValue) el.physicsCenterExpulsionValue.textContent = String(state.physics.centerExpulsion);
-        if (el.physicsConditionPulling) el.physicsConditionPulling.value = String(state.physics.conditionPulling);
-        if (el.physicsConditionPullingValue) el.physicsConditionPullingValue.textContent = String(state.physics.conditionPulling);
+        if (el.physicsLinkDistanceInput) el.physicsLinkDistanceInput.value = String(state.physics.linkDistance);
+        if (el.physicsLinkDistance) el.physicsLinkDistance.value = String(state.physics.linkDistance);
+        if (el.physicsLinkDistanceValue) el.physicsLinkDistanceValue.textContent = String(state.physics.linkDistance);
+        if (el.physicsNodeRepulsionInput) el.physicsNodeRepulsionInput.value = String(Math.abs(state.physics.nodeRepulsion));
         if (el.physicsNodeRepulsion) el.physicsNodeRepulsion.value = String(state.physics.nodeRepulsion);
-        if (el.physicsNodeRepulsionValue) el.physicsNodeRepulsionValue.textContent = String(state.physics.nodeRepulsion);
     }
 
     function setPhysicsField(key, value) {
-        state.physics[key] = value;
+        state.physics[key] = key === "nodeRepulsion" ? Math.max(0, Math.abs(value)) : value;
         savePhysics();
         syncPhysicsInputs();
+        if (state.layoutMode === "list") {
+            render();
+            return;
+        }
         applyPhysicsToSimulation();
     }
 
@@ -227,6 +264,10 @@ pub(crate) fn script() -> String {
         state.physics = { ...DEFAULT_PHYSICS };
         savePhysics();
         syncPhysicsInputs();
+        if (state.layoutMode === "list") {
+            render();
+            return;
+        }
         applyPhysicsToSimulation();
     }
 
@@ -281,48 +322,72 @@ pub(crate) fn script() -> String {
 
     function renderedGraph() {
         const graph = state.graph || { nodes: [], links: [], loops: [], karmaRows: [] };
-        let nodes = graph.nodes || [];
-        if (state.distinctness === "none" || state.distinctness === "consequence") {
-            const conditions = [];
-            for (const rule of graph.karmaRows || []) {
-                const base = nodes.find((node) => node.id === "condition:" + rule.conditionId);
-                if (base) {
-                    conditions.push({ ...base, id: "condition-row:" + rule.karmaId, entityId: rule.conditionId, ruleIds: [rule.karmaId] });
+        const baseNodes = graph.nodes || [];
+        const baseById = new Map(baseNodes.map((node) => [node.id, node]));
+        const nodes = [];
+        const seenNodes = new Set();
+        for (const node of baseNodes) {
+            if (state.distinctCondition || node.kind !== "condition") {
+                if (state.distinctConsequence || node.kind !== "consequence") {
+                    nodes.push(node);
+                    seenNodes.add(node.id);
                 }
             }
-            const others = nodes.filter((node) => node.kind !== "condition");
-            nodes = [...conditions, ...others];
         }
         let links = addVisualDirectLinks(graph, graph.links || []);
         const inactiveRuleIds = new Set((graph.karmaRows || []).filter(ruleHasZeroQuantity).map((rule) => Number(rule.karmaId)));
-        const directRuleIds = new Set(links.flatMap((link) => link.kind === "direct" ? (link.ruleIds || []) : []));
-        if (state.distinctness === "none" || state.distinctness === "consequence") {
-            links = links.map((link) => {
-                const next = { ...link };
-                if (next.source.startsWith("condition:")) {
-                    const ruleId = (next.ruleIds || []).find((id) => directRuleIds.has(id));
-                    if (ruleId) next.source = "condition-row:" + ruleId;
-                }
-                if (next.target.startsWith("condition:")) {
-                    const conditionId = Number(next.target.split(":")[1]);
-                    const rule = (graph.karmaRows || []).find((row) => Number(row.conditionId) === conditionId);
-                    if (rule) next.target = "condition-row:" + rule.karmaId;
-                }
-                return next;
-            });
-        }
+        links = links.map((link) => expandLinkDistinctness(link, graph, baseById, nodes, seenNodes));
         links = links.map((link) => ({
             ...link,
             active: !(link.ruleIds || []).some((id) => inactiveRuleIds.has(Number(id))),
         }));
-        if (state.distinctness === "condition" || state.distinctness === "both") {
-            nodes = Logic.uniqueBy(nodes, (node) => node.id);
-            links = Logic.uniqueBy(links, (link) => link.source + ">" + link.target + ">" + link.kind);
+        return { ...graph, nodes: Logic.uniqueBy(nodes, (node) => node.id), links };
+    }
+
+    function expandLinkDistinctness(link, graph, baseById, nodes, seenNodes) {
+        const next = { ...link };
+        const rule = firstRuleForLink(link, graph);
+        if (!rule) return next;
+        if (!state.distinctCondition && next.source.startsWith("condition:")) {
+            next.source = rowNodeId("condition", rule.karmaId);
+            addRowNode(next.source, "condition:" + rule.conditionId, rule.karmaId, baseById, nodes, seenNodes);
         }
-        if (state.distinctness === "consequence" || state.distinctness === "both") {
-            nodes = Logic.uniqueBy(nodes, (node) => node.kind === "consequence" || node.kind === "bridge" ? node.id : node.id);
+        if (!state.distinctCondition && next.target.startsWith("condition:")) {
+            next.target = rowNodeId("condition", rule.karmaId);
+            addRowNode(next.target, "condition:" + rule.conditionId, rule.karmaId, baseById, nodes, seenNodes);
         }
-        return { ...graph, nodes, links };
+        if (!state.distinctConsequence && next.source.startsWith("consequence:")) {
+            next.source = rowNodeId("consequence", rule.karmaId);
+            addRowNode(next.source, "consequence:" + rule.consequenceId, rule.karmaId, baseById, nodes, seenNodes);
+        }
+        if (!state.distinctConsequence && next.target.startsWith("consequence:")) {
+            next.target = rowNodeId("consequence", rule.karmaId);
+            addRowNode(next.target, "consequence:" + rule.consequenceId, rule.karmaId, baseById, nodes, seenNodes);
+        }
+        return next;
+    }
+
+    function firstRuleForLink(link, graph) {
+        const ruleId = Number((link.ruleIds || [])[0]);
+        if (Number.isFinite(ruleId)) {
+            const rule = (graph.karmaRows || []).find((row) => Number(row.karmaId) === ruleId);
+            if (rule) return rule;
+        }
+        const conditionId = Number(String(link.source).split(":")[1]);
+        const consequenceId = Number(String(link.target).split(":")[1]);
+        return (graph.karmaRows || []).find((row) => Number(row.conditionId) === conditionId && Number(row.consequenceId) === consequenceId) || null;
+    }
+
+    function rowNodeId(kind, ruleId) {
+        return kind + "-row:" + ruleId;
+    }
+
+    function addRowNode(id, baseId, ruleId, baseById, nodes, seenNodes) {
+        if (seenNodes.has(id)) return;
+        const base = baseById.get(baseId);
+        if (!base) return;
+        nodes.push({ ...base, id, ruleIds: [ruleId] });
+        seenNodes.add(id);
     }
 
     function addVisualDirectLinks(graph, links) {
@@ -379,7 +444,6 @@ pub(crate) fn script() -> String {
         conditionNodes.forEach((node, index) => {
             const angle = -Math.PI / 2 + (index / Math.max(1, conditionNodes.length)) * Math.PI * 2;
             node.angle = angle;
-            lockConditionNode(node);
             node.color = nodeHasActiveQuantity(node, graph) ? state.palette.condition : state.palette.inactive;
             byId.set(node.id, node);
         });
@@ -388,19 +452,85 @@ pub(crate) fn script() -> String {
             if (!bySource.has(link.source)) bySource.set(link.source, []);
             bySource.get(link.source).push(link);
         }
-        otherNodes.forEach((node, index) => {
-            const incoming = links.find((link) => link.target === node.id);
-            const source = incoming ? byId.get(incoming.source) : null;
-            const angle = source?.angle ?? (-Math.PI / 2 + index);
-            const fanIndex = source ? (bySource.get(incoming.source) || []).findIndex((link) => link.target === node.id) : 0;
-            const spread = (fanIndex - 1) * 0.22;
-            node.x = state.layout.centerX + Math.cos(angle + spread) * (radius + 150);
-            node.y = state.layout.centerY + Math.sin(angle + spread) * (radius + 150);
+        otherNodes.forEach((node) => {
             node.color = nodeHasActiveQuantity(node, graph) ? state.palette.consequence : state.palette.inactive;
             byId.set(node.id, node);
         });
 
-        runPhysics(nodes, links, byId, graph.loops || []);
+        if (state.layoutMode === "list") {
+            layoutList(conditionNodes, otherNodes, links, byId, width, height);
+            drawFrame(nodes, links, graph.loops || []);
+        } else {
+            conditionNodes.forEach(lockConditionNode);
+            otherNodes.forEach((node, index) => {
+                node.fx = null;
+                node.fy = null;
+                const incoming = links.find((link) => link.target === node.id);
+                const source = incoming ? byId.get(incoming.source) : null;
+                const angle = source?.angle ?? (-Math.PI / 2 + index);
+                const fanIndex = source ? (bySource.get(incoming.source) || []).findIndex((link) => link.target === node.id) : 0;
+                const spread = (fanIndex - 1) * 0.22;
+                node.x = state.layout.centerX + Math.cos(angle + spread) * (radius + 150);
+                node.y = state.layout.centerY + Math.sin(angle + spread) * (radius + 150);
+            });
+            runPhysics(nodes, links, byId, graph.loops || []);
+        }
+    }
+
+    function layoutList(conditionNodes, otherNodes, links, byId, width, height) {
+        if (state.simulation) state.simulation.stop();
+        const leftX = Math.max(90, width * 0.18);
+        const linkDistance = Math.max(80, Number(state.physics.linkDistance) || DEFAULT_PHYSICS.linkDistance);
+        const rightX = Math.min(width - 90, leftX + linkDistance);
+        state.layout.listConditionRightX = leftX;
+        state.layout.listConsequenceLeftX = rightX;
+        const top = 72;
+        const bottom = 72;
+        const verticalSpacing = Math.max(24, Math.abs(Number(state.physics.nodeRepulsion) || DEFAULT_PHYSICS.nodeRepulsion) / 3);
+        const groupGap = childGap;
+        const childGap = verticalSpacing;
+        const groups = conditionNodes.map((condition) => {
+            const outgoing = links
+                .filter((link) => link.source === condition.id && byId.has(link.target))
+                .sort((a, b) => String(a.target).localeCompare(String(b.target)));
+            const count = Math.max(1, outgoing.length);
+            const span = (count - 1) * childGap;
+            return { condition, outgoing, count, span, blockHeight: Math.max(56, span + 28) };
+        });
+        const placed = new Set();
+        let y = top;
+        for (const group of groups) {
+            const condition = group.condition;
+            const outgoing = group.outgoing;
+            const count = group.count;
+            const span = group.span;
+            const blockHeight = group.blockHeight;
+            const centerY = y + blockHeight / 2;
+            condition.angle = 0;
+            condition.x = leftX;
+            condition.y = centerY;
+            condition.fx = leftX;
+            condition.fy = centerY;
+            outgoing.forEach((link, index) => {
+                const target = byId.get(link.target);
+                if (!target) return;
+                target.x = rightX;
+                target.y = centerY - span / 2 + index * (count > 1 ? span / (count - 1) : 0);
+                target.fx = rightX;
+                target.fy = target.y;
+                placed.add(target.id);
+            });
+            y += blockHeight + groupGap;
+        }
+        let orphanY = Math.max(top, y);
+        for (const node of otherNodes) {
+            if (placed.has(node.id)) continue;
+            node.x = rightX;
+            node.y = orphanY;
+            node.fx = rightX;
+            node.fy = orphanY;
+            orphanY += childGap;
+        }
     }
 
     function conditionOrder(node, firstConditionOrder) {
@@ -433,9 +563,10 @@ pub(crate) fn script() -> String {
             .filter((link) => byId.has(link.source) && byId.has(link.target))
             .map((link) => ({ ...link }));
         const physics = state.physics || DEFAULT_PHYSICS;
+        const repulsion = -Math.abs(physics.nodeRepulsion);
         state.simulation = d3.forceSimulation(nodes)
-            .force("link", d3.forceLink(forceLinks).id((node) => node.id).distance((link) => link.kind === "fulfillment" ? 110 : 150).strength((link) => link.kind === "fulfillment" ? Math.min(1, physics.conditionPulling * 1.15) : physics.conditionPulling))
-            .force("charge", d3.forceManyBody().strength((node) => node.kind === "condition" ? -12 : physics.nodeRepulsion))
+            .force("link", d3.forceLink(forceLinks).id((node) => node.id).distance((link) => link.kind === "fulfillment" ? Math.max(80, physics.linkDistance * 0.85) : physics.linkDistance).strength((link) => link.kind === "fulfillment" ? 0.9 : 0.65))
+            .force("charge", d3.forceManyBody().strength((node) => node.kind === "condition" ? -12 : repulsion))
             .force("collide", d3.forceCollide((node) => node.kind === "condition" ? 38 : 98).iterations(3))
             .force("radial", d3.forceRadial((node) => node.kind === "condition" ? state.layout.ringRadius : state.layout.ringRadius + 320, state.layout.centerX, state.layout.centerY).strength((node) => node.kind === "condition" ? 0.95 : physics.centerExpulsion))
             .alpha(0.9)
@@ -449,17 +580,19 @@ pub(crate) fn script() -> String {
     }
 
     function applyPhysicsToSimulation() {
-        if (!state.simulation) {
+        if (!state.simulation || state.layoutMode !== "circle") {
             return;
         }
         const physics = state.physics || DEFAULT_PHYSICS;
+        const repulsion = -Math.abs(physics.nodeRepulsion);
         const linkForce = state.simulation.force("link");
         if (linkForce) {
             linkForce
-                .strength((link) => link.kind === "fulfillment" ? Math.min(1, physics.conditionPulling * 1.15) : physics.conditionPulling);
+                .distance((link) => link.kind === "fulfillment" ? Math.max(80, physics.linkDistance * 0.85) : physics.linkDistance)
+                .strength((link) => link.kind === "fulfillment" ? 0.9 : 0.65);
         }
         state.simulation
-            .force("charge", d3.forceManyBody().strength((node) => node.kind === "condition" ? -12 : physics.nodeRepulsion))
+            .force("charge", d3.forceManyBody().strength((node) => node.kind === "condition" ? -12 : repulsion))
             .force("radial", d3.forceRadial((node) => node.kind === "condition" ? state.layout.ringRadius : state.layout.ringRadius + 320, state.layout.centerX, state.layout.centerY).strength((node) => node.kind === "condition" ? 0.95 : physics.centerExpulsion))
             .alpha(0.55)
             .restart();
@@ -513,6 +646,7 @@ pub(crate) fn script() -> String {
         }
         state.dragBehavior = d3.drag()
             .on("start", (event, node) => {
+                if (node.kind !== "condition" || state.layoutMode !== "circle") return;
                 if (!event.active) state.simulation.alphaTarget(0.12).restart();
                 node.dragging = true;
                 if (node.kind === "condition") {
@@ -520,34 +654,24 @@ pub(crate) fn script() -> String {
                     node.fx = node.x;
                     node.fy = node.y;
                 }
-                if (node.kind !== "condition") {
-                    node.fx = node.x;
-                    node.fy = node.y;
-                }
             })
             .on("drag", (event, node) => {
+                if (node.kind !== "condition" || state.layoutMode !== "circle") return;
                 if (node.kind === "condition") {
                     node.angle = Math.atan2(event.y - state.layout.centerY, event.x - state.layout.centerX);
                     redistributeConditionRing(state.graphNodes || [], node);
-                } else {
-                    node.fx = event.x;
-                    node.fy = event.y;
                 }
                 drawFrame(state.graphNodes || [], state.graphLinks || [], state.graphLoops || []);
             })
             .on("end", (event, node) => {
+                if (node.kind !== "condition" || state.layoutMode !== "circle") return;
                 node.dragging = false;
                 if (!event.active) state.simulation.alphaTarget(0);
-                if (node.kind !== "condition") {
-                    node.fx = null;
-                    node.fy = null;
-                } else {
-                    state.draggingCondition = false;
-                    node.fx = null;
-                    node.fy = null;
-                    redistributeConditionRing(state.graphNodes || [], node);
-                    drawFrame(state.graphNodes || [], state.graphLinks || [], state.graphLoops || []);
-                }
+                state.draggingCondition = false;
+                node.fx = null;
+                node.fy = null;
+                redistributeConditionRing(state.graphNodes || [], node);
+                drawFrame(state.graphNodes || [], state.graphLinks || [], state.graphLoops || []);
             });
         return state.dragBehavior;
     }
@@ -559,7 +683,6 @@ pub(crate) fn script() -> String {
         const byId = new Map(nodes.map((node) => [node.id, node]));
         drawNodes(nodes);
         drawLabels(nodes);
-        drawMasks(nodes);
         drawLinks(links, byId, loops);
         drawArrowheads(links, byId, loops);
     }
@@ -583,66 +706,7 @@ pub(crate) fn script() -> String {
         };
     }
 
-    function drawMasks(nodes) {
-        const baseRect = (mask) => {
-            mask.selectAll("*").remove();
-            mask.append("rect")
-                .attr("x", -2000)
-                .attr("y", -2000)
-                .attr("width", 6000)
-                .attr("height", 6000)
-                .attr("fill", "white");
-        };
-        baseRect(linkMask);
-        baseRect(nodeMask);
-
-        for (const node of nodes) {
-            if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) continue;
-            linkMask.append("circle")
-                .attr("cx", node.x)
-                .attr("cy", node.y)
-                .attr("r", 19)
-                .attr("fill", "black");
-        }
-
-        for (const box of measuredLabelTextBoxes()) {
-            for (const mask of [linkMask, nodeMask]) {
-                mask.append("rect")
-                    .attr("x", box.x)
-                    .attr("y", box.y)
-                    .attr("width", box.width)
-                    .attr("height", box.height)
-                    .attr("rx", 2)
-                    .attr("ry", 2)
-                    .attr("fill", "black");
-            }
-        }
-    }
-
-    function measuredLabelTextBoxes() {
-        const boxes = [];
-        const transform = d3.zoomTransform(el.svg);
-        const svgRect = el.svg.getBoundingClientRect();
-        labelLayer.selectAll(".human,.meta").each(function () {
-            const textNode = this.firstChild;
-            if (!textNode) return;
-            const range = document.createRange();
-            range.selectNodeContents(this);
-            const rect = range.getBoundingClientRect();
-            range.detach();
-            if (!rect.width || !rect.height) return;
-            const pad = 2;
-            boxes.push({
-                x: (rect.left - svgRect.left - transform.x) / transform.k - pad,
-                y: (rect.top - svgRect.top - transform.y) / transform.k - pad,
-                width: rect.width / transform.k + pad * 2,
-                height: rect.height / transform.k + pad * 2,
-            });
-        });
-        return boxes;
-    }
-
-    function labelLayout(node) {
+    function cardLayout(node) {
         const label = node.label || {};
         const human = label.human || label.code || node.id;
         const code = label.code || "";
@@ -656,8 +720,8 @@ pub(crate) fn script() -> String {
         const humanHeight = humanRow.height;
         const metaHeight = metaRow.height;
         const gap = 0;
-        const width = Math.max(humanWidth, metaWidth);
-        const height = humanHeight + gap + metaHeight;
+        const width = Math.max(humanWidth, metaWidth) + 22;
+        const height = humanHeight + gap + metaHeight + 16;
         const pos = labelPosition(node, width, height);
         return {
             x: pos.x,
@@ -667,18 +731,10 @@ pub(crate) fn script() -> String {
             human,
             code,
             valueText,
-            humanBox: {
-                x: pos.x + (width - humanWidth) / 2,
-                y: pos.y,
-                width: humanWidth,
-                height: humanHeight,
-            },
-            metaBox: {
-                x: pos.x + (width - metaWidth) / 2,
-                y: pos.y + humanHeight + gap,
-                width: metaWidth,
-                height: metaHeight,
-            },
+            humanWidth,
+            metaWidth,
+            humanHeight,
+            metaHeight,
         };
     }
 
@@ -692,8 +748,9 @@ pub(crate) fn script() -> String {
                 if (!a || !b) return "";
                 const loop = loopLinks.get(d.id);
                 if (loop) return loopArcPath(a, b, loop, byId);
-                const sourcePoint = anchorPoint(a, b, true);
-                const targetPoint = anchorPoint(b, a, false);
+                if (state.layoutMode === "list") return listLinkPath(a, b, d);
+                const sourcePoint = cardAnchorPoint(a, b);
+                const targetPoint = cardAnchorPoint(b, a);
                 return `M${sourcePoint.x},${sourcePoint.y} L${targetPoint.x},${targetPoint.y}`;
             });
     }
@@ -709,8 +766,33 @@ pub(crate) fn script() -> String {
                 if (!a || !b) return "";
                 const loop = loopLinks.get(d.id);
                 if (loop) return "";
-                return arrowHeadPath(a, b);
+                const sourcePoint = state.layoutMode === "list" ? listArrowSource(a, b, d) : cardAnchorPoint(a, b);
+                const targetPoint = state.layoutMode === "list" ? cardSidePoint(b, "left") : cardAnchorPoint(b, a);
+                return arrowHeadPath(sourcePoint, targetPoint);
             });
+    }
+
+    function listLinkPath(source, target, link) {
+        const sourcePoint = cardSidePoint(source, "right");
+        const targetPoint = cardSidePoint(target, "left");
+        if (listOutgoingCount(link.source) <= 1) {
+            return `M${sourcePoint.x},${sourcePoint.y} L${targetPoint.x},${targetPoint.y}`;
+        }
+        const branchX = listBranchX(source, target);
+        return `M${sourcePoint.x},${sourcePoint.y} L${branchX},${sourcePoint.y} L${branchX},${targetPoint.y} L${targetPoint.x},${targetPoint.y}`;
+    }
+
+    function listArrowSource(source, target, link) {
+        if (state.layoutMode !== "list" || listOutgoingCount(link.source) <= 1) return cardSidePoint(source, "right");
+        return { x: listBranchX(source, target), y: target.y };
+    }
+
+    function listOutgoingCount(sourceId) {
+        return (state.graphLinks || []).filter((link) => link.source === sourceId).length;
+    }
+
+    function listBranchX(source, target) {
+        return source.x + Math.max(58, Math.min(140, (target.x - source.x) * 0.45));
     }
 
     function linkColor(link) {
@@ -723,10 +805,8 @@ pub(crate) fn script() -> String {
         const length = Math.hypot(dx, dy) || 1;
         const ux = dx / length;
         const uy = dy / length;
-        const radius = target.kind === "bridge" ? 9 : 17;
-        const tipGap = 1;
-        const tipX = target.x + ux * (radius + tipGap);
-        const tipY = target.y + uy * (radius + tipGap);
+        const tipX = target.x;
+        const tipY = target.y;
         const back = 12;
         const width = 6;
         const baseX = tipX + ux * back;
@@ -736,29 +816,6 @@ pub(crate) fn script() -> String {
         const rightX = baseX - uy * width;
         const rightY = baseY + ux * width;
         return `M${tipX},${tipY} L${leftX},${leftY} L${rightX},${rightY} Z`;
-    }
-
-    function anchorPoint(node, other, isSource) {
-        if (!node || !other) {
-            return node || { x: 0, y: 0 };
-        }
-        if (node.kind === "condition") {
-            const angle = isSource
-                ? node.angle || 0
-                : Math.atan2(other.y - node.y, other.x - node.x);
-            const radius = 17;
-            return {
-                x: node.x + Math.cos(angle) * radius,
-                y: node.y + Math.sin(angle) * radius,
-            };
-        }
-        const dx = other.x - node.x;
-        const dy = other.y - node.y;
-        const length = Math.hypot(dx, dy) || 1;
-        const radius = node.kind === "bridge" ? 9 : 17;
-        const ux = dx / length;
-        const uy = dy / length;
-        return { x: node.x + ux * radius, y: node.y + uy * radius };
     }
 
     function loopLinkMap(loops) {
@@ -784,44 +841,54 @@ pub(crate) fn script() -> String {
     }
 
     function drawNodes(nodes) {
-        const joined = nodeLayer.selectAll("g").data(nodes, (d) => d.id).join((enter) => {
-            const g = enter.append("g");
-            g.append("path").attr("class", "nodeShape");
-            g.append("path").attr("class", "bridgeInner").attr("display", "none");
-            return g;
-        });
+        const joined = nodeLayer.selectAll("rect").data(nodes, (d) => d.id).join("rect");
         joined.call(installNodeDrag());
-        joined.attr("transform", (d) => `translate(${d.x},${d.y})`);
-        joined.select("path")
-            .attr("fill", (d) => d.color || "#6f2e2b")
-            .attr("d", (d) => d.kind === "condition" ? trianglePath(15) : circlePath(17));
-        joined.select(".bridgeInner")
-            .attr("display", (d) => d.kind === "bridge" ? null : "none")
-            .attr("d", trianglePath(9));
-        joined.filter((d) => d.kind === "condition").attr("transform", (d) => `translate(${d.x},${d.y}) rotate(${(d.angle || 0) * 180 / Math.PI + 90})`);
+        joined
+            .attr("x", (d) => cardLayout(d).x)
+            .attr("y", (d) => cardLayout(d).y)
+            .attr("width", (d) => cardLayout(d).width)
+            .attr("height", (d) => cardLayout(d).height)
+            .attr("rx", 2)
+            .attr("ry", 2)
+            .attr("fill", "rgba(0,0,0,0.001)")
+            .attr("stroke", "rgba(0,0,0,0)")
+            .attr("stroke-width", 0)
+            .attr("pointer-events", "all");
     }
 
     function drawLabels(nodes) {
         const joined = labelLayer.selectAll("foreignObject").data(nodes, (d) => d.id).join((enter) => {
             const fo = enter.append("foreignObject").attr("class", "nodeLabel");
-            const outer = fo.append("xhtml:div").attr("class", "nodeLabelBox");
-            outer.append("div").attr("class", "human");
-            outer.append("div").attr("class", "meta");
+            const outer = fo.append("xhtml:div").attr("class", "nodeCard");
             return fo;
         });
         joined
-            .attr("x", (d) => labelLayout(d).x)
-            .attr("y", (d) => labelLayout(d).y)
-            .attr("width", (d) => labelLayout(d).width)
-            .attr("height", (d) => labelLayout(d).height);
-        joined.select(".nodeLabelBox")
+            .attr("x", (d) => cardLayout(d).x)
+            .attr("y", (d) => cardLayout(d).y)
+            .attr("width", (d) => cardLayout(d).width)
+            .attr("height", (d) => cardLayout(d).height);
+        joined.select(".nodeCard")
+            .attr("class", (d) => `nodeCard kind-${d.kind}`)
+            .attr("style", (d) => `color:${d.color || "#6f2e2b"}`)
             .html((d) => {
-                const box = labelLayout(d);
-                return `<div class="human" style="width:${box.humanBox.width}px">${escapeHtml(box.human)}</div><div class="meta" style="width:${box.metaBox.width}px">${escapeHtml(box.valueText ? `${box.code} ${box.valueText}` : box.code)}</div>`;
+                const box = cardLayout(d);
+                return `${nodeBadgeHtml(d)}<div class="human" style="width:${box.width - 22}px">${escapeHtml(box.human)}</div><div class="meta" style="width:${box.width - 22}px">${escapeHtml(box.valueText ? `${box.code} ${box.valueText}` : box.code)}</div>`;
             });
     }
 
     function labelPosition(node, width = 0, height = 0) {
+        if (state.layoutMode === "list") {
+            if (node.kind === "condition") {
+                return {
+                    x: (state.layout.listConditionRightX ?? node.x) - width,
+                    y: node.y - height / 2,
+                };
+            }
+            return {
+                x: state.layout.listConsequenceLeftX ?? node.x,
+                y: node.y - height / 2,
+            };
+        }
         if (node.kind === "condition") {
             const angle = node.angle || 0;
             const radius = 17 + 18 + (height / 2);
@@ -830,21 +897,82 @@ pub(crate) fn script() -> String {
                 y: node.y + Math.sin(angle) * radius - height / 2,
             };
         }
-        return { x: node.x - width / 2, y: node.y - 17 - height - 18 };
+        return { x: node.x - width / 2, y: node.y - height / 2 };
     }
 
-    function trianglePath(size) {
-        return `M0,${-size} L${size},${size} L${-size},${size} Z`;
-    }
-
-    function circlePath(radius) {
-        return `M${-radius},0 a${radius},${radius} 0 1,0 ${radius * 2},0 a${radius},${radius} 0 1,0 ${-radius * 2},0`;
-    }
-
-    function setDistinctnessButtons() {
-        document.querySelectorAll("[data-distinctness]").forEach((button) => {
-            button.classList.toggle("is-active", button.dataset.distinctness === state.distinctness);
+    function setLayoutModeButtons() {
+        document.querySelectorAll("[data-layout-mode]").forEach((button) => {
+            button.classList.toggle("is-active", button.dataset.layoutMode === state.layoutMode);
         });
+    }
+
+    function cardCenter(node) {
+        const box = cardLayout(node);
+        return {
+            x: box.x + box.width / 2,
+            y: box.y + box.height / 2,
+        };
+    }
+
+    function cardSidePoint(node, side) {
+        const box = cardLayout(node);
+        const centerY = box.y + box.height / 2;
+        if (side === "left") {
+            return { x: box.x, y: centerY };
+        }
+        if (side === "right") {
+            return { x: box.x + box.width, y: centerY };
+        }
+        return cardCenter(node);
+    }
+
+    function cardAnchorPoint(node, other) {
+        const box = cardLayout(node);
+        const center = {
+            x: box.x + box.width / 2,
+            y: box.y + box.height / 2,
+        };
+        const target = cardCenter(other);
+        const dx = target.x - center.x;
+        const dy = target.y - center.y;
+        if (!dx && !dy) {
+            return center;
+        }
+        const halfW = box.width / 2;
+        const halfH = box.height / 2;
+        const scaleX = dx ? halfW / Math.abs(dx) : Infinity;
+        const scaleY = dy ? halfH / Math.abs(dy) : Infinity;
+        const scale = Math.min(scaleX, scaleY);
+        return {
+            x: center.x + dx * scale,
+            y: center.y + dy * scale,
+        };
+    }
+
+    function nodeBadgeHtml(node) {
+        if (node.kind === "bridge") {
+            return `
+                <span class="nodeBadge" style="color:${escapeHtml(node.color || "#6f2e2b")}">
+                    <svg viewBox="0 0 12 12" aria-hidden="true">
+                        <path class="nodeBadgeStroke" d="M1 10 L6 1 L11 10 Z"></path>
+                        <circle class="nodeBadgeStroke" cx="6" cy="6.5" r="3.5"></circle>
+                    </svg>
+                </span>`;
+        }
+        if (node.kind === "condition") {
+            return `
+                <span class="nodeBadge" style="color:${escapeHtml(node.color || "#f1ece2")}">
+                    <svg viewBox="0 0 12 12" aria-hidden="true">
+                        <path class="nodeBadgeStroke" d="M1 10 L6 1 L11 10 Z"></path>
+                    </svg>
+                </span>`;
+        }
+        return `
+            <span class="nodeBadge" style="color:${escapeHtml(node.color || "#6f2e2b")}">
+                <svg viewBox="0 0 12 12" aria-hidden="true">
+                    <circle class="nodeBadgeStroke" cx="6" cy="6" r="4.5"></circle>
+                </svg>
+            </span>`;
     }
 
     function escapeHtml(value) {
@@ -858,17 +986,30 @@ pub(crate) fn script() -> String {
     el.adjustClose.addEventListener("click", () => el.adjustments.hidden = true);
     el.physicsReset?.addEventListener("click", resetPhysics);
     el.physicsCenterExpulsion?.addEventListener("input", (event) => setPhysicsField("centerExpulsion", Number(event.currentTarget.value)));
-    el.physicsConditionPulling?.addEventListener("input", (event) => setPhysicsField("conditionPulling", Number(event.currentTarget.value)));
+    el.physicsLinkDistanceInput?.addEventListener("input", (event) => setPhysicsField("linkDistance", Number(event.currentTarget.value)));
+    el.physicsLinkDistance?.addEventListener("input", (event) => setPhysicsField("linkDistance", Number(event.currentTarget.value)));
+    el.physicsNodeRepulsionInput?.addEventListener("input", (event) => setPhysicsField("nodeRepulsion", Number(event.currentTarget.value)));
     el.physicsNodeRepulsion?.addEventListener("input", (event) => setPhysicsField("nodeRepulsion", Number(event.currentTarget.value)));
     el.conditionColor?.addEventListener("input", (event) => setPaletteColor("condition", event.target.value));
     el.consequenceColor?.addEventListener("input", (event) => setPaletteColor("consequence", event.target.value));
     el.inactiveColor?.addEventListener("input", (event) => setPaletteColor("inactive", event.target.value));
-    document.querySelectorAll("[data-distinctness]").forEach((button) => {
-        button.addEventListener("click", async () => {
-            state.distinctness = button.dataset.distinctness || "none";
-            setDistinctnessButtons();
+    el.distinctCondition?.addEventListener("change", async (event) => {
+        state.distinctCondition = Boolean(event.target.checked);
+        render();
+        try { await postAction("set-distinctness", { distinctness: distinctnessValue() }); } catch (_error) {}
+    });
+    el.distinctConsequence?.addEventListener("change", async (event) => {
+        state.distinctConsequence = Boolean(event.target.checked);
+        render();
+        try { await postAction("set-distinctness", { distinctness: distinctnessValue() }); } catch (_error) {}
+    });
+    document.querySelectorAll("[data-layout-mode]").forEach((button) => {
+        button.addEventListener("click", () => {
+            state.layoutMode = button.dataset.layoutMode === "circle" ? "circle" : "list";
+            saveLayoutMode();
+            setLayoutModeButtons();
+            syncLayoutModePhysicsVisibility();
             render();
-            try { await postAction("set-distinctness", { distinctness: state.distinctness }); } catch (_error) {}
         });
     });
     window.addEventListener("resize", render);

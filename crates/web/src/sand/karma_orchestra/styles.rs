@@ -102,7 +102,7 @@ button, input { font: inherit; }
 .modalHead h2 { margin: 2px 0 0; font-size: 1rem; }
 .field { display: grid; gap: 7px; margin-top: 10px; color: var(--muted); font-size: .78rem; }
 .physicsHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.sliderRow { display: flex; justify-content: space-between; align-items: center; gap: 10px; color: var(--text); }
+.sliderRow { display: flex; justify-content: space-between; align-items: center; gap: 10px; color: var(--text); flex-wrap: nowrap; }
 .sliderLabel { font-size: .76rem; color: var(--muted); }
 .sliderValue { font-family: var(--mono); font-size: .72rem; color: var(--soft); }
 .slider {
@@ -153,40 +153,67 @@ button, input { font: inherit; }
 .muted { color: var(--muted); font-size: .78rem; }
 .segmented { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
 .segment.is-active { background: rgba(231,183,95,.22); border-color: rgba(231,183,95,.58); }
+.toggleGrid { display: grid; gap: 8px; }
+.toggleRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.toggleRow input { width: 18px; height: 18px; accent-color: var(--accent); }
+.repulsionValue { width: 92px; flex: 0 0 92px; }
 .summaryGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 14px; }
 .summaryGrid div { border: 1px solid var(--line); border-radius: 12px; padding: 9px; display: grid; gap: 3px; }
 .summaryGrid span { color: var(--muted); font-size: .72rem; }
 
 .nodeLabel { pointer-events: none; overflow: visible; }
-.nodeLabelBox {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    align-items: center;
-    padding: 0;
-    font: 9px ui-sans-serif, system-ui;
-    text-align: center;
-}
-.nodeLabelBox .human,
-.nodeLabelBox .meta {
+.nodeCard {
     position: relative;
-    z-index: 1;
-    padding: 1px 2px;
-    border-radius: 3px;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    align-content: center;
+    justify-items: start;
+    gap: 1px;
+    padding: 10px 12px 9px 10px;
+    border-radius: 2px;
+    border: 1px solid currentColor;
+    background: rgba(25,23,19,.96);
+    box-shadow: 0 10px 24px rgba(0,0,0,.18);
+    font: 9px ui-sans-serif, system-ui;
+    text-align: left;
+    overflow: hidden;
+}
+.nodeCard .human {
+    font-weight: 700;
+    color: var(--text);
+    font-size: 8px;
     white-space: nowrap;
-    background: transparent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     line-height: 1;
 }
-.nodeLabelBox .human { font-weight: 700; color: var(--text); font-size: 8px; }
-.nodeLabelBox .meta {
+.nodeCard .meta {
     color: var(--muted);
     font-size: 6.5px;
+    white-space: nowrap;
+    line-height: 1;
 }
-.nodeShape { stroke: rgba(255,255,255,.78); stroke-width: 2; }
-.bridgeInner { fill: rgba(241,236,226,.82); stroke: rgba(17,16,14,.8); stroke-width: 1.5; }
+.nodeBadge {
+    position: absolute;
+    top: 2px;
+    right: 3px;
+    width: 12px;
+    height: 12px;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+}
+.nodeBadge svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+.nodeBadgeFill { fill: currentColor; }
+.nodeBadgeStroke { fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linejoin: round; }
 .link { fill: none; stroke: rgba(255,255,255,.84); stroke-width: 1.6; }
 .link.fulfillment { stroke-dasharray: 4 4; }
 .link.inactive { stroke: rgba(155,155,155,.45); }

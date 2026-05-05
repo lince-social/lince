@@ -28,6 +28,7 @@ pub(crate) fn script() -> String {
         distinctConsequence: false,
         palette: { ...DEFAULT_PALETTE },
         physics: { ...DEFAULT_PHYSICS },
+        showCode: false,
         width: 0,
         height: 0,
         simulation: null,
@@ -35,6 +36,7 @@ pub(crate) fn script() -> String {
         dragBehavior: null,
         draggingCondition: false,
         karmaEditor: null,
+        deleteConfirm: false,
     };
 
     const el = {
@@ -72,6 +74,7 @@ pub(crate) fn script() -> String {
         conditionSave: document.getElementById("karma-condition-save"),
         conditionEdit: document.getElementById("karma-condition-edit"),
         conditionName: document.getElementById("karma-condition-name"),
+        conditionHuman: document.getElementById("karma-condition-human"),
         conditionInput: document.getElementById("karma-condition-input"),
         conditionPreview: document.getElementById("karma-condition-preview"),
         operator: document.getElementById("karma-operator-select"),
@@ -79,6 +82,7 @@ pub(crate) fn script() -> String {
         consequenceSave: document.getElementById("karma-consequence-save"),
         consequenceEdit: document.getElementById("karma-consequence-edit"),
         consequenceName: document.getElementById("karma-consequence-name"),
+        consequenceHuman: document.getElementById("karma-consequence-human"),
         consequenceInput: document.getElementById("karma-consequence-input"),
         consequencePreview: document.getElementById("karma-consequence-preview"),
         conditionSearch: document.getElementById("karma-condition-search"),
@@ -99,6 +103,7 @@ pub(crate) fn script() -> String {
         physicsNodeRepulsion: document.getElementById("karma-physics-node-repulsion"),
         distinctCondition: document.getElementById("karma-distinct-condition"),
         distinctConsequence: document.getElementById("karma-distinct-consequence"),
+        showCode: document.getElementById("karma-show-code"),
         conditionColor: document.getElementById("karma-condition-color"),
         consequenceColor: document.getElementById("karma-consequence-color"),
         inactiveColor: document.getElementById("karma-inactive-color"),
@@ -152,9 +157,11 @@ pub(crate) fn script() -> String {
         state.layoutMode = loadLayoutMode();
         state.palette = loadPalette();
         state.physics = loadPhysics();
+        state.showCode = loadShowCode();
         setLayoutModeButtons();
         syncLayoutModePhysicsVisibility();
         syncDistinctnessInputs();
+        syncDisplayInputs();
         syncPaletteInputs();
         syncPhysicsInputs();
         updateBinding(data.binding);
@@ -203,6 +210,40 @@ pub(crate) fn script() -> String {
     function setPaletteColor(key, value) {
         state.palette[key] = value;
         savePalette();
+        render();
+    }
+
+    function displayStorageKey() {
+        return "karma-orchestra:display";
+    }
+
+    function loadShowCode() {
+        try {
+            const raw = window.localStorage.getItem(displayStorageKey());
+            if (!raw) return false;
+            const parsed = JSON.parse(raw);
+            return parsed?.showCode === true;
+        } catch (_error) {
+            return false;
+        }
+    }
+
+    function saveDisplay() {
+        try {
+            window.localStorage.setItem(displayStorageKey(), JSON.stringify({ showCode: state.showCode }));
+        } catch (_error) {}
+    }
+
+    function syncDisplayInputs() {
+        if (el.showCode) el.showCode.checked = state.showCode;
+    }
+
+    function setShowCode(value) {
+        state.showCode = Boolean(value);
+        saveDisplay();
+        syncDisplayInputs();
+        if (state.karmaEditor) renderKarmaEditor();
+        renderEditorLists();
         render();
     }
 
@@ -315,6 +356,7 @@ pub(crate) fn script() -> String {
     async function openKarmaModal(ruleId) {
         if (!el.karmaModal) return;
         setEditorError("");
+        state.deleteConfirm = false;
         const data = await postAction("load-karma-editor", { karmaId: ruleId });
         state.karmaEditor = prepareEditorState(data.editor);
         renderKarmaEditor();
@@ -324,6 +366,7 @@ pub(crate) fn script() -> String {
     async function openCreateKarmaModal() {
         if (!el.karmaModal) return;
         setEditorError("");
+        state.deleteConfirm = false;
         const data = await postAction("load-karma-editor", { karmaId: null });
         state.karmaEditor = prepareEditorState(data.editor);
         renderKarmaEditor();
@@ -375,6 +418,7 @@ pub(crate) fn script() -> String {
         const selectedConsequence = (editor?.consequences || []).find((item) => Number(item.id) === Number(selectedConsequenceId));
         return {
             mode: editor?.mode === "update" ? "update" : "create",
+            karmaId: numberOrNull(editor?.original?.karmaId ?? editor?.karmaId ?? draft.karmaId),
             original: editor?.original || null,
             conditions: editor?.conditions || [],
             consequences: editor?.consequences || [],
@@ -411,13 +455,16 @@ pub(crate) fn script() -> String {
     function renderKarmaEditor() {
         const editor = state.karmaEditor;
         if (!editor) return;
+        document.getElementById("karma-condition-preview")?.remove();
+        document.getElementById("karma-consequence-preview")?.remove();
         const updateMode = editor.mode === "update";
         el.editorTitle.textContent = updateMode ? "Karma Update" : "Karma Creation";
         el.editorId.textContent = updateMode ? `Karma id: ${editor.original?.karmaId || ""}` : "";
         el.editorActive.checked = Boolean(editor.draft.active);
         el.editorActiveWrap.hidden = false;
         el.editorPrimary.textContent = updateMode ? "Update Karma" : "Create Karma";
-        el.editorDelete.hidden = !updateMode;
+        el.editorDelete.hidden = !updateMode || !editorKarmaId();
+        el.editorDelete.textContent = state.deleteConfirm ? "Are you sure?" : "Delete Karma";
         el.original.hidden = !updateMode;
         if (updateMode) {
             const original = editor.original;
@@ -441,7 +488,7 @@ pub(crate) fn script() -> String {
         const isCondition = side === "condition";
         const input = isCondition ? el.conditionInput : el.consequenceInput;
         const name = isCondition ? el.conditionName : el.consequenceName;
-        const preview = isCondition ? el.conditionPreview : el.consequencePreview;
+        const humanPreview = isCondition ? el.conditionHuman : el.consequenceHuman;
         const newButton = isCondition ? el.conditionNew : el.consequenceNew;
         const save = isCondition ? el.conditionSave : el.consequenceSave;
         const edit = isCondition ? el.conditionEdit : el.consequenceEdit;
@@ -450,14 +497,14 @@ pub(crate) fn script() -> String {
         const selectedId = isCondition ? draft.conditionId : draft.consequenceId;
         const editable = mode === "authoring" || mode === "editing";
         input.contentEditable = editable ? "true" : "false";
-        input.innerHTML = editable ? escapeHtml(code) : richCodeHtml(code);
+        input.innerHTML = richCodeHtml(code);
+        humanPreview.textContent = humanReadableCode(code) || (isCondition ? "Human readable condition" : "Human readable consequence");
         newButton.hidden = editable;
         name.hidden = mode !== "authoring" && mode !== "editing";
         name.value = isCondition ? draft.conditionName : draft.consequenceName;
         save.hidden = mode !== "authoring" && mode !== "editing";
         save.textContent = mode === "editing" ? "Save" : (isCondition ? "Create Condition" : "Create Consequence");
         edit.hidden = !selectedId || mode === "authoring" || mode === "editing";
-        preview.textContent = selectedId ? `id ${selectedId}` : displayPreview(code, isCondition);
     }
 
     function displayMeta(display) {
@@ -467,17 +514,21 @@ pub(crate) fn script() -> String {
         return [human, value && value !== display.code ? value : ""].filter(Boolean).join(" | ");
     }
 
-    function displayPreview(code, isCondition) {
-        if (!code) return "";
-        return isCondition ? "new condition" : "new consequence";
+    function richCodeHtml(code) {
+        const raw = String(code || "");
+        return escapeHtml(raw).replace(/@(rq|f|c|sql)(\d+)/g, (_match, prefix, id) => {
+            const machineCode = prefix + id;
+            const token = tokenByCode(machineCode);
+            const human = token?.human || fallbackTokenHuman(prefix, id);
+            return `<span class="tokenChip" contenteditable="false" data-code="@${escapeHtml(machineCode)}">${escapeHtml(human)}</span>`;
+        });
     }
 
-    function richCodeHtml(code) {
-        return escapeHtml(String(code || "")).replace(/@?(rq|f|c|sql)(\d+)/g, (match, prefix, id) => {
-            if (!match.startsWith("@")) return match;
-            const token = tokenByCode(prefix + id);
-            const human = token?.human || fallbackTokenHuman(prefix, id);
-            return `<span class="tokenChip" data-code="${escapeHtml(prefix + id)}">${escapeHtml(human)}</span>`;
+    function humanReadableCode(code) {
+        return String(code || "").replace(/@?(rq|f|c|sql)(\d+)/g, (_match, prefix, id) => {
+            const machineCode = prefix + id;
+            const token = tokenByCode(machineCode);
+            return token?.human || fallbackTokenHuman(prefix, id);
         });
     }
 
@@ -502,13 +553,12 @@ pub(crate) fn script() -> String {
         const editor = state.karmaEditor;
         const isCondition = side === "condition";
         const list = isCondition ? el.conditionList : el.consequenceList;
-        const search = isCondition ? editor.conditionSearch : editor.consequenceSearch;
         const options = isCondition ? editor.conditions : editor.consequences;
         const selectedId = isCondition ? editor.draft.conditionId : editor.draft.consequenceId;
         list.innerHTML = "";
-        const rows = filterOptions(options, search);
+        const rows = options;
         if (isAuthoring(side)) {
-            for (const token of filterTokens(side, search.trim().replace(/^@/, ""))) {
+            for (const token of filterTokens(side, "")) {
                 list.appendChild(tokenButton(token, side));
             }
         }
@@ -521,18 +571,6 @@ pub(crate) fn script() -> String {
             empty.textContent = "No results";
             list.appendChild(empty);
         }
-    }
-
-    function filterOptions(options, query) {
-        const value = String(query || "").toLowerCase().replace(/^@/, "");
-        if (!value) return options;
-        return options.filter((item) => [
-            item.id,
-            item.name,
-            item.code,
-            item.display?.human,
-            item.display?.value?.text,
-        ].some((part) => String(part || "").toLowerCase().includes(value)));
     }
 
     function filterTokens(side, query) {
@@ -550,7 +588,9 @@ pub(crate) fn script() -> String {
         button.className = "karmaOption real " + side + (Number(item.id) === Number(selectedId) ? " is-selected" : "");
         button.style.setProperty("--karma-option-accent", side === "condition" ? state.palette.condition : state.palette.consequence);
         button.draggable = true;
-        button.innerHTML = `${bankItemBadgeHtml(side)}<span class="karmaOptionName">${escapeHtml(item.name || ("#" + item.id))}</span><span class="karmaOptionCode">${escapeHtml(item.code || "")}</span><span class="karmaOptionMeta">${escapeHtml(displayMeta(item.display))}</span>`;
+        const codeHtml = state.showCode ? `<span class="karmaOptionCode">${escapeHtml(item.code || "")}</span>` : "";
+        const metaHtml = state.showCode ? `<span class="karmaOptionMeta">${escapeHtml(displayMeta(item.display))}</span>` : "";
+        button.innerHTML = `${bankItemBadgeHtml(side)}<span class="karmaOptionName">${escapeHtml(item.name || ("#" + item.id))}</span>${codeHtml}${metaHtml}`;
         button.addEventListener("click", () => selectExisting(side, item));
         button.addEventListener("dragstart", (event) => {
             event.dataTransfer.setData("application/json", JSON.stringify({ type: "existing", side, id: item.id, code: item.code, name: item.name }));
@@ -563,7 +603,9 @@ pub(crate) fn script() -> String {
         button.type = "button";
         button.className = "karmaOption token";
         button.draggable = true;
-        button.innerHTML = `<span class="karmaOptionName">${escapeHtml(token.human || token.code)}</span><span class="karmaOptionCode">${escapeHtml(token.code)}</span><span class="karmaOptionMeta">${escapeHtml(token.kind)}</span>`;
+        const codeHtml = state.showCode ? `<span class="karmaOptionCode">${escapeHtml(token.code)}</span>` : "";
+        const metaHtml = state.showCode ? `<span class="karmaOptionMeta">${escapeHtml(token.kind)}</span>` : "";
+        button.innerHTML = `<span class="karmaOptionName">${escapeHtml(token.human || token.code)}</span>${codeHtml}${metaHtml}`;
         button.addEventListener("click", () => insertToken(side, token));
         button.addEventListener("dragstart", (event) => {
             event.dataTransfer.setData("application/json", JSON.stringify({ type: "token", side, code: token.code, human: token.human }));
@@ -604,19 +646,20 @@ pub(crate) fn script() -> String {
         const input = side === "condition" ? el.conditionInput : el.consequenceInput;
         const raw = side === "condition" ? state.karmaEditor.draft.conditionCode : state.karmaEditor.draft.consequenceCode;
         const caret = raw.length;
-        const next = replaceActiveAtQuery(raw, caret, token.code);
+        const next = replaceActiveAtQuery(raw, caret, token.code, true);
         setDraftCode(side, next);
-        input.focus();
         renderKarmaEditor();
+        focusRichInputEnd(side);
     }
 
-    function replaceActiveAtQuery(raw, caret, code) {
+    function replaceActiveAtQuery(raw, caret, code, visual) {
         const before = raw.slice(0, caret);
         const start = before.lastIndexOf("@");
+        const inserted = visual ? "@" + code : code;
         if (start >= 0 && /^[A-Za-z0-9]*$/.test(before.slice(start + 1))) {
-            return raw.slice(0, start) + "@" + code + raw.slice(caret);
+            return raw.slice(0, start) + inserted + raw.slice(caret);
         }
-        return raw.slice(0, caret) + code + raw.slice(caret);
+        return raw.slice(0, caret) + inserted + raw.slice(caret);
     }
 
     function setDraftCode(side, value) {
@@ -629,13 +672,89 @@ pub(crate) fn script() -> String {
 
     function syncCodeFromInput(side) {
         const input = side === "condition" ? el.conditionInput : el.consequenceInput;
-        setDraftCode(side, input.textContent || "");
+        const value = machineCodeFromRichInput(input);
+        setDraftCode(side, value);
+        const humanPreview = side === "condition" ? el.conditionHuman : el.consequenceHuman;
+        if (humanPreview) humanPreview.textContent = humanReadableCode(value) || (side === "condition" ? "Human readable condition" : "Human readable consequence");
         if (side === "condition") {
             state.karmaEditor.conditionSearch = activeAtSearch(state.karmaEditor.draft.conditionCode);
         } else {
             state.karmaEditor.consequenceSearch = activeAtSearch(state.karmaEditor.draft.consequenceCode);
         }
         renderEditorLists();
+    }
+
+    function machineCodeFromRichInput(input) {
+        let value = "";
+        for (const node of input.childNodes) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                value += node.textContent || "";
+                continue;
+            }
+            if (node.nodeType === Node.ELEMENT_NODE) {
+                value += node.dataset?.code || node.textContent || "";
+            }
+        }
+        return value;
+    }
+
+    function tokenChipFromSelection(input) {
+        const selection = window.getSelection();
+        if (!selection || !selection.rangeCount) return null;
+        let node = selection.anchorNode;
+        if (!node || !input.contains(node)) return null;
+        if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+        return node?.closest?.(".tokenChip") || null;
+    }
+
+    function adjacentTokenChip(input, direction) {
+        const selection = window.getSelection();
+        if (!selection || !selection.rangeCount || !selection.isCollapsed) return null;
+        const range = selection.getRangeAt(0);
+        let container = range.startContainer;
+        let offset = range.startOffset;
+        if (!input.contains(container)) return null;
+        if (container.nodeType === Node.TEXT_NODE) {
+            if (direction < 0 && offset === 0) return container.previousSibling?.classList?.contains("tokenChip") ? container.previousSibling : null;
+            if (direction > 0 && offset === container.textContent.length) return container.nextSibling?.classList?.contains("tokenChip") ? container.nextSibling : null;
+            return null;
+        }
+        const child = container.childNodes[offset + (direction < 0 ? -1 : 0)];
+        return child?.classList?.contains("tokenChip") ? child : null;
+    }
+
+    function handleRichInputKeydown(side, event) {
+        const input = side === "condition" ? el.conditionInput : el.consequenceInput;
+        if (!input || input.contentEditable !== "true") return;
+        const selectedChip = tokenChipFromSelection(input);
+        const adjacentChip = event.key === "Backspace"
+            ? adjacentTokenChip(input, -1)
+            : event.key === "Delete"
+                ? adjacentTokenChip(input, 1)
+                : null;
+        const chip = selectedChip || adjacentChip;
+        if (chip && (event.key === "Backspace" || event.key === "Delete")) {
+            event.preventDefault();
+            chip.remove();
+            syncCodeFromInput(side);
+            focusRichInputEnd(side);
+            return;
+        }
+        if (selectedChip && event.key.length === 1) {
+            event.preventDefault();
+        }
+    }
+
+    function focusRichInputEnd(side) {
+        const input = side === "condition" ? el.conditionInput : el.consequenceInput;
+        if (!input) return;
+        input.focus();
+        const range = document.createRange();
+        range.selectNodeContents(input);
+        range.collapse(false);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
     }
 
     function activeAtSearch(code) {
@@ -649,7 +768,7 @@ pub(crate) fn script() -> String {
     }
 
     function editorKarmaId() {
-        return numberOrNull(state.karmaEditor?.original?.karmaId);
+        return numberOrNull(state.karmaEditor?.karmaId ?? state.karmaEditor?.original?.karmaId);
     }
 
     function selectedItem(side) {
@@ -762,16 +881,30 @@ pub(crate) fn script() -> String {
 
     async function deleteKarma() {
         const karmaId = editorKarmaId();
-        if (!karmaId) return;
-        if (!window.confirm(`Delete Karma #${karmaId}?`)) return;
+        if (!karmaId) {
+            setEditorError("Cannot delete: this modal does not have a Karma id.");
+            return;
+        }
+        if (!state.deleteConfirm) {
+            state.deleteConfirm = true;
+            renderKarmaEditor();
+            return;
+        }
         try {
             await postAction("delete-karma", { karmaId });
+            state.deleteConfirm = false;
             el.karmaModal.hidden = true;
             state.karmaEditor = null;
             await loadGraph();
         } catch (error) {
             setEditorError(error.message);
         }
+    }
+
+    function resetDeleteConfirmation() {
+        if (!state.deleteConfirm) return;
+        state.deleteConfirm = false;
+        renderKarmaEditor();
     }
 
     async function setEditorActive(active) {
@@ -1315,13 +1448,14 @@ pub(crate) fn script() -> String {
         const value = label.value?.text || "";
         const valueText = value && value !== code ? value : "";
         const metaText = valueText ? `${code} ${valueText}` : code;
+        const showMeta = state.showCode && Boolean(metaText);
         const humanRow = measureLabelRow(human, HUMAN_LABEL_FONT);
-        const metaRow = measureLabelRow(metaText, META_LABEL_FONT);
+        const metaRow = showMeta ? measureLabelRow(metaText, META_LABEL_FONT) : { width: 0, height: 0 };
         const humanWidth = humanRow.width;
         const metaWidth = metaRow.width;
         const humanHeight = humanRow.height;
         const metaHeight = metaRow.height;
-        const gap = 0;
+        const gap = showMeta ? 0 : 0;
         const width = Math.max(humanWidth, metaWidth) + 22;
         const height = humanHeight + gap + metaHeight + 16;
         const pos = labelPosition(node, width, height);
@@ -1333,6 +1467,8 @@ pub(crate) fn script() -> String {
             human,
             code,
             valueText,
+            metaText,
+            showMeta,
             humanWidth,
             metaWidth,
             humanHeight,
@@ -1474,7 +1610,8 @@ pub(crate) fn script() -> String {
             .attr("style", (d) => `color:${d.color || "#6f2e2b"}`)
             .html((d) => {
                 const box = cardLayout(d);
-                return `${nodeBadgeHtml(d)}<div class="human" style="width:${box.width - 22}px">${escapeHtml(box.human)}</div><div class="meta" style="width:${box.width - 22}px">${escapeHtml(box.valueText ? `${box.code} ${box.valueText}` : box.code)}</div>`;
+                const meta = box.showMeta ? `<div class="meta" style="width:${box.width - 22}px">${escapeHtml(box.metaText)}</div>` : "";
+                return `${nodeBadgeHtml(d)}<div class="human" style="width:${box.width - 22}px">${escapeHtml(box.human)}</div>${meta}`;
             });
     }
 
@@ -1587,7 +1724,15 @@ pub(crate) fn script() -> String {
     el.karmaClose?.addEventListener("click", () => { if (el.karmaModal) el.karmaModal.hidden = true; });
     el.createKarmaButton?.addEventListener("click", () => openCreateKarmaModal().catch((error) => setStatus(error.message)));
     el.editorPrimary?.addEventListener("click", () => saveKarma());
-    el.editorDelete?.addEventListener("click", () => deleteKarma());
+    el.editorDelete?.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        deleteKarma();
+    });
+    el.karmaModal?.addEventListener("click", (event) => {
+        if (event.target?.closest?.("#karma-editor-delete")) return;
+        resetDeleteConfirmation();
+    });
     el.editorActive?.addEventListener("change", (event) => setEditorActive(Boolean(event.currentTarget.checked)));
     el.operator?.addEventListener("change", (event) => {
         if (state.karmaEditor?.draft) state.karmaEditor.draft.operator = event.currentTarget.value;
@@ -1598,6 +1743,8 @@ pub(crate) fn script() -> String {
     el.consequenceEdit?.addEventListener("click", () => startSideEditing("consequence"));
     el.conditionSave?.addEventListener("click", () => saveSide("condition"));
     el.consequenceSave?.addEventListener("click", () => saveSide("consequence"));
+    el.conditionInput?.addEventListener("keydown", (event) => handleRichInputKeydown("condition", event));
+    el.consequenceInput?.addEventListener("keydown", (event) => handleRichInputKeydown("consequence", event));
     el.conditionInput?.addEventListener("input", () => syncCodeFromInput("condition"));
     el.consequenceInput?.addEventListener("input", () => syncCodeFromInput("consequence"));
     el.conditionInput?.addEventListener("dragover", (event) => event.preventDefault());
@@ -1630,6 +1777,7 @@ pub(crate) fn script() -> String {
     el.conditionColor?.addEventListener("input", (event) => setPaletteColor("condition", event.target.value));
     el.consequenceColor?.addEventListener("input", (event) => setPaletteColor("consequence", event.target.value));
     el.inactiveColor?.addEventListener("input", (event) => setPaletteColor("inactive", event.target.value));
+    el.showCode?.addEventListener("change", (event) => setShowCode(event.target.checked));
     el.distinctCondition?.addEventListener("change", async (event) => {
         state.distinctCondition = Boolean(event.target.checked);
         render();

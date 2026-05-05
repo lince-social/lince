@@ -95,8 +95,8 @@ pub(crate) fn body() -> Markup {
                                         button #karma-condition-edit.button.smallButton type="button" hidden { "Edit" }
                                     }
                                     input #karma-condition-name.input.karmaNameInput type="text" placeholder="Condition name" hidden;
+                                    div #karma-condition-human.karmaHumanPreview {}
                                     div #karma-condition-input.karmaRichInput contenteditable="false" data-placeholder="Pick or create condition" {}
-                                    div #karma-condition-preview.karmaPreview {}
                                 }
                                 div.karmaOperatorBox {
                                     label.karmaFieldTitle for="karma-operator-select" { "Operator" }
@@ -113,8 +113,8 @@ pub(crate) fn body() -> Markup {
                                         button #karma-consequence-edit.button.smallButton type="button" hidden { "Edit" }
                                     }
                                     input #karma-consequence-name.input.karmaNameInput type="text" placeholder="Consequence name" hidden;
+                                    div #karma-consequence-human.karmaHumanPreview {}
                                     div #karma-consequence-input.karmaRichInput contenteditable="false" data-placeholder="Pick or create consequence" {}
-                                    div #karma-consequence-preview.karmaPreview {}
                                 }
                             }
 
@@ -122,14 +122,12 @@ pub(crate) fn body() -> Markup {
                                 section.karmaBank {
                                     div.karmaBankHead {
                                         h3 { "Conditions" }
-                                        input #karma-condition-search.input type="search" placeholder="Search condition or @ token";
                                     }
                                     div #karma-condition-list.karmaBankList {}
                                 }
                                 section.karmaBank {
                                     div.karmaBankHead {
                                         h3 { "Consequences" }
-                                        input #karma-consequence-search.input type="search" placeholder="Search consequence or @ token";
                                     }
                                     div #karma-consequence-list.karmaBankList {}
                                 }
@@ -162,6 +160,15 @@ pub(crate) fn body() -> Markup {
                                 label.toggleRow {
                                     span { "Unique consequences" }
                                     input #karma-distinct-consequence type="checkbox";
+                                }
+                            }
+                        }
+                        div.field {
+                            span { "Display" }
+                            div.toggleGrid {
+                                label.toggleRow {
+                                    span { "Show code" }
+                                    input #karma-show-code type="checkbox";
                                 }
                             }
                         }

@@ -8,6 +8,8 @@ use std::{
 use tokio::sync::RwLock;
 use utils::auth::{decode_jwt, hash_password, issue_jwt, verify_password};
 
+const JWT_TTL: Duration = Duration::from_secs(60 * 60 * 24 * 365);
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuthSubject {
     pub user_id: u64,
@@ -72,7 +74,7 @@ impl AuthService {
             &user.username,
             user.role_id as u64,
             &user.role,
-            Duration::from_secs(60 * 60 * 24),
+            JWT_TTL,
         )
     }
 

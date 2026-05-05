@@ -135,26 +135,34 @@ button, input { font: inherit; }
 .originalCell { display: grid; gap: 5px; min-width: 0; }
 .operatorCell { text-align: center; }
 .karmaFieldTitle { color: var(--muted); font-size: .78rem; }
-.karmaReadonly, .karmaRichInput {
+.karmaReadonly, .karmaRichInput, .karmaHumanPreview, .karmaNameInput, .karmaOperatorBox .input {
     min-height: 48px;
     border: 1px solid currentColor;
-    border-radius: 6px;
+    border-radius: 2px;
     background: rgba(0,0,0,.24);
     color: var(--text);
     padding: 13px 12px;
     font: 700 .94rem ui-sans-serif, system-ui;
     overflow: hidden;
 }
-.karmaReadonlyMeta, .karmaPreview { color: var(--muted); min-height: 16px; font: .74rem ui-sans-serif, system-ui; }
+.karmaReadonlyMeta { color: var(--muted); min-height: 16px; font: .74rem ui-sans-serif, system-ui; }
+.karmaHumanPreview {
+    pointer-events: none;
+    white-space: pre-wrap;
+}
 .karmaDraftRow { display: grid; grid-template-columns: minmax(0, 1fr) 100px minmax(0, 1fr); gap: 10px; align-items: start; }
 .karmaDraftSide { display: grid; gap: 6px; min-width: 0; }
 .karmaDraftTitle { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--text); }
-.karmaNameInput { min-height: 30px; border-radius: 8px; font-size: .82rem; }
-.karmaRichInput { color: var(--text); outline: none; white-space: pre-wrap; overflow: auto; }
+.karmaNameInput { width: 100%; }
+.karmaRichInput { color: var(--text); caret-color: var(--accent); cursor: text; outline: none; white-space: pre-wrap; overflow: auto; }
+.karmaRichInput[contenteditable="true"]:focus {
+    border-color: rgba(231,183,95,.76);
+    box-shadow: 0 0 0 1px rgba(231,183,95,.28);
+}
 .karmaRichInput[contenteditable="false"] { color: var(--muted); cursor: default; }
 .karmaRichInput:empty::before { content: attr(data-placeholder); color: rgba(184,174,156,.65); }
 .tokenChip { border: 1px solid rgba(241,236,226,.45); border-radius: 4px; padding: 0 2px; background: rgba(255,255,255,.04); }
-.karmaOperatorBox { display: grid; gap: 6px; align-content: end; }
+.karmaOperatorBox { display: grid; gap: 6px; align-content: start; }
 .karmaBanks { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; min-height: 0; }
 .karmaBank { min-height: 0; border: 1px solid var(--line); border-radius: 10px; background: rgba(0,0,0,.2); padding: 10px; display: grid; grid-template-rows: auto 1fr; gap: 8px; }
 .karmaBankHead { display: grid; gap: 8px; }
@@ -163,7 +171,7 @@ button, input { font: inherit; }
 .karmaOption { position: relative; flex: 0 1 auto; max-width: 100%; width: max-content; border: 1px solid rgba(255,255,255,.18); border-radius: 8px; background: rgba(255,255,255,.04); color: var(--text); padding: 8px; cursor: pointer; text-align: left; display: inline-grid; gap: 3px; }
 .karmaOption.real { padding-right: 28px; border-color: color-mix(in srgb, var(--karma-option-accent, rgba(255,255,255,.18)) 78%, transparent); }
 .karmaOption.is-selected { background: rgba(231,183,95,.14); }
-.karmaOption.token { border-style: dashed; }
+.karmaOption.token { border-style: solid; }
 .karmaOptionName { font: 700 .82rem ui-sans-serif, system-ui; }
 .karmaOptionCode, .karmaOptionMeta { color: var(--muted); font: .72rem ui-sans-serif, system-ui; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .karmaOptionBadge {

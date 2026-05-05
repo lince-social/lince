@@ -69,6 +69,19 @@ button, input { font: inherit; }
     right: 18px;
     bottom: 18px;
 }
+.karmaCreateButton {
+    position: absolute;
+    z-index: 5;
+    top: 58px;
+    right: 18px;
+    border: 1px solid rgba(231,183,95,.58);
+    background: rgba(231,183,95,.18);
+    color: var(--text);
+    border-radius: 999px;
+    min-height: 32px;
+    padding: 0 12px;
+    cursor: pointer;
+}
 
 .emptyState {
     position: absolute;
@@ -98,6 +111,82 @@ button, input { font: inherit; }
     padding: 14px;
 }
 .adjustments { left: 18px; right: auto; bottom: 18px; }
+.karmaModal {
+    top: 50%;
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    width: 80vw;
+    height: 80vh;
+    transform: translate(-50%, -50%);
+    overflow: auto;
+}
+.karmaEditor { height: 100%; display: grid; grid-template-rows: auto auto auto 1fr; gap: 12px; min-height: 0; }
+.karmaEditorHead { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.karmaEditorHead h2 { margin: 0; font-size: 1.3rem; letter-spacing: .02em; }
+.karmaEditorActions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.karmaEditorId { color: var(--muted); font-size: .9rem; }
+.karmaSwitch { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: .78rem; }
+.karmaSwitch input { accent-color: var(--accent); }
+.dangerButton { border-color: rgba(217,119,87,.6); background: rgba(217,119,87,.18); }
+.smallButton { min-height: 28px; padding: 0 10px; font-size: .76rem; }
+.editorError { border: 1px solid rgba(217,119,87,.55); background: rgba(217,119,87,.12); color: #ffd2c5; border-radius: 8px; padding: 8px 10px; font-size: .82rem; }
+.originalKarma { display: grid; grid-template-columns: minmax(0, 1fr) 90px minmax(0, 1fr); gap: 10px; align-items: end; }
+.originalCell { display: grid; gap: 5px; min-width: 0; }
+.operatorCell { text-align: center; }
+.karmaFieldTitle { color: var(--muted); font-size: .78rem; }
+.karmaReadonly, .karmaRichInput {
+    min-height: 48px;
+    border: 1px solid currentColor;
+    border-radius: 6px;
+    background: rgba(0,0,0,.24);
+    color: var(--text);
+    padding: 13px 12px;
+    font: 700 .94rem ui-sans-serif, system-ui;
+    overflow: hidden;
+}
+.karmaReadonlyMeta, .karmaPreview { color: var(--muted); min-height: 16px; font: .74rem ui-sans-serif, system-ui; }
+.karmaDraftRow { display: grid; grid-template-columns: minmax(0, 1fr) 100px minmax(0, 1fr); gap: 10px; align-items: start; }
+.karmaDraftSide { display: grid; gap: 6px; min-width: 0; }
+.karmaDraftTitle { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--text); }
+.karmaNameInput { min-height: 30px; border-radius: 8px; font-size: .82rem; }
+.karmaRichInput { color: var(--text); outline: none; white-space: pre-wrap; overflow: auto; }
+.karmaRichInput[contenteditable="false"] { color: var(--muted); cursor: default; }
+.karmaRichInput:empty::before { content: attr(data-placeholder); color: rgba(184,174,156,.65); }
+.tokenChip { border: 1px solid rgba(241,236,226,.45); border-radius: 4px; padding: 0 2px; background: rgba(255,255,255,.04); }
+.karmaOperatorBox { display: grid; gap: 6px; align-content: end; }
+.karmaBanks { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; min-height: 0; }
+.karmaBank { min-height: 0; border: 1px solid var(--line); border-radius: 10px; background: rgba(0,0,0,.2); padding: 10px; display: grid; grid-template-rows: auto 1fr; gap: 8px; }
+.karmaBankHead { display: grid; gap: 8px; }
+.karmaBankHead h3 { margin: 0; font-size: .88rem; }
+.karmaBankList { min-height: 0; overflow: auto; display: flex; flex-wrap: wrap; align-content: flex-start; align-items: flex-start; gap: 8px; }
+.karmaOption { position: relative; flex: 0 1 auto; max-width: 100%; width: max-content; border: 1px solid rgba(255,255,255,.18); border-radius: 8px; background: rgba(255,255,255,.04); color: var(--text); padding: 8px; cursor: pointer; text-align: left; display: inline-grid; gap: 3px; }
+.karmaOption.real { padding-right: 28px; border-color: color-mix(in srgb, var(--karma-option-accent, rgba(255,255,255,.18)) 78%, transparent); }
+.karmaOption.is-selected { background: rgba(231,183,95,.14); }
+.karmaOption.token { border-style: dashed; }
+.karmaOptionName { font: 700 .82rem ui-sans-serif, system-ui; }
+.karmaOptionCode, .karmaOptionMeta { color: var(--muted); font: .72rem ui-sans-serif, system-ui; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.karmaOptionBadge {
+    position: absolute;
+    top: 6px;
+    right: 7px;
+    width: 13px;
+    height: 13px;
+    color: var(--karma-option-accent, currentColor);
+    pointer-events: none;
+}
+.karmaOptionBadge svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+.karmaOptionBadge path,
+.karmaOptionBadge circle {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linejoin: round;
+}
 .modalHead { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
 .modalHead h2 { margin: 2px 0 0; font-size: 1rem; }
 .field { display: grid; gap: 7px; margin-top: 10px; color: var(--muted); font-size: .78rem; }
@@ -220,4 +309,17 @@ button, input { font: inherit; }
 .link.inactive.fulfillment { stroke: rgba(155,155,155,.45); }
 .link.loop { stroke-width: 2.2; }
 .arrowHead { stroke: none; }
+.karmaLinkTag { cursor: pointer; }
+.karmaLinkTagBox {
+    fill: rgba(25,23,19,.98);
+    stroke: rgba(255,255,255,.28);
+    stroke-width: 1;
+}
+.karmaLinkTagText {
+    fill: var(--text);
+    font: 700 9px ui-sans-serif, system-ui;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    pointer-events: none;
+}
 "#;

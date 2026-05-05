@@ -217,7 +217,8 @@ fn evaluate_rule(rule: KarmaOrchestraRuleInput, catalog: &KarmaTokenCatalog) -> 
             _ => false,
         };
     let consequence_numeric_records = !record_ids_in_expression(&rule.consequence_code).is_empty();
-    let mut consequence = expression_display(&rule.consequence_code, catalog, consequence_numeric_records);
+    let mut consequence =
+        expression_display(&rule.consequence_code, catalog, consequence_numeric_records);
     if let Some(record_id) = first_record_quantity_token(&rule.consequence_code) {
         if consequence.human == rule.consequence_code {
             consequence.human = catalog

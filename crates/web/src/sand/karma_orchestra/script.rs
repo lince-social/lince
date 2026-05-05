@@ -34,6 +34,7 @@ pub(crate) fn script() -> String {
         layout: { centerX: 0, centerY: 0, ringRadius: 0 },
         dragBehavior: null,
         draggingCondition: false,
+        karmaEditor: null,
     };
 
     const el = {
@@ -49,6 +50,41 @@ pub(crate) fn script() -> String {
         viewList: document.getElementById("karma-view-list"),
         viewName: document.getElementById("karma-view-name"),
         createView: document.getElementById("karma-create-view"),
+        karmaModal: document.getElementById("karma-karma-modal"),
+        karmaClose: document.getElementById("karma-karma-close"),
+        createKarmaButton: document.getElementById("karma-create-karma-button"),
+        editorId: document.getElementById("karma-editor-id"),
+        editorTitle: document.getElementById("karma-editor-title"),
+        editorActiveWrap: document.getElementById("karma-editor-active-wrap"),
+        editorActive: document.getElementById("karma-editor-active"),
+        editorPrimary: document.getElementById("karma-editor-primary"),
+        editorDelete: document.getElementById("karma-editor-delete"),
+        editorError: document.getElementById("karma-editor-error"),
+        original: document.getElementById("karma-editor-original"),
+        originalConditionTitle: document.getElementById("karma-original-condition-title"),
+        originalCondition: document.getElementById("karma-original-condition"),
+        originalConditionMeta: document.getElementById("karma-original-condition-meta"),
+        originalOperator: document.getElementById("karma-original-operator"),
+        originalConsequenceTitle: document.getElementById("karma-original-consequence-title"),
+        originalConsequence: document.getElementById("karma-original-consequence"),
+        originalConsequenceMeta: document.getElementById("karma-original-consequence-meta"),
+        conditionNew: document.getElementById("karma-condition-new"),
+        conditionSave: document.getElementById("karma-condition-save"),
+        conditionEdit: document.getElementById("karma-condition-edit"),
+        conditionName: document.getElementById("karma-condition-name"),
+        conditionInput: document.getElementById("karma-condition-input"),
+        conditionPreview: document.getElementById("karma-condition-preview"),
+        operator: document.getElementById("karma-operator-select"),
+        consequenceNew: document.getElementById("karma-consequence-new"),
+        consequenceSave: document.getElementById("karma-consequence-save"),
+        consequenceEdit: document.getElementById("karma-consequence-edit"),
+        consequenceName: document.getElementById("karma-consequence-name"),
+        consequenceInput: document.getElementById("karma-consequence-input"),
+        consequencePreview: document.getElementById("karma-consequence-preview"),
+        conditionSearch: document.getElementById("karma-condition-search"),
+        consequenceSearch: document.getElementById("karma-consequence-search"),
+        conditionList: document.getElementById("karma-condition-list"),
+        consequenceList: document.getElementById("karma-consequence-list"),
         stateBall: document.getElementById("karma-state-ball"),
         adjustments: document.getElementById("karma-adjustments"),
         adjustClose: document.getElementById("karma-adjust-close"),
@@ -76,6 +112,7 @@ pub(crate) fn script() -> String {
     const root = svg.append("g");
     const linkLayer = root.append("g");
     const nodeLayer = root.append("g");
+    const linkTagLayer = root.append("g");
     const arrowLayer = root.append("g");
     const labelLayer = root.append("g");
     const labelMeasureCanvas = document.createElement("canvas");
@@ -275,6 +312,24 @@ pub(crate) fn script() -> String {
         el.viewPill.textContent = binding?.viewName ? binding.viewName : "No view";
     }
 
+    async function openKarmaModal(ruleId) {
+        if (!el.karmaModal) return;
+        setEditorError("");
+        const data = await postAction("load-karma-editor", { karmaId: ruleId });
+        state.karmaEditor = prepareEditorState(data.editor);
+        renderKarmaEditor();
+        el.karmaModal.hidden = false;
+    }
+
+    async function openCreateKarmaModal() {
+        if (!el.karmaModal) return;
+        setEditorError("");
+        const data = await postAction("load-karma-editor", { karmaId: null });
+        state.karmaEditor = prepareEditorState(data.editor);
+        renderKarmaEditor();
+        el.karmaModal.hidden = false;
+    }
+
     async function openViewModal() {
         el.viewModal.hidden = false;
         el.viewList.innerHTML = "<div class='muted'>Scanning Views...</div>";
@@ -310,6 +365,452 @@ pub(crate) fn script() -> String {
         updateBinding(data.binding);
         el.viewModal.hidden = true;
         await loadGraph();
+    }
+
+    function prepareEditorState(editor) {
+        const draft = editor?.draft || {};
+        const selectedConditionId = numberOrNull(editor?.selectedConditionId ?? draft.conditionId);
+        const selectedConsequenceId = numberOrNull(editor?.selectedConsequenceId ?? draft.consequenceId);
+        const selectedCondition = (editor?.conditions || []).find((item) => Number(item.id) === Number(selectedConditionId));
+        const selectedConsequence = (editor?.consequences || []).find((item) => Number(item.id) === Number(selectedConsequenceId));
+        return {
+            mode: editor?.mode === "update" ? "update" : "create",
+            original: editor?.original || null,
+            conditions: editor?.conditions || [],
+            consequences: editor?.consequences || [],
+            tokens: editor?.tokens || [],
+            conditionSearch: "",
+            consequenceSearch: "",
+            activeSide: null,
+            draft: {
+                conditionId: selectedConditionId,
+                conditionName: String(selectedCondition?.name ?? draft.conditionName ?? ""),
+                conditionCode: String(selectedCondition?.code ?? draft.conditionCode ?? ""),
+                conditionMode: "selected",
+                operator: String(draft.operator || "="),
+                consequenceId: selectedConsequenceId,
+                consequenceName: String(selectedConsequence?.name ?? draft.consequenceName ?? ""),
+                consequenceCode: String(selectedConsequence?.code ?? draft.consequenceCode ?? ""),
+                consequenceMode: "selected",
+                active: draft.active !== false,
+            },
+        };
+    }
+
+    function numberOrNull(value) {
+        const number = Number(value);
+        return Number.isFinite(number) && number > 0 ? number : null;
+    }
+
+    function setEditorError(message) {
+        if (!el.editorError) return;
+        el.editorError.hidden = !message;
+        el.editorError.textContent = message || "";
+    }
+
+    function renderKarmaEditor() {
+        const editor = state.karmaEditor;
+        if (!editor) return;
+        const updateMode = editor.mode === "update";
+        el.editorTitle.textContent = updateMode ? "Karma Update" : "Karma Creation";
+        el.editorId.textContent = updateMode ? `Karma id: ${editor.original?.karmaId || ""}` : "";
+        el.editorActive.checked = Boolean(editor.draft.active);
+        el.editorActiveWrap.hidden = false;
+        el.editorPrimary.textContent = updateMode ? "Update Karma" : "Create Karma";
+        el.editorDelete.hidden = !updateMode;
+        el.original.hidden = !updateMode;
+        if (updateMode) {
+            const original = editor.original;
+            el.originalConditionTitle.textContent = `Original Condition id: ${original.conditionId}`;
+            el.originalCondition.textContent = original.conditionCode || "";
+            el.originalConditionMeta.textContent = displayMeta(original.conditionDisplay);
+            el.originalOperator.textContent = original.operator || "=";
+            el.originalConsequenceTitle.textContent = `Original Consequence id: ${original.consequenceId}`;
+            el.originalConsequence.textContent = original.consequenceCode || "";
+            el.originalConsequenceMeta.textContent = displayMeta(original.consequenceDisplay);
+        }
+        el.operator.value = editor.draft.operator || "=";
+        renderDraftSide("condition");
+        renderDraftSide("consequence");
+        renderEditorLists();
+    }
+
+    function renderDraftSide(side) {
+        const editor = state.karmaEditor;
+        const draft = editor.draft;
+        const isCondition = side === "condition";
+        const input = isCondition ? el.conditionInput : el.consequenceInput;
+        const name = isCondition ? el.conditionName : el.consequenceName;
+        const preview = isCondition ? el.conditionPreview : el.consequencePreview;
+        const newButton = isCondition ? el.conditionNew : el.consequenceNew;
+        const save = isCondition ? el.conditionSave : el.consequenceSave;
+        const edit = isCondition ? el.conditionEdit : el.consequenceEdit;
+        const mode = isCondition ? draft.conditionMode : draft.consequenceMode;
+        const code = isCondition ? draft.conditionCode : draft.consequenceCode;
+        const selectedId = isCondition ? draft.conditionId : draft.consequenceId;
+        const editable = mode === "authoring" || mode === "editing";
+        input.contentEditable = editable ? "true" : "false";
+        input.innerHTML = editable ? escapeHtml(code) : richCodeHtml(code);
+        newButton.hidden = editable;
+        name.hidden = mode !== "authoring" && mode !== "editing";
+        name.value = isCondition ? draft.conditionName : draft.consequenceName;
+        save.hidden = mode !== "authoring" && mode !== "editing";
+        save.textContent = mode === "editing" ? "Save" : (isCondition ? "Create Condition" : "Create Consequence");
+        edit.hidden = !selectedId || mode === "authoring" || mode === "editing";
+        preview.textContent = selectedId ? `id ${selectedId}` : displayPreview(code, isCondition);
+    }
+
+    function displayMeta(display) {
+        if (!display) return "";
+        const value = display.value?.text;
+        const human = display.human && display.human !== display.code ? display.human : "";
+        return [human, value && value !== display.code ? value : ""].filter(Boolean).join(" | ");
+    }
+
+    function displayPreview(code, isCondition) {
+        if (!code) return "";
+        return isCondition ? "new condition" : "new consequence";
+    }
+
+    function richCodeHtml(code) {
+        return escapeHtml(String(code || "")).replace(/@?(rq|f|c|sql)(\d+)/g, (match, prefix, id) => {
+            if (!match.startsWith("@")) return match;
+            const token = tokenByCode(prefix + id);
+            const human = token?.human || fallbackTokenHuman(prefix, id);
+            return `<span class="tokenChip" data-code="${escapeHtml(prefix + id)}">${escapeHtml(human)}</span>`;
+        });
+    }
+
+    function tokenByCode(code) {
+        return (state.karmaEditor?.tokens || []).find((token) => token.code === code) || null;
+    }
+
+    function fallbackTokenHuman(prefix, id) {
+        if (prefix === "rq") return `Record with id ${id}`;
+        if (prefix === "f") return `Frequency with id ${id}`;
+        if (prefix === "c") return `Command with id ${id}`;
+        if (prefix === "sql") return `Query with id ${id}`;
+        return `${prefix}${id}`;
+    }
+
+    function renderEditorLists() {
+        renderOptionList("condition");
+        renderOptionList("consequence");
+    }
+
+    function renderOptionList(side) {
+        const editor = state.karmaEditor;
+        const isCondition = side === "condition";
+        const list = isCondition ? el.conditionList : el.consequenceList;
+        const search = isCondition ? editor.conditionSearch : editor.consequenceSearch;
+        const options = isCondition ? editor.conditions : editor.consequences;
+        const selectedId = isCondition ? editor.draft.conditionId : editor.draft.consequenceId;
+        list.innerHTML = "";
+        const rows = filterOptions(options, search);
+        if (isAuthoring(side)) {
+            for (const token of filterTokens(side, search.trim().replace(/^@/, ""))) {
+                list.appendChild(tokenButton(token, side));
+            }
+        }
+        for (const item of rows) {
+            list.appendChild(optionButton(item, side, selectedId));
+        }
+        if (!list.children.length) {
+            const empty = document.createElement("div");
+            empty.className = "muted";
+            empty.textContent = "No results";
+            list.appendChild(empty);
+        }
+    }
+
+    function filterOptions(options, query) {
+        const value = String(query || "").toLowerCase().replace(/^@/, "");
+        if (!value) return options;
+        return options.filter((item) => [
+            item.id,
+            item.name,
+            item.code,
+            item.display?.human,
+            item.display?.value?.text,
+        ].some((part) => String(part || "").toLowerCase().includes(value)));
+    }
+
+    function filterTokens(side, query) {
+        const value = String(query || "").toLowerCase();
+        return (state.karmaEditor?.tokens || []).filter((token) => {
+            if (side === "condition" && !token.validForCondition) return false;
+            if (side === "consequence" && !token.validForConsequence) return false;
+            return !value || String(token.searchText || "").toLowerCase().includes(value) || String(token.code || "").toLowerCase().includes(value);
+        });
+    }
+
+    function optionButton(item, side, selectedId) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "karmaOption real " + side + (Number(item.id) === Number(selectedId) ? " is-selected" : "");
+        button.style.setProperty("--karma-option-accent", side === "condition" ? state.palette.condition : state.palette.consequence);
+        button.draggable = true;
+        button.innerHTML = `${bankItemBadgeHtml(side)}<span class="karmaOptionName">${escapeHtml(item.name || ("#" + item.id))}</span><span class="karmaOptionCode">${escapeHtml(item.code || "")}</span><span class="karmaOptionMeta">${escapeHtml(displayMeta(item.display))}</span>`;
+        button.addEventListener("click", () => selectExisting(side, item));
+        button.addEventListener("dragstart", (event) => {
+            event.dataTransfer.setData("application/json", JSON.stringify({ type: "existing", side, id: item.id, code: item.code, name: item.name }));
+        });
+        return button;
+    }
+
+    function tokenButton(token, side) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "karmaOption token";
+        button.draggable = true;
+        button.innerHTML = `<span class="karmaOptionName">${escapeHtml(token.human || token.code)}</span><span class="karmaOptionCode">${escapeHtml(token.code)}</span><span class="karmaOptionMeta">${escapeHtml(token.kind)}</span>`;
+        button.addEventListener("click", () => insertToken(side, token));
+        button.addEventListener("dragstart", (event) => {
+            event.dataTransfer.setData("application/json", JSON.stringify({ type: "token", side, code: token.code, human: token.human }));
+        });
+        return button;
+    }
+
+    function bankItemBadgeHtml(side) {
+        if (side === "condition") {
+            return `<span class="karmaOptionBadge" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M1 10 L6 1 L11 10 Z"></path></svg></span>`;
+        }
+        return `<span class="karmaOptionBadge" aria-hidden="true"><svg viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5"></circle></svg></span>`;
+    }
+
+    function selectExisting(side, item) {
+        const draft = state.karmaEditor.draft;
+        if (side === "condition") {
+            draft.conditionId = Number(item.id);
+            draft.conditionName = item.name || "";
+            draft.conditionCode = item.code || "";
+            draft.conditionMode = "selected";
+        } else {
+            draft.consequenceId = Number(item.id);
+            draft.consequenceName = item.name || "";
+            draft.consequenceCode = item.code || "";
+            draft.consequenceMode = "selected";
+        }
+        renderKarmaEditor();
+    }
+
+    function isAuthoring(side) {
+        const mode = side === "condition" ? state.karmaEditor?.draft.conditionMode : state.karmaEditor?.draft.consequenceMode;
+        return mode === "authoring" || mode === "editing";
+    }
+
+    function insertToken(side, token) {
+        if (!isAuthoring(side)) return;
+        const input = side === "condition" ? el.conditionInput : el.consequenceInput;
+        const raw = side === "condition" ? state.karmaEditor.draft.conditionCode : state.karmaEditor.draft.consequenceCode;
+        const caret = raw.length;
+        const next = replaceActiveAtQuery(raw, caret, token.code);
+        setDraftCode(side, next);
+        input.focus();
+        renderKarmaEditor();
+    }
+
+    function replaceActiveAtQuery(raw, caret, code) {
+        const before = raw.slice(0, caret);
+        const start = before.lastIndexOf("@");
+        if (start >= 0 && /^[A-Za-z0-9]*$/.test(before.slice(start + 1))) {
+            return raw.slice(0, start) + "@" + code + raw.slice(caret);
+        }
+        return raw.slice(0, caret) + code + raw.slice(caret);
+    }
+
+    function setDraftCode(side, value) {
+        if (side === "condition") {
+            state.karmaEditor.draft.conditionCode = value;
+        } else {
+            state.karmaEditor.draft.consequenceCode = value;
+        }
+    }
+
+    function syncCodeFromInput(side) {
+        const input = side === "condition" ? el.conditionInput : el.consequenceInput;
+        setDraftCode(side, input.textContent || "");
+        if (side === "condition") {
+            state.karmaEditor.conditionSearch = activeAtSearch(state.karmaEditor.draft.conditionCode);
+        } else {
+            state.karmaEditor.consequenceSearch = activeAtSearch(state.karmaEditor.draft.consequenceCode);
+        }
+        renderEditorLists();
+    }
+
+    function activeAtSearch(code) {
+        const index = String(code || "").lastIndexOf("@");
+        if (index < 0) return "";
+        return String(code).slice(index);
+    }
+
+    function cleanEditorCode(value) {
+        return String(value || "").replace(/@(?=(rq|f|c|sql)\d+)/g, "").trim();
+    }
+
+    function editorKarmaId() {
+        return numberOrNull(state.karmaEditor?.original?.karmaId);
+    }
+
+    function selectedItem(side) {
+        const editor = state.karmaEditor;
+        if (!editor) return null;
+        const id = side === "condition" ? editor.draft.conditionId : editor.draft.consequenceId;
+        const rows = side === "condition" ? editor.conditions : editor.consequences;
+        return rows.find((item) => Number(item.id) === Number(id)) || null;
+    }
+
+    function startSideAuthoring(side) {
+        const draft = state.karmaEditor?.draft;
+        if (!draft) return;
+        if (side === "condition") {
+            draft.conditionId = null;
+            draft.conditionName = "";
+            draft.conditionCode = "";
+            draft.conditionMode = "authoring";
+            state.karmaEditor.conditionSearch = "";
+        } else {
+            draft.consequenceId = null;
+            draft.consequenceName = "";
+            draft.consequenceCode = "";
+            draft.consequenceMode = "authoring";
+            state.karmaEditor.consequenceSearch = "";
+        }
+        renderKarmaEditor();
+        const input = side === "condition" ? el.conditionInput : el.consequenceInput;
+        input?.focus();
+    }
+
+    function startSideEditing(side) {
+        const draft = state.karmaEditor?.draft;
+        const item = selectedItem(side);
+        if (!draft || !item) return;
+        if (!window.confirm("This edits an existing item used by every Karma that references it. Continue?")) return;
+        if (side === "condition") {
+            draft.conditionMode = "editing";
+            draft.conditionName = item.name || "";
+            draft.conditionCode = item.code || "";
+        } else {
+            draft.consequenceMode = "editing";
+            draft.consequenceName = item.name || "";
+            draft.consequenceCode = item.code || "";
+        }
+        renderKarmaEditor();
+        const input = side === "condition" ? el.conditionInput : el.consequenceInput;
+        input?.focus();
+    }
+
+    async function saveSide(side) {
+        const editor = state.karmaEditor;
+        if (!editor) return;
+        setEditorError("");
+        const draft = editor.draft;
+        const isCondition = side === "condition";
+        const mode = isCondition ? draft.conditionMode : draft.consequenceMode;
+        const code = cleanEditorCode(isCondition ? draft.conditionCode : draft.consequenceCode);
+        const name = (isCondition ? el.conditionName?.value : el.consequenceName?.value) || "";
+        if (!code) {
+            setEditorError((isCondition ? "Condition" : "Consequence") + " code is required.");
+            return;
+        }
+        const action = isCondition
+            ? (mode === "editing" ? "update-condition" : "create-condition")
+            : (mode === "editing" ? "update-consequence" : "create-consequence");
+        const payload = {
+            karmaId: editorKarmaId(),
+            id: mode === "editing" ? (isCondition ? draft.conditionId : draft.consequenceId) : null,
+            name,
+            code,
+        };
+        try {
+            const data = await postAction(action, payload);
+            state.karmaEditor = prepareEditorState(data.editor);
+            renderKarmaEditor();
+            await loadGraph();
+        } catch (error) {
+            setEditorError(error.message);
+        }
+    }
+
+    function karmaPayload() {
+        const draft = state.karmaEditor?.draft;
+        if (!draft?.conditionId || !draft?.consequenceId) {
+            throw new Error("Pick or create both a Condition and a Consequence before saving Karma.");
+        }
+        return {
+            karmaId: editorKarmaId(),
+            name: state.karmaEditor?.original?.karmaName || "Karma",
+            active: Boolean(draft.active),
+            conditionId: Number(draft.conditionId),
+            operator: el.operator?.value || draft.operator || "=",
+            consequenceId: Number(draft.consequenceId),
+        };
+    }
+
+    async function saveKarma() {
+        setEditorError("");
+        try {
+            const action = state.karmaEditor?.mode === "update" ? "update-karma" : "create-karma";
+            const data = await postAction(action, karmaPayload());
+            state.karmaEditor = prepareEditorState(data.editor);
+            renderKarmaEditor();
+            await loadGraph();
+        } catch (error) {
+            setEditorError(error.message);
+        }
+    }
+
+    async function deleteKarma() {
+        const karmaId = editorKarmaId();
+        if (!karmaId) return;
+        if (!window.confirm(`Delete Karma #${karmaId}?`)) return;
+        try {
+            await postAction("delete-karma", { karmaId });
+            el.karmaModal.hidden = true;
+            state.karmaEditor = null;
+            await loadGraph();
+        } catch (error) {
+            setEditorError(error.message);
+        }
+    }
+
+    async function setEditorActive(active) {
+        const editor = state.karmaEditor;
+        if (!editor) return;
+        editor.draft.active = active;
+        if (editor.mode !== "update") {
+            renderKarmaEditor();
+            return;
+        }
+        try {
+            const data = await postAction("set-karma-active", { karmaId: editorKarmaId(), active });
+            state.karmaEditor = prepareEditorState(data.editor);
+            renderKarmaEditor();
+            await loadGraph();
+        } catch (error) {
+            setEditorError(error.message);
+        }
+    }
+
+    function handleSideDrop(side, event) {
+        event.preventDefault();
+        if (!isAuthoring(side)) return;
+        let data = null;
+        try {
+            data = JSON.parse(event.dataTransfer.getData("application/json") || "null");
+        } catch (_error) {
+            data = null;
+        }
+        if (!data) return;
+        if (data.type === "existing") {
+            const rows = side === "condition" ? state.karmaEditor.conditions : state.karmaEditor.consequences;
+            const item = rows.find((row) => Number(row.id) === Number(data.id));
+            if (item) selectExisting(side, item);
+            return;
+        }
+        if (data.type === "token") {
+            insertToken(side, data);
+        }
     }
 
     async function loadGraph() {
@@ -487,8 +988,8 @@ pub(crate) fn script() -> String {
         const top = 72;
         const bottom = 72;
         const verticalSpacing = Math.max(24, Math.abs(Number(state.physics.nodeRepulsion) || DEFAULT_PHYSICS.nodeRepulsion) / 3);
-        const groupGap = childGap;
         const childGap = verticalSpacing;
+        const groupGap = childGap;
         const groups = conditionNodes.map((condition) => {
             const outgoing = links
                 .filter((link) => link.source === condition.id && byId.has(link.target))
@@ -684,7 +1185,108 @@ pub(crate) fn script() -> String {
         drawNodes(nodes);
         drawLabels(nodes);
         drawLinks(links, byId, loops);
+        drawLinkTags(links, byId, loops);
         drawArrowheads(links, byId, loops);
+    }
+
+    function linkKarmaId(link) {
+        const graph = state.graph || { karmaRows: [] };
+        const rule = firstRuleForLink(link, graph);
+        return rule ? Number(rule.karmaId) : null;
+    }
+
+    function measureLinkTag(text) {
+        const value = String(text || "");
+        const font = "700 9px ui-sans-serif, system-ui";
+        if (!labelMeasureContext) {
+            return {
+                width: Math.max(24, Math.ceil(value.length * 6 + 12)),
+                height: 18,
+            };
+        }
+        labelMeasureContext.font = font;
+        const metrics = labelMeasureContext.measureText(value);
+        const ascent = metrics.actualBoundingBoxAscent || 7;
+        const descent = metrics.actualBoundingBoxDescent || 2;
+        return {
+            width: Math.max(24, Math.ceil(metrics.width + 12)),
+            height: Math.max(18, Math.ceil(ascent + descent + 8)),
+        };
+    }
+
+    function linkTagPoint(link, byId, loops) {
+        const a = byId.get(link.source);
+        const b = byId.get(link.target);
+        if (!a || !b) return null;
+        const loop = loopLinkMap(loops).get(link.id);
+        if (loop) {
+            const ids = Logic.uniqueBy(loop.nodeIds || [], (id) => id);
+            const points = ids.map((id) => byId.get(id)).filter(Boolean);
+            if (points.length < 2) {
+                const start = cardAnchorPoint(a, b);
+                const end = cardAnchorPoint(b, a);
+                return { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
+            }
+            const cx = d3.mean(points, (point) => point.x);
+            const cy = d3.mean(points, (point) => point.y);
+            const radius = Math.max(52, d3.max(points, (point) => Math.hypot(point.x - cx, point.y - cy)) + 26);
+            const start = Math.atan2(a.y - cy, a.x - cx);
+            let end = Math.atan2(b.y - cy, b.x - cx);
+            while (end <= start) end += Math.PI * 2;
+            const mid = start + (end - start) / 2;
+            return {
+                x: cx + Math.cos(mid) * radius,
+                y: cy + Math.sin(mid) * radius,
+            };
+        }
+        if (state.layoutMode === "list") {
+            const sourcePoint = cardSidePoint(a, "right");
+            const targetPoint = cardSidePoint(b, "left");
+            return { x: targetPoint.x - 32, y: targetPoint.y };
+        }
+        const sourcePoint = cardAnchorPoint(a, b);
+        const targetPoint = cardAnchorPoint(b, a);
+        return {
+            x: (sourcePoint.x + targetPoint.x) / 2,
+            y: (sourcePoint.y + targetPoint.y) / 2,
+        };
+    }
+
+    function drawLinkTags(links, byId, loops) {
+        const loopLinks = loopLinkMap(loops);
+        const joined = linkTagLayer.selectAll("g").data(links, (d) => d.id).join((enter) => {
+            const group = enter.append("g").attr("class", "karmaLinkTag");
+            group.append("rect").attr("class", "karmaLinkTagBox");
+            group.append("text").attr("class", "karmaLinkTagText").attr("text-anchor", "middle").attr("dominant-baseline", "middle");
+            return group;
+        });
+        joined
+            .style("display", (d) => {
+                const point = linkTagPoint(d, byId, loops);
+                return point ? null : "none";
+            })
+            .attr("transform", (d) => {
+                const point = linkTagPoint(d, byId, loops);
+                if (!point) return "";
+                const karmaId = linkKarmaId(d);
+                const box = measureLinkTag(karmaId ?? "?");
+                return `translate(${point.x - box.width / 2},${point.y - box.height / 2})`;
+            })
+            .on("click", (event, d) => {
+                event.stopPropagation();
+                openKarmaModal(linkKarmaId(d));
+            });
+        joined.select("rect")
+            .attr("width", (d) => measureLinkTag(linkKarmaId(d) ?? "?").width)
+            .attr("height", (d) => measureLinkTag(linkKarmaId(d) ?? "?").height)
+            .attr("rx", 5)
+            .attr("ry", 5)
+            .attr("fill", "rgba(25,23,19,.98)")
+            .attr("stroke", (d) => linkColor(d));
+        joined.select("text")
+            .attr("x", (d) => measureLinkTag(linkKarmaId(d) ?? "?").width / 2)
+            .attr("y", (d) => measureLinkTag(linkKarmaId(d) ?? "?").height / 2 + 0.5)
+            .text((d) => String(linkKarmaId(d) ?? "?"));
     }
 
     function measureLabelRow(text, font) {
@@ -982,6 +1584,41 @@ pub(crate) fn script() -> String {
     el.viewButton.addEventListener("click", openViewModal);
     el.viewClose.addEventListener("click", () => el.viewModal.hidden = true);
     el.createView.addEventListener("click", () => createView().catch((error) => setStatus(error.message)));
+    el.karmaClose?.addEventListener("click", () => { if (el.karmaModal) el.karmaModal.hidden = true; });
+    el.createKarmaButton?.addEventListener("click", () => openCreateKarmaModal().catch((error) => setStatus(error.message)));
+    el.editorPrimary?.addEventListener("click", () => saveKarma());
+    el.editorDelete?.addEventListener("click", () => deleteKarma());
+    el.editorActive?.addEventListener("change", (event) => setEditorActive(Boolean(event.currentTarget.checked)));
+    el.operator?.addEventListener("change", (event) => {
+        if (state.karmaEditor?.draft) state.karmaEditor.draft.operator = event.currentTarget.value;
+    });
+    el.conditionNew?.addEventListener("click", () => startSideAuthoring("condition"));
+    el.consequenceNew?.addEventListener("click", () => startSideAuthoring("consequence"));
+    el.conditionEdit?.addEventListener("click", () => startSideEditing("condition"));
+    el.consequenceEdit?.addEventListener("click", () => startSideEditing("consequence"));
+    el.conditionSave?.addEventListener("click", () => saveSide("condition"));
+    el.consequenceSave?.addEventListener("click", () => saveSide("consequence"));
+    el.conditionInput?.addEventListener("input", () => syncCodeFromInput("condition"));
+    el.consequenceInput?.addEventListener("input", () => syncCodeFromInput("consequence"));
+    el.conditionInput?.addEventListener("dragover", (event) => event.preventDefault());
+    el.consequenceInput?.addEventListener("dragover", (event) => event.preventDefault());
+    el.conditionInput?.addEventListener("drop", (event) => handleSideDrop("condition", event));
+    el.consequenceInput?.addEventListener("drop", (event) => handleSideDrop("consequence", event));
+    el.conditionSearch?.addEventListener("input", (event) => {
+        if (!state.karmaEditor) return;
+        state.karmaEditor.conditionSearch = event.currentTarget.value;
+        renderEditorLists();
+    });
+    el.consequenceSearch?.addEventListener("input", (event) => {
+        if (!state.karmaEditor) return;
+        state.karmaEditor.consequenceSearch = event.currentTarget.value;
+        renderEditorLists();
+    });
+    window.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && el.karmaModal && !el.karmaModal.hidden) {
+            el.karmaModal.hidden = true;
+        }
+    });
     el.stateBall.addEventListener("click", () => el.adjustments.hidden = !el.adjustments.hidden);
     el.adjustClose.addEventListener("click", () => el.adjustments.hidden = true);
     el.physicsReset?.addEventListener("click", resetPhysics);

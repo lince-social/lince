@@ -16,7 +16,7 @@ use {
         auth::AuthSubject,
         karma_analysis::{
             KarmaOrchestraRuleInput, KarmaTokenCatalog, NamedToken, RecordToken,
-            build_karma_orchestra_snapshot,
+            build_karma_orchestra_snapshot, expression_display, record_ids_in_expression,
         },
     },
     persistence::repositories::view::is_special_view_query,
@@ -103,7 +103,22 @@ impl KarmaOrchestraWidgetService {
             "state": {
                 "distinctness": runtime.distinctness,
             },
-            "actions": ["list-views", "create-view", "use-view", "load-graph", "set-distinctness"],
+            "actions": [
+                "list-views",
+                "create-view",
+                "use-view",
+                "load-graph",
+                "set-distinctness",
+                "load-karma-editor",
+                "set-karma-active",
+                "delete-karma",
+                "create-condition",
+                "create-consequence",
+                "update-condition",
+                "update-consequence",
+                "create-karma",
+                "update-karma"
+            ],
             "dataContract": {
                 "specialViewQuery": KARMA_ORCHESTRA_VIEW_QUERY,
                 "normalSqlViewsAccepted": false,
@@ -144,6 +159,80 @@ impl KarmaOrchestraWidgetService {
                         KarmaOrchestraWidgetError::Invalid(format!("Payload invalido: {error}"))
                     })?;
                 self.set_distinctness_action(session_token, instance_id, request)
+                    .await
+            }
+            "load-karma-editor" => {
+                let request =
+                    serde_json::from_value::<LoadKarmaEditorRequest>(payload).map_err(|error| {
+                        KarmaOrchestraWidgetError::Invalid(format!("Payload invalido: {error}"))
+                    })?;
+                self.load_karma_editor_action(session_token, instance_id, request)
+                    .await
+            }
+            "set-karma-active" => {
+                let request =
+                    serde_json::from_value::<SetKarmaActiveRequest>(payload).map_err(|error| {
+                        KarmaOrchestraWidgetError::Invalid(format!("Payload invalido: {error}"))
+                    })?;
+                self.set_karma_active_action(session_token, instance_id, request)
+                    .await
+            }
+            "delete-karma" => {
+                let request =
+                    serde_json::from_value::<KarmaIdRequest>(payload).map_err(|error| {
+                        KarmaOrchestraWidgetError::Invalid(format!("Payload invalido: {error}"))
+                    })?;
+                self.delete_karma_action(session_token, instance_id, request)
+                    .await
+            }
+            "create-condition" => {
+                let request = serde_json::from_value::<ConditionMutationRequest>(payload).map_err(
+                    |error| {
+                        KarmaOrchestraWidgetError::Invalid(format!("Payload invalido: {error}"))
+                    },
+                )?;
+                self.create_condition_action(session_token, instance_id, request)
+                    .await
+            }
+            "create-consequence" => {
+                let request = serde_json::from_value::<ConsequenceMutationRequest>(payload)
+                    .map_err(|error| {
+                        KarmaOrchestraWidgetError::Invalid(format!("Payload invalido: {error}"))
+                    })?;
+                self.create_consequence_action(session_token, instance_id, request)
+                    .await
+            }
+            "update-condition" => {
+                let request = serde_json::from_value::<ConditionMutationRequest>(payload).map_err(
+                    |error| {
+                        KarmaOrchestraWidgetError::Invalid(format!("Payload invalido: {error}"))
+                    },
+                )?;
+                self.update_condition_action(session_token, instance_id, request)
+                    .await
+            }
+            "update-consequence" => {
+                let request = serde_json::from_value::<ConsequenceMutationRequest>(payload)
+                    .map_err(|error| {
+                        KarmaOrchestraWidgetError::Invalid(format!("Payload invalido: {error}"))
+                    })?;
+                self.update_consequence_action(session_token, instance_id, request)
+                    .await
+            }
+            "create-karma" => {
+                let request =
+                    serde_json::from_value::<KarmaMutationRequest>(payload).map_err(|error| {
+                        KarmaOrchestraWidgetError::Invalid(format!("Payload invalido: {error}"))
+                    })?;
+                self.create_karma_action(session_token, instance_id, request)
+                    .await
+            }
+            "update-karma" => {
+                let request =
+                    serde_json::from_value::<KarmaMutationRequest>(payload).map_err(|error| {
+                        KarmaOrchestraWidgetError::Invalid(format!("Payload invalido: {error}"))
+                    })?;
+                self.update_karma_action(session_token, instance_id, request)
                     .await
             }
             _ => Err(KarmaOrchestraWidgetError::Invalid(
@@ -336,6 +425,389 @@ impl KarmaOrchestraWidgetService {
             "ok": true,
             "action": "load-graph",
             "graph": snapshot,
+        }))
+    }
+
+    async fn load_karma_editor_action(
+        &self,
+        session_token: Option<&str>,
+        instance_id: &str,
+        request: LoadKarmaEditorRequest,
+    ) -> Result<Value, KarmaOrchestraWidgetError> {
+        let resolved = self
+            .resolve_instance(session_token, instance_id, KarmaOrchestraPermission::Read)
+            .await?;
+        self.validate_selected_karma_view(session_token, &resolved)
+            .await?;
+        let rows = self
+            .load_editor_rows(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+            )
+            .await?;
+        Ok(json!({
+            "ok": true,
+            "action": "load-karma-editor",
+            "editor": build_editor_payload(request.karma_id, rows)?,
+        }))
+    }
+
+    async fn set_karma_active_action(
+        &self,
+        session_token: Option<&str>,
+        instance_id: &str,
+        request: SetKarmaActiveRequest,
+    ) -> Result<Value, KarmaOrchestraWidgetError> {
+        let resolved = self
+            .resolve_instance(session_token, instance_id, KarmaOrchestraPermission::Write)
+            .await?;
+        self.validate_selected_karma_view(session_token, &resolved)
+            .await?;
+        self.update_table_row(
+            session_token,
+            &resolved.organ,
+            resolved.bearer_token.as_deref(),
+            "karma",
+            request.karma_id,
+            json!({ "quantity": if request.active { 1 } else { 0 } }),
+        )
+        .await?;
+        self.load_editor_response(
+            session_token,
+            &resolved,
+            Some(request.karma_id),
+            "set-karma-active",
+        )
+        .await
+    }
+
+    async fn delete_karma_action(
+        &self,
+        session_token: Option<&str>,
+        instance_id: &str,
+        request: KarmaIdRequest,
+    ) -> Result<Value, KarmaOrchestraWidgetError> {
+        let resolved = self
+            .resolve_instance(session_token, instance_id, KarmaOrchestraPermission::Write)
+            .await?;
+        self.validate_selected_karma_view(session_token, &resolved)
+            .await?;
+        self.delete_table_row(
+            session_token,
+            &resolved.organ,
+            resolved.bearer_token.as_deref(),
+            "karma",
+            request.karma_id,
+        )
+        .await?;
+        Ok(json!({
+            "ok": true,
+            "action": "delete-karma",
+        }))
+    }
+
+    async fn create_condition_action(
+        &self,
+        session_token: Option<&str>,
+        instance_id: &str,
+        request: ConditionMutationRequest,
+    ) -> Result<Value, KarmaOrchestraWidgetError> {
+        let resolved = self
+            .resolve_instance(session_token, instance_id, KarmaOrchestraPermission::Write)
+            .await?;
+        self.validate_selected_karma_view(session_token, &resolved)
+            .await?;
+        let name = fallback_name(request.name.as_deref(), "Condition");
+        let id = self
+            .create_table_row(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+                "karma_condition",
+                json!({ "name": name, "condition": request.code, "quantity": 1 }),
+            )
+            .await?;
+        self.load_editor_response_with_selected(
+            session_token,
+            &resolved,
+            request.karma_id,
+            id,
+            None,
+            "create-condition",
+        )
+        .await
+    }
+
+    async fn create_consequence_action(
+        &self,
+        session_token: Option<&str>,
+        instance_id: &str,
+        request: ConsequenceMutationRequest,
+    ) -> Result<Value, KarmaOrchestraWidgetError> {
+        validate_consequence_code(&request.code)?;
+        let resolved = self
+            .resolve_instance(session_token, instance_id, KarmaOrchestraPermission::Write)
+            .await?;
+        self.validate_selected_karma_view(session_token, &resolved)
+            .await?;
+        let name = fallback_name(request.name.as_deref(), "Consequence");
+        let id = self
+            .create_table_row(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+                "karma_consequence",
+                json!({ "name": name, "consequence": request.code, "quantity": 1 }),
+            )
+            .await?;
+        self.load_editor_response_with_selected(
+            session_token,
+            &resolved,
+            request.karma_id,
+            None,
+            id,
+            "create-consequence",
+        )
+        .await
+    }
+
+    async fn update_condition_action(
+        &self,
+        session_token: Option<&str>,
+        instance_id: &str,
+        request: ConditionMutationRequest,
+    ) -> Result<Value, KarmaOrchestraWidgetError> {
+        let Some(id) = request.id else {
+            return Err(KarmaOrchestraWidgetError::Invalid(
+                "Condition id ausente.".into(),
+            ));
+        };
+        let resolved = self
+            .resolve_instance(session_token, instance_id, KarmaOrchestraPermission::Write)
+            .await?;
+        self.validate_selected_karma_view(session_token, &resolved)
+            .await?;
+        let name = fallback_name(request.name.as_deref(), "Condition");
+        self.update_table_row(
+            session_token,
+            &resolved.organ,
+            resolved.bearer_token.as_deref(),
+            "karma_condition",
+            id,
+            json!({ "name": name, "condition": request.code }),
+        )
+        .await?;
+        self.load_editor_response_with_selected(
+            session_token,
+            &resolved,
+            request.karma_id,
+            Some(id),
+            None,
+            "update-condition",
+        )
+        .await
+    }
+
+    async fn update_consequence_action(
+        &self,
+        session_token: Option<&str>,
+        instance_id: &str,
+        request: ConsequenceMutationRequest,
+    ) -> Result<Value, KarmaOrchestraWidgetError> {
+        let Some(id) = request.id else {
+            return Err(KarmaOrchestraWidgetError::Invalid(
+                "Consequence id ausente.".into(),
+            ));
+        };
+        validate_consequence_code(&request.code)?;
+        let resolved = self
+            .resolve_instance(session_token, instance_id, KarmaOrchestraPermission::Write)
+            .await?;
+        self.validate_selected_karma_view(session_token, &resolved)
+            .await?;
+        let name = fallback_name(request.name.as_deref(), "Consequence");
+        self.update_table_row(
+            session_token,
+            &resolved.organ,
+            resolved.bearer_token.as_deref(),
+            "karma_consequence",
+            id,
+            json!({ "name": name, "consequence": request.code }),
+        )
+        .await?;
+        self.load_editor_response_with_selected(
+            session_token,
+            &resolved,
+            request.karma_id,
+            None,
+            Some(id),
+            "update-consequence",
+        )
+        .await
+    }
+
+    async fn create_karma_action(
+        &self,
+        session_token: Option<&str>,
+        instance_id: &str,
+        request: KarmaMutationRequest,
+    ) -> Result<Value, KarmaOrchestraWidgetError> {
+        validate_karma_mutation(&request)?;
+        let resolved = self
+            .resolve_instance(session_token, instance_id, KarmaOrchestraPermission::Write)
+            .await?;
+        self.validate_selected_karma_view(session_token, &resolved)
+            .await?;
+        let id = self
+            .create_table_row(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+                "karma",
+                json!({
+                    "name": fallback_name(request.name.as_deref(), "Karma"),
+                    "quantity": if request.active { 1 } else { 0 },
+                    "condition_id": request.condition_id,
+                    "operator": normalize_operator(&request.operator)?,
+                    "consequence_id": request.consequence_id,
+                    "confirm_karma_check_loops": true,
+                }),
+            )
+            .await?;
+        self.load_editor_response_with_selected(
+            session_token,
+            &resolved,
+            id,
+            Some(request.condition_id),
+            Some(request.consequence_id),
+            "create-karma",
+        )
+        .await
+    }
+
+    async fn update_karma_action(
+        &self,
+        session_token: Option<&str>,
+        instance_id: &str,
+        request: KarmaMutationRequest,
+    ) -> Result<Value, KarmaOrchestraWidgetError> {
+        let Some(id) = request.karma_id else {
+            return Err(KarmaOrchestraWidgetError::Invalid(
+                "Karma id ausente.".into(),
+            ));
+        };
+        validate_karma_mutation(&request)?;
+        let resolved = self
+            .resolve_instance(session_token, instance_id, KarmaOrchestraPermission::Write)
+            .await?;
+        self.validate_selected_karma_view(session_token, &resolved)
+            .await?;
+        self.update_table_row(
+            session_token,
+            &resolved.organ,
+            resolved.bearer_token.as_deref(),
+            "karma",
+            id,
+            json!({
+                "name": fallback_name(request.name.as_deref(), "Karma"),
+                "quantity": if request.active { 1 } else { 0 },
+                "condition_id": request.condition_id,
+                "operator": normalize_operator(&request.operator)?,
+                "consequence_id": request.consequence_id,
+                "confirm_karma_check_loops": true,
+            }),
+        )
+        .await?;
+        self.load_editor_response_with_selected(
+            session_token,
+            &resolved,
+            Some(id),
+            Some(request.condition_id),
+            Some(request.consequence_id),
+            "update-karma",
+        )
+        .await
+    }
+
+    async fn validate_selected_karma_view(
+        &self,
+        session_token: Option<&str>,
+        resolved: &ResolvedKarmaOrchestraInstance,
+    ) -> Result<(), KarmaOrchestraWidgetError> {
+        let runtime = parse_runtime_state(&resolved.card.widget_state);
+        let view_id = runtime.view_id.ok_or_else(|| {
+            KarmaOrchestraWidgetError::Invalid("Nenhuma Karma Orchestra View foi escolhida.".into())
+        })?;
+        let view = self
+            .load_view_definition(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+                view_id,
+            )
+            .await?;
+        if !is_special_view_query(&view.query) {
+            return Err(KarmaOrchestraWidgetError::Invalid(
+                "A View escolhida deixou de ser uma Karma Orchestra View.".into(),
+            ));
+        }
+        Ok(())
+    }
+
+    async fn load_editor_response(
+        &self,
+        session_token: Option<&str>,
+        resolved: &ResolvedKarmaOrchestraInstance,
+        karma_id: Option<i64>,
+        action: &str,
+    ) -> Result<Value, KarmaOrchestraWidgetError> {
+        self.load_editor_response_with_selected(
+            session_token,
+            resolved,
+            karma_id,
+            None,
+            None,
+            action,
+        )
+        .await
+    }
+
+    async fn load_editor_response_with_selected(
+        &self,
+        session_token: Option<&str>,
+        resolved: &ResolvedKarmaOrchestraInstance,
+        karma_id: Option<i64>,
+        selected_condition_id: Option<i64>,
+        selected_consequence_id: Option<i64>,
+        action: &str,
+    ) -> Result<Value, KarmaOrchestraWidgetError> {
+        let rows = self
+            .load_editor_rows(
+                session_token,
+                &resolved.organ,
+                resolved.bearer_token.as_deref(),
+            )
+            .await?;
+        let mut editor = build_editor_payload(karma_id, rows)?;
+        if let Some(object) = editor.as_object_mut() {
+            if let Some(id) = selected_condition_id {
+                object.insert(
+                    "selectedConditionId".into(),
+                    Value::Number(Number::from(id)),
+                );
+            }
+            if let Some(id) = selected_consequence_id {
+                object.insert(
+                    "selectedConsequenceId".into(),
+                    Value::Number(Number::from(id)),
+                );
+            }
+        }
+        Ok(json!({
+            "ok": true,
+            "action": action,
+            "editor": editor,
         }))
     }
 
@@ -551,6 +1023,138 @@ impl KarmaOrchestraWidgetService {
         Ok(GraphRows { rules, catalog })
     }
 
+    async fn load_editor_rows(
+        &self,
+        session_token: Option<&str>,
+        organ: &Organ,
+        bearer_token: Option<&str>,
+    ) -> Result<EditorRows, KarmaOrchestraWidgetError> {
+        let karma_rows = serde_json::from_value::<Vec<KarmaRow>>(
+            self.list_table_rows(session_token, organ, bearer_token, "karma")
+                .await?,
+        )
+        .map_err(|error| {
+            KarmaOrchestraWidgetError::Internal(format!("Resposta invalida de karma: {error}"))
+        })?;
+        let condition_rows = serde_json::from_value::<Vec<KarmaConditionRow>>(
+            self.list_table_rows(session_token, organ, bearer_token, "karma_condition")
+                .await?,
+        )
+        .map_err(|error| {
+            KarmaOrchestraWidgetError::Internal(format!(
+                "Resposta invalida de karma_condition: {error}"
+            ))
+        })?;
+        let consequence_rows = serde_json::from_value::<Vec<KarmaConsequenceRow>>(
+            self.list_table_rows(session_token, organ, bearer_token, "karma_consequence")
+                .await?,
+        )
+        .map_err(|error| {
+            KarmaOrchestraWidgetError::Internal(format!(
+                "Resposta invalida de karma_consequence: {error}"
+            ))
+        })?;
+        let record_rows = serde_json::from_value::<Vec<RecordRow>>(
+            self.list_table_rows(session_token, organ, bearer_token, "record")
+                .await?,
+        )
+        .map_err(|error| {
+            KarmaOrchestraWidgetError::Internal(format!("Resposta invalida de record: {error}"))
+        })?;
+        let command_rows = serde_json::from_value::<Vec<CommandRow>>(
+            self.list_table_rows(session_token, organ, bearer_token, "command")
+                .await
+                .unwrap_or_else(|_| Value::Array(Vec::new())),
+        )
+        .unwrap_or_default();
+        let query_rows = serde_json::from_value::<Vec<QueryRow>>(
+            self.list_table_rows(session_token, organ, bearer_token, "query")
+                .await
+                .unwrap_or_else(|_| Value::Array(Vec::new())),
+        )
+        .unwrap_or_default();
+        let frequency_rows = serde_json::from_value::<Vec<FrequencyRow>>(
+            self.list_table_rows(session_token, organ, bearer_token, "frequency")
+                .await
+                .unwrap_or_else(|_| Value::Array(Vec::new())),
+        )
+        .unwrap_or_default();
+
+        let catalog = KarmaTokenCatalog {
+            records: record_rows
+                .iter()
+                .map(|row| {
+                    (
+                        row.id as u32,
+                        RecordToken {
+                            id: row.id as u32,
+                            quantity: row.quantity,
+                            head: row
+                                .head
+                                .clone()
+                                .unwrap_or_else(|| format!("Record #{}", row.id)),
+                        },
+                    )
+                })
+                .collect(),
+            commands: command_rows
+                .iter()
+                .map(|row| {
+                    (
+                        row.id as u32,
+                        NamedToken {
+                            id: row.id as u32,
+                            name: if row.name.trim().is_empty() {
+                                "Nameless Command".into()
+                            } else {
+                                row.name.clone()
+                            },
+                        },
+                    )
+                })
+                .collect(),
+            queries: query_rows
+                .iter()
+                .map(|row| {
+                    (
+                        row.id as u32,
+                        NamedToken {
+                            id: row.id as u32,
+                            name: row
+                                .name
+                                .clone()
+                                .filter(|name| !name.trim().is_empty())
+                                .unwrap_or_else(|| "Nameless Query".into()),
+                        },
+                    )
+                })
+                .collect(),
+            frequencies: frequency_rows
+                .iter()
+                .map(|row| {
+                    (
+                        row.id as u32,
+                        NamedToken {
+                            id: row.id as u32,
+                            name: if row.name.trim().is_empty() {
+                                "Nameless Frequency".into()
+                            } else {
+                                row.name.clone()
+                            },
+                        },
+                    )
+                })
+                .collect(),
+        };
+
+        Ok(EditorRows {
+            karma_rows,
+            condition_rows,
+            consequence_rows,
+            catalog,
+        })
+    }
+
     async fn load_view_definition(
         &self,
         session_token: Option<&str>,
@@ -638,8 +1242,10 @@ impl KarmaOrchestraWidgetService {
         query: &str,
     ) -> Result<(), KarmaOrchestraWidgetError> {
         let payload = json!({ "name": name, "query": query });
-        self.create_table_row(session_token, organ, bearer_token, "view", payload)
-            .await
+        let _ = self
+            .create_table_row(session_token, organ, bearer_token, "view", payload)
+            .await?;
+        Ok(())
     }
 
     async fn list_table_rows(
@@ -681,7 +1287,7 @@ impl KarmaOrchestraWidgetService {
         bearer_token: Option<&str>,
         table: &str,
         payload: Value,
-    ) -> Result<(), KarmaOrchestraWidgetError> {
+    ) -> Result<Option<i64>, KarmaOrchestraWidgetError> {
         if !organ_requires_auth(organ, self.local_auth_required) {
             let object = payload.as_object().ok_or_else(|| {
                 KarmaOrchestraWidgetError::Invalid("Payload de criacao precisa ser objeto.".into())
@@ -691,8 +1297,7 @@ impl KarmaOrchestraWidgetService {
                 .create_table_row(&local_host_subject(), table, object)
                 .await
                 .map_err(|error| KarmaOrchestraWidgetError::Internal(error.to_string()))?;
-            let _ = outcome;
-            return Ok(());
+            return Ok(outcome.last_insert_rowid);
         }
         let response = self
             .manas
@@ -705,6 +1310,82 @@ impl KarmaOrchestraWidgetService {
                 table,
                 None,
                 Some(payload),
+            )
+            .await
+            .map_err(KarmaOrchestraWidgetError::BadGateway)?;
+        let value = self
+            .read_remote_json(session_token, &organ.id, response)
+            .await?;
+        Ok(extract_mutation_id(&value))
+    }
+
+    async fn update_table_row(
+        &self,
+        session_token: Option<&str>,
+        organ: &Organ,
+        bearer_token: Option<&str>,
+        table: &str,
+        id: i64,
+        payload: Value,
+    ) -> Result<(), KarmaOrchestraWidgetError> {
+        if !organ_requires_auth(organ, self.local_auth_required) {
+            let object = payload.as_object().ok_or_else(|| {
+                KarmaOrchestraWidgetError::Invalid("Payload de update precisa ser objeto.".into())
+            })?;
+            let _outcome = self
+                .backend
+                .update_table_row(&local_host_subject(), table, id, object)
+                .await
+                .map_err(|error| KarmaOrchestraWidgetError::Internal(error.to_string()))?;
+            return Ok(());
+        }
+        let response = self
+            .manas
+            .send_table_request(
+                &organ.base_url,
+                bearer_token.ok_or_else(|| {
+                    KarmaOrchestraWidgetError::Unauthorized("Sessao remota ausente.".into())
+                })?,
+                Method::PATCH,
+                table,
+                Some(id),
+                Some(payload),
+            )
+            .await
+            .map_err(KarmaOrchestraWidgetError::BadGateway)?;
+        let _ = self
+            .read_remote_json(session_token, &organ.id, response)
+            .await?;
+        Ok(())
+    }
+
+    async fn delete_table_row(
+        &self,
+        session_token: Option<&str>,
+        organ: &Organ,
+        bearer_token: Option<&str>,
+        table: &str,
+        id: i64,
+    ) -> Result<(), KarmaOrchestraWidgetError> {
+        if !organ_requires_auth(organ, self.local_auth_required) {
+            let _outcome = self
+                .backend
+                .delete_table_row(&local_host_subject(), table, id)
+                .await
+                .map_err(|error| KarmaOrchestraWidgetError::Internal(error.to_string()))?;
+            return Ok(());
+        }
+        let response = self
+            .manas
+            .send_table_request(
+                &organ.base_url,
+                bearer_token.ok_or_else(|| {
+                    KarmaOrchestraWidgetError::Unauthorized("Sessao remota ausente.".into())
+                })?,
+                Method::DELETE,
+                table,
+                Some(id),
+                None,
             )
             .await
             .map_err(KarmaOrchestraWidgetError::BadGateway)?;
@@ -832,6 +1513,54 @@ struct SetDistinctnessRequest {
     distinctness: String,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct LoadKarmaEditorRequest {
+    karma_id: Option<i64>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct KarmaIdRequest {
+    karma_id: i64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SetKarmaActiveRequest {
+    karma_id: i64,
+    active: bool,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ConditionMutationRequest {
+    id: Option<i64>,
+    karma_id: Option<i64>,
+    name: Option<String>,
+    code: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ConsequenceMutationRequest {
+    id: Option<i64>,
+    karma_id: Option<i64>,
+    name: Option<String>,
+    code: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct KarmaMutationRequest {
+    karma_id: Option<i64>,
+    name: Option<String>,
+    active: bool,
+    condition_id: i64,
+    operator: String,
+    consequence_id: i64,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 struct KarmaRow {
     id: i64,
@@ -890,6 +1619,13 @@ struct GraphRows {
     catalog: KarmaTokenCatalog,
 }
 
+struct EditorRows {
+    karma_rows: Vec<KarmaRow>,
+    condition_rows: Vec<KarmaConditionRow>,
+    consequence_rows: Vec<KarmaConsequenceRow>,
+    catalog: KarmaTokenCatalog,
+}
+
 enum KarmaOrchestraPermission {
     Read,
     Write,
@@ -925,6 +1661,237 @@ fn validate_karma_orchestra_card(card: &BoardCard) -> Result<(), KarmaOrchestraW
         ));
     }
     Ok(())
+}
+
+fn build_editor_payload(
+    karma_id: Option<i64>,
+    rows: EditorRows,
+) -> Result<Value, KarmaOrchestraWidgetError> {
+    let condition_refs = referenced_karma_ids_by_condition(&rows.karma_rows);
+    let consequence_refs = referenced_karma_ids_by_consequence(&rows.karma_rows);
+    let conditions = rows
+        .condition_rows
+        .iter()
+        .map(|row| {
+            let display = expression_display(&row.condition, &rows.catalog, true);
+            json!({
+                "id": row.id,
+                "name": row.name,
+                "quantity": row.quantity,
+                "code": row.condition,
+                "display": display,
+                "referencedByKarmaIds": condition_refs.get(&row.id).cloned().unwrap_or_default(),
+            })
+        })
+        .collect::<Vec<_>>();
+    let consequences = rows
+        .consequence_rows
+        .iter()
+        .map(|row| {
+            let display = consequence_display(&row.consequence, &rows.catalog);
+            json!({
+                "id": row.id,
+                "name": row.name,
+                "quantity": row.quantity,
+                "code": row.consequence,
+                "display": display,
+                "referencedByKarmaIds": consequence_refs.get(&row.id).cloned().unwrap_or_default(),
+            })
+        })
+        .collect::<Vec<_>>();
+    let original = if let Some(id) = karma_id {
+        let row = rows
+            .karma_rows
+            .iter()
+            .find(|row| row.id == id)
+            .ok_or_else(|| KarmaOrchestraWidgetError::NotFound("Karma nao encontrado.".into()))?;
+        let condition = rows
+            .condition_rows
+            .iter()
+            .find(|condition| condition.id == row.condition_id)
+            .ok_or_else(|| {
+                KarmaOrchestraWidgetError::NotFound("Condition do Karma nao encontrada.".into())
+            })?;
+        let consequence = rows
+            .consequence_rows
+            .iter()
+            .find(|consequence| consequence.id == row.consequence_id)
+            .ok_or_else(|| {
+                KarmaOrchestraWidgetError::NotFound("Consequence do Karma nao encontrada.".into())
+            })?;
+        Some(json!({
+            "karmaId": row.id,
+            "karmaName": row.name,
+            "karmaQuantity": row.quantity,
+            "karmaActive": row.quantity != 0,
+            "operator": row.operator,
+            "conditionId": condition.id,
+            "conditionName": condition.name,
+            "conditionCode": condition.condition,
+            "conditionDisplay": expression_display(&condition.condition, &rows.catalog, true),
+            "consequenceId": consequence.id,
+            "consequenceName": consequence.name,
+            "consequenceCode": consequence.consequence,
+            "consequenceDisplay": consequence_display(&consequence.consequence, &rows.catalog),
+        }))
+    } else {
+        None
+    };
+    Ok(json!({
+        "mode": if karma_id.is_some() { "update" } else { "create" },
+        "original": original,
+        "draft": {
+            "conditionId": original.as_ref().and_then(|value| value.get("conditionId")).cloned(),
+            "conditionName": original.as_ref().and_then(|value| value.get("conditionName")).cloned().unwrap_or(Value::String(String::new())),
+            "conditionCode": original.as_ref().and_then(|value| value.get("conditionCode")).cloned().unwrap_or(Value::String(String::new())),
+            "conditionMode": "selected",
+            "operator": original.as_ref().and_then(|value| value.get("operator")).cloned().unwrap_or(Value::String("=".into())),
+            "consequenceId": original.as_ref().and_then(|value| value.get("consequenceId")).cloned(),
+            "consequenceName": original.as_ref().and_then(|value| value.get("consequenceName")).cloned().unwrap_or(Value::String(String::new())),
+            "consequenceCode": original.as_ref().and_then(|value| value.get("consequenceCode")).cloned().unwrap_or(Value::String(String::new())),
+            "consequenceMode": "selected",
+            "active": original.as_ref().and_then(|value| value.get("karmaActive")).cloned().unwrap_or(Value::Bool(true)),
+        },
+        "conditions": conditions,
+        "consequences": consequences,
+        "tokens": build_token_options(&rows.catalog),
+        "operators": ["=", "=*"],
+    }))
+}
+
+fn consequence_display(
+    code: &str,
+    catalog: &KarmaTokenCatalog,
+) -> ::application::karma_analysis::KarmaExpressionDisplay {
+    expression_display(code, catalog, !record_ids_in_expression(code).is_empty())
+}
+
+fn referenced_karma_ids_by_condition(
+    rows: &[KarmaRow],
+) -> std::collections::BTreeMap<i64, Vec<i64>> {
+    let mut refs = std::collections::BTreeMap::<i64, Vec<i64>>::new();
+    for row in rows {
+        refs.entry(row.condition_id).or_default().push(row.id);
+    }
+    refs
+}
+
+fn referenced_karma_ids_by_consequence(
+    rows: &[KarmaRow],
+) -> std::collections::BTreeMap<i64, Vec<i64>> {
+    let mut refs = std::collections::BTreeMap::<i64, Vec<i64>>::new();
+    for row in rows {
+        refs.entry(row.consequence_id).or_default().push(row.id);
+    }
+    refs
+}
+
+fn build_token_options(catalog: &KarmaTokenCatalog) -> Vec<Value> {
+    let mut tokens = Vec::new();
+    tokens.extend(catalog.records.values().map(|record| {
+        json!({
+            "kind": "record_quantity",
+            "id": record.id,
+            "code": format!("rq{}", record.id),
+            "human": record.head,
+            "searchText": format!("{} rq{} {}", record.id, record.id, record.head),
+            "numeric": record.quantity,
+            "validForCondition": true,
+            "validForConsequence": true,
+        })
+    }));
+    tokens.extend(catalog.frequencies.values().map(|frequency| {
+        json!({
+            "kind": "frequency",
+            "id": frequency.id,
+            "code": format!("f{}", frequency.id),
+            "human": frequency.name,
+            "searchText": format!("{} f{} {}", frequency.id, frequency.id, frequency.name),
+            "validForCondition": true,
+            "validForConsequence": false,
+        })
+    }));
+    tokens.extend(catalog.commands.values().map(|command| {
+        json!({
+            "kind": "command",
+            "id": command.id,
+            "code": format!("c{}", command.id),
+            "human": command.name,
+            "searchText": format!("{} c{} {}", command.id, command.id, command.name),
+            "validForCondition": true,
+            "validForConsequence": true,
+        })
+    }));
+    tokens.extend(catalog.queries.values().map(|query| {
+        json!({
+            "kind": "query",
+            "id": query.id,
+            "code": format!("sql{}", query.id),
+            "human": query.name,
+            "searchText": format!("{} sql{} {}", query.id, query.id, query.name),
+            "validForCondition": true,
+            "validForConsequence": true,
+        })
+    }));
+    tokens
+}
+
+fn validate_karma_mutation(
+    request: &KarmaMutationRequest,
+) -> Result<(), KarmaOrchestraWidgetError> {
+    if request.condition_id <= 0 {
+        return Err(KarmaOrchestraWidgetError::Invalid(
+            "Condition invalida.".into(),
+        ));
+    }
+    if request.consequence_id <= 0 {
+        return Err(KarmaOrchestraWidgetError::Invalid(
+            "Consequence invalida.".into(),
+        ));
+    }
+    let _ = normalize_operator(&request.operator)?;
+    Ok(())
+}
+
+fn normalize_operator(operator: &str) -> Result<&str, KarmaOrchestraWidgetError> {
+    match operator.trim() {
+        "=" => Ok("="),
+        "=*" => Ok("=*"),
+        _ => Err(KarmaOrchestraWidgetError::Invalid(
+            "Operator invalido.".into(),
+        )),
+    }
+}
+
+fn validate_consequence_code(code: &str) -> Result<(), KarmaOrchestraWidgetError> {
+    let trimmed = code.trim();
+    let valid = regex::Regex::new(r"^(rq\d+|c\d+|sql\d+|sr(?:nt|t|n)q?h?b?\d+)$")
+        .expect("valid consequence regex")
+        .is_match(trimmed);
+    if valid {
+        Ok(())
+    } else {
+        Err(KarmaOrchestraWidgetError::Invalid(
+            "Consequence precisa ser um unico alvo executavel.".into(),
+        ))
+    }
+}
+
+fn fallback_name(name: Option<&str>, fallback: &str) -> String {
+    name.map(str::trim)
+        .filter(|name| !name.is_empty())
+        .unwrap_or(fallback)
+        .to_string()
+}
+
+fn extract_mutation_id(value: &Value) -> Option<i64> {
+    value
+        .get("id")
+        .or_else(|| value.get("rowId"))
+        .or_else(|| value.get("row_id"))
+        .or_else(|| value.get("lastInsertRowid"))
+        .or_else(|| value.get("last_insert_rowid"))
+        .and_then(Value::as_i64)
 }
 
 fn parse_runtime_state(widget_state: &Value) -> KarmaOrchestraRuntimeState {

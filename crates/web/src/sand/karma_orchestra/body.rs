@@ -16,6 +16,7 @@ pub(crate) fn body() -> Markup {
                     }
 
                     button #karma-state-ball.stateBall type="button" aria-label="Open adjustments" {}
+                    button #karma-create-karma-button.karmaCreateButton type="button" { "Create" }
                     button #karma-view-button.viewButton type="button" { "Views" }
 
                     svg #karma-graph.graph aria-label="Karma Orchestra graph" {
@@ -48,6 +49,92 @@ pub(crate) fn body() -> Markup {
                             input #karma-view-name.input type="text" value="Karma Orchestra" autocomplete="off";
                         }
                         button #karma-create-view.button.primary type="button" { "Create and use" }
+                    }
+
+                    aside #karma-karma-modal.viewModal.karmaModal hidden {
+                        div.karmaEditor {
+                            div.karmaEditorHead {
+                                h2 #karma-editor-title { "Karma Creation" }
+                                div.karmaEditorActions {
+                                    span #karma-editor-id.karmaEditorId {}
+                                    label #karma-editor-active-wrap.karmaSwitch {
+                                        span { "Active" }
+                                        input #karma-editor-active type="checkbox" checked;
+                                    }
+                                    button #karma-editor-primary.button.primary type="button" { "Create Karma" }
+                                    button #karma-editor-delete.button.dangerButton type="button" hidden { "Delete Karma" }
+                                    button #karma-karma-close.button type="button" { "Close" }
+                                }
+                            }
+
+                            div #karma-editor-error.editorError hidden {}
+
+                            div #karma-editor-original.originalKarma hidden {
+                                div.originalCell {
+                                    span #karma-original-condition-title.karmaFieldTitle { "Original Condition" }
+                                    div #karma-original-condition.karmaReadonly {}
+                                    div #karma-original-condition-meta.karmaReadonlyMeta {}
+                                }
+                                div.originalCell.operatorCell {
+                                    span.karmaFieldTitle { "Operator" }
+                                    div #karma-original-operator.karmaReadonly {}
+                                }
+                                div.originalCell {
+                                    span #karma-original-consequence-title.karmaFieldTitle { "Original Consequence" }
+                                    div #karma-original-consequence.karmaReadonly {}
+                                    div #karma-original-consequence-meta.karmaReadonlyMeta {}
+                                }
+                            }
+
+                            div.karmaDraftRow {
+                                div.karmaDraftSide {
+                                    div.karmaDraftTitle {
+                                        span { "Condition" }
+                                        button #karma-condition-new.button.smallButton type="button" { "New" }
+                                        button #karma-condition-save.button.smallButton type="button" hidden { "Create" }
+                                        button #karma-condition-edit.button.smallButton type="button" hidden { "Edit" }
+                                    }
+                                    input #karma-condition-name.input.karmaNameInput type="text" placeholder="Condition name" hidden;
+                                    div #karma-condition-input.karmaRichInput contenteditable="false" data-placeholder="Pick or create condition" {}
+                                    div #karma-condition-preview.karmaPreview {}
+                                }
+                                div.karmaOperatorBox {
+                                    label.karmaFieldTitle for="karma-operator-select" { "Operator" }
+                                    select #karma-operator-select.input {
+                                        option value="=" { "=" }
+                                        option value="=*" { "=*" }
+                                    }
+                                }
+                                div.karmaDraftSide {
+                                    div.karmaDraftTitle {
+                                        span { "Consequence" }
+                                        button #karma-consequence-new.button.smallButton type="button" { "New" }
+                                        button #karma-consequence-save.button.smallButton type="button" hidden { "Create" }
+                                        button #karma-consequence-edit.button.smallButton type="button" hidden { "Edit" }
+                                    }
+                                    input #karma-consequence-name.input.karmaNameInput type="text" placeholder="Consequence name" hidden;
+                                    div #karma-consequence-input.karmaRichInput contenteditable="false" data-placeholder="Pick or create consequence" {}
+                                    div #karma-consequence-preview.karmaPreview {}
+                                }
+                            }
+
+                            div.karmaBanks {
+                                section.karmaBank {
+                                    div.karmaBankHead {
+                                        h3 { "Conditions" }
+                                        input #karma-condition-search.input type="search" placeholder="Search condition or @ token";
+                                    }
+                                    div #karma-condition-list.karmaBankList {}
+                                }
+                                section.karmaBank {
+                                    div.karmaBankHead {
+                                        h3 { "Consequences" }
+                                        input #karma-consequence-search.input type="search" placeholder="Search consequence or @ token";
+                                    }
+                                    div #karma-consequence-list.karmaBankList {}
+                                }
+                            }
+                        }
                     }
 
                     aside #karma-adjustments.adjustments hidden {

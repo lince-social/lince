@@ -367,24 +367,26 @@ fn normalize_rows(rows: &[Value], columns: &[TableColumn]) -> Vec<TableRow> {
 
             if let Some(array) = row.as_array() {
                 for (column_index, column) in columns.iter().enumerate() {
-                    let cell = array
-                        .get(column_index)
-                        .map(cell_value)
-                        .unwrap_or_else(|| TableCell {
-                            text: String::new(),
-                            kind: CellKind::Null,
-                        });
+                    let cell =
+                        array
+                            .get(column_index)
+                            .map(cell_value)
+                            .unwrap_or_else(|| TableCell {
+                                text: String::new(),
+                                kind: CellKind::Null,
+                            });
                     cells.insert(column.key.clone(), cell);
                 }
             } else if let Some(object) = row.as_object() {
                 for column in columns {
-                    let cell = object
-                        .get(&column.key)
-                        .map(cell_value)
-                        .unwrap_or_else(|| TableCell {
-                            text: String::new(),
-                            kind: CellKind::Null,
-                        });
+                    let cell =
+                        object
+                            .get(&column.key)
+                            .map(cell_value)
+                            .unwrap_or_else(|| TableCell {
+                                text: String::new(),
+                                kind: CellKind::Null,
+                            });
                     cells.insert(column.key.clone(), cell);
                 }
             } else {
@@ -665,14 +667,10 @@ fn render_table_cell(
     row_id: Option<i64>,
     source_table: Option<&str>,
 ) -> Markup {
-    let cell_value = row
-        .cells
-        .get(&column.key)
-        .cloned()
-        .unwrap_or(TableCell {
-            text: String::new(),
-            kind: CellKind::Null,
-        });
+    let cell_value = row.cells.get(&column.key).cloned().unwrap_or(TableCell {
+        text: String::new(),
+        kind: CellKind::Null,
+    });
     let is_id_column = column.key == "id";
 
     if is_id_column && let (Some(row_id), Some(source_table)) = (row_id, source_table) {

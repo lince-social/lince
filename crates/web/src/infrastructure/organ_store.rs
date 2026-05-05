@@ -143,8 +143,5 @@ fn parse_organ_id(organ_id: impl ToString) -> Option<i64> {
     if organ_id.eq_ignore_ascii_case("local-dev") {
         return Some(DEFAULT_LOCAL_ORGAN_ID);
     }
-    organ_id
-        .parse::<i64>()
-        .ok()
-        .filter(|value| *value > 0)
+    organ_id.parse::<i64>().ok().filter(|value| *value > 0)
 }

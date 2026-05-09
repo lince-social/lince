@@ -1093,6 +1093,7 @@ pub(crate) fn script() -> String {
 
         if (state.layoutMode === "list") {
             layoutList(conditionNodes, otherNodes, links, byId, width, height);
+            applyListNodeOverrides(nodes);
             drawFrame(nodes, links, graph.loops || []);
         } else {
             conditionNodes.forEach(lockConditionNode);
@@ -1118,6 +1119,7 @@ pub(crate) fn script() -> String {
         const rightX = Math.min(width - 90, leftX + linkDistance);
         state.layout.listConditionRightX = leftX;
         state.layout.listConsequenceLeftX = rightX;
+        state.layout.listBranchX = leftX + Math.max(58, Math.min(140, (rightX - leftX) * 0.45));
         const top = 72;
         const bottom = 72;
         const verticalSpacing = Math.max(24, Math.abs(Number(state.physics.nodeRepulsion) || DEFAULT_PHYSICS.nodeRepulsion) / 3);
@@ -1164,6 +1166,42 @@ pub(crate) fn script() -> String {
             node.fx = rightX;
             node.fy = orphanY;
             orphanY += childGap;
+        }
+    }
+
+    function listPositionStorageKey() {
+        return "karma-orchestra:list-positions";
+    }
+
+    function loadListPositions() {
+        try {
+            return JSON.parse(window.localStorage.getItem(listPositionStorageKey()) || "{}");
+        } catch (_error) {
+            return {};
+        }
+    }
+
+    function saveListNodePosition(node) {
+        try {
+            const positions = loadListPositions();
+            positions[node.id] = { x: node.x, y: node.y };
+            window.localStorage.setItem(listPositionStorageKey(), JSON.stringify(positions));
+        } catch (_error) {}
+    }
+
+    function applyListNodeOverrides(nodes) {
+        const positions = loadListPositions();
+        for (const node of nodes) {
+            const position = positions[node.id];
+            if (!position) continue;
+            const x = Number(position.x);
+            const y = Number(position.y);
+            if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+            node.x = x;
+            node.y = y;
+            node.fx = x;
+            node.fy = y;
+            node.listMoved = true;
         }
     }
 
@@ -1280,6 +1318,16 @@ pub(crate) fn script() -> String {
         }
         state.dragBehavior = d3.drag()
             .on("start", (event, node) => {
+                if (state.layoutMode === "list") {
+                    node.dragging = true;
+                    node.listMoved = true;
+                    node.x = event.x;
+                    node.y = event.y;
+                    node.fx = node.x;
+                    node.fy = node.y;
+                    drawFrame(state.graphNodes || [], state.graphLinks || [], state.graphLoops || []);
+                    return;
+                }
                 if (node.kind !== "condition" || state.layoutMode !== "circle") return;
                 if (!event.active) state.simulation.alphaTarget(0.12).restart();
                 node.dragging = true;
@@ -1290,6 +1338,15 @@ pub(crate) fn script() -> String {
                 }
             })
             .on("drag", (event, node) => {
+                if (state.layoutMode === "list") {
+                    node.listMoved = true;
+                    node.x = event.x;
+                    node.y = event.y;
+                    node.fx = node.x;
+                    node.fy = node.y;
+                    drawFrame(state.graphNodes || [], state.graphLinks || [], state.graphLoops || []);
+                    return;
+                }
                 if (node.kind !== "condition" || state.layoutMode !== "circle") return;
                 if (node.kind === "condition") {
                     node.angle = Math.atan2(event.y - state.layout.centerY, event.x - state.layout.centerX);
@@ -1298,6 +1355,17 @@ pub(crate) fn script() -> String {
                 drawFrame(state.graphNodes || [], state.graphLinks || [], state.graphLoops || []);
             })
             .on("end", (event, node) => {
+                if (state.layoutMode === "list") {
+                    node.dragging = false;
+                    node.listMoved = true;
+                    node.x = event.x;
+                    node.y = event.y;
+                    node.fx = node.x;
+                    node.fy = node.y;
+                    saveListNodePosition(node);
+                    drawFrame(state.graphNodes || [], state.graphLinks || [], state.graphLoops || []);
+                    return;
+                }
                 if (node.kind !== "condition" || state.layoutMode !== "circle") return;
                 node.dragging = false;
                 if (!event.active) state.simulation.alphaTarget(0);
@@ -1314,12 +1382,17 @@ pub(crate) fn script() -> String {
         state.graphNodes = nodes;
         state.graphLinks = links;
         state.graphLoops = loops;
+        const orderedNodes = nodesForDrawing(nodes);
         const byId = new Map(nodes.map((node) => [node.id, node]));
-        drawNodes(nodes);
-        drawLabels(nodes);
+        drawNodes(orderedNodes);
+        drawLabels(orderedNodes);
         drawLinks(links, byId, loops);
         drawLinkTags(links, byId, loops);
         drawArrowheads(links, byId, loops);
+    }
+
+    function nodesForDrawing(nodes) {
+        return [...nodes].sort((a, b) => Number(Boolean(a.dragging)) - Number(Boolean(b.dragging)));
     }
 
     function linkKarmaId(link) {
@@ -1530,7 +1603,7 @@ pub(crate) fn script() -> String {
     }
 
     function listBranchX(source, target) {
-        return source.x + Math.max(58, Math.min(140, (target.x - source.x) * 0.45));
+        return state.layout.listBranchX ?? (source.x + Math.max(58, Math.min(140, (target.x - source.x) * 0.45)));
     }
 
     function linkColor(link) {
@@ -1580,6 +1653,7 @@ pub(crate) fn script() -> String {
 
     function drawNodes(nodes) {
         const joined = nodeLayer.selectAll("rect").data(nodes, (d) => d.id).join("rect");
+        joined.order();
         joined.call(installNodeDrag());
         joined
             .attr("x", (d) => cardLayout(d).x)
@@ -1600,6 +1674,7 @@ pub(crate) fn script() -> String {
             const outer = fo.append("xhtml:div").attr("class", "nodeCard");
             return fo;
         });
+        joined.order();
         joined
             .attr("x", (d) => cardLayout(d).x)
             .attr("y", (d) => cardLayout(d).y)
@@ -1617,6 +1692,12 @@ pub(crate) fn script() -> String {
 
     function labelPosition(node, width = 0, height = 0) {
         if (state.layoutMode === "list") {
+            if (node.listMoved) {
+                return {
+                    x: node.x - width / 2,
+                    y: node.y - height / 2,
+                };
+            }
             if (node.kind === "condition") {
                 return {
                     x: (state.layout.listConditionRightX ?? node.x) - width,

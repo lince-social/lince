@@ -468,6 +468,43 @@ body.auth-pending .startup-auth-card {
     justify-content: flex-end;
 }
 
+.operation-box {
+    flex: 1 1 260px;
+    max-width: 420px;
+    min-width: 180px;
+}
+
+.operation-box__input {
+    width: 100%;
+    height: 40px;
+    padding: 0 14px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    outline: none;
+    background: rgba(18, 20, 24, 0.75);
+    color: var(--text-strong);
+    font: inherit;
+    font-size: 0.92rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    transition:
+        border-color var(--transition-fast),
+        background var(--transition-fast),
+        color var(--transition-fast);
+}
+
+.operation-box__input::placeholder {
+    color: var(--text-muted);
+}
+
+.operation-box__input:focus {
+    border-color: var(--border-strong);
+    background: rgba(24, 27, 32, 0.92);
+}
+
+.operation-box.is-submitting .operation-box__input {
+    color: var(--text-soft);
+}
+
 .brand-mark {
     display: grid;
     place-items: center;
@@ -2128,6 +2165,45 @@ body.auth-pending .startup-auth-card {
     line-height: 1.65;
 }
 
+.import-mode-field {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.import-mode-option {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    cursor: pointer;
+}
+
+.import-mode-option input {
+    margin-top: 3px;
+}
+
+.import-mode-option span {
+    display: grid;
+    gap: 3px;
+}
+
+.import-mode-option strong {
+    color: var(--text);
+    font-size: 0.9rem;
+}
+
+.import-mode-option small {
+    color: var(--text-muted);
+    line-height: 1.35;
+}
+
 .import-modal__preview-header {
     display: flex;
     align-items: center;
@@ -2488,6 +2564,12 @@ body.auth-pending .startup-auth-card {
         width: 100%;
         justify-content: flex-end;
         flex-wrap: wrap;
+    }
+
+    .operation-box {
+        order: -1;
+        flex-basis: 100%;
+        max-width: none;
     }
 
     .workspace-switcher {

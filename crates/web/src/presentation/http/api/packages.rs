@@ -3,7 +3,7 @@ use {
         application::state::AppState,
         domain::lince_package::{
             LincePackage, PackageTransport, normalize_asset_path, package_id_from_filename,
-            parse_lince_package, validate_package_upload,
+            parse_lince_package, parse_manifest_from_html, validate_package_upload,
         },
         infrastructure::{
             auth::{parse_cookie_header, session_cookie_name},
@@ -57,6 +57,7 @@ pub struct PackagePreview {
     pub permissions: Vec<String>,
     pub html: String,
     pub frame_src: String,
+    pub has_manifest: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -260,6 +261,17 @@ impl PackagePreview {
     }
 }
 
+fn package_upload_has_manifest(filename: &str, bytes: &[u8]) -> bool {
+    if !filename.trim().to_ascii_lowercase().ends_with(".html") {
+        return true;
+    }
+
+    std::str::from_utf8(bytes)
+        .ok()
+        .and_then(|html| parse_manifest_from_html(html).ok())
+        .is_some()
+}
+
 pub async fn list_local_packages(
     State(state): State<AppState>,
 ) -> ApiResult<Json<Vec<InstalledPackageSummary>>> {
@@ -403,8 +415,15 @@ pub async fn preview_package(
 
         let bytes = field.bytes().await.map_err(invalid_multipart)?;
         validate_package_upload(&filename, &bytes).map_err(map_validation_error)?;
+        let has_manifest = package_upload_has_manifest(&filename, &bytes);
         let package = parse_lince_package(&filename, &bytes).map_err(map_validation_error)?;
-        return Ok(Json(PackagePreview::from_ephemeral(&state, package).await));
+        let mut preview = PackagePreview::from_ephemeral(&state, package).await;
+        preview.has_manifest = has_manifest;
+        if !has_manifest && let Ok(html) = std::str::from_utf8(&bytes) {
+            preview.html = html.trim().to_string();
+            preview.frame_src.clear();
+        }
+        return Ok(Json(preview));
     }
 
     Err(crate::presentation::http::api_error::api_error(
@@ -2180,6 +2199,7 @@ fn package_preview(package: LincePackage, frame_src: String) -> PackagePreview {
         permissions: manifest.permissions,
         html,
         frame_src,
+        has_manifest: true,
     }
 }
 

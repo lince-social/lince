@@ -58,6 +58,7 @@ pub async fn serve(
     let app_state = AppState {
         ai: AiBuilderState::new(),
         auth: auth.clone(),
+        services: services.clone(),
         backend: backend.clone(),
         board_state: board_state.clone(),
         local_auth_required,

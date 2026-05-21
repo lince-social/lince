@@ -472,8 +472,72 @@ fn parse_archive_package(filename: String, bytes: &[u8]) -> Result<LincePackage,
 fn parse_html_package(filename: String, bytes: &[u8]) -> Result<LincePackage, String> {
     let html = std::str::from_utf8(bytes)
         .map_err(|_| "O widget HTML precisa ser UTF-8 valido.".to_string())?;
-    let manifest = parse_manifest_from_html(html)?;
+    let manifest =
+        parse_manifest_from_html(html).or_else(|_| infer_plain_html_manifest(&filename, html))?;
     LincePackage::new(Some(filename), manifest, html)
+}
+
+fn infer_plain_html_manifest(filename: &str, html: &str) -> Result<PackageManifest, String> {
+    normalize_manifest(PackageManifest {
+        icon: "◧".into(),
+        title: infer_plain_html_title(filename, html),
+        author: "Local import".into(),
+        version: "0.1.0".into(),
+        description: "Imported HTML document.".into(),
+        details: "Plain HTML imported without an embedded Lince manifest.".into(),
+        initial_width: 6,
+        initial_height: 6,
+        requires_server: false,
+        permissions: Vec::new(),
+    })
+}
+
+fn infer_plain_html_title(filename: &str, html: &str) -> String {
+    extract_html_title(html).unwrap_or_else(|| title_from_filename(filename))
+}
+
+fn extract_html_title(html: &str) -> Option<String> {
+    let lowercase = html.to_ascii_lowercase();
+    let title_start = lowercase.find("<title")?;
+    let tag_end = lowercase[title_start..].find('>')? + title_start;
+    let close_start = lowercase[tag_end + 1..].find("</title>")? + tag_end + 1;
+    let title = html[tag_end + 1..close_start].trim();
+
+    if title.is_empty() {
+        None
+    } else {
+        Some(decode_basic_html_entities(title))
+    }
+}
+
+fn title_from_filename(filename: &str) -> String {
+    let stem = Path::new(filename)
+        .file_stem()
+        .and_then(|value| value.to_str())
+        .unwrap_or("Imported HTML");
+    let title = stem
+        .split(['-', '_', '.'])
+        .filter(|part| !part.is_empty())
+        .map(|part| {
+            let mut chars = part.chars();
+            match chars.next() {
+                Some(first) => first.to_uppercase().chain(chars).collect::<String>(),
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ");
+
+    fallback_string(&title, "Imported HTML")
+}
+
+fn decode_basic_html_entities(value: &str) -> String {
+    value
+        .replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&#39;", "'")
 }
 
 fn build_archive_package(package: &LincePackage) -> Result<Vec<u8>, String> {

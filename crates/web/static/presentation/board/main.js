@@ -130,6 +130,8 @@ const exportWorkspaceButton = document.getElementById(
 );
 const densityTag = document.getElementById("density-tag");
 const modeLabel = document.getElementById("mode-label");
+const operationForm = document.getElementById("operation-form");
+const operationInput = document.getElementById("operation-input");
 const streamsToggle = document.getElementById("streams-toggle");
 const streamsToggleLabel = document.getElementById("streams-toggle-label");
 const densitySlider = document.getElementById("density-slider");
@@ -168,6 +170,7 @@ const importPreviewFrame = document.getElementById("import-preview-frame");
 const importPermissionsList = document.getElementById(
   "import-permissions-list",
 );
+const importModeField = document.getElementById("import-mode-field");
 const importCancelButton = document.getElementById("import-cancel-button");
 const importConfirmButton = document.getElementById("import-confirm-button");
 const importCloseButton = document.getElementById("import-close-button");
@@ -333,6 +336,8 @@ if (
   !exportWorkspaceButton ||
   !densityTag ||
   !modeLabel ||
+  !operationForm ||
+  !operationInput ||
   !densitySlider ||
   !densityValue ||
   !workspaceSwitcher ||
@@ -363,6 +368,7 @@ if (
   !importPreviewCard ||
   !importPreviewFrame ||
   !importPermissionsList ||
+  !importModeField ||
   !importCancelButton ||
   !importConfirmButton ||
   !importCloseButton ||
@@ -551,6 +557,41 @@ function apiPath(path) {
   }
 
   return `/host${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+async function submitOperation() {
+  const operation = operationInput.value.trim();
+  if (!operation) {
+    return;
+  }
+
+  operationForm.classList.add("is-submitting");
+  operationInput.disabled = true;
+
+  try {
+    const response = await fetch(apiPath("/operation"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ operation }),
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null);
+      throw new Error(payload?.error || "Falha ao executar a operacao.");
+    }
+
+    operationInput.value = "";
+  } catch (error) {
+    operationInput.value =
+      error instanceof Error ? error.message : "Falha ao executar a operacao.";
+    operationInput.select();
+  } finally {
+    operationInput.disabled = false;
+    operationInput.focus();
+    operationForm.classList.remove("is-submitting");
+  }
 }
 
 function normalizeServerProfile(rawServer) {
@@ -3246,6 +3287,18 @@ function openImportModal(preview, file = null, options = {}) {
   importVersion.textContent = preview.version || "0.1.0";
   importSize.textContent = `${preview.initial_width} x ${preview.initial_height}`;
   importModalDetails.textContent = preview.details || preview.description;
+  const canChooseImportMode =
+    pendingImportFile &&
+    String(pendingImportFile.name || "").toLowerCase().endsWith(".html") &&
+    preview.has_manifest !== true &&
+    preview.hasManifest !== true;
+  importModeField.hidden = !canChooseImportMode;
+  if (canChooseImportMode) {
+    const rawOption = importModeField.querySelector('input[value="raw"]');
+    if (rawOption) {
+      rawOption.checked = true;
+    }
+  }
   renderImportPreview(preview);
   applyFrameContent(importPreviewFrame, {
     src: preview.frame_src || preview.frameSrc || "",
@@ -3509,6 +3562,30 @@ function createCardFromPreview(preview, sizeOverride = null) {
   });
 }
 
+function selectedImportMode() {
+  return (
+    importModeField.querySelector('input[name="import-mode"]:checked')?.value ||
+    "package"
+  );
+}
+
+function createRawHtmlCardFromPreview(preview) {
+  const size = resolvePreviewSize(preview);
+  return store.addImportedCard({
+    title: preview.title,
+    description: preview.description,
+    author: preview.author,
+    permissions: [],
+    packageName: "",
+    requiresServer: false,
+    html: preview.html,
+    serverId: "",
+    viewId: null,
+    w: size.w,
+    h: size.h,
+  });
+}
+
 async function addLocalPackageToWorkspace(packageId) {
   const preview = await requestInstalledPackage(packageId);
   const packageSummary =
@@ -3587,6 +3664,18 @@ async function confirmImportCard() {
   importCancelButton.disabled = true;
 
   try {
+    if (!importModeField.hidden && selectedImportMode() === "raw") {
+      const created = createRawHtmlCardFromPreview(pendingImportPreview);
+      if (!created) {
+        flashBoardBlocked();
+        return;
+      }
+
+      closeImportModal({ skipReopen: true });
+      setActiveCard(created.id, null);
+      return;
+    }
+
     const installedPackage = pendingImportRemotePackage
       ? await installDnaPackage(
           pendingImportRemotePackage.organId,
@@ -3911,6 +4000,11 @@ dnaPackagesSearch.addEventListener("input", () => {
 
 dnaOriginFilter.addEventListener("change", () => {
   void refreshDnaPackageSearch();
+});
+
+operationForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  void submitOperation();
 });
 
 localPackageList.addEventListener("click", (event) => {

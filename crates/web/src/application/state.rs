@@ -14,11 +14,13 @@ use crate::{
         widget_bridge_store::WidgetBridgeStore,
     },
 };
+use injection::cross_cutting::InjectedServices;
 
 #[derive(Clone)]
 pub struct AppState {
     pub ai: AiBuilderState,
     pub auth: AppAuth,
+    pub services: InjectedServices,
     pub backend: BackendApiService,
     pub board_state: BoardStateStore,
     pub local_auth_required: bool,

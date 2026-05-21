@@ -114,6 +114,16 @@ fn render_topbar(bootstrap: &AppBootstrap) -> Markup {
 fn render_topbar_actions() -> Markup {
     html! {
         div class="topbar__actions" {
+            form id="operation-form" class="operation-box" {
+                input
+                    id="operation-input"
+                    class="operation-box__input"
+                    type="text"
+                    name="operation"
+                    placeholder="Operation"
+                    autocomplete="off"
+                    aria-label="Executar operacao";
+            }
             (render_workspace_switcher())
             div class="pill pill--status" {
                 span class="pill__dot" {}
@@ -430,6 +440,23 @@ fn render_import_modal_sidebar() -> Markup {
             div class="import-modal__permissions" {
                 div class="import-modal__permissions-label" { "Permissoes solicitadas" }
                 ul id="import-permissions-list" class="permission-list" {}
+            }
+            fieldset id="import-mode-field" class="import-mode-field" hidden="" {
+                legend class="import-modal__details-label" { "Modo de importacao" }
+                label class="import-mode-option" {
+                    input type="radio" name="import-mode" value="raw" checked="";
+                    span {
+                        strong { "HTML puro" }
+                        small { "Adiciona este HTML ao card sem instalar como pacote Lince." }
+                    }
+                }
+                label class="import-mode-option" {
+                    input type="radio" name="import-mode" value="package";
+                    span {
+                        strong { "Pacote Lince" }
+                        small { "Instala uma copia com manifesto inferido no catalogo local." }
+                    }
+                }
             }
             (render_modal_footer(
                 "import-cancel-button",

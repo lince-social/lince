@@ -1470,9 +1470,19 @@ body.auth-pending .startup-auth-card {
     right: 164px;
 }
 
+.card-download-button {
+    right: 310px;
+}
+
 .board-card.is-compact .card-config-button,
 .board-card.is-tiny .card-config-button {
     top: 68px;
+    right: 18px;
+}
+
+.board-card.is-compact .card-download-button,
+.board-card.is-tiny .card-download-button {
+    top: 118px;
     right: 18px;
 }
 

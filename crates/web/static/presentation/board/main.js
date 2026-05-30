@@ -972,6 +972,16 @@ function renderConfigureIcon() {
   `;
 }
 
+function renderDownloadIcon() {
+  return `
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M8 2.75v7"></path>
+      <path d="M5.25 7.5 8 10.25 10.75 7.5"></path>
+      <path d="M3.25 12.75h9.5"></path>
+    </svg>
+  `;
+}
+
 function renderConfigureButton(card) {
   if (!cardSupportsHostConfiguration(card) && !cardSupportsPackagePreview(card)) {
     return "";
@@ -986,6 +996,32 @@ function renderConfigureButton(card) {
     >
       <span class="card-delete-button__icon">${renderConfigureIcon()}</span>
       <span class="card-delete-button__label">CONFIGURAR</span>
+    </button>
+  `;
+}
+
+function cardHasRawHtmlSource(card) {
+  return (
+    card?.kind === "package" &&
+    !String(card?.packageName || card?.package_name || "").trim() &&
+    String(card?.html || "").trim()
+  );
+}
+
+function renderRawHtmlDownloadButton(card) {
+  if (!cardHasRawHtmlSource(card)) {
+    return "";
+  }
+
+  return `
+    <button
+      type="button"
+      class="card-delete-button card-delete-button--secondary card-download-button"
+      data-card-action="download-raw-html"
+      aria-label="Baixar HTML de ${escapeHtml(card.title)}"
+    >
+      <span class="card-delete-button__icon">${renderDownloadIcon()}</span>
+      <span class="card-delete-button__label">HTML</span>
     </button>
   `;
 }
@@ -1039,6 +1075,42 @@ function buildPackageFrameSrc(card) {
 
   return apiPath(
     `/packages/local/by-filename/${encodeURIComponent(packageName)}/content/index.html`,
+  );
+}
+
+function slugForDownload(value, fallback = "card") {
+  return (
+    String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || fallback
+  );
+}
+
+function downloadTextFile(filename, text, mimeType = "text/plain;charset=utf-8") {
+  const blob = new Blob([text], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.rel = "noopener";
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function downloadRawHtmlCard(card) {
+  if (!cardHasRawHtmlSource(card)) {
+    flashBoardBlocked();
+    return;
+  }
+
+  downloadTextFile(
+    `${slugForDownload(card.title, "raw-html")}.html`,
+    card.html,
+    "text/html;charset=utf-8",
   );
 }
 
@@ -1374,7 +1446,7 @@ function ensureCardNode(card) {
 function createPackageRenderSignature(card) {
   const gate = resolveCardServerState(card);
   if (gate.state === "ready") {
-    return `ready:${cardRequiresServer(card) ? "server" : "local"}`;
+    return `ready:${cardRequiresServer(card) ? "server" : "local"}:${cardHasRawHtmlSource(card) ? "raw-html" : "package"}`;
   }
 
   return `${gate.state}:${gate.server?.id || ""}:${gate.message || ""}:${card.title || ""}`;
@@ -1404,6 +1476,7 @@ function syncCardNode(node, card) {
       node.innerHTML =
         renderDeleteButton(card) +
         renderConfigureButton(card) +
+        renderRawHtmlDownloadButton(card) +
         renderPackageBody(card) +
         renderHandles();
       node.dataset.packageRenderSignature = nextSignature;
@@ -1451,6 +1524,16 @@ function syncCardNode(node, card) {
     configureButton.setAttribute(
       "aria-label",
       `Configurar ${card.title || "card"}`,
+    );
+  }
+
+  const downloadButton = node.querySelector(
+    "[data-card-action='download-raw-html']",
+  );
+  if (downloadButton) {
+    downloadButton.setAttribute(
+      "aria-label",
+      `Baixar HTML de ${card.title || "card"}`,
     );
   }
 }
@@ -3870,6 +3953,16 @@ cardsLayer.addEventListener("click", (event) => {
     const gate = card ? resolveCardServerState(card) : null;
     if (gate?.server) {
       void openWidgetConfigModal(cardId);
+    } else {
+      flashBoardBlocked();
+    }
+    return;
+  }
+
+  if (action === "download-raw-html") {
+    const card = getCardById(cardId);
+    if (card) {
+      downloadRawHtmlCard(card);
     } else {
       flashBoardBlocked();
     }

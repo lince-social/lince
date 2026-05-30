@@ -475,10 +475,34 @@ const STYLE: &str = r#"
     word-break: break-word;
   }
 
-  .cellValue[contenteditable] {
+  .cellEditor {
+    appearance: none;
+    display: block;
+    min-width: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    outline: none;
+    resize: none;
+    overflow: auto;
+    background: transparent;
+    box-shadow: none;
+    color: inherit;
+    caret-color: var(--text);
+    font: inherit;
+    line-height: inherit;
+    white-space: pre-wrap;
+    scrollbar-width: none;
+  }
+
+  .cellEditor::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+
+  .cellValue[data-editing-cell="true"] {
     outline: none;
     cursor: text;
-    caret-color: var(--text);
   }
 
   .rowDeleteButton {

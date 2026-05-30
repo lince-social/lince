@@ -16,7 +16,6 @@ pub(super) fn script() -> String {
         const createSubmitButton = document.getElementById("create-submit");
         const tablePanel = document.getElementById("table-body");
         const toastLayer = document.getElementById("table-toasts");
-        const datastarReady = import("/static/vendored/datastar.js").catch(() => null);
         const serverId = String(frame?.dataset?.linceServerId || "").trim();
         const viewId = Number(String(frame?.dataset?.linceViewId || "").trim());
         const instanceId = String(frame?.dataset?.packageInstanceId || "preview").trim() || "preview";
@@ -720,8 +719,388 @@ pub(super) fn script() -> String {
             encodeURIComponent(serverId) +
             "/views/" +
             encodeURIComponent(viewId) +
-            "/table/stream"
+            "/stream"
           );
+        }
+
+        function valueToCell(value) {
+          if (value === null || value === undefined) {
+            return { text: "", kind: "null" };
+          }
+          if (typeof value === "string") {
+            return { text: value, kind: "string" };
+          }
+          if (typeof value === "number") {
+            return { text: String(value), kind: "number" };
+          }
+          if (typeof value === "boolean") {
+            return { text: String(value), kind: "boolean" };
+          }
+
+          try {
+            return { text: JSON.stringify(value, null, 2), kind: "json" };
+          } catch {
+            return { text: String(value), kind: "json" };
+          }
+        }
+
+        function prettifyKey(key) {
+          return String(key || "")
+            .replaceAll("_", " ")
+            .replaceAll("-", " ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .replace(/\b\w/g, (match) => match.toUpperCase()) || "Value";
+        }
+
+        function columnSpecFromValue(rawColumn, index) {
+          if (typeof rawColumn === "string") {
+            const key = rawColumn.trim() || "col_" + (index + 1);
+            return { key, label: prettifyKey(rawColumn) };
+          }
+
+          if (typeof rawColumn === "number") {
+            return { key: "col_" + (index + 1), label: String(rawColumn) };
+          }
+
+          if (rawColumn && typeof rawColumn === "object") {
+            const key = String(
+              rawColumn.key || rawColumn.name || rawColumn.id || rawColumn.field || rawColumn.label || "col_" + (index + 1),
+            ).trim();
+            const label = String(rawColumn.label || rawColumn.name || rawColumn.key || prettifyKey(key));
+            return { key: key || "col_" + (index + 1), label };
+          }
+
+          const key = "col_" + (index + 1);
+          return { key, label: key };
+        }
+
+        function extractRowsSource(value) {
+          if (Array.isArray(value)) {
+            return value;
+          }
+
+          if (value && typeof value === "object") {
+            for (const key of ["rows", "items", "data"]) {
+              if (Array.isArray(value[key])) {
+                return value[key];
+              }
+            }
+          }
+
+          return [value];
+        }
+
+        function inferColumns(rowsSource, explicitColumns) {
+          const columns = [];
+          const seen = new Set();
+          const pushColumn = (key, label) => {
+            const normalizedKey = String(key || "").trim();
+            if (!normalizedKey || seen.has(normalizedKey)) {
+              return;
+            }
+            seen.add(normalizedKey);
+            columns.push({ key: normalizedKey, label: String(label || normalizedKey) });
+          };
+
+          if (Array.isArray(explicitColumns) && explicitColumns.length) {
+            explicitColumns.forEach((rawColumn, index) => {
+              const column = columnSpecFromValue(rawColumn, index);
+              pushColumn(column.key, column.label);
+            });
+            return columns;
+          }
+
+          const arrayRows = rowsSource.filter(Array.isArray);
+          if (arrayRows.length) {
+            const maxLength = arrayRows.reduce((max, row) => Math.max(max, row.length), 0);
+            for (let index = 0; index < maxLength; index += 1) {
+              pushColumn("col_" + (index + 1), "Column " + (index + 1));
+            }
+            return columns;
+          }
+
+          const keys = new Set();
+          for (const row of rowsSource) {
+            if (row && typeof row === "object" && !Array.isArray(row)) {
+              Object.keys(row).forEach((key) => keys.add(key));
+            }
+          }
+
+          Array.from(keys)
+            .sort()
+            .forEach((key) => pushColumn(key, prettifyKey(key)));
+
+          if (!columns.length) {
+            pushColumn("value", "Value");
+          }
+
+          return columns;
+        }
+
+        function pickRowKey(row, index) {
+          if (row && typeof row === "object" && !Array.isArray(row)) {
+            for (const key of ["id", "key", "uuid", "slug", "name"]) {
+              const cell = valueToCell(row[key]);
+              if (cell.text.trim()) {
+                return key + ":" + cell.text;
+              }
+            }
+          }
+
+          return "row-" + index;
+        }
+
+        function normalizeRows(rowsSource, columns) {
+          return rowsSource.map((row, rowIndex) => {
+            const cells = {};
+            if (Array.isArray(row)) {
+              columns.forEach((column, columnIndex) => {
+                cells[column.key] = valueToCell(row[columnIndex]);
+              });
+            } else if (row && typeof row === "object") {
+              columns.forEach((column) => {
+                cells[column.key] = valueToCell(row[column.key]);
+              });
+            } else {
+              cells.value = valueToCell(row);
+            }
+
+            return { key: pickRowKey(row, rowIndex), cells };
+          });
+        }
+
+        function extractPrimaryTableName(query) {
+          const match = String(query || "").match(/\bfrom\s+(?:`([^`]+)`|\[([^\]]+)\]|"([^"]+)"|([a-zA-Z_][a-zA-Z0-9_]*))/i);
+          return String((match && (match[1] || match[2] || match[3] || match[4])) || "").trim();
+        }
+
+        function normalizeSnapshot(payload) {
+          const root = payload && typeof payload === "object" && !Array.isArray(payload) ? payload : {};
+          const query = String(root.query || "");
+          const rowsSource = extractRowsSource(payload);
+          const columns = inferColumns(rowsSource, Array.isArray(root.columns) ? root.columns : null);
+          return {
+            title: String(root.name || root.title || root.view_name || root.viewName || "Generic table"),
+            subtitle: query || rowsSource.length + " row" + (rowsSource.length === 1 ? "" : "s"),
+            sql: query,
+            kind: Array.isArray(payload) ? "array" : root.rows ? "view-snapshot" : "object",
+            sourceTable: extractPrimaryTableName(query),
+            columns,
+            rows: normalizeRows(rowsSource, columns),
+          };
+        }
+
+        function ensureTableElement(table) {
+          let frameElement = tablePanel?.querySelector(".tableFrame");
+          if (!(frameElement instanceof HTMLElement)) {
+            frameElement = document.createElement("div");
+            frameElement.className = "tableFrame";
+            tablePanel?.replaceChildren(frameElement);
+          }
+
+          let tableElement = frameElement.querySelector("table.table");
+          if (!(tableElement instanceof HTMLTableElement)) {
+            tableElement = document.createElement("table");
+            tableElement.className = "table";
+            frameElement.replaceChildren(tableElement);
+          }
+
+          return tableElement;
+        }
+
+        function syncTableHeader(tableElement, columns) {
+          let thead = tableElement.querySelector("thead");
+          const hideHeaderRow = columns.length === 1 && columns[0]?.key === "head";
+          if (hideHeaderRow) {
+            thead?.remove();
+            return;
+          }
+
+          if (!(thead instanceof HTMLTableSectionElement)) {
+            thead = document.createElement("thead");
+            tableElement.prepend(thead);
+          }
+
+          const existingKeys = Array.from(thead.querySelectorAll("th")).map((th) => th.dataset.columnKey || "");
+          const nextKeys = columns.map((column) => column.key);
+          if (existingKeys.join("\u0000") === nextKeys.join("\u0000")) {
+            Array.from(thead.querySelectorAll("th .columnName")).forEach((name, index) => {
+              name.textContent = columns[index]?.label || "";
+            });
+            return;
+          }
+
+          const row = document.createElement("tr");
+          columns.forEach((column, columnIndex) => {
+            const th = document.createElement("th");
+            th.scope = "col";
+            th.dataset.columnIndex = String(columnIndex);
+            th.dataset.columnKey = column.key;
+            const name = document.createElement("div");
+            name.className = "columnName";
+            name.textContent = column.label;
+            th.append(name);
+            row.append(th);
+          });
+          thead.replaceChildren(row);
+        }
+
+        function rowIdFromCells(row) {
+          return String(row.cells?.id?.text || "").trim();
+        }
+
+        function updateCellValue(cellElement, valueElement, row, column, cellValue, sourceTable) {
+          const editing = state.editingCell;
+          const rowId = rowIdFromCells(row);
+          const isEditingThisCell =
+            editing &&
+            String(editing.rowId || "") === rowId &&
+            String(editing.columnKey || "") === column.key;
+
+          if (isEditingThisCell) {
+            editing.cell = cellElement;
+            editing.valueElement = valueElement;
+            if (editing.currentText === editing.lastSavedText && editing.textarea instanceof HTMLTextAreaElement) {
+              const start = editing.textarea.selectionStart;
+              const end = editing.textarea.selectionEnd;
+              editing.currentText = cellValue.text;
+              editing.lastSavedText = cellValue.text;
+              editing.textarea.value = cellValue.text;
+              editing.textarea.setSelectionRange(
+                clamp(start, 0, editing.textarea.value.length),
+                clamp(end, 0, editing.textarea.value.length),
+              );
+            }
+            return;
+          }
+
+          valueElement.textContent = cellValue.text;
+          if (column.key === "id" && rowId && sourceTable) {
+            let button = cellElement.querySelector("[data-delete-row-id][data-delete-table-name]");
+            if (!(button instanceof HTMLButtonElement)) {
+              button = document.createElement("button");
+              button.className = "button button--danger rowDeleteButton";
+              button.type = "button";
+              button.textContent = "Delete";
+              cellElement.append(button);
+            }
+            button.dataset.deleteRowId = rowId;
+            button.dataset.deleteTableName = sourceTable;
+            button.title = "Delete row";
+            button.setAttribute("aria-label", "Delete row " + rowId + " from " + sourceTable);
+          }
+        }
+
+        function renderTableSnapshot(table) {
+          if (!tablePanel) {
+            return;
+          }
+
+          const tableElement = ensureTableElement(table);
+          syncTableHeader(tableElement, table.columns);
+
+          let tbody = tableElement.querySelector("tbody");
+          if (!(tbody instanceof HTMLTableSectionElement)) {
+            tbody = document.createElement("tbody");
+            tableElement.append(tbody);
+          }
+
+          if (table.sourceTable) {
+            tbody.dataset.sourceTable = table.sourceTable;
+          } else {
+            delete tbody.dataset.sourceTable;
+          }
+
+          const existingRows = new Map(
+            Array.from(tbody.querySelectorAll("tr")).map((row) => [row.dataset.rowKey || "", row]),
+          );
+          const nextRows = [];
+
+          table.rows.forEach((row, rowIndex) => {
+            const rowId = rowIdFromCells(row);
+            let rowElement = existingRows.get(row.key);
+            if (!(rowElement instanceof HTMLTableRowElement)) {
+              rowElement = document.createElement("tr");
+            }
+
+            rowElement.dataset.rowKey = row.key;
+            rowElement.dataset.rowIndex = String(rowIndex);
+            rowElement.dataset.rowId = rowId;
+            rowElement.dataset.rowQuantity = String(row.cells?.quantity?.text || "");
+
+            table.columns.forEach((column, columnIndex) => {
+              const selector = `td[data-column-key="${escapeCssSelector(column.key)}"]`;
+              let cellElement = rowElement.querySelector(selector);
+              if (!(cellElement instanceof HTMLTableCellElement)) {
+                cellElement = document.createElement("td");
+                rowElement.append(cellElement);
+              }
+
+              const cellValue = row.cells[column.key] || { text: "", kind: "null" };
+              cellElement.className = column.key === "id" ? "cell cell--id" : "cell";
+              cellElement.dataset.columnIndex = String(columnIndex);
+              cellElement.dataset.columnKey = column.key;
+              cellElement.dataset.cellKind = cellValue.kind;
+              if (rowId) {
+                cellElement.dataset.rowId = rowId;
+              } else {
+                delete cellElement.dataset.rowId;
+              }
+
+              let valueElement = cellElement.querySelector(".cellValue");
+              if (!(valueElement instanceof HTMLElement)) {
+                valueElement = document.createElement("div");
+                cellElement.prepend(valueElement);
+              }
+              valueElement.className = column.key === "id" ? "cellValue cellValue--id" : "cellValue";
+              updateCellValue(cellElement, valueElement, row, column, cellValue, table.sourceTable);
+            });
+
+            Array.from(rowElement.querySelectorAll("td[data-column-key]")).forEach((cell) => {
+              if (!table.columns.some((column) => column.key === cell.dataset.columnKey)) {
+                cell.remove();
+              }
+            });
+
+            nextRows.push(rowElement);
+          });
+
+          nextRows.forEach((rowElement) => {
+            tbody.append(rowElement);
+          });
+          Array.from(tbody.querySelectorAll("tr")).forEach((rowElement) => {
+            if (!nextRows.includes(rowElement)) {
+              rowElement.remove();
+            }
+          });
+          syncSelection();
+        }
+
+        function renderDetailsSnapshot(table) {
+          if (!tableDetails) {
+            return;
+          }
+
+          const title = tableDetails.querySelector(".detailCard:not(.detailCard--setting) .detailTitle");
+          if (title) {
+            title.textContent = table.title;
+          }
+          const copy = tableDetails.querySelector(".detailCard:not(.detailCard--setting) .detailCopy");
+          if (copy) {
+            copy.textContent = table.subtitle;
+          }
+          const code = tableDetails.querySelector("pre.codeBlock");
+          if (code) {
+            code.textContent = table.sql || "No SQL query was provided.";
+          }
+        }
+
+        function renderSnapshotPayload(payload) {
+          const table = normalizeSnapshot(payload);
+          renderDetailsSnapshot(table);
+          renderTableSnapshot(table);
+          setStatus("Live", "live");
         }
 
         function buildDeleteRowUrl(tableName, rowId) {
@@ -847,17 +1226,6 @@ pub(super) fn script() -> String {
           }
         }
 
-        function dispatchDatastarEvent(eventName, detail) {
-          document.dispatchEvent(
-            new CustomEvent("datastar-fetch", {
-              detail: {
-                type: eventName,
-                argsRaw: detail,
-              },
-            }),
-          );
-        }
-
         function stopReconnectTimer() {
           if (state.reconnectTimer) {
             window.clearTimeout(state.reconnectTimer);
@@ -970,44 +1338,82 @@ pub(super) fn script() -> String {
           }
 
           cell.dataset.focusedCell = "true";
-          if (state.editingCell && cell === state.editingCell.cell) {
-            applyEditingCellState();
-          }
         }
 
-        function applyEditingCellState() {
-          const editingCell = state.editingCell?.cell;
-          const valueElement = state.editingCell?.valueElement;
-          if (!(editingCell instanceof HTMLElement) || !(valueElement instanceof HTMLElement)) {
+        function placeCellTextarea(editing, options = {}) {
+          if (
+            !editing ||
+            !(editing.cell instanceof HTMLElement) ||
+            !(editing.valueElement instanceof HTMLElement)
+          ) {
+            return null;
+          }
+
+          let textarea = editing.textarea;
+          if (textarea instanceof HTMLTextAreaElement && editing.valueElement.contains(textarea)) {
+            return textarea;
+          }
+
+          const rect = editing.valueElement.getBoundingClientRect();
+          textarea = document.createElement("textarea");
+          textarea.className = "cellEditor";
+          textarea.value = String(editing.currentText ?? "");
+          textarea.rows = 1;
+          textarea.spellcheck = false;
+          textarea.setAttribute("aria-label", "Cell value");
+          textarea.style.width = Math.max(24, Math.ceil(rect.width)) + "px";
+          textarea.style.height = Math.max(20, Math.ceil(rect.height)) + "px";
+          editing.valueElement.dataset.editingCell = "true";
+          editing.valueElement.replaceChildren(textarea);
+          editing.cell.dataset.focusedCell = "true";
+          editing.cell.dataset.editingCell = "true";
+          editing.textarea = textarea;
+
+          focusCellEditor(textarea, options);
+          return textarea;
+        }
+
+        function rememberEditorSelection(editing) {
+          const textarea = editing?.textarea;
+          if (!(textarea instanceof HTMLTextAreaElement)) {
             return;
           }
 
-          valueElement.dataset.editingCell = "true";
-          valueElement.setAttribute("contenteditable", "plaintext-only");
-          valueElement.spellcheck = false;
-          valueElement.setAttribute("role", "textbox");
-          valueElement.setAttribute("aria-multiline", "true");
-          editingCell.dataset.focusedCell = "true";
-          editingCell.dataset.editingCell = "true";
+          editing.selectionStart = textarea.selectionStart;
+          editing.selectionEnd = textarea.selectionEnd;
         }
 
-        function clearEditingCellState() {
-          const editingCell = state.editingCell?.cell;
-          const valueElement = state.editingCell?.valueElement;
+        function updateEditingTextFromTextarea(editing) {
+          if (!editing) {
+            return;
+          }
+
+          if (editing.textarea instanceof HTMLTextAreaElement) {
+            editing.currentText = editing.textarea.value;
+          }
+        }
+
+        function removeCellTextarea(editing, replacementText) {
+          if (!editing) {
+            return;
+          }
+
+          const editingCell = editing.cell;
+          const valueElement = editing.valueElement;
           if (valueElement instanceof HTMLElement) {
             delete valueElement.dataset.editingCell;
-            valueElement.removeAttribute("contenteditable");
-            valueElement.removeAttribute("role");
-            valueElement.removeAttribute("aria-multiline");
+            valueElement.textContent = String(replacementText ?? editing.currentText ?? "");
           }
 
           if (editingCell instanceof HTMLElement) {
             delete editingCell.dataset.editingCell;
           }
+        }
 
+        function clearEditingCellState() {
+          removeCellTextarea(state.editingCell);
           state.editingCell = null;
           stopEditDebounceTimer();
-          stopEditSaveRequest();
         }
 
         function restoreEditingCellIfNeeded() {
@@ -1032,9 +1438,9 @@ pub(super) fn script() -> String {
             ...editing,
             cell,
             valueElement,
+            textarea: null,
           };
-          applyEditingCellState();
-          focusCellValue(valueElement, { selectAll: false });
+          placeCellTextarea(state.editingCell, { preserveSelection: true });
         }
 
         function syncSelection() {
@@ -1141,54 +1547,121 @@ pub(super) fn script() -> String {
           syncSelection();
         }
 
-        function selectEditableText(element, selectAll) {
-          if (!(element instanceof HTMLElement)) {
+        function focusCellEditor(textarea, options = {}) {
+          if (!(textarea instanceof HTMLTextAreaElement)) {
             return;
           }
 
-          const selection = window.getSelection?.();
-          if (!selection) {
-            return;
-          }
+          textarea.focus({ preventScroll: true });
+          window.requestAnimationFrame(() => {
+            if (!textarea.isConnected) {
+              return;
+            }
 
-          const range = document.createRange();
-          range.selectNodeContents(element);
-          if (!selectAll) {
-            range.collapse(false);
-          }
+            if (options.selectAll === true) {
+              textarea.select();
+              return;
+            }
 
-          selection.removeAllRanges();
-          selection.addRange(range);
+            if (Number.isInteger(options.caretOffset)) {
+              const offset = clamp(options.caretOffset, 0, textarea.value.length);
+              textarea.setSelectionRange(offset, offset);
+              return;
+            }
+
+            if (
+              options.preserveSelection === true &&
+              Number.isInteger(state.editingCell?.selectionStart)
+            ) {
+              const start = clamp(state.editingCell.selectionStart, 0, textarea.value.length);
+              const end = clamp(
+                Number.isInteger(state.editingCell.selectionEnd)
+                  ? state.editingCell.selectionEnd
+                  : start,
+                0,
+                textarea.value.length,
+              );
+              textarea.setSelectionRange(start, end);
+            }
+          });
         }
 
-        function focusCellValue(element, options = {}) {
-          if (!(element instanceof HTMLElement)) {
-            return;
+        function textOffsetWithin(root, node, nodeOffset) {
+          if (!(root instanceof Node) || !(node instanceof Node) || !root.contains(node)) {
+            return null;
           }
 
-          element.focus({ preventScroll: true });
-          const selectAll = options.selectAll === true;
-          window.requestAnimationFrame(() => {
-            if (!element.isConnected) {
-              return;
+          let offset = 0;
+          const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+          while (walker.nextNode()) {
+            const current = walker.currentNode;
+            const length = current.textContent?.length || 0;
+            if (current === node) {
+              return offset + clamp(nodeOffset, 0, length);
             }
+            offset += length;
+          }
 
-            if (selectAll) {
-              selectEditableText(element, true);
-              return;
+          return offset;
+        }
+
+        function caretOffsetFromPoint(valueElement, clientX, clientY) {
+          if (!(valueElement instanceof HTMLElement)) {
+            return null;
+          }
+
+          if (document.caretPositionFromPoint) {
+            const position = document.caretPositionFromPoint(clientX, clientY);
+            const node = position?.offsetNode || null;
+            if (node instanceof Node && valueElement.contains(node)) {
+              return textOffsetWithin(valueElement, node, position.offset);
             }
+          }
 
-            if (options.preserveExistingSelection === true) {
-              return;
+          if (document.caretRangeFromPoint) {
+            const range = document.caretRangeFromPoint(clientX, clientY);
+            const node = range?.startContainer || null;
+            if (node instanceof Node && valueElement.contains(node)) {
+              return textOffsetWithin(valueElement, node, range.startOffset);
             }
+          }
 
-            selectEditableText(element, false);
-          });
+          return null;
+        }
+
+        function isInsideEditingValue(node) {
+          const textarea = state.editingCell?.textarea;
+          if (!(textarea instanceof HTMLTextAreaElement) || !(node instanceof Node)) {
+            return false;
+          }
+
+          return node === textarea || textarea.contains(node);
+        }
+
+        function isEditingElementMutation(mutation) {
+          const valueElement = state.editingCell?.valueElement;
+          if (!(valueElement instanceof HTMLElement)) {
+            return false;
+          }
+
+          return mutation.target === valueElement || valueElement.contains(mutation.target);
         }
 
         function beginEditOnCell(cell, options = {}) {
           if (!(cell instanceof HTMLElement)) {
             return;
+          }
+
+          if (state.editingCell?.cell === cell) {
+            placeCellTextarea(state.editingCell, { preserveSelection: true });
+            return;
+          }
+
+          if (state.editingCell) {
+            const previous = state.editingCell;
+            updateEditingTextFromTextarea(previous);
+            clearEditingCellState();
+            void saveEditingCell(previous, { exit: false });
           }
 
           const row = cell.closest("tr");
@@ -1230,16 +1703,18 @@ pub(super) fn script() -> String {
             kind,
             originalText: text,
             lastSavedText: text,
+            currentText: text,
+            selectionStart: 0,
+            selectionEnd: 0,
+            textarea: null,
           };
 
-          syncSelection();
-          applyEditingCellState();
-
-          if (options.selectAll === true) {
-            focusCellValue(valueElement, { selectAll: true });
-          } else {
-            focusCellValue(valueElement, { preserveExistingSelection: false });
-          }
+          clearSelectionAttributes();
+          cell.dataset.focusedCell = "true";
+          placeCellTextarea(state.editingCell, {
+            caretOffset: options.caretOffset,
+            selectAll: options.selectAll === true,
+          });
         }
 
         function normalizeCellEditValue(editing, rawText) {
@@ -1279,12 +1754,7 @@ pub(super) fn script() -> String {
         }
 
         function readEditingCellText(editing) {
-          const valueElement = editing?.valueElement;
-          if (!(valueElement instanceof HTMLElement)) {
-            return "";
-          }
-
-          return String(valueElement.textContent || "");
+          return String(editing?.currentText || "");
         }
 
         function readRowCellText(row, columnKey) {
@@ -1467,7 +1937,7 @@ pub(super) fn script() -> String {
             }
 
             void saveEditingCell(editing, { exit: false });
-          }, 300);
+          }, 500);
         }
 
         function handleTableKeydown(event) {
@@ -1480,7 +1950,10 @@ pub(super) fn script() -> String {
               event.preventDefault();
               const editing = state.editingCell;
               if (editing) {
-                editing.valueElement.textContent = editing.lastSavedText;
+                editing.currentText = editing.lastSavedText;
+                if (editing.textarea instanceof HTMLTextAreaElement) {
+                  editing.textarea.value = editing.lastSavedText;
+                }
               }
               clearEditingCellState();
               syncSelection();
@@ -1629,13 +2102,20 @@ pub(super) fn script() -> String {
                 }
 
                 const event = parseEventBlock(trimmed);
-                if (!event.data || !event.event.startsWith("datastar-")) {
+                if (!event.data) {
                   continue;
                 }
 
                 const payload = parseSsePayload(event.data);
-                if (payload && typeof payload === "object") {
-                  dispatchDatastarEvent(event.event, payload);
+                if (event.event === "snapshot") {
+                  renderSnapshotPayload(payload);
+                } else if (event.event === "error") {
+                  setStatus("Offline", "error");
+                  showErrorToast(
+                    payload && typeof payload === "object"
+                      ? payload.message || payload.error || "stream error"
+                      : payload || "stream error",
+                  );
                 }
               }
             }
@@ -1684,6 +2164,10 @@ pub(super) fn script() -> String {
               return;
             }
 
+            if (target.closest(".cellEditor")) {
+              return;
+            }
+
             const button = target.closest("[data-delete-row-id][data-delete-table-name]");
             if (button instanceof HTMLElement) {
               event.preventDefault();
@@ -1703,15 +2187,17 @@ pub(super) fn script() -> String {
               state.focusedColumnIndex = Number.parseInt(String(cell.dataset.columnIndex || state.focusedColumnIndex || 0), 10);
               state.focusedRowId = String(row.dataset.rowId || "").trim();
               state.focusedColumnKey = String(cell.dataset.columnKey || "").trim();
-              syncSelection();
             }
 
             if (state.nerdMode) {
+              syncSelection();
               return;
             }
 
+            const valueElement = cellValueElement(cell);
+            const caretOffset = caretOffsetFromPoint(valueElement, event.clientX, event.clientY);
             event.preventDefault();
-            beginEditOnCell(cell, { selectAll: false });
+            beginEditOnCell(cell, { caretOffset, selectAll: false });
           });
           tablePanel.addEventListener("pointerdown", () => {
             if (!state.nerdMode) {
@@ -1724,6 +2210,10 @@ pub(super) fn script() -> String {
           tablePanel.addEventListener("focusin", (event) => {
             const target = event.target;
             if (!(target instanceof HTMLElement)) {
+              return;
+            }
+
+            if (target.closest(".cellEditor")) {
               return;
             }
 
@@ -1751,13 +2241,26 @@ pub(super) fn script() -> String {
             }
 
             const editing = state.editingCell;
-            if (!editing || target !== editing.valueElement) {
+            if (!editing || target !== editing.textarea) {
               return;
             }
 
-            const snapshot = { ...editing };
-            clearEditingCellState();
-            void saveEditingCell(snapshot, { exit: false });
+            updateEditingTextFromTextarea(editing);
+            window.requestAnimationFrame(() => {
+              if (state.editingCell !== editing) {
+                return;
+              }
+
+              const activeElement = document.activeElement;
+              if (
+                activeElement instanceof Node &&
+                (isInsideEditingValue(activeElement) || !editing.textarea?.isConnected)
+              ) {
+                return;
+              }
+
+              void saveEditingCell(editing, { exit: false });
+            });
           });
           tablePanel.addEventListener("input", (event) => {
             const target = event.target;
@@ -1766,18 +2269,33 @@ pub(super) fn script() -> String {
             }
 
             const editing = state.editingCell;
-            if (!editing || target !== editing.valueElement) {
+            if (!editing || target !== editing.textarea) {
               return;
             }
 
+            editing.currentText = editing.textarea.value;
+            rememberEditorSelection(editing);
             scheduleEditingCellSave();
           });
-
-          const observer = new MutationObserver(() => {
-            syncSelection();
-            refreshCreateSchemaIfNeeded();
+          tablePanel.addEventListener("keyup", () => {
+            rememberEditorSelection(state.editingCell);
           });
-          observer.observe(tablePanel, { childList: true, subtree: true });
+          tablePanel.addEventListener("mouseup", () => {
+            rememberEditorSelection(state.editingCell);
+          });
+
+          const observer = new MutationObserver((mutations) => {
+            const onlyEditingValueChanged =
+              state.editingCell &&
+              mutations.length > 0 &&
+              mutations.every(isEditingElementMutation);
+
+            if (!onlyEditingValueChanged) {
+              syncSelection();
+              refreshCreateSchemaIfNeeded();
+            }
+          });
+          observer.observe(tablePanel, { childList: true, characterData: true, subtree: true });
         }
 
         if (createOpenButton) {
@@ -1864,16 +2382,13 @@ pub(super) fn script() -> String {
           }
         });
 
-        datastarReady.then(() => {
-          state.streamUrl = buildStreamUrl();
-          if (!state.streamUrl) {
-            setStatus("Configurar", "idle");
-            return;
-          }
-
+        state.streamUrl = buildStreamUrl();
+        if (!state.streamUrl) {
+          setStatus("Configurar", "idle");
+        } else {
           syncSelection();
           connectStream(false);
-        });
+        }
 
         if (tableDetails) {
           const observer = new MutationObserver(() => {

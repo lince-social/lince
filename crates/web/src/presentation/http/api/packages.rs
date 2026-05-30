@@ -420,7 +420,7 @@ pub async fn preview_package(
         let mut preview = PackagePreview::from_ephemeral(&state, package).await;
         preview.has_manifest = has_manifest;
         if !has_manifest && let Ok(html) = std::str::from_utf8(&bytes) {
-            preview.html = html.trim().to_string();
+            preview.html = html.to_string();
             preview.frame_src.clear();
         }
         return Ok(Json(preview));

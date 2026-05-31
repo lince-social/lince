@@ -1,15 +1,27 @@
-{ config, pkgs, self, ... }:
+{
+  config,
+  pkgs,
+  self,
+  ...
+}:
 
 let
-  lincePackage = self.packages.${pkgs.system}.lince-http;
+  lincePackage = self.packages.${pkgs.system}.lince;
 in
 {
-  system.stateVersion = "25.05";
+  system.stateVersion = "26.05";
 
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings.experimental-features = [
+    "nix-command"
+    "flakes"
+  ];
 
   networking.hostName = "manas-organ";
-  networking.firewall.allowedTCPPorts = [ 22 80 443 ];
+  networking.firewall.allowedTCPPorts = [
+    22
+    80
+    443
+  ];
 
   time.timeZone = "UTC";
 
@@ -22,7 +34,7 @@ in
     createHome = true;
   };
 
-  users.groups.lince = {};
+  users.groups.lince = { };
 
   environment.systemPackages = with pkgs; [
     git

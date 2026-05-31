@@ -1395,6 +1395,7 @@ function renderCardMarkup(card) {
       <article class="board-card board-card--package" data-card-id="${escapeHtml(card.id)}" data-card-kind="${escapeHtml(card.kind || "package")}">
         ${renderDeleteButton(card)}
         ${renderConfigureButton(card)}
+        ${renderRawHtmlDownloadButton(card)}
         ${renderPackageBody(card)}
         ${renderHandles()}
       </article>

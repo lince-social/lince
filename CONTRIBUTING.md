@@ -44,6 +44,6 @@ The application can be run using [mask](https://github.com/jacobdeichert/mask), 
 cargo install mask
 ```
 
-The main command is `cargo run -- karma gui`, which runs Karma and the GPUI frontend.
+The main command is `cargo run --release`.
 
 Check the `mise.md` for more information about the workflow.

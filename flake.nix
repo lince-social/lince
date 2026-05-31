@@ -22,20 +22,7 @@
           cargoToml = builtins.fromTOML (builtins.readFile ./crates/lince/Cargo.toml);
           version = cargoToml.package.version;
 
-          mkLince = {
-            pname,
-            features,
-            noDefaultFeatures ? true,
-          }:
-            let
-              featureList =
-                if builtins.isList features then features else [ features ];
-              cargoFlags =
-                [ "--package" "lince" ]
-                ++ lib.optionals noDefaultFeatures [ "--no-default-features" ]
-                ++ [ "--features" (lib.concatStringsSep "," featureList) ];
-            in
-            pkgs.rustPlatform.buildRustPackage {
+          mkLince = { pname }: pkgs.rustPlatform.buildRustPackage {
               inherit pname version;
               src = ./.;
 
@@ -45,8 +32,8 @@
 
               RUSTFLAGS = "-D warnings";
 
-              cargoBuildFlags = cargoFlags;
-              cargoTestFlags = cargoFlags;
+              cargoBuildFlags = [ "--package" "lince" ];
+              cargoTestFlags = [ "--package" "lince" ];
 
               nativeBuildInputs = with pkgs; [
                 pkg-config
@@ -60,8 +47,7 @@
                 ];
 
               meta = {
-                description =
-                  "Lince binary built with ${lib.concatStringsSep ", " featureList} features";
+                description = "Lince binary";
                 mainProgram = "lince";
                 license = lib.licenses.gpl3Plus;
                 platforms = supportedSystems;
@@ -70,23 +56,12 @@
 
           lince = mkLince {
             pname = "lince";
-            features = [ "http" "karma" ];
-          };
-
-          lince-http = mkLince {
-            pname = "lince-http";
-            features = [ "http" "karma" ];
-          };
-
-          lince-tui = mkLince {
-            pname = "lince-tui";
-            features = [ "tui" "karma" ];
           };
         in
         {
           packages = {
             default = lince;
-            inherit lince lince-http lince-tui;
+            inherit lince;
           };
 
           apps = {
@@ -96,14 +71,6 @@
 
             lince = flake-utils.lib.mkApp {
               drv = lince;
-            };
-
-            http = flake-utils.lib.mkApp {
-              drv = lince-http;
-            };
-
-            tui = flake-utils.lib.mkApp {
-              drv = lince-tui;
             };
           };
 

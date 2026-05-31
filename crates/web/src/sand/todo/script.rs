@@ -13,6 +13,7 @@ pub(super) fn script() -> String {
   const blobColorInput = document.getElementById("blob-color-input");
   const blobAddColorButton = document.getElementById("blob-add-color");
   const blobPalette = document.getElementById("blob-palette");
+  const taskIdsVisibleInput = document.getElementById("task-ids-visible");
   const detailSource = document.getElementById("todo-detail-source");
   const detailActive = document.getElementById("todo-detail-active");
   const detailPreview = document.getElementById("todo-detail-preview");
@@ -23,6 +24,7 @@ pub(super) fn script() -> String {
   const viewId = Number(String(frame?.dataset?.linceViewId || "").trim());
   const instanceId = String(frame?.dataset?.packageInstanceId || "preview").trim() || "preview";
   const blobSettingsKey = "todo-blob/" + instanceId;
+  const taskSettingsKey = "todo-task/" + instanceId;
   const defaultBlobColors = ["#51f3d2", "#7cc7ff", "#f5d36a"];
   const MAX_HISTORY = 100;
 
@@ -40,6 +42,9 @@ pub(super) fn script() -> String {
     detailsOpen: false,
     chromeTimer: null,
     chromeHovered: false,
+    taskSettings: {
+      showIds: false,
+    },
     blobSettings: {
       enabled: false,
       viscosity: 0.62,
@@ -203,6 +208,45 @@ pub(super) fn script() -> String {
       );
     } catch {
       // ignore storage failures
+    }
+  }
+
+  function readTaskSettings() {
+    try {
+      const raw = window.localStorage?.getItem?.(taskSettingsKey);
+      if (!raw) {
+        return null;
+      }
+
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") {
+        return null;
+      }
+
+      return {
+        showIds: parsed.showIds === true,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  function writeTaskSettings() {
+    try {
+      window.localStorage?.setItem?.(
+        taskSettingsKey,
+        JSON.stringify({
+          showIds: state.taskSettings.showIds,
+        }),
+      );
+    } catch {
+      // ignore storage failures
+    }
+  }
+
+  function syncTaskControls() {
+    if (taskIdsVisibleInput instanceof HTMLInputElement) {
+      taskIdsVisibleInput.checked = state.taskSettings.showIds;
     }
   }
 
@@ -779,7 +823,14 @@ pub(super) fn script() -> String {
 
       const title = document.createElement("span");
       title.className = "todoItemTitle";
-      title.textContent = item.title;
+      if (state.taskSettings.showIds && String(item.recordId || item.id || "").trim()) {
+        const taskId = document.createElement("span");
+        taskId.className = "todoItemId";
+        taskId.textContent = "#" + String(item.recordId || item.id).trim();
+        title.append(taskId, document.createTextNode(" " + item.title));
+      } else {
+        title.textContent = item.title;
+      }
       main.appendChild(title);
 
       button.appendChild(main);
@@ -1488,6 +1539,14 @@ pub(super) fn script() -> String {
     });
   }
 
+  if (taskIdsVisibleInput instanceof HTMLInputElement) {
+    taskIdsVisibleInput.addEventListener("change", () => {
+      state.taskSettings.showIds = taskIdsVisibleInput.checked;
+      writeTaskSettings();
+      renderItems(state.items, state.activeIndex);
+    });
+  }
+
   if (listPanel) {
     listPanel.tabIndex = 0;
     listPanel.addEventListener("keydown", handleListKeydown);
@@ -1516,7 +1575,12 @@ pub(super) fn script() -> String {
   if (storedBlobSettings) {
     state.blobSettings = storedBlobSettings;
   }
+  const storedTaskSettings = readTaskSettings();
+  if (storedTaskSettings) {
+    state.taskSettings = storedTaskSettings;
+  }
 
+  syncTaskControls();
   syncBlobControls();
   renderBlobPalette();
   syncBlobState();

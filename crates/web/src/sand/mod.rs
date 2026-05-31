@@ -1,6 +1,6 @@
-mod bucket_image_view;
 mod calendar;
 mod chess;
+mod document_viewer;
 mod freedoom;
 mod general_creation;
 #[path = "kanban/mod.rs"]
@@ -101,8 +101,8 @@ impl OfficialWidgetBuilder {
 
 const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 19] = [
     OfficialWidgetBuilder::Html {
-        feature_flag: bucket_image_view::FEATURE_FLAG,
-        source_builder: bucket_image_view::source,
+        feature_flag: document_viewer::FEATURE_FLAG,
+        source_builder: document_viewer::source,
     },
     OfficialWidgetBuilder::Html {
         feature_flag: calendar::FEATURE_FLAG,

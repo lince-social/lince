@@ -284,7 +284,6 @@ const STYLE: &str = r#"
   }
 
   .pill,
-  .status,
   .button {
     display: inline-flex;
     align-items: center;
@@ -329,28 +328,55 @@ const STYLE: &str = r#"
   }
 
   .status {
-    color: var(--muted);
-    font-size: 0.7rem;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    display: inline-flex;
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    min-height: 18px;
+    padding: 0;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background:
+      radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55), transparent 34%),
+      rgba(102, 112, 122, 0.95);
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.22),
+      0 8px 24px rgba(0, 0, 0, 0.24);
+    transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease, background 140ms ease;
+  }
+
+  .status:hover {
+    transform: scale(1.05);
   }
 
   .status[data-tone="live"] {
-    color: #daf7e6;
-    border-color: rgba(141, 240, 185, 0.22);
-    background: #102017;
+    border-color: rgba(141, 240, 185, 0.5);
+    background:
+      radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.68), transparent 34%),
+      rgba(37, 194, 106, 0.98);
+    box-shadow:
+      0 0 0 1px rgba(18, 58, 34, 0.56),
+      0 0 24px rgba(37, 194, 106, 0.28);
   }
 
   .status[data-tone="loading"] {
-    color: #f7e6bf;
-    border-color: rgba(243, 199, 123, 0.22);
-    background: #231a10;
+    border-color: rgba(126, 240, 198, 0.48);
+    background:
+      radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.64), transparent 34%),
+      rgba(34, 203, 196, 0.96);
+    box-shadow:
+      0 0 0 1px rgba(16, 76, 72, 0.52),
+      0 0 24px rgba(34, 203, 196, 0.28);
   }
 
   .status[data-tone="error"] {
-    color: #ffd9df;
-    border-color: rgba(255, 151, 168, 0.22);
-    background: #231017;
+    border-color: rgba(255, 151, 168, 0.36);
+    background:
+      radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.58), transparent 34%),
+      rgba(255, 99, 123, 0.96);
+    box-shadow:
+      0 0 0 1px rgba(74, 19, 28, 0.5),
+      0 0 22px rgba(255, 99, 123, 0.24);
   }
 
   .button {

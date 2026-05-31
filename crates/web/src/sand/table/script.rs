@@ -54,8 +54,10 @@ pub(super) fn script() -> String {
             return;
           }
 
-          statusPill.textContent = text;
           statusPill.dataset.tone = tone;
+          statusPill.setAttribute("aria-label", text);
+          statusPill.title = text;
+          statusPill.textContent = "";
         }
 
         function showErrorToast(reason) {

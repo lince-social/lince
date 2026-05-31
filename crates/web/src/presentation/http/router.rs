@@ -19,9 +19,9 @@ use {
                 board::hydrated_board_state,
                 board::{export_workspace, get_board_state, import_workspace, put_board_state},
                 integrations::{
-                    proxy_manas_file, proxy_manas_organ, proxy_manas_table_collection,
-                    proxy_manas_table_item, proxy_manas_table_schema, proxy_manas_view,
-                    proxy_manas_view_snapshot, proxy_manas_view_table_stream,
+                    proxy_local_document_file, proxy_manas_file, proxy_manas_organ,
+                    proxy_manas_table_collection, proxy_manas_table_item, proxy_manas_table_schema,
+                    proxy_manas_view, proxy_manas_view_snapshot, proxy_manas_view_table_stream,
                 },
                 operation::post_operation,
                 packages::{
@@ -98,6 +98,7 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
             "/integrations/servers/{server_id}/files",
             get(proxy_manas_file),
         )
+        .route("/local-files", get(proxy_local_document_file))
         .route(
             "/integrations/servers/{server_id}/table/schema",
             get(proxy_manas_table_schema),

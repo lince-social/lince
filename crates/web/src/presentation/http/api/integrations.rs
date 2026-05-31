@@ -30,7 +30,14 @@ use {
     },
     serde::Deserialize,
     serde_json::{Value, json},
-    std::{convert::Infallible, io::Error, io::ErrorKind, time::Duration},
+    std::{
+        convert::Infallible,
+        env, fs,
+        io::Error,
+        io::ErrorKind,
+        path::{Path as FsPath, PathBuf},
+        time::Duration,
+    },
     tokio_stream::{StreamExt, wrappers::UnboundedReceiverStream},
     tokio_util::io::ReaderStream,
 };
@@ -316,6 +323,47 @@ pub async fn proxy_manas_file(
     Ok(download_response(file_response).await)
 }
 
+pub async fn proxy_local_document_file(
+    Query(query): Query<FilePathQuery>,
+) -> ApiResult<impl IntoResponse> {
+    let path = normalize_local_document_path(&query.path)?;
+    let content_type = supported_document_content_type(&path)?;
+    let metadata = fs::metadata(&path).map_err(|error| {
+        api_error(
+            StatusCode::NOT_FOUND,
+            format!("Nao foi possivel acessar o arquivo local: {error}"),
+        )
+    })?;
+
+    if !metadata.is_file() {
+        return Err(api_error(
+            StatusCode::BAD_REQUEST,
+            "O path local precisa apontar para um arquivo.",
+        ));
+    }
+
+    let bytes = fs::read(&path).map_err(|error| {
+        api_error(
+            StatusCode::BAD_GATEWAY,
+            format!("Nao foi possivel ler o arquivo local: {error}"),
+        )
+    })?;
+
+    let mut response = Response::new(axum::body::Body::from(bytes));
+    response
+        .headers_mut()
+        .insert(header::CONTENT_TYPE, HeaderValue::from_static(content_type));
+    if let Ok(value) = HeaderValue::from_str(&metadata.len().to_string()) {
+        response.headers_mut().insert(header::CONTENT_LENGTH, value);
+    }
+    response.headers_mut().insert(
+        header::CONTENT_DISPOSITION,
+        HeaderValue::from_static("inline"),
+    );
+
+    Ok(response)
+}
+
 pub async fn proxy_manas_table_collection(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -520,6 +568,45 @@ fn normalize_file_key(raw_path: &str) -> ApiResult<String> {
     }
 
     Ok(path)
+}
+
+fn normalize_local_document_path(raw_path: &str) -> ApiResult<PathBuf> {
+    let path = raw_path.trim();
+    if path.is_empty() || path.contains('\0') {
+        return Err(api_error(
+            StatusCode::BAD_REQUEST,
+            "Informe um path local valido.",
+        ));
+    }
+
+    if let Some(rest) = path.strip_prefix("~/") {
+        let home = env::var_os("HOME").ok_or_else(|| {
+            api_error(
+                StatusCode::BAD_REQUEST,
+                "Nao foi possivel resolver o diretorio HOME.",
+            )
+        })?;
+        return Ok(PathBuf::from(home).join(rest));
+    }
+
+    Ok(PathBuf::from(path))
+}
+
+fn supported_document_content_type(path: &FsPath) -> ApiResult<&'static str> {
+    match path
+        .extension()
+        .and_then(|value| value.to_str())
+        .map(|value| value.to_ascii_lowercase())
+        .as_deref()
+    {
+        Some("pdf") => Ok("application/pdf"),
+        Some("jpeg") | Some("jpg") => Ok("image/jpeg"),
+        Some("png") => Ok("image/png"),
+        _ => Err(api_error(
+            StatusCode::BAD_REQUEST,
+            "Somente arquivos PDF, JPEG e PNG sao suportados.",
+        )),
+    }
 }
 
 fn downloaded_response(downloaded: persistence::storage::DownloadedObject) -> Response {

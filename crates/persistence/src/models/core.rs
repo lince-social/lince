@@ -120,6 +120,33 @@ pub struct TransferRow {
 }
 
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
+#[table(name = "transfer_item")]
+pub struct TransferItemRow {
+    pub transfer_id: i64,
+
+    pub contribution_user_id: i64,
+    pub contribution_server_id: i64,
+    pub contribution_id: i64,
+    pub contribution_head: String,
+    pub contribution_quantity: f64,
+
+    pub need_user_id: i64,
+    pub need_server_id: i64,
+    pub need_id: i64,
+    pub need_head: String,
+    pub need_quantity: f64,
+
+    #[table(default = "0")]
+    pub first_agreement: i64,
+    #[table(default = "0")]
+    pub second_agreement: i64,
+
+    #[table(sql_type = "TIMESTAMP", default = "CURRENT_TIMESTAMP")]
+    pub date: String,
+    pub location: String,
+}
+
+#[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
 #[table(name = "sum")]
 pub struct SumRow {
     #[table(primary_key)]

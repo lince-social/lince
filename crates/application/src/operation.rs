@@ -91,23 +91,6 @@ pub async fn parse_operation_and_execute(services: InjectedServices, operation: 
                 //         .await,
                 //     );
                 // }
-                // "c" | "create" => {
-                //     return Some(
-                //         presentation_html_section_body_home_modal(
-                //             operation_create_component(services, parse_table(operation.clone()))
-                //                 .await,
-                //         )
-                //         .await,
-                //     );
-                // }
-                "k" | "collection" => {
-                    if let Some(id) = parse_id(&operation)
-                        && let Err(e) =
-                            crate::write::set_active_collection(services.clone(), id).await
-                    {
-                        log(LogEntry::Error(e.kind(), e.to_string()))
-                    }
-                }
                 "a" | "configuration" => {
                     if let Some(id) = parse_id(&operation)
                         && let Err(e) =
@@ -116,9 +99,10 @@ pub async fn parse_operation_and_execute(services: InjectedServices, operation: 
                         log(LogEntry::Error(e.kind(), e.to_string()))
                     }
                 }
-                "s" | "command" | "shell" | "shell command" => {
+                "c" | "command" | "shell" | "shell command" => {
                     if let Some(id) = parse_id(&operation) {
                         let parsed_id = id.parse::<u32>().unwrap_or(0);
+                        println!("[operation] trying command id: {}", parsed_id);
                         if let Err(e) = spawn_command_buffer_session_by_id(
                             services.clone(),
                             parsed_id,
@@ -126,6 +110,7 @@ pub async fn parse_operation_and_execute(services: InjectedServices, operation: 
                         )
                         .await
                         {
+                            println!("[operation] command spawn failed: {}", e);
                             log(LogEntry::Error(e.kind(), e.to_string()))
                         }
                     }

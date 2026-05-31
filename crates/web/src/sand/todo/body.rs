@@ -51,6 +51,14 @@ fn render_blob_settings() -> Markup {
     html! {
         div class="detailStack detailStack--settings" {
             section class="detailCard detailCard--setting" {
+                div class="eyebrow" { "tasks" }
+                label class="toggleRow" for="task-ids-visible" {
+                    input id="task-ids-visible" type="checkbox";
+                    span { "Show task ids" }
+                }
+            }
+
+            section class="detailCard detailCard--setting" {
                 div class="eyebrow" { "blob" }
                 div class="settingRow" {
                     label class="toggleRow" for="blob-enabled" {

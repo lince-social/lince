@@ -230,6 +230,13 @@ const STYLE: &str = r#"
     word-break: break-word;
   }
 
+  .todoItemId {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
   .todoItemBody {
     color: var(--muted);
     font-size: 0.74rem;

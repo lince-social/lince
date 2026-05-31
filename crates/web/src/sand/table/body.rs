@@ -51,7 +51,14 @@ fn render_top_line() -> Markup {
         header class="topLine" {
             div class="topLineTitle" { "Table" }
             div class="topLineActions" {
-                span id="table-status" class="status" data-tone="idle" { "Waiting" }
+                span
+                    id="table-status"
+                    class="status"
+                    data-tone="idle"
+                    role="status"
+                    aria-label="Waiting"
+                    title="Waiting"
+                {}
                 button id="info-open" class="button button--ghost" type="button" { "Info" }
                 button id="create-open" class="button button--accent" type="button" { "Create" }
             }

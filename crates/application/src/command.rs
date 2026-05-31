@@ -1,7 +1,7 @@
 use injection::cross_cutting::InjectedServices;
 use std::{
     collections::HashMap,
-    io::{Error, ErrorKind},
+    io::{self, Error, ErrorKind, Write},
     process::Stdio,
     sync::{Arc, OnceLock},
     time::Instant,
@@ -115,6 +115,26 @@ fn trim_output(text: &mut String) {
     text.drain(..remove_idx);
 }
 
+fn print_terminal_output(stream: &CommandOutputStream, chunk: &str) {
+    if chunk.is_empty() {
+        return;
+    }
+
+    match stream {
+        CommandOutputStream::Stdout => {
+            let mut stdout = io::stdout().lock();
+            let _ = stdout.write_all(chunk.as_bytes());
+            let _ = stdout.flush();
+        }
+        CommandOutputStream::Stderr => {
+            let mut stderr = io::stderr().lock();
+            let _ = stderr.write_all(chunk.as_bytes());
+            let _ = stderr.flush();
+        }
+        CommandOutputStream::Stdin | CommandOutputStream::System => {}
+    }
+}
+
 async fn register_session(
     command_id: Option<u32>,
     command: String,
@@ -156,6 +176,7 @@ async fn append_session_output(
     if chunk.is_empty() {
         return Ok(());
     }
+    print_terminal_output(&stream, &chunk);
     let hub = command_buffer();
     let mut state = hub.state.lock().await;
     let Some(session) = state.sessions.get_mut(&session_id) else {
@@ -173,7 +194,6 @@ async fn append_session_output(
         session.snapshot.output.push_str(prefix);
         session.snapshot.output.push_str(&chunk);
     }
-    dbg!(&session.snapshot.output);
     trim_output(&mut session.snapshot.output);
     let _ = hub.event_tx.send(CommandBufferEvent::Output(session_id));
     Ok(())
@@ -272,13 +292,22 @@ pub async fn spawn_command_buffer_session_by_id(
     command_id: u32,
     origin: CommandOrigin,
 ) -> Result<u64, Error> {
+    println!(
+        "[command] requested command id={} origin={:?}",
+        command_id, origin
+    );
     let command = services.repository.command.get_by_id(command_id).await?;
     let Some(command) = command else {
+        println!("[command] command id={} not found", command_id);
         return Err(Error::new(
             ErrorKind::NotFound,
             format!("Command with id {command_id} not found"),
         ));
     };
+    println!(
+        "[command] resolved command id={} name={} command={}",
+        command.id, command.name, command.command
+    );
     spawn_command_buffer_session(Some(command.id), command.command, origin).await
 }
 
@@ -287,6 +316,10 @@ pub async fn spawn_command_buffer_session(
     command: String,
     origin: CommandOrigin,
 ) -> Result<u64, Error> {
+    println!(
+        "[command] spawning shell for command_id={:?} origin={:?}: {}",
+        command_id, origin, command
+    );
     let mut child = TokioCommand::new("sh")
         .arg("-c")
         .arg(&command)
@@ -311,6 +344,7 @@ pub async fn spawn_command_buffer_session(
 
     let (stdin_tx, mut stdin_rx) = mpsc::channel::<String>(128);
     let session_id = register_session(command_id, command.clone(), origin, stdin_tx).await;
+    println!("[command] session started: {}", session_id);
 
     tokio::spawn(async move {
         let mut stdin = stdin;
@@ -336,9 +370,15 @@ pub async fn spawn_command_buffer_session(
     tokio::spawn(async move {
         match child.wait().await {
             Ok(status) => {
+                println!(
+                    "[command] session {} finished with status {:?}",
+                    session_id,
+                    status.code()
+                );
                 finish_session(session_id, status.code()).await;
             }
             Err(e) => {
+                println!("[command] session {} failed: {}", session_id, e);
                 fail_session(session_id, e.to_string()).await;
             }
         }

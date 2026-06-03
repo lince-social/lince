@@ -1,11 +1,12 @@
 use crate::infrastructure::backend_api_store::{
     ApiTable, BackendApiStore, TableCreateSchemaResponse, TableListQuery, validate_file_key,
 };
-use ::application::karma::{deliver_record_karma, karma_deliver, refresh_karma_cache};
+use ::application::karma::{karma_deliver, refresh_karma_cache};
 use ::application::{
     auth::{AuthService, AuthSubject},
     subscription::{SubscriptionHandle, SubscriptionRegistry},
     view::ViewReadService,
+    write,
 };
 use injection::cross_cutting::InjectedServices;
 use persistence::{
@@ -136,8 +137,14 @@ impl BackendApiService {
                     .execute_view_insert_returning_id(sql, params)
                     .await
             }
-            ApiTable::Record
-            | ApiTable::RecordExtension
+            ApiTable::Record => {
+                let (object, confirmed) = strip_karma_confirmation(table, object);
+                self.require_karma_loop_confirmation(table, None, &object, confirmed)
+                    .await?;
+                let (sql, params) = self.store.build_standard_insert(table, &object)?;
+                write::execute_record_insert_returning_id(self.services.clone(), sql, params).await
+            }
+            ApiTable::RecordExtension
             | ApiTable::RecordLink
             | ApiTable::RecordComment
             | ApiTable::RecordWorklog
@@ -165,12 +172,6 @@ impl BackendApiService {
                     )
                 {
                     refresh_karma_cache(self.services.clone()).await?;
-                }
-                if outcome.rows_affected > 0
-                    && matches!(table, ApiTable::Record)
-                    && let Some(id) = outcome.last_insert_rowid
-                {
-                    deliver_record_karma(self.services.clone(), [id as u32]).await?;
                 }
                 Ok(outcome)
             }
@@ -221,8 +222,14 @@ impl BackendApiService {
                     .execute_view_update(id, sql, params)
                     .await
             }
-            ApiTable::Record
-            | ApiTable::RecordExtension
+            ApiTable::Record => {
+                let (object, confirmed) = strip_karma_confirmation(table, object);
+                self.require_karma_loop_confirmation(table, Some(id), &object, confirmed)
+                    .await?;
+                let (sql, params) = self.store.build_standard_update(table, id, &object)?;
+                write::execute_record_update(self.services.clone(), [id as u32], sql, params).await
+            }
+            ApiTable::RecordExtension
             | ApiTable::RecordLink
             | ApiTable::RecordComment
             | ApiTable::RecordWorklog
@@ -246,9 +253,6 @@ impl BackendApiService {
                     )
                 {
                     refresh_karma_cache(self.services.clone()).await?;
-                }
-                if outcome.rows_affected > 0 && matches!(table, ApiTable::Record) {
-                    deliver_record_karma(self.services.clone(), [id as u32]).await?;
                 }
                 Ok(outcome)
             }
@@ -289,11 +293,7 @@ impl BackendApiService {
             ApiTable::Record => {
                 let (sql, params) = self.store.build_record_batch_update(rows)?;
                 let record_ids = collect_record_ids_from_rows(rows)?;
-                let outcome = self.services.writer.execute_statement(sql, params).await?;
-                if outcome.rows_affected > 0 {
-                    deliver_record_karma(self.services.clone(), record_ids).await?;
-                }
-                Ok(outcome)
+                write::execute_record_update(self.services.clone(), record_ids, sql, params).await
             }
             _ => Err(Error::new(
                 ErrorKind::InvalidInput,
@@ -317,11 +317,7 @@ impl BackendApiService {
         }
         let record_ids = updates.iter().map(|row| row.id as u32).collect::<Vec<_>>();
         let (sql, params) = build_record_quantity_batch_update(&updates);
-        let outcome = self.services.writer.execute_statement(sql, params).await?;
-        if outcome.rows_affected > 0 {
-            deliver_record_karma(self.services.clone(), record_ids).await?;
-        }
-        Ok(outcome)
+        write::execute_record_update(self.services.clone(), record_ids, sql, params).await
     }
 
     pub async fn delete_table_row(
@@ -346,12 +342,12 @@ impl BackendApiService {
                     .execute_view_delete(id, sql, params)
                     .await
             }
+            ApiTable::Record => {
+                write::execute_record_delete(self.services.clone(), id as u32, sql, params).await
+            }
             _ => self.services.writer.execute_statement(sql, params).await,
         }?;
 
-        if outcome.rows_affected > 0 && matches!(table, ApiTable::Record) {
-            deliver_record_karma(self.services.clone(), [id as u32]).await?;
-        }
         if outcome.rows_affected > 0
             && matches!(
                 table,

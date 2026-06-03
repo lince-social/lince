@@ -17,6 +17,7 @@ use persistence::write_coordinator::WriteCoordinatorHandle;
 use sqlx::{Pool, Sqlite};
 use std::{
     collections::HashMap,
+    path::PathBuf,
     sync::{Arc, RwLock},
 };
 
@@ -40,9 +41,16 @@ pub struct Injected {
     pub storage: Arc<StorageService>,
     pub writer: WriteCoordinatorHandle,
     pub karma_cache: Arc<KarmaCache>,
+    pub file_sync_config: Arc<RwLock<Option<FileSyncConfig>>>,
 }
 
 pub type InjectedServices = Arc<Injected>;
+
+#[derive(Debug, Clone)]
+pub struct FileSyncConfig {
+    pub enabled: bool,
+    pub path: PathBuf,
+}
 
 #[derive(Default)]
 pub struct KarmaCache {
@@ -90,6 +98,7 @@ pub fn dependency_injection(
         storage,
         writer,
         karma_cache: Arc::new(KarmaCache::default()),
+        file_sync_config: Arc::new(RwLock::new(None)),
     });
 
     services

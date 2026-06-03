@@ -57,6 +57,9 @@ pub struct ConfigurationRow {
     pub bucket_uri: Option<String>,
     pub bucket_name: Option<String>,
     pub bucket_region: Option<String>,
+    #[table(default = "0")]
+    pub file_sync_enabled: i64,
+    pub file_sync_path: Option<String>,
 }
 
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]

@@ -4,6 +4,7 @@ pub mod configuration;
 pub mod cub;
 pub mod dst;
 pub mod engine;
+pub mod file_sync;
 pub mod frequency;
 pub mod gpui;
 pub mod karma;

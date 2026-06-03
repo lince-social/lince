@@ -21,6 +21,7 @@ mod table;
 mod terminal;
 mod todo;
 mod trail;
+mod transfer;
 mod weather;
 
 use {
@@ -99,7 +100,7 @@ impl OfficialWidgetBuilder {
     }
 }
 
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 19] = [
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 20] = [
     OfficialWidgetBuilder::Html {
         feature_flag: document_viewer::FEATURE_FLAG,
         source_builder: document_viewer::source,
@@ -163,6 +164,10 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 19] = [
     OfficialWidgetBuilder::Package {
         feature_flag: todo::FEATURE_FLAG,
         package_builder: todo::package,
+    },
+    OfficialWidgetBuilder::Html {
+        feature_flag: transfer::FEATURE_FLAG,
+        source_builder: transfer::source,
     },
     OfficialWidgetBuilder::Html {
         feature_flag: sand_publisher::FEATURE_FLAG,

@@ -4643,6 +4643,7 @@ dependencies = [
  "argon2",
  "async-trait",
  "chrono",
+ "dirs 6.0.0",
  "jsonwebtoken",
  "lince-domain",
  "lince-injection",

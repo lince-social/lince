@@ -85,6 +85,8 @@ async fn main() -> Result<(), Error> {
 
     let services = dependency_injection(read_db.clone(), storage, writer.clone());
     refresh_karma_cache(services.clone()).await?;
+    application::file_sync::configure_from_active_configuration(services.clone()).await?;
+    application::file_sync::start_if_enabled(services.clone()).await?;
 
     #[cfg(feature = "karma")]
     let karma_handle = if karma_enabled {

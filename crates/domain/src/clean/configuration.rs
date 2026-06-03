@@ -20,4 +20,6 @@ pub struct Configuration {
     pub bucket_uri: Option<String>,
     pub bucket_name: Option<String>,
     pub bucket_region: Option<String>,
+    pub file_sync_enabled: i64,
+    pub file_sync_path: Option<String>,
 }

@@ -271,6 +271,8 @@ struct ConfigurationRow {
     bucket_uri: Option<String>,
     bucket_name: Option<String>,
     bucket_region: Option<String>,
+    file_sync_enabled: i64,
+    file_sync_path: Option<String>,
 }
 
 #[derive(Debug, Serialize, FromRow)]
@@ -569,7 +571,7 @@ const KARMA_FIELD_SPECS: [FieldSpec; 7] = [
     },
 ];
 
-const CONFIGURATION_FIELD_SPECS: [FieldSpec; 16] = [
+const CONFIGURATION_FIELD_SPECS: [FieldSpec; 18] = [
     FieldSpec {
         name: "quantity",
         kind: FieldKind::NullableInteger,
@@ -632,6 +634,14 @@ const CONFIGURATION_FIELD_SPECS: [FieldSpec; 16] = [
     },
     FieldSpec {
         name: "bucket_region",
+        kind: FieldKind::NullableText,
+    },
+    FieldSpec {
+        name: "file_sync_enabled",
+        kind: FieldKind::BooleanInteger,
+    },
+    FieldSpec {
+        name: "file_sync_path",
         kind: FieldKind::NullableText,
     },
 ];
@@ -764,7 +774,7 @@ impl BackendApiStore {
             ),
             ApiTable::Configuration => serialize_value(
                 sqlx::query_as::<_, ConfigurationRow>(
-                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region FROM configuration ORDER BY id",
+                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region, file_sync_enabled, file_sync_path FROM configuration ORDER BY id",
                 )
                 .fetch_all(db)
                 .await
@@ -890,7 +900,7 @@ impl BackendApiStore {
             ),
             ApiTable::Configuration => serialize_value(
                 sqlx::query_as::<_, ConfigurationRow>(
-                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region FROM configuration WHERE id = ?",
+                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region, file_sync_enabled, file_sync_path FROM configuration WHERE id = ?",
                 )
                 .bind(id)
                 .fetch_one(db)
@@ -1876,26 +1886,56 @@ fn parse_text_value(field_name: &str, value: &Value) -> Result<String, Error> {
 }
 
 fn parse_i64_value(field_name: &str, value: &Value) -> Result<i64, Error> {
-    value.as_i64().ok_or_else(|| {
-        Error::new(
-            ErrorKind::InvalidInput,
-            format!("Expected integer for field {field_name}"),
-        )
-    })
+    if let Some(integer) = value.as_i64() {
+        return Ok(integer);
+    }
+
+    if let Some(text) = value.as_str() {
+        return text.trim().parse::<i64>().map_err(|error| {
+            Error::new(
+                ErrorKind::InvalidInput,
+                format!("Expected integer for field {field_name}: {error}"),
+            )
+        });
+    }
+
+    Err(Error::new(
+        ErrorKind::InvalidInput,
+        format!("Expected integer for field {field_name}"),
+    ))
 }
 
 fn parse_f64_value(field_name: &str, value: &Value) -> Result<f64, Error> {
-    value.as_f64().ok_or_else(|| {
-        Error::new(
-            ErrorKind::InvalidInput,
-            format!("Expected number for field {field_name}"),
-        )
-    })
+    if let Some(number) = value.as_f64() {
+        return Ok(number);
+    }
+
+    if let Some(text) = value.as_str() {
+        return text.trim().parse::<f64>().map_err(|error| {
+            Error::new(
+                ErrorKind::InvalidInput,
+                format!("Expected number for field {field_name}: {error}"),
+            )
+        });
+    }
+
+    Err(Error::new(
+        ErrorKind::InvalidInput,
+        format!("Expected number for field {field_name}"),
+    ))
 }
 
 fn parse_bool_i64_value(field_name: &str, value: &Value) -> Result<i64, Error> {
     if let Some(boolean) = value.as_bool() {
         return Ok(i64::from(boolean));
+    }
+
+    if let Some(text) = value.as_str() {
+        match text.trim().to_ascii_lowercase().as_str() {
+            "true" => return Ok(1),
+            "false" => return Ok(0),
+            _ => {}
+        }
     }
 
     let integer = parse_i64_value(field_name, value)?;

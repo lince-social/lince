@@ -8,6 +8,106 @@ use std::{
 
 use crate::karma::{deliver_record_karma, refresh_karma_cache};
 
+pub async fn execute_record_insert_returning_id(
+    services: InjectedServices,
+    sql: impl Into<String>,
+    params: Vec<SqlParameter>,
+) -> Result<WriteOutcome, Error> {
+    let outcome = services
+        .writer
+        .execute_statement_returning_id(sql.into(), params)
+        .await?;
+    if outcome.rows_affected > 0
+        && let Some(id) = outcome.last_insert_rowid
+    {
+        handle_record_change(services, [id as u32]).await?;
+    }
+    Ok(outcome)
+}
+
+pub async fn execute_record_update(
+    services: InjectedServices,
+    record_ids: impl IntoIterator<Item = u32>,
+    sql: impl Into<String>,
+    params: Vec<SqlParameter>,
+) -> Result<WriteOutcome, Error> {
+    let ids = record_ids.into_iter().collect::<Vec<_>>();
+    let outcome = execute_statement(services.clone(), sql, params).await?;
+    if outcome.rows_affected > 0 {
+        handle_record_change(services, ids).await?;
+    }
+    Ok(outcome)
+}
+
+pub async fn execute_record_delete(
+    services: InjectedServices,
+    id: u32,
+    sql: impl Into<String>,
+    params: Vec<SqlParameter>,
+) -> Result<WriteOutcome, Error> {
+    let outcome = execute_statement(services.clone(), sql, params).await?;
+    if outcome.rows_affected > 0 {
+        handle_record_change(services, [id]).await?;
+    }
+    Ok(outcome)
+}
+
+pub async fn insert_record_from_file_sync(
+    services: InjectedServices,
+    head: String,
+    body: String,
+) -> Result<WriteOutcome, Error> {
+    execute_record_insert_returning_id(
+        services,
+        "INSERT INTO record(head, body) VALUES (?, ?) RETURNING id",
+        vec![
+            crate::file_sync::text_param(head),
+            crate::file_sync::text_param(body),
+        ],
+    )
+    .await
+}
+
+pub async fn update_record_head_body_from_file_sync(
+    services: InjectedServices,
+    id: i64,
+    head: String,
+    body: String,
+) -> Result<WriteOutcome, Error> {
+    if id <= 0 {
+        return Ok(crate::file_sync::empty_outcome());
+    }
+
+    execute_record_update(
+        services,
+        [id as u32],
+        "UPDATE record SET head = ?, body = ? WHERE id = ?",
+        vec![
+            crate::file_sync::text_param(head),
+            crate::file_sync::text_param(body),
+            SqlParameter::Integer(id),
+        ],
+    )
+    .await
+}
+
+pub async fn delete_record_from_file_sync(
+    services: InjectedServices,
+    id: i64,
+) -> Result<WriteOutcome, Error> {
+    if id <= 0 {
+        return Ok(crate::file_sync::empty_outcome());
+    }
+
+    execute_record_delete(
+        services,
+        id as u32,
+        "DELETE FROM record WHERE id = ?",
+        vec![SqlParameter::Integer(id)],
+    )
+    .await
+}
+
 pub async fn execute_sql(
     services: InjectedServices,
     sql: impl Into<String>,
@@ -46,7 +146,7 @@ pub async fn table_patch_row(
     .await?;
 
     if table == "record" && _outcome.rows_affected > 0 {
-        deliver_record_karma(services.clone(), [id as u32]).await?;
+        handle_record_change(services.clone(), [id as u32]).await?;
     }
     if needs_karma_refresh && _outcome.rows_affected > 0 {
         refresh_karma_cache(services.clone()).await?;
@@ -75,7 +175,7 @@ pub async fn table_delete_row(
     .await?;
 
     if table == "record" && _outcome.rows_affected > 0 {
-        deliver_record_karma(services.clone(), [id as u32]).await?;
+        handle_record_change(services.clone(), [id as u32]).await?;
     }
     if needs_karma_refresh && _outcome.rows_affected > 0 {
         refresh_karma_cache(services.clone()).await?;
@@ -105,7 +205,7 @@ pub async fn table_insert_row(
             && outcome.rows_affected > 0
             && let Some(id) = outcome.last_insert_rowid
         {
-            deliver_record_karma(services.clone(), [id as u32]).await?;
+            handle_record_change(services.clone(), [id as u32]).await?;
         }
         if needs_karma_refresh && outcome.rows_affected > 0 {
             refresh_karma_cache(services.clone()).await?;
@@ -143,7 +243,7 @@ pub async fn table_insert_row(
         && outcome.rows_affected > 0
         && let Some(id) = outcome.last_insert_rowid
     {
-        deliver_record_karma(services.clone(), [id as u32]).await?;
+        handle_record_change(services.clone(), [id as u32]).await?;
     }
     if needs_karma_refresh && outcome.rows_affected > 0 {
         refresh_karma_cache(services.clone()).await?;
@@ -246,7 +346,7 @@ pub async fn set_record_quantity(
     .await?;
 
     if outcome.rows_affected > 0 {
-        deliver_record_karma(services.clone(), [id]).await?;
+        handle_record_change(services.clone(), [id]).await?;
     }
 
     Ok(())
@@ -322,4 +422,16 @@ fn parse_i64(value: &str) -> Result<i64, Error> {
             format!("Expected integer identifier, got {value}: {error}"),
         )
     })
+}
+
+async fn handle_record_change(
+    services: InjectedServices,
+    record_ids: impl IntoIterator<Item = u32>,
+) -> Result<(), Error> {
+    let ids = record_ids.into_iter().collect::<Vec<_>>();
+    if !ids.is_empty() {
+        deliver_record_karma(services.clone(), ids).await?;
+    }
+    crate::file_sync::sync_after_record_change(services).await?;
+    Ok(())
 }

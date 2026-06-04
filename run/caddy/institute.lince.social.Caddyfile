@@ -1,4 +1,4 @@
-manas.lince.social {
+institute.lince.social {
     encode gzip zstd
     reverse_proxy 127.0.0.1:6174
 }

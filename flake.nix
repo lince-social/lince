@@ -96,7 +96,7 @@
         system = "x86_64-linux";
         specialArgs = { inherit self; };
         modules = [
-          ./run/nixos/configuration.nix
+          ./scripts/deploy/nixos/configuration.nix
         ];
       };
     };

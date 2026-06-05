@@ -29,7 +29,7 @@ usage() {
 Install Lince from a published binary.
 
 Usage:
-  ./run/install.sh [options]
+  ./scripts/install/install.sh [options]
 
 Options:
   --version <tag>      Release tag to install. Defaults to "rolling".
@@ -283,7 +283,7 @@ log "Optional ways to keep it running:"
 log "  Docker: docker run -d --name lince --restart unless-stopped -p 6174:6174 -v lince-data:/var/lib/lince ghcr.io/lince-social/lince:rolling"
 
 if [ "$(uname -s)" = "Linux" ]; then
-    log "  systemd: adapt https://raw.githubusercontent.com/${LINCE_REPOSITORY}/main/run/systemd/lince.service"
+    log "  systemd: use scripts/install/install-system-service.sh"
 fi
 
 if ! path_has_dir "$BIN_DIR"; then

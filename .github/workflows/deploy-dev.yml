@@ -84,26 +84,8 @@ jobs:
           command_timeout: 10m
           script: |
             set -euo pipefail
-            REPO_DIR=/root/git/lince-social/lince
-            BRANCH=dev
-            SERVICE_NAME=lince
-            REMOTE_BINARY=/tmp/lince-deploy/deploy-artifact/lince
-
-            cd "$REPO_DIR"
-
-            git fetch origin "$BRANCH"
-            git checkout "$BRANCH"
-            git reset --hard "origin/$BRANCH"
-
-            install -d "$REPO_DIR/target/release"
-            install -m 755 "$REMOTE_BINARY" "$REPO_DIR/target/release/lince"
-
-            bash ./run/systemd/install-system-service.sh \
-              --service-name "$SERVICE_NAME" \
-              --description "Lince Social HTTP API" \
-              --user root \
-              --working-directory "$REPO_DIR" \
-              --exec-start "$REPO_DIR/target/release/lince --http-api-only"
-
-            sudo systemctl restart "$SERVICE_NAME"
-            sudo systemctl status "$SERVICE_NAME" --no-pager -l
+            REPO_DIR=/root/git/lince-social/lince \
+            BRANCH=dev \
+            SERVICE_NAME=lince \
+            REMOTE_BINARY=/tmp/lince-deploy/deploy-artifact/lince \
+            bash /root/git/lince-social/lince/scripts/deploy/dev.sh install-remote-binary

@@ -65,6 +65,6 @@ in
 
   services.caddy = {
     enable = true;
-    configFile = ../caddy/manas.lince.social.Caddyfile;
+    configFile = ../caddy/Caddyfile;
   };
 }

@@ -37,10 +37,10 @@ The hosted installer is meant for macOS and glibc-based Linux systems. It instal
 curl -fsSL https://lince.social/install.sh | bash
 ```
 
-Inside this repo, the canonical script lives at `run/install.sh`:
+Inside this repo, the canonical script lives at `scripts/install/install.sh`:
 
 ```bash
-./run/install.sh
+./scripts/install/install.sh
 ```
 
 To pin a specific release or install somewhere else:
@@ -158,13 +158,13 @@ For those that want to compile the latest and have [cargo](https://www.rust-lang
 cargo run
 ```
 
-To run the trail browser regression mode locally, use `./run/browser-watch-tests.sh --jobs 10` to execute all browser tests in headed Chromium with `browser-watch`; if you want the raw command, use `cargo test -p lince-web --features browser-watch browser_ -- --nocapture --test-threads=10`.
+To run the trail browser regression mode locally, use `./scripts/other/browser-watch-tests.sh --jobs 10` to execute all browser tests in headed Chromium with `browser-watch`; if you want the raw command, use `cargo test -p lince-web --features browser-watch browser_ -- --nocapture --test-threads=10`.
 
 ### Keeping it running
 
 The installer only installs the binary. If you want Lince to stay up after boot, use your own process supervisor.
 
-- On Linux with `systemd`, start from [run/systemd/lince.service](run/systemd/lince.service).
+- On Linux with `systemd`, use [`scripts/install/install-system-service.sh`](scripts/install/install-system-service.sh).
 - With Docker or Podman, use the container command above with `--restart unless-stopped`.
 
 ### Extra

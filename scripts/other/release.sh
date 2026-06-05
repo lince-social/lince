@@ -66,4 +66,4 @@ git commit -m "chore(release): ${version}"
 git tag -a "$version" -m "$version"
 git push origin main "$version"
 gh run list --workflow=build-release --limit 1 --json url -q '.[0].url'
-echo "If you also want cargo install support from crates.io, run ./run/publish-crates.sh"
+echo "If you also want cargo install support from crates.io, run ./scripts/other/publish-crates.sh"

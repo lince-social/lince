@@ -5,9 +5,8 @@ use sqlx::{
 use std::{fs::create_dir_all, io::Error, path::PathBuf, time::Duration};
 
 fn sqlite_db_path() -> Result<PathBuf, Error> {
-    let config_dir = dirs::config_dir()
+    let lince_config_dir: PathBuf = utils::config::lince_data_dir()
         .ok_or_else(|| Error::other("Unable to resolve user config directory"))?;
-    let lince_config_dir: PathBuf = config_dir.join("lince");
     create_dir_all(&lince_config_dir)?;
     Ok(lince_config_dir.join("lince.db"))
 }

@@ -8,12 +8,12 @@ use std::io::Error;
 /// It's safe to run multiple times after schema bootstrap has completed.
 ///
 /// Usage:
-/// - call `persistence::bootstrap_database(&db).await?` in the normal app path
-/// - or call `persistence::seeder::seed(&*db).await?` only after schema bootstrap
+/// - call `persistence::bootstrap_database(&db, local_base_url).await?` in the normal app path
+/// - or call `persistence::seeder::seed(&*db, local_base_url).await?` only after schema bootstrap
 ///
 /// This implementation avoids using workspace macros so it doesn't require
 /// compile-time query macros or macro imports; all queries are executed at runtime.
-pub async fn seed(db: &Pool<Sqlite>) -> Result<(), Error> {
+pub async fn seed(db: &Pool<Sqlite>, local_base_url: &str) -> Result<(), Error> {
     sqlx::query(
         "INSERT INTO role(name)
          SELECT 'admin'
@@ -125,11 +125,12 @@ pub async fn seed(db: &Pool<Sqlite>) -> Result<(), Error> {
 
     sqlx::query(
         "INSERT INTO organ(id, name, base_url)
-         SELECT 1, 'Local Lince', 'http://127.0.0.1:6174'
+         SELECT 1, 'Local Lince', ?
          WHERE NOT EXISTS (
             SELECT 1 FROM organ WHERE id = 1
          )",
     )
+    .bind(local_base_url)
     .execute(&*db)
     .await
     .map_err(Error::other)?;

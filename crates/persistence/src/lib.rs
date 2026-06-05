@@ -11,11 +11,11 @@ use {
     std::io::Error,
 };
 
-pub async fn bootstrap_database(db: &Pool<Sqlite>) -> Result<(), Error> {
+pub async fn bootstrap_database(db: &Pool<Sqlite>, local_base_url: &str) -> Result<(), Error> {
     sqlx::migrate!("../../migrations")
         .run(db)
         .await
         .map_err(Error::other)?;
-    seeder::seed(db).await?;
+    seeder::seed(db, local_base_url).await?;
     Ok(())
 }

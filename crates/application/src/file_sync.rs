@@ -93,9 +93,9 @@ fn resolve_sync_path(configured_path: Option<&str>) -> Result<PathBuf, Error> {
         return Ok(path);
     }
 
-    let config_dir = dirs::config_dir()
+    let config_dir = utils::config::lince_data_dir()
         .ok_or_else(|| Error::other("Unable to resolve user config directory"))?;
-    Ok(config_dir.join("lince").join("files"))
+    Ok(config_dir.join("files"))
 }
 
 async fn watch_file_sync_dir(services: InjectedServices, path: PathBuf) {

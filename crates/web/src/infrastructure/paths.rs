@@ -32,9 +32,9 @@ pub fn sand_dir() -> PathBuf {
 }
 
 pub fn web_config_dir() -> PathBuf {
-    config_root_dir().join("lince").join("web")
+    config_root_dir().join("web")
 }
 
 fn config_root_dir() -> PathBuf {
-    dirs::config_dir().unwrap_or_else(|| crate_root_dir().join(".config"))
+    utils::config::lince_data_dir().unwrap_or_else(|| crate_root_dir().join(".config").join("lince"))
 }

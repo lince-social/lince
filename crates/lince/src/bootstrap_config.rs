@@ -68,9 +68,9 @@ pub fn load_or_init_bootstrap_config() -> Result<BootstrapConfig, Error> {
 }
 
 fn bootstrap_config_path() -> Result<PathBuf, Error> {
-    let config_dir = dirs::config_dir()
+    let config_dir = utils::config::lince_data_dir()
         .ok_or_else(|| Error::other("Unable to resolve user config directory"))?;
-    Ok(config_dir.join("lince").join("lince.toml"))
+    Ok(config_dir.join("lince.toml"))
 }
 
 fn persist_bootstrap_config(path: &Path, config: &BootstrapConfigFile) -> Result<(), Error> {

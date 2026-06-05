@@ -25,9 +25,12 @@ use persistence::{
 };
 #[cfg(feature = "karma")]
 use std::time::Duration;
+#[cfg(feature = "http")]
+use std::net::SocketAddr;
 use std::{
     env,
     io::{self, Error, IsTerminal, Write},
+    path::PathBuf,
     sync::Arc,
 };
 #[cfg(feature = "tui")]
@@ -48,14 +51,26 @@ async fn main() -> Result<(), Error> {
     }
     set_quiet(has_arg(&args, "--quiet"));
 
+    if let Some(data_dir) = arg_value(&args, "--data-dir") {
+        utils::config::set_lince_data_dir_override(PathBuf::from(data_dir))?;
+    }
+
     let bootstrap = bootstrap_config::load_or_init_bootstrap_config()?;
     #[cfg(feature = "http")]
-    let listen_addr = arg_value(&args, "--listen-addr");
+    let listen_addr = resolve_listen_addr(&args)?;
+    let local_base_url = local_base_url(
+        #[cfg(feature = "http")]
+        listen_addr.as_deref(),
+        #[cfg(not(feature = "http"))]
+        None,
+    )?;
 
     let db = Arc::new(connection().await.inspect_err(|e| {
         log(LogEntry::Error(e.kind(), e.to_string()));
     })?);
-    bootstrap_database(&db).await.map_err(Error::other)?;
+    bootstrap_database(&db, &local_base_url)
+        .await
+        .map_err(Error::other)?;
 
     #[cfg(any(feature = "gui", feature = "http", feature = "tui", feature = "karma"))]
     let frontend_enabled = should_start_frontend(&args);
@@ -138,6 +153,9 @@ fn print_help() {
     println!();
     println!("Options:");
     println!("  -h, --help            Show this help message");
+    println!("      --data-dir <path> Override the Lince data directory");
+    #[cfg(feature = "http")]
+    println!("      --port <port>     Override only the HTTP listen port");
     println!("      --listen-addr <addr>  Override the HTTP listen address");
     println!("      --quiet          Suppress normal status output");
     #[cfg(feature = "http")]
@@ -163,10 +181,51 @@ fn has_arg(args: &[String], expected: &str) -> bool {
     args.iter().any(|arg| arg == expected)
 }
 
-#[cfg(feature = "http")]
 fn arg_value(args: &[String], expected: &str) -> Option<String> {
     args.windows(2)
         .find_map(|window| (window[0] == expected).then(|| window[1].clone()))
+}
+
+#[cfg(feature = "http")]
+fn resolve_listen_addr(args: &[String]) -> Result<Option<String>, Error> {
+    if let Some(listen_addr) = arg_value(args, "--listen-addr") {
+        validate_listen_addr(&listen_addr)?;
+        return Ok(Some(listen_addr));
+    }
+
+    let Some(port) = arg_value(args, "--port") else {
+        return Ok(None);
+    };
+    let port = port
+        .parse::<u16>()
+        .map_err(|error| Error::other(format!("Invalid port `{port}`: {error}")))?;
+    let listen_addr = format!("127.0.0.1:{port}");
+    validate_listen_addr(&listen_addr)?;
+    Ok(Some(listen_addr))
+}
+
+#[cfg(feature = "http")]
+fn validate_listen_addr(listen_addr: &str) -> Result<(), Error> {
+    listen_addr
+        .parse::<SocketAddr>()
+        .map(|_| ())
+        .map_err(|error| Error::other(format!("Invalid listen address `{listen_addr}`: {error}")))
+}
+
+fn local_base_url(listen_addr: Option<&str>) -> Result<String, Error> {
+    const DEFAULT_PORT: u16 = 6174;
+
+    let port = match listen_addr {
+        Some(listen_addr) => listen_addr
+            .parse::<SocketAddr>()
+            .map_err(|error| {
+                Error::other(format!("Invalid listen address `{listen_addr}`: {error}"))
+            })?
+            .port(),
+        None => DEFAULT_PORT,
+    };
+
+    Ok(format!("http://127.0.0.1:{port}"))
 }
 
 #[cfg(any(feature = "gui", feature = "http", feature = "tui", feature = "karma"))]

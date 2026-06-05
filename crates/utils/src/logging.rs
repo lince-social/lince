@@ -32,7 +32,7 @@ pub fn log(entry: LogEntry) {
     let timestamp: DateTime<Utc> = Utc::now();
     let date = timestamp.format("%Y-%m-%d").to_string();
     let time = timestamp.format("%Y-%m-%d %H:%M:%S").to_string();
-    let Some(config_dir) = dirs::config_dir() else {
+    let Some(config_dir) = crate::config::lince_data_dir() else {
         error(format!(
             "{} | [LOG ERROR]: Unable to resolve user config directory",
             time
@@ -40,7 +40,6 @@ pub fn log(entry: LogEntry) {
         return;
     };
     let log_dir: PathBuf = config_dir
-        .join("lince")
         .join("log")
         .join(timestamp.format("%Y").to_string())
         .join(timestamp.format("%m").to_string());

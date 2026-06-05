@@ -6,8 +6,7 @@ dry_run=false
 
 usage() {
     cat <<'EOF'
-Usage: ./run/publish-crates.sh [--dry-run]
-
+Usage: ./scripts/other/publish-crates.sh [--dry-run]
 Publishes the internal lince-* crates first and the lince binary last.
 Use --dry-run to validate the publish order without uploading crates.
 EOF

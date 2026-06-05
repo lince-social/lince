@@ -36,7 +36,7 @@ usage() {
 Mirror a RustFS bucket into a backup bucket with mc.
 
 Usage:
-  ./run/backup-rustfs.sh
+  ./scripts/other/backup-rustfs.sh
 
 Environment overrides:
   RUSTFS_BACKUP_SOURCE_ALIAS

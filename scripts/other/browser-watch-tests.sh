@@ -12,7 +12,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     -h|--help)
       cat <<'EOF'
-Usage: run/browser-watch-tests.sh [--jobs N]
+Usage: scripts/other/browser-watch-tests.sh [--jobs N]
 
 Runs all browser regression tests in headed watch mode.
 EOF

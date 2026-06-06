@@ -2,6 +2,7 @@ pub mod ai;
 pub mod backend;
 pub mod board;
 pub mod integrations;
+pub mod notifications;
 pub mod operation;
 pub mod packages;
 pub mod servers;

@@ -47,9 +47,23 @@ pub async fn execute_record_delete(
 ) -> Result<WriteOutcome, Error> {
     let outcome = execute_statement(services.clone(), sql, params).await?;
     if outcome.rows_affected > 0 {
+        cleanup_deleted_record_sidecars(services.clone(), id).await?;
         handle_record_change(services, [id]).await?;
     }
     Ok(outcome)
+}
+
+async fn cleanup_deleted_record_sidecars(
+    services: InjectedServices,
+    id: u32,
+) -> Result<WriteOutcome, Error> {
+    let id = i64::from(id);
+    execute_statement(
+        services,
+        "DELETE FROM record_link WHERE record_id = ? OR (target_table = 'record' AND target_id = ?)",
+        vec![SqlParameter::Integer(id), SqlParameter::Integer(id)],
+    )
+    .await
 }
 
 pub async fn insert_record_from_file_sync(

@@ -179,6 +179,10 @@ pub async fn login_server(
         )
         .await
         .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
+    state
+        .services
+        .notifications
+        .dismiss(&format!("organ-login-required-{}", server.id));
 
     let mut response_headers = HeaderMap::new();
     response_headers.insert(

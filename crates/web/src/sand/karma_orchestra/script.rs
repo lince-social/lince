@@ -143,9 +143,47 @@ pub(crate) fn script() -> String {
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-            throw new Error(data?.message || data?.error || "Action failed");
+            const error = new Error(data?.message || data?.error || "Action failed");
+            error.payload = parseActionErrorPayload(data);
+            throw error;
         }
         return data;
+    }
+
+    function parseActionErrorPayload(data) {
+        const raw = data?.error || data?.message;
+        if (!raw || typeof raw !== "string") return null;
+        try {
+            return JSON.parse(raw);
+        } catch (_error) {
+            return null;
+        }
+    }
+
+    function isKarmaLoopConfirmation(error) {
+        return error?.payload?.status === "confirmation_required" &&
+            error?.payload?.confirmationKind === "karma_check_loop";
+    }
+
+    function karmaLoopConfirmationText(report) {
+        const cycles = Array.isArray(report?.cycles) ? report.cycles : [];
+        const touched = Array.isArray(report?.touchedKarmaIds) ? report.touchedKarmaIds : [];
+        const cycleText = cycles
+            .map((cycle) => (cycle.karmaIds || []).join(" -> "))
+            .filter(Boolean)
+            .join("\\n");
+        const touchedText = touched.length ? "Touched Karma: " + touched.join(", ") + "\\n" : "";
+        return touchedText + "This change participates in Karma loop(s):\\n" + (cycleText || "cycle details unavailable") + "\\n\\nContinue anyway?";
+    }
+
+    async function postActionWithLoopConfirmation(action, payload) {
+        try {
+            return await postAction(action, payload);
+        } catch (error) {
+            if (!isKarmaLoopConfirmation(error)) throw error;
+            if (!window.confirm(karmaLoopConfirmationText(error.payload))) throw error;
+            return await postAction(action, { ...payload, confirmKarmaCheckLoops: true });
+        }
     }
 
     async function loadContract() {
@@ -517,7 +555,7 @@ pub(crate) fn script() -> String {
     function richCodeHtml(code) {
         const raw = String(code || "");
         return escapeHtml(raw)
-            .replace(/@((?:(?:sr|sync-record)(?:nt|t|n)q?h?b?)|(?:sync-record-(?:node-and-tree|node|tree)-(?:quantity-head-body|quantity-head|quantity-body|head-body|quantity|head|body)-))(\d+)/g, (_match, prefix, id) => {
+            .replace(/@((?:(?:sr|sync-record)(?:org\d+)?(?:nt|t|n)q?h?b?)|(?:sync-record(?:-organ-\d+)?-(?:node-and-tree|node|tree)-(?:quantity-head-body|quantity-head|quantity-body|head-body|quantity|head|body)-))(\d+)/g, (_match, prefix, id) => {
                 const machineCode = prefix + id;
                 return `<span class="tokenChip" contenteditable="false" data-code="@${escapeHtml(machineCode)}">${escapeHtml(syncTokenHuman(machineCode))}</span>`;
             })
@@ -531,7 +569,7 @@ pub(crate) fn script() -> String {
 
     function humanReadableCode(code) {
         return String(code || "")
-            .replace(/@?((?:(?:sr|sync-record)(?:nt|t|n)q?h?b?)|(?:sync-record-(?:node-and-tree|node|tree)-(?:quantity-head-body|quantity-head|quantity-body|head-body|quantity|head|body)-))(\d+)/g, (_match, prefix, id) => {
+            .replace(/@?((?:(?:sr|sync-record)(?:org\d+)?(?:nt|t|n)q?h?b?)|(?:sync-record(?:-organ-\d+)?-(?:node-and-tree|node|tree)-(?:quantity-head-body|quantity-head|quantity-body|head-body|quantity|head|body)-))(\d+)/g, (_match, prefix, id) => {
                 return syncTokenHuman(prefix + id);
             })
             .replace(/@?(rq|f|c|sql)(\d+)/g, (_match, prefix, id) => {
@@ -542,17 +580,17 @@ pub(crate) fn script() -> String {
     }
 
     function syncTokenHuman(code) {
-        const match = String(code || "").match(/^(?:sr|sync-record)(nt|t|n)(q?h?b?)(\d+)$/);
+        const match = String(code || "").match(/^(?:sr|sync-record)(?:org(\d+))?(nt|t|n)(q?h?b?)(\d+)$/);
         if (!match) {
-            const humanMatch = String(code || "").match(/^sync-record-(node-and-tree|node|tree)-(quantity-head-body|quantity-head|quantity-body|head-body|quantity|head|body)-(\d+)$/);
+            const humanMatch = String(code || "").match(/^sync-record(?:-organ-(\d+))?-(node-and-tree|node|tree)-(quantity-head-body|quantity-head|quantity-body|head-body|quantity|head|body)-(\d+)$/);
             if (!humanMatch) return code;
-            const [, scope, fields, id] = humanMatch;
+            const [, organId, scope, fields, id] = humanMatch;
             const root = tokenByCode("rq" + id)?.human || fallbackTokenHuman("rq", id);
-            return `sync-record ${syncScopeHuman(scope)} ${syncFieldsHuman(fields)} ${root}`;
+            return `sync-record ${organId ? "organ " + organId + " " : ""}${syncScopeHuman(scope)} ${syncFieldsHuman(fields)} ${root}`;
         }
-        const [, scope, fields, id] = match;
+        const [, organId, scope, fields, id] = match;
         const root = tokenByCode("rq" + id)?.human || fallbackTokenHuman("rq", id);
-        return `sync-record ${syncScopeHuman(scope)} ${syncFieldsHuman(fields)} ${root}`;
+        return `sync-record ${organId ? "organ " + organId + " " : ""}${syncScopeHuman(scope)} ${syncFieldsHuman(fields)} ${root}`;
     }
 
     function syncScopeHuman(scope) {
@@ -883,7 +921,7 @@ pub(crate) fn script() -> String {
             code,
         };
         try {
-            const data = await postAction(action, payload);
+            const data = await postActionWithLoopConfirmation(action, payload);
             state.karmaEditor = prepareEditorState(data.editor);
             renderKarmaEditor();
             await loadGraph();
@@ -911,7 +949,7 @@ pub(crate) fn script() -> String {
         setEditorError("");
         try {
             const action = state.karmaEditor?.mode === "update" ? "update-karma" : "create-karma";
-            const data = await postAction(action, karmaPayload());
+            const data = await postActionWithLoopConfirmation(action, karmaPayload());
             state.karmaEditor = prepareEditorState(data.editor);
             renderKarmaEditor();
             await loadGraph();

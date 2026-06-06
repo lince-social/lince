@@ -19,6 +19,7 @@ use axum::{
     },
     routing::{get, post},
 };
+use domain::clean::karma::Karma;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::{
@@ -106,6 +107,7 @@ pub fn router() -> Router<AppState> {
         )
         .route("/transfer/packages", post(receive_transfer_package))
         .route("/karma", get(list_karma_rows).post(create_karma_row))
+        .route("/karma/evaluate", post(evaluate_karma_row))
         .route(
             "/karma/{id}",
             get(get_karma_row)
@@ -633,6 +635,36 @@ async fn execute_karma(
 }
 
 #[utoipa::path(
+    post,
+    path = "/karma/evaluate",
+    tag = "karma",
+    request_body = serde_json::Value,
+    responses(
+        (status = 200, description = "Karma row evaluated", body = MutationResponse),
+        (status = 400, description = "Invalid payload", body = crate::presentation::http::api_error::ApiError),
+        (status = 401, description = "Missing or invalid authorization", body = crate::presentation::http::api_error::ApiError)
+    )
+)]
+async fn evaluate_karma_row(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(karma): Json<Karma>,
+) -> ApiResult<Json<MutationResponse>> {
+    let claims = authenticate_request(&state, &headers).await?;
+    state
+        .backend
+        .evaluate_karma_row(&claims, karma)
+        .await
+        .map_err(map_backend_error)?;
+    Ok(Json(MutationResponse {
+        ok: true,
+        rows_affected: 0,
+        last_insert_rowid: None,
+        row: None,
+    }))
+}
+
+#[utoipa::path(
     get,
     path = "/files",
     tag = "files",
@@ -963,6 +995,7 @@ fn map_backend_error(
         ErrorKind::NotFound => StatusCode::NOT_FOUND,
         ErrorKind::InvalidInput => StatusCode::BAD_REQUEST,
         ErrorKind::PermissionDenied => StatusCode::FORBIDDEN,
+        ErrorKind::WouldBlock => StatusCode::CONFLICT,
         _ => StatusCode::INTERNAL_SERVER_ERROR,
     };
     api_error(status, error.to_string())

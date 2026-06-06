@@ -20,6 +20,7 @@ axum = { workspace = true, features = ["json", "multipart", "ws"] }
 base64 = { workspace = true }
 chrono = { workspace = true }
 dirs = { workspace = true }
+domain = { workspace = true }
 dotenvy = { workspace = true }
 ed25519-dalek = { workspace = true }
 futures = { workspace = true }

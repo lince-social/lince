@@ -42,6 +42,7 @@ pub struct Injected {
     pub writer: WriteCoordinatorHandle,
     pub karma_cache: Arc<KarmaCache>,
     pub file_sync_config: Arc<RwLock<Option<FileSyncConfig>>>,
+    pub remote_organ_auth: Arc<RwLock<HashMap<i64, String>>>,
 }
 
 pub type InjectedServices = Arc<Injected>;
@@ -99,6 +100,7 @@ pub fn dependency_injection(
         writer,
         karma_cache: Arc::new(KarmaCache::default()),
         file_sync_config: Arc::new(RwLock::new(None)),
+        remote_organ_auth: Arc::new(RwLock::new(HashMap::new())),
     });
 
     services

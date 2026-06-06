@@ -525,7 +525,12 @@ impl KarmaOrchestraWidgetService {
                 &resolved.organ,
                 resolved.bearer_token.as_deref(),
                 "karma_condition",
-                json!({ "name": name, "condition": request.code, "quantity": 1 }),
+                json!({
+                    "name": name,
+                    "condition": request.code,
+                    "quantity": 1,
+                    "confirm_karma_check_loops": request.confirm_karma_check_loops,
+                }),
             )
             .await?;
         self.load_editor_response_with_selected(
@@ -558,7 +563,12 @@ impl KarmaOrchestraWidgetService {
                 &resolved.organ,
                 resolved.bearer_token.as_deref(),
                 "karma_consequence",
-                json!({ "name": name, "consequence": request.code, "quantity": 1 }),
+                json!({
+                    "name": name,
+                    "consequence": request.code,
+                    "quantity": 1,
+                    "confirm_karma_check_loops": request.confirm_karma_check_loops,
+                }),
             )
             .await?;
         self.load_editor_response_with_selected(
@@ -595,7 +605,11 @@ impl KarmaOrchestraWidgetService {
             resolved.bearer_token.as_deref(),
             "karma_condition",
             id,
-            json!({ "name": name, "condition": request.code }),
+            json!({
+                "name": name,
+                "condition": request.code,
+                "confirm_karma_check_loops": request.confirm_karma_check_loops,
+            }),
         )
         .await?;
         self.load_editor_response_with_selected(
@@ -633,7 +647,11 @@ impl KarmaOrchestraWidgetService {
             resolved.bearer_token.as_deref(),
             "karma_consequence",
             id,
-            json!({ "name": name, "consequence": request.code }),
+            json!({
+                "name": name,
+                "consequence": request.code,
+                "confirm_karma_check_loops": request.confirm_karma_check_loops,
+            }),
         )
         .await?;
         self.load_editor_response_with_selected(
@@ -671,7 +689,7 @@ impl KarmaOrchestraWidgetService {
                     "condition_id": request.condition_id,
                     "operator": normalize_operator(&request.operator)?,
                     "consequence_id": request.consequence_id,
-                    "confirm_karma_check_loops": true,
+                    "confirm_karma_check_loops": request.confirm_karma_check_loops,
                 }),
             )
             .await?;
@@ -715,7 +733,7 @@ impl KarmaOrchestraWidgetService {
                 "condition_id": request.condition_id,
                 "operator": normalize_operator(&request.operator)?,
                 "consequence_id": request.consequence_id,
-                "confirm_karma_check_loops": true,
+                "confirm_karma_check_loops": request.confirm_karma_check_loops,
             }),
         )
         .await?;
@@ -1166,7 +1184,7 @@ impl KarmaOrchestraWidgetService {
             self.backend
                 .get_table_row(&local_host_subject(), "view", view_id)
                 .await
-                .map_err(|error| KarmaOrchestraWidgetError::Internal(error.to_string()))?
+                .map_err(map_local_backend_error)?
         } else {
             let response = self
                 .manas
@@ -1260,7 +1278,7 @@ impl KarmaOrchestraWidgetService {
                 .backend
                 .list_table_rows(&local_host_subject(), table)
                 .await
-                .map_err(|error| KarmaOrchestraWidgetError::Internal(error.to_string()));
+                .map_err(map_local_backend_error);
         }
         let response = self
             .manas
@@ -1296,7 +1314,7 @@ impl KarmaOrchestraWidgetService {
                 .backend
                 .create_table_row(&local_host_subject(), table, object)
                 .await
-                .map_err(|error| KarmaOrchestraWidgetError::Internal(error.to_string()))?;
+                .map_err(map_local_backend_error)?;
             return Ok(outcome.last_insert_rowid);
         }
         let response = self
@@ -1336,7 +1354,7 @@ impl KarmaOrchestraWidgetService {
                 .backend
                 .update_table_row(&local_host_subject(), table, id, object)
                 .await
-                .map_err(|error| KarmaOrchestraWidgetError::Internal(error.to_string()))?;
+                .map_err(map_local_backend_error)?;
             return Ok(());
         }
         let response = self
@@ -1372,7 +1390,7 @@ impl KarmaOrchestraWidgetService {
                 .backend
                 .delete_table_row(&local_host_subject(), table, id)
                 .await
-                .map_err(|error| KarmaOrchestraWidgetError::Internal(error.to_string()))?;
+                .map_err(map_local_backend_error)?;
             return Ok(());
         }
         let response = self
@@ -1539,6 +1557,8 @@ struct ConditionMutationRequest {
     karma_id: Option<i64>,
     name: Option<String>,
     code: String,
+    #[serde(default)]
+    confirm_karma_check_loops: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -1548,6 +1568,8 @@ struct ConsequenceMutationRequest {
     karma_id: Option<i64>,
     name: Option<String>,
     code: String,
+    #[serde(default)]
+    confirm_karma_check_loops: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -1559,6 +1581,8 @@ struct KarmaMutationRequest {
     condition_id: i64,
     operator: String,
     consequence_id: i64,
+    #[serde(default)]
+    confirm_karma_check_loops: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -1865,7 +1889,7 @@ fn normalize_operator(operator: &str) -> Result<&str, KarmaOrchestraWidgetError>
 
 fn validate_consequence_code(code: &str) -> Result<(), KarmaOrchestraWidgetError> {
     let trimmed = code.trim();
-    let valid = regex::Regex::new(r"^(rq\d+|c\d+|sql\d+|(?:sr|sync-record)(?:nt|t|n)q?h?b?\d+|sync-record-(?:node-and-tree|node|tree)-(?:quantity-head-body|quantity-head|quantity-body|head-body|quantity|head|body)-\d+)$")
+    let valid = regex::Regex::new(r"^(rq\d+|c\d+|sql\d+|(?:sr|sync-record)(?:org\d+)?(?:nt|t|n)q?h?b?\d+|sync-record(?:-organ-\d+)?-(?:node-and-tree|node|tree)-(?:quantity-head-body|quantity-head|quantity-body|head-body|quantity|head|body)-\d+)$")
         .expect("valid consequence regex")
         .is_match(trimmed);
     if valid {
@@ -1874,6 +1898,14 @@ fn validate_consequence_code(code: &str) -> Result<(), KarmaOrchestraWidgetError
         Err(KarmaOrchestraWidgetError::Invalid(
             "Consequence precisa ser um unico alvo executavel.".into(),
         ))
+    }
+}
+
+fn map_local_backend_error(error: std::io::Error) -> KarmaOrchestraWidgetError {
+    if error.kind() == std::io::ErrorKind::WouldBlock {
+        KarmaOrchestraWidgetError::Invalid(error.to_string())
+    } else {
+        KarmaOrchestraWidgetError::Internal(error.to_string())
     }
 }
 

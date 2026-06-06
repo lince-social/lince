@@ -77,6 +77,7 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
     let regex_sync_exact = sync_token_exact_regex();
 
     let mut frequencies_to_update: HashMap<u32, Frequency> = HashMap::new();
+    let mut sync_snapshots: HashMap<SyncToken, SyncSourceTree> = HashMap::new();
     let active_rule_count = services
         .repository
         .karma
@@ -112,7 +113,8 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
         )
         .await?;
         condition = replace_commands(&services, &regex_command, condition).await?;
-        condition = replace_sync_tokens(&services, &regex_sync, condition).await?;
+        condition =
+            replace_sync_tokens(&services, &regex_sync, condition, &mut sync_snapshots).await?;
 
         let expr = format!("({condition}) * 1.0");
         let condition = tokio::task::spawn_blocking(move || {
@@ -128,7 +130,9 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
         }
 
         if let Some(token) = parse_sync_token(&regex_sync_exact, &karma.consequence) {
-            if let Err(error) = execute_sync_consequence(services.clone(), &token).await {
+            if let Err(error) =
+                execute_sync_consequence(services.clone(), &token, &mut sync_snapshots).await
+            {
                 log(LogEntry::Error(
                     error.kind(),
                     format!("sync consequence error on karma id {}: {}", karma.id, error),
@@ -309,6 +313,7 @@ async fn replace_sync_tokens(
     services: &InjectedServices,
     regex: &Regex,
     input: String,
+    sync_snapshots: &mut HashMap<SyncToken, SyncSourceTree>,
 ) -> Result<String, Error> {
     let mut output = input.clone();
 
@@ -316,19 +321,25 @@ async fn replace_sync_tokens(
         let Some(token) = parse_sync_captures(&caps) else {
             continue;
         };
-        let exists = services
-            .repository
-            .record
-            .get_by_id(token.record_id as u32)
-            .await
-            .is_ok();
+        let exists = if token.organ_id.is_some() {
+            load_sync_source_tree(services, &token, sync_snapshots)
+                .await
+                .is_ok()
+        } else {
+            services
+                .repository
+                .record
+                .get_by_id(token.record_id as u32)
+                .await
+                .is_ok()
+        };
         output = output.replace(&caps[0], if exists { "1" } else { "0" });
     }
 
     Ok(output)
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct SyncFields {
     quantity: bool,
     head: bool,
@@ -377,7 +388,7 @@ impl SyncFields {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 enum SyncScope {
     Node,
     Tree,
@@ -412,8 +423,9 @@ impl SyncScope {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct SyncToken {
+    organ_id: Option<i64>,
     scope: SyncScope,
     fields: SyncFields,
     record_id: i64,
@@ -428,6 +440,9 @@ fn parse_sync_token(regex: &Regex, input: &str) -> Option<SyncToken> {
 fn parse_sync_captures(caps: &regex::Captures<'_>) -> Option<SyncToken> {
     if let Some(id) = caps.name("id") {
         return Some(SyncToken {
+            organ_id: caps
+                .name("organ")
+                .and_then(|value| value.as_str().parse::<i64>().ok()),
             scope: SyncScope::from_segment(caps.name("scope")?.as_str())?,
             fields: SyncFields::from_segment(
                 caps.name("fields")
@@ -439,6 +454,9 @@ fn parse_sync_captures(caps: &regex::Captures<'_>) -> Option<SyncToken> {
     }
 
     Some(SyncToken {
+        organ_id: caps
+            .name("human_organ")
+            .and_then(|value| value.as_str().parse::<i64>().ok()),
         scope: SyncScope::from_human_segment(caps.name("human_scope")?.as_str())?,
         fields: SyncFields::from_human_segment(caps.name("human_fields")?.as_str())?,
         record_id: caps.name("human_id")?.as_str().parse::<i64>().ok()?,
@@ -447,14 +465,14 @@ fn parse_sync_captures(caps: &regex::Captures<'_>) -> Option<SyncToken> {
 
 fn sync_token_regex() -> Regex {
     Regex::new(
-        r"(?:sr|sync-record)(?P<scope>nt|t|n)(?P<fields>q?h?b?)(?P<id>\d+)|sync-record-(?P<human_scope>node-and-tree|node|tree)-(?P<human_fields>quantity-head-body|quantity-head|quantity-body|head-body|quantity|head|body)-(?P<human_id>\d+)",
+        r"(?:sr|sync-record)(?:org(?P<organ>\d+))?(?P<scope>nt|t|n)(?P<fields>q?h?b?)(?P<id>\d+)|sync-record(?:-organ-(?P<human_organ>\d+))?-(?P<human_scope>node-and-tree|node|tree)-(?P<human_fields>quantity-head-body|quantity-head|quantity-body|head-body|quantity|head|body)-(?P<human_id>\d+)",
     )
     .unwrap()
 }
 
 fn sync_token_exact_regex() -> Regex {
     Regex::new(
-        r"^(?:(?:sr|sync-record)(?P<scope>nt|t|n)(?P<fields>q?h?b?)(?P<id>\d+)|sync-record-(?P<human_scope>node-and-tree|node|tree)-(?P<human_fields>quantity-head-body|quantity-head|quantity-body|head-body|quantity|head|body)-(?P<human_id>\d+))$",
+        r"^(?:(?:sr|sync-record)(?:org(?P<organ>\d+))?(?P<scope>nt|t|n)(?P<fields>q?h?b?)(?P<id>\d+)|sync-record(?:-organ-(?P<human_organ>\d+))?-(?P<human_scope>node-and-tree|node|tree)-(?P<human_fields>quantity-head-body|quantity-head|quantity-body|head-body|quantity|head|body)-(?P<human_id>\d+))$",
     )
     .unwrap()
 }
@@ -484,6 +502,36 @@ struct SqlRecordExtensionRow {
     freestyle_data_structure: String,
 }
 
+#[derive(Debug, Clone)]
+struct SyncSourceTree {
+    records: Vec<SqlRecordRow>,
+    parent_links: Vec<SqlRecordLinkRow>,
+    record_ids: BTreeSet<i64>,
+}
+
+#[derive(Debug, Clone, FromRow)]
+struct SqlOrganRow {
+    id: i64,
+    base_url: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct RemoteRecordRow {
+    id: i64,
+    quantity: f64,
+    head: Option<String>,
+    body: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct RemoteRecordLinkRow {
+    id: i64,
+    record_id: i64,
+    link_type: String,
+    target_table: String,
+    target_id: i64,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 struct TrailSyncExtension {
     #[serde(alias = "trailRootRecordId")]
@@ -492,11 +540,192 @@ struct TrailSyncExtension {
     sync_source_record_id: i64,
 }
 
+async fn load_sync_source_tree(
+    services: &InjectedServices,
+    token: &SyncToken,
+    sync_snapshots: &mut HashMap<SyncToken, SyncSourceTree>,
+) -> Result<SyncSourceTree, Error> {
+    if let Some(existing) = sync_snapshots.get(token) {
+        return Ok(existing.clone());
+    }
+
+    let tree = if let Some(organ_id) = token.organ_id {
+        fetch_remote_sync_source_tree(services, organ_id, token.record_id).await?
+    } else {
+        load_local_sync_source_tree(services, token.record_id).await?
+    };
+    sync_snapshots.insert(*token, tree.clone());
+    Ok(tree)
+}
+
+async fn load_local_sync_source_tree(
+    services: &InjectedServices,
+    root_record_id: i64,
+) -> Result<SyncSourceTree, Error> {
+    let db = &*services.db;
+    let records = sqlx::query_as::<_, SqlRecordRow>("SELECT id, quantity, head, body FROM record")
+        .fetch_all(db)
+        .await
+        .map_err(Error::other)?;
+    let parent_links = sqlx::query_as::<_, SqlRecordLinkRow>(
+        "SELECT id, record_id, link_type, target_table, target_id FROM record_link WHERE link_type = 'parent' AND target_table = 'record'",
+    )
+    .fetch_all(db)
+    .await
+    .map_err(Error::other)?;
+    let record_ids = collect_tree_record_ids(root_record_id, &parent_links);
+    Ok(SyncSourceTree {
+        records: records
+            .into_iter()
+            .filter(|row| record_ids.contains(&row.id))
+            .collect(),
+        parent_links: parent_links
+            .into_iter()
+            .filter(|row| {
+                record_ids.contains(&row.record_id) && record_ids.contains(&row.target_id)
+            })
+            .collect(),
+        record_ids,
+    })
+}
+
+async fn fetch_remote_sync_source_tree(
+    services: &InjectedServices,
+    organ_id: i64,
+    root_record_id: i64,
+) -> Result<SyncSourceTree, Error> {
+    let organ =
+        sqlx::query_as::<_, SqlOrganRow>("SELECT id, base_url FROM organ WHERE id = ? LIMIT 1")
+            .bind(organ_id)
+            .fetch_optional(&*services.db)
+            .await
+            .map_err(Error::other)?
+            .ok_or_else(|| Error::new(ErrorKind::NotFound, "Remote organ not found"))?;
+    let bearer_token = services
+        .remote_organ_auth
+        .read()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .get(&organ.id)
+        .cloned()
+        .filter(|value| !value.trim().is_empty())
+        .ok_or_else(|| Error::new(ErrorKind::PermissionDenied, "Remote organ login missing"))?;
+    let base_url = organ.base_url.trim().trim_end_matches('/');
+    let client = reqwest::Client::builder()
+        .user_agent("lince-karma-sync/0.1")
+        .build()
+        .map_err(Error::other)?;
+
+    let records = fetch_remote_json::<Vec<RemoteRecordRow>>(
+        &client,
+        &bearer_token,
+        &format!("{base_url}/table/record"),
+    )
+    .await?;
+    let parent_links = fetch_remote_json::<Vec<RemoteRecordLinkRow>>(
+        &client,
+        &bearer_token,
+        &format!("{base_url}/table/record_link"),
+    )
+    .await?
+    .into_iter()
+    .filter(|row| row.link_type == "parent" && row.target_table == "record")
+    .map(|row| SqlRecordLinkRow {
+        id: row.id,
+        record_id: row.record_id,
+        link_type: row.link_type,
+        target_table: row.target_table,
+        target_id: row.target_id,
+    })
+    .collect::<Vec<_>>();
+    let record_ids = collect_tree_record_ids(root_record_id, &parent_links);
+    Ok(SyncSourceTree {
+        records: records
+            .into_iter()
+            .filter(|row| record_ids.contains(&row.id))
+            .map(|row| SqlRecordRow {
+                id: row.id,
+                quantity: row.quantity,
+                head: row.head,
+                body: row.body,
+            })
+            .collect(),
+        parent_links: parent_links
+            .into_iter()
+            .filter(|row| {
+                record_ids.contains(&row.record_id) && record_ids.contains(&row.target_id)
+            })
+            .collect(),
+        record_ids,
+    })
+}
+
+async fn fetch_remote_json<T: for<'de> Deserialize<'de>>(
+    client: &reqwest::Client,
+    bearer_token: &str,
+    url: &str,
+) -> Result<T, Error> {
+    let response = client
+        .get(url)
+        .bearer_auth(bearer_token)
+        .send()
+        .await
+        .map_err(Error::other)?;
+    if !response.status().is_success() {
+        return Err(Error::other(format!(
+            "Remote sync request failed with {}",
+            response.status()
+        )));
+    }
+    response.json::<T>().await.map_err(Error::other)
+}
+
+fn collect_tree_record_ids(
+    root_record_id: i64,
+    parent_links: &[SqlRecordLinkRow],
+) -> BTreeSet<i64> {
+    let mut record_ids = BTreeSet::from([root_record_id]);
+    let mut children_by_parent = HashMap::<i64, BTreeSet<i64>>::new();
+    for row in parent_links {
+        children_by_parent
+            .entry(row.target_id)
+            .or_default()
+            .insert(row.record_id);
+    }
+    let mut queue = VecDeque::from([root_record_id]);
+    while let Some(parent_id) = queue.pop_front() {
+        for child_id in children_by_parent
+            .get(&parent_id)
+            .cloned()
+            .unwrap_or_default()
+        {
+            if record_ids.insert(child_id) {
+                queue.push_back(child_id);
+            }
+        }
+    }
+    record_ids
+}
+
 async fn execute_sync_consequence(
     services: InjectedServices,
     token: &SyncToken,
+    sync_snapshots: &mut HashMap<SyncToken, SyncSourceTree>,
 ) -> Result<(), Error> {
-    let mut context = load_sync_context(&services, token.record_id).await?;
+    let mut context = load_sync_context(&services, token.record_id, None).await?;
+    let remote_source_tree = if token.organ_id.is_some() {
+        Some(load_sync_source_tree(&services, token, sync_snapshots).await?)
+    } else {
+        sync_snapshots
+            .iter()
+            .find(|(snapshot_token, _)| {
+                snapshot_token.organ_id.is_some()
+                    && snapshot_token.record_id == context.source_root_record_id
+            })
+            .map(|(_, tree)| tree.clone())
+    };
+    if let Some(source_tree) = remote_source_tree {
+        context = load_sync_context(&services, token.record_id, Some(source_tree)).await?;
+    }
     let source_root_record_id = context.source_root_record_id;
     let root_categories = context
         .categories_by_record
@@ -552,6 +781,7 @@ struct SyncContext {
 async fn load_sync_context(
     services: &InjectedServices,
     copied_root_id: i64,
+    remote_source_tree: Option<SyncSourceTree>,
 ) -> Result<SyncContext, Error> {
     let db = &*services.db;
     let records = sqlx::query_as::<_, SqlRecordRow>("SELECT id, quantity, head, body FROM record")
@@ -583,11 +813,19 @@ async fn load_sync_context(
         serde_json::from_str::<TrailSyncExtension>(&trail_extension.freestyle_data_structure)
             .map_err(Error::other)?;
 
-    let parent_links = all_links
+    let mut parent_links = all_links
         .iter()
         .filter(|row| row.link_type == "parent" && row.target_table == "record")
         .cloned()
         .collect::<Vec<_>>();
+    let mut records_by_id = records_by_id;
+    if let Some(remote) = remote_source_tree {
+        for row in remote.records {
+            records_by_id.insert(row.id, row);
+        }
+        parent_links.retain(|row| !remote.record_ids.contains(&row.record_id));
+        parent_links.extend(remote.parent_links);
+    }
     let mut children_by_parent = HashMap::<i64, BTreeSet<i64>>::new();
     for row in &parent_links {
         children_by_parent

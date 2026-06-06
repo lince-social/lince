@@ -2,7 +2,7 @@ use {
     serde::Serialize,
     std::{
         collections::HashMap,
-        sync::Arc,
+        sync::{Arc, RwLock as StdRwLock},
         time::{SystemTime, UNIX_EPOCH},
     },
     tokio::sync::RwLock,
@@ -45,11 +45,17 @@ pub struct SessionRecord {
 #[derive(Clone, Default)]
 pub struct AppAuth {
     sessions: Arc<RwLock<HashMap<String, SessionRecord>>>,
+    shared_remote_tokens: Option<Arc<StdRwLock<HashMap<i64, String>>>>,
 }
 
 impl AppAuth {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn with_shared_remote_tokens(
+        shared_remote_tokens: Arc<StdRwLock<HashMap<i64, String>>>,
+    ) -> Self {
+        Self {
+            sessions: Arc::new(RwLock::new(HashMap::new())),
+            shared_remote_tokens: Some(shared_remote_tokens),
+        }
     }
 
     pub async fn ensure_session(&self, token: Option<&str>) -> (String, bool) {
@@ -100,12 +106,22 @@ impl AppAuth {
         let Some(session) = sessions.get_mut(token) else {
             return Err("Sessao local ausente.".into());
         };
+        let server_id = server_id.to_string();
+        let bearer_token = bearer_token.into();
+        if let Ok(server_id_i64) = server_id.parse::<i64>()
+            && let Some(shared) = &self.shared_remote_tokens
+        {
+            shared
+                .write()
+                .unwrap_or_else(|poisoned| poisoned.into_inner())
+                .insert(server_id_i64, bearer_token.clone());
+        }
         session.server_sessions.insert(
-            server_id.to_string(),
+            server_id,
             RemoteServerSession {
                 session_state: RemoteServerSessionState::Connected,
                 username_hint: username_hint.into(),
-                bearer_token: bearer_token.into(),
+                bearer_token,
                 connected_at_unix: Some(current_unix_timestamp()),
                 last_error: String::new(),
             },
@@ -129,6 +145,14 @@ impl AppAuth {
             server_session.connected_at_unix = None;
             server_session.last_error.clear();
         }
+        if let Ok(server_id_i64) = server_id.parse::<i64>()
+            && let Some(shared) = &self.shared_remote_tokens
+        {
+            shared
+                .write()
+                .unwrap_or_else(|poisoned| poisoned.into_inner())
+                .remove(&server_id_i64);
+        }
     }
 
     pub async fn expire_server_session(
@@ -151,6 +175,14 @@ impl AppAuth {
             server_session.bearer_token.clear();
             server_session.connected_at_unix = None;
             server_session.last_error = message.into();
+        }
+        if let Ok(server_id_i64) = server_id.parse::<i64>()
+            && let Some(shared) = &self.shared_remote_tokens
+        {
+            shared
+                .write()
+                .unwrap_or_else(|poisoned| poisoned.into_inner())
+                .remove(&server_id_i64);
         }
     }
 

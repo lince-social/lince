@@ -9,7 +9,15 @@ pub(super) fn body() -> Markup {
                     p id="transfer-status" class="status" data-tone="idle" { "Loading" }
                 }
                 div class="topActions" {
-                    button type="button" data-action="refresh" { "Refresh" }
+                    button
+                        type="button"
+                        class="iconButton"
+                        data-action="refresh"
+                        aria-label="Refresh"
+                        title="Refresh"
+                    {
+                        "↻"
+                    }
                 }
             }
 

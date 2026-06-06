@@ -393,6 +393,14 @@ impl BackendApiService {
         karma_deliver(self.services.clone(), vec![karma]).await
     }
 
+    pub async fn evaluate_karma_row(
+        &self,
+        _claims: &AuthSubject,
+        karma: domain::clean::karma::Karma,
+    ) -> Result<(), Error> {
+        karma_deliver(self.services.clone(), vec![karma]).await
+    }
+
     async fn require_karma_loop_confirmation(
         &self,
         table: ApiTable,
@@ -405,24 +413,29 @@ impl BackendApiService {
                 table,
                 ApiTable::Karma | ApiTable::KarmaCondition | ApiTable::KarmaConsequence
             )
-            || !self
-                .karma_has_potential_record_loop_after(table, row_id, object)
-                .await?
         {
             return Ok(());
         }
-        Err(Error::new(
-            ErrorKind::WouldBlock,
-            r#"{"status":"confirmation_required","confirmationKind":"karma_check_loop"}"#,
-        ))
+
+        let report = self
+            .karma_loop_report_after_mutation(table, row_id, object)
+            .await?;
+        if report.cycles.is_empty() {
+            return Ok(());
+        }
+        let detail = serde_json::to_string(&report).unwrap_or_else(|_| {
+            r#"{"status":"confirmation_required","confirmationKind":"karma_check_loop"}"#.into()
+        });
+        tracing::warn!("karma loop confirmation required: {detail}");
+        Err(Error::new(ErrorKind::WouldBlock, detail))
     }
 
-    async fn karma_has_potential_record_loop_after(
+    async fn karma_loop_report_after_mutation(
         &self,
         table: ApiTable,
         row_id: Option<i64>,
         object: &Map<String, Value>,
-    ) -> Result<bool, Error> {
+    ) -> Result<KarmaLoopConfirmationReport, Error> {
         let mut karmas = serde_json::from_value::<Vec<LoopKarmaRow>>(
             self.store
                 .list_table_rows_filtered(ApiTable::Karma, &TableListQuery::default())
@@ -442,6 +455,8 @@ impl BackendApiService {
         )
         .map_err(Error::other)?;
 
+        let touched_karma_ids = touched_karma_ids(table, row_id, object, &karmas);
+
         match table {
             ApiTable::Karma => apply_loop_karma_mutation(&mut karmas, row_id, object),
             ApiTable::KarmaCondition => {
@@ -451,6 +466,10 @@ impl BackendApiService {
                 apply_loop_consequence_mutation(&mut consequences, row_id, object)
             }
             _ => {}
+        }
+
+        if touched_karma_ids.is_empty() {
+            return Ok(KarmaLoopConfirmationReport::empty(table, row_id));
         }
 
         let regex = Regex::new(r"rq(\d+)").map_err(Error::other)?;
@@ -509,7 +528,33 @@ impl BackendApiService {
                 }
             }
         }
-        Ok(has_rule_cycle(&edges))
+
+        let cycles = find_rule_cycles(&edges)
+            .into_iter()
+            .filter(|cycle| cycle.iter().any(|id| touched_karma_ids.contains(id)))
+            .map(|cycle| KarmaLoopCycle { karma_ids: cycle })
+            .collect::<Vec<_>>();
+        if cycles.is_empty() {
+            return Ok(KarmaLoopConfirmationReport::empty(table, row_id));
+        }
+
+        let edge_details = build_loop_edge_details(
+            &edges,
+            &karmas,
+            &condition_by_id,
+            &consequence_by_id,
+            &condition_refs,
+        );
+
+        Ok(KarmaLoopConfirmationReport {
+            status: "confirmation_required",
+            confirmation_kind: "karma_check_loop",
+            table: table.as_table_name(),
+            row_id,
+            touched_karma_ids: touched_karma_ids.into_iter().collect(),
+            cycles,
+            edges: edge_details,
+        })
     }
 
     pub async fn list_files(
@@ -761,6 +806,139 @@ struct LoopConsequenceRow {
     consequence: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct KarmaLoopConfirmationReport {
+    status: &'static str,
+    confirmation_kind: &'static str,
+    table: &'static str,
+    row_id: Option<i64>,
+    touched_karma_ids: Vec<i64>,
+    cycles: Vec<KarmaLoopCycle>,
+    edges: Vec<KarmaLoopEdgeDetail>,
+}
+
+impl KarmaLoopConfirmationReport {
+    fn empty(table: ApiTable, row_id: Option<i64>) -> Self {
+        Self {
+            status: "ok",
+            confirmation_kind: "karma_check_loop",
+            table: table.as_table_name(),
+            row_id,
+            touched_karma_ids: Vec::new(),
+            cycles: Vec::new(),
+            edges: Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct KarmaLoopCycle {
+    karma_ids: Vec<i64>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct KarmaLoopEdgeDetail {
+    source_karma_id: i64,
+    target_karma_id: i64,
+    record_id: u32,
+    source_consequence_id: i64,
+    source_consequence: String,
+    target_condition_id: i64,
+    target_condition: String,
+}
+
+fn touched_karma_ids(
+    table: ApiTable,
+    row_id: Option<i64>,
+    object: &Map<String, Value>,
+    karmas: &[LoopKarmaRow],
+) -> BTreeSet<i64> {
+    match table {
+        ApiTable::Karma => row_id
+            .or_else(|| optional_i64_field(object, "id"))
+            .or_else(|| Some(next_loop_row_id(karmas)))
+            .into_iter()
+            .collect(),
+        ApiTable::KarmaCondition => {
+            let Some(condition_id) = row_id.or_else(|| optional_i64_field(object, "id")) else {
+                return BTreeSet::new();
+            };
+            karmas
+                .iter()
+                .filter(|karma| karma.condition_id == condition_id)
+                .map(|karma| karma.id)
+                .collect()
+        }
+        ApiTable::KarmaConsequence => {
+            let Some(consequence_id) = row_id.or_else(|| optional_i64_field(object, "id")) else {
+                return BTreeSet::new();
+            };
+            karmas
+                .iter()
+                .filter(|karma| karma.consequence_id == consequence_id)
+                .map(|karma| karma.id)
+                .collect()
+        }
+        _ => BTreeSet::new(),
+    }
+}
+
+fn build_loop_edge_details(
+    edges: &BTreeMap<i64, Vec<i64>>,
+    karmas: &[LoopKarmaRow],
+    condition_by_id: &BTreeMap<i64, LoopConditionRow>,
+    consequence_by_id: &BTreeMap<i64, LoopConsequenceRow>,
+    condition_refs: &BTreeMap<i64, BTreeSet<u32>>,
+) -> Vec<KarmaLoopEdgeDetail> {
+    let karma_by_id = karmas
+        .iter()
+        .map(|karma| (karma.id, karma))
+        .collect::<BTreeMap<_, _>>();
+    let regex = Regex::new(r"rq(\d+)").expect("valid record quantity regex");
+    let mut details = Vec::new();
+    for (source_id, target_ids) in edges {
+        let Some(source) = karma_by_id.get(source_id).copied() else {
+            continue;
+        };
+        let Some(source_consequence) = consequence_by_id.get(&source.consequence_id) else {
+            continue;
+        };
+        let Some(record_id) = regex
+            .captures(&source_consequence.consequence)
+            .and_then(|caps| caps.get(1)?.as_str().parse::<u32>().ok())
+        else {
+            continue;
+        };
+        for target_id in target_ids {
+            if !condition_refs
+                .get(target_id)
+                .is_some_and(|refs| refs.contains(&record_id))
+            {
+                continue;
+            }
+            let Some(target) = karma_by_id.get(target_id).copied() else {
+                continue;
+            };
+            let Some(target_condition) = condition_by_id.get(&target.condition_id) else {
+                continue;
+            };
+            details.push(KarmaLoopEdgeDetail {
+                source_karma_id: *source_id,
+                target_karma_id: *target_id,
+                record_id,
+                source_consequence_id: source.consequence_id,
+                source_consequence: source_consequence.consequence.clone(),
+                target_condition_id: target.condition_id,
+                target_condition: target_condition.condition.clone(),
+            });
+        }
+    }
+    details
+}
+
 fn apply_loop_karma_mutation(
     rows: &mut Vec<LoopKarmaRow>,
     row_id: Option<i64>,
@@ -888,34 +1066,49 @@ fn next_loop_row_id(rows: &[impl LoopRowId]) -> i64 {
     rows.iter().map(LoopRowId::loop_row_id).max().unwrap_or(0) + 1
 }
 
-fn has_rule_cycle(edges: &BTreeMap<i64, Vec<i64>>) -> bool {
-    fn visit(
+fn find_rule_cycles(edges: &BTreeMap<i64, Vec<i64>>) -> Vec<Vec<i64>> {
+    fn walk(
+        start: i64,
         node: i64,
         edges: &BTreeMap<i64, Vec<i64>>,
-        visiting: &mut BTreeSet<i64>,
-        visited: &mut BTreeSet<i64>,
-    ) -> bool {
-        if visiting.contains(&node) {
-            return true;
-        }
-        if visited.contains(&node) {
-            return false;
-        }
-        visiting.insert(node);
+        path: &mut Vec<i64>,
+        cycles: &mut BTreeSet<Vec<i64>>,
+    ) {
         for next in edges.get(&node).into_iter().flatten().copied() {
-            if visit(next, edges, visiting, visited) {
-                return true;
+            if next == start {
+                cycles.insert(normalize_cycle(path));
+                continue;
             }
+            if next < start || path.contains(&next) {
+                continue;
+            }
+            path.push(next);
+            walk(start, next, edges, path, cycles);
+            path.pop();
         }
-        visiting.remove(&node);
-        visited.insert(node);
-        false
     }
 
-    let mut visiting = BTreeSet::new();
-    let mut visited = BTreeSet::new();
-    edges
-        .keys()
+    let mut cycles = BTreeSet::<Vec<i64>>::new();
+    for start in edges.keys().copied() {
+        let mut path = vec![start];
+        walk(start, start, edges, &mut path, &mut cycles);
+    }
+    cycles.into_iter().collect()
+}
+
+fn normalize_cycle(path: &[i64]) -> Vec<i64> {
+    if path.is_empty() {
+        return Vec::new();
+    }
+    let min_index = path
+        .iter()
+        .enumerate()
+        .min_by_key(|(_, value)| *value)
+        .map(|(index, _)| index)
+        .unwrap_or(0);
+    path[min_index..]
+        .iter()
+        .chain(path[..min_index].iter())
         .copied()
-        .any(|node| visit(node, edges, &mut visiting, &mut visited))
+        .collect()
 }

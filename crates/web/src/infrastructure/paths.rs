@@ -36,5 +36,6 @@ pub fn web_config_dir() -> PathBuf {
 }
 
 fn config_root_dir() -> PathBuf {
-    utils::config::lince_data_dir().unwrap_or_else(|| crate_root_dir().join(".config").join("lince"))
+    utils::config::lince_data_dir()
+        .unwrap_or_else(|| crate_root_dir().join(".config").join("lince"))
 }

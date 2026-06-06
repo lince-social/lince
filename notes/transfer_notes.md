@@ -124,3 +124,7 @@ enum AgreementType {
 ```
 
 On visibility: Cell is an Organ used by one person (its an abstraction), i edited the visibility check on sql to remove it, continue the change.
+
+---
+
+We need to be able to receive transfer proposals from anyone if we want, or not, it might be a config, default is dont allow transfer proposals to arrive if we dont have them in the organ list. If we can then we need to put it in a cache of some sorts, that doesnt save, bc then we need a tmp transfers? and we need to manage it.

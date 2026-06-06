@@ -101,9 +101,9 @@ impl OfficialWidgetBuilder {
 }
 
 const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 20] = [
-    OfficialWidgetBuilder::Html {
+    OfficialWidgetBuilder::Package {
         feature_flag: document_viewer::FEATURE_FLAG,
-        source_builder: document_viewer::source,
+        package_builder: document_viewer::package,
     },
     OfficialWidgetBuilder::Html {
         feature_flag: calendar::FEATURE_FLAG,

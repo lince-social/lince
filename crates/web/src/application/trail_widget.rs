@@ -687,7 +687,7 @@ impl TrailWidgetService {
         let server_id = card.server_id.trim().to_string();
         if server_id.is_empty() {
             return Err(TrailWidgetError::Misconfigured(
-                "Trail Relation sem server_id configurado.".into(),
+                "Trail sem server_id configurado.".into(),
             ));
         }
 
@@ -1994,11 +1994,11 @@ impl TrailPermission {
         let has_write_table = has_permission(card, "write_table");
         match self {
             Self::Read if !has_read => Err(TrailWidgetError::Forbidden(
-                "Esse Trail Relation nao declara permissao read_view_stream.".into(),
+                "Esse Trail nao declara permissao read_view_stream.".into(),
             )),
             Self::Write if !(has_write_records && has_write_table) => {
                 Err(TrailWidgetError::Forbidden(
-                    "Esse Trail Relation nao declara as permissoes necessarias.".into(),
+                    "Esse Trail nao declara as permissoes necessarias.".into(),
                 ))
             }
             _ => Ok(()),
@@ -2476,7 +2476,7 @@ fn validate_trail_card(card: &BoardCard) -> Result<(), TrailWidgetError> {
     }
     if !is_supported_trail_package_filename(&card.package_name) {
         return Err(TrailWidgetError::Misconfigured(
-            "Esse widget nao usa o package Trail Relation.".into(),
+            "Esse widget nao usa o package Trail.".into(),
         ));
     }
     Ok(())

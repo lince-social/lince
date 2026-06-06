@@ -22,7 +22,7 @@ use std::{
 
 pub async fn refresh_karma_cache(services: InjectedServices) -> Result<(), Error> {
     let regex_record_quantity = Regex::new(r"rq(\d+)").unwrap();
-    let regex_sync = Regex::new(r"sr(?:nt|t|n)(?:q?h?b?)(\d+)").unwrap();
+    let regex_sync = sync_token_regex();
     let vec_karma = services.repository.karma.get(None).await?;
 
     let mut karma_by_record: HashMap<u32, Vec<Karma>> = HashMap::new();
@@ -73,9 +73,8 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
     let regex_frequency = Regex::new(r"f(\d+)").unwrap();
     let regex_command = Regex::new(r"c(\d+)").unwrap();
     let regex_query = Regex::new(r"sql(\d+)").unwrap();
-    let regex_sync = Regex::new(r"sr(?P<scope>nt|t|n)(?P<fields>q?h?b?)(?P<id>\d+)").unwrap();
-    let regex_sync_exact =
-        Regex::new(r"^sr(?P<scope>nt|t|n)(?P<fields>q?h?b?)(?P<id>\d+)$").unwrap();
+    let regex_sync = sync_token_regex();
+    let regex_sync_exact = sync_token_exact_regex();
 
     let mut frequencies_to_update: HashMap<u32, Frequency> = HashMap::new();
     let active_rule_count = services
@@ -232,9 +231,10 @@ fn extract_karma_record_ids(
     }
 
     for caps in regex_sync.captures_iter(condition) {
-        if let Ok(id) = caps[1].parse::<u32>() {
-            record_ids.push(id);
-        }
+        let Some(token) = parse_sync_captures(&caps) else {
+            continue;
+        };
+        record_ids.push(token.record_id as u32);
     }
 
     record_ids
@@ -360,6 +360,21 @@ impl SyncFields {
             })
         }
     }
+
+    fn from_human_segment(segment: &str) -> Option<Self> {
+        let parts = segment.split('-').collect::<Vec<_>>();
+        if !parts
+            .iter()
+            .all(|part| matches!(*part, "quantity" | "head" | "body"))
+        {
+            return None;
+        }
+        Some(Self {
+            quantity: parts.contains(&"quantity"),
+            head: parts.contains(&"head"),
+            body: parts.contains(&"body"),
+        })
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -375,6 +390,15 @@ impl SyncScope {
             "n" => Some(Self::Node),
             "t" => Some(Self::Tree),
             "nt" => Some(Self::NodeAndTree),
+            _ => None,
+        }
+    }
+
+    fn from_human_segment(segment: &str) -> Option<Self> {
+        match segment {
+            "node" => Some(Self::Node),
+            "tree" => Some(Self::Tree),
+            "node-and-tree" => Some(Self::NodeAndTree),
             _ => None,
         }
     }
@@ -402,15 +426,37 @@ fn parse_sync_token(regex: &Regex, input: &str) -> Option<SyncToken> {
 }
 
 fn parse_sync_captures(caps: &regex::Captures<'_>) -> Option<SyncToken> {
+    if let Some(id) = caps.name("id") {
+        return Some(SyncToken {
+            scope: SyncScope::from_segment(caps.name("scope")?.as_str())?,
+            fields: SyncFields::from_segment(
+                caps.name("fields")
+                    .map(|value| value.as_str())
+                    .unwrap_or(""),
+            )?,
+            record_id: id.as_str().parse::<i64>().ok()?,
+        });
+    }
+
     Some(SyncToken {
-        scope: SyncScope::from_segment(caps.name("scope")?.as_str())?,
-        fields: SyncFields::from_segment(
-            caps.name("fields")
-                .map(|value| value.as_str())
-                .unwrap_or(""),
-        )?,
-        record_id: caps.name("id")?.as_str().parse::<i64>().ok()?,
+        scope: SyncScope::from_human_segment(caps.name("human_scope")?.as_str())?,
+        fields: SyncFields::from_human_segment(caps.name("human_fields")?.as_str())?,
+        record_id: caps.name("human_id")?.as_str().parse::<i64>().ok()?,
     })
+}
+
+fn sync_token_regex() -> Regex {
+    Regex::new(
+        r"(?:sr|sync-record)(?P<scope>nt|t|n)(?P<fields>q?h?b?)(?P<id>\d+)|sync-record-(?P<human_scope>node-and-tree|node|tree)-(?P<human_fields>quantity-head-body|quantity-head|quantity-body|head-body|quantity|head|body)-(?P<human_id>\d+)",
+    )
+    .unwrap()
+}
+
+fn sync_token_exact_regex() -> Regex {
+    Regex::new(
+        r"^(?:(?:sr|sync-record)(?P<scope>nt|t|n)(?P<fields>q?h?b?)(?P<id>\d+)|sync-record-(?P<human_scope>node-and-tree|node|tree)-(?P<human_fields>quantity-head-body|quantity-head|quantity-body|head-body|quantity|head|body)-(?P<human_id>\d+))$",
+    )
+    .unwrap()
 }
 
 #[derive(Debug, Clone, FromRow)]

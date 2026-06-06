@@ -23,6 +23,14 @@ Lince tries to facilitate and automate the connection between people and resourc
 The gains and losses related to the interaction, such as transportation, production and services themselves, remain the responsibility
 and risk of the parties involved.
 
+# Contributions
+
+To contribute, check the [CONTRIBUTING.md](CONTRIBUTING.md).
+
+# License
+
+Check the MIT [License](LICENSE)
+
 # Ways to install
 
 Note that the `dev` branch is always further ahead, sometimes by a lot. But it is more unstable.
@@ -175,13 +183,3 @@ For maintainers, the release flow is:
 mise release
 mise publish-crates
 ```
-
-# Contributions
-
-To contribute, check the [CONTRIBUTING.md](CONTRIBUTING.md).
-
-# License
-
-Check the [License](LICENSE)
-
----

@@ -6,6 +6,7 @@ use crate::{
     application::kanban_streams::KanbanStreamService,
     application::karma_orchestra_widget::KarmaOrchestraWidgetService,
     application::trail_widget::TrailWidgetService,
+    application::transfer_widget::TransferWidgetService,
     application::widget_runtime::WidgetRuntimeService,
     infrastructure::{
         auth::AppAuth, board_state_store::BoardStateStore, manas::ManasGateway,
@@ -35,6 +36,7 @@ pub struct AppState {
     pub kanban_streams: KanbanStreamService,
     pub karma_orchestra_widget: KarmaOrchestraWidgetService,
     pub trail_widget: TrailWidgetService,
+    pub transfer_widget: TransferWidgetService,
     pub widget_runtime: WidgetRuntimeService,
 }
 

@@ -1,8 +1,4 @@
-use std::{
-    io::Error,
-    path::PathBuf,
-    sync::OnceLock,
-};
+use std::{io::Error, path::PathBuf, sync::OnceLock};
 
 static LINCE_DATA_DIR_OVERRIDE: OnceLock<PathBuf> = OnceLock::new();
 
@@ -28,4 +24,11 @@ pub fn lince_data_dir() -> Option<PathBuf> {
         .get()
         .cloned()
         .or_else(|| dirs::config_dir().map(|dir| dir.join("lince")))
+}
+
+pub fn lince_cache_dir() -> Option<PathBuf> {
+    LINCE_DATA_DIR_OVERRIDE
+        .get()
+        .map(|dir| dir.join("cache"))
+        .or_else(|| dirs::cache_dir().map(|dir| dir.join("lince")))
 }

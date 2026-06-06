@@ -38,7 +38,7 @@ fn render_trail_document(
             head {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
-                title { "Trail Relation" }
+                title { "Trail" }
                 link rel="stylesheet" href=(format!("/static/styles.css?v={asset_version}"));
                 @for style_block in TRAIL_INLINE_STYLES {
                     style { (PreEscaped(*style_block)) }

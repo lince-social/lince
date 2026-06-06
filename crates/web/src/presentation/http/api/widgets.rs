@@ -20,6 +20,8 @@ use {
             state::AppState,
             trail_identity::is_supported_trail_package_filename,
             trail_widget::{PreparedTrailStream, TrailBindingPayload, TrailWidgetError},
+            transfer_identity::is_supported_transfer_package_filename,
+            transfer_widget::TransferWidgetError,
             widget_runtime::WidgetRuntimeError,
         },
         domain::board::BoardState,
@@ -87,6 +89,13 @@ pub async fn get_widget_contract(
                 .await
                 .map_err(map_karma_orchestra_widget_error)?,
         )),
+        WidgetKind::Transfer => Ok(Json(
+            state
+                .transfer_widget
+                .contract(session_token.as_deref(), &instance_id)
+                .await
+                .map_err(map_transfer_widget_error)?,
+        )),
     }
 }
 
@@ -121,6 +130,12 @@ pub async fn get_widget_stream(
             return Err(api_error(
                 StatusCode::UNPROCESSABLE_ENTITY,
                 "Karma Orchestra nao usa stream nesta versao.",
+            ));
+        }
+        WidgetKind::Transfer => {
+            return Err(api_error(
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "Transfer nao usa stream nesta versao.",
             ));
         }
     };
@@ -162,6 +177,14 @@ pub async fn post_widget_action(
                 .action(session_token.as_deref(), &instance_id, &action, payload)
                 .await
                 .map_err(map_karma_orchestra_widget_error)?;
+            return Ok(Json(outcome));
+        }
+        WidgetKind::Transfer => {
+            let outcome = state
+                .transfer_widget
+                .action(session_token.as_deref(), &instance_id, &action, payload)
+                .await
+                .map_err(map_transfer_widget_error)?;
             return Ok(Json(outcome));
         }
         WidgetKind::Kanban => {}
@@ -619,10 +642,28 @@ fn map_karma_orchestra_widget_error(
     }
 }
 
+fn map_transfer_widget_error(
+    error: TransferWidgetError,
+) -> (
+    StatusCode,
+    Json<crate::presentation::http::api_error::ApiError>,
+) {
+    match error {
+        TransferWidgetError::NotFound(message) => api_error(StatusCode::NOT_FOUND, message),
+        TransferWidgetError::Misconfigured(message) | TransferWidgetError::Invalid(message) => {
+            api_error(StatusCode::UNPROCESSABLE_ENTITY, message)
+        }
+        TransferWidgetError::Internal(message) => {
+            api_error(StatusCode::INTERNAL_SERVER_ERROR, message)
+        }
+    }
+}
+
 enum WidgetKind {
     Kanban,
     Trail,
     KarmaOrchestra,
+    Transfer,
 }
 
 fn widget_kind(board_state: &BoardState, instance_id: &str) -> ApiResult<WidgetKind> {
@@ -638,6 +679,8 @@ fn widget_kind(board_state: &BoardState, instance_id: &str) -> ApiResult<WidgetK
         Ok(WidgetKind::Trail)
     } else if is_supported_karma_orchestra_package_filename(&card.package_name) {
         Ok(WidgetKind::KarmaOrchestra)
+    } else if is_supported_transfer_package_filename(&card.package_name) {
+        Ok(WidgetKind::Transfer)
     } else {
         Err(api_error(
             StatusCode::UNPROCESSABLE_ENTITY,

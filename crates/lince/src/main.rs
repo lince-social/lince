@@ -23,10 +23,10 @@ use persistence::{
     storage::StorageService,
     write_coordinator::{SqlParameter, WriteCoordinatorHandle, spawn_write_coordinator},
 };
-#[cfg(feature = "karma")]
-use std::time::Duration;
 #[cfg(feature = "http")]
 use std::net::SocketAddr;
+#[cfg(feature = "karma")]
+use std::time::Duration;
 use std::{
     env,
     io::{self, Error, IsTerminal, Write},

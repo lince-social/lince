@@ -125,6 +125,30 @@ impl ManasGateway {
         })
     }
 
+    pub async fn send_public_backend_request(
+        &self,
+        base_url: &str,
+        method: Method,
+        path: &str,
+        body: Option<Value>,
+    ) -> Result<Response, String> {
+        let url = if path.starts_with("http://") || path.starts_with("https://") {
+            path.to_string()
+        } else {
+            format!("{}{}", normalize_base_url(base_url), path)
+        };
+        let mut request = self.http.request(method.clone(), url);
+
+        if let Some(body) = body {
+            request = request.json(&body);
+        }
+
+        request.send().await.map_err(|error| {
+            tracing::warn!("manas public backend request failed ({method} {path}): {error}");
+            "Nao foi possivel falar com o servidor externo.".to_string()
+        })
+    }
+
     pub async fn send_backend_bytes_request(
         &self,
         base_url: &str,

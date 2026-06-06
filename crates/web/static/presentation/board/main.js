@@ -770,7 +770,7 @@ async function refreshWidgetConfigViews() {
 }
 
 function cardSupportsHostConfiguration(card) {
-  return card?.kind === "package";
+  return card?.kind === "package" && cardRequiresServer(card);
 }
 
 function cardSupportsPackagePreview(card) {
@@ -784,7 +784,6 @@ function cardRequiresServer(card) {
   const permissions = Array.isArray(card?.permissions) ? card.permissions : [];
   return (
     permissions.includes("read_view_stream") ||
-    permissions.includes("read_files") ||
     permissions.includes("write_records") ||
     permissions.includes("write_table")
   );

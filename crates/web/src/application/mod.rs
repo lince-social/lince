@@ -11,5 +11,7 @@ pub mod relations_identity;
 pub mod state;
 pub mod trail_identity;
 pub mod trail_widget;
+pub mod transfer_identity;
+pub mod transfer_widget;
 pub mod view_table_render;
 pub mod widget_runtime;

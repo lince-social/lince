@@ -21,6 +21,7 @@ base64 = { workspace = true }
 chrono = { workspace = true }
 dirs = { workspace = true }
 dotenvy = { workspace = true }
+ed25519-dalek = { workspace = true }
 futures = { workspace = true }
 injection = { workspace = true }
 maud = { workspace = true }

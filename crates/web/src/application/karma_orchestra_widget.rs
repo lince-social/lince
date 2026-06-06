@@ -1865,7 +1865,7 @@ fn normalize_operator(operator: &str) -> Result<&str, KarmaOrchestraWidgetError>
 
 fn validate_consequence_code(code: &str) -> Result<(), KarmaOrchestraWidgetError> {
     let trimmed = code.trim();
-    let valid = regex::Regex::new(r"^(rq\d+|c\d+|sql\d+|sr(?:nt|t|n)q?h?b?\d+)$")
+    let valid = regex::Regex::new(r"^(rq\d+|c\d+|sql\d+|(?:sr|sync-record)(?:nt|t|n)q?h?b?\d+|sync-record-(?:node-and-tree|node|tree)-(?:quantity-head-body|quantity-head|quantity-body|head-body|quantity|head|body)-\d+)$")
         .expect("valid consequence regex")
         .is_match(trimmed);
     if valid {

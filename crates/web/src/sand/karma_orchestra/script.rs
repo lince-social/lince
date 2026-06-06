@@ -516,7 +516,12 @@ pub(crate) fn script() -> String {
 
     function richCodeHtml(code) {
         const raw = String(code || "");
-        return escapeHtml(raw).replace(/@(rq|f|c|sql)(\d+)/g, (_match, prefix, id) => {
+        return escapeHtml(raw)
+            .replace(/@((?:(?:sr|sync-record)(?:nt|t|n)q?h?b?)|(?:sync-record-(?:node-and-tree|node|tree)-(?:quantity-head-body|quantity-head|quantity-body|head-body|quantity|head|body)-))(\d+)/g, (_match, prefix, id) => {
+                const machineCode = prefix + id;
+                return `<span class="tokenChip" contenteditable="false" data-code="@${escapeHtml(machineCode)}">${escapeHtml(syncTokenHuman(machineCode))}</span>`;
+            })
+            .replace(/@(rq|f|c|sql)(\d+)/g, (_match, prefix, id) => {
             const machineCode = prefix + id;
             const token = tokenByCode(machineCode);
             const human = token?.human || fallbackTokenHuman(prefix, id);
@@ -525,11 +530,47 @@ pub(crate) fn script() -> String {
     }
 
     function humanReadableCode(code) {
-        return String(code || "").replace(/@?(rq|f|c|sql)(\d+)/g, (_match, prefix, id) => {
-            const machineCode = prefix + id;
-            const token = tokenByCode(machineCode);
-            return token?.human || fallbackTokenHuman(prefix, id);
-        });
+        return String(code || "")
+            .replace(/@?((?:(?:sr|sync-record)(?:nt|t|n)q?h?b?)|(?:sync-record-(?:node-and-tree|node|tree)-(?:quantity-head-body|quantity-head|quantity-body|head-body|quantity|head|body)-))(\d+)/g, (_match, prefix, id) => {
+                return syncTokenHuman(prefix + id);
+            })
+            .replace(/@?(rq|f|c|sql)(\d+)/g, (_match, prefix, id) => {
+                const machineCode = prefix + id;
+                const token = tokenByCode(machineCode);
+                return token?.human || fallbackTokenHuman(prefix, id);
+            });
+    }
+
+    function syncTokenHuman(code) {
+        const match = String(code || "").match(/^(?:sr|sync-record)(nt|t|n)(q?h?b?)(\d+)$/);
+        if (!match) {
+            const humanMatch = String(code || "").match(/^sync-record-(node-and-tree|node|tree)-(quantity-head-body|quantity-head|quantity-body|head-body|quantity|head|body)-(\d+)$/);
+            if (!humanMatch) return code;
+            const [, scope, fields, id] = humanMatch;
+            const root = tokenByCode("rq" + id)?.human || fallbackTokenHuman("rq", id);
+            return `sync-record ${syncScopeHuman(scope)} ${syncFieldsHuman(fields)} ${root}`;
+        }
+        const [, scope, fields, id] = match;
+        const root = tokenByCode("rq" + id)?.human || fallbackTokenHuman("rq", id);
+        return `sync-record ${syncScopeHuman(scope)} ${syncFieldsHuman(fields)} ${root}`;
+    }
+
+    function syncScopeHuman(scope) {
+        if (scope === "n") return "node";
+        if (scope === "t") return "tree";
+        if (scope === "nt") return "node and tree";
+        if (scope === "node-and-tree") return "node and tree";
+        return scope;
+    }
+
+    function syncFieldsHuman(fields) {
+        if (!fields) return "quantity/head/body";
+        if (fields.includes("-")) return fields.replaceAll("-", "/");
+        const labels = [];
+        if (fields.includes("q")) labels.push("quantity");
+        if (fields.includes("h")) labels.push("head");
+        if (fields.includes("b")) labels.push("body");
+        return labels.join("/") || fields;
     }
 
     function tokenByCode(code) {

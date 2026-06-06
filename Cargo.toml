@@ -45,6 +45,7 @@ color-eyre = "0.6.5"
 crossterm = "0.29.0"
 dirs = "6.0.0"
 dotenvy = "0.15.7"
+ed25519-dalek = "2.2.0"
 futures = "0.3.31"
 gpui = { version = "0.2.2" }
 gpui-component = { version = "0.5.0" }

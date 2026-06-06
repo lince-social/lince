@@ -12,7 +12,7 @@ fn run_node_assertions(script: &str) {
     }
 
     panic!(
-        "trail_relation Node assertions failed (status: {:?})\nstdout:\n{}\nstderr:\n{}",
+        "trail Node assertions failed (status: {:?})\nstdout:\n{}\nstderr:\n{}",
         output.status.code(),
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr),

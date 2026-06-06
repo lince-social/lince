@@ -13,7 +13,52 @@ The detailed notes live in:
 - [Intent And Discovery](transfer-intent-discovery.md)
 - [Networking And Sync](transfer-networking.md)
 - [Work Metadata](transfer-work-metadata.md)
-- [Workflow And Roadmap](transfer-workflow-roadmap.md)
+- [Transfer Sand](transfer-sand.md)
+
+## MVP Build Order
+
+Recommended first implementation order:
+
+1. Visibility subjects, rules, and fields.
+2. Transfer header with quantity and immutable agreement/settlement modes.
+3. Transfer parties linked to visibility subjects.
+4. Transfer items with Transfer-specific title/description and source Record snapshots.
+5. Transfer interactions and dependencies.
+6. Transfer event log and validator.
+7. Coordinator-backed event sync cursor for participating Cells.
+8. Agreement levels with edit invalidation for connected items.
+9. Messages.
+10. Karma link that changes Transfer quantity only.
+11. Transfer quantity influence facts.
+12. Delivery/receipt confirmations.
+13. Individual/full settlement.
+14. Server-backed Transfer sand contract and typed backend actions.
+15. Transfer sand list/detail/create/agreement UI.
+16. Basic peer/contact table and Transfer discovery cache.
+17. Optional SQL views or sand queries for richer quantity projections.
+18. Optional work metadata attachment.
+
+## Not First
+
+- External integrations.
+- Global reputation.
+- Full peer-to-peer federation.
+- Hardcoded expiration.
+- Role-based agreement.
+- Complex legal-contract language.
+
+## Cross-File Map
+
+- Product shape and corrected assumptions live in [Core Model](transfer-core-model.md).
+- Visibility tables and UI behavior live in [Visibility](transfer-visibility.md).
+- Transfer tables, typed enums, nesting, and interactions live in [Data Model](transfer-data-model.md).
+- Agreement, history events, signed events, and messages live in [Agreement And Events](transfer-agreement-events.md).
+- Karma activation lives in [Karma](transfer-karma.md).
+- Simulation, confirmation, and settlement live in [Simulation And Settlement](transfer-simulation-settlement.md).
+- Intent, discovery, proposal editing, and state model live in [Intent And Discovery](transfer-intent-discovery.md).
+- P2P cache, peer discovery, and server topology live in [Networking And Sync](transfer-networking.md).
+- Generalized Kanban/work metadata lives in [Work Metadata](transfer-work-metadata.md).
+- Transfer sand requirements live in [Transfer Sand](transfer-sand.md).
 
 ## Status
 
@@ -34,11 +79,14 @@ The detailed notes live in:
 - [ ] Simulation uses plus/minus influence facts.
 - [ ] Delivery and receipt confirmations are modeled separately.
 - [ ] Settlement is idempotent.
+- [ ] Transfer proposal data is separate from final Record quantity mutation.
 - [ ] Transfer history is append-only.
+- [ ] A coordinator event log can be mirrored by participating Cells.
 - [ ] Signed events are documented for later use.
 - [ ] Discovery can cache public or permitted Transfer summaries.
 - [ ] A central or Organ server can introduce Cells to each other.
 - [ ] Direct Cell-to-Cell sync can happen after introduction.
+- [ ] The Transfer sand is a real server-backed workflow, not a placeholder.
 - [x] The doc set is split into multiple focused files.
 
 ## Checklist
@@ -169,11 +217,41 @@ The detailed notes live in:
 - [ ] A node can publish visible Transfer summaries.
 - [ ] A node can cache visible Transfer summaries.
 - [ ] A node can keep cached summaries stale.
+- [ ] A participating Cell can mirror a Transfer event log.
+- [ ] A participating Cell can track its last synced event.
+- [ ] A coordinator orders writes while replicas sync eventually.
 - [ ] A central or Organ server can introduce peers.
 - [ ] Direct peer sync can happen after introduction.
 - [ ] Peer discovery can be topic-based.
 - [ ] Peer discovery can be contact-list based.
 - [ ] Event logs can later become signed.
+
+### Transfer Sand
+
+- [ ] The Transfer sand requires a server.
+- [ ] The Transfer sand declares the permissions it needs.
+- [ ] The Transfer sand has a dedicated runtime contract.
+- [ ] The Transfer sand has typed backend actions.
+- [ ] The Transfer sand can list Transfer summaries.
+- [ ] The Transfer sand can load one Transfer detail.
+- [ ] The Transfer sand can create a Transfer.
+- [ ] The Transfer sand can create child Transfers.
+- [ ] The Transfer sand can add and edit Transfer items.
+- [ ] The Transfer sand can link a Transfer item to a source Record.
+- [ ] The Transfer sand can show Transfer-specific item title and description.
+- [ ] The Transfer sand can configure parties.
+- [ ] The Transfer sand can configure field-level visibility.
+- [ ] The Transfer sand can show item interactions.
+- [ ] The Transfer sand can show dependencies.
+- [ ] The Transfer sand can show agreement state.
+- [ ] The Transfer sand can let permitted parties agree.
+- [ ] The Transfer sand invalidates agreement through backend rules after connected edits.
+- [ ] The Transfer sand can show Transfer messages.
+- [ ] The Transfer sand can show append-only Transfer history.
+- [ ] The Transfer sand can show delivery confirmation state.
+- [ ] The Transfer sand can show receipt confirmation state.
+- [ ] The Transfer sand can request settlement.
+- [ ] The Transfer sand can show quantity influence facts when they exist.
 
 ### Roadmap
 

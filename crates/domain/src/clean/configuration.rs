@@ -22,4 +22,5 @@ pub struct Configuration {
     pub bucket_region: Option<String>,
     pub file_sync_enabled: i64,
     pub file_sync_path: Option<String>,
+    pub transfer_public_proposals_enabled: i64,
 }

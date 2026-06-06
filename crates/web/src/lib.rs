@@ -15,7 +15,8 @@ use {
             kanban_actions::KanbanActionService, kanban_filters::KanbanFilterService,
             kanban_streams::KanbanStreamService,
             karma_orchestra_widget::KarmaOrchestraWidgetService, state::AppState,
-            trail_widget::TrailWidgetService, widget_runtime::WidgetRuntimeService,
+            trail_widget::TrailWidgetService, transfer_widget::TransferWidgetService,
+            widget_runtime::WidgetRuntimeService,
         },
         infrastructure::{
             auth::AppAuth, board_state_store::BoardStateStore, manas::ManasGateway,
@@ -50,11 +51,23 @@ pub async fn serve(
     mode: HttpServeMode,
 ) -> Result<(), IoError> {
     let auth = AppAuth::new();
+    let local_base_url = local_base_url_from_listen_addr(listen_addr.as_deref())?;
     let board_state = BoardStateStore::new().map_err(IoError::other)?;
     let organs = OrganStore::new(services.db.clone(), services.writer.clone());
     let backend = BackendApiService::new(services.clone(), Arc::new(jwt_secret));
     let manas = ManasGateway::new().map_err(IoError::other)?;
     let kanban_filters = KanbanFilterService::new(board_state.clone());
+    let transfer_widget = TransferWidgetService::new(
+        auth.clone(),
+        board_state.clone(),
+        local_auth_required,
+        local_base_url,
+        manas.clone(),
+        organs.clone(),
+        services.clone(),
+    );
+    transfer_widget.clone().spawn_sync_tasks();
+
     let app_state = AppState {
         ai: AiBuilderState::new(),
         auth: auth.clone(),
@@ -102,6 +115,7 @@ pub async fn serve(
             manas.clone(),
             organs.clone(),
         ),
+        transfer_widget,
         widget_runtime: WidgetRuntimeService::new(auth, board_state, local_auth_required, organs),
     };
 
@@ -134,4 +148,17 @@ pub async fn serve(
         listener.local_addr().map_err(IoError::other)?
     ));
     axum::serve(listener, app).await.map_err(IoError::other)
+}
+
+fn local_base_url_from_listen_addr(listen_addr: Option<&str>) -> Result<String, IoError> {
+    let listen_addr = listen_addr.unwrap_or("127.0.0.1:6174");
+    let address = listen_addr.parse::<SocketAddr>().map_err(|error| {
+        IoError::other(format!("Invalid listen address `{listen_addr}`: {error}"))
+    })?;
+    let host = if address.ip().is_unspecified() {
+        "127.0.0.1".to_string()
+    } else {
+        address.ip().to_string()
+    };
+    Ok(format!("http://{host}:{}", address.port()))
 }

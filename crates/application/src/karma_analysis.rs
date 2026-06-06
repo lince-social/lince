@@ -341,19 +341,25 @@ fn replace_sync_tokens(
     references: &mut Vec<KarmaTokenReference>,
     catalog: &KarmaTokenCatalog,
 ) {
-    let regex = Regex::new(r"sr(?P<scope>nt|t|n)(?P<fields>q?h?b?)(?P<id>\d+)").unwrap();
+    let regex = Regex::new(
+        r"(?:sr|sync-record)(?P<scope>nt|t|n)(?P<fields>q?h?b?)(?P<id>\d+)|sync-record-(?P<human_scope>node-and-tree|node|tree)-(?P<human_fields>quantity-head-body|quantity-head|quantity-body|head-body|quantity|head|body)-(?P<human_id>\d+)",
+    )
+    .unwrap();
     for caps in regex.captures_iter(code) {
         let token = caps[0].to_string();
         let id = caps
             .name("id")
+            .or_else(|| caps.name("human_id"))
             .and_then(|value| value.as_str().parse::<u32>().ok())
             .unwrap_or_default();
         let scope = caps
             .name("scope")
+            .or_else(|| caps.name("human_scope"))
             .map(|value| value.as_str())
             .unwrap_or("t");
         let fields = caps
             .name("fields")
+            .or_else(|| caps.name("human_fields"))
             .map(|value| value.as_str())
             .unwrap_or("");
         let root = catalog
@@ -363,7 +369,8 @@ fn replace_sync_tokens(
             .filter(|head| !head.trim().is_empty())
             .unwrap_or_else(|| format!("Record #{id}"));
         let label = format!(
-            "Sync {scope} {} root {root} (#{id})",
+            "Sync {} {} root {root} (#{id})",
+            sync_scope_label(scope),
             sync_fields_label(fields)
         );
         *human = human.replace(&token, &label);
@@ -380,9 +387,31 @@ fn replace_sync_tokens(
 
 fn sync_fields_label(fields: &str) -> String {
     if fields.is_empty() {
-        return "qhb".into();
+        return "quantity/head/body".into();
     }
-    fields.into()
+    if fields.contains('-') {
+        return fields.replace('-', "/");
+    }
+    let mut labels = Vec::new();
+    if fields.contains('q') {
+        labels.push("quantity");
+    }
+    if fields.contains('h') {
+        labels.push("head");
+    }
+    if fields.contains('b') {
+        labels.push("body");
+    }
+    labels.join("/")
+}
+
+fn sync_scope_label(scope: &str) -> &str {
+    match scope {
+        "n" | "node" => "node",
+        "t" | "tree" => "tree",
+        "nt" | "node-and-tree" => "node and tree",
+        _ => scope,
+    }
 }
 
 fn evaluate_symbolic(symbolic: &str) -> KarmaDisplayValue {

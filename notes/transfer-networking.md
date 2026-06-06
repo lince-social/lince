@@ -29,6 +29,89 @@ The practical early path:
 
 This keeps the central server useful for discovery without making it the permanent source of truth for every Transfer.
 
+## Coordinator Event Log And Eventual Consistency
+
+For Transfers, p2p sync should be based on the Transfer event log.
+
+The event log is the sync unit because it explains how a Transfer reached its current state. A materialized Transfer row can be cached, but the log is what participating Cells need to compare, replay, mirror, and eventually verify with signatures.
+
+Recommended rule:
+
+- One coordinator orders writes for a Transfer at a time.
+- The coordinator stores the operational source of truth while it coordinates that Transfer.
+- Participating Cells may keep a local replica of the visible event log.
+- Replicas are eventually consistent: they can be behind, then catch up by fetching events after their last synced event.
+- Local drafts can exist before submission, but once a proposal is sent to the coordinator, the coordinator assigns the canonical event order.
+- The first apple implementation can use my local Lince as coordinator.
+
+This means a Transfer created from "my Cell" can live in more than one place:
+
+- My local Lince can keep the coordinator copy.
+- My Cell can keep a local draft before the coordinator accepts it.
+- The Lince server Organ can keep a visible mirror as a participant.
+- The coordinator copy is authoritative for event ordering until coordinator migration exists.
+- Participants catch up by syncing events from the coordinator.
+
+Hello-world sync does not need full direct p2p. It only needs the same shape:
+
+1. My Cell creates a local proposal draft.
+2. The draft is submitted to my local Lince coordinator.
+3. Local Lince appends canonical Transfer events.
+4. The Lince server Organ stores or displays the visible coordinator events.
+5. Each participant tracks the last event it has seen.
+6. When new events happen, each participant asks the coordinator for events after that cursor.
+
+Coordination does not mean centralization. Coordination means one node is responsible for:
+
+- Assigning event order for one Transfer.
+- Validating state-changing actions.
+- Rejecting stale or invalid writes.
+- Maintaining the event hash chain.
+- Serving visible events to participants.
+- Producing the materialized Transfer state from those events.
+
+Different Transfers can have different coordinators. A local Lince can coordinate one Transfer, an Organ server can coordinate another, and later a coordinator migration event can move responsibility from one node to another.
+
+The system does not need a central global coordinator. A central or Organ server is useful for discovery, introduction, hosting always-online Organs, or relay, but it should not be required for every Transfer.
+
+Possible sync cursor table:
+
+```sql
+CREATE TABLE transfer_sync_cursor (
+    id INTEGER PRIMARY KEY,
+    transfer_id INTEGER NOT NULL REFERENCES transfer(id) ON DELETE CASCADE,
+    peer_subject_id INTEGER NOT NULL REFERENCES transfer_visibility_subject(id),
+    last_event_id INTEGER,
+    last_event_hash TEXT,
+    last_synced_at TEXT,
+    UNIQUE (transfer_id, peer_subject_id)
+) STRICT;
+```
+
+Possible replica marker:
+
+```sql
+CREATE TABLE transfer_replica (
+    id INTEGER PRIMARY KEY,
+    transfer_id INTEGER NOT NULL REFERENCES transfer(id) ON DELETE CASCADE,
+    coordinator_peer_id INTEGER REFERENCES cell_peer(id),
+    local_role TEXT NOT NULL DEFAULT 'mirror',
+    last_applied_event_id INTEGER,
+    last_applied_event_hash TEXT,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CHECK (local_role IN ('coordinator', 'participant', 'mirror'))
+) STRICT;
+```
+
+For hello world, these can be simple or even represented inside one database. The important part is not network complexity; it is separating the concepts:
+
+- Draft proposal.
+- Coordinator event.
+- Local mirror.
+- Final settlement.
+
+Direct Cell-to-Cell sync can later reuse the same event cursor flow by calling whichever peer is coordinator for that Transfer.
+
 ## Cache Tables
 
 ```sql

@@ -19,7 +19,7 @@ pub(crate) const FEATURE_FLAG: &str = "sand.trail_relation";
 pub(crate) fn package() -> crate::domain::lince_package::LincePackage {
     let manifest = PackageManifest {
         icon: "🧭".into(),
-        title: "Trail Relation".into(),
+        title: "Trail".into(),
         author: "Lince Labs".into(),
         version: "0.1.0".into(),
         description: "Per-user record trails with named views and graph physics.".into(),
@@ -46,13 +46,13 @@ pub(crate) fn package() -> crate::domain::lince_package::LincePackage {
     );
 
     crate::domain::lince_package::LincePackage::new_archive(
-        Some("trail_relation.lince".into()),
+        Some("trail.lince".into()),
         manifest,
         document(),
         "index.html",
         assets,
     )
-    .expect("trail relation official sand should render as a valid archive package")
+    .expect("trail official sand should render as a valid archive package")
 }
 
 fn document() -> String {
@@ -89,11 +89,11 @@ fn document() -> String {
 
 fn source() -> SandWidgetSource {
     SandWidgetSource {
-        filename: "trail_relation.lince",
+        filename: "trail.lince",
         lang: "en",
         manifest: PackageManifest {
             icon: "🧭".into(),
-            title: "Trail Relation".into(),
+            title: "Trail".into(),
             author: "Lince Labs".into(),
             version: "0.1.0".into(),
             description: "Per-user record trails with named views and graph physics.".into(),

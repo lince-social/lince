@@ -1501,7 +1501,7 @@ pub(crate) fn script() -> String {
         });
 
         loadContract().catch((error) => {
-            setStatus(error.message || "Failed to load Trail Relation");
+            setStatus(error.message || "Failed to load Trail");
         });
     })();
     "####);

@@ -3,7 +3,9 @@ use crate::{
         auth::{AppUserRow, OrganRow, RoleRow, ViewDependencyRow},
         core::{
             CollectionRow, CollectionViewRow, CommandRow, ConfigurationRow, FrequencyRow,
-            HistoryRow, QueryRow, RecordRow, SumRow, TransferItemRow, TransferRow, ViewRow,
+            HistoryRow, QueryRow, RecordRow, SumRow, TransferEventRow, TransferIdentityRow,
+            TransferItemRow, TransferLocalSettlementRow, TransferNodeIdentityRow, TransferRow,
+            TransferSettlementRow, TransferSyncCursorRow, ViewRow,
         },
         karma::{KarmaConditionRow, KarmaConsequenceRow, KarmaRow},
         sidecars::{
@@ -28,6 +30,12 @@ pub fn declared_tables() -> Vec<TableSchema> {
         CommandRow::schema(),
         TransferRow::schema(),
         TransferItemRow::schema(),
+        TransferNodeIdentityRow::schema(),
+        TransferIdentityRow::schema(),
+        TransferEventRow::schema(),
+        TransferSettlementRow::schema(),
+        TransferLocalSettlementRow::schema(),
+        TransferSyncCursorRow::schema(),
         SumRow::schema(),
         HistoryRow::schema(),
         QueryRow::schema(),

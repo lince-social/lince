@@ -4756,6 +4756,7 @@ dependencies = [
  "chrono",
  "dirs 6.0.0",
  "dotenvy",
+ "ed25519-dalek",
  "futures",
  "lince-application",
  "lince-injection",

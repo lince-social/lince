@@ -1,6 +1,9 @@
 use crate::{
-    application::backend_api::{FileLink, RecordQuantityBatchUpdateRequest},
-    application::state::AppState,
+    application::{
+        backend_api::{FileLink, RecordQuantityBatchUpdateRequest},
+        state::AppState,
+        transfer_widget::TransferWidgetError,
+    },
     infrastructure::backend_api_store::{TableCreateSchemaResponse, TableListQuery},
     presentation::http::api_error::{ApiResult, api_error},
 };
@@ -97,6 +100,11 @@ pub fn router() -> Router<AppState> {
             "/table/record/quantities",
             post(batch_update_record_quantities),
         )
+        .route(
+            "/transfer/packages/since",
+            get(list_transfer_packages_since),
+        )
+        .route("/transfer/packages", post(receive_transfer_package))
         .route("/karma", get(list_karma_rows).post(create_karma_row))
         .route(
             "/karma/{id}",
@@ -402,6 +410,44 @@ async fn batch_update_record_quantities(
         last_insert_rowid: outcome.last_insert_rowid,
         row: None,
     }))
+}
+
+async fn receive_transfer_package(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(payload): Json<Value>,
+) -> ApiResult<Json<Value>> {
+    let value = match authenticate_request(&state, &headers).await {
+        Ok(_claims) => state
+            .transfer_widget
+            .receive_transfer_package_value(payload)
+            .await
+            .map_err(map_transfer_widget_error)?,
+        Err(_) if headers.get(header::AUTHORIZATION).is_none() => state
+            .transfer_widget
+            .receive_public_transfer_package_value(payload)
+            .await
+            .map_err(map_transfer_widget_error)?,
+        Err(error) => return Err(error),
+    };
+    Ok(Json(value))
+}
+
+#[derive(Debug, Deserialize)]
+struct TransferSinceQuery {
+    since: Option<String>,
+}
+
+async fn list_transfer_packages_since(
+    State(state): State<AppState>,
+    Query(query): Query<TransferSinceQuery>,
+) -> ApiResult<Json<Value>> {
+    let value = state
+        .transfer_widget
+        .transfer_packages_since_value(query.since.as_deref())
+        .await
+        .map_err(map_transfer_widget_error)?;
+    Ok(Json(value))
 }
 
 #[utoipa::path(
@@ -920,4 +966,21 @@ fn map_backend_error(
         _ => StatusCode::INTERNAL_SERVER_ERROR,
     };
     api_error(status, error.to_string())
+}
+
+fn map_transfer_widget_error(
+    error: TransferWidgetError,
+) -> (
+    StatusCode,
+    Json<crate::presentation::http::api_error::ApiError>,
+) {
+    match error {
+        TransferWidgetError::NotFound(message) => api_error(StatusCode::NOT_FOUND, message),
+        TransferWidgetError::Misconfigured(message) | TransferWidgetError::Invalid(message) => {
+            api_error(StatusCode::BAD_REQUEST, message)
+        }
+        TransferWidgetError::Internal(message) => {
+            api_error(StatusCode::INTERNAL_SERVER_ERROR, message)
+        }
+    }
 }

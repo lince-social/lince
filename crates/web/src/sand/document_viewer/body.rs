@@ -21,14 +21,23 @@ pub(super) fn body() -> Markup {
                     div class="fieldRow fieldRow--path" {
                         input id="path-input" class="field" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="Path or URL";
                         button id="pick-button" class="button" type="button" { "Choose" }
-                        input id="file-input" class="fileInput" type="file" accept="application/pdf,image/png,image/jpeg" hidden="";
+                        input id="file-input" class="fileInput" type="file" accept="application/pdf,application/epub+zip,.epub,image/png,image/jpeg" hidden="";
                     }
-                    div class="fieldRow fieldRow--pdf" {
+                    div id="view-mode-row" class="fieldRow fieldRow--mode" {
                         select id="pdf-mode-select" class="field field--select" {
                             option value="scroll" { "Infinite scroll" }
-                            option value="page" { "Page anchor" }
+                            option value="page" { "Paging" }
                         }
                         input id="pdf-page-input" class="field pageField" type="number" min="1" step="1" inputmode="numeric" value="1";
+                    }
+                    div id="epub-controls" class="fieldRow fieldRow--epub" hidden="" {
+                        button id="epub-prev" class="button" type="button" title="Previous EPUB section" { "Prev" }
+                        button id="epub-next" class="button" type="button" title="Next EPUB section" { "Next" }
+                    }
+                    div class="licenseRow" {
+                        span { "Reader libraries:" }
+                        a href="vendor/EPUBJS-LICENSE.txt" target="_blank" rel="noreferrer" { "epub.js BSD" }
+                        a href="vendor/JSZIP-LICENSE.txt" target="_blank" rel="noreferrer" { "JSZip MIT" }
                     }
                 }
                 pre id="debug" class="debug" {}
@@ -38,6 +47,11 @@ pub(super) fn body() -> Markup {
                 div id="frame" class="frame" {
                     img id="image" class="image" alt="Document preview" hidden="";
                     iframe id="pdf-frame" class="pdfFrame" title="PDF preview" hidden="" {}
+                    div id="epub-viewer" class="epubViewer" hidden="" {}
+                    div id="nav-hit" class="navHit" aria-hidden="true" hidden="" {
+                        button id="nav-prev" class="navZone navZone--prev" type="button" title="Previous" {}
+                        button id="nav-next" class="navZone navZone--next" type="button" title="Next" {}
+                    }
                     div id="empty" class="empty" {
                         div class="emptyEyebrow" { "No document selected" }
                         div id="empty-title" class="emptyTitle" { "Choose a file or path" }

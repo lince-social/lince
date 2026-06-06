@@ -600,11 +600,12 @@ fn supported_document_content_type(path: &FsPath) -> ApiResult<&'static str> {
         .as_deref()
     {
         Some("pdf") => Ok("application/pdf"),
+        Some("epub") => Ok("application/epub+zip"),
         Some("jpeg") | Some("jpg") => Ok("image/jpeg"),
         Some("png") => Ok("image/png"),
         _ => Err(api_error(
             StatusCode::BAD_REQUEST,
-            "Somente arquivos PDF, JPEG e PNG sao suportados.",
+            "Somente arquivos PDF, EPUB, JPEG e PNG sao suportados.",
         )),
     }
 }

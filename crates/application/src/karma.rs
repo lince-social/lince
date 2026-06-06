@@ -711,21 +711,26 @@ async fn execute_sync_consequence(
     token: &SyncToken,
     sync_snapshots: &mut HashMap<SyncToken, SyncSourceTree>,
 ) -> Result<(), Error> {
-    let mut context = load_sync_context(&services, token.record_id, None).await?;
-    let remote_source_tree = if token.organ_id.is_some() {
-        Some(load_sync_source_tree(&services, token, sync_snapshots).await?)
+    let remote_snapshot = if token.organ_id.is_some() {
+        let tree = load_sync_source_tree(&services, token, sync_snapshots).await?;
+        Some((*token, tree))
     } else {
         sync_snapshots
             .iter()
-            .find(|(snapshot_token, _)| {
-                snapshot_token.organ_id.is_some()
-                    && snapshot_token.record_id == context.source_root_record_id
-            })
-            .map(|(_, tree)| tree.clone())
+            .find(|(snapshot_token, _)| snapshot_token.organ_id.is_some())
+            .map(|(snapshot_token, tree)| (*snapshot_token, tree.clone()))
     };
-    if let Some(source_tree) = remote_source_tree {
-        context = load_sync_context(&services, token.record_id, Some(source_tree)).await?;
-    }
+    let source_root_hint = remote_snapshot
+        .as_ref()
+        .map(|(snapshot_token, _)| snapshot_token.record_id);
+    let remote_source_tree = remote_snapshot.map(|(_, tree)| tree);
+    let mut context = load_sync_context(
+        &services,
+        token.record_id,
+        source_root_hint,
+        remote_source_tree,
+    )
+    .await?;
     let source_root_record_id = context.source_root_record_id;
     let root_categories = context
         .categories_by_record
@@ -781,6 +786,7 @@ struct SyncContext {
 async fn load_sync_context(
     services: &InjectedServices,
     copied_root_id: i64,
+    source_root_hint: Option<i64>,
     remote_source_tree: Option<SyncSourceTree>,
 ) -> Result<SyncContext, Error> {
     let db = &*services.db;
@@ -794,7 +800,7 @@ async fn load_sync_context(
     .fetch_all(db)
     .await
     .map_err(Error::other)?;
-    let all_extensions = sqlx::query_as::<_, SqlRecordExtensionRow>(
+    let mut all_extensions = sqlx::query_as::<_, SqlRecordExtensionRow>(
         "SELECT id, record_id, namespace, freestyle_data_structure FROM record_extension",
     )
     .fetch_all(db)
@@ -807,11 +813,34 @@ async fn load_sync_context(
         .collect::<BTreeMap<_, _>>();
     let trail_extension = all_extensions
         .iter()
-        .find(|row| row.record_id == copied_root_id && row.namespace == "trail.sync")
-        .ok_or_else(|| Error::new(ErrorKind::InvalidData, "Missing trail.sync extension"))?;
-    let trail_sync =
+        .find(|row| row.record_id == copied_root_id && row.namespace == "trail.sync");
+    let trail_sync = if let Some(trail_extension) = trail_extension {
         serde_json::from_str::<TrailSyncExtension>(&trail_extension.freestyle_data_structure)
-            .map_err(Error::other)?;
+            .map_err(Error::other)?
+    } else {
+        let source_root_id = source_root_hint.ok_or_else(|| {
+            Error::new(
+                ErrorKind::InvalidData,
+                "Missing trail.sync extension and sync source hint",
+            )
+        })?;
+        upsert_extension(
+            services.clone(),
+            &mut all_extensions,
+            copied_root_id,
+            "trail.sync",
+            &json!({
+                "trail_root_record_id": copied_root_id,
+                "sync_source_record_id": source_root_id,
+            })
+            .to_string(),
+        )
+        .await?;
+        TrailSyncExtension {
+            trail_root_record_id: copied_root_id,
+            sync_source_record_id: source_root_id,
+        }
+    };
 
     let mut parent_links = all_links
         .iter()

@@ -13,4 +13,5 @@ name = "injection"
 [dependencies]
 persistence = { workspace = true }
 domain = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
 sqlx.workspace = true

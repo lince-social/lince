@@ -23,6 +23,7 @@ use {
                     proxy_manas_table_collection, proxy_manas_table_item, proxy_manas_table_schema,
                     proxy_manas_view, proxy_manas_view_snapshot, proxy_manas_view_table_stream,
                 },
+                notifications::{dismiss_notification, list_notifications},
                 operation::post_operation,
                 packages::{
                     delete_dna_publication, get_dna_catalog, get_local_package,
@@ -76,6 +77,11 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
         .route("/ai/drafts/{draft_id}/size", post(update_draft_size))
         .route("/ai/drafts/{draft_id}/download", get(download_draft))
         .route("/board/state", get(get_board_state).put(put_board_state))
+        .route("/notifications", get(list_notifications))
+        .route(
+            "/notifications/{notification_id}",
+            axum::routing::delete(dismiss_notification),
+        )
         .route("/operation", post(post_operation))
         .route("/board/workspaces/import", post(import_workspace))
         .route(

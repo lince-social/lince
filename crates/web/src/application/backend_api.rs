@@ -144,8 +144,18 @@ impl BackendApiService {
                 let (sql, params) = self.store.build_standard_insert(table, &object)?;
                 write::execute_record_insert_returning_id(self.services.clone(), sql, params).await
             }
+            ApiTable::RecordLink => {
+                let (object, confirmed) = strip_karma_confirmation(table, object);
+                self.require_karma_loop_confirmation(table, None, &object, confirmed)
+                    .await?;
+                self.validate_record_link_payload(None, &object).await?;
+                let (sql, params) = self.store.build_standard_insert(table, &object)?;
+                self.services
+                    .writer
+                    .execute_statement_returning_id(sql, params)
+                    .await
+            }
             ApiTable::RecordExtension
-            | ApiTable::RecordLink
             | ApiTable::RecordComment
             | ApiTable::RecordWorklog
             | ApiTable::RecordResourceRef
@@ -229,8 +239,15 @@ impl BackendApiService {
                 let (sql, params) = self.store.build_standard_update(table, id, &object)?;
                 write::execute_record_update(self.services.clone(), [id as u32], sql, params).await
             }
+            ApiTable::RecordLink => {
+                let (object, confirmed) = strip_karma_confirmation(table, object);
+                self.require_karma_loop_confirmation(table, Some(id), &object, confirmed)
+                    .await?;
+                self.validate_record_link_payload(Some(id), &object).await?;
+                let (sql, params) = self.store.build_standard_update(table, id, &object)?;
+                self.services.writer.execute_statement(sql, params).await
+            }
             ApiTable::RecordExtension
-            | ApiTable::RecordLink
             | ApiTable::RecordComment
             | ApiTable::RecordWorklog
             | ApiTable::RecordResourceRef
@@ -318,6 +335,82 @@ impl BackendApiService {
         let record_ids = updates.iter().map(|row| row.id as u32).collect::<Vec<_>>();
         let (sql, params) = build_record_quantity_batch_update(&updates);
         write::execute_record_update(self.services.clone(), record_ids, sql, params).await
+    }
+
+    async fn validate_record_link_payload(
+        &self,
+        link_id: Option<i64>,
+        object: &Map<String, Value>,
+    ) -> Result<(), Error> {
+        let mut record_id = None;
+        let mut target_table = None;
+        let mut target_id = None;
+
+        if let Some(link_id) = link_id {
+            let existing = sqlx::query_as::<_, (i64, String, i64)>(
+                "SELECT record_id, target_table, target_id FROM record_link WHERE id = ?",
+            )
+            .bind(link_id)
+            .fetch_optional(&*self.services.db)
+            .await
+            .map_err(Error::other)?
+            .ok_or_else(|| Error::new(ErrorKind::NotFound, "Record link not found"))?;
+            record_id = Some(existing.0);
+            target_table = Some(existing.1);
+            target_id = Some(existing.2);
+        }
+
+        if let Some(value) = object.get("record_id") {
+            record_id = Some(parse_i64_value("record_id", value)?);
+        }
+        if let Some(value) = object.get("target_table") {
+            target_table = Some(parse_text_value("target_table", value)?);
+        }
+        if let Some(value) = object.get("target_id") {
+            target_id = Some(parse_i64_value("target_id", value)?);
+        }
+
+        let record_id = record_id.ok_or_else(|| {
+            Error::new(ErrorKind::InvalidInput, "Missing required field: record_id")
+        })?;
+        if !self.record_exists(record_id).await? {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                format!("record_link.record_id {record_id} does not exist"),
+            ));
+        }
+
+        let target_table = target_table.ok_or_else(|| {
+            Error::new(
+                ErrorKind::InvalidInput,
+                "Missing required field: target_table",
+            )
+        })?;
+        if target_table == "record" {
+            let target_id = target_id.ok_or_else(|| {
+                Error::new(ErrorKind::InvalidInput, "Missing required field: target_id")
+            })?;
+            if !self.record_exists(target_id).await? {
+                return Err(Error::new(
+                    ErrorKind::InvalidInput,
+                    format!("record_link target record {target_id} does not exist"),
+                ));
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn record_exists(&self, id: i64) -> Result<bool, Error> {
+        if id <= 0 {
+            return Ok(false);
+        }
+        let count = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM record WHERE id = ?")
+            .bind(id)
+            .fetch_one(&*self.services.db)
+            .await
+            .map_err(Error::other)?;
+        Ok(count > 0)
     }
 
     pub async fn delete_table_row(
@@ -693,6 +786,24 @@ fn parse_text_value(field_name: &str, value: &Value) -> Result<String, Error> {
             format!("Expected string for field {field_name}"),
         )
     })
+}
+
+fn parse_i64_value(field_name: &str, value: &Value) -> Result<i64, Error> {
+    if let Some(value) = value.as_i64() {
+        return Ok(value);
+    }
+    if let Some(value) = value.as_str() {
+        return value.parse::<i64>().map_err(|_| {
+            Error::new(
+                ErrorKind::InvalidInput,
+                format!("Expected integer for field {field_name}"),
+            )
+        });
+    }
+    Err(Error::new(
+        ErrorKind::InvalidInput,
+        format!("Expected integer for field {field_name}"),
+    ))
 }
 
 fn collect_record_ids_from_rows(rows: &[Map<String, Value>]) -> Result<Vec<u32>, Error> {

@@ -134,6 +134,12 @@ const operationForm = document.getElementById("operation-form");
 const operationInput = document.getElementById("operation-input");
 const streamsToggle = document.getElementById("streams-toggle");
 const streamsToggleLabel = document.getElementById("streams-toggle-label");
+const notificationsToggle = document.getElementById("notifications-toggle");
+const notificationsCount = document.getElementById("notifications-count");
+const notificationsPanel = document.getElementById("notifications-panel");
+const notificationsClose = document.getElementById("notifications-close");
+const notificationsSummary = document.getElementById("notifications-summary");
+const notificationsList = document.getElementById("notifications-list");
 const densitySlider = document.getElementById("density-slider");
 const densityValue = document.getElementById("density-value");
 const workspaceSwitcher = document.querySelector(".workspace-switcher");
@@ -338,6 +344,14 @@ if (
   !modeLabel ||
   !operationForm ||
   !operationInput ||
+  !streamsToggle ||
+  !streamsToggleLabel ||
+  !notificationsToggle ||
+  !notificationsCount ||
+  !notificationsPanel ||
+  !notificationsClose ||
+  !notificationsSummary ||
+  !notificationsList ||
   !densitySlider ||
   !densityValue ||
   !workspaceSwitcher ||
@@ -516,6 +530,9 @@ let dnaPackageResults = [];
 let dnaCatalogOrigins = [];
 let serverProfiles = Array.isArray(bootstrap?.servers) ? bootstrap.servers : [];
 let pendingServerLogin = null;
+let appNotifications = [];
+let notificationsOpen = false;
+let notificationsTimer = null;
 let pendingWidgetConfigCardId = null;
 let pendingWidgetConfigServerId = "";
 let pendingWidgetConfigViewId = null;
@@ -2706,6 +2723,88 @@ async function refreshServerProfiles() {
   return serverProfiles;
 }
 
+async function refreshNotifications() {
+  const response = await fetch(apiPath("/notifications"));
+  const payload = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(payload?.error || "Falha ao carregar notificacoes.");
+  }
+  appNotifications = Array.isArray(payload?.notifications)
+    ? payload.notifications
+    : [];
+  renderNotifications();
+  return appNotifications;
+}
+
+function renderNotifications() {
+  const count = appNotifications.length;
+  notificationsCount.textContent = String(count);
+  notificationsCount.hidden = count === 0;
+  notificationsToggle.classList.toggle("is-active", notificationsOpen || count > 0);
+  notificationsToggle.setAttribute("aria-expanded", String(notificationsOpen));
+  notificationsPanel.hidden = !notificationsOpen;
+  notificationsSummary.textContent =
+    count === 0 ? "No notifications" : `${count} pending`;
+  notificationsList.innerHTML = "";
+
+  if (count === 0) {
+    const empty = document.createElement("div");
+    empty.className = "notification-item";
+    empty.innerHTML = `<div class="notification-item__body">Nothing needs attention.</div>`;
+    notificationsList.appendChild(empty);
+    return;
+  }
+
+  for (const notification of appNotifications) {
+    const item = document.createElement("article");
+    item.className = "notification-item";
+    const canLogin =
+      notification.kind === "organ_login_required" && notification.organId;
+    item.innerHTML = `
+      <div class="notification-item__title">${escapeHtml(notification.title || "Notification")}</div>
+      <div class="notification-item__body">${escapeHtml(notification.body || "")}</div>
+      <div class="notification-item__actions">
+        ${
+          canLogin
+            ? `<button class="notification-item__button" type="button" data-notification-login="${escapeHtml(notification.organId)}">Login</button>`
+            : ""
+        }
+        <button class="notification-item__button" type="button" data-notification-dismiss="${escapeHtml(notification.id)}">Dismiss</button>
+      </div>
+    `;
+    notificationsList.appendChild(item);
+  }
+}
+
+function setNotificationsOpen(open) {
+  notificationsOpen = Boolean(open);
+  renderNotifications();
+  syncModalLock();
+}
+
+async function dismissNotification(notificationId) {
+  const id = String(notificationId || "").trim();
+  if (!id) return;
+  const response = await fetch(
+    apiPath(`/notifications/${encodeURIComponent(id)}`),
+    { method: "DELETE" },
+  );
+  if (!response.ok) {
+    const payload = await parseJsonResponse(response);
+    throw new Error(payload?.error || "Falha ao dispensar notificacao.");
+  }
+  appNotifications = appNotifications.filter((item) => item.id !== id);
+  renderNotifications();
+}
+
+function startNotificationsPolling() {
+  window.clearInterval(notificationsTimer);
+  void refreshNotifications().catch(() => {});
+  notificationsTimer = window.setInterval(() => {
+    void refreshNotifications().catch(() => {});
+  }, 10000);
+}
+
 function setServerLoginError(message) {
   const text = String(message || "").trim();
   serverLoginErrorMessage.textContent = text;
@@ -2814,6 +2913,7 @@ async function handleServerLoginFormSubmit(event) {
   try {
     await submitServerLogin(pendingServerLogin, username, password);
     await refreshServerProfiles();
+    await refreshNotifications().catch(() => {});
     closeServerLoginModal();
   } catch (error) {
     setServerLoginError(
@@ -3308,7 +3408,8 @@ function syncModalLock() {
       !dnaPackagesModalBackdrop.hidden ||
       !deleteCardModalBackdrop.hidden ||
       !serverLoginModalBackdrop.hidden ||
-      !widgetConfigModalBackdrop.hidden,
+      !widgetConfigModalBackdrop.hidden ||
+      notificationsOpen,
   );
 }
 
@@ -3847,6 +3948,38 @@ if (streamsToggle) {
   });
 }
 
+notificationsToggle.addEventListener("click", () => {
+  setNotificationsOpen(!notificationsOpen);
+  if (notificationsOpen) {
+    void refreshNotifications().catch(() => {});
+  }
+});
+
+notificationsClose.addEventListener("click", () => {
+  setNotificationsOpen(false);
+});
+
+notificationsList.addEventListener("click", (event) => {
+  const loginButton = event.target.closest("[data-notification-login]");
+  if (loginButton) {
+    const serverId = loginButton.dataset.notificationLogin;
+    setNotificationsOpen(false);
+    openServerLoginModal(serverId);
+    return;
+  }
+
+  const dismissButton = event.target.closest("[data-notification-dismiss]");
+  if (dismissButton) {
+    void dismissNotification(dismissButton.dataset.notificationDismiss).catch(
+      (error) => {
+        flashDropOverlayMessage(
+          error instanceof Error ? error.message : "Falha ao dispensar notificacao.",
+        );
+      },
+    );
+  }
+});
+
 addCardButton.addEventListener("click", () => {
   setWorkspacePopoverOpen(false);
   setAddCardPopoverOpen(!addCardPopoverOpen);
@@ -4312,6 +4445,12 @@ document.addEventListener("pointerdown", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
+  if (notificationsOpen && event.key === "Escape") {
+    event.preventDefault();
+    setNotificationsOpen(false);
+    return;
+  }
+
   if (!serverLoginModalBackdrop.hidden && event.key === "Escape") {
     event.preventDefault();
     closeServerLoginModal();
@@ -4395,6 +4534,8 @@ setEditMode(false);
 syncServerProfiles(serverProfiles);
 syncServerOptions("");
 syncPasswordVisibility(false);
+setNotificationsOpen(false);
+startNotificationsPolling();
 void bootWorkspace();
 
 window.LinceBoard = {

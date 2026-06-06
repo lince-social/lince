@@ -14,6 +14,7 @@ use persistence::repositories::{
 };
 use persistence::storage::StorageService;
 use persistence::write_coordinator::WriteCoordinatorHandle;
+use serde::Serialize;
 use sqlx::{Pool, Sqlite};
 use std::{
     collections::HashMap,
@@ -43,6 +44,7 @@ pub struct Injected {
     pub karma_cache: Arc<KarmaCache>,
     pub file_sync_config: Arc<RwLock<Option<FileSyncConfig>>>,
     pub remote_organ_auth: Arc<RwLock<HashMap<i64, String>>>,
+    pub notifications: Arc<NotificationStore>,
 }
 
 pub type InjectedServices = Arc<Injected>;
@@ -51,6 +53,60 @@ pub type InjectedServices = Arc<Injected>;
 pub struct FileSyncConfig {
     pub enabled: bool,
     pub path: PathBuf,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AppNotification {
+    pub id: String,
+    pub kind: String,
+    pub severity: String,
+    pub title: String,
+    pub body: String,
+    pub organ_id: Option<i64>,
+    pub created_at_unix: i64,
+}
+
+#[derive(Default)]
+pub struct NotificationStore {
+    notifications: RwLock<Vec<AppNotification>>,
+}
+
+impl NotificationStore {
+    pub fn upsert(&self, notification: AppNotification) {
+        let mut notifications = self
+            .notifications
+            .write()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if let Some(existing) = notifications
+            .iter_mut()
+            .find(|item| item.id == notification.id)
+        {
+            *existing = notification;
+        } else {
+            notifications.push(notification);
+        }
+    }
+
+    pub fn dismiss(&self, notification_id: &str) -> bool {
+        let mut notifications = self
+            .notifications
+            .write()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let before = notifications.len();
+        notifications.retain(|item| item.id != notification_id);
+        before != notifications.len()
+    }
+
+    pub fn list(&self) -> Vec<AppNotification> {
+        let mut notifications = self
+            .notifications
+            .read()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .clone();
+        notifications.sort_by(|left, right| right.created_at_unix.cmp(&left.created_at_unix));
+        notifications
+    }
 }
 
 #[derive(Default)]
@@ -101,6 +157,7 @@ pub fn dependency_injection(
         karma_cache: Arc::new(KarmaCache::default()),
         file_sync_config: Arc::new(RwLock::new(None)),
         remote_organ_auth: Arc::new(RwLock::new(HashMap::new())),
+        notifications: Arc::new(NotificationStore::default()),
     });
 
     services

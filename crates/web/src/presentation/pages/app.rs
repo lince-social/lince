@@ -140,6 +140,16 @@ fn render_topbar_actions() -> Markup {
                 span id="streams-toggle-label" { "Streams on" }
             }
             button
+                id="notifications-toggle"
+                class="icon-button notification-button"
+                type="button"
+                aria-label="Abrir notificacoes"
+                aria-expanded="false"
+            {
+                span class="notification-button__mark" aria-hidden="true" { "!" }
+                span id="notifications-count" class="notification-button__count" hidden="" { "0" }
+            }
+            button
                 id="edit-toggle"
                 class="icon-button"
                 type="button"
@@ -386,8 +396,26 @@ fn render_app_modals() -> Markup {
         (render_local_packages_modal_backdrop())
         (render_dna_packages_modal_backdrop())
         (render_delete_card_modal_backdrop())
-        (render_server_login_modal_backdrop())
-        (render_widget_config_modal_backdrop())
+            (render_server_login_modal_backdrop())
+            (render_notifications_panel())
+            (render_widget_config_modal_backdrop())
+    }
+}
+
+fn render_notifications_panel() -> Markup {
+    html! {
+        aside id="notifications-panel" class="notifications-panel" aria-label="Notificacoes" hidden="" {
+            div class="notifications-panel__header" {
+                div {
+                    h2 class="notifications-panel__title" { "Notifications" }
+                    p id="notifications-summary" class="notifications-panel__summary" { "No notifications" }
+                }
+                button id="notifications-close" class="icon-button" type="button" aria-label="Fechar notificacoes" {
+                    "x"
+                }
+            }
+            div id="notifications-list" class="notifications-list" {}
+        }
     }
 }
 

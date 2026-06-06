@@ -1,5 +1,5 @@
 use domain::clean::{frequency::Frequency, karma::Karma};
-use injection::cross_cutting::InjectedServices;
+use injection::cross_cutting::{AppNotification, InjectedServices};
 use persistence::write_coordinator::SqlParameter;
 use regex::Regex;
 use serde::Deserialize;
@@ -18,6 +18,7 @@ use crate::{
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque},
     io::{Error, ErrorKind},
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 pub async fn refresh_karma_cache(services: InjectedServices) -> Result<(), Error> {
@@ -322,9 +323,25 @@ async fn replace_sync_tokens(
             continue;
         };
         let exists = if token.organ_id.is_some() {
-            load_sync_source_tree(services, &token, sync_snapshots)
-                .await
-                .is_ok()
+            match load_sync_source_tree(services, &token, sync_snapshots).await {
+                Ok(tree) => {
+                    karma_sync_log(format!(
+                        "condition token ready organ={:?} record={} records={} parent_links={}",
+                        token.organ_id,
+                        token.record_id,
+                        tree.records.len(),
+                        tree.parent_links.len()
+                    ));
+                    true
+                }
+                Err(error) => {
+                    karma_sync_log(format!(
+                        "condition token failed organ={:?} record={} error={}",
+                        token.organ_id, token.record_id, error
+                    ));
+                    false
+                }
+            }
         } else {
             services
                 .repository
@@ -594,6 +611,10 @@ async fn fetch_remote_sync_source_tree(
     organ_id: i64,
     root_record_id: i64,
 ) -> Result<SyncSourceTree, Error> {
+    karma_sync_log(format!(
+        "fetch remote tree organ={} root_record={}",
+        organ_id, root_record_id
+    ));
     let organ =
         sqlx::query_as::<_, SqlOrganRow>("SELECT id, base_url FROM organ WHERE id = ? LIMIT 1")
             .bind(organ_id)
@@ -608,8 +629,15 @@ async fn fetch_remote_sync_source_tree(
         .get(&organ.id)
         .cloned()
         .filter(|value| !value.trim().is_empty())
-        .ok_or_else(|| Error::new(ErrorKind::PermissionDenied, "Remote organ login missing"))?;
+        .ok_or_else(|| {
+            notify_remote_organ_login_required(services, organ.id, root_record_id);
+            Error::new(ErrorKind::PermissionDenied, "Remote organ login missing")
+        })?;
     let base_url = organ.base_url.trim().trim_end_matches('/');
+    karma_sync_log(format!(
+        "remote organ resolved organ={} base_url={}",
+        organ.id, base_url
+    ));
     let client = reqwest::Client::builder()
         .user_agent("lince-karma-sync/0.1")
         .build()
@@ -638,7 +666,7 @@ async fn fetch_remote_sync_source_tree(
     })
     .collect::<Vec<_>>();
     let record_ids = collect_tree_record_ids(root_record_id, &parent_links);
-    Ok(SyncSourceTree {
+    let tree = SyncSourceTree {
         records: records
             .into_iter()
             .filter(|row| record_ids.contains(&row.id))
@@ -656,7 +684,16 @@ async fn fetch_remote_sync_source_tree(
             })
             .collect(),
         record_ids,
-    })
+    };
+    karma_sync_log(format!(
+        "remote tree loaded organ={} root_record={} record_ids={:?} records={} parent_links={}",
+        organ_id,
+        root_record_id,
+        tree.record_ids,
+        tree.records.len(),
+        tree.parent_links.len()
+    ));
+    Ok(tree)
 }
 
 async fn fetch_remote_json<T: for<'de> Deserialize<'de>>(
@@ -711,6 +748,14 @@ async fn execute_sync_consequence(
     token: &SyncToken,
     sync_snapshots: &mut HashMap<SyncToken, SyncSourceTree>,
 ) -> Result<(), Error> {
+    karma_sync_log(format!(
+        "execute consequence target_record={} organ={:?} scope={:?} fields={:?} cached_snapshots={}",
+        token.record_id,
+        token.organ_id,
+        token.scope,
+        token.fields,
+        sync_snapshots.len()
+    ));
     let remote_snapshot = if token.organ_id.is_some() {
         let tree = load_sync_source_tree(&services, token, sync_snapshots).await?;
         Some((*token, tree))
@@ -724,6 +769,12 @@ async fn execute_sync_consequence(
         .as_ref()
         .map(|(snapshot_token, _)| snapshot_token.record_id);
     let remote_source_tree = remote_snapshot.map(|(_, tree)| tree);
+    karma_sync_log(format!(
+        "consequence source resolved target_record={} source_root_hint={:?} has_remote_tree={}",
+        token.record_id,
+        source_root_hint,
+        remote_source_tree.is_some()
+    ));
     let mut context = load_sync_context(
         &services,
         token.record_id,
@@ -731,6 +782,15 @@ async fn execute_sync_consequence(
         remote_source_tree,
     )
     .await?;
+    karma_sync_log(format!(
+        "context ready target_record={} trail_root={} source_root={} copies={} records={} child_parent_entries={}",
+        token.record_id,
+        context.trail_root_record_id,
+        context.source_root_record_id,
+        context.copies_by_source_id.len(),
+        context.records_by_id.len(),
+        context.children_by_parent.len()
+    ));
     let source_root_record_id = context.source_root_record_id;
     let root_categories = context
         .categories_by_record
@@ -815,6 +875,10 @@ async fn load_sync_context(
         .iter()
         .find(|row| row.record_id == copied_root_id && row.namespace == "trail.sync");
     let trail_sync = if let Some(trail_extension) = trail_extension {
+        karma_sync_log(format!(
+            "existing trail.sync copied_root={}",
+            copied_root_id
+        ));
         serde_json::from_str::<TrailSyncExtension>(&trail_extension.freestyle_data_structure)
             .map_err(Error::other)?
     } else {
@@ -836,6 +900,10 @@ async fn load_sync_context(
             .to_string(),
         )
         .await?;
+        karma_sync_log(format!(
+            "created trail.sync copied_root={} source_root={}",
+            copied_root_id, source_root_id
+        ));
         TrailSyncExtension {
             trail_root_record_id: copied_root_id,
             sync_source_record_id: source_root_id,
@@ -849,6 +917,12 @@ async fn load_sync_context(
         .collect::<Vec<_>>();
     let mut records_by_id = records_by_id;
     if let Some(remote) = remote_source_tree {
+        karma_sync_log(format!(
+            "merge remote tree copied_root={} remote_records={} remote_parent_links={}",
+            copied_root_id,
+            remote.records.len(),
+            remote.parent_links.len()
+        ));
         for row in remote.records {
             records_by_id.insert(row.id, row);
         }
@@ -930,8 +1004,16 @@ async fn sync_existing_record_fields(
     }
 
     if assignments.is_empty() {
+        karma_sync_log(format!(
+            "sync root skipped copied={} source={} no changes",
+            copied_record_id, source_record_id
+        ));
         return Ok(());
     }
+    karma_sync_log(format!(
+        "sync record fields copied={} source={} assignments={:?}",
+        copied_record_id, source_record_id, assignments
+    ));
 
     params.push(SqlParameter::Integer(copied_record_id));
     execute_statement(
@@ -977,6 +1059,10 @@ async fn sync_descendants(
             .get(&current_source_id)
             .cloned()
             .unwrap_or_default();
+        karma_sync_log(format!(
+            "sync descendants source={} copy={} children={:?}",
+            current_source_id, current_copy_id, expected_source_children
+        ));
 
         let mut expected_copy_children = BTreeSet::new();
 
@@ -1055,6 +1141,10 @@ async fn create_copied_record(
         .get(&source_record_id)
         .ok_or_else(|| Error::new(ErrorKind::NotFound, "Missing source record for copied node"))?
         .clone();
+    karma_sync_log(format!(
+        "create copied record source={} trail_root={} fields={:?}",
+        source_record_id, trail_root_record_id, fields
+    ));
     let quantity = if fields.quantity {
         source.quantity
     } else {
@@ -1126,6 +1216,36 @@ async fn create_copied_record(
     Ok(copied_record_id)
 }
 
+fn karma_sync_log(message: impl Into<String>) {
+    let message = format!("[karma-sync] {}", message.into());
+    log(LogEntry::Info(message));
+}
+
+fn notify_remote_organ_login_required(
+    services: &InjectedServices,
+    organ_id: i64,
+    root_record_id: i64,
+) {
+    services.notifications.upsert(AppNotification {
+        id: format!("organ-login-required-{organ_id}"),
+        kind: "organ_login_required".into(),
+        severity: "warning".into(),
+        title: format!("Organ {organ_id} login required"),
+        body: format!(
+            "Karma sync needs credentials for Organ {organ_id} before it can fetch record {root_record_id}."
+        ),
+        organ_id: Some(organ_id),
+        created_at_unix: current_unix_timestamp_i64(),
+    });
+}
+
+fn current_unix_timestamp_i64() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_secs() as i64)
+        .unwrap_or(0)
+}
+
 async fn ensure_parent_link(
     services: InjectedServices,
     context: &mut SyncContext,
@@ -1171,6 +1291,15 @@ async fn repair_parent_links(
     expected_copy_children: &BTreeSet<i64>,
     trail_root_record_id: i64,
 ) -> Result<(), Error> {
+    let current_is_synced = record_belongs_to_trail(context, current_copy_id, trail_root_record_id)
+        || current_copy_id == trail_root_record_id;
+    if !current_is_synced {
+        karma_sync_log(format!(
+            "skip parent repair copy={} trail_root={} not owned by sync",
+            current_copy_id, trail_root_record_id
+        ));
+        return Ok(());
+    }
     let candidate_links = context
         .all_links
         .iter()
@@ -1182,17 +1311,11 @@ async fn repair_parent_links(
         .cloned()
         .collect::<Vec<_>>();
     for link in candidate_links {
-        let belongs_to_same_trail = context
-            .all_extensions
-            .iter()
-            .find(|extension| {
-                extension.record_id == link.record_id && extension.namespace == "trail.sync"
-            })
-            .and_then(|extension| {
-                serde_json::from_str::<TrailSyncExtension>(&extension.freestyle_data_structure).ok()
-            })
-            .is_some_and(|meta| meta.trail_root_record_id == trail_root_record_id);
-        if belongs_to_same_trail && !expected_copy_children.contains(&link.record_id) {
+        if !expected_copy_children.contains(&link.record_id) {
+            karma_sync_log(format!(
+                "remove stale parent link id={} child={} parent={} trail_root={}",
+                link.id, link.record_id, current_copy_id, trail_root_record_id
+            ));
             execute_statement(
                 services.clone(),
                 "DELETE FROM record_link WHERE id = ?",
@@ -1204,6 +1327,21 @@ async fn repair_parent_links(
         }
     }
     Ok(())
+}
+
+fn record_belongs_to_trail(
+    context: &SyncContext,
+    record_id: i64,
+    trail_root_record_id: i64,
+) -> bool {
+    context
+        .all_extensions
+        .iter()
+        .find(|extension| extension.record_id == record_id && extension.namespace == "trail.sync")
+        .and_then(|extension| {
+            serde_json::from_str::<TrailSyncExtension>(&extension.freestyle_data_structure).ok()
+        })
+        .is_some_and(|meta| meta.trail_root_record_id == trail_root_record_id)
 }
 
 async fn upsert_extension(

@@ -50,7 +50,7 @@ pub async fn serve(
     listen_addr: Option<String>,
     mode: HttpServeMode,
 ) -> Result<(), IoError> {
-    let auth = AppAuth::new();
+    let auth = AppAuth::with_shared_remote_tokens(services.remote_organ_auth.clone());
     let local_base_url = local_base_url_from_listen_addr(listen_addr.as_deref())?;
     let board_state = BoardStateStore::new().map_err(IoError::other)?;
     let organs = OrganStore::new(services.db.clone(), services.writer.clone());

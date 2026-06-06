@@ -55,6 +55,15 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
   button.primary { border-color: rgba(143, 227, 170, 0.5); color: var(--ok); }
   button.danger { border-color: rgba(255, 154, 154, 0.45); color: var(--danger); }
   button.danger:hover:not(:disabled) { background: rgba(255, 154, 154, 0.12); }
+  button.iconButton {
+    width: 36px;
+    min-width: 36px;
+    padding: 0;
+    display: inline-grid;
+    place-items: center;
+    font-size: 1.05rem;
+    line-height: 1;
+  }
 
   input,
   select,

@@ -24,6 +24,7 @@ pub(super) fn script() -> String {
   const transferList = document.getElementById("transfer-list");
   const transferDetail = document.getElementById("transfer-detail");
   const transferCount = document.getElementById("transfer-count");
+  const transferTabs = document.getElementById("transfer-tabs");
 
   const frame = window.frameElement;
   const instanceId = String(frame?.dataset?.packageInstanceId || "").trim();
@@ -34,8 +35,11 @@ pub(super) fn script() -> String {
     records: [],
     organs: [],
     transfers: [],
+    gossipTransfers: [],
   };
   let selectedTransferId = null;
+  let selectedGossipTransferUid = null;
+  let activeTransferTab = "mine";
   let pendingDeleteTransferId = null;
   let busy = false;
 
@@ -118,19 +122,37 @@ pub(super) fn script() -> String {
     return snapshot.transfers.find((transfer) => Number(transfer.id) === Number(id)) || null;
   }
 
+  function gossipByUid(uid) {
+    return snapshot.gossipTransfers.find((transfer) => String(transfer.transferUid) === String(uid)) || null;
+  }
+
+  function visibleTransfers() {
+    const localLabel = snapshot.localIdentity?.label || "";
+    if (activeTransferTab === "mine") {
+      return snapshot.transfers.filter((transfer) => transfer.proposerLabel === localLabel);
+    }
+    return snapshot.transfers.filter((transfer) =>
+      transfer.proposerLabel !== localLabel && (transfer.localRole || transfer.controls?.canDuplicate)
+    );
+  }
+
   function selectedTransfer() {
-    if (!selectedTransferId && snapshot.transfers.length) {
-      selectedTransferId = snapshot.transfers[0].id;
+    const transfers = visibleTransfers();
+    if (!selectedTransferId && transfers.length) {
+      selectedTransferId = transfers[0].id;
     }
     return transferById(selectedTransferId);
   }
 
   function reconcileSelectedTransfer() {
-    if (selectedTransferId && !transferById(selectedTransferId)) {
+    if (selectedTransferId && !visibleTransfers().some((transfer) => Number(transfer.id) === Number(selectedTransferId))) {
       selectedTransferId = null;
     }
     if (pendingDeleteTransferId && !transferById(pendingDeleteTransferId)) {
       pendingDeleteTransferId = null;
+    }
+    if (selectedGossipTransferUid && !gossipByUid(selectedGossipTransferUid)) {
+      selectedGossipTransferUid = null;
     }
   }
 
@@ -235,18 +257,62 @@ pub(super) fn script() -> String {
   }
 
   function renderTransferList() {
-    transferCount.textContent = snapshot.transfers.length + " total";
-    if (!snapshot.transfers.length) {
-      transferList.innerHTML = `<div class="emptyBlock">No Transfer proposals.</div>`;
+    renderTransferTabs();
+    if (activeTransferTab === "observed") {
+      renderGossipList();
       return;
     }
-    transferList.innerHTML = snapshot.transfers.map((transfer) => {
+    const transfers = visibleTransfers();
+    transferCount.textContent = transfers.length + " total";
+    if (!transfers.length) {
+      transferList.innerHTML = `<div class="emptyBlock">No Transfers in this tab.</div>`;
+      return;
+    }
+    transferList.innerHTML = transfers.map((transfer) => {
       const active = Number(transfer.id) === Number(selectedTransferId);
       return `
         <button type="button" class="transferRow" data-transfer-id="${escapeHtml(transfer.id)}" data-active="${active ? "true" : "false"}" data-keep-enabled="true">
           <span class="transferTitle">${escapeHtml(transfer.title || "Transfer")}</span>
           <span class="meta">#${escapeHtml(transfer.id)} ${escapeHtml(shortKey(transfer.transferUid))}</span>
+          <span class="meta">updated ${escapeHtml(transfer.updatedAt || "")}</span>
           <span class="chips">${transferChips(transfer)}</span>
+        </button>
+      `;
+    }).join("");
+  }
+
+  function renderTransferTabs() {
+    const localLabel = snapshot.localIdentity?.label || "";
+    const mineCount = snapshot.transfers.filter((transfer) => transfer.proposerLabel === localLabel).length;
+    const participatingCount = snapshot.transfers.filter((transfer) =>
+      transfer.proposerLabel !== localLabel && (transfer.localRole || transfer.controls?.canDuplicate)
+    ).length;
+    const observedCount = snapshot.gossipTransfers.length;
+    transferTabs.innerHTML = [
+      tabButton("mine", "Mine", mineCount),
+      tabButton("participating", "Participating", participatingCount),
+      tabButton("observed", "Observed", observedCount),
+    ].join("");
+  }
+
+  function tabButton(tab, label, count) {
+    return `<button type="button" class="tabButton" data-transfer-tab="${escapeHtml(tab)}" data-active="${activeTransferTab === tab ? "true" : "false"}">${escapeHtml(label)} ${escapeHtml(count)}</button>`;
+  }
+
+  function renderGossipList() {
+    transferCount.textContent = snapshot.gossipTransfers.length + " observed";
+    if (!snapshot.gossipTransfers.length) {
+      transferList.innerHTML = `<div class="emptyBlock">No observed gossip packages.</div>`;
+      return;
+    }
+    transferList.innerHTML = snapshot.gossipTransfers.map((transfer) => {
+      const active = String(transfer.transferUid) === String(selectedGossipTransferUid);
+      return `
+        <button type="button" class="transferRow" data-gossip-transfer-uid="${escapeHtml(transfer.transferUid)}" data-active="${active ? "true" : "false"}" data-keep-enabled="true">
+          <span class="transferTitle">${escapeHtml(transfer.title || "Observed Transfer")}</span>
+          <span class="meta">${escapeHtml(shortKey(transfer.transferUid))}</span>
+          <span class="meta">updated ${escapeHtml(transfer.updatedAt || "")}</span>
+          <span class="chips">${chip("observed", "idle")}${chip(String(transfer.eventCount || 0) + " events", "ok")}</span>
         </button>
       `;
     }).join("");
@@ -298,6 +364,10 @@ pub(super) fn script() -> String {
   }
 
   function renderDetail() {
+    if (activeTransferTab === "observed") {
+      renderGossipDetail();
+      return;
+    }
     const transfer = selectedTransfer();
     if (!transfer) {
       transferDetail.innerHTML = `<div class="emptyBlock">Select or create a Transfer.</div>`;
@@ -383,6 +453,54 @@ pub(super) fn script() -> String {
           ${(transfer.events || []).length ? transfer.events.map(eventHtml).join("") : `<li class="emptyBlock">No signed events.</li>`}
         </ol>
       </section>
+    `;
+  }
+
+  function renderGossipDetail() {
+    let transfer = gossipByUid(selectedGossipTransferUid);
+    if (!transfer && snapshot.gossipTransfers.length) {
+      transfer = snapshot.gossipTransfers[0];
+      selectedGossipTransferUid = transfer.transferUid;
+    }
+    if (!transfer) {
+      transferDetail.innerHTML = `<div class="emptyBlock">Select an observed Transfer.</div>`;
+      return;
+    }
+    const packageText = JSON.stringify(transfer.package || {}, null, 2);
+    transferDetail.innerHTML = `
+      <div class="detailHeader">
+        <div>
+          <h2>${escapeHtml(transfer.title || "Observed Transfer")}</h2>
+          <div class="meta">${escapeHtml(transfer.transferUid || "")}</div>
+          <div class="meta">updated ${escapeHtml(transfer.updatedAt || "")}</div>
+        </div>
+        <div class="chips">
+          ${chip("observed", "idle")}
+          ${chip(String(transfer.eventCount || 0) + " events", "ok")}
+          ${chip(transfer.state || "unknown", "warn")}
+        </div>
+      </div>
+
+      <div class="sideGrid">
+        ${sideHtml("Contribution", transfer.contribution || {})}
+        ${sideHtml("Need", transfer.need || {})}
+      </div>
+
+      <div class="actionBox">
+        <div class="actionTitle">Gossip metadata</div>
+        <div class="meta">source ${escapeHtml(transfer.sourceBaseUrl || "unknown")}</div>
+        <div class="meta">target ${escapeHtml(transfer.targetBaseUrl || "unknown")}</div>
+        <div class="meta">observed from ${escapeHtml(transfer.observedFromBaseUrl || "unknown")}</div>
+        <div class="meta">first seen ${escapeHtml(transfer.firstSeenAt || "")}</div>
+        <div class="meta">latest event ${escapeHtml(transfer.latestEventCreatedAt || "unknown")}</div>
+      </div>
+
+      <div class="packageGrid">
+        <label>
+          <span>Read-only package</span>
+          <textarea readonly rows="10" data-keep-enabled="true">${escapeHtml(packageText)}</textarea>
+        </label>
+      </div>
     `;
   }
 
@@ -553,13 +671,32 @@ pub(super) fn script() -> String {
   app.addEventListener("click", async (event) => {
     const refreshButton = event.target.closest("[data-action='refresh']");
     if (refreshButton) {
-      loadContract();
+      postAction("refresh");
+      return;
+    }
+
+    const tabButton = event.target.closest("[data-transfer-tab]");
+    if (tabButton) {
+      activeTransferTab = tabButton.dataset.transferTab || "mine";
+      selectedTransferId = null;
+      selectedGossipTransferUid = null;
+      pendingDeleteTransferId = null;
+      renderTransferList();
+      renderDetail();
       return;
     }
 
     const fillRecord = event.target.closest("[data-fill-record]");
     if (fillRecord) {
       proposalRecord.value = fillRecord.dataset.fillRecord || "";
+      return;
+    }
+
+    const gossipRow = event.target.closest("[data-gossip-transfer-uid]");
+    if (gossipRow) {
+      selectedGossipTransferUid = gossipRow.dataset.gossipTransferUid || "";
+      renderTransferList();
+      renderDetail();
       return;
     }
 

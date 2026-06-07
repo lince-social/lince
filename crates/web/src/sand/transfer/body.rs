@@ -147,6 +147,7 @@ pub(super) fn body() -> Markup {
                     section class="panel transfersPanel" aria-labelledby="transfers-title" {
                         div class="panelHead splitHead" {
                             h2 id="transfers-title" { "Transfers" }
+                            div id="transfer-tabs" class="tabs" {}
                             div id="transfer-count" class="muted" {}
                         }
                         div class="transferLayout" {

@@ -30,6 +30,9 @@ use {
 
 const COORDINATOR_LABEL: &str = "local_lince";
 const PACKAGE_VERSION: u32 = 1;
+const MAX_GOSSIP_EVENTS: usize = 200;
+const MAX_GOSSIP_PACKAGE_BYTES: usize = 256 * 1024;
+const MAX_GOSSIP_PACKAGES: i64 = 500;
 
 #[derive(Clone)]
 pub struct TransferWidgetService {
@@ -192,7 +195,10 @@ impl TransferWidgetService {
                     .map_err(TransferWidgetError::from_io)?;
                 "Transfer ingress policy updated.".to_string()
             }
-            "refresh" => "Transfer snapshot refreshed.".to_string(),
+            "refresh" => {
+                self.pulse_transfer_mesh().await?;
+                "Transfer mesh pulse completed.".to_string()
+            }
             _ => {
                 return Err(TransferWidgetError::Invalid(
                     "Unknown Transfer action.".into(),
@@ -237,12 +243,30 @@ impl TransferWidgetService {
         }
         let package = parse_transfer_package_value(value)?;
         validate_public_transfer_package(self, &package).await?;
-        let imported = self.receive_transfer_package(package).await?;
+        let known = self
+            .find_transfer_id_by_uid(&package.identity.transfer_uid)
+            .await
+            .map_err(TransferWidgetError::from_io)?
+            .is_some();
+        let addressed = self.package_is_addressed_to_local_node(&package);
+        let initial = is_public_proposal_package(&package);
+        if known || addressed || initial {
+            let imported = self.receive_transfer_package(package).await?;
+            return Ok(json!({
+                "ok": true,
+                "transferId": imported.transfer_id,
+                "eventsImported": imported.events_imported,
+            }));
+        }
+        let transfer_uid = package.identity.transfer_uid.clone();
+        self.store_gossip_package(&package, None)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
 
         Ok(json!({
             "ok": true,
-            "transferId": imported.transfer_id,
-            "eventsImported": imported.events_imported,
+            "gossiped": true,
+            "transferUid": transfer_uid,
         }))
     }
 
@@ -321,6 +345,10 @@ impl TransferWidgetService {
             .load_transfer_views(local_identity.as_ref())
             .await
             .map_err(TransferWidgetError::from_io)?;
+        let gossip_transfers = self
+            .load_gossip_views()
+            .await
+            .map_err(TransferWidgetError::from_io)?;
         let organs = self.load_organ_options(session_token).await?;
         let public_proposals_enabled = self
             .transfer_public_proposals_enabled()
@@ -336,6 +364,7 @@ impl TransferWidgetService {
             "records": records,
             "organs": organs,
             "transfers": transfers,
+            "gossipTransfers": gossip_transfers,
         }))
     }
 
@@ -1079,6 +1108,19 @@ impl TransferWidgetService {
         })
     }
 
+    fn package_is_addressed_to_local_node(&self, package: &TransferPackage) -> bool {
+        package
+            .identity
+            .target_base_url
+            .as_deref()
+            .is_some_and(|value| same_base_url(value, &self.local_base_url))
+            || package
+                .identity
+                .source_base_url
+                .as_deref()
+                .is_some_and(|value| same_base_url(value, &self.local_base_url))
+    }
+
     fn require_local_role(
         &self,
         transfer: &TransferSummaryRow,
@@ -1543,7 +1585,160 @@ impl TransferWidgetService {
         for transfer_id in transfer_ids {
             packages.push(self.build_transfer_package(transfer_id).await?);
         }
+        packages.extend(self.load_gossip_packages_since(since).await?);
         Ok(packages)
+    }
+
+    async fn load_gossip_packages_since(
+        &self,
+        since: Option<&str>,
+    ) -> Result<Vec<TransferPackage>, Error> {
+        let rows = if let Some(since) = since.filter(|value| !value.trim().is_empty()) {
+            sqlx::query_as::<_, GossipPackageJsonRow>(
+                "SELECT package_json
+                 FROM transfer_gossip_package
+                 WHERE updated_at >= ?
+                 ORDER BY updated_at DESC, id DESC
+                 LIMIT 100",
+            )
+            .bind(since)
+            .fetch_all(&*self.services.db)
+            .await
+            .map_err(Error::other)?
+        } else {
+            sqlx::query_as::<_, GossipPackageJsonRow>(
+                "SELECT package_json
+                 FROM transfer_gossip_package
+                 ORDER BY updated_at DESC, id DESC
+                 LIMIT 100",
+            )
+            .fetch_all(&*self.services.db)
+            .await
+            .map_err(Error::other)?
+        };
+
+        let mut packages = Vec::with_capacity(rows.len());
+        for row in rows {
+            let package =
+                serde_json::from_str::<TransferPackage>(&row.package_json).map_err(Error::other)?;
+            packages.push(package);
+        }
+        Ok(packages)
+    }
+
+    async fn load_gossip_views(&self) -> Result<Vec<GossipTransferView>, Error> {
+        let rows = sqlx::query_as::<_, GossipPackageRow>(
+            "SELECT
+                id,
+                transfer_uid,
+                package_json,
+                source_base_url,
+                target_base_url,
+                observed_from_base_url,
+                event_count,
+                latest_event_created_at,
+                first_seen_at,
+                updated_at,
+                last_pulsed_at
+             FROM transfer_gossip_package
+             ORDER BY updated_at DESC, id DESC
+             LIMIT 100",
+        )
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(Error::other)?;
+
+        let mut views = Vec::with_capacity(rows.len());
+        for row in rows {
+            if let Ok(package) = serde_json::from_str::<TransferPackage>(&row.package_json) {
+                views.push(GossipTransferView::from_row(row, package));
+            }
+        }
+        Ok(views)
+    }
+
+    async fn store_gossip_package(
+        &self,
+        package: &TransferPackage,
+        observed_from_base_url: Option<String>,
+    ) -> Result<(), Error> {
+        let package_json = serde_json::to_string(package).map_err(Error::other)?;
+        if package_json.len() > MAX_GOSSIP_PACKAGE_BYTES || package.events.len() > MAX_GOSSIP_EVENTS
+        {
+            return Err(Error::new(
+                ErrorKind::InvalidData,
+                "Transfer gossip package too large",
+            ));
+        }
+        let latest_event_created_at = package
+            .events
+            .iter()
+            .map(|event| event.created_at.as_str())
+            .max()
+            .map(ToOwned::to_owned);
+        self.services
+            .writer
+            .execute_statement(
+                "INSERT INTO transfer_gossip_package(
+                    transfer_uid,
+                    package_json,
+                    source_base_url,
+                    target_base_url,
+                    observed_from_base_url,
+                    event_count,
+                    latest_event_created_at
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                 ON CONFLICT(transfer_uid)
+                 DO UPDATE SET
+                    package_json = excluded.package_json,
+                    source_base_url = COALESCE(excluded.source_base_url, transfer_gossip_package.source_base_url),
+                    target_base_url = COALESCE(excluded.target_base_url, transfer_gossip_package.target_base_url),
+                    observed_from_base_url = COALESCE(excluded.observed_from_base_url, transfer_gossip_package.observed_from_base_url),
+                    event_count = MAX(transfer_gossip_package.event_count, excluded.event_count),
+                    latest_event_created_at = COALESCE(excluded.latest_event_created_at, transfer_gossip_package.latest_event_created_at),
+                    updated_at = CURRENT_TIMESTAMP"
+                    .to_string(),
+                vec![
+                    SqlParameter::Text(package.identity.transfer_uid.clone()),
+                    SqlParameter::Text(package_json),
+                    optional_text_parameter(package.identity.source_base_url.clone()),
+                    optional_text_parameter(package.identity.target_base_url.clone()),
+                    optional_text_parameter(observed_from_base_url),
+                    SqlParameter::Integer(package.events.len() as i64),
+                    optional_text_parameter(latest_event_created_at),
+                ],
+            )
+            .await?;
+        self.prune_gossip_packages().await?;
+        Ok(())
+    }
+
+    async fn prune_gossip_packages(&self) -> Result<(), Error> {
+        self.services
+            .writer
+            .execute_statement(
+                "DELETE FROM transfer_gossip_package
+                 WHERE id NOT IN (
+                    SELECT id FROM transfer_gossip_package
+                    ORDER BY updated_at DESC, id DESC
+                    LIMIT ?
+                 )"
+                .to_string(),
+                vec![SqlParameter::Integer(MAX_GOSSIP_PACKAGES)],
+            )
+            .await?;
+        Ok(())
+    }
+
+    async fn pulse_transfer_mesh(&self) -> Result<(), TransferWidgetError> {
+        let since = sync_since_with_lookback(&current_sql_timestamp());
+        self.pull_recent_transfer_packages(&since)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        self.flush_transfer_sync_outbox()
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        Ok(())
     }
 
     async fn enqueue_transfer_sync(&self, transfer_id: i64) -> Result<(), Error> {
@@ -1732,8 +1927,35 @@ impl TransferWidgetService {
                 .and_then(Value::as_array)
                 .cloned()
                 .unwrap_or_default();
-            for package in packages {
-                if let Err(error) = self.receive_transfer_package_value(package).await {
+            for value in packages {
+                let package = match parse_transfer_package_value(value) {
+                    Ok(package) => package,
+                    Err(error) => {
+                        tracing::warn!(
+                            "transfer startup package parse failed from {target}: {error:?}"
+                        );
+                        continue;
+                    }
+                };
+                if let Err(error) = validate_package(&package) {
+                    tracing::warn!(
+                        "transfer startup package validation failed from {target}: {error:?}"
+                    );
+                    continue;
+                }
+                let outcome = if self
+                    .find_transfer_id_by_uid(&package.identity.transfer_uid)
+                    .await?
+                    .is_some()
+                    || self.package_is_addressed_to_local_node(&package)
+                {
+                    self.receive_transfer_package(package).await.map(|_| ())
+                } else {
+                    self.store_gossip_package(&package, Some(target.clone()))
+                        .await
+                        .map_err(TransferWidgetError::from_io)
+                };
+                if let Err(error) = outcome {
                     tracing::warn!(
                         "transfer startup package import failed from {target}: {error:?}"
                     );
@@ -1763,6 +1985,24 @@ impl TransferWidgetService {
                 targets.push(base_url);
             }
             if let Some(base_url) = normalize_optional_text(row.target_base_url) {
+                targets.push(base_url);
+            }
+        }
+        let gossip_targets = sqlx::query_as::<_, GossipSyncTargetRow>(
+            "SELECT source_base_url, target_base_url, observed_from_base_url
+             FROM transfer_gossip_package",
+        )
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(Error::other)?;
+        for row in gossip_targets {
+            if let Some(base_url) = normalize_optional_text(row.source_base_url) {
+                targets.push(base_url);
+            }
+            if let Some(base_url) = normalize_optional_text(row.target_base_url) {
+                targets.push(base_url);
+            }
+            if let Some(base_url) = normalize_optional_text(row.observed_from_base_url) {
                 targets.push(base_url);
             }
         }
@@ -2385,6 +2625,94 @@ struct TransferSyncTargetRow {
     target_base_url: Option<String>,
 }
 
+#[derive(Debug, Clone, FromRow)]
+struct GossipSyncTargetRow {
+    source_base_url: Option<String>,
+    target_base_url: Option<String>,
+    observed_from_base_url: Option<String>,
+}
+
+#[derive(Debug, Clone, FromRow)]
+struct GossipPackageJsonRow {
+    package_json: String,
+}
+
+#[derive(Debug, Clone, FromRow)]
+struct GossipPackageRow {
+    id: i64,
+    transfer_uid: String,
+    package_json: String,
+    source_base_url: Option<String>,
+    target_base_url: Option<String>,
+    observed_from_base_url: Option<String>,
+    event_count: i64,
+    latest_event_created_at: Option<String>,
+    first_seen_at: String,
+    updated_at: String,
+    last_pulsed_at: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct GossipTransferView {
+    id: i64,
+    transfer_uid: String,
+    title: String,
+    state: String,
+    proposer_label: String,
+    counterparty_label: String,
+    source_base_url: Option<String>,
+    target_base_url: Option<String>,
+    observed_from_base_url: Option<String>,
+    event_count: i64,
+    latest_event_created_at: Option<String>,
+    first_seen_at: String,
+    updated_at: String,
+    last_pulsed_at: Option<String>,
+    contribution: TransferSideView,
+    need: TransferSideView,
+    package: TransferPackage,
+}
+
+impl GossipTransferView {
+    fn from_row(row: GossipPackageRow, package: TransferPackage) -> Self {
+        let identity = &package.identity;
+        Self {
+            id: row.id,
+            transfer_uid: row.transfer_uid,
+            title: identity.title.clone(),
+            state: identity.state.clone(),
+            proposer_label: identity.proposer_label.clone(),
+            counterparty_label: identity.counterparty_label.clone(),
+            source_base_url: row.source_base_url,
+            target_base_url: row.target_base_url,
+            observed_from_base_url: row.observed_from_base_url,
+            event_count: row.event_count,
+            latest_event_created_at: row
+                .latest_event_created_at
+                .map(|value| sql_to_iso8601(&value)),
+            first_seen_at: sql_to_iso8601(&row.first_seen_at),
+            updated_at: sql_to_iso8601(&row.updated_at),
+            last_pulsed_at: row.last_pulsed_at.map(|value| sql_to_iso8601(&value)),
+            contribution: TransferSideView {
+                actor_label: identity.contribution_actor_label.clone(),
+                public_key: identity.contribution_public_key.clone(),
+                record_id: package.item.contribution_id,
+                head: package.item.contribution_head.clone(),
+                quantity: package.item.contribution_quantity.abs(),
+            },
+            need: TransferSideView {
+                actor_label: identity.need_actor_label.clone(),
+                public_key: identity.need_public_key.clone(),
+                record_id: package.item.need_id,
+                head: package.item.need_head.clone(),
+                quantity: package.item.need_quantity.abs(),
+            },
+            package,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct TransferSyncCache {
@@ -2545,8 +2873,8 @@ impl TransferView {
             sync_cursors: cursors,
             settlements,
             package,
-            created_at: transfer.created_at,
-            updated_at: transfer.updated_at,
+            created_at: sql_to_iso8601(&transfer.created_at),
+            updated_at: sql_to_iso8601(&transfer.updated_at),
         }
     }
 }
@@ -2870,6 +3198,12 @@ fn current_sql_timestamp() -> String {
         .to_string()
 }
 
+fn sql_to_iso8601(value: &str) -> String {
+    chrono::NaiveDateTime::parse_from_str(value, "%Y-%m-%d %H:%M:%S")
+        .map(|time| format!("{}Z", time.format("%Y-%m-%dT%H:%M:%S")))
+        .unwrap_or_else(|_| value.to_string())
+}
+
 fn sync_since_with_lookback(value: &str) -> String {
     chrono::NaiveDateTime::parse_from_str(value, "%Y-%m-%d %H:%M:%S")
         .map(|time| time - ChronoDuration::seconds(60))
@@ -2879,7 +3213,33 @@ fn sync_since_with_lookback(value: &str) -> String {
 }
 
 fn same_base_url(left: &str, right: &str) -> bool {
-    left.trim().trim_end_matches('/') == right.trim().trim_end_matches('/')
+    let left_parts = normalize_base_url_parts(left);
+    let right_parts = normalize_base_url_parts(right);
+    match (left_parts, right_parts) {
+        (Some(left), Some(right)) => left == right,
+        _ => left.trim().trim_end_matches('/') == right.trim().trim_end_matches('/'),
+    }
+}
+
+fn normalize_base_url_parts(value: &str) -> Option<(String, Option<u16>)> {
+    let value = value
+        .trim()
+        .trim_end_matches('/')
+        .trim_start_matches("http://")
+        .trim_start_matches("https://");
+    let host_port = value.split('/').next().unwrap_or(value);
+    let (host, port) = host_port
+        .rsplit_once(':')
+        .map(|(host, port)| (host, port.parse::<u16>().ok()))
+        .unwrap_or((host_port, None));
+    if host.trim().is_empty() {
+        return None;
+    }
+    let host = match host {
+        "localhost" | "0.0.0.0" | "::1" => "127.0.0.1",
+        other => other,
+    };
+    Some((host.to_string(), port))
 }
 
 fn encode_query_value(value: &str) -> String {
@@ -3025,11 +3385,29 @@ fn validate_package(package: &TransferPackage) -> Result<(), TransferWidgetError
     Ok(())
 }
 
+fn validate_gossip_size(package: &TransferPackage) -> Result<(), TransferWidgetError> {
+    if package.events.len() > MAX_GOSSIP_EVENTS {
+        return Err(TransferWidgetError::Invalid(
+            "Transfer gossip package has too many events.".into(),
+        ));
+    }
+    let size = serde_json::to_string(package)
+        .map_err(|error| TransferWidgetError::Invalid(error.to_string()))?
+        .len();
+    if size > MAX_GOSSIP_PACKAGE_BYTES {
+        return Err(TransferWidgetError::Invalid(
+            "Transfer gossip package is too large.".into(),
+        ));
+    }
+    Ok(())
+}
+
 async fn validate_public_transfer_package(
     service: &TransferWidgetService,
     package: &TransferPackage,
 ) -> Result<(), TransferWidgetError> {
     validate_package(package)?;
+    validate_gossip_size(package)?;
     if is_public_proposal_package(package) {
         return Ok(());
     }
@@ -3041,10 +3419,7 @@ async fn validate_public_transfer_package(
     {
         return Ok(());
     }
-    Err(TransferWidgetError::Invalid(
-        "Public ingress accepts initial proposal packages, or signed updates for Transfers already known by this node."
-            .into(),
-    ))
+    Ok(())
 }
 
 fn is_public_proposal_package(package: &TransferPackage) -> bool {

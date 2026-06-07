@@ -7,6 +7,9 @@ pub(super) fn script() -> String {
   const identityForm = document.getElementById("identity-form");
   const identityLabel = document.getElementById("identity-label");
   const identitySave = document.getElementById("identity-save");
+  const identityReset = document.getElementById("identity-reset");
+  const settingsPanel = document.getElementById("settings-panel");
+  const resetKeyModal = document.getElementById("reset-key-modal");
   const ingressSummary = document.getElementById("ingress-summary");
   const ingressForm = document.getElementById("ingress-form");
   const publicProposalsEnabled = document.getElementById("public-proposals-enabled");
@@ -14,11 +17,8 @@ pub(super) fn script() -> String {
   const loginOrgan = document.getElementById("login-organ");
   const recordForm = document.getElementById("record-form");
   const recordList = document.getElementById("record-list");
-  const proposalForm = document.getElementById("proposal-form");
   const proposalSubmit = document.getElementById("proposal-create");
-  const proposalRecord = document.getElementById("proposal-record");
-  const proposalOrgan = document.getElementById("proposal-organ");
-  const proposalCounterparty = document.getElementById("proposal-counterparty");
+  const transferSearch = document.getElementById("transfer-search");
   const recordOptions = document.getElementById("record-options");
   const organOptions = document.getElementById("organ-options");
   const transferList = document.getElementById("transfer-list");
@@ -40,8 +40,12 @@ pub(super) fn script() -> String {
   let selectedTransferId = null;
   let selectedGossipTransferUid = null;
   let activeTransferTab = "mine";
+  let detailMode = "selected";
   let pendingDeleteTransferId = null;
   let busy = false;
+  let contractLoading = false;
+  let reloadQueued = false;
+  let confirmingProgressAction = null;
 
   function contractUrl() {
     return "/host/widgets/" + encodeURIComponent(instanceId) + "/contract";
@@ -49,6 +53,10 @@ pub(super) fn script() -> String {
 
   function actionUrl(action) {
     return "/host/widgets/" + encodeURIComponent(instanceId) + "/actions/" + encodeURIComponent(action);
+  }
+
+  function streamUrl() {
+    return "/host/widgets/" + encodeURIComponent(instanceId) + "/stream";
   }
 
   function setBusy(nextBusy) {
@@ -64,6 +72,16 @@ pub(super) fn script() -> String {
   function setStatus(text, tone = "idle") {
     status.textContent = text;
     status.dataset.tone = tone;
+  }
+
+  function setSettingsOpen(open) {
+    settingsPanel.dataset.open = open ? "true" : "false";
+    settingsPanel.setAttribute("aria-hidden", open ? "false" : "true");
+  }
+
+  function setResetModalOpen(open) {
+    resetKeyModal.dataset.open = open ? "true" : "false";
+    resetKeyModal.setAttribute("aria-hidden", open ? "false" : "true");
   }
 
   function escapeHtml(value) {
@@ -84,6 +102,10 @@ pub(super) fn script() -> String {
     const number = Number(value);
     if (!Number.isFinite(number)) return "0";
     return number.toLocaleString(undefined, { maximumFractionDigits: 3 });
+  }
+
+  function currentQuantityText(record) {
+    return record ? formatQuantity(record.quantity) : "unknown";
   }
 
   function shortKey(value) {
@@ -128,12 +150,23 @@ pub(super) fn script() -> String {
 
   function visibleTransfers() {
     const localLabel = snapshot.localIdentity?.label || "";
-    if (activeTransferTab === "mine") {
-      return snapshot.transfers.filter((transfer) => transfer.proposerLabel === localLabel);
-    }
-    return snapshot.transfers.filter((transfer) =>
+    const query = String(transferSearch?.value || "").trim().toLowerCase();
+    const transfers = activeTransferTab === "mine"
+      ? snapshot.transfers.filter((transfer) => transfer.proposerLabel === localLabel)
+      : snapshot.transfers.filter((transfer) =>
       transfer.proposerLabel !== localLabel && (transfer.localRole || transfer.controls?.canDuplicate)
     );
+    if (!query) return transfers;
+    return transfers.filter((transfer) => [
+      transfer.title,
+      transfer.transferUid,
+      transfer.proposerLabel,
+      transfer.counterpartyLabel,
+      transfer.contribution?.head,
+      transfer.need?.head,
+      transfer.status,
+      transfer.state,
+    ].some((value) => String(value || "").toLowerCase().includes(query)));
   }
 
   function selectedTransfer() {
@@ -145,6 +178,7 @@ pub(super) fn script() -> String {
   }
 
   function reconcileSelectedTransfer() {
+    if (detailMode === "create") return;
     if (selectedTransferId && !visibleTransfers().some((transfer) => Number(transfer.id) === Number(selectedTransferId))) {
       selectedTransferId = null;
     }
@@ -165,8 +199,7 @@ pub(super) fn script() -> String {
     if (!identity) {
       identitySummary.innerHTML = `
         <div class="emptyBlock">
-          No local signing identity.
-          <div class="meta">Save one once on this node. It is not a JWT and it is not sent to other nodes as a secret.</div>
+          Creating local signing identity.
         </div>
       `;
       return;
@@ -212,13 +245,6 @@ pub(super) fn script() -> String {
     organOptions.innerHTML = snapshot.organs
       .map((organ) => `<option value="${escapeHtml(organ.name)}"></option>`)
       .join("");
-    const options = [`<option value="">Local only</option>`].concat(
-      snapshot.organs.map((organ) => {
-        const auth = organ.authenticated ? "" : " (login for replies)";
-        return `<option value="${escapeHtml(organ.id)}">${escapeHtml(organ.name + auth)}</option>`;
-      })
-    );
-    proposalOrgan.innerHTML = options.join("");
     loginOrgan.innerHTML = [`<option value="">Select Organ</option>`].concat(
       snapshot.organs.map((organ) => {
         const state = organ.authenticated ? "connected" : "login needed";
@@ -227,16 +253,94 @@ pub(super) fn script() -> String {
     ).join("");
   }
 
-  function sideHtml(label, side) {
+  function sideHtml(label, side, transfer = null) {
+    const record = snapshot.records.find((item) => Number(item.id) === Number(side?.recordId || 0));
+    const organUrl = transfer?.targetBaseUrl || transfer?.sourceBaseUrl || "local";
     return `
-      <div class="sideBox">
-        <div class="sideTitle">
-          <span>${escapeHtml(label)}</span>
-          <span class="quantity">${escapeHtml(formatQuantity(side?.quantity || 0))}</span>
+      <div class="partyCard">
+        <div class="organMeta">
+          <div><span>Organ ID</span><strong>${escapeHtml(side?.recordId || 0)}</strong></div>
+          <div><span>Organ Name</span><strong>${escapeHtml(side?.actorLabel || "unbound")}</strong></div>
+          <div><span>Organ URL</span><strong>${escapeHtml(side?.publicKey ? organUrl : "unbound")}</strong></div>
         </div>
-        <div class="meta">${escapeHtml(side?.actorLabel || "unbound")} / ${escapeHtml(side?.head || "Record")}</div>
-        <div class="meta">record #${escapeHtml(side?.recordId || 0)} / key ${escapeHtml(shortKey(side?.publicKey))}</div>
+        <div class="partyItemLine">
+          <span>
+            <span class="fieldLabel">Transfer Item ${escapeHtml(label)} Title</span>
+            <strong>${escapeHtml(side?.head || label + " Head")}</strong>
+          </span>
+          <span class="qtyPair">
+            <span>${escapeHtml(label)} Qty ${escapeHtml(formatQuantity(side?.quantity || 0))}</span>
+            <span class="partyQtyInline">Current Qty ${escapeHtml(currentQuantityText(record))}</span>
+          </span>
+        </div>
       </div>
+    `;
+  }
+
+  function editableSideHtml(label, side, transfer) {
+    const role = label.toLowerCase();
+    const record = snapshot.records.find((item) => Number(item.id) === Number(side?.recordId || 0));
+    return `
+      <div class="partyCard">
+        <div class="organMeta">
+          <div><span>Organ ID</span><strong>${escapeHtml(side?.recordId || 0)}</strong></div>
+          <div><span>Organ Name</span><strong>${escapeHtml(side?.actorLabel || "unbound")}</strong></div>
+          <div><span>Organ URL</span><strong>${escapeHtml(transfer.targetBaseUrl || transfer.sourceBaseUrl || "local")}</strong></div>
+        </div>
+        <div class="editableTerms" data-local-terms="${escapeHtml(role)}">
+          <label>
+            <span>Transfer Item ${escapeHtml(label)} Title</span>
+            <input id="local-item-title" value="${escapeHtml(side?.head || "")}" autocomplete="off">
+          </label>
+          <label>
+            <span>Local Record</span>
+            <input id="local-record-input" list="record-options" value="${escapeHtml(recordLabel({ id: side?.recordId || "", head: side?.head || "" }))}" autocomplete="off">
+          </label>
+          <label>
+            <span>${escapeHtml(label)} Qty / Current Qty ${escapeHtml(currentQuantityText(record))}</span>
+            <input id="local-quantity-input" inputmode="decimal" value="${escapeHtml(formatQuantity(side?.quantity || 1))}">
+          </label>
+          <div class="formActions">
+            <button type="button" class="primary" data-transfer-action="update-transfer-local-item">Save Terms</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function duplicateSideHtml(label) {
+    const role = label.toLowerCase();
+    return `
+      <div class="partyCard duplicateCard">
+        <div class="partyMeta">
+          <span>unclaimed ${escapeHtml(label)}</span>
+          <span>Select your local Record</span>
+          <span>then duplicate</span>
+        </div>
+        <div class="editableTerms">
+          <input id="duplicate-role" type="hidden" value="${escapeHtml(role)}">
+          ${recordSelectHtml("duplicate-record")}
+          ${actionButton("duplicate-proposal", "Duplicate as " + label, false, 'class="primary"')}
+        </div>
+      </div>
+    `;
+  }
+
+  function partySection(transfer, sideName, side) {
+    const local = transfer.localRole === sideName;
+    const label = sideName === "need" ? "Need" : "Contribution";
+    const unclaimed = !side?.publicKey;
+    const body = transfer.controls?.canDuplicate && unclaimed
+      ? duplicateSideHtml(label)
+      : local
+        ? editableSideHtml(label, side || {}, transfer)
+        : sideHtml(label, side || {}, transfer);
+    return `
+      <section class="transferParty" data-local="${local ? "true" : "false"}">
+        <div class="partyLabel">${escapeHtml(label)}</div>
+        ${processButtons(transfer, sideName)}
+        ${body}
+      </section>
     `;
   }
 
@@ -300,12 +404,24 @@ pub(super) fn script() -> String {
   }
 
   function renderGossipList() {
-    transferCount.textContent = snapshot.gossipTransfers.length + " observed";
-    if (!snapshot.gossipTransfers.length) {
+    const query = String(transferSearch?.value || "").trim().toLowerCase();
+    const transfers = query
+      ? snapshot.gossipTransfers.filter((transfer) => [
+        transfer.title,
+        transfer.transferUid,
+        transfer.proposerLabel,
+        transfer.counterpartyLabel,
+        transfer.contribution?.head,
+        transfer.need?.head,
+        transfer.state,
+      ].some((value) => String(value || "").toLowerCase().includes(query)))
+      : snapshot.gossipTransfers;
+    transferCount.textContent = transfers.length + " observed";
+    if (!transfers.length) {
       transferList.innerHTML = `<div class="emptyBlock">No observed gossip packages.</div>`;
       return;
     }
-    transferList.innerHTML = snapshot.gossipTransfers.map((transfer) => {
+    transferList.innerHTML = transfers.map((transfer) => {
       const active = String(transfer.transferUid) === String(selectedGossipTransferUid);
       return `
         <button type="button" class="transferRow" data-gossip-transfer-uid="${escapeHtml(transfer.transferUid)}" data-active="${active ? "true" : "false"}" data-keep-enabled="true">
@@ -352,69 +468,141 @@ pub(super) fn script() -> String {
     return `<select id="${escapeHtml(id)}">${options.join("")}</select>`;
   }
 
-  function agreementActionLabel(transfer) {
-    const agreement = transfer?.agreement || {};
-    const localRole = transfer?.localRole || "";
-    const count = localRole === "contribution"
-      ? Number(agreement.contribution || 0)
-      : localRole === "need"
-        ? Number(agreement.need || 0)
-        : 0;
-    return count > 0 ? "Confirm Agreement" : "First Agreement";
+  function sideAgreementLevel(transfer, side) {
+    return Number(side === "contribution" ? transfer.agreement?.contribution || 0 : transfer.agreement?.need || 0);
+  }
+
+  function sideConclusionDone(transfer, side) {
+    return side === "contribution"
+      ? Boolean(transfer.confirmations?.delivery)
+      : Boolean(transfer.confirmations?.receipt);
+  }
+
+  function sideButtonClass(active, done) {
+    if (done) return active ? "processDone" : "processDone remoteDone";
+    return active ? "processWaiting" : "processIdle";
+  }
+
+  function processButtons(transfer, side) {
+    const local = transfer.localRole === side;
+    const agreementLevel = sideAgreementLevel(transfer, side);
+    const otherSide = side === "contribution" ? "need" : "contribution";
+    const otherLocked = sideAgreementLevel(transfer, otherSide) >= 1;
+    const termsLocked = agreementLevel >= 1;
+    const termsAccepted = agreementLevel >= 2;
+    const conclusionDone = sideConclusionDone(transfer, side);
+    const canLock = local && !termsLocked && transfer.controls?.canSignAgreement;
+    const canAccept = local && termsLocked && !termsAccepted && otherLocked && transfer.controls?.canSignAgreement;
+    const canConclude = local && !conclusionDone && (
+      (side === "contribution" && transfer.controls?.canConfirmDelivery)
+      || (side === "need" && transfer.controls?.canConfirmReceipt)
+    );
+    const canSettle = local && conclusionDone && transfer.controls?.canSettleLocal;
+    const concludeAction = canSettle ? "settle-local" : side === "contribution" ? "confirm-delivery" : "confirm-receipt";
+    const buttons = [
+      {
+        step: "lock-terms",
+        label: "Lock My Terms",
+        action: "sign-agreement",
+        enabled: canLock,
+        done: termsLocked,
+        title: "Lock My Terms signs your current side of the Transfer as ready. It does not mutate Records.",
+      },
+      {
+        step: "accept-terms",
+        label: "Accept Terms I Need To Accept",
+        action: "sign-agreement",
+        enabled: canAccept,
+        done: termsAccepted,
+        title: "Accept Terms I Need To Accept becomes available after all required parties have locked their terms.",
+      },
+      {
+        step: "confirm-conclusion",
+        label: "Confirm Conclusion",
+        action: concludeAction,
+        enabled: canConclude || canSettle,
+        done: conclusionDone || canSettle,
+        title: "Confirm Conclusion records that this side's contribution or need has been completed. When both sides are confirmed, this applies your local Record quantity change.",
+      },
+    ];
+    return `
+      <div class="processButtons" data-side="${escapeHtml(side)}">
+        ${buttons.map((button) => {
+          const key = progressActionKey(transfer, side, button.step);
+          const confirming = confirmingProgressAction === key;
+          const clickable = local && button.enabled && !button.done;
+          const active = clickable || confirming;
+          const buttonClass = active && local && !button.done ? "processReady" : sideButtonClass(local, button.done);
+          const actionAttrs = local && active
+            ? `data-progress-action="${escapeHtml(button.action)}" data-progress-side="${escapeHtml(side)}" data-progress-step="${escapeHtml(button.step)}" data-progress-label="${escapeHtml(button.label)}"`
+            : "";
+          return `<button
+            type="button"
+            class="${buttonClass}"
+            ${actionAttrs}
+            ${active ? "" : "disabled"}
+            title="${escapeHtml(button.title)}"
+          >${escapeHtml(confirming ? "Confirm " + button.label : button.label)}</button>`;
+        }).join("")}
+      </div>
+    `;
+  }
+
+  function progressActionKey(transfer, side, step) {
+    return [transfer?.id || "", side || "", step || ""].join(":");
+  }
+
+  function proposalOrganOptions() {
+    return [`<option value="">Local only</option>`].concat(
+      snapshot.organs.map((organ) => {
+        const auth = organ.authenticated ? "" : " (login for replies)";
+        return `<option value="${escapeHtml(organ.id)}">${escapeHtml(organ.name + auth)}</option>`;
+      })
+    ).join("");
   }
 
   function renderDetail() {
+    if (detailMode === "create") {
+      transferDetail.dataset.inactive = "false";
+      renderCreateDetail();
+      return;
+    }
     if (activeTransferTab === "observed") {
+      transferDetail.dataset.inactive = "false";
       renderGossipDetail();
       return;
     }
     const transfer = selectedTransfer();
     if (!transfer) {
+      transferDetail.dataset.inactive = "false";
       transferDetail.innerHTML = `<div class="emptyBlock">Select or create a Transfer.</div>`;
       return;
     }
     const controls = transfer.controls || {};
     const packageText = JSON.stringify(transfer.package || {}, null, 2);
+    transferDetail.dataset.inactive = transfer.status === "inactive" ? "true" : "false";
     transferDetail.innerHTML = `
-      <div class="detailHeader">
-        <div>
+      <div class="transferHero">
+        <div class="transferHeroInfo">
           <h2>${escapeHtml(transfer.title || "Transfer")}</h2>
-          <div class="meta">#${escapeHtml(transfer.id)} / ${escapeHtml(transfer.transferUid || "")}</div>
+          <div class="meta">last updated ${escapeHtml(transfer.updatedAt || "")} / ${escapeHtml(transfer.status || transfer.state || "")}</div>
         </div>
-        <div class="chips">${transferChips(transfer)}</div>
+        <div class="sendControls">
+          ${postTargetSelectHtml("post-organ", transfer)}
+          ${actionButton("post-transfer", "Send to Organ", false)}
+        </div>
       </div>
 
-      <div class="sideGrid">
-        ${sideHtml("Contribution", transfer.contribution || {})}
-        ${sideHtml("Need", transfer.need || {})}
+      <div class="transferParties">
+        ${partySection(transfer, "need", transfer.need || {})}
+        ${partySection(transfer, "contribution", transfer.contribution || {})}
       </div>
 
       <div class="actionGrid">
-        ${controls.canDuplicate ? `
-          <div class="actionBox">
-            <div class="actionTitle">Duplicate locally</div>
-            <div class="inlineControls">
-              <select id="duplicate-role">
-                <option value="contribution">Contribution</option>
-                <option value="need">Need</option>
-              </select>
-              ${recordSelectHtml("duplicate-record")}
-              ${actionButton("duplicate-proposal", "Duplicate", false)}
-            </div>
-          </div>
-        ` : ""}
-        <div class="actionBox">
-          <div class="actionTitle">Local signatures</div>
-          <div class="inlineControls">
-            ${actionButton("sign-agreement", agreementActionLabel(transfer), !controls.canSignAgreement)}
-            ${actionButton("confirm-delivery", "Confirm Delivery", !controls.canConfirmDelivery)}
-            ${actionButton("confirm-receipt", "Confirm Receipt", !controls.canConfirmReceipt)}
-            ${actionButton("settle-local", "Settle Local Record", !controls.canSettleLocal, 'class="primary"')}
-          </div>
-        </div>
         <div class="actionBox">
           <div class="actionTitle">Danger zone</div>
           <div class="inlineControls">
+            ${actionButton("inactivate-transfer", transfer.status === "inactive" ? "Inactive" : "Inactivate transfer", !controls.canInactivate, 'class="danger"')}
             ${actionButton(
               "delete-transfer",
               Number(pendingDeleteTransferId) === Number(transfer.id) ? "Confirm delete" : "Delete transfer",
@@ -423,36 +611,76 @@ pub(super) fn script() -> String {
             )}
           </div>
         </div>
-        <div class="actionBox">
-          <div class="actionTitle">Post package</div>
-          <div class="inlineControls">
-            ${postTargetSelectHtml("post-organ", transfer)}
-            ${actionButton("post-transfer", "Post to Organ", false)}
+      </div>
+
+      <details class="transferPackageArea">
+        <summary>Package and events</summary>
+        <div class="packageGrid">
+          <label>
+            <span>Package</span>
+            <textarea id="package-output" readonly rows="8" data-keep-enabled="true">${escapeHtml(packageText)}</textarea>
+          </label>
+          <label>
+            <span>Import package</span>
+            <textarea id="package-input" rows="8" data-keep-enabled="true"></textarea>
+          </label>
+          <div class="formActions">
+            <button type="button" data-copy-package data-keep-enabled="true">Copy package</button>
+            <button type="button" data-import-package data-keep-enabled="true">Import package</button>
           </div>
         </div>
-      </div>
+        <section class="eventSection">
+          <h2>Events</h2>
+          <ol class="events">
+            ${(transfer.events || []).length ? transfer.events.map(eventHtml).join("") : `<li class="emptyBlock">No signed events.</li>`}
+          </ol>
+        </section>
+      </details>
+    `;
+  }
 
-      <div class="packageGrid">
-        <label>
-          <span>Package</span>
-          <textarea id="package-output" readonly rows="8" data-keep-enabled="true">${escapeHtml(packageText)}</textarea>
-        </label>
-        <label>
-          <span>Import package</span>
-          <textarea id="package-input" rows="8" data-keep-enabled="true"></textarea>
-        </label>
-        <div class="formActions">
-          <button type="button" data-copy-package data-keep-enabled="true">Copy package</button>
-          <button type="button" data-import-package data-keep-enabled="true">Import package</button>
+  function renderCreateDetail() {
+    transferDetail.innerHTML = `
+      <div class="detailHeader">
+        <div>
+          <h2>New Transfer</h2>
+          <div class="meta">Create a proposal from one local Record and optionally post it to an Organ.</div>
         </div>
       </div>
 
-      <section class="eventSection">
-        <h2>Events</h2>
-        <ol class="events">
-          ${(transfer.events || []).length ? transfer.events.map(eventHtml).join("") : `<li class="emptyBlock">No signed events.</li>`}
-        </ol>
-      </section>
+      <form id="proposal-form" class="proposalGrid createProposalGrid">
+        <label>
+          <span>Title</span>
+          <input id="proposal-title-input" name="title" value="Record transfer" autocomplete="off">
+        </label>
+        <label>
+          <span>Local side</span>
+          <select id="proposal-role" name="role">
+            <option value="need">Need</option>
+            <option value="contribution">Contribution</option>
+          </select>
+        </label>
+        <label>
+          <span>Local Record</span>
+          <input id="proposal-record" name="record" list="record-options" autocomplete="off" placeholder="Select Record">
+        </label>
+        <label>
+          <span>Quantity</span>
+          <input id="proposal-quantity" name="quantity" inputmode="decimal" value="1">
+        </label>
+        <label>
+          <span>Counterparty</span>
+          <input id="proposal-counterparty" name="counterparty" list="organ-options" autocomplete="off" placeholder="other-cell">
+        </label>
+        <label>
+          <span>Post target</span>
+          <select id="proposal-organ" name="organ">${proposalOrganOptions()}</select>
+        </label>
+        <div class="formActions">
+          <button type="button" class="primary" data-action="submit-create-proposal">Create proposal</button>
+          <button type="button" data-action="cancel-create" data-keep-enabled="true">Cancel</button>
+        </div>
+      </form>
     `;
   }
 
@@ -530,12 +758,17 @@ pub(super) fn script() -> String {
 
   function updateStaticDisabledState() {
     if (proposalSubmit) {
-      proposalSubmit.disabled = busy || !snapshot.localIdentity;
-      proposalSubmit.title = snapshot.localIdentity ? "" : "Save local identity first";
+      proposalSubmit.disabled = busy;
+      proposalSubmit.title = "";
     }
   }
 
   async function loadContract() {
+    if (contractLoading) {
+      reloadQueued = true;
+      return;
+    }
+    contractLoading = true;
     setBusy(true);
     try {
       const response = await fetch(contractUrl(), { cache: "no-store" });
@@ -548,8 +781,25 @@ pub(super) fn script() -> String {
     } catch (error) {
       setStatus(error instanceof Error ? error.message : String(error), "danger");
     } finally {
+      contractLoading = false;
       setBusy(false);
+      if (reloadQueued) {
+        reloadQueued = false;
+        loadContract();
+      }
     }
+  }
+
+  function connectTransferStream() {
+    if (!window.EventSource || !instanceId) return;
+    const source = new EventSource(streamUrl());
+    source.addEventListener("transfer-changed", () => {
+      loadContract();
+    });
+    source.onerror = () => {
+      source.close();
+      window.setTimeout(connectTransferStream, 2000);
+    };
   }
 
   async function postAction(action, payload) {
@@ -564,6 +814,13 @@ pub(super) fn script() -> String {
       const body = await response.json().catch(() => null);
       if (!response.ok) throw new Error(body?.error || `Action ${action} failed.`);
       snapshot = body?.snapshot || snapshot;
+      confirmingProgressAction = null;
+      if (action === "create-proposal") {
+        activeTransferTab = "mine";
+        detailMode = "selected";
+        selectedTransferId = null;
+        selectedGossipTransferUid = null;
+      }
       reconcileSelectedTransfer();
       render();
       setStatus(body?.message || "Done", "ok");
@@ -585,6 +842,10 @@ pub(super) fn script() -> String {
   }
 
   identitySave.addEventListener("click", saveIdentity);
+
+  identityReset.addEventListener("click", () => {
+    setResetModalOpen(true);
+  });
 
   identityForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -639,8 +900,13 @@ pub(super) fn script() -> String {
   });
 
   function createProposal() {
-    if (!snapshot.localIdentity) {
-      setStatus("Save local identity first.", "danger");
+    const proposalForm = document.getElementById("proposal-form");
+    if (!proposalForm) {
+      detailMode = "create";
+      selectedTransferId = null;
+      selectedGossipTransferUid = null;
+      renderTransferList();
+      renderDetail();
       return;
     }
     const data = new FormData(proposalForm);
@@ -661,17 +927,67 @@ pub(super) fn script() -> String {
     });
   }
 
-  proposalSubmit.addEventListener("click", createProposal);
+  proposalSubmit.addEventListener("click", () => {
+    detailMode = "create";
+    selectedTransferId = null;
+    selectedGossipTransferUid = null;
+    pendingDeleteTransferId = null;
+    confirmingProgressAction = null;
+    renderTransferList();
+    renderDetail();
+  });
 
-  proposalForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    createProposal();
+  transferSearch.addEventListener("input", () => {
+    selectedTransferId = null;
+    selectedGossipTransferUid = null;
+    confirmingProgressAction = null;
+    renderTransferList();
+    renderDetail();
   });
 
   app.addEventListener("click", async (event) => {
+    const openSettings = event.target.closest("[data-action='open-settings']");
+    if (openSettings) {
+      setSettingsOpen(true);
+      return;
+    }
+
+    const closeSettings = event.target.closest("[data-action='close-settings']");
+    if (closeSettings) {
+      setSettingsOpen(false);
+      return;
+    }
+
+    const cancelResetKey = event.target.closest("[data-action='cancel-reset-key']");
+    if (cancelResetKey) {
+      setResetModalOpen(false);
+      return;
+    }
+
+    const confirmResetKey = event.target.closest("[data-action='confirm-reset-key']");
+    if (confirmResetKey) {
+      const label = String(identityLabel.value || snapshot.localIdentity?.label || "local-cell").trim();
+      setResetModalOpen(false);
+      postAction("reset-local-party", { label });
+      return;
+    }
+
     const refreshButton = event.target.closest("[data-action='refresh']");
     if (refreshButton) {
       postAction("refresh");
+      return;
+    }
+
+    const cancelCreate = event.target.closest("[data-action='cancel-create']");
+    if (cancelCreate) {
+      detailMode = "selected";
+      renderDetail();
+      return;
+    }
+
+    const submitCreateProposal = event.target.closest("[data-action='submit-create-proposal']");
+    if (submitCreateProposal) {
+      createProposal();
       return;
     }
 
@@ -681,6 +997,8 @@ pub(super) fn script() -> String {
       selectedTransferId = null;
       selectedGossipTransferUid = null;
       pendingDeleteTransferId = null;
+      confirmingProgressAction = null;
+      detailMode = "selected";
       renderTransferList();
       renderDetail();
       return;
@@ -688,13 +1006,19 @@ pub(super) fn script() -> String {
 
     const fillRecord = event.target.closest("[data-fill-record]");
     if (fillRecord) {
-      proposalRecord.value = fillRecord.dataset.fillRecord || "";
+      detailMode = "create";
+      renderDetail();
+      const proposalRecord = document.getElementById("proposal-record");
+      if (proposalRecord) {
+        proposalRecord.value = fillRecord.dataset.fillRecord || "";
+      }
       return;
     }
 
     const gossipRow = event.target.closest("[data-gossip-transfer-uid]");
     if (gossipRow) {
       selectedGossipTransferUid = gossipRow.dataset.gossipTransferUid || "";
+      detailMode = "selected";
       renderTransferList();
       renderDetail();
       return;
@@ -704,6 +1028,8 @@ pub(super) fn script() -> String {
     if (row) {
       selectedTransferId = Number(row.dataset.transferId);
       pendingDeleteTransferId = null;
+      confirmingProgressAction = null;
+      detailMode = "selected";
       renderTransferList();
       renderDetail();
       return;
@@ -712,9 +1038,45 @@ pub(super) fn script() -> String {
     const transfer = selectedTransfer();
     if (!transfer) return;
 
+    const progressButton = event.target.closest("[data-progress-action]");
+    if (progressButton) {
+      if (progressButton.disabled) return;
+      const action = progressButton.dataset.progressAction || "";
+      const side = progressButton.dataset.progressSide || "";
+      const step = progressButton.dataset.progressStep || action;
+      if (side !== transfer.localRole) return;
+      const label = progressButton.dataset.progressLabel || progressButton.textContent || action;
+      const key = progressActionKey(transfer, side, step);
+      if (confirmingProgressAction !== key) {
+        confirmingProgressAction = key;
+        renderDetail();
+        setStatus("Click Confirm " + label + " to continue.", "warn");
+        return;
+      }
+      confirmingProgressAction = null;
+      postAction(action, { transferId: transfer.id });
+      return;
+    }
+
     const transferAction = event.target.closest("[data-transfer-action]");
     if (transferAction) {
+      if (transferAction.disabled) return;
       const action = transferAction.dataset.transferAction;
+      if (action === "update-transfer-local-item") {
+        const recordId = selectedRecordId(document.getElementById("local-record-input")?.value || "");
+        if (!recordId) {
+          setStatus("Select a local Record first.", "danger");
+          return;
+        }
+        postAction(action, {
+          transferId: transfer.id,
+          title: transfer.title || "Transfer",
+          itemTitle: document.getElementById("local-item-title")?.value || "Record",
+          recordId,
+          quantity: parseNumber(document.getElementById("local-quantity-input")?.value, transfer.quantity || 1),
+        });
+        return;
+      }
       if (action === "duplicate-proposal") {
         const role = document.getElementById("duplicate-role")?.value || "contribution";
         const recordId = Number(document.getElementById("duplicate-record")?.value || 0);
@@ -784,14 +1146,24 @@ pub(super) fn script() -> String {
     }
   });
 
-  proposalOrgan.addEventListener("change", () => {
+  app.addEventListener("submit", (event) => {
+    if (!event.target.closest("#proposal-form")) return;
+    event.preventDefault();
+    createProposal();
+  });
+
+  app.addEventListener("change", (event) => {
+    const proposalOrgan = event.target.closest("#proposal-organ");
+    if (!proposalOrgan) return;
     const organId = selectedOrganId(proposalOrgan.value);
     const organ = snapshot.organs.find((item) => Number(item.id) === Number(organId));
-    if (organ && !proposalCounterparty.value.trim()) {
+    const proposalCounterparty = document.getElementById("proposal-counterparty");
+    if (organ && proposalCounterparty && !proposalCounterparty.value.trim()) {
       proposalCounterparty.value = organ.name;
     }
   });
 
+  connectTransferStream();
   loadContract();
 })();
 "##.to_string()

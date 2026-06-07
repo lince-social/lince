@@ -327,6 +327,35 @@ pub struct TransferSyncOutboxRow {
 }
 
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
+#[allow(dead_code)]
+#[table(name = "transfer_gossip_package")]
+#[table(strict)]
+#[table(index(
+    name = "idx_transfer_gossip_package_uid",
+    columns = "transfer_uid",
+    unique
+))]
+pub struct TransferGossipPackageRow {
+    #[table(primary_key)]
+    pub id: i64,
+    #[table(check = "length(trim(transfer_uid)) > 0")]
+    pub transfer_uid: String,
+    #[table(default = "'{}'", check = "json_valid(package_json)")]
+    pub package_json: String,
+    pub source_base_url: Option<String>,
+    pub target_base_url: Option<String>,
+    pub observed_from_base_url: Option<String>,
+    #[table(default = "0")]
+    pub event_count: i64,
+    pub latest_event_created_at: Option<String>,
+    #[table(default = "CURRENT_TIMESTAMP")]
+    pub first_seen_at: String,
+    #[table(default = "CURRENT_TIMESTAMP")]
+    pub updated_at: String,
+    pub last_pulsed_at: Option<String>,
+}
+
+#[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
 #[table(name = "sum")]
 pub struct SumRow {
     #[table(primary_key)]

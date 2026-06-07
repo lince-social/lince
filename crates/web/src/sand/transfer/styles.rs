@@ -149,6 +149,25 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
     gap: 8px;
   }
 
+  .tabs {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .tabButton {
+    min-height: 28px;
+    padding: 0 9px;
+    font-size: 0.76rem;
+    color: var(--muted);
+  }
+
+  .tabButton[data-active="true"] {
+    border-color: rgba(134, 199, 255, 0.45);
+    color: var(--accent);
+    background: rgba(134, 199, 255, 0.1);
+  }
+
   .status {
     min-height: 18px;
     margin-top: 4px;

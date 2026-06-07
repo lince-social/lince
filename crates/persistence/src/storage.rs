@@ -6,7 +6,13 @@ use aws_sdk_s3::{
 };
 use serde::Serialize;
 use sqlx::{FromRow, Pool, Sqlite};
-use std::io::{Error, ErrorKind};
+use std::{
+    io::{Error, ErrorKind},
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+};
 
 const DEFAULT_BUCKET_NAME: &str = "lince";
 const DEFAULT_BUCKET_REGION: &str = "us-east-1";
@@ -16,6 +22,7 @@ pub struct StorageService {
     client: Option<Client>,
     bucket: String,
     enabled: bool,
+    bucket_ensure_attempted: Arc<AtomicBool>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -81,6 +88,7 @@ impl StorageService {
                     .unwrap_or(DEFAULT_BUCKET_NAME)
                     .to_string(),
                 enabled: false,
+                bucket_ensure_attempted: Arc::new(AtomicBool::new(false)),
             });
         }
 
@@ -130,6 +138,7 @@ impl StorageService {
             client: Some(Client::from_conf(config)),
             bucket,
             enabled: true,
+            bucket_ensure_attempted: Arc::new(AtomicBool::new(false)),
         })
     }
 
@@ -138,6 +147,9 @@ impl StorageService {
     }
 
     pub async fn ensure_bucket_exists(&self) -> Result<(), Error> {
+        if self.bucket_ensure_attempted.swap(true, Ordering::AcqRel) {
+            return Ok(());
+        }
         let Some(client) = self.client.as_ref() else {
             return Ok(());
         };

@@ -3,32 +3,29 @@ use maud::{Markup, html};
 pub(super) fn body() -> Markup {
     html! {
         main id="transfer-app" class="transferApp" {
-            header class="topbar" {
-                div {
-                    h1 { "Transfer" }
-                    p id="transfer-status" class="status" data-tone="idle" { "Loading" }
-                }
-                div class="topActions" {
-                    button
-                        type="button"
-                        class="iconButton"
-                        data-action="refresh"
-                        aria-label="Refresh"
-                        title="Refresh"
-                    {
-                        "↻"
-                    }
-                }
-            }
-
             datalist id="record-options" {}
             datalist id="organ-options" {}
 
-            section class="workspace" {
-                aside class="sidebar" {
-                    section class="panel" aria-labelledby="identity-title" {
+            aside id="settings-panel" class="settingsPanel" aria-label="Transfer settings" aria-hidden="true" {
+                div class="settingsBackdrop" data-action="close-settings" {}
+                div class="settingsDrawer" {
+                    div class="panelHead" {
+                        h2 { "Transfer settings" }
+                        button
+                            type="button"
+                            class="iconButton"
+                            data-action="close-settings"
+                            aria-label="Close settings"
+                            title="Close settings"
+                            data-keep-enabled="true"
+                        {
+                            "×"
+                        }
+                    }
+
+                    section class="panel drawerPanel" aria-labelledby="identity-title" {
                         div class="panelHead" {
-                            h2 id="identity-title" { "Local party" }
+                            h2 id="identity-title" { "Signing identity" }
                         }
                         div id="identity-summary" class="panelBody" {}
                         form id="identity-form" class="formGrid" {
@@ -37,15 +34,20 @@ pub(super) fn body() -> Markup {
                                 input id="identity-label" name="label" autocomplete="off" placeholder="my-cell" {}
                             }
                             p class="muted" {
-                                "This creates one persistent local signing identity for this node. It stays in the local database and is reused automatically for Transfer signatures."
+                                "Created automatically on this node. The private key stays local; Transfer events share only the public key and signatures."
                             }
-                            button id="identity-save" type="button" class="primary" {
-                                "Save signing identity"
+                            div class="formActions" {
+                                button id="identity-save" type="button" class="primary" {
+                                    "Save label"
+                                }
+                                button id="identity-reset" type="button" class="danger" {
+                                    "Reset key"
+                                }
                             }
                         }
                     }
 
-                    section class="panel" aria-labelledby="ingress-title" {
+                    section class="panel drawerPanel" aria-labelledby="ingress-title" {
                         div class="panelHead" {
                             h2 id="ingress-title" { "Ingress" }
                         }
@@ -59,7 +61,7 @@ pub(super) fn body() -> Markup {
                         }
                     }
 
-                    section class="panel" aria-labelledby="organ-login-title" {
+                    section class="panel drawerPanel" aria-labelledby="organ-login-title" {
                         div class="panelHead" {
                             h2 id="organ-login-title" { "Organ login" }
                         }
@@ -80,7 +82,7 @@ pub(super) fn body() -> Markup {
                         }
                     }
 
-                    section class="panel" aria-labelledby="record-title" {
+                    section class="panel drawerPanel" aria-labelledby="record-title" {
                         div class="panelHead" {
                             h2 id="record-title" { "Records" }
                         }
@@ -102,58 +104,73 @@ pub(super) fn body() -> Markup {
                         div id="record-list" class="compactList" {}
                     }
                 }
+            }
 
-                section class="mainColumn" {
-                    section class="panel" aria-labelledby="proposal-title" {
-                        div class="panelHead" {
-                            h2 id="proposal-title" { "New proposal" }
-                        }
-                        form id="proposal-form" class="proposalGrid" {
-                            label {
-                                span { "Title" }
-                                input id="proposal-title-input" name="title" value="Record transfer" autocomplete="off" {}
-                            }
-                            label {
-                                span { "Local side" }
-                                select id="proposal-role" name="role" {
-                                    option value="need" { "Need" }
-                                    option value="contribution" { "Contribution" }
-                                }
-                            }
-                            label {
-                                span { "Local Record" }
-                                input id="proposal-record" name="record" list="record-options" autocomplete="off" placeholder="Select Record" {}
-                            }
-                            label {
-                                span { "Quantity" }
-                                input id="proposal-quantity" name="quantity" inputmode="decimal" value="1" {}
-                            }
-                            label {
-                                span { "Counterparty" }
-                                input id="proposal-counterparty" name="counterparty" list="organ-options" autocomplete="off" placeholder="other-cell" {}
-                            }
-                            label {
-                                span { "Post target" }
-                                select id="proposal-organ" name="organ" {}
-                            }
-                            div class="formActions" {
-                                button id="proposal-create" type="button" class="primary" {
-                                    "Create proposal"
-                                }
-                            }
-                        }
+            div id="reset-key-modal" class="modalLayer" aria-hidden="true" {
+                div class="modalCard" role="dialog" aria-modal="true" aria-labelledby="reset-key-title" {
+                    h2 id="reset-key-title" { "Reset signing key?" }
+                    p class="muted" {
+                        "This creates a new local private/public key pair. Existing Transfers signed by the old key will not be owned by the new key."
                     }
+                    div class="formActions" {
+                        button type="button" data-action="cancel-reset-key" data-keep-enabled="true" { "Cancel" }
+                        button type="button" class="danger" data-action="confirm-reset-key" data-keep-enabled="true" { "Reset key" }
+                    }
+                }
+            }
 
+            section class="workspace" {
+                aside class="transferBrowser" aria-label="Transfer browser" {
+                    input id="transfer-search" class="searchInput" autocomplete="off" placeholder="Search" {}
                     section class="panel transfersPanel" aria-labelledby="transfers-title" {
-                        div class="panelHead splitHead" {
-                            h2 id="transfers-title" { "Transfers" }
+                        div class="browserHead" {
                             div id="transfer-tabs" class="tabs" {}
                             div id="transfer-count" class="muted" {}
                         }
-                        div class="transferLayout" {
-                            div id="transfer-list" class="transferList" {}
-                            article id="transfer-detail" class="transferDetail" {}
+                        div id="transfer-list" class="transferList" {}
+                    }
+                }
+
+                section class="mainColumn" {
+                    header class="utilityBar" {
+                        div {
+                            h1 { "Transfer" }
+                            p id="transfer-status" class="status" data-tone="idle" { "Loading" }
                         }
+                        div class="topActions" {
+                            button
+                                id="proposal-create"
+                                type="button"
+                                class="iconButton primary"
+                                data-action="new-transfer"
+                                aria-label="Create Transfer"
+                                title="Create Transfer"
+                            {
+                                "+"
+                            }
+                            button
+                                type="button"
+                                class="iconButton"
+                                data-action="open-settings"
+                                aria-label="Transfer settings"
+                                title="Transfer settings"
+                            {
+                                "⚙"
+                            }
+                            button
+                                type="button"
+                                class="iconButton"
+                                data-action="refresh"
+                                aria-label="Refresh"
+                                title="Refresh"
+                            {
+                                "↻"
+                            }
+                        }
+                    }
+                    section class="panel transferWorkspace" aria-labelledby="transfers-title" {
+                        h2 id="transfers-title" class="srOnly" { "Transfer workspace" }
+                        article id="transfer-detail" class="transferDetail" {}
                     }
                 }
             }

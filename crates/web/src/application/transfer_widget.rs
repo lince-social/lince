@@ -23,8 +23,13 @@ use {
         fs,
         io::{Error, ErrorKind},
         path::PathBuf,
+        sync::{
+            Arc,
+            atomic::{AtomicU64, Ordering},
+        },
         time::Duration,
     },
+    tokio::sync::broadcast,
     uuid::Uuid,
 };
 
@@ -33,6 +38,19 @@ const PACKAGE_VERSION: u32 = 1;
 const MAX_GOSSIP_EVENTS: usize = 200;
 const MAX_GOSSIP_PACKAGE_BYTES: usize = 256 * 1024;
 const MAX_GOSSIP_PACKAGES: i64 = 500;
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TransferChangeEvent {
+    pub version: u64,
+    pub reason: String,
+}
+
+#[derive(Clone)]
+struct TransferChangeBus {
+    version: Arc<AtomicU64>,
+    sender: broadcast::Sender<TransferChangeEvent>,
+}
 
 #[derive(Clone)]
 pub struct TransferWidgetService {
@@ -43,6 +61,7 @@ pub struct TransferWidgetService {
     manas: ManasGateway,
     organs: OrganStore,
     services: InjectedServices,
+    changes: TransferChangeBus,
 }
 
 impl TransferWidgetService {
@@ -55,6 +74,7 @@ impl TransferWidgetService {
         organs: OrganStore,
         services: InjectedServices,
     ) -> Self {
+        let (changes, _) = broadcast::channel(1024);
         Self {
             auth,
             board_state,
@@ -63,6 +83,10 @@ impl TransferWidgetService {
             manas,
             organs,
             services,
+            changes: TransferChangeBus {
+                version: Arc::new(AtomicU64::new(0)),
+                sender: changes,
+            },
         }
     }
 
@@ -87,13 +111,16 @@ impl TransferWidgetService {
             },
             "actions": [
                 "configure-local-party",
+                "reset-local-party",
                 "create-record",
                 "create-proposal",
+                "update-transfer-local-item",
                 "duplicate-proposal",
                 "sign-agreement",
                 "confirm-delivery",
                 "confirm-receipt",
                 "settle-local",
+                "inactivate-transfer",
                 "delete-transfer",
                 "post-transfer",
                 "import-package",
@@ -118,6 +145,11 @@ impl TransferWidgetService {
                 let request = parse_payload::<ConfigureLocalPartyRequest>(payload)?;
                 self.configure_local_party(&request.label).await?;
                 "Local Transfer signing identity saved in this node database.".to_string()
+            }
+            "reset-local-party" => {
+                let request = parse_payload::<ConfigureLocalPartyRequest>(payload)?;
+                self.reset_local_party(&request.label).await?;
+                "Local Transfer signing identity reset.".to_string()
             }
             "create-record" => {
                 let request = parse_payload::<CreateRecordRequest>(payload)?;
@@ -151,6 +183,11 @@ impl TransferWidgetService {
                 let transfer_id = self.duplicate_proposal(request).await?;
                 format!("Proposal duplicated into Transfer #{transfer_id}.")
             }
+            "update-transfer-local-item" => {
+                let request = parse_payload::<UpdateTransferLocalItemRequest>(payload)?;
+                self.update_transfer_local_item(request).await?;
+                "Transfer local terms updated.".to_string()
+            }
             "sign-agreement" => {
                 let request = parse_payload::<TransferIdRequest>(payload)?;
                 self.sign_agreement(request.transfer_id).await?;
@@ -170,6 +207,11 @@ impl TransferWidgetService {
                 let request = parse_payload::<TransferIdRequest>(payload)?;
                 self.settle_local(request.transfer_id).await?;
                 "Local Record quantity settled.".to_string()
+            }
+            "inactivate-transfer" => {
+                let request = parse_payload::<TransferIdRequest>(payload)?;
+                self.inactivate_transfer(request.transfer_id).await?;
+                "Transfer inactivated and progress reset.".to_string()
             }
             "delete-transfer" => {
                 let request = parse_payload::<TransferIdRequest>(payload)?;
@@ -206,12 +248,26 @@ impl TransferWidgetService {
             }
         };
 
-        Ok(json!({
+        let response = json!({
             "ok": true,
             "action": action,
             "message": message,
             "snapshot": self.snapshot(session_token).await?,
-        }))
+        });
+        self.notify_changed(action);
+        Ok(response)
+    }
+
+    pub fn subscribe_changes(&self) -> broadcast::Receiver<TransferChangeEvent> {
+        self.changes.sender.subscribe()
+    }
+
+    fn notify_changed(&self, reason: impl Into<String>) {
+        let version = self.changes.version.fetch_add(1, Ordering::Relaxed) + 1;
+        let _ = self.changes.sender.send(TransferChangeEvent {
+            version,
+            reason: reason.into(),
+        });
     }
 
     pub async fn receive_transfer_package_value(
@@ -220,6 +276,9 @@ impl TransferWidgetService {
     ) -> Result<Value, TransferWidgetError> {
         let package = parse_transfer_package_value(value)?;
         let imported = self.receive_transfer_package(package).await?;
+        if imported.events_imported > 0 {
+            self.notify_changed("package_received");
+        }
 
         Ok(json!({
             "ok": true,
@@ -252,6 +311,9 @@ impl TransferWidgetService {
         let initial = is_public_proposal_package(&package);
         if known || addressed || initial {
             let imported = self.receive_transfer_package(package).await?;
+            if imported.events_imported > 0 {
+                self.notify_changed("public_package_received");
+            }
             return Ok(json!({
                 "ok": true,
                 "transferId": imported.transfer_id,
@@ -262,6 +324,7 @@ impl TransferWidgetService {
         self.store_gossip_package(&package, None)
             .await
             .map_err(TransferWidgetError::from_io)?;
+        self.notify_changed("gossip_package_received");
 
         Ok(json!({
             "ok": true,
@@ -334,7 +397,7 @@ impl TransferWidgetService {
 
     async fn snapshot(&self, session_token: Option<&str>) -> Result<Value, TransferWidgetError> {
         let local_identity = self
-            .load_local_identity()
+            .ensure_local_identity()
             .await
             .map_err(TransferWidgetError::from_io)?;
         let records = self
@@ -342,7 +405,7 @@ impl TransferWidgetService {
             .await
             .map_err(TransferWidgetError::from_io)?;
         let transfers = self
-            .load_transfer_views(local_identity.as_ref())
+            .load_transfer_views(Some(&local_identity))
             .await
             .map_err(TransferWidgetError::from_io)?;
         let gossip_transfers = self
@@ -356,7 +419,7 @@ impl TransferWidgetService {
             .map_err(TransferWidgetError::from_io)?;
 
         Ok(json!({
-            "localIdentity": local_identity.map(LocalIdentityView::from),
+            "localIdentity": LocalIdentityView::from(local_identity),
             "ingressPolicy": {
                 "publicProposalsEnabled": public_proposals_enabled,
                 "copy": "When enabled, this node accepts unauthenticated initial proposal packages only. Replies still require login or manual import."
@@ -468,6 +531,27 @@ impl TransferWidgetService {
             return Ok(());
         }
 
+        self.insert_local_identity(&label)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+
+        Ok(())
+    }
+
+    async fn reset_local_party(&self, label: &str) -> Result<(), TransferWidgetError> {
+        let label = normalize_nonempty(label, "Local party label")?;
+        self.services
+            .writer
+            .execute_statement("DELETE FROM transfer_node_identity".to_string(), Vec::new())
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        self.insert_local_identity(&label)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        Ok(())
+    }
+
+    async fn insert_local_identity(&self, label: &str) -> Result<(), Error> {
         let signing_key = new_signing_key();
         let public_key = BASE64.encode(signing_key.verifying_key().to_bytes());
         let secret_key = BASE64.encode(signing_key.to_bytes());
@@ -479,13 +563,12 @@ impl TransferWidgetService {
                  VALUES (1, ?, ?, ?)"
                     .to_string(),
                 vec![
-                    SqlParameter::Text(label),
+                    SqlParameter::Text(label.to_string()),
                     SqlParameter::Text(public_key),
                     SqlParameter::Text(secret_key),
                 ],
             )
-            .await
-            .map_err(TransferWidgetError::from_io)?;
+            .await?;
 
         Ok(())
     }
@@ -760,6 +843,91 @@ impl TransferWidgetService {
         Ok(transfer_id)
     }
 
+    async fn update_transfer_local_item(
+        &self,
+        request: UpdateTransferLocalItemRequest,
+    ) -> Result<(), TransferWidgetError> {
+        let title = normalize_nonempty(&request.title, "Transfer title")?;
+        let item_title = normalize_nonempty(&request.item_title, "Transfer item title")?;
+        let local_identity = self.require_local_identity().await?;
+        let transfer = self
+            .load_transfer_summary(request.transfer_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        let role = self.require_local_role(&transfer, &local_identity)?;
+        let record = self
+            .load_record_by_id(request.record_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        let quantity = positive_quantity(request.quantity)?;
+
+        let (id_column, head_column, quantity_column) = match role {
+            TransferSide::Contribution => (
+                "contribution_id",
+                "contribution_head",
+                "contribution_quantity",
+            ),
+            TransferSide::Need => ("need_id", "need_head", "need_quantity"),
+        };
+
+        self.services
+            .writer
+            .execute_statement(
+                "UPDATE transfer_identity
+                 SET title = ?, updated_at = CURRENT_TIMESTAMP
+                 WHERE transfer_id = ?"
+                    .to_string(),
+                vec![
+                    SqlParameter::Text(title.clone()),
+                    SqlParameter::Integer(transfer.id),
+                ],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+
+        self.services
+            .writer
+            .execute_statement(
+                format!(
+                    "UPDATE transfer_item
+                     SET {id_column} = ?,
+                         {head_column} = ?,
+                         {quantity_column} = ?
+                     WHERE transfer_id = ?"
+                ),
+                vec![
+                    SqlParameter::Integer(record.id),
+                    SqlParameter::Text(item_title.clone()),
+                    SqlParameter::Real(quantity),
+                    SqlParameter::Integer(transfer.id),
+                ],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+
+        let identity = self
+            .load_transfer_identity_by_id(transfer.id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        self.append_signed_event(
+            &identity,
+            &local_identity,
+            EventKind::ItemCreated,
+            json!({
+                "event_type": "item_updated",
+                "role": role.as_str(),
+                "title": title,
+                "record": record,
+                "item_title": item_title,
+                "quantity": quantity
+            }),
+        )
+        .await
+        .map_err(TransferWidgetError::from_io)?;
+
+        Ok(())
+    }
+
     async fn sign_agreement(&self, transfer_id: i64) -> Result<(), TransferWidgetError> {
         let local_identity = self.require_local_identity().await?;
         let transfer = self
@@ -767,12 +935,44 @@ impl TransferWidgetService {
             .await
             .map_err(TransferWidgetError::from_io)?;
         let role = self.require_local_role(&transfer, &local_identity)?;
+        let (local_agreement, remote_agreement) = match role {
+            TransferSide::Contribution => (transfer.first_agreement, transfer.second_agreement),
+            TransferSide::Need => (transfer.second_agreement, transfer.first_agreement),
+        };
+        let next_agreement = if local_agreement <= 0 {
+            1
+        } else if local_agreement < 2 && remote_agreement >= 1 {
+            2
+        } else {
+            return Err(TransferWidgetError::Invalid(
+                "The other side must lock terms before you can accept them.".into(),
+            ));
+        };
         let column = role.agreement_column();
+        if transfer.state == TransferState::Inactive.as_str() {
+            self.services
+                .writer
+                .execute_statement(
+                    "UPDATE transfer_identity
+                     SET state = ?, updated_at = CURRENT_TIMESTAMP
+                     WHERE transfer_id = ?"
+                        .to_string(),
+                    vec![
+                        SqlParameter::Text(TransferState::Negotiation.as_str().to_string()),
+                        SqlParameter::Integer(transfer.id),
+                    ],
+                )
+                .await
+                .map_err(TransferWidgetError::from_io)?;
+        }
         self.services
             .writer
             .execute_statement(
-                format!("UPDATE transfer_item SET {column} = 2 WHERE transfer_id = ?"),
-                vec![SqlParameter::Integer(transfer.id)],
+                format!("UPDATE transfer_item SET {column} = ? WHERE transfer_id = ?"),
+                vec![
+                    SqlParameter::Integer(next_agreement),
+                    SqlParameter::Integer(transfer.id),
+                ],
             )
             .await
             .map_err(TransferWidgetError::from_io)?;
@@ -784,12 +984,60 @@ impl TransferWidgetService {
             json!({
                 "role": role.as_str(),
                 "agreement_type": "full",
-                "agreement_level": 2
+                "agreement_level": next_agreement
             }),
         )
         .await
         .map_err(TransferWidgetError::from_io)?;
 
+        Ok(())
+    }
+
+    async fn inactivate_transfer(&self, transfer_id: i64) -> Result<(), TransferWidgetError> {
+        let local_identity = self.require_local_identity().await?;
+        let transfer = self
+            .load_transfer_summary(transfer_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        let role = self.require_local_role(&transfer, &local_identity)?;
+        self.services
+            .writer
+            .execute_statement(
+                "UPDATE transfer_identity
+                 SET state = ?, updated_at = CURRENT_TIMESTAMP
+                 WHERE transfer_id = ?"
+                    .to_string(),
+                vec![
+                    SqlParameter::Text(TransferState::Inactive.as_str().to_string()),
+                    SqlParameter::Integer(transfer.id),
+                ],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        self.services
+            .writer
+            .execute_statement(
+                "UPDATE transfer_item
+                 SET first_agreement = 0,
+                     second_agreement = 0
+                 WHERE transfer_id = ?"
+                    .to_string(),
+                vec![SqlParameter::Integer(transfer.id)],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        self.append_signed_event(
+            &transfer.identity_row(),
+            &local_identity,
+            EventKind::TransferInactivated,
+            json!({
+                "event_type": "transfer_inactivated",
+                "role": role.as_str(),
+                "progress_reset": true
+            }),
+        )
+        .await
+        .map_err(TransferWidgetError::from_io)?;
         Ok(())
     }
 
@@ -856,6 +1104,7 @@ impl TransferWidgetService {
             }),
         )
         .await?;
+        self.settle_local(transfer_id).await?;
         Ok(())
     }
 
@@ -1134,12 +1383,19 @@ impl TransferWidgetService {
     }
 
     async fn require_local_identity(&self) -> Result<LocalIdentityRow, TransferWidgetError> {
-        self.load_local_identity()
+        self.ensure_local_identity()
             .await
-            .map_err(TransferWidgetError::from_io)?
-            .ok_or_else(|| {
-                TransferWidgetError::Invalid("Configure the local Transfer party first.".into())
-            })
+            .map_err(TransferWidgetError::from_io)
+    }
+
+    async fn ensure_local_identity(&self) -> Result<LocalIdentityRow, Error> {
+        if let Some(identity) = self.load_local_identity().await? {
+            return Ok(identity);
+        }
+        self.insert_local_identity("local-cell").await?;
+        self.load_local_identity()
+            .await?
+            .ok_or_else(|| Error::other("Local Transfer identity was not created"))
     }
 
     async fn load_local_identity(&self) -> Result<Option<LocalIdentityRow>, Error> {
@@ -1943,22 +2199,37 @@ impl TransferWidgetService {
                     );
                     continue;
                 }
-                let outcome = if self
+                let changed = if self
                     .find_transfer_id_by_uid(&package.identity.transfer_uid)
                     .await?
                     .is_some()
                     || self.package_is_addressed_to_local_node(&package)
                 {
-                    self.receive_transfer_package(package).await.map(|_| ())
+                    match self.receive_transfer_package(package).await {
+                        Ok(outcome) => outcome.events_imported > 0,
+                        Err(error) => {
+                            tracing::warn!(
+                                "transfer startup package import failed from {target}: {error:?}"
+                            );
+                            false
+                        }
+                    }
                 } else {
-                    self.store_gossip_package(&package, Some(target.clone()))
+                    match self
+                        .store_gossip_package(&package, Some(target.clone()))
                         .await
-                        .map_err(TransferWidgetError::from_io)
+                    {
+                        Ok(()) => true,
+                        Err(error) => {
+                            tracing::warn!(
+                                "transfer startup package import failed from {target}: {error:?}"
+                            );
+                            false
+                        }
+                    }
                 };
-                if let Err(error) = outcome {
-                    tracing::warn!(
-                        "transfer startup package import failed from {target}: {error:?}"
-                    );
+                if changed {
+                    self.notify_changed("mesh_pull");
                 }
             }
         }
@@ -2357,6 +2628,7 @@ impl TransferSide {
 enum TransferState {
     PublicProposal,
     Negotiation,
+    Inactive,
 }
 
 impl TransferState {
@@ -2364,6 +2636,7 @@ impl TransferState {
         match self {
             Self::PublicProposal => "public_proposal",
             Self::Negotiation => "negotiation",
+            Self::Inactive => "inactive",
         }
     }
 }
@@ -2377,6 +2650,7 @@ enum EventKind {
     DeliveryConfirmed,
     ReceiptConfirmed,
     SettlementApplied,
+    TransferInactivated,
 }
 
 impl EventKind {
@@ -2388,6 +2662,7 @@ impl EventKind {
             Self::DeliveryConfirmed => "delivery_confirmed",
             Self::ReceiptConfirmed => "receipt_confirmed",
             Self::SettlementApplied => "settlement_applied",
+            Self::TransferInactivated => "transfer_inactivated",
         }
     }
 }
@@ -2423,6 +2698,16 @@ struct DuplicateProposalRequest {
     transfer_id: i64,
     local_role: TransferSide,
     local_record_id: i64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct UpdateTransferLocalItemRequest {
+    transfer_id: i64,
+    title: String,
+    item_title: String,
+    record_id: i64,
+    quantity: f64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -2771,7 +3056,12 @@ impl TransferView {
         local_identity: Option<&LocalIdentityRow>,
     ) -> Self {
         let local_role = local_role_for(&transfer, local_identity);
-        let event_kinds = events
+        let reset_after_index = events
+            .iter()
+            .rposition(|event| event.event_kind == EventKind::TransferInactivated.as_str())
+            .map(|index| index + 1)
+            .unwrap_or(0);
+        let event_kinds = events[reset_after_index..]
             .iter()
             .map(|event| event.event_kind.as_str())
             .collect::<Vec<_>>();
@@ -2784,7 +3074,10 @@ impl TransferView {
                 .iter()
                 .any(|settlement| settlement.local_actor_label == label)
         });
-        let status = if local_settled {
+        let inactive = transfer.state == TransferState::Inactive.as_str();
+        let status = if inactive {
+            "inactive"
+        } else if local_settled {
             "local_settled"
         } else if delivery_confirmed && receipt_confirmed && complete_agreement {
             "ready_to_settle"
@@ -2801,20 +3094,31 @@ impl TransferView {
         let can_duplicate =
             local_identity.is_some() && local_role.is_none() && (contribution_signed ^ need_signed);
         let can_sign_agreement = match local_role {
-            Some(TransferSide::Contribution) => transfer.first_agreement < 2,
-            Some(TransferSide::Need) => transfer.second_agreement < 2,
+            Some(TransferSide::Contribution) => {
+                transfer.first_agreement <= 0
+                    || (transfer.first_agreement < 2 && transfer.second_agreement >= 1)
+            }
+            Some(TransferSide::Need) => {
+                transfer.second_agreement <= 0
+                    || (transfer.second_agreement < 2 && transfer.first_agreement >= 1)
+            }
             None => false,
         };
-        let can_confirm_delivery = local_role == Some(TransferSide::Contribution)
+        let can_confirm_delivery = !inactive
+            && local_role == Some(TransferSide::Contribution)
             && complete_agreement
             && !delivery_confirmed;
-        let can_confirm_receipt =
-            local_role == Some(TransferSide::Need) && delivery_confirmed && !receipt_confirmed;
-        let can_settle_local = local_role.is_some()
+        let can_confirm_receipt = !inactive
+            && local_role == Some(TransferSide::Need)
+            && delivery_confirmed
+            && !receipt_confirmed;
+        let can_settle_local = !inactive
+            && local_role.is_some()
             && complete_agreement
             && delivery_confirmed
             && receipt_confirmed
             && !local_settled;
+        let can_inactivate = local_role.is_some() && !inactive;
         let event_views = events.iter().map(EventView::from).collect::<Vec<_>>();
         let package = TransferPackage {
             version: PACKAGE_VERSION,
@@ -2868,6 +3172,7 @@ impl TransferView {
                 can_confirm_delivery,
                 can_confirm_receipt,
                 can_settle_local,
+                can_inactivate,
             },
             events: event_views,
             sync_cursors: cursors,
@@ -2911,6 +3216,7 @@ struct ControlView {
     can_confirm_delivery: bool,
     can_confirm_receipt: bool,
     can_settle_local: bool,
+    can_inactivate: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -3449,7 +3755,7 @@ fn validate_event_actor(
     let expected_side = match event.event_kind.as_str() {
         "delivery_confirmed" => Some(TransferSide::Contribution),
         "receipt_confirmed" => Some(TransferSide::Need),
-        "agreement_changed" | "settlement_applied" => {
+        "agreement_changed" | "settlement_applied" | "transfer_inactivated" => {
             Some(event_payload_role(&event.payload_json)?)
         }
         "transfer_created" | "item_created" => None,

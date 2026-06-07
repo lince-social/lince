@@ -21,7 +21,7 @@ use {
             trail_identity::is_supported_trail_package_filename,
             trail_widget::{PreparedTrailStream, TrailBindingPayload, TrailWidgetError},
             transfer_identity::is_supported_transfer_package_filename,
-            transfer_widget::TransferWidgetError,
+            transfer_widget::{TransferChangeEvent, TransferWidgetError},
             widget_runtime::WidgetRuntimeError,
         },
         domain::board::BoardState,
@@ -132,12 +132,7 @@ pub async fn get_widget_stream(
                 "Karma Orchestra nao usa stream nesta versao.",
             ));
         }
-        WidgetKind::Transfer => {
-            return Err(api_error(
-                StatusCode::UNPROCESSABLE_ENTITY,
-                "Transfer nao usa stream nesta versao.",
-            ));
-        }
+        WidgetKind::Transfer => render_transfer_stream(state.transfer_widget.subscribe_changes()),
     };
 
     Ok(response)
@@ -938,6 +933,36 @@ fn render_trail_stream(prepared: PreparedTrailStream) -> Response {
                 .into_response()
         }
     }
+}
+
+fn render_transfer_stream(
+    mut receiver: tokio::sync::broadcast::Receiver<TransferChangeEvent>,
+) -> Response {
+    let stream = stream! {
+        yield Ok::<Event, Infallible>(
+            Event::default()
+                .event("transfer-ready")
+                .data(r#"{"ok":true}"#),
+        );
+        loop {
+            match receiver.recv().await {
+                Ok(event) => {
+                    let payload = serde_json::to_string(&event)
+                        .unwrap_or_else(|_| r#"{"reason":"changed"}"#.to_string());
+                    yield Ok(Event::default().event("transfer-changed").data(payload));
+                }
+                Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {
+                    yield Ok(Event::default()
+                        .event("transfer-changed")
+                        .data(r#"{"reason":"lagged"}"#));
+                }
+                Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
+            }
+        }
+    };
+    Sse::new(stream)
+        .keep_alive(KeepAlive::default())
+        .into_response()
 }
 
 fn render_trail_stream_events(

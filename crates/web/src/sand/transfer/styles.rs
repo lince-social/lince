@@ -126,18 +126,92 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
   .transferApp {
     min-height: 100vh;
     display: grid;
-    grid-template-rows: auto 1fr;
-    gap: 12px;
     padding: 12px;
   }
 
-  .topbar {
+  .settingsPanel {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    pointer-events: none;
+  }
+
+  .settingsPanel[data-open="true"] {
+    pointer-events: auto;
+  }
+
+  .settingsBackdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.46);
+    opacity: 0;
+    transition: opacity 140ms ease;
+  }
+
+  .settingsPanel[data-open="true"] .settingsBackdrop {
+    opacity: 1;
+  }
+
+  .settingsDrawer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: min(380px, 100vw);
+    height: 100%;
+    overflow: auto;
+    display: grid;
+    align-content: start;
+    gap: 12px;
+    padding: 12px;
+    border-left: 1px solid var(--line);
+    background: var(--bg);
+    transform: translateX(100%);
+    transition: transform 140ms ease;
+  }
+
+  .settingsPanel[data-open="true"] .settingsDrawer {
+    transform: translateX(0);
+  }
+
+  .drawerPanel {
+    overflow: hidden;
+  }
+
+  .modalLayer {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    display: none;
+    place-items: center;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.58);
+  }
+
+  .modalLayer[data-open="true"] {
+    display: grid;
+  }
+
+  .modalCard {
+    width: min(420px, 100%);
+    display: grid;
+    gap: 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel);
+    padding: 16px;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.38);
+  }
+
+  .utilityBar {
     display: flex;
-    align-items: start;
+    align-items: center;
     justify-content: space-between;
     gap: 12px;
-    border-bottom: 1px solid var(--line);
-    padding-bottom: 10px;
+    min-height: 50px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel);
+    padding: 8px 10px;
   }
 
   .topActions,
@@ -182,17 +256,29 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
   .workspace {
     min-height: 0;
     display: grid;
-    grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+    grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
     gap: 12px;
   }
 
-  .sidebar,
+  .transferBrowser,
   .mainColumn {
     min-width: 0;
     min-height: 0;
     display: grid;
     align-content: start;
     gap: 12px;
+  }
+
+  .mainColumn {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .transferBrowser {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .searchInput {
+    min-height: 38px;
   }
 
   .panel {
@@ -214,7 +300,13 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
     background: var(--panel-2);
   }
 
-  .splitHead { align-items: baseline; }
+  .browserHead {
+    display: grid;
+    gap: 8px;
+    padding: 8px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel-2);
+  }
 
   .panelBody,
   .formGrid,
@@ -231,6 +323,10 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
     display: grid;
     grid-template-columns: repeat(3, minmax(140px, 1fr));
     gap: 10px;
+  }
+
+  .createProposalGrid {
+    padding: 0;
   }
 
   .proposalGrid .formActions {
@@ -288,21 +384,18 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
     padding: 8px 10px;
   }
 
-  .transferLayout {
-    min-height: 480px;
-    display: grid;
-    grid-template-columns: minmax(230px, 0.42fr) minmax(0, 1fr);
-  }
-
   .transferList {
     min-height: 0;
-    max-height: 70vh;
+    max-height: calc(100vh - 92px);
     overflow: auto;
     display: grid;
     align-content: start;
     gap: 8px;
     padding: 12px;
-    border-right: 1px solid var(--line);
+  }
+
+  .transferWorkspace {
+    min-height: calc(100vh - 86px);
   }
 
   .transferRow[data-active="true"] {
@@ -316,6 +409,242 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
     padding: 12px;
     display: grid;
     align-content: start;
+    gap: 12px;
+  }
+
+  .srOnly {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  .transferHero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, auto);
+    align-items: center;
+    gap: 12px;
+    border: 1px solid rgba(134, 199, 255, 0.5);
+    border-radius: 8px;
+    background: rgba(134, 199, 255, 0.12);
+    padding: 10px 12px;
+  }
+
+  .transferHero h2 {
+    font-size: 1.05rem;
+  }
+
+  .transferHeroInfo {
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+
+  .sendControls {
+    justify-self: end;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+
+  .transferHero select {
+    width: min(280px, 32vw);
+  }
+
+  .transferParties {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 12px;
+  }
+
+  .transferParty {
+    display: grid;
+    align-content: start;
+    gap: 8px;
+  }
+
+  .partyLabel {
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-style: italic;
+  }
+
+  .processButtons {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 6px;
+    background: rgba(255, 255, 255, 0.025);
+  }
+
+  .processButtons button {
+    min-height: 54px;
+    height: 100%;
+    padding: 6px 8px;
+    white-space: normal;
+    line-height: 1.25;
+  }
+
+  .processReady {
+    border-color: rgba(143, 227, 170, 0.55);
+    color: var(--ok);
+    background: rgba(18, 122, 78, 0.42);
+  }
+
+  .processDone {
+    border-color: rgba(143, 227, 170, 0.45);
+    color: var(--ok);
+    background: rgba(18, 122, 78, 0.3);
+  }
+
+  .processWaiting {
+    border-color: rgba(134, 199, 255, 0.28);
+    color: var(--muted);
+    background: rgba(134, 199, 255, 0.08);
+  }
+
+  .processIdle {
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.025);
+  }
+
+  .remoteDone {
+    opacity: 0.62;
+  }
+
+  .partyCard {
+    position: relative;
+    min-height: 0;
+    display: grid;
+    align-content: start;
+    gap: 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.025);
+    padding: 16px;
+  }
+
+  .duplicateCard {
+    align-content: center;
+  }
+
+  .transferParty[data-local="true"] .partyCard {
+    border-color: rgba(134, 199, 255, 0.45);
+    background: rgba(115, 92, 168, 0.45);
+  }
+
+  .partyMeta,
+  .partyItemLine {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+
+  .partyItemLine {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+  }
+
+  .partyItemLine strong {
+    display: block;
+    margin-top: 4px;
+    color: var(--text);
+    font-size: 1rem;
+  }
+
+  .fieldLabel {
+    display: block;
+    color: var(--muted);
+    font-size: 0.76rem;
+  }
+
+  .qtyPair {
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: 12px;
+    white-space: nowrap;
+  }
+
+  .organMeta {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: end;
+    justify-content: space-between;
+    gap: 14px;
+    color: var(--muted);
+  }
+
+  .organMeta div {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .organMeta span {
+    font-size: 0.66rem;
+    text-transform: uppercase;
+  }
+
+  .organMeta strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text);
+    font-size: 0.86rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .editableTerms {
+    display: grid;
+    gap: 10px;
+  }
+
+  .partyQtyInline {
+    flex: 0 0 auto;
+    width: max-content;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+
+  .transferDetail[data-inactive="true"] .transferHero,
+  .transferDetail[data-inactive="true"] .processButtons,
+  .transferDetail[data-inactive="true"] .partyCard {
+    filter: grayscale(1);
+    opacity: 0.62;
+  }
+
+  .transferDetail[data-inactive="true"] .processButtons:has(button:not(:disabled)) {
+    filter: none;
+    opacity: 1;
+  }
+
+  .transferPackageArea {
+    border: 1px solid rgba(143, 227, 170, 0.42);
+    border-radius: 8px;
+    background: rgba(13, 135, 93, 0.2);
+    padding: 12px;
+  }
+
+  .transferPackageArea > summary {
+    cursor: pointer;
+    color: var(--ok);
+    font-weight: 700;
+  }
+
+  .transferPackageArea[open] {
+    display: grid;
     gap: 12px;
   }
 
@@ -423,8 +752,9 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
 
   @media (max-width: 900px) {
     .workspace,
-    .transferLayout,
     .proposalGrid,
+    .transferHero,
+    .transferParties,
     .sideGrid,
     .packageGrid {
       grid-template-columns: 1fr;
@@ -432,8 +762,22 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
 
     .transferList {
       max-height: none;
-      border-right: 0;
-      border-bottom: 1px solid var(--line);
+    }
+
+    .transferHeroInfo,
+    .sendControls,
+    .transferHero select {
+      width: 100%;
+    }
+
+    .sendControls {
+      justify-self: stretch;
+      flex-wrap: wrap;
+    }
+
+    .processButtons,
+    .partyMeta {
+      grid-template-columns: 1fr;
     }
   }
 "#];

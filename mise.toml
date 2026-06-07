@@ -2,3 +2,11 @@
 description = "Automated release workflow"
 tools = { "cargo:git-cliff" = "latest", "cargo:cargo-edit" = "latest", "gh" = "latest" }
 run = "./scripts/other/release.sh"
+
+[tasks.test]
+run = """
+systemctl --user stop lince.service
+mprocs --names lince,test \
+    "cargo watch -x run" \
+    "cargo watch -x 'run -- --port 6176 --data-dir /home/user/.config/test_lince'"
+"""

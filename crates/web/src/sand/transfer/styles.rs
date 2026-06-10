@@ -157,10 +157,13 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
     top: 0;
     right: 0;
     width: min(380px, 100vw);
-    height: 100%;
+    height: 100dvh;
+    max-height: 100%;
     overflow: auto;
-    display: grid;
-    align-content: start;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-direction: column;
     gap: 12px;
     padding: 12px;
     border-left: 1px solid var(--line);
@@ -174,6 +177,7 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
   }
 
   .drawerPanel {
+    flex: 0 0 auto;
     overflow: hidden;
   }
 

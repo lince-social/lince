@@ -164,16 +164,25 @@ impl TransferWidgetService {
                 let target_organ_id = request.target_organ_id;
                 let transfer_id = self.create_proposal(request).await?;
                 if let Some(organ_id) = target_organ_id {
-                    self.post_transfer_package(
-                        session_token,
-                        PostTransferRequest {
-                            transfer_id,
-                            organ_id: Some(organ_id),
-                            base_url: None,
-                        },
-                    )
-                    .await?;
-                    format!("Transfer proposal #{transfer_id} created and posted.")
+                    match self
+                        .post_transfer_package(
+                            session_token,
+                            PostTransferRequest {
+                                transfer_id,
+                                organ_id: Some(organ_id),
+                                base_url: None,
+                            },
+                        )
+                        .await
+                    {
+                        Ok(()) => format!("Transfer proposal #{transfer_id} created and posted."),
+                        Err(error) => {
+                            let error_message = error.message();
+                            format!(
+                                "Transfer proposal #{transfer_id} was created locally, but posting failed: {error_message}"
+                            )
+                        }
+                    }
                 } else {
                     format!("Transfer proposal #{transfer_id} created locally.")
                 }
@@ -1235,12 +1244,14 @@ impl TransferWidgetService {
                 .map_err(TransferWidgetError::Invalid)?;
             if !response.status().is_success() {
                 let status = response.status();
+                let url = response.url().to_string();
                 let body = response.text().await.unwrap_or_default();
-                return Err(TransferWidgetError::Invalid(if body.trim().is_empty() {
-                    format!("Remote node rejected the Transfer package with status {status}.")
-                } else {
-                    body
-                }));
+                return Err(TransferWidgetError::Invalid(describe_remote_transfer_error(
+                    "Remote node",
+                    status.as_u16(),
+                    &url,
+                    &body,
+                )));
             }
             return Ok(());
         }
@@ -1285,12 +1296,14 @@ impl TransferWidgetService {
             };
         if !response.status().is_success() {
             let status = response.status();
+            let url = response.url().to_string();
             let body = response.text().await.unwrap_or_default();
-            return Err(TransferWidgetError::Invalid(if body.trim().is_empty() {
-                format!("Remote Organ rejected the Transfer package with status {status}.")
-            } else {
-                body
-            }));
+            return Err(TransferWidgetError::Invalid(describe_remote_transfer_error(
+                "Remote Organ",
+                status.as_u16(),
+                &url,
+                &body,
+            )));
         }
 
         Ok(())
@@ -3416,6 +3429,15 @@ pub enum TransferWidgetError {
 }
 
 impl TransferWidgetError {
+    fn message(&self) -> &str {
+        match self {
+            Self::NotFound(message)
+            | Self::Misconfigured(message)
+            | Self::Invalid(message)
+            | Self::Internal(message) => message,
+        }
+    }
+
     fn from_io(error: Error) -> Self {
         match error.kind() {
             ErrorKind::NotFound => Self::NotFound(error.to_string()),
@@ -3431,6 +3453,11 @@ fn parse_payload<T: for<'de> Deserialize<'de>>(payload: Value) -> Result<T, Tran
 }
 
 fn parse_transfer_package_value(value: Value) -> Result<TransferPackage, TransferWidgetError> {
+    if looks_like_create_proposal_payload(&value) {
+        return Err(TransferWidgetError::Invalid(
+            "Invalid Transfer package: /transfer/packages received a create-proposal action payload. Send widget action create-proposal to /host/widgets/{instance_id}/actions/create-proposal, or send a Transfer package with version, identity, item, and events to /transfer/packages.".into(),
+        ));
+    }
     if let Some(text) = value.as_str() {
         serde_json::from_str::<TransferPackage>(text).map_err(|error| {
             TransferWidgetError::Invalid(format!("Invalid Transfer package JSON: {error}"))
@@ -3440,6 +3467,50 @@ fn parse_transfer_package_value(value: Value) -> Result<TransferPackage, Transfe
             TransferWidgetError::Invalid(format!("Invalid Transfer package: {error}"))
         })
     }
+}
+
+fn describe_remote_transfer_error(source: &str, status: u16, url: &str, body: &str) -> String {
+    let detail = remote_error_detail(body);
+    match status {
+        400 => format!("{source} rejected {url}: bad Transfer payload. {detail}"),
+        401 => format!("{source} rejected {url}: authentication is required or expired. {detail}"),
+        403 => format!("{source} rejected {url}: authenticated user is not allowed. {detail}"),
+        404 => format!("{source} rejected {url}: endpoint not found. Check that the Organ base URL points to the Lince server root, not /host or another app path. {detail}"),
+        413 => format!("{source} rejected {url}: Transfer package is too large. {detail}"),
+        415 => format!("{source} rejected {url}: unsupported content type. {detail}"),
+        422 => format!("{source} rejected {url}: Transfer package validation failed. {detail}"),
+        500..=599 => format!("{source} failed while handling {url}: server error {status}. {detail}"),
+        _ => format!("{source} rejected {url} with status {status}. {detail}"),
+    }
+}
+
+fn remote_error_detail(body: &str) -> String {
+    let trimmed = body.trim();
+    if trimmed.is_empty() {
+        return "The response body was empty.".to_string();
+    }
+    if let Ok(value) = serde_json::from_str::<Value>(trimmed) {
+        if let Some(error) = value.get("error").and_then(Value::as_str) {
+            return error.to_string();
+        }
+        if looks_like_create_proposal_payload(&value) {
+            return "The response body looked like a create-proposal action payload, not a Transfer package error. Check browser/network logs for a request hitting /transfer/packages with the wrong body.".to_string();
+        }
+    }
+    trimmed.to_string()
+}
+
+fn looks_like_create_proposal_payload(value: &Value) -> bool {
+    value.as_object().is_some_and(|object| {
+        object.contains_key("title")
+            && object.contains_key("role")
+            && object.contains_key("recordId")
+            && object.contains_key("quantity")
+            && object.contains_key("counterpartyLabel")
+            && !object.contains_key("version")
+            && !object.contains_key("identity")
+            && !object.contains_key("events")
+    })
 }
 
 fn normalize_nonempty(value: &str, field: &str) -> Result<String, TransferWidgetError> {

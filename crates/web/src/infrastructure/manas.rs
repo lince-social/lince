@@ -110,9 +110,10 @@ impl ManasGateway {
         } else {
             format!("{}{}", normalize_base_url(base_url), path)
         };
+        let request_url = url.clone();
         let mut request = self
             .http
-            .request(method.clone(), url)
+            .request(method.clone(), request_url.clone())
             .bearer_auth(bearer_token);
 
         if let Some(body) = body {
@@ -120,8 +121,9 @@ impl ManasGateway {
         }
 
         request.send().await.map_err(|error| {
-            tracing::warn!("manas backend request failed ({method} {path}): {error}");
-            "Nao foi possivel falar com o servidor externo.".to_string()
+            let message = describe_request_error(&method, &request_url, &error);
+            tracing::warn!("manas backend request failed: {message}");
+            message
         })
     }
 
@@ -137,15 +139,17 @@ impl ManasGateway {
         } else {
             format!("{}{}", normalize_base_url(base_url), path)
         };
-        let mut request = self.http.request(method.clone(), url);
+        let request_url = url.clone();
+        let mut request = self.http.request(method.clone(), request_url.clone());
 
         if let Some(body) = body {
             request = request.json(&body);
         }
 
         request.send().await.map_err(|error| {
-            tracing::warn!("manas public backend request failed ({method} {path}): {error}");
-            "Nao foi possivel falar com o servidor externo.".to_string()
+            let message = describe_request_error(&method, &request_url, &error);
+            tracing::warn!("manas public backend request failed: {message}");
+            message
         })
     }
 
@@ -163,9 +167,10 @@ impl ManasGateway {
         } else {
             format!("{}{}", normalize_base_url(base_url), path)
         };
+        let request_url = url.clone();
         let mut request = self
             .http
-            .request(method.clone(), url)
+            .request(method.clone(), request_url.clone())
             .bearer_auth(bearer_token)
             .body(body);
 
@@ -174,12 +179,32 @@ impl ManasGateway {
         }
 
         request.send().await.map_err(|error| {
-            tracing::warn!("manas backend bytes request failed ({method} {path}): {error}");
-            "Nao foi possivel falar com o servidor externo.".to_string()
+            let message = describe_request_error(&method, &request_url, &error);
+            tracing::warn!("manas backend bytes request failed: {message}");
+            message
         })
     }
 }
 
 fn normalize_base_url(base_url: &str) -> String {
     base_url.trim().trim_end_matches('/').to_string()
+}
+
+fn describe_request_error(method: &Method, url: &str, error: &reqwest::Error) -> String {
+    let kind = if error.is_timeout() {
+        "timeout"
+    } else if error.is_connect() {
+        "connection"
+    } else if error.is_builder() || error.is_request() {
+        "request"
+    } else if error.is_body() {
+        "request body"
+    } else if error.is_decode() {
+        "response decode"
+    } else {
+        "network"
+    };
+    format!(
+        "Nao foi possivel falar com o servidor externo ({kind} error on {method} {url}: {error})."
+    )
 }

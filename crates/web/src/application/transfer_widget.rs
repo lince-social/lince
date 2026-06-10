@@ -2404,6 +2404,7 @@ impl TransferWidgetService {
         self.update_sync_cursor(identity.transfer_id, &local_identity.label, event_id)
             .await?;
         self.enqueue_transfer_sync(identity.transfer_id).await?;
+        self.flush_transfer_sync_outbox().await?;
         Ok(event_id)
     }
 

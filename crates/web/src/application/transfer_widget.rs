@@ -677,6 +677,7 @@ impl TransferWidgetService {
             need_actor_label: need.actor_label.clone(),
             need_public_key: need.public_key.clone(),
             target_organ: target_organ.clone(),
+            target_base_url: None,
             source_base_url: Some(self.local_base_url.clone()),
         })
         .await
@@ -806,6 +807,12 @@ impl TransferWidgetService {
         }
 
         let target_organ = self.load_optional_organ(source.target_organ_id).await?;
+        let reply_base_url = normalize_optional_text(source.source_base_url.clone())
+            .filter(|base_url| !same_base_url(base_url, &self.local_base_url))
+            .or_else(|| {
+                normalize_optional_text(source.target_base_url.clone())
+                    .filter(|base_url| !same_base_url(base_url, &self.local_base_url))
+            });
         self.insert_transfer_identity(TransferIdentityInput {
             transfer_id,
             transfer_uid: transfer_uid.clone(),
@@ -821,6 +828,7 @@ impl TransferWidgetService {
             need_actor_label: need.actor_label.clone(),
             need_public_key: need.public_key.clone(),
             target_organ,
+            target_base_url: reply_base_url,
             source_base_url: Some(self.local_base_url.clone()),
         })
         .await
@@ -1246,12 +1254,9 @@ impl TransferWidgetService {
                 let status = response.status();
                 let url = response.url().to_string();
                 let body = response.text().await.unwrap_or_default();
-                return Err(TransferWidgetError::Invalid(describe_remote_transfer_error(
-                    "Remote node",
-                    status.as_u16(),
-                    &url,
-                    &body,
-                )));
+                return Err(TransferWidgetError::Invalid(
+                    describe_remote_transfer_error("Remote node", status.as_u16(), &url, &body),
+                ));
             }
             return Ok(());
         }
@@ -1298,12 +1303,9 @@ impl TransferWidgetService {
             let status = response.status();
             let url = response.url().to_string();
             let body = response.text().await.unwrap_or_default();
-            return Err(TransferWidgetError::Invalid(describe_remote_transfer_error(
-                "Remote Organ",
-                status.as_u16(),
-                &url,
-                &body,
-            )));
+            return Err(TransferWidgetError::Invalid(
+                describe_remote_transfer_error("Remote Organ", status.as_u16(), &url, &body),
+            ));
         }
 
         Ok(())
@@ -1515,12 +1517,12 @@ impl TransferWidgetService {
                     optional_text_parameter(
                         input.target_organ.as_ref().map(|organ| organ.name.clone()),
                     ),
-                    optional_text_parameter(
+                    optional_text_parameter(input.target_base_url.or_else(|| {
                         input
                             .target_organ
                             .as_ref()
-                            .map(|organ| organ.base_url.clone()),
-                    ),
+                            .map(|organ| organ.base_url.clone())
+                    })),
                     optional_text_parameter(input.source_base_url),
                 ],
             )
@@ -2826,6 +2828,7 @@ struct TransferIdentityInput {
     need_actor_label: String,
     need_public_key: Option<String>,
     target_organ: Option<Organ>,
+    target_base_url: Option<String>,
     source_base_url: Option<String>,
 }
 
@@ -3475,11 +3478,15 @@ fn describe_remote_transfer_error(source: &str, status: u16, url: &str, body: &s
         400 => format!("{source} rejected {url}: bad Transfer payload. {detail}"),
         401 => format!("{source} rejected {url}: authentication is required or expired. {detail}"),
         403 => format!("{source} rejected {url}: authenticated user is not allowed. {detail}"),
-        404 => format!("{source} rejected {url}: endpoint not found. Check that the Organ base URL points to the Lince server root, not /host or another app path. {detail}"),
+        404 => format!(
+            "{source} rejected {url}: endpoint not found. Check that the Organ base URL points to the Lince server root, not /host or another app path. {detail}"
+        ),
         413 => format!("{source} rejected {url}: Transfer package is too large. {detail}"),
         415 => format!("{source} rejected {url}: unsupported content type. {detail}"),
         422 => format!("{source} rejected {url}: Transfer package validation failed. {detail}"),
-        500..=599 => format!("{source} failed while handling {url}: server error {status}. {detail}"),
+        500..=599 => {
+            format!("{source} failed while handling {url}: server error {status}. {detail}")
+        }
         _ => format!("{source} rejected {url} with status {status}. {detail}"),
     }
 }

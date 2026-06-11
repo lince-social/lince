@@ -2,6 +2,7 @@ use {
     reqwest::{Client, Method, Response},
     serde::Deserialize,
     serde_json::Value,
+    std::time::Duration,
 };
 
 #[derive(Clone)]
@@ -16,7 +17,10 @@ struct LoginResponse {
 
 impl ManasGateway {
     pub fn new() -> Result<Self, reqwest::Error> {
-        let http = Client::builder().user_agent("lince-web/0.1").build()?;
+        let http = Client::builder()
+            .user_agent("lince-web/0.1")
+            .timeout(Duration::from_secs(8))
+            .build()?;
         Ok(Self { http })
     }
 

@@ -203,18 +203,18 @@ impl TransferWidgetService {
                             PostTransferRequest {
                                 transfer_id,
                                 organ_id: None,
-                                base_url: Some(target_base_url),
+                                base_url: Some(target_base_url.clone()),
                             },
                         )
                         .await
                     {
-                        Ok(()) => {
-                            format!("Proposal duplicated into Transfer #{transfer_id} and posted.")
-                        }
+                        Ok(()) => format!(
+                            "Proposal duplicated into Transfer #{transfer_id} and posted to {target_base_url}."
+                        ),
                         Err(error) => {
                             let error_message = error.message();
                             format!(
-                                "Proposal duplicated into Transfer #{transfer_id}, but posting failed: {error_message}"
+                                "Proposal duplicated into Transfer #{transfer_id}, but posting to {target_base_url} failed: {error_message}"
                             )
                         }
                     }
@@ -286,6 +286,20 @@ impl TransferWidgetService {
                 ));
             }
         };
+
+        if matches!(
+            action,
+            "update-transfer-local-item"
+                | "sign-agreement"
+                | "confirm-delivery"
+                | "confirm-receipt"
+                | "settle-local"
+                | "inactivate-transfer"
+        ) {
+            self.flush_transfer_sync_outbox()
+                .await
+                .map_err(TransferWidgetError::from_io)?;
+        }
 
         let response = json!({
             "ok": true,
@@ -2434,7 +2448,6 @@ impl TransferWidgetService {
         self.update_sync_cursor(identity.transfer_id, &local_identity.label, event_id)
             .await?;
         self.enqueue_transfer_sync(identity.transfer_id).await?;
-        self.flush_transfer_sync_outbox().await?;
         Ok(event_id)
     }
 

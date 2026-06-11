@@ -190,7 +190,37 @@ impl TransferWidgetService {
             "duplicate-proposal" => {
                 let request = parse_payload::<DuplicateProposalRequest>(payload)?;
                 let transfer_id = self.duplicate_proposal(request).await?;
-                format!("Proposal duplicated into Transfer #{transfer_id}.")
+                let transfer = self
+                    .load_transfer_summary(transfer_id)
+                    .await
+                    .map_err(TransferWidgetError::from_io)?;
+                if let Some(target_base_url) = normalize_optional_text(transfer.target_base_url)
+                    .or_else(|| normalize_optional_text(transfer.source_base_url))
+                {
+                    match self
+                        .post_transfer_package(
+                            session_token,
+                            PostTransferRequest {
+                                transfer_id,
+                                organ_id: None,
+                                base_url: Some(target_base_url),
+                            },
+                        )
+                        .await
+                    {
+                        Ok(()) => {
+                            format!("Proposal duplicated into Transfer #{transfer_id} and posted.")
+                        }
+                        Err(error) => {
+                            let error_message = error.message();
+                            format!(
+                                "Proposal duplicated into Transfer #{transfer_id}, but posting failed: {error_message}"
+                            )
+                        }
+                    }
+                } else {
+                    format!("Proposal duplicated into Transfer #{transfer_id}.")
+                }
             }
             "update-transfer-local-item" => {
                 let request = parse_payload::<UpdateTransferLocalItemRequest>(payload)?;

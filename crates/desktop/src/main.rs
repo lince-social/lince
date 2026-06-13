@@ -8,14 +8,17 @@ use std::time::Duration;
 use std::{env, io::Error};
 use tauri::{
     Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent,
+    image::Image,
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    webview::PageLoadEvent,
 };
 #[cfg(any(target_os = "macos", windows))]
 use tauri_plugin_autostart::ManagerExt;
 use utils::desktop_setup::{DesktopInstallSetup, detected_language_default, write_staged_setup};
 
 const MAIN_WINDOW_LABEL: &str = "main";
+const APP_ICON_PNG: &[u8] = include_bytes!("../../../assets/black_in_white.png");
 
 fn main() {
     let args = env::args().collect::<Vec<_>>();
@@ -38,7 +41,7 @@ fn main() {
             #[cfg(any(target_os = "macos", windows))]
             app.handle().plugin(tauri_plugin_autostart::init(
                 tauri_plugin_autostart::MacosLauncher::LaunchAgent,
-                Some(vec!["--desktop-autostart".to_string()]),
+                Some(vec!["--desktop-autostart"]),
             ))?;
 
             install_tray(app)?;
@@ -47,6 +50,8 @@ fn main() {
             tauri::async_runtime::spawn(async move {
                 match runtime::start_desktop_server().await {
                     Ok(runtime) => {
+                        eprintln!("Lince desktop serving {}", runtime.url);
+
                         #[cfg(any(target_os = "macos", windows))]
                         if let Err(error) = sync_autostart(&handle, runtime.start_on_login) {
                             eprintln!("Failed to sync Lince desktop autostart: {error}");
@@ -162,9 +167,12 @@ fn install_tray(app: &mut tauri::App) -> tauri::Result<()> {
     let open = MenuItem::with_id(app, "open", "Open Lince", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&open, &quit])?;
+    let icon = app_icon()?;
 
     TrayIconBuilder::new()
         .tooltip("Lince")
+        .icon(icon)
+        .icon_as_template(false)
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id.as_ref() {
@@ -197,12 +205,33 @@ fn open_main_window(app: &tauri::AppHandle, url: &str) -> tauri::Result<()> {
         .map(WebviewUrl::External)
         .map_err(|error| tauri::Error::Anyhow(anyhow::anyhow!(error)))?;
 
-    WebviewWindowBuilder::new(app, MAIN_WINDOW_LABEL, url)
+    let open_devtools = env::var_os("LINCE_DESKTOP_DEVTOOLS").is_some();
+    let window = WebviewWindowBuilder::new(app, MAIN_WINDOW_LABEL, url)
+        .icon(app_icon()?)?
         .title("Lince")
         .inner_size(1440.0, 960.0)
         .min_inner_size(980.0, 680.0)
+        .devtools(cfg!(debug_assertions))
+        .on_page_load(move |window, payload| {
+            #[cfg(debug_assertions)]
+            if open_devtools && payload.event() == PageLoadEvent::Finished {
+                eprintln!("Opening Lince desktop WebKit devtools");
+                window.open_devtools();
+            }
+        })
         .build()?;
+
+    #[cfg(debug_assertions)]
+    if open_devtools {
+        eprintln!("Opening Lince desktop WebKit devtools");
+        window.open_devtools();
+    }
+
     Ok(())
+}
+
+fn app_icon() -> tauri::Result<Image<'static>> {
+    Image::from_bytes(APP_ICON_PNG)
 }
 
 fn restore_main_window(app: &tauri::AppHandle) {

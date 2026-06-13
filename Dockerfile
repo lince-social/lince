@@ -13,6 +13,7 @@ WORKDIR /app
 
 COPY Cargo.toml Cargo.lock rust-toolchain.toml ./
 COPY crates/lince/Cargo.toml crates/lince/Cargo.toml
+COPY crates/desktop/Cargo.toml crates/desktop/Cargo.toml
 COPY crates/application/Cargo.toml crates/application/Cargo.toml
 COPY crates/domain/Cargo.toml crates/domain/Cargo.toml
 COPY crates/injection/Cargo.toml crates/injection/Cargo.toml

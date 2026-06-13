@@ -18,7 +18,7 @@ utils = { workspace = true }
 web = { workspace = true }
 sqlx = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "process", "time", "macros", "sync"] }
-tauri = { workspace = true, features = ["tray-icon"] }
+tauri = { workspace = true, features = ["image-png", "tray-icon"] }
 tauri-plugin-autostart = { workspace = true }
 tauri-plugin-single-instance = { workspace = true }
 serde = { workspace = true, features = ["derive"] }

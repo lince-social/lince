@@ -9,10 +9,7 @@ For the feature list and platform quirks, see [Desktop Features](desktop-feature
 Use the desktop dev shell:
 
 ```sh
-nix develop .#desktop
-cargo check --locked -p lince-desktop
-cd crates/desktop
-cargo tauri dev
+nix develop
 ```
 
 Build or run the Nix package:
@@ -22,7 +19,9 @@ nix build .#lince-desktop
 nix run .#lince-desktop
 ```
 
-The desktop shell provides WebKitGTK, GTK, appindicator, librsvg, xdo, OpenSSL, SQLite, Rust, and `cargo-tauri` through Nix. You do not need to install those globally on NixOS.
+The default and desktop shells provide WebKitGTK, GTK, appindicator, librsvg, xdo, OpenSSL, SQLite, Rust, and `cargo-tauri` through Nix. You do not need to install those globally on NixOS.
+Entering `nix develop` or `nix develop .#desktop` starts `cargo tauri dev` automatically. If you only want to check the crate without opening the window, run `Lince_desktop_shell_started=1 nix develop` and then `cargo check --locked -p lince-desktop`.
+Do not set `WEBKIT_DISABLE_COMPOSITING_MODE=1` unless debugging a compositor-specific WebKit issue; disabling compositing makes the board and widget iframes noticeably slower.
 
 ## Generic Linux
 

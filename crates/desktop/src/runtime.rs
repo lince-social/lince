@@ -55,7 +55,9 @@ pub async fn start_desktop_server() -> Result<DesktopRuntime, Error> {
 
     let storage = Arc::new(StorageService::from_database(&read_db).await?);
     if storage.is_enabled() {
-        storage.ensure_bucket_exists().await?;
+        if let Err(error) = storage.ensure_bucket_exists().await {
+            eprintln!("Failed to prepare Lince desktop bucket storage: {error}");
+        }
     }
     let services = dependency_injection(read_db, storage, writer);
 

@@ -1,4 +1,4 @@
-name: build-release
+name: desktop-release
 
 on:
   push:
@@ -39,95 +39,6 @@ jobs:
           export RUSTFLAGS="-D warnings"
           cargo check --locked -p lince
 
-  build:
-    needs: check
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            artifact: x86_64-unknown-linux-gnu
-
-          - os: macos-latest
-            artifact: aarch64-apple-darwin
-
-          - os: windows-latest
-            artifact: x86_64-pc-windows-msvc
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install Linux system dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libxcb1-dev \
-            libxkbcommon-dev \
-            libxkbcommon-x11-dev
-
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-${{ matrix.artifact }}-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Run release build
-        shell: bash
-        run: |
-          export RUSTFLAGS="-D warnings"
-          export LINCE_GIT_REVISION="${GITHUB_SHA}"
-          export LINCE_TARGET="${{ matrix.artifact }}"
-          cargo build --locked --release -p lince
-
-      - name: Package artifacts
-        shell: bash
-        run: |
-          set -euo pipefail
-          BIN=lince
-          mkdir -p artifacts
-
-          if [[ "${{ runner.os }}" == "Windows" ]]; then
-            cp target/release/${BIN}.exe \
-               artifacts/${BIN}-${{ matrix.artifact }}.exe
-          else
-            cp target/release/${BIN} \
-               artifacts/${BIN}-${{ matrix.artifact }}
-
-            chmod +x artifacts/${BIN}-${{ matrix.artifact }}
-
-            tar -czf artifacts/${BIN}-${{ matrix.artifact }}.tar.gz \
-              -C artifacts ${BIN}-${{ matrix.artifact }}
-
-            zip -j artifacts/${BIN}-${{ matrix.artifact }}.zip \
-              artifacts/${BIN}-${{ matrix.artifact }}
-          fi
-
-          cd artifacts
-          for asset in *; do
-            if command -v sha256sum >/dev/null 2>&1; then
-              sha256sum "$asset" > "${asset}.sha256"
-            else
-              shasum -a 256 "$asset" > "${asset}.sha256"
-            fi
-          done
-
-      - name: Upload build artifact (temp)
-        uses: actions/upload-artifact@v4
-        with:
-          name: lince-artifacts-${{ matrix.artifact }}
-          path: artifacts/*
-          if-no-files-found: error
-          retention-days: 1
-
   desktop:
     needs: check
     runs-on: ${{ matrix.os }}
@@ -136,7 +47,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             artifact: x86_64-unknown-linux-gnu-desktop
 
           - os: macos-latest
@@ -182,7 +93,7 @@ jobs:
           export RUSTFLAGS="-D warnings"
           cargo check --locked -p lince-desktop
 
-      - name: Build Tauri bundles
+      - name: Create Tauri bundles
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -235,18 +146,11 @@ jobs:
 
   publish-rolling:
     if: github.ref == 'refs/heads/main'
-    needs: [build, desktop]
+    needs: [desktop]
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Download packaged artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: lince-artifacts-*
-          path: release-artifacts
-          merge-multiple: true
 
       - name: Download desktop artifacts
         uses: actions/download-artifact@v4
@@ -268,16 +172,17 @@ jobs:
             printf '  "channel": "%s",\n' "$CHANNEL"
             printf '  "assets": [\n'
             first=1
-            for asset_path in release-artifacts/lince-*.tar.gz; do
+            for asset_path in release-artifacts/*; do
               [ -f "$asset_path" ] || continue
+              case "$asset_path" in
+                *.sha256|*/lince-update.json) continue ;;
+              esac
               asset="$(basename "$asset_path")"
-              target="${asset#lince-}"
-              target="${target%.tar.gz}"
               sum="$(awk '{print $1}' "${asset_path}.sha256")"
               if [ "$first" -eq 0 ]; then printf ',\n'; fi
               first=0
-              printf '    {"name":"%s","url":"https://github.com/%s/releases/download/%s/%s","sha256":"%s","target":"%s","kind":"server"}' \
-                "$asset" "$GITHUB_REPOSITORY" "$CHANNEL" "$asset" "$sum" "$target"
+              printf '    {"name":"%s","url":"https://github.com/%s/releases/download/%s/%s","sha256":"%s","target":"","kind":"desktop"}' \
+                "$asset" "$GITHUB_REPOSITORY" "$CHANNEL" "$asset" "$sum"
             done
             printf '\n  ]\n'
             printf '}\n'
@@ -295,15 +200,15 @@ jobs:
             gh release create "$TAG" \
               --repo "$GH_REPO" \
               --target "$GITHUB_SHA" \
-              --title "Rolling build" \
-              --notes "Latest automated build from the main branch."
+              --title "Rolling desktop release" \
+              --notes "Latest desktop release from the main branch."
           fi
 
           gh release upload "$TAG" release-artifacts/* --clobber --repo "$GH_REPO"
 
   publish-tag:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [build, desktop]
+    needs: [desktop]
     runs-on: ubuntu-latest
 
     steps:
@@ -318,13 +223,6 @@ jobs:
 
       - name: Generate release notes
         run: git cliff --latest -o RELEASE_NOTES.md
-
-      - name: Download packaged artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: lince-artifacts-*
-          path: release-artifacts
-          merge-multiple: true
 
       - name: Download desktop artifacts
         uses: actions/download-artifact@v4
@@ -346,16 +244,17 @@ jobs:
             printf '  "channel": "%s",\n' "$CHANNEL"
             printf '  "assets": [\n'
             first=1
-            for asset_path in release-artifacts/lince-*.tar.gz; do
+            for asset_path in release-artifacts/*; do
               [ -f "$asset_path" ] || continue
+              case "$asset_path" in
+                *.sha256|*/lince-update.json) continue ;;
+              esac
               asset="$(basename "$asset_path")"
-              target="${asset#lince-}"
-              target="${target%.tar.gz}"
               sum="$(awk '{print $1}' "${asset_path}.sha256")"
               if [ "$first" -eq 0 ]; then printf ',\n'; fi
               first=0
-              printf '    {"name":"%s","url":"https://github.com/%s/releases/download/%s/%s","sha256":"%s","target":"%s","kind":"server"}' \
-                "$asset" "$GITHUB_REPOSITORY" "$CHANNEL" "$asset" "$sum" "$target"
+              printf '    {"name":"%s","url":"https://github.com/%s/releases/download/%s/%s","sha256":"%s","target":"","kind":"desktop"}' \
+                "$asset" "$GITHUB_REPOSITORY" "$CHANNEL" "$asset" "$sum"
             done
             printf '\n  ]\n'
             printf '}\n'

@@ -44,6 +44,17 @@ use {
 
 const MAX_PROXY_BODY_BYTES: usize = 1024 * 1024;
 
+fn sse_no_buffer_response(mut response: Response) -> Response {
+    let headers = response.headers_mut();
+    headers.insert(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("no-cache, no-transform"),
+    );
+    headers.insert(header::CONNECTION, HeaderValue::from_static("keep-alive"));
+    headers.insert("x-accel-buffering", HeaderValue::from_static("no"));
+    response
+}
+
 #[derive(Debug, Deserialize)]
 pub struct FilePathQuery {
     path: String,
@@ -115,8 +126,12 @@ pub async fn proxy_manas_view(
         header::CONTENT_TYPE,
         HeaderValue::from_static("text/event-stream"),
     );
-    headers.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
+    headers.insert(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("no-cache, no-transform"),
+    );
     headers.insert(header::CONNECTION, HeaderValue::from_static("keep-alive"));
+    headers.insert("x-accel-buffering", HeaderValue::from_static("no"));
 
     Ok((headers, axum::body::Body::from_stream(stream)).into_response())
 }
@@ -721,9 +736,11 @@ async fn local_view_stream(state: &AppState, view_id: u64) -> ApiResult<Response
         })
     });
 
-    Ok(axum::response::Sse::new(stream)
-        .keep_alive(axum::response::sse::KeepAlive::default())
-        .into_response())
+    Ok(sse_no_buffer_response(
+        axum::response::Sse::new(stream)
+            .keep_alive(axum::response::sse::KeepAlive::default())
+            .into_response(),
+    ))
 }
 
 async fn local_view_table_stream(
@@ -760,13 +777,15 @@ fn render_view_table_stream(
                 }
             };
 
-            Sse::new(stream)
-                .keep_alive(
-                    KeepAlive::new()
-                        .interval(Duration::from_secs(15))
-                        .text("heartbeat"),
-                )
-                .into_response()
+            sse_no_buffer_response(
+                Sse::new(stream)
+                    .keep_alive(
+                        KeepAlive::new()
+                            .interval(Duration::from_secs(15))
+                            .text("heartbeat"),
+                    )
+                    .into_response(),
+            )
         }
         ViewTableStreamSource::Remote { response } => {
             let stream = stream! {
@@ -802,13 +821,15 @@ fn render_view_table_stream(
                 }
             };
 
-            Sse::new(stream)
-                .keep_alive(
-                    KeepAlive::new()
-                        .interval(Duration::from_secs(15))
-                        .text("heartbeat"),
-                )
-                .into_response()
+            sse_no_buffer_response(
+                Sse::new(stream)
+                    .keep_alive(
+                        KeepAlive::new()
+                            .interval(Duration::from_secs(15))
+                            .text("heartbeat"),
+                    )
+                    .into_response(),
+            )
         }
     }
 }

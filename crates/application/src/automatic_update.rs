@@ -3,13 +3,17 @@ use reqwest::Client;
 use semver::Version;
 use serde::Deserialize;
 use std::{
-    env, fs,
+    env,
     io::{Error, ErrorKind},
-    path::Path,
     process::Stdio,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
-use tokio::process::Command;
+
+#[cfg(not(windows))]
+use {
+    std::{fs, path::Path},
+    tokio::process::Command,
+};
 
 const REPOSITORY: &str = "lince-social/lince";
 const ROLLING_TAG: &str = "rolling";
@@ -339,6 +343,7 @@ async fn install_unix_binary_asset(asset: &UpdateAsset) -> Result<(), Error> {
     Ok(())
 }
 
+#[cfg(not(windows))]
 async fn download_to_path(url: &str, destination: &Path) -> Result<(), Error> {
     let bytes = Client::builder()
         .user_agent("lince-automatic-update")
@@ -356,6 +361,7 @@ async fn download_to_path(url: &str, destination: &Path) -> Result<(), Error> {
     tokio::fs::write(destination, bytes).await
 }
 
+#[cfg(not(windows))]
 async fn verify_checksum_if_available(
     asset: &UpdateAsset,
     archive_path: &Path,
@@ -392,11 +398,6 @@ fn set_executable(path: &Path) -> Result<(), Error> {
     let mut permissions = fs::metadata(path)?.permissions();
     permissions.set_mode(0o755);
     fs::set_permissions(path, permissions)
-}
-
-#[cfg(not(unix))]
-fn set_executable(_path: &Path) -> Result<(), Error> {
-    Ok(())
 }
 
 fn restart_current_process() -> Result<(), Error> {

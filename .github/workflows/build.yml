@@ -126,9 +126,114 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  desktop:
+    needs: check
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            artifact: x86_64-unknown-linux-gnu-desktop
+
+          - os: macos-latest
+            artifact: aarch64-apple-darwin-desktop
+
+          - os: windows-latest
+            artifact: x86_64-pc-windows-msvc-desktop
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux Tauri dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            curl \
+            file \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libssl-dev \
+            libwebkit2gtk-4.1-dev \
+            libxdo-dev \
+            wget
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: desktop-${{ runner.os }}-${{ matrix.artifact }}-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Check desktop crate
+        shell: bash
+        run: |
+          set -euo pipefail
+          export RUSTFLAGS="-D warnings"
+          cargo check --locked -p lince-desktop
+
+      - name: Build Tauri bundles
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RUSTFLAGS: "-D warnings"
+        with:
+          projectPath: crates/desktop
+          args: --verbose
+
+      - name: Collect desktop artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p desktop-artifacts
+
+          if [[ -d target/release/bundle ]]; then
+            find target/release/bundle -type f \
+              \( -name '*.deb' -o -name '*.AppImage' -o -name '*.dmg' -o -name '*.app.tar.gz' -o -name '*.msi' -o -name '*.exe' \) \
+              -exec cp {} desktop-artifacts/ \;
+          fi
+
+          if [[ -d crates/desktop/target/release/bundle ]]; then
+            find crates/desktop/target/release/bundle -type f \
+              \( -name '*.deb' -o -name '*.AppImage' -o -name '*.dmg' -o -name '*.app.tar.gz' -o -name '*.msi' -o -name '*.exe' \) \
+              -exec cp {} desktop-artifacts/ \;
+          fi
+
+          if [[ "${{ runner.os }}" == "macOS" ]]; then
+            cp scripts/install/macos-desktop-setup.sh desktop-artifacts/lince-macos-desktop-setup.sh
+            chmod +x desktop-artifacts/lince-macos-desktop-setup.sh
+          fi
+
+          test -n "$(find desktop-artifacts -maxdepth 1 -type f)"
+
+          cd desktop-artifacts
+          for asset in *; do
+            if command -v sha256sum >/dev/null 2>&1; then
+              sha256sum "$asset" > "${asset}.sha256"
+            else
+              shasum -a 256 "$asset" > "${asset}.sha256"
+            fi
+          done
+
+      - name: Upload desktop artifact (temp)
+        uses: actions/upload-artifact@v4
+        with:
+          name: lince-desktop-artifacts-${{ matrix.artifact }}
+          path: desktop-artifacts/*
+          if-no-files-found: error
+          retention-days: 1
+
   publish-rolling:
     if: github.ref == 'refs/heads/main'
-    needs: build
+    needs: [build, desktop]
     runs-on: ubuntu-latest
 
     steps:
@@ -136,6 +241,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: lince-artifacts-*
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Download desktop artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: lince-desktop-artifacts-*
           path: release-artifacts
           merge-multiple: true
 
@@ -159,7 +271,7 @@ jobs:
 
   publish-tag:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: build
+    needs: [build, desktop]
     runs-on: ubuntu-latest
 
     steps:
@@ -179,6 +291,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: lince-artifacts-*
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Download desktop artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: lince-desktop-artifacts-*
           path: release-artifacts
           merge-multiple: true
 

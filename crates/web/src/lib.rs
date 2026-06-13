@@ -32,6 +32,7 @@ use {
         net::SocketAddr,
         sync::Arc,
     },
+    tokio::sync::oneshot,
     utils::logging::status,
 };
 
@@ -49,6 +50,25 @@ pub async fn serve(
     local_auth_required: bool,
     listen_addr: Option<String>,
     mode: HttpServeMode,
+) -> Result<(), IoError> {
+    serve_with_bound_addr_sender(
+        services,
+        jwt_secret,
+        local_auth_required,
+        listen_addr,
+        mode,
+        None,
+    )
+    .await
+}
+
+pub async fn serve_with_bound_addr_sender(
+    services: InjectedServices,
+    jwt_secret: String,
+    local_auth_required: bool,
+    listen_addr: Option<String>,
+    mode: HttpServeMode,
+    bound_addr_sender: Option<oneshot::Sender<SocketAddr>>,
 ) -> Result<(), IoError> {
     let auth = AppAuth::with_shared_remote_tokens(services.remote_organ_auth.clone());
     let local_base_url = local_base_url_from_listen_addr(listen_addr.as_deref())?;
@@ -143,10 +163,11 @@ pub async fn serve(
         HttpServeMode::FullUi => "Web frontend",
         HttpServeMode::ApiOnly => "HTTP API",
     };
-    status(format!(
-        "{label} listening at http://{}",
-        listener.local_addr().map_err(IoError::other)?
-    ));
+    let local_addr = listener.local_addr().map_err(IoError::other)?;
+    if let Some(sender) = bound_addr_sender {
+        let _ = sender.send(local_addr);
+    }
+    status(format!("{label} listening at http://{local_addr}"));
     axum::serve(listener, app).await.map_err(IoError::other)
 }
 

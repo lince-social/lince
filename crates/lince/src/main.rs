@@ -36,6 +36,7 @@ use std::{
 #[cfg(feature = "tui")]
 use tui::tui_app;
 use utils::auth::hash_password;
+use utils::desktop_setup::{DesktopInstallSetup, read_staged_setup, remove_staged_setup};
 #[cfg(feature = "karma")]
 use utils::logging::status;
 use utils::logging::{LogEntry, error as print_error, log, set_quiet};
@@ -53,6 +54,11 @@ async fn main() -> Result<(), Error> {
 
     if let Some(data_dir) = arg_value(&args, "--data-dir") {
         utils::config::set_lince_data_dir_override(PathBuf::from(data_dir))?;
+    }
+
+    let staged_setup = read_staged_setup()?;
+    if let Some(auth_enabled) = staged_setup.as_ref().and_then(|setup| setup.auth_enabled) {
+        bootstrap_config::set_auth_enabled(auth_enabled)?;
     }
 
     let bootstrap = bootstrap_config::load_or_init_bootstrap_config()?;
@@ -84,7 +90,15 @@ async fn main() -> Result<(), Error> {
     let read_db = Arc::new(read_only_connection().await.inspect_err(|e| {
         log(LogEntry::Error(e.kind(), e.to_string()));
     })?);
-    ensure_local_admin_if_needed(&read_db, &writer, bootstrap.auth_enabled).await?;
+    ensure_local_admin_if_needed(
+        &read_db,
+        &writer,
+        bootstrap.auth_enabled,
+        staged_setup
+            .as_ref()
+            .and_then(|setup| setup.initial_admin_password.as_deref()),
+    )
+    .await?;
     let storage = Arc::new(
         StorageService::from_database(&read_db)
             .await
@@ -99,6 +113,10 @@ async fn main() -> Result<(), Error> {
     }
 
     let services = dependency_injection(read_db.clone(), storage, writer.clone());
+    if let Some(setup) = staged_setup.as_ref() {
+        import_staged_desktop_setup(services.clone(), setup).await?;
+        remove_staged_setup()?;
+    }
     refresh_karma_cache(services.clone()).await?;
     application::file_sync::configure_from_active_configuration(services.clone()).await?;
     application::file_sync::start_if_enabled(services.clone()).await?;
@@ -374,6 +392,7 @@ async fn ensure_local_admin_if_needed(
     read_db: &Arc<sqlx::Pool<sqlx::Sqlite>>,
     writer: &WriteCoordinatorHandle,
     auth_enabled: bool,
+    staged_password: Option<&str>,
 ) -> Result<(), Error> {
     if !auth_enabled {
         return Ok(());
@@ -394,6 +413,15 @@ async fn ensure_local_admin_if_needed(
         return Ok(());
     }
 
+    if let Some(password) = staged_password {
+        if password.trim().is_empty() {
+            return Err(Error::other(
+                "Installer enabled auth but did not provide an initial admin password.",
+            ));
+        }
+        return seed_root_user(writer, "user", password).await;
+    }
+
     if !io::stdin().is_terminal() || !io::stdout().is_terminal() {
         return Err(Error::other(
             "Auth is enabled in ~/.config/lince/lince.toml but no admin user exists. Run lince in an interactive terminal once to create the initial admin.",
@@ -404,6 +432,31 @@ async fn ensure_local_admin_if_needed(
     let username = prompt_username()?;
     let password = prompt_password_with_confirmation()?;
     seed_root_user(writer, &username, &password).await
+}
+
+async fn import_staged_desktop_setup(
+    services: InjectedServices,
+    setup: &DesktopInstallSetup,
+) -> Result<(), Error> {
+    if setup.start_on_login.is_some() || setup.start_silent.is_some() {
+        application::write::set_desktop_startup_for_active(
+            services.clone(),
+            setup.start_on_login,
+            setup.start_silent,
+        )
+        .await?;
+    }
+
+    if let Some(language) = setup
+        .language
+        .as_deref()
+        .map(str::trim)
+        .filter(|language| !language.is_empty())
+    {
+        application::write::set_active_configuration_language_if_unset(services, language).await?;
+    }
+
+    Ok(())
 }
 
 fn prompt_username() -> Result<String, Error> {

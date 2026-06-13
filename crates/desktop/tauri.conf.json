@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Lince",
+  "version": "0.7.0",
+  "identifier": "social.lince.desktop",
+  "build": {
+    "frontendDist": "desktop-dist"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": []
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "dmg", "app", "deb", "appimage"],
+    "icon": [
+      "../../assets/black_in_white.ico"
+    ],
+    "windows": {
+      "nsis": {
+        "installerIcon": "../../assets/black_in_white.ico",
+        "languages": ["English", "PortugueseBR"],
+        "installerHooks": "windows/nsis-installer-hooks.nsh"
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "11.0"
+    }
+  }
+}

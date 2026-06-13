@@ -274,6 +274,8 @@ struct ConfigurationRow {
     file_sync_enabled: i64,
     file_sync_path: Option<String>,
     transfer_public_proposals_enabled: i64,
+    desktop_start_on_login: Option<i64>,
+    desktop_start_silent: Option<i64>,
 }
 
 #[derive(Debug, Serialize, FromRow)]
@@ -572,7 +574,7 @@ const KARMA_FIELD_SPECS: [FieldSpec; 7] = [
     },
 ];
 
-const CONFIGURATION_FIELD_SPECS: [FieldSpec; 19] = [
+const CONFIGURATION_FIELD_SPECS: [FieldSpec; 21] = [
     FieldSpec {
         name: "quantity",
         kind: FieldKind::NullableInteger,
@@ -648,6 +650,14 @@ const CONFIGURATION_FIELD_SPECS: [FieldSpec; 19] = [
     FieldSpec {
         name: "transfer_public_proposals_enabled",
         kind: FieldKind::BooleanInteger,
+    },
+    FieldSpec {
+        name: "desktop_start_on_login",
+        kind: FieldKind::NullableInteger,
+    },
+    FieldSpec {
+        name: "desktop_start_silent",
+        kind: FieldKind::NullableInteger,
     },
 ];
 
@@ -779,7 +789,7 @@ impl BackendApiStore {
             ),
             ApiTable::Configuration => serialize_value(
                 sqlx::query_as::<_, ConfigurationRow>(
-                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region, file_sync_enabled, file_sync_path, transfer_public_proposals_enabled FROM configuration ORDER BY id",
+                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region, file_sync_enabled, file_sync_path, transfer_public_proposals_enabled, desktop_start_on_login, desktop_start_silent FROM configuration ORDER BY id",
                 )
                 .fetch_all(db)
                 .await
@@ -905,7 +915,7 @@ impl BackendApiStore {
             ),
             ApiTable::Configuration => serialize_value(
                 sqlx::query_as::<_, ConfigurationRow>(
-                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region, file_sync_enabled, file_sync_path, transfer_public_proposals_enabled FROM configuration WHERE id = ?",
+                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region, file_sync_enabled, file_sync_path, transfer_public_proposals_enabled, desktop_start_on_login, desktop_start_silent FROM configuration WHERE id = ?",
                 )
                 .bind(id)
                 .fetch_one(db)

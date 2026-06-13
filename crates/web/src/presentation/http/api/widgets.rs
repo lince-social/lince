@@ -32,7 +32,7 @@ use {
     axum::{
         Json,
         extract::{Path, State},
-        http::{HeaderMap, StatusCode, header},
+        http::{HeaderMap, HeaderValue, StatusCode, header},
         response::{
             IntoResponse, Response,
             sse::{Event, KeepAlive, Sse},
@@ -42,6 +42,17 @@ use {
     serde_json::{Value, json},
     std::{convert::Infallible, time::Duration},
 };
+
+fn sse_no_buffer_response(mut response: Response) -> Response {
+    let headers = response.headers_mut();
+    headers.insert(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("no-cache, no-transform"),
+    );
+    headers.insert(header::CONNECTION, HeaderValue::from_static("keep-alive"));
+    headers.insert("x-accel-buffering", HeaderValue::from_static("no"));
+    response
+}
 
 pub async fn get_widget_contract(
     State(state): State<AppState>,
@@ -792,13 +803,15 @@ fn render_kanban_stream(prepared: PreparedKanbanStream) -> Response {
                     }
                 }
             };
-            Sse::new(stream)
-                .keep_alive(
-                    KeepAlive::new()
-                        .interval(Duration::from_secs(15))
-                        .text("heartbeat"),
-                )
-                .into_response()
+            sse_no_buffer_response(
+                Sse::new(stream)
+                    .keep_alive(
+                        KeepAlive::new()
+                            .interval(Duration::from_secs(15))
+                            .text("heartbeat"),
+                    )
+                    .into_response(),
+            )
         }
         PreparedKanbanStream::Remote { response, settings } => {
             let stream = stream! {
@@ -842,13 +855,15 @@ fn render_kanban_stream(prepared: PreparedKanbanStream) -> Response {
                     }
                 }
             };
-            Sse::new(stream)
-                .keep_alive(
-                    KeepAlive::new()
-                        .interval(Duration::from_secs(15))
-                        .text("heartbeat"),
-                )
-                .into_response()
+            sse_no_buffer_response(
+                Sse::new(stream)
+                    .keep_alive(
+                        KeepAlive::new()
+                            .interval(Duration::from_secs(15))
+                            .text("heartbeat"),
+                    )
+                    .into_response(),
+            )
         }
     }
 }
@@ -874,13 +889,15 @@ fn render_trail_stream(prepared: PreparedTrailStream) -> Response {
                     }
                 }
             };
-            Sse::new(stream)
-                .keep_alive(
-                    KeepAlive::new()
-                        .interval(Duration::from_secs(15))
-                        .text("heartbeat"),
-                )
-                .into_response()
+            sse_no_buffer_response(
+                Sse::new(stream)
+                    .keep_alive(
+                        KeepAlive::new()
+                            .interval(Duration::from_secs(15))
+                            .text("heartbeat"),
+                    )
+                    .into_response(),
+            )
         }
         PreparedTrailStream::Remote { response, binding } => {
             let stream = stream! {
@@ -924,13 +941,15 @@ fn render_trail_stream(prepared: PreparedTrailStream) -> Response {
                     }
                 }
             };
-            Sse::new(stream)
-                .keep_alive(
-                    KeepAlive::new()
-                        .interval(Duration::from_secs(15))
-                        .text("heartbeat"),
-                )
-                .into_response()
+            sse_no_buffer_response(
+                Sse::new(stream)
+                    .keep_alive(
+                        KeepAlive::new()
+                            .interval(Duration::from_secs(15))
+                            .text("heartbeat"),
+                    )
+                    .into_response(),
+            )
         }
     }
 }
@@ -960,9 +979,11 @@ fn render_transfer_stream(
             }
         }
     };
-    Sse::new(stream)
-        .keep_alive(KeepAlive::default())
-        .into_response()
+    sse_no_buffer_response(
+        Sse::new(stream)
+            .keep_alive(KeepAlive::default())
+            .into_response(),
+    )
 }
 
 fn render_trail_stream_events(

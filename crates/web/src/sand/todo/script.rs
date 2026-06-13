@@ -29,7 +29,7 @@ pub(super) fn script() -> String {
   const MAX_HISTORY = 100;
 
   const state = {
-    controller: null,
+    stream: null,
     reconnectTimer: null,
     reconnectAttempt: 0,
     streamGeneration: 0,
@@ -342,9 +342,9 @@ pub(super) fn script() -> String {
   function stopStream() {
     stopReconnectTimer();
 
-    if (state.controller) {
-      state.controller.abort();
-      state.controller = null;
+    if (state.stream) {
+      state.stream.close();
+      state.stream = null;
     }
   }
 
@@ -1341,7 +1341,7 @@ pub(super) fn script() -> String {
     }
   }
 
-  async function connectStream(reset) {
+  function connectStream(reset) {
     stopStream();
 
     if (!state.streamUrl) {
@@ -1356,100 +1356,43 @@ pub(super) fn script() -> String {
     }
 
     const generation = ++state.streamGeneration;
-    const controller = new AbortController();
-    state.controller = controller;
+    const source = new EventSource(state.streamUrl);
+    state.stream = source;
 
-    try {
-      const response = await fetch(state.streamUrl, {
-        headers: {
-          Accept: "text/event-stream",
-        },
-        cache: "no-store",
-        signal: controller.signal,
-      });
-
-      if (controller.signal.aborted || generation !== state.streamGeneration) {
+    source.addEventListener("open", () => {
+      if (generation !== state.streamGeneration) {
         return;
       }
-
-      if (response.status === 401) {
-        setStatus("Blocked", "error");
-        return;
-      }
-
-      if (!response.ok || !response.body) {
-        const raw = await response.text().catch(() => "");
-        throw new Error(raw || `Nao foi possivel abrir o stream (${response.status}).`);
-      }
-
       state.reconnectAttempt = 0;
       setStatus("Live", "live");
+    });
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done || controller.signal.aborted || generation !== state.streamGeneration) {
-          break;
-        }
-
-        buffer += decoder.decode(value, { stream: true });
-        const blocks = buffer.split("\n\n");
-        buffer = blocks.pop() || "";
-
-        for (const block of blocks) {
-          const trimmed = block.trim();
-          if (!trimmed) {
-            continue;
-          }
-
-          const event = parseEventBlock(trimmed);
-          if (!event.data) {
-            continue;
-          }
-
-          if (event.event === "snapshot") {
-            const payload = parseSsePayload(event.data);
-            renderSnapshot(payload);
-            setStatus("Live", "live");
-            continue;
-          }
-
-          if (event.event === "error") {
-            const message = parseSsePayload(event.data);
-            const text = typeof message === "string" ? message : "Stream error";
-            setStatus("Offline", "error");
-            renderEmptyState(text);
-            updateDetails(null, [], -1);
-            return;
-          }
-        }
+    source.addEventListener("snapshot", (event) => {
+      if (generation !== state.streamGeneration) {
+        return;
       }
+      const payload = parseSsePayload(event.data);
+      renderSnapshot(payload);
+      setStatus("Live", "live");
+    });
 
-      if (controller.signal.aborted || generation !== state.streamGeneration) {
+    source.addEventListener("error", (event) => {
+      if (generation !== state.streamGeneration) {
         return;
       }
 
-      setStatus("Reconnecting", "loading");
-      scheduleReconnect();
-    } catch (error) {
-      if (controller.signal.aborted || generation !== state.streamGeneration) {
+      if (event.data) {
+        const message = parseSsePayload(event.data);
+        const text = typeof message === "string" ? message : "Stream error";
+        setStatus("Offline", "error");
+        renderEmptyState(text);
+        updateDetails(null, [], -1);
         return;
       }
 
       setStatus("Offline", "error");
       scheduleReconnect();
-
-      if (error instanceof Error) {
-        console.error(error);
-      }
-    } finally {
-      if (state.controller === controller) {
-        state.controller = null;
-      }
-    }
+    });
   }
 
   function reconnect() {

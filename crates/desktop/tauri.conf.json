@@ -14,7 +14,9 @@
     "active": true,
     "targets": ["nsis", "dmg", "app", "deb", "appimage"],
     "icon": [
-      "../../assets/black_in_white.ico"
+      "../../assets/black_in_white.png",
+      "../../assets/black_in_white.ico",
+      "../../assets/black_in_white.icns"
     ],
     "windows": {
       "nsis": {

@@ -38,6 +38,26 @@ fn render_app_head(asset_version: u64) -> Markup {
             link rel="icon" href="/favicon.ico";
             link rel="shortcut icon" href="/favicon.ico";
             link rel="stylesheet" href=(format!("/static/styles.css?v={asset_version}"));
+            script {
+                (PreEscaped(
+                    r#"
+window.addEventListener("error", function (event) {
+  var target = document.getElementById("startup-error-message");
+  if (!target) return;
+  var source = event.filename ? " (" + event.filename.split("/").pop() + ":" + event.lineno + ")" : "";
+  target.textContent = "Frontend error: " + (event.message || "unknown error") + source;
+  target.hidden = false;
+});
+window.addEventListener("unhandledrejection", function (event) {
+  var target = document.getElementById("startup-error-message");
+  if (!target) return;
+  var reason = event.reason && event.reason.message ? event.reason.message : String(event.reason || "unknown rejection");
+  target.textContent = "Frontend promise rejection: " + reason;
+  target.hidden = false;
+});
+"#,
+                ))
+            }
             script type="module" src=(format!("/static/vendored/datastar.js?v={asset_version}")) {}
             script type="module" src=(format!("/static/presentation/board/main.js?v={asset_version}")) {}
         }

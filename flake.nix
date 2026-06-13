@@ -42,7 +42,11 @@
             wrapGAppsHook3
           ];
           tauriLinuxBuildInputs = with pkgs; lib.optionals stdenv.isLinux [
+            gsettings-desktop-schemas
             glib-networking
+            gst_all_1.gst-plugins-base
+            gst_all_1.gst-plugins-good
+            gst_all_1.gstreamer
             gtk3
             libayatana-appindicator
             libxkbcommon
@@ -144,16 +148,36 @@
           formatter = pkgs.nixfmt-rfc-style;
 
           devShells.default = pkgs.mkShell {
-            packages = with pkgs; [
-              cargo
-              clippy
-              openssl
-              pkg-config
-              rust-analyzer
-              rustc
-              rustfmt
-              sqlite
-            ];
+            packages =
+              (with pkgs; [
+                cargo
+                cargo-tauri
+                clippy
+                openssl
+                pkg-config
+                rust-analyzer
+                rustc
+                rustfmt
+                sqlite
+              ])
+              ++ tauriLinuxNativeBuildInputs
+              ++ tauriLinuxBuildInputs;
+
+            shellHook = ''
+              export RUSTFLAGS="-D warnings"
+            '' + lib.optionalString pkgs.stdenv.isLinux ''
+              export LD_LIBRARY_PATH="${lib.makeLibraryPath (tauriLinuxBuildInputs ++ (with pkgs; [ openssl sqlite ]))}:''${LD_LIBRARY_PATH:-}"
+              export XDG_DATA_DIRS="${pkgs.gsettings-desktop-schemas}/share:${pkgs.gtk3}/share:''${XDG_DATA_DIRS:-}"
+              export GIO_EXTRA_MODULES="${pkgs.glib-networking}/lib/gio/modules:''${GIO_EXTRA_MODULES:-}"
+              export GST_PLUGIN_SYSTEM_PATH_1_0="${lib.makeSearchPath "lib/gstreamer-1.0" (with pkgs; [ gst_all_1.gst-plugins-base gst_all_1.gst-plugins-good gst_all_1.gstreamer ])}:''${GST_PLUGIN_SYSTEM_PATH_1_0:-}"
+              export GSETTINGS_SCHEMA_DIR="${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}/glib-2.0/schemas"
+            '' + ''
+              if [[ -t 1 && -z "''${Lince_desktop_shell_started:-}" ]]; then
+                export Lince_desktop_shell_started=1
+                cd crates/desktop
+                exec cargo tauri dev
+              fi
+            '';
           };
 
           devShells.desktop = pkgs.mkShell {
@@ -176,7 +200,16 @@
               export RUSTFLAGS="-D warnings"
             '' + lib.optionalString pkgs.stdenv.isLinux ''
               export LD_LIBRARY_PATH="${lib.makeLibraryPath (tauriLinuxBuildInputs ++ (with pkgs; [ openssl sqlite ]))}:''${LD_LIBRARY_PATH:-}"
-              export WEBKIT_DISABLE_COMPOSITING_MODE=1
+              export XDG_DATA_DIRS="${pkgs.gsettings-desktop-schemas}/share:${pkgs.gtk3}/share:''${XDG_DATA_DIRS:-}"
+              export GIO_EXTRA_MODULES="${pkgs.glib-networking}/lib/gio/modules:''${GIO_EXTRA_MODULES:-}"
+              export GST_PLUGIN_SYSTEM_PATH_1_0="${lib.makeSearchPath "lib/gstreamer-1.0" (with pkgs; [ gst_all_1.gst-plugins-base gst_all_1.gst-plugins-good gst_all_1.gstreamer ])}:''${GST_PLUGIN_SYSTEM_PATH_1_0:-}"
+              export GSETTINGS_SCHEMA_DIR="${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}/glib-2.0/schemas"
+            '' + ''
+              if [[ -t 1 && -z "''${Lince_desktop_shell_started:-}" ]]; then
+                export Lince_desktop_shell_started=1
+                cd crates/desktop
+                exec cargo tauri dev
+              fi
             '';
           };
         });

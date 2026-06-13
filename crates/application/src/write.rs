@@ -396,6 +396,46 @@ pub async fn set_delete_confirmation_for_active(
     .map(|_| ())
 }
 
+pub async fn set_desktop_startup_for_active(
+    services: InjectedServices,
+    start_on_login: Option<bool>,
+    start_silent: Option<bool>,
+) -> Result<(), Error> {
+    execute_statement(
+        services,
+        "
+        UPDATE configuration
+        SET desktop_start_on_login = ?,
+            desktop_start_silent = ?
+        WHERE quantity = 1
+        ",
+        vec![
+            optional_bool_parameter(start_on_login),
+            optional_bool_parameter(start_silent),
+        ],
+    )
+    .await
+    .map(|_| ())
+}
+
+pub async fn set_active_configuration_language_if_unset(
+    services: InjectedServices,
+    language: &str,
+) -> Result<(), Error> {
+    execute_statement(
+        services,
+        "
+        UPDATE configuration
+        SET language = ?
+        WHERE quantity = 1
+          AND (language IS NULL OR trim(language) = '')
+        ",
+        vec![SqlParameter::Text(language.to_string())],
+    )
+    .await
+    .map(|_| ())
+}
+
 pub async fn update_collection_view_column_widths(
     services: InjectedServices,
     collection_view_id: u32,
@@ -436,6 +476,13 @@ fn parse_i64(value: &str) -> Result<i64, Error> {
             format!("Expected integer identifier, got {value}: {error}"),
         )
     })
+}
+
+fn optional_bool_parameter(value: Option<bool>) -> SqlParameter {
+    match value {
+        Some(value) => SqlParameter::Integer(if value { 1 } else { 0 }),
+        None => SqlParameter::Null,
+    }
 }
 
 async fn handle_record_change(

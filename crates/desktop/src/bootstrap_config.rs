@@ -8,7 +8,6 @@ use std::{
 #[derive(Debug, Clone)]
 pub struct BootstrapConfig {
     pub auth_enabled: bool,
-    #[cfg_attr(not(feature = "http"), allow(dead_code))]
     pub secret: String,
 }
 

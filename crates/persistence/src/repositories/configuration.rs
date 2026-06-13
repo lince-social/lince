@@ -11,6 +11,12 @@ pub trait ConfigurationRepository: Send + Sync {
     async fn set_active(&self, id: &str) -> Result<(), Error>;
     async fn get_active(&self) -> Result<Configuration, Error>;
     async fn set_delete_confirmation_for_active(&self, enabled: bool) -> Result<(), Error>;
+    async fn set_desktop_startup_for_active(
+        &self,
+        start_on_login: Option<bool>,
+        start_silent: Option<bool>,
+    ) -> Result<(), Error>;
+    async fn set_language_for_active_if_unset(&self, language: &str) -> Result<(), Error>;
 }
 
 pub struct ConfigurationRepositoryImpl {
@@ -51,6 +57,43 @@ impl ConfigurationRepository for ConfigurationRepositoryImpl {
             .execute(&*self.pool)
             .await
             .map_err(Error::other)?;
+        Ok(())
+    }
+
+    async fn set_desktop_startup_for_active(
+        &self,
+        start_on_login: Option<bool>,
+        start_silent: Option<bool>,
+    ) -> Result<(), Error> {
+        sqlx::query(
+            "
+            UPDATE configuration
+            SET desktop_start_on_login = ?,
+                desktop_start_silent = ?
+            WHERE quantity = 1
+            ",
+        )
+        .bind(start_on_login.map(|value| if value { 1_i64 } else { 0_i64 }))
+        .bind(start_silent.map(|value| if value { 1_i64 } else { 0_i64 }))
+        .execute(&*self.pool)
+        .await
+        .map_err(Error::other)?;
+        Ok(())
+    }
+
+    async fn set_language_for_active_if_unset(&self, language: &str) -> Result<(), Error> {
+        sqlx::query(
+            "
+            UPDATE configuration
+            SET language = ?
+            WHERE quantity = 1
+              AND (language IS NULL OR trim(language) = '')
+            ",
+        )
+        .bind(language)
+        .execute(&*self.pool)
+        .await
+        .map_err(Error::other)?;
         Ok(())
     }
 }

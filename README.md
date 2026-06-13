@@ -166,6 +166,8 @@ For those that want to compile the latest and have [cargo](https://www.rust-lang
 cargo run
 ```
 
+For the standalone desktop webview build, see [Desktop Builds](docs/desktop.md). It covers NixOS, generic Linux prerequisites, and Tauri release artifacts.
+
 To run the trail browser regression mode locally, use `./scripts/other/browser-watch-tests.sh --jobs 10` to execute all browser tests in headed Chromium with `browser-watch`; if you want the raw command, use `cargo test -p lince-web --features browser-watch browser_ -- --nocapture --test-threads=10`.
 
 ### Keeping it running

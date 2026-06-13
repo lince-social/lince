@@ -23,4 +23,6 @@ pub struct Configuration {
     pub file_sync_enabled: i64,
     pub file_sync_path: Option<String>,
     pub transfer_public_proposals_enabled: i64,
+    pub desktop_start_on_login: Option<i64>,
+    pub desktop_start_silent: Option<i64>,
 }

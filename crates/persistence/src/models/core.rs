@@ -62,6 +62,8 @@ pub struct ConfigurationRow {
     pub file_sync_path: Option<String>,
     #[table(default = "0")]
     pub transfer_public_proposals_enabled: i64,
+    pub desktop_start_on_login: Option<i64>,
+    pub desktop_start_silent: Option<i64>,
 }
 
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]

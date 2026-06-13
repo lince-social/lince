@@ -62,30 +62,30 @@ Recommended first implementation order:
 
 ## Status
 
-- [ ] Transfer is treated as structured data, not a single immediate transaction.
-- [ ] Quantity stays central.
-- [ ] Records can participate in Transfers without becoming permanently Need or Contribution objects.
-- [ ] Transfer items carry their own title and description.
-- [ ] Transfer can be nested under a parent Transfer.
+- [x] Transfer is treated as structured data, not a single immediate transaction.
+- [x] Quantity stays central.
+- [x] Records can participate in Transfers without becoming permanently Need or Contribution objects.
+- [/] Transfer items carry their own title and description.
+- [x] Transfer can be nested under a parent Transfer.
 - [ ] Visibility is first-class data.
 - [ ] A Lince Cell is modeled as an Organ used by one person.
-- [ ] Personal Organs can publish and consume p2p Transfer summaries.
+- [x] Personal Organs can publish and consume p2p Transfer summaries.
 - [ ] Agreement is invalidated by edits to connected items.
 - [ ] Agreement policies are typed in Rust, not passed around as raw strings.
-- [ ] Event kinds are typed in Rust, not passed around as raw strings.
+- [x] Event kinds are typed in Rust, not passed around as raw strings.
 - [ ] Event payloads are deserialized into typed Rust values at the boundary.
 - [ ] Karma only activates/deactivates preconfigured Transfers for now.
-- [ ] Transfer stores enough facts for SQL views and sands to project richer quantity views.
+- [x] Transfer stores enough facts for SQL views and sands to project richer quantity views.
 - [ ] Simulation uses plus/minus influence facts.
-- [ ] Delivery and receipt confirmations are modeled separately.
-- [ ] Settlement is idempotent.
-- [ ] Transfer proposal data is separate from final Record quantity mutation.
-- [ ] Transfer history is append-only.
-- [ ] A coordinator event log can be mirrored by participating Cells.
-- [ ] Signed events are documented for later use.
-- [ ] Discovery can cache public or permitted Transfer summaries.
-- [ ] A central or Organ server can introduce Cells to each other.
-- [ ] Direct Cell-to-Cell sync can happen after introduction.
+- [x] Delivery and receipt confirmations are modeled separately.
+- [x] Settlement is idempotent.
+- [x] Transfer proposal data is separate from final Record quantity mutation.
+- [x] Transfer history is append-only.
+- [x] A coordinator event log can be mirrored by participating Cells.
+- [x] Signed events are documented for later use.
+- [x] Discovery can cache public or permitted Transfer summaries.
+- [x] A central or Organ server can introduce Cells to each other.
+- [x] Direct Cell-to-Cell sync can happen after introduction.
 - [ ] The Transfer sand is a real server-backed workflow, not a placeholder.
 - [x] The doc set is split into multiple focused files.
 
@@ -99,16 +99,16 @@ Recommended first implementation order:
 - [ ] No external messaging integration is assumed.
 - [ ] No calendar integration is assumed.
 - [ ] No legal-contract language is required for MVP.
-- [ ] The feature is described as a protocol for making Record changes socially valid.
-- [ ] The feature supports both personal and shared Organ use.
+- [x] The feature is described as a protocol for making Record changes socially valid.
+- [x] The feature supports both personal and shared Organ use.
 - [ ] The feature supports one-off and grouped work.
 - [ ] The feature supports large subjects split into smaller child Transfers.
 
 ### Core Concepts
 
-- [ ] A Transfer is a structured promise before execution.
+- [x] A Transfer is a structured promise before execution.
 - [ ] A Transfer can contain multiple interactions.
-- [ ] A Transfer can contain multiple items.
+- [x] A Transfer can contain multiple items.
 - [ ] A Transfer item can represent a Need.
 - [ ] A Transfer item can represent a Contribution.
 - [ ] A Transfer item can represent support.
@@ -125,12 +125,12 @@ Recommended first implementation order:
 - [ ] Agreement type is a Rust enum.
 - [ ] Settlement mode is a Rust enum.
 - [ ] Agreement level is a Rust enum.
-- [ ] Transfer role is a Rust enum.
+- [x] Transfer role is a Rust enum.
 - [ ] Transfer direction is a Rust enum.
 - [ ] Transfer interaction kind is a Rust enum.
 - [ ] Participation kind is a Rust enum.
 - [ ] Confirmation kind is a Rust enum.
-- [ ] Event kind is a Rust enum.
+- [x] Event kind is a Rust enum.
 - [ ] Storage strings are parsed into Rust types at the boundary.
 - [ ] Storage strings are serialized from Rust types at the boundary.
 - [ ] Raw `get("field")` access is avoided in the design.
@@ -168,9 +168,9 @@ Recommended first implementation order:
 
 ### History And Events
 
-- [ ] Transfer events are append-only.
+- [x] Transfer events are append-only.
 - [ ] Event hashes can chain together.
-- [ ] Signed events are documented for future use.
+- [x] Signed events are documented for future use.
 - [ ] Event validation can be deterministic.
 - [ ] Event payloads can be typed.
 - [ ] Messages are separate from generic comments.
@@ -202,29 +202,29 @@ Recommended first implementation order:
 
 ### Settlement
 
-- [ ] Delivery confirmation is modeled.
-- [ ] Receipt confirmation is modeled.
-- [ ] Settlement is idempotent.
-- [ ] Individual settlement exists.
+- [x] Delivery confirmation is modeled.
+- [x] Receipt confirmation is modeled.
+- [x] Settlement is idempotent.
+- [x] Individual settlement exists.
 - [ ] Full settlement exists.
 - [ ] Settlement can be derived from interaction state.
-- [ ] Settlement can apply Record quantity changes.
+- [x] Settlement can apply Record quantity changes.
 - [ ] Settlement can consume reserved influence facts.
 
 ### Networking
 
 - [ ] A Cell can act as a p2p node.
-- [ ] A node can publish visible Transfer summaries.
-- [ ] A node can cache visible Transfer summaries.
-- [ ] A node can keep cached summaries stale.
-- [ ] A participating Cell can mirror a Transfer event log.
-- [ ] A participating Cell can track its last synced event.
-- [ ] A coordinator orders writes while replicas sync eventually.
-- [ ] A central or Organ server can introduce peers.
-- [ ] Direct peer sync can happen after introduction.
+- [x] A node can publish visible Transfer summaries.
+- [x] A node can cache visible Transfer summaries.
+- [x] A node can keep cached summaries stale.
+- [x] A participating Cell can mirror a Transfer event log.
+- [x] A participating Cell can track its last synced event.
+- [x] A coordinator orders writes while replicas sync eventually.
+- [x] A central or Organ server can introduce peers.
+- [x] Direct peer sync can happen after introduction.
 - [ ] Peer discovery can be topic-based.
 - [ ] Peer discovery can be contact-list based.
-- [ ] Event logs can later become signed.
+- [x] Event logs can later become signed.
 
 ### Transfer Sand
 
@@ -247,10 +247,10 @@ Recommended first implementation order:
 - [ ] The Transfer sand can let permitted parties agree.
 - [ ] The Transfer sand invalidates agreement through backend rules after connected edits.
 - [ ] The Transfer sand can show Transfer messages.
-- [ ] The Transfer sand can show append-only Transfer history.
-- [ ] The Transfer sand can show delivery confirmation state.
-- [ ] The Transfer sand can show receipt confirmation state.
-- [ ] The Transfer sand can request settlement.
+- [x] The Transfer sand can show append-only Transfer history.
+- [x] The Transfer sand can show delivery confirmation state.
+- [x] The Transfer sand can show receipt confirmation state.
+- [x] The Transfer sand can request settlement.
 - [ ] The Transfer sand can show quantity influence facts when they exist.
 
 ### Roadmap
@@ -259,8 +259,8 @@ Recommended first implementation order:
 - [x] The main file is a tracker.
 - [x] The main file has many checkboxes.
 - [x] The plan can grow without becoming one monolith.
-- [ ] The schema and Rust models still need implementation.
-- [ ] The UI still needs Transfer screens.
-- [ ] The reducer still needs to be written.
-- [ ] The views for visibility and projection still need implementation.
-- [ ] The networking protocol still needs implementation.
+- [x] The schema and Rust models still need implementation.
+- [x] The UI still needs Transfer screens.
+- [x] The reducer still needs to be written.
+- [x] The views for visibility and projection still need implementation.
+- [x] The networking protocol still needs implementation.

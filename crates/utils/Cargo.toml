@@ -16,3 +16,4 @@ chrono.workspace = true
 dirs.workspace = true
 jsonwebtoken.workspace = true
 serde = { workspace = true, features = ["derive"] }
+toml.workspace = true

@@ -2,6 +2,28 @@
 
 Lince desktop uses Tauri to run the existing HTML app in the operating system webview. The repo does not vendor WebKitGTK, GTK, appindicator, compilers, or other native platform libraries. Those come from the OS package manager or the release artifact format.
 
+For the feature list and platform quirks, see [Desktop Features](desktop-features.md).
+
+## NixOS
+
+Use the desktop dev shell:
+
+```sh
+nix develop .#desktop
+cargo check --locked -p lince-desktop
+cd crates/desktop
+cargo tauri dev
+```
+
+Build or run the Nix package:
+
+```sh
+nix build .#lince-desktop
+nix run .#lince-desktop
+```
+
+The desktop shell provides WebKitGTK, GTK, appindicator, librsvg, xdo, OpenSSL, SQLite, Rust, and `cargo-tauri` through Nix. You do not need to install those globally on NixOS.
+
 ## Generic Linux
 
 Install Rust and the Tauri native prerequisites with your distro package manager. On Debian/Ubuntu-compatible systems:

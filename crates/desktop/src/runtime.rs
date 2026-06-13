@@ -22,9 +22,10 @@ use utils::{
 };
 use web::{HttpServeMode, serve_with_bound_addr_sender};
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct DesktopRuntime {
     pub url: String,
+    #[cfg_attr(not(any(target_os = "macos", windows)), allow(dead_code))]
     pub services: InjectedServices,
     pub start_on_login: bool,
     pub start_silent: bool,
@@ -70,6 +71,10 @@ pub async fn start_desktop_server() -> Result<DesktopRuntime, Error> {
     refresh_karma_cache(services.clone()).await?;
     file_sync::configure_from_active_configuration(services.clone()).await?;
     file_sync::start_if_enabled(services.clone()).await?;
+    tokio::spawn(application::automatic_update::check_startup_update(
+        services.clone(),
+        false,
+    ));
 
     let (addr_tx, addr_rx) = oneshot::channel();
     let server_services = services.clone();

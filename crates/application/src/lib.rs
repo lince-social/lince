@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod automatic_update;
 pub mod command;
 pub mod configuration;
 pub mod cub;

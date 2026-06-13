@@ -5453,6 +5453,7 @@ dependencies = [
  "regex",
  "reqwest 0.12.28",
  "rhai",
+ "semver",
  "serde",
  "serde_json",
  "sqlx",

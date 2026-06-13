@@ -1,5 +1,8 @@
 use {
-    crate::{application::state::AppState, presentation::http::api_error::ApiResult},
+    crate::{
+        application::state::AppState,
+        presentation::http::api_error::{ApiResult, api_error},
+    },
     axum::{
         Json,
         extract::{Path, State},
@@ -7,6 +10,7 @@ use {
     },
     injection::cross_cutting::AppNotification,
     serde::Serialize,
+    std::time::Duration,
 };
 
 #[derive(Debug, Serialize)]
@@ -29,4 +33,14 @@ pub async fn dismiss_notification(
 ) -> ApiResult<StatusCode> {
     state.services.notifications.dismiss(&notification_id);
     Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn install_update(State(state): State<AppState>) -> ApiResult<StatusCode> {
+    ::application::automatic_update::install_and_restart_later(
+        state.services.clone(),
+        Duration::from_millis(500),
+    )
+    .await
+    .map_err(|error| api_error(StatusCode::BAD_GATEWAY, error.to_string()))?;
+    Ok(StatusCode::ACCEPTED)
 }

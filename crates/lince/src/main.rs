@@ -120,6 +120,10 @@ async fn main() -> Result<(), Error> {
     refresh_karma_cache(services.clone()).await?;
     application::file_sync::configure_from_active_configuration(services.clone()).await?;
     application::file_sync::start_if_enabled(services.clone()).await?;
+    tokio::spawn(application::automatic_update::check_startup_update(
+        services.clone(),
+        true,
+    ));
 
     #[cfg(feature = "karma")]
     let karma_handle = if karma_enabled {

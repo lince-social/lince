@@ -31,3 +31,4 @@ regex.workspace = true
 reqwest = { workspace = true, default-features = false, features = ["json", "rustls-tls"] }
 sqlx.workspace = true
 dirs.workspace = true
+semver.workspace = true

@@ -64,6 +64,13 @@ pub struct ConfigurationRow {
     pub transfer_public_proposals_enabled: i64,
     pub desktop_start_on_login: Option<i64>,
     pub desktop_start_silent: Option<i64>,
+    #[table(default = "'rolling'")]
+    pub automatic_update_channel: String,
+    #[table(default = "1")]
+    pub automatic_update_notify_enabled: i64,
+    #[table(default = "1")]
+    pub automatic_update_install_enabled: i64,
+    pub automatic_update_last_seen_revision: Option<String>,
 }
 
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]

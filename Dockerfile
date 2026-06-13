@@ -17,22 +17,21 @@ COPY crates/application/Cargo.toml crates/application/Cargo.toml
 COPY crates/domain/Cargo.toml crates/domain/Cargo.toml
 COPY crates/injection/Cargo.toml crates/injection/Cargo.toml
 COPY crates/persistence/Cargo.toml crates/persistence/Cargo.toml
+COPY crates/persistence-table-derive/Cargo.toml crates/persistence-table-derive/Cargo.toml
 COPY crates/gui/Cargo.toml crates/gui/Cargo.toml
 COPY crates/utils/Cargo.toml crates/utils/Cargo.toml
 COPY crates/tui/Cargo.toml crates/tui/Cargo.toml
 COPY crates/web/Cargo.toml crates/web/Cargo.toml
-COPY xtask/Cargo.toml xtask/Cargo.toml
-COPY crates/lince/build.rs crates/lince/build.rs
 COPY crates/lince/src/main.rs crates/lince/src/main.rs
 COPY crates/application/src/lib.rs crates/application/src/lib.rs
 COPY crates/domain/src/lib.rs crates/domain/src/lib.rs
 COPY crates/injection/src/lib.rs crates/injection/src/lib.rs
 COPY crates/persistence/src/lib.rs crates/persistence/src/lib.rs
+COPY crates/persistence-table-derive/src/lib.rs crates/persistence-table-derive/src/lib.rs
 COPY crates/gui/src/lib.rs crates/gui/src/lib.rs
 COPY crates/utils/src/lib.rs crates/utils/src/lib.rs
 COPY crates/tui/src/lib.rs crates/tui/src/lib.rs
 COPY crates/web/src/lib.rs crates/web/src/lib.rs
-COPY xtask/src/main.rs xtask/src/main.rs
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \

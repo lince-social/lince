@@ -84,6 +84,8 @@ jobs:
         shell: bash
         run: |
           export RUSTFLAGS="-D warnings"
+          export LINCE_GIT_REVISION="${GITHUB_SHA}"
+          export LINCE_TARGET="${{ matrix.artifact }}"
           cargo build --locked --release -p lince
 
       - name: Package artifacts
@@ -237,6 +239,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Download packaged artifacts
         uses: actions/download-artifact@v4
         with:
@@ -250,6 +254,34 @@ jobs:
           pattern: lince-desktop-artifacts-*
           path: release-artifacts
           merge-multiple: true
+
+      - name: Write update manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$(grep -m1 '^version = ' Cargo.toml | sed -E 's/version = "([^"]+)"/\1/')"
+          CHANNEL="rolling"
+          {
+            printf '{\n'
+            printf '  "version": "%s",\n' "$VERSION"
+            printf '  "revision": "%s",\n' "$GITHUB_SHA"
+            printf '  "channel": "%s",\n' "$CHANNEL"
+            printf '  "assets": [\n'
+            first=1
+            for asset_path in release-artifacts/lince-*.tar.gz; do
+              [ -f "$asset_path" ] || continue
+              asset="$(basename "$asset_path")"
+              target="${asset#lince-}"
+              target="${target%.tar.gz}"
+              sum="$(awk '{print $1}' "${asset_path}.sha256")"
+              if [ "$first" -eq 0 ]; then printf ',\n'; fi
+              first=0
+              printf '    {"name":"%s","url":"https://github.com/%s/releases/download/%s/%s","sha256":"%s","target":"%s","kind":"server"}' \
+                "$asset" "$GITHUB_REPOSITORY" "$CHANNEL" "$asset" "$sum" "$target"
+            done
+            printf '\n  ]\n'
+            printf '}\n'
+          } > release-artifacts/lince-update.json
 
       - name: Publish rolling release
         env:
@@ -300,6 +332,34 @@ jobs:
           pattern: lince-desktop-artifacts-*
           path: release-artifacts
           merge-multiple: true
+
+      - name: Write update manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          CHANNEL="${GITHUB_REF_NAME}"
+          {
+            printf '{\n'
+            printf '  "version": "%s",\n' "$VERSION"
+            printf '  "revision": "%s",\n' "$GITHUB_SHA"
+            printf '  "channel": "%s",\n' "$CHANNEL"
+            printf '  "assets": [\n'
+            first=1
+            for asset_path in release-artifacts/lince-*.tar.gz; do
+              [ -f "$asset_path" ] || continue
+              asset="$(basename "$asset_path")"
+              target="${asset#lince-}"
+              target="${target%.tar.gz}"
+              sum="$(awk '{print $1}' "${asset_path}.sha256")"
+              if [ "$first" -eq 0 ]; then printf ',\n'; fi
+              first=0
+              printf '    {"name":"%s","url":"https://github.com/%s/releases/download/%s/%s","sha256":"%s","target":"%s","kind":"server"}' \
+                "$asset" "$GITHUB_REPOSITORY" "$CHANNEL" "$asset" "$sum" "$target"
+            done
+            printf '\n  ]\n'
+            printf '}\n'
+          } > release-artifacts/lince-update.json
 
       - name: Publish tagged release
         uses: softprops/action-gh-release@v2

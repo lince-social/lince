@@ -2760,6 +2760,7 @@ function renderNotifications() {
     item.className = "notification-item";
     const canLogin =
       notification.kind === "organ_login_required" && notification.organId;
+    const canInstallUpdate = notification.kind === "app_update_installable";
     item.innerHTML = `
       <div class="notification-item__title">${escapeHtml(notification.title || "Notification")}</div>
       <div class="notification-item__body">${escapeHtml(notification.body || "")}</div>
@@ -2767,6 +2768,11 @@ function renderNotifications() {
         ${
           canLogin
             ? `<button class="notification-item__button" type="button" data-notification-login="${escapeHtml(notification.organId)}">Login</button>`
+            : ""
+        }
+        ${
+          canInstallUpdate
+            ? `<button class="notification-item__button" type="button" data-notification-install-update="true">Install and restart</button>`
             : ""
         }
         <button class="notification-item__button" type="button" data-notification-dismiss="${escapeHtml(notification.id)}">Dismiss</button>
@@ -2795,6 +2801,15 @@ async function dismissNotification(notificationId) {
   }
   appNotifications = appNotifications.filter((item) => item.id !== id);
   renderNotifications();
+}
+
+async function installAutomaticUpdate() {
+  const response = await fetch(apiPath("/updates/install"), { method: "POST" });
+  if (!response.ok) {
+    const payload = await parseJsonResponse(response);
+    throw new Error(payload?.error || "Falha ao instalar atualizacao.");
+  }
+  flashDropOverlayMessage("Installing update. Lince will restart.");
 }
 
 function startNotificationsPolling() {
@@ -3965,6 +3980,18 @@ notificationsList.addEventListener("click", (event) => {
     const serverId = loginButton.dataset.notificationLogin;
     setNotificationsOpen(false);
     openServerLoginModal(serverId);
+    return;
+  }
+
+  const installUpdateButton = event.target.closest("[data-notification-install-update]");
+  if (installUpdateButton) {
+    installUpdateButton.disabled = true;
+    void installAutomaticUpdate().catch((error) => {
+      installUpdateButton.disabled = false;
+      flashDropOverlayMessage(
+        error instanceof Error ? error.message : "Falha ao instalar atualizacao.",
+      );
+    });
     return;
   }
 

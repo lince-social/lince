@@ -276,6 +276,10 @@ struct ConfigurationRow {
     transfer_public_proposals_enabled: i64,
     desktop_start_on_login: Option<i64>,
     desktop_start_silent: Option<i64>,
+    automatic_update_channel: String,
+    automatic_update_notify_enabled: i64,
+    automatic_update_install_enabled: i64,
+    automatic_update_last_seen_revision: Option<String>,
 }
 
 #[derive(Debug, Serialize, FromRow)]
@@ -574,7 +578,7 @@ const KARMA_FIELD_SPECS: [FieldSpec; 7] = [
     },
 ];
 
-const CONFIGURATION_FIELD_SPECS: [FieldSpec; 21] = [
+const CONFIGURATION_FIELD_SPECS: [FieldSpec; 25] = [
     FieldSpec {
         name: "quantity",
         kind: FieldKind::NullableInteger,
@@ -658,6 +662,22 @@ const CONFIGURATION_FIELD_SPECS: [FieldSpec; 21] = [
     FieldSpec {
         name: "desktop_start_silent",
         kind: FieldKind::NullableInteger,
+    },
+    FieldSpec {
+        name: "automatic_update_channel",
+        kind: FieldKind::Text,
+    },
+    FieldSpec {
+        name: "automatic_update_notify_enabled",
+        kind: FieldKind::BooleanInteger,
+    },
+    FieldSpec {
+        name: "automatic_update_install_enabled",
+        kind: FieldKind::BooleanInteger,
+    },
+    FieldSpec {
+        name: "automatic_update_last_seen_revision",
+        kind: FieldKind::NullableText,
     },
 ];
 
@@ -789,7 +809,7 @@ impl BackendApiStore {
             ),
             ApiTable::Configuration => serialize_value(
                 sqlx::query_as::<_, ConfigurationRow>(
-                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region, file_sync_enabled, file_sync_path, transfer_public_proposals_enabled, desktop_start_on_login, desktop_start_silent FROM configuration ORDER BY id",
+                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region, file_sync_enabled, file_sync_path, transfer_public_proposals_enabled, desktop_start_on_login, desktop_start_silent, automatic_update_channel, automatic_update_notify_enabled, automatic_update_install_enabled, automatic_update_last_seen_revision FROM configuration ORDER BY id",
                 )
                 .fetch_all(db)
                 .await
@@ -915,7 +935,7 @@ impl BackendApiStore {
             ),
             ApiTable::Configuration => serialize_value(
                 sqlx::query_as::<_, ConfigurationRow>(
-                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region, file_sync_enabled, file_sync_path, transfer_public_proposals_enabled, desktop_start_on_login, desktop_start_silent FROM configuration WHERE id = ?",
+                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region, file_sync_enabled, file_sync_path, transfer_public_proposals_enabled, desktop_start_on_login, desktop_start_silent, automatic_update_channel, automatic_update_notify_enabled, automatic_update_install_enabled, automatic_update_last_seen_revision FROM configuration WHERE id = ?",
                 )
                 .bind(id)
                 .fetch_one(db)

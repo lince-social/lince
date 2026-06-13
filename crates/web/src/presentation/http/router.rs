@@ -23,7 +23,7 @@ use {
                     proxy_manas_table_collection, proxy_manas_table_item, proxy_manas_table_schema,
                     proxy_manas_view, proxy_manas_view_snapshot, proxy_manas_view_table_stream,
                 },
-                notifications::{dismiss_notification, list_notifications},
+                notifications::{dismiss_notification, install_update, list_notifications},
                 operation::post_operation,
                 packages::{
                     delete_dna_publication, get_dna_catalog, get_local_package,
@@ -82,6 +82,7 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
             "/notifications/{notification_id}",
             axum::routing::delete(dismiss_notification),
         )
+        .route("/updates/install", post(install_update))
         .route("/operation", post(post_operation))
         .route("/board/workspaces/import", post(import_workspace))
         .route(

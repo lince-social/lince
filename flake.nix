@@ -19,12 +19,42 @@
         let
           pkgs = import nixpkgs { inherit system; };
           lib = pkgs.lib;
-          cargoToml = builtins.fromTOML (builtins.readFile ./crates/lince/Cargo.toml);
-          version = cargoToml.package.version;
+          cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
+          version = cargoToml.workspace.package.version;
+          cleanSrc = lib.cleanSourceWith {
+            src = ./.;
+            filter = path: type:
+              let
+                name = baseNameOf path;
+                rel = lib.removePrefix (toString ./. + "/") (toString path);
+              in
+              !(
+                name == ".direnv"
+                || name == ".devenv"
+                || name == ".git"
+                || name == "mprocs.log"
+                || name == "target"
+                || lib.hasPrefix "target/" rel
+              );
+          };
+          tauriLinuxNativeBuildInputs = with pkgs; lib.optionals stdenv.isLinux [
+            pkg-config
+            wrapGAppsHook3
+          ];
+          tauriLinuxBuildInputs = with pkgs; lib.optionals stdenv.isLinux [
+            glib-networking
+            gtk3
+            libayatana-appindicator
+            libxkbcommon
+            librsvg
+            libsoup_3
+            webkitgtk_4_1
+            xdotool
+          ];
 
           mkLince = { pname }: pkgs.rustPlatform.buildRustPackage {
               inherit pname version;
-              src = ./.;
+              src = cleanSrc;
 
               cargoLock = {
                 lockFile = ./Cargo.lock;
@@ -57,11 +87,44 @@
           lince = mkLince {
             pname = "lince";
           };
+
+          lince-desktop = pkgs.rustPlatform.buildRustPackage {
+            pname = "lince-desktop";
+            inherit version;
+            src = cleanSrc;
+
+            cargoLock = {
+              lockFile = ./Cargo.lock;
+            };
+
+            RUSTFLAGS = "-D warnings";
+
+            cargoBuildFlags = [ "--package" "lince-desktop" ];
+            cargoTestFlags = [ "--package" "lince-desktop" ];
+
+            nativeBuildInputs = with pkgs; [
+              pkg-config
+            ] ++ lib.remove pkg-config tauriLinuxNativeBuildInputs;
+
+            buildInputs =
+              (with pkgs; [
+                openssl
+                sqlite
+              ])
+              ++ tauriLinuxBuildInputs;
+
+            meta = {
+              description = "Lince desktop webview application";
+              mainProgram = "lince-desktop";
+              license = lib.licenses.gpl3Plus;
+              platforms = supportedSystems;
+            };
+          };
         in
         {
           packages = {
             default = lince;
-            inherit lince;
+            inherit lince lince-desktop;
           };
 
           apps = {
@@ -71,6 +134,10 @@
 
             lince = flake-utils.lib.mkApp {
               drv = lince;
+            };
+
+            lince-desktop = flake-utils.lib.mkApp {
+              drv = lince-desktop;
             };
           };
 
@@ -87,6 +154,30 @@
               rustfmt
               sqlite
             ];
+          };
+
+          devShells.desktop = pkgs.mkShell {
+            packages =
+              (with pkgs; [
+                cargo
+                cargo-tauri
+                clippy
+                openssl
+                pkg-config
+                rust-analyzer
+                rustc
+                rustfmt
+                sqlite
+              ])
+              ++ tauriLinuxNativeBuildInputs
+              ++ tauriLinuxBuildInputs;
+
+            shellHook = ''
+              export RUSTFLAGS="-D warnings"
+            '' + lib.optionalString pkgs.stdenv.isLinux ''
+              export LD_LIBRARY_PATH="${lib.makeLibraryPath (tauriLinuxBuildInputs ++ (with pkgs; [ openssl sqlite ]))}:''${LD_LIBRARY_PATH:-}"
+              export WEBKIT_DISABLE_COMPOSITING_MODE=1
+            '';
           };
         });
     in

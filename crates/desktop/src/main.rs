@@ -11,7 +11,6 @@ use tauri::{
     image::Image,
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    webview::PageLoadEvent,
 };
 #[cfg(any(target_os = "macos", windows))]
 use tauri_plugin_autostart::ManagerExt;
@@ -205,26 +204,38 @@ fn open_main_window(app: &tauri::AppHandle, url: &str) -> tauri::Result<()> {
         .map(WebviewUrl::External)
         .map_err(|error| tauri::Error::Anyhow(anyhow::anyhow!(error)))?;
 
-    let open_devtools = env::var_os("LINCE_DESKTOP_DEVTOOLS").is_some();
-    let window = WebviewWindowBuilder::new(app, MAIN_WINDOW_LABEL, url)
-        .icon(app_icon()?)?
-        .title("Lince")
-        .inner_size(1440.0, 960.0)
-        .min_inner_size(980.0, 680.0)
-        .devtools(cfg!(debug_assertions))
-        .on_page_load(move |window, payload| {
-            #[cfg(debug_assertions)]
-            if open_devtools && payload.event() == PageLoadEvent::Finished {
-                eprintln!("Opening Lince desktop WebKit devtools");
-                window.open_devtools();
-            }
-        })
-        .build()?;
-
     #[cfg(debug_assertions)]
-    if open_devtools {
-        eprintln!("Opening Lince desktop WebKit devtools");
-        window.open_devtools();
+    {
+        let open_devtools = env::var_os("LINCE_DESKTOP_DEVTOOLS").is_some();
+        let window = WebviewWindowBuilder::new(app, MAIN_WINDOW_LABEL, url)
+            .icon(app_icon()?)?
+            .title("Lince")
+            .inner_size(1440.0, 960.0)
+            .min_inner_size(980.0, 680.0)
+            .devtools(true)
+            .on_page_load(move |window, payload| {
+                if open_devtools && payload.event() == tauri::webview::PageLoadEvent::Finished {
+                    eprintln!("Opening Lince desktop WebKit devtools");
+                    window.open_devtools();
+                }
+            })
+            .build()?;
+
+        if open_devtools {
+            eprintln!("Opening Lince desktop WebKit devtools");
+            window.open_devtools();
+        }
+    }
+
+    #[cfg(not(debug_assertions))]
+    {
+        WebviewWindowBuilder::new(app, MAIN_WINDOW_LABEL, url)
+            .icon(app_icon()?)?
+            .title("Lince")
+            .inner_size(1440.0, 960.0)
+            .min_inner_size(980.0, 680.0)
+            .devtools(false)
+            .build()?;
     }
 
     Ok(())

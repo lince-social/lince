@@ -148,6 +148,8 @@ jobs:
     if: github.ref == 'refs/heads/main'
     needs: [desktop]
     runs-on: ubuntu-latest
+    env:
+      ROLLING_TAG: rolling-${{ github.run_number }}
 
     steps:
       - uses: actions/checkout@v4
@@ -182,7 +184,7 @@ jobs:
               if [ "$first" -eq 0 ]; then printf ',\n'; fi
               first=0
               printf '    {"name":"%s","url":"https://github.com/%s/releases/download/%s/%s","sha256":"%s","target":"","kind":"desktop"}' \
-                "$asset" "$GITHUB_REPOSITORY" "$CHANNEL" "$asset" "$sum"
+                "$asset" "$GITHUB_REPOSITORY" "$ROLLING_TAG" "$asset" "$sum"
             done
             printf '\n  ]\n'
             printf '}\n'
@@ -194,13 +196,13 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          TAG="rolling-$(date -u +%Y%m%d)"
+          TAG="$ROLLING_TAG"
 
           if ! gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
             gh release create "$TAG" \
               --repo "$GH_REPO" \
               --target "$GITHUB_SHA" \
-              --title "Rolling desktop release $TAG" \
+              --title "Latest $TAG" \
               --notes "Latest desktop release from the main branch."
           fi
 

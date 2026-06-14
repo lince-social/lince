@@ -86,7 +86,7 @@ Recommended first implementation order:
 - [x] Discovery can cache public or permitted Transfer summaries.
 - [x] A central or Organ server can introduce Cells to each other.
 - [x] Direct Cell-to-Cell sync can happen after introduction.
-- [ ] The Transfer sand is a real server-backed workflow, not a placeholder.
+- [x] The Transfer sand is a real server-backed workflow, not a placeholder.
 - [x] The doc set is split into multiple focused files.
 
 ## Checklist
@@ -101,8 +101,8 @@ Recommended first implementation order:
 - [ ] No legal-contract language is required for MVP.
 - [x] The feature is described as a protocol for making Record changes socially valid.
 - [x] The feature supports both personal and shared Organ use.
-- [ ] The feature supports one-off and grouped work.
-- [ ] The feature supports large subjects split into smaller child Transfers.
+- [x] The feature supports one-off and grouped work.
+- [x] The feature supports large subjects split into smaller child Transfers.
 
 ### Core Concepts
 
@@ -115,9 +115,9 @@ Recommended first implementation order:
 - [ ] A Transfer item can represent a task.
 - [ ] A Transfer item can represent information.
 - [ ] A Transfer item can represent a reservation.
-- [ ] A parent Transfer can group child Transfers.
-- [ ] A parent Transfer can expose aggregate state.
-- [ ] Child Transfers can keep their own policies.
+- [x] A parent Transfer can group child Transfers.
+- [x] A parent Transfer can expose aggregate state.
+- [x] Child Transfers can keep their own policies.
 - [ ] Child Transfers can have dependencies.
 
 ### Typed Options
@@ -131,8 +131,8 @@ Recommended first implementation order:
 - [ ] Participation kind is a Rust enum.
 - [ ] Confirmation kind is a Rust enum.
 - [x] Event kind is a Rust enum.
-- [ ] Storage strings are parsed into Rust types at the boundary.
-- [ ] Storage strings are serialized from Rust types at the boundary.
+- [x] Storage strings are parsed into Rust types at the boundary.
+- [x] Storage strings are serialized from Rust types at the boundary.
 - [ ] Raw `get("field")` access is avoided in the design.
 
 ### Visibility
@@ -229,22 +229,22 @@ Recommended first implementation order:
 ### Transfer Sand
 
 - [ ] The Transfer sand requires a server.
-- [ ] The Transfer sand declares the permissions it needs.
-- [ ] The Transfer sand has a dedicated runtime contract.
-- [ ] The Transfer sand has typed backend actions.
-- [ ] The Transfer sand can list Transfer summaries.
-- [ ] The Transfer sand can load one Transfer detail.
-- [ ] The Transfer sand can create a Transfer.
-- [ ] The Transfer sand can create child Transfers.
-- [ ] The Transfer sand can add and edit Transfer items.
-- [ ] The Transfer sand can link a Transfer item to a source Record.
+- [x] The Transfer sand declares the permissions it needs.
+- [x] The Transfer sand has a dedicated runtime contract.
+- [x] The Transfer sand has typed backend actions.
+- [x] The Transfer sand can list Transfer summaries.
+- [x] The Transfer sand can load one Transfer detail.
+- [x] The Transfer sand can create a Transfer.
+- [x] The Transfer sand can create child Transfers.
+- [x] The Transfer sand can add and edit Transfer items.
+- [x] The Transfer sand can link a Transfer item to a source Record.
 - [ ] The Transfer sand can show Transfer-specific item title and description.
-- [ ] The Transfer sand can configure parties.
+- [x] The Transfer sand can configure parties.
 - [ ] The Transfer sand can configure field-level visibility.
 - [ ] The Transfer sand can show item interactions.
 - [ ] The Transfer sand can show dependencies.
-- [ ] The Transfer sand can show agreement state.
-- [ ] The Transfer sand can let permitted parties agree.
+- [x] The Transfer sand can show agreement state.
+- [x] The Transfer sand can let permitted parties agree.
 - [ ] The Transfer sand invalidates agreement through backend rules after connected edits.
 - [ ] The Transfer sand can show Transfer messages.
 - [x] The Transfer sand can show append-only Transfer history.
@@ -259,8 +259,8 @@ Recommended first implementation order:
 - [x] The main file is a tracker.
 - [x] The main file has many checkboxes.
 - [x] The plan can grow without becoming one monolith.
-- [x] The schema and Rust models still need implementation.
-- [x] The UI still needs Transfer screens.
-- [x] The reducer still needs to be written.
+- [ ] The schema and Rust models still need implementation.
+- [ ] The UI still needs Transfer screens.
+- [ ] The reducer still needs to be written.
 - [x] The views for visibility and projection still need implementation.
-- [x] The networking protocol still needs implementation.
+- [ ] The networking protocol still needs implementation.

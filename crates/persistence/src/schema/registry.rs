@@ -4,8 +4,9 @@ use crate::{
         core::{
             CollectionRow, CollectionViewRow, CommandRow, ConfigurationRow, FrequencyRow,
             HistoryRow, QueryRow, RecordRow, SumRow, TransferEventRow, TransferIdentityRow,
-            TransferItemRow, TransferLocalSettlementRow, TransferNodeIdentityRow, TransferRow,
-            TransferSettlementRow, TransferSyncCursorRow, ViewRow,
+            TransferItemRow, TransferLocalSettlementRow, TransferNodeIdentityRow,
+            TransferRelationRow, TransferRow, TransferSettlementRow, TransferSyncCursorRow,
+            TransferTreeConfigRow, ViewRow,
         },
         karma::{KarmaConditionRow, KarmaConsequenceRow, KarmaRow},
         sidecars::{
@@ -32,6 +33,8 @@ pub fn declared_tables() -> Vec<TableSchema> {
         TransferItemRow::schema(),
         TransferNodeIdentityRow::schema(),
         TransferIdentityRow::schema(),
+        TransferRelationRow::schema(),
+        TransferTreeConfigRow::schema(),
         TransferEventRow::schema(),
         TransferSettlementRow::schema(),
         TransferLocalSettlementRow::schema(),

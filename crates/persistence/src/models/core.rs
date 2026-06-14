@@ -218,6 +218,74 @@ pub struct TransferIdentityRow {
 }
 
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
+#[allow(dead_code)]
+#[table(name = "transfer_relation")]
+#[table(strict)]
+#[table(index(
+    name = "idx_transfer_relation_transfer_type",
+    columns = "transfer_uid, relation_type"
+))]
+#[table(index(
+    name = "idx_transfer_relation_target_type",
+    columns = "target_transfer_uid, relation_type"
+))]
+#[table(index(
+    name = "uq_transfer_relation_identity",
+    columns = "transfer_uid, relation_type, target_transfer_uid",
+    unique
+))]
+pub struct TransferRelationRow {
+    #[table(primary_key)]
+    pub id: i64,
+    #[table(check = "length(trim(transfer_uid)) > 0")]
+    pub transfer_uid: String,
+    #[table(check = "relation_type IN ('parent', 'depends_on')")]
+    pub relation_type: String,
+    #[table(check = "length(trim(target_transfer_uid)) > 0")]
+    pub target_transfer_uid: String,
+    pub position: Option<f64>,
+    #[table(default = "CURRENT_TIMESTAMP")]
+    pub created_at: String,
+    #[table(default = "CURRENT_TIMESTAMP")]
+    pub updated_at: String,
+}
+
+#[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
+#[allow(dead_code)]
+#[table(name = "transfer_tree_config")]
+#[table(strict)]
+#[table(index(
+    name = "idx_transfer_tree_config_uid",
+    columns = "transfer_uid",
+    unique
+))]
+pub struct TransferTreeConfigRow {
+    #[table(primary_key)]
+    pub id: i64,
+    #[table(check = "length(trim(transfer_uid)) > 0")]
+    pub transfer_uid: String,
+    #[table(check = "branch_mode IN ('inherit', 'duplicated', 'greedy')")]
+    pub branch_mode: String,
+    #[table(check = "record_sync_mode IN ('none', 'copy_once', 'live')")]
+    pub record_sync_mode: String,
+    #[table(references = "record(id)")]
+    pub source_record_id: Option<i64>,
+    #[table(check = "sync_role IS NULL OR sync_role IN ('need', 'contribution')")]
+    pub sync_role: Option<String>,
+    pub sync_quantity: Option<f64>,
+    pub sync_counterparty_label: Option<String>,
+    pub sync_target_organ_id: Option<i64>,
+    pub last_synced_record_head: Option<String>,
+    #[table(default = "0")]
+    pub sync_enabled: i64,
+    pub last_synced_at: Option<String>,
+    #[table(default = "CURRENT_TIMESTAMP")]
+    pub created_at: String,
+    #[table(default = "CURRENT_TIMESTAMP")]
+    pub updated_at: String,
+}
+
+#[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
 #[table(name = "transfer_event")]
 #[table(strict)]
 pub struct TransferEventRow {

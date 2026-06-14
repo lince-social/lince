@@ -201,6 +201,52 @@ CREATE TABLE IF NOT EXISTS transfer_visibility_field (
 CREATE UNIQUE INDEX IF NOT EXISTS uq_transfer_visibility_field_rule_name
 ON transfer_visibility_field(visibility_rule_id, field_name);
 
+DELETE FROM transfer_party
+WHERE NOT EXISTS (
+    SELECT 1 FROM transfer transfer_header
+    WHERE transfer_header.id = transfer_party.transfer_id
+);
+DELETE FROM transfer_structured_item
+WHERE NOT EXISTS (
+    SELECT 1 FROM transfer transfer_header
+    WHERE transfer_header.id = transfer_structured_item.transfer_id
+);
+DELETE FROM transfer_interaction
+WHERE NOT EXISTS (
+    SELECT 1 FROM transfer transfer_header
+    WHERE transfer_header.id = transfer_interaction.transfer_id
+);
+DELETE FROM transfer_agreement
+WHERE NOT EXISTS (
+    SELECT 1 FROM transfer transfer_header
+    WHERE transfer_header.id = transfer_agreement.transfer_id
+);
+DELETE FROM transfer_confirmation
+WHERE NOT EXISTS (
+    SELECT 1 FROM transfer transfer_header
+    WHERE transfer_header.id = transfer_confirmation.transfer_id
+);
+DELETE FROM transfer_structured_settlement
+WHERE NOT EXISTS (
+    SELECT 1 FROM transfer transfer_header
+    WHERE transfer_header.id = transfer_structured_settlement.transfer_id
+);
+DELETE FROM transfer_quantity_influence
+WHERE NOT EXISTS (
+    SELECT 1 FROM transfer transfer_header
+    WHERE transfer_header.id = transfer_quantity_influence.transfer_id
+);
+DELETE FROM transfer_message
+WHERE NOT EXISTS (
+    SELECT 1 FROM transfer transfer_header
+    WHERE transfer_header.id = transfer_message.transfer_id
+);
+DELETE FROM transfer_visibility_rule
+WHERE NOT EXISTS (
+    SELECT 1 FROM transfer transfer_header
+    WHERE transfer_header.id = transfer_visibility_rule.transfer_id
+);
+
 INSERT INTO transfer_party (
     transfer_id,
     participation_kind,
@@ -223,6 +269,7 @@ SELECT
     ti.created_at,
     ti.updated_at
 FROM transfer_identity ti
+JOIN transfer transfer_header ON transfer_header.id = ti.transfer_id
 WHERE NOT EXISTS (
     SELECT 1 FROM transfer_party tp
     WHERE tp.transfer_id = ti.transfer_id
@@ -252,6 +299,7 @@ SELECT
     ti.created_at,
     ti.updated_at
 FROM transfer_identity ti
+JOIN transfer transfer_header ON transfer_header.id = ti.transfer_id
 WHERE NOT EXISTS (
     SELECT 1 FROM transfer_party tp
     WHERE tp.transfer_id = ti.transfer_id
@@ -274,7 +322,7 @@ INSERT INTO transfer_structured_item (
 SELECT
     legacy.transfer_id,
     'contribution',
-    NULLIF(legacy.contribution_id, 0),
+    CASE WHEN contribution_record.id IS NULL THEN NULL ELSE legacy.contribution_id END,
     party.id,
     legacy.contribution_head,
     legacy.contribution_head,
@@ -283,7 +331,10 @@ SELECT
     legacy.date,
     legacy.date
 FROM transfer_item legacy
+JOIN transfer transfer_header ON transfer_header.id = legacy.transfer_id
 JOIN transfer_identity ti ON ti.transfer_id = legacy.transfer_id
+LEFT JOIN record contribution_record
+    ON contribution_record.id = NULLIF(legacy.contribution_id, 0)
 LEFT JOIN transfer_party party
     ON party.transfer_id = legacy.transfer_id
    AND party.role_hint = 'contribution'
@@ -293,8 +344,8 @@ WHERE NOT EXISTS (
     WHERE item.transfer_id = legacy.transfer_id
       AND item.role = 'contribution'
       AND (
-          (item.source_record_id IS NULL AND NULLIF(legacy.contribution_id, 0) IS NULL)
-          OR item.source_record_id = NULLIF(legacy.contribution_id, 0)
+          (item.source_record_id IS NULL AND contribution_record.id IS NULL)
+          OR item.source_record_id = contribution_record.id
       )
 );
 
@@ -313,7 +364,7 @@ INSERT INTO transfer_structured_item (
 SELECT
     legacy.transfer_id,
     'need',
-    NULLIF(legacy.need_id, 0),
+    CASE WHEN need_record.id IS NULL THEN NULL ELSE legacy.need_id END,
     party.id,
     legacy.need_head,
     legacy.need_head,
@@ -322,7 +373,10 @@ SELECT
     legacy.date,
     legacy.date
 FROM transfer_item legacy
+JOIN transfer transfer_header ON transfer_header.id = legacy.transfer_id
 JOIN transfer_identity ti ON ti.transfer_id = legacy.transfer_id
+LEFT JOIN record need_record
+    ON need_record.id = NULLIF(legacy.need_id, 0)
 LEFT JOIN transfer_party party
     ON party.transfer_id = legacy.transfer_id
    AND party.role_hint = 'need'
@@ -332,8 +386,8 @@ WHERE NOT EXISTS (
     WHERE item.transfer_id = legacy.transfer_id
       AND item.role = 'need'
       AND (
-          (item.source_record_id IS NULL AND NULLIF(legacy.need_id, 0) IS NULL)
-          OR item.source_record_id = NULLIF(legacy.need_id, 0)
+          (item.source_record_id IS NULL AND need_record.id IS NULL)
+          OR item.source_record_id = need_record.id
       )
 );
 
@@ -363,6 +417,7 @@ SELECT
     legacy.date,
     legacy.date
 FROM transfer_item legacy
+JOIN transfer transfer_header ON transfer_header.id = legacy.transfer_id
 JOIN transfer_identity ti ON ti.transfer_id = legacy.transfer_id
 LEFT JOIN transfer_structured_item contribution_item
     ON contribution_item.transfer_id = legacy.transfer_id
@@ -406,6 +461,7 @@ SELECT
     legacy.date,
     legacy.date
 FROM transfer_item legacy
+JOIN transfer transfer_header ON transfer_header.id = legacy.transfer_id
 JOIN transfer_identity ti ON ti.transfer_id = legacy.transfer_id
 JOIN transfer_party party
     ON party.transfer_id = legacy.transfer_id
@@ -443,6 +499,7 @@ SELECT
     legacy.date,
     legacy.date
 FROM transfer_item legacy
+JOIN transfer transfer_header ON transfer_header.id = legacy.transfer_id
 JOIN transfer_identity ti ON ti.transfer_id = legacy.transfer_id
 JOIN transfer_party party
     ON party.transfer_id = legacy.transfer_id
@@ -461,6 +518,8 @@ WHERE legacy.second_agreement > 0
   );
 
 PRAGMA foreign_keys=OFF;
+
+DROP TABLE IF EXISTS transfer_event_rebuild;
 
 CREATE TABLE IF NOT EXISTS transfer_event_rebuild (
     id INTEGER PRIMARY KEY,
@@ -510,7 +569,11 @@ SELECT
     signature,
     CASE WHEN signature IS NULL OR actor_public_key IS NULL OR event_uid IS NULL THEN 'pending' ELSE 'valid' END,
     created_at
-FROM transfer_event;
+FROM transfer_event
+WHERE EXISTS (
+    SELECT 1 FROM transfer transfer_header
+    WHERE transfer_header.id = transfer_event.transfer_id
+);
 
 DROP TABLE transfer_event;
 ALTER TABLE transfer_event_rebuild RENAME TO transfer_event;

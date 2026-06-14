@@ -228,6 +228,14 @@ fn plan_table_diff(previous: &TableSchema, current: &TableSchema) -> Result<Vec<
                 statements.push(render_add_column(current.name.as_str(), current_column));
             }
             Some(previous_column) if *previous_column != current_column => {
+                if manual_migration_handles_column_change(
+                    current.name.as_str(),
+                    current_column.name.as_str(),
+                    previous_column,
+                    current_column,
+                ) {
+                    continue;
+                }
                 return Err(Error::other(format!(
                     "column `{}` changed in table `{}`; write a manual migration",
                     current_column.name, current.name
@@ -270,6 +278,15 @@ fn plan_table_diff(previous: &TableSchema, current: &TableSchema) -> Result<Vec<
     }
 
     Ok(statements)
+}
+
+fn manual_migration_handles_column_change(
+    table_name: &str,
+    column_name: &str,
+    _previous: &ColumnDef,
+    _current: &ColumnDef,
+) -> bool {
+    matches!((table_name, column_name), ("transfer_event", "event_kind"))
 }
 
 fn ensure_additive_column_is_safe(table_name: &str, column: &ColumnDef) -> Result<(), Error> {

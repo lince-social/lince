@@ -122,6 +122,11 @@ impl TransferWidgetService {
                 "settle-local",
                 "inactivate-transfer",
                 "delete-transfer",
+                "create-child-transfer",
+                "create-transfer-tree-from-record",
+                "sync-transfer-tree",
+                "set-transfer-branch-mode",
+                "set-transfer-tree-sync-mode",
                 "post-transfer",
                 "import-package",
                 "set-ingress-policy",
@@ -259,6 +264,31 @@ impl TransferWidgetService {
                     .map_err(TransferWidgetError::from_io)?;
                 "Transfer deleted from this node.".to_string()
             }
+            "create-child-transfer" => {
+                let request = parse_payload::<CreateChildTransferRequest>(payload)?;
+                let transfer_id = self.create_child_transfer(request).await?;
+                format!("Child Transfer #{transfer_id} created.")
+            }
+            "create-transfer-tree-from-record" => {
+                let request = parse_payload::<CreateTransferTreeFromRecordRequest>(payload)?;
+                let created = self.create_transfer_tree_from_record(request).await?;
+                format!("Transfer tree created with {created} Transfers.")
+            }
+            "sync-transfer-tree" => {
+                let request = parse_payload::<TransferIdRequest>(payload)?;
+                let created = self.sync_transfer_tree(request.transfer_id).await?;
+                format!("Transfer tree sync created {created} missing children.")
+            }
+            "set-transfer-branch-mode" => {
+                let request = parse_payload::<SetTransferBranchModeRequest>(payload)?;
+                self.set_transfer_branch_mode(request).await?;
+                "Transfer branch mode updated.".to_string()
+            }
+            "set-transfer-tree-sync-mode" => {
+                let request = parse_payload::<SetTransferTreeSyncModeRequest>(payload)?;
+                self.set_transfer_tree_sync_mode(request).await?;
+                "Transfer tree sync mode updated.".to_string()
+            }
             "post-transfer" => {
                 let request = parse_payload::<PostTransferRequest>(payload)?;
                 self.post_transfer_package(session_token, request).await?;
@@ -295,6 +325,11 @@ impl TransferWidgetService {
                 | "confirm-receipt"
                 | "settle-local"
                 | "inactivate-transfer"
+                | "create-child-transfer"
+                | "create-transfer-tree-from-record"
+                | "sync-transfer-tree"
+                | "set-transfer-branch-mode"
+                | "set-transfer-tree-sync-mode"
         ) {
             self.flush_transfer_sync_outbox()
                 .await
@@ -729,6 +764,20 @@ impl TransferWidgetService {
         self.insert_transfer_item(transfer_id, &contribution, &need, target_organ.as_ref())
             .await
             .map_err(TransferWidgetError::from_io)?;
+        if let Some(parent_transfer_id) = request.parent_transfer_id {
+            let parent = self
+                .load_transfer_summary(parent_transfer_id)
+                .await
+                .map_err(TransferWidgetError::from_io)?;
+            self.upsert_transfer_relation(
+                &transfer_uid,
+                TransferRelationType::Parent.as_str(),
+                &parent.transfer_uid,
+                None,
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        }
 
         let identity = self
             .load_transfer_identity_by_id(transfer_id)
@@ -764,6 +813,25 @@ impl TransferWidgetService {
         .map_err(TransferWidgetError::from_io)?;
 
         Ok(transfer_id)
+    }
+
+    async fn create_child_transfer(
+        &self,
+        request: CreateChildTransferRequest,
+    ) -> Result<i64, TransferWidgetError> {
+        self.load_transfer_summary(request.parent_transfer_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        self.create_proposal(CreateProposalRequest {
+            title: request.title,
+            role: request.role,
+            record_id: request.record_id,
+            quantity: request.quantity,
+            counterparty_label: request.counterparty_label,
+            target_organ_id: request.target_organ_id,
+            parent_transfer_id: Some(request.parent_transfer_id),
+        })
+        .await
     }
 
     async fn duplicate_proposal(
@@ -880,6 +948,14 @@ impl TransferWidgetService {
         self.insert_transfer_item(transfer_id, &contribution, &need, None)
             .await
             .map_err(TransferWidgetError::from_io)?;
+        self.upsert_transfer_relation(
+            &transfer_uid,
+            TransferRelationType::Parent.as_str(),
+            &source.transfer_uid,
+            None,
+        )
+        .await
+        .map_err(TransferWidgetError::from_io)?;
 
         let identity = self
             .load_transfer_identity_by_id(transfer_id)
@@ -1394,6 +1470,35 @@ impl TransferWidgetService {
                 transfer_id
             }
         };
+        for relation in &package.relations {
+            self.upsert_transfer_relation(
+                &relation.transfer_uid,
+                &relation.relation_type,
+                &relation.target_transfer_uid,
+                relation.position,
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        }
+        if let Some(config) = &package.tree_config {
+            self.upsert_transfer_tree_config(
+                &config.transfer_uid,
+                TransferBranchMode::parse_storage(&config.branch_mode)
+                    .unwrap_or(TransferBranchMode::Inherit),
+                TransferRecordSyncMode::parse_storage(&config.record_sync_mode)
+                    .unwrap_or(TransferRecordSyncMode::None),
+                config.source_record_id,
+                config.sync_enabled,
+                TransferSide::parse_storage(config.sync_role.as_deref()),
+                config.sync_quantity,
+                config.sync_counterparty_label.clone(),
+                config.sync_target_organ_id,
+                config.last_synced_record_head.clone(),
+                false,
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        }
 
         let mut events_imported = 0;
         for event in package.events {
@@ -1797,6 +1902,536 @@ impl TransferWidgetService {
         Ok(())
     }
 
+    async fn upsert_transfer_relation(
+        &self,
+        transfer_uid: &str,
+        relation_type: &str,
+        target_transfer_uid: &str,
+        position: Option<f64>,
+    ) -> Result<(), Error> {
+        if transfer_uid == target_transfer_uid {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "A Transfer cannot relate to itself",
+            ));
+        }
+        if relation_type == TransferRelationType::Parent.as_str()
+            && self
+                .would_create_parent_cycle(transfer_uid, target_transfer_uid)
+                .await?
+        {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "Transfer parent relation would create a cycle",
+            ));
+        }
+        self.services
+            .writer
+            .execute_statement(
+                "INSERT INTO transfer_relation(
+                    transfer_uid,
+                    relation_type,
+                    target_transfer_uid,
+                    position
+                ) VALUES (?, ?, ?, ?)
+                ON CONFLICT(transfer_uid, relation_type, target_transfer_uid)
+                DO UPDATE SET
+                    position = excluded.position,
+                    updated_at = CURRENT_TIMESTAMP"
+                    .to_string(),
+                vec![
+                    SqlParameter::Text(transfer_uid.to_string()),
+                    SqlParameter::Text(relation_type.to_string()),
+                    SqlParameter::Text(target_transfer_uid.to_string()),
+                    optional_f64_parameter(position),
+                ],
+            )
+            .await?;
+        Ok(())
+    }
+
+    async fn would_create_parent_cycle(
+        &self,
+        child_uid: &str,
+        parent_uid: &str,
+    ) -> Result<bool, Error> {
+        let mut current = Some(parent_uid.to_string());
+        let mut seen = std::collections::BTreeSet::new();
+        while let Some(uid) = current {
+            if uid == child_uid {
+                return Ok(true);
+            }
+            if !seen.insert(uid.clone()) {
+                return Ok(true);
+            }
+            current = sqlx::query_scalar::<_, String>(
+                "SELECT target_transfer_uid
+                 FROM transfer_relation
+                 WHERE transfer_uid = ?
+                   AND relation_type = 'parent'
+                 LIMIT 1",
+            )
+            .bind(uid)
+            .fetch_optional(&*self.services.db)
+            .await
+            .map_err(Error::other)?;
+        }
+        Ok(false)
+    }
+
+    async fn upsert_transfer_tree_config(
+        &self,
+        transfer_uid: &str,
+        branch_mode: TransferBranchMode,
+        record_sync_mode: TransferRecordSyncMode,
+        source_record_id: Option<i64>,
+        sync_enabled: bool,
+        sync_role: Option<TransferSide>,
+        sync_quantity: Option<f64>,
+        sync_counterparty_label: Option<String>,
+        sync_target_organ_id: Option<i64>,
+        last_synced_record_head: Option<String>,
+        mark_synced: bool,
+    ) -> Result<(), Error> {
+        self.services
+            .writer
+            .execute_statement(
+                "INSERT INTO transfer_tree_config(
+                    transfer_uid,
+                    branch_mode,
+                    record_sync_mode,
+                    source_record_id,
+                    sync_role,
+                    sync_quantity,
+                    sync_counterparty_label,
+                    sync_target_organ_id,
+                    last_synced_record_head,
+                    sync_enabled,
+                    last_synced_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CASE WHEN ? THEN CURRENT_TIMESTAMP ELSE NULL END)
+                ON CONFLICT(transfer_uid)
+                DO UPDATE SET
+                    branch_mode = excluded.branch_mode,
+                    record_sync_mode = excluded.record_sync_mode,
+                    source_record_id = COALESCE(excluded.source_record_id, transfer_tree_config.source_record_id),
+                    sync_role = COALESCE(excluded.sync_role, transfer_tree_config.sync_role),
+                    sync_quantity = COALESCE(excluded.sync_quantity, transfer_tree_config.sync_quantity),
+                    sync_counterparty_label = COALESCE(excluded.sync_counterparty_label, transfer_tree_config.sync_counterparty_label),
+                    sync_target_organ_id = COALESCE(excluded.sync_target_organ_id, transfer_tree_config.sync_target_organ_id),
+                    last_synced_record_head = COALESCE(excluded.last_synced_record_head, transfer_tree_config.last_synced_record_head),
+                    sync_enabled = excluded.sync_enabled,
+                    last_synced_at = CASE
+                        WHEN ? THEN CURRENT_TIMESTAMP
+                        ELSE transfer_tree_config.last_synced_at
+                    END,
+                    updated_at = CURRENT_TIMESTAMP"
+                    .to_string(),
+                vec![
+                    SqlParameter::Text(transfer_uid.to_string()),
+                    SqlParameter::Text(branch_mode.as_str().to_string()),
+                    SqlParameter::Text(record_sync_mode.as_str().to_string()),
+                    optional_i64_parameter(source_record_id),
+                    optional_text_parameter(sync_role.map(|role| role.as_str().to_string())),
+                    optional_f64_parameter(sync_quantity),
+                    optional_text_parameter(sync_counterparty_label),
+                    optional_i64_parameter(sync_target_organ_id),
+                    optional_text_parameter(last_synced_record_head),
+                    SqlParameter::Integer(if sync_enabled { 1 } else { 0 }),
+                    SqlParameter::Integer(if mark_synced { 1 } else { 0 }),
+                    SqlParameter::Integer(if mark_synced { 1 } else { 0 }),
+                ],
+            )
+            .await?;
+        Ok(())
+    }
+
+    async fn set_transfer_branch_mode(
+        &self,
+        request: SetTransferBranchModeRequest,
+    ) -> Result<(), TransferWidgetError> {
+        let transfer = self
+            .load_transfer_summary(request.transfer_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        let mode = TransferBranchMode::parse(&request.branch_mode)?;
+        let existing = self
+            .load_transfer_tree_config(&transfer.transfer_uid)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        self.upsert_transfer_tree_config(
+            &transfer.transfer_uid,
+            mode,
+            existing
+                .as_ref()
+                .and_then(|config| TransferRecordSyncMode::parse_storage(&config.record_sync_mode))
+                .unwrap_or(TransferRecordSyncMode::None),
+            existing.as_ref().and_then(|config| config.source_record_id),
+            existing
+                .as_ref()
+                .is_some_and(|config| config.sync_enabled != 0),
+            existing
+                .as_ref()
+                .and_then(|config| TransferSide::parse_storage(config.sync_role.as_deref())),
+            existing.as_ref().and_then(|config| config.sync_quantity),
+            existing
+                .as_ref()
+                .and_then(|config| config.sync_counterparty_label.clone()),
+            existing
+                .as_ref()
+                .and_then(|config| config.sync_target_organ_id),
+            existing
+                .as_ref()
+                .and_then(|config| config.last_synced_record_head.clone()),
+            false,
+        )
+        .await
+        .map_err(TransferWidgetError::from_io)
+    }
+
+    async fn set_transfer_tree_sync_mode(
+        &self,
+        request: SetTransferTreeSyncModeRequest,
+    ) -> Result<(), TransferWidgetError> {
+        let transfer = self
+            .load_transfer_summary(request.transfer_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        let mode = TransferRecordSyncMode::parse(&request.record_sync_mode)?;
+        let existing = self
+            .load_transfer_tree_config(&transfer.transfer_uid)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        self.upsert_transfer_tree_config(
+            &transfer.transfer_uid,
+            existing
+                .as_ref()
+                .and_then(|config| TransferBranchMode::parse_storage(&config.branch_mode))
+                .unwrap_or(TransferBranchMode::Inherit),
+            mode,
+            existing.as_ref().and_then(|config| config.source_record_id),
+            mode == TransferRecordSyncMode::Live,
+            existing
+                .as_ref()
+                .and_then(|config| TransferSide::parse_storage(config.sync_role.as_deref())),
+            existing.as_ref().and_then(|config| config.sync_quantity),
+            existing
+                .as_ref()
+                .and_then(|config| config.sync_counterparty_label.clone()),
+            existing
+                .as_ref()
+                .and_then(|config| config.sync_target_organ_id),
+            existing
+                .as_ref()
+                .and_then(|config| config.last_synced_record_head.clone()),
+            false,
+        )
+        .await
+        .map_err(TransferWidgetError::from_io)
+    }
+
+    async fn create_transfer_tree_from_record(
+        &self,
+        request: CreateTransferTreeFromRecordRequest,
+    ) -> Result<usize, TransferWidgetError> {
+        self.load_transfer_summary(request.parent_transfer_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        let sync_mode = TransferRecordSyncMode::parse(&request.record_sync_mode)?;
+        let created = self
+            .create_transfer_tree_node(
+                request.parent_transfer_id,
+                request.root_record_id,
+                request.role,
+                request.quantity,
+                request.counterparty_label,
+                request.target_organ_id,
+                sync_mode,
+            )
+            .await?;
+        Ok(created)
+    }
+
+    async fn create_transfer_tree_node(
+        &self,
+        parent_transfer_id: i64,
+        record_id: i64,
+        role: TransferSide,
+        quantity: f64,
+        counterparty_label: String,
+        target_organ_id: Option<i64>,
+        sync_mode: TransferRecordSyncMode,
+    ) -> Result<usize, TransferWidgetError> {
+        let record = self
+            .load_record_by_id(record_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        let title = record
+            .head
+            .clone()
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or_else(|| format!("Record #{}", record.id));
+        let transfer_id = self
+            .create_child_transfer(CreateChildTransferRequest {
+                parent_transfer_id,
+                title,
+                role,
+                record_id,
+                quantity,
+                counterparty_label: counterparty_label.clone(),
+                target_organ_id,
+            })
+            .await?;
+        let transfer = self
+            .load_transfer_summary(transfer_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        self.upsert_transfer_tree_config(
+            &transfer.transfer_uid,
+            TransferBranchMode::Inherit,
+            sync_mode,
+            Some(record_id),
+            sync_mode == TransferRecordSyncMode::Live,
+            Some(role),
+            Some(quantity),
+            Some(counterparty_label.clone()),
+            target_organ_id,
+            record.head.clone(),
+            true,
+        )
+        .await
+        .map_err(TransferWidgetError::from_io)?;
+
+        let mut created = 1;
+        for child_record_id in self
+            .load_child_record_ids(record_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?
+        {
+            created += Box::pin(self.create_transfer_tree_node(
+                transfer_id,
+                child_record_id,
+                role,
+                quantity,
+                counterparty_label.clone(),
+                target_organ_id,
+                sync_mode,
+            ))
+            .await?;
+        }
+        Ok(created)
+    }
+
+    async fn sync_transfer_tree(&self, transfer_id: i64) -> Result<usize, TransferWidgetError> {
+        let transfer = self
+            .load_transfer_summary(transfer_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        let Some(config) = self
+            .load_transfer_tree_config(&transfer.transfer_uid)
+            .await
+            .map_err(TransferWidgetError::from_io)?
+        else {
+            return Err(TransferWidgetError::Invalid(
+                "This Transfer was not created from a Record tree.".into(),
+            ));
+        };
+        if config.record_sync_mode != TransferRecordSyncMode::Live.as_str()
+            || config.sync_enabled == 0
+        {
+            return Ok(0);
+        }
+        let Some(source_record_id) = config.source_record_id else {
+            return Ok(0);
+        };
+        self.sync_transfer_title_from_record(&transfer, &config)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+
+        let children = self
+            .load_child_record_ids(source_record_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        let existing_child_source_ids = self
+            .load_child_transfer_source_record_ids(&transfer.transfer_uid)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        let mut created = 0;
+        for child_record_id in children {
+            if existing_child_source_ids.contains(&child_record_id) {
+                continue;
+            }
+            let role = TransferSide::parse_storage(config.sync_role.as_deref())
+                .unwrap_or(TransferSide::Need);
+            let quantity = config.sync_quantity.unwrap_or(1.0);
+            let counterparty_label = config
+                .sync_counterparty_label
+                .clone()
+                .unwrap_or_else(|| transfer.counterparty_label.clone());
+            created += self
+                .create_transfer_tree_node(
+                    transfer_id,
+                    child_record_id,
+                    role,
+                    quantity,
+                    counterparty_label,
+                    config.sync_target_organ_id.or(transfer.target_organ_id),
+                    TransferRecordSyncMode::Live,
+                )
+                .await?;
+        }
+        for child_transfer_id in self
+            .load_child_transfer_ids(&transfer.transfer_uid)
+            .await
+            .map_err(TransferWidgetError::from_io)?
+        {
+            created += Box::pin(self.sync_transfer_tree(child_transfer_id)).await?;
+        }
+        self.upsert_transfer_tree_config(
+            &transfer.transfer_uid,
+            TransferBranchMode::parse_storage(
+                self.load_transfer_tree_config(&transfer.transfer_uid)
+                    .await
+                    .map_err(TransferWidgetError::from_io)?
+                    .as_ref()
+                    .map(|config| config.branch_mode.as_str())
+                    .unwrap_or(TransferBranchMode::Inherit.as_str()),
+            )
+            .unwrap_or(TransferBranchMode::Inherit),
+            TransferRecordSyncMode::Live,
+            Some(source_record_id),
+            true,
+            TransferSide::parse_storage(config.sync_role.as_deref()),
+            config.sync_quantity,
+            config.sync_counterparty_label.clone(),
+            config.sync_target_organ_id,
+            config.last_synced_record_head.clone(),
+            true,
+        )
+        .await
+        .map_err(TransferWidgetError::from_io)?;
+        Ok(created)
+    }
+
+    async fn sync_transfer_title_from_record(
+        &self,
+        transfer: &TransferSummaryRow,
+        config: &TransferTreeConfigRow,
+    ) -> Result<(), Error> {
+        let Some(record_id) = config.source_record_id else {
+            return Ok(());
+        };
+        let record = self.load_record_by_id(record_id).await?;
+        let next_head = record
+            .head
+            .clone()
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or_else(|| format!("Record #{}", record.id));
+        let should_update = config
+            .last_synced_record_head
+            .as_deref()
+            .is_none_or(|last| transfer.title == last);
+        if should_update && transfer.title != next_head {
+            self.services
+                .writer
+                .execute_statement(
+                    "UPDATE transfer_identity
+                     SET title = ?, updated_at = CURRENT_TIMESTAMP
+                     WHERE transfer_id = ?"
+                        .to_string(),
+                    vec![
+                        SqlParameter::Text(next_head.clone()),
+                        SqlParameter::Integer(transfer.id),
+                    ],
+                )
+                .await?;
+            if let Some(role) = TransferSide::parse_storage(config.sync_role.as_deref()) {
+                let column = match role {
+                    TransferSide::Contribution => "contribution_head",
+                    TransferSide::Need => "need_head",
+                };
+                self.services
+                    .writer
+                    .execute_statement(
+                        format!(
+                            "UPDATE transfer_item
+                             SET {column} = ?
+                             WHERE transfer_id = ?"
+                        ),
+                        vec![
+                            SqlParameter::Text(next_head.clone()),
+                            SqlParameter::Integer(transfer.id),
+                        ],
+                    )
+                    .await?;
+            }
+        }
+        self.services
+            .writer
+            .execute_statement(
+                "UPDATE transfer_tree_config
+                 SET last_synced_record_head = ?,
+                     last_synced_at = CURRENT_TIMESTAMP,
+                     updated_at = CURRENT_TIMESTAMP
+                 WHERE transfer_uid = ?"
+                    .to_string(),
+                vec![
+                    SqlParameter::Text(next_head),
+                    SqlParameter::Text(transfer.transfer_uid.clone()),
+                ],
+            )
+            .await?;
+        Ok(())
+    }
+
+    async fn load_child_record_ids(&self, record_id: i64) -> Result<Vec<i64>, Error> {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT record_id
+             FROM record_link
+             WHERE link_type = 'parent'
+               AND target_table = 'record'
+               AND target_id = ?
+             ORDER BY COALESCE(position, id), id",
+        )
+        .bind(record_id)
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(Error::other)
+    }
+
+    async fn load_child_transfer_source_record_ids(
+        &self,
+        parent_transfer_uid: &str,
+    ) -> Result<std::collections::BTreeSet<i64>, Error> {
+        let values = sqlx::query_scalar::<_, i64>(
+            "SELECT config.source_record_id
+             FROM transfer_relation rel
+             JOIN transfer_tree_config config ON config.transfer_uid = rel.transfer_uid
+             WHERE rel.relation_type = 'parent'
+               AND rel.target_transfer_uid = ?
+               AND config.source_record_id IS NOT NULL",
+        )
+        .bind(parent_transfer_uid)
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(Error::other)?;
+        Ok(values.into_iter().collect())
+    }
+
+    async fn load_child_transfer_ids(&self, parent_transfer_uid: &str) -> Result<Vec<i64>, Error> {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT ident.transfer_id
+             FROM transfer_relation rel
+             JOIN transfer_identity ident ON ident.transfer_uid = rel.transfer_uid
+             WHERE rel.relation_type = 'parent'
+               AND rel.target_transfer_uid = ?
+             ORDER BY COALESCE(rel.position, rel.id), rel.id",
+        )
+        .bind(parent_transfer_uid)
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(Error::other)
+    }
+
     async fn load_transfer_identity_by_id(
         &self,
         transfer_id: i64,
@@ -1837,6 +2472,12 @@ impl TransferWidgetService {
         .fetch_all(&*self.services.db)
         .await
         .map_err(Error::other)?;
+        let relations = self.load_transfer_relations().await?;
+        let configs = self.load_transfer_tree_configs().await?;
+        let transfer_lookup = transfers
+            .iter()
+            .map(|transfer| (transfer.transfer_uid.clone(), transfer.id))
+            .collect::<std::collections::BTreeMap<_, _>>();
         let mut views = Vec::with_capacity(transfers.len());
         for transfer in transfers {
             let events = self.load_transfer_events(transfer.id).await?;
@@ -1847,10 +2488,113 @@ impl TransferWidgetService {
                 events,
                 cursors,
                 settlements,
+                &relations,
+                &configs,
+                &transfer_lookup,
                 local_identity,
             ));
         }
         Ok(views)
+    }
+
+    async fn load_transfer_relations(&self) -> Result<Vec<TransferRelationRow>, Error> {
+        sqlx::query_as::<_, TransferRelationRow>(
+            "SELECT
+                id,
+                transfer_uid,
+                relation_type,
+                target_transfer_uid,
+                position,
+                created_at,
+                updated_at
+             FROM transfer_relation
+             ORDER BY COALESCE(position, id), id",
+        )
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(Error::other)
+    }
+
+    async fn load_transfer_package_relations(
+        &self,
+        transfer_uid: &str,
+    ) -> Result<Vec<TransferRelationPackage>, Error> {
+        let rows = sqlx::query_as::<_, TransferRelationRow>(
+            "SELECT
+                id,
+                transfer_uid,
+                relation_type,
+                target_transfer_uid,
+                position,
+                created_at,
+                updated_at
+             FROM transfer_relation
+             WHERE transfer_uid = ? OR target_transfer_uid = ?
+             ORDER BY COALESCE(position, id), id",
+        )
+        .bind(transfer_uid)
+        .bind(transfer_uid)
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(Error::other)?;
+        Ok(rows
+            .into_iter()
+            .map(TransferRelationPackage::from)
+            .collect())
+    }
+
+    async fn load_transfer_tree_configs(&self) -> Result<Vec<TransferTreeConfigRow>, Error> {
+        sqlx::query_as::<_, TransferTreeConfigRow>(
+            "SELECT
+                id,
+                transfer_uid,
+                branch_mode,
+                record_sync_mode,
+                source_record_id,
+                sync_role,
+                sync_quantity,
+                sync_counterparty_label,
+                sync_target_organ_id,
+                last_synced_record_head,
+                sync_enabled,
+                last_synced_at,
+                created_at,
+                updated_at
+             FROM transfer_tree_config",
+        )
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(Error::other)
+    }
+
+    async fn load_transfer_tree_config(
+        &self,
+        transfer_uid: &str,
+    ) -> Result<Option<TransferTreeConfigRow>, Error> {
+        sqlx::query_as::<_, TransferTreeConfigRow>(
+            "SELECT
+                id,
+                transfer_uid,
+                branch_mode,
+                record_sync_mode,
+                source_record_id,
+                sync_role,
+                sync_quantity,
+                sync_counterparty_label,
+                sync_target_organ_id,
+                last_synced_record_head,
+                sync_enabled,
+                last_synced_at,
+                created_at,
+                updated_at
+             FROM transfer_tree_config
+             WHERE transfer_uid = ?
+             LIMIT 1",
+        )
+        .bind(transfer_uid)
+        .fetch_optional(&*self.services.db)
+        .await
+        .map_err(Error::other)
     }
 
     async fn build_transfer_package(&self, transfer_id: i64) -> Result<TransferPackage, Error> {
@@ -1860,6 +2604,13 @@ impl TransferWidgetService {
             version: PACKAGE_VERSION,
             identity: TransferIdentityPackage::from(&transfer),
             item: TransferItemPackage::from(&transfer),
+            relations: self
+                .load_transfer_package_relations(&transfer.transfer_uid)
+                .await?,
+            tree_config: self
+                .load_transfer_tree_config(&transfer.transfer_uid)
+                .await?
+                .map(TransferTreeConfigPackage::from),
             events: events.into_iter().map(TransferEventPackage::from).collect(),
         })
     }
@@ -2169,6 +2920,11 @@ impl TransferWidgetService {
     }
 
     async fn delete_transfer(&self, transfer_id: i64) -> Result<(), Error> {
+        let transfer_uid = self
+            .load_transfer_summary(transfer_id)
+            .await
+            .ok()
+            .map(|transfer| transfer.transfer_uid);
         let outcome = self
             .services
             .writer
@@ -2187,6 +2943,27 @@ impl TransferWidgetService {
             .await?;
         if outcome.rows_affected == 0 && transfer_outcome.rows_affected == 0 {
             return Err(Error::new(ErrorKind::NotFound, "Transfer not found"));
+        }
+        if let Some(transfer_uid) = transfer_uid {
+            self.services
+                .writer
+                .execute_statement(
+                    "DELETE FROM transfer_relation
+                     WHERE transfer_uid = ? OR target_transfer_uid = ?"
+                        .to_string(),
+                    vec![
+                        SqlParameter::Text(transfer_uid.clone()),
+                        SqlParameter::Text(transfer_uid.clone()),
+                    ],
+                )
+                .await?;
+            self.services
+                .writer
+                .execute_statement(
+                    "DELETE FROM transfer_tree_config WHERE transfer_uid = ?".to_string(),
+                    vec![SqlParameter::Text(transfer_uid)],
+                )
+                .await?;
         }
         Ok(())
     }
@@ -2668,6 +3445,14 @@ enum TransferSide {
 }
 
 impl TransferSide {
+    fn parse_storage(value: Option<&str>) -> Option<Self> {
+        match value {
+            Some("contribution") => Some(Self::Contribution),
+            Some("need") => Some(Self::Need),
+            _ => None,
+        }
+    }
+
     fn as_str(self) -> &'static str {
         match self {
             Self::Contribution => "contribution",
@@ -2696,6 +3481,81 @@ impl TransferState {
             Self::PublicProposal => "public_proposal",
             Self::Negotiation => "negotiation",
             Self::Inactive => "inactive",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum TransferRelationType {
+    Parent,
+}
+
+impl TransferRelationType {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Parent => "parent",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum TransferBranchMode {
+    Inherit,
+    Duplicated,
+    Greedy,
+}
+
+impl TransferBranchMode {
+    fn parse(value: &str) -> Result<Self, TransferWidgetError> {
+        Self::parse_storage(value)
+            .ok_or_else(|| TransferWidgetError::Invalid("Unknown Transfer branch mode.".into()))
+    }
+
+    fn parse_storage(value: &str) -> Option<Self> {
+        match value {
+            "inherit" => Some(Self::Inherit),
+            "duplicated" => Some(Self::Duplicated),
+            "greedy" => Some(Self::Greedy),
+            _ => None,
+        }
+    }
+
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Inherit => "inherit",
+            Self::Duplicated => "duplicated",
+            Self::Greedy => "greedy",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum TransferRecordSyncMode {
+    None,
+    CopyOnce,
+    Live,
+}
+
+impl TransferRecordSyncMode {
+    fn parse(value: &str) -> Result<Self, TransferWidgetError> {
+        Self::parse_storage(value)
+            .ok_or_else(|| TransferWidgetError::Invalid("Unknown Transfer tree sync mode.".into()))
+    }
+
+    fn parse_storage(value: &str) -> Option<Self> {
+        match value {
+            "none" => Some(Self::None),
+            "copy_once" => Some(Self::CopyOnce),
+            "live" => Some(Self::Live),
+            _ => None,
+        }
+    }
+
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::CopyOnce => "copy_once",
+            Self::Live => "live",
         }
     }
 }
@@ -2749,6 +3609,45 @@ struct CreateProposalRequest {
     quantity: f64,
     counterparty_label: String,
     target_organ_id: Option<i64>,
+    parent_transfer_id: Option<i64>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateChildTransferRequest {
+    parent_transfer_id: i64,
+    title: String,
+    role: TransferSide,
+    record_id: i64,
+    quantity: f64,
+    counterparty_label: String,
+    target_organ_id: Option<i64>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateTransferTreeFromRecordRequest {
+    parent_transfer_id: i64,
+    root_record_id: i64,
+    role: TransferSide,
+    quantity: f64,
+    counterparty_label: String,
+    target_organ_id: Option<i64>,
+    record_sync_mode: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SetTransferBranchModeRequest {
+    transfer_id: i64,
+    branch_mode: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SetTransferTreeSyncModeRequest {
+    transfer_id: i64,
+    record_sync_mode: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -3075,6 +3974,49 @@ struct SettlementRow {
     settled_at: String,
 }
 
+#[derive(Debug, Clone, Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
+struct TransferRelationRow {
+    id: i64,
+    transfer_uid: String,
+    relation_type: String,
+    target_transfer_uid: String,
+    position: Option<f64>,
+    created_at: String,
+    updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
+struct TransferTreeConfigRow {
+    id: i64,
+    transfer_uid: String,
+    branch_mode: String,
+    record_sync_mode: String,
+    source_record_id: Option<i64>,
+    sync_role: Option<String>,
+    sync_quantity: Option<f64>,
+    sync_counterparty_label: Option<String>,
+    sync_target_organ_id: Option<i64>,
+    last_synced_record_head: Option<String>,
+    sync_enabled: i64,
+    last_synced_at: Option<String>,
+    created_at: String,
+    updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TransferTreeView {
+    parent_uid: Option<String>,
+    parent_id: Option<i64>,
+    child_uids: Vec<String>,
+    child_ids: Vec<i64>,
+    relations: Vec<TransferRelationRow>,
+    config: Option<TransferTreeConfigRow>,
+    effective_branch_mode: String,
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct TransferView {
@@ -3098,6 +4040,7 @@ struct TransferView {
     need: TransferSideView,
     agreement: AgreementView,
     confirmations: ConfirmationView,
+    tree: TransferTreeView,
     controls: ControlView,
     events: Vec<EventView>,
     sync_cursors: Vec<CursorRow>,
@@ -3113,6 +4056,9 @@ impl TransferView {
         events: Vec<EventRow>,
         cursors: Vec<CursorRow>,
         settlements: Vec<SettlementRow>,
+        relations: &[TransferRelationRow],
+        configs: &[TransferTreeConfigRow],
+        transfer_lookup: &std::collections::BTreeMap<String, i64>,
         local_identity: Option<&LocalIdentityRow>,
     ) -> Self {
         let local_role = local_role_for(&transfer, local_identity);
@@ -3180,10 +4126,19 @@ impl TransferView {
             && !local_settled;
         let can_inactivate = local_role.is_some() && !inactive;
         let event_views = events.iter().map(EventView::from).collect::<Vec<_>>();
+        let tree =
+            build_transfer_tree_view(&transfer.transfer_uid, relations, configs, transfer_lookup);
         let package = TransferPackage {
             version: PACKAGE_VERSION,
             identity: TransferIdentityPackage::from(&transfer),
             item: TransferItemPackage::from(&transfer),
+            relations: tree
+                .relations
+                .iter()
+                .cloned()
+                .map(TransferRelationPackage::from)
+                .collect(),
+            tree_config: tree.config.clone().map(TransferTreeConfigPackage::from),
             events: events.into_iter().map(TransferEventPackage::from).collect(),
         };
 
@@ -3226,6 +4181,7 @@ impl TransferView {
                 delivery: delivery_confirmed,
                 receipt: receipt_confirmed,
             },
+            tree,
             controls: ControlView {
                 can_duplicate,
                 can_sign_agreement,
@@ -3321,6 +4277,10 @@ struct TransferPackage {
     version: u32,
     identity: TransferIdentityPackage,
     item: TransferItemPackage,
+    #[serde(default)]
+    relations: Vec<TransferRelationPackage>,
+    #[serde(default)]
+    tree_config: Option<TransferTreeConfigPackage>,
     events: Vec<TransferEventPackage>,
 }
 
@@ -3364,6 +4324,63 @@ impl From<&TransferSummaryRow> for TransferIdentityPackage {
             target_organ_name: row.target_organ_name.clone(),
             target_base_url: row.target_base_url.clone(),
             source_base_url: row.source_base_url.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct TransferRelationPackage {
+    transfer_uid: String,
+    relation_type: String,
+    target_transfer_uid: String,
+    position: Option<f64>,
+}
+
+impl From<TransferRelationRow> for TransferRelationPackage {
+    fn from(row: TransferRelationRow) -> Self {
+        Self {
+            transfer_uid: row.transfer_uid,
+            relation_type: row.relation_type,
+            target_transfer_uid: row.target_transfer_uid,
+            position: row.position,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct TransferTreeConfigPackage {
+    transfer_uid: String,
+    branch_mode: String,
+    record_sync_mode: String,
+    source_record_id: Option<i64>,
+    #[serde(default)]
+    sync_role: Option<String>,
+    #[serde(default)]
+    sync_quantity: Option<f64>,
+    #[serde(default)]
+    sync_counterparty_label: Option<String>,
+    #[serde(default)]
+    sync_target_organ_id: Option<i64>,
+    #[serde(default)]
+    last_synced_record_head: Option<String>,
+    sync_enabled: bool,
+}
+
+impl From<TransferTreeConfigRow> for TransferTreeConfigPackage {
+    fn from(row: TransferTreeConfigRow) -> Self {
+        Self {
+            transfer_uid: row.transfer_uid,
+            branch_mode: row.branch_mode,
+            record_sync_mode: row.record_sync_mode,
+            source_record_id: row.source_record_id,
+            sync_role: row.sync_role,
+            sync_quantity: row.sync_quantity,
+            sync_counterparty_label: row.sync_counterparty_label,
+            sync_target_organ_id: row.sync_target_organ_id,
+            last_synced_record_head: row.last_synced_record_head,
+            sync_enabled: row.sync_enabled != 0,
         }
     }
 }
@@ -3613,6 +4630,10 @@ fn optional_i64_parameter(value: Option<i64>) -> SqlParameter {
         .unwrap_or(SqlParameter::Null)
 }
 
+fn optional_f64_parameter(value: Option<f64>) -> SqlParameter {
+    value.map(SqlParameter::Real).unwrap_or(SqlParameter::Null)
+}
+
 fn transfer_sync_cache_path() -> Result<PathBuf, Error> {
     let dir = utils::config::lince_data_dir()
         .ok_or_else(|| Error::other("Unable to resolve Lince data directory"))?;
@@ -3779,6 +4800,30 @@ fn validate_package(package: &TransferPackage) -> Result<(), TransferWidgetError
         return Err(TransferWidgetError::Invalid(
             "Transfer package has no signed events.".into(),
         ));
+    }
+    for relation in &package.relations {
+        if relation.transfer_uid.trim().is_empty()
+            || relation.target_transfer_uid.trim().is_empty()
+            || !matches!(relation.relation_type.as_str(), "parent" | "depends_on")
+        {
+            return Err(TransferWidgetError::Invalid(
+                "Transfer package has an invalid relation.".into(),
+            ));
+        }
+    }
+    if let Some(config) = &package.tree_config {
+        if config.transfer_uid.trim().is_empty()
+            || TransferBranchMode::parse_storage(&config.branch_mode).is_none()
+            || TransferRecordSyncMode::parse_storage(&config.record_sync_mode).is_none()
+            || config
+                .sync_role
+                .as_deref()
+                .is_some_and(|role| TransferSide::parse_storage(Some(role)).is_none())
+        {
+            return Err(TransferWidgetError::Invalid(
+                "Transfer package has an invalid tree config.".into(),
+            ));
+        }
     }
 
     for event in &package.events {
@@ -3986,6 +5031,84 @@ fn local_role_for(
 
 fn agreements_complete(transfer: &TransferSummaryRow) -> bool {
     transfer.first_agreement >= 2 && transfer.second_agreement >= 2
+}
+
+fn build_transfer_tree_view(
+    transfer_uid: &str,
+    relations: &[TransferRelationRow],
+    configs: &[TransferTreeConfigRow],
+    transfer_lookup: &std::collections::BTreeMap<String, i64>,
+) -> TransferTreeView {
+    let parent_uid = relations
+        .iter()
+        .find(|relation| {
+            relation.transfer_uid == transfer_uid
+                && relation.relation_type == TransferRelationType::Parent.as_str()
+        })
+        .map(|relation| relation.target_transfer_uid.clone());
+    let parent_id = parent_uid
+        .as_ref()
+        .and_then(|uid| transfer_lookup.get(uid).copied());
+    let child_uids = relations
+        .iter()
+        .filter(|relation| {
+            relation.target_transfer_uid == transfer_uid
+                && relation.relation_type == TransferRelationType::Parent.as_str()
+        })
+        .map(|relation| relation.transfer_uid.clone())
+        .collect::<Vec<_>>();
+    let child_ids = child_uids
+        .iter()
+        .filter_map(|uid| transfer_lookup.get(uid).copied())
+        .collect::<Vec<_>>();
+    let direct_relations = relations
+        .iter()
+        .filter(|relation| {
+            relation.transfer_uid == transfer_uid || relation.target_transfer_uid == transfer_uid
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+    let config = configs
+        .iter()
+        .find(|config| config.transfer_uid == transfer_uid)
+        .cloned();
+    let effective_branch_mode = resolve_effective_branch_mode(transfer_uid, relations, configs);
+    TransferTreeView {
+        parent_uid,
+        parent_id,
+        child_uids,
+        child_ids,
+        relations: direct_relations,
+        config,
+        effective_branch_mode,
+    }
+}
+
+fn resolve_effective_branch_mode(
+    transfer_uid: &str,
+    relations: &[TransferRelationRow],
+    configs: &[TransferTreeConfigRow],
+) -> String {
+    let mut current = Some(transfer_uid.to_string());
+    let mut seen = std::collections::BTreeSet::new();
+    while let Some(uid) = current {
+        if !seen.insert(uid.clone()) {
+            break;
+        }
+        if let Some(config) = configs.iter().find(|config| config.transfer_uid == uid)
+            && config.branch_mode != TransferBranchMode::Inherit.as_str()
+        {
+            return config.branch_mode.clone();
+        }
+        current = relations
+            .iter()
+            .find(|relation| {
+                relation.transfer_uid == uid
+                    && relation.relation_type == TransferRelationType::Parent.as_str()
+            })
+            .map(|relation| relation.target_transfer_uid.clone());
+    }
+    TransferBranchMode::Duplicated.as_str().to_string()
 }
 
 fn transfer_summary_sql(tail: &str) -> String {

@@ -169,6 +169,16 @@ pub(super) fn script() -> String {
     ].some((value) => String(value || "").toLowerCase().includes(query)));
   }
 
+  function transferDepth(transfer, seen = new Set()) {
+    const uid = String(transfer?.transferUid || "");
+    if (!uid || seen.has(uid)) return 0;
+    seen.add(uid);
+    const parentUid = transfer?.tree?.parentUid;
+    if (!parentUid) return 0;
+    const parent = snapshot.transfers.find((item) => String(item.transferUid) === String(parentUid));
+    return parent ? 1 + transferDepth(parent, seen) : 1;
+  }
+
   function selectedTransfer() {
     const transfers = visibleTransfers();
     if (!selectedTransferId && transfers.length) {
@@ -374,10 +384,13 @@ pub(super) fn script() -> String {
     }
     transferList.innerHTML = transfers.map((transfer) => {
       const active = Number(transfer.id) === Number(selectedTransferId);
+      const depth = Math.min(transferDepth(transfer), 8);
+      const childCount = Number(transfer.tree?.childIds?.length || 0);
       return `
-        <button type="button" class="transferRow" data-transfer-id="${escapeHtml(transfer.id)}" data-active="${active ? "true" : "false"}" data-keep-enabled="true">
+        <button type="button" class="transferRow" data-transfer-id="${escapeHtml(transfer.id)}" data-active="${active ? "true" : "false"}" data-keep-enabled="true" style="padding-left: ${12 + depth * 16}px">
           <span class="transferTitle">${escapeHtml(transfer.title || "Transfer")}</span>
           <span class="meta">#${escapeHtml(transfer.id)} ${escapeHtml(shortKey(transfer.transferUid))}</span>
+          <span class="meta">${escapeHtml(childCount ? childCount + " children" : transfer.tree?.parentUid ? "child" : "root")}</span>
           <span class="meta">updated ${escapeHtml(transfer.updatedAt || "")}</span>
           <span class="chips">${transferChips(transfer)}</span>
         </button>
@@ -580,6 +593,9 @@ pub(super) fn script() -> String {
     }
     const controls = transfer.controls || {};
     const packageText = JSON.stringify(transfer.package || {}, null, 2);
+    const treeConfig = transfer.tree?.config || {};
+    const branchMode = treeConfig.branchMode || "inherit";
+    const syncMode = treeConfig.recordSyncMode || "none";
     transferDetail.dataset.inactive = transfer.status === "inactive" ? "true" : "false";
     transferDetail.innerHTML = `
       <div class="transferHero">
@@ -596,6 +612,58 @@ pub(super) fn script() -> String {
       <div class="transferParties">
         ${partySection(transfer, "need", transfer.need || {})}
         ${partySection(transfer, "contribution", transfer.contribution || {})}
+      </div>
+
+      <div class="actionGrid">
+        <div class="actionBox">
+          <div class="actionTitle">Transfer tree</div>
+          <div class="meta">parent ${escapeHtml(transfer.tree?.parentId ? "#" + transfer.tree.parentId : "none")} / children ${escapeHtml(String(transfer.tree?.childIds?.length || 0))} / effective ${escapeHtml(transfer.tree?.effectiveBranchMode || "duplicated")}</div>
+          <div class="inlineControls">
+            <label>
+              <span>Branch mode</span>
+              <select id="tree-branch-mode" data-keep-enabled="true">
+                <option value="inherit" ${branchMode === "inherit" ? "selected" : ""}>Inherit</option>
+                <option value="duplicated" ${branchMode === "duplicated" ? "selected" : ""}>Duplicated</option>
+                <option value="greedy" ${branchMode === "greedy" ? "selected" : ""}>Greedy</option>
+              </select>
+            </label>
+            ${actionButton("set-transfer-branch-mode", "Save mode", false)}
+            <label>
+              <span>Sync</span>
+              <select id="tree-sync-mode" data-keep-enabled="true">
+                <option value="none" ${syncMode === "none" ? "selected" : ""}>None</option>
+                <option value="copy_once" ${syncMode === "copy_once" ? "selected" : ""}>Copy once</option>
+                <option value="live" ${syncMode === "live" ? "selected" : ""}>Live</option>
+              </select>
+            </label>
+            ${actionButton("set-transfer-tree-sync-mode", "Save sync", false)}
+            ${actionButton("sync-transfer-tree", "Sync now", syncMode !== "live")}
+          </div>
+        </div>
+      </div>
+
+      <div class="actionGrid">
+        <div class="actionBox">
+          <div class="actionTitle">Add child</div>
+          <div class="proposalGrid">
+            <label><span>Title</span><input id="child-title" value="${escapeHtml((transfer.title || "Transfer") + " child")}" autocomplete="off" data-keep-enabled="true"></label>
+            <label><span>Local side</span><select id="child-role" data-keep-enabled="true"><option value="need">Need</option><option value="contribution">Contribution</option></select></label>
+            <label><span>Local Record</span><input id="child-record" list="record-options" autocomplete="off" data-keep-enabled="true"></label>
+            <label><span>Quantity</span><input id="child-quantity" inputmode="decimal" value="1" data-keep-enabled="true"></label>
+            <label><span>Counterparty</span><input id="child-counterparty" value="${escapeHtml(transfer.counterpartyLabel || "")}" list="organ-options" autocomplete="off" data-keep-enabled="true"></label>
+            ${actionButton("create-child-transfer", "Create child", false, 'class="primary"')}
+          </div>
+        </div>
+        <div class="actionBox">
+          <div class="actionTitle">Import Record tree</div>
+          <div class="proposalGrid">
+            <label><span>Root Record</span><input id="tree-record-root" list="record-options" autocomplete="off" data-keep-enabled="true"></label>
+            <label><span>Local side</span><select id="tree-role" data-keep-enabled="true"><option value="need">Need</option><option value="contribution">Contribution</option></select></label>
+            <label><span>Quantity</span><input id="tree-quantity" inputmode="decimal" value="1" data-keep-enabled="true"></label>
+            <label><span>Sync mode</span><span><label><input name="tree-sync-create" type="radio" value="live" checked data-keep-enabled="true"> Live</label> <label><input name="tree-sync-create" type="radio" value="copy_once" data-keep-enabled="true"> Copy once</label></span></label>
+            ${actionButton("create-transfer-tree-from-record", "Create tree", false, 'class="primary"')}
+          </div>
+        </div>
       </div>
 
       <div class="actionGrid">
@@ -1108,6 +1176,59 @@ pub(super) fn script() -> String {
             organId: Number(target.replace(/^organ:/, "")),
           });
         }
+        return;
+      }
+      if (action === "create-child-transfer") {
+        const recordId = selectedRecordId(document.getElementById("child-record")?.value || "");
+        if (!recordId) {
+          setStatus("Select a local Record for the child Transfer.", "danger");
+          return;
+        }
+        postAction(action, {
+          parentTransferId: transfer.id,
+          title: document.getElementById("child-title")?.value || "Child Transfer",
+          role: document.getElementById("child-role")?.value || "need",
+          recordId,
+          quantity: parseNumber(document.getElementById("child-quantity")?.value, 1),
+          counterpartyLabel: document.getElementById("child-counterparty")?.value || transfer.counterpartyLabel || "",
+          targetOrganId: transfer.targetOrganId || null,
+        });
+        return;
+      }
+      if (action === "create-transfer-tree-from-record") {
+        const rootRecordId = selectedRecordId(document.getElementById("tree-record-root")?.value || "");
+        if (!rootRecordId) {
+          setStatus("Select a root Record for the Transfer tree.", "danger");
+          return;
+        }
+        const syncInput = app.querySelector("input[name='tree-sync-create']:checked");
+        postAction(action, {
+          parentTransferId: transfer.id,
+          rootRecordId,
+          role: document.getElementById("tree-role")?.value || "need",
+          quantity: parseNumber(document.getElementById("tree-quantity")?.value, 1),
+          counterpartyLabel: transfer.counterpartyLabel || "",
+          targetOrganId: transfer.targetOrganId || null,
+          recordSyncMode: syncInput?.value || "live",
+        });
+        return;
+      }
+      if (action === "set-transfer-branch-mode") {
+        postAction(action, {
+          transferId: transfer.id,
+          branchMode: document.getElementById("tree-branch-mode")?.value || "inherit",
+        });
+        return;
+      }
+      if (action === "set-transfer-tree-sync-mode") {
+        postAction(action, {
+          transferId: transfer.id,
+          recordSyncMode: document.getElementById("tree-sync-mode")?.value || "none",
+        });
+        return;
+      }
+      if (action === "sync-transfer-tree") {
+        postAction(action, { transferId: transfer.id });
         return;
       }
       if (action === "delete-transfer") {

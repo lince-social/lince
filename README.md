@@ -60,7 +60,7 @@ curl -fsSL https://lince.social/install.sh | bash -s -- --bin-dir /usr/local/bin
 
 ### 2. Releases
 
-Check the [releases](https://github.com/lince-social/lince/releases) and download the asset for your operating system. The rolling main-branch binaries live under the [`rolling`](https://github.com/lince-social/lince/releases/tag/rolling) release.
+Check the [releases](https://github.com/lince-social/lince/releases) and download the asset for your operating system. The rolling main-branch binaries live under the latest `rolling-*` release.
 
 ```bash
 ./lince --help

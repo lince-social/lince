@@ -91,7 +91,7 @@ jobs:
         run: |
           set -euo pipefail
           export RUSTFLAGS="-D warnings"
-          cargo check --locked -p lince-desktop
+          cargo check --release --locked -p lince-desktop
 
       - name: Create Tauri bundles
         uses: tauri-apps/tauri-action@v0

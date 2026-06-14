@@ -6,7 +6,7 @@ use std::{
     io::{Error, ErrorKind},
 };
 
-use crate::karma::{deliver_record_karma, refresh_karma_cache};
+use crate::karma::{deliver_record_karma, deliver_transfer_karma, refresh_karma_cache};
 
 pub async fn execute_record_insert_returning_id(
     services: InjectedServices,
@@ -162,6 +162,9 @@ pub async fn table_patch_row(
     if table == "record" && _outcome.rows_affected > 0 {
         handle_record_change(services.clone(), [id as u32]).await?;
     }
+    if table == "transfer" && _outcome.rows_affected > 0 {
+        handle_transfer_change(services.clone(), [id as u32]).await?;
+    }
     if needs_karma_refresh && _outcome.rows_affected > 0 {
         refresh_karma_cache(services.clone()).await?;
     }
@@ -190,6 +193,9 @@ pub async fn table_delete_row(
 
     if table == "record" && _outcome.rows_affected > 0 {
         handle_record_change(services.clone(), [id as u32]).await?;
+    }
+    if table == "transfer" && _outcome.rows_affected > 0 {
+        handle_transfer_change(services.clone(), [id as u32]).await?;
     }
     if needs_karma_refresh && _outcome.rows_affected > 0 {
         refresh_karma_cache(services.clone()).await?;
@@ -220,6 +226,12 @@ pub async fn table_insert_row(
             && let Some(id) = outcome.last_insert_rowid
         {
             handle_record_change(services.clone(), [id as u32]).await?;
+        }
+        if table == "transfer"
+            && outcome.rows_affected > 0
+            && let Some(id) = outcome.last_insert_rowid
+        {
+            handle_transfer_change(services.clone(), [id as u32]).await?;
         }
         if needs_karma_refresh && outcome.rows_affected > 0 {
             refresh_karma_cache(services.clone()).await?;
@@ -258,6 +270,12 @@ pub async fn table_insert_row(
         && let Some(id) = outcome.last_insert_rowid
     {
         handle_record_change(services.clone(), [id as u32]).await?;
+    }
+    if table == "transfer"
+        && outcome.rows_affected > 0
+        && let Some(id) = outcome.last_insert_rowid
+    {
+        handle_transfer_change(services.clone(), [id as u32]).await?;
     }
     if needs_karma_refresh && outcome.rows_affected > 0 {
         refresh_karma_cache(services.clone()).await?;
@@ -494,5 +512,16 @@ async fn handle_record_change(
         deliver_record_karma(services.clone(), ids).await?;
     }
     crate::file_sync::sync_after_record_change(services).await?;
+    Ok(())
+}
+
+async fn handle_transfer_change(
+    services: InjectedServices,
+    transfer_ids: impl IntoIterator<Item = u32>,
+) -> Result<(), Error> {
+    let ids = transfer_ids.into_iter().collect::<Vec<_>>();
+    if !ids.is_empty() {
+        deliver_transfer_karma(services, ids).await?;
+    }
     Ok(())
 }

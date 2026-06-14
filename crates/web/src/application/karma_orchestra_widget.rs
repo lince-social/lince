@@ -15,8 +15,9 @@ use {
     ::application::{
         auth::AuthSubject,
         karma_analysis::{
-            KarmaOrchestraRuleInput, KarmaTokenCatalog, NamedToken, RecordToken,
+            KarmaOrchestraRuleInput, KarmaTokenCatalog, NamedToken, RecordToken, TransferToken,
             build_karma_orchestra_snapshot, expression_display, record_ids_in_expression,
+            transfer_ids_in_expression,
         },
     },
     persistence::repositories::view::is_special_view_query,
@@ -920,6 +921,12 @@ impl KarmaOrchestraWidgetService {
         .map_err(|error| {
             KarmaOrchestraWidgetError::Internal(format!("Resposta invalida de record: {error}"))
         })?;
+        let transfer_rows = serde_json::from_value::<Vec<TransferRow>>(
+            self.list_table_rows(session_token, organ, bearer_token, "transfer")
+                .await
+                .unwrap_or_else(|_| Value::Array(Vec::new())),
+        )
+        .unwrap_or_default();
         let command_rows = serde_json::from_value::<Vec<CommandRow>>(
             self.list_table_rows(session_token, organ, bearer_token, "command")
                 .await
@@ -985,6 +992,18 @@ impl KarmaOrchestraWidgetService {
                             id: row.id as u32,
                             quantity: row.quantity,
                             head: row.head.unwrap_or_else(|| format!("Record #{}", row.id)),
+                        },
+                    )
+                })
+                .collect(),
+            transfers: transfer_rows
+                .into_iter()
+                .map(|row| {
+                    (
+                        row.id as u32,
+                        TransferToken {
+                            id: row.id as u32,
+                            quantity: row.quantity,
                         },
                     )
                 })
@@ -1079,6 +1098,12 @@ impl KarmaOrchestraWidgetService {
         .map_err(|error| {
             KarmaOrchestraWidgetError::Internal(format!("Resposta invalida de record: {error}"))
         })?;
+        let transfer_rows = serde_json::from_value::<Vec<TransferRow>>(
+            self.list_table_rows(session_token, organ, bearer_token, "transfer")
+                .await
+                .unwrap_or_else(|_| Value::Array(Vec::new())),
+        )
+        .unwrap_or_default();
         let command_rows = serde_json::from_value::<Vec<CommandRow>>(
             self.list_table_rows(session_token, organ, bearer_token, "command")
                 .await
@@ -1111,6 +1136,18 @@ impl KarmaOrchestraWidgetService {
                                 .head
                                 .clone()
                                 .unwrap_or_else(|| format!("Record #{}", row.id)),
+                        },
+                    )
+                })
+                .collect(),
+            transfers: transfer_rows
+                .iter()
+                .map(|row| {
+                    (
+                        row.id as u32,
+                        TransferToken {
+                            id: row.id as u32,
+                            quantity: row.quantity,
                         },
                     )
                 })
@@ -1621,6 +1658,12 @@ struct RecordRow {
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
+struct TransferRow {
+    id: i64,
+    quantity: f64,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
 struct CommandRow {
     id: i64,
     name: String,
@@ -1787,7 +1830,11 @@ fn consequence_display(
     code: &str,
     catalog: &KarmaTokenCatalog,
 ) -> ::application::karma_analysis::KarmaExpressionDisplay {
-    expression_display(code, catalog, !record_ids_in_expression(code).is_empty())
+    expression_display(
+        code,
+        catalog,
+        !record_ids_in_expression(code).is_empty() || !transfer_ids_in_expression(code).is_empty(),
+    )
 }
 
 fn referenced_karma_ids_by_condition(
@@ -1820,6 +1867,24 @@ fn build_token_options(catalog: &KarmaTokenCatalog) -> Vec<Value> {
             "human": record.head,
             "searchText": format!("{} rq{} {}", record.id, record.id, record.head),
             "numeric": record.quantity,
+            "validForCondition": true,
+            "validForConsequence": true,
+        })
+    }));
+    tokens.extend(catalog.transfers.values().map(|transfer| {
+        json!({
+            "kind": "transfer_quantity",
+            "id": transfer.id,
+            "code": format!("tq{}", transfer.id),
+            "human": format!("Transfer #{}", transfer.id),
+            "searchText": format!(
+                "{} tq{} transfer-quantity-{} Transfer #{}",
+                transfer.id,
+                transfer.id,
+                transfer.id,
+                transfer.id
+            ),
+            "numeric": transfer.quantity,
             "validForCondition": true,
             "validForConsequence": true,
         })

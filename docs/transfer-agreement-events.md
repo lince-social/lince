@@ -39,6 +39,13 @@ For `percentage` agreement, the reducer counts agreement level `2` among visible
 
 ## Invalidating Agreement On Edits
 
+The structured schema stores item and interaction versions. Agreement invalidation should use those versions as the backend source of truth:
+
+- Edit actions increment the affected item or interaction version.
+- Agreement rows store the item or interaction version that was agreed to.
+- Connected agreements are invalidated when a later edit changes an agreed version.
+- Settlement readiness is derived from structured agreement, confirmation, interaction, and settlement rows.
+
 ```rust
 pub async fn edit_transfer_item(
     db: &SqlitePool,
@@ -176,16 +183,28 @@ pub fn validate_transfer_event(
 }
 ```
 
+## Typed Event Payloads
+
+Event payloads should not be interpreted with scattered raw `get("field")` access. Services should deserialize payload JSON into typed payload structs/enums at the boundary, validate that the payload matches the event kind, and only then update projections or package data.
+
+Remaining payload work:
+
+- Define typed payloads for structured item edits, interaction edits, agreement changes, visibility changes, messages, confirmations, settlement, reversal, and dispute events.
+- Validate package event payloads before import.
+- Reject event/package data whose payload kind does not match `event_kind`.
+- Keep validation errors in `transfer_event.validation_error` when an event is stored as invalid.
+
 ## Signed Events
 
-A signed event is an event whose content is hashed and then signed by the actor's Cell or user key. It is not a legal signature. It is a technical proof that says:
+Implemented Transfer events store `actor_public_key`, `previous_event_uid`, `event_uid`, `signature`, optional hash-chain fields, and validation state. Package import validates signed event authorship for the current package shape. A signed event is not a legal signature. It is a technical proof that says:
 
 - This Cell claims it created this exact event.
 - The event payload was not changed after signing.
-- The event belongs after a specific previous event hash.
 - Another Cell can verify the event without trusting the server that relayed it.
 
-Conceptually:
+The remaining planned work is deterministic hash-chain calculation and validation. The schema can store `previous_event_hash` and `event_hash`; services still need to populate and verify them consistently.
+
+Future hash-chain shape:
 
 ```text
 event_hash = hash(transfer_id, previous_event_hash, event_kind, actor, created_at, payload_json)
@@ -213,7 +232,7 @@ pub fn verify_signed_transfer_event(
 }
 ```
 
-The MVP can leave `signature` and public keys out of the schema or store them as optional fields. The important part is to design events so they can be signed later: deterministic payload, previous hash, event hash, actor identity, and validation.
+The important remaining design point is deterministic payload hashing: previous hash, event hash, actor identity, and validation should be reproducible from stored event data.
 
 ## Messages
 

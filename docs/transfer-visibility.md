@@ -135,3 +135,15 @@ Subject: Restaurant Organ
 ```
 
 This supports the guitar example: the restaurant can contribute to the private `Play Guitar` Record without knowing the private Record head.
+
+## Enforcement
+
+Visibility tables are not enough by themselves. Backend projection and package code must apply visibility before data leaves the server boundary.
+
+Remaining enforcement work:
+
+- Apply `transfer_visibility_rule` and `transfer_visibility_field` before data reaches sands, packages, streams, or public gossip caches.
+- Redact source Record identity, Record head/body, parties, locations, quantities, messages, and event payload fields when a subject cannot view them.
+- Make package export use the same visibility path as UI projections.
+- Add tests proving a party can see Transfer item title/description without seeing source Record head/body.
+- Add tests for field-level visibility on structured Transfer summary/detail projections.

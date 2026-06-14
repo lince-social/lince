@@ -1,118 +1,48 @@
 # Networking And Sync
 
-A Lince Cell should be able to act as a node in a wider network. A node can publish a cache of visible Transfer information, receive caches from other nodes, and choose whether to keep or relay that information.
+The implemented package-sync shape now lives in [TRANSFER](TRANSFER.md). This note keeps the remaining networking plan that is not implemented yet.
 
-## P2P Discovery And Pub/Sub Cache
+## Remaining P2P Discovery
 
-This is close to pub/sub:
+The current implementation can post/import Transfer packages, expose packages since a cursor, retry an outbox, and cache public/permitted gossip packages. It does not yet implement topic-based or contact-list-based peer discovery.
+
+Remaining discovery goals:
 
 - A Cell publishes topics it wants others to discover.
 - Other Cells subscribe to those topics or to specific nodes.
-- A server or known node can introduce Cells to each other.
-- After introduction, Cells can sync directly.
-- A Cell may cache public or permitted Transfer summaries from other Cells.
-- A Cell may periodically ask for updates, or keep the cached information as stale background knowledge.
-- Visibility rules still decide what fields are included in the cache.
+- A server or known node introduces Cells to each other by topic.
+- The user chooses a discovered Cell to connect to directly.
+- The contact/Organ list stores peer Cells with base URL and optional public key.
+- A Cell fetches visible Transfer summaries from selected peers.
+- Visibility rules decide what fields are included in discovery results.
 
-The cache is not source of truth. It is a menu or index of known Needs, Contributions, Transfers, and nodes. It helps a Cell expand its understanding of the world without forcing every node to trust every other node.
+The cache is not the source of truth. It is a menu of known Needs, Contributions, Transfers, and nodes. It helps a Cell expand its understanding of the world without forcing every node to trust every other node.
 
-## Discovery Server Path
+## Transfer Package
 
-The practical early path:
+The package is the portable Transfer payload used for post/import, sync, and gossip. It should use the structured Transfer model directly instead of carrying contribution/need-only fields forward.
 
-1. A central or Organ server lists reachable Cells and public topics.
-2. A Cell asks the server for nodes matching a topic.
-3. The user chooses a Cell to connect to directly.
-4. Lince adds that Cell to the Organ/contact list.
-5. The local Cell calls the remote Cell directly for visible Transfer summaries.
-6. If both Cells choose to participate in a Transfer, they sync the Transfer event log directly or through the coordinator.
+Package work that remains:
 
-This keeps the central server useful for discovery without making it the permanent source of truth for every Transfer.
+- Serialize structured parties, items, interactions, scoped agreements, confirmations, settlements, visibility, messages, and quantity influence.
+- Read package data into structured backend rows first, then expose sand-specific projections from those rows.
+- Drop package-level assumptions that a Transfer has exactly one contribution side and one need side.
+- Include enough event data for deterministic validation: event kind, actor, payload, previous event reference/hash, signature, and validation state.
+- Apply visibility filtering before packages are emitted to peers, streams, or public gossip caches.
 
-## Coordinator Event Log And Eventual Consistency
+## Structured Projections
 
-For Transfers, p2p sync should be based on the Transfer event log.
+Networking and widgets should consume read models, not raw table rows.
 
-The event log is the sync unit because it explains how a Transfer reached its current state. A materialized Transfer row can be cached, but the log is what participating Cells need to compare, replay, mirror, and eventually verify with signatures.
+Projection work that remains:
 
-Recommended rule:
+- Add Transfer summary and detail projections over structured rows.
+- Keep any contribution/need-only shape as an internal adapter only while the current sand migrates.
+- Add projection queries for parent/child aggregate state and dependency state.
 
-- One coordinator orders writes for a Transfer at a time.
-- The coordinator stores the operational source of truth while it coordinates that Transfer.
-- Participating Cells may keep a local replica of the visible event log.
-- Replicas are eventually consistent: they can be behind, then catch up by fetching events after their last synced event.
-- Local drafts can exist before submission, but once a proposal is sent to the coordinator, the coordinator assigns the canonical event order.
-- The first apple implementation can use my local Lince as coordinator.
+## Future Cache Tables
 
-This means a Transfer created from "my Cell" can live in more than one place:
-
-- My local Lince can keep the coordinator copy.
-- My Cell can keep a local draft before the coordinator accepts it.
-- The Lince server Organ can keep a visible mirror as a participant.
-- The coordinator copy is authoritative for event ordering until coordinator migration exists.
-- Participants catch up by syncing events from the coordinator.
-
-Hello-world sync does not need full direct p2p. It only needs the same shape:
-
-1. My Cell creates a local proposal draft.
-2. The draft is submitted to my local Lince coordinator.
-3. Local Lince appends canonical Transfer events.
-4. The Lince server Organ stores or displays the visible coordinator events.
-5. Each participant tracks the last event it has seen.
-6. When new events happen, each participant asks the coordinator for events after that cursor.
-
-Coordination does not mean centralization. Coordination means one node is responsible for:
-
-- Assigning event order for one Transfer.
-- Validating state-changing actions.
-- Rejecting stale or invalid writes.
-- Maintaining the event hash chain.
-- Serving visible events to participants.
-- Producing the materialized Transfer state from those events.
-
-Different Transfers can have different coordinators. A local Lince can coordinate one Transfer, an Organ server can coordinate another, and later a coordinator migration event can move responsibility from one node to another.
-
-The system does not need a central global coordinator. A central or Organ server is useful for discovery, introduction, hosting always-online Organs, or relay, but it should not be required for every Transfer.
-
-Possible sync cursor table:
-
-```sql
-CREATE TABLE transfer_sync_cursor (
-    id INTEGER PRIMARY KEY,
-    transfer_id INTEGER NOT NULL REFERENCES transfer(id) ON DELETE CASCADE,
-    peer_subject_id INTEGER NOT NULL REFERENCES transfer_visibility_subject(id),
-    last_event_id INTEGER,
-    last_event_hash TEXT,
-    last_synced_at TEXT,
-    UNIQUE (transfer_id, peer_subject_id)
-) STRICT;
-```
-
-Possible replica marker:
-
-```sql
-CREATE TABLE transfer_replica (
-    id INTEGER PRIMARY KEY,
-    transfer_id INTEGER NOT NULL REFERENCES transfer(id) ON DELETE CASCADE,
-    coordinator_peer_id INTEGER REFERENCES cell_peer(id),
-    local_role TEXT NOT NULL DEFAULT 'mirror',
-    last_applied_event_id INTEGER,
-    last_applied_event_hash TEXT,
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CHECK (local_role IN ('coordinator', 'participant', 'mirror'))
-) STRICT;
-```
-
-For hello world, these can be simple or even represented inside one database. The important part is not network complexity; it is separating the concepts:
-
-- Draft proposal.
-- Coordinator event.
-- Local mirror.
-- Final settlement.
-
-Direct Cell-to-Cell sync can later reuse the same event cursor flow by calling whichever peer is coordinator for that Transfer.
-
-## Cache Tables
+The implemented `transfer_gossip_package` table stores package JSON. A richer discovery system can add explicit peer/topic/subscription tables later:
 
 ```sql
 CREATE TABLE cell_peer (
@@ -154,59 +84,14 @@ CREATE TABLE transfer_discovery_cache (
 ) STRICT;
 ```
 
-## Sync Function Example
-
-```rust
-pub async fn sync_transfer_topic_from_peer(
-    db: &SqlitePool,
-    peer: CellPeer,
-    topic: String,
-) -> Result<(), Error> {
-    let summaries = fetch_visible_transfer_summaries(&peer.base_url, &topic).await?;
-
-    for summary in summaries {
-        if visibility_summary_is_allowed(&summary) {
-            upsert_transfer_discovery_cache(db, peer.id, summary).await?;
-        }
-    }
-
-    mark_subscription_synced(db, peer.id, topic).await?;
-    Ok(())
-}
-```
-
-This creates a path for "needs of the world" discovery while keeping each Cell in control of what it stores and republishes.
-
-## Cells, Organs, And Servers
-
-Lince should not require one central global server, but real Transfers need some coordination point.
-
-Recommended model:
-
-- Each Transfer has a coordinator.
-- The coordinator can be a local Cell or an Organ server.
-- The coordinator orders events and stores the operational source of truth.
-- Other Cells can mirror or export/import Transfer events.
-
-MVP:
-
-- Local Cell for personal Transfers.
-- Organ server for cross-user Transfers.
-- Server as source of truth while the Transfer is active.
-
-Later:
-
-- Start on an Organ server for discovery, then allow direct Cell-to-Cell continuation.
-- Add event signatures where the event author can be verified independently from the relay server.
-- Add coordinator migration.
-
-Cell-to-cell sync can start before full p2p federation:
-
-- The Organ/contact list stores peer Cells.
-- Each peer has a base URL and optional public key.
-- A Cell can fetch visible Transfer summaries from a peer.
-- A Cell can fetch the event log for a Transfer it participates in.
-- The coordinator still orders writes for the active Transfer.
-- Direct peers can mirror event logs and cache discovery summaries.
+## Future Federation
 
 Do not start with full federation. The item-level agreement and visibility model is already enough complexity.
+
+Later work:
+
+- Direct peer continuation after Organ/server introduction.
+- Event hash-chain verification independent of the relay server.
+- Coordinator migration events.
+- Peer trust states and blocking.
+- Field-level visibility filtering on summaries and event logs.

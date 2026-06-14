@@ -33,6 +33,13 @@ pub struct RecordToken {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct TransferToken {
+    pub id: u32,
+    pub quantity: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NamedToken {
     pub id: u32,
     pub name: String,
@@ -42,6 +49,7 @@ pub struct NamedToken {
 #[serde(rename_all = "camelCase")]
 pub struct KarmaTokenCatalog {
     pub records: BTreeMap<u32, RecordToken>,
+    pub transfers: BTreeMap<u32, TransferToken>,
     pub commands: BTreeMap<u32, NamedToken>,
     pub queries: BTreeMap<u32, NamedToken>,
     pub frequencies: BTreeMap<u32, NamedToken>,
@@ -205,6 +213,19 @@ pub fn first_record_quantity_token(expression: &str) -> Option<u32> {
         .and_then(|caps| caps.get(1)?.as_str().parse::<u32>().ok())
 }
 
+pub fn transfer_ids_in_expression(expression: &str) -> BTreeSet<u32> {
+    transfer_quantity_regex()
+        .captures_iter(expression)
+        .filter_map(|caps| transfer_quantity_id(&caps))
+        .collect()
+}
+
+pub fn first_transfer_quantity_token(expression: &str) -> Option<u32> {
+    transfer_quantity_regex()
+        .captures(expression)
+        .and_then(|caps| transfer_quantity_id(&caps))
+}
+
 fn evaluate_rule(rule: KarmaOrchestraRuleInput, catalog: &KarmaTokenCatalog) -> EvaluatedRule {
     let condition = expression_display(&rule.condition_code, catalog, true);
     let condition_numeric = condition.value.numeric.unwrap_or(0.0);
@@ -216,9 +237,9 @@ fn evaluate_rule(rule: KarmaOrchestraRuleInput, catalog: &KarmaTokenCatalog) -> 
             "=*" => true,
             _ => false,
         };
-    let consequence_numeric_records = !record_ids_in_expression(&rule.consequence_code).is_empty();
-    let mut consequence =
-        expression_display(&rule.consequence_code, catalog, consequence_numeric_records);
+    let consequence_numeric = !record_ids_in_expression(&rule.consequence_code).is_empty()
+        || !transfer_ids_in_expression(&rule.consequence_code).is_empty();
+    let mut consequence = expression_display(&rule.consequence_code, catalog, consequence_numeric);
     if let Some(record_id) = first_record_quantity_token(&rule.consequence_code) {
         if consequence.human == rule.consequence_code {
             consequence.human = catalog
@@ -227,6 +248,10 @@ fn evaluate_rule(rule: KarmaOrchestraRuleInput, catalog: &KarmaTokenCatalog) -> 
                 .map(|record| record.head.clone())
                 .unwrap_or_else(|| format!("Record #{record_id}"));
         }
+    } else if let Some(transfer_id) = first_transfer_quantity_token(&rule.consequence_code)
+        && consequence.human == rule.consequence_code
+    {
+        consequence.human = format!("Transfer #{transfer_id}");
     }
 
     EvaluatedRule {
@@ -241,7 +266,7 @@ fn evaluate_rule(rule: KarmaOrchestraRuleInput, catalog: &KarmaTokenCatalog) -> 
 pub fn expression_display(
     code: &str,
     catalog: &KarmaTokenCatalog,
-    numeric_records: bool,
+    numeric_quantities: bool,
 ) -> KarmaExpressionDisplay {
     let mut human = code.to_string();
     let mut symbolic = code.to_string();
@@ -256,7 +281,7 @@ pub fn expression_display(
             .map(|record| record.head.clone())
             .unwrap_or_else(|| format!("Record #{id}"));
         human = human.replace(&token, &name);
-        if numeric_records {
+        if numeric_quantities {
             symbolic = symbolic.replace(&token, &quantity.to_string());
         }
         references.push(KarmaTokenReference {
@@ -265,7 +290,30 @@ pub fn expression_display(
             id,
             human: name.clone(),
             numeric: Some(quantity),
-            display_only: !numeric_records,
+            display_only: !numeric_quantities,
+        });
+    }
+
+    for caps in transfer_quantity_regex().captures_iter(code) {
+        let token = caps[0].to_string();
+        let id = transfer_quantity_id(&caps).unwrap_or_default();
+        let quantity = catalog
+            .transfers
+            .get(&id)
+            .map(|transfer| transfer.quantity)
+            .unwrap_or(0.0);
+        let name = format!("Transfer #{id}");
+        human = human.replace(&token, &name);
+        if numeric_quantities {
+            symbolic = symbolic.replace(&token, &quantity.to_string());
+        }
+        references.push(KarmaTokenReference {
+            token,
+            kind: "transfer_quantity".into(),
+            id,
+            human: name,
+            numeric: Some(quantity),
+            display_only: !numeric_quantities,
         });
     }
 
@@ -304,6 +352,16 @@ pub fn expression_display(
         value: evaluate_symbolic(&symbolic),
         references,
     }
+}
+
+fn transfer_quantity_regex() -> Regex {
+    Regex::new(r"(?:tq(\d+)|transfer-quantity-(\d+))").unwrap()
+}
+
+fn transfer_quantity_id(caps: &regex::Captures<'_>) -> Option<u32> {
+    caps.get(1)
+        .or_else(|| caps.get(2))
+        .and_then(|value| value.as_str().parse::<u32>().ok())
 }
 
 fn replace_named_tokens(
@@ -530,28 +588,47 @@ fn build_fulfillment_links(
         .iter()
         .filter(|entry| entry.enabled && entry.triggers)
     {
-        let Some(changed_record_id) = first_record_quantity_token(&source.rule.consequence_code)
-        else {
-            continue;
-        };
+        let changed_quantity =
+            if let Some(record_id) = first_record_quantity_token(&source.rule.consequence_code) {
+                QuantityTarget::Record(record_id)
+            } else if let Some(transfer_id) =
+                first_transfer_quantity_token(&source.rule.consequence_code)
+            {
+                QuantityTarget::Transfer(transfer_id)
+            } else {
+                continue;
+            };
         let Some(new_quantity) = source.condition.value.numeric else {
             continue;
         };
         let mut next_catalog = catalog.clone();
-        next_catalog
-            .records
-            .entry(changed_record_id)
-            .and_modify(|record| record.quantity = new_quantity)
-            .or_insert(RecordToken {
-                id: changed_record_id,
-                quantity: new_quantity,
-                head: format!("Record #{changed_record_id}"),
-            });
+        match changed_quantity {
+            QuantityTarget::Record(record_id) => {
+                next_catalog
+                    .records
+                    .entry(record_id)
+                    .and_modify(|record| record.quantity = new_quantity)
+                    .or_insert(RecordToken {
+                        id: record_id,
+                        quantity: new_quantity,
+                        head: format!("Record #{record_id}"),
+                    });
+            }
+            QuantityTarget::Transfer(transfer_id) => {
+                next_catalog
+                    .transfers
+                    .entry(transfer_id)
+                    .and_modify(|transfer| transfer.quantity = new_quantity)
+                    .or_insert(TransferToken {
+                        id: transfer_id,
+                        quantity: new_quantity,
+                    });
+            }
+        }
 
         for target in evaluated {
             if !target.enabled
-                || !record_ids_in_expression(&target.rule.condition_code)
-                    .contains(&changed_record_id)
+                || !quantity_target_in_expression(&changed_quantity, &target.rule.condition_code)
             {
                 continue;
             }
@@ -587,6 +664,19 @@ fn build_fulfillment_links(
     }
 
     links.into_values().collect()
+}
+
+#[derive(Debug, Clone, Copy)]
+enum QuantityTarget {
+    Record(u32),
+    Transfer(u32),
+}
+
+fn quantity_target_in_expression(target: &QuantityTarget, expression: &str) -> bool {
+    match target {
+        QuantityTarget::Record(id) => record_ids_in_expression(expression).contains(id),
+        QuantityTarget::Transfer(id) => transfer_ids_in_expression(expression).contains(id),
+    }
 }
 
 fn detect_loops(links: &[KarmaOrchestraLink]) -> Vec<KarmaOrchestraLoop> {

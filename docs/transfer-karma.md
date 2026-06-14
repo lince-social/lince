@@ -1,60 +1,52 @@
 # Karma
 
-For now, Karma should not invent a Transfer's parties, visibility, or proposal shape.
+Karma can activate, deactivate, or neutralize a preconfigured Transfer by changing `transfer.quantity`.
 
-Karma should change Transfer quantity from neutral to active, using preconfigured data:
+Karma does not create Transfer parties, visibility, proposal shape, items, interactions, agreement, or settlement. Those facts are configured as Transfer data first. Karma only changes the Transfer's activation quantity.
 
-- Parties already exist.
-- Visibility already exists.
-- Transfer items already exist.
-- Interactions already exist.
-- Karma only changes the activation quantity.
+## Transfer Quantity Tokens
 
-Example:
+Transfer quantity is exposed to Karma with two equivalent token forms:
 
 ```text
-if record Apple quantity < 7:
-    set transfer Buy Apples quantity = -1
-
-if transfer Buy Apples has been active for too long:
-    set transfer Buy Apples quantity = 0
+tq4
+transfer-quantity-4
 ```
 
-## Table
+Both tokens read or write `transfer.quantity` for Transfer `4`.
 
-```sql
-CREATE TABLE transfer_karma_link (
-    id INTEGER PRIMARY KEY,
-    transfer_id INTEGER NOT NULL REFERENCES transfer(id) ON DELETE CASCADE,
-    karma_id INTEGER NOT NULL REFERENCES karma(id) ON DELETE CASCADE,
-    activation_quantity REAL NOT NULL DEFAULT -1,
-    neutral_quantity REAL NOT NULL DEFAULT 0,
-    UNIQUE (transfer_id, karma_id)
-) STRICT;
+In a condition, the token is replaced with the current Transfer quantity. If the Transfer does not exist, the value is `0`.
+
+In a consequence, the token identifies which Transfer quantity receives the evaluated condition value.
+
+Examples:
+
+```text
+condition: rq7 < 7
+operator: =
+consequence: tq4
 ```
 
-## Function Example
+If Record `7` is below `7`, Transfer `4` receives quantity `1`.
 
-```rust
-pub async fn apply_karma_transfer_quantity(
-    db: &SqlitePool,
-    karma_id: i64,
-    transfer_id: i64,
-    new_quantity: f64,
-) -> Result<(), Error> {
-    ensure_karma_is_linked_to_transfer(db, karma_id, transfer_id).await?;
-
-    update_transfer_quantity(db, transfer_id, new_quantity).await?;
-    append_transfer_event(
-        db,
-        VisibilitySubject::system_karma(karma_id),
-        TransferEventKind::TransferQuantityChanged,
-        json!({ "transfer_id": transfer_id, "quantity": new_quantity }),
-    )
-    .await?;
-
-    Ok(())
-}
+```text
+condition: rq7 - 7
+operator: =*
+consequence: transfer-quantity-4
 ```
 
-This keeps automation bounded and makes the Transfer's visibility and parties inspectable before Karma activates it.
+Transfer `4` receives the numeric difference between Record `7` and `7`.
+
+## Cascading
+
+Karma rules can depend on Transfer quantities:
+
+```text
+condition: tq4
+operator: =
+consequence: rq9
+```
+
+When Transfer `4` quantity changes, Karma rules that reference `tq4` or `transfer-quantity-4` in their condition can run. This mirrors the existing `rq{id}` behavior for Record quantity.
+
+This keeps automation bounded and makes Transfer visibility, parties, and settlement inspectable before Karma activates or deactivates it.

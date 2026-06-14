@@ -190,10 +190,12 @@ mod tests {
                 transfer_id,
                 event_kind,
                 payload_json,
-                actor_label
+                actor_label,
+                previous_event_id
             ) VALUES
-                (1, 1, 'transfer_created', '{}', 'me'),
-                (2, 99, 'transfer_created', '{}', 'me');
+                (1, 1, 'transfer_created', '{}', 'me', NULL),
+                (2, 99, 'transfer_created', '{}', 'me', NULL),
+                (3, 1, 'agreement_changed', '{}', 'me', 2);
             ",
         )
         .execute(&pool)
@@ -217,12 +219,11 @@ mod tests {
             .expect("count transfer parties");
         assert_eq!(party_count, 2);
 
-        let orphan_event_count = sqlx::query_scalar::<_, i64>(
-            "SELECT COUNT(1) FROM transfer_event WHERE transfer_id = 99",
-        )
-        .fetch_one(&pool)
-        .await
-        .expect("count orphan transfer events");
-        assert_eq!(orphan_event_count, 0);
+        let structured_item_count =
+            sqlx::query_scalar::<_, i64>("SELECT COUNT(1) FROM transfer_structured_item")
+                .fetch_one(&pool)
+                .await
+                .expect("count structured items");
+        assert_eq!(structured_item_count, 2);
     }
 }

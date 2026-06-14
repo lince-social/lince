@@ -490,7 +490,7 @@ pub struct TransferEventRow {
     pub actor_label: String,
     pub actor_public_key: Option<String>,
     #[table(
-        check = "event_kind IN ('transfer_created', 'transfer_inactivated', 'transfer_quantity_changed', 'item_created', 'item_edited', 'interaction_created', 'interaction_edited', 'visibility_changed', 'agreement_changed', 'message_sent', 'delivery_confirmed', 'receipt_confirmed', 'settlement_applied', 'settlement_reverted', 'dispute_opened', 'dispute_resolved')"
+        check = "event_kind IN ('transfer_created', 'item_created', 'agreement_changed', 'delivery_confirmed', 'receipt_confirmed', 'settlement_applied')"
     )]
     pub event_kind: String,
     #[table(default = "'{}'", check = "json_valid(payload_json)")]

@@ -141,7 +141,7 @@ Events are append-only and signed with the local Transfer node key. The implemen
 - `receipt_confirmed`
 - `settlement_applied`
 
-The persistence model now also accepts the broader structured event vocabulary, including `transfer_inactivated`, item/interaction edits, visibility changes, messages, settlement reversal, and dispute events. `transfer_event` has optional hash-chain and validation columns for deterministic event verification.
+The broader structured event vocabulary, including `transfer_inactivated`, item/interaction edits, visibility changes, messages, settlement reversal, and dispute events, still needs a dedicated event migration. The current `transfer_event` table keeps the implemented event kinds and existing hash-chain/signature columns.
 
 Transfer packages carry identity, item, relation, tree config, and event data between nodes. Nodes can receive addressed packages directly, accept public initial proposal packages when ingress is enabled, or cache unrelated public packages as gossip. Startup and heartbeat tasks maintain a local transfer sync cache and flush the sync outbox.
 

@@ -112,14 +112,23 @@ impl NotificationStore {
 #[derive(Default)]
 pub struct KarmaCache {
     karma_by_record: RwLock<HashMap<u32, Vec<Karma>>>,
+    karma_by_transfer: RwLock<HashMap<u32, Vec<Karma>>>,
 }
 
 impl KarmaCache {
-    pub fn replace(&self, karma_by_record: HashMap<u32, Vec<Karma>>) {
+    pub fn replace(
+        &self,
+        karma_by_record: HashMap<u32, Vec<Karma>>,
+        karma_by_transfer: HashMap<u32, Vec<Karma>>,
+    ) {
         *self
             .karma_by_record
             .write()
             .unwrap_or_else(|poisoned| poisoned.into_inner()) = karma_by_record;
+        *self
+            .karma_by_transfer
+            .write()
+            .unwrap_or_else(|poisoned| poisoned.into_inner()) = karma_by_transfer;
     }
 
     pub fn karma_for_record(&self, record_id: u32) -> Vec<Karma> {
@@ -127,6 +136,15 @@ impl KarmaCache {
             .read()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .get(&record_id)
+            .cloned()
+            .unwrap_or_default()
+    }
+
+    pub fn karma_for_transfer(&self, transfer_id: u32) -> Vec<Karma> {
+        self.karma_by_transfer
+            .read()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .get(&transfer_id)
             .cloned()
             .unwrap_or_default()
     }

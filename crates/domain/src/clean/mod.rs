@@ -9,4 +9,5 @@ pub mod karma_consequence;
 pub mod record;
 pub mod role;
 pub mod table;
+pub mod transfer;
 pub mod view;

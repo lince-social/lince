@@ -23,10 +23,12 @@ use std::{
 
 pub async fn refresh_karma_cache(services: InjectedServices) -> Result<(), Error> {
     let regex_record_quantity = Regex::new(r"rq(\d+)").unwrap();
+    let regex_transfer_quantity = transfer_quantity_regex();
     let regex_sync = sync_token_regex();
     let vec_karma = services.repository.karma.get(None).await?;
 
     let mut karma_by_record: HashMap<u32, Vec<Karma>> = HashMap::new();
+    let mut karma_by_transfer: HashMap<u32, Vec<Karma>> = HashMap::new();
 
     for karma in vec_karma {
         let mut ids =
@@ -39,14 +41,30 @@ pub async fn refresh_karma_cache(services: InjectedServices) -> Result<(), Error
                 .or_default()
                 .push(karma.clone());
         }
+
+        let mut ids = extract_karma_transfer_ids(&regex_transfer_quantity, &karma.condition);
+        ids.sort_unstable();
+        ids.dedup();
+        for transfer_id in ids {
+            karma_by_transfer
+                .entry(transfer_id)
+                .or_default()
+                .push(karma.clone());
+        }
     }
 
     for vec_karma in karma_by_record.values_mut() {
         vec_karma.sort_by_key(|karma| karma.id);
         vec_karma.dedup_by_key(|karma| karma.id);
     }
+    for vec_karma in karma_by_transfer.values_mut() {
+        vec_karma.sort_by_key(|karma| karma.id);
+        vec_karma.dedup_by_key(|karma| karma.id);
+    }
 
-    services.karma_cache.replace(karma_by_record);
+    services
+        .karma_cache
+        .replace(karma_by_record, karma_by_transfer);
     Ok(())
 }
 
@@ -69,8 +87,28 @@ pub async fn deliver_record_karma(
     Ok(())
 }
 
+pub async fn deliver_transfer_karma(
+    services: InjectedServices,
+    transfer_ids: impl IntoIterator<Item = u32>,
+) -> Result<(), Error> {
+    let mut ordered_transfer_ids = transfer_ids.into_iter().collect::<Vec<_>>();
+    ordered_transfer_ids.sort_unstable();
+    ordered_transfer_ids.dedup();
+
+    for transfer_id in ordered_transfer_ids {
+        let vec_karma = services.karma_cache.karma_for_transfer(transfer_id);
+        if vec_karma.is_empty() {
+            continue;
+        }
+        karma_deliver(services.clone(), vec_karma).await?;
+    }
+
+    Ok(())
+}
+
 pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) -> Result<(), Error> {
     let regex_record_quantity = Regex::new(r"rq(\d+)").unwrap();
+    let regex_transfer_quantity = transfer_quantity_regex();
     let regex_frequency = Regex::new(r"f(\d+)").unwrap();
     let regex_command = Regex::new(r"c(\d+)").unwrap();
     let regex_query = Regex::new(r"sql(\d+)").unwrap();
@@ -88,7 +126,7 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
         .unwrap_or(vec_karma.len());
     let max_cascade_steps = std::cmp::max(32, active_rule_count * 4);
     let mut queue = VecDeque::from(vec_karma);
-    let mut seen_states = HashSet::<(u32, u32, String)>::new();
+    let mut seen_states = HashSet::<(u32, String, u32, String)>::new();
     let mut steps = 0usize;
 
     while let Some(karma) = queue.pop_front() {
@@ -106,6 +144,8 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
         let mut condition = karma.condition.clone();
 
         condition = replace_record_quantities(&services, &regex_record_quantity, condition).await?;
+        condition =
+            replace_transfer_quantities(&services, &regex_transfer_quantity, condition).await?;
         condition = replace_frequencies(
             &services,
             &regex_frequency,
@@ -163,7 +203,12 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
                         format!("record quantity error on karma id {}", karma.id),
                     ));
                 } else {
-                    let state = (karma.id, id, format!("{condition:.6}"));
+                    let state = (
+                        karma.id,
+                        "record".to_string(),
+                        id,
+                        format!("{condition:.6}"),
+                    );
                     if !seen_states.insert(state) {
                         log(LogEntry::Error(
                             ErrorKind::Other,
@@ -175,6 +220,46 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
                         continue;
                     }
                     for dependent in services.karma_cache.karma_for_record(id) {
+                        queue.push_back(dependent);
+                    }
+                }
+            }
+        }
+
+        if let Some(caps) = regex_transfer_quantity.captures(&karma.consequence) {
+            if let Some(id) = transfer_quantity_id(&caps) {
+                if let Err(e) = execute_statement(
+                    services.clone(),
+                    "UPDATE transfer SET quantity = ? WHERE id = ?",
+                    vec![
+                        SqlParameter::Real(condition),
+                        SqlParameter::Integer(id as i64),
+                    ],
+                )
+                .await
+                {
+                    log(LogEntry::Error(
+                        e.kind(),
+                        format!("transfer quantity error on karma id {}", karma.id),
+                    ));
+                } else {
+                    let state = (
+                        karma.id,
+                        "transfer".to_string(),
+                        id,
+                        format!("{condition:.6}"),
+                    );
+                    if !seen_states.insert(state) {
+                        log(LogEntry::Error(
+                            ErrorKind::Other,
+                            format!(
+                                "Karma cascade repeated state for karma id {} and transfer {}",
+                                karma.id, id
+                            ),
+                        ));
+                        continue;
+                    }
+                    for dependent in services.karma_cache.karma_for_transfer(id) {
                         queue.push_back(dependent);
                     }
                 }
@@ -222,6 +307,16 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
     Ok(())
 }
 
+fn transfer_quantity_regex() -> Regex {
+    Regex::new(r"(?:tq(\d+)|transfer-quantity-(\d+))").unwrap()
+}
+
+fn transfer_quantity_id(caps: &regex::Captures<'_>) -> Option<u32> {
+    caps.get(1)
+        .or_else(|| caps.get(2))
+        .and_then(|value| value.as_str().parse::<u32>().ok())
+}
+
 fn extract_karma_record_ids(
     regex_record_quantity: &Regex,
     regex_sync: &Regex,
@@ -245,6 +340,13 @@ fn extract_karma_record_ids(
     record_ids
 }
 
+fn extract_karma_transfer_ids(regex_transfer_quantity: &Regex, condition: &str) -> Vec<u32> {
+    regex_transfer_quantity
+        .captures_iter(condition)
+        .filter_map(|caps| transfer_quantity_id(&caps))
+        .collect()
+}
+
 async fn replace_record_quantities(
     services: &InjectedServices,
     regex: &Regex,
@@ -260,6 +362,30 @@ async fn replace_record_quantities(
             .get_by_id(id)
             .await
             .map(|r| r.quantity)
+            .unwrap_or(0.0);
+
+        output = output.replace(&caps[0], &value.to_string());
+    }
+
+    Ok(output)
+}
+
+async fn replace_transfer_quantities(
+    services: &InjectedServices,
+    regex: &Regex,
+    input: String,
+) -> Result<String, Error> {
+    let mut output = input.clone();
+
+    for caps in regex.captures_iter(&input) {
+        let Some(id) = transfer_quantity_id(&caps) else {
+            continue;
+        };
+        let value = sqlx::query_scalar::<_, f64>("SELECT quantity FROM transfer WHERE id = ?")
+            .bind(id as i64)
+            .fetch_optional(services.db.as_ref())
+            .await
+            .map_err(Error::other)?
             .unwrap_or(0.0);
 
         output = output.replace(&caps[0], &value.to_string());

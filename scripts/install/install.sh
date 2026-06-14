@@ -63,6 +63,22 @@ need_cmd() {
     have_cmd "$1" || fail "required command not found: $1"
 }
 
+resolve_version() {
+    if [ "$VERSION" != "rolling" ]; then
+        printf '%s\n' "$VERSION"
+        return
+    fi
+
+    api_url="https://api.github.com/repos/${LINCE_REPOSITORY}/releases?per_page=100"
+    if have_cmd curl; then
+        curl --proto '=https' --tlsv1.2 -fsSL "$api_url"
+    elif have_cmd wget; then
+        wget -qO- "$api_url"
+    else
+        fail "need curl or wget to resolve the latest rolling release"
+    fi | sed -n 's/.*"tag_name":[[:space:]]*"\(rolling-[^"]*\)".*/\1/p' | head -n1
+}
+
 download_file() {
     url="$1"
     destination="$2"
@@ -224,6 +240,9 @@ need_cmd rm
 need_cmd awk
 need_cmd grep
 need_cmd tr
+
+VERSION="$(resolve_version)"
+[ -n "$VERSION" ] || fail "unable to resolve a rolling release tag"
 
 if [ -z "$TARGET" ]; then
     TARGET="$(detect_target)"

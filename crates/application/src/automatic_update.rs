@@ -16,7 +16,8 @@ use {
 };
 
 const REPOSITORY: &str = "lince-social/lince";
-const ROLLING_TAG: &str = "rolling";
+const ROLLING_TAG_PREFIX: &str = "rolling-";
+const ROLLING_CHANNEL: &str = "rolling";
 const NOTIFICATION_ID: &str = "automatic-update-available";
 
 #[derive(Debug, Clone, Deserialize)]
@@ -199,8 +200,8 @@ async fn fetch_manifest(channel: &str) -> Result<UpdateManifest, Error> {
         .build()
         .map_err(Error::other)?;
 
-    let release = if channel == ROLLING_TAG {
-        fetch_release_by_tag(&client, ROLLING_TAG).await?
+    let release = if channel == ROLLING_CHANNEL {
+        fetch_latest_rolling_release(&client).await?
     } else {
         fetch_latest_tag_release(&client).await?
     };
@@ -219,20 +220,6 @@ async fn fetch_manifest(channel: &str) -> Result<UpdateManifest, Error> {
         .error_for_status()
         .map_err(Error::other)?
         .json::<UpdateManifest>()
-        .await
-        .map_err(Error::other)
-}
-
-async fn fetch_release_by_tag(client: &Client, tag: &str) -> Result<GithubRelease, Error> {
-    let url = format!("https://api.github.com/repos/{REPOSITORY}/releases/tags/{tag}");
-    client
-        .get(url)
-        .send()
-        .await
-        .map_err(Error::other)?
-        .error_for_status()
-        .map_err(Error::other)?
-        .json::<GithubRelease>()
         .await
         .map_err(Error::other)
 }
@@ -267,7 +254,7 @@ fn is_newer_update(
     current_revision: &str,
     channel: &str,
 ) -> bool {
-    if channel == ROLLING_TAG {
+    if channel == ROLLING_CHANNEL {
         let next_revision = manifest.revision.trim();
         return !next_revision.is_empty() && next_revision != current_revision.trim();
     }
@@ -435,10 +422,33 @@ fn current_binary_supports_server_update() -> bool {
 fn normalize_channel(channel: &str) -> String {
     let channel = channel.trim();
     if channel.is_empty() {
-        ROLLING_TAG.into()
+        ROLLING_CHANNEL.into()
     } else {
         channel.to_ascii_lowercase()
     }
+}
+
+async fn fetch_latest_rolling_release(client: &Client) -> Result<GithubRelease, Error> {
+    let url = format!("https://api.github.com/repos/{REPOSITORY}/releases");
+    let releases = client
+        .get(url)
+        .send()
+        .await
+        .map_err(Error::other)?
+        .error_for_status()
+        .map_err(Error::other)?
+        .json::<Vec<GithubRelease>>()
+        .await
+        .map_err(Error::other)?;
+
+    releases
+        .into_iter()
+        .find(|release| {
+            !release.draft
+                && !release.prerelease
+                && release.tag_name.starts_with(ROLLING_TAG_PREFIX)
+        })
+        .ok_or_else(|| Error::new(ErrorKind::NotFound, "no rolling Lince release found"))
 }
 
 fn parse_release_version(tag: &str) -> Option<Version> {

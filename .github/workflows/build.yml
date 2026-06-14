@@ -194,13 +194,13 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          TAG=rolling
+          TAG="rolling-$(date -u +%Y%m%d)"
 
           if ! gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
             gh release create "$TAG" \
               --repo "$GH_REPO" \
               --target "$GITHUB_SHA" \
-              --title "Rolling desktop release" \
+              --title "Rolling desktop release $TAG" \
               --notes "Latest desktop release from the main branch."
           fi
 

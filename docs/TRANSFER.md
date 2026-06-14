@@ -7,7 +7,6 @@ The detailed notes live in:
 - [Core Model](transfer-core-model.md)
 - [Visibility](transfer-visibility.md)
 - [Agreement And Events](transfer-agreement-events.md)
-- [Karma](transfer-karma.md)
 - [Simulation And Settlement](transfer-simulation-settlement.md)
 - [Intent And Discovery](transfer-intent-discovery.md)
 - [Networking And Sync](transfer-networking.md)
@@ -26,7 +25,7 @@ Recommended first implementation order:
 7. Coordinator-backed event sync cursor for participating Cells.
 8. Agreement levels with edit invalidation for connected items.
 9. Messages.
-10. Karma link that changes Transfer quantity only.
+10. Karma Transfer quantity tokens.
 11. Transfer quantity influence facts.
 12. Delivery/receipt confirmations.
 13. Individual/full settlement.
@@ -50,7 +49,7 @@ Recommended first implementation order:
 - Product shape and corrected assumptions live in [Core Model](transfer-core-model.md).
 - Visibility tables and UI behavior live in [Visibility](transfer-visibility.md).
 - Agreement, history events, signed events, and messages live in [Agreement And Events](transfer-agreement-events.md).
-- Karma activation lives in [Karma](transfer-karma.md).
+- Karma activation is implemented in this tracker.
 - Remaining quantity influence, projection, and full settlement work lives in [Simulation And Settlement](transfer-simulation-settlement.md).
 - Intent, discovery, proposal editing, and state model live in [Intent And Discovery](transfer-intent-discovery.md).
 - Remaining peer discovery and future federation work lives in [Networking And Sync](transfer-networking.md).
@@ -171,6 +170,41 @@ Settlement is local and idempotent per actor. The contribution side applies a ne
 - no existing `transfer_local_settlement` for the same Transfer and actor.
 
 The current sand settlement path does not yet consume plus/minus influence facts. The structured `transfer_quantity_influence` table exists for that next step.
+
+### Implemented Karma
+
+Karma can activate, deactivate, or neutralize a preconfigured Transfer by changing `transfer.quantity`. It does not create Transfer parties, visibility, proposal shape, items, interactions, agreement, or settlement.
+
+Transfer quantity is exposed to Karma with two equivalent token forms:
+
+```text
+tq4
+transfer-quantity-4
+```
+
+Both tokens read or write `transfer.quantity` for Transfer `4`.
+
+In a condition, the token is replaced with the current Transfer quantity. If the Transfer does not exist, the value is `0`.
+
+In a consequence, the token identifies which Transfer quantity receives the evaluated condition value. For example:
+
+```text
+condition: rq7 < 7
+operator: =
+consequence: tq4
+```
+
+If Record `7` is below `7`, Transfer `4` receives quantity `1`.
+
+Karma rules can also depend on Transfer quantities:
+
+```text
+condition: tq4
+operator: =
+consequence: rq9
+```
+
+When Transfer `4` quantity changes, Karma rules that reference `tq4` or `transfer-quantity-4` in their condition can run. This mirrors the existing `rq{id}` behavior for Record quantity.
 
 ## Status
 

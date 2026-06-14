@@ -763,3 +763,111 @@ fn consequence_node_id(id: u32) -> String {
 fn token_regex(prefix: &str) -> Regex {
     Regex::new(&format!(r"{prefix}(\d+)")).expect("valid karma token regex")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn rule(
+        karma_id: u32,
+        condition_id: u32,
+        condition_code: &str,
+        consequence_id: u32,
+        consequence_code: &str,
+    ) -> KarmaOrchestraRuleInput {
+        KarmaOrchestraRuleInput {
+            karma_id,
+            karma_name: format!("Karma {karma_id}"),
+            karma_quantity: 1,
+            karma_parallel: false,
+            karma_timeout_seconds: 0.0,
+            active: false,
+            condition_id,
+            condition_name: format!("Condition {condition_id}"),
+            condition_quantity: 1,
+            condition_code: condition_code.into(),
+            operator: "=".into(),
+            consequence_id,
+            consequence_name: format!("Consequence {consequence_id}"),
+            consequence_quantity: 1,
+            consequence_code: consequence_code.into(),
+        }
+    }
+
+    #[test]
+    fn transfer_quantity_tokens_are_numeric_aliases() {
+        let mut catalog = KarmaTokenCatalog::default();
+        catalog.transfers.insert(
+            4,
+            TransferToken {
+                id: 4,
+                quantity: -1.0,
+            },
+        );
+
+        let display = expression_display("tq4 + transfer-quantity-4", &catalog, true);
+
+        assert_eq!(
+            transfer_ids_in_expression(&display.code),
+            BTreeSet::from([4])
+        );
+        assert_eq!(first_transfer_quantity_token(&display.code), Some(4));
+        assert_eq!(display.human, "Transfer #4 + Transfer #4");
+        assert_eq!(display.value.numeric, Some(-2.0));
+        assert!(display.value.complete);
+        assert_eq!(display.references.len(), 2);
+        assert!(
+            display
+                .references
+                .iter()
+                .all(|reference| reference.kind == "transfer_quantity")
+        );
+    }
+
+    #[test]
+    fn missing_transfer_quantity_token_evaluates_to_zero() {
+        let catalog = KarmaTokenCatalog::default();
+
+        let display = expression_display("transfer-quantity-9 + 2", &catalog, true);
+
+        assert_eq!(
+            transfer_ids_in_expression(&display.code),
+            BTreeSet::from([9])
+        );
+        assert_eq!(display.value.numeric, Some(2.0));
+        assert!(display.value.complete);
+    }
+
+    #[test]
+    fn transfer_quantity_consequence_creates_fulfillment_link() {
+        let mut catalog = KarmaTokenCatalog::default();
+        catalog.transfers.insert(
+            4,
+            TransferToken {
+                id: 4,
+                quantity: 0.0,
+            },
+        );
+        catalog.records.insert(
+            9,
+            RecordToken {
+                id: 9,
+                quantity: 0.0,
+                head: "Target".into(),
+            },
+        );
+
+        let snapshot = build_karma_orchestra_snapshot(
+            1,
+            "Transfer Karma",
+            vec![rule(1, 10, "1", 11, "tq4"), rule(2, 12, "tq4", 13, "rq9")],
+            catalog,
+        );
+
+        assert!(snapshot.links.iter().any(|link| {
+            link.kind == "fulfillment"
+                && link.source == "consequence:11"
+                && link.target == "condition:12"
+        }));
+    }
+}

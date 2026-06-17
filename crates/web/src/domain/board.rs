@@ -52,6 +52,7 @@ pub struct BoardState {
 #[serde(rename_all = "camelCase")]
 pub struct AppBootstrap {
     pub app_name: &'static str,
+    pub runtime: AppRuntimeInfo,
     pub cols: u8,
     pub rows: u8,
     pub gap: u8,
@@ -60,6 +61,13 @@ pub struct AppBootstrap {
     pub board_state: BoardState,
     pub widget_bridge: WidgetBridgeSnapshot,
     pub servers: Vec<ServerBootstrap>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AppRuntimeInfo {
+    pub port: u16,
+    pub version: &'static str,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -81,6 +89,7 @@ impl AppBootstrap {
         widget_bridge: WidgetBridgeSnapshot,
         board_state: BoardState,
         servers: Vec<ServerBootstrap>,
+        runtime: AppRuntimeInfo,
     ) -> Self {
         let density = clamp_density(board_state.density);
         let (cols, rows, gap) = density_layout(density);
@@ -93,6 +102,7 @@ impl AppBootstrap {
 
         Self {
             app_name: "Lince",
+            runtime,
             cols,
             rows,
             gap,
@@ -111,6 +121,10 @@ impl Default for AppBootstrap {
             WidgetBridgeSnapshot::default(),
             default_board_state(),
             vec![],
+            AppRuntimeInfo {
+                port: 6174,
+                version: env!("CARGO_PKG_VERSION"),
+            },
         )
     }
 }

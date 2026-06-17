@@ -5,7 +5,8 @@ use {
 
 use super::shared::{
     app_shell_signals, asset_version_token, board_style, chevron_down_icon, eye_icon, pencil_icon,
-    render_card, render_lince_logo, render_topbar_brand, safe_json_for_html, sparkles_icon,
+    render_card, render_lince_logo, render_topbar_brand, safe_json_for_html, server_status_icon,
+    sparkles_icon,
 };
 
 pub fn render_app(bootstrap: &AppBootstrap) -> String {
@@ -69,7 +70,7 @@ fn render_app_body(bootstrap: &AppBootstrap, bootstrap_json: &str) -> Markup {
         body class="startup-active" data-signals=(app_shell_signals(bootstrap)) {
             (render_startup_screen())
             (render_app_shell(bootstrap))
-            (render_app_modals())
+            (render_app_modals(bootstrap))
             (render_hidden_inputs(bootstrap_json))
         }
     }
@@ -410,19 +411,23 @@ fn render_cards_layer(bootstrap: &AppBootstrap) -> Markup {
     }
 }
 
-fn render_app_modals() -> Markup {
+fn render_app_modals(bootstrap: &AppBootstrap) -> Markup {
     html! {
         (render_import_modal_backdrop())
         (render_local_packages_modal_backdrop())
         (render_dna_packages_modal_backdrop())
         (render_delete_card_modal_backdrop())
             (render_server_login_modal_backdrop())
-            (render_notifications_panel())
+            (render_notifications_panel(bootstrap))
             (render_widget_config_modal_backdrop())
     }
 }
 
-fn render_notifications_panel() -> Markup {
+fn render_notifications_panel(bootstrap: &AppBootstrap) -> Markup {
+    let runtime_label = format!(
+        "Port: {}\nLince: {}",
+        bootstrap.runtime.port, bootstrap.runtime.version
+    );
     html! {
         aside id="notifications-panel" class="notifications-panel" aria-label="Notificacoes" hidden="" {
             div class="notifications-panel__header" {
@@ -430,8 +435,21 @@ fn render_notifications_panel() -> Markup {
                     h2 class="notifications-panel__title" { "Notifications" }
                     p id="notifications-summary" class="notifications-panel__summary" { "No notifications" }
                 }
-                button id="notifications-close" class="icon-button" type="button" aria-label="Fechar notificacoes" {
-                    "x"
+                div class="notifications-panel__actions" {
+                    span
+                        class="notification-runtime"
+                        title=(runtime_label.as_str())
+                        aria-label=(runtime_label.as_str())
+                    {
+                        (server_status_icon())
+                        span class="notification-runtime__tooltip" role="tooltip" {
+                            span { (format!("Port {}", bootstrap.runtime.port)) }
+                            span { (format!("Lince {}", bootstrap.runtime.version)) }
+                        }
+                    }
+                    button id="notifications-close" class="icon-button" type="button" aria-label="Fechar notificacoes" {
+                        "x"
+                    }
                 }
             }
             div id="notifications-list" class="notifications-list" {}

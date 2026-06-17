@@ -206,6 +206,19 @@ pub(crate) fn sparkles_icon() -> Markup {
     }
 }
 
+pub(crate) fn server_status_icon() -> Markup {
+    html! {
+        svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" {
+            rect x="4" y="4" width="16" height="6" rx="1.5" {}
+            rect x="4" y="14" width="16" height="6" rx="1.5" {}
+            path d="M7 7h.01" {}
+            path d="M7 17h.01" {}
+            path d="M11 7h6" {}
+            path d="M11 17h6" {}
+        }
+    }
+}
+
 pub(crate) fn home_icon() -> Markup {
     html! {
         svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" {

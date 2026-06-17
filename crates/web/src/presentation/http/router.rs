@@ -3,7 +3,7 @@ use {
     crate::{
         HttpServeMode,
         application::state::AppState,
-        domain::board::{AppBootstrap, ServerBootstrap},
+        domain::board::{AppBootstrap, AppRuntimeInfo, ServerBootstrap},
         infrastructure::auth::{
             RemoteServerSessionSnapshot, RemoteServerSessionState, parse_cookie_header,
             session_cookie_header, session_cookie_name,
@@ -287,7 +287,15 @@ async fn build_bootstrap(state: &AppState, session_token: Option<&str>) -> AppBo
     let widget_bridge = state.widget_bridge.snapshot().await;
     let board_state = hydrated_board_state(state).await;
 
-    AppBootstrap::new(widget_bridge, board_state, servers)
+    AppBootstrap::new(
+        widget_bridge,
+        board_state,
+        servers,
+        AppRuntimeInfo {
+            port: state.listening_port,
+            version: env!("CARGO_PKG_VERSION"),
+        },
+    )
 }
 
 fn is_connected(session: &RemoteServerSessionSnapshot) -> bool {

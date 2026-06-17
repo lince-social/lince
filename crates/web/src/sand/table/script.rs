@@ -22,7 +22,7 @@ pub(super) fn script() -> String {
         const settingsKey = "table-nerd/" + instanceId;
 
         const state = {
-          controller: null,
+          stream: null,
           reconnectTimer: null,
           reconnectAttempt: 0,
           scrollTimer: null,
@@ -47,6 +47,46 @@ pub(super) fn script() -> String {
 
         function clamp(value, min, max) {
           return Math.min(max, Math.max(min, value));
+        }
+
+        function editDebug(label, detail = {}) {
+          const editing = state.editingCell;
+          const textarea = editing?.textarea;
+          const active = document.activeElement;
+          const activeLabel =
+            active instanceof HTMLElement
+              ? `${active.tagName.toLowerCase()}${active.className ? "." + String(active.className).replace(/\s+/g, ".") : ""}`
+              : String(active?.nodeName || "");
+          const payload = {
+            label,
+            focusedRowIndex: state.focusedRowIndex,
+            focusedColumnIndex: state.focusedColumnIndex,
+            focusedRowId: state.focusedRowId,
+            focusedColumnKey: state.focusedColumnKey,
+            editing: editing
+              ? {
+                  rowIndex: editing.rowIndex,
+                  columnIndex: editing.columnIndex,
+                  rowId: editing.rowId,
+                  columnKey: editing.columnKey,
+                  tableName: editing.tableName,
+                  currentText: editing.currentText,
+                  lastSavedText: editing.lastSavedText,
+                  selectionStart: textarea instanceof HTMLTextAreaElement ? textarea.selectionStart : editing.selectionStart,
+                  selectionEnd: textarea instanceof HTMLTextAreaElement ? textarea.selectionEnd : editing.selectionEnd,
+                  textareaConnected: textarea instanceof HTMLTextAreaElement ? textarea.isConnected : false,
+                  valueContainsTextarea:
+                    textarea instanceof HTMLTextAreaElement &&
+                    editing.valueElement instanceof HTMLElement
+                      ? editing.valueElement.contains(textarea)
+                      : false,
+                  cellConnected: editing.cell instanceof HTMLElement ? editing.cell.isConnected : false,
+                }
+              : null,
+            activeElement: activeLabel,
+            ...detail,
+          };
+          console.debug("[table-edit]", payload);
         }
 
         function setStatus(text, tone = "idle") {
@@ -952,27 +992,32 @@ pub(super) fn script() -> String {
           return String(row.cells?.id?.text || "").trim();
         }
 
-        function updateCellValue(cellElement, valueElement, row, column, cellValue, sourceTable) {
+        function updateCellValue(cellElement, valueElement, row, rowIndex, column, cellValue, sourceTable) {
           const editing = state.editingCell;
           const rowId = rowIdFromCells(row);
+          const editingRowId = String(editing?.rowId || "").trim();
           const isEditingThisCell =
             editing &&
-            String(editing.rowId || "") === rowId &&
+            (editingRowId
+              ? editingRowId === rowId
+              : Number(editing.rowIndex) === rowIndex) &&
             String(editing.columnKey || "") === column.key;
 
           if (isEditingThisCell) {
+            editDebug("stream-update-active-cell", {
+              rowId,
+              rowIndex,
+              columnKey: column.key,
+              incomingText: cellValue.text,
+              incomingMatchesCurrent: String(cellValue.text) === String(editing.currentText ?? ""),
+            });
             editing.cell = cellElement;
             editing.valueElement = valueElement;
-            if (editing.currentText === editing.lastSavedText && editing.textarea instanceof HTMLTextAreaElement) {
-              const start = editing.textarea.selectionStart;
-              const end = editing.textarea.selectionEnd;
-              editing.currentText = cellValue.text;
+            cellElement.dataset.focusedCell = "true";
+            cellElement.dataset.editingCell = "true";
+            valueElement.dataset.editingCell = "true";
+            if (String(cellValue.text) === String(editing.currentText ?? "")) {
               editing.lastSavedText = cellValue.text;
-              editing.textarea.value = cellValue.text;
-              editing.textarea.setSelectionRange(
-                clamp(start, 0, editing.textarea.value.length),
-                clamp(end, 0, editing.textarea.value.length),
-              );
             }
             return;
           }
@@ -1056,7 +1101,7 @@ pub(super) fn script() -> String {
                 cellElement.prepend(valueElement);
               }
               valueElement.className = column.key === "id" ? "cellValue cellValue--id" : "cellValue";
-              updateCellValue(cellElement, valueElement, row, column, cellValue, table.sourceTable);
+              updateCellValue(cellElement, valueElement, row, rowIndex, column, cellValue, table.sourceTable);
             });
 
             Array.from(rowElement.querySelectorAll("td[data-column-key]")).forEach((cell) => {
@@ -1200,22 +1245,6 @@ pub(super) fn script() -> String {
           }
         }
 
-        function parseEventBlock(block) {
-          const lines = block.split("\n");
-          let eventName = "message";
-          const dataLines = [];
-
-          for (const line of lines) {
-            if (line.startsWith("event:")) {
-              eventName = line.slice(6).trim();
-            } else if (line.startsWith("data:")) {
-              dataLines.push(line.slice(5).trimStart());
-            }
-          }
-
-          return { event: eventName, data: dataLines.join("\n") };
-        }
-
         function parseSsePayload(payload) {
           if (typeof payload !== "string") {
             return payload;
@@ -1348,11 +1377,13 @@ pub(super) fn script() -> String {
             !(editing.cell instanceof HTMLElement) ||
             !(editing.valueElement instanceof HTMLElement)
           ) {
+            editDebug("place-textarea-skip-invalid", { hasEditing: Boolean(editing) });
             return null;
           }
 
           let textarea = editing.textarea;
           if (textarea instanceof HTMLTextAreaElement && editing.valueElement.contains(textarea)) {
+            editDebug("place-textarea-keep-existing", { options });
             return textarea;
           }
 
@@ -1371,6 +1402,12 @@ pub(super) fn script() -> String {
           editing.cell.dataset.editingCell = "true";
           editing.textarea = textarea;
 
+          editDebug("place-textarea-created", {
+            options,
+            value: textarea.value,
+            width: textarea.style.width,
+            height: textarea.style.height,
+          });
           focusCellEditor(textarea, options);
           return textarea;
         }
@@ -1402,6 +1439,12 @@ pub(super) fn script() -> String {
 
           const editingCell = editing.cell;
           const valueElement = editing.valueElement;
+          editDebug("remove-cell-textarea", {
+            replacementText,
+            editingValueText: editing.currentText,
+            textareaValue:
+              editing.textarea instanceof HTMLTextAreaElement ? editing.textarea.value : null,
+          });
           if (valueElement instanceof HTMLElement) {
             delete valueElement.dataset.editingCell;
             valueElement.textContent = String(replacementText ?? editing.currentText ?? "");
@@ -1413,6 +1456,7 @@ pub(super) fn script() -> String {
         }
 
         function clearEditingCellState() {
+          editDebug("clear-editing-cell-state");
           removeCellTextarea(state.editingCell);
           state.editingCell = null;
           stopEditDebounceTimer();
@@ -1421,18 +1465,52 @@ pub(super) fn script() -> String {
         function restoreEditingCellIfNeeded() {
           const editing = state.editingCell;
           if (!editing) {
+            editDebug("restore-skip-no-editing");
             return;
           }
 
           const cell = cellByIdentity(editing.rowId, editing.columnKey) || cellAt(editing.rowIndex, editing.columnIndex);
           if (!(cell instanceof HTMLElement)) {
+            editDebug("restore-clear-missing-cell", {
+              rowId: editing.rowId,
+              rowIndex: editing.rowIndex,
+              columnKey: editing.columnKey,
+            });
             clearEditingCellState();
             return;
           }
 
           const valueElement = cellValueElement(cell);
           if (!(valueElement instanceof HTMLElement)) {
+            editDebug("restore-clear-missing-value", {
+              rowId: editing.rowId,
+              rowIndex: editing.rowIndex,
+              columnKey: editing.columnKey,
+            });
             clearEditingCellState();
+            return;
+          }
+
+          const existingTextarea =
+            editing.textarea instanceof HTMLTextAreaElement &&
+            valueElement.contains(editing.textarea)
+              ? editing.textarea
+              : null;
+          if (existingTextarea) {
+            editDebug("restore-keep-existing-textarea", {
+              cellChanged: editing.cell !== cell,
+              valueChanged: editing.valueElement !== valueElement,
+            });
+            editing.cell = cell;
+            editing.valueElement = valueElement;
+            editing.selectionStart = existingTextarea.selectionStart;
+            editing.selectionEnd = existingTextarea.selectionEnd;
+            cell.dataset.focusedCell = "true";
+            cell.dataset.editingCell = "true";
+            valueElement.dataset.editingCell = "true";
+            if (document.activeElement !== existingTextarea) {
+              focusCellEditor(existingTextarea, { preserveSelection: true });
+            }
             return;
           }
 
@@ -1442,6 +1520,11 @@ pub(super) fn script() -> String {
             valueElement,
             textarea: null,
           };
+          editDebug("restore-recreate-textarea", {
+            rowId: editing.rowId,
+            rowIndex: editing.rowIndex,
+            columnKey: editing.columnKey,
+          });
           placeCellTextarea(state.editingCell, { preserveSelection: true });
         }
 
@@ -1551,23 +1634,31 @@ pub(super) fn script() -> String {
 
         function focusCellEditor(textarea, options = {}) {
           if (!(textarea instanceof HTMLTextAreaElement)) {
+            editDebug("focus-editor-skip-invalid");
             return;
           }
 
+          editDebug("focus-editor-request", { options, value: textarea.value });
           textarea.focus({ preventScroll: true });
           window.requestAnimationFrame(() => {
             if (!textarea.isConnected) {
+              editDebug("focus-editor-skip-disconnected");
               return;
             }
 
             if (options.selectAll === true) {
               textarea.select();
+              editDebug("focus-editor-select-all", {
+                selectionStart: textarea.selectionStart,
+                selectionEnd: textarea.selectionEnd,
+              });
               return;
             }
 
             if (Number.isInteger(options.caretOffset)) {
               const offset = clamp(options.caretOffset, 0, textarea.value.length);
               textarea.setSelectionRange(offset, offset);
+              editDebug("focus-editor-caret-offset", { offset });
               return;
             }
 
@@ -1584,6 +1675,7 @@ pub(super) fn script() -> String {
                 textarea.value.length,
               );
               textarea.setSelectionRange(start, end);
+              editDebug("focus-editor-preserve-selection", { start, end });
             }
           });
         }
@@ -1651,16 +1743,21 @@ pub(super) fn script() -> String {
 
         function beginEditOnCell(cell, options = {}) {
           if (!(cell instanceof HTMLElement)) {
+            editDebug("begin-edit-skip-invalid-cell");
             return;
           }
 
           if (state.editingCell?.cell === cell) {
+            editDebug("begin-edit-existing-cell", { options });
             placeCellTextarea(state.editingCell, { preserveSelection: true });
             return;
           }
 
           if (state.editingCell) {
             const previous = state.editingCell;
+            editDebug("begin-edit-saving-previous", {
+              nextColumnKey: cell.dataset.columnKey || "",
+            });
             updateEditingTextFromTextarea(previous);
             clearEditingCellState();
             void saveEditingCell(previous, { exit: false });
@@ -1669,15 +1766,18 @@ pub(super) fn script() -> String {
           const row = cell.closest("tr");
           const valueElement = cellValueElement(cell);
           if (!(row instanceof HTMLElement) || !(valueElement instanceof HTMLElement)) {
+            editDebug("begin-edit-skip-missing-row-or-value");
             return;
           }
 
           const columnKey = String(cell.dataset.columnKey || "").trim();
           if (!columnKey) {
+            editDebug("begin-edit-skip-missing-column");
             return;
           }
 
           if (columnKey === "id") {
+            editDebug("begin-edit-skip-id-column");
             showErrorToast("id column is read-only");
             return;
           }
@@ -1713,6 +1813,14 @@ pub(super) fn script() -> String {
 
           clearSelectionAttributes();
           cell.dataset.focusedCell = "true";
+          editDebug("begin-edit-created", {
+            rowId,
+            rowIndex: state.focusedRowIndex,
+            columnKey,
+            columnIndex: state.focusedColumnIndex,
+            text,
+            options,
+          });
           placeCellTextarea(state.editingCell, {
             caretOffset: options.caretOffset,
             selectAll: options.selectAll === true,
@@ -1840,11 +1948,13 @@ pub(super) fn script() -> String {
 
         async function saveEditingCell(editing, options = {}) {
           if (!editing) {
+            editDebug("save-skip-no-editing");
             return;
           }
 
           const rawText = readEditingCellText(editing);
           if (rawText === editing.lastSavedText) {
+            editDebug("save-skip-unchanged", { rawText, options });
             if (options.exit === true) {
               clearEditingCellState();
             }
@@ -1855,6 +1965,10 @@ pub(super) fn script() -> String {
           try {
             target = buildSaveTarget(editing, rawText);
           } catch (error) {
+            editDebug("save-build-target-error", {
+              rawText,
+              error: error instanceof Error ? error.message : String(error),
+            });
             if (error instanceof Error) {
               showErrorToast(error.message);
             } else {
@@ -1868,6 +1982,13 @@ pub(super) fn script() -> String {
           const requestBody = JSON.stringify(target.payload);
 
           try {
+            editDebug("save-start", {
+              url: target.url,
+              rawText,
+              lastSavedText: editing.lastSavedText,
+              options,
+              requestBody,
+            });
             setStatus("Saving", "loading");
             const response = await fetch(target.url, {
               method: "PATCH",
@@ -1906,6 +2027,12 @@ pub(super) fn script() -> String {
             }
 
             editing.lastSavedText = rawText;
+            editDebug("save-success", {
+              rawText,
+              options,
+              responseStatus: response.status,
+              stillCurrentEditing: state.editingCell === editing,
+            });
             setStatus("Live", "live");
             if (options.exit === true) {
               clearEditingCellState();
@@ -1916,6 +2043,7 @@ pub(super) fn script() -> String {
             }
 
             const reason = error instanceof Error ? error.message : "patch failed";
+            editDebug("save-error", { reason });
             setStatus("Save failed", "error");
             showErrorToast(reason);
           } finally {
@@ -1927,17 +2055,21 @@ pub(super) fn script() -> String {
 
         function scheduleEditingCellSave() {
           if (!state.editingCell) {
+            editDebug("schedule-save-skip-no-editing");
             return;
           }
 
           stopEditDebounceTimer();
           stopEditSaveRequest();
+          editDebug("schedule-save");
           state.editDebounceTimer = window.setTimeout(() => {
             const editing = state.editingCell;
             if (!editing) {
+              editDebug("schedule-save-fired-no-editing");
               return;
             }
 
+            editDebug("schedule-save-fired");
             void saveEditingCell(editing, { exit: false });
           }, 500);
         }
@@ -2018,10 +2150,11 @@ pub(super) fn script() -> String {
           stopReconnectTimer();
           setScrolling(false);
 
-          if (state.controller) {
-            state.controller.abort();
-            state.controller = null;
+          if (state.stream) {
+            state.stream.close();
+            state.stream = null;
           }
+
         }
 
         function scheduleReconnect() {
@@ -2036,7 +2169,7 @@ pub(super) fn script() -> String {
           state.reconnectTimer = window.setTimeout(() => connectStream(false), delay);
         }
 
-        async function connectStream(reset) {
+        function connectStream(reset) {
           clearStream();
 
           if (!state.streamUrl) {
@@ -2049,100 +2182,64 @@ pub(super) fn script() -> String {
           }
 
           const generation = ++state.streamGeneration;
-          const controller = new AbortController();
-          state.controller = controller;
+          if (bootstrap) {
+            bootstrap.dataset.streamUrl = state.streamUrl;
+          }
 
-          try {
-            if (bootstrap) {
-              bootstrap.dataset.streamUrl = state.streamUrl;
-            }
+          const source = new EventSource(state.streamUrl);
+          state.stream = source;
 
-            const response = await fetch(state.streamUrl, {
-              headers: {
-                Accept: "text/event-stream",
-              },
-              cache: "no-store",
-              signal: controller.signal,
-            });
-
-            if (controller.signal.aborted || generation !== state.streamGeneration) {
+          source.addEventListener("open", () => {
+            if (generation !== state.streamGeneration || state.stream !== source) {
               return;
             }
 
-            if (response.status === 401) {
-              window.LinceWidgetHost?.invalidateServerAuth?.(serverId);
-              setStatus("Bloqueado", "error");
-              return;
-            }
-
-            if (!response.ok || !response.body) {
-              const raw = await response.text().catch(() => "");
-              throw new Error(raw || `Nao foi possivel abrir o stream (${response.status}).`);
-            }
-
+            editDebug("stream-open", { generation });
             state.reconnectAttempt = 0;
             setStatus("Live", "live");
+          });
 
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = "";
-
-            while (true) {
-              const { value, done } = await reader.read();
-              if (done || controller.signal.aborted || generation !== state.streamGeneration) {
-                break;
-              }
-
-              buffer += decoder.decode(value, { stream: true });
-              const blocks = buffer.split("\n\n");
-              buffer = blocks.pop() || "";
-
-              for (const block of blocks) {
-                const trimmed = block.trim();
-                if (!trimmed) {
-                  continue;
-                }
-
-                const event = parseEventBlock(trimmed);
-                if (!event.data) {
-                  continue;
-                }
-
-                const payload = parseSsePayload(event.data);
-                if (event.event === "snapshot") {
-                  renderSnapshotPayload(payload);
-                } else if (event.event === "error") {
-                  setStatus("Offline", "error");
-                  showErrorToast(
-                    payload && typeof payload === "object"
-                      ? payload.message || payload.error || "stream error"
-                      : payload || "stream error",
-                  );
-                }
-              }
-            }
-
-            if (controller.signal.aborted || generation !== state.streamGeneration) {
+          source.addEventListener("snapshot", (event) => {
+            if (generation !== state.streamGeneration || state.stream !== source) {
               return;
             }
 
+            const payload = parseSsePayload(event.data);
+            editDebug("stream-snapshot", {
+              generation,
+              eventDataLength: String(event.data || "").length,
+            });
+            renderSnapshotPayload(payload);
+            setStatus("Live", "live");
+          });
+
+          source.addEventListener("error", (event) => {
+            if (generation !== state.streamGeneration || state.stream !== source) {
+              return;
+            }
+
+            editDebug("stream-error", {
+              hasData: Boolean(event.data),
+              generation,
+            });
+            if (event.data) {
+              const payload = parseSsePayload(event.data);
+              setStatus("Offline", "error");
+              showErrorToast(
+                payload && typeof payload === "object"
+                  ? payload.message || payload.error || "stream error"
+                  : payload || "stream error",
+              );
+              return;
+            }
+
+            source.close();
+            if (state.stream === source) {
+              state.stream = null;
+            }
             setStatus("Reconnecting", "loading");
             scheduleReconnect();
-          } catch (error) {
-            if (controller.signal.aborted || generation !== state.streamGeneration) {
-              return;
-            }
-
-            setStatus("Offline", "error");
-            scheduleReconnect();
-            if (error instanceof Error) {
-              console.error(error);
-            }
-          } finally {
-            if (state.controller === controller) {
-              state.controller = null;
-            }
-          }
+          });
         }
 
         window.TableWidget = {
@@ -2216,6 +2313,9 @@ pub(super) fn script() -> String {
             }
 
             if (target.closest(".cellEditor")) {
+              editDebug("focusin-editor", {
+                targetClass: target.className,
+              });
               return;
             }
 
@@ -2233,6 +2333,9 @@ pub(super) fn script() -> String {
             }
 
             if (state.nerdMode || state.editingCell) {
+              editDebug("focusin-cell-sync-selection", {
+                columnKey: cell.dataset.columnKey || "",
+              });
               syncSelection();
             }
           });
@@ -2244,12 +2347,24 @@ pub(super) fn script() -> String {
 
             const editing = state.editingCell;
             if (!editing || target !== editing.textarea) {
+              editDebug("focusout-ignore", {
+                targetClass: target.className,
+                hasEditing: Boolean(editing),
+                isTextarea: Boolean(editing && target === editing.textarea),
+              });
               return;
             }
 
             updateEditingTextFromTextarea(editing);
+            editDebug("focusout-editor", {
+              relatedTarget:
+                event.relatedTarget instanceof HTMLElement
+                  ? event.relatedTarget.tagName.toLowerCase() + "." + event.relatedTarget.className
+                  : String(event.relatedTarget?.nodeName || ""),
+            });
             window.requestAnimationFrame(() => {
               if (state.editingCell !== editing) {
+                editDebug("focusout-raf-skip-editing-changed");
                 return;
               }
 
@@ -2258,9 +2373,16 @@ pub(super) fn script() -> String {
                 activeElement instanceof Node &&
                 (isInsideEditingValue(activeElement) || !editing.textarea?.isConnected)
               ) {
+                editDebug("focusout-raf-skip-still-inside-or-disconnected", {
+                  textareaConnected:
+                    editing.textarea instanceof HTMLTextAreaElement
+                      ? editing.textarea.isConnected
+                      : false,
+                });
                 return;
               }
 
+              editDebug("focusout-raf-save");
               void saveEditingCell(editing, { exit: false });
             });
           });
@@ -2277,13 +2399,20 @@ pub(super) fn script() -> String {
 
             editing.currentText = editing.textarea.value;
             rememberEditorSelection(editing);
+            editDebug("input-editor", {
+              value: editing.currentText,
+              selectionStart: editing.textarea.selectionStart,
+              selectionEnd: editing.textarea.selectionEnd,
+            });
             scheduleEditingCellSave();
           });
           tablePanel.addEventListener("keyup", () => {
             rememberEditorSelection(state.editingCell);
+            editDebug("keyup-remember-selection");
           });
           tablePanel.addEventListener("mouseup", () => {
             rememberEditorSelection(state.editingCell);
+            editDebug("mouseup-remember-selection");
           });
 
           const observer = new MutationObserver((mutations) => {
@@ -2293,8 +2422,17 @@ pub(super) fn script() -> String {
               mutations.every(isEditingElementMutation);
 
             if (!onlyEditingValueChanged) {
+              editDebug("mutation-sync-selection", {
+                mutationCount: mutations.length,
+                onlyEditingValueChanged: Boolean(onlyEditingValueChanged),
+                mutationTypes: mutations.map((mutation) => mutation.type).join(","),
+              });
               syncSelection();
               refreshCreateSchemaIfNeeded();
+            } else {
+              editDebug("mutation-only-editing-value", {
+                mutationCount: mutations.length,
+              });
             }
           });
           observer.observe(tablePanel, { childList: true, characterData: true, subtree: true });

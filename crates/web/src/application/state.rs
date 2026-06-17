@@ -24,6 +24,7 @@ pub struct AppState {
     pub services: InjectedServices,
     pub backend: BackendApiService,
     pub board_state: BoardStateStore,
+    pub listening_port: u16,
     pub local_auth_required: bool,
     pub manas: ManasGateway,
     pub organs: OrganStore,

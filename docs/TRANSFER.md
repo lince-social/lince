@@ -141,7 +141,7 @@ Events are append-only and signed with the local Transfer node key. The implemen
 - `receipt_confirmed`
 - `settlement_applied`
 
-The broader structured event vocabulary, including `transfer_inactivated`, item/interaction edits, visibility changes, messages, settlement reversal, and dispute events, still needs a dedicated event migration. The current `transfer_event` table keeps the implemented event kinds and existing hash-chain/signature columns.
+The `transfer_event` table also accepts the broader structured event vocabulary needed by the package model and future UI flows: `transfer_quantity_changed`, `transfer_inactivated`, `item_edited`, `interaction_created`, `interaction_edited`, `visibility_changed`, `message_sent`, `settlement_reverted`, `dispute_opened`, and `dispute_resolved`. Most of those event handlers are still planned; the schema now reserves the stable event names so package/history data does not need another table rewrite.
 
 Transfer packages carry identity, item, relation, tree config, and event data between nodes. Nodes can receive addressed packages directly, accept public initial proposal packages when ingress is enabled, or cache unrelated public packages as gossip. Startup and heartbeat tasks maintain a local transfer sync cache and flush the sync outbox.
 

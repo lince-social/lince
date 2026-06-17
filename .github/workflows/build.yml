@@ -1,4 +1,4 @@
-name: desktop-release
+name: app-release
 
 on:
   push:
@@ -7,6 +7,34 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      build_android:
+        description: Build the Tauri Android package
+        required: false
+        default: false
+        type: boolean
+      android_artifact:
+        description: Android artifact type
+        required: false
+        default: apk
+        type: choice
+        options:
+          - apk
+          - aab
+          - both
+      build_ios:
+        description: Build the Tauri iOS package
+        required: false
+        default: false
+        type: boolean
+      ios_target:
+        description: iOS target
+        required: false
+        default: simulator
+        type: choice
+        options:
+          - simulator
+          - device
 
 permissions:
   contents: write
@@ -143,6 +171,191 @@ jobs:
           path: desktop-artifacts/*
           if-no-files-found: error
           retention-days: 1
+
+  android:
+    if: github.event_name == 'workflow_dispatch' && inputs.build_android
+    needs: check
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            curl \
+            file \
+            libssl-dev \
+            pkg-config \
+            wget
+
+      - name: Install Rust Android targets
+        run: |
+          rustup target add \
+            aarch64-linux-android \
+            armv7-linux-androideabi \
+            i686-linux-android \
+            x86_64-linux-android
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --locked --version '^2'
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+            crates/desktop/target
+          key: android-${{ runner.os }}-${{ inputs.android_artifact }}-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Prepare Tauri Android project
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd crates/desktop
+          if [[ ! -d gen/android ]]; then
+            cargo tauri android init --ci
+          fi
+
+      - name: Build Android package
+        shell: bash
+        env:
+          RUSTFLAGS: "-D warnings"
+        run: |
+          set -euo pipefail
+          cd crates/desktop
+          case "${{ inputs.android_artifact }}" in
+            apk)
+              cargo tauri android build --apk --verbose
+              ;;
+            aab)
+              cargo tauri android build --verbose
+              ;;
+            both)
+              cargo tauri android build --apk --verbose
+              cargo tauri android build --verbose
+              ;;
+          esac
+
+      - name: Collect Android artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mobile-artifacts
+          find crates/desktop/gen/android -type f \
+            \( -name '*.apk' -o -name '*.aab' \) \
+            -exec cp {} mobile-artifacts/ \;
+          test -n "$(find mobile-artifacts -maxdepth 1 -type f)"
+          cd mobile-artifacts
+          for asset in *; do
+            sha256sum "$asset" > "${asset}.sha256"
+          done
+
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lince-mobile-artifacts-android-${{ inputs.android_artifact }}
+          path: mobile-artifacts/*
+          if-no-files-found: error
+          retention-days: 7
+
+  ios:
+    if: github.event_name == 'workflow_dispatch' && inputs.build_ios
+    needs: check
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Rust iOS targets
+        run: |
+          rustup target add \
+            aarch64-apple-ios \
+            aarch64-apple-ios-sim
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --locked --version '^2'
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+            crates/desktop/target
+          key: ios-${{ runner.os }}-${{ inputs.ios_target }}-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Prepare Tauri iOS project
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd crates/desktop
+          if [[ ! -d gen/apple ]]; then
+            cargo tauri ios init --ci
+          fi
+
+      - name: Build iOS package
+        shell: bash
+        env:
+          RUSTFLAGS: "-D warnings"
+        run: |
+          set -euo pipefail
+          cd crates/desktop
+          case "${{ inputs.ios_target }}" in
+            simulator)
+              cargo tauri ios build --target aarch64-apple-ios-sim --verbose
+              ;;
+            device)
+              cargo tauri ios build --target aarch64-apple-ios --verbose
+              ;;
+          esac
+
+      - name: Collect iOS artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mobile-artifacts
+          find crates/desktop/gen/apple crates/desktop/target target -type f \
+            \( -name '*.ipa' -o -name '*.app' -o -name '*.app.tar.gz' \) \
+            -exec cp -R {} mobile-artifacts/ \; 2>/dev/null || true
+          test -n "$(find mobile-artifacts -maxdepth 1 -mindepth 1)"
+          cd mobile-artifacts
+          for asset in *; do
+            if [[ -d "$asset" ]]; then
+              tar -czf "${asset}.tar.gz" "$asset"
+              rm -rf "$asset"
+              asset="${asset}.tar.gz"
+            fi
+            shasum -a 256 "$asset" > "${asset}.sha256"
+          done
+
+      - name: Upload iOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lince-mobile-artifacts-ios-${{ inputs.ios_target }}
+          path: mobile-artifacts/*
+          if-no-files-found: error
+          retention-days: 7
 
   publish-rolling:
     if: github.ref == 'refs/heads/main'

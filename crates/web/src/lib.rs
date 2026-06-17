@@ -70,8 +70,28 @@ pub async fn serve_with_bound_addr_sender(
     mode: HttpServeMode,
     bound_addr_sender: Option<oneshot::Sender<SocketAddr>>,
 ) -> Result<(), IoError> {
+    let listen_addr = listen_addr
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or_else(|| DEFAULT_WEB_LISTEN_ADDR.to_string());
+    let address = listen_addr.parse::<SocketAddr>().map_err(|error| {
+        IoError::other(format!("Invalid listen address `{listen_addr}`: {error}"))
+    })?;
+    let listener = tokio::net::TcpListener::bind(address)
+        .await
+        .map_err(|error| {
+            if error.kind() == ErrorKind::AddrInUse {
+                IoError::new(
+                    ErrorKind::AddrInUse,
+                    format!("Address {address} is already in use"),
+                )
+            } else {
+                IoError::new(error.kind(), format!("Failed to bind {address}: {error}"))
+            }
+        })?;
+    let local_addr = listener.local_addr().map_err(IoError::other)?;
+
     let auth = AppAuth::with_shared_remote_tokens(services.remote_organ_auth.clone());
-    let local_base_url = local_base_url_from_listen_addr(listen_addr.as_deref())?;
+    let local_base_url = local_base_url_from_socket_addr(local_addr);
     let board_state = BoardStateStore::new().map_err(IoError::other)?;
     let organs = OrganStore::new(services.db.clone(), services.writer.clone());
     let backend = BackendApiService::new(services.clone(), Arc::new(jwt_secret));
@@ -94,6 +114,7 @@ pub async fn serve_with_bound_addr_sender(
         services: services.clone(),
         backend: backend.clone(),
         board_state: board_state.clone(),
+        listening_port: local_addr.port(),
         local_auth_required,
         manas: manas.clone(),
         organs: organs.clone(),
@@ -141,29 +162,10 @@ pub async fn serve_with_bound_addr_sender(
 
     let app = axum::Router::new().merge(build_router(app_state, mode));
 
-    let listen_addr = listen_addr
-        .filter(|value| !value.trim().is_empty())
-        .unwrap_or_else(|| DEFAULT_WEB_LISTEN_ADDR.to_string());
-    let address = listen_addr.parse::<SocketAddr>().map_err(|error| {
-        IoError::other(format!("Invalid listen address `{listen_addr}`: {error}"))
-    })?;
-    let listener = tokio::net::TcpListener::bind(address)
-        .await
-        .map_err(|error| {
-            if error.kind() == ErrorKind::AddrInUse {
-                IoError::new(
-                    ErrorKind::AddrInUse,
-                    format!("Address {address} is already in use"),
-                )
-            } else {
-                IoError::new(error.kind(), format!("Failed to bind {address}: {error}"))
-            }
-        })?;
     let label = match mode {
         HttpServeMode::FullUi => "Web frontend",
         HttpServeMode::ApiOnly => "HTTP API",
     };
-    let local_addr = listener.local_addr().map_err(IoError::other)?;
     if let Some(sender) = bound_addr_sender {
         let _ = sender.send(local_addr);
     }
@@ -171,15 +173,11 @@ pub async fn serve_with_bound_addr_sender(
     axum::serve(listener, app).await.map_err(IoError::other)
 }
 
-fn local_base_url_from_listen_addr(listen_addr: Option<&str>) -> Result<String, IoError> {
-    let listen_addr = listen_addr.unwrap_or("127.0.0.1:6174");
-    let address = listen_addr.parse::<SocketAddr>().map_err(|error| {
-        IoError::other(format!("Invalid listen address `{listen_addr}`: {error}"))
-    })?;
+fn local_base_url_from_socket_addr(address: SocketAddr) -> String {
     let host = if address.ip().is_unspecified() {
         "127.0.0.1".to_string()
     } else {
         address.ip().to_string()
     };
-    Ok(format!("http://{host}:{}", address.port()))
+    format!("http://{host}:{}", address.port())
 }

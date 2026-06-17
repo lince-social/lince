@@ -197,6 +197,7 @@
 
             shellHook = ''
               export RUSTFLAGS="-D warnings"
+              export LINCE_MIGRATION_PREFLIGHT=1
             ''
             + lib.optionalString pkgs.stdenv.isLinux ''
               export LD_LIBRARY_PATH="${
@@ -249,6 +250,7 @@
 
             shellHook = ''
               export RUSTFLAGS="-D warnings"
+              export LINCE_MIGRATION_PREFLIGHT=1
             ''
             + lib.optionalString pkgs.stdenv.isLinux ''
               export LD_LIBRARY_PATH="${

@@ -638,6 +638,68 @@ body.auth-pending .startup-auth-card {
     position: relative;
 }
 
+.notification-runtime {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border);
+    border-radius: 15px;
+    color: #d7dde8;
+    background: rgba(18, 20, 24, 0.75);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.notification-runtime svg {
+    width: 16px;
+    height: 16px;
+}
+
+.notification-runtime__tooltip {
+    position: absolute;
+    right: -2px;
+    top: calc(100% + 10px);
+    z-index: 40;
+    display: grid;
+    gap: 3px;
+    min-width: 118px;
+    padding: 8px 10px;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    color: var(--text-strong);
+    background: rgba(14, 16, 20, 0.98);
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.28);
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.25;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-3px);
+    transition:
+        opacity var(--transition-fast),
+        transform var(--transition-fast);
+}
+
+.notification-runtime__tooltip::before {
+    content: "";
+    position: absolute;
+    top: -5px;
+    right: 10px;
+    width: 8px;
+    height: 8px;
+    border-top: 1px solid var(--border-strong);
+    border-left: 1px solid var(--border-strong);
+    background: rgba(14, 16, 20, 0.98);
+    transform: rotate(45deg);
+}
+
+.notification-runtime:hover .notification-runtime__tooltip,
+.notification-runtime:focus-visible .notification-runtime__tooltip {
+    opacity: 1;
+    transform: translateY(0);
+}
+
 .notification-button__mark {
     display: grid;
     place-items: center;
@@ -687,6 +749,12 @@ body.auth-pending .startup-auth-card {
     gap: 14px;
     padding: 18px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.notifications-panel__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .notifications-panel__title {

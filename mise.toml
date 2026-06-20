@@ -10,3 +10,7 @@ mprocs --names lince,test \
     "cargo watch -x run" \
     "cargo watch -x 'run -- --port 6176 --data-dir /home/user/.config/test_lince'"
 """
+
+[tasks.test-all]
+description = "Run all Rust tests in the workspace"
+run = "cargo test --workspace --all-targets"

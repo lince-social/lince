@@ -138,6 +138,9 @@ mod tests {
             "transfer_visibility_subject",
             "transfer_visibility_rule",
             "transfer_visibility_field",
+            "work_metadata",
+            "work_subject",
+            "work_assignment",
         ] {
             let exists = sqlx::query_scalar::<_, i64>(
                 "SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name = ?",
@@ -330,6 +333,86 @@ mod tests {
         .execute(&pool)
         .await
         .expect("widened event vocabulary accepts transfer_inactivated");
+    }
+
+    #[tokio::test]
+    async fn generic_work_metadata_migration_backfills_kanban_sidecars() {
+        let options = SqliteConnectOptions::new()
+            .filename(":memory:")
+            .create_if_missing(true)
+            .foreign_keys(true);
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect_with(options)
+            .await
+            .expect("connect to in-memory sqlite");
+
+        sqlx::migrate!("../../migrations")
+            .run(&pool)
+            .await
+            .expect("run embedded migrations");
+
+        sqlx::raw_sql(
+            r#"
+            INSERT INTO app_user (id, name, username, password_hash, role_id)
+            VALUES (42, 'Ada', 'ada', 'hash', 1);
+            INSERT INTO record (id, quantity, head, body)
+            VALUES (7, 1, 'Ship work metadata', 'body');
+            INSERT INTO record_extension (record_id, namespace, version, freestyle_data_structure)
+            VALUES
+                (7, 'task.type', 1, '{"task_type":"task"}'),
+                (7, 'task.schedule', 1, '{"start_at":"2026-06-17T10:00:00Z","end_at":"2026-06-17T11:00:00Z"}'),
+                (7, 'task.effort', 1, '{"estimate_seconds":3600}'),
+                (7, 'task.categories', 1, '{"categories":["backend","transfer"]}');
+            INSERT INTO record_link (record_id, link_type, target_table, target_id)
+            VALUES (7, 'assigned_to', 'app_user', 42);
+            "#,
+        )
+        .execute(&pool)
+        .await
+        .expect("seed legacy kanban sidecars");
+
+        sqlx::raw_sql(include_str!(
+            "../../../migrations/20260617120000_generic_work_metadata.sql"
+        ))
+        .execute(&pool)
+        .await
+        .expect("rerun generic work migration");
+
+        let metadata = sqlx::query_as::<
+            _,
+            (
+                Option<String>,
+                Option<String>,
+                Option<String>,
+                Option<i64>,
+                String,
+            ),
+        >(
+            "SELECT task_type, start_at, end_at, estimate_seconds, metadata_json
+             FROM work_metadata
+             WHERE owner_kind = 'record' AND owner_id = 7",
+        )
+        .fetch_one(&pool)
+        .await
+        .expect("load backfilled work metadata");
+        assert_eq!(metadata.0.as_deref(), Some("task"));
+        assert_eq!(metadata.1.as_deref(), Some("2026-06-17T10:00:00Z"));
+        assert_eq!(metadata.2.as_deref(), Some("2026-06-17T11:00:00Z"));
+        assert_eq!(metadata.3, Some(3600));
+        assert!(metadata.4.contains("backend"));
+        assert!(metadata.4.contains("transfer"));
+
+        let assignment_count = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(1)
+             FROM work_assignment assignment
+             JOIN work_subject subject ON subject.id = assignment.work_subject_id
+             WHERE subject.subject_kind = 'app_user' AND subject.app_user_id = 42",
+        )
+        .fetch_one(&pool)
+        .await
+        .expect("count backfilled assignments");
+        assert_eq!(assignment_count, 1);
     }
 
     #[test]

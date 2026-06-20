@@ -46,6 +46,7 @@ pub(super) fn script() -> String {
   let contractLoading = false;
   let reloadQueued = false;
   let confirmingProgressAction = null;
+  const collapsedTransferUids = new Set();
 
   function contractUrl() {
     return "/host/widgets/" + encodeURIComponent(instanceId) + "/contract";
@@ -169,14 +170,52 @@ pub(super) fn script() -> String {
     ].some((value) => String(value || "").toLowerCase().includes(query)));
   }
 
-  function transferDepth(transfer, seen = new Set()) {
-    const uid = String(transfer?.transferUid || "");
-    if (!uid || seen.has(uid)) return 0;
-    seen.add(uid);
-    const parentUid = transfer?.tree?.parentUid;
-    if (!parentUid) return 0;
-    const parent = snapshot.transfers.find((item) => String(item.transferUid) === String(parentUid));
-    return parent ? 1 + transferDepth(parent, seen) : 1;
+  function buildTransferTree(transfers) {
+    const byUid = new Map();
+    const childrenByParentUid = new Map();
+    for (const transfer of transfers) {
+      const uid = String(transfer.transferUid || "");
+      if (uid) byUid.set(uid, transfer);
+    }
+    for (const transfer of transfers) {
+      const parentUid = String(transfer.tree?.parentUid || "");
+      if (!parentUid || !byUid.has(parentUid)) continue;
+      if (!childrenByParentUid.has(parentUid)) childrenByParentUid.set(parentUid, []);
+      childrenByParentUid.get(parentUid).push(transfer);
+    }
+    const sorted = (items) => items.slice().sort((left, right) => {
+      const leftTime = String(left.updatedAt || "");
+      const rightTime = String(right.updatedAt || "");
+      if (leftTime !== rightTime) return rightTime.localeCompare(leftTime);
+      return Number(right.id || 0) - Number(left.id || 0);
+    });
+    const roots = sorted(transfers.filter((transfer) => {
+      const parentUid = String(transfer.tree?.parentUid || "");
+      return !parentUid || !byUid.has(parentUid);
+    }));
+    const rows = [];
+    const visit = (transfer, depth, ancestors) => {
+      const uid = String(transfer.transferUid || "");
+      if (uid && ancestors.has(uid)) return;
+      const children = sorted(childrenByParentUid.get(uid) || []);
+      rows.push({ transfer, depth, childCount: children.length });
+      if (!uid || collapsedTransferUids.has(uid)) return;
+      const nextAncestors = new Set(ancestors);
+      nextAncestors.add(uid);
+      for (const child of children) visit(child, depth + 1, nextAncestors);
+    };
+    for (const root of roots) visit(root, 0, new Set());
+    return rows;
+  }
+
+  function toggleTransferBranch(transferUid) {
+    if (!transferUid) return;
+    if (collapsedTransferUids.has(transferUid)) {
+      collapsedTransferUids.delete(transferUid);
+    } else {
+      collapsedTransferUids.add(transferUid);
+    }
+    renderTransferList();
   }
 
   function selectedTransfer() {
@@ -382,13 +421,23 @@ pub(super) fn script() -> String {
       transferList.innerHTML = `<div class="emptyBlock">No Transfers in this tab.</div>`;
       return;
     }
-    transferList.innerHTML = transfers.map((transfer) => {
+    const rows = buildTransferTree(transfers);
+    transferList.innerHTML = rows.map(({ transfer, depth, childCount }) => {
       const active = Number(transfer.id) === Number(selectedTransferId);
-      const depth = Math.min(transferDepth(transfer), 8);
-      const childCount = Number(transfer.tree?.childIds?.length || 0);
+      const safeDepth = Math.min(depth, 8);
+      const indentPx = 10 + safeDepth * 18;
+      const guidePx = 17 + Math.max(safeDepth - 1, 0) * 18;
+      const transferUid = String(transfer.transferUid || "");
+      const collapsed = transferUid && collapsedTransferUids.has(transferUid);
+      const toggle = childCount
+        ? `<span class="treeToggle" role="button" tabindex="0" data-transfer-toggle="${escapeHtml(transferUid)}" aria-label="${escapeHtml(collapsed ? "Expand Transfer" : "Collapse Transfer")}" aria-expanded="${collapsed ? "false" : "true"}">${collapsed ? "▸" : "▾"}</span>`
+        : `<span class="treeToggleSpacer"></span>`;
       return `
-        <button type="button" class="transferRow" data-transfer-id="${escapeHtml(transfer.id)}" data-active="${active ? "true" : "false"}" data-keep-enabled="true" style="padding-left: ${12 + depth * 16}px">
-          <span class="transferTitle">${escapeHtml(transfer.title || "Transfer")}</span>
+        <button type="button" class="transferRow" data-transfer-id="${escapeHtml(transfer.id)}" data-active="${active ? "true" : "false"}" data-depth="${escapeHtml(safeDepth)}" data-keep-enabled="true" style="--tree-indent: ${indentPx}px; --tree-guide: ${guidePx}px">
+          <span class="treeCell">
+            ${toggle}
+            <span class="transferTitle">${escapeHtml(transfer.title || "Transfer")}</span>
+          </span>
           <span class="meta">#${escapeHtml(transfer.id)} ${escapeHtml(shortKey(transfer.transferUid))}</span>
           <span class="meta">${escapeHtml(childCount ? childCount + " children" : transfer.tree?.parentUid ? "child" : "root")}</span>
           <span class="meta">updated ${escapeHtml(transfer.updatedAt || "")}</span>
@@ -479,6 +528,185 @@ pub(super) fn script() -> String {
       `)
     );
     return `<select id="${escapeHtml(id)}">${options.join("")}</select>`;
+  }
+
+  function workOptions() {
+    return snapshot.workAssigneeOptions || { localUsers: [], organs: [] };
+  }
+
+  function dateTimeInputValue(value) {
+    const text = String(value || "");
+    if (!text) return "";
+    const date = new Date(text);
+    if (!Number.isFinite(date.getTime())) return text.slice(0, 16);
+    const offset = date.getTimezoneOffset() * 60000;
+    return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+  }
+
+  function dateTimePayloadValue(value) {
+    const text = String(value || "").trim();
+    if (!text) return null;
+    const date = new Date(text);
+    if (!Number.isFinite(date.getTime())) return text;
+    return date.toISOString().slice(0, 19) + "Z";
+  }
+
+  function localUserLabel(user) {
+    return user?.name || user?.username || ("user " + user?.id);
+  }
+
+  function assignmentLabel(assignment) {
+    if (assignment.subjectKind === "app_user") {
+      const user = workOptions().localUsers.find((item) => Number(item.id) === Number(assignment.appUserId));
+      return user ? localUserLabel(user) : (assignment.displayName || "Local user");
+    }
+    const organ = assignment.organName ? " / " + assignment.organName : "";
+    return (assignment.displayName || "External actor") + organ;
+  }
+
+  function externalAssignmentAttrs(assignment) {
+    return [
+      ["displayName", assignment.displayName || ""],
+      ["organName", assignment.organName || ""],
+      ["remoteBaseUrl", assignment.remoteBaseUrl || ""],
+      ["remotePublicKey", assignment.remotePublicKey || ""],
+      ["remoteSubjectUid", assignment.remoteSubjectUid || ""],
+    ].map(([key, value]) => `data-${key.replace(/[A-Z]/g, (match) => "-" + match.toLowerCase())}="${escapeHtml(value)}"`).join(" ");
+  }
+
+  function renderAssigneeControls(prefix, work) {
+    const assignments = work?.assignments || [];
+    const localIds = new Set(assignments
+      .filter((assignment) => assignment.subjectKind === "app_user")
+      .map((assignment) => String(assignment.appUserId)));
+    const externalAssignments = assignments.filter((assignment) => assignment.subjectKind !== "app_user");
+    const localUsers = workOptions().localUsers || [];
+    const organs = workOptions().organs || [];
+    const localHtml = localUsers.length
+      ? localUsers.map((user) => `
+          <label class="checkRow assigneeChoice">
+            <input type="checkbox" data-work-local-assignee="${escapeHtml(prefix)}" value="${escapeHtml(user.id)}" ${localIds.has(String(user.id)) ? "checked" : ""} data-keep-enabled="true">
+            <span>${escapeHtml(localUserLabel(user))}</span>
+          </label>
+        `).join("")
+      : `<div class="emptyBlock">No local users available.</div>`;
+    const existingExternal = externalAssignments.length
+      ? externalAssignments.map((assignment) => `
+          <label class="checkRow assigneeChoice">
+            <input type="checkbox" data-work-external-assignee="${escapeHtml(prefix)}" ${externalAssignmentAttrs(assignment)} checked data-keep-enabled="true">
+            <span>${escapeHtml(assignmentLabel(assignment))}</span>
+          </label>
+        `).join("")
+      : `<div class="meta">No external assignees.</div>`;
+    const organOptions = [`<option value="">No Organ</option>`].concat(
+      organs.map((organ) => `<option value="${escapeHtml(organ.id)}">${escapeHtml(organ.name)}</option>`)
+    ).join("");
+    return `
+      <div class="assigneeGrid">
+        <div>
+          <div class="fieldLabel">Local assignees</div>
+          <div class="assigneeStack">${localHtml}</div>
+        </div>
+        <div>
+          <div class="fieldLabel">External assignees</div>
+          <div class="assigneeStack">${existingExternal}</div>
+          <div class="externalAssigneeNew">
+            <input id="${escapeHtml(prefix)}-external-name" placeholder="External name" autocomplete="off" data-keep-enabled="true">
+            <select id="${escapeHtml(prefix)}-external-organ" data-keep-enabled="true">${organOptions}</select>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderWorkPanel(prefix, title, work, action, buttonLabel, extraAttrs = "") {
+    return `
+      <div class="actionBox workBox">
+        <div class="actionTitle">${escapeHtml(title)}</div>
+        <div class="workGrid">
+          <label><span>Start</span><input id="${escapeHtml(prefix)}-start" type="datetime-local" value="${escapeHtml(dateTimeInputValue(work?.startAt))}" data-keep-enabled="true"></label>
+          <label><span>End</span><input id="${escapeHtml(prefix)}-end" type="datetime-local" value="${escapeHtml(dateTimeInputValue(work?.endAt))}" data-keep-enabled="true"></label>
+          <label><span>Estimate minutes</span><input id="${escapeHtml(prefix)}-estimate" type="number" min="0" step="1" value="${escapeHtml(work?.estimateSeconds ? Math.round(Number(work.estimateSeconds) / 60) : "")}" data-keep-enabled="true"></label>
+          <label class="workNotes"><span>Completion notes</span><textarea id="${escapeHtml(prefix)}-notes" rows="3" data-keep-enabled="true">${escapeHtml(work?.completionNotes || "")}</textarea></label>
+        </div>
+        ${renderAssigneeControls(prefix, work)}
+        <div class="formActions">${actionButton(action, buttonLabel, false, `class="primary" data-work-prefix="${escapeHtml(prefix)}" ${extraAttrs}`)}</div>
+      </div>
+    `;
+  }
+
+  function renderTransferWorkSection(transfer) {
+    const items = transfer.items || [];
+    const interactions = transfer.interactions || [];
+    return `
+      <div class="workSection">
+        ${renderWorkPanel("transfer-work", "Transfer work", transfer.work || {}, "update-transfer-work", "Save Transfer work")}
+        ${items.length ? `
+          <div class="workItems">
+            ${items.map((item) => `
+              <details class="workItem">
+                <summary>
+                  <span>${escapeHtml(item.title || "Transfer item")}</span>
+                  <span class="meta">${escapeHtml(item.role || "")}${item.sourceRecordId ? " / record #" + escapeHtml(item.sourceRecordId) : ""}</span>
+                </summary>
+                ${renderWorkPanel("item-work-" + item.id, "Item work", item.work || {}, "update-transfer-item-work", "Save item work", `data-structured-item-id="${escapeHtml(item.id)}"`)}
+              </details>
+            `).join("")}
+          </div>
+        ` : ""}
+        ${interactions.length ? `
+          <div class="workItems">
+            ${interactions.map((interaction) => `
+              <details class="workItem">
+                <summary>
+                  <span>${escapeHtml((interaction.interactionKind || "interaction").replaceAll("_", " "))}</span>
+                  <span class="meta">${escapeHtml(interaction.direction || "")}${interaction.dependencyKind ? " / " + escapeHtml(interaction.dependencyKind) : ""}${interaction.quantity ? " / qty " + escapeHtml(formatQuantity(interaction.quantity)) : ""}</span>
+                </summary>
+                ${renderWorkPanel("interaction-work-" + interaction.id, "Interaction work", interaction.work || {}, "update-transfer-interaction-work", "Save interaction work", `data-interaction-id="${escapeHtml(interaction.id)}"`)}
+              </details>
+            `).join("")}
+          </div>
+        ` : ""}
+      </div>
+    `;
+  }
+
+  function collectWorkPayload(prefix) {
+    const estimateMinutes = parseNumber(document.getElementById(prefix + "-estimate")?.value, 0);
+    const assignees = [];
+    for (const input of app.querySelectorAll(`[data-work-local-assignee="${CSS.escape(prefix)}"]:checked`)) {
+      assignees.push({ kind: "appUser", appUserId: Number(input.value) });
+    }
+    for (const input of app.querySelectorAll(`[data-work-external-assignee="${CSS.escape(prefix)}"]:checked`)) {
+      assignees.push({
+        kind: "externalActor",
+        displayName: input.dataset.displayName || "",
+        organName: input.dataset.organName || null,
+        remoteBaseUrl: input.dataset.remoteBaseUrl || null,
+        remotePublicKey: input.dataset.remotePublicKey || null,
+        remoteSubjectUid: input.dataset.remoteSubjectUid || null,
+      });
+    }
+    const externalName = String(document.getElementById(prefix + "-external-name")?.value || "").trim();
+    if (externalName) {
+      const organId = Number(document.getElementById(prefix + "-external-organ")?.value || 0);
+      const organ = workOptions().organs.find((item) => Number(item.id) === organId);
+      assignees.push({
+        kind: "externalActor",
+        displayName: externalName,
+        organName: organ?.name || null,
+        remoteBaseUrl: organ?.baseUrl || null,
+        remotePublicKey: null,
+        remoteSubjectUid: null,
+      });
+    }
+    return {
+      startAt: dateTimePayloadValue(document.getElementById(prefix + "-start")?.value || ""),
+      endAt: dateTimePayloadValue(document.getElementById(prefix + "-end")?.value || ""),
+      estimateSeconds: estimateMinutes > 0 ? Math.round(estimateMinutes * 60) : null,
+      completionNotes: document.getElementById(prefix + "-notes")?.value || null,
+      assignees,
+    };
   }
 
   function sideAgreementLevel(transfer, side) {
@@ -613,6 +841,8 @@ pub(super) fn script() -> String {
         ${partySection(transfer, "need", transfer.need || {})}
         ${partySection(transfer, "contribution", transfer.contribution || {})}
       </div>
+
+      ${renderTransferWorkSection(transfer)}
 
       <div class="actionGrid">
         <div class="actionBox">
@@ -1013,6 +1243,14 @@ pub(super) fn script() -> String {
     renderDetail();
   });
 
+  app.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const toggle = event.target.closest("[data-transfer-toggle]");
+    if (!toggle) return;
+    event.preventDefault();
+    toggleTransferBranch(toggle.dataset.transferToggle || "");
+  });
+
   app.addEventListener("click", async (event) => {
     const openSettings = event.target.closest("[data-action='open-settings']");
     if (openSettings) {
@@ -1092,6 +1330,14 @@ pub(super) fn script() -> String {
       return;
     }
 
+    const toggle = event.target.closest("[data-transfer-toggle]");
+    if (toggle) {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleTransferBranch(toggle.dataset.transferToggle || "");
+      return;
+    }
+
     const row = event.target.closest("[data-transfer-id]");
     if (row) {
       selectedTransferId = Number(row.dataset.transferId);
@@ -1142,6 +1388,42 @@ pub(super) fn script() -> String {
           itemTitle: document.getElementById("local-item-title")?.value || "Record",
           recordId,
           quantity: parseNumber(document.getElementById("local-quantity-input")?.value, transfer.quantity || 1),
+        });
+        return;
+      }
+      if (action === "update-transfer-work") {
+        const prefix = transferAction.dataset.workPrefix || "transfer-work";
+        postAction(action, {
+          transferId: transfer.id,
+          work: collectWorkPayload(prefix),
+        });
+        return;
+      }
+      if (action === "update-transfer-item-work") {
+        const prefix = transferAction.dataset.workPrefix || "";
+        const structuredItemId = Number(transferAction.dataset.structuredItemId || 0);
+        if (!prefix || !structuredItemId) {
+          setStatus("Missing Transfer item work target.", "danger");
+          return;
+        }
+        postAction(action, {
+          transferId: transfer.id,
+          structuredItemId,
+          work: collectWorkPayload(prefix),
+        });
+        return;
+      }
+      if (action === "update-transfer-interaction-work") {
+        const prefix = transferAction.dataset.workPrefix || "";
+        const interactionId = Number(transferAction.dataset.interactionId || 0);
+        if (!prefix || !interactionId) {
+          setStatus("Missing Transfer interaction work target.", "danger");
+          return;
+        }
+        postAction(action, {
+          transferId: transfer.id,
+          interactionId,
+          work: collectWorkPayload(prefix),
         });
         return;
       }

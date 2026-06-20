@@ -204,3 +204,140 @@ pub struct RecordResourceRefRow {
     )]
     pub updated_at: String,
 }
+
+#[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
+#[allow(dead_code)]
+#[table(name = "work_metadata")]
+#[table(strict)]
+#[table(index(name = "idx_work_metadata_owner", columns = "owner_kind, owner_id"))]
+#[table(index(name = "idx_work_metadata_status", columns = "status"))]
+#[table(index(
+    name = "uq_work_metadata_owner",
+    columns = "owner_kind, owner_id",
+    unique
+))]
+pub struct WorkMetadataRow {
+    #[table(primary_key)]
+    pub id: i64,
+    #[table(
+        check = "owner_kind IN ('record', 'transfer', 'transfer_item', 'transfer_interaction')"
+    )]
+    pub owner_kind: String,
+    #[table(check = "owner_id > 0")]
+    pub owner_id: i64,
+    #[table(check = "task_type IS NULL OR task_type IN ('epic', 'feature', 'task', 'other')")]
+    pub task_type: Option<String>,
+    pub status: Option<String>,
+    #[table(check = "start_at IS NULL OR julianday(start_at) IS NOT NULL")]
+    pub start_at: Option<String>,
+    #[table(check = "end_at IS NULL OR julianday(end_at) IS NOT NULL")]
+    pub end_at: Option<String>,
+    #[table(check = "estimate_seconds IS NULL OR estimate_seconds >= 0")]
+    pub estimate_seconds: Option<i64>,
+    pub completion_notes: Option<String>,
+    #[table(default = "'{}'", check = "json_valid(metadata_json)")]
+    pub metadata_json: String,
+    #[table(
+        default = "CURRENT_TIMESTAMP",
+        check = "julianday(created_at) IS NOT NULL"
+    )]
+    pub created_at: String,
+    #[table(
+        default = "CURRENT_TIMESTAMP",
+        check = "julianday(updated_at) IS NOT NULL"
+    )]
+    pub updated_at: String,
+}
+
+#[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
+#[allow(dead_code)]
+#[table(name = "work_subject")]
+#[table(strict)]
+#[table(index(
+    name = "uq_work_subject_app_user",
+    columns = "app_user_id",
+    unique,
+    where = "subject_kind = 'app_user' AND app_user_id IS NOT NULL"
+))]
+#[table(index(
+    name = "uq_work_subject_organ",
+    columns = "organ_id",
+    unique,
+    where = "subject_kind = 'organ' AND organ_id IS NOT NULL"
+))]
+#[table(index(
+    name = "uq_work_subject_transfer_party",
+    columns = "transfer_party_id",
+    unique,
+    where = "subject_kind = 'transfer_party' AND transfer_party_id IS NOT NULL"
+))]
+#[table(index(
+    name = "uq_work_subject_remote",
+    columns = "subject_kind, remote_base_url, remote_subject_uid",
+    unique,
+    where = "remote_base_url IS NOT NULL AND remote_subject_uid IS NOT NULL"
+))]
+pub struct WorkSubjectRow {
+    #[table(primary_key)]
+    pub id: i64,
+    #[table(
+        check = "subject_kind IN ('app_user', 'organ', 'transfer_party', 'external_actor', 'placeholder')"
+    )]
+    pub subject_kind: String,
+    #[table(references = "app_user(id) ON DELETE CASCADE")]
+    pub app_user_id: Option<i64>,
+    #[table(references = "organ(id) ON DELETE CASCADE")]
+    pub organ_id: Option<i64>,
+    #[table(references = "transfer_party(id) ON DELETE CASCADE")]
+    pub transfer_party_id: Option<i64>,
+    pub remote_base_url: Option<String>,
+    pub remote_public_key: Option<String>,
+    pub remote_subject_uid: Option<String>,
+    pub display_name_snapshot: Option<String>,
+    pub organ_name_snapshot: Option<String>,
+    #[table(
+        default = "CURRENT_TIMESTAMP",
+        check = "julianday(created_at) IS NOT NULL"
+    )]
+    pub created_at: String,
+    #[table(
+        default = "CURRENT_TIMESTAMP",
+        check = "julianday(updated_at) IS NOT NULL"
+    )]
+    pub updated_at: String,
+}
+
+#[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
+#[allow(dead_code)]
+#[table(name = "work_assignment")]
+#[table(strict)]
+#[table(index(name = "idx_work_assignment_metadata", columns = "work_metadata_id"))]
+#[table(index(name = "idx_work_assignment_subject", columns = "work_subject_id"))]
+#[table(index(
+    name = "uq_work_assignment_identity",
+    columns = "work_metadata_id, work_subject_id, assignment_kind",
+    unique
+))]
+pub struct WorkAssignmentRow {
+    #[table(primary_key)]
+    pub id: i64,
+    #[table(references = "work_metadata(id) ON DELETE CASCADE")]
+    pub work_metadata_id: i64,
+    #[table(references = "work_subject(id) ON DELETE CASCADE")]
+    pub work_subject_id: i64,
+    #[table(
+        default = "'responsible'",
+        check = "assignment_kind IN ('responsible', 'observer', 'helper')"
+    )]
+    pub assignment_kind: String,
+    #[table(
+        default = "CURRENT_TIMESTAMP",
+        check = "julianday(created_at) IS NOT NULL"
+    )]
+    pub created_at: String,
+    #[table(
+        default = "CURRENT_TIMESTAMP",
+        check = "julianday(updated_at) IS NOT NULL"
+    )]
+    pub updated_at: String,
+}

@@ -659,8 +659,8 @@ impl KanbanActionService {
                 resolved.bearer_token.as_deref(),
             )
             .await?;
-        let extensions = self
-            .list_record_extensions(
+        let work_metadata = self
+            .list_work_metadata(
                 session_token,
                 &resolved.organ,
                 resolved.bearer_token.as_deref(),
@@ -717,14 +717,14 @@ impl KanbanActionService {
         let mut parent_records_raw = Vec::new();
         let mut parent_records_have_categories = false;
 
-        for extension in &extensions {
-            if extension.namespace == "task.categories" {
-                let normalized_categories = extract_categories(&extension.freestyle_data_structure)
+        for metadata in &work_metadata {
+            if metadata.owner_kind == "record" {
+                let normalized_categories = extract_categories(&metadata.metadata_json)
                     .map(normalize_categories)
                     .unwrap_or_default();
                 if !normalized_categories.is_empty() {
                     categories_by_record_id
-                        .insert(extension.record_id, normalized_categories.clone());
+                        .insert(metadata.owner_id, normalized_categories.clone());
                 }
                 for category in normalized_categories {
                     let normalized = category.trim().to_lowercase();
@@ -1310,45 +1310,25 @@ impl KanbanActionService {
         record_id: i64,
         input: TaskMetadataInput,
     ) -> Result<(), KanbanActionError> {
-        self.sync_extension(
+        self.upsert_work_metadata(
             session_token,
             organ,
             bearer_token,
+            "record",
             record_id,
-            "task.type",
-            task_type_payload(input.task_type)?,
-        )
-        .await?;
-        self.sync_extension(
-            session_token,
-            organ,
-            bearer_token,
-            record_id,
-            "task.categories",
-            categories_payload(input.categories),
-        )
-        .await?;
-        self.sync_extension(
-            session_token,
-            organ,
-            bearer_token,
-            record_id,
-            "task.schedule",
-            schedule_payload(input.start_at, input.end_at),
-        )
-        .await?;
-        self.sync_extension(
-            session_token,
-            organ,
-            bearer_token,
-            record_id,
-            "task.effort",
-            effort_payload(input.estimate_seconds)?,
+            &input,
         )
         .await?;
         if let Some(assignee_ids) = input.assignee_ids {
-            self.sync_assignees(session_token, organ, bearer_token, record_id, assignee_ids)
-                .await?;
+            self.sync_work_assignees(
+                session_token,
+                organ,
+                bearer_token,
+                "record",
+                record_id,
+                assignee_ids,
+            )
+            .await?;
         }
         if let Some(parent_id) = input.parent_id {
             self.sync_parent_links(
@@ -1364,108 +1344,122 @@ impl KanbanActionService {
         Ok(())
     }
 
-    async fn sync_extension(
+    async fn upsert_work_metadata(
         &self,
         session_token: Option<&str>,
         organ: &Organ,
         bearer_token: Option<&str>,
-        record_id: i64,
-        namespace: &str,
-        payload: Option<Value>,
+        owner_kind: &str,
+        owner_id: i64,
+        input: &TaskMetadataInput,
     ) -> Result<(), KanbanActionError> {
+        let task_type = normalized_task_type(input.task_type.clone())?;
+        let categories = input
+            .categories
+            .clone()
+            .map(normalize_categories)
+            .unwrap_or_default();
+        let estimate_seconds = validate_estimate_seconds(input.estimate_seconds)?;
+        let metadata_json = json!({ "categories": categories }).to_string();
         let existing = self
-            .find_record_extension(session_token, organ, bearer_token, record_id, namespace)
+            .find_work_metadata(session_token, organ, bearer_token, owner_kind, owner_id)
             .await?;
-        match (existing, payload) {
-            (Some(row), Some(freestyle_data_structure)) => {
+        let payload = json!({
+            "owner_kind": owner_kind,
+            "owner_id": owner_id,
+            "task_type": task_type,
+            "status": null,
+            "start_at": input.start_at,
+            "end_at": input.end_at,
+            "estimate_seconds": estimate_seconds,
+            "completion_notes": null,
+            "metadata_json": metadata_json,
+            "updated_at": now_utc_string(),
+        });
+        match existing {
+            Some(row) => {
                 self.update_table_row(
                     session_token,
                     organ,
                     bearer_token,
-                    "record_extension",
+                    "work_metadata",
                     row.id,
-                    json!({
-                        "record_id": record_id,
-                        "namespace": namespace,
-                        "version": 1,
-                        "freestyle_data_structure": freestyle_data_structure.to_string(),
-                    }),
+                    payload,
                 )
                 .await?;
             }
-            (None, Some(freestyle_data_structure)) => {
-                self.create_table_row(
-                    session_token,
-                    organ,
-                    bearer_token,
-                    "record_extension",
-                    json!({
-                        "record_id": record_id,
-                        "namespace": namespace,
-                        "version": 1,
-                        "freestyle_data_structure": freestyle_data_structure.to_string(),
-                    }),
-                )
-                .await?;
+            None => {
+                self.create_table_row(session_token, organ, bearer_token, "work_metadata", payload)
+                    .await?;
             }
-            (Some(row), None) => {
-                self.delete_table_row(
-                    session_token,
-                    organ,
-                    bearer_token,
-                    "record_extension",
-                    row.id,
-                )
-                .await?;
-            }
-            (None, None) => {}
         }
         Ok(())
     }
 
-    async fn sync_assignees(
+    async fn sync_work_assignees(
         &self,
         session_token: Option<&str>,
         organ: &Organ,
         bearer_token: Option<&str>,
-        record_id: i64,
+        owner_kind: &str,
+        owner_id: i64,
         assignee_ids: Vec<i64>,
     ) -> Result<(), KanbanActionError> {
         let desired = normalize_integer_ids(assignee_ids);
-        let existing = self
-            .list_record_links(session_token, organ, bearer_token)
+        let metadata = self
+            .find_work_metadata(session_token, organ, bearer_token, owner_kind, owner_id)
             .await?
-            .into_iter()
+            .ok_or_else(|| KanbanActionError::Internal("work_metadata ausente.".into()))?;
+        let existing = self
+            .list_work_assignments(session_token, organ, bearer_token)
+            .await?;
+        let subjects = self
+            .list_work_subjects(session_token, organ, bearer_token)
+            .await?;
+        let existing_for_metadata = existing
+            .iter()
             .filter(|row| {
-                row.record_id == record_id
-                    && row.link_type == "assigned_to"
-                    && row.target_table == "app_user"
+                row.work_metadata_id == metadata.id && row.assignment_kind == "responsible"
             })
+            .cloned()
             .collect::<Vec<_>>();
 
-        for row in &existing {
-            if !desired.contains(&row.target_id) {
-                self.delete_table_row(session_token, organ, bearer_token, "record_link", row.id)
-                    .await?;
+        for row in &existing_for_metadata {
+            let subject = subjects
+                .iter()
+                .find(|subject| subject.id == row.work_subject_id);
+            let app_user_id = subject.and_then(|subject| subject.app_user_id);
+            if !app_user_id.is_some_and(|id| desired.contains(&id)) {
+                self.delete_table_row(
+                    session_token,
+                    organ,
+                    bearer_token,
+                    "work_assignment",
+                    row.id,
+                )
+                .await?;
             }
         }
 
         for assignee_id in desired {
-            if existing.iter().any(|row| row.target_id == assignee_id) {
+            let subject_id = self
+                .ensure_app_user_work_subject(session_token, organ, bearer_token, assignee_id)
+                .await?;
+            if existing_for_metadata
+                .iter()
+                .any(|row| row.work_subject_id == subject_id)
+            {
                 continue;
             }
             self.create_table_row(
                 session_token,
                 organ,
                 bearer_token,
-                "record_link",
+                "work_assignment",
                 json!({
-                    "record_id": record_id,
-                    "link_type": "assigned_to",
-                    "target_table": "app_user",
-                    "target_id": assignee_id,
-                    "position": null,
-                    "freestyle_data_structure": null,
+                    "work_metadata_id": metadata.id,
+                    "work_subject_id": subject_id,
+                    "assignment_kind": "responsible",
                 }),
             )
             .await?;
@@ -1562,8 +1556,14 @@ impl KanbanActionService {
         record: &RecordRow,
         current_user_id: Option<i64>,
     ) -> Result<RecordDetailPayload, KanbanActionError> {
-        let extensions = self
-            .list_record_extensions(session_token, organ, bearer_token)
+        let work_metadata = self
+            .list_work_metadata(session_token, organ, bearer_token)
+            .await?;
+        let work_subjects = self
+            .list_work_subjects(session_token, organ, bearer_token)
+            .await?;
+        let work_assignments = self
+            .list_work_assignments(session_token, organ, bearer_token)
             .await?;
         let links = self
             .list_record_links(session_token, organ, bearer_token)
@@ -1584,48 +1584,60 @@ impl KanbanActionService {
             .list_app_users(session_token, organ, bearer_token)
             .await?;
 
-        let categories = extensions
+        let metadata = work_metadata
             .iter()
-            .find(|row| row.record_id == record.id && row.namespace == "task.categories")
-            .and_then(|row| extract_categories(&row.freestyle_data_structure))
+            .find(|row| row.owner_kind == "record" && row.owner_id == record.id);
+        let categories = metadata
+            .and_then(|row| extract_categories(&row.metadata_json))
             .unwrap_or_default();
         let primary_category = categories.first().cloned();
-        let task_type = extensions
-            .iter()
-            .find(|row| row.record_id == record.id && row.namespace == "task.type")
-            .and_then(|row| extract_task_type(&row.freestyle_data_structure));
-        let (start_at, end_at) = extensions
-            .iter()
-            .find(|row| row.record_id == record.id && row.namespace == "task.schedule")
-            .map(|row| extract_schedule(&row.freestyle_data_structure))
+        let task_type = metadata.and_then(|row| row.task_type.clone());
+        let (start_at, end_at) = metadata
+            .map(|row| (row.start_at.clone(), row.end_at.clone()))
             .unwrap_or((None, None));
-        let estimate_seconds = extensions
-            .iter()
-            .find(|row| row.record_id == record.id && row.namespace == "task.effort")
-            .and_then(|row| extract_estimate_seconds(&row.freestyle_data_structure));
+        let estimate_seconds = metadata.and_then(|row| row.estimate_seconds);
         let record_lookup = records
             .iter()
             .map(|candidate| (candidate.id, candidate))
             .collect::<HashMap<_, _>>();
         let (parents_by_record, children_by_record) = build_record_relation_maps(&links);
 
-        let assignees = links
-            .iter()
-            .filter(|row| {
-                row.record_id == record.id
-                    && row.link_type == "assigned_to"
-                    && row.target_table == "app_user"
+        let assignees = metadata
+            .into_iter()
+            .flat_map(|metadata| {
+                work_assignments.iter().filter(move |assignment| {
+                    assignment.work_metadata_id == metadata.id
+                        && assignment.assignment_kind == "responsible"
+                })
             })
-            .filter_map(|link| {
-                app_users
+            .filter_map(|assignment| {
+                let subject = work_subjects
                     .iter()
-                    .find(|user| user.id == link.target_id)
-                    .map(|user| {
-                        json!({
-                            "id": user.id,
-                            "name": user.name,
+                    .find(|subject| subject.id == assignment.work_subject_id)?;
+                if let Some(app_user_id) = subject.app_user_id {
+                    app_users
+                        .iter()
+                        .find(|user| user.id == app_user_id)
+                        .map(|user| {
+                            json!({
+                                "id": user.id,
+                                "name": if user.name.trim().is_empty() {
+                                    user.username.clone()
+                                } else {
+                                    user.name.clone()
+                                },
+                            })
                         })
-                    })
+                } else {
+                    Some(json!({
+                        "id": subject.id,
+                        "name": subject
+                            .display_name_snapshot
+                            .clone()
+                            .unwrap_or_else(|| "Assignee".to_string()),
+                        "subjectKind": subject.subject_kind,
+                    }))
+                }
             })
             .collect::<Vec<_>>();
 
@@ -1892,19 +1904,73 @@ impl KanbanActionService {
         Ok(())
     }
 
-    async fn find_record_extension(
+    async fn find_work_metadata(
         &self,
         session_token: Option<&str>,
         organ: &Organ,
         bearer_token: Option<&str>,
-        record_id: i64,
-        namespace: &str,
-    ) -> Result<Option<RecordExtensionRow>, KanbanActionError> {
+        owner_kind: &str,
+        owner_id: i64,
+    ) -> Result<Option<WorkMetadataRow>, KanbanActionError> {
         Ok(self
-            .list_record_extensions(session_token, organ, bearer_token)
+            .list_work_metadata(session_token, organ, bearer_token)
             .await?
             .into_iter()
-            .find(|row| row.record_id == record_id && row.namespace == namespace))
+            .find(|row| row.owner_kind == owner_kind && row.owner_id == owner_id))
+    }
+
+    async fn ensure_app_user_work_subject(
+        &self,
+        session_token: Option<&str>,
+        organ: &Organ,
+        bearer_token: Option<&str>,
+        app_user_id: i64,
+    ) -> Result<i64, KanbanActionError> {
+        if let Some(existing) = self
+            .list_work_subjects(session_token, organ, bearer_token)
+            .await?
+            .into_iter()
+            .find(|row| row.subject_kind == "app_user" && row.app_user_id == Some(app_user_id))
+        {
+            return Ok(existing.id);
+        }
+        let user = self
+            .list_app_users(session_token, organ, bearer_token)
+            .await?
+            .into_iter()
+            .find(|user| user.id == app_user_id)
+            .ok_or_else(|| {
+                KanbanActionError::Validation("Assignee app_user inexistente.".into())
+            })?;
+        let display_name = if !user.name.trim().is_empty() {
+            user.name
+        } else if !user.username.trim().is_empty() {
+            user.username
+        } else {
+            format!("user {}", user.id)
+        };
+        let created = self
+            .create_table_row(
+                session_token,
+                organ,
+                bearer_token,
+                "work_subject",
+                json!({
+                    "subject_kind": "app_user",
+                    "app_user_id": app_user_id,
+                    "organ_id": null,
+                    "transfer_party_id": null,
+                    "remote_base_url": null,
+                    "remote_public_key": null,
+                    "remote_subject_uid": null,
+                    "display_name_snapshot": display_name,
+                    "organ_name_snapshot": null,
+                }),
+            )
+            .await?;
+        created.created_row_id().ok_or_else(|| {
+            KanbanActionError::Internal("Criacao de work_subject nao retornou id.".into())
+        })
     }
 
     async fn validate_assignee_ids(
@@ -2240,14 +2306,38 @@ impl KanbanActionService {
             .map_err(|error| KanbanActionError::BadGateway(error.to_string()))
     }
 
-    async fn list_record_extensions(
+    async fn list_work_metadata(
         &self,
         session_token: Option<&str>,
         organ: &Organ,
         bearer_token: Option<&str>,
-    ) -> Result<Vec<RecordExtensionRow>, KanbanActionError> {
+    ) -> Result<Vec<WorkMetadataRow>, KanbanActionError> {
         parse_rows(
-            self.list_table_rows(session_token, organ, bearer_token, "record_extension")
+            self.list_table_rows(session_token, organ, bearer_token, "work_metadata")
+                .await?,
+        )
+    }
+
+    async fn list_work_subjects(
+        &self,
+        session_token: Option<&str>,
+        organ: &Organ,
+        bearer_token: Option<&str>,
+    ) -> Result<Vec<WorkSubjectRow>, KanbanActionError> {
+        parse_rows(
+            self.list_table_rows(session_token, organ, bearer_token, "work_subject")
+                .await?,
+        )
+    }
+
+    async fn list_work_assignments(
+        &self,
+        session_token: Option<&str>,
+        organ: &Organ,
+        bearer_token: Option<&str>,
+    ) -> Result<Vec<WorkAssignmentRow>, KanbanActionError> {
+        parse_rows(
+            self.list_table_rows(session_token, organ, bearer_token, "work_assignment")
                 .await?,
         )
     }
@@ -2518,20 +2608,40 @@ struct RecordRow {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-struct RecordExtensionRow {
-    id: i64,
-    record_id: i64,
-    namespace: String,
-    freestyle_data_structure: String,
-}
-
-#[derive(Debug, Clone, Deserialize)]
 struct RecordLinkRow {
     id: i64,
     record_id: i64,
     link_type: String,
     target_table: String,
     target_id: i64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct WorkMetadataRow {
+    id: i64,
+    owner_kind: String,
+    owner_id: i64,
+    task_type: Option<String>,
+    start_at: Option<String>,
+    end_at: Option<String>,
+    estimate_seconds: Option<i64>,
+    metadata_json: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct WorkSubjectRow {
+    id: i64,
+    subject_kind: String,
+    app_user_id: Option<i64>,
+    display_name_snapshot: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct WorkAssignmentRow {
+    id: i64,
+    work_metadata_id: i64,
+    work_subject_id: i64,
+    assignment_kind: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -2797,41 +2907,22 @@ fn validate_task_type(task_type: Option<&str>) -> Result<(), KanbanActionError> 
     }
 }
 
-fn task_type_payload(task_type: Option<String>) -> Result<Option<Value>, KanbanActionError> {
+fn normalized_task_type(task_type: Option<String>) -> Result<Option<String>, KanbanActionError> {
     let task_type = task_type
         .map(|value| value.trim().to_string())
         .filter(|value| !value.is_empty());
     validate_task_type(task_type.as_deref())?;
-    Ok(task_type.map(|value| json!({ "task_type": value })))
+    Ok(task_type)
 }
 
-fn categories_payload(categories: Option<Vec<String>>) -> Option<Value> {
-    categories.map(normalize_categories).and_then(|categories| {
-        if categories.is_empty() {
-            None
-        } else {
-            Some(json!({ "categories": categories }))
-        }
-    })
-}
-
-fn schedule_payload(start_at: Option<String>, end_at: Option<String>) -> Option<Value> {
-    if start_at.is_none() && end_at.is_none() {
-        None
-    } else {
-        Some(json!({
-            "start_at": start_at,
-            "end_at": end_at,
-        }))
-    }
-}
-
-fn effort_payload(estimate_seconds: Option<i64>) -> Result<Option<Value>, KanbanActionError> {
+fn validate_estimate_seconds(
+    estimate_seconds: Option<i64>,
+) -> Result<Option<i64>, KanbanActionError> {
     match estimate_seconds {
         Some(value) if value < 0 => Err(KanbanActionError::Validation(
             "estimate_seconds nao pode ser negativo.".into(),
         )),
-        Some(value) => Ok(Some(json!({ "estimate_seconds": value }))),
+        Some(value) => Ok(Some(value)),
         None => Ok(None),
     }
 }
@@ -3035,35 +3126,6 @@ fn extract_categories(freestyle_data_structure: &str) -> Option<Vec<String>> {
         .map(str::to_string)
         .collect::<Vec<_>>();
     Some(categories)
-}
-
-fn extract_task_type(freestyle_data_structure: &str) -> Option<String> {
-    let value = serde_json::from_str::<Value>(freestyle_data_structure).ok()?;
-    value
-        .get("task_type")
-        .and_then(Value::as_str)
-        .map(str::to_string)
-}
-
-fn extract_schedule(freestyle_data_structure: &str) -> (Option<String>, Option<String>) {
-    let Ok(value) = serde_json::from_str::<Value>(freestyle_data_structure) else {
-        return (None, None);
-    };
-    (
-        value
-            .get("start_at")
-            .and_then(Value::as_str)
-            .map(str::to_string),
-        value
-            .get("end_at")
-            .and_then(Value::as_str)
-            .map(str::to_string),
-    )
-}
-
-fn extract_estimate_seconds(freestyle_data_structure: &str) -> Option<i64> {
-    let value = serde_json::from_str::<Value>(freestyle_data_structure).ok()?;
-    value.get("estimate_seconds").and_then(Value::as_i64)
 }
 
 fn now_utc_string() -> String {

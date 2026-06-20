@@ -152,6 +152,22 @@ pub(super) fn body() -> Markup {
                                     pre id="origin-text" class="codeBlock" { "Waiting for host metadata..." }
                                     div class="sectionLabel" { "view sql" }
                                     pre id="view-sql" class="codeBlock" { "Waiting for view SQL..." }
+                                    div class="sectionLabel" { "projection view" }
+                                    p class="mutedCopy" {
+                                        "Optional SQL view id for quantity projection columns."
+                                    }
+                                    div class="actionRow actionRow--split" {
+                                        input
+                                            id="projection-view-id"
+                                            class="input"
+                                            type="number"
+                                            min="1"
+                                            step="1"
+                                            placeholder="View id"
+                                        ;
+                                        button id="projection-view-save" class="button button--ghost" type="button" { "Save" }
+                                    }
+                                    pre id="projection-view-summary" class="codeBlock" { "No projection view selected." }
                                 }
                             }
                         }

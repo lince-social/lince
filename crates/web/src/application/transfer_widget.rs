@@ -115,11 +115,15 @@ impl TransferWidgetService {
                 "create-record",
                 "create-proposal",
                 "update-transfer-local-item",
+                "update-transfer-work",
+                "update-transfer-item-work",
+                "update-transfer-interaction-work",
                 "duplicate-proposal",
                 "sign-agreement",
                 "confirm-delivery",
                 "confirm-receipt",
                 "settle-local",
+                "settle-full",
                 "inactivate-transfer",
                 "delete-transfer",
                 "create-child-transfer",
@@ -127,6 +131,7 @@ impl TransferWidgetService {
                 "sync-transfer-tree",
                 "set-transfer-branch-mode",
                 "set-transfer-tree-sync-mode",
+                "set-transfer-reservation-policy",
                 "post-transfer",
                 "import-package",
                 "set-ingress-policy",
@@ -232,6 +237,21 @@ impl TransferWidgetService {
                 self.update_transfer_local_item(request).await?;
                 "Transfer local terms updated.".to_string()
             }
+            "update-transfer-work" => {
+                let request = parse_payload::<UpdateTransferWorkRequest>(payload)?;
+                self.update_transfer_work(request).await?;
+                "Transfer work metadata updated.".to_string()
+            }
+            "update-transfer-item-work" => {
+                let request = parse_payload::<UpdateTransferItemWorkRequest>(payload)?;
+                self.update_transfer_item_work(request).await?;
+                "Transfer item work metadata updated.".to_string()
+            }
+            "update-transfer-interaction-work" => {
+                let request = parse_payload::<UpdateTransferInteractionWorkRequest>(payload)?;
+                self.update_transfer_interaction_work(request).await?;
+                "Transfer interaction work metadata updated.".to_string()
+            }
             "sign-agreement" => {
                 let request = parse_payload::<TransferIdRequest>(payload)?;
                 self.sign_agreement(request.transfer_id).await?;
@@ -251,6 +271,11 @@ impl TransferWidgetService {
                 let request = parse_payload::<TransferIdRequest>(payload)?;
                 self.settle_local(request.transfer_id).await?;
                 "Local Record quantity settled.".to_string()
+            }
+            "settle-full" => {
+                let request = parse_payload::<TransferIdRequest>(payload)?;
+                self.settle_full(request.transfer_id).await?;
+                "Full Transfer quantity settled.".to_string()
             }
             "inactivate-transfer" => {
                 let request = parse_payload::<TransferIdRequest>(payload)?;
@@ -289,6 +314,11 @@ impl TransferWidgetService {
                 self.set_transfer_tree_sync_mode(request).await?;
                 "Transfer tree sync mode updated.".to_string()
             }
+            "set-transfer-reservation-policy" => {
+                let request = parse_payload::<SetTransferReservationPolicyRequest>(payload)?;
+                self.set_transfer_reservation_policy(request).await?;
+                "Transfer reservation policy updated.".to_string()
+            }
             "post-transfer" => {
                 let request = parse_payload::<PostTransferRequest>(payload)?;
                 self.post_transfer_package(session_token, request).await?;
@@ -320,10 +350,14 @@ impl TransferWidgetService {
         if matches!(
             action,
             "update-transfer-local-item"
+                | "update-transfer-work"
+                | "update-transfer-item-work"
+                | "update-transfer-interaction-work"
                 | "sign-agreement"
                 | "confirm-delivery"
                 | "confirm-receipt"
                 | "settle-local"
+                | "settle-full"
                 | "inactivate-transfer"
                 | "create-child-transfer"
                 | "create-transfer-tree-from-record"
@@ -501,6 +535,11 @@ impl TransferWidgetService {
             .await
             .map_err(TransferWidgetError::from_io)?;
         let organs = self.load_organ_options(session_token).await?;
+        let work_assignee_organs = organs.clone();
+        let local_users = self
+            .load_app_user_options()
+            .await
+            .map_err(TransferWidgetError::from_io)?;
         let public_proposals_enabled = self
             .transfer_public_proposals_enabled()
             .await
@@ -514,6 +553,10 @@ impl TransferWidgetService {
             },
             "records": records,
             "organs": organs,
+            "workAssigneeOptions": {
+                "localUsers": local_users,
+                "organs": work_assignee_organs,
+            },
             "transfers": transfers,
             "gossipTransfers": gossip_transfers,
         }))
@@ -811,6 +854,9 @@ impl TransferWidgetService {
         )
         .await
         .map_err(TransferWidgetError::from_io)?;
+        self.refresh_transfer_reservation(transfer_id, ReservationRefreshTrigger::ProposalCreated)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
 
         Ok(transfer_id)
     }
@@ -976,6 +1022,9 @@ impl TransferWidgetService {
         )
         .await
         .map_err(TransferWidgetError::from_io)?;
+        self.refresh_transfer_reservation(transfer_id, ReservationRefreshTrigger::ProposalConsumed)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
 
         Ok(transfer_id)
     }
@@ -1061,8 +1110,433 @@ impl TransferWidgetService {
         )
         .await
         .map_err(TransferWidgetError::from_io)?;
+        self.refresh_transfer_reservation(transfer.id, ReservationRefreshTrigger::ProposalCreated)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
 
         Ok(())
+    }
+
+    async fn update_transfer_work(
+        &self,
+        request: UpdateTransferWorkRequest,
+    ) -> Result<(), TransferWidgetError> {
+        self.load_transfer_summary(request.transfer_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        self.upsert_work_metadata("transfer", request.transfer_id, &request.work)
+            .await?;
+        Ok(())
+    }
+
+    async fn update_transfer_item_work(
+        &self,
+        request: UpdateTransferItemWorkRequest,
+    ) -> Result<(), TransferWidgetError> {
+        let belongs_to_transfer = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(1)
+             FROM transfer_structured_item
+             WHERE id = ? AND transfer_id = ?",
+        )
+        .bind(request.structured_item_id)
+        .bind(request.transfer_id)
+        .fetch_one(&*self.services.db)
+        .await
+        .map_err(|error| TransferWidgetError::Invalid(error.to_string()))?;
+        if belongs_to_transfer <= 0 {
+            return Err(TransferWidgetError::Invalid(
+                "Transfer item does not belong to this Transfer.".into(),
+            ));
+        }
+        self.upsert_work_metadata("transfer_item", request.structured_item_id, &request.work)
+            .await?;
+        Ok(())
+    }
+
+    async fn update_transfer_interaction_work(
+        &self,
+        request: UpdateTransferInteractionWorkRequest,
+    ) -> Result<(), TransferWidgetError> {
+        let belongs_to_transfer = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(1)
+             FROM transfer_interaction
+             WHERE id = ? AND transfer_id = ?",
+        )
+        .bind(request.interaction_id)
+        .bind(request.transfer_id)
+        .fetch_one(&*self.services.db)
+        .await
+        .map_err(|error| TransferWidgetError::Invalid(error.to_string()))?;
+        if belongs_to_transfer <= 0 {
+            return Err(TransferWidgetError::Invalid(
+                "Transfer interaction does not belong to this Transfer.".into(),
+            ));
+        }
+        self.upsert_work_metadata(
+            "transfer_interaction",
+            request.interaction_id,
+            &request.work,
+        )
+        .await?;
+        Ok(())
+    }
+
+    async fn upsert_work_metadata(
+        &self,
+        owner_kind: &str,
+        owner_id: i64,
+        input: &WorkMetadataInput,
+    ) -> Result<i64, TransferWidgetError> {
+        if owner_id <= 0 {
+            return Err(TransferWidgetError::Invalid(
+                "Work metadata owner id must be positive.".into(),
+            ));
+        }
+        let estimate_seconds = match input.estimate_seconds {
+            Some(value) if value < 0 => {
+                return Err(TransferWidgetError::Invalid(
+                    "Estimate seconds cannot be negative.".into(),
+                ));
+            }
+            value => value,
+        };
+        let metadata_id = self
+            .services
+            .writer
+            .execute_statement_returning_id(
+                "INSERT INTO work_metadata(
+                    owner_kind,
+                    owner_id,
+                    start_at,
+                    end_at,
+                    estimate_seconds,
+                    completion_notes,
+                    metadata_json,
+                    updated_at
+                 ) VALUES (?, ?, ?, ?, ?, ?, '{}', CURRENT_TIMESTAMP)
+                 ON CONFLICT(owner_kind, owner_id) DO UPDATE SET
+                    start_at = excluded.start_at,
+                    end_at = excluded.end_at,
+                    estimate_seconds = excluded.estimate_seconds,
+                    completion_notes = excluded.completion_notes,
+                    updated_at = CURRENT_TIMESTAMP
+                 RETURNING id"
+                    .to_string(),
+                vec![
+                    SqlParameter::Text(owner_kind.to_string()),
+                    SqlParameter::Integer(owner_id),
+                    optional_text_param(input.start_at.as_deref()),
+                    optional_text_param(input.end_at.as_deref()),
+                    optional_i64_param(estimate_seconds),
+                    optional_text_param(input.completion_notes.as_deref()),
+                ],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?
+            .last_insert_rowid
+            .ok_or_else(|| {
+                TransferWidgetError::Invalid("Work metadata upsert returned no id.".into())
+            })?;
+
+        self.replace_work_assignments(metadata_id, &input.assignees)
+            .await?;
+        Ok(metadata_id)
+    }
+
+    async fn replace_work_assignments(
+        &self,
+        work_metadata_id: i64,
+        assignees: &[WorkAssigneeInput],
+    ) -> Result<(), TransferWidgetError> {
+        self.services
+            .writer
+            .execute_statement(
+                "DELETE FROM work_assignment
+                 WHERE work_metadata_id = ? AND assignment_kind = 'responsible'"
+                    .to_string(),
+                vec![SqlParameter::Integer(work_metadata_id)],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+
+        for assignee in assignees {
+            let subject_id = self.ensure_work_subject(assignee).await?;
+            self.services
+                .writer
+                .execute_statement(
+                    "INSERT INTO work_assignment(
+                        work_metadata_id,
+                        work_subject_id,
+                        assignment_kind
+                     ) VALUES (?, ?, 'responsible')
+                     ON CONFLICT(work_metadata_id, work_subject_id, assignment_kind) DO NOTHING"
+                        .to_string(),
+                    vec![
+                        SqlParameter::Integer(work_metadata_id),
+                        SqlParameter::Integer(subject_id),
+                    ],
+                )
+                .await
+                .map_err(TransferWidgetError::from_io)?;
+        }
+        Ok(())
+    }
+
+    async fn ensure_work_subject(
+        &self,
+        input: &WorkAssigneeInput,
+    ) -> Result<i64, TransferWidgetError> {
+        match input.kind.as_str() {
+            "appUser" => {
+                let app_user_id =
+                    input
+                        .app_user_id
+                        .filter(|value| *value > 0)
+                        .ok_or_else(|| {
+                            TransferWidgetError::Invalid(
+                                "Local assignee is missing app_user id.".into(),
+                            )
+                        })?;
+                self.services
+                    .writer
+                    .execute_statement_returning_id(
+                        "INSERT INTO work_subject(
+                            subject_kind,
+                            app_user_id,
+                            display_name_snapshot
+                         )
+                         SELECT
+                            'app_user',
+                            id,
+                            COALESCE(NULLIF(trim(name), ''), NULLIF(trim(username), ''), 'user ' || id)
+                         FROM app_user
+                         WHERE id = ?
+                         ON CONFLICT(app_user_id) WHERE subject_kind = 'app_user' AND app_user_id IS NOT NULL
+                         DO UPDATE SET
+                            display_name_snapshot = excluded.display_name_snapshot,
+                            updated_at = CURRENT_TIMESTAMP
+                         RETURNING id"
+                            .to_string(),
+                        vec![SqlParameter::Integer(app_user_id)],
+                    )
+                    .await
+                    .map_err(TransferWidgetError::from_io)?
+                    .last_insert_rowid
+                    .ok_or_else(|| {
+                        TransferWidgetError::Invalid("Local assignee does not exist.".into())
+                    })
+            }
+            "externalActor" => {
+                let display_name = normalize_nonempty(
+                    input.display_name.as_deref().unwrap_or(""),
+                    "External assignee name",
+                )?;
+                if has_stable_remote_subject(
+                    input.remote_base_url.as_deref(),
+                    input.remote_subject_uid.as_deref(),
+                ) {
+                    return self
+                        .services
+                        .writer
+                        .execute_statement_returning_id(
+                            "INSERT INTO work_subject(
+                                subject_kind,
+                                remote_base_url,
+                                remote_public_key,
+                                remote_subject_uid,
+                                display_name_snapshot,
+                                organ_name_snapshot
+                             ) VALUES ('external_actor', ?, ?, ?, ?, ?)
+                             ON CONFLICT(subject_kind, remote_base_url, remote_subject_uid)
+                             WHERE remote_base_url IS NOT NULL AND remote_subject_uid IS NOT NULL
+                             DO UPDATE SET
+                                remote_public_key = COALESCE(excluded.remote_public_key, work_subject.remote_public_key),
+                                display_name_snapshot = excluded.display_name_snapshot,
+                                organ_name_snapshot = COALESCE(excluded.organ_name_snapshot, work_subject.organ_name_snapshot),
+                                updated_at = CURRENT_TIMESTAMP
+                             RETURNING id"
+                                .to_string(),
+                            vec![
+                                optional_text_param(input.remote_base_url.as_deref()),
+                                optional_text_param(input.remote_public_key.as_deref()),
+                                optional_text_param(input.remote_subject_uid.as_deref()),
+                                SqlParameter::Text(display_name),
+                                optional_text_param(input.organ_name.as_deref()),
+                            ],
+                        )
+                        .await
+                        .map_err(TransferWidgetError::from_io)?
+                        .last_insert_rowid
+                        .ok_or_else(|| {
+                            TransferWidgetError::Invalid(
+                                "External assignee upsert returned no id.".into(),
+                            )
+                        });
+                }
+                self.services
+                    .writer
+                    .execute_statement_returning_id(
+                        "INSERT INTO work_subject(
+                            subject_kind,
+                            remote_base_url,
+                            remote_public_key,
+                            remote_subject_uid,
+                            display_name_snapshot,
+                            organ_name_snapshot
+                         ) VALUES ('external_actor', ?, ?, ?, ?, ?)
+                         RETURNING id"
+                            .to_string(),
+                        vec![
+                            optional_text_param(input.remote_base_url.as_deref()),
+                            optional_text_param(input.remote_public_key.as_deref()),
+                            optional_text_param(input.remote_subject_uid.as_deref()),
+                            SqlParameter::Text(display_name),
+                            optional_text_param(input.organ_name.as_deref()),
+                        ],
+                    )
+                    .await
+                    .map_err(TransferWidgetError::from_io)?
+                    .last_insert_rowid
+                    .ok_or_else(|| {
+                        TransferWidgetError::Invalid(
+                            "External assignee insert returned no id.".into(),
+                        )
+                    })
+            }
+            _ => Err(TransferWidgetError::Invalid(
+                "Unknown work assignee kind.".into(),
+            )),
+        }
+    }
+
+    async fn upsert_work_metadata_package(
+        &self,
+        owner_kind: &str,
+        owner_id: i64,
+        package: &WorkMetadataPackage,
+    ) -> Result<(), TransferWidgetError> {
+        let metadata_id = self
+            .services
+            .writer
+            .execute_statement_returning_id(
+                "INSERT INTO work_metadata(
+                    owner_kind,
+                    owner_id,
+                    task_type,
+                    status,
+                    start_at,
+                    end_at,
+                    estimate_seconds,
+                    completion_notes,
+                    metadata_json,
+                    updated_at
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                 ON CONFLICT(owner_kind, owner_id) DO UPDATE SET
+                    task_type = excluded.task_type,
+                    status = excluded.status,
+                    start_at = excluded.start_at,
+                    end_at = excluded.end_at,
+                    estimate_seconds = excluded.estimate_seconds,
+                    completion_notes = excluded.completion_notes,
+                    metadata_json = excluded.metadata_json,
+                    updated_at = CURRENT_TIMESTAMP
+                 RETURNING id"
+                    .to_string(),
+                vec![
+                    SqlParameter::Text(owner_kind.to_string()),
+                    SqlParameter::Integer(owner_id),
+                    optional_text_parameter(package.task_type.clone()),
+                    optional_text_parameter(package.status.clone()),
+                    optional_text_parameter(package.start_at.clone()),
+                    optional_text_parameter(package.end_at.clone()),
+                    optional_i64_parameter(package.estimate_seconds),
+                    optional_text_parameter(package.completion_notes.clone()),
+                    SqlParameter::Text(package.metadata_json()),
+                ],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?
+            .last_insert_rowid
+            .ok_or_else(|| {
+                TransferWidgetError::Invalid("Packaged work metadata returned no id.".into())
+            })?;
+
+        self.services
+            .writer
+            .execute_statement(
+                "DELETE FROM work_assignment WHERE work_metadata_id = ?".to_string(),
+                vec![SqlParameter::Integer(metadata_id)],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+
+        for assignment in &package.assignments {
+            let subject_id = self.ensure_packaged_work_subject(assignment).await?;
+            self.services
+                .writer
+                .execute_statement(
+                    "INSERT INTO work_assignment(
+                        work_metadata_id,
+                        work_subject_id,
+                        assignment_kind
+                     ) VALUES (?, ?, ?)
+                     ON CONFLICT(work_metadata_id, work_subject_id, assignment_kind) DO NOTHING"
+                        .to_string(),
+                    vec![
+                        SqlParameter::Integer(metadata_id),
+                        SqlParameter::Integer(subject_id),
+                        SqlParameter::Text(assignment.assignment_kind.clone()),
+                    ],
+                )
+                .await
+                .map_err(TransferWidgetError::from_io)?;
+        }
+        Ok(())
+    }
+
+    async fn ensure_packaged_work_subject(
+        &self,
+        assignment: &WorkAssignmentPackage,
+    ) -> Result<i64, TransferWidgetError> {
+        if assignment.subject_kind == "app_user" {
+            if let Some(app_user_id) = assignment.app_user_id.filter(|value| *value > 0) {
+                let exists =
+                    sqlx::query_scalar::<_, i64>("SELECT COUNT(1) FROM app_user WHERE id = ?")
+                        .bind(app_user_id)
+                        .fetch_one(&*self.services.db)
+                        .await
+                        .map_err(|error| TransferWidgetError::Invalid(error.to_string()))?;
+                if exists > 0 {
+                    return self
+                        .ensure_work_subject(&WorkAssigneeInput {
+                            kind: "appUser".to_string(),
+                            app_user_id: Some(app_user_id),
+                            display_name: None,
+                            organ_name: None,
+                            remote_base_url: None,
+                            remote_public_key: None,
+                            remote_subject_uid: None,
+                        })
+                        .await;
+                }
+            }
+        }
+        let display_name = assignment
+            .display_name
+            .as_deref()
+            .or(assignment.remote_subject_uid.as_deref())
+            .unwrap_or("Remote assignee")
+            .to_string();
+        self.ensure_work_subject(&WorkAssigneeInput {
+            kind: "externalActor".to_string(),
+            app_user_id: None,
+            display_name: Some(display_name),
+            organ_name: assignment.organ_name.clone(),
+            remote_base_url: assignment.remote_base_url.clone(),
+            remote_public_key: assignment.remote_public_key.clone(),
+            remote_subject_uid: assignment.remote_subject_uid.clone(),
+        })
+        .await
     }
 
     async fn sign_agreement(&self, transfer_id: i64) -> Result<(), TransferWidgetError> {
@@ -1126,6 +1600,9 @@ impl TransferWidgetService {
         )
         .await
         .map_err(TransferWidgetError::from_io)?;
+        self.refresh_transfer_reservation(transfer.id, ReservationRefreshTrigger::AgreementLocked)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
 
         Ok(())
     }
@@ -1175,6 +1652,9 @@ impl TransferWidgetService {
         )
         .await
         .map_err(TransferWidgetError::from_io)?;
+        self.refresh_transfer_reservation(transfer.id, ReservationRefreshTrigger::Released)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
         Ok(())
     }
 
@@ -1252,24 +1732,7 @@ impl TransferWidgetService {
             .await
             .map_err(TransferWidgetError::from_io)?;
         let role = self.require_local_role(&transfer, &local_identity)?;
-        if !agreements_complete(&transfer) {
-            return Err(TransferWidgetError::Invalid(
-                "Both parties must sign agreement before settlement.".into(),
-            ));
-        }
-        if !self
-            .event_exists(transfer.id, EventKind::DeliveryConfirmed)
-            .await
-            .map_err(TransferWidgetError::from_io)?
-            || !self
-                .event_exists(transfer.id, EventKind::ReceiptConfirmed)
-                .await
-                .map_err(TransferWidgetError::from_io)?
-        {
-            return Err(TransferWidgetError::Invalid(
-                "Delivery and receipt signatures are required before settlement.".into(),
-            ));
-        }
+        self.ensure_settlement_ready(&transfer).await?;
         if self
             .local_settlement_exists(transfer.id, &local_identity.label)
             .await
@@ -1290,6 +1753,125 @@ impl TransferWidgetService {
                 "This side does not have a local Record selected.".into(),
             ));
         }
+        self.apply_settlement_effect(&transfer, &local_identity, role, record_id, delta)
+            .await?;
+        self.refresh_transfer_reservation(transfer.id, ReservationRefreshTrigger::Settled)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+
+        Ok(())
+    }
+
+    async fn settle_full(&self, transfer_id: i64) -> Result<(), TransferWidgetError> {
+        let local_identity = self.require_local_identity().await?;
+        let transfer = self
+            .load_transfer_summary(transfer_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        self.ensure_settlement_ready(&transfer).await?;
+        if transfer.contribution_id <= 0 || transfer.need_id <= 0 {
+            return Err(TransferWidgetError::Invalid(
+                "Full settlement requires local Records on both sides.".into(),
+            ));
+        }
+        self.load_record_by_id(transfer.contribution_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        self.load_record_by_id(transfer.need_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+
+        if !self
+            .local_settlement_exists(transfer.id, &transfer.contribution_actor_label)
+            .await
+            .map_err(TransferWidgetError::from_io)?
+        {
+            self.apply_settlement_effect(
+                &transfer,
+                &local_identity,
+                TransferSide::Contribution,
+                transfer.contribution_id,
+                -transfer.contribution_quantity.abs(),
+            )
+            .await?;
+        }
+
+        if !self
+            .local_settlement_exists(transfer.id, &transfer.need_actor_label)
+            .await
+            .map_err(TransferWidgetError::from_io)?
+        {
+            self.apply_settlement_effect(
+                &transfer,
+                &local_identity,
+                TransferSide::Need,
+                transfer.need_id,
+                transfer.need_quantity.abs(),
+            )
+            .await?;
+        }
+
+        self.refresh_transfer_reservation(transfer.id, ReservationRefreshTrigger::Settled)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+
+        Ok(())
+    }
+
+    async fn ensure_settlement_ready(
+        &self,
+        transfer: &TransferSummaryRow,
+    ) -> Result<(), TransferWidgetError> {
+        if !self.structured_settlement_ready(transfer).await? {
+            return Err(TransferWidgetError::Invalid(
+                "Both parties must sign agreement before settlement.".into(),
+            ));
+        }
+        if !self
+            .event_exists(transfer.id, EventKind::DeliveryConfirmed)
+            .await
+            .map_err(TransferWidgetError::from_io)?
+            || !self
+                .event_exists(transfer.id, EventKind::ReceiptConfirmed)
+                .await
+                .map_err(TransferWidgetError::from_io)?
+        {
+            return Err(TransferWidgetError::Invalid(
+                "Delivery and receipt signatures are required before settlement.".into(),
+            ));
+        }
+        Ok(())
+    }
+
+    async fn structured_settlement_ready(
+        &self,
+        transfer: &TransferSummaryRow,
+    ) -> Result<bool, TransferWidgetError> {
+        if !agreements_complete(transfer) {
+            return Ok(false);
+        }
+        let blocking_dependencies = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(1)
+             FROM transfer_interaction interaction
+             WHERE interaction.transfer_id = ?
+               AND interaction.dependency_kind IN ('must_agree', 'must_activate', 'must_deliver', 'must_receive', 'must_settle')
+               AND interaction.state NOT IN ('settled', 'satisfied', 'complete', 'completed', 'inactive')",
+        )
+        .bind(transfer.id)
+        .fetch_one(&*self.services.db)
+        .await
+        .map_err(|error| TransferWidgetError::Internal(error.to_string()))?;
+        Ok(blocking_dependencies == 0)
+    }
+
+    async fn apply_settlement_effect(
+        &self,
+        transfer: &TransferSummaryRow,
+        signer: &LocalIdentityRow,
+        role: TransferSide,
+        record_id: i64,
+        delta: f64,
+    ) -> Result<(), TransferWidgetError> {
         let record = self
             .load_record_by_id(record_id)
             .await
@@ -1311,7 +1893,7 @@ impl TransferWidgetService {
         let event_id = self
             .append_signed_event(
                 &transfer.identity_row(),
-                &local_identity,
+                signer,
                 EventKind::SettlementApplied,
                 json!({
                     "role": role.as_str(),
@@ -1336,14 +1918,16 @@ impl TransferWidgetService {
                 vec![
                     SqlParameter::Integer(transfer.id),
                     SqlParameter::Integer(record.id),
-                    SqlParameter::Text(local_identity.label),
+                    SqlParameter::Text(match role {
+                        TransferSide::Contribution => transfer.contribution_actor_label.clone(),
+                        TransferSide::Need => transfer.need_actor_label.clone(),
+                    }),
                     SqlParameter::Real(delta),
                     SqlParameter::Integer(event_id),
                 ],
             )
             .await
             .map_err(TransferWidgetError::from_io)?;
-
         Ok(())
     }
 
@@ -1487,6 +2071,10 @@ impl TransferWidgetService {
                     .unwrap_or(TransferBranchMode::Inherit),
                 TransferRecordSyncMode::parse_storage(&config.record_sync_mode)
                     .unwrap_or(TransferRecordSyncMode::None),
+                config
+                    .reservation_policy
+                    .as_deref()
+                    .and_then(TransferReservationPolicy::parse_storage),
                 config.source_record_id,
                 config.sync_enabled,
                 TransferSide::parse_storage(config.sync_role.as_deref()),
@@ -1498,6 +2086,30 @@ impl TransferWidgetService {
             )
             .await
             .map_err(TransferWidgetError::from_io)?;
+        }
+        if let Some(work) = &package.work {
+            self.upsert_work_metadata_package("transfer", transfer_id, work)
+                .await?;
+        }
+        for item_work in &package.item_work {
+            let item_id = self
+                .ensure_packaged_structured_item(transfer_id, item_work)
+                .await
+                .map_err(TransferWidgetError::from_io)?;
+            self.upsert_work_metadata_package("transfer_item", item_id, &item_work.work)
+                .await?;
+        }
+        for interaction_work in &package.interaction_work {
+            let interaction_id = self
+                .ensure_packaged_interaction(transfer_id, interaction_work)
+                .await
+                .map_err(TransferWidgetError::from_io)?;
+            self.upsert_work_metadata_package(
+                "transfer_interaction",
+                interaction_id,
+                &interaction_work.work,
+            )
+            .await?;
         }
 
         let mut events_imported = 0;
@@ -1579,6 +2191,18 @@ impl TransferWidgetService {
             "SELECT id, quantity, head, body
              FROM record
              ORDER BY id DESC
+             LIMIT 100",
+        )
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(Error::other)
+    }
+
+    async fn load_app_user_options(&self) -> Result<Vec<AppUserOption>, Error> {
+        sqlx::query_as::<_, AppUserOption>(
+            "SELECT id, name, username
+             FROM app_user
+             ORDER BY lower(COALESCE(NULLIF(name, ''), username)), id
              LIMIT 100",
         )
         .fetch_all(&*self.services.db)
@@ -1902,6 +2526,150 @@ impl TransferWidgetService {
         Ok(())
     }
 
+    async fn ensure_packaged_structured_item(
+        &self,
+        transfer_id: i64,
+        item_work: &TransferItemWorkPackage,
+    ) -> Result<i64, Error> {
+        if let Some(source_record_id) = item_work.source_record_id {
+            if let Some(id) = sqlx::query_scalar::<_, i64>(
+                "SELECT id
+                 FROM transfer_structured_item
+                 WHERE transfer_id = ? AND role = ? AND source_record_id = ?
+                 ORDER BY id
+                 LIMIT 1",
+            )
+            .bind(transfer_id)
+            .bind(&item_work.role)
+            .bind(source_record_id)
+            .fetch_optional(&*self.services.db)
+            .await
+            .map_err(Error::other)?
+            {
+                return Ok(id);
+            }
+        }
+        if let Some(id) = sqlx::query_scalar::<_, i64>(
+            "SELECT id
+             FROM transfer_structured_item
+             WHERE transfer_id = ? AND role = ? AND title = ?
+             ORDER BY id
+             LIMIT 1",
+        )
+        .bind(transfer_id)
+        .bind(&item_work.role)
+        .bind(&item_work.title)
+        .fetch_optional(&*self.services.db)
+        .await
+        .map_err(Error::other)?
+        {
+            return Ok(id);
+        }
+        self.services
+            .writer
+            .execute_statement_returning_id(
+                "INSERT INTO transfer_structured_item(
+                    transfer_id,
+                    role,
+                    source_record_id,
+                    title,
+                    description,
+                    quantity,
+                    unit,
+                    version
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                 RETURNING id"
+                    .to_string(),
+                vec![
+                    SqlParameter::Integer(transfer_id),
+                    SqlParameter::Text(item_work.role.clone()),
+                    optional_i64_parameter(item_work.source_record_id),
+                    SqlParameter::Text(item_work.title.clone()),
+                    optional_text_parameter(item_work.description.clone()),
+                    item_work
+                        .quantity
+                        .map(SqlParameter::Real)
+                        .unwrap_or(SqlParameter::Null),
+                    optional_text_parameter(item_work.unit.clone()),
+                    SqlParameter::Integer(item_work.version.unwrap_or(1)),
+                ],
+            )
+            .await?
+            .last_insert_rowid
+            .ok_or_else(|| Error::new(ErrorKind::InvalidData, "Structured item returned no id"))
+    }
+
+    async fn ensure_packaged_interaction(
+        &self,
+        transfer_id: i64,
+        interaction_work: &TransferInteractionWorkPackage,
+    ) -> Result<i64, Error> {
+        if let Some(id) = sqlx::query_scalar::<_, i64>(
+            "SELECT id
+             FROM transfer_interaction
+             WHERE transfer_id = ?
+               AND interaction_kind = ?
+               AND direction = ?
+               AND COALESCE(from_item_id, -1) = COALESCE(?, -1)
+               AND COALESCE(to_item_id, -1) = COALESCE(?, -1)
+               AND COALESCE(from_party_id, -1) = COALESCE(?, -1)
+               AND COALESCE(to_party_id, -1) = COALESCE(?, -1)
+             ORDER BY id
+             LIMIT 1",
+        )
+        .bind(transfer_id)
+        .bind(&interaction_work.interaction_kind)
+        .bind(&interaction_work.direction)
+        .bind(interaction_work.from_item_id)
+        .bind(interaction_work.to_item_id)
+        .bind(interaction_work.from_party_id)
+        .bind(interaction_work.to_party_id)
+        .fetch_optional(&*self.services.db)
+        .await
+        .map_err(Error::other)?
+        {
+            return Ok(id);
+        }
+        self.services
+            .writer
+            .execute_statement_returning_id(
+                "INSERT INTO transfer_interaction(
+                    transfer_id,
+                    interaction_kind,
+                    direction,
+                    from_item_id,
+                    to_item_id,
+                    from_party_id,
+                    to_party_id,
+                    quantity,
+                    state,
+                    dependency_kind,
+                    version
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 RETURNING id"
+                    .to_string(),
+                vec![
+                    SqlParameter::Integer(transfer_id),
+                    SqlParameter::Text(interaction_work.interaction_kind.clone()),
+                    SqlParameter::Text(interaction_work.direction.clone()),
+                    optional_i64_parameter(interaction_work.from_item_id),
+                    optional_i64_parameter(interaction_work.to_item_id),
+                    optional_i64_parameter(interaction_work.from_party_id),
+                    optional_i64_parameter(interaction_work.to_party_id),
+                    interaction_work
+                        .quantity
+                        .map(SqlParameter::Real)
+                        .unwrap_or(SqlParameter::Null),
+                    SqlParameter::Text(interaction_work.state.clone()),
+                    optional_text_parameter(interaction_work.dependency_kind.clone()),
+                    SqlParameter::Integer(interaction_work.version.unwrap_or(1)),
+                ],
+            )
+            .await?
+            .last_insert_rowid
+            .ok_or_else(|| Error::new(ErrorKind::InvalidData, "Interaction returned no id"))
+    }
+
     async fn upsert_transfer_relation(
         &self,
         transfer_uid: &str,
@@ -1984,6 +2752,7 @@ impl TransferWidgetService {
         transfer_uid: &str,
         branch_mode: TransferBranchMode,
         record_sync_mode: TransferRecordSyncMode,
+        reservation_policy: Option<TransferReservationPolicy>,
         source_record_id: Option<i64>,
         sync_enabled: bool,
         sync_role: Option<TransferSide>,
@@ -2000,6 +2769,7 @@ impl TransferWidgetService {
                     transfer_uid,
                     branch_mode,
                     record_sync_mode,
+                    reservation_policy,
                     source_record_id,
                     sync_role,
                     sync_quantity,
@@ -2008,11 +2778,12 @@ impl TransferWidgetService {
                     last_synced_record_head,
                     sync_enabled,
                     last_synced_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CASE WHEN ? THEN CURRENT_TIMESTAMP ELSE NULL END)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CASE WHEN ? THEN CURRENT_TIMESTAMP ELSE NULL END)
                 ON CONFLICT(transfer_uid)
                 DO UPDATE SET
                     branch_mode = excluded.branch_mode,
                     record_sync_mode = excluded.record_sync_mode,
+                    reservation_policy = excluded.reservation_policy,
                     source_record_id = COALESCE(excluded.source_record_id, transfer_tree_config.source_record_id),
                     sync_role = COALESCE(excluded.sync_role, transfer_tree_config.sync_role),
                     sync_quantity = COALESCE(excluded.sync_quantity, transfer_tree_config.sync_quantity),
@@ -2030,6 +2801,9 @@ impl TransferWidgetService {
                     SqlParameter::Text(transfer_uid.to_string()),
                     SqlParameter::Text(branch_mode.as_str().to_string()),
                     SqlParameter::Text(record_sync_mode.as_str().to_string()),
+                    optional_text_parameter(
+                        reservation_policy.map(|policy| policy.as_str().to_string()),
+                    ),
                     optional_i64_parameter(source_record_id),
                     optional_text_parameter(sync_role.map(|role| role.as_str().to_string())),
                     optional_f64_parameter(sync_quantity),
@@ -2065,6 +2839,10 @@ impl TransferWidgetService {
                 .as_ref()
                 .and_then(|config| TransferRecordSyncMode::parse_storage(&config.record_sync_mode))
                 .unwrap_or(TransferRecordSyncMode::None),
+            existing
+                .as_ref()
+                .and_then(|config| config.reservation_policy.as_deref())
+                .and_then(TransferReservationPolicy::parse_storage),
             existing.as_ref().and_then(|config| config.source_record_id),
             existing
                 .as_ref()
@@ -2108,6 +2886,10 @@ impl TransferWidgetService {
                 .and_then(|config| TransferBranchMode::parse_storage(&config.branch_mode))
                 .unwrap_or(TransferBranchMode::Inherit),
             mode,
+            existing
+                .as_ref()
+                .and_then(|config| config.reservation_policy.as_deref())
+                .and_then(TransferReservationPolicy::parse_storage),
             existing.as_ref().and_then(|config| config.source_record_id),
             mode == TransferRecordSyncMode::Live,
             existing
@@ -2129,6 +2911,403 @@ impl TransferWidgetService {
         .map_err(TransferWidgetError::from_io)
     }
 
+    async fn set_transfer_reservation_policy(
+        &self,
+        request: SetTransferReservationPolicyRequest,
+    ) -> Result<(), TransferWidgetError> {
+        let transfer = self
+            .load_transfer_summary(request.transfer_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        let policy = request
+            .reservation_policy
+            .as_deref()
+            .map(TransferReservationPolicy::parse)
+            .transpose()?;
+        let existing = self
+            .load_transfer_tree_config(&transfer.transfer_uid)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        self.upsert_transfer_tree_config(
+            &transfer.transfer_uid,
+            existing
+                .as_ref()
+                .and_then(|config| TransferBranchMode::parse_storage(&config.branch_mode))
+                .unwrap_or(TransferBranchMode::Inherit),
+            existing
+                .as_ref()
+                .and_then(|config| TransferRecordSyncMode::parse_storage(&config.record_sync_mode))
+                .unwrap_or(TransferRecordSyncMode::None),
+            policy,
+            existing.as_ref().and_then(|config| config.source_record_id),
+            existing
+                .as_ref()
+                .is_some_and(|config| config.sync_enabled != 0),
+            existing
+                .as_ref()
+                .and_then(|config| TransferSide::parse_storage(config.sync_role.as_deref())),
+            existing.as_ref().and_then(|config| config.sync_quantity),
+            existing
+                .as_ref()
+                .and_then(|config| config.sync_counterparty_label.clone()),
+            existing
+                .as_ref()
+                .and_then(|config| config.sync_target_organ_id),
+            existing
+                .as_ref()
+                .and_then(|config| config.last_synced_record_head.clone()),
+            false,
+        )
+        .await
+        .map_err(TransferWidgetError::from_io)?;
+        let mut transfer_ids = vec![transfer.id];
+        transfer_ids.extend(
+            self.load_descendant_transfer_ids(&transfer.transfer_uid)
+                .await
+                .map_err(TransferWidgetError::from_io)?,
+        );
+        for transfer_id in transfer_ids {
+            self.refresh_transfer_reservation(
+                transfer_id,
+                ReservationRefreshTrigger::PolicyChanged,
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        }
+        Ok(())
+    }
+
+    async fn refresh_transfer_reservation(
+        &self,
+        transfer_id: i64,
+        trigger: ReservationRefreshTrigger,
+    ) -> Result<(), Error> {
+        let transfer = self.load_transfer_summary(transfer_id).await?;
+        let mut affected_record_ids = self
+            .load_transfer_influence_record_ids(transfer.id)
+            .await?
+            .into_iter()
+            .collect::<std::collections::BTreeSet<_>>();
+        if transfer.contribution_id > 0 {
+            affected_record_ids.insert(transfer.contribution_id);
+        }
+
+        match trigger {
+            ReservationRefreshTrigger::Settled => {
+                self.services
+                    .writer
+                    .execute_statement(
+                        "UPDATE transfer_quantity_influence
+                         SET influence_state = 'consumed',
+                             consumed_at = CURRENT_TIMESTAMP
+                         WHERE transfer_id = ?
+                           AND influence_state IN ('planned', 'active')"
+                            .to_string(),
+                        vec![SqlParameter::Integer(transfer.id)],
+                    )
+                    .await?;
+            }
+            ReservationRefreshTrigger::Released => {
+                self.services
+                    .writer
+                    .execute_statement(
+                        "UPDATE transfer_quantity_influence
+                         SET influence_state = 'released',
+                             consumed_at = CURRENT_TIMESTAMP
+                         WHERE transfer_id = ?
+                           AND influence_state IN ('planned', 'active')"
+                            .to_string(),
+                        vec![SqlParameter::Integer(transfer.id)],
+                    )
+                    .await?;
+            }
+            _ => {
+                self.services
+                    .writer
+                    .execute_statement(
+                        "UPDATE transfer_quantity_influence
+                         SET influence_state = 'released',
+                             consumed_at = CURRENT_TIMESTAMP
+                         WHERE transfer_id = ?
+                           AND influence_state IN ('planned', 'active')"
+                            .to_string(),
+                        vec![SqlParameter::Integer(transfer.id)],
+                    )
+                    .await?;
+
+                let Some(local_identity) = self.load_local_identity().await? else {
+                    self.refresh_record_transfer_availability_for_records(&affected_record_ids)
+                        .await?;
+                    return Ok(());
+                };
+                if self
+                    .local_settlement_exists(transfer.id, &local_identity.label)
+                    .await?
+                {
+                    self.refresh_record_transfer_availability_for_records(&affected_record_ids)
+                        .await?;
+                    return Ok(());
+                }
+                let Some(local_role) = local_role_for(&transfer, Some(&local_identity)) else {
+                    self.refresh_record_transfer_availability_for_records(&affected_record_ids)
+                        .await?;
+                    return Ok(());
+                };
+                let (record_id, influence) = match local_role {
+                    TransferSide::Contribution => (
+                        transfer.contribution_id,
+                        -transfer.contribution_quantity.abs(),
+                    ),
+                    TransferSide::Need => (transfer.need_id, transfer.need_quantity.abs()),
+                };
+                if record_id <= 0 {
+                    self.refresh_record_transfer_availability_for_records(&affected_record_ids)
+                        .await?;
+                    return Ok(());
+                }
+                affected_record_ids.insert(record_id);
+
+                let policy = self
+                    .effective_transfer_reservation_policy(&transfer.transfer_uid)
+                    .await?;
+                if policy != TransferReservationPolicy::None {
+                    let influence_state = match policy {
+                        TransferReservationPolicy::None => None,
+                        TransferReservationPolicy::Soft => Some("planned"),
+                        TransferReservationPolicy::HardOnProposal => Some("active"),
+                        TransferReservationPolicy::HardOnConsume => {
+                            if transfer.source_transfer_uid.is_some()
+                                || trigger == ReservationRefreshTrigger::ProposalConsumed
+                            {
+                                Some("active")
+                            } else {
+                                Some("planned")
+                            }
+                        }
+                        TransferReservationPolicy::HardOnLock => {
+                            if agreements_complete(&transfer) {
+                                Some("active")
+                            } else {
+                                Some("planned")
+                            }
+                        }
+                    };
+
+                    if let Some(influence_state) = influence_state {
+                        self.services
+                            .writer
+                            .execute_statement(
+                                "INSERT INTO transfer_quantity_influence(
+                                    transfer_id,
+                                    item_id,
+                                    interaction_id,
+                                    record_id,
+                                    influence,
+                                    influence_state,
+                                    policy
+                                ) VALUES (?, NULL, NULL, ?, ?, ?, 'manual')"
+                                    .to_string(),
+                                vec![
+                                    SqlParameter::Integer(transfer.id),
+                                    SqlParameter::Integer(record_id),
+                                    SqlParameter::Real(influence),
+                                    SqlParameter::Text(influence_state.to_string()),
+                                ],
+                            )
+                            .await?;
+                    }
+                }
+            }
+        }
+
+        self.refresh_record_transfer_availability_for_records(&affected_record_ids)
+            .await
+    }
+
+    async fn effective_transfer_reservation_policy(
+        &self,
+        transfer_uid: &str,
+    ) -> Result<TransferReservationPolicy, Error> {
+        let mut current = Some(transfer_uid.to_string());
+        let mut seen = std::collections::BTreeSet::new();
+        while let Some(uid) = current {
+            if !seen.insert(uid.clone()) {
+                break;
+            }
+            if let Some(policy) = sqlx::query_scalar::<_, String>(
+                "SELECT reservation_policy
+                 FROM transfer_tree_config
+                 WHERE transfer_uid = ?
+                   AND reservation_policy IS NOT NULL
+                 LIMIT 1",
+            )
+            .bind(&uid)
+            .fetch_optional(&*self.services.db)
+            .await
+            .map_err(Error::other)?
+                && let Some(parsed) = TransferReservationPolicy::parse_storage(&policy)
+            {
+                return Ok(parsed);
+            }
+            current = sqlx::query_scalar::<_, String>(
+                "SELECT target_transfer_uid
+                 FROM transfer_relation
+                 WHERE transfer_uid = ?
+                   AND relation_type = 'parent'
+                 LIMIT 1",
+            )
+            .bind(&uid)
+            .fetch_optional(&*self.services.db)
+            .await
+            .map_err(Error::other)?;
+        }
+
+        let configured = sqlx::query_scalar::<_, String>(
+            "SELECT COALESCE(
+                (SELECT transfer_reservation_policy
+                 FROM configuration
+                 WHERE quantity = 1
+                 ORDER BY id
+                 LIMIT 1),
+                'soft'
+             )",
+        )
+        .fetch_one(&*self.services.db)
+        .await
+        .map_err(Error::other)?;
+        Ok(TransferReservationPolicy::parse_storage(&configured)
+            .unwrap_or(TransferReservationPolicy::Soft))
+    }
+
+    async fn load_transfer_influence_record_ids(
+        &self,
+        transfer_id: i64,
+    ) -> Result<Vec<i64>, Error> {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT DISTINCT record_id
+             FROM transfer_quantity_influence
+             WHERE transfer_id = ?",
+        )
+        .bind(transfer_id)
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(Error::other)
+    }
+
+    async fn load_descendant_transfer_ids(&self, transfer_uid: &str) -> Result<Vec<i64>, Error> {
+        let mut descendant_ids = Vec::new();
+        let mut stack = vec![transfer_uid.to_string()];
+        let mut seen = std::collections::BTreeSet::new();
+        while let Some(parent_uid) = stack.pop() {
+            if !seen.insert(parent_uid.clone()) {
+                continue;
+            }
+            let children = sqlx::query_as::<_, (i64, String)>(
+                "SELECT ident.transfer_id, ident.transfer_uid
+                 FROM transfer_identity ident
+                 JOIN transfer_relation rel ON rel.transfer_uid = ident.transfer_uid
+                 WHERE rel.target_transfer_uid = ?
+                   AND rel.relation_type = 'parent'",
+            )
+            .bind(&parent_uid)
+            .fetch_all(&*self.services.db)
+            .await
+            .map_err(Error::other)?;
+            for (transfer_id, child_uid) in children {
+                descendant_ids.push(transfer_id);
+                stack.push(child_uid);
+            }
+        }
+        Ok(descendant_ids)
+    }
+
+    async fn refresh_record_transfer_availability_for_records(
+        &self,
+        record_ids: &std::collections::BTreeSet<i64>,
+    ) -> Result<(), Error> {
+        for record_id in record_ids
+            .iter()
+            .copied()
+            .filter(|record_id| *record_id > 0)
+        {
+            self.services
+                .writer
+                .execute_statement(
+                    "DELETE FROM record_transfer_availability WHERE record_id = ?".to_string(),
+                    vec![SqlParameter::Integer(record_id)],
+                )
+                .await?;
+            self.services
+                .writer
+                .execute_statement(
+                    "INSERT INTO record_transfer_availability(
+                        record_id,
+                        actual_quantity,
+                        proposed_outgoing_quantity,
+                        proposed_incoming_quantity,
+                        reserved_quantity,
+                        reserved_incoming_quantity,
+                        available_quantity,
+                        planned_quantity,
+                        updated_at
+                     )
+                     WITH projection AS (
+                        SELECT
+                            record.id AS record_id,
+                            record.quantity AS actual_quantity,
+                            COALESCE(SUM(CASE
+                                WHEN transfer_quantity_influence.influence_state = 'planned'
+                                     AND transfer_quantity_influence.influence < 0
+                                THEN ABS(transfer_quantity_influence.influence)
+                                ELSE 0
+                            END), 0) AS proposed_outgoing_quantity,
+                            COALESCE(SUM(CASE
+                                WHEN transfer_quantity_influence.influence_state = 'planned'
+                                     AND transfer_quantity_influence.influence > 0
+                                THEN transfer_quantity_influence.influence
+                                ELSE 0
+                            END), 0) AS proposed_incoming_quantity,
+                            COALESCE(SUM(CASE
+                                WHEN transfer_quantity_influence.influence_state = 'active'
+                                     AND transfer_quantity_influence.influence < 0
+                                THEN ABS(transfer_quantity_influence.influence)
+                                ELSE 0
+                            END), 0) AS reserved_outgoing_quantity,
+                            COALESCE(SUM(CASE
+                                WHEN transfer_quantity_influence.influence_state = 'active'
+                                     AND transfer_quantity_influence.influence > 0
+                                THEN transfer_quantity_influence.influence
+                                ELSE 0
+                            END), 0) AS reserved_incoming_quantity
+                        FROM record
+                        LEFT JOIN transfer_quantity_influence
+                            ON transfer_quantity_influence.record_id = record.id
+                           AND transfer_quantity_influence.influence_state IN ('planned', 'active')
+                        WHERE record.id = ?
+                        GROUP BY record.id
+                     )
+                     SELECT
+                        record_id,
+                        actual_quantity,
+                        proposed_outgoing_quantity,
+                        proposed_incoming_quantity,
+                        reserved_outgoing_quantity,
+                        reserved_incoming_quantity,
+                        actual_quantity - reserved_outgoing_quantity,
+                        actual_quantity
+                            + proposed_incoming_quantity
+                            + reserved_incoming_quantity
+                            - proposed_outgoing_quantity
+                            - reserved_outgoing_quantity,
+                        CURRENT_TIMESTAMP
+                     FROM projection"
+                        .to_string(),
+                    vec![SqlParameter::Integer(record_id)],
+                )
+                .await?;
+        }
+        Ok(())
+    }
     async fn create_transfer_tree_from_record(
         &self,
         request: CreateTransferTreeFromRecordRequest,
@@ -2189,6 +3368,7 @@ impl TransferWidgetService {
             &transfer.transfer_uid,
             TransferBranchMode::Inherit,
             sync_mode,
+            None,
             Some(record_id),
             sync_mode == TransferRecordSyncMode::Live,
             Some(role),
@@ -2298,6 +3478,10 @@ impl TransferWidgetService {
             )
             .unwrap_or(TransferBranchMode::Inherit),
             TransferRecordSyncMode::Live,
+            config
+                .reservation_policy
+                .as_deref()
+                .and_then(TransferReservationPolicy::parse_storage),
             Some(source_record_id),
             true,
             TransferSide::parse_storage(config.sync_role.as_deref()),
@@ -2483,11 +3667,19 @@ impl TransferWidgetService {
             let events = self.load_transfer_events(transfer.id).await?;
             let cursors = self.load_transfer_cursors(transfer.id).await?;
             let settlements = self.load_transfer_settlements(transfer.id).await?;
+            let work = self.load_work_metadata("transfer", transfer.id).await?;
+            let items = self.load_transfer_item_work_views(transfer.id).await?;
+            let interactions = self
+                .load_transfer_interaction_work_views(transfer.id)
+                .await?;
             views.push(TransferView::from_rows(
                 transfer,
                 events,
                 cursors,
                 settlements,
+                work,
+                items,
+                interactions,
                 &relations,
                 &configs,
                 &transfer_lookup,
@@ -2495,6 +3687,218 @@ impl TransferWidgetService {
             ));
         }
         Ok(views)
+    }
+
+    async fn load_transfer_interaction_work_views(
+        &self,
+        transfer_id: i64,
+    ) -> Result<Vec<TransferInteractionWorkView>, Error> {
+        let rows = sqlx::query_as::<_, TransferInteractionWorkRow>(
+            "SELECT
+                id,
+                transfer_id,
+                interaction_kind,
+                direction,
+                from_item_id,
+                to_item_id,
+                from_party_id,
+                to_party_id,
+                quantity,
+                state,
+                dependency_kind,
+                version
+             FROM transfer_interaction
+             WHERE transfer_id = ?
+             ORDER BY id",
+        )
+        .bind(transfer_id)
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(Error::other)?;
+        let mut views = Vec::with_capacity(rows.len());
+        for row in rows {
+            let work = self
+                .load_work_metadata("transfer_interaction", row.id)
+                .await?;
+            views.push(TransferInteractionWorkView::from_row(row, work));
+        }
+        Ok(views)
+    }
+
+    async fn load_work_metadata(
+        &self,
+        owner_kind: &str,
+        owner_id: i64,
+    ) -> Result<WorkMetadataView, Error> {
+        let Some(row) = sqlx::query_as::<_, WorkMetadataRow>(
+            "SELECT id, status, start_at, end_at, estimate_seconds, completion_notes, metadata_json
+             FROM work_metadata
+             WHERE owner_kind = ? AND owner_id = ?
+             LIMIT 1",
+        )
+        .bind(owner_kind)
+        .bind(owner_id)
+        .fetch_optional(&*self.services.db)
+        .await
+        .map_err(Error::other)?
+        else {
+            return Ok(WorkMetadataView::empty());
+        };
+        let assignments = sqlx::query_as::<_, WorkAssignmentJoinRow>(
+            "SELECT
+                assignment.id,
+                subject.id AS work_subject_id,
+                assignment.assignment_kind,
+                subject.subject_kind,
+                subject.app_user_id,
+                subject.organ_id,
+                subject.transfer_party_id,
+                subject.remote_base_url,
+                subject.remote_public_key,
+                subject.remote_subject_uid,
+                subject.display_name_snapshot,
+                subject.organ_name_snapshot
+             FROM work_assignment assignment
+             JOIN work_subject subject ON subject.id = assignment.work_subject_id
+             WHERE assignment.work_metadata_id = ?
+             ORDER BY assignment.id",
+        )
+        .bind(row.id)
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(Error::other)?;
+        Ok(WorkMetadataView::from_row(row, assignments))
+    }
+
+    async fn load_transfer_item_work_views(
+        &self,
+        transfer_id: i64,
+    ) -> Result<Vec<TransferItemWorkView>, Error> {
+        let rows = sqlx::query_as::<_, TransferStructuredItemWorkRow>(
+            "SELECT id, transfer_id, role, title, description, source_record_id, quantity, unit, version
+             FROM transfer_structured_item
+             WHERE transfer_id = ?
+             ORDER BY id",
+        )
+        .bind(transfer_id)
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(Error::other)?;
+        let mut views = Vec::with_capacity(rows.len());
+        for row in rows {
+            let work = self.load_work_metadata("transfer_item", row.id).await?;
+            views.push(TransferItemWorkView::from_row(row, work));
+        }
+        Ok(views)
+    }
+
+    async fn load_work_metadata_package(
+        &self,
+        owner_kind: &str,
+        owner_id: i64,
+    ) -> Result<Option<WorkMetadataPackage>, Error> {
+        let Some(row) = sqlx::query_as::<_, WorkMetadataPackageRow>(
+            "SELECT id, task_type, status, start_at, end_at, estimate_seconds, completion_notes, metadata_json
+             FROM work_metadata
+             WHERE owner_kind = ? AND owner_id = ?
+             LIMIT 1",
+        )
+        .bind(owner_kind)
+        .bind(owner_id)
+        .fetch_optional(&*self.services.db)
+        .await
+        .map_err(Error::other)?
+        else {
+            return Ok(None);
+        };
+        let assignments = sqlx::query_as::<_, WorkAssignmentJoinRow>(
+            "SELECT
+                assignment.id,
+                subject.id AS work_subject_id,
+                assignment.assignment_kind,
+                subject.subject_kind,
+                subject.app_user_id,
+                subject.organ_id,
+                subject.transfer_party_id,
+                subject.remote_base_url,
+                subject.remote_public_key,
+                subject.remote_subject_uid,
+                subject.display_name_snapshot,
+                subject.organ_name_snapshot
+             FROM work_assignment assignment
+             JOIN work_subject subject ON subject.id = assignment.work_subject_id
+             WHERE assignment.work_metadata_id = ?
+             ORDER BY assignment.id",
+        )
+        .bind(row.id)
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(Error::other)?;
+        Ok(Some(WorkMetadataPackage::from_row(row, assignments)))
+    }
+
+    async fn load_transfer_item_work_packages(
+        &self,
+        transfer_id: i64,
+    ) -> Result<Vec<TransferItemWorkPackage>, Error> {
+        let rows = sqlx::query_as::<_, TransferStructuredItemWorkRow>(
+            "SELECT id, transfer_id, role, title, description, source_record_id, quantity, unit, version
+             FROM transfer_structured_item
+             WHERE transfer_id = ?
+             ORDER BY id",
+        )
+        .bind(transfer_id)
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(Error::other)?;
+        let mut packages = Vec::new();
+        for row in rows {
+            if let Some(work) = self
+                .load_work_metadata_package("transfer_item", row.id)
+                .await?
+            {
+                packages.push(TransferItemWorkPackage::from_row(row, work));
+            }
+        }
+        Ok(packages)
+    }
+
+    async fn load_transfer_interaction_work_packages(
+        &self,
+        transfer_id: i64,
+    ) -> Result<Vec<TransferInteractionWorkPackage>, Error> {
+        let rows = sqlx::query_as::<_, TransferInteractionWorkRow>(
+            "SELECT
+                id,
+                transfer_id,
+                interaction_kind,
+                direction,
+                from_item_id,
+                to_item_id,
+                from_party_id,
+                to_party_id,
+                quantity,
+                state,
+                dependency_kind,
+                version
+             FROM transfer_interaction
+             WHERE transfer_id = ?
+             ORDER BY id",
+        )
+        .bind(transfer_id)
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(Error::other)?;
+        let mut packages = Vec::new();
+        for row in rows {
+            if let Some(work) = self
+                .load_work_metadata_package("transfer_interaction", row.id)
+                .await?
+            {
+                packages.push(TransferInteractionWorkPackage::from_row(row, work));
+            }
+        }
+        Ok(packages)
     }
 
     async fn load_transfer_relations(&self) -> Result<Vec<TransferRelationRow>, Error> {
@@ -2550,6 +3954,7 @@ impl TransferWidgetService {
                 transfer_uid,
                 branch_mode,
                 record_sync_mode,
+                reservation_policy,
                 source_record_id,
                 sync_role,
                 sync_quantity,
@@ -2577,6 +3982,7 @@ impl TransferWidgetService {
                 transfer_uid,
                 branch_mode,
                 record_sync_mode,
+                reservation_policy,
                 source_record_id,
                 sync_role,
                 sync_quantity,
@@ -2600,10 +4006,20 @@ impl TransferWidgetService {
     async fn build_transfer_package(&self, transfer_id: i64) -> Result<TransferPackage, Error> {
         let transfer = self.load_transfer_summary(transfer_id).await?;
         let events = self.load_transfer_events(transfer_id).await?;
+        let work = self
+            .load_work_metadata_package("transfer", transfer_id)
+            .await?;
+        let item_work = self.load_transfer_item_work_packages(transfer_id).await?;
+        let interaction_work = self
+            .load_transfer_interaction_work_packages(transfer_id)
+            .await?;
         Ok(TransferPackage {
             version: PACKAGE_VERSION,
             identity: TransferIdentityPackage::from(&transfer),
             item: TransferItemPackage::from(&transfer),
+            work,
+            item_work,
+            interaction_work,
             relations: self
                 .load_transfer_package_relations(&transfer.transfer_uid)
                 .await?,
@@ -2625,10 +4041,30 @@ impl TransferWidgetService {
                  FROM transfer t
                  JOIN transfer_identity ident ON ident.transfer_id = t.id
                  LEFT JOIN transfer_event event ON event.transfer_id = t.id
-                 WHERE ident.updated_at >= ? OR event.created_at >= ?
+                 LEFT JOIN work_metadata transfer_work
+                    ON transfer_work.owner_kind = 'transfer'
+                   AND transfer_work.owner_id = t.id
+                 LEFT JOIN transfer_structured_item structured_item
+                    ON structured_item.transfer_id = t.id
+                 LEFT JOIN work_metadata item_work
+                    ON item_work.owner_kind = 'transfer_item'
+                   AND item_work.owner_id = structured_item.id
+                 LEFT JOIN transfer_interaction interaction
+                    ON interaction.transfer_id = t.id
+                 LEFT JOIN work_metadata interaction_work
+                    ON interaction_work.owner_kind = 'transfer_interaction'
+                   AND interaction_work.owner_id = interaction.id
+                 WHERE ident.updated_at >= ?
+                    OR event.created_at >= ?
+                    OR transfer_work.updated_at >= ?
+                    OR item_work.updated_at >= ?
+                    OR interaction_work.updated_at >= ?
                  ORDER BY t.id DESC
                  LIMIT 100",
             )
+            .bind(since)
+            .bind(since)
+            .bind(since)
             .bind(since)
             .bind(since)
             .fetch_all(&*self.services.db)
@@ -3530,6 +4966,54 @@ impl TransferBranchMode {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum TransferReservationPolicy {
+    None,
+    Soft,
+    HardOnProposal,
+    HardOnConsume,
+    HardOnLock,
+}
+
+impl TransferReservationPolicy {
+    fn parse(value: &str) -> Result<Self, TransferWidgetError> {
+        Self::parse_storage(value).ok_or_else(|| {
+            TransferWidgetError::Invalid("Unknown Transfer reservation policy.".into())
+        })
+    }
+
+    fn parse_storage(value: &str) -> Option<Self> {
+        match value {
+            "none" => Some(Self::None),
+            "soft" => Some(Self::Soft),
+            "hard_on_proposal" => Some(Self::HardOnProposal),
+            "hard_on_consume" => Some(Self::HardOnConsume),
+            "hard_on_lock" => Some(Self::HardOnLock),
+            _ => None,
+        }
+    }
+
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::Soft => "soft",
+            Self::HardOnProposal => "hard_on_proposal",
+            Self::HardOnConsume => "hard_on_consume",
+            Self::HardOnLock => "hard_on_lock",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ReservationRefreshTrigger {
+    ProposalCreated,
+    ProposalConsumed,
+    AgreementLocked,
+    PolicyChanged,
+    Released,
+    Settled,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum TransferRecordSyncMode {
     None,
     CopyOnce,
@@ -3652,6 +5136,13 @@ struct SetTransferTreeSyncModeRequest {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+struct SetTransferReservationPolicyRequest {
+    transfer_id: i64,
+    reservation_policy: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct DuplicateProposalRequest {
     transfer_id: i64,
     local_role: TransferSide,
@@ -3666,6 +5157,52 @@ struct UpdateTransferLocalItemRequest {
     item_title: String,
     record_id: i64,
     quantity: f64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct UpdateTransferWorkRequest {
+    transfer_id: i64,
+    work: WorkMetadataInput,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct UpdateTransferItemWorkRequest {
+    transfer_id: i64,
+    structured_item_id: i64,
+    work: WorkMetadataInput,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct UpdateTransferInteractionWorkRequest {
+    transfer_id: i64,
+    interaction_id: i64,
+    work: WorkMetadataInput,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct WorkMetadataInput {
+    start_at: Option<String>,
+    end_at: Option<String>,
+    estimate_seconds: Option<i64>,
+    completion_notes: Option<String>,
+    #[serde(default)]
+    assignees: Vec<WorkAssigneeInput>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct WorkAssigneeInput {
+    kind: String,
+    app_user_id: Option<i64>,
+    display_name: Option<String>,
+    organ_name: Option<String>,
+    remote_base_url: Option<String>,
+    remote_public_key: Option<String>,
+    remote_subject_uid: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -3702,6 +5239,14 @@ struct OrganOption {
     base_url: String,
     requires_auth: bool,
     authenticated: bool,
+}
+
+#[derive(Debug, Clone, Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
+struct AppUserOption {
+    id: i64,
+    name: String,
+    username: String,
 }
 
 #[derive(Debug, Clone, Serialize, FromRow)]
@@ -3993,6 +5538,7 @@ struct TransferTreeConfigRow {
     transfer_uid: String,
     branch_mode: String,
     record_sync_mode: String,
+    reservation_policy: Option<String>,
     source_record_id: Option<i64>,
     sync_role: Option<String>,
     sync_quantity: Option<f64>,
@@ -4045,6 +5591,9 @@ struct TransferView {
     events: Vec<EventView>,
     sync_cursors: Vec<CursorRow>,
     settlements: Vec<SettlementRow>,
+    work: WorkMetadataView,
+    items: Vec<TransferItemWorkView>,
+    interactions: Vec<TransferInteractionWorkView>,
     package: TransferPackage,
     created_at: String,
     updated_at: String,
@@ -4056,6 +5605,9 @@ impl TransferView {
         events: Vec<EventRow>,
         cursors: Vec<CursorRow>,
         settlements: Vec<SettlementRow>,
+        work: WorkMetadataView,
+        items: Vec<TransferItemWorkView>,
+        interactions: Vec<TransferInteractionWorkView>,
         relations: &[TransferRelationRow],
         configs: &[TransferTreeConfigRow],
         transfer_lookup: &std::collections::BTreeMap<String, i64>,
@@ -4124,14 +5676,32 @@ impl TransferView {
             && delivery_confirmed
             && receipt_confirmed
             && !local_settled;
+        let can_settle_full = !inactive
+            && complete_agreement
+            && delivery_confirmed
+            && receipt_confirmed
+            && transfer.contribution_id > 0
+            && transfer.need_id > 0;
         let can_inactivate = local_role.is_some() && !inactive;
         let event_views = events.iter().map(EventView::from).collect::<Vec<_>>();
         let tree =
             build_transfer_tree_view(&transfer.transfer_uid, relations, configs, transfer_lookup);
+        let package_work = WorkMetadataPackage::from_view(&work);
+        let package_item_work = items
+            .iter()
+            .filter_map(TransferItemWorkPackage::from_view)
+            .collect::<Vec<_>>();
+        let package_interaction_work = interactions
+            .iter()
+            .filter_map(TransferInteractionWorkPackage::from_view)
+            .collect::<Vec<_>>();
         let package = TransferPackage {
             version: PACKAGE_VERSION,
             identity: TransferIdentityPackage::from(&transfer),
             item: TransferItemPackage::from(&transfer),
+            work: package_work,
+            item_work: package_item_work,
+            interaction_work: package_interaction_work,
             relations: tree
                 .relations
                 .iter()
@@ -4141,7 +5711,6 @@ impl TransferView {
             tree_config: tree.config.clone().map(TransferTreeConfigPackage::from),
             events: events.into_iter().map(TransferEventPackage::from).collect(),
         };
-
         Self {
             id: transfer.id,
             quantity: transfer.quantity,
@@ -4188,15 +5757,473 @@ impl TransferView {
                 can_confirm_delivery,
                 can_confirm_receipt,
                 can_settle_local,
+                can_settle_full,
                 can_inactivate,
             },
             events: event_views,
             sync_cursors: cursors,
             settlements,
+            work,
+            items,
+            interactions,
             package,
             created_at: sql_to_iso8601(&transfer.created_at),
             updated_at: sql_to_iso8601(&transfer.updated_at),
         }
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct WorkMetadataView {
+    status: Option<String>,
+    start_at: Option<String>,
+    end_at: Option<String>,
+    estimate_seconds: Option<i64>,
+    completion_notes: Option<String>,
+    metadata: Value,
+    assignments: Vec<WorkAssignmentView>,
+}
+
+impl WorkMetadataView {
+    fn empty() -> Self {
+        Self {
+            status: None,
+            start_at: None,
+            end_at: None,
+            estimate_seconds: None,
+            completion_notes: None,
+            metadata: json!({}),
+            assignments: Vec::new(),
+        }
+    }
+
+    fn from_row(row: WorkMetadataRow, assignments: Vec<WorkAssignmentJoinRow>) -> Self {
+        Self {
+            status: row.status,
+            start_at: row.start_at.as_deref().map(sql_to_iso8601),
+            end_at: row.end_at.as_deref().map(sql_to_iso8601),
+            estimate_seconds: row.estimate_seconds,
+            completion_notes: row.completion_notes,
+            metadata: row
+                .metadata_json
+                .as_deref()
+                .and_then(|value| serde_json::from_str::<Value>(value).ok())
+                .unwrap_or_else(|| json!({})),
+            assignments: assignments
+                .into_iter()
+                .map(WorkAssignmentView::from)
+                .collect(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, FromRow)]
+struct WorkMetadataRow {
+    id: i64,
+    status: Option<String>,
+    start_at: Option<String>,
+    end_at: Option<String>,
+    estimate_seconds: Option<i64>,
+    completion_notes: Option<String>,
+    metadata_json: Option<String>,
+}
+
+#[derive(Debug, Clone, FromRow)]
+struct WorkMetadataPackageRow {
+    id: i64,
+    task_type: Option<String>,
+    status: Option<String>,
+    start_at: Option<String>,
+    end_at: Option<String>,
+    estimate_seconds: Option<i64>,
+    completion_notes: Option<String>,
+    metadata_json: Option<String>,
+}
+
+#[derive(Debug, Clone, FromRow)]
+struct WorkAssignmentJoinRow {
+    id: i64,
+    work_subject_id: i64,
+    assignment_kind: String,
+    subject_kind: String,
+    app_user_id: Option<i64>,
+    organ_id: Option<i64>,
+    transfer_party_id: Option<i64>,
+    remote_base_url: Option<String>,
+    remote_public_key: Option<String>,
+    remote_subject_uid: Option<String>,
+    display_name_snapshot: Option<String>,
+    organ_name_snapshot: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct WorkAssignmentView {
+    id: i64,
+    subject_id: i64,
+    assignment_kind: String,
+    subject_kind: String,
+    app_user_id: Option<i64>,
+    organ_id: Option<i64>,
+    transfer_party_id: Option<i64>,
+    remote_base_url: Option<String>,
+    remote_public_key: Option<String>,
+    remote_subject_uid: Option<String>,
+    display_name: Option<String>,
+    organ_name: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct WorkMetadataPackage {
+    #[serde(default)]
+    task_type: Option<String>,
+    #[serde(default)]
+    status: Option<String>,
+    #[serde(default)]
+    start_at: Option<String>,
+    #[serde(default)]
+    end_at: Option<String>,
+    #[serde(default)]
+    estimate_seconds: Option<i64>,
+    #[serde(default)]
+    completion_notes: Option<String>,
+    #[serde(default)]
+    metadata: Value,
+    #[serde(default)]
+    assignments: Vec<WorkAssignmentPackage>,
+}
+
+impl WorkMetadataPackage {
+    fn from_view(view: &WorkMetadataView) -> Option<Self> {
+        if view.status.is_none()
+            && view.start_at.is_none()
+            && view.end_at.is_none()
+            && view.estimate_seconds.is_none()
+            && view.completion_notes.is_none()
+            && view.metadata == json!({})
+            && view.assignments.is_empty()
+        {
+            return None;
+        }
+        Some(Self {
+            task_type: None,
+            status: view.status.clone(),
+            start_at: view.start_at.clone(),
+            end_at: view.end_at.clone(),
+            estimate_seconds: view.estimate_seconds,
+            completion_notes: view.completion_notes.clone(),
+            metadata: view.metadata.clone(),
+            assignments: view
+                .assignments
+                .iter()
+                .cloned()
+                .map(WorkAssignmentPackage::from)
+                .collect(),
+        })
+    }
+
+    fn from_row(row: WorkMetadataPackageRow, assignments: Vec<WorkAssignmentJoinRow>) -> Self {
+        Self {
+            task_type: row.task_type,
+            status: row.status,
+            start_at: row.start_at.as_deref().map(sql_to_iso8601),
+            end_at: row.end_at.as_deref().map(sql_to_iso8601),
+            estimate_seconds: row.estimate_seconds,
+            completion_notes: row.completion_notes,
+            metadata: row
+                .metadata_json
+                .as_deref()
+                .and_then(|value| serde_json::from_str::<Value>(value).ok())
+                .unwrap_or_else(|| json!({})),
+            assignments: assignments
+                .into_iter()
+                .map(WorkAssignmentPackage::from)
+                .collect(),
+        }
+    }
+
+    fn metadata_json(&self) -> String {
+        serde_json::to_string(&self.metadata).unwrap_or_else(|_| "{}".to_string())
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct WorkAssignmentPackage {
+    assignment_kind: String,
+    subject_kind: String,
+    #[serde(default)]
+    app_user_id: Option<i64>,
+    #[serde(default)]
+    organ_id: Option<i64>,
+    #[serde(default)]
+    transfer_party_id: Option<i64>,
+    #[serde(default)]
+    remote_base_url: Option<String>,
+    #[serde(default)]
+    remote_public_key: Option<String>,
+    #[serde(default)]
+    remote_subject_uid: Option<String>,
+    #[serde(default)]
+    display_name: Option<String>,
+    #[serde(default)]
+    organ_name: Option<String>,
+}
+
+impl From<WorkAssignmentJoinRow> for WorkAssignmentPackage {
+    fn from(row: WorkAssignmentJoinRow) -> Self {
+        Self {
+            assignment_kind: row.assignment_kind,
+            subject_kind: row.subject_kind,
+            app_user_id: row.app_user_id,
+            organ_id: row.organ_id,
+            transfer_party_id: row.transfer_party_id,
+            remote_base_url: row.remote_base_url,
+            remote_public_key: row.remote_public_key,
+            remote_subject_uid: row.remote_subject_uid,
+            display_name: row.display_name_snapshot,
+            organ_name: row.organ_name_snapshot,
+        }
+    }
+}
+
+impl From<WorkAssignmentView> for WorkAssignmentPackage {
+    fn from(row: WorkAssignmentView) -> Self {
+        Self {
+            assignment_kind: row.assignment_kind,
+            subject_kind: row.subject_kind,
+            app_user_id: row.app_user_id,
+            organ_id: row.organ_id,
+            transfer_party_id: row.transfer_party_id,
+            remote_base_url: row.remote_base_url,
+            remote_public_key: row.remote_public_key,
+            remote_subject_uid: row.remote_subject_uid,
+            display_name: row.display_name,
+            organ_name: row.organ_name,
+        }
+    }
+}
+
+impl From<WorkAssignmentJoinRow> for WorkAssignmentView {
+    fn from(row: WorkAssignmentJoinRow) -> Self {
+        Self {
+            id: row.id,
+            subject_id: row.work_subject_id,
+            assignment_kind: row.assignment_kind,
+            subject_kind: row.subject_kind,
+            app_user_id: row.app_user_id,
+            organ_id: row.organ_id,
+            transfer_party_id: row.transfer_party_id,
+            remote_base_url: row.remote_base_url,
+            remote_public_key: row.remote_public_key,
+            remote_subject_uid: row.remote_subject_uid,
+            display_name: row.display_name_snapshot,
+            organ_name: row.organ_name_snapshot,
+        }
+    }
+}
+
+#[derive(Debug, Clone, FromRow)]
+struct TransferStructuredItemWorkRow {
+    id: i64,
+    transfer_id: i64,
+    role: String,
+    title: String,
+    description: Option<String>,
+    source_record_id: Option<i64>,
+    quantity: Option<f64>,
+    unit: Option<String>,
+    version: i64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TransferItemWorkView {
+    id: i64,
+    transfer_id: i64,
+    role: String,
+    title: String,
+    description: Option<String>,
+    source_record_id: Option<i64>,
+    quantity: Option<f64>,
+    unit: Option<String>,
+    version: i64,
+    work: WorkMetadataView,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct TransferItemWorkPackage {
+    role: String,
+    title: String,
+    #[serde(default)]
+    description: Option<String>,
+    #[serde(default)]
+    source_record_id: Option<i64>,
+    #[serde(default)]
+    quantity: Option<f64>,
+    #[serde(default)]
+    unit: Option<String>,
+    #[serde(default)]
+    version: Option<i64>,
+    work: WorkMetadataPackage,
+}
+
+impl TransferItemWorkPackage {
+    fn from_row(row: TransferStructuredItemWorkRow, work: WorkMetadataPackage) -> Self {
+        Self {
+            role: row.role,
+            title: row.title,
+            description: row.description,
+            source_record_id: row.source_record_id,
+            quantity: row.quantity,
+            unit: row.unit,
+            version: Some(row.version),
+            work,
+        }
+    }
+
+    fn from_view(view: &TransferItemWorkView) -> Option<Self> {
+        WorkMetadataPackage::from_view(&view.work).map(|work| Self {
+            role: view.role.clone(),
+            title: view.title.clone(),
+            description: view.description.clone(),
+            source_record_id: view.source_record_id,
+            quantity: view.quantity,
+            unit: view.unit.clone(),
+            version: Some(view.version),
+            work,
+        })
+    }
+}
+
+impl TransferItemWorkView {
+    fn from_row(row: TransferStructuredItemWorkRow, work: WorkMetadataView) -> Self {
+        Self {
+            id: row.id,
+            transfer_id: row.transfer_id,
+            role: row.role,
+            title: row.title,
+            description: row.description,
+            source_record_id: row.source_record_id,
+            quantity: row.quantity,
+            unit: row.unit,
+            version: row.version,
+            work,
+        }
+    }
+}
+
+#[derive(Debug, Clone, FromRow)]
+struct TransferInteractionWorkRow {
+    id: i64,
+    transfer_id: i64,
+    interaction_kind: String,
+    direction: String,
+    from_item_id: Option<i64>,
+    to_item_id: Option<i64>,
+    from_party_id: Option<i64>,
+    to_party_id: Option<i64>,
+    quantity: Option<f64>,
+    state: String,
+    dependency_kind: Option<String>,
+    version: i64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TransferInteractionWorkView {
+    id: i64,
+    transfer_id: i64,
+    interaction_kind: String,
+    direction: String,
+    from_item_id: Option<i64>,
+    to_item_id: Option<i64>,
+    from_party_id: Option<i64>,
+    to_party_id: Option<i64>,
+    quantity: Option<f64>,
+    state: String,
+    dependency_kind: Option<String>,
+    version: i64,
+    work: WorkMetadataView,
+}
+
+impl TransferInteractionWorkView {
+    fn from_row(row: TransferInteractionWorkRow, work: WorkMetadataView) -> Self {
+        Self {
+            id: row.id,
+            transfer_id: row.transfer_id,
+            interaction_kind: row.interaction_kind,
+            direction: row.direction,
+            from_item_id: row.from_item_id,
+            to_item_id: row.to_item_id,
+            from_party_id: row.from_party_id,
+            to_party_id: row.to_party_id,
+            quantity: row.quantity,
+            state: row.state,
+            dependency_kind: row.dependency_kind,
+            version: row.version,
+            work,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct TransferInteractionWorkPackage {
+    interaction_kind: String,
+    direction: String,
+    #[serde(default)]
+    from_item_id: Option<i64>,
+    #[serde(default)]
+    to_item_id: Option<i64>,
+    #[serde(default)]
+    from_party_id: Option<i64>,
+    #[serde(default)]
+    to_party_id: Option<i64>,
+    #[serde(default)]
+    quantity: Option<f64>,
+    state: String,
+    #[serde(default)]
+    dependency_kind: Option<String>,
+    #[serde(default)]
+    version: Option<i64>,
+    work: WorkMetadataPackage,
+}
+
+impl TransferInteractionWorkPackage {
+    fn from_row(row: TransferInteractionWorkRow, work: WorkMetadataPackage) -> Self {
+        Self {
+            interaction_kind: row.interaction_kind,
+            direction: row.direction,
+            from_item_id: row.from_item_id,
+            to_item_id: row.to_item_id,
+            from_party_id: row.from_party_id,
+            to_party_id: row.to_party_id,
+            quantity: row.quantity,
+            state: row.state,
+            dependency_kind: row.dependency_kind,
+            version: Some(row.version),
+            work,
+        }
+    }
+
+    fn from_view(view: &TransferInteractionWorkView) -> Option<Self> {
+        WorkMetadataPackage::from_view(&view.work).map(|work| Self {
+            interaction_kind: view.interaction_kind.clone(),
+            direction: view.direction.clone(),
+            from_item_id: view.from_item_id,
+            to_item_id: view.to_item_id,
+            from_party_id: view.from_party_id,
+            to_party_id: view.to_party_id,
+            quantity: view.quantity,
+            state: view.state.clone(),
+            dependency_kind: view.dependency_kind.clone(),
+            version: Some(view.version),
+            work,
+        })
     }
 }
 
@@ -4232,6 +6259,7 @@ struct ControlView {
     can_confirm_delivery: bool,
     can_confirm_receipt: bool,
     can_settle_local: bool,
+    can_settle_full: bool,
     can_inactivate: bool,
 }
 
@@ -4277,6 +6305,12 @@ struct TransferPackage {
     version: u32,
     identity: TransferIdentityPackage,
     item: TransferItemPackage,
+    #[serde(default)]
+    work: Option<WorkMetadataPackage>,
+    #[serde(default)]
+    item_work: Vec<TransferItemWorkPackage>,
+    #[serde(default)]
+    interaction_work: Vec<TransferInteractionWorkPackage>,
     #[serde(default)]
     relations: Vec<TransferRelationPackage>,
     #[serde(default)]
@@ -4354,6 +6388,8 @@ struct TransferTreeConfigPackage {
     transfer_uid: String,
     branch_mode: String,
     record_sync_mode: String,
+    #[serde(default)]
+    reservation_policy: Option<String>,
     source_record_id: Option<i64>,
     #[serde(default)]
     sync_role: Option<String>,
@@ -4374,6 +6410,7 @@ impl From<TransferTreeConfigRow> for TransferTreeConfigPackage {
             transfer_uid: row.transfer_uid,
             branch_mode: row.branch_mode,
             record_sync_mode: row.record_sync_mode,
+            reservation_policy: row.reservation_policy,
             source_record_id: row.source_record_id,
             sync_role: row.sync_role,
             sync_quantity: row.sync_quantity,
@@ -4624,10 +6661,32 @@ fn optional_text_parameter(value: Option<String>) -> SqlParameter {
     value.map(SqlParameter::Text).unwrap_or(SqlParameter::Null)
 }
 
+fn optional_text_param(value: Option<&str>) -> SqlParameter {
+    value
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(|value| SqlParameter::Text(value.to_string()))
+        .unwrap_or(SqlParameter::Null)
+}
+
 fn optional_i64_parameter(value: Option<i64>) -> SqlParameter {
     value
         .map(SqlParameter::Integer)
         .unwrap_or(SqlParameter::Null)
+}
+
+fn optional_i64_param(value: Option<i64>) -> SqlParameter {
+    value
+        .map(SqlParameter::Integer)
+        .unwrap_or(SqlParameter::Null)
+}
+
+fn has_stable_remote_subject(
+    remote_base_url: Option<&str>,
+    remote_subject_uid: Option<&str>,
+) -> bool {
+    remote_base_url.is_some_and(|value| !value.trim().is_empty())
+        && remote_subject_uid.is_some_and(|value| !value.trim().is_empty())
 }
 
 fn optional_f64_parameter(value: Option<f64>) -> SqlParameter {
@@ -4825,6 +6884,54 @@ fn validate_package(package: &TransferPackage) -> Result<(), TransferWidgetError
             ));
         }
     }
+    if let Some(work) = &package.work {
+        validate_work_metadata_package(work)?;
+    }
+    for item_work in &package.item_work {
+        if TransferSide::parse_storage(Some(&item_work.role)).is_none()
+            && !matches!(
+                item_work.role.as_str(),
+                "support" | "task" | "information" | "reservation"
+            )
+        {
+            return Err(TransferWidgetError::Invalid(
+                "Transfer package has invalid item work role.".into(),
+            ));
+        }
+        if item_work.title.trim().is_empty() {
+            return Err(TransferWidgetError::Invalid(
+                "Transfer package has item work without a title.".into(),
+            ));
+        }
+        validate_work_metadata_package(&item_work.work)?;
+    }
+    for interaction_work in &package.interaction_work {
+        if !matches!(
+            interaction_work.interaction_kind.as_str(),
+            "contributes_to" | "depends_on" | "unblocks" | "replaces" | "informs"
+        ) || !matches!(
+            interaction_work.direction.as_str(),
+            "incoming" | "outgoing" | "mutual" | "informational"
+        ) || interaction_work
+            .dependency_kind
+            .as_deref()
+            .is_some_and(|kind| {
+                !matches!(
+                    kind,
+                    "must_agree"
+                        | "must_activate"
+                        | "must_deliver"
+                        | "must_receive"
+                        | "must_settle"
+                )
+            })
+        {
+            return Err(TransferWidgetError::Invalid(
+                "Transfer package has invalid interaction work.".into(),
+            ));
+        }
+        validate_work_metadata_package(&interaction_work.work)?;
+    }
 
     for event in &package.events {
         if event.transfer_uid != package.identity.transfer_uid {
@@ -4855,6 +6962,38 @@ fn validate_package(package: &TransferPackage) -> Result<(), TransferWidgetError
         validate_event_actor(&package.identity, event)?;
     }
 
+    Ok(())
+}
+
+fn validate_work_metadata_package(work: &WorkMetadataPackage) -> Result<(), TransferWidgetError> {
+    if work.estimate_seconds.is_some_and(|value| value < 0) {
+        return Err(TransferWidgetError::Invalid(
+            "Transfer package has invalid work estimate.".into(),
+        ));
+    }
+    if !work.metadata.is_object() {
+        return Err(TransferWidgetError::Invalid(
+            "Transfer package work metadata must be a JSON object.".into(),
+        ));
+    }
+    for assignment in &work.assignments {
+        if !matches!(
+            assignment.assignment_kind.as_str(),
+            "responsible" | "observer" | "helper"
+        ) {
+            return Err(TransferWidgetError::Invalid(
+                "Transfer package has invalid work assignment kind.".into(),
+            ));
+        }
+        if !matches!(
+            assignment.subject_kind.as_str(),
+            "app_user" | "organ" | "transfer_party" | "external_actor" | "placeholder"
+        ) {
+            return Err(TransferWidgetError::Invalid(
+                "Transfer package has invalid work subject kind.".into(),
+            ));
+        }
+    }
     Ok(())
 }
 
@@ -5161,4 +7300,415 @@ fn find_board_card(board_state: &BoardState, instance_id: &str) -> Option<BoardC
         .flat_map(|workspace| workspace.cards.iter())
         .find(|card| card.id == instance_id)
         .cloned()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use {
+        crate::{
+            domain::board::{BoardCard, BoardWorkspace},
+            infrastructure::{
+                auth::AppAuth, board_state_store::BoardStateStore, manas::ManasGateway,
+                organ_store::OrganStore,
+            },
+        },
+        injection::cross_cutting::dependency_injection,
+        persistence::{bootstrap_database, connection, storage::StorageService},
+        std::{
+            path::PathBuf,
+            sync::{Mutex, OnceLock},
+        },
+    };
+
+    static SERVICE_TEST_LOCK: Mutex<()> = Mutex::new(());
+    static SERVICE_TEST_DIR: OnceLock<PathBuf> = OnceLock::new();
+
+    #[test]
+    fn stable_remote_subject_requires_base_url_and_subject_uid() {
+        assert!(has_stable_remote_subject(
+            Some("https://organ.example"),
+            Some("remote-user-1")
+        ));
+        assert!(!has_stable_remote_subject(
+            Some("https://organ.example"),
+            Some(" ")
+        ));
+        assert!(!has_stable_remote_subject(None, Some("remote-user-1")));
+        assert!(!has_stable_remote_subject(
+            Some("https://organ.example"),
+            None
+        ));
+    }
+
+    #[test]
+    fn work_package_from_view_preserves_assignment_snapshots() {
+        let view = WorkMetadataView {
+            status: None,
+            start_at: Some("2026-06-18T10:00:00Z".to_string()),
+            end_at: None,
+            estimate_seconds: Some(3600),
+            completion_notes: Some("done".to_string()),
+            metadata: json!({"priority": "high"}),
+            assignments: vec![WorkAssignmentView {
+                id: 7,
+                subject_id: 9,
+                assignment_kind: "responsible".to_string(),
+                subject_kind: "external_actor".to_string(),
+                app_user_id: None,
+                organ_id: None,
+                transfer_party_id: None,
+                remote_base_url: Some("https://organ.example".to_string()),
+                remote_public_key: Some("public-key".to_string()),
+                remote_subject_uid: Some("remote-user-1".to_string()),
+                display_name: Some("Remote User".to_string()),
+                organ_name: Some("Remote Organ".to_string()),
+            }],
+        };
+
+        let package = WorkMetadataPackage::from_view(&view).expect("package");
+
+        assert_eq!(package.start_at.as_deref(), Some("2026-06-18T10:00:00Z"));
+        assert_eq!(package.estimate_seconds, Some(3600));
+        assert_eq!(package.metadata, json!({"priority": "high"}));
+        assert_eq!(package.assignments.len(), 1);
+        assert_eq!(
+            package.assignments[0].remote_subject_uid.as_deref(),
+            Some("remote-user-1")
+        );
+        assert!(validate_work_metadata_package(&package).is_ok());
+    }
+
+    #[test]
+    fn empty_work_view_is_not_packaged() {
+        let view = WorkMetadataView::empty();
+
+        assert!(WorkMetadataPackage::from_view(&view).is_none());
+    }
+
+    #[test]
+    fn work_package_validation_rejects_invalid_assignment_kind() {
+        let package = WorkMetadataPackage {
+            task_type: None,
+            status: None,
+            start_at: None,
+            end_at: None,
+            estimate_seconds: Some(1),
+            completion_notes: None,
+            metadata: json!({}),
+            assignments: vec![WorkAssignmentPackage {
+                assignment_kind: "owner".to_string(),
+                subject_kind: "external_actor".to_string(),
+                app_user_id: None,
+                organ_id: None,
+                transfer_party_id: None,
+                remote_base_url: None,
+                remote_public_key: None,
+                remote_subject_uid: None,
+                display_name: Some("Remote User".to_string()),
+                organ_name: None,
+            }],
+        };
+
+        assert!(validate_work_metadata_package(&package).is_err());
+    }
+
+    #[tokio::test]
+    async fn widget_actions_persist_work_metadata_in_snapshot_and_package() {
+        let _guard = SERVICE_TEST_LOCK.lock().expect("service test lock");
+        let service = test_service().await;
+        let instance_id = "transfer-test";
+
+        let response = service
+            .action(
+                None,
+                instance_id,
+                "create-proposal",
+                json!({
+                    "title": "Work metadata proposal",
+                    "role": "contribution",
+                    "recordId": 1,
+                    "quantity": 1,
+                    "counterpartyLabel": "Remote Organ",
+                    "targetOrganId": null,
+                    "parentTransferId": null
+                }),
+            )
+            .await
+            .expect("create proposal");
+        let transfer_id = response["snapshot"]["transfers"][0]["id"]
+            .as_i64()
+            .expect("transfer id");
+        let item_id = insert_test_structured_item(&service, transfer_id).await;
+        let interaction_id = insert_test_interaction(&service, transfer_id, item_id).await;
+
+        service
+            .action(
+                None,
+                instance_id,
+                "update-transfer-work",
+                json!({
+                    "transferId": transfer_id,
+                    "work": {
+                        "startAt": "2026-06-18T10:00:00Z",
+                        "endAt": null,
+                        "estimateSeconds": 3600,
+                        "completionNotes": "Transfer note",
+                        "assignees": [
+                            { "kind": "appUser", "appUserId": 1 },
+                            {
+                                "kind": "externalActor",
+                                "displayName": "Remote User",
+                                "organName": "Remote Organ",
+                                "remoteBaseUrl": "https://remote.example",
+                                "remoteSubjectUid": "remote-user-1",
+                                "remotePublicKey": "remote-public-key"
+                            }
+                        ]
+                    }
+                }),
+            )
+            .await
+            .expect("update transfer work");
+        service
+            .action(
+                None,
+                instance_id,
+                "update-transfer-item-work",
+                json!({
+                    "transferId": transfer_id,
+                    "structuredItemId": item_id,
+                    "work": {
+                        "startAt": null,
+                        "endAt": "2026-06-18T12:00:00Z",
+                        "estimateSeconds": 1200,
+                        "completionNotes": "Item note",
+                        "assignees": []
+                    }
+                }),
+            )
+            .await
+            .expect("update item work");
+        let response = service
+            .action(
+                None,
+                instance_id,
+                "update-transfer-interaction-work",
+                json!({
+                    "transferId": transfer_id,
+                    "interactionId": interaction_id,
+                    "work": {
+                        "startAt": null,
+                        "endAt": null,
+                        "estimateSeconds": 600,
+                        "completionNotes": "Interaction note",
+                        "assignees": []
+                    }
+                }),
+            )
+            .await
+            .expect("update interaction work");
+
+        let transfer = response["snapshot"]["transfers"]
+            .as_array()
+            .expect("transfers")
+            .iter()
+            .find(|transfer| transfer["id"].as_i64() == Some(transfer_id))
+            .expect("transfer snapshot");
+        assert_eq!(
+            transfer["work"]["completionNotes"].as_str(),
+            Some("Transfer note")
+        );
+        assert_eq!(
+            transfer["items"][0]["work"]["completionNotes"].as_str(),
+            Some("Item note")
+        );
+        assert_eq!(
+            transfer["interactions"][0]["work"]["completionNotes"].as_str(),
+            Some("Interaction note")
+        );
+        assert_eq!(
+            transfer["work"]["assignments"]
+                .as_array()
+                .expect("assignments")
+                .len(),
+            2
+        );
+
+        let package = service
+            .build_transfer_package(transfer_id)
+            .await
+            .expect("package");
+        assert_eq!(
+            package
+                .work
+                .as_ref()
+                .and_then(|work| work.completion_notes.as_deref()),
+            Some("Transfer note")
+        );
+        assert_eq!(package.item_work.len(), 1);
+        assert_eq!(package.interaction_work.len(), 1);
+        assert_eq!(
+            package.interaction_work[0].work.completion_notes.as_deref(),
+            Some("Interaction note")
+        );
+
+        let stable_subject_count = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(1)
+             FROM work_subject
+             WHERE remote_base_url = 'https://remote.example'
+               AND remote_subject_uid = 'remote-user-1'",
+        )
+        .fetch_one(&*service.services.db)
+        .await
+        .expect("stable subject count");
+        assert_eq!(stable_subject_count, 1);
+    }
+
+    async fn test_service() -> TransferWidgetService {
+        let dir = SERVICE_TEST_DIR.get_or_init(|| {
+            let dir = std::env::temp_dir().join("lince-transfer-widget-service-test");
+            let _ = std::fs::remove_dir_all(&dir);
+            utils::config::set_lince_data_dir_override(dir.clone()).expect("data dir override");
+            dir
+        });
+        std::fs::create_dir_all(dir).expect("test data dir");
+
+        let db = Arc::new(connection::connection().await.expect("db connection"));
+        bootstrap_database(&db, "http://127.0.0.1:6174")
+            .await
+            .expect("bootstrap db");
+        seed_test_user(&db).await;
+        let writer = persistence::write_coordinator::spawn_write_coordinator()
+            .await
+            .expect("writer");
+        let storage = Arc::new(StorageService::from_database(&db).await.expect("storage"));
+        let services = dependency_injection(db.clone(), storage, writer.clone());
+        let board_state = BoardStateStore::new().expect("board state");
+        board_state
+            .replace(test_board_state())
+            .await
+            .expect("replace board state");
+        let organs = OrganStore::new(db, writer);
+        let auth = AppAuth::with_shared_remote_tokens(services.remote_organ_auth.clone());
+        let manas = ManasGateway::new().expect("manas");
+
+        TransferWidgetService::new(
+            auth,
+            board_state,
+            false,
+            "http://127.0.0.1:6174".to_string(),
+            manas,
+            organs,
+            services,
+        )
+    }
+
+    fn test_board_state() -> BoardState {
+        BoardState {
+            density: 4,
+            global_streams_enabled: true,
+            active_workspace_id: "space-1".to_string(),
+            workspaces: vec![BoardWorkspace {
+                id: "space-1".to_string(),
+                name: "Test".to_string(),
+                cards: vec![BoardCard {
+                    id: "transfer-test".to_string(),
+                    kind: "widget".to_string(),
+                    title: "Transfer".to_string(),
+                    description: String::new(),
+                    text: String::new(),
+                    html: String::new(),
+                    author: "Lince".to_string(),
+                    permissions: vec![],
+                    package_name: "transfer.lince".to_string(),
+                    requires_server: false,
+                    server_id: String::new(),
+                    view_id: None,
+                    streams_enabled: true,
+                    widget_state: json!({}),
+                    x: 0,
+                    y: 0,
+                    w: 4,
+                    h: 4,
+                }],
+            }],
+        }
+    }
+
+    async fn seed_test_user(db: &sqlx::Pool<sqlx::Sqlite>) {
+        sqlx::query(
+            "INSERT INTO app_user(id, name, username, password_hash, role_id)
+             VALUES (
+                1,
+                'Test User',
+                'test-user',
+                'hash',
+                (SELECT id FROM role WHERE name = 'lince' LIMIT 1)
+             )
+             ON CONFLICT(id) DO UPDATE SET
+                name = excluded.name,
+                username = excluded.username,
+                password_hash = excluded.password_hash,
+                role_id = excluded.role_id",
+        )
+        .execute(db)
+        .await
+        .expect("seed app user");
+    }
+
+    async fn insert_test_structured_item(service: &TransferWidgetService, transfer_id: i64) -> i64 {
+        service
+            .services
+            .writer
+            .execute_statement_returning_id(
+                "INSERT INTO transfer_structured_item(
+                    transfer_id,
+                    role,
+                    source_record_id,
+                    title,
+                    quantity,
+                    version
+                 ) VALUES (?, 'contribution', 1, 'Structured item', 1, 1)
+                 RETURNING id"
+                    .to_string(),
+                vec![SqlParameter::Integer(transfer_id)],
+            )
+            .await
+            .expect("insert structured item")
+            .last_insert_rowid
+            .expect("structured item id")
+    }
+
+    async fn insert_test_interaction(
+        service: &TransferWidgetService,
+        transfer_id: i64,
+        item_id: i64,
+    ) -> i64 {
+        service
+            .services
+            .writer
+            .execute_statement_returning_id(
+                "INSERT INTO transfer_interaction(
+                    transfer_id,
+                    interaction_kind,
+                    direction,
+                    from_item_id,
+                    to_item_id,
+                    state,
+                    version
+                 ) VALUES (?, 'depends_on', 'outgoing', ?, ?, 'open', 1)
+                 RETURNING id"
+                    .to_string(),
+                vec![
+                    SqlParameter::Integer(transfer_id),
+                    SqlParameter::Integer(item_id),
+                    SqlParameter::Integer(item_id),
+                ],
+            )
+            .await
+            .expect("insert interaction")
+            .last_insert_rowid
+            .expect("interaction id")
+    }
 }

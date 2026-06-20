@@ -22,6 +22,9 @@ pub(super) fn script() -> String {
     const emptyState = document.getElementById("empty-state");
     const originText = document.getElementById("origin-text");
     const viewSqlText = document.getElementById("view-sql");
+    const projectionViewIdInput = document.getElementById("projection-view-id");
+    const projectionViewSaveButton = document.getElementById("projection-view-save");
+    const projectionViewSummary = document.getElementById("projection-view-summary");
     const createSummary = document.getElementById("create-summary");
     const createHeadInput = document.getElementById("create-head");
     const createBodyInput = document.getElementById("create-body");
@@ -90,6 +93,7 @@ pub(super) fn script() -> String {
             serverId: String(frame?.dataset?.linceServerId || "").trim(),
             viewId: Number(frame?.dataset?.linceViewId || 0) || null,
             viewName: String(frame?.dataset?.linceViewName || "").trim(),
+            projectionViewId: null,
         },
         cardState: {},
         snapshot: null,
@@ -341,6 +345,17 @@ pub(super) fn script() -> String {
             asObject(cardState).relationsPhysics ||
             null
         );
+    }
+
+    function readProjectionViewId(cardState) {
+        const scoped = readRelationsState(cardState);
+        return Number(
+            scoped.projectionViewId ||
+                scoped.projection_view_id ||
+                asObject(cardState).projectionViewId ||
+                asObject(cardState).projection_view_id ||
+                0,
+        ) || null;
     }
 
     function samePhysics(left, right) {
@@ -931,8 +946,10 @@ pub(super) fn script() -> String {
                 frame?.dataset?.linceViewName ||
                 "",
         ).trim();
+        state.origin.projectionViewId = readProjectionViewId(state.cardState);
         renderMode();
         renderOrigin();
+        renderProjectionViewConfig();
         renderFilterControls();
         renderCreateForm();
         renderPhysicsControls();
@@ -1829,6 +1846,37 @@ pub(super) fn script() -> String {
             `view: ${name}`,
         ].join("\n");
         viewSqlText.textContent = query || "(none)";
+        renderProjectionViewConfig();
+    }
+
+    function renderProjectionViewConfig() {
+        const projectionViewId = Number(state.origin.projectionViewId || 0) || null;
+        if (projectionViewIdInput) {
+            projectionViewIdInput.value = projectionViewId ? String(projectionViewId) : "";
+        }
+        if (projectionViewSummary) {
+            projectionViewSummary.textContent = projectionViewId
+                ? `projectionViewId: ${projectionViewId}`
+                : "No projection view selected.";
+        }
+    }
+
+    function saveProjectionViewConfig() {
+        const projectionViewId = Number(projectionViewIdInput?.value || 0) || null;
+        const nextRelationsState = {
+            ...readRelationsState(state.cardState),
+            projectionViewId,
+        };
+        state.origin.projectionViewId = projectionViewId;
+        state.cardState = {
+            ...asObject(state.cardState),
+            [CARD_STATE_KEY]: nextRelationsState,
+        };
+        bridge?.patchCardState?.({
+            [CARD_STATE_KEY]: nextRelationsState,
+        });
+        renderProjectionViewConfig();
+        renderStatus("Saved", "live", projectionViewId ? "Projection view selected." : "Projection view cleared.");
     }
 
     function updateStatusFromSnapshot() {
@@ -2668,6 +2716,7 @@ pub(super) fn script() -> String {
         });
         applyFiltersButton.addEventListener("click", applyFilters);
         clearFiltersButton.addEventListener("click", clearFilters);
+        projectionViewSaveButton?.addEventListener("click", saveProjectionViewConfig);
         resetPhysicsButton.addEventListener("click", resetPhysics);
         controlsResizer?.addEventListener("pointerdown", (event) => {
             startPanelResize("controls", event);

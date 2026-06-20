@@ -1,6 +1,8 @@
 # Visibility
 
-Visibility is the first concrete design because it affects every other table.
+Visibility affects every Transfer surface, but implementation is deliberately last. The Transfer shape, package format, interaction model, work metadata, and settlement behavior should settle before field-level filtering is enforced.
+
+When this is implemented, the same subject/rule/field model must apply consistently to sand projections, packages, streams, public gossip caches, Transfer work metadata, item work metadata, interaction work metadata, messages, event payloads, parties, source Record references, quantities, locations, and settlement/projection views.
 
 ## Requirements
 

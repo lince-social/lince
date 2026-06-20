@@ -150,8 +150,16 @@ impl KanbanFilterService {
              FROM ( \
                  SELECT raw.*, CAST(parent_rel.parent_id AS TEXT) AS parent_id, parent_record.head AS parent_head, \
                         COALESCE(parent_rel.parent_ids_json, '[]') AS parent_ids_json, \
-                        COALESCE(parent_rel.parent_heads_json, '[]') AS parent_heads_json \
+                        COALESCE(parent_rel.parent_heads_json, '[]') AS parent_heads_json, \
+                        work_meta.task_type AS task_type, \
+                        COALESCE(json_extract(work_meta.metadata_json, '$.categories'), '[]') AS categories_json, \
+                        COALESCE(work_assignees.assignee_ids_json, '[]') AS assignee_ids_json, \
+                        COALESCE(work_assignees.assignee_names_json, '[]') AS assignee_names_json, \
+                        COALESCE(worklogs.active_worklog_count, 0) AS active_worklog_count \
                  FROM ({trimmed_query}) raw \
+                 LEFT JOIN work_metadata work_meta \
+                     ON work_meta.owner_kind = 'record' \
+                    AND work_meta.owner_id = CAST(raw.id AS INTEGER) \
                  LEFT JOIN ( \
                      SELECT \
                          rl.record_id, \
@@ -164,6 +172,26 @@ impl KanbanFilterService {
                      GROUP BY rl.record_id \
                  ) parent_rel ON parent_rel.record_id = CAST(raw.id AS INTEGER) \
                  LEFT JOIN record parent_record ON parent_record.id = parent_rel.parent_id \
+                 LEFT JOIN ( \
+                     SELECT \
+                         metadata.owner_id AS record_id, \
+                         json_group_array(subject.app_user_id) AS assignee_ids_json, \
+                         json_group_array(COALESCE(subject.display_name_snapshot, app_user.name, app_user.username, 'user ' || subject.app_user_id)) AS assignee_names_json \
+                     FROM work_metadata metadata \
+                     JOIN work_assignment assignment ON assignment.work_metadata_id = metadata.id \
+                     JOIN work_subject subject ON subject.id = assignment.work_subject_id \
+                     LEFT JOIN app_user ON app_user.id = subject.app_user_id \
+                     WHERE metadata.owner_kind = 'record' \
+                       AND assignment.assignment_kind = 'responsible' \
+                       AND subject.subject_kind = 'app_user' \
+                     GROUP BY metadata.owner_id \
+                 ) work_assignees ON work_assignees.record_id = CAST(raw.id AS INTEGER) \
+                 LEFT JOIN ( \
+                     SELECT record_id, COUNT(*) AS active_worklog_count \
+                     FROM record_worklog \
+                     WHERE ended_at IS NULL \
+                     GROUP BY record_id \
+                 ) worklogs ON worklogs.record_id = CAST(raw.id AS INTEGER) \
              ) base \
              WHERE 1 = 1"
         );

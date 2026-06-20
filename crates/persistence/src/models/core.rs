@@ -62,6 +62,11 @@ pub struct ConfigurationRow {
     pub file_sync_path: Option<String>,
     #[table(default = "0")]
     pub transfer_public_proposals_enabled: i64,
+    #[table(
+        default = "'soft'",
+        check = "transfer_reservation_policy IN ('none', 'soft', 'hard_on_proposal', 'hard_on_consume', 'hard_on_lock')"
+    )]
+    pub transfer_reservation_policy: String,
     pub desktop_start_on_login: Option<i64>,
     pub desktop_start_silent: Option<i64>,
     #[table(default = "'rolling'")]
@@ -268,6 +273,10 @@ pub struct TransferTreeConfigRow {
     pub branch_mode: String,
     #[table(check = "record_sync_mode IN ('none', 'copy_once', 'live')")]
     pub record_sync_mode: String,
+    #[table(
+        check = "reservation_policy IS NULL OR reservation_policy IN ('none', 'soft', 'hard_on_proposal', 'hard_on_consume', 'hard_on_lock')"
+    )]
+    pub reservation_policy: Option<String>,
     #[table(references = "record(id)")]
     pub source_record_id: Option<i64>,
     #[table(check = "sync_role IS NULL OR sync_role IN ('need', 'contribution')")]
@@ -579,6 +588,32 @@ pub struct TransferQuantityInfluenceRow {
     #[table(default = "CURRENT_TIMESTAMP")]
     pub created_at: String,
     pub consumed_at: Option<String>,
+}
+
+#[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
+#[allow(dead_code)]
+#[table(name = "record_transfer_availability")]
+#[table(strict)]
+pub struct RecordTransferAvailabilityRow {
+    #[table(primary_key)]
+    #[table(references = "record(id) ON DELETE CASCADE")]
+    pub record_id: i64,
+    #[table(default = "0")]
+    pub actual_quantity: f64,
+    #[table(default = "0")]
+    pub proposed_outgoing_quantity: f64,
+    #[table(default = "0")]
+    pub proposed_incoming_quantity: f64,
+    #[table(default = "0")]
+    pub reserved_quantity: f64,
+    #[table(default = "0")]
+    pub reserved_incoming_quantity: f64,
+    #[table(default = "0")]
+    pub available_quantity: f64,
+    #[table(default = "0")]
+    pub planned_quantity: f64,
+    #[table(default = "CURRENT_TIMESTAMP")]
+    pub updated_at: String,
 }
 
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]

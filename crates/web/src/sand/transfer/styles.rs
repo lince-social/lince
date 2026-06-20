@@ -329,6 +329,70 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
     gap: 10px;
   }
 
+  .workSection,
+  .workItems,
+  .assigneeStack {
+    display: grid;
+    gap: 10px;
+  }
+
+  .workGrid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(140px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .workNotes {
+    grid-column: 1 / -1;
+  }
+
+  .assigneeGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 10px 0;
+  }
+
+  .assigneeChoice {
+    min-height: 28px;
+    align-content: center;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 6px 8px;
+    background: rgba(255, 255, 255, 0.025);
+  }
+
+  .externalAssigneeNew {
+    display: grid;
+    grid-template-columns: minmax(140px, 1fr) minmax(120px, 0.75fr);
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .workItem {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    overflow: hidden;
+  }
+
+  .workItem > summary {
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+    cursor: pointer;
+  }
+
+  .workItem .workBox {
+    border-width: 1px 0 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
   .createProposalGrid {
     padding: 0;
   }
@@ -386,6 +450,58 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
     text-align: left;
     gap: 3px;
     padding: 8px 10px;
+  }
+
+  .transferRow {
+    position: relative;
+    padding-left: var(--tree-indent, 10px);
+  }
+
+  .transferRow[data-depth]:not([data-depth="0"])::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    left: var(--tree-guide, 17px);
+    width: 1px;
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  .treeCell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .treeToggle,
+  .treeToggleSpacer {
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+    display: inline-grid;
+    place-items: center;
+  }
+
+  .treeToggle {
+    border-radius: 4px;
+    color: var(--accent);
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .treeToggle:hover,
+  .treeToggle:focus-visible {
+    background: rgba(134, 199, 255, 0.14);
+    outline: none;
+  }
+
+  .treeCell .transferTitle {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .transferList {
@@ -757,6 +873,9 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
   @media (max-width: 900px) {
     .workspace,
     .proposalGrid,
+    .workGrid,
+    .assigneeGrid,
+    .externalAssigneeNew,
     .transferHero,
     .transferParties,
     .sideGrid,

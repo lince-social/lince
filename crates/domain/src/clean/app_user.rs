@@ -8,6 +8,8 @@ pub struct AppUser {
     pub password_hash: String,
     pub role_id: i64,
     pub role: String,
+    #[serde(default)]
+    pub permissions: Vec<String>,
     pub created_at: String,
     pub updated_at: String,
 }

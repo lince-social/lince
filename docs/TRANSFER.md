@@ -5,9 +5,6 @@ This is the main tracker for the Transfer feature.
 The detailed notes live in:
 
 - [Visibility](transfer-visibility.md)
-- [Simulation And Settlement](transfer-simulation-settlement.md)
-- [Intent And Discovery](transfer-intent-discovery.md)
-- [Networking And Sync](transfer-networking.md)
 
 ## MVP Build Order
 
@@ -47,8 +44,6 @@ Recommended first implementation order:
 - Visibility tables and UI behavior live in [Visibility](transfer-visibility.md).
 - Karma activation is implemented in this tracker.
 - Remaining reversal/dispute settlement work lives in [Simulation And Settlement](transfer-simulation-settlement.md).
-- Intent, discovery, proposal editing, and state model live in [Intent And Discovery](transfer-intent-discovery.md).
-- Remaining peer discovery and future federation work lives in [Networking And Sync](transfer-networking.md).
 
 ## Core Model
 
@@ -63,6 +58,8 @@ Current principles:
 - A Transfer item carries Transfer-specific title/description and may hide the private source Record fields.
 - Parent Transfers group child Transfers without forcing one agreement or settlement policy on every child.
 - Counteroffers are edits. Agreement returns only when the relevant parties accept the edited state again.
+- Discovery must not mutate Records. It can suggest candidate links or create/edit Transfer proposals, but final Record quantity changes happen only through settlement.
+- Transfer status should be derived from item, interaction, agreement, delivery, receipt, settlement, quantity influence, and event facts instead of maintained as a separate source of truth.
 - Expiration is not hardcoded in Transfer for the first version; Karma can activate or neutralize Transfers by quantity.
 - Role-based agreement, legal-contract language, external payments, delivery integrations, calendars, and external messaging are out of MVP scope.
 
@@ -188,29 +185,30 @@ Transfer packages carry identity, item, relation, tree config, and event data be
 
 Agreement is about the current state of connected items/interactions, not about abstract counteroffers.
 
+Proposal changes are edits, not formal counteroffers. When a connected item or interaction changes, earlier agreement for the affected scope must be invalidated and an event should explain what changed.
+
+Implemented legacy local item edits emit `item_edited`, reset the edited side's agreement level to `0`, and invalidate structured agreement rows for that Transfer. Structured item/interaction edit actions should use the same normal edit-event policy when those edit actions are added.
+
 Agreement levels:
 
-| Level | Meaning |
-| ----- | ------- |
-| `0` | No current agreement, or agreement invalidated by an edit. |
-| `1` | First agreement: the party reviewed the current visible proposal and is aligned. |
-| `2` | Commitment threshold: the party accepts its part and the interaction can activate if policy is satisfied. |
+| Level | Meaning                                                                                                   |
+| ----- | --------------------------------------------------------------------------------------------------------- |
+| `0`   | No current agreement, or agreement invalidated by an edit.                                                |
+| `1`   | First agreement: the party reviewed the current visible proposal and is aligned.                          |
+| `2`   | Commitment threshold: the party accepts its part and the interaction can activate if policy is satisfied. |
 
 Implemented facts:
 
 - Agreement level is typed in Rust and stored as `0`, `1`, or `2`.
 - The structured schema stores scoped `transfer_agreement` rows for Transfer, item, or interaction agreement.
 - Agreement rows can store agreed item/interaction versions and invalidation event references.
-- `transfer_event` stores signed append-only events with UID/signature fields and validation state.
+- `transfer_event` stores signed append-only events with UID/signature fields, hash-chain fields, validation state, and validation error.
 - `transfer_message` exists for Transfer and interaction-level messages.
 
 Remaining implementation work:
 
-- Make edit actions on structured items/interactions increment versions and invalidate connected `transfer_agreement` rows.
-- Derive settlement readiness from structured agreement, confirmation, interaction, and settlement rows instead of the legacy contribution/need projection.
-- Deserialize `transfer_event.payload_json` into typed payload structs/enums at package/action boundaries.
-- Reject or mark invalid event/package data whose payload shape does not match `event_kind`.
-- Populate and verify deterministic `previous_event_hash` and `event_hash` values.
+- Derive Transfer and parent Transfer status from structured item, interaction, agreement, confirmation, settlement, quantity influence, and event facts.
+- Replace the current basic event payload-shape validation with full typed payload structs/enums at package/action boundaries.
 - Implement message send/display actions in the Transfer sand using `transfer_message` plus `message_sent` events.
 
 ### Implemented Networking
@@ -223,9 +221,45 @@ The current network model is practical package sync, not full federation:
 - Participating nodes can mirror imported event logs.
 - Nodes track sync progress with `transfer_sync_cursor`.
 - Failed/queued posts are retried through `transfer_sync_outbox`.
-- Public or permitted packages can be cached in `transfer_gossip_package`.
+- Public or permitted packages can be cached in `transfer_gossip_package` as a basic package cache.
+- Organs now act as the first peer/contact table with `unknown`, `known`, and `blocked` trust states.
+- Organ contacts carry `contact_discovery_enabled`, `last_seen_at`, and `last_transfer_polled_at`.
+- Automatic known-peer Transfer polling is enabled by default through `transfer_known_peer_polling_enabled`.
+- Startup asks known peers for missed packages since the previous local online timestamp and announces this node as online.
+- Heartbeat keeps the local online cache fresh, and due known peers are polled around hourly.
+- Manual Transfer peer polling exists through the Transfer widget action using an Organ id or base URL.
+- Blocked peers are skipped for polling, package send, queued outbox retry, package receive, and contact discovery.
+- Public package ingress still uses `transfer_public_proposals_enabled` for unknown peers; known peers can sync valid packages without that stranger gate.
+- Contact discovery exposes discoverable non-blocked Organs through `/transfer/contacts/discover` with pagination and text search.
+- Discovered contacts can be added locally through `/transfer/contacts`; they start as `unknown`.
+- Online announcements are accepted through `/transfer/peers/online` and update `last_seen_at` for known/unknown non-blocked peers already in the contact list.
+- The Transfer settings drawer exposes the near-term network controls: toggle automatic known-peer polling, discover contacts from another node, add discovered contacts as `unknown`, promote peers to `known`, block/unblock peers, expose/hide contacts from discovery, and manually poll a peer.
+- Transfer packages now carry a structured section for parties, structured items, interactions, scoped agreements, confirmations, structured settlements, quantity influence facts, and messages in addition to the legacy sand projection.
+- Structured package import writes portable structured rows and only preserves local Record references when that Record exists locally.
+- Re-importing the same structured package skips exact duplicate structured rows, so repeated polling does not append identical parties, items, interactions, agreements, confirmations, settlements, quantity influences, or messages.
+- Structured parties, items, and interactions have stable scoped row UIDs. Package import uses those UIDs to update existing rows instead of appending a new row when the remote row changed.
+- Structured package import still preserves local-only rows; package rows update or insert by UID and do not replace the whole local structured set.
+- Transfer identity carries optional manual `topic_text`; proposal creation exposes a Topic input and packages preserve topic text for later filtering/discovery.
+- Signed events now persist deterministic `previous_event_hash` and `event_hash` values.
+- Local signed events are marked `valid`; imported package events are marked `valid` or `invalid` after signature verification, hash verification, previous-hash checking, and basic event payload-shape validation.
+- Transfer history/package projections expose event validation state, validation error, event hash, and previous event hash.
 
-Topic-based peer discovery, contact-list-based peer discovery, full field-level visibility filtering, and coordinator migration remain planned work.
+Full field-level visibility filtering, candidate discovery UI, and coordinator migration remain planned work.
+
+### Long-Term Networking Plan
+
+The near-term networking plan is known-peer polling, explicit contact discovery, and package sync. Broader network behavior stays long-term.
+
+Long-term networking work:
+
+- Public square abstraction: a well-known server or Organ can index topics, introduce nodes, and return visible peer/contact suggestions. It must not become source of truth for Transfer state.
+- Gossip cache: cache secondhand visible Transfer summaries/packages with source, observed-from, fetched time, stale time, topic/category, and event head/hash metadata. This is postponed until it has a clear use beyond direct known-peer polling.
+- Delegated search: asking one node to ask others around the network is postponed. If implemented later, it needs hop limits, TTL, rate limits, loop prevention, and source attribution.
+- Offline-aware federation: richer delivery receipts, peer retry windows, background wake coordination, and multi-hop update repair can come later. The near-term behavior is only startup catch-up, hourly known-peer polling, and online announcement to known peers.
+- Muted peers: postponed until notifications, noisy feeds, or broad gossip make "known but quiet" meaningfully different from `unknown` or `blocked`.
+- Topic/category discovery beyond manual text: start with manual text topics; richer taxonomy or category reuse can come later.
+- Event verification: validate event hash chains and signatures independently of relays/public squares.
+- Coordinator migration: allow Transfer coordination to move between nodes through signed events.
 
 ### Implemented Settlement
 
@@ -241,25 +275,25 @@ The current sand settlement path consumes or releases local plus/minus influence
 
 Implemented simulation settlement keeps Record quantity and availability separate:
 
-| Quantity | Meaning |
-| -------- | ------- |
-| `record.quantity` | Actual settled Record quantity. |
-| `record_transfer_availability.proposed_outgoing_quantity` | Planned negative Transfer influence. |
-| `record_transfer_availability.proposed_incoming_quantity` | Planned positive Transfer influence. |
-| `record_transfer_availability.reserved_quantity` | Active hard outgoing reservation from Transfers. |
-| `record_transfer_availability.reserved_incoming_quantity` | Active positive Transfer influence, informational only. |
-| `record_transfer_availability.available_quantity` | Actual quantity minus active hard outgoing reservation. |
-| `record_transfer_availability.planned_quantity` | Simple projection: actual plus incoming influence minus outgoing influence. |
+| Quantity                                                  | Meaning                                                                     |
+| --------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `record.quantity`                                         | Actual settled Record quantity.                                             |
+| `record_transfer_availability.proposed_outgoing_quantity` | Planned negative Transfer influence.                                        |
+| `record_transfer_availability.proposed_incoming_quantity` | Planned positive Transfer influence.                                        |
+| `record_transfer_availability.reserved_quantity`          | Active hard outgoing reservation from Transfers.                            |
+| `record_transfer_availability.reserved_incoming_quantity` | Active positive Transfer influence, informational only.                     |
+| `record_transfer_availability.available_quantity`         | Actual quantity minus active hard outgoing reservation.                     |
+| `record_transfer_availability.planned_quantity`           | Simple projection: actual plus incoming influence minus outgoing influence. |
 
 The active configuration has a default `transfer_reservation_policy`:
 
-| Policy | Meaning |
-| ------ | ------- |
-| `none` | Never show staged Transfer quantity changes. Only final settlement changes Record quantity. |
-| `soft` | Track proposal intent without reducing availability. |
-| `hard_on_proposal` | Reserve outgoing quantity when a proposal is created. |
-| `hard_on_consume` | Reserve outgoing quantity when a proposal is duplicated/consumed into a local Transfer. |
-| `hard_on_lock` | Reserve outgoing quantity when both sides lock/accept agreement terms. |
+| Policy             | Meaning                                                                                     |
+| ------------------ | ------------------------------------------------------------------------------------------- |
+| `none`             | Never show staged Transfer quantity changes. Only final settlement changes Record quantity. |
+| `soft`             | Track proposal intent without reducing availability.                                        |
+| `hard_on_proposal` | Reserve outgoing quantity when a proposal is created.                                       |
+| `hard_on_consume`  | Reserve outgoing quantity when a proposal is duplicated/consumed into a local Transfer.     |
+| `hard_on_lock`     | Reserve outgoing quantity when both sides lock/accept agreement terms.                      |
 
 Each Transfer can override the default in `transfer_tree_config.reservation_policy`. `NULL` means inherit from the nearest parent Transfer override; a root Transfer with no override uses the active configuration default. Structured items use the effective policy of their owning Transfer. Child Transfers inherit the effective policy down to leaves unless they override it.
 
@@ -485,15 +519,29 @@ When Transfer `4` quantity changes, Karma rules that reference `tq4` or `transfe
 
 - [ ] A Cell can act as a p2p node.
 - [x] A node can publish visible Transfer summaries.
-- [x] A node can cache visible Transfer summaries.
-- [x] A node can keep cached summaries stale.
+- [x] A node can cache public/permitted Transfer packages.
+- [ ] A node can keep discovery cache entries stale with source metadata.
 - [x] A participating Cell can mirror a Transfer event log.
 - [x] A participating Cell can track its last synced event.
 - [x] A coordinator orders writes while replicas sync eventually.
 - [x] A central or Organ server can introduce peers.
 - [x] Direct peer sync can happen after introduction.
-- [ ] Peer discovery can be topic-based.
-- [ ] Peer discovery can be contact-list based.
+- [x] Peer discovery can be contact-list based.
+- [x] Known peers can be auto-polled hourly by default.
+- [x] Known peers can be manually polled when automatic polling is disabled.
+- [x] A node can expose discoverable contacts with pagination and text search.
+- [x] A discovered contact can be added locally as `unknown`.
+- [x] Peer trust supports `unknown`, `known`, and `blocked`.
+- [x] Blocked peers are rejected from receive, send, polling, and discovery surfaces.
+- [x] Transfer topics/categories can be manual text input.
+- [x] Public proposal ingress is integrated with unknown/known/blocked peer behavior.
+- [x] Topic/category labels can be used by future discovery.
+- [x] Structured package rows use stable UIDs for parties, items, and interactions.
+- [x] Structured package import updates existing party/item/interaction rows by UID.
+- [x] Structured package import preserves local-only rows when importing partial remote packages.
+- [x] Structured package import has service coverage for idempotent UID-based updates.
+- [ ] Gossip cache is available as a long-term discovery helper.
+- [ ] Delegated ask-around search is available with hop/TTL limits.
 - [x] Event logs can later become signed.
 
 ### Transfer Sand

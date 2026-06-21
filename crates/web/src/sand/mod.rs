@@ -11,6 +11,7 @@ mod lince_logo_led;
 mod markdown_notes;
 mod ops_clock;
 mod organ_management;
+mod role_access;
 #[path = "relations/mod.rs"]
 mod relations;
 mod sand_publisher;
@@ -100,7 +101,7 @@ impl OfficialWidgetBuilder {
     }
 }
 
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 20] = [
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 21] = [
     OfficialWidgetBuilder::Package {
         feature_flag: document_viewer::FEATURE_FLAG,
         package_builder: document_viewer::package,
@@ -152,6 +153,10 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 20] = [
     OfficialWidgetBuilder::Html {
         feature_flag: organ_management::FEATURE_FLAG,
         source_builder: organ_management::source,
+    },
+    OfficialWidgetBuilder::Html {
+        feature_flag: role_access::FEATURE_FLAG,
+        source_builder: role_access::source,
     },
     OfficialWidgetBuilder::Html {
         feature_flag: ops_clock::FEATURE_FLAG,

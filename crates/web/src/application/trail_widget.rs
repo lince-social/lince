@@ -2549,12 +2549,7 @@ fn ensure_nested_object<'a>(
 }
 
 fn local_host_subject() -> AuthSubject {
-    AuthSubject {
-        user_id: 0,
-        username: "local-host".into(),
-        role_id: 0,
-        role: "admin".into(),
-    }
+    AuthSubject::system()
 }
 
 fn parse_json_strings(value: Option<&str>) -> Vec<String> {

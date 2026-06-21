@@ -2089,12 +2089,7 @@ fn payload_object(payload: &Value) -> ApiResult<&serde_json::Map<String, Value>>
 }
 
 fn local_host_subject() -> AuthSubject {
-    AuthSubject {
-        user_id: 0,
-        username: "local-host".into(),
-        role_id: 0,
-        role: "admin".into(),
-    }
+    AuthSubject::system()
 }
 
 fn map_backend_error(

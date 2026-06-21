@@ -23,16 +23,16 @@ pub(crate) fn source() -> SandWidgetSource {
         inline_styles: vec![r#"
       :root {
         color-scheme: dark;
-        --bg: #0d1014;
-        --panel: #141922;
-        --panel-soft: #1a202a;
-        --panel-strong: #202836;
-        --line: rgba(255, 255, 255, 0.08);
-        --line-strong: rgba(255, 255, 255, 0.16);
+        --bg: #101216;
+        --panel: #171b21;
+        --panel-soft: #20262f;
+        --panel-strong: #26303d;
+        --line: rgba(255, 255, 255, 0.12);
+        --line-strong: rgba(255, 255, 255, 0.2);
         --text: #eef3f8;
         --muted: #93a0b0;
-        --accent: #b8d78c;
-        --accent-soft: rgba(184, 215, 140, 0.12);
+        --accent: #86c7ff;
+        --accent-soft: rgba(134, 199, 255, 0.12);
         --warn: #efc77d;
         --danger: #ff97a6;
         --ok: #82efb3;
@@ -49,20 +49,18 @@ pub(crate) fn source() -> SandWidgetSource {
 
       body {
         min-height: 100vh;
-        padding: 14px;
+        padding: 12px;
         color: var(--text);
-        background:
-          linear-gradient(180deg, rgba(11, 14, 18, 0.98), rgba(8, 10, 13, 0.98)),
-          radial-gradient(circle at top right, rgba(184, 215, 140, 0.08), transparent 28%);
+        background: var(--bg);
         font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
       }
 
-      button, input {
+      button, input, select {
         font: inherit;
       }
 
       .app {
-        min-height: calc(100vh - 28px);
+        min-height: calc(100vh - 24px);
         display: grid;
         grid-template-rows: auto auto minmax(0, 1fr) auto;
         gap: 12px;
@@ -70,9 +68,8 @@ pub(crate) fn source() -> SandWidgetSource {
 
       .panel {
         border: 1px solid var(--line);
-        border-radius: 18px;
-        background: linear-gradient(180deg, rgba(20, 25, 34, 0.98), rgba(15, 19, 26, 0.98));
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+        border-radius: 8px;
+        background: var(--panel);
       }
 
       .header {
@@ -98,7 +95,7 @@ pub(crate) fn source() -> SandWidgetSource {
         font-family: var(--mono);
         font-size: 0.67rem;
         font-weight: 600;
-        letter-spacing: 0.14em;
+        letter-spacing: 0;
         text-transform: uppercase;
       }
 
@@ -106,7 +103,7 @@ pub(crate) fn source() -> SandWidgetSource {
         margin: 4px 0 0;
         font-size: 1.05rem;
         font-weight: 700;
-        letter-spacing: -0.03em;
+        letter-spacing: 0;
       }
 
       .copy {
@@ -125,7 +122,7 @@ pub(crate) fn source() -> SandWidgetSource {
         min-width: 88px;
         padding: 10px 12px;
         border: 1px solid var(--line);
-        border-radius: 14px;
+        border-radius: 8px;
         background: rgba(255, 255, 255, 0.02);
       }
 
@@ -134,7 +131,7 @@ pub(crate) fn source() -> SandWidgetSource {
         margin-top: 3px;
         font-size: 1rem;
         font-weight: 700;
-        letter-spacing: -0.03em;
+        letter-spacing: 0;
       }
 
       .toolbar {
@@ -146,7 +143,7 @@ pub(crate) fn source() -> SandWidgetSource {
       .button {
         min-height: 38px;
         border: 1px solid var(--line);
-        border-radius: 12px;
+        border-radius: 6px;
         background: var(--panel-soft);
         color: var(--text);
       }
@@ -169,7 +166,7 @@ pub(crate) fn source() -> SandWidgetSource {
       }
 
       .button--primary {
-        border-color: rgba(184, 215, 140, 0.28);
+        border-color: rgba(134, 199, 255, 0.36);
         background: var(--accent-soft);
         color: var(--accent);
         font-weight: 700;
@@ -186,7 +183,7 @@ pub(crate) fn source() -> SandWidgetSource {
       .workspace {
         min-height: 0;
         display: grid;
-        grid-template-columns: minmax(240px, 1.05fr) minmax(280px, 1.4fr);
+        grid-template-columns: minmax(260px, 0.9fr) minmax(320px, 1.45fr);
         gap: 12px;
       }
 
@@ -237,7 +234,7 @@ pub(crate) fn source() -> SandWidgetSource {
         display: grid;
         gap: 8px;
         border: 1px solid var(--line);
-        border-radius: 16px;
+        border-radius: 8px;
         background: rgba(255, 255, 255, 0.02);
         color: inherit;
         cursor: pointer;
@@ -250,7 +247,7 @@ pub(crate) fn source() -> SandWidgetSource {
       }
 
       .organCard[data-active="true"] {
-        box-shadow: inset 0 0 0 1px rgba(184, 215, 140, 0.18);
+        box-shadow: inset 0 0 0 1px rgba(134, 199, 255, 0.2);
       }
 
       .organTop {
@@ -263,7 +260,7 @@ pub(crate) fn source() -> SandWidgetSource {
       .organName {
         font-size: 0.88rem;
         font-weight: 700;
-        letter-spacing: -0.02em;
+        letter-spacing: 0;
       }
 
       .organId, .organUrl, .mutedText, .emptyCopy {
@@ -284,7 +281,7 @@ pub(crate) fn source() -> SandWidgetSource {
         gap: 6px;
         min-height: 24px;
         padding: 0 9px;
-        border-radius: 999px;
+        border-radius: 6px;
         border: 1px solid var(--line);
         background: rgba(255, 255, 255, 0.03);
         color: var(--text);
@@ -335,7 +332,7 @@ pub(crate) fn source() -> SandWidgetSource {
         margin: 0;
         font-size: 1rem;
         font-weight: 700;
-        letter-spacing: -0.03em;
+        letter-spacing: 0;
       }
 
       .mono {
@@ -351,7 +348,7 @@ pub(crate) fn source() -> SandWidgetSource {
       .statCard {
         padding: 11px 12px;
         border: 1px solid var(--line);
-        border-radius: 14px;
+        border-radius: 8px;
         background: rgba(255, 255, 255, 0.02);
       }
 
@@ -372,6 +369,16 @@ pub(crate) fn source() -> SandWidgetSource {
         gap: 6px;
       }
 
+      .checkField {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .checkField input {
+        width: auto;
+      }
+
       .fieldHint {
         color: var(--muted);
         font-size: 0.71rem;
@@ -390,7 +397,7 @@ pub(crate) fn source() -> SandWidgetSource {
         overflow: auto;
         padding: 12px;
         border: 1px solid var(--line);
-        border-radius: 14px;
+        border-radius: 8px;
         background: rgba(8, 10, 14, 0.78);
         color: var(--text);
         font-family: var(--mono);
@@ -413,7 +420,7 @@ pub(crate) fn source() -> SandWidgetSource {
         display: inline-flex;
         align-items: center;
         padding: 0 12px;
-        border-radius: 12px;
+        border-radius: 6px;
         border: 1px solid var(--line);
         background: rgba(255, 255, 255, 0.03);
         color: var(--muted);
@@ -449,7 +456,7 @@ pub(crate) fn source() -> SandWidgetSource {
         body: body(),
         body_scripts: vec![crate::sand::WidgetScript::inline(r#"
       const CARD_STATE_KEY = "organManagement";
-      const DEFAULT_FORM = { id: "", name: "", baseUrl: "" };
+      const DEFAULT_FORM = { id: "", name: "", baseUrl: "", trustState: "known", contactDiscoveryEnabled: false };
       const app = document.getElementById("app");
       const searchInput = document.getElementById("search-input");
       const refreshButton = document.getElementById("refresh-button");
@@ -476,6 +483,8 @@ pub(crate) fn source() -> SandWidgetSource {
       const formModeEl = document.getElementById("form-mode");
       const formNameEl = document.getElementById("field-name");
       const formBaseUrlEl = document.getElementById("field-base-url");
+      const formTrustStateEl = document.getElementById("field-trust-state");
+      const formContactDiscoveryEl = document.getElementById("field-contact-discovery");
       const footerEl = document.getElementById("footer-meta");
 
       let bridgeBound = false;
@@ -505,6 +514,8 @@ pub(crate) fn source() -> SandWidgetSource {
             id: typeof scoped?.draft?.id === "string" ? scoped.draft.id : "",
             name: typeof scoped?.draft?.name === "string" ? scoped.draft.name : "",
             baseUrl: typeof scoped?.draft?.baseUrl === "string" ? scoped.draft.baseUrl : "",
+            trustState: typeof scoped?.draft?.trustState === "string" ? scoped.draft.trustState : "known",
+            contactDiscoveryEnabled: Boolean(scoped?.draft?.contactDiscoveryEnabled),
           },
           draftMode: scoped?.draftMode === "create" ? "create" : "edit",
         };
@@ -614,6 +625,8 @@ pub(crate) fn source() -> SandWidgetSource {
           id: organ.id,
           name: organ.name,
           baseUrl: organ.baseUrl,
+          trustState: organ.trustState,
+          contactDiscoveryEnabled: organ.contactDiscoveryEnabled,
         };
       }
 
@@ -644,9 +657,11 @@ pub(crate) fn source() -> SandWidgetSource {
         if (organ.usernameHint) {
           chips.push(chip("User " + organ.usernameHint, "accent"));
         }
-        if (organ.lastError) {
+          if (organ.lastError) {
           chips.push(chip("Error", "danger"));
         }
+        chips.push(chip(organ.trustState || "known", organ.trustState === "blocked" ? "danger" : organ.trustState === "unknown" ? "warn" : "ok"));
+        chips.push(chip(organ.contactDiscoveryEnabled ? "discoverable" : "private", organ.contactDiscoveryEnabled ? "ok" : "accent"));
         return chips.join("");
       }
 
@@ -716,6 +731,8 @@ pub(crate) fn source() -> SandWidgetSource {
         formModeEl.textContent = isCreate ? "Create organ" : "Edit organ";
         formNameEl.value = draft.name || "";
         formBaseUrlEl.value = draft.baseUrl || "";
+        formTrustStateEl.value = draft.trustState || "known";
+        formContactDiscoveryEl.checked = Boolean(draft.contactDiscoveryEnabled);
         deleteButton.disabled = isCreate || !organ || state.loading;
         saveButton.disabled = state.loading;
         resetButton.disabled = state.loading;
@@ -757,6 +774,8 @@ pub(crate) fn source() -> SandWidgetSource {
           id: String(nextDraft.id || ""),
           name: String(nextDraft.name || ""),
           baseUrl: String(nextDraft.baseUrl || ""),
+          trustState: String(nextDraft.trustState || "known"),
+          contactDiscoveryEnabled: Boolean(nextDraft.contactDiscoveryEnabled),
         };
         persistUiSoon();
         render();
@@ -780,6 +799,8 @@ pub(crate) fn source() -> SandWidgetSource {
             id: organ.id,
             name: organ.name,
             baseUrl: organ.baseUrl,
+            trustState: organ.trustState,
+            contactDiscoveryEnabled: organ.contactDiscoveryEnabled,
           };
         } else {
           state.ui.draftMode = "create";
@@ -834,6 +855,8 @@ pub(crate) fn source() -> SandWidgetSource {
           id: String(raw.id || "").trim(),
           name: String(raw.name || "").trim(),
           baseUrl: String(raw.baseUrl || "").trim(),
+          trustState: String(raw.trustState || "known").trim() || "known",
+          contactDiscoveryEnabled: Boolean(raw.contactDiscoveryEnabled),
           requiresAuth: Boolean(raw.requiresAuth),
           authenticated: Boolean(raw.authenticated),
           sessionState: typeof raw.sessionState === "string" ? raw.sessionState : null,
@@ -847,6 +870,8 @@ pub(crate) fn source() -> SandWidgetSource {
         return {
           name: formNameEl.value.trim(),
           base_url: formBaseUrlEl.value.trim(),
+          trust_state: formTrustStateEl.value || "known",
+          contact_discovery_enabled: Boolean(formContactDiscoveryEl.checked),
         };
       }
 
@@ -956,6 +981,14 @@ pub(crate) fn source() -> SandWidgetSource {
       });
       formBaseUrlEl.addEventListener("input", () => {
         patchDraft({ ...state.ui.draft, baseUrl: formBaseUrlEl.value });
+        requestPreviewFor(state.ui.draftMode === "create" ? "POST" : "PATCH", state.ui.draftMode === "create" ? "/organ" : "/organ/" + encodeURIComponent(state.ui.selectedId || "{organ_id}"), buildPayload());
+      });
+      formTrustStateEl.addEventListener("change", () => {
+        patchDraft({ ...state.ui.draft, trustState: formTrustStateEl.value || "known" });
+        requestPreviewFor(state.ui.draftMode === "create" ? "POST" : "PATCH", state.ui.draftMode === "create" ? "/organ" : "/organ/" + encodeURIComponent(state.ui.selectedId || "{organ_id}"), buildPayload());
+      });
+      formContactDiscoveryEl.addEventListener("change", () => {
+        patchDraft({ ...state.ui.draft, contactDiscoveryEnabled: Boolean(formContactDiscoveryEl.checked) });
         requestPreviewFor(state.ui.draftMode === "create" ? "POST" : "PATCH", state.ui.draftMode === "create" ? "/organ" : "/organ/" + encodeURIComponent(state.ui.selectedId || "{organ_id}"), buildPayload());
       });
 
@@ -1101,6 +1134,19 @@ fn body() -> Markup {
                                     label class="label" for="field-base-url" { "Base URL" }
                                     input id="field-base-url" class="field mono" type="text" placeholder="https://organ.example";
                                     div class="fieldHint" { "The host trims whitespace and strips a trailing slash before saving." }
+                                }
+                                div class="fieldWrap" {
+                                    label class="label" for="field-trust-state" { "Trust state" }
+                                    select id="field-trust-state" class="field" {
+                                        option value="unknown" { "Unknown" }
+                                        option value="known" selected { "Known" }
+                                        option value="blocked" { "Blocked" }
+                                    }
+                                    div class="fieldHint" { "Known peers can sync Transfers. Blocked peers are skipped for send, receive, polling, and discovery." }
+                                }
+                                label class="checkField" {
+                                    input id="field-contact-discovery" type="checkbox";
+                                    span class="fieldHint" { "Expose this Organ through contact discovery" }
                                 }
                                 div class="actions" {
                                     button id="save-button" class="button button--primary" type="button" { "Save organ" }

@@ -1,4 +1,3 @@
-use ::application::auth::AuthSubject;
 use injection::cross_cutting::InjectedServices;
 use persistence::write_coordinator::SqlParameter;
 use serde::Deserialize;
@@ -29,6 +28,8 @@ pub enum ApiTable {
     Configuration,
     AppUser,
     Role,
+    Permission,
+    RolePermission,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -274,6 +275,7 @@ struct ConfigurationRow {
     file_sync_enabled: i64,
     file_sync_path: Option<String>,
     transfer_public_proposals_enabled: i64,
+    transfer_known_peer_polling_enabled: i64,
     desktop_start_on_login: Option<i64>,
     desktop_start_silent: Option<i64>,
     automatic_update_channel: String,
@@ -297,6 +299,21 @@ struct PublicAppUserRow {
 struct RoleRow {
     id: i64,
     name: String,
+}
+
+#[derive(Debug, Serialize, FromRow)]
+struct PermissionRow {
+    id: i64,
+    subject: String,
+    action: String,
+    description: Option<String>,
+}
+
+#[derive(Debug, Serialize, FromRow)]
+struct RolePermissionRow {
+    id: i64,
+    role_id: i64,
+    permission_id: i64,
 }
 
 const VIEW_FIELD_SPECS: [FieldSpec; 2] = [
@@ -578,7 +595,7 @@ const KARMA_FIELD_SPECS: [FieldSpec; 7] = [
     },
 ];
 
-const CONFIGURATION_FIELD_SPECS: [FieldSpec; 25] = [
+const CONFIGURATION_FIELD_SPECS: [FieldSpec; 26] = [
     FieldSpec {
         name: "quantity",
         kind: FieldKind::NullableInteger,
@@ -656,6 +673,10 @@ const CONFIGURATION_FIELD_SPECS: [FieldSpec; 25] = [
         kind: FieldKind::BooleanInteger,
     },
     FieldSpec {
+        name: "transfer_known_peer_polling_enabled",
+        kind: FieldKind::BooleanInteger,
+    },
+    FieldSpec {
         name: "desktop_start_on_login",
         kind: FieldKind::NullableInteger,
     },
@@ -685,6 +706,17 @@ const ROLE_FIELD_SPECS: [FieldSpec; 1] = [FieldSpec {
     name: "name",
     kind: FieldKind::Text,
 }];
+
+const ROLE_PERMISSION_FIELD_SPECS: [FieldSpec; 2] = [
+    FieldSpec {
+        name: "role_id",
+        kind: FieldKind::Integer,
+    },
+    FieldSpec {
+        name: "permission_id",
+        kind: FieldKind::Integer,
+    },
+];
 
 #[derive(Clone)]
 pub struct BackendApiStore {
@@ -809,7 +841,7 @@ impl BackendApiStore {
             ),
             ApiTable::Configuration => serialize_value(
                 sqlx::query_as::<_, ConfigurationRow>(
-                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region, file_sync_enabled, file_sync_path, transfer_public_proposals_enabled, desktop_start_on_login, desktop_start_silent, automatic_update_channel, automatic_update_notify_enabled, automatic_update_install_enabled, automatic_update_last_seen_revision FROM configuration ORDER BY id",
+                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region, file_sync_enabled, file_sync_path, transfer_public_proposals_enabled, transfer_known_peer_polling_enabled, desktop_start_on_login, desktop_start_silent, automatic_update_channel, automatic_update_notify_enabled, automatic_update_install_enabled, automatic_update_last_seen_revision FROM configuration ORDER BY id",
                 )
                 .fetch_all(db)
                 .await
@@ -821,6 +853,22 @@ impl BackendApiStore {
                     .fetch_all(db)
                     .await
                     .map_err(map_sqlx_error)?,
+            ),
+            ApiTable::Permission => serialize_value(
+                sqlx::query_as::<_, PermissionRow>(
+                    "SELECT id, subject, action, description FROM permission ORDER BY subject, action",
+                )
+                .fetch_all(db)
+                .await
+                .map_err(map_sqlx_error)?,
+            ),
+            ApiTable::RolePermission => serialize_value(
+                sqlx::query_as::<_, RolePermissionRow>(
+                    "SELECT rowid AS id, role_id, permission_id FROM role_permission ORDER BY role_id, permission_id",
+                )
+                .fetch_all(db)
+                .await
+                .map_err(map_sqlx_error)?,
             ),
         }
     }
@@ -935,7 +983,7 @@ impl BackendApiStore {
             ),
             ApiTable::Configuration => serialize_value(
                 sqlx::query_as::<_, ConfigurationRow>(
-                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region, file_sync_enabled, file_sync_path, transfer_public_proposals_enabled, desktop_start_on_login, desktop_start_silent, automatic_update_channel, automatic_update_notify_enabled, automatic_update_install_enabled, automatic_update_last_seen_revision FROM configuration WHERE id = ?",
+                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region, file_sync_enabled, file_sync_path, transfer_public_proposals_enabled, transfer_known_peer_polling_enabled, desktop_start_on_login, desktop_start_silent, automatic_update_channel, automatic_update_notify_enabled, automatic_update_install_enabled, automatic_update_last_seen_revision FROM configuration WHERE id = ?",
                 )
                 .bind(id)
                 .fetch_one(db)
@@ -949,6 +997,24 @@ impl BackendApiStore {
                     .fetch_one(db)
                     .await
                     .map_err(map_sqlx_error)?,
+            ),
+            ApiTable::Permission => serialize_value(
+                sqlx::query_as::<_, PermissionRow>(
+                    "SELECT id, subject, action, description FROM permission WHERE id = ?",
+                )
+                .bind(id)
+                .fetch_one(db)
+                .await
+                .map_err(map_sqlx_error)?,
+            ),
+            ApiTable::RolePermission => serialize_value(
+                sqlx::query_as::<_, RolePermissionRow>(
+                    "SELECT rowid AS id, role_id, permission_id FROM role_permission WHERE rowid = ?",
+                )
+                .bind(id)
+                .fetch_one(db)
+                .await
+                .map_err(map_sqlx_error)?,
             ),
         }
     }
@@ -1318,7 +1384,7 @@ impl BackendApiStore {
 
     pub async fn build_app_user_update(
         &self,
-        claims: &AuthSubject,
+        _claims: &::application::auth::AuthSubject,
         id: i64,
         object: &Map<String, Value>,
         password_hash: Option<String>,
@@ -1342,12 +1408,6 @@ impl BackendApiStore {
             params.push(SqlParameter::Text(password_hash));
         }
         if let Some(value) = object.get("role_id") {
-            if !claims.is_admin() {
-                return Err(Error::new(
-                    ErrorKind::PermissionDenied,
-                    "Admin role required",
-                ));
-            }
             let role_id = parse_i64_value("role_id", value)?;
             self.ensure_role_exists(role_id).await?;
             assignments.push("role_id = ?".to_string());
@@ -1434,6 +1494,26 @@ impl BackendApiStore {
         ))
     }
 
+    pub async fn build_role_permission_insert(
+        &self,
+        object: &Map<String, Value>,
+    ) -> Result<(String, Vec<SqlParameter>), Error> {
+        reject_common_forbidden_fields(object)?;
+        reject_unknown_fields(object, &["role_id", "permission_id"])?;
+        let role_id = required_i64_field(object, "role_id")?;
+        let permission_id = required_i64_field(object, "permission_id")?;
+        self.ensure_role_exists(role_id).await?;
+        self.ensure_permission_exists(permission_id).await?;
+        Ok((
+            "INSERT OR IGNORE INTO role_permission(role_id, permission_id) VALUES (?, ?) RETURNING rowid"
+                .to_string(),
+            vec![
+                SqlParameter::Integer(role_id),
+                SqlParameter::Integer(permission_id),
+            ],
+        ))
+    }
+
     pub async fn role_id_by_name(&self, role_name: &str) -> Result<i64, Error> {
         sqlx::query_scalar::<_, i64>("SELECT id FROM role WHERE name = ? LIMIT 1")
             .bind(role_name)
@@ -1455,10 +1535,24 @@ impl BackendApiStore {
 
         Ok(())
     }
+
+    pub async fn ensure_permission_exists(&self, permission_id: i64) -> Result<(), Error> {
+        let exists = sqlx::query_scalar::<_, i64>("SELECT COUNT(1) FROM permission WHERE id = ?")
+            .bind(permission_id)
+            .fetch_one(&*self.services.db)
+            .await
+            .map_err(map_sqlx_error)?;
+
+        if exists == 0 {
+            return Err(Error::new(ErrorKind::NotFound, "Permission not found"));
+        }
+
+        Ok(())
+    }
 }
 
 impl ApiTable {
-    pub fn all() -> [ApiTable; 16] {
+    pub fn all() -> [ApiTable; 18] {
         [
             ApiTable::Record,
             ApiTable::AppUser,
@@ -1475,6 +1569,8 @@ impl ApiTable {
             ApiTable::RecordResourceRef,
             ApiTable::RecordWorklog,
             ApiTable::Role,
+            ApiTable::Permission,
+            ApiTable::RolePermission,
             ApiTable::View,
         ]
     }
@@ -1497,6 +1593,8 @@ impl ApiTable {
             ApiTable::Configuration => "configuration",
             ApiTable::AppUser => "app_user",
             ApiTable::Role => "role",
+            ApiTable::Permission => "permission",
+            ApiTable::RolePermission => "role_permission",
         }
     }
 
@@ -1516,7 +1614,8 @@ impl ApiTable {
             ApiTable::KarmaConsequence => Some(KARMA_CONSEQUENCE_FIELD_SPECS.to_vec()),
             ApiTable::Karma => Some(KARMA_FIELD_SPECS.to_vec()),
             ApiTable::Configuration => Some(CONFIGURATION_FIELD_SPECS.to_vec()),
-            ApiTable::AppUser | ApiTable::Role => None,
+            ApiTable::AppUser | ApiTable::Role | ApiTable::Permission => None,
+            ApiTable::RolePermission => Some(ROLE_PERMISSION_FIELD_SPECS.to_vec()),
         }
     }
 
@@ -1585,6 +1684,11 @@ impl ApiTable {
                 table_create_field_schema("role_id", FieldKind::NullableInteger),
             ],
             ApiTable::Role => vec![table_create_field_schema("name", FieldKind::Text)],
+            ApiTable::Permission => vec![],
+            ApiTable::RolePermission => ROLE_PERMISSION_FIELD_SPECS
+                .iter()
+                .map(|spec| table_create_field_schema(spec.name, spec.kind))
+                .collect(),
         }
     }
 }
@@ -1695,6 +1799,8 @@ fn parse_api_table(table_name: &str) -> Result<ApiTable, Error> {
         "configuration" => Ok(ApiTable::Configuration),
         "app_user" => Ok(ApiTable::AppUser),
         "role" => Ok(ApiTable::Role),
+        "permission" => Ok(ApiTable::Permission),
+        "role_permission" => Ok(ApiTable::RolePermission),
         _ => Err(Error::new(
             ErrorKind::InvalidInput,
             format!("Unsupported API table: {table_name}"),
@@ -1905,6 +2011,16 @@ fn required_text_field(object: &Map<String, Value>, field_name: &str) -> Result<
         )
     })?;
     parse_text_value(field_name, value)
+}
+
+fn required_i64_field(object: &Map<String, Value>, field_name: &str) -> Result<i64, Error> {
+    let value = object.get(field_name).ok_or_else(|| {
+        Error::new(
+            ErrorKind::InvalidInput,
+            format!("Missing required field: {field_name}"),
+        )
+    })?;
+    parse_i64_value(field_name, value)
 }
 
 fn parse_text_parameter(field_name: &str, value: &Value) -> Result<SqlParameter, Error> {

@@ -13,6 +13,14 @@ pub(super) fn script() -> String {
   const ingressSummary = document.getElementById("ingress-summary");
   const ingressForm = document.getElementById("ingress-form");
   const publicProposalsEnabled = document.getElementById("public-proposals-enabled");
+  const networkSummary = document.getElementById("network-summary");
+  const networkPolicyForm = document.getElementById("network-policy-form");
+  const knownPeerPollingEnabled = document.getElementById("known-peer-polling-enabled");
+  const contactDiscoveryForm = document.getElementById("contact-discovery-form");
+  const contactDiscoveryBaseUrl = document.getElementById("contact-discovery-base-url");
+  const contactDiscoverySearch = document.getElementById("contact-discovery-search");
+  const contactDiscoveryList = document.getElementById("contact-discovery-list");
+  const peerList = document.getElementById("peer-list");
   const organLoginForm = document.getElementById("organ-login-form");
   const loginOrgan = document.getElementById("login-organ");
   const recordForm = document.getElementById("record-form");
@@ -32,11 +40,13 @@ pub(super) fn script() -> String {
   let snapshot = {
     localIdentity: null,
     ingressPolicy: { publicProposalsEnabled: false },
+    networkPolicy: { knownPeerPollingEnabled: true },
     records: [],
     organs: [],
     transfers: [],
     gossipTransfers: [],
   };
+  let discoveredContacts = [];
   let selectedTransferId = null;
   let selectedGossipTransferUid = null;
   let activeTransferTab = "mine";
@@ -274,6 +284,97 @@ pub(super) fn script() -> String {
         <div class="meta">${escapeHtml(snapshot.ingressPolicy?.copy || "Initial public proposal ingress is off by default.")}</div>
       </div>
     `;
+  }
+
+  function formatDateTime(value) {
+    const text = String(value || "").trim();
+    if (!text) return "never";
+    const date = new Date(text.endsWith("Z") ? text : text.replace(" ", "T") + "Z");
+    if (Number.isNaN(date.getTime())) return text;
+    return date.toLocaleString();
+  }
+
+  function trustTone(trustState) {
+    if (trustState === "known") return "ok";
+    if (trustState === "blocked") return "danger";
+    return "warn";
+  }
+
+  function renderNetwork() {
+    const polling = Boolean(snapshot.networkPolicy?.knownPeerPollingEnabled);
+    knownPeerPollingEnabled.checked = polling;
+    const knownCount = snapshot.organs.filter((organ) => organ.trustState === "known").length;
+    const unknownCount = snapshot.organs.filter((organ) => organ.trustState === "unknown").length;
+    const blockedCount = snapshot.organs.filter((organ) => organ.trustState === "blocked").length;
+    networkSummary.innerHTML = `
+      <div class="identityBox">
+        <div class="strong">${escapeHtml(polling ? "Known-peer polling enabled" : "Known-peer polling disabled")}</div>
+        <div class="meta">${escapeHtml(knownCount)} known / ${escapeHtml(unknownCount)} unknown / ${escapeHtml(blockedCount)} blocked</div>
+      </div>
+    `;
+    renderPeerList();
+    renderDiscoveredContacts();
+  }
+
+  function peerActionButton(organ, action, label, tone = "") {
+    return `<button type="button" class="${escapeHtml(tone)}" data-peer-action="${escapeHtml(action)}" data-peer-id="${escapeHtml(organ.id)}" data-keep-enabled="true">${escapeHtml(label)}</button>`;
+  }
+
+  function renderPeerList() {
+    if (!snapshot.organs.length) {
+      peerList.innerHTML = `<div class="emptyBlock">No Organ contacts yet.</div>`;
+      return;
+    }
+    peerList.innerHTML = snapshot.organs.map((organ) => {
+      const trust = organ.trustState || "known";
+      const discoverable = Boolean(organ.contactDiscoveryEnabled);
+      const promote = trust === "known" ? "" : peerActionButton(organ, "trust-known", "Known", "primary");
+      const unblock = trust === "blocked" ? peerActionButton(organ, "trust-unknown", "Unblock") : peerActionButton(organ, "trust-blocked", "Block", "danger");
+      const discovery = peerActionButton(organ, discoverable ? "hide-contact" : "show-contact", discoverable ? "Hide" : "Expose");
+      const poll = trust === "blocked" ? "" : peerActionButton(organ, "poll", "Poll");
+      return `
+        <div class="networkRow" data-peer-id="${escapeHtml(organ.id)}">
+          <div class="networkRowMain">
+            <strong>${escapeHtml(organ.name || "Organ")}</strong>
+            <span class="meta mono">${escapeHtml(organ.baseUrl || "")}</span>
+            <span class="chips">
+              ${chip(trust, trustTone(trust))}
+              ${chip(discoverable ? "discoverable" : "private", discoverable ? "ok" : "idle")}
+              ${chip(organ.authenticated ? "connected" : "no session", organ.authenticated ? "ok" : "idle")}
+            </span>
+            <span class="meta">seen ${escapeHtml(formatDateTime(organ.lastSeenAt))} / polled ${escapeHtml(formatDateTime(organ.lastTransferPolledAt))}</span>
+          </div>
+          <div class="networkRowActions">
+            ${promote}
+            ${poll}
+            ${discovery}
+            ${unblock}
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function renderDiscoveredContacts() {
+    if (!discoveredContacts.length) {
+      contactDiscoveryList.innerHTML = `<div class="emptyBlock">No discovered contacts loaded.</div>`;
+      return;
+    }
+    contactDiscoveryList.innerHTML = discoveredContacts.map((contact, index) => {
+      const exists = snapshot.organs.some((organ) => String(organ.baseUrl || "").replace(/\/+$/, "") === String(contact.baseUrl || "").replace(/\/+$/, ""));
+      return `
+        <div class="networkRow">
+          <div class="networkRowMain">
+            <strong>${escapeHtml(contact.name || "Discovered node")}</strong>
+            <span class="meta mono">${escapeHtml(contact.baseUrl || "")}</span>
+            <span class="meta">seen ${escapeHtml(formatDateTime(contact.lastSeenAt))}</span>
+          </div>
+          <div class="networkRowActions">
+            <button type="button" data-contact-add="${escapeHtml(index)}" data-keep-enabled="true" ${exists ? "disabled" : ""}>${escapeHtml(exists ? "Added" : "Add unknown")}</button>
+          </div>
+        </div>
+      `;
+    }).join("");
   }
 
   function renderRecords() {
@@ -971,6 +1072,10 @@ pub(super) fn script() -> String {
           <input id="proposal-counterparty" name="counterparty" list="organ-options" autocomplete="off" placeholder="other-cell">
         </label>
         <label>
+          <span>Topic</span>
+          <input id="proposal-topic" name="topic" autocomplete="off" placeholder="donation, repair, food">
+        </label>
+        <label>
           <span>Post target</span>
           <select id="proposal-organ" name="organ">${proposalOrganOptions()}</select>
         </label>
@@ -1047,6 +1152,7 @@ pub(super) fn script() -> String {
   function render() {
     renderIdentity();
     renderIngress();
+    renderNetwork();
     renderRecords();
     renderOrgans();
     renderTransferList();
@@ -1129,6 +1235,86 @@ pub(super) fn script() -> String {
     }
   }
 
+  async function discoverContacts() {
+    const baseUrl = String(contactDiscoveryBaseUrl.value || "").trim().replace(/\/+$/, "");
+    if (!baseUrl) {
+      setStatus("Enter a node URL first.", "danger");
+      contactDiscoveryBaseUrl.focus();
+      return;
+    }
+    const query = new URLSearchParams();
+    const search = String(contactDiscoverySearch.value || "").trim();
+    if (search) query.set("search", search);
+    query.set("limit", "50");
+    setBusy(true);
+    setStatus("Discovering contacts...", "warn");
+    try {
+      const response = await fetch(baseUrl + "/transfer/contacts/discover?" + query.toString());
+      const body = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(body?.error || "Contact discovery failed.");
+      discoveredContacts = Array.isArray(body?.contacts) ? body.contacts : [];
+      renderNetwork();
+      setStatus("Contact discovery loaded.", "ok");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : String(error), "danger");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function addDiscoveredContact(index) {
+    const contact = discoveredContacts[Number(index)];
+    if (!contact?.baseUrl) {
+      setStatus("Discovered contact is missing a base URL.", "danger");
+      return;
+    }
+    setBusy(true);
+    setStatus("Adding contact...", "warn");
+    try {
+      const response = await fetch("/transfer/contacts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: contact.name || contact.baseUrl,
+          baseUrl: contact.baseUrl,
+        }),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(body?.error || "Adding contact failed.");
+      await loadContract();
+      setStatus("Contact added as unknown.", "ok");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : String(error), "danger");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function patchPeer(organ, patch) {
+    setBusy(true);
+    setStatus("Updating peer...", "warn");
+    try {
+      const response = await fetch("/organ/" + encodeURIComponent(String(organ.id)), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: organ.name,
+          base_url: organ.baseUrl,
+          trust_state: patch.trustState ?? organ.trustState,
+          contact_discovery_enabled: patch.contactDiscoveryEnabled ?? Boolean(organ.contactDiscoveryEnabled),
+        }),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(body?.error || "Peer update failed.");
+      await loadContract();
+      setStatus("Peer updated.", "ok");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : String(error), "danger");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function saveIdentity() {
     const label = String(identityLabel.value || "").trim();
     if (!label) {
@@ -1155,6 +1341,18 @@ pub(super) fn script() -> String {
     postAction("set-ingress-policy", {
       publicProposalsEnabled: Boolean(publicProposalsEnabled.checked),
     });
+  });
+
+  networkPolicyForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    postAction("set-network-policy", {
+      knownPeerPollingEnabled: Boolean(knownPeerPollingEnabled.checked),
+    });
+  });
+
+  contactDiscoveryForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    discoverContacts();
   });
 
   organLoginForm.addEventListener("submit", async (event) => {
@@ -1222,6 +1420,7 @@ pub(super) fn script() -> String {
       quantity: parseNumber(data.get("quantity"), 1),
       counterpartyLabel: data.get("counterparty") || selectedOrgan?.name || "",
       targetOrganId: organId || null,
+      topicText: data.get("topic") || null,
     });
   }
 
@@ -1282,6 +1481,46 @@ pub(super) fn script() -> String {
     if (refreshButton) {
       postAction("refresh");
       return;
+    }
+
+    const addContact = event.target.closest("[data-contact-add]");
+    if (addContact) {
+      addDiscoveredContact(addContact.dataset.contactAdd);
+      return;
+    }
+
+    const peerAction = event.target.closest("[data-peer-action]");
+    if (peerAction) {
+      const organ = snapshot.organs.find((item) => Number(item.id) === Number(peerAction.dataset.peerId || 0));
+      if (!organ) {
+        setStatus("Peer not found.", "danger");
+        return;
+      }
+      const action = peerAction.dataset.peerAction || "";
+      if (action === "poll") {
+        postAction("poll-transfer-peer", { organId: Number(organ.id) });
+        return;
+      }
+      if (action === "trust-known") {
+        patchPeer(organ, { trustState: "known" });
+        return;
+      }
+      if (action === "trust-unknown") {
+        patchPeer(organ, { trustState: "unknown" });
+        return;
+      }
+      if (action === "trust-blocked") {
+        patchPeer(organ, { trustState: "blocked" });
+        return;
+      }
+      if (action === "show-contact") {
+        patchPeer(organ, { contactDiscoveryEnabled: true });
+        return;
+      }
+      if (action === "hide-contact") {
+        patchPeer(organ, { contactDiscoveryEnabled: false });
+        return;
+      }
     }
 
     const cancelCreate = event.target.closest("[data-action='cancel-create']");

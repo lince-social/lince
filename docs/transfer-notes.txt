@@ -1,0 +1,23 @@
+1. Visibility Subjects
+   We must have control of visibility only for a certan user too.
+
+2. Visibility Scopes
+   Why do you say legacy for contribution/need, aren't items of a transfer a two part contribution/need? What's legacy about it?
+
+Im having trouble imagining how we can hide parts of a transfer or the items. I think im wrong, please correct me, but doesn't the visibility needs to be a matching pair? When we limit a transfer property in current state we need to limit the packages/events too so they cant reconstruct state right? Therefore we must always hide all of a transfer? Theres gotta be a way
+
+3. Field Visibility
+
+
+4. Package Visibility
+   I think that when we set only a few organs to see a transfer, we probab
+5. Contact Discovery
+Why is the endpoint transfer related? Isnt it supposed to be organ independent first and then currently only used for transfer? Its a filter on organs no? What are the reasons to putting it in /transfer? I dont like it
+
+6. Organ Proximity / Affinity
+The proximity property needs to exist: fact. We need to add another option to the state of known/unkown called mirror. It needs me to have permission access to that organ in a mirror way (that means cooking up a system of permissions separated by subject and action like subject organ, action mirror which makes all records and karma and transfer the same. The process that changes anything in db also calls for a creation of it in the mirrors registered in our organs. When we register an organ as mirror in our, if in the organ we point to we have the subject action of organ mirror we can . and  want that to be the thing
+
+7.
+
+8. Refusal / Triage
+   This needs to work more like a received and seen, a confirmation generated automatically that the person received and saw the transfer. Thats better because the "refusal" doesnt exist, its just a transfer i know about and chose not to do anything about it. Put in configuration something to not generate the data of received and/or seen, like anonymous package viewing.

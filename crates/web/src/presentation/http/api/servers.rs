@@ -26,6 +26,10 @@ pub struct ServerProfileResponse {
     pub id: i64,
     pub name: String,
     pub base_url: String,
+    pub trust_state: String,
+    pub contact_discovery_enabled: bool,
+    pub last_seen_at: Option<String>,
+    pub last_transfer_polled_at: Option<String>,
     pub requires_auth: bool,
     pub authenticated: bool,
     pub session_state: Option<String>,
@@ -44,6 +48,8 @@ pub struct ServerLoginRequest {
 pub struct UpsertServerProfileRequest {
     pub name: String,
     pub base_url: String,
+    pub trust_state: Option<String>,
+    pub contact_discovery_enabled: Option<bool>,
 }
 
 #[utoipa::path(
@@ -86,6 +92,10 @@ pub async fn list_servers(
                     id: server.id,
                     name: server.name,
                     base_url: server.base_url,
+                    trust_state: server.trust_state,
+                    contact_discovery_enabled: server.contact_discovery_enabled != 0,
+                    last_seen_at: server.last_seen_at,
+                    last_transfer_polled_at: server.last_transfer_polled_at,
                     requires_auth,
                     authenticated,
                     session_state: status.map(|value| session_state_name(value).to_string()),
@@ -122,6 +132,26 @@ pub async fn create_server(
         .create(payload.name, payload.base_url)
         .await
         .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
+    if let Some(trust_state) = payload.trust_state.as_deref() {
+        state
+            .organs
+            .set_trust_state(profile.id, trust_state)
+            .await
+            .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
+    }
+    if let Some(enabled) = payload.contact_discovery_enabled {
+        state
+            .organs
+            .set_contact_discovery_enabled(profile.id, enabled)
+            .await
+            .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
+    }
+    let profile = state
+        .organs
+        .get(profile.id)
+        .await
+        .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?
+        .unwrap_or(profile);
 
     Ok(Json(
         server_profile_response(&state, &headers, profile).await,
@@ -206,6 +236,10 @@ pub async fn login_server(
             id: server.id,
             name: server.name,
             base_url: server.base_url,
+            trust_state: server.trust_state,
+            contact_discovery_enabled: server.contact_discovery_enabled != 0,
+            last_seen_at: server.last_seen_at,
+            last_transfer_polled_at: server.last_transfer_polled_at,
             requires_auth: true,
             authenticated: true,
             session_state: Some("connected".to_string()),
@@ -267,6 +301,26 @@ pub async fn update_server(
         .update(server_id, payload.name, payload.base_url)
         .await
         .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
+    if let Some(trust_state) = payload.trust_state.as_deref() {
+        state
+            .organs
+            .set_trust_state(profile.id, trust_state)
+            .await
+            .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
+    }
+    if let Some(enabled) = payload.contact_discovery_enabled {
+        state
+            .organs
+            .set_contact_discovery_enabled(profile.id, enabled)
+            .await
+            .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
+    }
+    let profile = state
+        .organs
+        .get(profile.id)
+        .await
+        .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?
+        .unwrap_or(profile);
 
     Ok(Json(
         server_profile_response(&state, &headers, profile).await,
@@ -355,6 +409,10 @@ async fn server_profile_response(
         id: profile.id,
         name: profile.name,
         base_url: profile.base_url,
+        trust_state: profile.trust_state,
+        contact_discovery_enabled: profile.contact_discovery_enabled != 0,
+        last_seen_at: profile.last_seen_at,
+        last_transfer_polled_at: profile.last_transfer_polled_at,
         requires_auth,
         authenticated,
         session_state,

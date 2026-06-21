@@ -1,6 +1,6 @@
 use injection::cross_cutting::InjectedServices;
 use std::{
-    collections::HashMap,
+    collections::{BTreeSet, HashMap},
     io::{Error, ErrorKind},
     sync::Arc,
     time::Duration,
@@ -16,12 +16,134 @@ pub struct AuthSubject {
     pub username: String,
     pub role_id: u64,
     pub role: String,
+    pub permissions: Vec<String>,
 }
 
 impl AuthSubject {
     pub fn is_admin(&self) -> bool {
         self.role == "admin"
     }
+
+    pub fn system() -> Self {
+        Self {
+            user_id: 0,
+            username: "local-host".into(),
+            role_id: 0,
+            role: "system".into(),
+            permissions: all_permission_keys(),
+        }
+    }
+
+    pub fn has_permission(&self, permission: PermissionKey) -> bool {
+        let permission = permission.as_str();
+        self.permissions.iter().any(|value| value == &permission)
+    }
+
+    pub fn require_permission(&self, permission: PermissionKey) -> Result<(), Error> {
+        if self.has_permission(permission) {
+            Ok(())
+        } else {
+            Err(Error::new(
+                ErrorKind::PermissionDenied,
+                format!("Permission required: {}", permission.as_str()),
+            ))
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PermissionKey {
+    pub subject: &'static str,
+    pub action: &'static str,
+}
+
+impl PermissionKey {
+    pub const fn new(subject: &'static str, action: &'static str) -> Self {
+        Self { subject, action }
+    }
+
+    pub fn as_str(self) -> String {
+        format!("{}:{}", self.subject, self.action)
+    }
+}
+
+pub const ALL_PERMISSIONS: &[PermissionKey] = &[
+    PermissionKey::new("record", "create"),
+    PermissionKey::new("record", "read"),
+    PermissionKey::new("record", "update"),
+    PermissionKey::new("record", "delete"),
+    PermissionKey::new("view", "create"),
+    PermissionKey::new("view", "read"),
+    PermissionKey::new("view", "update"),
+    PermissionKey::new("view", "delete"),
+    PermissionKey::new("view", "stream"),
+    PermissionKey::new("terminal", "execute"),
+    PermissionKey::new("transfer", "create"),
+    PermissionKey::new("transfer", "read"),
+    PermissionKey::new("transfer", "update"),
+    PermissionKey::new("transfer", "delete"),
+    PermissionKey::new("organ", "create"),
+    PermissionKey::new("organ", "read"),
+    PermissionKey::new("organ", "update"),
+    PermissionKey::new("organ", "delete"),
+    PermissionKey::new("karma", "create"),
+    PermissionKey::new("karma", "read"),
+    PermissionKey::new("karma", "update"),
+    PermissionKey::new("karma", "delete"),
+    PermissionKey::new("karma", "execute"),
+    PermissionKey::new("user", "create"),
+    PermissionKey::new("user", "read"),
+    PermissionKey::new("user", "update"),
+    PermissionKey::new("user", "update_self"),
+    PermissionKey::new("user", "delete"),
+    PermissionKey::new("user", "assign_role"),
+    PermissionKey::new("role", "create"),
+    PermissionKey::new("role", "read"),
+    PermissionKey::new("role", "update"),
+    PermissionKey::new("role", "delete"),
+    PermissionKey::new("permission", "read"),
+    PermissionKey::new("permission", "assign"),
+    PermissionKey::new("file", "read"),
+    PermissionKey::new("file", "upload"),
+    PermissionKey::new("file", "download"),
+    PermissionKey::new("file", "delete"),
+    PermissionKey::new("configuration", "create"),
+    PermissionKey::new("configuration", "read"),
+    PermissionKey::new("configuration", "update"),
+    PermissionKey::new("configuration", "delete"),
+    PermissionKey::new("command", "create"),
+    PermissionKey::new("command", "read"),
+    PermissionKey::new("command", "update"),
+    PermissionKey::new("command", "delete"),
+    PermissionKey::new("query", "create"),
+    PermissionKey::new("query", "read"),
+    PermissionKey::new("query", "update"),
+    PermissionKey::new("query", "delete"),
+    PermissionKey::new("frequency", "create"),
+    PermissionKey::new("frequency", "read"),
+    PermissionKey::new("frequency", "update"),
+    PermissionKey::new("frequency", "delete"),
+    PermissionKey::new("package", "create"),
+    PermissionKey::new("package", "read"),
+    PermissionKey::new("package", "update"),
+    PermissionKey::new("package", "delete"),
+    PermissionKey::new("board", "read"),
+    PermissionKey::new("board", "update"),
+    PermissionKey::new("sand", "read"),
+    PermissionKey::new("sand", "create"),
+    PermissionKey::new("sand", "update"),
+    PermissionKey::new("sand", "delete"),
+];
+
+pub fn all_permission_keys() -> Vec<String> {
+    normalized_permission_strings(ALL_PERMISSIONS.iter().map(|permission| permission.as_str()))
+}
+
+pub fn normalized_permission_strings<I>(permissions: I) -> Vec<String>
+where
+    I: IntoIterator<Item = String>,
+{
+    permissions.into_iter().collect::<BTreeSet<_>>().into_iter().collect()
 }
 
 #[derive(Clone)]
@@ -37,6 +159,7 @@ struct CachedAuthUser {
     username: String,
     role_id: i64,
     role: String,
+    permissions: Vec<String>,
 }
 
 impl AuthService {
@@ -74,6 +197,7 @@ impl AuthService {
             &user.username,
             user.role_id as u64,
             &user.role,
+            &user.permissions,
             JWT_TTL,
         )
     }
@@ -102,6 +226,7 @@ impl AuthService {
         if current.username != claims.username
             || current.role_id as u64 != claims.role_id
             || current.role != claims.role
+            || current.permissions != normalized_permission_strings(claims.permissions.clone())
         {
             return Err(Error::new(
                 ErrorKind::PermissionDenied,
@@ -114,6 +239,7 @@ impl AuthService {
             username: claims.username,
             role_id: claims.role_id,
             role: claims.role,
+            permissions: normalized_permission_strings(claims.permissions),
         })
     }
 
@@ -154,6 +280,7 @@ impl AuthService {
                         username: user.username,
                         role_id: user.role_id,
                         role: user.role,
+                        permissions: user.permissions,
                     },
                 )
             })
@@ -171,7 +298,12 @@ impl AuthService {
                         let should_refresh = event
                             .changed_tables
                             .iter()
-                            .any(|table| matches!(table.as_str(), "app_user" | "role"));
+                            .any(|table| {
+                                matches!(
+                                    table.as_str(),
+                                    "app_user" | "role" | "permission" | "role_permission"
+                                )
+                            });
 
                         if should_refresh {
                             let _ = service.refresh_cache().await;

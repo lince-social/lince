@@ -440,6 +440,54 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
     padding: 0 12px 12px;
   }
 
+  .networkDiscoveryForm {
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+  }
+
+  .peerList {
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+  }
+
+  .networkRow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.025);
+    padding: 10px;
+  }
+
+  .networkRowMain {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+  }
+
+  .networkRowMain strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .networkRowActions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+    max-width: 210px;
+  }
+
+  .networkRowActions button {
+    min-height: 30px;
+    padding: 0 8px;
+    font-size: 0.76rem;
+  }
+
   .listRow,
   .transferRow {
     width: 100%;

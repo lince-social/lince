@@ -1,6 +1,8 @@
 use crate::{
     models::{
-        auth::{AppUserRow, OrganRow, RoleRow, ViewDependencyRow},
+        auth::{
+            AppUserRow, OrganRow, PermissionRow, RolePermissionRow, RoleRow, ViewDependencyRow,
+        },
         core::{
             CollectionRow, CollectionViewRow, CommandRow, ConfigurationRow, FrequencyRow,
             HistoryRow, QueryRow, RecordRow, SumRow, TransferAgreementRow,
@@ -58,6 +60,8 @@ pub fn declared_tables() -> Vec<TableSchema> {
         HistoryRow::schema(),
         QueryRow::schema(),
         RoleRow::schema(),
+        PermissionRow::schema(),
+        RolePermissionRow::schema(),
         AppUserRow::schema(),
         OrganRow::schema(),
         ViewDependencyRow::schema(),

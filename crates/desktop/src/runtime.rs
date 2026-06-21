@@ -1,7 +1,7 @@
 use crate::bootstrap_config;
 use application::{
     file_sync,
-    karma::refresh_karma_cache,
+    karma::{karma_deliver, refresh_karma_cache},
     write::{set_active_configuration_language_if_unset, set_desktop_startup_for_active},
 };
 use injection::cross_cutting::{InjectedServices, dependency_injection};
@@ -14,6 +14,7 @@ use persistence::{
 use std::{
     io::{Error, ErrorKind},
     sync::Arc,
+    time::Duration,
 };
 use tokio::sync::oneshot;
 use utils::{
@@ -71,6 +72,7 @@ pub async fn start_desktop_server() -> Result<DesktopRuntime, Error> {
     let start_silent = active_configuration.desktop_start_silent == Some(1);
 
     refresh_karma_cache(services.clone()).await?;
+    start_karma_delivery_loop(services.clone());
     file_sync::configure_from_active_configuration(services.clone()).await?;
     file_sync::start_if_enabled(services.clone()).await?;
     tokio::spawn(application::automatic_update::check_startup_update(
@@ -102,6 +104,22 @@ pub async fn start_desktop_server() -> Result<DesktopRuntime, Error> {
         start_on_login,
         start_silent,
     })
+}
+
+fn start_karma_delivery_loop(services: InjectedServices) {
+    tokio::spawn(async move {
+        loop {
+            match services.repository.karma.get_active(None).await {
+                Ok(karmas) => {
+                    if let Err(error) = karma_deliver(services.clone(), karmas).await {
+                        eprintln!("Desktop Karma delivery failed: {error}");
+                    }
+                }
+                Err(error) => eprintln!("Desktop Karma load failed: {error}"),
+            }
+            tokio::time::sleep(Duration::from_secs(60)).await;
+        }
+    });
 }
 
 async fn ensure_local_admin_if_needed(

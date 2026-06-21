@@ -62,6 +62,8 @@ pub struct ConfigurationRow {
     pub file_sync_path: Option<String>,
     #[table(default = "0")]
     pub transfer_public_proposals_enabled: i64,
+    #[table(default = "1", check = "transfer_known_peer_polling_enabled IN (0, 1)")]
+    pub transfer_known_peer_polling_enabled: i64,
     #[table(
         default = "'soft'",
         check = "transfer_reservation_policy IN ('none', 'soft', 'hard_on_proposal', 'hard_on_consume', 'hard_on_lock')"
@@ -216,6 +218,7 @@ pub struct TransferIdentityRow {
     pub target_organ_name: Option<String>,
     pub target_base_url: Option<String>,
     pub source_base_url: Option<String>,
+    pub topic_text: Option<String>,
     #[table(default = "CURRENT_TIMESTAMP")]
     pub created_at: String,
     #[table(default = "CURRENT_TIMESTAMP")]
@@ -303,6 +306,7 @@ pub struct TransferTreeConfigRow {
     columns = "transfer_id, participation_kind"
 ))]
 #[table(index(name = "idx_transfer_party_public_key", columns = "public_key"))]
+#[table(index(name = "uq_transfer_party_uid", columns = "transfer_id, party_uid", unique))]
 pub struct TransferPartyRow {
     #[table(primary_key)]
     pub id: i64,
@@ -343,6 +347,11 @@ pub struct TransferPartyRow {
 #[table(index(
     name = "idx_transfer_structured_item_source_record",
     columns = "source_record_id"
+))]
+#[table(index(
+    name = "uq_transfer_structured_item_uid",
+    columns = "transfer_id, item_uid",
+    unique
 ))]
 pub struct TransferStructuredItemRow {
     #[table(primary_key)]
@@ -386,6 +395,11 @@ pub struct TransferStructuredItemRow {
 ))]
 #[table(index(name = "idx_transfer_interaction_from_item", columns = "from_item_id"))]
 #[table(index(name = "idx_transfer_interaction_to_item", columns = "to_item_id"))]
+#[table(index(
+    name = "uq_transfer_interaction_uid",
+    columns = "transfer_id, interaction_uid",
+    unique
+))]
 pub struct TransferInteractionRow {
     #[table(primary_key)]
     pub id: i64,

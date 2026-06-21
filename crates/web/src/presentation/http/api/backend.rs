@@ -21,7 +21,7 @@ use axum::{
 };
 use domain::clean::karma::Karma;
 use serde::{Deserialize, Serialize};
-use serde_json::{Map, Value};
+use serde_json::{Map, Value, json};
 use std::{
     convert::Infallible,
     io::{Error, ErrorKind},
@@ -106,6 +106,12 @@ pub fn router() -> Router<AppState> {
             get(list_transfer_packages_since),
         )
         .route("/transfer/packages", post(receive_transfer_package))
+        .route(
+            "/transfer/contacts/discover",
+            get(discover_transfer_contacts),
+        )
+        .route("/transfer/contacts", post(add_transfer_contact))
+        .route("/transfer/peers/online", post(receive_transfer_peer_online))
         .route("/karma", get(list_karma_rows).post(create_karma_row))
         .route("/karma/evaluate", post(evaluate_karma_row))
         .route(
@@ -440,6 +446,27 @@ struct TransferSinceQuery {
     since: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+struct TransferContactDiscoveryQuery {
+    search: Option<String>,
+    limit: Option<i64>,
+    offset: Option<i64>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AddTransferContactRequest {
+    name: String,
+    base_url: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct TransferPeerOnlineRequest {
+    name: Option<String>,
+    base_url: String,
+}
+
 async fn list_transfer_packages_since(
     State(state): State<AppState>,
     Query(query): Query<TransferSinceQuery>,
@@ -450,6 +477,66 @@ async fn list_transfer_packages_since(
         .await
         .map_err(map_transfer_widget_error)?;
     Ok(Json(value))
+}
+
+async fn discover_transfer_contacts(
+    State(state): State<AppState>,
+    Query(query): Query<TransferContactDiscoveryQuery>,
+) -> ApiResult<Json<Value>> {
+    let contacts = state
+        .organs
+        .discoverable_contacts(
+            query.search.as_deref(),
+            query.limit.unwrap_or(50),
+            query.offset.unwrap_or(0),
+        )
+        .await
+        .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
+    let contacts = contacts
+        .into_iter()
+        .map(|contact| {
+            json!({
+                "name": contact.name,
+                "baseUrl": contact.base_url,
+                "lastSeenAt": contact.last_seen_at,
+            })
+        })
+        .collect::<Vec<_>>();
+    Ok(Json(json!({
+        "ok": true,
+        "contacts": contacts,
+    })))
+}
+
+async fn add_transfer_contact(
+    State(state): State<AppState>,
+    Json(request): Json<AddTransferContactRequest>,
+) -> ApiResult<Json<Value>> {
+    let contact = state
+        .organs
+        .create_discovered(request.name, request.base_url)
+        .await
+        .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
+    Ok(Json(json!({
+        "ok": true,
+        "contact": contact,
+    })))
+}
+
+async fn receive_transfer_peer_online(
+    State(state): State<AppState>,
+    Json(request): Json<TransferPeerOnlineRequest>,
+) -> ApiResult<Json<Value>> {
+    let observed = state
+        .organs
+        .mark_seen_by_base_url(&request.base_url)
+        .await
+        .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
+    Ok(Json(json!({
+        "ok": true,
+        "observed": observed,
+        "name": request.name,
+    })))
 }
 
 #[utoipa::path(

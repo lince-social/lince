@@ -61,6 +61,33 @@ pub(super) fn body() -> Markup {
                         }
                     }
 
+                    section class="panel drawerPanel" aria-labelledby="network-title" {
+                        div class="panelHead" {
+                            h2 id="network-title" { "Network" }
+                        }
+                        div id="network-summary" class="panelBody" {}
+                        form id="network-policy-form" class="formGrid" {
+                            label class="checkRow" {
+                                input id="known-peer-polling-enabled" name="knownPeerPollingEnabled" type="checkbox" {}
+                                span { "Poll known peers" }
+                            }
+                            button type="submit" { "Save network" }
+                        }
+                        form id="contact-discovery-form" class="formGrid networkDiscoveryForm" {
+                            label {
+                                span { "Node URL" }
+                                input id="contact-discovery-base-url" name="baseUrl" autocomplete="off" placeholder="http://127.0.0.1:3000" {}
+                            }
+                            label {
+                                span { "Search" }
+                                input id="contact-discovery-search" name="search" autocomplete="off" placeholder="name or URL" {}
+                            }
+                            button type="submit" { "Discover contacts" }
+                        }
+                        div id="contact-discovery-list" class="compactList" {}
+                        div id="peer-list" class="compactList peerList" {}
+                    }
+
                     section class="panel drawerPanel" aria-labelledby="organ-login-title" {
                         div class="panelHead" {
                             h2 id="organ-login-title" { "Organ login" }

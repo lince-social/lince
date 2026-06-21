@@ -15,6 +15,8 @@ pub struct AuthClaims {
     pub username: String,
     pub role_id: u64,
     pub role: String,
+    #[serde(default)]
+    pub permissions: Vec<String>,
     pub exp: usize,
 }
 
@@ -45,6 +47,7 @@ pub fn issue_jwt(
     username: &str,
     role_id: u64,
     role: &str,
+    permissions: &[String],
     ttl: Duration,
 ) -> Result<String, Error> {
     let expires_at = SystemTime::now()
@@ -59,6 +62,7 @@ pub fn issue_jwt(
         username: username.to_string(),
         role_id,
         role: role.to_string(),
+        permissions: normalized_permissions(permissions),
         exp: expires_at,
     };
 
@@ -68,6 +72,13 @@ pub fn issue_jwt(
         &EncodingKey::from_secret(secret.as_bytes()),
     )
     .map_err(|error| Error::other(format!("Failed to encode JWT: {error}")))
+}
+
+fn normalized_permissions(permissions: &[String]) -> Vec<String> {
+    let mut permissions = permissions.to_vec();
+    permissions.sort();
+    permissions.dedup();
+    permissions
 }
 
 pub fn decode_jwt(secret: &str, token: &str) -> Result<AuthClaims, Error> {

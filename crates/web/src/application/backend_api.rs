@@ -3,7 +3,7 @@ use crate::infrastructure::backend_api_store::{
 };
 use ::application::karma::{karma_deliver, refresh_karma_cache};
 use ::application::{
-    auth::{AuthService, AuthSubject},
+    auth::{AuthService, AuthSubject, PermissionKey},
     subscription::{SubscriptionHandle, SubscriptionRegistry},
     view::ViewReadService,
     write,
@@ -87,30 +87,32 @@ impl BackendApiService {
 
     pub async fn list_table_rows(
         &self,
-        _claims: &AuthSubject,
+        claims: &AuthSubject,
         table_name: &str,
     ) -> Result<Value, Error> {
-        self.list_table_rows_filtered(_claims, table_name, &TableListQuery::default())
+        self.list_table_rows_filtered(claims, table_name, &TableListQuery::default())
             .await
     }
 
     pub async fn list_table_rows_filtered(
         &self,
-        _claims: &AuthSubject,
+        claims: &AuthSubject,
         table_name: &str,
         query: &TableListQuery,
     ) -> Result<Value, Error> {
         let table = self.store.parse_table(table_name)?;
+        require_table_permission(claims, table, "read")?;
         self.store.list_table_rows_filtered(table, query).await
     }
 
     pub async fn get_table_row(
         &self,
-        _claims: &AuthSubject,
+        claims: &AuthSubject,
         table_name: &str,
         id: i64,
     ) -> Result<Value, Error> {
         let table = self.store.parse_table(table_name)?;
+        require_table_permission(claims, table, "read")?;
         self.store.get_table_row(table, id).await
     }
 
@@ -128,6 +130,7 @@ impl BackendApiService {
         object: &Map<String, Value>,
     ) -> Result<WriteOutcome, Error> {
         let table = self.store.parse_table(table_name)?;
+        require_create_permission(claims, table)?;
 
         match table {
             ApiTable::View => {
@@ -186,7 +189,6 @@ impl BackendApiService {
                 Ok(outcome)
             }
             ApiTable::AppUser => {
-                require_admin(claims)?;
                 let password = required_text_field(object, "password")?;
                 let password_hash = self.auth.hash_password(&password)?;
                 let (sql, params) = self
@@ -202,8 +204,21 @@ impl BackendApiService {
                 Ok(outcome)
             }
             ApiTable::Role => {
-                require_admin(claims)?;
                 let (sql, params) = self.store.build_role_insert(object)?;
+                let outcome = self
+                    .services
+                    .writer
+                    .execute_statement_returning_id(sql, params)
+                    .await?;
+                self.auth.refresh_cache().await?;
+                Ok(outcome)
+            }
+            ApiTable::Permission => Err(Error::new(
+                ErrorKind::PermissionDenied,
+                "Permissions are hardcoded and cannot be created through the API",
+            )),
+            ApiTable::RolePermission => {
+                let (sql, params) = self.store.build_role_permission_insert(object).await?;
                 let outcome = self
                     .services
                     .writer
@@ -223,6 +238,7 @@ impl BackendApiService {
         object: &Map<String, Value>,
     ) -> Result<WriteOutcome, Error> {
         let table = self.store.parse_table(table_name)?;
+        require_update_permission(claims, table, id, object)?;
 
         match table {
             ApiTable::View => {
@@ -274,7 +290,6 @@ impl BackendApiService {
                 Ok(outcome)
             }
             ApiTable::AppUser => {
-                ensure_self_or_admin(claims, id)?;
                 let password_hash = object
                     .get("password")
                     .map(|value| parse_text_value("password", value))
@@ -290,22 +305,26 @@ impl BackendApiService {
                 Ok(outcome)
             }
             ApiTable::Role => {
-                require_admin(claims)?;
                 let (sql, params) = self.store.build_role_update(id, object)?;
                 let outcome = self.services.writer.execute_statement(sql, params).await?;
                 self.auth.refresh_cache().await?;
                 Ok(outcome)
             }
+            ApiTable::Permission | ApiTable::RolePermission => Err(Error::new(
+                ErrorKind::PermissionDenied,
+                "This table cannot be updated through the API",
+            )),
         }
     }
 
     pub async fn update_table_rows(
         &self,
-        _claims: &AuthSubject,
+        claims: &AuthSubject,
         table_name: &str,
         rows: &[Map<String, Value>],
     ) -> Result<WriteOutcome, Error> {
         let table = self.store.parse_table(table_name)?;
+        require_table_permission(claims, table, "update")?;
         match table {
             ApiTable::Record => {
                 let (sql, params) = self.store.build_record_batch_update(rows)?;
@@ -321,9 +340,10 @@ impl BackendApiService {
 
     pub async fn batch_update_record_quantities(
         &self,
-        _claims: &AuthSubject,
+        claims: &AuthSubject,
         request: RecordQuantityBatchUpdateRequest,
     ) -> Result<WriteOutcome, Error> {
+        claims.require_permission(PermissionKey::new("record", "update"))?;
         let updates = normalize_record_quantity_batch_rows(request.rows)?;
         if updates.is_empty() {
             return Ok(WriteOutcome {
@@ -420,13 +440,13 @@ impl BackendApiService {
         id: i64,
     ) -> Result<WriteOutcome, Error> {
         let table = self.store.parse_table(table_name)?;
-        match table {
-            ApiTable::AppUser => ensure_self_or_admin(claims, id)?,
-            ApiTable::Role => require_admin(claims)?,
-            _ => {}
-        }
+        require_delete_permission(claims, table, id)?;
 
-        let sql = format!("DELETE FROM {} WHERE id = ?", table.as_table_name());
+        let sql = if matches!(table, ApiTable::RolePermission) {
+            "DELETE FROM role_permission WHERE rowid = ?".to_string()
+        } else {
+            format!("DELETE FROM {} WHERE id = ?", table.as_table_name())
+        };
         let params = vec![persistence::write_coordinator::SqlParameter::Integer(id)];
         let outcome = match table {
             ApiTable::View => {
@@ -449,7 +469,7 @@ impl BackendApiService {
         {
             refresh_karma_cache(self.services.clone()).await?;
         }
-        if matches!(table, ApiTable::AppUser | ApiTable::Role) {
+        if matches!(table, ApiTable::AppUser | ApiTable::Role | ApiTable::RolePermission) {
             self.auth.refresh_cache().await?;
         }
 
@@ -466,14 +486,16 @@ impl BackendApiService {
 
     pub async fn read_view_snapshot(
         &self,
-        _claims: &AuthSubject,
+        claims: &AuthSubject,
         view_id: u32,
     ) -> Result<Value, Error> {
+        claims.require_permission(PermissionKey::new("view", "read"))?;
         let snapshot = self.view_reads.read_snapshot(view_id).await?;
         serde_json::to_value(snapshot.snapshot).map_err(Error::other)
     }
 
-    pub async fn execute_karma(&self, _claims: &AuthSubject, karma_id: i64) -> Result<(), Error> {
+    pub async fn execute_karma(&self, claims: &AuthSubject, karma_id: i64) -> Result<(), Error> {
+        claims.require_permission(PermissionKey::new("karma", "execute"))?;
         let karma = self
             .services
             .repository
@@ -488,9 +510,10 @@ impl BackendApiService {
 
     pub async fn evaluate_karma_row(
         &self,
-        _claims: &AuthSubject,
+        claims: &AuthSubject,
         karma: domain::clean::karma::Karma,
     ) -> Result<(), Error> {
+        claims.require_permission(PermissionKey::new("karma", "execute"))?;
         karma_deliver(self.services.clone(), vec![karma]).await
     }
 
@@ -652,11 +675,12 @@ impl BackendApiService {
 
     pub async fn list_files(
         &self,
-        _claims: &AuthSubject,
+        claims: &AuthSubject,
         prefix: Option<&str>,
         limit: i32,
         cursor: Option<&str>,
     ) -> Result<StorageList, Error> {
+        claims.require_permission(PermissionKey::new("file", "read"))?;
         self.services
             .storage
             .list_objects(prefix, limit, cursor)
@@ -689,10 +713,16 @@ impl BackendApiService {
 
     pub fn issue_file_link(
         &self,
-        _claims: &AuthSubject,
+        claims: &AuthSubject,
         key: &str,
         action: FileAccessAction,
     ) -> Result<FileLink, Error> {
+        let permission = match action {
+            FileAccessAction::Upload => PermissionKey::new("file", "upload"),
+            FileAccessAction::Download => PermissionKey::new("file", "download"),
+            FileAccessAction::Delete => PermissionKey::new("file", "delete"),
+        };
+        claims.require_permission(permission)?;
         let key = validate_file_key(key)?;
         let token = issue_file_access_token(
             self.jwt_secret.as_str(),
@@ -747,25 +777,77 @@ impl BackendApiService {
     }
 }
 
-fn require_admin(claims: &AuthSubject) -> Result<(), Error> {
-    if claims.is_admin() {
-        Ok(())
-    } else {
-        Err(Error::new(
-            ErrorKind::PermissionDenied,
-            "Admin role required",
-        ))
+fn require_table_permission(
+    claims: &AuthSubject,
+    table: ApiTable,
+    action: &'static str,
+) -> Result<(), Error> {
+    claims.require_permission(PermissionKey::new(table_permission_subject(table), action))
+}
+
+fn require_create_permission(claims: &AuthSubject, table: ApiTable) -> Result<(), Error> {
+    match table {
+        ApiTable::RolePermission => claims.require_permission(PermissionKey::new("permission", "assign")),
+        ApiTable::Permission => claims.require_permission(PermissionKey::new("permission", "assign")),
+        _ => require_table_permission(claims, table, "create"),
     }
 }
 
-fn ensure_self_or_admin(claims: &AuthSubject, id: i64) -> Result<(), Error> {
-    if claims.is_admin() || claims.user_id as i64 == id {
-        Ok(())
-    } else {
-        Err(Error::new(
+fn require_update_permission(
+    claims: &AuthSubject,
+    table: ApiTable,
+    id: i64,
+    object: &Map<String, Value>,
+) -> Result<(), Error> {
+    match table {
+        ApiTable::AppUser => {
+            if object.contains_key("role_id") {
+                claims.require_permission(PermissionKey::new("user", "assign_role"))?;
+            }
+            if claims.user_id as i64 == id {
+                claims.require_permission(PermissionKey::new("user", "update_self"))
+            } else {
+                claims.require_permission(PermissionKey::new("user", "update"))
+            }
+        }
+        ApiTable::RolePermission => claims.require_permission(PermissionKey::new("permission", "assign")),
+        ApiTable::Permission => claims.require_permission(PermissionKey::new("permission", "assign")),
+        _ => require_table_permission(claims, table, "update"),
+    }
+}
+
+fn require_delete_permission(claims: &AuthSubject, table: ApiTable, id: i64) -> Result<(), Error> {
+    match table {
+        ApiTable::AppUser if claims.user_id as i64 == id => {
+            claims.require_permission(PermissionKey::new("user", "update_self"))
+        }
+        ApiTable::RolePermission => claims.require_permission(PermissionKey::new("permission", "assign")),
+        ApiTable::Permission => Err(Error::new(
             ErrorKind::PermissionDenied,
-            "You may only modify your own user unless you are an admin",
-        ))
+            "Permissions are hardcoded and cannot be deleted through the API",
+        )),
+        _ => require_table_permission(claims, table, "delete"),
+    }
+}
+
+fn table_permission_subject(table: ApiTable) -> &'static str {
+    match table {
+        ApiTable::View => "view",
+        ApiTable::Record
+        | ApiTable::RecordExtension
+        | ApiTable::RecordLink
+        | ApiTable::RecordComment
+        | ApiTable::RecordWorklog
+        | ApiTable::RecordResourceRef => "record",
+        ApiTable::Command => "command",
+        ApiTable::Query => "query",
+        ApiTable::Frequency => "frequency",
+        ApiTable::KarmaCondition | ApiTable::KarmaConsequence | ApiTable::Karma => "karma",
+        ApiTable::Configuration => "configuration",
+        ApiTable::AppUser => "user",
+        ApiTable::Role => "role",
+        ApiTable::Permission => "permission",
+        ApiTable::RolePermission => "permission",
     }
 }
 

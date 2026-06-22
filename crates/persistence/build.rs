@@ -86,7 +86,7 @@ fn run() -> Result<(), Error> {
     };
 
     if previous_snapshot != &current_snapshot {
-        let statements = plan_schema_diff(previous_snapshot, &current_snapshot)?;
+        let statements = plan_schema_diff(previous_snapshot, &current_snapshot, &migrations_dir)?;
         if !statements.is_empty() {
             let version = next_version(&migrations_dir)?;
             let filename = format!("{version}_auto_schema_update.sql");
@@ -149,6 +149,7 @@ fn create_table_and_indexes_statements(schema: &TableSchema) -> Vec<String> {
 fn plan_schema_diff(
     previous: &[TableSchema],
     current: &[TableSchema],
+    migrations_dir: &Path,
 ) -> Result<Vec<String>, Error> {
     let previous_by_name = previous
         .iter()
@@ -171,6 +172,9 @@ fn plan_schema_diff(
             .iter()
             .all(|table| table.name != previous_table.name)
         {
+            if manual_migration_drops_table(migrations_dir, previous_table.name.as_str())? {
+                continue;
+            }
             return Err(Error::other(format!(
                 "table `{}` was removed from the Rust schema; write a manual migration for drops",
                 previous_table.name
@@ -179,6 +183,27 @@ fn plan_schema_diff(
     }
 
     Ok(statements)
+}
+
+fn manual_migration_drops_table(migrations_dir: &Path, table_name: &str) -> Result<bool, Error> {
+    let drop_table = format!("drop table {table_name}");
+    let drop_table_if_exists = format!("drop table if exists {table_name}");
+    for entry in fs::read_dir(migrations_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.extension().and_then(|extension| extension.to_str()) != Some("sql") {
+            continue;
+        }
+        let sql = fs::read_to_string(path)?.to_lowercase();
+        let normalized = sql
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ");
+        if normalized.contains(&drop_table) || normalized.contains(&drop_table_if_exists) {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 fn plan_table_diff(previous: &TableSchema, current: &TableSchema) -> Result<Vec<String>, Error> {
@@ -286,7 +311,10 @@ fn manual_migration_handles_column_change(
     _previous: &ColumnDef,
     _current: &ColumnDef,
 ) -> bool {
-    matches!((table_name, column_name), ("transfer_event", "event_kind"))
+    matches!(
+        (table_name, column_name),
+        ("transfer_event", "event_kind") | ("work_metadata", "owner_kind")
+    )
 }
 
 fn ensure_additive_column_is_safe(table_name: &str, column: &ColumnDef) -> Result<(), Error> {

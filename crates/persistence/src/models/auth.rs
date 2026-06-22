@@ -82,6 +82,12 @@ pub struct OrganRow {
     pub last_seen_at: Option<String>,
     #[table(check = "last_transfer_polled_at IS NULL OR julianday(last_transfer_polled_at) IS NOT NULL")]
     pub last_transfer_polled_at: Option<String>,
+    #[table(default = "100", check = "proximity >= 0")]
+    pub proximity: i64,
+    #[table(default = "1", check = "transfer_send_received_receipts IN (0, 1)")]
+    pub transfer_send_received_receipts: i64,
+    #[table(default = "1", check = "transfer_send_seen_receipts IN (0, 1)")]
+    pub transfer_send_seen_receipts: i64,
 }
 
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]

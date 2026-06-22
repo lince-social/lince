@@ -16,6 +16,11 @@ pub(super) fn script() -> String {
   const networkSummary = document.getElementById("network-summary");
   const networkPolicyForm = document.getElementById("network-policy-form");
   const knownPeerPollingEnabled = document.getElementById("known-peer-polling-enabled");
+  const shareQuantityProjections = document.getElementById("share-quantity-projections");
+  const receiptPolicyForm = document.getElementById("receipt-policy-form");
+  const sendReceivedReceipts = document.getElementById("send-received-receipts");
+  const sendSeenReceipts = document.getElementById("send-seen-receipts");
+  const anonymousPackageViewing = document.getElementById("anonymous-package-viewing");
   const contactDiscoveryForm = document.getElementById("contact-discovery-form");
   const contactDiscoveryBaseUrl = document.getElementById("contact-discovery-base-url");
   const contactDiscoverySearch = document.getElementById("contact-discovery-search");
@@ -40,7 +45,8 @@ pub(super) fn script() -> String {
   let snapshot = {
     localIdentity: null,
     ingressPolicy: { publicProposalsEnabled: false },
-    networkPolicy: { knownPeerPollingEnabled: true },
+    networkPolicy: { knownPeerPollingEnabled: true, shareQuantityProjections: false },
+    receiptPolicy: { sendReceivedReceipts: true, sendSeenReceipts: true, anonymousPackageViewing: false },
     records: [],
     organs: [],
     transfers: [],
@@ -56,6 +62,7 @@ pub(super) fn script() -> String {
   let contractLoading = false;
   let reloadQueued = false;
   let confirmingProgressAction = null;
+  const seenMarkingTransfers = new Set();
   const collapsedTransferUids = new Set();
 
   function contractUrl() {
@@ -302,14 +309,20 @@ pub(super) fn script() -> String {
 
   function renderNetwork() {
     const polling = Boolean(snapshot.networkPolicy?.knownPeerPollingEnabled);
+    const sharingProjections = Boolean(snapshot.networkPolicy?.shareQuantityProjections);
+    const receipt = snapshot.receiptPolicy || {};
     knownPeerPollingEnabled.checked = polling;
+    shareQuantityProjections.checked = sharingProjections;
+    sendReceivedReceipts.checked = receipt.sendReceivedReceipts !== false;
+    sendSeenReceipts.checked = receipt.sendSeenReceipts !== false;
+    anonymousPackageViewing.checked = Boolean(receipt.anonymousPackageViewing);
     const knownCount = snapshot.organs.filter((organ) => organ.trustState === "known").length;
     const unknownCount = snapshot.organs.filter((organ) => organ.trustState === "unknown").length;
     const blockedCount = snapshot.organs.filter((organ) => organ.trustState === "blocked").length;
     networkSummary.innerHTML = `
       <div class="identityBox">
         <div class="strong">${escapeHtml(polling ? "Known-peer polling enabled" : "Known-peer polling disabled")}</div>
-        <div class="meta">${escapeHtml(knownCount)} known / ${escapeHtml(unknownCount)} unknown / ${escapeHtml(blockedCount)} blocked</div>
+        <div class="meta">${escapeHtml(knownCount)} known / ${escapeHtml(unknownCount)} unknown / ${escapeHtml(blockedCount)} blocked / projections ${escapeHtml(sharingProjections ? "shared" : "local")}</div>
       </div>
     `;
     renderPeerList();
@@ -345,6 +358,11 @@ pub(super) fn script() -> String {
             <span class="meta">seen ${escapeHtml(formatDateTime(organ.lastSeenAt))} / polled ${escapeHtml(formatDateTime(organ.lastTransferPolledAt))}</span>
           </div>
           <div class="networkRowActions">
+            <label class="compactField"><span>Proximity</span><input data-peer-proximity="${escapeHtml(organ.id)}" value="${escapeHtml(organ.proximity ?? 100)}" inputmode="numeric" data-keep-enabled="true"></label>
+            <label class="checkRow compactCheck"><input type="checkbox" data-peer-received-receipts="${escapeHtml(organ.id)}" ${organ.transferSendReceivedReceipts === false ? "" : "checked"} data-keep-enabled="true"><span>Received</span></label>
+            <label class="checkRow compactCheck"><input type="checkbox" data-peer-seen-receipts="${escapeHtml(organ.id)}" ${organ.transferSendSeenReceipts === false ? "" : "checked"} data-keep-enabled="true"><span>Seen</span></label>
+            ${peerActionButton(organ, "save-proximity", "Save proximity")}
+            ${peerActionButton(organ, "save-receipts", "Save receipts")}
             ${promote}
             ${poll}
             ${discovery}
@@ -945,6 +963,8 @@ pub(super) fn script() -> String {
 
       ${renderTransferWorkSection(transfer)}
 
+      ${renderTransferVisibilitySection(transfer)}
+
       <div class="actionGrid">
         <div class="actionBox">
           <div class="actionTitle">Transfer tree</div>
@@ -1036,6 +1056,83 @@ pub(super) fn script() -> String {
         </section>
       </details>
     `;
+    markSelectedTransferSeen(transfer);
+  }
+
+  function renderTransferVisibilitySection(transfer) {
+    const visibility = transfer.visibility || {};
+    const mode = visibility.visibilityMode || "hidden";
+    const allowedOrgans = new Set((visibility.organIds || []).map((id) => String(id)));
+    const receiptEvents = (transfer.receipt?.events || []).map((event) => `
+      <div class="listRow">
+        <span>${escapeHtml(event.eventKind === "package_seen" ? "seen" : "received")} by ${escapeHtml(event.actorLabel || "remote")}</span>
+        <span class="meta">${escapeHtml(formatDateTime(event.createdAt))}</span>
+      </div>
+    `).join("");
+    const organChecks = snapshot.organs.map((organ) => `
+      <label class="checkRow">
+        <input type="checkbox" name="visibility-organ" value="${escapeHtml(organ.id)}" ${allowedOrgans.has(String(organ.id)) ? "checked" : ""} data-keep-enabled="true">
+        <span>${escapeHtml(organ.name || organ.baseUrl || "Organ")} <span class="meta">proximity ${escapeHtml(organ.proximity ?? 100)}</span></span>
+      </label>
+    `).join("");
+    return `
+      <div class="actionGrid">
+        <div class="actionBox">
+          <div class="actionTitle">Visibility</div>
+          <div class="meta">received ${escapeHtml(formatDateTime(transfer.receipt?.receivedAt))} / seen ${escapeHtml(formatDateTime(transfer.receipt?.seenAt))}</div>
+          <div class="proposalGrid">
+            <label>
+              <span>Mode</span>
+              <select id="visibility-mode" data-keep-enabled="true">
+                <option value="hidden" ${mode === "hidden" ? "selected" : ""}>Hidden</option>
+                <option value="public" ${mode === "public" ? "selected" : ""}>Public</option>
+                <option value="restricted" ${mode === "restricted" ? "selected" : ""}>Restricted</option>
+              </select>
+            </label>
+            <label>
+              <span>Max proximity</span>
+              <input id="visibility-proximity" value="${escapeHtml(visibility.maxVisibleProximity ?? "")}" inputmode="numeric" placeholder="restricted only" data-keep-enabled="true">
+            </label>
+            ${actionButton("set-transfer-visibility", "Save visibility", false)}
+            <label>
+              <span>Next wave proximity</span>
+              <input id="visibility-wave-proximity" value="" inputmode="numeric" placeholder="widen restricted" data-keep-enabled="true">
+            </label>
+            <label>
+              <span>Wave reason</span>
+              <input id="visibility-wave-reason" value="karma_wave" data-keep-enabled="true">
+            </label>
+            ${actionButton("apply-visibility-wave", "Apply wave", mode !== "restricted")}
+          </div>
+          <div class="compactList">${organChecks || `<div class="emptyBlock">No Organs saved.</div>`}</div>
+          <div class="compactList">${receiptEvents || `<div class="emptyBlock">No package receipt events.</div>`}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function markSelectedTransferSeen(transfer) {
+    if (!transfer?.id || transfer.receipt?.seenAt || seenMarkingTransfers.has(Number(transfer.id))) return;
+    if (snapshot.receiptPolicy?.anonymousPackageViewing) return;
+    seenMarkingTransfers.add(Number(transfer.id));
+    fetch(actionUrl("mark-transfer-seen"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transferId: transfer.id }),
+    })
+      .then((response) => response.json().catch(() => null).then((body) => ({ response, body })))
+      .then(({ response, body }) => {
+        if (!response.ok) throw new Error(body?.error || "Mark seen failed.");
+        snapshot = body?.snapshot || snapshot;
+        reconcileSelectedTransfer();
+        renderTransferList();
+      })
+      .catch((error) => {
+        console.warn(error);
+      })
+      .finally(() => {
+        seenMarkingTransfers.delete(Number(transfer.id));
+      });
   }
 
   function renderCreateDetail() {
@@ -1249,7 +1346,7 @@ pub(super) fn script() -> String {
     setBusy(true);
     setStatus("Discovering contacts...", "warn");
     try {
-      const response = await fetch(baseUrl + "/transfer/contacts/discover?" + query.toString());
+      const response = await fetch(baseUrl + "/organs/discover?" + query.toString());
       const body = await response.json().catch(() => null);
       if (!response.ok) throw new Error(body?.error || "Contact discovery failed.");
       discoveredContacts = Array.isArray(body?.contacts) ? body.contacts : [];
@@ -1347,6 +1444,16 @@ pub(super) fn script() -> String {
     event.preventDefault();
     postAction("set-network-policy", {
       knownPeerPollingEnabled: Boolean(knownPeerPollingEnabled.checked),
+      shareQuantityProjections: Boolean(shareQuantityProjections.checked),
+    });
+  });
+
+  receiptPolicyForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    postAction("set-receipt-policy", {
+      sendReceivedReceipts: Boolean(sendReceivedReceipts.checked),
+      sendSeenReceipts: Boolean(sendSeenReceipts.checked),
+      anonymousPackageViewing: Boolean(anonymousPackageViewing.checked),
     });
   });
 
@@ -1499,6 +1606,24 @@ pub(super) fn script() -> String {
       const action = peerAction.dataset.peerAction || "";
       if (action === "poll") {
         postAction("poll-transfer-peer", { organId: Number(organ.id) });
+        return;
+      }
+      if (action === "save-proximity") {
+        const proximityInput = document.querySelector(`[data-peer-proximity="${CSS.escape(String(organ.id))}"]`);
+        postAction("set-organ-proximity", {
+          organId: Number(organ.id),
+          proximity: Math.max(0, Math.trunc(parseNumber(proximityInput?.value, organ.proximity ?? 100))),
+        });
+        return;
+      }
+      if (action === "save-receipts") {
+        const receivedInput = document.querySelector(`[data-peer-received-receipts="${CSS.escape(String(organ.id))}"]`);
+        const seenInput = document.querySelector(`[data-peer-seen-receipts="${CSS.escape(String(organ.id))}"]`);
+        postAction("set-organ-receipt-policy", {
+          organId: Number(organ.id),
+          sendReceivedReceipts: Boolean(receivedInput?.checked),
+          sendSeenReceipts: Boolean(seenInput?.checked),
+        });
         return;
       }
       if (action === "trust-known") {
@@ -1745,6 +1870,29 @@ pub(super) fn script() -> String {
         postAction(action, {
           transferId: transfer.id,
           recordSyncMode: document.getElementById("tree-sync-mode")?.value || "none",
+        });
+        return;
+      }
+      if (action === "set-transfer-visibility") {
+        const mode = document.getElementById("visibility-mode")?.value || "hidden";
+        const proximityRaw = String(document.getElementById("visibility-proximity")?.value || "").trim();
+        const organIds = Array.from(app.querySelectorAll("input[name='visibility-organ']:checked"))
+          .map((input) => Number(input.value))
+          .filter((id) => Number.isFinite(id) && id > 0);
+        postAction(action, {
+          transferId: transfer.id,
+          visibilityMode: mode,
+          maxVisibleProximity: mode === "restricted" && proximityRaw ? Math.max(0, Math.trunc(parseNumber(proximityRaw, 0))) : null,
+          organIds: mode === "restricted" ? organIds : [],
+        });
+        return;
+      }
+      if (action === "apply-visibility-wave") {
+        const proximityRaw = String(document.getElementById("visibility-wave-proximity")?.value || "").trim();
+        postAction(action, {
+          transferId: transfer.id,
+          maxVisibleProximity: proximityRaw ? Math.max(0, Math.trunc(parseNumber(proximityRaw, 0))) : null,
+          reason: document.getElementById("visibility-wave-reason")?.value || "karma_wave",
         });
         return;
       }

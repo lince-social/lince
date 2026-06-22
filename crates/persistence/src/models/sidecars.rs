@@ -220,7 +220,7 @@ pub struct WorkMetadataRow {
     #[table(primary_key)]
     pub id: i64,
     #[table(
-        check = "owner_kind IN ('record', 'transfer', 'transfer_item', 'transfer_interaction')"
+        check = "owner_kind IN ('record', 'transfer', 'transfer_structured_item', 'transfer_interaction')"
     )]
     pub owner_kind: String,
     #[table(check = "owner_id > 0")]

@@ -15,6 +15,9 @@ pub struct Organ {
     pub contact_discovery_enabled: i64,
     pub last_seen_at: Option<String>,
     pub last_transfer_polled_at: Option<String>,
+    pub proximity: i64,
+    pub transfer_send_received_receipts: i64,
+    pub transfer_send_seen_receipts: i64,
 }
 
 #[derive(Clone)]
@@ -30,7 +33,7 @@ impl OrganStore {
 
     pub async fn list(&self) -> Result<Vec<Organ>, String> {
         let mut organs = sqlx::query_as::<_, Organ>(
-            "SELECT id, name, base_url, trust_state, contact_discovery_enabled, last_seen_at, last_transfer_polled_at FROM organ ORDER BY LOWER(name), id",
+            "SELECT id, name, base_url, trust_state, contact_discovery_enabled, last_seen_at, last_transfer_polled_at, proximity, transfer_send_received_receipts, transfer_send_seen_receipts FROM organ ORDER BY LOWER(name), id",
         )
         .fetch_all(&*self.db)
         .await
@@ -45,7 +48,7 @@ impl OrganStore {
         };
 
         sqlx::query_as::<_, Organ>(
-            "SELECT id, name, base_url, trust_state, contact_discovery_enabled, last_seen_at, last_transfer_polled_at FROM organ WHERE id = ? LIMIT 1",
+            "SELECT id, name, base_url, trust_state, contact_discovery_enabled, last_seen_at, last_transfer_polled_at, proximity, transfer_send_received_receipts, transfer_send_seen_receipts FROM organ WHERE id = ? LIMIT 1",
         )
             .bind(organ_id)
             .fetch_optional(&*self.db)
@@ -99,6 +102,9 @@ impl OrganStore {
             contact_discovery_enabled,
             last_seen_at: None,
             last_transfer_polled_at: None,
+            proximity: 100,
+            transfer_send_received_receipts: 1,
+            transfer_send_seen_receipts: 1,
         })
     }
 
@@ -172,6 +178,58 @@ impl OrganStore {
         Ok(outcome.rows_affected > 0)
     }
 
+    pub async fn set_proximity(
+        &self,
+        organ_id: impl ToString,
+        proximity: i64,
+    ) -> Result<bool, String> {
+        let Some(organ_id) = parse_organ_id(organ_id) else {
+            return Ok(false);
+        };
+        if proximity < 0 {
+            return Err("Proximity cannot be negative.".into());
+        }
+        let outcome = self
+            .writer
+            .execute_statement(
+                "UPDATE organ SET proximity = ? WHERE id = ?".to_string(),
+                vec![SqlParameter::Integer(proximity), SqlParameter::Integer(organ_id)],
+            )
+            .await
+            .map_err(|error| format!("Nao consegui atualizar proximidade do orgao: {error}"))?;
+        Ok(outcome.rows_affected > 0)
+    }
+
+    pub async fn set_transfer_receipts(
+        &self,
+        organ_id: impl ToString,
+        send_received: bool,
+        send_seen: bool,
+    ) -> Result<bool, String> {
+        let Some(organ_id) = parse_organ_id(organ_id) else {
+            return Ok(false);
+        };
+        let outcome = self
+            .writer
+            .execute_statement(
+                "UPDATE organ
+                 SET transfer_send_received_receipts = ?,
+                     transfer_send_seen_receipts = ?
+                 WHERE id = ?"
+                    .to_string(),
+                vec![
+                    SqlParameter::Integer(if send_received { 1 } else { 0 }),
+                    SqlParameter::Integer(if send_seen { 1 } else { 0 }),
+                    SqlParameter::Integer(organ_id),
+                ],
+            )
+            .await
+            .map_err(|error| {
+                format!("Nao consegui atualizar recibos de Transfer do orgao: {error}")
+            })?;
+        Ok(outcome.rows_affected > 0)
+    }
+
     pub async fn mark_seen_by_base_url(&self, base_url: &str) -> Result<bool, String> {
         let Some(organ) = self.find_by_base_url(base_url).await? else {
             return Ok(false);
@@ -226,7 +284,11 @@ impl OrganStore {
                     && !same_organ_base_url(&organ.base_url, "")
             })
             .collect::<Vec<_>>();
-        organs.sort_by(|left, right| left.base_url.cmp(&right.base_url));
+        organs.sort_by(|left, right| {
+            left.proximity
+                .cmp(&right.proximity)
+                .then_with(|| left.base_url.cmp(&right.base_url))
+        });
         organs.dedup_by(|left, right| same_organ_base_url(&left.base_url, &right.base_url));
         Ok(organs)
     }

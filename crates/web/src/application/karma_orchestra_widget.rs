@@ -1889,6 +1889,23 @@ fn build_token_options(catalog: &KarmaTokenCatalog) -> Vec<Value> {
             "validForConsequence": true,
         })
     }));
+    tokens.extend(catalog.transfers.values().map(|transfer| {
+        json!({
+            "kind": "transfer_proximity_broadening",
+            "id": transfer.id,
+            "code": format!("transfer-proximity-broadening-{}", transfer.id),
+            "human": format!("Transfer #{} proximity broadening", transfer.id),
+            "searchText": format!(
+                "{} transfer-proximity-broadening-{} visibility proximity broadening Transfer #{}",
+                transfer.id,
+                transfer.id,
+                transfer.id
+            ),
+            "numeric": transfer.quantity,
+            "validForCondition": false,
+            "validForConsequence": true,
+        })
+    }));
     tokens.extend(catalog.frequencies.values().map(|frequency| {
         json!({
             "kind": "frequency",
@@ -1954,7 +1971,7 @@ fn normalize_operator(operator: &str) -> Result<&str, KarmaOrchestraWidgetError>
 
 fn validate_consequence_code(code: &str) -> Result<(), KarmaOrchestraWidgetError> {
     let trimmed = code.trim();
-    let valid = regex::Regex::new(r"^(rq\d+|c\d+|sql\d+|(?:sr|sync-record)(?:org\d+)?(?:nt|t|n)q?h?b?\d+|sync-record(?:-organ-\d+)?-(?:node-and-tree|node|tree)-(?:quantity-head-body|quantity-head|quantity-body|head-body|quantity|head|body)-\d+)$")
+    let valid = regex::Regex::new(r"^(rq\d+|tq\d+|transfer-quantity-\d+|transfer-proximity-broadening-\d+|c\d+|sql\d+|(?:sr|sync-record)(?:org\d+)?(?:nt|t|n)q?h?b?\d+|sync-record(?:-organ-\d+)?-(?:node-and-tree|node|tree)-(?:quantity-head-body|quantity-head|quantity-body|head-body|quantity|head|body)-\d+)$")
         .expect("valid consequence regex")
         .is_match(trimmed);
     if valid {

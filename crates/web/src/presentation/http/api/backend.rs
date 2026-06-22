@@ -110,6 +110,7 @@ pub fn router() -> Router<AppState> {
             "/transfer/contacts/discover",
             get(discover_transfer_contacts),
         )
+        .route("/organs/discover", get(discover_transfer_contacts))
         .route("/transfer/contacts", post(add_transfer_contact))
         .route("/transfer/peers/online", post(receive_transfer_peer_online))
         .route("/karma", get(list_karma_rows).post(create_karma_row))
@@ -442,8 +443,10 @@ async fn receive_transfer_package(
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct TransferSinceQuery {
     since: Option<String>,
+    requester_base_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -473,7 +476,10 @@ async fn list_transfer_packages_since(
 ) -> ApiResult<Json<Value>> {
     let value = state
         .transfer_widget
-        .transfer_packages_since_value(query.since.as_deref())
+        .transfer_packages_since_value(
+            query.since.as_deref(),
+            query.requester_base_url.as_deref(),
+        )
         .await
         .map_err(map_transfer_widget_error)?;
     Ok(Json(value))
@@ -519,7 +525,11 @@ async fn add_transfer_contact(
         .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
     Ok(Json(json!({
         "ok": true,
-        "contact": contact,
+        "contact": {
+            "name": contact.name,
+            "baseUrl": contact.base_url,
+            "trustState": contact.trust_state,
+        },
     })))
 }
 

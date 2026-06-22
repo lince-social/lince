@@ -261,6 +261,12 @@ const widgetConfigServerId = document.getElementById("widget-config-server-id");
 const widgetConfigAuthField = document.getElementById(
   "widget-config-auth-field",
 );
+const widgetConfigAuthUsernameField = document.getElementById(
+  "widget-config-auth-username-field",
+);
+const widgetConfigAuthPasswordField = document.getElementById(
+  "widget-config-auth-password-field",
+);
 const widgetConfigAuthEnabled = document.getElementById(
   "widget-config-auth-enabled",
 );
@@ -275,6 +281,9 @@ const widgetConfigAuthPasswordToggle = document.getElementById(
 );
 const widgetConfigAuthLogin = document.getElementById(
   "widget-config-auth-login",
+);
+const widgetConfigAuthLogout = document.getElementById(
+  "widget-config-auth-logout",
 );
 const widgetConfigAuthHelp = document.getElementById("widget-config-auth-help");
 const widgetConfigViewField = document.getElementById("widget-config-view-field");
@@ -421,11 +430,14 @@ if (
   !widgetConfigServerIdField ||
   !widgetConfigServerId ||
   !widgetConfigAuthField ||
+  !widgetConfigAuthUsernameField ||
+  !widgetConfigAuthPasswordField ||
   !widgetConfigAuthEnabled ||
   !widgetConfigAuthUsername ||
   !widgetConfigAuthPassword ||
   !widgetConfigAuthPasswordToggle ||
   !widgetConfigAuthLogin ||
+  !widgetConfigAuthLogout ||
   !widgetConfigAuthHelp ||
   !widgetConfigViewField ||
   !widgetConfigViewSearch ||
@@ -2908,6 +2920,22 @@ async function submitServerLogin(serverId, username, password) {
   return payload;
 }
 
+async function logoutServerSession(serverId) {
+  const response = await fetch(
+    `/organ/${encodeURIComponent(serverId)}/session`,
+    {
+      method: "DELETE",
+    },
+  );
+
+  const payload = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(payload?.error || "Falha ao desconectar servidor.");
+  }
+
+  return payload;
+}
+
 async function handleServerLoginFormSubmit(event) {
   event.preventDefault();
 
@@ -3137,17 +3165,26 @@ async function refreshWidgetConfigModalState() {
         canShowViews &&
         pendingWidgetConfigViewId == null));
 
-  widgetConfigAuthField.hidden = !requiresAuth || authenticated;
+  widgetConfigAuthField.hidden = !requiresAuth;
   widgetConfigAuthEnabled.checked = requiresAuth && !authenticated;
+  widgetConfigAuthUsernameField.hidden = !requiresAuth || authenticated;
+  widgetConfigAuthPasswordField.hidden = !requiresAuth || authenticated;
   widgetConfigAuthUsername.value = server?.usernameHint || "";
   widgetConfigAuthPassword.value = "";
-  widgetConfigAuthLogin.disabled = !pendingWidgetConfigServerId || !requiresAuth || authenticated;
+  widgetConfigAuthLogin.hidden = !requiresAuth || authenticated;
+  widgetConfigAuthLogin.disabled =
+    !pendingWidgetConfigServerId || !requiresAuth || authenticated;
+  widgetConfigAuthLogout.hidden = !requiresAuth || !authenticated;
+  widgetConfigAuthLogout.disabled =
+    !pendingWidgetConfigServerId || !requiresAuth || !authenticated;
   widgetConfigSaveButton.disabled = needsHostSelection;
   setWidgetConfigAuthHelp(
     !pendingWidgetConfigServerId
       ? "Escolha um servidor primeiro."
       : requiresAuth && !authenticated
         ? "Digite as credenciais do servidor aqui."
+        : requiresAuth && authenticated
+          ? `Conectado como ${server?.usernameHint || "usuario remoto"}.`
         : "",
   );
 
@@ -3325,6 +3362,35 @@ async function handleWidgetConfigAuthLogin() {
     widgetConfigAuthPassword.focus();
   } finally {
     widgetConfigAuthLogin.disabled = false;
+  }
+}
+
+async function handleWidgetConfigAuthLogout() {
+  const card = pendingWidgetConfigCardId
+    ? getCardById(pendingWidgetConfigCardId)
+    : null;
+  if (!card || !pendingWidgetConfigServerId) {
+    return;
+  }
+
+  setWidgetConfigAuthHelp("Desconectando...");
+  widgetConfigAuthLogout.disabled = true;
+  try {
+    await logoutServerSession(pendingWidgetConfigServerId);
+    const profiles = await requestServerProfiles();
+    syncServerProfiles(profiles);
+    syncServerOptions(pendingWidgetConfigServerId);
+    await refreshWidgetConfigModalState();
+    await refreshNotifications().catch(() => {});
+    setWidgetConfigAuthHelp("Sessao do servidor desconectada.");
+  } catch (error) {
+    setWidgetConfigAuthHelp(
+      error instanceof Error
+        ? error.message
+        : "Falha ao desconectar servidor.",
+    );
+  } finally {
+    widgetConfigAuthLogout.disabled = false;
   }
 }
 
@@ -4361,6 +4427,10 @@ widgetConfigAuthPasswordToggle.addEventListener("click", () => {
 
 widgetConfigAuthLogin.addEventListener("click", () => {
   void handleWidgetConfigAuthLogin();
+});
+
+widgetConfigAuthLogout.addEventListener("click", () => {
+  void handleWidgetConfigAuthLogout();
 });
 
 widgetConfigViewSearch.addEventListener("input", () => {

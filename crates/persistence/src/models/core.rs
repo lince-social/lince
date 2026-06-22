@@ -69,6 +69,14 @@ pub struct ConfigurationRow {
         check = "transfer_reservation_policy IN ('none', 'soft', 'hard_on_proposal', 'hard_on_consume', 'hard_on_lock')"
     )]
     pub transfer_reservation_policy: String,
+    #[table(default = "1", check = "transfer_send_received_receipts IN (0, 1)")]
+    pub transfer_send_received_receipts: i64,
+    #[table(default = "1", check = "transfer_send_seen_receipts IN (0, 1)")]
+    pub transfer_send_seen_receipts: i64,
+    #[table(default = "0", check = "transfer_anonymous_package_viewing IN (0, 1)")]
+    pub transfer_anonymous_package_viewing: i64,
+    #[table(default = "0", check = "transfer_share_quantity_projections IN (0, 1)")]
+    pub transfer_share_quantity_projections: i64,
     pub desktop_start_on_login: Option<i64>,
     pub desktop_start_silent: Option<i64>,
     #[table(default = "'rolling'")]
@@ -138,33 +146,6 @@ pub struct TransferRow {
     pub id: i64,
     #[table(default = "1")]
     pub quantity: f64,
-}
-
-#[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
-#[table(name = "transfer_item")]
-pub struct TransferItemRow {
-    pub transfer_id: i64,
-
-    pub contribution_user_id: i64,
-    pub contribution_server_id: i64,
-    pub contribution_id: i64,
-    pub contribution_head: String,
-    pub contribution_quantity: f64,
-
-    pub need_user_id: i64,
-    pub need_server_id: i64,
-    pub need_id: i64,
-    pub need_head: String,
-    pub need_quantity: f64,
-
-    #[table(default = "0")]
-    pub first_agreement: i64,
-    #[table(default = "0")]
-    pub second_agreement: i64,
-
-    #[table(sql_type = "TIMESTAMP", default = "CURRENT_TIMESTAMP")]
-    pub date: String,
-    pub location: String,
 }
 
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
@@ -513,7 +494,7 @@ pub struct TransferEventRow {
     pub actor_label: String,
     pub actor_public_key: Option<String>,
     #[table(
-        check = "event_kind IN ('transfer_created', 'transfer_quantity_changed', 'transfer_inactivated', 'item_created', 'item_edited', 'interaction_created', 'interaction_edited', 'visibility_changed', 'agreement_changed', 'message_sent', 'delivery_confirmed', 'receipt_confirmed', 'settlement_applied', 'settlement_reverted', 'dispute_opened', 'dispute_resolved')"
+        check = "event_kind IN ('transfer_created', 'transfer_quantity_changed', 'transfer_inactivated', 'item_created', 'item_edited', 'interaction_created', 'interaction_edited', 'visibility_changed', 'agreement_changed', 'message_sent', 'delivery_confirmed', 'receipt_confirmed', 'package_received', 'package_seen', 'settlement_applied', 'settlement_reverted', 'dispute_opened', 'dispute_resolved')"
     )]
     pub event_kind: String,
     #[table(default = "'{}'", check = "json_valid(payload_json)")]
@@ -677,6 +658,59 @@ pub struct TransferVisibilitySubjectRow {
 
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
 #[allow(dead_code)]
+#[table(name = "transfer_visibility_policy")]
+#[table(strict)]
+#[table(index(
+    name = "idx_transfer_visibility_policy_mode",
+    columns = "visibility_mode"
+))]
+pub struct TransferVisibilityPolicyRow {
+    #[table(primary_key)]
+    pub id: i64,
+    #[table(references = "transfer(id) ON DELETE CASCADE", unique)]
+    pub transfer_id: i64,
+    #[table(default = "'hidden'", check = "visibility_mode IN ('hidden', 'public', 'restricted')")]
+    pub visibility_mode: String,
+    #[table(check = "max_visible_proximity IS NULL OR max_visible_proximity >= 0")]
+    pub max_visible_proximity: Option<i64>,
+    #[table(default = "CURRENT_TIMESTAMP")]
+    pub created_at: String,
+    #[table(default = "CURRENT_TIMESTAMP")]
+    pub updated_at: String,
+}
+
+#[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
+#[allow(dead_code)]
+#[table(name = "transfer_visibility_wave")]
+#[table(strict)]
+#[table(index(
+    name = "idx_transfer_visibility_wave_transfer",
+    columns = "transfer_id"
+))]
+#[table(index(
+    name = "idx_transfer_visibility_wave_karma",
+    columns = "karma_id"
+))]
+pub struct TransferVisibilityWaveRow {
+    #[table(primary_key)]
+    pub id: i64,
+    #[table(references = "transfer(id) ON DELETE CASCADE")]
+    pub transfer_id: i64,
+    pub karma_id: Option<i64>,
+    #[table(check = "max_visible_proximity >= 0")]
+    pub max_visible_proximity: i64,
+    #[table(default = "0", check = "active IN (0, 1)")]
+    pub active: i64,
+    #[table(default = "'karma_consequence'")]
+    pub reason: String,
+    #[table(default = "CURRENT_TIMESTAMP")]
+    pub created_at: String,
+    #[table(default = "CURRENT_TIMESTAMP")]
+    pub updated_at: String,
+}
+
+#[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
+#[allow(dead_code)]
 #[table(name = "transfer_visibility_rule")]
 #[table(strict)]
 #[table(index(name = "idx_transfer_visibility_rule_subject", columns = "subject_id"))]
@@ -737,6 +771,30 @@ pub struct TransferVisibilityFieldRow {
     #[table(default = "0")]
     pub editable: i64,
     pub redaction_label: Option<String>,
+}
+
+#[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
+#[allow(dead_code)]
+#[table(name = "transfer_package_receipt")]
+#[table(strict)]
+#[table(index(
+    name = "uq_transfer_package_receipt_transfer_source",
+    columns = "transfer_id, source_base_url",
+    unique
+))]
+pub struct TransferPackageReceiptRow {
+    #[table(primary_key)]
+    pub id: i64,
+    #[table(references = "transfer(id) ON DELETE CASCADE")]
+    pub transfer_id: i64,
+    pub source_base_url: Option<String>,
+    #[table(default = "CURRENT_TIMESTAMP")]
+    pub received_at: String,
+    pub seen_at: Option<String>,
+    #[table(default = "0")]
+    pub received_receipt_generated: i64,
+    #[table(default = "0")]
+    pub seen_receipt_generated: i64,
 }
 
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]

@@ -71,7 +71,26 @@ pub(super) fn body() -> Markup {
                                 input id="known-peer-polling-enabled" name="knownPeerPollingEnabled" type="checkbox" {}
                                 span { "Poll known peers" }
                             }
+                            label class="checkRow" {
+                                input id="share-quantity-projections" name="shareQuantityProjections" type="checkbox" {}
+                                span { "Share quantity projections" }
+                            }
                             button type="submit" { "Save network" }
+                        }
+                        form id="receipt-policy-form" class="formGrid" {
+                            label class="checkRow" {
+                                input id="send-received-receipts" name="sendReceivedReceipts" type="checkbox" {}
+                                span { "Send received receipts" }
+                            }
+                            label class="checkRow" {
+                                input id="send-seen-receipts" name="sendSeenReceipts" type="checkbox" {}
+                                span { "Send seen receipts" }
+                            }
+                            label class="checkRow" {
+                                input id="anonymous-package-viewing" name="anonymousPackageViewing" type="checkbox" {}
+                                span { "Anonymous package viewing" }
+                            }
+                            button type="submit" { "Save receipts" }
                         }
                         form id="contact-discovery-form" class="formGrid networkDiscoveryForm" {
                             label {

@@ -2,10 +2,6 @@
 
 This is the main tracker for the Transfer feature.
 
-The detailed notes live in:
-
-- [Visibility](transfer-visibility.md)
-
 ## MVP Build Order
 
 Recommended first implementation order:
@@ -38,10 +34,24 @@ Recommended first implementation order:
 - Complex legal-contract language.
 - Field-level visibility. Visibility subjects, rules, and field filtering are intentionally last so the Transfer shape can settle first.
 
+## 4. Later Field-Level Visibility
+
+Field-level visibility remains later work. The current package boundary is all-or-nothing.
+
+Later package export should be able to redact:
+
+- Transfer title, topic, status, and summary;
+- item title, description, role, quantity, unit, and location;
+- source Record id, head, body, and actual quantity;
+- parties, Organs, public keys, agreement state, signatures, and event history;
+- work metadata such as start/end, estimates, assignees, and completion notes;
+- messages;
+- settlement and quantity projection facts.
+
 ## Cross-File Map
 
 - Product shape, core assumptions, agreement, events, messages, and the main checklist live in this file.
-- Visibility tables and UI behavior live in [Visibility](transfer-visibility.md).
+- Visibility v1 is tracked in this file. Field-level visibility remains long-term.
 - Karma activation is implemented in this tracker.
 - Remaining reversal/dispute settlement work lives in [Simulation And Settlement](transfer-simulation-settlement.md).
 
@@ -78,27 +88,37 @@ The intended flow remains:
 
 ## Implemented Shape
 
-Transfer currently has two backend layers:
+Transfer currently has a structured backend model. The old contribution/need adapter table has been removed from the Rust-owned schema and is dropped by migration after structured backfill runs.
 
-- The current widget projection, still used by the Transfer sand.
-- A structured, UI-agnostic data model for Transfer services and Transfer packages.
+The old adapter is retired. The sand should continue moving toward native multi-item and interaction editing instead of only exposing the first contribution/need pair; that is product UI breadth, not legacy compatibility.
 
-The current widget projection is still present while the sand moves to structured projections:
+The current state during that migration:
 
 - `transfer` is still the minimal header with `id` and `quantity`.
 - Transfer metadata still lives in `transfer_identity`.
-- The current sand still reads one contribution side plus one need side from `transfer_item`.
+- Backend Transfer summary/list projections now read the contribution/need view from `transfer_structured_item`, `transfer_party`, `transfer_interaction`, and scoped `transfer_agreement` rows.
+- Transfer packages require structured rows and no longer carry or import the old `item: TransferItemPackage` projection.
+- Local create, duplicate, edit, agreement, inactivation, record-sync, delivery, receipt, and settlement actions write structured rows/tables directly.
 - Parent/child grouping and dependency-capable edges still use `transfer_relation`.
 - Tree behavior uses `transfer_tree_config`, including branch mode, record sync mode, source record, sync role, sync quantity, sync counterparty, target Organ, and live/copy sync state.
 - Event sync uses signed package import/export and cursor/outbox/cache tables.
 - The Transfer sand is a real widget backed by a dedicated contract and typed backend actions. Its manifest still says `requires_server: false` because it runs as an official local widget, but the workflow uses server-side widget actions and streams.
+
+"Structured Transfer data" means the target model for the product shape:
+
+- a Transfer can group many need/contribution items;
+- need and contribution remain the only v1 item roles;
+- item relationships and ordering live in `transfer_interaction`, such as contributes-to, depends-on, unblocks, replaces, or informs;
+- parent/child Transfer grouping lives in `transfer_relation`;
+- agreement, delivery, receipt, settlement, quantity influence, messages, and work metadata attach to the relevant structured Transfer object instead of being forced through one contribution/need row.
+
+The part being retired is not contribution/need. The part being retired is representing a Transfer as a single table row with exactly one contribution and one need.
 
 ### Implemented Data
 
 The current widget-facing schema/model surface includes:
 
 - `transfer`: base Transfer row and activation quantity.
-- `transfer_item`: contribution/need actor snapshots, source Record ids, item heads, side quantities, agreement levels, date, and location.
 - `transfer_node_identity`: local signing label and keypair.
 - `transfer_identity`: stable Transfer UID, source/parent UID, state, title, coordinator/proposer/counterparty labels, side actor labels/public keys, target Organ, and source/target base URLs.
 - `transfer_relation`: relation edges between Transfer UIDs, currently used for parent trees and accepted for dependencies in imported packages.
@@ -122,6 +142,7 @@ The structured backend schema adds:
 - `record_transfer_availability`: explicit SQL projection/cache for Record availability after active hard Transfer reservations.
 - `transfer_message`: Transfer and interaction-level messages.
 - `transfer_visibility_subject`, `transfer_visibility_rule`, and `transfer_visibility_field`: field-level visibility.
+- `transfer_visibility_policy`: whole-Transfer visibility mode and proximity threshold for v1 visibility.
 - `work_metadata`, `work_subject`, and `work_assignment`: generic Kanban/Transfer work fields, assignable subjects, and assignment links.
 
 Existing Transfers are backfilled into structured parties, items, interactions, and agreement rows during migration.
@@ -187,7 +208,7 @@ Agreement is about the current state of connected items/interactions, not about 
 
 Proposal changes are edits, not formal counteroffers. When a connected item or interaction changes, earlier agreement for the affected scope must be invalidated and an event should explain what changed.
 
-Implemented legacy local item edits emit `item_edited`, reset the edited side's agreement level to `0`, and invalidate structured agreement rows for that Transfer. Structured item/interaction edit actions should use the same normal edit-event policy when those edit actions are added.
+Implemented local item edits update structured item rows, emit `item_edited`, and invalidate structured agreement rows for that Transfer. The sand still exposes only the first contribution/need pair even though the backend model can hold more structured items/interactions.
 
 Agreement levels:
 
@@ -234,7 +255,12 @@ The current network model is practical package sync, not full federation:
 - Discovered contacts can be added locally through `/transfer/contacts`; they start as `unknown`.
 - Online announcements are accepted through `/transfer/peers/online` and update `last_seen_at` for known/unknown non-blocked peers already in the contact list.
 - The Transfer settings drawer exposes the near-term network controls: toggle automatic known-peer polling, discover contacts from another node, add discovered contacts as `unknown`, promote peers to `known`, block/unblock peers, expose/hide contacts from discovery, and manually poll a peer.
-- Transfer packages now carry a structured section for parties, structured items, interactions, scoped agreements, confirmations, structured settlements, quantity influence facts, and messages in addition to the legacy sand projection.
+- Transfer packages carry a structured section for parties, structured items, interactions, scoped agreements, confirmations, structured settlements, optional quantity influence facts, and messages.
+- Backend Transfer summary/list projections are structured-backed; they no longer join `transfer_item` as the read source.
+- Local create/edit/agreement/inactivation, record-sync, delivery, receipt, and settlement paths write structured rows/tables directly.
+- Package import requires structured package rows and no longer accepts the old `item` fallback projection.
+- The legacy `transfer_item` adapter table is dropped by migration after the structured backfill migration has copied old rows into structured parties/items/interactions/agreements.
+- Transfer structured-item work metadata uses `owner_kind = 'transfer_structured_item'`; the old `transfer_item` owner-kind value is migrated away.
 - Structured package import writes portable structured rows and only preserves local Record references when that Record exists locally.
 - Re-importing the same structured package skips exact duplicate structured rows, so repeated polling does not append identical parties, items, interactions, agreements, confirmations, settlements, quantity influences, or messages.
 - Structured parties, items, and interactions have stable scoped row UIDs. Package import uses those UIDs to update existing rows instead of appending a new row when the remote row changed.
@@ -243,6 +269,32 @@ The current network model is practical package sync, not full federation:
 - Signed events now persist deterministic `previous_event_hash` and `event_hash` values.
 - Local signed events are marked `valid`; imported package events are marked `valid` or `invalid` after signature verification, hash verification, previous-hash checking, and basic event payload-shape validation.
 - Transfer history/package projections expose event validation state, validation error, event hash, and previous event hash.
+- Organs have `proximity` as a non-negative integer; lower numbers mean closer and higher priority.
+- `transfer_visibility_policy` stores one whole-Transfer visibility policy per Transfer with mode `hidden`, `public`, or `restricted`, plus optional `max_visible_proximity`.
+- Whole-Transfer visibility is mutually exclusive by mode: hidden exports to nobody, public exports without hiding the Transfer, and restricted exports only to allowed Organs or Organs whose proximity is lower than or equal to the Transfer threshold.
+- Transfers default to hidden when created or imported.
+- The Transfer sand exposes visibility mode, allowed Organs, max proximity, and a manual visibility wave control for widening restricted proximity thresholds.
+- Manual visibility waves update `max_visible_proximity` and append a signed `visibility_changed` event with the previous threshold, next threshold, and reason.
+- Karma can widen whole-Transfer visibility through a `transfer-proximity-broadening-{transfer_id}` consequence. The evaluated condition value becomes the new max visible proximity.
+- Karma proximity-broadening evaluations are stored in `transfer_visibility_wave`. If the Transfer is public, the wave is recorded but inactive because public visibility already dominates.
+- If the Transfer is hidden or restricted, the Karma proximity-broadening consequence applies a restricted `max_visible_proximity` policy.
+- Blocked Organs are excluded from visibility, package send, package receive, polling, and contact discovery even when their proximity would otherwise match.
+- Outbox package sends are ordered by Organ proximity first, so closer Organs receive queued updates before weaker contacts.
+- Known-peer polling targets are ordered by Organ proximity internally.
+- Organ proximity is local priority data. It is visible to local users in the Transfer sand, but external package, contact discovery, and add-contact responses do not include proximity.
+- Sharing the local Organ contact list is gated by each Organ's `contact_discovery_enabled` flag. Even when a contact is shared, local proximity/priority is not shared.
+- Package received and package seen are local receipt facts and, when configured, signed Transfer events named `package_received` and `package_seen`.
+- Receipt events are synced back through the same package/outbox mechanism as other Transfer events. Anonymous package viewing disables local receipt generation and outbound receipt events.
+- Opening a Transfer marks the package seen when anonymous viewing is off; package receipt is recorded when a package is imported.
+- Receipt emission is controlled globally and per Organ. Global receipt settings are the default, and each Organ can independently suppress received or seen receipt events sent back to that Organ.
+- The Transfer sand shows package received/seen event summaries as normal Transfer facts in the visibility panel.
+- Transfer packages do not export reservation/projection facts by default. Proposed Transfer quantities remain in Transfer items/interactions, but `transfer_quantity_influence` projection rows stay local unless `transfer_share_quantity_projections` is enabled in configuration.
+- Quantity projection sharing is default-off and exposed in Transfer network settings. When enabled, outgoing packages include `transfer_quantity_influence` rows for related Transfers so remote/public viewers can calculate reserved/projected quantities later.
+- Transfers default to hidden visibility. Locally created and imported Transfers receive a hidden visibility policy by default.
+- Package sending to a known Organ checks the whole-Transfer visibility policy before export.
+- Selecting a target Organ on proposal creation or manually sending to an Organ creates/uses a restricted allow rule for that Organ.
+- `/transfer/packages/since` filters package export: anonymous/no requester gets public packages only; a requester that identifies as a known Organ by `requesterBaseUrl` gets packages allowed by that Organ's whole-Transfer visibility.
+- Peer polling sends this node's `requesterBaseUrl` so remote nodes can evaluate Organ visibility.
 
 Full field-level visibility filtering, candidate discovery UI, and coordinator migration remain planned work.
 
@@ -325,7 +377,7 @@ Example: outgoing donation, Record quantity `10`, Transfer contribution `5`:
 
 Full settlement is available as a Transfer-level action. Individual settlement applies only the current local party's Record side. Full settlement checks the Transfer once and applies both contribution and need Record effects when both Records are local and the Transfer is ready.
 
-Settlement readiness includes structured interaction dependencies. Blocking structured interactions with dependency kinds such as `must_agree`, `must_deliver`, `must_receive`, or `must_settle` prevent settlement until their state is completed, satisfied, settled, or inactive. The legacy contribution/need agreement, delivery, and receipt checks still apply.
+Settlement readiness includes structured interaction dependencies. Blocking structured interactions with dependency kinds such as `must_agree`, `must_deliver`, `must_receive`, or `must_settle` prevent settlement until their state is completed, satisfied, settled, or inactive. The old contribution/need agreement, delivery, and receipt checks still apply only while the sand is migrating to structured settlement readiness.
 
 The Relation sand can store a projection view id in its widget state so it can be configured to use SQL views that include Transfer quantity projection columns.
 
@@ -540,9 +592,36 @@ When Transfer `4` quantity changes, Karma rules that reference `tq4` or `transfe
 - [x] Structured package import updates existing party/item/interaction rows by UID.
 - [x] Structured package import preserves local-only rows when importing partial remote packages.
 - [x] Structured package import has service coverage for idempotent UID-based updates.
+- [x] Organ discovery is available through `/organs/discover`.
 - [ ] Gossip cache is available as a long-term discovery helper.
 - [ ] Delegated ask-around search is available with hop/TTL limits.
 - [x] Event logs can later become signed.
+
+### Visibility V1
+
+- [x] Transfer visibility defaults to hidden.
+- [x] Transfer visibility mode is exclusive: `hidden`, `public`, or `restricted`.
+- [x] Whole-Transfer package export is the v1 visibility boundary.
+- [x] Package export checks the requesting Organ before sending a Transfer package.
+- [x] Public visibility allows public package discovery/export.
+- [x] Restricted visibility supports explicit Organ allow rules.
+- [x] Restricted visibility supports `max_visible_proximity`.
+- [x] Blocked Organs cannot receive visible Transfer packages.
+- [x] Manual send to an Organ ensures that Organ can view the Transfer.
+- [x] Organ proximity is stored as a numeric Organ property.
+- [x] The Transfer sand can edit Organ proximity.
+- [x] The Transfer sand can edit whole-Transfer visibility.
+- [x] The Transfer sand can choose hidden/public/restricted visibility.
+- [x] The Transfer sand can choose restricted Organs and a max proximity threshold.
+- [x] Received package state is stored locally.
+- [x] Seen package state is stored locally when a user opens Transfer detail.
+- [x] Receipt configuration exists for received receipts, seen receipts, and anonymous package viewing.
+- [x] Anonymous package viewing avoids generating received/seen state.
+- [x] Received/seen package facts can become signed outbound Transfer events.
+- [x] Karma consequences can widen restricted visibility with `transfer-proximity-broadening-{transfer_id}`.
+- [x] Offer ordering sends eligible Transfers to closer Organs first without exposing local proximity externally.
+- [ ] Field-level visibility remains later work.
+- [x] Visibility-aware projection sharing is default-off and gated by configuration.
 
 ### Transfer Sand
 
@@ -574,6 +653,7 @@ When Transfer `4` quantity changes, Karma rules that reference `tq4` or `transfe
 - [x] The Transfer sand can edit Transfer work metadata.
 - [x] The Transfer sand can show and edit item work metadata.
 - [x] The Transfer sand can show and edit interaction work metadata.
+- [x] The Transfer sand can configure whole-Transfer visibility.
 
 ### Roadmap
 
@@ -584,9 +664,15 @@ When Transfer `4` quantity changes, Karma rules that reference `tq4` or `transfe
 - [x] The schema and Rust models have a structured backend implementation.
 - [x] Generic Kanban work metadata can attach to Transfers.
 - [x] Generic Kanban work metadata can attach to structured Transfer items.
-- [ ] The UI still needs to migrate from contribution/need projection to structured Transfer projections.
-- [ ] The reducer/service layer still needs to use structured agreement invalidation and interaction state.
+- [x] Backend Transfer summary/list projection reads from structured parties/items/agreements.
+- [x] The local create/edit/agreement/inactivation action surface writes structured rows first.
+- [x] Transfer package import/export uses structured rows without the old `TransferItemPackage` fallback.
+- [x] Delivery, receipt, and settlement write/check structured confirmation and settlement rows.
+- [x] The legacy `transfer_item` table is removed from the Rust schema and dropped by migration.
+- [x] Work metadata owner kind for structured Transfer items no longer uses the legacy `transfer_item` name.
+- [ ] The UI action surface still needs multi-item and interaction creation/editing beyond the simple contribution/need pair.
 - [x] Explicit reservation projection is available through `record_transfer_availability`.
 - [ ] Visibility-aware projection filtering still needs implementation after visibility.
-- [ ] The networking protocol still needs Transfer packages over structured Transfer data.
-- [ ] Contribution/need projection writes can be retired after the sand uses structured projections.
+- [x] The networking protocol carries Transfer packages over structured Transfer data.
+- [ ] The sand UI still needs native multi-item and interaction editing beyond the first contribution/need pair.
+- [ ] Contribution/need adapter mirror writes can be retired after package compatibility is retired.

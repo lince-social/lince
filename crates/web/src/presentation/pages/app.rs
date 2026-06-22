@@ -828,7 +828,7 @@ fn render_widget_config_form() -> Markup {
                                 small { "Enter credentials here only if the selected server is not connected yet." }
                             }
                         }
-                        label class="startup-field" for="widget-config-auth-username" {
+                        label id="widget-config-auth-username-field" class="startup-field" for="widget-config-auth-username" {
                             input
                                 id="widget-config-auth-username"
                                 class="startup-field__input"
@@ -836,7 +836,7 @@ fn render_widget_config_form() -> Markup {
                                 autocomplete="username"
                                 placeholder="Login";
                         }
-                        label class="startup-field" for="widget-config-auth-password" {
+                        label id="widget-config-auth-password-field" class="startup-field" for="widget-config-auth-password" {
                             div class="startup-password-field" {
                                 input
                                     id="widget-config-auth-password"
@@ -861,6 +861,14 @@ fn render_widget_config_form() -> Markup {
                             type="button"
                         {
                             "Conectar"
+                        }
+                        button
+                            id="widget-config-auth-logout"
+                            class="modal-button modal-button--danger"
+                            type="button"
+                            hidden=""
+                        {
+                            "Desconectar"
                         }
                         p id="widget-config-auth-help" class="startup-error-message" hidden="" {}
                     }

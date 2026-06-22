@@ -109,6 +109,7 @@ pub async fn deliver_transfer_karma(
 pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) -> Result<(), Error> {
     let regex_record_quantity = Regex::new(r"rq(\d+)").unwrap();
     let regex_transfer_quantity = transfer_quantity_regex();
+    let regex_transfer_proximity_broadening = transfer_proximity_broadening_regex();
     let regex_frequency = Regex::new(r"f(\d+)").unwrap();
     let regex_command = Regex::new(r"c(\d+)").unwrap();
     let regex_query = Regex::new(r"sql(\d+)").unwrap();
@@ -266,6 +267,28 @@ pub async fn karma_deliver(services: InjectedServices, vec_karma: Vec<Karma>) ->
             }
         }
 
+        if let Some(caps) = regex_transfer_proximity_broadening.captures(&karma.consequence) {
+            if let Some(id) = transfer_proximity_broadening_id(&caps) {
+                let max_visible_proximity = condition.max(0.0).floor() as i64;
+                if let Err(e) = execute_transfer_proximity_broadening(
+                    services.clone(),
+                    karma.id as i64,
+                    id as i64,
+                    max_visible_proximity,
+                )
+                .await
+                {
+                    log(LogEntry::Error(
+                        e.kind(),
+                        format!(
+                            "transfer proximity broadening error on karma id {}",
+                            karma.id
+                        ),
+                    ));
+                }
+            }
+        }
+
         if let Some(caps) = regex_command.captures(&karma.consequence) {
             if let Ok(id) = caps[1].parse::<u32>() {
                 info!("Running command {}", id);
@@ -311,10 +334,83 @@ fn transfer_quantity_regex() -> Regex {
     Regex::new(r"(?:tq(\d+)|transfer-quantity-(\d+))").unwrap()
 }
 
+fn transfer_proximity_broadening_regex() -> Regex {
+    Regex::new(r"transfer-proximity-broadening-(\d+)").unwrap()
+}
+
 fn transfer_quantity_id(caps: &regex::Captures<'_>) -> Option<u32> {
     caps.get(1)
         .or_else(|| caps.get(2))
         .and_then(|value| value.as_str().parse::<u32>().ok())
+}
+
+fn transfer_proximity_broadening_id(caps: &regex::Captures<'_>) -> Option<u32> {
+    caps.get(1)
+        .and_then(|value| value.as_str().parse::<u32>().ok())
+}
+
+async fn execute_transfer_proximity_broadening(
+    services: InjectedServices,
+    karma_id: i64,
+    transfer_id: i64,
+    max_visible_proximity: i64,
+) -> Result<(), Error> {
+    let visibility_mode = sqlx::query_scalar::<_, String>(
+        "SELECT visibility_mode
+         FROM transfer_visibility_policy
+         WHERE transfer_id = ?
+         LIMIT 1",
+    )
+    .bind(transfer_id)
+    .fetch_optional(&*services.db)
+    .await
+    .map_err(Error::other)?
+    .unwrap_or_else(|| "hidden".to_string());
+    let active = visibility_mode != "public";
+
+    execute_statement(
+        services.clone(),
+        "INSERT INTO transfer_visibility_wave(
+            transfer_id,
+            karma_id,
+            max_visible_proximity,
+            active,
+            reason
+         ) VALUES (?, ?, ?, ?, 'karma_consequence')
+         ON CONFLICT(id) DO NOTHING",
+        vec![
+            SqlParameter::Integer(transfer_id),
+            SqlParameter::Integer(karma_id),
+            SqlParameter::Integer(max_visible_proximity),
+            SqlParameter::Integer(if active { 1 } else { 0 }),
+        ],
+    )
+    .await?;
+
+    if active {
+        execute_statement(
+            services,
+            "INSERT INTO transfer_visibility_policy(
+                transfer_id,
+                visibility_mode,
+                max_visible_proximity
+             ) VALUES (?, 'restricted', ?)
+             ON CONFLICT(transfer_id) DO UPDATE SET
+                visibility_mode = CASE
+                    WHEN transfer_visibility_policy.visibility_mode = 'public' THEN 'public'
+                    ELSE 'restricted'
+                END,
+                max_visible_proximity = excluded.max_visible_proximity,
+                updated_at = CURRENT_TIMESTAMP",
+            vec![
+                SqlParameter::Integer(transfer_id),
+                SqlParameter::Integer(max_visible_proximity),
+            ],
+        )
+        .await?;
+    }
+
+    Ok(())
 }
 
 fn extract_karma_record_ids(

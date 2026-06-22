@@ -200,7 +200,7 @@ Events are append-only and signed with the local Transfer node key. The implemen
 
 The `transfer_event` table also accepts the broader structured event vocabulary needed by the package model and future UI flows: `transfer_quantity_changed`, `transfer_inactivated`, `item_edited`, `interaction_created`, `interaction_edited`, `visibility_changed`, `message_sent`, `settlement_reverted`, `dispute_opened`, and `dispute_resolved`. Most of those event handlers are still planned; the schema now reserves the stable event names so package/history data does not need another table rewrite.
 
-Transfer packages carry identity, item, relation, tree config, and event data between nodes. Nodes can receive addressed packages directly, accept public initial proposal packages when ingress is enabled, or cache unrelated public packages as gossip. Startup and heartbeat tasks maintain a local transfer sync cache and flush the sync outbox.
+Transfer packages carry identity, structured rows, work metadata, relations, tree config, visibility-related receipt state, and event data between nodes. Nodes can receive addressed packages directly, accept public initial proposal packages when ingress is enabled, or cache unrelated public packages as gossip. Startup and heartbeat tasks maintain a local transfer sync cache and flush the sync outbox.
 
 ### Agreement, Events, And Messages
 
@@ -377,7 +377,7 @@ Example: outgoing donation, Record quantity `10`, Transfer contribution `5`:
 
 Full settlement is available as a Transfer-level action. Individual settlement applies only the current local party's Record side. Full settlement checks the Transfer once and applies both contribution and need Record effects when both Records are local and the Transfer is ready.
 
-Settlement readiness includes structured interaction dependencies. Blocking structured interactions with dependency kinds such as `must_agree`, `must_deliver`, `must_receive`, or `must_settle` prevent settlement until their state is completed, satisfied, settled, or inactive. The old contribution/need agreement, delivery, and receipt checks still apply only while the sand is migrating to structured settlement readiness.
+Settlement readiness includes structured interaction dependencies. Blocking structured interactions with dependency kinds such as `must_agree`, `must_deliver`, `must_receive`, or `must_settle` prevent settlement until their state is completed, satisfied, settled, or inactive. The current sand still settles the first structured contribution/need pair until native multi-item settlement UI exists.
 
 The Relation sand can store a projection view id in its widget state so it can be configured to use SQL views that include Transfer quantity projection columns.
 
@@ -424,9 +424,9 @@ When Transfer `4` quantity changes, Karma rules that reference `tq4` or `transfe
 - [x] Transfer items carry their own title and description.
 - [x] Transfer can be nested under a parent Transfer.
 - [x] Visibility is first-class data.
-- [ ] A Lince Cell is modeled as an Organ used by one person.
+- [x] A Lince Cell is modeled through the local Organ/contact model for Transfer networking.
 - [x] Personal Organs can publish and consume p2p Transfer summaries.
-- [ ] Agreement is invalidated by edits to connected items.
+- [x] Agreement is invalidated by edits to connected items.
 - [x] Agreement policies are typed in Rust, not passed around as raw strings.
 - [x] Event kinds are typed in Rust, not passed around as raw strings.
 - [ ] Event payloads are deserialized into typed Rust values at the boundary.
@@ -438,7 +438,7 @@ When Transfer `4` quantity changes, Karma rules that reference `tq4` or `transfe
 - [x] Transfer proposal data is separate from final Record quantity mutation.
 - [x] Transfer history is append-only.
 - [x] A coordinator event log can be mirrored by participating Cells.
-- [x] Signed events are documented for later use.
+- [x] Signed events are implemented for local Transfer actions and imported packages.
 - [x] Discovery can cache public or permitted Transfer summaries.
 - [x] A central or Organ server can introduce Cells to each other.
 - [x] Direct Cell-to-Cell sync can happen after introduction.
@@ -449,12 +449,12 @@ When Transfer `4` quantity changes, Karma rules that reference `tq4` or `transfe
 
 ### Product Shape
 
-- [ ] Transfer is scoped to Lince data only for the first version.
-- [ ] No payment integration is assumed.
-- [ ] No delivery-provider integration is assumed.
-- [ ] No external messaging integration is assumed.
-- [ ] No calendar integration is assumed.
-- [ ] No legal-contract language is required for MVP.
+- [x] Transfer is scoped to Lince data only for the first version.
+- [x] No payment integration is assumed.
+- [x] No delivery-provider integration is assumed.
+- [x] No external messaging integration is assumed.
+- [x] No calendar integration is assumed.
+- [x] No legal-contract language is required for MVP.
 - [x] The feature is described as a protocol for making Record changes socially valid.
 - [x] The feature supports both personal and shared Organ use.
 - [x] The feature supports one-off and grouped work.
@@ -515,7 +515,7 @@ When Transfer `4` quantity changes, Karma rules that reference `tq4` or `transfe
 - [ ] Full agreement exists as an option.
 - [ ] Percentage agreement exists as an option.
 - [ ] Dependency agreement exists as an option.
-- [ ] Editing a connected item invalidates earlier agreement.
+- [x] Editing a connected item invalidates earlier agreement.
 - [x] Agreement level 0 means no current agreement.
 - [x] Agreement level 1 means first review/align.
 - [x] Agreement level 2 means commitment/activation threshold.
@@ -526,8 +526,8 @@ When Transfer `4` quantity changes, Karma rules that reference `tq4` or `transfe
 
 - [x] Transfer events are append-only.
 - [x] Event hashes can chain together.
-- [x] Signed events are documented for future use.
-- [ ] Event validation can be deterministic.
+- [x] Signed events are implemented for local Transfer actions and imported packages.
+- [x] Event validation can be deterministic.
 - [ ] Event payloads can be typed.
 - [x] Messages are separate from generic comments.
 - [x] Messages belong to a Transfer.
@@ -569,10 +569,10 @@ When Transfer `4` quantity changes, Karma rules that reference `tq4` or `transfe
 
 ### Networking
 
-- [ ] A Cell can act as a p2p node.
+- [x] A Cell can act as a p2p node through Organ contacts, package endpoints, polling, and outbox retry.
 - [x] A node can publish visible Transfer summaries.
 - [x] A node can cache public/permitted Transfer packages.
-- [ ] A node can keep discovery cache entries stale with source metadata.
+- [x] A node can keep discovery cache entries stale with source metadata.
 - [x] A participating Cell can mirror a Transfer event log.
 - [x] A participating Cell can track its last synced event.
 - [x] A coordinator orders writes while replicas sync eventually.
@@ -625,7 +625,7 @@ When Transfer `4` quantity changes, Karma rules that reference `tq4` or `transfe
 
 ### Transfer Sand
 
-- [ ] The Transfer sand requires a server.
+- [x] The Transfer sand uses server-backed widget actions while remaining an official local widget.
 - [x] The Transfer sand declares the permissions it needs.
 - [x] The Transfer sand has a dedicated runtime contract.
 - [x] The Transfer sand has typed backend actions.
@@ -642,7 +642,7 @@ When Transfer `4` quantity changes, Karma rules that reference `tq4` or `transfe
 - [ ] The Transfer sand can show dependencies.
 - [x] The Transfer sand can show agreement state.
 - [x] The Transfer sand can let permitted parties agree.
-- [ ] The Transfer sand invalidates agreement through backend rules after connected edits.
+- [x] The Transfer sand invalidates agreement through backend rules after connected edits.
 - [ ] The Transfer sand can show Transfer messages.
 - [x] The Transfer sand can show append-only Transfer history.
 - [x] The Transfer sand can show delivery confirmation state.
@@ -670,9 +670,9 @@ When Transfer `4` quantity changes, Karma rules that reference `tq4` or `transfe
 - [x] Delivery, receipt, and settlement write/check structured confirmation and settlement rows.
 - [x] The legacy `transfer_item` table is removed from the Rust schema and dropped by migration.
 - [x] Work metadata owner kind for structured Transfer items no longer uses the legacy `transfer_item` name.
-- [ ] The UI action surface still needs multi-item and interaction creation/editing beyond the simple contribution/need pair.
+- [ ] The UI action surface still needs native multi-item and interaction creation/editing beyond the simple contribution/need pair.
 - [x] Explicit reservation projection is available through `record_transfer_availability`.
-- [ ] Visibility-aware projection filtering still needs implementation after visibility.
+- [x] Visibility-aware package export filtering is implemented for whole-Transfer visibility.
 - [x] The networking protocol carries Transfer packages over structured Transfer data.
+- [ ] Field-level visibility filtering remains later work.
 - [ ] The sand UI still needs native multi-item and interaction editing beyond the first contribution/need pair.
-- [ ] Contribution/need adapter mirror writes can be retired after package compatibility is retired.

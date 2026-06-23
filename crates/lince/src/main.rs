@@ -9,6 +9,8 @@ compile_error!("Enable only one frontend feature at a time: `gui`, `tui`, or `ht
 #[cfg(all(feature = "tui", feature = "http"))]
 compile_error!("Enable only one frontend feature at a time: `gui`, `tui`, or `http`.");
 
+//hello
+
 #[cfg(feature = "karma")]
 use application::karma::karma_deliver;
 use application::karma::refresh_karma_cache;

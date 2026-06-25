@@ -1,4 +1,0 @@
-ALTER TABLE configuration DROP COLUMN automatic_update_last_seen_revision;
-ALTER TABLE configuration DROP COLUMN automatic_update_install_enabled;
-ALTER TABLE configuration DROP COLUMN automatic_update_notify_enabled;
-ALTER TABLE configuration DROP COLUMN automatic_update_channel;

@@ -1,2 +1,0 @@
-ALTER TABLE configuration ADD COLUMN transfer_reservation_policy TEXT NOT NULL DEFAULT 'soft' CHECK (transfer_reservation_policy IN ('none', 'soft', 'hard_on_proposal', 'hard_on_consume', 'hard_on_lock'));
-ALTER TABLE transfer_tree_config ADD COLUMN reservation_policy TEXT CHECK (reservation_policy IS NULL OR reservation_policy IN ('none', 'soft', 'hard_on_proposal', 'hard_on_consume', 'hard_on_lock'));

@@ -1,2 +1,0 @@
-ALTER TABLE configuration
-ADD COLUMN keybinding_mode INTEGER NOT NULL DEFAULT 0;

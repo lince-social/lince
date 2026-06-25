@@ -31,7 +31,10 @@ pub struct PermissionRow {
 pub struct RolePermissionRow {
     #[table(references = "role(id) ON DELETE CASCADE", check = "role_id > 0")]
     pub role_id: i64,
-    #[table(references = "permission(id) ON DELETE CASCADE", check = "permission_id > 0")]
+    #[table(
+        references = "permission(id) ON DELETE CASCADE",
+        check = "permission_id > 0"
+    )]
     pub permission_id: i64,
 }
 
@@ -80,7 +83,9 @@ pub struct OrganRow {
     pub contact_discovery_enabled: i64,
     #[table(check = "last_seen_at IS NULL OR julianday(last_seen_at) IS NOT NULL")]
     pub last_seen_at: Option<String>,
-    #[table(check = "last_transfer_polled_at IS NULL OR julianday(last_transfer_polled_at) IS NOT NULL")]
+    #[table(
+        check = "last_transfer_polled_at IS NULL OR julianday(last_transfer_polled_at) IS NOT NULL"
+    )]
     pub last_transfer_polled_at: Option<String>,
     #[table(default = "100", check = "proximity >= 0")]
     pub proximity: i64,

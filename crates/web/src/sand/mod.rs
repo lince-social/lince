@@ -1,8 +1,10 @@
 mod calendar;
 mod chess;
 mod document_viewer;
+mod finance;
 mod freedoom;
 mod general_creation;
+mod home_manager;
 #[path = "kanban/mod.rs"]
 mod kanban;
 mod karma_orchestra;
@@ -11,9 +13,9 @@ mod lince_logo_led;
 mod markdown_notes;
 mod ops_clock;
 mod organ_management;
-mod role_access;
 #[path = "relations/mod.rs"]
 mod relations;
+mod role_access;
 mod sand_publisher;
 #[path = "shared_markdown/mod.rs"]
 mod shared_markdown;
@@ -101,7 +103,7 @@ impl OfficialWidgetBuilder {
     }
 }
 
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 21] = [
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 23] = [
     OfficialWidgetBuilder::Package {
         feature_flag: document_viewer::FEATURE_FLAG,
         package_builder: document_viewer::package,
@@ -119,8 +121,16 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 21] = [
         package_builder: freedoom::package,
     },
     OfficialWidgetBuilder::Html {
+        feature_flag: finance::FEATURE_FLAG,
+        source_builder: finance::source,
+    },
+    OfficialWidgetBuilder::Html {
         feature_flag: general_creation::FEATURE_FLAG,
         source_builder: general_creation::source,
+    },
+    OfficialWidgetBuilder::Html {
+        feature_flag: home_manager::FEATURE_FLAG,
+        source_builder: home_manager::source,
     },
     OfficialWidgetBuilder::Package {
         feature_flag: terminal::FEATURE_FLAG,
@@ -170,9 +180,9 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 21] = [
         feature_flag: todo::FEATURE_FLAG,
         package_builder: todo::package,
     },
-    OfficialWidgetBuilder::Html {
+    OfficialWidgetBuilder::Package {
         feature_flag: transfer::FEATURE_FLAG,
-        source_builder: transfer::source,
+        package_builder: transfer::package,
     },
     OfficialWidgetBuilder::Html {
         feature_flag: sand_publisher::FEATURE_FLAG,

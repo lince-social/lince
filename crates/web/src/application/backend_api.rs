@@ -469,7 +469,10 @@ impl BackendApiService {
         {
             refresh_karma_cache(self.services.clone()).await?;
         }
-        if matches!(table, ApiTable::AppUser | ApiTable::Role | ApiTable::RolePermission) {
+        if matches!(
+            table,
+            ApiTable::AppUser | ApiTable::Role | ApiTable::RolePermission
+        ) {
             self.auth.refresh_cache().await?;
         }
 
@@ -787,8 +790,12 @@ fn require_table_permission(
 
 fn require_create_permission(claims: &AuthSubject, table: ApiTable) -> Result<(), Error> {
     match table {
-        ApiTable::RolePermission => claims.require_permission(PermissionKey::new("permission", "assign")),
-        ApiTable::Permission => claims.require_permission(PermissionKey::new("permission", "assign")),
+        ApiTable::RolePermission => {
+            claims.require_permission(PermissionKey::new("permission", "assign"))
+        }
+        ApiTable::Permission => {
+            claims.require_permission(PermissionKey::new("permission", "assign"))
+        }
         _ => require_table_permission(claims, table, "create"),
     }
 }
@@ -810,8 +817,12 @@ fn require_update_permission(
                 claims.require_permission(PermissionKey::new("user", "update"))
             }
         }
-        ApiTable::RolePermission => claims.require_permission(PermissionKey::new("permission", "assign")),
-        ApiTable::Permission => claims.require_permission(PermissionKey::new("permission", "assign")),
+        ApiTable::RolePermission => {
+            claims.require_permission(PermissionKey::new("permission", "assign"))
+        }
+        ApiTable::Permission => {
+            claims.require_permission(PermissionKey::new("permission", "assign"))
+        }
         _ => require_table_permission(claims, table, "update"),
     }
 }
@@ -821,7 +832,9 @@ fn require_delete_permission(claims: &AuthSubject, table: ApiTable, id: i64) -> 
         ApiTable::AppUser if claims.user_id as i64 == id => {
             claims.require_permission(PermissionKey::new("user", "update_self"))
         }
-        ApiTable::RolePermission => claims.require_permission(PermissionKey::new("permission", "assign")),
+        ApiTable::RolePermission => {
+            claims.require_permission(PermissionKey::new("permission", "assign"))
+        }
         ApiTable::Permission => Err(Error::new(
             ErrorKind::PermissionDenied,
             "Permissions are hardcoded and cannot be deleted through the API",

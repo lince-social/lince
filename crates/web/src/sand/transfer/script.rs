@@ -38,6 +38,10 @@ pub(super) fn script() -> String {
   const transferDetail = document.getElementById("transfer-detail");
   const transferCount = document.getElementById("transfer-count");
   const transferTabs = document.getElementById("transfer-tabs");
+  const visualizationToggle = document.getElementById("visualization-toggle");
+  const transferGraphView = document.getElementById("transfer-graph-view");
+  const transferGraph = document.getElementById("transfer-graph");
+  const transferGraphSummary = document.getElementById("transfer-graph-summary");
 
   const frame = window.frameElement;
   const instanceId = String(frame?.dataset?.packageInstanceId || "").trim();
@@ -56,6 +60,7 @@ pub(super) fn script() -> String {
   let selectedTransferId = null;
   let selectedGossipTransferUid = null;
   let activeTransferTab = "mine";
+  let visualizationMode = "structured";
   let detailMode = "selected";
   let pendingDeleteTransferId = null;
   let busy = false;
@@ -64,6 +69,11 @@ pub(super) fn script() -> String {
   let confirmingProgressAction = null;
   const seenMarkingTransfers = new Set();
   const collapsedTransferUids = new Set();
+  const graphState = {
+    simulation: null,
+    zoom: null,
+    viewport: null,
+  };
 
   function contractUrl() {
     return "/host/widgets/" + encodeURIComponent(instanceId) + "/contract";
@@ -233,6 +243,30 @@ pub(super) fn script() -> String {
       collapsedTransferUids.add(transferUid);
     }
     renderTransferList();
+  }
+
+  function setVisualizationMode(mode) {
+    visualizationMode = mode === "graph" ? "graph" : "structured";
+    app.dataset.visualization = visualizationMode;
+    if (transferGraphView) {
+      transferGraphView.setAttribute("aria-hidden", visualizationMode === "graph" ? "false" : "true");
+    }
+    if (visualizationMode === "graph" && activeTransferTab === "observed") {
+      activeTransferTab = "mine";
+      selectedGossipTransferUid = null;
+    }
+    if (visualizationMode === "graph") {
+      detailMode = "selected";
+    }
+    if (visualizationToggle) {
+      const graphActive = visualizationMode === "graph";
+      visualizationToggle.textContent = graphActive ? "Structured" : "Graph";
+      visualizationToggle.setAttribute("aria-label", graphActive ? "Switch to structured view" : "Switch to graph view");
+      visualizationToggle.title = graphActive ? "Switch to structured view" : "Switch to graph view";
+    }
+    renderTransferList();
+    renderDetail();
+    renderTransferGraph();
   }
 
   function selectedTransfer() {
@@ -584,6 +618,147 @@ pub(super) fn script() -> String {
     return `<button type="button" class="tabButton" data-transfer-tab="${escapeHtml(tab)}" data-active="${activeTransferTab === tab ? "true" : "false"}">${escapeHtml(label)} ${escapeHtml(count)}</button>`;
   }
 
+  function graphTransfers() {
+    const query = String(transferSearch?.value || "").trim().toLowerCase();
+    const transfers = snapshot.transfers.slice();
+    if (!query) return transfers;
+    return transfers.filter((transfer) => [
+      transfer.title,
+      transfer.transferUid,
+      transfer.proposerLabel,
+      transfer.counterpartyLabel,
+      transfer.contribution?.head,
+      transfer.need?.head,
+      transfer.status,
+      transfer.state,
+    ].some((value) => String(value || "").toLowerCase().includes(query)));
+  }
+
+  function graphColor(transfer) {
+    if (Number(transfer.id) === Number(selectedTransferId)) return "#86c7ff";
+    if (transfer.status === "inactive") return "#647183";
+    if (transfer.localRole === "contribution") return "#8fe3aa";
+    if (transfer.localRole === "need") return "#b99cff";
+    return "#f0c979";
+  }
+
+  function renderTransferGraph() {
+    if (!transferGraph || visualizationMode !== "graph") return;
+    if (!window.d3) {
+      transferGraphSummary.textContent = "D3 is not loaded";
+      return;
+    }
+    const transfers = graphTransfers();
+    const byUid = new Map(transfers.map((transfer) => [String(transfer.transferUid || ""), transfer]));
+    const nodes = transfers.map((transfer) => ({
+      id: String(transfer.id),
+      uid: String(transfer.transferUid || transfer.id),
+      transfer,
+      radius: Number(transfer.id) === Number(selectedTransferId) ? 22 : 18,
+    }));
+    const links = transfers
+      .map((transfer) => {
+        const parentUid = String(transfer.tree?.parentUid || "");
+        const parent = parentUid ? byUid.get(parentUid) : null;
+        return parent ? { source: String(parent.id), target: String(transfer.id) } : null;
+      })
+      .filter(Boolean);
+    transferGraphSummary.textContent = `${transfers.length} transfers / ${links.length} links`;
+    const svg = window.d3.select(transferGraph);
+    const rect = transferGraph.getBoundingClientRect();
+    const width = Math.max(360, Math.round(rect.width || transferGraph.clientWidth || 900));
+    const height = Math.max(320, Math.round(rect.height || transferGraph.clientHeight || 600));
+    svg.attr("viewBox", [0, 0, width, height].join(" "));
+    svg.selectAll("*").remove();
+    const root = svg.append("g");
+    graphState.viewport = root;
+    graphState.zoom = window.d3.zoom()
+      .scaleExtent([0.35, 3])
+      .on("zoom", (event) => root.attr("transform", event.transform));
+    svg.call(graphState.zoom);
+    const link = root.append("g")
+      .attr("class", "transferGraphLinks")
+      .selectAll("line")
+      .data(links)
+      .join("line");
+    const node = root.append("g")
+      .attr("class", "transferGraphNodes")
+      .selectAll("g")
+      .data(nodes, (node) => node.id)
+      .join("g")
+      .attr("class", "transferGraphNode")
+      .attr("data-active", (node) => Number(node.transfer.id) === Number(selectedTransferId) ? "true" : "false")
+      .call(window.d3.drag()
+        .on("start", (event, node) => {
+          if (!event.active) graphState.simulation?.alphaTarget(0.18).restart();
+          node.fx = node.x;
+          node.fy = node.y;
+        })
+        .on("drag", (event, node) => {
+          node.fx = event.x;
+          node.fy = event.y;
+        })
+        .on("end", (event, node) => {
+          if (!event.active) graphState.simulation?.alphaTarget(0);
+          node.fx = null;
+          node.fy = null;
+        }));
+    node.append("circle")
+      .attr("r", (node) => node.radius)
+      .attr("fill", (node) => graphColor(node.transfer));
+    node.append("text")
+      .attr("class", "transferGraphNodeTitle")
+      .attr("x", 26)
+      .attr("y", -2)
+      .text((node) => node.transfer.title || "Transfer");
+    node.append("text")
+      .attr("class", "transferGraphNodeMeta")
+      .attr("x", 26)
+      .attr("y", 14)
+      .text((node) => `#${node.transfer.id} ${node.transfer.status || node.transfer.state || ""}`);
+    node.on("click", (event, node) => {
+      event.stopPropagation();
+      selectedTransferId = node.transfer.id;
+      detailMode = "selected";
+      renderTransferList();
+      renderDetail();
+      renderTransferGraph();
+    });
+    svg.on("click", () => {
+      selectedTransferId = null;
+      renderDetail();
+      renderTransferGraph();
+    });
+    graphState.simulation?.stop();
+    graphState.simulation = window.d3.forceSimulation(nodes)
+      .force("link", window.d3.forceLink(links).id((node) => node.id).distance(120).strength(0.45))
+      .force("charge", window.d3.forceManyBody().strength(-260))
+      .force("collision", window.d3.forceCollide().radius((node) => node.radius + 26))
+      .force("center", window.d3.forceCenter(width / 2, height / 2))
+      .on("tick", () => {
+        link
+          .attr("x1", (link) => link.source.x)
+          .attr("y1", (link) => link.source.y)
+          .attr("x2", (link) => link.target.x)
+          .attr("y2", (link) => link.target.y);
+        node.attr("transform", (node) => `translate(${node.x},${node.y})`);
+      });
+  }
+
+  function fitTransferGraph() {
+    if (!window.d3 || !transferGraph || !graphState.zoom || !graphState.viewport) return;
+    const bounds = graphState.viewport.node()?.getBBox();
+    if (!bounds || !Number.isFinite(bounds.width) || !bounds.width || !bounds.height) return;
+    const rect = transferGraph.getBoundingClientRect();
+    const width = Math.max(360, rect.width || 900);
+    const height = Math.max(320, rect.height || 600);
+    const scale = Math.min(2.2, Math.max(0.35, 0.86 / Math.max(bounds.width / width, bounds.height / height)));
+    const transform = window.d3.zoomIdentity
+      .translate(width / 2 - scale * (bounds.x + bounds.width / 2), height / 2 - scale * (bounds.y + bounds.height / 2))
+      .scale(scale);
+    window.d3.select(transferGraph).transition().duration(180).call(graphState.zoom.transform, transform);
+  }
+
   function renderGossipList() {
     const query = String(transferSearch?.value || "").trim().toLowerCase();
     const transfers = query
@@ -932,6 +1107,11 @@ pub(super) fn script() -> String {
       renderGossipDetail();
       return;
     }
+    if (visualizationMode === "graph" && !selectedTransferId) {
+      transferDetail.dataset.inactive = "false";
+      transferDetail.innerHTML = `<div class="emptyBlock">Click a Transfer node to inspect and edit it.</div>`;
+      return;
+    }
     const transfer = selectedTransfer();
     if (!transfer) {
       transferDetail.dataset.inactive = "false";
@@ -1056,6 +1236,14 @@ pub(super) fn script() -> String {
         </section>
       </details>
     `;
+    if (visualizationMode === "graph") {
+      transferDetail.insertAdjacentHTML("afterbegin", `
+        <button type="button" class="graphDetailClose" data-action="close-graph-detail" data-keep-enabled="true" aria-label="Close Transfer detail">
+          <span aria-hidden="true">↑</span>
+          <span>Close</span>
+        </button>
+      `);
+    }
     markSelectedTransferSeen(transfer);
   }
 
@@ -1254,6 +1442,7 @@ pub(super) fn script() -> String {
     renderOrgans();
     renderTransferList();
     renderDetail();
+    renderTransferGraph();
     updateStaticDisabledState();
   }
 
@@ -1547,6 +1736,7 @@ pub(super) fn script() -> String {
     confirmingProgressAction = null;
     renderTransferList();
     renderDetail();
+    renderTransferGraph();
   });
 
   app.addEventListener("keydown", (event) => {
@@ -1567,6 +1757,39 @@ pub(super) fn script() -> String {
     const closeSettings = event.target.closest("[data-action='close-settings']");
     if (closeSettings) {
       setSettingsOpen(false);
+      return;
+    }
+
+    const toggleTransferVisualization = event.target.closest("[data-action='toggle-transfer-visualization']");
+    if (toggleTransferVisualization) {
+      setVisualizationMode(visualizationMode === "graph" ? "structured" : "graph");
+      return;
+    }
+
+    const graphTransferView = event.target.closest("[data-action='graph-transfer-view']");
+    if (graphTransferView) {
+      setVisualizationMode("graph");
+      setSettingsOpen(false);
+      return;
+    }
+
+    const structuredTransferView = event.target.closest("[data-action='structured-transfer-view']");
+    if (structuredTransferView) {
+      setVisualizationMode("structured");
+      return;
+    }
+
+    const fitGraph = event.target.closest("[data-action='fit-transfer-graph']");
+    if (fitGraph) {
+      fitTransferGraph();
+      return;
+    }
+
+    const closeGraphDetail = event.target.closest("[data-action='close-graph-detail']");
+    if (closeGraphDetail) {
+      selectedTransferId = null;
+      renderDetail();
+      renderTransferGraph();
       return;
     }
 
@@ -1953,7 +2176,14 @@ pub(super) fn script() -> String {
     }
   });
 
+  window.addEventListener("resize", () => {
+    if (visualizationMode === "graph") {
+      renderTransferGraph();
+    }
+  });
+
   connectTransferStream();
+  setVisualizationMode("structured");
   loadContract();
 })();
 "##.to_string()

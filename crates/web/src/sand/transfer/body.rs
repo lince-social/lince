@@ -47,6 +47,31 @@ pub(super) fn body() -> Markup {
                         }
                     }
 
+                    section class="panel drawerPanel" aria-labelledby="visualization-title" {
+                        div class="panelHead" {
+                            h2 id="visualization-title" { "Visualization" }
+                        }
+                        div class="formActions" {
+                            button
+                                id="visualization-structured"
+                                type="button"
+                                data-action="structured-transfer-view"
+                                data-keep-enabled="true"
+                            {
+                                "Structured"
+                            }
+                            button
+                                id="visualization-graph"
+                                type="button"
+                                class="primary"
+                                data-action="graph-transfer-view"
+                                data-keep-enabled="true"
+                            {
+                                "D3 graph"
+                            }
+                        }
+                    }
+
                     section class="panel drawerPanel" aria-labelledby="ingress-title" {
                         div class="panelHead" {
                             h2 id="ingress-title" { "Ingress" }
@@ -195,6 +220,16 @@ pub(super) fn body() -> Markup {
                                 "+"
                             }
                             button
+                                id="visualization-toggle"
+                                type="button"
+                                data-action="toggle-transfer-visualization"
+                                data-keep-enabled="true"
+                                aria-label="Switch to graph view"
+                                title="Switch to graph view"
+                            {
+                                "Graph"
+                            }
+                            button
                                 type="button"
                                 class="iconButton"
                                 data-action="open-settings"
@@ -216,6 +251,19 @@ pub(super) fn body() -> Markup {
                     }
                     section class="panel transferWorkspace" aria-labelledby="transfers-title" {
                         h2 id="transfers-title" class="srOnly" { "Transfer workspace" }
+                        section id="transfer-graph-view" class="transferGraphView" aria-label="Transfer graph" aria-hidden="true" {
+                            div class="graphToolbar" {
+                                div {
+                                    h2 { "Transfer graph" }
+                                    p id="transfer-graph-summary" class="meta" { "0 transfers" }
+                                }
+                                div class="graphActions" {
+                                    button type="button" data-action="fit-transfer-graph" data-keep-enabled="true" { "Fit" }
+                                    button type="button" data-action="structured-transfer-view" data-keep-enabled="true" { "Structured" }
+                                }
+                            }
+                            svg id="transfer-graph" class="transferGraph" role="img" aria-label="Transfer graph nodes" {}
+                        }
                         article id="transfer-detail" class="transferDetail" {}
                     }
                 }

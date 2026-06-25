@@ -476,10 +476,7 @@ async fn list_transfer_packages_since(
 ) -> ApiResult<Json<Value>> {
     let value = state
         .transfer_widget
-        .transfer_packages_since_value(
-            query.since.as_deref(),
-            query.requester_base_url.as_deref(),
-        )
+        .transfer_packages_since_value(query.since.as_deref(), query.requester_base_url.as_deref())
         .await
         .map_err(map_transfer_widget_error)?;
     Ok(Json(value))

@@ -1108,8 +1108,8 @@ impl TransferWidgetService {
             &need,
             target_organ.as_ref().map(|organ| organ.id),
         )
-            .await
-            .map_err(TransferWidgetError::from_io)?;
+        .await
+        .map_err(TransferWidgetError::from_io)?;
         self.ensure_transfer_visibility_policy(transfer_id, "hidden", None)
             .await
             .map_err(TransferWidgetError::from_io)?;
@@ -1465,8 +1465,12 @@ impl TransferWidgetService {
                 "Transfer item does not belong to this Transfer.".into(),
             ));
         }
-        self.upsert_work_metadata("transfer_structured_item", request.structured_item_id, &request.work)
-            .await?;
+        self.upsert_work_metadata(
+            "transfer_structured_item",
+            request.structured_item_id,
+            &request.work,
+        )
+        .await?;
         Ok(())
     }
 
@@ -2919,7 +2923,7 @@ impl TransferWidgetService {
                         WHEN transfer_package_receipt.received_receipt_generated = 1 THEN 1
                         ELSE excluded.received_receipt_generated
                     END"
-                    .to_string(),
+                .to_string(),
                 vec![
                     SqlParameter::Integer(transfer_id),
                     SqlParameter::Text(source_base_url.clone()),
@@ -2982,7 +2986,7 @@ impl TransferWidgetService {
                         WHEN transfer_package_receipt.seen_receipt_generated = 1 THEN 1
                         ELSE excluded.seen_receipt_generated
                     END"
-                    .to_string(),
+                .to_string(),
                 vec![
                     SqlParameter::Integer(transfer_id),
                     SqlParameter::Text(source_base_url.clone()),
@@ -3301,7 +3305,7 @@ impl TransferWidgetService {
         .fetch_optional(&*self.services.db)
         .await
         .map_err(Error::other)?
-            .ok_or_else(|| Error::new(ErrorKind::NotFound, "Record not found"))
+        .ok_or_else(|| Error::new(ErrorKind::NotFound, "Record not found"))
     }
 
     async fn record_exists(&self, id: i64) -> Result<bool, Error> {
@@ -3510,8 +3514,13 @@ impl TransferWidgetService {
         need: &TransferSideInput,
         organ_id: Option<i64>,
     ) -> Result<(), Error> {
-        self.upsert_structured_side(transfer_id, TransferSide::Contribution, contribution, organ_id)
-            .await?;
+        self.upsert_structured_side(
+            transfer_id,
+            TransferSide::Contribution,
+            contribution,
+            organ_id,
+        )
+        .await?;
         self.upsert_structured_side(transfer_id, TransferSide::Need, need, organ_id)
             .await?;
         self.upsert_structured_interaction(transfer_id).await?;
@@ -4811,7 +4820,7 @@ impl TransferWidgetService {
                         TransferSide::Need => transfer.need_quantity.abs(),
                     }),
                 )
-                    .await?;
+                .await?;
             }
         }
         self.services
@@ -5129,7 +5138,9 @@ impl TransferWidgetService {
         .map_err(Error::other)?;
         let mut views = Vec::with_capacity(rows.len());
         for row in rows {
-            let work = self.load_work_metadata("transfer_structured_item", row.id).await?;
+            let work = self
+                .load_work_metadata("transfer_structured_item", row.id)
+                .await?;
             views.push(TransferItemWorkView::from_row(row, work));
         }
         Ok(views)
@@ -5248,7 +5259,8 @@ impl TransferWidgetService {
         &self,
         transfer_id: i64,
     ) -> Result<StructuredTransferPackage, Error> {
-        self.ensure_structured_transfer_row_uids(transfer_id).await?;
+        self.ensure_structured_transfer_row_uids(transfer_id)
+            .await?;
         let quantity_influences = if self.transfer_share_quantity_projections().await? {
             sqlx::query_as::<_, QuantityInfluencePackage>(
                 "SELECT record_id, influence, influence_state, policy, consumed_at
@@ -5369,8 +5381,11 @@ impl TransferWidgetService {
     ) -> Result<(), Error> {
         for party in &package.parties {
             if let Some(party_uid) = normalize_optional_text(party.party_uid.clone()) {
-                let outcome = self.services.writer.execute_statement(
-                    "UPDATE transfer_party
+                let outcome = self
+                    .services
+                    .writer
+                    .execute_statement(
+                        "UPDATE transfer_party
                      SET participation_kind = ?,
                          role_hint = ?,
                          actor_label = ?,
@@ -5379,17 +5394,18 @@ impl TransferWidgetService {
                          updated_at = CURRENT_TIMESTAMP
                      WHERE transfer_id = ?
                        AND party_uid = ?"
-                        .to_string(),
-                    vec![
-                        SqlParameter::Text(party.participation_kind.clone()),
-                        optional_text_parameter(party.role_hint.clone()),
-                        SqlParameter::Text(party.actor_label.clone()),
-                        optional_text_parameter(party.public_key.clone()),
-                        SqlParameter::Integer(party.placeholder),
-                        SqlParameter::Integer(transfer_id),
-                        SqlParameter::Text(party_uid.clone()),
-                    ],
-                ).await?;
+                            .to_string(),
+                        vec![
+                            SqlParameter::Text(party.participation_kind.clone()),
+                            optional_text_parameter(party.role_hint.clone()),
+                            SqlParameter::Text(party.actor_label.clone()),
+                            optional_text_parameter(party.public_key.clone()),
+                            SqlParameter::Integer(party.placeholder),
+                            SqlParameter::Integer(transfer_id),
+                            SqlParameter::Text(party_uid.clone()),
+                        ],
+                    )
+                    .await?;
                 if outcome.rows_affected > 0 {
                     continue;
                 }
@@ -5435,8 +5451,11 @@ impl TransferWidgetService {
             };
             let metadata_json = valid_json_or_empty_object(&item.metadata_json);
             if let Some(item_uid) = normalize_optional_text(item.item_uid.clone()) {
-                let outcome = self.services.writer.execute_statement(
-                    "UPDATE transfer_structured_item
+                let outcome = self
+                    .services
+                    .writer
+                    .execute_statement(
+                        "UPDATE transfer_structured_item
                      SET role = ?,
                          source_record_id = ?,
                          title = ?,
@@ -5451,23 +5470,24 @@ impl TransferWidgetService {
                          updated_at = CURRENT_TIMESTAMP
                      WHERE transfer_id = ?
                        AND item_uid = ?"
-                        .to_string(),
-                    vec![
-                        SqlParameter::Text(item.role.clone()),
-                        optional_i64_parameter(source_record_id),
-                        SqlParameter::Text(item.title.clone()),
-                        optional_text_parameter(item.description.clone()),
-                        optional_text_parameter(item.record_head_snapshot.clone()),
-                        optional_text_parameter(item.record_body_snapshot.clone()),
-                        optional_f64_parameter(item.quantity),
-                        optional_text_parameter(item.unit.clone()),
-                        optional_text_parameter(item.location.clone()),
-                        SqlParameter::Text(metadata_json.clone()),
-                        SqlParameter::Integer(item.version.unwrap_or(1)),
-                        SqlParameter::Integer(transfer_id),
-                        SqlParameter::Text(item_uid.clone()),
-                    ],
-                ).await?;
+                            .to_string(),
+                        vec![
+                            SqlParameter::Text(item.role.clone()),
+                            optional_i64_parameter(source_record_id),
+                            SqlParameter::Text(item.title.clone()),
+                            optional_text_parameter(item.description.clone()),
+                            optional_text_parameter(item.record_head_snapshot.clone()),
+                            optional_text_parameter(item.record_body_snapshot.clone()),
+                            optional_f64_parameter(item.quantity),
+                            optional_text_parameter(item.unit.clone()),
+                            optional_text_parameter(item.location.clone()),
+                            SqlParameter::Text(metadata_json.clone()),
+                            SqlParameter::Integer(item.version.unwrap_or(1)),
+                            SqlParameter::Integer(transfer_id),
+                            SqlParameter::Text(item_uid.clone()),
+                        ],
+                    )
+                    .await?;
                 if outcome.rows_affected > 0 {
                     continue;
                 }
@@ -5526,9 +5546,14 @@ impl TransferWidgetService {
         }
         for interaction in &package.interactions {
             let metadata_json = valid_json_or_empty_object(&interaction.metadata_json);
-            if let Some(interaction_uid) = normalize_optional_text(interaction.interaction_uid.clone()) {
-                let outcome = self.services.writer.execute_statement(
-                    "UPDATE transfer_interaction
+            if let Some(interaction_uid) =
+                normalize_optional_text(interaction.interaction_uid.clone())
+            {
+                let outcome = self
+                    .services
+                    .writer
+                    .execute_statement(
+                        "UPDATE transfer_interaction
                      SET interaction_kind = ?,
                          direction = ?,
                          quantity = ?,
@@ -5539,19 +5564,20 @@ impl TransferWidgetService {
                          updated_at = CURRENT_TIMESTAMP
                      WHERE transfer_id = ?
                        AND interaction_uid = ?"
-                        .to_string(),
-                    vec![
-                        SqlParameter::Text(interaction.interaction_kind.clone()),
-                        SqlParameter::Text(interaction.direction.clone()),
-                        optional_f64_parameter(interaction.quantity),
-                        SqlParameter::Text(interaction.state.clone()),
-                        optional_text_parameter(interaction.dependency_kind.clone()),
-                        SqlParameter::Text(metadata_json.clone()),
-                        SqlParameter::Integer(interaction.version.unwrap_or(1)),
-                        SqlParameter::Integer(transfer_id),
-                        SqlParameter::Text(interaction_uid.clone()),
-                    ],
-                ).await?;
+                            .to_string(),
+                        vec![
+                            SqlParameter::Text(interaction.interaction_kind.clone()),
+                            SqlParameter::Text(interaction.direction.clone()),
+                            optional_f64_parameter(interaction.quantity),
+                            SqlParameter::Text(interaction.state.clone()),
+                            optional_text_parameter(interaction.dependency_kind.clone()),
+                            SqlParameter::Text(metadata_json.clone()),
+                            SqlParameter::Integer(interaction.version.unwrap_or(1)),
+                            SqlParameter::Integer(transfer_id),
+                            SqlParameter::Text(interaction_uid.clone()),
+                        ],
+                    )
+                    .await?;
                 if outcome.rows_affected > 0 {
                     continue;
                 }
@@ -5717,8 +5743,10 @@ impl TransferWidgetService {
             ).await?;
         }
         for message in &package.messages {
-            self.services.writer.execute_statement(
-                "INSERT INTO transfer_message(transfer_id, body, created_at)
+            self.services
+                .writer
+                .execute_statement(
+                    "INSERT INTO transfer_message(transfer_id, body, created_at)
                  SELECT ?, ?, ?
                  WHERE NOT EXISTS (
                     SELECT 1 FROM transfer_message
@@ -5727,15 +5755,16 @@ impl TransferWidgetService {
                       AND created_at = ?
                  )"
                     .to_string(),
-                vec![
-                    SqlParameter::Integer(transfer_id),
-                    SqlParameter::Text(message.body.clone()),
-                    SqlParameter::Text(message.created_at.clone()),
-                    SqlParameter::Integer(transfer_id),
-                    SqlParameter::Text(message.body.clone()),
-                    SqlParameter::Text(message.created_at.clone()),
-                ],
-            ).await?;
+                    vec![
+                        SqlParameter::Integer(transfer_id),
+                        SqlParameter::Text(message.body.clone()),
+                        SqlParameter::Text(message.created_at.clone()),
+                        SqlParameter::Integer(transfer_id),
+                        SqlParameter::Text(message.body.clone()),
+                        SqlParameter::Text(message.created_at.clone()),
+                    ],
+                )
+                .await?;
         }
         Ok(())
     }
@@ -8791,12 +8820,7 @@ fn package_side_view(
         public_key,
         record_id: item.and_then(|item| item.source_record_id).unwrap_or(0),
         head: item
-            .map(|item| {
-                item.title
-                    .clone()
-                    .trim()
-                    .to_string()
-            })
+            .map(|item| item.title.clone().trim().to_string())
             .filter(|value| !value.is_empty())
             .or_else(|| {
                 item.and_then(|item| item.record_head_snapshot.clone())

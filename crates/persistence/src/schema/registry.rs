@@ -16,7 +16,7 @@ use crate::{
         karma::{KarmaConditionRow, KarmaConsequenceRow, KarmaRow},
         sidecars::{
             RecordCommentRow, RecordExtensionRow, RecordLinkRow, RecordResourceRefRow,
-            RecordWorklogRow,
+            RecordWorklogRow, WorkAssignmentRow, WorkMetadataRow, WorkSubjectRow,
         },
     },
     schema::types::{Table, TableSchema},
@@ -68,5 +68,8 @@ pub fn declared_tables() -> Vec<TableSchema> {
         RecordCommentRow::schema(),
         RecordWorklogRow::schema(),
         RecordResourceRefRow::schema(),
+        WorkMetadataRow::schema(),
+        WorkSubjectRow::schema(),
+        WorkAssignmentRow::schema(),
     ]
 }

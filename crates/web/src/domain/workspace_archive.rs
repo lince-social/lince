@@ -156,8 +156,8 @@ pub fn reconstruct_package_from_card(card: &BoardCard) -> Result<LincePackage, S
             details:
                 "Widget reconstruido automaticamente a partir do estado exportado de um workspace."
                     .into(),
-            initial_width: card.w,
-            initial_height: card.h,
+            initial_width: package_width_hint(card),
+            initial_height: package_height_hint(card),
             requires_server: card.requires_server,
             permissions: card.permissions.clone(),
         }
@@ -167,8 +167,8 @@ pub fn reconstruct_package_from_card(card: &BoardCard) -> Result<LincePackage, S
         title,
         author: fallback_string(&card.author, &manifest.author),
         description: fallback_string(&card.description, &manifest.description),
-        initial_width: card.w,
-        initial_height: card.h,
+        initial_width: package_width_hint(card),
+        initial_height: package_height_hint(card),
         requires_server: card.requires_server || manifest.requires_server,
         permissions: if card.permissions.is_empty() {
             manifest.permissions.clone()
@@ -192,6 +192,14 @@ pub fn reconstruct_package_from_card(card: &BoardCard) -> Result<LincePackage, S
     } else {
         LincePackage::new(Some(filename), manifest, html)
     }
+}
+
+fn package_width_hint(card: &BoardCard) -> u8 {
+    ((card.width / 180.0).round() as i64).clamp(1, 6) as u8
+}
+
+fn package_height_hint(card: &BoardCard) -> u8 {
+    ((card.height / 160.0).round() as i64).clamp(1, 6) as u8
 }
 
 fn is_workspace_archive_filename(filename: &str) -> bool {
@@ -239,7 +247,7 @@ fn read_archive_entry_bytes(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::board::{BoardCard, BoardWorkspace};
+    use crate::domain::board::{BoardCard, BoardWorkspace, default_camera};
     use serde_json::{Map, Value};
 
     #[test]
@@ -247,6 +255,7 @@ mod tests {
         let workspace = BoardWorkspace {
             id: "space-1".into(),
             name: "Area 1".into(),
+            camera: default_camera(),
             cards: vec![BoardCard {
                 id: "card-1".into(),
                 kind: "package".into(),
@@ -262,10 +271,10 @@ mod tests {
                 view_id: None,
                 streams_enabled: true,
                 widget_state: Value::Object(Map::new()),
-                x: 1,
-                y: 1,
-                w: 4,
-                h: 3,
+                x: 49_000.0,
+                y: 49_000.0,
+                width: 720.0,
+                height: 480.0,
             }],
         };
 

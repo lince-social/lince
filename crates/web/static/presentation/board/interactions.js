@@ -1,9 +1,7 @@
 import {
   buildMoveCandidate,
   buildResizeCandidate,
-  deltaToGrid,
-  isAreaAvailable,
-  measureBoard,
+  screenDeltaToWorldDelta,
 } from "./grid.js";
 
 function cloneCard(card) {
@@ -16,6 +14,7 @@ export function attachBoardInteractions({
   readCards,
   replaceCards,
   isEditMode,
+  getScale,
   onInteractionStart,
   onInteractionEnd,
   onEdgeTransferPreview,
@@ -56,7 +55,9 @@ export function attachBoardInteractions({
       return;
     }
 
-    const isInteractiveElement = event.target.closest("a, button, input, select, textarea");
+    const isInteractiveElement = event.target.closest(
+      "a, button, input, select, textarea",
+    );
     if (isInteractiveElement && !handle) {
       return;
     }
@@ -69,6 +70,7 @@ export function attachBoardInteractions({
     }
 
     event.preventDefault();
+    event.stopPropagation();
 
     interaction = {
       pointerId: event.pointerId,
@@ -80,7 +82,7 @@ export function attachBoardInteractions({
       baseCards: cards.map(cloneCard),
       startX: event.clientX,
       startY: event.clientY,
-      metrics: measureBoard(boardElement, config),
+      scale: typeof getScale === "function" ? getScale() : 1,
     };
 
     cardElement.setPointerCapture?.(event.pointerId);
@@ -99,25 +101,24 @@ export function attachBoardInteractions({
 
     event.preventDefault();
 
-    const delta = deltaToGrid(
+    const delta = screenDeltaToWorldDelta(
       event.clientX - interaction.startX,
       event.clientY - interaction.startY,
-      interaction.metrics,
+      interaction.scale,
     );
 
     const candidate =
       interaction.type === "move"
         ? buildMoveCandidate(interaction.origin, delta, config)
-        : buildResizeCandidate(interaction.origin, interaction.handle, delta, config);
+        : buildResizeCandidate(
+            interaction.origin,
+            interaction.handle,
+            delta,
+            config,
+          );
 
     if (interaction.type === "move") {
       onEdgeTransferPreview?.(resolveEdgeTransferDirection(event.clientX));
-    }
-
-    if (
-      !isAreaAvailable(interaction.baseCards, candidate, config, interaction.cardId)
-    ) {
-      return;
     }
 
     interaction.current = candidate;

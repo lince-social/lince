@@ -1,11 +1,16 @@
 import {
+  arrangeCardsInCircle,
   applyDensity,
   clampDensityLevel,
+  defaultCamera,
   findOpenPosition,
   normalizeLayout,
+  normalizeWorld,
+  sanitizeCamera,
+  sanitizeCard,
 } from "./grid.js";
 
-const DEFAULT_CARD_SIZE = { w: 3, h: 2 };
+const DEFAULT_CARD_SIZE = { width: 640, height: 420 };
 
 function cloneJsonValue(value, fallback = {}) {
   try {
@@ -30,9 +35,18 @@ function cloneCards(cards) {
   return cards.map(cloneCard);
 }
 
+function cloneCamera(camera) {
+  return {
+    x: Number(camera?.x) || 0,
+    y: Number(camera?.y) || 0,
+    scale: Number(camera?.scale) || 1,
+  };
+}
+
 function cloneWorkspace(workspace) {
   return {
     ...workspace,
+    camera: cloneCamera(workspace.camera),
     cards: cloneCards(workspace.cards),
   };
 }
@@ -53,9 +67,11 @@ function nextEntityId(prefix) {
 }
 
 function normalizeWorkspace(workspace, index, config) {
+  const world = normalizeWorld(config.world);
   return {
     id: String(workspace?.id || `space-${index + 1}`),
     name: String(workspace?.name || `Area ${index + 1}`),
+    camera: sanitizeCamera(workspace?.camera, world),
     cards: normalizeLayout(
       Array.isArray(workspace?.cards) ? workspace.cards : [],
       config,
@@ -69,16 +85,19 @@ function createFallbackState(seedCards, config) {
   return {
     density: config.density,
     globalStreamsEnabled: true,
+    world: normalizeWorld(config.world),
     activeWorkspaceId: "space-1",
     workspaces: [
       {
         id: "space-1",
         name: "Area 1",
+        camera: defaultCamera(config.world),
         cards: normalizeLayout(seedCards, config),
       },
       {
         id: "space-2",
         name: "Area 2",
+        camera: defaultCamera(config.world),
         cards: [],
       },
     ],
@@ -86,17 +105,20 @@ function createFallbackState(seedCards, config) {
 }
 
 function loadState(initialBoardState, seedCards, config) {
-  const fallback = createFallbackState(seedCards, config);
   const parsed =
     initialBoardState && typeof initialBoardState === "object"
       ? initialBoardState
       : null;
 
+  if (parsed?.world) {
+    config.world = normalizeWorld(parsed.world);
+  }
+  applyDensity(config, clampDensityLevel(parsed?.density ?? config.density));
+
+  const fallback = createFallbackState(seedCards, config);
   if (!parsed) {
     return fallback;
   }
-
-  applyDensity(config, clampDensityLevel(parsed.density));
 
   const workspaces = Array.isArray(parsed.workspaces)
     ? parsed.workspaces
@@ -117,8 +139,53 @@ function loadState(initialBoardState, seedCards, config) {
   return {
     density: config.density,
     globalStreamsEnabled: parsed.globalStreamsEnabled !== false,
+    world: normalizeWorld(config.world),
     activeWorkspaceId,
     workspaces,
+  };
+}
+
+function exportCard(card) {
+  const {
+    id: cardId,
+    kind,
+    title,
+    description,
+    text,
+    html,
+    author,
+    permissions,
+    packageName,
+    requiresServer,
+    serverId,
+    viewId,
+    streamsEnabled,
+    widgetState,
+    x,
+    y,
+    width,
+    height,
+  } = card;
+
+  return {
+    id: cardId,
+    kind,
+    title,
+    description,
+    text,
+    html,
+    author,
+    permissions,
+    packageName,
+    requiresServer,
+    serverId,
+    viewId,
+    streamsEnabled,
+    widgetState: cloneJsonValue(widgetState, {}),
+    x,
+    y,
+    width,
+    height,
   };
 }
 
@@ -126,56 +193,25 @@ function exportState(state) {
   return {
     density: state.density,
     globalStreamsEnabled: state.globalStreamsEnabled !== false,
+    world: normalizeWorld(state.world),
     activeWorkspaceId: state.activeWorkspaceId,
-    workspaces: state.workspaces.map(({ id, name, cards }) => ({
+    workspaces: state.workspaces.map(({ id, name, camera, cards }) => ({
       id,
       name,
-      cards: cards.map(
-        ({
-          id: cardId,
-          kind,
-          title,
-          description,
-          text,
-          html,
-          author,
-          permissions,
-          packageName,
-          requiresServer,
-          serverId,
-          viewId,
-          streamsEnabled,
-          widgetState,
-          x,
-          y,
-          w,
-          h,
-        }) => ({
-          id: cardId,
-          kind,
-          title,
-          description,
-          text,
-          html,
-          author,
-          permissions,
-          packageName,
-          requiresServer,
-          serverId,
-          viewId,
-          streamsEnabled,
-          widgetState: cloneJsonValue(widgetState, {}),
-          x,
-          y,
-          w,
-          h,
-        }),
-      ),
+      camera: cloneCamera(camera),
+      cards: cards.map(exportCard),
     })),
   };
 }
 
-function cardTemplate(index) {
+function cardTemplate(index, centerPoint, config) {
+  const position = findOpenPosition(
+    [],
+    DEFAULT_CARD_SIZE,
+    config,
+    centerPoint,
+  );
+
   return {
     id: nextEntityId("card"),
     kind: "text",
@@ -192,9 +228,7 @@ function cardTemplate(index) {
     viewId: null,
     streamsEnabled: true,
     widgetState: {},
-    ...DEFAULT_CARD_SIZE,
-    x: 1,
-    y: 1,
+    ...position,
   };
 }
 
@@ -226,18 +260,18 @@ export function createBoardStore({
 
   function buildSnapshot() {
     const activeWorkspace = getActiveWorkspace();
+    const world = normalizeWorld(state.world);
 
     return {
       density: state.density,
       activeWorkspaceId: activeWorkspace.id,
       workspaces: cloneWorkspaces(state.workspaces),
       activeWorkspace: cloneWorkspace(activeWorkspace),
+      activeCamera: cloneCamera(activeWorkspace.camera),
       cards: cloneCards(activeWorkspace.cards),
       boardState: exportState(state),
       layout: {
-        cols: config.cols,
-        rows: config.rows,
-        gap: config.gap,
+        world,
         density: config.density,
         densityLabel: config.densityLabel,
       },
@@ -281,17 +315,8 @@ export function createBoardStore({
     return commit(options);
   }
 
-  function replaceWorkspaceCards(workspaceId, nextCards, options = {}) {
-    const workspace = getWorkspaceById(workspaceId);
-    if (!workspace) {
-      return buildSnapshot();
-    }
-
-    workspace.cards = normalizeLayout(nextCards, config);
-    return commit(options);
-  }
-
   function normalizeAllWorkspaces() {
+    state.world = normalizeWorld(config.world);
     state.workspaces = state.workspaces.map((workspace, index) =>
       normalizeWorkspace(workspace, index, config),
     );
@@ -329,6 +354,7 @@ export function createBoardStore({
           name: String(
             workspaceLike?.name || `Area ${state.workspaces.length + 1}`,
           ),
+          camera: workspaceLike?.camera || defaultCamera(config.world),
           cards: Array.isArray(workspaceLike?.cards) ? workspaceLike.cards : [],
         },
         state.workspaces.length,
@@ -343,64 +369,65 @@ export function createBoardStore({
       commit(options);
       return cloneWorkspace(workspace);
     },
-    addCard() {
+    addCard(options = {}) {
       const activeWorkspace = getActiveWorkspace();
-      const nextCard = cardTemplate(activeWorkspace.cards.length + 1);
-      const position = findOpenPosition(
-        activeWorkspace.cards,
-        DEFAULT_CARD_SIZE,
+      const created = cardTemplate(
+        activeWorkspace.cards.length + 1,
+        options.center,
         config,
       );
 
-      if (!position) {
-        return null;
-      }
-
-      const created = { ...nextCard, ...position };
       replaceActiveWorkspaceCards([...activeWorkspace.cards, created]);
       return created;
     },
-    addImportedCard(cardDefinition) {
+    addImportedCard(cardDefinition, options = {}) {
       const activeWorkspace = getActiveWorkspace();
       const requestedSize = {
-        w: Number(cardDefinition?.w) || DEFAULT_CARD_SIZE.w,
-        h: Number(cardDefinition?.h) || DEFAULT_CARD_SIZE.h,
+        width:
+          Number(cardDefinition?.width) ||
+          (Number(cardDefinition?.w) || 0) * 180 ||
+          DEFAULT_CARD_SIZE.width,
+        height:
+          Number(cardDefinition?.height) ||
+          (Number(cardDefinition?.h) || 0) * 160 ||
+          DEFAULT_CARD_SIZE.height,
       };
       const position = findOpenPosition(
         activeWorkspace.cards,
         requestedSize,
         config,
+        options.center,
       );
 
-      if (!position) {
-        return null;
-      }
-
-      const created = {
-        id: nextEntityId("card"),
-        kind: "package",
-        title: String(cardDefinition?.title || "Card importado"),
-        description: String(
-          cardDefinition?.description || "Card importado de um widget HTML.",
-        ),
-        text: "",
-        html: String(cardDefinition?.html || ""),
-        author: String(cardDefinition?.author || ""),
-        permissions: Array.isArray(cardDefinition?.permissions)
-          ? cardDefinition.permissions.map((permission) => String(permission))
-          : [],
-        packageName: String(cardDefinition?.packageName || ""),
-        requiresServer: cardDefinition?.requiresServer === true,
-        serverId: String(cardDefinition?.serverId || ""),
-        viewId:
-          cardDefinition?.viewId == null
-            ? null
-            : Number(cardDefinition.viewId) || null,
-        streamsEnabled: cardDefinition?.streamsEnabled !== false,
-        widgetState: cloneJsonValue(cardDefinition?.widgetState, {}),
-        ...requestedSize,
-        ...position,
-      };
+      const created = sanitizeCard(
+        {
+          id: nextEntityId("card"),
+          kind: "package",
+          title: String(cardDefinition?.title || "Card importado"),
+          description: String(
+            cardDefinition?.description || "Card importado de um widget HTML.",
+          ),
+          text: "",
+          html: String(cardDefinition?.html || ""),
+          author: String(cardDefinition?.author || ""),
+          permissions: Array.isArray(cardDefinition?.permissions)
+            ? cardDefinition.permissions.map((permission) => String(permission))
+            : [],
+          packageName: String(cardDefinition?.packageName || ""),
+          requiresServer: cardDefinition?.requiresServer === true,
+          serverId: String(cardDefinition?.serverId || ""),
+          viewId:
+            cardDefinition?.viewId == null
+              ? null
+              : Number(cardDefinition.viewId) || null,
+          streamsEnabled: cardDefinition?.streamsEnabled !== false,
+          widgetState: cloneJsonValue(cardDefinition?.widgetState, {}),
+          ...requestedSize,
+          ...position,
+        },
+        activeWorkspace.cards.length,
+        config,
+      );
 
       replaceActiveWorkspaceCards([...activeWorkspace.cards, created]);
       return created;
@@ -444,14 +471,12 @@ export function createBoardStore({
       const position = findOpenPosition(
         targetWorkspace.cards,
         {
-          w: Number(card.w) || DEFAULT_CARD_SIZE.w,
-          h: Number(card.h) || DEFAULT_CARD_SIZE.h,
+          width: Number(card.width) || DEFAULT_CARD_SIZE.width,
+          height: Number(card.height) || DEFAULT_CARD_SIZE.height,
         },
         config,
+        options.center,
       );
-      if (!position) {
-        return null;
-      }
 
       sourceWorkspace.cards = sourceWorkspace.cards.filter(
         (entry) => entry.id !== cardId,
@@ -479,6 +504,7 @@ export function createBoardStore({
       const workspace = {
         id: nextEntityId("space"),
         name: `Area ${state.workspaces.length + 1}`,
+        camera: defaultCamera(config.world),
         cards: [],
       };
 
@@ -539,8 +565,23 @@ export function createBoardStore({
     updateDensity(level) {
       applyDensity(config, clampDensityLevel(level));
       state.density = config.density;
+      state.world = normalizeWorld(config.world);
       normalizeAllWorkspaces();
       return commit();
+    },
+    updateActiveCamera(camera, options = {}) {
+      const activeWorkspace = getActiveWorkspace();
+      activeWorkspace.camera = sanitizeCamera(camera, state.world);
+      return commit(options);
+    },
+    reorganizeActiveCards(centerPoint, options = {}) {
+      const activeWorkspace = getActiveWorkspace();
+      activeWorkspace.cards = arrangeCardsInCircle(
+        activeWorkspace.cards,
+        centerPoint,
+        config,
+      );
+      return commit(options);
     },
     setGlobalStreamsEnabled(enabled, options = {}) {
       state.globalStreamsEnabled = Boolean(enabled);

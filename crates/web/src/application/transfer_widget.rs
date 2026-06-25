@@ -10258,10 +10258,12 @@ mod tests {
         BoardState {
             density: 4,
             global_streams_enabled: true,
+            world: crate::domain::board::default_world(),
             active_workspace_id: "space-1".to_string(),
             workspaces: vec![BoardWorkspace {
                 id: "space-1".to_string(),
                 name: "Test".to_string(),
+                camera: crate::domain::board::default_camera(),
                 cards: vec![BoardCard {
                     id: "transfer-test".to_string(),
                     kind: "widget".to_string(),
@@ -10277,10 +10279,10 @@ mod tests {
                     view_id: None,
                     streams_enabled: true,
                     widget_state: json!({}),
-                    x: 0,
-                    y: 0,
-                    w: 4,
-                    h: 4,
+                    x: 49_000.0,
+                    y: 49_000.0,
+                    width: 720.0,
+                    height: 640.0,
                 }],
             }],
         }

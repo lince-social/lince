@@ -227,6 +227,10 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
     gap: 8px;
   }
 
+  #visualization-toggle {
+    min-width: 88px;
+  }
+
   .tabs {
     display: inline-flex;
     align-items: center;
@@ -566,6 +570,105 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
     min-height: calc(100vh - 86px);
   }
 
+  .transferApp[data-visualization="graph"] .workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .transferApp[data-visualization="graph"] .transferBrowser {
+    display: none;
+  }
+
+  .transferApp[data-visualization="graph"] .transferWorkspace {
+    min-height: calc(100vh - 86px);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 44%);
+    align-items: stretch;
+    gap: 12px;
+    padding: 10px;
+  }
+
+  .transferGraphView {
+    display: none;
+    min-width: 0;
+    min-height: 560px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    background: radial-gradient(circle at 20% 20%, rgba(134, 199, 255, 0.1), transparent 28%), #0e1218;
+  }
+
+  .transferApp[data-visualization="graph"] .transferGraphView {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .graphToolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid var(--line);
+    padding: 10px 12px;
+    background: rgba(23, 27, 33, 0.86);
+  }
+
+  .graphToolbar h2 {
+    font-size: 0.95rem;
+  }
+
+  .graphActions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .transferGraph {
+    width: 100%;
+    height: 100%;
+    min-height: 500px;
+    touch-action: none;
+  }
+
+  .transferGraphLinks line {
+    stroke: rgba(134, 199, 255, 0.32);
+    stroke-width: 2;
+  }
+
+  .transferGraphNode {
+    cursor: pointer;
+  }
+
+  .transferGraphNode circle {
+    stroke: rgba(255, 255, 255, 0.72);
+    stroke-width: 1.5;
+    filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.45));
+  }
+
+  .transferGraphNode[data-active="true"] circle {
+    stroke: #ffffff;
+    stroke-width: 3;
+  }
+
+  .transferGraphNodeTitle,
+  .transferGraphNodeMeta {
+    paint-order: stroke;
+    stroke: rgba(14, 18, 24, 0.9);
+    stroke-width: 4px;
+    stroke-linejoin: round;
+    fill: var(--text);
+    font-weight: 700;
+    pointer-events: none;
+  }
+
+  .transferGraphNodeTitle {
+    font-size: 13px;
+  }
+
+  .transferGraphNodeMeta {
+    fill: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
   .transferRow[data-active="true"] {
     border-color: rgba(134, 199, 255, 0.55);
     background: #223043;
@@ -578,6 +681,26 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
     display: grid;
     align-content: start;
     gap: 12px;
+  }
+
+  .transferApp[data-visualization="graph"] .transferDetail {
+    overflow: auto;
+    max-height: calc(100vh - 110px);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(16, 18, 22, 0.96);
+  }
+
+  .graphDetailClose {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-color: rgba(134, 199, 255, 0.5);
+    background: rgba(32, 38, 47, 0.96);
   }
 
   .srOnly {

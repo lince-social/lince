@@ -287,7 +287,11 @@ pub struct TransferTreeConfigRow {
     columns = "transfer_id, participation_kind"
 ))]
 #[table(index(name = "idx_transfer_party_public_key", columns = "public_key"))]
-#[table(index(name = "uq_transfer_party_uid", columns = "transfer_id, party_uid", unique))]
+#[table(index(
+    name = "uq_transfer_party_uid",
+    columns = "transfer_id, party_uid",
+    unique
+))]
 pub struct TransferPartyRow {
     #[table(primary_key)]
     pub id: i64,
@@ -669,7 +673,10 @@ pub struct TransferVisibilityPolicyRow {
     pub id: i64,
     #[table(references = "transfer(id) ON DELETE CASCADE", unique)]
     pub transfer_id: i64,
-    #[table(default = "'hidden'", check = "visibility_mode IN ('hidden', 'public', 'restricted')")]
+    #[table(
+        default = "'hidden'",
+        check = "visibility_mode IN ('hidden', 'public', 'restricted')"
+    )]
     pub visibility_mode: String,
     #[table(check = "max_visible_proximity IS NULL OR max_visible_proximity >= 0")]
     pub max_visible_proximity: Option<i64>,
@@ -687,10 +694,7 @@ pub struct TransferVisibilityPolicyRow {
     name = "idx_transfer_visibility_wave_transfer",
     columns = "transfer_id"
 ))]
-#[table(index(
-    name = "idx_transfer_visibility_wave_karma",
-    columns = "karma_id"
-))]
+#[table(index(name = "idx_transfer_visibility_wave_karma", columns = "karma_id"))]
 pub struct TransferVisibilityWaveRow {
     #[table(primary_key)]
     pub id: i64,

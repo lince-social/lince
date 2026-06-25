@@ -57,7 +57,8 @@ impl OrganStore {
     }
 
     pub async fn create(&self, name: String, base_url: String) -> Result<Organ, String> {
-        self.create_with_options(name, base_url, "known", false).await
+        self.create_with_options(name, base_url, "known", false)
+            .await
     }
 
     pub async fn create_discovered(&self, name: String, base_url: String) -> Result<Organ, String> {
@@ -65,7 +66,8 @@ impl OrganStore {
         if let Some(existing) = self.find_by_base_url(&base_url).await? {
             return Ok(existing);
         }
-        self.create_with_options(name, base_url, "unknown", false).await
+        self.create_with_options(name, base_url, "unknown", false)
+            .await
     }
 
     async fn create_with_options(
@@ -77,7 +79,11 @@ impl OrganStore {
     ) -> Result<Organ, String> {
         let (name, base_url) = normalize_organ_fields(name, base_url)?;
         let trust_state = normalize_trust_state(trust_state)?;
-        let contact_discovery_enabled = if contact_discovery_enabled { 1_i64 } else { 0_i64 };
+        let contact_discovery_enabled = if contact_discovery_enabled {
+            1_i64
+        } else {
+            0_i64
+        };
         let outcome = self
             .writer
             .execute_statement_returning_id(
@@ -149,7 +155,10 @@ impl OrganStore {
             .writer
             .execute_statement(
                 "UPDATE organ SET trust_state = ? WHERE id = ?".to_string(),
-                vec![SqlParameter::Text(trust_state), SqlParameter::Integer(organ_id)],
+                vec![
+                    SqlParameter::Text(trust_state),
+                    SqlParameter::Integer(organ_id),
+                ],
             )
             .await
             .map_err(|error| format!("Nao consegui atualizar confianca do orgao: {error}"))?;
@@ -169,7 +178,10 @@ impl OrganStore {
             .writer
             .execute_statement(
                 "UPDATE organ SET contact_discovery_enabled = ? WHERE id = ?".to_string(),
-                vec![SqlParameter::Integer(enabled), SqlParameter::Integer(organ_id)],
+                vec![
+                    SqlParameter::Integer(enabled),
+                    SqlParameter::Integer(organ_id),
+                ],
             )
             .await
             .map_err(|error| {
@@ -193,7 +205,10 @@ impl OrganStore {
             .writer
             .execute_statement(
                 "UPDATE organ SET proximity = ? WHERE id = ?".to_string(),
-                vec![SqlParameter::Integer(proximity), SqlParameter::Integer(organ_id)],
+                vec![
+                    SqlParameter::Integer(proximity),
+                    SqlParameter::Integer(organ_id),
+                ],
             )
             .await
             .map_err(|error| format!("Nao consegui atualizar proximidade do orgao: {error}"))?;

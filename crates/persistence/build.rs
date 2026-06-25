@@ -195,10 +195,7 @@ fn manual_migration_drops_table(migrations_dir: &Path, table_name: &str) -> Resu
             continue;
         }
         let sql = fs::read_to_string(path)?.to_lowercase();
-        let normalized = sql
-            .split_whitespace()
-            .collect::<Vec<_>>()
-            .join(" ");
+        let normalized = sql.split_whitespace().collect::<Vec<_>>().join(" ");
         if normalized.contains(&drop_table) || normalized.contains(&drop_table_if_exists) {
             return Ok(true);
         }

@@ -143,7 +143,11 @@ pub fn normalized_permission_strings<I>(permissions: I) -> Vec<String>
 where
     I: IntoIterator<Item = String>,
 {
-    permissions.into_iter().collect::<BTreeSet<_>>().into_iter().collect()
+    permissions
+        .into_iter()
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect()
 }
 
 #[derive(Clone)]
@@ -295,15 +299,12 @@ impl AuthService {
             loop {
                 match invalidation_rx.recv().await {
                     Ok(event) => {
-                        let should_refresh = event
-                            .changed_tables
-                            .iter()
-                            .any(|table| {
-                                matches!(
-                                    table.as_str(),
-                                    "app_user" | "role" | "permission" | "role_permission"
-                                )
-                            });
+                        let should_refresh = event.changed_tables.iter().any(|table| {
+                            matches!(
+                                table.as_str(),
+                                "app_user" | "role" | "permission" | "role_permission"
+                            )
+                        });
 
                         if should_refresh {
                             let _ = service.refresh_cache().await;

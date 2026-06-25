@@ -1,5 +1,36 @@
+const DEFAULT_WORLD = {
+  width: 10_000,
+  height: 10_000,
+  snap: 40,
+};
+
+const DEFAULT_CARD_SIZE = {
+  width: 640,
+  height: 420,
+};
+
+const MIN_CARD_SIZE = {
+  width: 240,
+  height: 180,
+};
+
+const SNAP_PRESETS = [
+  { level: 1, label: "livre", snap: 80 },
+  { level: 2, label: "largo", snap: 64 },
+  { level: 3, label: "medio", snap: 48 },
+  { level: 4, label: "padrao", snap: 40 },
+  { level: 5, label: "fino", snap: 32 },
+  { level: 6, label: "preciso", snap: 24 },
+  { level: 7, label: "micro", snap: 16 },
+];
+
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
+}
+
+function finiteNumber(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
 }
 
 function cloneJsonValue(value, fallback = {}) {
@@ -14,11 +45,9 @@ function cloneJsonValue(value, fallback = {}) {
   }
 }
 
-function cloneCard(card) {
-  return {
-    ...card,
-    widgetState: cloneJsonValue(card?.widgetState, {}),
-  };
+function snapValue(value, snap) {
+  const step = Math.max(1, finiteNumber(snap, DEFAULT_WORLD.snap));
+  return Math.round(value / step) * step;
 }
 
 function sanitizePermissions(rawPermissions) {
@@ -30,29 +59,65 @@ function sanitizePermissions(rawPermissions) {
 }
 
 function sanitizeWidgetState(rawWidgetState) {
-  if (rawWidgetState == null) {
-    return {};
-  }
-
-  return cloneJsonValue(rawWidgetState, {});
+  return rawWidgetState == null ? {} : cloneJsonValue(rawWidgetState, {});
 }
 
-const DENSITY_PRESETS = [
-  { level: 1, label: "solto", cols: 10, rows: 7, gap: 18 },
-  { level: 2, label: "aberto", cols: 12, rows: 8, gap: 16 },
-  { level: 3, label: "padrao", cols: 14, rows: 9, gap: 14 },
-  { level: 4, label: "fino", cols: 16, rows: 10, gap: 12 },
-  { level: 5, label: "denso", cols: 18, rows: 11, gap: 10 },
-  { level: 6, label: "compacto", cols: 20, rows: 12, gap: 9 },
-  { level: 7, label: "micro", cols: 22, rows: 13, gap: 8 },
-];
+function cardSizeFromRaw(rawCard) {
+  const width =
+    rawCard?.width ??
+    rawCard?.initialWidth ??
+    rawCard?.initial_width ??
+    (rawCard?.w == null ? null : Number(rawCard.w) * 180);
+  const height =
+    rawCard?.height ??
+    rawCard?.initialHeight ??
+    rawCard?.initial_height ??
+    (rawCard?.h == null ? null : Number(rawCard.h) * 160);
+
+  return {
+    width: finiteNumber(width, DEFAULT_CARD_SIZE.width),
+    height: finiteNumber(height, DEFAULT_CARD_SIZE.height),
+  };
+}
 
 export function clampDensityLevel(level) {
-  return clamp(Math.round(Number(level) || 3), 1, DENSITY_PRESETS.length);
+  return clamp(Math.round(Number(level) || 4), 1, SNAP_PRESETS.length);
 }
 
 export function getDensityPreset(level) {
-  return DENSITY_PRESETS[clampDensityLevel(level) - 1];
+  return SNAP_PRESETS[clampDensityLevel(level) - 1];
+}
+
+export function normalizeWorld(rawWorld) {
+  return {
+    width: clamp(finiteNumber(rawWorld?.width, DEFAULT_WORLD.width), 2_000, 10_000),
+    height: clamp(finiteNumber(rawWorld?.height, DEFAULT_WORLD.height), 2_000, 10_000),
+    snap: clamp(finiteNumber(rawWorld?.snap, DEFAULT_WORLD.snap), 4, 200),
+  };
+}
+
+export function defaultCamera(world = DEFAULT_WORLD) {
+  return {
+    x: -Math.max(0, finiteNumber(world.width, DEFAULT_WORLD.width) / 2 - 800),
+    y: -Math.max(0, finiteNumber(world.height, DEFAULT_WORLD.height) / 2 - 500),
+    scale: 1,
+  };
+}
+
+export function sanitizeCamera(rawCamera, world) {
+  const fallback = defaultCamera(world);
+  const x = finiteNumber(rawCamera?.x, fallback.x);
+  const y = finiteNumber(rawCamera?.y, fallback.y);
+
+  if (Math.abs(x) > world.width || Math.abs(y) > world.height) {
+    return fallback;
+  }
+
+  return {
+    x,
+    y,
+    scale: clamp(finiteNumber(rawCamera?.scale, fallback.scale), 0.1, 3),
+  };
 }
 
 export function applyDensity(config, level) {
@@ -60,47 +125,70 @@ export function applyDensity(config, level) {
 
   config.density = preset.level;
   config.densityLabel = preset.label;
-  config.cols = preset.cols;
-  config.rows = preset.rows;
-  config.gap = preset.gap;
+  config.world = {
+    ...normalizeWorld(config.world),
+    snap: preset.snap,
+  };
 
   return config;
 }
 
 export function createGridConfig(raw) {
-  const config = {
-    cols: Number(raw.cols) || 16,
-    rows: Number(raw.rows) || 10,
-    gap: Number(raw.gap) || 12,
-    density: clampDensityLevel(raw.density || 4),
-    densityLabel: "fino",
+  const world = normalizeWorld(raw?.boardState?.world || raw?.world);
+  return {
+    density: clampDensityLevel(raw?.density || raw?.boardState?.density || 4),
+    densityLabel: getDensityPreset(raw?.density || raw?.boardState?.density || 4).label,
+    world,
   };
-
-  return applyDensity(config, config.density);
 }
 
-export function sanitizeCard(rawCard, index, config) {
+export function viewportCenterWorldPoint(viewportElement, camera, world) {
+  const rect = viewportElement?.getBoundingClientRect?.() || {
+    width: 1600,
+    height: 1000,
+  };
+  const scale = clamp(finiteNumber(camera?.scale, 1), 0.1, 3);
+
+  return {
+    x: clamp((-finiteNumber(camera?.x, 0) + rect.width / 2) / scale, 0, world.width),
+    y: clamp((-finiteNumber(camera?.y, 0) + rect.height / 2) / scale, 0, world.height),
+  };
+}
+
+export function sanitizeCard(rawCard, index, config, placementPoint = null) {
+  const world = normalizeWorld(config.world);
   const kind = rawCard?.kind === "package" ? "package" : "text";
-  const title = String(rawCard?.title || `Resumo ${index + 1}`);
-  const description = String(
-    rawCard?.description ||
-      "Card base pronto para receber tabela, formulario ou mini app.",
-  );
-  const text =
-    kind === "package"
-      ? String(rawCard?.text || "")
-      : String(
-          rawCard?.text ||
-            "Card base pronto para receber tabela, formulario, status ou outro mini app.",
-        );
+  const size = cardSizeFromRaw(rawCard);
+  const rawX = rawCard?.x == null ? null : finiteNumber(rawCard.x, null);
+  const rawY = rawCard?.y == null ? null : finiteNumber(rawCard.y, null);
+  const rawPositionFitsWorld =
+    rawX != null &&
+    rawY != null &&
+    rawX >= 0 &&
+    rawY >= 0 &&
+    rawX <= world.width &&
+    rawY <= world.height;
+  const fallbackPoint = placementPoint || {
+    x: world.width / 2 + index * world.snap,
+    y: world.height / 2 + index * world.snap,
+  };
 
   return clampCard(
     {
       id: String(rawCard?.id || `card-${index + 1}`),
       kind,
-      title,
-      description,
-      text,
+      title: String(rawCard?.title || `Bloco ${index + 1}`),
+      description: String(
+        rawCard?.description ||
+          "Card base pronto para receber tabela, formulario ou mini app.",
+      ),
+      text:
+        kind === "package"
+          ? String(rawCard?.text || "")
+          : String(
+              rawCard?.text ||
+                "Card base pronto para receber tabela, formulario, status ou outro mini app.",
+            ),
       html: kind === "package" ? String(rawCard?.html || "") : "",
       author: kind === "package" ? String(rawCard?.author || "") : "",
       permissions: sanitizePermissions(rawCard?.permissions),
@@ -115,120 +203,162 @@ export function sanitizeCard(rawCard, index, config) {
         kind === "package" ? rawCard?.streamsEnabled !== false : true,
       widgetState:
         kind === "package" ? sanitizeWidgetState(rawCard?.widgetState) : {},
-      x: Number(rawCard?.x) || 1,
-      y: Number(rawCard?.y) || 1,
-      w: Number(rawCard?.w) || 3,
-      h: Number(rawCard?.h) || 2,
+      x: rawPositionFitsWorld ? rawX : fallbackPoint.x - size.width / 2,
+      y: rawPositionFitsWorld ? rawY : fallbackPoint.y - size.height / 2,
+      width: size.width,
+      height: size.height,
     },
     config,
   );
 }
 
 export function clampCard(card, config) {
-  const w = clamp(Math.round(card.w), 1, config.cols);
-  const h = clamp(Math.round(card.h), 1, config.rows);
-  const x = clamp(Math.round(card.x), 1, config.cols - w + 1);
-  const y = clamp(Math.round(card.y), 1, config.rows - h + 1);
+  const world = normalizeWorld(config.world);
+  const width = clamp(
+    snapValue(finiteNumber(card.width, DEFAULT_CARD_SIZE.width), world.snap),
+    MIN_CARD_SIZE.width,
+    world.width,
+  );
+  const height = clamp(
+    snapValue(finiteNumber(card.height, DEFAULT_CARD_SIZE.height), world.snap),
+    MIN_CARD_SIZE.height,
+    world.height,
+  );
+  const x = clamp(
+    snapValue(finiteNumber(card.x, world.width / 2 - width / 2), world.snap),
+    0,
+    Math.max(0, world.width - width),
+  );
+  const y = clamp(
+    snapValue(finiteNumber(card.y, world.height / 2 - height / 2), world.snap),
+    0,
+    Math.max(0, world.height - height),
+  );
 
   return {
-    ...cloneCard(card),
+    ...card,
     x,
     y,
-    w,
-    h,
+    width,
+    height,
   };
-}
-
-export function cardsOverlap(a, b) {
-  return (
-    a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y
-  );
-}
-
-export function isAreaAvailable(cards, candidate, config, ignoreId = null) {
-  const next = clampCard(candidate, config);
-
-  return cards
-    .filter((card) => card.id !== ignoreId)
-    .every((card) => !cardsOverlap(next, card));
-}
-
-export function findOpenPosition(cards, size, config) {
-  const w = clamp(Math.round(size.w), 1, config.cols);
-  const h = clamp(Math.round(size.h), 1, config.rows);
-
-  for (let y = 1; y <= config.rows - h + 1; y += 1) {
-    for (let x = 1; x <= config.cols - w + 1; x += 1) {
-      const candidate = {
-        id: "__candidate__",
-        kind: "text",
-        title: "",
-        description: "",
-        text: "",
-        html: "",
-        author: "",
-        permissions: [],
-        packageName: "",
-        requiresServer: false,
-        serverId: "",
-        viewId: null,
-        streamsEnabled: true,
-        widgetState: {},
-        x,
-        y,
-        w,
-        h,
-      };
-      if (isAreaAvailable(cards, candidate, config, candidate.id)) {
-        return { x, y, w, h };
-      }
-    }
-  }
-
-  return null;
 }
 
 export function normalizeLayout(cards, config) {
+  return cards.map((card, index) => sanitizeCard(card, index, config));
+}
+
+export function findOpenPosition(cards, size, config, centerPoint = null) {
+  const world = normalizeWorld(config.world);
+  const width = finiteNumber(size?.width ?? size?.w, DEFAULT_CARD_SIZE.width);
+  const height = finiteNumber(size?.height ?? size?.h, DEFAULT_CARD_SIZE.height);
+  const center = centerPoint || {
+    x: world.width / 2,
+    y: world.height / 2,
+  };
+  const offset = cards.length * world.snap;
+
+  return clampCard(
+    {
+      x: center.x - width / 2 + offset,
+      y: center.y - height / 2 + offset,
+      width,
+      height,
+    },
+    config,
+  );
+}
+
+function cardsOverlap(a, b, margin) {
+  return !(
+    a.x + a.width + margin <= b.x ||
+    b.x + b.width + margin <= a.x ||
+    a.y + a.height + margin <= b.y ||
+    b.y + b.height + margin <= a.y
+  );
+}
+
+export function arrangeCardsInCircle(cards, centerPoint, config) {
+  const world = normalizeWorld(config.world);
+  const center = centerPoint || {
+    x: world.width / 2,
+    y: world.height / 2,
+  };
+  const snap = Math.max(1, world.snap);
+  const margin = Math.max(12, snap / 2);
+  const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+  const sorted = cards
+    .map((card, index) => ({
+      card,
+      index,
+      area: Number(card.width) * Number(card.height),
+    }))
+    .sort((a, b) => b.area - a.area);
   const placed = [];
+  const nextById = new Map();
 
-  for (const [index, rawCard] of cards.entries()) {
-    const preferred = sanitizeCard(rawCard, index, config);
-    const position = isAreaAvailable(placed, preferred, config, preferred.id)
-      ? preferred
-      : findOpenPosition(placed, preferred, config);
+  for (const entry of sorted) {
+    const card = entry.card;
+    const width = finiteNumber(card.width, DEFAULT_CARD_SIZE.width);
+    const height = finiteNumber(card.height, DEFAULT_CARD_SIZE.height);
+    let selected = null;
 
-    if (!position) {
-      continue;
+    if (!placed.length) {
+      selected = {
+        x: center.x - width / 2,
+        y: center.y - height / 2,
+        width,
+        height,
+      };
     }
 
-    placed.push({
-      ...preferred,
-      ...position,
-    });
+    for (let ring = 1; !selected && ring <= 80; ring += 1) {
+      const radius = ring * snap * 2;
+      const slots = Math.max(
+        8,
+        Math.ceil((Math.PI * 2 * radius) / Math.max(snap * 3, Math.max(width, height) / 2)),
+      );
+
+      for (let slot = 0; slot < slots; slot += 1) {
+        const angle = entry.index * goldenAngle + (slot / slots) * Math.PI * 2;
+        const candidate = {
+          x: center.x + Math.cos(angle) * radius - width / 2,
+          y: center.y + Math.sin(angle) * radius - height / 2,
+          width,
+          height,
+        };
+
+        if (!placed.some((other) => cardsOverlap(candidate, other, margin))) {
+          selected = candidate;
+          break;
+        }
+      }
+    }
+
+    const arranged = clampCard(
+      {
+        ...card,
+        ...(selected || {
+          x: center.x - width / 2,
+          y: center.y - height / 2,
+          width,
+          height,
+        }),
+      },
+      config,
+    );
+    placed.push(arranged);
+    nextById.set(card.id, arranged);
   }
 
-  return placed;
+  return cards.map((card) => nextById.get(card.id) || card);
 }
 
-export function measureBoard(boardElement, config) {
-  const rect = boardElement.getBoundingClientRect();
-  const cellWidth = (rect.width - (config.cols - 1) * config.gap) / config.cols;
-  const cellHeight =
-    (rect.height - (config.rows - 1) * config.gap) / config.rows;
-
+export function screenDeltaToWorldDelta(moveX, moveY, scale) {
+  const safeScale = clamp(finiteNumber(scale, 1), 0.1, 3);
   return {
-    rect,
-    cellWidth,
-    cellHeight,
-    stepX: cellWidth + config.gap,
-    stepY: cellHeight + config.gap,
-  };
-}
-
-export function deltaToGrid(moveX, moveY, metrics) {
-  return {
-    cols: Math.round(moveX / metrics.stepX),
-    rows: Math.round(moveY / metrics.stepY),
+    x: moveX / safeScale,
+    y: moveY / safeScale,
   };
 }
 
@@ -236,8 +366,8 @@ export function buildMoveCandidate(card, delta, config) {
   return clampCard(
     {
       ...card,
-      x: card.x + delta.cols,
-      y: card.y + delta.rows,
+      x: card.x + delta.x,
+      y: card.y + delta.y,
     },
     config,
   );
@@ -245,52 +375,30 @@ export function buildMoveCandidate(card, delta, config) {
 
 export function buildResizeCandidate(card, handle, delta, config) {
   let left = card.x;
-  let right = card.x + card.w - 1;
+  let right = card.x + card.width;
   let top = card.y;
-  let bottom = card.y + card.h - 1;
+  let bottom = card.y + card.height;
 
   if (handle.includes("w")) {
-    left += delta.cols;
+    left += delta.x;
   }
   if (handle.includes("e")) {
-    right += delta.cols;
+    right += delta.x;
   }
   if (handle.includes("n")) {
-    top += delta.rows;
+    top += delta.y;
   }
   if (handle.includes("s")) {
-    bottom += delta.rows;
+    bottom += delta.y;
   }
 
-  left = clamp(left, 1, config.cols);
-  right = clamp(right, 1, config.cols);
-  top = clamp(top, 1, config.rows);
-  bottom = clamp(bottom, 1, config.rows);
+  const next = {
+    ...card,
+    x: Math.min(left, right - MIN_CARD_SIZE.width),
+    y: Math.min(top, bottom - MIN_CARD_SIZE.height),
+    width: Math.max(MIN_CARD_SIZE.width, right - left),
+    height: Math.max(MIN_CARD_SIZE.height, bottom - top),
+  };
 
-  if (left > right) {
-    if (handle.includes("w")) {
-      left = right;
-    } else {
-      right = left;
-    }
-  }
-
-  if (top > bottom) {
-    if (handle.includes("n")) {
-      top = bottom;
-    } else {
-      bottom = top;
-    }
-  }
-
-  return clampCard(
-    {
-      ...card,
-      x: left,
-      y: top,
-      w: right - left + 1,
-      h: bottom - top + 1,
-    },
-    config,
-  );
+  return clampCard(next, config);
 }

@@ -1053,6 +1053,62 @@ body.auth-pending .startup-auth-card {
     cursor: pointer;
 }
 
+.board-zoom-controls {
+    position: absolute;
+    left: 18px;
+    bottom: 18px;
+    z-index: 4;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    background: rgba(13, 15, 19, 0.88);
+    box-shadow:
+        0 20px 46px rgba(0, 0, 0, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(20px);
+}
+
+.board-zoom-button,
+.board-zoom-indicator {
+    display: inline-grid;
+    place-items: center;
+    height: 32px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--text-soft);
+    cursor: pointer;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.86rem;
+    transition:
+        background var(--transition-fast),
+        color var(--transition-fast);
+}
+
+.board-zoom-button {
+    width: 32px;
+    font-size: 1.05rem;
+}
+
+.board-zoom-button--wide {
+    width: 38px;
+}
+
+.board-zoom-indicator {
+    min-width: 58px;
+    padding: 0 9px;
+    color: var(--text-strong);
+}
+
+.board-zoom-button:hover,
+.board-zoom-indicator:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-strong);
+}
+
 .add-card-popover {
     position: absolute;
     right: 0;
@@ -1168,14 +1224,23 @@ body.auth-pending .startup-auth-card {
 .board-shell {
     --workspace-slide-duration: 720ms;
     --workspace-slide-ease: cubic-bezier(0.22, 0.86, 0.2, 1);
+    --board-world-width: 10000px;
+    --board-world-height: 10000px;
+    --board-snap: 40px;
+    --board-grid-micro: 20px;
+    --board-grid-minor: 40px;
+    --board-grid-major: 320px;
+    --board-grid-micro-opacity: 0.16;
+    --board-grid-minor-opacity: 0.36;
+    --board-grid-major-opacity: 0.5;
     flex: 1;
     position: relative;
     height: auto;
     padding: 20px;
-    overflow: auto;
+    overflow: hidden;
     border: 0;
     border-radius: var(--radius-xl);
-    background: #0b0d11;
+    background: #07080a;
     box-shadow: var(--shadow-lg);
     transition:
         border-color var(--transition-fast),
@@ -1205,7 +1270,7 @@ body.auth-pending .startup-auth-card {
 
 .board-shell.is-editing {
     border-color: rgba(255, 255, 255, 0.08);
-    background: #0d0f13;
+    background: #07080a;
 }
 
 .board-shell.is-transfer-left::after,
@@ -1260,6 +1325,23 @@ body.auth-pending .startup-auth-card {
     min-height: 100%;
     height: 100%;
     overflow: hidden;
+    background: #07080a;
+    touch-action: none;
+}
+
+.board-world {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: var(--board-world-width);
+    height: var(--board-world-height);
+    overflow: visible;
+    background: #171a20;
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.045),
+        0 0 0 1px rgba(0, 0, 0, 0.45);
+    transform-origin: 0 0;
+    will-change: transform;
 }
 
 .drop-zone-overlay {
@@ -1318,38 +1400,28 @@ body.auth-pending .startup-auth-card {
 .cards-layer {
     position: absolute;
     inset: 0;
-    display: grid;
-    grid-template-columns: repeat(var(--board-cols), minmax(0, 1fr));
-    grid-template-rows: repeat(var(--board-rows), minmax(0, 1fr));
-    gap: var(--board-gap);
 }
 
 .board-grid {
     pointer-events: none;
     z-index: 0;
     opacity: 0;
-    transform: translate3d(0, 0, 0) scale(0.995);
+    background: none;
+    transform: translate3d(0, 0, 0);
     transition:
         opacity var(--transition-fast),
         transform var(--transition-fast);
 }
 
 .board-shell.is-editing .board-grid {
-    opacity: 0.72;
-    transform: scale(1);
-}
-
-.board-grid__cell {
-    border: 1px solid rgba(255, 255, 255, 0.035);
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.012);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+    opacity: 0;
 }
 
 .cards-layer {
     position: absolute;
     inset: 0;
     z-index: 2;
+    overflow: visible;
 }
 
 .board-grid,
@@ -1488,7 +1560,7 @@ body.auth-pending .startup-auth-card {
 }
 
 .board-card {
-    position: relative;
+    position: absolute;
     display: flex;
     flex-direction: column;
     gap: 18px;
@@ -1565,7 +1637,6 @@ body.auth-pending .startup-auth-card {
 }
 
 .board-card.is-dragging {
-    transform: translateY(-10px) scale(1.012);
     box-shadow:
         0 34px 72px rgba(0, 0, 0, 0.48),
         0 0 0 1px rgba(255, 255, 255, 0.06),

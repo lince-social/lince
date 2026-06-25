@@ -261,24 +261,20 @@ fn render_board_shell(bootstrap: &AppBootstrap) -> Markup {
 fn render_board_canvas(bootstrap: &AppBootstrap) -> Markup {
     html! {
         div id="board-canvas" class="board-canvas" {
-            (render_board_grid(bootstrap))
-            (render_workspace_empty())
+            div id="board-world" class="board-world" {
+                (render_board_grid())
+                (render_workspace_empty())
+                (render_cards_layer(bootstrap))
+            }
             (render_board_floating_controls())
             (render_drop_zone_overlay())
-            (render_cards_layer(bootstrap))
         }
     }
 }
 
-fn render_board_grid(bootstrap: &AppBootstrap) -> Markup {
-    let cell_count = bootstrap.cols as usize * bootstrap.rows as usize;
-
+fn render_board_grid() -> Markup {
     html! {
-        div id="board-grid" class="board-grid" aria-hidden="true" {
-            @for _ in 0..cell_count {
-                div class="board-grid__cell" {}
-            }
-        }
+        div id="board-grid" class="board-grid" aria-hidden="true" {}
     }
 }
 
@@ -305,6 +301,13 @@ fn render_board_floating_controls() -> Markup {
                 (render_add_card_popover())
             }
             (render_density_tag())
+        }
+        div id="board-zoom-controls" class="board-zoom-controls panzoom-exclude" aria-label="Controles de zoom do canvas" {
+            button id="board-zoom-out" class="board-zoom-button" type="button" aria-label="Diminuir zoom" { "−" }
+            button id="board-zoom-indicator" class="board-zoom-indicator" type="button" aria-label="Voltar zoom para 100%" { "100%" }
+            button id="board-zoom-in" class="board-zoom-button" type="button" aria-label="Aumentar zoom" { "+" }
+            button id="board-recenter" class="board-zoom-button board-zoom-button--wide" type="button" aria-label="Recentralizar canvas" { "⌖" }
+            button id="board-reorganize" class="board-zoom-button board-zoom-button--wide" type="button" aria-label="Reorganizar componentes no centro" { "◎" }
         }
     }
 }

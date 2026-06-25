@@ -1,6 +1,7 @@
 import { attachBoardInteractions } from "./interactions.js";
 import { createGridConfig } from "./grid.js";
 import { createBoardStore } from "./store.js";
+import { createBoardViewport } from "./viewport.js";
 import { createWidgetBridge, enhancePackageHtml } from "./widget-bridge.js";
 
 const PACKAGE_EXTENSION = ".html";
@@ -152,7 +153,13 @@ const workspaceEmptyTitle = document.getElementById("workspace-empty-title");
 const workspaceEmptyCopy = document.getElementById("workspace-empty-copy");
 const boardShell = document.getElementById("board-shell");
 const boardCanvas = document.getElementById("board-canvas");
+const boardWorld = document.getElementById("board-world");
 const boardGrid = document.getElementById("board-grid");
+const boardZoomOut = document.getElementById("board-zoom-out");
+const boardZoomIndicator = document.getElementById("board-zoom-indicator");
+const boardZoomIn = document.getElementById("board-zoom-in");
+const boardRecenter = document.getElementById("board-recenter");
+const boardReorganize = document.getElementById("board-reorganize");
 const dropZoneOverlay = document.getElementById("drop-zone-overlay");
 const dropZoneOverlayEyebrow = document.getElementById(
   "drop-zone-overlay-eyebrow",
@@ -373,7 +380,13 @@ if (
   !workspaceEmptyCopy ||
   !boardShell ||
   !boardCanvas ||
+  !boardWorld ||
   !boardGrid ||
+  !boardZoomOut ||
+  !boardZoomIndicator ||
+  !boardZoomIn ||
+  !boardRecenter ||
+  !boardReorganize ||
   !dropZoneOverlay ||
   !dropZoneOverlayEyebrow ||
   !dropZoneOverlayTitle ||
@@ -554,6 +567,20 @@ const PACKAGE_PREVIEW_WATCH_INTERVAL_MS = 2500;
 const packagePreviewRefreshState = new Map();
 let packagePreviewWatchTimer = null;
 let packagePreviewWatchInFlight = false;
+let cameraPersistTimer = null;
+let lastAppliedCameraWorkspaceId = null;
+
+const boardViewport = createBoardViewport({
+  viewportElement: boardCanvas,
+  worldElement: boardWorld,
+  onCameraChanged(camera) {
+    renderCameraHud(camera, store.getSnapshot().layout.world);
+    window.clearTimeout(cameraPersistTimer);
+    cameraPersistTimer = window.setTimeout(() => {
+      store.updateActiveCamera(camera, { persist: true });
+    }, 180);
+  },
+});
 
 const startupPaths = Array.from(startupScreen.querySelectorAll(".s0"));
 const cardNodes = new Map(
@@ -1420,7 +1447,7 @@ function renderCardMarkup(card) {
   const isPackageCard = card.kind === "package";
   if (isPackageCard) {
     return `
-      <article class="board-card board-card--package" data-card-id="${escapeHtml(card.id)}" data-card-kind="${escapeHtml(card.kind || "package")}">
+      <article class="board-card board-card--package panzoom-exclude" data-card-id="${escapeHtml(card.id)}" data-card-kind="${escapeHtml(card.kind || "package")}">
         ${renderDeleteButton(card)}
         ${renderConfigureButton(card)}
         ${renderRawHtmlDownloadButton(card)}
@@ -1431,7 +1458,7 @@ function renderCardMarkup(card) {
   }
 
   return `
-    <article class="board-card" data-card-id="${escapeHtml(card.id)}" data-card-kind="${escapeHtml(card.kind || "text")}">
+    <article class="board-card panzoom-exclude" data-card-id="${escapeHtml(card.id)}" data-card-kind="${escapeHtml(card.kind || "text")}">
       ${renderDeleteButton(card)}
       <header class="card-header">
         <span class="card-eyebrow">Widget</span>
@@ -1482,13 +1509,15 @@ function createPackageRenderSignature(card) {
 }
 
 function syncCardNode(node, card) {
-  node.style.gridColumn = `${card.x} / span ${card.w}`;
-  node.style.gridRow = `${card.y} / span ${card.h}`;
+  node.style.left = `${card.x}px`;
+  node.style.top = `${card.y}px`;
+  node.style.width = `${card.width}px`;
+  node.style.height = `${card.height}px`;
   node.style.zIndex = card.id === activeCardId ? "4" : "1";
   node.dataset.cardKind = card.kind || "text";
   node.classList.toggle("board-card--package", card.kind === "package");
-  node.classList.toggle("is-compact", card.w <= 2 || card.h <= 2);
-  node.classList.toggle("is-tiny", card.w === 1 || card.h === 1);
+  node.classList.toggle("is-compact", card.width <= 420 || card.height <= 320);
+  node.classList.toggle("is-tiny", card.width <= 280 || card.height <= 220);
   node.classList.toggle("is-active", card.id === activeCardId);
   node.classList.toggle(
     "is-dragging",
@@ -1637,20 +1666,34 @@ function ensureBackgroundPackageCards(snapshot) {
 }
 
 function renderGrid(layout) {
-  boardShell.style.setProperty("--board-cols", layout.cols);
-  boardShell.style.setProperty("--board-rows", layout.rows);
-  boardShell.style.setProperty("--board-gap", `${layout.gap}px`);
+  const world = layout.world || {};
+  const width = Number(world.width) || 10000;
+  const height = Number(world.height) || 10000;
+  const snap = Number(world.snap) || 40;
 
-  const signature = `${layout.cols}:${layout.rows}`;
-  if (boardGrid.dataset.signature === signature) {
-    return;
-  }
+  boardShell.style.setProperty("--board-world-width", `${width}px`);
+  boardShell.style.setProperty("--board-world-height", `${height}px`);
+  boardShell.style.setProperty("--board-snap", `${snap}px`);
+  boardWorld.style.width = `${width}px`;
+  boardWorld.style.height = `${height}px`;
+  boardGrid.style.width = `${width}px`;
+  boardGrid.style.height = `${height}px`;
+  renderCameraHud(boardViewport.getCamera(), {
+    width,
+    height,
+    snap,
+  });
+}
 
-  boardGrid.dataset.signature = signature;
-  boardGrid.innerHTML = Array.from(
-    { length: layout.cols * layout.rows },
-    () => '<div class="board-grid__cell"></div>',
-  ).join("");
+function renderCameraHud(camera) {
+  const scale = Math.max(0.1, Number(camera?.scale) || 1);
+
+  const zoomPercent = Math.round(scale * 100);
+  boardZoomIndicator.textContent = `${zoomPercent}%`;
+  boardZoomIndicator.setAttribute(
+    "aria-label",
+    `Zoom ${zoomPercent}%. Voltar zoom para 100%`,
+  );
 }
 
 function renderWorkspaceList(snapshot) {
@@ -1698,7 +1741,7 @@ function renderWorkspaceList(snapshot) {
 
 function renderDensity(snapshot) {
   densitySlider.value = String(snapshot.density);
-  densityValue.textContent = `${snapshot.layout.cols} x ${snapshot.layout.rows} · ${snapshot.layout.densityLabel}`;
+  densityValue.textContent = `${snapshot.layout.world.snap}px · ${snapshot.layout.densityLabel}`;
 }
 
 function renderStreamsToggle(snapshot) {
@@ -1749,6 +1792,11 @@ function renderSnapshot(snapshot) {
   }
 
   renderGrid(snapshot.layout);
+  if (lastAppliedCameraWorkspaceId !== snapshot.activeWorkspaceId) {
+    boardViewport.setCamera(snapshot.activeCamera, { silent: true });
+    renderCameraHud(snapshot.activeCamera, snapshot.layout.world);
+    lastAppliedCameraWorkspaceId = snapshot.activeWorkspaceId;
+  }
   renderWorkspaceList(snapshot);
   renderDensity(snapshot);
   renderStreamsToggle(snapshot);
@@ -1811,6 +1859,7 @@ function handleWorkspaceEdgeTransfer(card, direction) {
 
   queueWorkspaceTransition(direction);
   const transferred = store.moveCardToAdjacentWorkspace(card.id, direction, {
+    center: boardViewport.centerWorldPoint(),
     persist: true,
   });
   if (!transferred) {
@@ -1861,59 +1910,13 @@ function queueWorkspaceTransition(direction) {
   }
 
   clearWorkspaceTransition();
-
-  const layer = document.createElement("div");
-  layer.className = `workspace-transition-layer ${
-    direction > 0
-      ? "workspace-transition-layer--to-left"
-      : "workspace-transition-layer--to-right"
-  }`;
-
-  const gridClone = boardGrid.cloneNode(true);
-  gridClone.removeAttribute("id");
-  gridClone.classList.add("workspace-transition-layer__grid");
-  layer.appendChild(gridClone);
-
-  const cardsClone = cardsLayer.cloneNode(true);
-  cardsClone.removeAttribute("id");
-  cardsClone.classList.add("workspace-transition-layer__cards");
-  for (const frame of cardsClone.querySelectorAll(
-    "iframe.package-widget__frame",
-  )) {
-    const placeholder = document.createElement("div");
-    placeholder.className = "workspace-transition-frame-placeholder";
-    frame.replaceWith(placeholder);
-  }
-  layer.appendChild(cardsClone);
-
-  if (!workspaceEmpty.hidden) {
-    const emptyClone = workspaceEmpty.cloneNode(true);
-    emptyClone.removeAttribute("id");
-    emptyClone.hidden = false;
-
-    for (const duplicateIdNode of emptyClone.querySelectorAll("[id]")) {
-      duplicateIdNode.removeAttribute("id");
-    }
-
-    emptyClone.classList.add("workspace-transition-layer__empty");
-    layer.appendChild(emptyClone);
-  }
-
-  boardCanvas.appendChild(layer);
   pendingWorkspaceTransitionDirection = direction;
 }
 
 function playWorkspaceTransition(direction) {
   const directionClass = direction > 0 ? "from-right" : "from-left";
-  const outgoingLayer = boardCanvas.querySelector(
-    ".workspace-transition-layer",
-  );
-  if (!outgoingLayer) {
-    return;
-  }
 
   boardShell.classList.add("is-workspace-transitioning");
-  outgoingLayer.getBoundingClientRect();
   boardGrid.classList.add(
     "board-grid--entering",
     `board-grid--${directionClass}`,
@@ -3499,9 +3502,9 @@ function getCardById(cardId) {
 }
 
 function renderImportPreview(preview) {
-  const snapshot = store.getSnapshot();
-  const cols = snapshot.layout.cols;
-  const rows = snapshot.layout.rows;
+  const snap = store.getSnapshot().layout.world.snap;
+  const cols = 12;
+  const rows = 8;
   const cardWidth = Math.max(
     1,
     Math.min(cols, Number(preview.initial_width) || 3),
@@ -3514,18 +3517,18 @@ function renderImportPreview(preview) {
   const cardY = Math.max(1, Math.floor((rows - cardHeight) / 2) + 1);
   const previewOverlay = importPreviewCard.parentElement;
 
-  importPreviewDensity.textContent = `${cols} x ${rows} grid ativa · card ${cardWidth} x ${cardHeight}`;
+  importPreviewDensity.textContent = `canvas ${snap}px snap · card ${cardWidth} x ${cardHeight}`;
   importPreviewCells.style.setProperty("--preview-cols", String(cols));
   importPreviewCells.style.setProperty("--preview-rows", String(rows));
   importPreviewCells.style.setProperty(
     "--preview-gap",
-    `${Math.max(8, snapshot.layout.gap - 4)}px`,
+    "8px",
   );
   previewOverlay?.style.setProperty("--preview-cols", String(cols));
   previewOverlay?.style.setProperty("--preview-rows", String(rows));
   previewOverlay?.style.setProperty(
     "--preview-gap",
-    `${Math.max(8, snapshot.layout.gap - 4)}px`,
+    "8px",
   );
   importPreviewCard.style.gridColumn = `${cardX} / span ${cardWidth}`;
   importPreviewCard.style.gridRow = `${cardY} / span ${cardHeight}`;
@@ -3790,7 +3793,10 @@ function resolvePreviewSize(preview, fallback = null) {
       2,
   );
 
-  return { w: width, h: height };
+  return {
+    width: Math.max(320, width * 180),
+    height: Math.max(240, height * 160),
+  };
 }
 
 function defaultServerIdForPreview(preview) {
@@ -3822,9 +3828,9 @@ function createCardFromPreview(preview, sizeOverride = null) {
     html: preview.html,
     serverId: defaultServerIdForPreview(preview),
     viewId: null,
-    w: size.w,
-    h: size.h,
-  });
+    width: size.width,
+    height: size.height,
+  }, { center: boardViewport.centerWorldPoint() });
 }
 
 function selectedImportMode() {
@@ -3846,9 +3852,9 @@ function createRawHtmlCardFromPreview(preview) {
     html: preview.html,
     serverId: "",
     viewId: null,
-    w: size.w,
-    h: size.h,
-  });
+    width: size.width,
+    height: size.height,
+  }, { center: boardViewport.centerWorldPoint() });
 }
 
 async function addLocalPackageToWorkspace(packageId) {
@@ -4005,10 +4011,13 @@ attachBoardInteractions({
   readCards: () => store.getCards(),
   replaceCards: (cards, options) => store.replaceCards(cards, options),
   isEditMode: () => editMode,
+  getScale: () => boardViewport.getScale(),
   onInteractionStart: (cardId, interactionType) => {
+    boardViewport.setInteractionLocked(true);
     setActiveCard(cardId, interactionType);
   },
   onInteractionEnd: () => {
+    boardViewport.setInteractionLocked(false);
     clearActiveCard();
   },
   onEdgeTransferPreview: (direction) => {
@@ -4090,6 +4099,28 @@ addCardLocalButton.addEventListener("click", () => {
 
 addCardDnaButton.addEventListener("click", () => {
   openDnaPackagesModal();
+});
+
+boardZoomOut.addEventListener("click", () => {
+  boardViewport.zoomBy(0.82);
+});
+
+boardZoomIn.addEventListener("click", () => {
+  boardViewport.zoomBy(1.22);
+});
+
+boardZoomIndicator.addEventListener("click", () => {
+  boardViewport.resetZoom();
+});
+
+boardRecenter.addEventListener("click", () => {
+  boardViewport.recenter(store.getSnapshot().layout.world);
+});
+
+boardReorganize.addEventListener("click", () => {
+  store.reorganizeActiveCards(boardViewport.centerWorldPoint(), {
+    persist: true,
+  });
 });
 
 workspaceToggle.addEventListener("click", () => {

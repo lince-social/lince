@@ -24,10 +24,14 @@ pub struct BoardCard {
     pub streams_enabled: bool,
     #[serde(default = "default_widget_state")]
     pub widget_state: Value,
-    pub x: u8,
-    pub y: u8,
-    pub w: u8,
-    pub h: u8,
+    #[serde(default = "default_card_x")]
+    pub x: f64,
+    #[serde(default = "default_card_y")]
+    pub y: f64,
+    #[serde(default = "default_card_width", alias = "w")]
+    pub width: f64,
+    #[serde(default = "default_card_height", alias = "h")]
+    pub height: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -35,7 +39,25 @@ pub struct BoardCard {
 pub struct BoardWorkspace {
     pub id: String,
     pub name: String,
+    #[serde(default = "default_camera")]
+    pub camera: BoardCamera,
     pub cards: Vec<BoardCard>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BoardCamera {
+    pub x: f64,
+    pub y: f64,
+    pub scale: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BoardWorld {
+    pub width: f64,
+    pub height: f64,
+    pub snap: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -44,6 +66,8 @@ pub struct BoardState {
     pub density: u8,
     #[serde(default = "default_true")]
     pub global_streams_enabled: bool,
+    #[serde(default = "default_world")]
+    pub world: BoardWorld,
     pub active_workspace_id: String,
     pub workspaces: Vec<BoardWorkspace>,
 }
@@ -53,10 +77,8 @@ pub struct BoardState {
 pub struct AppBootstrap {
     pub app_name: &'static str,
     pub runtime: AppRuntimeInfo,
-    pub cols: u8,
-    pub rows: u8,
-    pub gap: u8,
     pub density: u8,
+    pub world: BoardWorld,
     pub cards: Vec<BoardCard>,
     pub board_state: BoardState,
     pub widget_bridge: WidgetBridgeSnapshot,
@@ -92,7 +114,6 @@ impl AppBootstrap {
         runtime: AppRuntimeInfo,
     ) -> Self {
         let density = clamp_density(board_state.density);
-        let (cols, rows, gap) = density_layout(density);
         let cards = board_state
             .workspaces
             .iter()
@@ -103,10 +124,8 @@ impl AppBootstrap {
         Self {
             app_name: "Lince",
             runtime,
-            cols,
-            rows,
-            gap,
             density,
+            world: board_state.world.clone(),
             cards,
             board_state,
             widget_bridge,
@@ -133,16 +152,19 @@ pub fn default_board_state() -> BoardState {
     BoardState {
         density: 4,
         global_streams_enabled: true,
+        world: default_world(),
         active_workspace_id: "space-1".into(),
         workspaces: vec![
             BoardWorkspace {
                 id: "space-1".into(),
                 name: "Area 1".into(),
+                camera: default_camera(),
                 cards: vec![],
             },
             BoardWorkspace {
                 id: "space-2".into(),
                 name: "Area 2".into(),
+                camera: default_camera(),
                 cards: vec![],
             },
         ],
@@ -157,18 +179,38 @@ fn default_widget_state() -> Value {
     Value::Object(Map::new())
 }
 
-fn clamp_density(level: u8) -> u8 {
-    level.clamp(1, 7)
+fn default_card_x() -> f64 {
+    4_680.0
 }
 
-fn density_layout(level: u8) -> (u8, u8, u8) {
-    match clamp_density(level) {
-        1 => (10, 7, 18),
-        2 => (12, 8, 16),
-        3 => (14, 9, 14),
-        4 => (16, 10, 12),
-        5 => (18, 11, 10),
-        6 => (20, 12, 9),
-        _ => (22, 13, 8),
+fn default_card_y() -> f64 {
+    4_800.0
+}
+
+fn default_card_width() -> f64 {
+    640.0
+}
+
+fn default_card_height() -> f64 {
+    420.0
+}
+
+pub fn default_world() -> BoardWorld {
+    BoardWorld {
+        width: 10_000.0,
+        height: 10_000.0,
+        snap: 40.0,
     }
+}
+
+pub fn default_camera() -> BoardCamera {
+    BoardCamera {
+        x: -4_200.0,
+        y: -4_500.0,
+        scale: 1.0,
+    }
+}
+
+fn clamp_density(level: u8) -> u8 {
+    level.clamp(1, 7)
 }

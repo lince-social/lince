@@ -24,8 +24,8 @@ pub(crate) fn asset_version_token() -> u64 {
 
 pub(crate) fn board_style(bootstrap: &AppBootstrap) -> String {
     format!(
-        "--board-cols:{};--board-rows:{};--board-gap:{}px;",
-        bootstrap.cols, bootstrap.rows, bootstrap.gap
+        "--board-world-width:{}px;--board-world-height:{}px;--board-snap:{}px;",
+        bootstrap.world.width, bootstrap.world.height, bootstrap.world.snap
     )
 }
 
@@ -64,9 +64,9 @@ pub(crate) fn render_topbar_brand(title: &str, data_text: Option<&str>) -> Marku
 pub(crate) fn render_card(card: &BoardCard) -> Markup {
     let is_package = card.kind == "package";
     let class_name = if is_package {
-        "board-card board-card--package"
+        "board-card board-card--package panzoom-exclude"
     } else {
-        "board-card"
+        "board-card panzoom-exclude"
     };
 
     html! {
@@ -75,8 +75,8 @@ pub(crate) fn render_card(card: &BoardCard) -> Markup {
             data-card-id=(card.id.as_str())
             data-card-kind=(card.kind.as_str())
             style=(format!(
-                "grid-column: {} / span {}; grid-row: {} / span {};",
-                card.x, card.w, card.y, card.h
+                "left:{}px;top:{}px;width:{}px;height:{}px;",
+                card.x, card.y, card.width, card.height
             ))
         {
             (render_card_delete_button(card.title.as_str()))

@@ -17,6 +17,7 @@ mod organ_management;
 mod relations;
 mod role_access;
 mod sand_publisher;
+mod shell;
 #[path = "shared_markdown/mod.rs"]
 mod shared_markdown;
 mod spotify_control;
@@ -103,7 +104,39 @@ impl OfficialWidgetBuilder {
     }
 }
 
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 23] = [
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 31] = [
+    OfficialWidgetBuilder::Html {
+        feature_flag: shell::FEATURE_FLAG,
+        source_builder: shell::logo_source,
+    },
+    OfficialWidgetBuilder::Html {
+        feature_flag: shell::FEATURE_FLAG,
+        source_builder: shell::operation_source,
+    },
+    OfficialWidgetBuilder::Html {
+        feature_flag: shell::FEATURE_FLAG,
+        source_builder: shell::workspaces_source,
+    },
+    OfficialWidgetBuilder::Html {
+        feature_flag: shell::FEATURE_FLAG,
+        source_builder: shell::notifications_source,
+    },
+    OfficialWidgetBuilder::Html {
+        feature_flag: shell::FEATURE_FLAG,
+        source_builder: shell::edit_source,
+    },
+    OfficialWidgetBuilder::Html {
+        feature_flag: shell::FEATURE_FLAG,
+        source_builder: shell::zoom_source,
+    },
+    OfficialWidgetBuilder::Html {
+        feature_flag: shell::FEATURE_FLAG,
+        source_builder: shell::ai_source,
+    },
+    OfficialWidgetBuilder::Html {
+        feature_flag: shell::FEATURE_FLAG,
+        source_builder: shell::tutorial_source,
+    },
     OfficialWidgetBuilder::Package {
         feature_flag: document_viewer::FEATURE_FLAG,
         package_builder: document_viewer::package,

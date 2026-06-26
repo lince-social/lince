@@ -821,9 +821,8 @@ body.auth-pending .startup-auth-card {
 .workspace {
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    padding: calc(var(--topbar-height) + var(--page-padding))
-        var(--page-padding) var(--page-padding);
+    gap: 0;
+    padding: 0;
     height: 100vh;
 }
 
@@ -1054,10 +1053,10 @@ body.auth-pending .startup-auth-card {
 }
 
 .board-zoom-controls {
-    position: absolute;
-    left: 18px;
-    bottom: 18px;
-    z-index: 4;
+    position: fixed;
+    left: var(--board-fixed-controls-left);
+    bottom: var(--board-fixed-controls-bottom);
+    z-index: 18;
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -1233,15 +1232,17 @@ body.auth-pending .startup-auth-card {
     --board-grid-micro-opacity: 0.16;
     --board-grid-minor-opacity: 0.36;
     --board-grid-major-opacity: 0.5;
+    --board-fixed-controls-left: 18px;
+    --board-fixed-controls-bottom: 18px;
     flex: 1;
     position: relative;
     height: auto;
-    padding: 20px;
+    padding: 0;
     overflow: hidden;
     border: 0;
-    border-radius: var(--radius-xl);
+    border-radius: 0;
     background: #07080a;
-    box-shadow: var(--shadow-lg);
+    box-shadow: none;
     transition:
         border-color var(--transition-fast),
         background var(--transition-fast),
@@ -1422,6 +1423,18 @@ body.auth-pending .startup-auth-card {
     inset: 0;
     z-index: 2;
     overflow: visible;
+}
+
+.pinned-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 8;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.pinned-layer .board-card {
+    pointer-events: auto;
 }
 
 .board-grid,
@@ -1626,6 +1639,17 @@ body.auth-pending .startup-auth-card {
 .board-shell.is-editing .board-card--package {
     border-radius: 4px;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.board-card--pinned.board-card--system::before,
+.board-shell.is-editing .board-card--pinned.board-card--system::before {
+    background: transparent;
+}
+
+.board-card--pinned.board-card--system {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
 }
 
 .board-card.is-active {

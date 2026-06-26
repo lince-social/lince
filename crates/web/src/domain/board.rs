@@ -32,6 +32,12 @@ pub struct BoardCard {
     pub width: f64,
     #[serde(default = "default_card_height", alias = "h")]
     pub height: f64,
+    #[serde(default)]
+    pub pinned: bool,
+    #[serde(default)]
+    pub system: bool,
+    #[serde(default = "default_card_z_index")]
+    pub z_index: i32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -63,6 +69,8 @@ pub struct BoardWorld {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BoardState {
+    #[serde(default = "default_schema_version")]
+    pub schema_version: u16,
     pub density: u8,
     #[serde(default = "default_true")]
     pub global_streams_enabled: bool,
@@ -150,6 +158,7 @@ impl Default for AppBootstrap {
 
 pub fn default_board_state() -> BoardState {
     BoardState {
+        schema_version: default_schema_version(),
         density: 4,
         global_streams_enabled: true,
         world: default_world(),
@@ -159,16 +168,22 @@ pub fn default_board_state() -> BoardState {
                 id: "space-1".into(),
                 name: "Area 1".into(),
                 camera: default_camera(),
-                cards: vec![],
+                cards: seed_workspace_cards(true),
             },
             BoardWorkspace {
                 id: "space-2".into(),
                 name: "Area 2".into(),
                 camera: default_camera(),
-                cards: vec![],
+                cards: seed_workspace_cards(false),
             },
         ],
     }
+}
+
+pub const BOARD_STATE_SCHEMA_VERSION: u16 = 2;
+
+fn default_schema_version() -> u16 {
+    BOARD_STATE_SCHEMA_VERSION
 }
 
 fn default_true() -> bool {
@@ -195,6 +210,10 @@ fn default_card_height() -> f64 {
     420.0
 }
 
+fn default_card_z_index() -> i32 {
+    1
+}
+
 pub fn default_world() -> BoardWorld {
     BoardWorld {
         width: 10_000.0,
@@ -208,6 +227,136 @@ pub fn default_camera() -> BoardCamera {
         x: -4_200.0,
         y: -4_500.0,
         scale: 1.0,
+    }
+}
+
+fn seed_workspace_cards(include_seed_cards: bool) -> Vec<BoardCard> {
+    let mut cards = vec![
+        shell_card("shell-logo", "Logo", "lince-shell-logo.html", 16.0, 14.0, 168.0, 54.0, 90),
+        shell_card(
+            "shell-operation",
+            "Operation",
+            "lince-shell-operation.html",
+            204.0,
+            14.0,
+            360.0,
+            54.0,
+            91,
+        ),
+        shell_card(
+            "shell-workspaces",
+            "Workspaces",
+            "lince-shell-workspaces.html",
+            584.0,
+            14.0,
+            220.0,
+            54.0,
+            92,
+        ),
+        shell_card(
+            "shell-notifications",
+            "Notifications",
+            "lince-shell-notifications.html",
+            824.0,
+            14.0,
+            62.0,
+            54.0,
+            93,
+        ),
+        shell_card(
+            "shell-edit",
+            "Edit",
+            "lince-shell-edit.html",
+            906.0,
+            14.0,
+            176.0,
+            54.0,
+            94,
+        ),
+        shell_card(
+            "shell-zoom",
+            "Zoom",
+            "lince-shell-zoom.html",
+            20.0,
+            700.0,
+            330.0,
+            54.0,
+            95,
+        ),
+    ];
+
+    if include_seed_cards {
+        cards.push(package_card(
+            "seed-ai",
+            "AI",
+            "lince-shell-ai.html",
+            4_240.0,
+            4_460.0,
+            460.0,
+            280.0,
+        ));
+        cards.push(package_card(
+            "seed-tutorial",
+            "Tutorial",
+            "lince-shell-tutorial.html",
+            4_760.0,
+            4_460.0,
+            520.0,
+            280.0,
+        ));
+    }
+
+    cards
+}
+
+fn shell_card(
+    id: &str,
+    title: &str,
+    package_name: &str,
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+    z_index: i32,
+) -> BoardCard {
+    let mut card = package_card(id, title, package_name, x, y, width, height);
+    card.pinned = true;
+    card.system = true;
+    card.z_index = z_index;
+    card
+}
+
+fn package_card(
+    id: &str,
+    title: &str,
+    package_name: &str,
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+) -> BoardCard {
+    BoardCard {
+        id: id.into(),
+        kind: "package".into(),
+        title: title.into(),
+        description: String::new(),
+        text: String::new(),
+        html: String::new(),
+        author: "Lince".into(),
+        permissions: vec!["bridge_state".into(), "shell_board".into()],
+        package_name: package_name.into(),
+        requires_server: false,
+        server_id: String::new(),
+        view_id: None,
+        streams_enabled: true,
+        widget_state: default_widget_state(),
+        x,
+        y,
+        width,
+        height,
+        pinned: false,
+        system: false,
+        z_index: default_card_z_index(),
     }
 }
 

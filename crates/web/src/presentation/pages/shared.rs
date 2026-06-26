@@ -63,8 +63,12 @@ pub(crate) fn render_topbar_brand(title: &str, data_text: Option<&str>) -> Marku
 
 pub(crate) fn render_card(card: &BoardCard) -> Markup {
     let is_package = card.kind == "package";
-    let class_name = if is_package {
+    let class_name = if is_package && card.pinned {
+        "board-card board-card--package board-card--pinned panzoom-exclude"
+    } else if is_package {
         "board-card board-card--package panzoom-exclude"
+    } else if card.pinned {
+        "board-card board-card--pinned panzoom-exclude"
     } else {
         "board-card panzoom-exclude"
     };
@@ -75,8 +79,8 @@ pub(crate) fn render_card(card: &BoardCard) -> Markup {
             data-card-id=(card.id.as_str())
             data-card-kind=(card.kind.as_str())
             style=(format!(
-                "left:{}px;top:{}px;width:{}px;height:{}px;",
-                card.x, card.y, card.width, card.height
+                "left:{}px;top:{}px;width:{}px;height:{}px;z-index:{};",
+                card.x, card.y, card.width, card.height, card.z_index
             ))
         {
             (render_card_delete_button(card.title.as_str()))
@@ -105,9 +109,10 @@ fn render_text_card_body(card: &BoardCard) -> Markup {
 
 pub(crate) fn render_package_body(card: &BoardCard) -> Markup {
     let frame_src = package_frame_src(card.package_name.as_str());
+    let use_inline_shell_html = card.system && !card.html.trim().is_empty();
     html! {
         div class="package-widget" {
-            @if card.package_name.trim().is_empty() {
+            @if card.package_name.trim().is_empty() || use_inline_shell_html {
                 iframe
                     class="package-widget__frame"
                     title=(card.title.as_str())

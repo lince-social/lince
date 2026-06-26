@@ -117,7 +117,10 @@ fn render_startup_status() -> Markup {
 fn render_app_shell(bootstrap: &AppBootstrap) -> Markup {
     html! {
         div class="app-shell" {
-            (render_topbar(bootstrap))
+            div class="native-board-controls" hidden="" {
+                (render_topbar(bootstrap))
+                (render_board_floating_controls())
+            }
             (render_workspace_main(bootstrap))
         }
     }
@@ -266,7 +269,7 @@ fn render_board_canvas(bootstrap: &AppBootstrap) -> Markup {
                 (render_workspace_empty())
                 (render_cards_layer(bootstrap))
             }
-            (render_board_floating_controls())
+            (render_pinned_layer(bootstrap))
             (render_drop_zone_overlay())
         }
     }
@@ -408,7 +411,21 @@ fn render_cards_layer(bootstrap: &AppBootstrap) -> Markup {
     html! {
         div id="cards-layer" class="cards-layer" {
             @for card in &bootstrap.cards {
-                (render_card(card))
+                @if !card.pinned {
+                    (render_card(card))
+                }
+            }
+        }
+    }
+}
+
+fn render_pinned_layer(bootstrap: &AppBootstrap) -> Markup {
+    html! {
+        div id="pinned-layer" class="pinned-layer panzoom-exclude" {
+            @for card in &bootstrap.cards {
+                @if card.pinned {
+                    (render_card(card))
+                }
             }
         }
     }

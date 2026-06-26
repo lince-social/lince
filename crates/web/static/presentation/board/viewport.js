@@ -17,6 +17,13 @@ function normalizeCamera(camera) {
   };
 }
 
+function normalizeWorld(world) {
+  return {
+    width: Math.max(1, finiteNumber(world?.width, 10_000)),
+    height: Math.max(1, finiteNumber(world?.height, 10_000)),
+  };
+}
+
 function wheelDelta(event) {
   const lineHeight = 16;
   const pageHeight = 800;
@@ -118,6 +125,17 @@ export function createBoardViewport({
     };
   }
 
+  function cameraForWorldCenter(world, scale = 1) {
+    const normalized = normalizeWorld(world);
+    return cameraForCenter(
+      {
+        x: normalized.width / 2,
+        y: normalized.height / 2,
+      },
+      scale,
+    );
+  }
+
   function setCenteredCamera(center, scale, options = {}) {
     setCamera(cameraForCenter(center, scale), options);
     if (options.silent !== true) {
@@ -169,14 +187,10 @@ export function createBoardViewport({
   }
 
   function recenter(world) {
-    setCenteredCamera(
-      {
-        x: finiteNumber(world?.width, 10_000) / 2,
-        y: finiteNumber(world?.height, 10_000) / 2,
-      },
-      panzoom.getScale(),
-      { animate: true },
-    );
+    setCamera(cameraForWorldCenter(world, panzoom.getScale()), {
+      animate: true,
+    });
+    emitCameraChanged();
   }
 
   function setInteractionLocked(locked) {
@@ -196,6 +210,7 @@ export function createBoardViewport({
     getCamera: cameraFromPanzoom,
     getScale: () => panzoom.getScale(),
     centerWorldPoint,
+    cameraForWorldCenter,
     zoomBy,
     resetZoom,
     recenter,

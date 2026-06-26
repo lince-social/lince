@@ -44,7 +44,9 @@ pub(super) fn script() -> String {
   const transferGraphSummary = document.getElementById("transfer-graph-summary");
 
   const frame = window.frameElement;
+  const bridge = window.LinceWidgetHost || null;
   const instanceId = String(frame?.dataset?.packageInstanceId || "").trim();
+  const savedUiState = normalizeUiState(bridge?.getCardState?.()?.transfer || bridge?.getCardState?.() || {});
 
   let snapshot = {
     localIdentity: null,
@@ -57,23 +59,88 @@ pub(super) fn script() -> String {
     gossipTransfers: [],
   };
   let discoveredContacts = [];
-  let selectedTransferId = null;
-  let selectedGossipTransferUid = null;
-  let activeTransferTab = "mine";
-  let visualizationMode = "structured";
-  let detailMode = "selected";
+  let selectedTransferId = savedUiState.selectedTransferId;
+  let selectedGossipTransferUid = savedUiState.selectedGossipTransferUid;
+  let activeTransferTab = savedUiState.activeTransferTab;
+  let visualizationMode = savedUiState.visualizationMode;
+  let detailMode = savedUiState.detailMode;
   let pendingDeleteTransferId = null;
   let busy = false;
   let contractLoading = false;
   let reloadQueued = false;
   let confirmingProgressAction = null;
   const seenMarkingTransfers = new Set();
-  const collapsedTransferUids = new Set();
+  const collapsedTransferUids = new Set(savedUiState.collapsedTransferUids);
   const graphState = {
     simulation: null,
     zoom: null,
     viewport: null,
   };
+
+  function normalizeUiState(rawState) {
+    const value = rawState && typeof rawState === "object" ? rawState : {};
+    const tab = value.activeTransferTab === "observed" ? "observed" : "mine";
+    const visualization = value.visualizationMode === "graph" ? "graph" : "structured";
+    const detail = value.detailMode === "create" ? "create" : "selected";
+    const transferId = Number(value.selectedTransferId);
+    const collapsed = Array.isArray(value.collapsedTransferUids)
+      ? value.collapsedTransferUids.map((uid) => String(uid || "").trim()).filter(Boolean)
+      : [];
+
+    return {
+      activeTransferTab: visualization === "graph" ? "mine" : tab,
+      visualizationMode: visualization,
+      detailMode: visualization === "graph" ? "selected" : detail,
+      selectedTransferId: Number.isFinite(transferId) && transferId > 0 ? transferId : null,
+      selectedGossipTransferUid: String(value.selectedGossipTransferUid || "").trim() || null,
+      collapsedTransferUids: collapsed,
+    };
+  }
+
+  function persistUiState() {
+    (window.LinceWidgetHost || bridge)?.patchCardState?.({
+      transfer: {
+        activeTransferTab,
+        visualizationMode,
+        detailMode,
+        selectedTransferId,
+        selectedGossipTransferUid,
+        collapsedTransferUids: Array.from(collapsedTransferUids),
+      },
+    });
+  }
+
+  function applyUiState(rawState) {
+    const next = normalizeUiState(rawState?.transfer || rawState || {});
+    selectedTransferId = next.selectedTransferId;
+    selectedGossipTransferUid = next.selectedGossipTransferUid;
+    activeTransferTab = next.activeTransferTab;
+    visualizationMode = next.visualizationMode;
+    detailMode = next.detailMode;
+    collapsedTransferUids.clear();
+    for (const uid of next.collapsedTransferUids) {
+      collapsedTransferUids.add(uid);
+    }
+  }
+
+  function bindHostState() {
+    const host = window.LinceWidgetHost || bridge;
+    if (!host || typeof host.subscribe !== "function") return;
+    host.subscribe((detail) => {
+      const cardState = detail?.meta?.cardState || host.getCardState?.() || null;
+      if (
+        !cardState ||
+        (!cardState.transfer &&
+          !Object.prototype.hasOwnProperty.call(cardState, "visualizationMode"))
+      ) {
+        return;
+      }
+      applyUiState(cardState);
+      setVisualizationMode(visualizationMode);
+      render();
+    });
+    host.requestState?.();
+  }
 
   function contractUrl() {
     return "/host/widgets/" + encodeURIComponent(instanceId) + "/contract";
@@ -242,6 +309,7 @@ pub(super) fn script() -> String {
     } else {
       collapsedTransferUids.add(transferUid);
     }
+    persistUiState();
     renderTransferList();
   }
 
@@ -264,6 +332,7 @@ pub(super) fn script() -> String {
       visualizationToggle.setAttribute("aria-label", graphActive ? "Switch to structured view" : "Switch to graph view");
       visualizationToggle.title = graphActive ? "Switch to structured view" : "Switch to graph view";
     }
+    persistUiState();
     renderTransferList();
     renderDetail();
     renderTransferGraph();
@@ -720,12 +789,14 @@ pub(super) fn script() -> String {
       event.stopPropagation();
       selectedTransferId = node.transfer.id;
       detailMode = "selected";
+      persistUiState();
       renderTransferList();
       renderDetail();
       renderTransferGraph();
     });
     svg.on("click", () => {
       selectedTransferId = null;
+      persistUiState();
       renderDetail();
       renderTransferGraph();
     });
@@ -1510,6 +1581,7 @@ pub(super) fn script() -> String {
         detailMode = "selected";
         selectedTransferId = null;
         selectedGossipTransferUid = null;
+        persistUiState();
       }
       reconcileSelectedTransfer();
       render();
@@ -1788,6 +1860,7 @@ pub(super) fn script() -> String {
     const closeGraphDetail = event.target.closest("[data-action='close-graph-detail']");
     if (closeGraphDetail) {
       selectedTransferId = null;
+      persistUiState();
       renderDetail();
       renderTransferGraph();
       return;
@@ -1874,6 +1947,7 @@ pub(super) fn script() -> String {
     const cancelCreate = event.target.closest("[data-action='cancel-create']");
     if (cancelCreate) {
       detailMode = "selected";
+      persistUiState();
       renderDetail();
       return;
     }
@@ -1892,6 +1966,7 @@ pub(super) fn script() -> String {
       pendingDeleteTransferId = null;
       confirmingProgressAction = null;
       detailMode = "selected";
+      persistUiState();
       renderTransferList();
       renderDetail();
       return;
@@ -1900,6 +1975,7 @@ pub(super) fn script() -> String {
     const fillRecord = event.target.closest("[data-fill-record]");
     if (fillRecord) {
       detailMode = "create";
+      persistUiState();
       renderDetail();
       const proposalRecord = document.getElementById("proposal-record");
       if (proposalRecord) {
@@ -1912,6 +1988,7 @@ pub(super) fn script() -> String {
     if (gossipRow) {
       selectedGossipTransferUid = gossipRow.dataset.gossipTransferUid || "";
       detailMode = "selected";
+      persistUiState();
       renderTransferList();
       renderDetail();
       return;
@@ -1931,6 +2008,7 @@ pub(super) fn script() -> String {
       pendingDeleteTransferId = null;
       confirmingProgressAction = null;
       detailMode = "selected";
+      persistUiState();
       renderTransferList();
       renderDetail();
       return;
@@ -2183,7 +2261,8 @@ pub(super) fn script() -> String {
   });
 
   connectTransferStream();
-  setVisualizationMode("structured");
+  bindHostState();
+  setVisualizationMode(visualizationMode);
   loadContract();
 })();
 "##.to_string()

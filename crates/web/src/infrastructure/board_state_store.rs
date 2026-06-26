@@ -1,6 +1,6 @@
 use {
     crate::{
-        domain::board::{BoardState, default_board_state},
+        domain::board::{BOARD_STATE_SCHEMA_VERSION, BoardState, default_board_state},
         infrastructure::paths,
     },
     std::{path::PathBuf, sync::Arc},
@@ -45,8 +45,15 @@ impl BoardStateStore {
 
 fn load_state_from_disk(path: &PathBuf) -> Result<BoardState, String> {
     match std::fs::read_to_string(path) {
-        Ok(raw) => serde_json::from_str::<BoardState>(&raw)
-            .map_err(|error| format!("Nao consegui interpretar o board salvo: {error}")),
+        Ok(raw) => {
+            let state = serde_json::from_str::<BoardState>(&raw)
+                .map_err(|error| format!("Nao consegui interpretar o board salvo: {error}"))?;
+            if state.schema_version == BOARD_STATE_SCHEMA_VERSION {
+                Ok(state)
+            } else {
+                Ok(default_board_state())
+            }
+        }
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(default_board_state()),
         Err(error) => Err(format!("Nao consegui ler o board salvo: {error}")),
     }

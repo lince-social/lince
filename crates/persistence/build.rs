@@ -85,6 +85,13 @@ fn run() -> Result<(), Error> {
         return Ok(());
     };
 
+    if is_single_initial_migration_dir(&migrations_dir)?
+        && has_removed_tables(previous_snapshot, &current_snapshot)
+    {
+        write_snapshot(&snapshot_path, &current_snapshot)?;
+        return Ok(());
+    }
+
     if previous_snapshot != &current_snapshot {
         let statements = plan_schema_diff(previous_snapshot, &current_snapshot, &migrations_dir)?;
         if !statements.is_empty() {
@@ -385,6 +392,33 @@ fn has_sql_migration_files(dir: &Path) -> Result<bool, Error> {
     }
 
     Ok(false)
+}
+
+fn is_single_initial_migration_dir(dir: &Path) -> Result<bool, Error> {
+    let mut sql_file_names = Vec::new();
+    for entry in fs::read_dir(dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.extension().and_then(|value| value.to_str()) != Some("sql") {
+            continue;
+        }
+        if let Some(file_name) = path.file_name().and_then(|value| value.to_str()) {
+            sql_file_names.push(file_name.to_string());
+        }
+    }
+
+    Ok(matches!(
+        sql_file_names.as_slice(),
+        [file_name] if file_name.ends_with("_auto_init.sql")
+    ))
+}
+
+fn has_removed_tables(previous: &[TableSchema], current: &[TableSchema]) -> bool {
+    previous.iter().any(|previous_table| {
+        current
+            .iter()
+            .all(|table| table.name != previous_table.name)
+    })
 }
 
 fn render_migration(statements: &[String]) -> String {

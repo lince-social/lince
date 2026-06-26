@@ -34,7 +34,7 @@ pub(super) fn script() -> &'static str {
         const instanceId = String(frame?.dataset?.packageInstanceId || "preview").trim() || "preview";
         const stateKey = "document-viewer/" + instanceId;
         const fallbackState = readFallbackState();
-        const bridgeState = normalizeCardState(bridge?.getCardState?.() || null);
+        const bridgeState = normalizeCardState((window.LinceWidgetHost || bridge)?.getCardState?.() || null);
         const state = {
           serverId: String(frame?.dataset?.linceServerId || ""),
           source: bridgeState.source || fallbackState.source || "local",
@@ -141,7 +141,7 @@ pub(super) fn script() -> &'static str {
             loaded: state.loaded,
           };
           writeFallbackState(nextState);
-          bridge?.patchCardState?.(nextState);
+          (window.LinceWidgetHost || bridge)?.patchCardState?.(nextState);
         }
 
         function setConfigOpen(nextOpen) {
@@ -231,8 +231,8 @@ pub(super) fn script() -> &'static str {
             ? detail.meta
             : detail && typeof detail === "object" && !Array.isArray(detail)
               ? detail
-              : bridge?.getMeta?.() || null;
-          return meta?.cardState || detail?.cardState || bridge?.getCardState?.() || null;
+              : (window.LinceWidgetHost || bridge)?.getMeta?.() || null;
+          return meta?.cardState || detail?.cardState || (window.LinceWidgetHost || bridge)?.getCardState?.() || null;
         }
 
         function maybeAutoloadSavedDocument(reason) {
@@ -663,8 +663,8 @@ pub(super) fn script() -> &'static str {
         }
 
         applyBridgeDetail({
-          meta: bridge?.getMeta?.() || null,
-          cardState: bridge?.getCardState?.() || null
+          meta: (window.LinceWidgetHost || bridge)?.getMeta?.() || null,
+          cardState: (window.LinceWidgetHost || bridge)?.getCardState?.() || null
         });
         if (!bindBridgeWhenReady()) {
           window.setTimeout(bindBridgeWhenReady, 0);

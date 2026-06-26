@@ -10256,6 +10256,7 @@ mod tests {
 
     fn test_board_state() -> BoardState {
         BoardState {
+            schema_version: crate::domain::board::BOARD_STATE_SCHEMA_VERSION,
             density: 4,
             global_streams_enabled: true,
             world: crate::domain::board::default_world(),
@@ -10283,6 +10284,9 @@ mod tests {
                     y: 49_000.0,
                     width: 720.0,
                     height: 640.0,
+                    pinned: false,
+                    system: false,
+                    z_index: 1,
                 }],
             }],
         }

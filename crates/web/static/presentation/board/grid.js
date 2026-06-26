@@ -159,9 +159,11 @@ export function sanitizeCard(rawCard, index, config, placementPoint = null) {
   const world = normalizeWorld(config.world);
   const kind = rawCard?.kind === "package" ? "package" : "text";
   const size = cardSizeFromRaw(rawCard);
+  const pinned = rawCard?.pinned === true;
   const rawX = rawCard?.x == null ? null : finiteNumber(rawCard.x, null);
   const rawY = rawCard?.y == null ? null : finiteNumber(rawCard.y, null);
   const rawPositionFitsWorld =
+    pinned ||
     rawX != null &&
     rawY != null &&
     rawX >= 0 &&
@@ -207,6 +209,9 @@ export function sanitizeCard(rawCard, index, config, placementPoint = null) {
       y: rawPositionFitsWorld ? rawY : fallbackPoint.y - size.height / 2,
       width: size.width,
       height: size.height,
+      pinned,
+      system: rawCard?.system === true,
+      zIndex: Math.round(finiteNumber(rawCard?.zIndex, pinned ? 50 : 1)),
     },
     config,
   );
@@ -214,6 +219,24 @@ export function sanitizeCard(rawCard, index, config, placementPoint = null) {
 
 export function clampCard(card, config) {
   const world = normalizeWorld(config.world);
+  if (card?.pinned === true) {
+    return {
+      ...card,
+      x: finiteNumber(card.x, 0),
+      y: finiteNumber(card.y, 0),
+      width: clamp(
+        finiteNumber(card.width, DEFAULT_CARD_SIZE.width),
+        48,
+        Math.max(48, window.innerWidth || 1920),
+      ),
+      height: clamp(
+        finiteNumber(card.height, DEFAULT_CARD_SIZE.height),
+        40,
+        Math.max(40, window.innerHeight || 1080),
+      ),
+      zIndex: Math.round(finiteNumber(card.zIndex, 50)),
+    };
+  }
   const width = clamp(
     snapValue(finiteNumber(card.width, DEFAULT_CARD_SIZE.width), world.snap),
     MIN_CARD_SIZE.width,

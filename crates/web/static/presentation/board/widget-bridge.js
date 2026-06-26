@@ -50,6 +50,7 @@ function normalizeBridgeMeta(rawMeta, instanceId = "") {
     serverId: String(rawMeta?.serverId || ""),
     viewId: rawMeta?.viewId == null ? null : Number(rawMeta.viewId) || null,
     cardState: cloneJsonValue(rawMeta?.cardState, {}),
+    shell: cloneJsonValue(rawMeta?.shell, {}),
     streams: {
       globalEnabled,
       cardEnabled,
@@ -177,6 +178,7 @@ export function createWidgetBridge({
   setCardState,
   patchCardState,
   setCardStreamsEnabled,
+  handleShellAction,
   invalidateServerAuth,
   onError,
 }) {
@@ -243,6 +245,16 @@ export function createWidgetBridge({
         setCardStreamsEnabled(
           message.instanceId || "",
           message.payload?.enabled !== false,
+        );
+        render(bridgeState);
+        return;
+      }
+
+      if (action === "shell-action" && typeof handleShellAction === "function") {
+        handleShellAction(
+          message.instanceId || "",
+          String(message.payload?.command || ""),
+          cloneJsonValue(message.payload?.payload, {}),
         );
         render(bridgeState);
         return;

@@ -155,6 +155,7 @@ const boardShell = document.getElementById("board-shell");
 const boardCanvas = document.getElementById("board-canvas");
 const boardWorld = document.getElementById("board-world");
 const boardGrid = document.getElementById("board-grid");
+const pinnedLayer = document.getElementById("pinned-layer");
 const boardZoomOut = document.getElementById("board-zoom-out");
 const boardZoomIndicator = document.getElementById("board-zoom-indicator");
 const boardZoomIn = document.getElementById("board-zoom-in");
@@ -469,7 +470,8 @@ if (
   !widgetConfigPreviewHelp ||
   !packageImportInput ||
   !workspaceImportInput ||
-  !cardsLayer
+  !cardsLayer ||
+  !pinnedLayer
 ) {
   throw new Error("Lince bootstrap did not find the required DOM nodes.");
 }
@@ -498,6 +500,9 @@ const store = createBoardStore({
   },
 });
 let editMode = false;
+let appNotifications = [];
+let notificationsOpen = false;
+let boardViewport = null;
 const widgetBridge = createWidgetBridge({
   statusNode: null,
   initialState: bootstrap.widgetBridge,
@@ -516,6 +521,9 @@ const widgetBridge = createWidgetBridge({
   },
   setCardStreamsEnabled(instanceId, enabled) {
     updateCardStreamsEnabled(instanceId, enabled);
+  },
+  handleShellAction(instanceId, command, payload) {
+    handleShellAction(instanceId, command, payload);
   },
   async invalidateServerAuth(serverId) {
     const target = String(serverId || "").trim();
@@ -555,8 +563,6 @@ let dnaPackageResults = [];
 let dnaCatalogOrigins = [];
 let serverProfiles = Array.isArray(bootstrap?.servers) ? bootstrap.servers : [];
 let pendingServerLogin = null;
-let appNotifications = [];
-let notificationsOpen = false;
 let notificationsTimer = null;
 let pendingWidgetConfigCardId = null;
 let pendingWidgetConfigServerId = "";
@@ -569,12 +575,18 @@ let packagePreviewWatchTimer = null;
 let packagePreviewWatchInFlight = false;
 let cameraPersistTimer = null;
 let lastAppliedCameraWorkspaceId = null;
+let lastCameraWorkspaceId = null;
+let lastCameraValue = null;
 
-const boardViewport = createBoardViewport({
+boardViewport = createBoardViewport({
   viewportElement: boardCanvas,
   worldElement: boardWorld,
   onCameraChanged(camera) {
-    renderCameraHud(camera, store.getSnapshot().layout.world);
+    const snapshot = store.getSnapshot();
+    renderCameraHud(camera);
+    lastCameraWorkspaceId = snapshot.activeWorkspaceId;
+    lastCameraValue = cloneJsonValue(camera, null);
+    store.updateActiveCamera(camera, { notify: false, persist: false });
     window.clearTimeout(cameraPersistTimer);
     cameraPersistTimer = window.setTimeout(() => {
       store.updateActiveCamera(camera, { persist: true });
@@ -582,12 +594,36 @@ const boardViewport = createBoardViewport({
   },
 });
 
+function flushCameraState() {
+  if (!lastCameraValue || !lastCameraWorkspaceId) {
+    return;
+  }
+
+  window.clearTimeout(cameraPersistTimer);
+  cameraPersistTimer = null;
+  if (store.getSnapshot().activeWorkspaceId === lastCameraWorkspaceId) {
+    store.updateActiveCamera(lastCameraValue, { persist: true });
+  }
+}
+
+function positionCanvasControls() {
+  const rect = boardCanvas.getBoundingClientRect();
+  const viewportWidth =
+    window.visualViewport?.width || document.documentElement.clientWidth || window.innerWidth;
+  const viewportHeight =
+    window.visualViewport?.height || document.documentElement.clientHeight || window.innerHeight;
+  const left = Math.max(12, Math.min(rect.left + 18, viewportWidth - 96));
+  const bottom = Math.max(12, viewportHeight - rect.bottom + 18);
+
+  boardShell.style.setProperty("--board-fixed-controls-left", `${left}px`);
+  boardShell.style.setProperty("--board-fixed-controls-bottom", `${bottom}px`);
+}
+
 const startupPaths = Array.from(startupScreen.querySelectorAll(".s0"));
 const cardNodes = new Map(
-  Array.from(cardsLayer.querySelectorAll("[data-card-id]")).map((node) => [
-    node.dataset.cardId,
-    node,
-  ]),
+  Array.from(
+    document.querySelectorAll("#cards-layer [data-card-id], #pinned-layer [data-card-id]"),
+  ).map((node) => [node.dataset.cardId, node]),
 );
 
 function escapeHtml(value) {
@@ -867,6 +903,29 @@ function getCardRecord(cardId) {
   return null;
 }
 
+function shellMeta(snapshot = store.getSnapshot()) {
+  const activeIndex = getActiveWorkspaceIndex(snapshot);
+  const camera = boardViewport?.getCamera?.() || snapshot.activeCamera || {};
+  const notificationCount = appNotifications.length;
+
+  return {
+    editMode,
+    density: snapshot.density,
+    workspace: {
+      id: snapshot.activeWorkspaceId,
+      label: formatWorkspaceNumber(activeIndex),
+      count: snapshot.workspaces.length,
+    },
+    zoom: {
+      percent: Math.round((Number(camera.scale) || 1) * 100),
+    },
+    notifications: {
+      count: notificationCount,
+      open: notificationsOpen,
+    },
+  };
+}
+
 function getCardBridgeMeta(cardId) {
   const record = getCardRecord(cardId);
   const card = record?.card || null;
@@ -882,12 +941,82 @@ function getCardBridgeMeta(cardId) {
     viewId: card?.viewId ?? null,
     viewName: resolveCardViewName(card),
     cardState: cloneJsonValue(card?.widgetState, {}),
+    shell: card?.system === true ? shellMeta(snapshot) : {},
     streams: {
       globalEnabled,
       cardEnabled,
       enabled: globalEnabled && cardEnabled,
     },
   };
+}
+
+function isShellCard(cardId) {
+  const record = getCardRecord(cardId);
+  return record?.card?.system === true && record.card.pinned === true;
+}
+
+function handleShellAction(instanceId, command, payload = {}) {
+  if (!isShellCard(instanceId)) {
+    return;
+  }
+
+  switch (command) {
+    case "operation.submit": {
+      operationInput.value = String(payload.value || "");
+      operationForm.requestSubmit();
+      break;
+    }
+    case "workspace.relative":
+      cycleWorkspace(Number(payload.direction) < 0 ? -1 : 1);
+      break;
+    case "workspace.toggle":
+      setWorkspacePopoverOpen(!workspacePopoverOpen);
+      break;
+    case "notifications.toggle":
+      setNotificationsOpen(!notificationsOpen);
+      break;
+    case "edit.toggle":
+      setEditMode(!editMode);
+      break;
+    case "card.add":
+      store.addCard({ center: boardViewport.centerWorldPoint() });
+      break;
+    case "card.import":
+      packageImportInput.value = "";
+      packageImportInput.click();
+      break;
+    case "card.local":
+      openLocalPackagesModal();
+      break;
+    case "card.dna":
+      openDnaPackagesModal();
+      break;
+    case "density.set":
+      store.updateDensity(Number(payload.value) || 4);
+      break;
+    case "zoom.out":
+      boardViewport.zoomBy(0.82);
+      break;
+    case "zoom.in":
+      boardViewport.zoomBy(1.22);
+      break;
+    case "zoom.reset":
+      boardViewport.resetZoom();
+      break;
+    case "zoom.center":
+      boardViewport.recenter(store.getSnapshot().layout.world);
+      break;
+    case "layout.circle":
+      store.reorganizeActiveCards(boardViewport.centerWorldPoint(), {
+        persist: true,
+      });
+      break;
+    case "navigation.ai":
+      window.location.href = "/ai";
+      break;
+    default:
+      break;
+  }
 }
 
 function updateCardWidgetState(cardId, nextState) {
@@ -1123,6 +1252,10 @@ function renderTextBody(card) {
 }
 
 function buildPackageFrameSrc(card) {
+  if (card?.system === true && String(card?.html || "").trim()) {
+    return "";
+  }
+
   const packageName = String(card?.packageName || card?.package_name || "").trim();
   if (!packageName) {
     return "";
@@ -1475,6 +1608,7 @@ function renderCardMarkup(card) {
 
 function ensureCardNode(card) {
   let node = cardNodes.get(card.id);
+  const targetLayer = card.pinned === true ? pinnedLayer : cardsLayer;
 
   if (node && node.dataset.cardKind !== (card.kind || "text")) {
     node.remove();
@@ -1490,10 +1624,10 @@ function ensureCardNode(card) {
     if (card.kind === "package") {
       node.dataset.packageRenderSignature = createPackageRenderSignature(card);
     }
-    cardsLayer.appendChild(node);
+    targetLayer.appendChild(node);
     cardNodes.set(card.id, node);
-  } else if (node.parentElement !== cardsLayer) {
-    cardsLayer.appendChild(node);
+  } else if (node.parentElement !== targetLayer) {
+    targetLayer.appendChild(node);
   }
 
   return node;
@@ -1513,9 +1647,15 @@ function syncCardNode(node, card) {
   node.style.top = `${card.y}px`;
   node.style.width = `${card.width}px`;
   node.style.height = `${card.height}px`;
-  node.style.zIndex = card.id === activeCardId ? "4" : "1";
+  node.style.zIndex = String(
+    card.id === activeCardId
+      ? Math.max(Number(card.zIndex) || 1, 100)
+      : Number(card.zIndex) || (card.pinned ? 50 : 1),
+  );
   node.dataset.cardKind = card.kind || "text";
   node.classList.toggle("board-card--package", card.kind === "package");
+  node.classList.toggle("board-card--pinned", card.pinned === true);
+  node.classList.toggle("board-card--system", card.system === true);
   node.classList.toggle("is-compact", card.width <= 420 || card.height <= 320);
   node.classList.toggle("is-tiny", card.width <= 280 || card.height <= 220);
   node.classList.toggle("is-active", card.id === activeCardId);
@@ -1652,9 +1792,20 @@ function renderCards(cards, allCardIds) {
 }
 
 function ensureBackgroundPackageCards(snapshot) {
+  const activeCardIds = new Set(
+    (snapshot.cards || []).map((card) => String(card.id || "")),
+  );
+
   for (const workspace of snapshot.workspaces) {
     for (const card of workspace.cards) {
       if (card.kind !== "package") {
+        continue;
+      }
+
+      if (
+        workspace.id !== snapshot.activeWorkspaceId &&
+        activeCardIds.has(String(card.id || ""))
+      ) {
         continue;
       }
 
@@ -1678,11 +1829,8 @@ function renderGrid(layout) {
   boardWorld.style.height = `${height}px`;
   boardGrid.style.width = `${width}px`;
   boardGrid.style.height = `${height}px`;
-  renderCameraHud(boardViewport.getCamera(), {
-    width,
-    height,
-    snap,
-  });
+  positionCanvasControls();
+  renderCameraHud(boardViewport.getCamera());
 }
 
 function renderCameraHud(camera) {
@@ -1694,6 +1842,26 @@ function renderCameraHud(camera) {
     "aria-label",
     `Zoom ${zoomPercent}%. Voltar zoom para 100%`,
   );
+}
+
+function resolveWorkspaceCamera(camera, world) {
+  const scale = Math.max(0.1, Math.min(Number(camera?.scale) || 1, 3));
+  const x = Number(camera?.x);
+  const y = Number(camera?.y);
+  const width = Math.max(1, Number(world?.width) || 10_000);
+  const height = Math.max(1, Number(world?.height) || 10_000);
+  const maxOffset = Math.max(width, height) * 1.2;
+
+  if (
+    Number.isFinite(x) &&
+    Number.isFinite(y) &&
+    Math.abs(x) <= maxOffset &&
+    Math.abs(y) <= maxOffset
+  ) {
+    return { x, y, scale };
+  }
+
+  return boardViewport.cameraForWorldCenter(world, 1);
 }
 
 function renderWorkspaceList(snapshot) {
@@ -1793,9 +1961,14 @@ function renderSnapshot(snapshot) {
 
   renderGrid(snapshot.layout);
   if (lastAppliedCameraWorkspaceId !== snapshot.activeWorkspaceId) {
-    boardViewport.setCamera(snapshot.activeCamera, { silent: true });
-    renderCameraHud(snapshot.activeCamera, snapshot.layout.world);
+    const camera = resolveWorkspaceCamera(
+      snapshot.activeCamera,
+      snapshot.layout.world,
+    );
+    boardViewport.setCamera(camera, { silent: true });
+    renderCameraHud(camera);
     lastAppliedCameraWorkspaceId = snapshot.activeWorkspaceId;
+    store.updateActiveCamera(camera, { notify: false, persist: false });
   }
   renderWorkspaceList(snapshot);
   renderDensity(snapshot);
@@ -2567,6 +2740,7 @@ function addWorkspace() {
 
 function switchWorkspace(workspaceId) {
   setAddCardPopoverOpen(false);
+  flushCameraState();
   const snapshot = store.getSnapshot();
   const currentIndex = getActiveWorkspaceIndex(snapshot);
   const nextIndex = snapshot.workspaces.findIndex(
@@ -2591,6 +2765,7 @@ function switchWorkspace(workspaceId) {
 
 function cycleWorkspace(direction) {
   setAddCardPopoverOpen(false);
+  flushCameraState();
   const snapshot = store.getSnapshot();
   if (snapshot.workspaces.length <= 1) {
     return;
@@ -2604,6 +2779,7 @@ function cycleWorkspace(direction) {
 
 function jumpToWorkspace(index) {
   setAddCardPopoverOpen(false);
+  flushCameraState();
   const snapshot = store.getSnapshot();
   const currentIndex = getActiveWorkspaceIndex(snapshot);
   if (index < 0 || index >= snapshot.workspaces.length) {
@@ -4657,12 +4833,19 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+window.addEventListener("resize", positionCanvasControls);
+window.addEventListener("scroll", positionCanvasControls, { passive: true });
+window.addEventListener("beforeunload", flushCameraState);
+window.visualViewport?.addEventListener("resize", positionCanvasControls);
+window.visualViewport?.addEventListener("scroll", positionCanvasControls);
+
 setWorkspacePopoverOpen(false);
 setEditMode(false);
 syncServerProfiles(serverProfiles);
 syncServerOptions("");
 syncPasswordVisibility(false);
 setNotificationsOpen(false);
+positionCanvasControls();
 startNotificationsPolling();
 void bootWorkspace();
 

@@ -93,6 +93,7 @@ const WIDGET_ERROR = "lince:bridge-error";
           nextMeta.viewId == null ? null : Number(nextMeta.viewId) || null,
         viewName: String(nextMeta.viewName || ""),
         cardState: cloneJsonValue(nextMeta.cardState, {}),
+        shell: cloneJsonValue(nextMeta.shell, {}),
         streams: {
           globalEnabled: nextMeta.streams?.globalEnabled !== false,
           cardEnabled: nextMeta.streams?.cardEnabled !== false,
@@ -175,6 +176,13 @@ const WIDGET_ERROR = "lince:bridge-error";
       send(WIDGET_ACTION, {
         action: "invalidate-server-auth",
         serverId: String(serverId || ""),
+      });
+    },
+    shell(command, payload = {}) {
+      send(WIDGET_ACTION, {
+        action: "shell-action",
+        command: String(command || ""),
+        payload: cloneJsonValue(payload, {}),
       });
     },
   };

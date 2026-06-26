@@ -8,6 +8,58 @@ function cloneCard(card) {
   return { ...card };
 }
 
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function buildPinnedMoveCandidate(origin, delta) {
+  const maxX = Math.max(0, window.innerWidth - origin.width);
+  const maxY = Math.max(0, window.innerHeight - origin.height);
+
+  return {
+    ...origin,
+    x: clamp(origin.x + delta.x, 0, maxX),
+    y: clamp(origin.y + delta.y, 0, maxY),
+  };
+}
+
+function buildPinnedResizeCandidate(origin, handle, delta) {
+  const minWidth = 48;
+  const minHeight = 40;
+  let x = origin.x;
+  let y = origin.y;
+  let width = origin.width;
+  let height = origin.height;
+
+  if (handle?.includes("e")) {
+    width = origin.width + delta.x;
+  }
+  if (handle?.includes("s")) {
+    height = origin.height + delta.y;
+  }
+  if (handle?.includes("w")) {
+    width = origin.width - delta.x;
+    x = origin.x + delta.x;
+  }
+  if (handle?.includes("n")) {
+    height = origin.height - delta.y;
+    y = origin.y + delta.y;
+  }
+
+  width = clamp(width, minWidth, Math.max(minWidth, window.innerWidth - x));
+  height = clamp(height, minHeight, Math.max(minHeight, window.innerHeight - y));
+  x = clamp(x, 0, Math.max(0, window.innerWidth - width));
+  y = clamp(y, 0, Math.max(0, window.innerHeight - height));
+
+  return {
+    ...origin,
+    x,
+    y,
+    width,
+    height,
+  };
+}
+
 export function attachBoardInteractions({
   boardElement,
   config,
@@ -101,23 +153,30 @@ export function attachBoardInteractions({
 
     event.preventDefault();
 
-    const delta = screenDeltaToWorldDelta(
-      event.clientX - interaction.startX,
-      event.clientY - interaction.startY,
-      interaction.scale,
-    );
+    const screenDelta = {
+      x: event.clientX - interaction.startX,
+      y: event.clientY - interaction.startY,
+    };
+    const delta =
+      interaction.origin.pinned === true
+        ? screenDelta
+        : screenDeltaToWorldDelta(screenDelta.x, screenDelta.y, interaction.scale);
 
     const candidate =
-      interaction.type === "move"
-        ? buildMoveCandidate(interaction.origin, delta, config)
-        : buildResizeCandidate(
-            interaction.origin,
-            interaction.handle,
-            delta,
-            config,
-          );
+      interaction.origin.pinned === true
+        ? interaction.type === "move"
+          ? buildPinnedMoveCandidate(interaction.origin, delta)
+          : buildPinnedResizeCandidate(interaction.origin, interaction.handle, delta)
+        : interaction.type === "move"
+          ? buildMoveCandidate(interaction.origin, delta, config)
+          : buildResizeCandidate(
+              interaction.origin,
+              interaction.handle,
+              delta,
+              config,
+            );
 
-    if (interaction.type === "move") {
+    if (interaction.type === "move" && interaction.origin.pinned !== true) {
       onEdgeTransferPreview?.(resolveEdgeTransferDirection(event.clientX));
     }
 
@@ -139,7 +198,9 @@ export function attachBoardInteractions({
     }
 
     const transferDirection =
-      interaction.type === "move" ? resolveEdgeTransferDirection(event.clientX) : 0;
+      interaction.type === "move" && interaction.origin.pinned !== true
+        ? resolveEdgeTransferDirection(event.clientX)
+        : 0;
     if (transferDirection) {
       const transferred = onEdgeTransfer?.(interaction.current, transferDirection);
       if (transferred) {

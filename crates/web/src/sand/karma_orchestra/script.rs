@@ -6,6 +6,7 @@ pub(crate) fn script() -> String {
     const d3 = window.d3;
     const Logic = globalThis.KarmaOrchestraLogic;
     const frame = window.frameElement;
+    const bridge = window.LinceWidgetHost || null;
     const DEFAULT_PALETTE = {
         condition: "#f1ece2",
         consequence: "#6f2e2b",
@@ -127,6 +128,25 @@ pub(crate) fn script() -> String {
     });
     svg.call(zoom);
 
+    function cardState() {
+        try {
+            return (window.LinceWidgetHost || bridge)?.getCardState?.() || {};
+        } catch (_error) {
+            return {};
+        }
+    }
+
+    function runtimeCardState() {
+        const value = cardState();
+        return value && typeof value === "object" ? value.karma_orchestra_runtime || value.karmaOrchestra || {} : {};
+    }
+
+    function patchRuntimeState(patch) {
+        (window.LinceWidgetHost || bridge)?.patchCardState?.({
+            karma_orchestra_runtime: patch,
+        });
+    }
+
     function instanceId() {
         return String(frame?.dataset?.packageInstanceId || "preview").trim() || "preview";
     }
@@ -219,6 +239,15 @@ pub(crate) fn script() -> String {
     }
 
     function loadPalette() {
+        const runtime = runtimeCardState();
+        const saved = runtime.palette && typeof runtime.palette === "object" ? runtime.palette : null;
+        if (saved) {
+            return {
+                condition: saved.condition || DEFAULT_PALETTE.condition,
+                consequence: saved.consequence || DEFAULT_PALETTE.consequence,
+                inactive: saved.inactive || DEFAULT_PALETTE.inactive,
+            };
+        }
         try {
             const raw = window.localStorage.getItem(paletteStorageKey());
             if (!raw) return { ...DEFAULT_PALETTE };
@@ -234,6 +263,7 @@ pub(crate) fn script() -> String {
     }
 
     function savePalette() {
+        patchRuntimeState({ palette: state.palette });
         try {
             window.localStorage.setItem(paletteStorageKey(), JSON.stringify(state.palette));
         } catch (_error) {}
@@ -256,6 +286,8 @@ pub(crate) fn script() -> String {
     }
 
     function loadShowCode() {
+        const runtime = runtimeCardState();
+        if (typeof runtime.showCode === "boolean") return runtime.showCode;
         try {
             const raw = window.localStorage.getItem(displayStorageKey());
             if (!raw) return false;
@@ -267,6 +299,7 @@ pub(crate) fn script() -> String {
     }
 
     function saveDisplay() {
+        patchRuntimeState({ showCode: state.showCode });
         try {
             window.localStorage.setItem(displayStorageKey(), JSON.stringify({ showCode: state.showCode }));
         } catch (_error) {}
@@ -290,6 +323,8 @@ pub(crate) fn script() -> String {
     }
 
     function loadLayoutMode() {
+        const runtime = runtimeCardState();
+        if (runtime.layoutMode === "circle" || runtime.layoutMode === "list") return runtime.layoutMode;
         try {
             const value = window.localStorage.getItem(layoutModeStorageKey());
             return value === "circle" ? "circle" : "list";
@@ -299,6 +334,7 @@ pub(crate) fn script() -> String {
     }
 
     function saveLayoutMode() {
+        patchRuntimeState({ layoutMode: state.layoutMode });
         try {
             window.localStorage.setItem(layoutModeStorageKey(), state.layoutMode);
         } catch (_error) {}
@@ -327,11 +363,27 @@ pub(crate) fn script() -> String {
         if (el.distinctConsequence) el.distinctConsequence.checked = state.distinctConsequence;
     }
 
+    function saveDistinctnessState() {
+        patchRuntimeState({ distinctness: distinctnessValue() });
+    }
+
     function physicsStorageKey() {
         return "karma-orchestra:physics";
     }
 
     function loadPhysics() {
+        const runtime = runtimeCardState();
+        const saved = runtime.physics && typeof runtime.physics === "object" ? runtime.physics : null;
+        if (saved) {
+            const centerExpulsion = Number(saved.centerExpulsion);
+            const linkDistance = Number(saved.linkDistance ?? saved.conditionPulling);
+            const nodeRepulsion = Math.abs(Number(saved.nodeRepulsion));
+            return {
+                centerExpulsion: Number.isFinite(centerExpulsion) ? centerExpulsion : DEFAULT_PHYSICS.centerExpulsion,
+                linkDistance: Number.isFinite(linkDistance) ? linkDistance : DEFAULT_PHYSICS.linkDistance,
+                nodeRepulsion: Number.isFinite(nodeRepulsion) ? nodeRepulsion : DEFAULT_PHYSICS.nodeRepulsion,
+            };
+        }
         try {
             const raw = window.localStorage.getItem(physicsStorageKey());
             if (!raw) return { ...DEFAULT_PHYSICS };
@@ -350,6 +402,7 @@ pub(crate) fn script() -> String {
     }
 
     function savePhysics() {
+        patchRuntimeState({ physics: state.physics });
         try {
             window.localStorage.setItem(physicsStorageKey(), JSON.stringify(state.physics));
         } catch (_error) {}
@@ -429,6 +482,11 @@ pub(crate) fn script() -> String {
                 button.textContent = "#" + view.id + "  " + view.name;
                 button.addEventListener("click", async () => {
                     const data = await postAction("use-view", { viewId: view.id });
+                    patchRuntimeState({
+                        server_id: data?.source?.serverId,
+                        view_id: data?.binding?.viewId || view.id,
+                        viewName: data?.binding?.viewName || view.name,
+                    });
                     updateBinding(data.binding);
                     el.viewModal.hidden = true;
                     await loadGraph();
@@ -443,6 +501,11 @@ pub(crate) fn script() -> String {
     async function createView() {
         const name = el.viewName.value.trim() || "Karma Orchestra";
         const data = await postAction("create-view", { name });
+        patchRuntimeState({
+            server_id: data?.source?.serverId,
+            view_id: data?.binding?.viewId,
+            viewName: data?.binding?.viewName || name,
+        });
         updateBinding(data.binding);
         el.viewModal.hidden = true;
         await loadGraph();
@@ -1940,11 +2003,13 @@ pub(crate) fn script() -> String {
     el.showCode?.addEventListener("change", (event) => setShowCode(event.target.checked));
     el.distinctCondition?.addEventListener("change", async (event) => {
         state.distinctCondition = Boolean(event.target.checked);
+        saveDistinctnessState();
         render();
         try { await postAction("set-distinctness", { distinctness: distinctnessValue() }); } catch (_error) {}
     });
     el.distinctConsequence?.addEventListener("change", async (event) => {
         state.distinctConsequence = Boolean(event.target.checked);
+        saveDistinctnessState();
         render();
         try { await postAction("set-distinctness", { distinctness: distinctnessValue() }); } catch (_error) {}
     });

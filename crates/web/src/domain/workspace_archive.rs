@@ -275,6 +275,9 @@ mod tests {
                 y: 49_000.0,
                 width: 720.0,
                 height: 480.0,
+                pinned: false,
+                system: false,
+                z_index: 1,
             }],
         };
 

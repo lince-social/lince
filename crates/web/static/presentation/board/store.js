@@ -55,6 +55,19 @@ function cloneWorkspaces(workspaces) {
   return workspaces.map(cloneWorkspace);
 }
 
+function cloneShellCards(workspaces) {
+  const sourceWorkspace = workspaces.find((workspace) =>
+    workspace.cards.some((card) => card.pinned === true && card.system === true),
+  );
+  if (!sourceWorkspace) {
+    return [];
+  }
+
+  return sourceWorkspace.cards
+    .filter((card) => card.pinned === true && card.system === true)
+    .map(cloneCard);
+}
+
 function nextEntityId(prefix) {
   if (
     typeof crypto !== "undefined" &&
@@ -83,6 +96,7 @@ function createFallbackState(seedCards, config) {
   applyDensity(config, config.density);
 
   return {
+    schemaVersion: 2,
     density: config.density,
     globalStreamsEnabled: true,
     world: normalizeWorld(config.world),
@@ -137,6 +151,7 @@ function loadState(initialBoardState, seedCards, config) {
     : workspaces[0].id;
 
   return {
+    schemaVersion: Number(parsed.schemaVersion) || 2,
     density: config.density,
     globalStreamsEnabled: parsed.globalStreamsEnabled !== false,
     world: normalizeWorld(config.world),
@@ -165,6 +180,9 @@ function exportCard(card) {
     y,
     width,
     height,
+    pinned,
+    system,
+    zIndex,
   } = card;
 
   return {
@@ -186,11 +204,15 @@ function exportCard(card) {
     y,
     width,
     height,
+    pinned: pinned === true,
+    system: system === true,
+    zIndex: Number(zIndex) || (pinned ? 50 : 1),
   };
 }
 
 function exportState(state) {
   return {
+    schemaVersion: 2,
     density: state.density,
     globalStreamsEnabled: state.globalStreamsEnabled !== false,
     world: normalizeWorld(state.world),
@@ -228,6 +250,9 @@ function cardTemplate(index, centerPoint, config) {
     viewId: null,
     streamsEnabled: true,
     widgetState: {},
+    pinned: false,
+    system: false,
+    zIndex: 1,
     ...position,
   };
 }
@@ -305,7 +330,9 @@ export function createBoardStore({
       persist();
     }
 
-    notify();
+    if (options.notify !== false) {
+      notify();
+    }
     return buildSnapshot();
   }
 
@@ -464,7 +491,7 @@ export function createBoardStore({
       const sourceWorkspace = state.workspaces[sourceIndex];
       const targetWorkspace = state.workspaces[targetIndex];
       const card = sourceWorkspace.cards.find((entry) => entry.id === cardId);
-      if (!card) {
+      if (!card || card.pinned === true) {
         return null;
       }
 
@@ -501,11 +528,12 @@ export function createBoardStore({
       };
     },
     addWorkspace() {
+      const shellCards = cloneShellCards(state.workspaces);
       const workspace = {
         id: nextEntityId("space"),
         name: `Area ${state.workspaces.length + 1}`,
         camera: defaultCamera(config.world),
-        cards: [],
+        cards: normalizeLayout(shellCards, config),
       };
 
       state.workspaces = [...state.workspaces, workspace];
@@ -576,11 +604,12 @@ export function createBoardStore({
     },
     reorganizeActiveCards(centerPoint, options = {}) {
       const activeWorkspace = getActiveWorkspace();
-      activeWorkspace.cards = arrangeCardsInCircle(
-        activeWorkspace.cards,
-        centerPoint,
-        config,
-      );
+      const pinnedCards = activeWorkspace.cards.filter((card) => card.pinned === true);
+      const worldCards = activeWorkspace.cards.filter((card) => card.pinned !== true);
+      activeWorkspace.cards = [
+        ...pinnedCards,
+        ...arrangeCardsInCircle(worldCards, centerPoint, config),
+      ];
       return commit(options);
     },
     setGlobalStreamsEnabled(enabled, options = {}) {

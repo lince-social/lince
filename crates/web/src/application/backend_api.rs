@@ -181,6 +181,18 @@ impl BackendApiService {
                 )
                 .await
             }
+            ApiTable::Organ => {
+                let (sql, params) = self.store.build_standard_insert(table, object)?;
+                let outcome = self
+                    .services
+                    .writer
+                    .execute_statement_returning_id(sql, params)
+                    .await?;
+                if let Some(id) = outcome.last_insert_rowid {
+                    let _ = self.store_default_organ_sync_policy(id).await;
+                }
+                Ok(outcome)
+            }
             ApiTable::Command
             | ApiTable::Query
             | ApiTable::Frequency
@@ -309,6 +321,10 @@ impl BackendApiService {
                     params,
                 )
                 .await
+            }
+            ApiTable::Organ => {
+                let (sql, params) = self.store.build_standard_update(table, id, object)?;
+                self.services.writer.execute_statement(sql, params).await
             }
             ApiTable::Command
             | ApiTable::Query
@@ -534,6 +550,20 @@ impl BackendApiService {
         }
 
         Ok(outcome)
+    }
+
+    async fn store_default_organ_sync_policy(&self, organ_id: i64) -> Result<(), Error> {
+        self.services
+            .writer
+            .execute_statement(
+                "INSERT INTO organ_sync_policy(organ_id, sync_resources, record_sync_mode)
+                 VALUES (?, '[]', 'none')
+                 ON CONFLICT(organ_id) DO NOTHING"
+                    .to_string(),
+                vec![SqlParameter::Integer(organ_id)],
+            )
+            .await
+            .map(|_| ())
     }
 
     pub async fn subscribe_view(
@@ -918,6 +948,7 @@ fn table_permission_subject(table: ApiTable) -> &'static str {
         ApiTable::Role => "role",
         ApiTable::Permission => "permission",
         ApiTable::RolePermission => "permission",
+        ApiTable::Organ => "organ",
     }
 }
 

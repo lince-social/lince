@@ -419,6 +419,8 @@ async fn ensure_local_admin_if_needed(
         return Ok(());
     }
 
+    let bootstrap_path = bootstrap_config::bootstrap_config_path()?;
+
     if let Some(password) = staged_password {
         if password.trim().is_empty() {
             return Err(Error::other(
@@ -429,9 +431,10 @@ async fn ensure_local_admin_if_needed(
     }
 
     if !io::stdin().is_terminal() || !io::stdout().is_terminal() {
-        return Err(Error::other(
-            "Auth is enabled in ~/.config/lince/lince.toml but no admin user exists. Run lince in an interactive terminal once to create the initial admin.",
-        ));
+        return Err(Error::other(format!(
+            "Auth is enabled in {} but no admin user exists. Run lince in an interactive terminal once to create the initial admin.",
+            bootstrap_path.display()
+        )));
     }
 
     println!("Auth is enabled and no admin user exists yet.");

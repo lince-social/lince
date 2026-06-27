@@ -30,6 +30,7 @@ pub enum ApiTable {
     Role,
     Permission,
     RolePermission,
+    Organ,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -314,6 +315,20 @@ struct RolePermissionRow {
     id: i64,
     role_id: i64,
     permission_id: i64,
+}
+
+#[derive(Debug, Serialize, FromRow)]
+struct OrganRow {
+    id: i64,
+    name: String,
+    base_url: String,
+    trust_state: String,
+    contact_discovery_enabled: i64,
+    last_seen_at: Option<String>,
+    last_transfer_polled_at: Option<String>,
+    proximity: i64,
+    transfer_send_received_receipts: i64,
+    transfer_send_seen_receipts: i64,
 }
 
 const VIEW_FIELD_SPECS: [FieldSpec; 2] = [
@@ -718,6 +733,33 @@ const ROLE_PERMISSION_FIELD_SPECS: [FieldSpec; 2] = [
     },
 ];
 
+const ORGAN_FIELD_SPECS: [FieldSpec; 6] = [
+    FieldSpec {
+        name: "name",
+        kind: FieldKind::Text,
+    },
+    FieldSpec {
+        name: "base_url",
+        kind: FieldKind::Text,
+    },
+    FieldSpec {
+        name: "trust_state",
+        kind: FieldKind::Text,
+    },
+    FieldSpec {
+        name: "contact_discovery_enabled",
+        kind: FieldKind::BooleanInteger,
+    },
+    FieldSpec {
+        name: "transfer_send_received_receipts",
+        kind: FieldKind::BooleanInteger,
+    },
+    FieldSpec {
+        name: "transfer_send_seen_receipts",
+        kind: FieldKind::BooleanInteger,
+    },
+];
+
 #[derive(Clone)]
 pub struct BackendApiStore {
     services: InjectedServices,
@@ -870,6 +912,14 @@ impl BackendApiStore {
                 .await
                 .map_err(map_sqlx_error)?,
             ),
+            ApiTable::Organ => serialize_value(
+                sqlx::query_as::<_, OrganRow>(
+                    "SELECT id, name, base_url, trust_state, contact_discovery_enabled, last_seen_at, last_transfer_polled_at, proximity, transfer_send_received_receipts, transfer_send_seen_receipts FROM organ ORDER BY LOWER(name), id",
+                )
+                .fetch_all(db)
+                .await
+                .map_err(map_sqlx_error)?,
+            ),
         }
     }
 
@@ -1010,6 +1060,15 @@ impl BackendApiStore {
             ApiTable::RolePermission => serialize_value(
                 sqlx::query_as::<_, RolePermissionRow>(
                     "SELECT rowid AS id, role_id, permission_id FROM role_permission WHERE rowid = ?",
+                )
+                .bind(id)
+                .fetch_one(db)
+                .await
+                .map_err(map_sqlx_error)?,
+            ),
+            ApiTable::Organ => serialize_value(
+                sqlx::query_as::<_, OrganRow>(
+                    "SELECT id, name, base_url, trust_state, contact_discovery_enabled, last_seen_at, last_transfer_polled_at, proximity, transfer_send_received_receipts, transfer_send_seen_receipts FROM organ WHERE id = ?",
                 )
                 .bind(id)
                 .fetch_one(db)
@@ -1552,7 +1611,7 @@ impl BackendApiStore {
 }
 
 impl ApiTable {
-    pub fn all() -> [ApiTable; 18] {
+    pub fn all() -> [ApiTable; 19] {
         [
             ApiTable::Record,
             ApiTable::AppUser,
@@ -1572,6 +1631,7 @@ impl ApiTable {
             ApiTable::Permission,
             ApiTable::RolePermission,
             ApiTable::View,
+            ApiTable::Organ,
         ]
     }
 
@@ -1595,6 +1655,7 @@ impl ApiTable {
             ApiTable::Role => "role",
             ApiTable::Permission => "permission",
             ApiTable::RolePermission => "role_permission",
+            ApiTable::Organ => "organ",
         }
     }
 
@@ -1614,6 +1675,7 @@ impl ApiTable {
             ApiTable::KarmaConsequence => Some(KARMA_CONSEQUENCE_FIELD_SPECS.to_vec()),
             ApiTable::Karma => Some(KARMA_FIELD_SPECS.to_vec()),
             ApiTable::Configuration => Some(CONFIGURATION_FIELD_SPECS.to_vec()),
+            ApiTable::Organ => Some(ORGAN_FIELD_SPECS.to_vec()),
             ApiTable::AppUser | ApiTable::Role | ApiTable::Permission => None,
             ApiTable::RolePermission => Some(ROLE_PERMISSION_FIELD_SPECS.to_vec()),
         }
@@ -1689,6 +1751,10 @@ impl ApiTable {
                 .iter()
                 .map(|spec| table_create_field_schema(spec.name, spec.kind))
                 .collect(),
+            ApiTable::Organ => ORGAN_FIELD_SPECS
+                .iter()
+                .map(|spec| table_create_field_schema(spec.name, spec.kind))
+                .collect(),
         }
     }
 }
@@ -1699,7 +1765,7 @@ pub fn build_table_create_schema_response(
     let preferred = preferred_table
         .map(|table_name| table_name.trim().to_lowercase())
         .filter(|table_name| !table_name.is_empty())
-        .filter(|table_name| table_name == "organ" || parse_api_table(table_name).is_ok())
+        .filter(|table_name| parse_api_table(table_name).is_ok())
         .unwrap_or_else(|| "record".to_string());
 
     let mut tables = ApiTable::all()
@@ -1709,13 +1775,6 @@ pub fn build_table_create_schema_response(
             fields: table.create_field_schemas(),
         })
         .collect::<Vec<_>>();
-    tables.push(TableCreateSchema {
-        name: "organ".to_string(),
-        fields: vec![
-            table_create_field_schema("name", FieldKind::Text),
-            table_create_field_schema("base_url", FieldKind::Text),
-        ],
-    });
     tables.sort_by(|left, right| compare_create_schema_order(left, right, &preferred));
 
     TableCreateSchemaResponse {
@@ -1801,6 +1860,7 @@ fn parse_api_table(table_name: &str) -> Result<ApiTable, Error> {
         "role" => Ok(ApiTable::Role),
         "permission" => Ok(ApiTable::Permission),
         "role_permission" => Ok(ApiTable::RolePermission),
+        "organ" => Ok(ApiTable::Organ),
         _ => Err(Error::new(
             ErrorKind::InvalidInput,
             format!("Unsupported API table: {table_name}"),

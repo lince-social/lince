@@ -95,7 +95,7 @@ pub fn set_auth_enabled(enabled: bool) -> Result<(), Error> {
     persist_bootstrap_config(&path, &raw)
 }
 
-fn bootstrap_config_path() -> Result<PathBuf, Error> {
+pub fn bootstrap_config_path() -> Result<PathBuf, Error> {
     let config_dir = utils::config::lince_data_dir()
         .ok_or_else(|| Error::other("Unable to resolve user config directory"))?;
     Ok(config_dir.join("lince.toml"))

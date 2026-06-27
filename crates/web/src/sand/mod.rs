@@ -17,9 +17,9 @@ mod organ_management;
 mod relations;
 mod role_access;
 mod sand_publisher;
-mod shell;
 #[path = "shared_markdown/mod.rs"]
 mod shared_markdown;
+mod shell;
 mod spotify_control;
 mod table;
 mod terminal;

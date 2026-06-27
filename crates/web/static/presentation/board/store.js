@@ -68,6 +68,81 @@ function cloneShellCards(workspaces) {
     .map(cloneCard);
 }
 
+function layoutShellPins(cards) {
+  const viewportWidth =
+    window.visualViewport?.width || document.documentElement.clientWidth || window.innerWidth || 1360;
+  const viewportHeight =
+    window.visualViewport?.height || document.documentElement.clientHeight || window.innerHeight || 760;
+  const gap = 10;
+  const padding = 20;
+  const top = 16;
+  const editWidth = 40;
+  const notificationsWidth = 40;
+  const workspaceWidth = 72;
+  const minimumOperationWidth = 260;
+  const preferredOperationWidth = 420;
+  const brandWidth = 112;
+  const reservedRight = editWidth + notificationsWidth + workspaceWidth + gap * 3 + padding;
+  const availableOperationWidth =
+    viewportWidth - padding - brandWidth - gap - reservedRight;
+  const operationWidth = Math.max(
+    minimumOperationWidth,
+    Math.min(preferredOperationWidth, availableOperationWidth),
+  );
+  const editX = Math.max(padding, viewportWidth - padding - editWidth);
+  const notificationsX = editX - gap - notificationsWidth;
+  const workspaceX = notificationsX - gap - workspaceWidth;
+  const operationX = workspaceX - gap - operationWidth;
+
+  const layoutById = {
+    "shell-logo": {
+      x: padding,
+      y: 28,
+      width: brandWidth,
+      height: 32,
+    },
+    "shell-operation": {
+      x: Math.max(padding + brandWidth + gap, operationX),
+      y: top,
+      width: operationWidth,
+      height: 40,
+    },
+    "shell-workspaces": {
+      x: workspaceX,
+      y: top,
+      width: workspaceWidth,
+      height: 40,
+    },
+    "shell-notifications": {
+      x: notificationsX,
+      y: top,
+      width: notificationsWidth,
+      height: 40,
+    },
+    "shell-edit": {
+      x: editX,
+      y: top,
+      width: editWidth,
+      height: 40,
+    },
+    "shell-zoom": {
+      x: padding,
+      y: Math.max(80, viewportHeight - 72),
+      width: 242,
+      height: 52,
+    },
+  };
+
+  return cards.map((card) =>
+    card?.system === true && layoutById[card.id]
+      ? {
+          ...card,
+          ...layoutById[card.id],
+        }
+      : card,
+  );
+}
+
 function nextEntityId(prefix) {
   if (
     typeof crypto !== "undefined" &&
@@ -85,9 +160,11 @@ function normalizeWorkspace(workspace, index, config) {
     id: String(workspace?.id || `space-${index + 1}`),
     name: String(workspace?.name || `Area ${index + 1}`),
     camera: sanitizeCamera(workspace?.camera, world),
-    cards: normalizeLayout(
-      Array.isArray(workspace?.cards) ? workspace.cards : [],
-      config,
+    cards: layoutShellPins(
+      normalizeLayout(
+        Array.isArray(workspace?.cards) ? workspace.cards : [],
+        config,
+      ),
     ),
   };
 }
@@ -367,6 +444,12 @@ export function createBoardStore({
     replaceCards(nextCards, options) {
       return replaceActiveWorkspaceCards(nextCards, options);
     },
+    relayoutShellPins(options = {}) {
+      for (const workspace of state.workspaces) {
+        workspace.cards = layoutShellPins(workspace.cards);
+      }
+      return commit(options);
+    },
     replaceState(nextState, options = {}) {
       state = loadState(nextState, [], config);
       return commit({
@@ -531,7 +614,7 @@ export function createBoardStore({
       const shellCards = cloneShellCards(state.workspaces);
       const workspace = {
         id: nextEntityId("space"),
-        name: `Area ${state.workspaces.length + 1}`,
+        name: String(state.workspaces.length + 1).padStart(2, "0"),
         camera: defaultCamera(config.world),
         cards: normalizeLayout(shellCards, config),
       };
@@ -564,6 +647,16 @@ export function createBoardStore({
 
       commit();
       return cloneWorkspaces(nextWorkspaces);
+    },
+    renameWorkspace(workspaceId, name) {
+      const workspace = getWorkspaceById(workspaceId);
+      const nextName = String(name || "").trim();
+      if (!workspace || !nextName) {
+        return buildSnapshot();
+      }
+
+      workspace.name = nextName;
+      return commit();
     },
     switchWorkspace(workspaceId) {
       if (!state.workspaces.some((workspace) => workspace.id === workspaceId)) {

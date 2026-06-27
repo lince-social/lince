@@ -350,21 +350,10 @@ fn render_add_card_popover() -> Markup {
                 class="add-card-popover__action"
                 type="button"
             {
-                span class="add-card-popover__icon" { "◎" }
+                span class="add-card-popover__icon" { "+" }
                 span class="add-card-popover__copy" {
-                    strong { "Local" }
-                    small { "Catalogo instalado" }
-                }
-            }
-            button
-                id="add-card-dna-button"
-                class="add-card-popover__action"
-                type="button"
-            {
-                span class="add-card-popover__icon" { "◌" }
-                span class="add-card-popover__copy" {
-                    strong { "DNA" }
-                    small { "Sand publicados nos organs conectados" }
+                    strong { "Add card" }
+                    small { "Escolher no catalogo de sand" }
                 }
             }
         }
@@ -605,6 +594,26 @@ fn render_local_packages_modal_backdrop() -> Markup {
                     "local-packages-search",
                     "Nome, arquivo, autor ou permissao",
                 ))
+                div class="catalog-origin-toggle-group" aria-label="Filtrar origem dos sand" {
+                    button
+                        id="package-origin-local-toggle"
+                        class="catalog-origin-toggle is-active"
+                        type="button"
+                        aria-pressed="true"
+                    {
+                        span class="catalog-origin-toggle__mark" { "◎" }
+                        span { "Local" }
+                    }
+                    button
+                        id="package-origin-dna-toggle"
+                        class="catalog-origin-toggle is-active"
+                        type="button"
+                        aria-pressed="true"
+                    {
+                        span class="catalog-origin-toggle__mark" { "◌" }
+                        span { "DNA" }
+                    }
+                }
                 div id="local-package-list" class="local-package-list" {}
             }
         }

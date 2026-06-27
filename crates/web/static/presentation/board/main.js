@@ -196,6 +196,12 @@ const localPackagesCloseButton = document.getElementById(
 );
 const localPackagesSummary = document.getElementById("local-packages-summary");
 const localPackagesSearch = document.getElementById("local-packages-search");
+const packageOriginLocalToggle = document.getElementById(
+  "package-origin-local-toggle",
+);
+const packageOriginDnaToggle = document.getElementById(
+  "package-origin-dna-toggle",
+);
 const localPackageList = document.getElementById("local-package-list");
 const dnaPackagesModalBackdrop = document.getElementById(
   "dna-packages-modal-backdrop",
@@ -352,7 +358,6 @@ if (
   !addCardButton ||
   !addCardImportButton ||
   !addCardLocalButton ||
-  !addCardDnaButton ||
   !addCardPopover ||
   !addWorkspaceButton ||
   !importWorkspaceButton ||
@@ -413,6 +418,8 @@ if (
   !localPackagesCloseButton ||
   !localPackagesSummary ||
   !localPackagesSearch ||
+  !packageOriginLocalToggle ||
+  !packageOriginDnaToggle ||
   !localPackageList ||
   !dnaPackagesModalBackdrop ||
   !dnaPackagesCloseButton ||
@@ -478,9 +485,104 @@ if (
 
 const bootstrap = JSON.parse(bootstrapElement.textContent || "{}");
 const config = createGridConfig(bootstrap);
+const CAMERA_SESSION_KEY = "lince.board.camera.v1";
+
+function normalizeCachedCamera(camera) {
+  const x = Number(camera?.x);
+  const y = Number(camera?.y);
+  const scale = Number(camera?.scale);
+
+  if (!Number.isFinite(x) || !Number.isFinite(y)) {
+    return null;
+  }
+
+  return {
+    x,
+    y,
+    scale: Math.max(0.1, Math.min(Number.isFinite(scale) ? scale : 1, 3)),
+  };
+}
+
+function readSessionCameraCache() {
+  try {
+    const parsed = JSON.parse(sessionStorage.getItem(CAMERA_SESSION_KEY) || "null");
+    if (!parsed || typeof parsed !== "object") {
+      return null;
+    }
+
+    const cameras = parsed.cameras && typeof parsed.cameras === "object"
+      ? parsed.cameras
+      : {};
+    return {
+      activeWorkspaceId: String(parsed.activeWorkspaceId || ""),
+      cameras,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeSessionCameraCache(workspaceId, camera) {
+  const normalized = normalizeCachedCamera(camera);
+  const targetWorkspaceId = String(workspaceId || "");
+  if (!targetWorkspaceId || !normalized) {
+    return;
+  }
+
+  try {
+    const current = readSessionCameraCache() || {
+      activeWorkspaceId: "",
+      cameras: {},
+    };
+    sessionStorage.setItem(
+      CAMERA_SESSION_KEY,
+      JSON.stringify({
+        activeWorkspaceId: targetWorkspaceId,
+        cameras: {
+          ...current.cameras,
+          [targetWorkspaceId]: normalized,
+        },
+      }),
+    );
+  } catch {
+    // Session storage can be unavailable in hardened browser contexts.
+  }
+}
+
+function applySessionCameraCache(boardState) {
+  const cache = readSessionCameraCache();
+  if (!cache || !boardState || typeof boardState !== "object") {
+    return boardState;
+  }
+
+  const workspaces = Array.isArray(boardState.workspaces)
+    ? boardState.workspaces.map((workspace) => {
+        const workspaceId = String(workspace?.id || "");
+        const cachedCamera = normalizeCachedCamera(cache.cameras?.[workspaceId]);
+        return cachedCamera
+          ? {
+              ...workspace,
+              camera: cachedCamera,
+            }
+          : workspace;
+      })
+    : boardState.workspaces;
+
+  return {
+    ...boardState,
+    activeWorkspaceId:
+      cache.activeWorkspaceId &&
+      Array.isArray(workspaces) &&
+      workspaces.some((workspace) => workspace?.id === cache.activeWorkspaceId)
+        ? cache.activeWorkspaceId
+        : boardState.activeWorkspaceId,
+    workspaces,
+  };
+}
+
 const store = createBoardStore({
   seedCards: Array.isArray(bootstrap.cards) ? bootstrap.cards : [],
-  initialBoardState: bootstrap.boardState,
+  initialBoardState: applySessionCameraCache(bootstrap.boardState),
   config,
   async persistState(nextState) {
     const response = await fetch(apiPath("/board/state"), {
@@ -500,9 +602,11 @@ const store = createBoardStore({
   },
 });
 let editMode = false;
+let selfEditCardId = null;
 let appNotifications = [];
 let notificationsOpen = false;
 let boardViewport = null;
+let workspacePopoverOpen = false;
 const widgetBridge = createWidgetBridge({
   statusNode: null,
   initialState: bootstrap.widgetBridge,
@@ -544,7 +648,6 @@ let activeCardId = null;
 let activeInteractionType = null;
 let addCardPopoverOpen = false;
 let blockedFlashTimeout = null;
-let workspacePopoverOpen = false;
 let pendingWorkspaceTransitionDirection = 0;
 let lastRenderedWorkspaceId = null;
 let workspaceTransitionCleanup = null;
@@ -561,6 +664,10 @@ let dnaCatalogPackageCount = 0;
 let dnaCatalogPackages = [];
 let dnaPackageResults = [];
 let dnaCatalogOrigins = [];
+let packageOriginFilters = {
+  local: true,
+  dna: true,
+};
 let serverProfiles = Array.isArray(bootstrap?.servers) ? bootstrap.servers : [];
 let pendingServerLogin = null;
 let notificationsTimer = null;
@@ -574,6 +681,7 @@ const packagePreviewRefreshState = new Map();
 let packagePreviewWatchTimer = null;
 let packagePreviewWatchInFlight = false;
 let cameraPersistTimer = null;
+let shellPinRelayoutTimer = null;
 let lastAppliedCameraWorkspaceId = null;
 let lastCameraWorkspaceId = null;
 let lastCameraValue = null;
@@ -586,6 +694,7 @@ boardViewport = createBoardViewport({
     renderCameraHud(camera);
     lastCameraWorkspaceId = snapshot.activeWorkspaceId;
     lastCameraValue = cloneJsonValue(camera, null);
+    writeSessionCameraCache(snapshot.activeWorkspaceId, camera);
     store.updateActiveCamera(camera, { notify: false, persist: false });
     window.clearTimeout(cameraPersistTimer);
     cameraPersistTimer = window.setTimeout(() => {
@@ -602,6 +711,7 @@ function flushCameraState() {
   window.clearTimeout(cameraPersistTimer);
   cameraPersistTimer = null;
   if (store.getSnapshot().activeWorkspaceId === lastCameraWorkspaceId) {
+    writeSessionCameraCache(lastCameraWorkspaceId, lastCameraValue);
     store.updateActiveCamera(lastCameraValue, { persist: true });
   }
 }
@@ -910,11 +1020,21 @@ function shellMeta(snapshot = store.getSnapshot()) {
 
   return {
     editMode,
+    selfEditCardId,
     density: snapshot.density,
+    gridSnap: snapshot.layout?.world?.snap || 40,
     workspace: {
       id: snapshot.activeWorkspaceId,
       label: formatWorkspaceNumber(activeIndex),
       count: snapshot.workspaces.length,
+      open: workspacePopoverOpen,
+      items: snapshot.workspaces.map((workspace, index) => ({
+        id: workspace.id,
+        label: formatWorkspaceNumber(index),
+        name: workspaceDisplayName(workspace, index),
+        active: workspace.id === snapshot.activeWorkspaceId,
+        canDelete: snapshot.workspaces.length > 1,
+      })),
     },
     zoom: {
       percent: Math.round((Number(camera.scale) || 1) * 100),
@@ -972,14 +1092,42 @@ function handleShellAction(instanceId, command, payload = {}) {
     case "workspace.toggle":
       setWorkspacePopoverOpen(!workspacePopoverOpen);
       break;
+    case "workspace.close":
+      setWorkspacePopoverOpen(false);
+      break;
+    case "workspace.switch":
+      switchWorkspace(String(payload.workspaceId || ""));
+      break;
+    case "workspace.rename":
+      renameWorkspace(String(payload.workspaceId || ""), payload.name);
+      break;
+    case "workspace.delete":
+      removeWorkspace(String(payload.workspaceId || ""));
+      break;
+    case "workspace.add":
+      addWorkspace();
+      break;
+    case "workspace.import":
+      workspaceImportInput.value = "";
+      workspaceImportInput.click();
+      break;
+    case "workspace.export":
+      triggerWorkspaceExport();
+      break;
     case "notifications.toggle":
       setNotificationsOpen(!notificationsOpen);
       break;
     case "edit.toggle":
       setEditMode(!editMode);
       break;
+    case "edit.self":
+      setSelfEditMode(instanceId);
+      break;
+    case "edit.self.leave":
+      clearSelfEditMode();
+      break;
     case "card.add":
-      store.addCard({ center: boardViewport.centerWorldPoint() });
+      openLocalPackagesModal();
       break;
     case "card.import":
       packageImportInput.value = "";
@@ -989,7 +1137,7 @@ function handleShellAction(instanceId, command, payload = {}) {
       openLocalPackagesModal();
       break;
     case "card.dna":
-      openDnaPackagesModal();
+      openLocalPackagesModal();
       break;
     case "density.set":
       store.updateDensity(Number(payload.value) || 4);
@@ -1121,6 +1269,19 @@ function resolveWorkspaceDirection(fromIndex, toIndex) {
   return toIndex > fromIndex ? 1 : -1;
 }
 
+function workspaceDisplayName(workspace, index) {
+  const fallback = formatWorkspaceNumber(index);
+  const rawName = String(workspace?.name || "").trim();
+  const defaultMatch = rawName.match(/^Area\s+(\d+)$/i);
+  if (!rawName) {
+    return fallback;
+  }
+  if (defaultMatch) {
+    return formatWorkspaceNumber(Math.max(0, Number(defaultMatch[1]) - 1));
+  }
+  return rawName;
+}
+
 function renderTrashIcon() {
   return `
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1130,6 +1291,15 @@ function renderTrashIcon() {
       <path d="M8 4.5v7"></path>
       <path d="M11 4.5v7"></path>
       <path d="M4.5 4.5 5 13h6l.5-8.5"></path>
+    </svg>
+  `;
+}
+
+function renderPencilIcon() {
+  return `
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M9.8 3.1 12.9 6.2"></path>
+      <path d="M11.3 1.9a1.45 1.45 0 0 1 2.1 2.1L5.7 11.7 3 12.4l.7-2.7 7.6-7.8Z"></path>
     </svg>
   `;
 }
@@ -1145,13 +1315,9 @@ function renderCloseIcon() {
 
 function renderConfigureIcon() {
   return `
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M8 3.25a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z"></path>
-      <path d="M8 11.25a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z"></path>
-      <path d="M3.25 8a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"></path>
-      <path d="M11.25 8a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"></path>
-      <path d="M8 4.75V11.25"></path>
-      <path d="M4.75 8H11.25"></path>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 15.25a3.25 3.25 0 1 0 0-6.5 3.25 3.25 0 0 0 0 6.5Z"></path>
+      <path d="M19.4 15a1.75 1.75 0 0 0 .35 1.93l.05.05a2.1 2.1 0 0 1-2.97 2.97l-.05-.05a1.75 1.75 0 0 0-1.93-.35 1.75 1.75 0 0 0-1.05 1.6v.15a2.1 2.1 0 0 1-4.2 0v-.08a1.75 1.75 0 0 0-1.15-1.62 1.75 1.75 0 0 0-1.93.35l-.05.05a2.1 2.1 0 0 1-2.97-2.97l.05-.05a1.75 1.75 0 0 0 .35-1.93 1.75 1.75 0 0 0-1.6-1.05H2.2a2.1 2.1 0 0 1 0-4.2h.08A1.75 1.75 0 0 0 3.9 8.65a1.75 1.75 0 0 0-.35-1.93l-.05-.05A2.1 2.1 0 0 1 6.47 3.7l.05.05a1.75 1.75 0 0 0 1.93.35h.08A1.75 1.75 0 0 0 9.6 2.5V2.2a2.1 2.1 0 0 1 4.2 0v.08a1.75 1.75 0 0 0 1.05 1.6 1.75 1.75 0 0 0 1.93-.35l.05-.05a2.1 2.1 0 0 1 2.97 2.97l-.05.05a1.75 1.75 0 0 0-.35 1.93v.08a1.75 1.75 0 0 0 1.6 1.05h.3a2.1 2.1 0 0 1 0 4.2h-.08A1.75 1.75 0 0 0 19.4 15Z"></path>
     </svg>
   `;
 }
@@ -1163,6 +1329,29 @@ function renderDownloadIcon() {
       <path d="M5.25 7.5 8 10.25 10.75 7.5"></path>
       <path d="M3.25 12.75h9.5"></path>
     </svg>
+  `;
+}
+
+function renderPinIcon(pinned = false) {
+  const fill = pinned ? ` fill="currentColor"` : "";
+  return `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path${fill} d="M14.5 4.5 19.5 9.5 16.8 12.2 17.3 17.2 15.9 18.6 11.9 14.6 7.3 19.2 4.8 16.7 9.4 12.1 5.4 8.1 6.8 6.7 11.8 7.2 14.5 4.5Z"></path>
+    </svg>
+  `;
+}
+
+function renderPinButton(card) {
+  return `
+    <button
+      type="button"
+      class="card-delete-button card-delete-button--secondary card-pin-button${card.pinned === true ? " is-pinned" : ""}"
+      data-card-action="pin"
+      aria-label="${card.pinned === true ? "Desafixar" : "Fixar"} ${escapeHtml(card.title)}"
+      aria-pressed="${card.pinned === true ? "true" : "false"}"
+    >
+      <span class="card-delete-button__icon">${renderPinIcon(card.pinned === true)}</span>
+    </button>
   `;
 }
 
@@ -1179,7 +1368,6 @@ function renderConfigureButton(card) {
       aria-label="Configurar ${escapeHtml(card.title)}"
     >
       <span class="card-delete-button__icon">${renderConfigureIcon()}</span>
-      <span class="card-delete-button__label">CONFIGURAR</span>
     </button>
   `;
 }
@@ -1210,6 +1398,23 @@ function renderRawHtmlDownloadButton(card) {
   `;
 }
 
+function renderLeaveSelfEditButton(card) {
+  if (!isShellEditCard(card)) {
+    return "";
+  }
+
+  return `
+    <button
+      type="button"
+      class="card-delete-button card-delete-button--secondary card-leave-self-edit-button"
+      data-card-action="leave-self-edit"
+      aria-label="Sair do modo de edicao deste sand"
+    >
+      <span class="card-delete-button__label">SAIR DO EDIT</span>
+    </button>
+  `;
+}
+
 function renderHandles() {
   return `
     <button type="button" class="resize-handle resize-handle--nw" tabindex="-1" aria-hidden="true" data-resize-handle="nw"></button>
@@ -1232,7 +1437,6 @@ function renderDeleteButton(card) {
       aria-label="Excluir ${escapeHtml(card.title)}"
     >
       <span class="card-delete-button__icon">${renderTrashIcon()}</span>
-      <span class="card-delete-button__label">REMOVER</span>
     </button>
   `;
 }
@@ -1583,6 +1787,8 @@ function renderCardMarkup(card) {
       <article class="board-card board-card--package panzoom-exclude" data-card-id="${escapeHtml(card.id)}" data-card-kind="${escapeHtml(card.kind || "package")}">
         ${renderDeleteButton(card)}
         ${renderConfigureButton(card)}
+        ${renderPinButton(card)}
+        ${renderLeaveSelfEditButton(card)}
         ${renderRawHtmlDownloadButton(card)}
         ${renderPackageBody(card)}
         ${renderHandles()}
@@ -1593,6 +1799,7 @@ function renderCardMarkup(card) {
   return `
     <article class="board-card panzoom-exclude" data-card-id="${escapeHtml(card.id)}" data-card-kind="${escapeHtml(card.kind || "text")}">
       ${renderDeleteButton(card)}
+      ${renderPinButton(card)}
       <header class="card-header">
         <span class="card-eyebrow">Widget</span>
         <h2 class="card-title" data-card-title>${escapeHtml(card.title)}</h2>
@@ -1643,10 +1850,29 @@ function createPackageRenderSignature(card) {
 }
 
 function syncCardNode(node, card) {
-  node.style.left = `${card.x}px`;
+  const isWorkspaceShell = card.system === true && card.packageName === "lince-shell-workspaces.html";
+  const isEditShell = isShellEditCard(card);
+  const isShellPopoverOpen = (isWorkspaceShell && workspacePopoverOpen) || (isEditShell && editMode);
+  const workspacePopoverWidth = 260;
+  const expandedWidth = card.width;
+  const wantedExpandedHeight = isWorkspaceShell && workspacePopoverOpen ? 350 : card.height;
+  const expandedHeight =
+    card.pinned === true
+      ? Math.max(card.height, Math.min(wantedExpandedHeight, window.innerHeight - card.y - 8))
+      : wantedExpandedHeight;
+  const anchoredX =
+    isShellPopoverOpen && !isWorkspaceShell && card.pinned === true
+      ? card.x + card.width - expandedWidth
+      : card.x;
+  const adjustedX =
+    card.pinned === true
+      ? Math.max(8, Math.min(anchoredX, window.innerWidth - expandedWidth - 8))
+      : anchoredX;
+
+  node.style.left = `${adjustedX}px`;
   node.style.top = `${card.y}px`;
-  node.style.width = `${card.width}px`;
-  node.style.height = `${card.height}px`;
+  node.style.width = `${expandedWidth}px`;
+  node.style.height = `${expandedHeight}px`;
   node.style.zIndex = String(
     card.id === activeCardId
       ? Math.max(Number(card.zIndex) || 1, 100)
@@ -1656,6 +1882,12 @@ function syncCardNode(node, card) {
   node.classList.toggle("board-card--package", card.kind === "package");
   node.classList.toggle("board-card--pinned", card.pinned === true);
   node.classList.toggle("board-card--system", card.system === true);
+  node.classList.toggle(
+    "board-card--shell-popover-open",
+    isShellPopoverOpen,
+  );
+  node.classList.toggle("is-edit-locked", editMode && !isCardEditable(card));
+  node.classList.toggle("is-self-editing", selfEditCardId === card.id);
   node.classList.toggle("is-compact", card.width <= 420 || card.height <= 320);
   node.classList.toggle("is-tiny", card.width <= 280 || card.height <= 220);
   node.classList.toggle("is-active", card.id === activeCardId);
@@ -1674,6 +1906,8 @@ function syncCardNode(node, card) {
       node.innerHTML =
         renderDeleteButton(card) +
         renderConfigureButton(card) +
+        renderPinButton(card) +
+        renderLeaveSelfEditButton(card) +
         renderRawHtmlDownloadButton(card) +
         renderPackageBody(card) +
         renderHandles();
@@ -1700,6 +1934,25 @@ function syncCardNode(node, card) {
   }
 
   if (frameNode) {
+    if (isWorkspaceShell && workspacePopoverOpen) {
+      frameNode.style.width = `${workspacePopoverWidth}px`;
+      frameNode.style.height = `${expandedHeight}px`;
+      frameNode.style.transform = `translateX(-${Math.max(0, workspacePopoverWidth - card.width)}px)`;
+    } else if (isEditShell && editMode) {
+      const popoverWidth = 268;
+      const popoverHeight = Math.max(
+        card.height,
+        Math.min(460, window.innerHeight - card.y - 8),
+      );
+      frameNode.style.width = `${popoverWidth}px`;
+      frameNode.style.height = `${popoverHeight}px`;
+      frameNode.style.transform = `translateX(-${Math.max(0, popoverWidth - card.width)}px)`;
+    } else {
+      frameNode.style.width = "";
+      frameNode.style.height = "";
+      frameNode.style.transform = "";
+    }
+
     applyFrameContent(frameNode, {
       src: buildPackageFrameSrc(card),
       html: card.html || "",
@@ -1723,6 +1976,20 @@ function syncCardNode(node, card) {
       "aria-label",
       `Configurar ${card.title || "card"}`,
     );
+  }
+
+  const pinButton = node.querySelector("[data-card-action='pin']");
+  if (pinButton) {
+    pinButton.setAttribute(
+      "aria-label",
+      `${card.pinned === true ? "Desafixar" : "Fixar"} ${card.title || "card"}`,
+    );
+    pinButton.setAttribute("aria-pressed", String(card.pinned === true));
+    pinButton.classList.toggle("is-pinned", card.pinned === true);
+    const pinIcon = pinButton.querySelector(".card-delete-button__icon");
+    if (pinIcon) {
+      pinIcon.innerHTML = renderPinIcon(card.pinned === true);
+    }
   }
 
   const downloadButton = node.querySelector(
@@ -1868,7 +2135,8 @@ function renderWorkspaceList(snapshot) {
   const activeIndex = getActiveWorkspaceIndex(snapshot);
   const canDelete = snapshot.workspaces.length > 1;
 
-  workspaceCurrent.textContent = formatWorkspaceNumber(activeIndex);
+  const activeWorkspace = snapshot.workspaces[activeIndex];
+  workspaceCurrent.textContent = workspaceDisplayName(activeWorkspace, activeIndex);
   workspaceToggle.setAttribute(
     "aria-label",
     `Area ${formatWorkspaceNumber(activeIndex)}. Abrir seletor de areas`,
@@ -1881,15 +2149,35 @@ function renderWorkspaceList(snapshot) {
 
       return `
         <div class="workspace-item${isActive ? " is-active" : ""}">
-          <button
-            type="button"
+          <div
             class="workspace-item__switch"
             data-workspace-action="switch"
             data-workspace-id="${escapeHtml(workspace.id)}"
             aria-pressed="${String(isActive)}"
+            role="button"
+            tabindex="0"
             aria-label="Ir para a area ${workspaceNumber}"
           >
-            <span class="workspace-item__number">${workspaceNumber}</span>
+            <input
+              class="workspace-item__number workspace-item__name-input"
+              data-workspace-name-input
+              data-workspace-id="${escapeHtml(workspace.id)}"
+              value="${escapeHtml(workspaceDisplayName(workspace, index))}"
+              aria-label="Nome da area ${workspaceNumber}"
+              autocomplete="off"
+              spellcheck="false"
+              readonly
+              tabindex="-1"
+            >
+          </div>
+          <button
+            type="button"
+            class="workspace-item__edit"
+            data-workspace-action="rename"
+            data-workspace-id="${escapeHtml(workspace.id)}"
+            aria-label="Renomear a area ${workspaceNumber}"
+          >
+            ${renderPencilIcon()}
           </button>
           <button
             type="button"
@@ -1968,6 +2256,7 @@ function renderSnapshot(snapshot) {
     boardViewport.setCamera(camera, { silent: true });
     renderCameraHud(camera);
     lastAppliedCameraWorkspaceId = snapshot.activeWorkspaceId;
+    writeSessionCameraCache(snapshot.activeWorkspaceId, camera);
     store.updateActiveCamera(camera, { notify: false, persist: false });
   }
   renderWorkspaceList(snapshot);
@@ -1998,10 +2287,33 @@ function setActiveCard(cardId, interactionType = null) {
   renderCards(store.getCards());
 }
 
+function isShellEditCard(card) {
+  return card?.system === true && card?.packageName === "lince-shell-edit.html";
+}
+
+function isCardEditable(card) {
+  if (!editMode || !card) {
+    return false;
+  }
+
+  if (selfEditCardId) {
+    return card.id === selfEditCardId;
+  }
+
+  return !isShellEditCard(card);
+}
+
 function clearActiveCard() {
   activeCardId = null;
   activeInteractionType = null;
   renderCards(store.getCards());
+}
+
+function scheduleShellPinRelayout() {
+  window.clearTimeout(shellPinRelayoutTimer);
+  shellPinRelayoutTimer = window.setTimeout(() => {
+    store.relayoutShellPins({ persist: true });
+  }, 120);
 }
 
 function flashBoardBlocked() {
@@ -2149,6 +2461,8 @@ function setWorkspacePopoverOpen(nextOpen) {
   workspaceSwitcher.classList.toggle("is-open", workspacePopoverOpen);
   workspacePopover.hidden = !workspacePopoverOpen;
   workspaceToggle.setAttribute("aria-expanded", String(workspacePopoverOpen));
+  renderCards(store.getCards());
+  widgetBridge.syncFrames();
 }
 
 function setAddCardPopoverOpen(nextOpen) {
@@ -2183,96 +2497,218 @@ function matchesPackageQuery(pkg, query) {
   return tokens.includes(query);
 }
 
-function summarizeLocalPackages(filteredPackages) {
-  const visibleCount = filteredPackages.length;
-  const totalCount = installedPackages.length;
+function syncPackageOriginToggles() {
+  packageOriginLocalToggle.classList.toggle("is-active", packageOriginFilters.local);
+  packageOriginLocalToggle.setAttribute(
+    "aria-pressed",
+    String(packageOriginFilters.local),
+  );
+  packageOriginDnaToggle.classList.toggle("is-active", packageOriginFilters.dna);
+  packageOriginDnaToggle.setAttribute(
+    "aria-pressed",
+    String(packageOriginFilters.dna),
+  );
+}
 
-  if (!installedPackages.length) {
+function summarizeLocalPackages(localResults, dnaResults) {
+  const localVisibleCount = localResults.length;
+  const dnaVisibleCount = dnaResults.length;
+  const localTotalCount = installedPackages.length;
+  const dnaTotalCount = dnaCatalogLoaded ? dnaCatalogPackageCount : 0;
+  const visibleCount = localVisibleCount + dnaVisibleCount;
+  const totalCount =
+    (packageOriginFilters.local ? localTotalCount : 0) +
+    (packageOriginFilters.dna ? dnaTotalCount : 0);
+
+  if (!packageOriginFilters.local && !packageOriginFilters.dna) {
     localPackagesSummary.textContent =
-      "Nenhum widget no catalogo ainda. Importe um .html para adicionar um widget local.";
+      "Ative Local, DNA ou ambos para escolher quais sand aparecem.";
+    return;
+  }
+
+  if (packageOriginFilters.dna && !dnaCatalogLoaded) {
+    localPackagesSummary.textContent =
+      "Carregando o catalogo local e o catalogo distribuido de sand...";
+    return;
+  }
+
+  if (!totalCount) {
+    localPackagesSummary.textContent =
+      packageOriginFilters.dna && !packageOriginFilters.local
+        ? "Nenhum sand publicado apareceu nos organs conectados."
+        : "Nenhum widget no catalogo ainda. Importe um .html para adicionar um widget local.";
     return;
   }
 
   if (normalizedPackageSearch()) {
-    localPackagesSummary.textContent = `${visibleCount} de ${totalCount} widgets correspondem a essa busca.`;
+    localPackagesSummary.textContent = `${visibleCount} de ${totalCount} sand correspondem a essa busca.`;
     return;
   }
 
-  localPackagesSummary.textContent = `${totalCount} widget${totalCount > 1 ? "s" : ""} disponivel${
-    totalCount > 1 ? "eis" : ""
-  } no catalogo em ~/.config/lince/web/sand.`;
+  if (packageOriginFilters.local && packageOriginFilters.dna) {
+    localPackagesSummary.textContent = `${localTotalCount} local${
+      localTotalCount === 1 ? "" : "is"
+    } e ${dnaTotalCount} DNA disponiveis.`;
+    return;
+  }
+
+  if (packageOriginFilters.local) {
+    localPackagesSummary.textContent = `${localTotalCount} widget${
+      localTotalCount > 1 ? "s" : ""
+    } disponivel${localTotalCount > 1 ? "eis" : ""} no catalogo em ~/.config/lince/web/sand.`;
+    return;
+  }
+
+  localPackagesSummary.textContent = `${dnaTotalCount} sand${
+    dnaTotalCount === 1 ? "" : "s"
+  } publicados nos organs conectados.`;
+}
+
+function renderLocalPackageCard(pkg) {
+  const width = Number(pkg.initialWidth ?? pkg.initial_width) || 3;
+  const height = Number(pkg.initialHeight ?? pkg.initial_height) || 2;
+  const permissions = Array.isArray(pkg.permissions)
+    ? pkg.permissions.slice(0, 2)
+    : [];
+  return `
+    <button
+      type="button"
+      class="local-package-card"
+      data-local-package-id="${escapeHtml(pkg.id)}"
+      aria-label="Adicionar ${escapeHtml(pkg.title)}"
+    >
+      <span class="local-package-card__icon" aria-hidden="true">${escapeHtml(pkg.icon || "◧")}</span>
+      <span class="local-package-card__body">
+        <span class="local-package-card__topline">
+          <strong class="local-package-card__title">${escapeHtml(pkg.title)}</strong>
+          <span class="local-package-card__size">${escapeHtml(`${width} x ${height}`)}</span>
+        </span>
+        <span class="local-package-card__description">${escapeHtml(
+          pkg.description || "Widget local instalado no sistema.",
+        )}</span>
+        <span class="local-package-card__meta">${escapeHtml(
+          `${pkg.filename} · ${pkg.author || "Lince Labs"}`,
+        )}</span>
+        <span class="local-package-card__footer">
+          <span class="local-package-card__pill">Local</span>
+          ${
+            permissions.length
+              ? permissions
+                  .map(
+                    (permission) =>
+                      `<span class="local-package-card__pill">${escapeHtml(permission)}</span>`,
+                  )
+                  .join("")
+              : '<span class="local-package-card__pill local-package-card__pill--muted">sem permissoes</span>'
+          }
+        </span>
+      </span>
+    </button>
+  `;
+}
+
+function renderDnaPackageCard(pkg) {
+  return `
+    <button
+      type="button"
+      class="local-package-card"
+      data-dna-package-organ-id="${escapeHtml(pkg.organId)}"
+      data-dna-package-record-id="${escapeHtml(pkg.recordId)}"
+      aria-label="Abrir preview de ${escapeHtml(pkg.head)}"
+    >
+      <span class="local-package-card__icon" aria-hidden="true">◧</span>
+      <span class="local-package-card__body">
+        <span class="local-package-card__topline">
+          <strong class="local-package-card__title">${escapeHtml(pkg.head)}</strong>
+          <span class="local-package-card__size">${escapeHtml(pkg.packageFormat || "html")}</span>
+        </span>
+        <span class="local-package-card__description">${escapeHtml(
+          pkg.body || "Sand publicado por um organ acessivel.",
+        )}</span>
+        <span class="local-package-card__meta">${escapeHtml(
+          `${pkg.originName} · ${pkg.slug} · ${pkg.version || "0.1.0"} · ${pkg.packageFormat}`,
+        )}</span>
+        <span class="local-package-card__footer">
+          <span class="local-package-card__pill">DNA</span>
+          <span class="local-package-card__pill">${escapeHtml(
+            pkg.originName || pkg.organId,
+          )}</span>
+          ${
+            Array.isArray(pkg.categories) && pkg.categories.length
+              ? pkg.categories
+                  .slice(0, 2)
+                  .map(
+                    (category) =>
+                      `<span class="local-package-card__pill">${escapeHtml(category)}</span>`,
+                  )
+                  .join("")
+              : ""
+          }
+          <span class="local-package-card__pill">preview</span>
+        </span>
+      </span>
+    </button>
+  `;
 }
 
 function renderLocalPackageList() {
+  syncPackageOriginToggles();
   const query = normalizedPackageSearch();
-  const filteredPackages = installedPackages.filter((pkg) =>
-    matchesPackageQuery(pkg, query),
-  );
-  summarizeLocalPackages(filteredPackages);
+  const filteredPackages = packageOriginFilters.local
+    ? installedPackages.filter((pkg) => matchesPackageQuery(pkg, query))
+    : [];
+  const filteredDnaPackages =
+    packageOriginFilters.dna && dnaCatalogLoaded
+      ? filterDnaPackageCatalog(query, "")
+      : [];
+  summarizeLocalPackages(filteredPackages, filteredDnaPackages);
 
-  if (!installedPackages.length) {
+  if (!packageOriginFilters.local && !packageOriginFilters.dna) {
     localPackageList.innerHTML = `
       <div class="local-package-empty">
-        <strong>Nada no catalogo ainda</strong>
-        <span>Use Importar para mandar um .html para o backend local.</span>
+        <strong>Nenhuma origem ativa</strong>
+        <span>Ative Local, DNA ou ambos para exibir sand no grid.</span>
       </div>
     `;
     return;
   }
 
-  if (!filteredPackages.length) {
+  if (
+    packageOriginFilters.dna &&
+    !dnaCatalogLoaded &&
+    !filteredPackages.length
+  ) {
+    localPackageList.innerHTML = `
+      <div class="local-package-empty">
+        <strong>Carregando catalogo</strong>
+        <span>Buscando sand locais e sand publicados nos organs acessiveis.</span>
+      </div>
+    `;
+    return;
+  }
+
+  if (!filteredPackages.length && !filteredDnaPackages.length) {
     localPackageList.innerHTML = `
       <div class="local-package-empty">
         <strong>Nenhum resultado</strong>
-        <span>Tente buscar por nome, arquivo, autor ou permissao do widget.</span>
+        <span>Tente buscar por nome, arquivo, autor, permissao, origem ou categoria.</span>
       </div>
     `;
     return;
   }
 
-  localPackageList.innerHTML = filteredPackages
-    .map((pkg) => {
-      const width = Number(pkg.initialWidth ?? pkg.initial_width) || 3;
-      const height = Number(pkg.initialHeight ?? pkg.initial_height) || 2;
-      const permissions = Array.isArray(pkg.permissions)
-        ? pkg.permissions.slice(0, 2)
-        : [];
-      return `
-        <button
-          type="button"
-          class="local-package-card"
-          data-local-package-id="${escapeHtml(pkg.id)}"
-          aria-label="Adicionar ${escapeHtml(pkg.title)}"
-        >
-          <span class="local-package-card__icon" aria-hidden="true">${escapeHtml(pkg.icon || "◧")}</span>
-          <span class="local-package-card__body">
-            <span class="local-package-card__topline">
-              <strong class="local-package-card__title">${escapeHtml(pkg.title)}</strong>
-              <span class="local-package-card__size">${escapeHtml(`${width} x ${height}`)}</span>
-            </span>
-            <span class="local-package-card__description">${escapeHtml(
-              pkg.description || "Widget local instalado no sistema.",
-            )}</span>
-            <span class="local-package-card__meta">${escapeHtml(
-              `${pkg.filename} · ${pkg.author || "Lince Labs"}`,
-            )}</span>
-            <span class="local-package-card__footer">
-              ${
-                permissions.length
-                  ? permissions
-                      .map(
-                        (permission) =>
-                          `<span class="local-package-card__pill">${escapeHtml(permission)}</span>`,
-                      )
-                      .join("")
-                  : '<span class="local-package-card__pill local-package-card__pill--muted">sem permissoes</span>'
-              }
-            </span>
-          </span>
-        </button>
-      `;
-    })
-    .join("");
+  localPackageList.innerHTML = [
+    ...filteredPackages.map(renderLocalPackageCard),
+    ...filteredDnaPackages.map(renderDnaPackageCard),
+    packageOriginFilters.dna && !dnaCatalogLoaded
+      ? `
+        <div class="local-package-empty">
+          <strong>Carregando DNA</strong>
+          <span>Buscando sand publicados nos organs acessiveis.</span>
+        </div>
+      `
+      : "",
+  ].join("");
 }
 
 function upsertInstalledPackage(pkg) {
@@ -2360,6 +2796,21 @@ function openLocalPackagesModal() {
     localPackagesSummary.textContent =
       error instanceof Error ? error.message : "Falha ao ler o catalogo local.";
   });
+  if (packageOriginFilters.dna) {
+    void loadDnaCatalog().catch((error) => {
+      dnaCatalogLoaded = true;
+      dnaCatalogPackageCount = 0;
+      dnaCatalogPackages = [];
+      dnaPackageResults = [];
+      dnaCatalogOrigins = [];
+      syncDnaOriginFilterOptions();
+      renderLocalPackageList();
+      localPackagesSummary.textContent =
+        error instanceof Error
+          ? error.message
+          : "Falha ao buscar o catalogo distribuido.";
+    });
+  }
 }
 
 function closeLocalPackagesModal() {
@@ -2604,6 +3055,7 @@ async function loadDnaCatalog() {
       ).filter((origin) => origin.organId);
   syncDnaOriginFilterOptions();
   renderDnaPackageList();
+  renderLocalPackageList();
   return dnaCatalogPackageCount;
 }
 
@@ -2698,7 +3150,11 @@ function closeDnaPackagesModal() {
 
 function setEditMode(nextEditMode) {
   editMode = Boolean(nextEditMode);
+  if (!editMode) {
+    selfEditCardId = null;
+  }
   boardShell.classList.toggle("is-editing", editMode);
+  boardShell.classList.toggle("is-self-editing", Boolean(selfEditCardId));
   document.documentElement.classList.toggle("edit-mode-active", editMode);
   editToggle.classList.toggle("is-active", editMode);
   editToggle.setAttribute("aria-pressed", String(editMode));
@@ -2717,10 +3173,46 @@ function setEditMode(nextEditMode) {
   }
 
   widgetBridge.syncFrames();
+  renderCards(store.getCards());
   updatePackagePreviewWatchTimer();
   if (editMode) {
     void syncWatchedPackageFrames();
   }
+}
+
+function setSelfEditMode(cardId) {
+  if (!isShellCard(cardId)) {
+    return;
+  }
+
+  selfEditCardId = cardId;
+  if (!editMode) {
+    editMode = true;
+  }
+  boardShell.classList.add("is-editing", "is-self-editing");
+  document.documentElement.classList.add("edit-mode-active");
+  editToggle.classList.add("is-active");
+  editToggle.setAttribute("aria-pressed", "true");
+  addCardButton.hidden = true;
+  densityTag.hidden = true;
+  modeLabel.textContent = "Edit self";
+  setAddCardPopoverOpen(false);
+  closeLocalPackagesModal();
+  closeDnaPackagesModal();
+  closeDeleteCardModal();
+  renderCards(store.getCards());
+  widgetBridge.syncFrames();
+}
+
+function clearSelfEditMode() {
+  selfEditCardId = null;
+  boardShell.classList.remove("is-self-editing");
+  if (editMode) {
+    modeLabel.textContent = "Edit mode";
+  }
+  clearActiveCard();
+  renderCards(store.getCards());
+  widgetBridge.syncFrames();
 }
 
 function isTypingTarget(target) {
@@ -2736,6 +3228,73 @@ function addWorkspace() {
   const created = store.addWorkspace();
   setWorkspacePopoverOpen(false);
   return created;
+}
+
+function renameWorkspace(workspaceId, name) {
+  const snapshot = store.getSnapshot();
+  const workspaceIndex = snapshot.workspaces.findIndex(
+    (workspace) => workspace.id === workspaceId,
+  );
+  const workspace = snapshot.workspaces[workspaceIndex];
+  if (!workspace) {
+    flashBoardBlocked();
+    return;
+  }
+
+  const trimmedName = String(name || "").trim();
+  if (!trimmedName) {
+    flashBoardBlocked();
+    return;
+  }
+
+  store.renameWorkspace(workspaceId, trimmedName);
+}
+
+function finishWorkspaceNameInput(input, options = {}) {
+  if (!input) {
+    return;
+  }
+
+  if (options.cancel === true) {
+    input.value = input.dataset.originalValue || input.defaultValue || "";
+  } else {
+    const nextName = String(input.value || "").trim();
+    const originalName = String(input.dataset.originalValue || input.defaultValue || "").trim();
+    if (!nextName) {
+      input.value = originalName;
+      flashBoardBlocked();
+    } else if (nextName !== originalName) {
+      renameWorkspace(input.dataset.workspaceId, nextName);
+    }
+  }
+
+  input.readOnly = true;
+  input.tabIndex = -1;
+  input.closest(".workspace-item")?.classList.remove("is-renaming");
+}
+
+function focusWorkspaceNameInput(workspaceId) {
+  for (const activeInput of workspaceList.querySelectorAll(
+    "[data-workspace-name-input]:not([readonly])",
+  )) {
+    if (activeInput.dataset.workspaceId !== workspaceId) {
+      finishWorkspaceNameInput(activeInput);
+    }
+  }
+
+  const input = Array.from(
+    workspaceList.querySelectorAll("[data-workspace-name-input]"),
+  ).find((entry) => entry.dataset.workspaceId === workspaceId);
+  if (!input) {
+    return;
+  }
+
+  input.readOnly = false;
+  input.tabIndex = 0;
+  input.dataset.originalValue = input.value;
+  input.closest(".workspace-item")?.classList.add("is-renaming");
+  input.focus();
+  input.select();
 }
 
 function switchWorkspace(workspaceId) {
@@ -2802,6 +3361,20 @@ function removeWorkspace(workspaceId) {
   setAddCardPopoverOpen(false);
   const snapshot = store.getSnapshot();
   const currentIndex = getActiveWorkspaceIndex(snapshot);
+  const workspaceIndex = snapshot.workspaces.findIndex(
+    (workspace) => workspace.id === workspaceId,
+  );
+  const workspace = snapshot.workspaces[workspaceIndex];
+  if (!workspace) {
+    flashBoardBlocked();
+    return;
+  }
+
+  const workspaceName = workspaceDisplayName(workspace, workspaceIndex);
+  if (!window.confirm(`Apagar a area "${workspaceName}"?`)) {
+    return;
+  }
+
   const isActiveWorkspace = snapshot.activeWorkspaceId === workspaceId;
   if (isActiveWorkspace) {
     queueWorkspaceTransition(
@@ -4050,12 +4623,16 @@ async function addLocalPackageToWorkspace(packageId) {
   return created;
 }
 
-async function previewDnaPackage(organId, recordId) {
+async function previewDnaPackage(organId, recordId, options = {}) {
   const preview = await requestDnaPackagePreview(organId, recordId);
-  closeDnaPackagesModal();
+  if (options.source === "add-card") {
+    closeLocalPackagesModal();
+  } else {
+    closeDnaPackagesModal();
+  }
   openImportModal(preview, null, {
     remotePackage: { organId, recordId },
-    reopenDnaModal: true,
+    reopenDnaModal: options.source !== "add-card",
   });
 }
 
@@ -4187,6 +4764,7 @@ attachBoardInteractions({
   readCards: () => store.getCards(),
   replaceCards: (cards, options) => store.replaceCards(cards, options),
   isEditMode: () => editMode,
+  isCardEditable,
   getScale: () => boardViewport.getScale(),
   onInteractionStart: (cardId, interactionType) => {
     boardViewport.setInteractionLocked(true);
@@ -4273,8 +4851,8 @@ addCardLocalButton.addEventListener("click", () => {
   openLocalPackagesModal();
 });
 
-addCardDnaButton.addEventListener("click", () => {
-  openDnaPackagesModal();
+addCardDnaButton?.addEventListener("click", () => {
+  openLocalPackagesModal();
 });
 
 boardZoomOut.addEventListener("click", () => {
@@ -4338,6 +4916,15 @@ exportWorkspaceButton.addEventListener("dragstart", (event) => {
 });
 
 workspaceList.addEventListener("click", (event) => {
+  const clickedInput = event.target.closest("[data-workspace-name-input]");
+  if (clickedInput) {
+    event.stopPropagation();
+    if (clickedInput.readOnly) {
+      clickedInput.blur();
+    }
+    return;
+  }
+
   const button = event.target.closest("[data-workspace-action]");
   if (!button) {
     return;
@@ -4354,15 +4941,79 @@ workspaceList.addEventListener("click", (event) => {
     return;
   }
 
+  if (action === "rename") {
+    focusWorkspaceNameInput(workspaceId);
+    return;
+  }
+
   switchWorkspace(workspaceId);
 });
+
+workspaceList.addEventListener("pointerdown", (event) => {
+  const button = event.target.closest("[data-workspace-action='rename']");
+  if (button?.dataset.workspaceId) {
+    event.preventDefault();
+    focusWorkspaceNameInput(button.dataset.workspaceId);
+    return;
+  }
+
+  if (!event.target.closest("[data-workspace-name-input]")) {
+    for (const activeInput of workspaceList.querySelectorAll(
+      "[data-workspace-name-input]:not([readonly])",
+    )) {
+      finishWorkspaceNameInput(activeInput);
+    }
+  }
+});
+
+workspaceList.addEventListener("focusin", (event) => {
+  const input = event.target.closest("[data-workspace-name-input]");
+  if (!input || input.readOnly) {
+    return;
+  }
+
+  input.dataset.originalValue = input.value;
+  input.closest(".workspace-item")?.classList.add("is-renaming");
+});
+
+workspaceList.addEventListener("keydown", (event) => {
+  const input = event.target.closest("[data-workspace-name-input]");
+  if (!input) {
+    return;
+  }
+
+  if (event.key === "Enter") {
+    event.preventDefault();
+    input.blur();
+    return;
+  }
+
+  if (event.key === "Escape") {
+    event.preventDefault();
+    finishWorkspaceNameInput(input, { cancel: true });
+    input.blur();
+  }
+});
+
+workspaceList.addEventListener(
+  "blur",
+  (event) => {
+    const input = event.target.closest("[data-workspace-name-input]");
+    if (!input?.dataset.workspaceId) {
+      return;
+    }
+
+    finishWorkspaceNameInput(input);
+  },
+  true,
+);
 
 densitySlider.addEventListener("input", (event) => {
   clearActiveCard();
   store.updateDensity(Number(event.currentTarget.value));
 });
 
-cardsLayer.addEventListener("click", (event) => {
+function handleCardActionClick(event) {
   const actionButton = event.target.closest("[data-card-action]");
   if (!actionButton) {
     return;
@@ -4376,8 +5027,28 @@ cardsLayer.addEventListener("click", (event) => {
   }
 
   const action = actionButton.dataset.cardAction;
+  if (action === "leave-self-edit") {
+    clearSelfEditMode();
+    return;
+  }
+
   if (action === "configure") {
     void openWidgetConfigModal(cardId);
+    return;
+  }
+
+  if (action === "pin") {
+    if (!editMode) {
+      return;
+    }
+    const updated = store.updateCard(cardId, (card) => ({
+      ...card,
+      pinned: card.pinned !== true,
+      zIndex: card.pinned === true ? 1 : Math.max(Number(card.zIndex) || 1, 50),
+    }));
+    if (!updated) {
+      flashBoardBlocked();
+    }
     return;
   }
 
@@ -4414,7 +5085,10 @@ cardsLayer.addEventListener("click", (event) => {
   }
 
   openDeleteCardModal(cardId);
-});
+}
+
+cardsLayer.addEventListener("click", handleCardActionClick);
+pinnedLayer.addEventListener("click", handleCardActionClick);
 
 boardShell.addEventListener("dragenter", (event) => {
   if (!editMode || !hasFilePayload(event.dataTransfer)) {
@@ -4520,6 +5194,37 @@ localPackagesSearch.addEventListener("input", () => {
   renderLocalPackageList();
 });
 
+packageOriginLocalToggle.addEventListener("click", () => {
+  packageOriginFilters = {
+    ...packageOriginFilters,
+    local: !packageOriginFilters.local,
+  };
+  renderLocalPackageList();
+});
+
+packageOriginDnaToggle.addEventListener("click", () => {
+  packageOriginFilters = {
+    ...packageOriginFilters,
+    dna: !packageOriginFilters.dna,
+  };
+  renderLocalPackageList();
+  if (packageOriginFilters.dna && !dnaCatalogLoaded) {
+    void loadDnaCatalog().catch((error) => {
+      dnaCatalogLoaded = true;
+      dnaCatalogPackageCount = 0;
+      dnaCatalogPackages = [];
+      dnaPackageResults = [];
+      dnaCatalogOrigins = [];
+      syncDnaOriginFilterOptions();
+      renderLocalPackageList();
+      localPackagesSummary.textContent =
+        error instanceof Error
+          ? error.message
+          : "Falha ao buscar o catalogo distribuido.";
+    });
+  }
+});
+
 dnaPackagesSearch.addEventListener("input", () => {
   void refreshDnaPackageSearch();
 });
@@ -4534,6 +5239,21 @@ operationForm.addEventListener("submit", (event) => {
 });
 
 localPackageList.addEventListener("click", (event) => {
+  const dnaCard = event.target.closest("[data-dna-package-organ-id]");
+  if (dnaCard?.dataset.dnaPackageOrganId && dnaCard?.dataset.dnaPackageRecordId) {
+    void previewDnaPackage(
+      dnaCard.dataset.dnaPackageOrganId,
+      Number(dnaCard.dataset.dnaPackageRecordId),
+      { source: "add-card" },
+    ).catch((error) => {
+      localPackagesSummary.textContent =
+        error instanceof Error
+          ? error.message
+          : "Falha ao baixar o sand selecionado.";
+    });
+    return;
+  }
+
   const card = event.target.closest("[data-local-package-id]");
   if (!card?.dataset.localPackageId) {
     return;
@@ -4833,10 +5553,16 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-window.addEventListener("resize", positionCanvasControls);
+window.addEventListener("resize", () => {
+  positionCanvasControls();
+  scheduleShellPinRelayout();
+});
 window.addEventListener("scroll", positionCanvasControls, { passive: true });
 window.addEventListener("beforeunload", flushCameraState);
-window.visualViewport?.addEventListener("resize", positionCanvasControls);
+window.visualViewport?.addEventListener("resize", () => {
+  positionCanvasControls();
+  scheduleShellPinRelayout();
+});
 window.visualViewport?.addEventListener("scroll", positionCanvasControls);
 
 setWorkspacePopoverOpen(false);

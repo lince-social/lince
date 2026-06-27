@@ -68,6 +68,35 @@ function cloneShellCards(workspaces) {
     .map(cloneCard);
 }
 
+function ensureShellPins(workspaces, config) {
+  const shellCards = cloneShellCards(workspaces);
+  if (!shellCards.length) {
+    return workspaces;
+  }
+
+  return workspaces.map((workspace) => {
+    const existingIds = new Set(
+      workspace.cards
+        .filter((card) => card.pinned === true && card.system === true)
+        .map((card) => card.id),
+    );
+    const missingShellCards = shellCards.filter(
+      (card) => !existingIds.has(card.id),
+    );
+
+    if (!missingShellCards.length) {
+      return workspace;
+    }
+
+    return {
+      ...workspace,
+      cards: layoutShellPins(
+        normalizeLayout([...workspace.cards, ...missingShellCards], config),
+      ),
+    };
+  });
+}
+
 function layoutShellPins(cards) {
   const viewportWidth =
     window.visualViewport?.width || document.documentElement.clientWidth || window.innerWidth || 1360;
@@ -211,7 +240,7 @@ function loadState(initialBoardState, seedCards, config) {
     return fallback;
   }
 
-  const workspaces = Array.isArray(parsed.workspaces)
+  let workspaces = Array.isArray(parsed.workspaces)
     ? parsed.workspaces
         .map((workspace, index) => normalizeWorkspace(workspace, index, config))
         .filter((workspace) => workspace.id)
@@ -220,6 +249,7 @@ function loadState(initialBoardState, seedCards, config) {
   if (!workspaces.length) {
     return fallback;
   }
+  workspaces = ensureShellPins(workspaces, config);
 
   const activeWorkspaceId = workspaces.some(
     (workspace) => workspace.id === parsed.activeWorkspaceId,

@@ -174,7 +174,11 @@ fn plan_schema_diff(
         match previous_by_name.get(current_table.name.as_str()) {
             None => statements.extend(create_table_and_indexes_statements(current_table)),
             Some(previous_table) => {
-                statements.extend(plan_table_diff(previous_table, current_table)?);
+                statements.extend(plan_table_diff(
+                    previous_table,
+                    current_table,
+                    migrations_dir,
+                )?);
             }
         }
     }
@@ -215,7 +219,11 @@ fn manual_migration_drops_table(migrations_dir: &Path, table_name: &str) -> Resu
     Ok(false)
 }
 
-fn plan_table_diff(previous: &TableSchema, current: &TableSchema) -> Result<Vec<String>, Error> {
+fn plan_table_diff(
+    previous: &TableSchema,
+    current: &TableSchema,
+    migrations_dir: &Path,
+) -> Result<Vec<String>, Error> {
     if previous.strict != current.strict {
         return Err(Error::other(format!(
             "table `{}` changed strictness; write a manual migration",
@@ -258,6 +266,13 @@ fn plan_table_diff(previous: &TableSchema, current: &TableSchema) -> Result<Vec<
     for current_column in &current.columns {
         match previous_columns.get(current_column.name.as_str()) {
             None => {
+                if manual_migration_adds_column(
+                    migrations_dir,
+                    current.name.as_str(),
+                    current_column.name.as_str(),
+                )? {
+                    continue;
+                }
                 ensure_additive_column_is_safe(current.name.as_str(), current_column)?;
                 statements.push(render_add_column(current.name.as_str(), current_column));
             }
@@ -312,6 +327,27 @@ fn plan_table_diff(previous: &TableSchema, current: &TableSchema) -> Result<Vec<
     }
 
     Ok(statements)
+}
+
+fn manual_migration_adds_column(
+    migrations_dir: &Path,
+    table_name: &str,
+    column_name: &str,
+) -> Result<bool, Error> {
+    let add_column = format!("alter table {table_name} add column {column_name}");
+    for entry in fs::read_dir(migrations_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.extension().and_then(|extension| extension.to_str()) != Some("sql") {
+            continue;
+        }
+        let sql = fs::read_to_string(path)?.to_lowercase();
+        let normalized = sql.split_whitespace().collect::<Vec<_>>().join(" ");
+        if normalized.contains(&add_column) {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 fn manual_migration_handles_column_change(

@@ -502,18 +502,22 @@ async fn build_snapshot(
 
 async fn ensure_snapshot_identities(state: &AppState, owners: &[i64]) -> Result<(), sqlx::Error> {
     let owners_json = json!(owners).to_string();
-    sqlx::query(
-        "UPDATE record
+    state
+        .services
+        .writer
+        .execute_statement(
+            "UPDATE record
          SET sync_uid = COALESCE(sync_uid, 'organ:1:record:' || id),
              owner_organ_id = COALESCE(owner_organ_id, 1),
              origin_organ_id = COALESCE(origin_organ_id, COALESCE(owner_organ_id, 1)),
              created_at = COALESCE(created_at, CURRENT_TIMESTAMP),
              updated_at = COALESCE(updated_at, CURRENT_TIMESTAMP)
-         WHERE COALESCE(owner_organ_id, 1) IN (SELECT value FROM json_each(?))",
-    )
-    .bind(&owners_json)
-    .execute(&*state.services.db)
-    .await?;
+         WHERE COALESCE(owner_organ_id, 1) IN (SELECT value FROM json_each(?))"
+                .to_string(),
+            vec![text(owners_json.clone())],
+        )
+        .await
+        .map_err(sqlx::Error::Io)?;
 
     for table in SYNC_TABLES.iter().copied().filter(|table| *table != "record") {
         let sql = match table {
@@ -552,19 +556,29 @@ async fn ensure_snapshot_identities(state: &AppState, owners: &[i64]) -> Result<
             _ => "",
         };
         if !sql.is_empty() {
-            sqlx::query(sql).bind(&owners_json).execute(&*state.services.db).await?;
+            state
+                .services
+                .writer
+                .execute_statement(sql.to_string(), vec![text(owners_json.clone())])
+                .await
+                .map_err(sqlx::Error::Io)?;
         } else if let Some(fk) = record_fk_column(table) {
-            sqlx::query(&format!(
-                "UPDATE {table}
+            state
+                .services
+                .writer
+                .execute_statement(
+                    format!(
+                        "UPDATE {table}
                  SET sync_uid = COALESCE(sync_uid, 'organ:1:{table}:' || id),
                      origin_organ_id = COALESCE(origin_organ_id, 1)
                  WHERE {fk} IN (
                    SELECT id FROM record WHERE COALESCE(owner_organ_id, 1) IN (SELECT value FROM json_each(?))
                  )"
-            ))
-            .bind(&owners_json)
-            .execute(&*state.services.db)
-            .await?;
+                    ),
+                    vec![text(owners_json.clone())],
+                )
+                .await
+                .map_err(sqlx::Error::Io)?;
         }
     }
     Ok(())

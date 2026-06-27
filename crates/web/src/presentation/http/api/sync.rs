@@ -911,7 +911,7 @@ async fn pull_snapshot(
         .iter()
         .map(|owner| if *owner == organ_id { LOCAL_ORGAN_ID } else { *owner })
         .collect::<Vec<_>>();
-    let path = sync_path("/host/sync/record/snapshot", &remote_owners);
+    let path = sync_path("/sync/record/snapshot", &remote_owners);
     let response = state
         .manas
         .send_backend_request(base_url, bearer_token, Method::GET, &path, None)
@@ -960,7 +960,7 @@ async fn pull_operations(
         .iter()
         .map(|owner| if *owner == organ_id { LOCAL_ORGAN_ID } else { *owner })
         .collect::<Vec<_>>();
-    let mut path = sync_path("/host/sync/record/operations", &remote_owners);
+    let mut path = sync_path("/sync/record/operations", &remote_owners);
     if let Some(since) = since {
         path.push_str(if path.contains('?') { "&" } else { "?" });
         path.push_str("since_clock=");
@@ -1058,7 +1058,7 @@ async fn post_operations_to_remote(
             base_url,
             bearer_token,
             Method::POST,
-            "/host/sync/record/operations",
+            "/sync/record/operations",
             Some(json!({
                 "sourceBaseUrl": source_base_url,
                 "sourceName": "Lince",

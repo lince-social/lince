@@ -35,9 +35,9 @@ use {
                     create_server, delete_server, list_servers, login_server, logout_server,
                     update_server,
                 },
-                sync::connect_record_sync_socket,
                 sync::{
-                    apply_record_sync_operations, record_sync_operations, record_sync_snapshot,
+                    apply_record_sync_operations, connect_record_sync_socket,
+                    record_sync_operations, record_sync_snapshot,
                 },
                 terminal::{
                     connect_terminal_socket, create_terminal_session, delete_terminal_session,
@@ -69,6 +69,12 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
             .route("/", get(api_only_index))
             .route("/openapi.json", get(openapi_json))
             .route("/swagger-ui", get(swagger_ui))
+            .route("/sync/record/socket", get(connect_record_sync_socket))
+            .route("/sync/record/snapshot", get(record_sync_snapshot))
+            .route(
+                "/sync/record/operations",
+                get(record_sync_operations).post(apply_record_sync_operations),
+            )
             .merge(build_backend_router())
             .with_state(state);
     }
@@ -205,6 +211,12 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
         .route("/openapi.json", get(openapi_json))
         .route("/swagger-ui", get(swagger_ui))
         .merge(build_backend_router())
+        .route("/sync/record/socket", get(connect_record_sync_socket))
+        .route("/sync/record/snapshot", get(record_sync_snapshot))
+        .route(
+            "/sync/record/operations",
+            get(record_sync_operations).post(apply_record_sync_operations),
+        )
         .route("/organ", get(list_servers).post(create_server))
         .route(
             "/organ/{server_id}",

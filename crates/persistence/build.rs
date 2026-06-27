@@ -31,6 +31,10 @@ mod models {
     pub mod sidecars {
         include!("src/models/sidecars.rs");
     }
+
+    pub mod sync {
+        include!("src/models/sync.rs");
+    }
 }
 
 mod registry {
@@ -56,6 +60,7 @@ fn run() -> Result<(), Error> {
     rerun_if_changed("src/models/core.rs");
     rerun_if_changed("src/models/karma.rs");
     rerun_if_changed("src/models/sidecars.rs");
+    rerun_if_changed("src/models/sync.rs");
 
     let migrations_dir = repo_root().join("migrations");
     fs::create_dir_all(&migrations_dir)?;

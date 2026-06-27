@@ -141,6 +141,11 @@ mod tests {
             "work_metadata",
             "work_subject",
             "work_assignment",
+            "organ_sync_policy",
+            "record_sync_operation",
+            "record_sync_tombstone",
+            "record_sync_ack",
+            "record_sync_pending_dependency",
         ] {
             let exists = sqlx::query_scalar::<_, i64>(
                 "SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name = ?",

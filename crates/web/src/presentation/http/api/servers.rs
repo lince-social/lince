@@ -36,6 +36,8 @@ pub struct ServerProfileResponse {
     pub username_hint: String,
     pub connected_at_unix: Option<u64>,
     pub last_error: String,
+    pub sync_resources: Vec<String>,
+    pub record_sync_mode: String,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -50,6 +52,7 @@ pub struct UpsertServerProfileRequest {
     pub base_url: String,
     pub trust_state: Option<String>,
     pub contact_discovery_enabled: Option<bool>,
+    pub record_sync_mode: Option<String>,
 }
 
 #[utoipa::path(
@@ -81,35 +84,36 @@ pub async fn list_servers(
         .await
         .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?;
 
-    Ok(Json(
-        servers
-            .into_iter()
-            .map(|server| {
-                let status = statuses.get(&server.id.to_string());
-                let requires_auth = organ_requires_auth(&server, state.local_auth_required);
-                let authenticated = !requires_auth || status.is_some_and(is_connected);
-                ServerProfileResponse {
-                    id: server.id,
-                    name: server.name,
-                    base_url: server.base_url,
-                    trust_state: server.trust_state,
-                    contact_discovery_enabled: server.contact_discovery_enabled != 0,
-                    last_seen_at: server.last_seen_at,
-                    last_transfer_polled_at: server.last_transfer_polled_at,
-                    requires_auth,
-                    authenticated,
-                    session_state: status.map(|value| session_state_name(value).to_string()),
-                    username_hint: status
-                        .map(|value| value.username_hint.clone())
-                        .unwrap_or_default(),
-                    connected_at_unix: status.and_then(|value| value.connected_at_unix),
-                    last_error: status
-                        .map(|value| value.last_error.clone())
-                        .unwrap_or_default(),
-                }
-            })
-            .collect(),
-    ))
+    let mut response = Vec::with_capacity(servers.len());
+    for server in servers {
+        let status = statuses.get(&server.id.to_string());
+        let requires_auth = organ_requires_auth(&server, state.local_auth_required);
+        let authenticated = !requires_auth || status.is_some_and(is_connected);
+        let (sync_resources, record_sync_mode) = load_sync_policy(&state, server.id).await?;
+        response.push(ServerProfileResponse {
+            id: server.id,
+            name: server.name,
+            base_url: server.base_url,
+            trust_state: server.trust_state,
+            contact_discovery_enabled: server.contact_discovery_enabled != 0,
+            last_seen_at: server.last_seen_at,
+            last_transfer_polled_at: server.last_transfer_polled_at,
+            requires_auth,
+            authenticated,
+            session_state: status.map(|value| session_state_name(value).to_string()),
+            username_hint: status
+                .map(|value| value.username_hint.clone())
+                .unwrap_or_default(),
+            connected_at_unix: status.and_then(|value| value.connected_at_unix),
+            last_error: status
+                .map(|value| value.last_error.clone())
+                .unwrap_or_default(),
+            sync_resources,
+            record_sync_mode,
+        });
+    }
+
+    Ok(Json(response))
 }
 
 #[utoipa::path(
@@ -146,6 +150,12 @@ pub async fn create_server(
             .await
             .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
     }
+    let mode = payload.record_sync_mode.as_deref().unwrap_or("none");
+    state
+        .organs
+        .set_record_sync_policy(profile.id, mode)
+        .await
+        .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
     let profile = state
         .organs
         .get(profile.id)
@@ -229,6 +239,9 @@ pub async fn login_server(
         .remote_server_snapshots(Some(&session_token))
         .await
         .remove(&server.id.to_string());
+    let (sync_resources, record_sync_mode) = load_sync_policy(&state, server.id)
+        .await
+        .unwrap_or_else(|_| (Vec::new(), "none".to_string()));
 
     Ok((
         response_headers,
@@ -246,6 +259,8 @@ pub async fn login_server(
             username_hint: username.to_string(),
             connected_at_unix: snapshot.and_then(|value| value.connected_at_unix),
             last_error: String::new(),
+            sync_resources,
+            record_sync_mode,
         }),
     ))
 }
@@ -312,6 +327,13 @@ pub async fn update_server(
         state
             .organs
             .set_contact_discovery_enabled(profile.id, enabled)
+            .await
+            .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
+    }
+    if let Some(mode) = payload.record_sync_mode.as_deref() {
+        state
+            .organs
+            .set_record_sync_policy(profile.id, mode)
             .await
             .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
     }
@@ -404,6 +426,9 @@ async fn server_profile_response(
     let session_state = snapshot
         .take()
         .map(|value| session_state_name(&value).to_string());
+    let (sync_resources, record_sync_mode) = load_sync_policy(state, profile.id)
+        .await
+        .unwrap_or_else(|_| (Vec::new(), "none".to_string()));
 
     ServerProfileResponse {
         id: profile.id,
@@ -419,7 +444,26 @@ async fn server_profile_response(
         username_hint,
         connected_at_unix,
         last_error,
+        sync_resources,
+        record_sync_mode,
     }
+}
+
+async fn load_sync_policy(state: &AppState, organ_id: i64) -> ApiResult<(Vec<String>, String)> {
+    let Some(policy) = state
+        .organs
+        .get_sync_policy(organ_id)
+        .await
+        .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?
+    else {
+        return Ok((Vec::new(), "none".to_string()));
+    };
+    let resources = serde_json::from_str::<Vec<String>>(&policy.sync_resources)
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|value| !value.trim().is_empty())
+        .collect::<Vec<_>>();
+    Ok((resources, policy.record_sync_mode))
 }
 
 fn is_connected(session: &RemoteServerSessionSnapshot) -> bool {

@@ -153,16 +153,35 @@ impl BackendApiService {
                     .await?;
                 self.validate_record_link_payload(None, &object).await?;
                 let (sql, params) = self.store.build_standard_insert(table, &object)?;
-                self.services
-                    .writer
-                    .execute_statement_returning_id(sql, params)
-                    .await
+                let root_record_id = root_record_id_from_payload(&object)?;
+                write::execute_record_sidecar_insert_returning_id(
+                    self.services.clone(),
+                    table.as_table_name(),
+                    root_record_id,
+                    sql,
+                    params,
+                )
+                .await
             }
             ApiTable::RecordExtension
             | ApiTable::RecordComment
             | ApiTable::RecordWorklog
-            | ApiTable::RecordResourceRef
-            | ApiTable::Command
+            | ApiTable::RecordResourceRef => {
+                let (object, confirmed) = strip_karma_confirmation(table, object);
+                self.require_karma_loop_confirmation(table, None, &object, confirmed)
+                    .await?;
+                let (sql, params) = self.store.build_standard_insert(table, &object)?;
+                let root_record_id = root_record_id_from_payload(&object)?;
+                write::execute_record_sidecar_insert_returning_id(
+                    self.services.clone(),
+                    table.as_table_name(),
+                    root_record_id,
+                    sql,
+                    params,
+                )
+                .await
+            }
+            ApiTable::Command
             | ApiTable::Query
             | ApiTable::Frequency
             | ApiTable::KarmaCondition
@@ -261,13 +280,37 @@ impl BackendApiService {
                     .await?;
                 self.validate_record_link_payload(Some(id), &object).await?;
                 let (sql, params) = self.store.build_standard_update(table, id, &object)?;
-                self.services.writer.execute_statement(sql, params).await
+                let root_record_id = root_record_id_from_payload(&object)?;
+                write::execute_record_sidecar_update(
+                    self.services.clone(),
+                    table.as_table_name(),
+                    id,
+                    root_record_id,
+                    sql,
+                    params,
+                )
+                .await
             }
             ApiTable::RecordExtension
             | ApiTable::RecordComment
             | ApiTable::RecordWorklog
-            | ApiTable::RecordResourceRef
-            | ApiTable::Command
+            | ApiTable::RecordResourceRef => {
+                let (object, confirmed) = strip_karma_confirmation(table, object);
+                self.require_karma_loop_confirmation(table, Some(id), &object, confirmed)
+                    .await?;
+                let (sql, params) = self.store.build_standard_update(table, id, &object)?;
+                let root_record_id = root_record_id_from_payload(&object)?;
+                write::execute_record_sidecar_update(
+                    self.services.clone(),
+                    table.as_table_name(),
+                    id,
+                    root_record_id,
+                    sql,
+                    params,
+                )
+                .await
+            }
+            ApiTable::Command
             | ApiTable::Query
             | ApiTable::Frequency
             | ApiTable::KarmaCondition
@@ -457,6 +500,20 @@ impl BackendApiService {
             }
             ApiTable::Record => {
                 write::execute_record_delete(self.services.clone(), id as u32, sql, params).await
+            }
+            ApiTable::RecordExtension
+            | ApiTable::RecordLink
+            | ApiTable::RecordComment
+            | ApiTable::RecordWorklog
+            | ApiTable::RecordResourceRef => {
+                write::execute_record_sidecar_delete(
+                    self.services.clone(),
+                    table.as_table_name(),
+                    id,
+                    sql,
+                    params,
+                )
+                .await
             }
             _ => self.services.writer.execute_statement(sql, params).await,
         }?;
@@ -899,6 +956,22 @@ fn parse_i64_value(field_name: &str, value: &Value) -> Result<i64, Error> {
         ErrorKind::InvalidInput,
         format!("Expected integer for field {field_name}"),
     ))
+}
+
+fn root_record_id_from_payload(object: &Map<String, Value>) -> Result<Option<u32>, Error> {
+    let Some(value) = object.get("record_id") else {
+        return Ok(None);
+    };
+    let id = parse_i64_value("record_id", value)?;
+    if id <= 0 {
+        return Err(Error::new(
+            ErrorKind::InvalidInput,
+            "Record id must be positive",
+        ));
+    }
+    u32::try_from(id)
+        .map(Some)
+        .map_err(|_| Error::new(ErrorKind::InvalidInput, "Record id is too large"))
 }
 
 fn collect_record_ids_from_rows(rows: &[Map<String, Value>]) -> Result<Vec<u32>, Error> {

@@ -485,7 +485,8 @@ if (
 
 const bootstrap = JSON.parse(bootstrapElement.textContent || "{}");
 const config = createGridConfig(bootstrap);
-const CAMERA_SESSION_KEY = "lince.board.camera.v1";
+const CAMERA_CACHE_KEY = "lince.board.camera.v2";
+const LEGACY_CAMERA_SESSION_KEY = "lince.board.camera.v1";
 
 function normalizeCachedCamera(camera) {
   const x = Number(camera?.x);
@@ -503,9 +504,23 @@ function normalizeCachedCamera(camera) {
   };
 }
 
-function readSessionCameraCache() {
+function isLegacyCornerCamera(camera) {
+  const normalized = normalizeCachedCamera(camera);
+  return (
+    normalized &&
+    normalized.x === 0 &&
+    normalized.y === 0 &&
+    Math.abs(normalized.scale - 1) < 0.0001
+  );
+}
+
+function readCameraCacheFrom(storage, key) {
+  if (!storage) {
+    return null;
+  }
+
   try {
-    const parsed = JSON.parse(sessionStorage.getItem(CAMERA_SESSION_KEY) || "null");
+    const parsed = JSON.parse(storage.getItem(key) || "null");
     if (!parsed || typeof parsed !== "object") {
       return null;
     }
@@ -522,7 +537,27 @@ function readSessionCameraCache() {
   }
 }
 
-function writeSessionCameraCache(workspaceId, camera) {
+function readCameraCache() {
+  try {
+    return (
+      readCameraCacheFrom(window.sessionStorage, CAMERA_CACHE_KEY) ||
+      readCameraCacheFrom(window.localStorage, CAMERA_CACHE_KEY) ||
+      readCameraCacheFrom(window.sessionStorage, LEGACY_CAMERA_SESSION_KEY)
+    );
+  } catch {
+    return null;
+  }
+}
+
+function writeCameraCacheTo(storage, cache) {
+  if (!storage) {
+    return;
+  }
+
+  storage.setItem(CAMERA_CACHE_KEY, JSON.stringify(cache));
+}
+
+function writeCameraCache(workspaceId, camera) {
   const normalized = normalizeCachedCamera(camera);
   const targetWorkspaceId = String(workspaceId || "");
   if (!targetWorkspaceId || !normalized) {
@@ -530,27 +565,26 @@ function writeSessionCameraCache(workspaceId, camera) {
   }
 
   try {
-    const current = readSessionCameraCache() || {
+    const current = readCameraCache() || {
       activeWorkspaceId: "",
       cameras: {},
     };
-    sessionStorage.setItem(
-      CAMERA_SESSION_KEY,
-      JSON.stringify({
-        activeWorkspaceId: targetWorkspaceId,
-        cameras: {
-          ...current.cameras,
-          [targetWorkspaceId]: normalized,
-        },
-      }),
-    );
+    const nextCache = {
+      activeWorkspaceId: targetWorkspaceId,
+      cameras: {
+        ...current.cameras,
+        [targetWorkspaceId]: normalized,
+      },
+    };
+    writeCameraCacheTo(window.sessionStorage, nextCache);
+    writeCameraCacheTo(window.localStorage, nextCache);
   } catch {
-    // Session storage can be unavailable in hardened browser contexts.
+    // Storage can be unavailable in hardened browser contexts.
   }
 }
 
-function applySessionCameraCache(boardState) {
-  const cache = readSessionCameraCache();
+function applyCameraCache(boardState) {
+  const cache = readCameraCache();
   if (!cache || !boardState || typeof boardState !== "object") {
     return boardState;
   }
@@ -559,7 +593,7 @@ function applySessionCameraCache(boardState) {
     ? boardState.workspaces.map((workspace) => {
         const workspaceId = String(workspace?.id || "");
         const cachedCamera = normalizeCachedCamera(cache.cameras?.[workspaceId]);
-        return cachedCamera
+        return cachedCamera && !isLegacyCornerCamera(cachedCamera)
           ? {
               ...workspace,
               camera: cachedCamera,
@@ -582,7 +616,7 @@ function applySessionCameraCache(boardState) {
 
 const store = createBoardStore({
   seedCards: Array.isArray(bootstrap.cards) ? bootstrap.cards : [],
-  initialBoardState: applySessionCameraCache(bootstrap.boardState),
+  initialBoardState: applyCameraCache(bootstrap.boardState),
   config,
   async persistState(nextState) {
     const response = await fetch(apiPath("/board/state"), {
@@ -694,7 +728,7 @@ boardViewport = createBoardViewport({
     renderCameraHud(camera);
     lastCameraWorkspaceId = snapshot.activeWorkspaceId;
     lastCameraValue = cloneJsonValue(camera, null);
-    writeSessionCameraCache(snapshot.activeWorkspaceId, camera);
+    writeCameraCache(snapshot.activeWorkspaceId, camera);
     store.updateActiveCamera(camera, { notify: false, persist: false });
     window.clearTimeout(cameraPersistTimer);
     cameraPersistTimer = window.setTimeout(() => {
@@ -711,7 +745,7 @@ function flushCameraState() {
   window.clearTimeout(cameraPersistTimer);
   cameraPersistTimer = null;
   if (store.getSnapshot().activeWorkspaceId === lastCameraWorkspaceId) {
-    writeSessionCameraCache(lastCameraWorkspaceId, lastCameraValue);
+    writeCameraCache(lastCameraWorkspaceId, lastCameraValue);
     store.updateActiveCamera(lastCameraValue, { persist: true });
   }
 }
@@ -2127,6 +2161,7 @@ function resolveWorkspaceCamera(camera, world) {
   if (
     Number.isFinite(x) &&
     Number.isFinite(y) &&
+    !isLegacyCornerCamera({ x, y, scale }) &&
     Math.abs(x) <= maxOffset &&
     Math.abs(y) <= maxOffset
   ) {
@@ -2254,6 +2289,7 @@ function renderSnapshot(snapshot) {
 
   renderGrid(snapshot.layout);
   if (lastAppliedCameraWorkspaceId !== snapshot.activeWorkspaceId) {
+    const hadLegacyCornerCamera = isLegacyCornerCamera(snapshot.activeCamera);
     const camera = resolveWorkspaceCamera(
       snapshot.activeCamera,
       snapshot.layout.world,
@@ -2261,8 +2297,11 @@ function renderSnapshot(snapshot) {
     boardViewport.setCamera(camera, { silent: true });
     renderCameraHud(camera);
     lastAppliedCameraWorkspaceId = snapshot.activeWorkspaceId;
-    writeSessionCameraCache(snapshot.activeWorkspaceId, camera);
-    store.updateActiveCamera(camera, { notify: false, persist: false });
+    writeCameraCache(snapshot.activeWorkspaceId, camera);
+    store.updateActiveCamera(camera, {
+      notify: false,
+      persist: hadLegacyCornerCamera,
+    });
   }
   renderWorkspaceList(snapshot);
   renderDensity(snapshot);

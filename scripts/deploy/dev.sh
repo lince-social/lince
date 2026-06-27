@@ -17,6 +17,43 @@ run_as_root() {
     fi
 }
 
+normalize_service_unit() {
+    local service_name="$1"
+    if [[ "$service_name" == *.service ]]; then
+        printf '%s\n' "$service_name"
+    else
+        printf '%s.service\n' "$service_name"
+    fi
+}
+
+list_lince_service_units() {
+    local service_pattern="${LINCE_SERVICE_PATTERN:-lince*.service}"
+    {
+        run_as_root systemctl list-units --type=service --all --plain --no-legend "$service_pattern" || true
+        run_as_root systemctl list-unit-files --type=service --no-legend "$service_pattern" || true
+    } | awk '/^lince.*\.service[[:space:]]/ { print $1 }' | sort -u
+}
+
+restart_lince_services() {
+    local service_name="${1:-lince}"
+    local fallback_unit
+    fallback_unit="$(normalize_service_unit "$service_name")"
+
+    local units=()
+    mapfile -t units < <(list_lince_service_units)
+    if ((${#units[@]} == 0)); then
+        units=("$fallback_unit")
+    fi
+
+    echo "[$(timestamp)] restarting services: ${units[*]}"
+    run_as_root systemctl restart "${units[@]}"
+
+    local unit
+    for unit in "${units[@]}"; do
+        run_as_root systemctl status "$unit" --no-pager -l
+    done
+}
+
 install_remote_binary() {
     local repo_dir="${REPO_DIR:-/root/git/lince-social/lince}"
     local branch="${BRANCH:-dev}"
@@ -39,8 +76,7 @@ install_remote_binary() {
         --working-directory "$repo_dir" \
         --exec-start "$repo_dir/target/release/lince --http-api-only"
 
-    run_as_root systemctl restart "$service_name"
-    run_as_root systemctl status "$service_name" --no-pager -l
+    restart_lince_services "$service_name"
 }
 
 worker() {
@@ -106,8 +142,7 @@ worker() {
         --exec-start "$repo_dir/target/release/lince --http-api-only"
 
     write_status "restarting-service"
-    run_as_root systemctl restart "$service_name"
-    run_as_root systemctl status "$service_name" --no-pager -l
+    restart_lince_services "$service_name"
 
     echo "[$(timestamp)] deploy finished"
 }

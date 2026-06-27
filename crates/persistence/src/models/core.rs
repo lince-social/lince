@@ -2,6 +2,12 @@ use lince_persistence_table_derive::Table;
 
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
 #[table(name = "record")]
+#[table(index(
+    name = "uq_record_sync_uid",
+    columns = "sync_uid",
+    unique,
+    where = "sync_uid IS NOT NULL"
+))]
 pub struct RecordRow {
     #[table(primary_key)]
     pub id: i64,
@@ -9,6 +15,22 @@ pub struct RecordRow {
     pub quantity: f64,
     pub head: Option<String>,
     pub body: Option<String>,
+    #[table(references = "organ(id)", check = "owner_organ_id IS NULL OR owner_organ_id > 0")]
+    pub owner_organ_id: Option<i64>,
+    #[table(check = "sync_uid IS NULL OR length(trim(sync_uid)) > 0")]
+    pub sync_uid: Option<String>,
+    #[table(references = "organ(id)", check = "origin_organ_id IS NULL OR origin_organ_id > 0")]
+    pub origin_organ_id: Option<i64>,
+    #[table(
+        default = "CURRENT_TIMESTAMP",
+        check = "julianday(created_at) IS NOT NULL"
+    )]
+    pub created_at: String,
+    #[table(
+        default = "CURRENT_TIMESTAMP",
+        check = "julianday(updated_at) IS NOT NULL"
+    )]
+    pub updated_at: String,
 }
 
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]

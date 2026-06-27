@@ -35,6 +35,7 @@ use {
                     create_server, delete_server, list_servers, login_server, logout_server,
                     update_server,
                 },
+                sync::connect_record_sync_socket,
                 terminal::{
                     connect_terminal_socket, create_terminal_session, delete_terminal_session,
                     get_terminal_output, post_terminal_input, post_terminal_resize,
@@ -130,6 +131,7 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
         .route("/trail/{instance_id}/stream", get(get_trail_stream))
         .route("/widgets/{instance_id}/trail", get(get_trail_page))
         .route("/widgets/{instance_id}/trail/stream", get(get_trail_stream))
+        .route("/sync/record/socket", get(connect_record_sync_socket))
         .route("/terminal/sessions", post(create_terminal_session))
         .route("/terminal/stream", get(connect_terminal_socket))
         .route(

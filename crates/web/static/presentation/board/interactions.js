@@ -66,6 +66,7 @@ export function attachBoardInteractions({
   readCards,
   replaceCards,
   isEditMode,
+  isCardEditable,
   getScale,
   onInteractionStart,
   onInteractionEnd,
@@ -118,6 +119,10 @@ export function attachBoardInteractions({
     const card = cards.find((entry) => entry.id === cardElement.dataset.cardId);
 
     if (!card) {
+      return;
+    }
+
+    if (typeof isCardEditable === "function" && !isCardEditable(card)) {
       return;
     }
 

@@ -612,7 +612,7 @@ body.auth-pending .startup-auth-card {
     width: 40px;
     height: 40px;
     padding: 0;
-    border-radius: 15px;
+    border-radius: 2px;
     text-decoration: none;
     cursor: pointer;
     transition:
@@ -832,6 +832,7 @@ body.auth-pending .startup-auth-card {
 
 .workspace-indicator,
 .workspace-item__switch,
+.workspace-item__edit,
 .workspace-item__delete,
 .workspace-popover__action {
     border: 1px solid var(--border);
@@ -848,7 +849,7 @@ body.auth-pending .startup-auth-card {
     min-width: 72px;
     min-height: 38px;
     padding: 0 12px;
-    border-radius: 14px;
+    border-radius: 2px;
     cursor: pointer;
     transition:
         border-color var(--transition-fast),
@@ -861,6 +862,7 @@ body.auth-pending .startup-auth-card {
 .workspace-switcher.is-open .workspace-indicator,
 .workspace-item__switch:hover,
 .workspace-item__delete:hover,
+.workspace-item__edit:hover,
 .workspace-popover__action:hover {
     border-color: var(--border-strong);
     background: rgba(28, 31, 37, 0.9);
@@ -869,10 +871,14 @@ body.auth-pending .startup-auth-card {
 
 .workspace-indicator__value,
 .workspace-item__number {
+    min-width: 0;
+    overflow: hidden;
     color: var(--text-strong);
     font-family: "IBM Plex Mono", monospace;
     font-size: 0.82rem;
     letter-spacing: 0.08em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .workspace-indicator__chevron {
@@ -897,7 +903,7 @@ body.auth-pending .startup-auth-card {
     z-index: 24;
     display: grid;
     gap: 8px;
-    width: 154px;
+    width: 240px;
     padding: 8px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 18px;
@@ -922,7 +928,7 @@ body.auth-pending .startup-auth-card {
 
 .workspace-item {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
     gap: 6px;
     align-items: center;
 }
@@ -930,7 +936,8 @@ body.auth-pending .startup-auth-card {
 .workspace-item__switch {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+    min-width: 0;
     min-height: 38px;
     padding: 0 12px;
     border-radius: 12px;
@@ -941,18 +948,45 @@ body.auth-pending .startup-auth-card {
         color var(--transition-fast);
 }
 
+.workspace-item__name-input {
+    width: 100%;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    cursor: pointer;
+    pointer-events: none;
+}
+
+.workspace-item.is-renaming .workspace-item__name-input {
+    cursor: text;
+    pointer-events: auto;
+}
+
+.workspace-item__name-input:focus {
+    color: var(--text-strong);
+}
+
+.workspace-item.is-renaming .workspace-item__switch,
+.workspace-item__switch:focus-within {
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(43, 47, 56, 0.96);
+    color: var(--text-strong);
+}
+
 .workspace-item.is-active .workspace-item__switch {
     border-color: rgba(232, 238, 246, 0.22);
     background: rgba(29, 32, 38, 0.94);
 }
 
+.workspace-item__edit,
 .workspace-item__delete {
     display: inline-grid;
     place-items: center;
-    width: 38px;
+    width: 34px;
     height: 38px;
     padding: 0;
-    border-radius: 12px;
+    border-radius: 2px;
     cursor: pointer;
     transition:
         border-color var(--transition-fast),
@@ -961,6 +995,7 @@ body.auth-pending .startup-auth-card {
         opacity var(--transition-fast);
 }
 
+.workspace-item__edit svg,
 .workspace-item__delete svg {
     width: 14px;
     height: 14px;
@@ -1027,7 +1062,7 @@ body.auth-pending .startup-auth-card {
     min-height: 40px;
     padding: 0 14px;
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
+    border-radius: 2px;
     background: rgba(13, 15, 19, 0.86);
     box-shadow:
         0 20px 46px rgba(0, 0, 0, 0.28),
@@ -1062,7 +1097,7 @@ body.auth-pending .startup-auth-card {
     gap: 6px;
     padding: 6px;
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 14px;
+    border-radius: 2px;
     background: rgba(13, 15, 19, 0.88);
     box-shadow:
         0 20px 46px rgba(0, 0, 0, 0.28),
@@ -1076,7 +1111,7 @@ body.auth-pending .startup-auth-card {
     place-items: center;
     height: 32px;
     border: 0;
-    border-radius: 9px;
+    border-radius: 2px;
     background: transparent;
     color: var(--text-soft);
     cursor: pointer;
@@ -1134,7 +1169,7 @@ body.auth-pending .startup-auth-card {
     width: 100%;
     padding: 12px;
     border: 1px solid var(--border);
-    border-radius: 14px;
+    border-radius: 2px;
     background: rgba(17, 19, 24, 0.64);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
     color: var(--text-soft);
@@ -1157,7 +1192,7 @@ body.auth-pending .startup-auth-card {
     place-items: center;
     width: 34px;
     height: 34px;
-    border-radius: 10px;
+    border-radius: 2px;
     background: rgba(255, 255, 255, 0.04);
     color: var(--text-strong);
     font-size: 1rem;
@@ -1646,10 +1681,24 @@ body.auth-pending .startup-auth-card {
     background: transparent;
 }
 
+.board-shell.is-editing
+    .board-card--pinned.board-card--system.board-card--shell-popover-open::before {
+    background: rgba(0, 0, 0, 0.46);
+}
+
 .board-card--pinned.board-card--system {
     border-color: transparent;
     background: transparent;
     box-shadow: none;
+}
+
+.board-card--pinned.board-card--system.board-card--shell-popover-open {
+    overflow: visible;
+}
+
+.board-card--pinned.board-card--system.board-card--shell-popover-open
+    .package-widget {
+    overflow: visible;
 }
 
 .board-card.is-active {
@@ -1682,24 +1731,24 @@ body.auth-pending .startup-auth-card {
 
 .card-delete-button {
     position: absolute;
-    top: 18px;
-    right: 18px;
+    top: 50%;
+    left: calc(50% - 52px);
     z-index: 4;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    min-height: 42px;
-    padding: 0 18px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
     opacity: 0;
     pointer-events: none;
     border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 999px;
+    border-radius: 2px;
     background: rgba(10, 12, 15, 0.92);
     color: var(--text-muted);
     box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28);
     cursor: pointer;
-    transform: translateY(-6px) scale(0.96);
+    transform: translate(-50%, -50%) scale(0.96);
     transition:
         opacity var(--transition-fast),
         border-color var(--transition-fast),
@@ -1714,8 +1763,8 @@ body.auth-pending .startup-auth-card {
 }
 
 .card-delete-button__icon svg {
-    width: 14px;
-    height: 14px;
+    width: 18px;
+    height: 18px;
 }
 
 .card-delete-button__label {
@@ -1729,14 +1778,14 @@ body.auth-pending .startup-auth-card {
 .board-shell.is-editing .card-delete-button {
     opacity: 1;
     pointer-events: auto;
-    transform: translateY(0) scale(1);
+    transform: translate(-50%, -50%) scale(1);
 }
 
 .card-delete-button:hover {
     border-color: rgba(255, 177, 187, 0.26);
     background: rgba(61, 20, 26, 0.9);
     color: #ffd8de;
-    transform: translateY(0) scale(1.04);
+    transform: translate(-50%, -50%) scale(1.04);
 }
 
 .card-delete-button--secondary:hover {
@@ -1745,24 +1794,88 @@ body.auth-pending .startup-auth-card {
     color: #eaf0ff;
 }
 
+.board-shell.is-editing .card-download-button,
+.board-shell.is-editing .card-leave-self-edit-button {
+    transform: translateY(0) scale(1);
+}
+
+.card-download-button:hover,
+.card-leave-self-edit-button:hover {
+    transform: translateY(0) scale(1.04);
+}
+
 .card-config-button {
-    right: 164px;
+    left: 50%;
+}
+
+.card-pin-button {
+    left: calc(50% + 52px);
+}
+
+.card-pin-button.is-pinned {
+    color: var(--text-strong);
+    background: rgba(50, 55, 65, 0.92);
 }
 
 .card-download-button {
+    top: 18px;
+    left: auto;
     right: 310px;
+    width: auto;
+    min-height: 42px;
+    padding: 0 18px;
+    gap: 10px;
+    transform: translateY(-6px) scale(0.96);
+}
+
+.card-leave-self-edit-button {
+    top: 18px;
+    left: auto;
+    right: 456px;
+    width: auto;
+    min-height: 42px;
+    padding: 0 18px;
+    gap: 10px;
+    transform: translateY(-6px) scale(0.96);
+}
+
+.board-card:not(.is-self-editing) .card-leave-self-edit-button {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.board-card.is-edit-locked .card-delete-button,
+.board-card.is-edit-locked .resize-handle {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.board-card.is-self-editing .card-leave-self-edit-button {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
 }
 
 .board-card.is-compact .card-config-button,
 .board-card.is-tiny .card-config-button {
-    top: 68px;
-    right: 18px;
+    top: 50%;
+    left: calc(50% + 26px);
 }
 
 .board-card.is-compact .card-download-button,
 .board-card.is-tiny .card-download-button {
     top: 118px;
+    left: auto;
     right: 18px;
+    transform: translateY(-6px) scale(0.96);
+}
+
+.board-card.is-compact .card-leave-self-edit-button,
+.board-card.is-tiny .card-leave-self-edit-button {
+    top: 168px;
+    left: auto;
+    right: 18px;
+    transform: translateY(-6px) scale(0.96);
 }
 
 .board-card.is-dragging .card-delete-button,
@@ -1866,6 +1979,12 @@ body.auth-pending .startup-auth-card {
 
 .board-shell.is-editing .package-widget__frame {
     pointer-events: none;
+}
+
+.board-shell.is-editing
+    .board-card--pinned.board-card--system.board-card--shell-popover-open
+    .package-widget__frame {
+    pointer-events: auto;
 }
 
 .package-widget--locked {
@@ -2265,6 +2384,49 @@ body.auth-pending .startup-auth-card {
     box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.04);
 }
 
+.catalog-origin-toggle-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: -8px 0 14px;
+}
+
+.catalog-origin-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 36px;
+    padding: 0 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 2px;
+    background: rgba(17, 19, 24, 0.72);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition:
+        border-color var(--transition-fast),
+        background var(--transition-fast),
+        color var(--transition-fast);
+}
+
+.catalog-origin-toggle:hover {
+    border-color: rgba(255, 255, 255, 0.14);
+    color: var(--text-soft);
+}
+
+.catalog-origin-toggle.is-active {
+    border-color: rgba(96, 165, 250, 0.42);
+    background: rgba(32, 71, 122, 0.28);
+    color: var(--text-strong);
+}
+
+.catalog-origin-toggle__mark {
+    display: inline-grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    color: currentColor;
+}
+
 .local-package-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -2647,14 +2809,12 @@ body.auth-pending .startup-auth-card {
 .resize-handle {
     position: absolute;
     z-index: 5;
-    display: grid;
-    place-items: center;
     opacity: 0;
     pointer-events: none;
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 999px;
-    background: rgba(12, 13, 16, 0.88);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.42);
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
     transition:
         opacity var(--transition-fast),
         transform var(--transition-fast),
@@ -2666,76 +2826,185 @@ body.auth-pending .startup-auth-card {
     pointer-events: auto;
 }
 
+.board-shell.is-editing .board-card.is-edit-locked .resize-handle {
+    opacity: 0;
+    pointer-events: none;
+}
+
 .resize-handle:hover {
-    background: rgba(28, 30, 36, 0.96);
+    background: transparent;
 }
 
 .resize-handle--nw,
 .resize-handle--ne,
 .resize-handle--sw,
 .resize-handle--se {
-    width: 14px;
-    height: 14px;
+    width: 30px;
+    height: 30px;
+}
+
+.resize-handle--nw::before,
+.resize-handle--nw::after,
+.resize-handle--ne::before,
+.resize-handle--ne::after,
+.resize-handle--sw::before,
+.resize-handle--sw::after,
+.resize-handle--se::before,
+.resize-handle--se::after {
+    content: "";
+    position: absolute;
+    background: transparent;
+    border-radius: 999px;
 }
 
 .resize-handle--nw {
-    top: 10px;
-    left: 10px;
+    top: 0;
+    left: 0;
     cursor: nwse-resize;
+}
+
+.resize-handle--nw::before {
+    top: 0;
+    left: 0;
+    width: 22px;
+    height: 2px;
+}
+
+.resize-handle--nw::after {
+    top: 0;
+    left: 0;
+    width: 2px;
+    height: 22px;
 }
 
 .resize-handle--ne {
-    top: 10px;
-    right: 42px;
+    top: 0;
+    right: 0;
     cursor: nesw-resize;
+}
+
+.resize-handle--ne::before {
+    top: 0;
+    right: 0;
+    width: 22px;
+    height: 2px;
+}
+
+.resize-handle--ne::after {
+    top: 0;
+    right: 0;
+    width: 2px;
+    height: 22px;
 }
 
 .resize-handle--sw {
-    bottom: 10px;
-    left: 10px;
+    bottom: 0;
+    left: 0;
     cursor: nesw-resize;
 }
 
+.resize-handle--sw::before {
+    bottom: 0;
+    left: 0;
+    width: 22px;
+    height: 2px;
+}
+
+.resize-handle--sw::after {
+    bottom: 0;
+    left: 0;
+    width: 2px;
+    height: 22px;
+}
+
 .resize-handle--se {
-    right: 10px;
-    bottom: 10px;
+    right: 0;
+    bottom: 0;
     cursor: nwse-resize;
+}
+
+.resize-handle--se::before {
+    right: 0;
+    bottom: 0;
+    width: 22px;
+    height: 2px;
+}
+
+.resize-handle--se::after {
+    right: 0;
+    bottom: 0;
+    width: 2px;
+    height: 22px;
 }
 
 .resize-handle--n,
 .resize-handle--s {
-    left: 50%;
-    width: 22px;
-    height: 8px;
-    transform: translateX(-50%);
-    border-radius: 999px;
+    left: 30px;
+    right: 30px;
+    height: 10px;
     cursor: ns-resize;
 }
 
+.resize-handle--n::before,
+.resize-handle--s::before,
+.resize-handle--e::before,
+.resize-handle--w::before {
+    content: "";
+    position: absolute;
+    background: transparent;
+    border-radius: 999px;
+}
+
 .resize-handle--n {
-    top: 9px;
+    top: 0;
+}
+
+.resize-handle--n::before {
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
 }
 
 .resize-handle--s {
-    bottom: 9px;
+    bottom: 0;
+}
+
+.resize-handle--s::before {
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 2px;
 }
 
 .resize-handle--e,
 .resize-handle--w {
-    top: 50%;
-    width: 8px;
-    height: 22px;
-    transform: translateY(-50%);
-    border-radius: 999px;
+    top: 30px;
+    bottom: 30px;
+    width: 10px;
     cursor: ew-resize;
 }
 
 .resize-handle--e {
-    right: 9px;
+    right: 0;
+}
+
+.resize-handle--e::before {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 2px;
 }
 
 .resize-handle--w {
-    left: 9px;
+    left: 0;
+}
+
+.resize-handle--w::before {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 2px;
 }
 
 .board-card.is-compact .card-copy,

@@ -12,10 +12,11 @@ use {
     },
     futures::{SinkExt, StreamExt},
     reqwest::Method,
-    serde::{Deserialize, Serialize},
+    serde::{Deserialize, Deserializer, Serialize},
     serde_json::{Map, Value, json},
     sqlx::Row,
     std::collections::BTreeSet,
+    utils::logging::{LogEntry, log},
 };
 
 const LOCAL_ORGAN_ID: i64 = ::application::record_sync::LOCAL_ORGAN_ID;
@@ -30,6 +31,10 @@ const SYNC_TABLES: &[&str] = &[
     "work_subject",
     "work_assignment",
 ];
+
+fn sync_log(message: impl Into<String>) {
+    log(LogEntry::Info(message.into()));
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
@@ -66,15 +71,46 @@ struct RecordSyncOperationFrame {
 
 #[derive(Debug, Deserialize)]
 pub struct RecordSyncSnapshotQuery {
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_owner_organ_ids")]
     owner_organ_id: Vec<i64>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct RecordSyncOperationsQuery {
     since_clock: Option<String>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_owner_organ_ids")]
     owner_organ_id: Vec<i64>,
+}
+
+fn deserialize_owner_organ_ids<'de, D>(deserializer: D) -> Result<Vec<i64>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum OwnerIds {
+        One(String),
+        Many(Vec<String>),
+    }
+
+    let Some(value) = Option::<OwnerIds>::deserialize(deserializer)? else {
+        return Ok(Vec::new());
+    };
+    let raw = match value {
+        OwnerIds::One(value) => vec![value],
+        OwnerIds::Many(values) => values,
+    };
+    Ok(raw
+        .into_iter()
+        .flat_map(|value| {
+            value
+                .split(',')
+                .map(str::trim)
+                .filter(|part| !part.is_empty())
+                .filter_map(|part| part.parse::<i64>().ok())
+                .collect::<Vec<_>>()
+        })
+        .collect())
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -166,8 +202,21 @@ pub async fn record_sync_snapshot(
         return api_error(StatusCode::FORBIDDEN, error.to_string()).into_response();
     }
     match build_snapshot(&state, &query.owner_organ_id).await {
-        Ok(snapshot) => Json(snapshot).into_response(),
-        Err(error) => api_error(StatusCode::BAD_GATEWAY, error.to_string()).into_response(),
+        Ok(snapshot) => {
+            sync_log(format!(
+                "record sync: served snapshot owners={:?} rows={}",
+                query.owner_organ_id,
+                snapshot.rows.len()
+            ));
+            Json(snapshot).into_response()
+        }
+        Err(error) => {
+            sync_log(format!(
+                "record sync: snapshot request failed owners={:?} error={error}",
+                query.owner_organ_id
+            ));
+            api_error(StatusCode::BAD_GATEWAY, error.to_string()).into_response()
+        }
     }
 }
 
@@ -186,8 +235,23 @@ pub async fn record_sync_operations(
         return api_error(StatusCode::FORBIDDEN, error.to_string()).into_response();
     }
     match load_operations_since(&state, query.since_clock.as_deref(), &query.owner_organ_id).await {
-        Ok(operations) => Json(RecordSyncOperationsResponse { operations }).into_response(),
-        Err(error) => api_error(StatusCode::BAD_GATEWAY, error.to_string()).into_response(),
+        Ok(operations) => {
+            sync_log(format!(
+                "record sync: served operations owners={:?} since={:?} operations={}",
+                query.owner_organ_id,
+                query.since_clock,
+                operations.len()
+            ));
+            Json(RecordSyncOperationsResponse { operations }).into_response()
+        }
+        Err(error) => {
+            sync_log(format!(
+                "record sync: operations request failed owners={:?} since={:?} error={error}",
+                query.owner_organ_id,
+                query.since_clock
+            ));
+            api_error(StatusCode::BAD_GATEWAY, error.to_string()).into_response()
+        }
     }
 }
 
@@ -210,8 +274,17 @@ pub async fn apply_record_sync_operations(
         }
     }
     match apply_operations_from_peer(&state, payload).await {
-        Ok(response) => Json(response).into_response(),
-        Err(error) => api_error(StatusCode::BAD_GATEWAY, error.to_string()).into_response(),
+        Ok(response) => {
+            sync_log(format!(
+                "record sync: accepted pushed operations applied={} skipped={}",
+                response.applied, response.skipped
+            ));
+            Json(response).into_response()
+        }
+        Err(error) => {
+            sync_log(format!("record sync: applying pushed operations failed error={error}"));
+            api_error(StatusCode::BAD_GATEWAY, error.to_string()).into_response()
+        }
     }
 }
 
@@ -849,6 +922,10 @@ pub async fn run_record_sync_for_organ(
     organ_id: i64,
     bearer_token: String,
 ) -> Result<(), String> {
+    sync_log(format!(
+        "record sync: run requested organ_id={organ_id} token_present={}",
+        !bearer_token.trim().is_empty()
+    ));
     let organ = state
         .organs
         .get(organ_id)
@@ -858,22 +935,33 @@ pub async fn run_record_sync_for_organ(
         .await
         .map_err(|(_, error)| error.error.clone())?;
     let owners = owners_for_mode(&mode, organ_id);
+    sync_log(format!(
+        "record sync: policy resolved organ_id={organ_id} mode={mode} owners={owners:?} base_url={}",
+        organ.base_url
+    ));
     if owners.is_empty() {
         tracing::info!(organ_id, mode = %mode, "record sync: skipped disabled policy");
+        sync_log(format!(
+            "record sync: skipped disabled policy organ_id={organ_id} mode={mode}"
+        ));
         return Ok(());
     }
 
     tracing::info!(organ_id, mode = %mode, "record sync: run started");
+    sync_log(format!("record sync: run started organ_id={organ_id} mode={mode}"));
     pull_snapshot(&state, &organ.base_url, &bearer_token, organ_id, &owners).await?;
     pull_operations(&state, &organ.base_url, &bearer_token, organ_id, &owners).await?;
     push_operations(&state, &organ.base_url, &bearer_token, organ_id, &owners).await?;
     tracing::info!(organ_id, mode = %mode, "record sync: run finished");
+    sync_log(format!("record sync: run finished organ_id={organ_id} mode={mode}"));
     Ok(())
 }
 
 pub fn spawn_record_sync_tasks(state: AppState) {
+    sync_log("record sync: background task spawned");
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(std::time::Duration::from_secs(5));
+        let mut logged_empty_tokens = false;
         loop {
             interval.tick().await;
             let tokens = state
@@ -883,12 +971,24 @@ pub fn spawn_record_sync_tasks(state: AppState) {
                 .unwrap_or_else(|poisoned| poisoned.into_inner())
                 .clone();
             if tokens.is_empty() {
+                if !logged_empty_tokens {
+                    sync_log("record sync: background tick found no authenticated remote organ tokens");
+                    logged_empty_tokens = true;
+                }
                 continue;
             }
+            logged_empty_tokens = false;
+            sync_log(format!(
+                "record sync: background tick found {} authenticated remote organ token(s)",
+                tokens.len()
+            ));
             for (organ_id, bearer_token) in tokens {
                 if let Err(error) =
                     run_record_sync_for_organ(state.clone(), organ_id, bearer_token).await
                 {
+                    sync_log(format!(
+                        "record sync: background sync failed organ_id={organ_id} error={error}"
+                    ));
                     tracing::warn!(
                         organ_id,
                         error = %error,
@@ -912,17 +1012,31 @@ async fn pull_snapshot(
         .map(|owner| if *owner == organ_id { LOCAL_ORGAN_ID } else { *owner })
         .collect::<Vec<_>>();
     let path = sync_path("/sync/record/snapshot", &remote_owners);
+    sync_log(format!(
+        "record sync: requesting snapshot organ_id={organ_id} url={}{} owners={remote_owners:?}",
+        base_url.trim().trim_end_matches('/'),
+        path
+    ));
     let response = state
         .manas
         .send_backend_request(base_url, bearer_token, Method::GET, &path, None)
         .await?;
-    if !response.status().is_success() {
-        return Err(format!("Snapshot sync failed with {}", response.status()));
+    let status = response.status();
+    if !status.is_success() {
+        let body = response.text().await.unwrap_or_default();
+        sync_log(format!(
+            "record sync: snapshot failed organ_id={organ_id} status={status} body={body}"
+        ));
+        return Err(format!("Snapshot sync failed with {status}: {body}"));
     }
     let mut snapshot = response
         .json::<RecordSyncSnapshotResponse>()
         .await
         .map_err(|error| format!("Invalid snapshot sync response: {error}"))?;
+    sync_log(format!(
+        "record sync: snapshot response organ_id={organ_id} rows={}",
+        snapshot.rows.len()
+    ));
     for row in &mut snapshot.rows {
         remap_snapshot_row_for_local(row, organ_id);
         let operation = RecordSyncOperationFrame {
@@ -943,6 +1057,10 @@ async fn pull_snapshot(
         let _ = apply_upsert(state, &operation, organ_id).await;
     }
     tracing::info!(organ_id, rows = snapshot.rows.len(), "record sync: snapshot applied");
+    sync_log(format!(
+        "record sync: snapshot applied organ_id={organ_id} rows={}",
+        snapshot.rows.len()
+    ));
     Ok(())
 }
 
@@ -966,12 +1084,22 @@ async fn pull_operations(
         path.push_str("since_clock=");
         path.push_str(&urlencoding::encode(&since));
     }
+    sync_log(format!(
+        "record sync: requesting operations organ_id={organ_id} url={}{} owners={remote_owners:?}",
+        base_url.trim().trim_end_matches('/'),
+        path
+    ));
     let response = state
         .manas
         .send_backend_request(base_url, bearer_token, Method::GET, &path, None)
         .await?;
-    if !response.status().is_success() {
-        return Err(format!("Operation pull failed with {}", response.status()));
+    let status = response.status();
+    if !status.is_success() {
+        let body = response.text().await.unwrap_or_default();
+        sync_log(format!(
+            "record sync: operations pull failed organ_id={organ_id} status={status} body={body}"
+        ));
+        return Err(format!("Operation pull failed with {status}: {body}"));
     }
     let mut payload = response
         .json::<RecordSyncOperationsResponse>()
@@ -993,6 +1121,10 @@ async fn pull_operations(
         write_ack(state, organ_id, &clock).await.map_err(|error| error.to_string())?;
     }
     tracing::info!(organ_id, operations = payload.operations.len(), applied, "record sync: operations pulled");
+    sync_log(format!(
+        "record sync: operations pulled organ_id={organ_id} operations={} applied={applied}",
+        payload.operations.len()
+    ));
     Ok(())
 }
 
@@ -1010,6 +1142,10 @@ async fn push_operations(
         .filter(|operation| operation.source_operation_uid.is_none())
         .filter(|operation| operation.source_organ_id == LOCAL_ORGAN_ID)
         .collect::<Vec<_>>();
+    sync_log(format!(
+        "record sync: local operations selected organ_id={organ_id} owners={owners:?} operations={}",
+        operations.len()
+    ));
     let mut local_owned = Vec::new();
     let mut remote_owned = Vec::new();
     for operation in operations {
@@ -1042,6 +1178,9 @@ async fn push_operations(
         .await?;
     }
     tracing::info!(organ_id, operations = pushed, "record sync: operations pushed");
+    sync_log(format!(
+        "record sync: operations pushed organ_id={organ_id} operations={pushed}"
+    ));
     Ok(())
 }
 
@@ -1052,6 +1191,13 @@ async fn post_operations_to_remote(
     source_base_url: Option<String>,
     operations: Vec<RecordSyncOperationFrame>,
 ) -> Result<usize, String> {
+    sync_log(format!(
+        "record sync: posting operations url={}{} operations={} source_base_url={:?}",
+        base_url.trim().trim_end_matches('/'),
+        "/sync/record/operations",
+        operations.len(),
+        source_base_url
+    ));
     let response = state
         .manas
         .send_backend_request(
@@ -1066,13 +1212,22 @@ async fn post_operations_to_remote(
             })),
         )
         .await?;
-    if !response.status().is_success() {
-        return Err(format!("Operation push failed with {}", response.status()));
+    let status = response.status();
+    if !status.is_success() {
+        let body = response.text().await.unwrap_or_default();
+        sync_log(format!(
+            "record sync: operation push failed status={status} body={body}"
+        ));
+        return Err(format!("Operation push failed with {status}: {body}"));
     }
     let result = response
         .json::<RecordSyncApplyResponse>()
         .await
         .map_err(|error| format!("Invalid operation push response: {error}"))?;
+    sync_log(format!(
+        "record sync: operation push response applied={} skipped={}",
+        result.applied, result.skipped
+    ));
     Ok(result.applied + result.skipped)
 }
 

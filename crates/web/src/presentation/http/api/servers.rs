@@ -17,6 +17,7 @@ use {
         response::IntoResponse,
     },
     serde::{Deserialize, Serialize},
+    utils::logging::{LogEntry, log},
     utoipa::ToSchema,
 };
 
@@ -259,6 +260,10 @@ pub async fn login_server(
         .services
         .notifications
         .dismiss(&format!("organ-login-required-{}", server.id));
+    log(LogEntry::Info(format!(
+        "record sync: spawning login-triggered sync organ_id={}",
+        server.id
+    )));
 
     let mut response_headers = HeaderMap::new();
     response_headers.insert(

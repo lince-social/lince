@@ -6,6 +6,7 @@ use {
         time::{SystemTime, UNIX_EPOCH},
     },
     tokio::sync::RwLock,
+    utils::logging::{LogEntry, log},
 };
 
 const SESSION_COOKIE_NAME: &str = "lince_session";
@@ -115,6 +116,9 @@ impl AppAuth {
                 .write()
                 .unwrap_or_else(|poisoned| poisoned.into_inner())
                 .insert(server_id_i64, bearer_token.clone());
+            log(LogEntry::Info(format!(
+                "record sync: stored remote bearer token for organ_id={server_id_i64}"
+            )));
         }
         session.server_sessions.insert(
             server_id,

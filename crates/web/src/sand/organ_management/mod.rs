@@ -456,7 +456,7 @@ pub(crate) fn source() -> SandWidgetSource {
         body: body(),
         body_scripts: vec![crate::sand::WidgetScript::inline(r#"
       const CARD_STATE_KEY = "organManagement";
-      const DEFAULT_FORM = { id: "", name: "", baseUrl: "", trustState: "known", contactDiscoveryEnabled: false, recordSyncMode: "none" };
+      const DEFAULT_FORM = { id: "", name: "", baseUrl: "", trustState: "known", contactDiscoveryEnabled: false, recordSyncMode: "none", fileSyncEnabled: false, fileSyncPath: "" };
       const app = document.getElementById("app");
       const searchInput = document.getElementById("search-input");
       const refreshButton = document.getElementById("refresh-button");
@@ -486,6 +486,8 @@ pub(crate) fn source() -> SandWidgetSource {
       const formTrustStateEl = document.getElementById("field-trust-state");
       const formContactDiscoveryEl = document.getElementById("field-contact-discovery");
       const formRecordSyncModeEl = document.getElementById("field-record-sync-mode");
+      const formFileSyncEnabledEl = document.getElementById("field-file-sync-enabled");
+      const formFileSyncPathEl = document.getElementById("field-file-sync-path");
       const footerEl = document.getElementById("footer-meta");
 
       let bridgeBound = false;
@@ -518,6 +520,8 @@ pub(crate) fn source() -> SandWidgetSource {
             trustState: typeof scoped?.draft?.trustState === "string" ? scoped.draft.trustState : "known",
             contactDiscoveryEnabled: Boolean(scoped?.draft?.contactDiscoveryEnabled),
             recordSyncMode: normalizeRecordSyncMode(scoped?.draft?.recordSyncMode),
+            fileSyncEnabled: Boolean(scoped?.draft?.fileSyncEnabled),
+            fileSyncPath: typeof scoped?.draft?.fileSyncPath === "string" ? scoped.draft.fileSyncPath : "",
           },
           draftMode: scoped?.draftMode === "create" ? "create" : "edit",
         };
@@ -543,14 +547,35 @@ pub(crate) fn source() -> SandWidgetSource {
       function applyBridgeDetail(detail) {
         state.hostMeta = normalizeMeta(detail?.meta || null);
         const nextUi = normalizeCardState(detail?.meta?.cardState || null);
-        const keepDraft = state.ui.draftMode === "create" && hasDraftContent(state.ui.draft);
-        state.ui = keepDraft ? { ...nextUi, draft: state.ui.draft, draftMode: state.ui.draftMode } : nextUi;
+        const keepDraft = shouldKeepDraftDuringExternalState(nextUi);
+        state.ui = keepDraft ? { ...nextUi, selectedId: state.ui.selectedId, draft: state.ui.draft, draftMode: state.ui.draftMode } : nextUi;
         searchInput.value = state.ui.search;
         render();
       }
 
       function hasDraftContent(draft) {
         return Boolean(String(draft?.name || "").trim() || String(draft?.baseUrl || "").trim());
+      }
+
+      function formContainsActiveElement() {
+        const active = document.activeElement;
+        return active === formNameEl
+          || active === formBaseUrlEl
+          || active === formTrustStateEl
+          || active === formContactDiscoveryEl
+          || active === formRecordSyncModeEl
+          || active === formFileSyncEnabledEl
+          || active === formFileSyncPathEl;
+      }
+
+      function shouldKeepDraftDuringExternalState(nextUi) {
+        if (state.ui.draftMode === "create" && hasDraftContent(state.ui.draft)) {
+          return true;
+        }
+        return formContainsActiveElement()
+          && state.ui.selectedId
+          && state.ui.selectedId === nextUi.selectedId
+          && state.ui.draftMode === nextUi.draftMode;
       }
 
       function formatSessionState(value) {
@@ -631,6 +656,9 @@ pub(crate) fn source() -> SandWidgetSource {
       }
 
       function syncDraftWithSelection() {
+        if (formContainsActiveElement()) {
+          return;
+        }
         if (state.ui.draftMode === "create" && hasDraftContent(state.ui.draft)) {
           return;
         }
@@ -648,6 +676,8 @@ pub(crate) fn source() -> SandWidgetSource {
           trustState: organ.trustState,
           contactDiscoveryEnabled: organ.contactDiscoveryEnabled,
           recordSyncMode: organ.recordSyncMode,
+          fileSyncEnabled: organ.fileSyncEnabled,
+          fileSyncPath: organ.fileSyncPath,
         };
       }
 
@@ -684,6 +714,7 @@ pub(crate) fn source() -> SandWidgetSource {
         chips.push(chip(organ.trustState || "known", organ.trustState === "blocked" ? "danger" : organ.trustState === "unknown" ? "warn" : "ok"));
         chips.push(chip(organ.contactDiscoveryEnabled ? "discoverable" : "private", organ.contactDiscoveryEnabled ? "ok" : "accent"));
         chips.push(chip(formatRecordSyncMode(organ.recordSyncMode), organ.recordSyncMode === "none" ? "accent" : "ok"));
+        chips.push(chip(organ.fileSyncEnabled ? "file sync" : "no file sync", organ.fileSyncEnabled ? "ok" : "accent"));
         return chips.join("");
       }
 
@@ -756,6 +787,8 @@ pub(crate) fn source() -> SandWidgetSource {
         formTrustStateEl.value = draft.trustState || "known";
         formContactDiscoveryEl.checked = Boolean(draft.contactDiscoveryEnabled);
         formRecordSyncModeEl.value = normalizeRecordSyncMode(draft.recordSyncMode);
+        formFileSyncEnabledEl.checked = Boolean(draft.fileSyncEnabled);
+        formFileSyncPathEl.value = draft.fileSyncPath || "";
         deleteButton.disabled = isCreate || !organ || state.loading;
         saveButton.disabled = state.loading;
         resetButton.disabled = state.loading;
@@ -800,9 +833,12 @@ pub(crate) fn source() -> SandWidgetSource {
           trustState: String(nextDraft.trustState || "known"),
           contactDiscoveryEnabled: Boolean(nextDraft.contactDiscoveryEnabled),
           recordSyncMode: normalizeRecordSyncMode(nextDraft.recordSyncMode),
+          fileSyncEnabled: Boolean(nextDraft.fileSyncEnabled),
+          fileSyncPath: String(nextDraft.fileSyncPath || ""),
         };
         persistUiSoon();
-        render();
+        renderDetail();
+        renderFooter();
       }
 
       function beginCreate() {
@@ -826,6 +862,8 @@ pub(crate) fn source() -> SandWidgetSource {
             trustState: organ.trustState,
             contactDiscoveryEnabled: organ.contactDiscoveryEnabled,
             recordSyncMode: organ.recordSyncMode,
+            fileSyncEnabled: organ.fileSyncEnabled,
+            fileSyncPath: organ.fileSyncPath,
           };
         } else {
           state.ui.draftMode = "create";
@@ -884,6 +922,8 @@ pub(crate) fn source() -> SandWidgetSource {
           contactDiscoveryEnabled: Boolean(raw.contactDiscoveryEnabled),
           syncResources: Array.isArray(raw.syncResources) ? raw.syncResources.map(String) : [],
           recordSyncMode: normalizeRecordSyncMode(raw.recordSyncMode),
+          fileSyncEnabled: Boolean(raw.fileSyncEnabled),
+          fileSyncPath: String(raw.fileSyncPath || ""),
           requiresAuth: Boolean(raw.requiresAuth),
           authenticated: Boolean(raw.authenticated),
           sessionState: typeof raw.sessionState === "string" ? raw.sessionState : null,
@@ -900,6 +940,8 @@ pub(crate) fn source() -> SandWidgetSource {
           trust_state: formTrustStateEl.value || "known",
           contact_discovery_enabled: Boolean(formContactDiscoveryEl.checked),
           record_sync_mode: normalizeRecordSyncMode(formRecordSyncModeEl.value),
+          file_sync_enabled: Boolean(formFileSyncEnabledEl.checked),
+          file_sync_path: optionalTrimmed(formFileSyncPathEl.value),
         };
       }
 
@@ -953,6 +995,41 @@ pub(crate) fn source() -> SandWidgetSource {
         } catch (error) {
           setStatus(isCreate ? "Create failed." : "Update failed.", "error");
           responseEl.textContent = String(error instanceof Error ? error.message : error);
+        }
+      }
+
+      async function saveRecordSyncMode() {
+        const selected = selectedOrgan();
+        if (!selected || state.ui.draftMode === "create") {
+          return;
+        }
+        const payload = buildPayload();
+        const url = "/organ/" + encodeURIComponent(selected.id);
+        requestPreviewFor("PATCH", url, payload);
+        setStatus("Updating record sync...", "warn");
+        try {
+          const response = await fetch(url, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const raw = await response.text().catch(() => "");
+          let parsed = raw;
+          try {
+            parsed = raw ? JSON.parse(raw) : null;
+          } catch {
+            // keep raw
+          }
+          responseEl.textContent = typeof parsed === "string" ? parsed : JSON.stringify(parsed, null, 2);
+          if (!response.ok) {
+            throw new Error(typeof parsed === "string" ? parsed : JSON.stringify(parsed, null, 2));
+          }
+          setStatus("Record sync updated.", "ok");
+          await loadOrgans();
+        } catch (error) {
+          setStatus("Record sync update failed.", "error");
+          responseEl.textContent = String(error instanceof Error ? error.message : error);
+          await loadOrgans();
         }
       }
 
@@ -1021,6 +1098,15 @@ pub(crate) fn source() -> SandWidgetSource {
       });
       formRecordSyncModeEl.addEventListener("change", () => {
         patchDraft({ ...state.ui.draft, recordSyncMode: normalizeRecordSyncMode(formRecordSyncModeEl.value) });
+        requestPreviewFor(state.ui.draftMode === "create" ? "POST" : "PATCH", state.ui.draftMode === "create" ? "/organ" : "/organ/" + encodeURIComponent(state.ui.selectedId || "{organ_id}"), buildPayload());
+        void saveRecordSyncMode();
+      });
+      formFileSyncEnabledEl.addEventListener("change", () => {
+        patchDraft({ ...state.ui.draft, fileSyncEnabled: Boolean(formFileSyncEnabledEl.checked) });
+        requestPreviewFor(state.ui.draftMode === "create" ? "POST" : "PATCH", state.ui.draftMode === "create" ? "/organ" : "/organ/" + encodeURIComponent(state.ui.selectedId || "{organ_id}"), buildPayload());
+      });
+      formFileSyncPathEl.addEventListener("input", () => {
+        patchDraft({ ...state.ui.draft, fileSyncPath: formFileSyncPathEl.value });
         requestPreviewFor(state.ui.draftMode === "create" ? "POST" : "PATCH", state.ui.draftMode === "create" ? "/organ" : "/organ/" + encodeURIComponent(state.ui.selectedId || "{organ_id}"), buildPayload());
       });
 
@@ -1189,6 +1275,15 @@ fn body() -> Markup {
                                         option value="sync_both" { "Sync both directions" }
                                     }
                                     div class="fieldHint" { "Stores organ_sync_policy for record bundle sync. None is the default." }
+                                }
+                                label class="checkField" {
+                                    input id="field-file-sync-enabled" type="checkbox";
+                                    span class="fieldHint" { "Mirror this organ's owned records to a local directory" }
+                                }
+                                div class="fieldWrap" {
+                                    label class="label" for="field-file-sync-path" { "File sync path" }
+                                    input id="field-file-sync-path" class="field mono" type="text" placeholder="/home/user/Documents/lince/organ-name";
+                                    div class="fieldHint" { "Records with owner_organ_id for this organ use this directory. Empty uses the host default." }
                                 }
                                 div class="actions" {
                                     button id="save-button" class="button button--primary" type="button" { "Save organ" }

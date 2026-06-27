@@ -93,8 +93,8 @@ export function createBoardViewport({
     const scale = clamp(camera.scale, 0.1, 3);
 
     return {
-      x: -camera.x + rect.width / 2 / scale,
-      y: -camera.y + rect.height / 2 / scale,
+      x: (rect.width / 2 - camera.x) / scale,
+      y: (rect.height / 2 - camera.y) / scale,
     };
   }
 
@@ -105,12 +105,15 @@ export function createBoardViewport({
 
     return {
       x:
-        -camera.x +
-        (finiteNumber(clientX, rect.left + rect.width / 2) - rect.left) /
-          scale,
+        (finiteNumber(clientX, rect.left + rect.width / 2) -
+          rect.left -
+          camera.x) /
+        scale,
       y:
-        -camera.y +
-        (finiteNumber(clientY, rect.top + rect.height / 2) - rect.top) / scale,
+        (finiteNumber(clientY, rect.top + rect.height / 2) -
+          rect.top -
+          camera.y) /
+        scale,
     };
   }
 
@@ -119,8 +122,8 @@ export function createBoardViewport({
     const safeScale = clamp(finiteNumber(scale, 1), 0.1, 3);
 
     return {
-      x: -finiteNumber(center?.x, 0) + rect.width / 2 / safeScale,
-      y: -finiteNumber(center?.y, 0) + rect.height / 2 / safeScale,
+      x: rect.width / 2 - finiteNumber(center?.x, 0) * safeScale,
+      y: rect.height / 2 - finiteNumber(center?.y, 0) * safeScale,
       scale: safeScale,
     };
   }
@@ -155,8 +158,8 @@ export function createBoardViewport({
     setCamera(
       {
         ...camera,
-        x: camera.x - finiteNumber(deltaX, 0) / scale,
-        y: camera.y - finiteNumber(deltaY, 0) / scale,
+        x: camera.x - finiteNumber(deltaX, 0),
+        y: camera.y - finiteNumber(deltaY, 0),
       },
       { silent: true },
     );

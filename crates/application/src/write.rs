@@ -163,15 +163,17 @@ async fn cleanup_deleted_record_sidecars(
 
 pub async fn insert_record_from_file_sync(
     services: InjectedServices,
+    owner_organ_id: i64,
     head: String,
     body: String,
 ) -> Result<WriteOutcome, Error> {
     execute_record_insert_returning_id(
         services,
-        "INSERT INTO record(head, body) VALUES (?, ?) RETURNING id",
+        "INSERT INTO record(head, body, owner_organ_id) VALUES (?, ?, ?) RETURNING id",
         vec![
             crate::file_sync::text_param(head),
             crate::file_sync::text_param(body),
+            SqlParameter::Integer(owner_organ_id),
         ],
     )
     .await

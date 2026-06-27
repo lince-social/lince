@@ -38,6 +38,8 @@ pub struct ServerProfileResponse {
     pub last_error: String,
     pub sync_resources: Vec<String>,
     pub record_sync_mode: String,
+    pub file_sync_enabled: bool,
+    pub file_sync_path: Option<String>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -53,6 +55,8 @@ pub struct UpsertServerProfileRequest {
     pub trust_state: Option<String>,
     pub contact_discovery_enabled: Option<bool>,
     pub record_sync_mode: Option<String>,
+    pub file_sync_enabled: Option<bool>,
+    pub file_sync_path: Option<String>,
 }
 
 #[utoipa::path(
@@ -110,6 +114,8 @@ pub async fn list_servers(
                 .unwrap_or_default(),
             sync_resources,
             record_sync_mode,
+            file_sync_enabled: server.file_sync_enabled != 0,
+            file_sync_path: server.file_sync_path,
         });
     }
 
@@ -156,6 +162,23 @@ pub async fn create_server(
         .set_record_sync_policy(profile.id, mode)
         .await
         .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
+    if payload.file_sync_enabled.is_some() || payload.file_sync_path.is_some() {
+        state
+            .organs
+            .set_file_sync(
+                profile.id,
+                payload.file_sync_enabled.unwrap_or(false),
+                payload.file_sync_path.as_deref(),
+            )
+            .await
+            .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
+        ::application::file_sync::configure_from_organs(state.services.clone())
+            .await
+            .map_err(|error| api_error(StatusCode::BAD_GATEWAY, error.to_string()))?;
+        ::application::file_sync::sync_after_record_change(state.services.clone())
+            .await
+            .map_err(|error| api_error(StatusCode::BAD_GATEWAY, error.to_string()))?;
+    }
     let profile = state
         .organs
         .get(profile.id)
@@ -261,6 +284,8 @@ pub async fn login_server(
             last_error: String::new(),
             sync_resources,
             record_sync_mode,
+            file_sync_enabled: server.file_sync_enabled != 0,
+            file_sync_path: server.file_sync_path,
         }),
     ))
 }
@@ -336,6 +361,34 @@ pub async fn update_server(
             .set_record_sync_policy(profile.id, mode)
             .await
             .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
+    }
+    if payload.file_sync_enabled.is_some() || payload.file_sync_path.is_some() {
+        let existing = state
+            .organs
+            .get(profile.id)
+            .await
+            .map_err(|message| api_error(StatusCode::BAD_GATEWAY, message))?
+            .unwrap_or(profile.clone());
+        state
+            .organs
+            .set_file_sync(
+                profile.id,
+                payload
+                    .file_sync_enabled
+                    .unwrap_or(existing.file_sync_enabled != 0),
+                payload
+                    .file_sync_path
+                    .as_deref()
+                    .or(existing.file_sync_path.as_deref()),
+            )
+            .await
+            .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
+        ::application::file_sync::configure_from_organs(state.services.clone())
+            .await
+            .map_err(|error| api_error(StatusCode::BAD_GATEWAY, error.to_string()))?;
+        ::application::file_sync::sync_after_record_change(state.services.clone())
+            .await
+            .map_err(|error| api_error(StatusCode::BAD_GATEWAY, error.to_string()))?;
     }
     let profile = state
         .organs
@@ -446,6 +499,8 @@ async fn server_profile_response(
         last_error,
         sync_resources,
         record_sync_mode,
+        file_sync_enabled: profile.file_sync_enabled != 0,
+        file_sync_path: profile.file_sync_path,
     }
 }
 

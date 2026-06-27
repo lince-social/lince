@@ -33,49 +33,57 @@ struct DiskFile {
 }
 
 pub async fn configure_from_active_configuration(services: InjectedServices) -> Result<(), Error> {
-    let configuration = services.repository.configuration.get_active().await?;
-    let path = resolve_sync_path(configuration.file_sync_path.as_deref())?;
-    let config = FileSyncConfig {
-        enabled: configuration.file_sync_enabled != 0,
-        path,
-    };
+    configure_from_organs(services).await
+}
+
+pub async fn configure_from_organs(services: InjectedServices) -> Result<(), Error> {
+    let rows = sqlx::query_as::<_, (i64, i64, Option<String>)>(
+        "SELECT id, file_sync_enabled, file_sync_path FROM organ ORDER BY id",
+    )
+    .fetch_all(&*services.db)
+    .await
+    .map_err(Error::other)?;
+
+    let mut configs = Vec::with_capacity(rows.len());
+    for (organ_id, enabled, path) in rows {
+        configs.push(FileSyncConfig {
+            organ_id,
+            enabled: enabled != 0,
+            path: resolve_sync_path(organ_id, path.as_deref())?,
+        });
+    }
 
     *services
         .file_sync_config
         .write()
-        .map_err(|_| Error::other("File sync config lock poisoned"))? = Some(config);
+        .map_err(|_| Error::other("File sync config lock poisoned"))? = configs;
 
     Ok(())
 }
 
 pub async fn start_if_enabled(services: InjectedServices) -> Result<(), Error> {
-    let Some(config) = active_config(&services)? else {
-        return Ok(());
-    };
-    if !config.enabled {
-        return Ok(());
+    let configs = active_configs(&services)?;
+    for config in configs.into_iter().filter(|config| config.enabled) {
+        fs::create_dir_all(&config.path)?;
+        mirror_records_to_files(services.clone(), &config).await?;
+        tokio::spawn(watch_file_sync_dir(services.clone(), config));
     }
-
-    fs::create_dir_all(&config.path)?;
-    mirror_records_to_files(services.clone(), &config.path).await?;
-    tokio::spawn(watch_file_sync_dir(services, config.path));
 
     Ok(())
 }
 
 pub async fn sync_after_record_change(services: InjectedServices) -> Result<(), Error> {
-    let Some(config) = active_config(&services)? else {
-        return Ok(());
-    };
-    if !config.enabled {
-        return Ok(());
+    for config in active_configs(&services)?
+        .into_iter()
+        .filter(|config| config.enabled)
+    {
+        fs::create_dir_all(&config.path)?;
+        mirror_records_to_files(services.clone(), &config).await?;
     }
-
-    fs::create_dir_all(&config.path)?;
-    mirror_records_to_files(services, &config.path).await
+    Ok(())
 }
 
-fn active_config(services: &InjectedServices) -> Result<Option<FileSyncConfig>, Error> {
+fn active_configs(services: &InjectedServices) -> Result<Vec<FileSyncConfig>, Error> {
     Ok(services
         .file_sync_config
         .read()
@@ -83,23 +91,22 @@ fn active_config(services: &InjectedServices) -> Result<Option<FileSyncConfig>, 
         .clone())
 }
 
-fn resolve_sync_path(configured_path: Option<&str>) -> Result<PathBuf, Error> {
+fn resolve_sync_path(organ_id: i64, configured_path: Option<&str>) -> Result<PathBuf, Error> {
     if let Some(path) = configured_path
         .map(str::trim)
         .filter(|value| !value.is_empty())
         .map(PathBuf::from)
-        && path.is_dir()
     {
         return Ok(path);
     }
 
     let config_dir = utils::config::lince_data_dir()
         .ok_or_else(|| Error::other("Unable to resolve user config directory"))?;
-    Ok(config_dir.join("files"))
+    Ok(config_dir.join("files").join(format!("organ-{organ_id}")))
 }
 
-async fn watch_file_sync_dir(services: InjectedServices, path: PathBuf) {
-    let mut snapshot = match scan_disk_files(&path) {
+async fn watch_file_sync_dir(services: InjectedServices, config: FileSyncConfig) {
+    let mut snapshot = match scan_disk_files(&config.path) {
         Ok(files) => files,
         Err(_) => BTreeMap::new(),
     };
@@ -108,12 +115,12 @@ async fn watch_file_sync_dir(services: InjectedServices, path: PathBuf) {
     loop {
         interval.tick().await;
 
-        let desired = match desired_files_from_records(&services).await {
+        let desired = match desired_files_from_records(&services, &config).await {
             Ok(files) => files,
             Err(_) => continue,
         };
 
-        let current = match scan_disk_files(&path) {
+        let current = match scan_disk_files(&config.path) {
             Ok(files) => files,
             Err(_) => continue,
         };
@@ -123,21 +130,21 @@ async fn watch_file_sync_dir(services: InjectedServices, path: PathBuf) {
             continue;
         }
 
-        if apply_disk_changes_to_records(services.clone(), &snapshot, &current)
+        if apply_disk_changes_to_records(services.clone(), &config, &snapshot, &current)
             .await
             .is_err()
         {
             continue;
         }
 
-        if mirror_records_to_files(services.clone(), &path)
+        if mirror_records_to_files(services.clone(), &config)
             .await
             .is_err()
         {
             continue;
         }
 
-        snapshot = match scan_disk_files(&path) {
+        snapshot = match scan_disk_files(&config.path) {
             Ok(files) => files,
             Err(_) => BTreeMap::new(),
         };
@@ -146,6 +153,7 @@ async fn watch_file_sync_dir(services: InjectedServices, path: PathBuf) {
 
 async fn apply_disk_changes_to_records(
     services: InjectedServices,
+    config: &FileSyncConfig,
     previous: &BTreeMap<PathBuf, DiskFile>,
     current: &BTreeMap<PathBuf, DiskFile>,
 ) -> Result<(), Error> {
@@ -153,7 +161,9 @@ async fn apply_disk_changes_to_records(
         match previous.get(path) {
             Some(previous_file) if previous_file == file => {}
             Some(previous_file) => {
-                if let Some(id) = record_id_for_head(&services, &previous_file.head).await? {
+                if let Some(id) =
+                    record_id_for_head(&services, config.organ_id, &previous_file.head).await?
+                {
                     crate::write::update_record_head_body_from_file_sync(
                         services.clone(),
                         id,
@@ -166,6 +176,7 @@ async fn apply_disk_changes_to_records(
             None => {
                 crate::write::insert_record_from_file_sync(
                     services.clone(),
+                    config.organ_id,
                     file.head.clone(),
                     file.body.clone(),
                 )
@@ -176,7 +187,7 @@ async fn apply_disk_changes_to_records(
 
     for (path, file) in previous {
         if !current.contains_key(path)
-            && let Some(id) = record_id_for_head(&services, &file.head).await?
+            && let Some(id) = record_id_for_head(&services, config.organ_id, &file.head).await?
         {
             crate::write::delete_record_from_file_sync(services.clone(), id).await?;
         }
@@ -185,18 +196,32 @@ async fn apply_disk_changes_to_records(
     Ok(())
 }
 
-async fn record_id_for_head(services: &InjectedServices, head: &str) -> Result<Option<i64>, Error> {
+async fn record_id_for_head(
+    services: &InjectedServices,
+    organ_id: i64,
+    head: &str,
+) -> Result<Option<i64>, Error> {
     sqlx::query_scalar::<_, i64>(
-        "SELECT id FROM record WHERE COALESCE(head, '') = ? ORDER BY id LIMIT 1",
+        "SELECT id
+         FROM record
+         WHERE COALESCE(owner_organ_id, 1) = ?
+           AND COALESCE(head, '') = ?
+         ORDER BY id
+         LIMIT 1",
     )
+    .bind(organ_id)
     .bind(head)
     .fetch_optional(&*services.db)
     .await
     .map_err(Error::other)
 }
 
-async fn mirror_records_to_files(services: InjectedServices, dir: &Path) -> Result<(), Error> {
-    let desired = desired_files_from_records(&services).await?;
+async fn mirror_records_to_files(
+    services: InjectedServices,
+    config: &FileSyncConfig,
+) -> Result<(), Error> {
+    let dir = &config.path;
+    let desired = desired_files_from_records(&services, config).await?;
     let desired_paths = desired.keys().cloned().collect::<BTreeSet<_>>();
 
     for entry in fs::read_dir(dir)? {
@@ -221,14 +246,18 @@ async fn mirror_records_to_files(services: InjectedServices, dir: &Path) -> Resu
 
 async fn desired_files_from_records(
     services: &InjectedServices,
+    config: &FileSyncConfig,
 ) -> Result<BTreeMap<PathBuf, RecordFile>, Error> {
-    let Some(config) = active_config(services)? else {
-        return Ok(BTreeMap::new());
-    };
-    let rows = sqlx::query_as::<_, SyncRecord>("SELECT id, head, body FROM record ORDER BY id")
-        .fetch_all(&*services.db)
-        .await
-        .map_err(Error::other)?;
+    let rows = sqlx::query_as::<_, SyncRecord>(
+        "SELECT id, head, body
+         FROM record
+         WHERE COALESCE(owner_organ_id, 1) = ?
+         ORDER BY id",
+    )
+    .bind(config.organ_id)
+    .fetch_all(&*services.db)
+    .await
+    .map_err(Error::other)?;
 
     Ok(records_to_files(&config.path, rows))
 }

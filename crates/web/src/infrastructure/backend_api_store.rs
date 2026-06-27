@@ -273,8 +273,6 @@ struct ConfigurationRow {
     bucket_uri: Option<String>,
     bucket_name: Option<String>,
     bucket_region: Option<String>,
-    file_sync_enabled: i64,
-    file_sync_path: Option<String>,
     transfer_public_proposals_enabled: i64,
     transfer_known_peer_polling_enabled: i64,
     desktop_start_on_login: Option<i64>,
@@ -329,6 +327,8 @@ struct OrganRow {
     proximity: i64,
     transfer_send_received_receipts: i64,
     transfer_send_seen_receipts: i64,
+    file_sync_enabled: i64,
+    file_sync_path: Option<String>,
 }
 
 const VIEW_FIELD_SPECS: [FieldSpec; 2] = [
@@ -610,7 +610,7 @@ const KARMA_FIELD_SPECS: [FieldSpec; 7] = [
     },
 ];
 
-const CONFIGURATION_FIELD_SPECS: [FieldSpec; 26] = [
+const CONFIGURATION_FIELD_SPECS: [FieldSpec; 24] = [
     FieldSpec {
         name: "quantity",
         kind: FieldKind::NullableInteger,
@@ -676,14 +676,6 @@ const CONFIGURATION_FIELD_SPECS: [FieldSpec; 26] = [
         kind: FieldKind::NullableText,
     },
     FieldSpec {
-        name: "file_sync_enabled",
-        kind: FieldKind::BooleanInteger,
-    },
-    FieldSpec {
-        name: "file_sync_path",
-        kind: FieldKind::NullableText,
-    },
-    FieldSpec {
         name: "transfer_public_proposals_enabled",
         kind: FieldKind::BooleanInteger,
     },
@@ -733,7 +725,7 @@ const ROLE_PERMISSION_FIELD_SPECS: [FieldSpec; 2] = [
     },
 ];
 
-const ORGAN_FIELD_SPECS: [FieldSpec; 6] = [
+const ORGAN_FIELD_SPECS: [FieldSpec; 8] = [
     FieldSpec {
         name: "name",
         kind: FieldKind::Text,
@@ -757,6 +749,14 @@ const ORGAN_FIELD_SPECS: [FieldSpec; 6] = [
     FieldSpec {
         name: "transfer_send_seen_receipts",
         kind: FieldKind::BooleanInteger,
+    },
+    FieldSpec {
+        name: "file_sync_enabled",
+        kind: FieldKind::BooleanInteger,
+    },
+    FieldSpec {
+        name: "file_sync_path",
+        kind: FieldKind::NullableText,
     },
 ];
 
@@ -883,7 +883,7 @@ impl BackendApiStore {
             ),
             ApiTable::Configuration => serialize_value(
                 sqlx::query_as::<_, ConfigurationRow>(
-                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region, file_sync_enabled, file_sync_path, transfer_public_proposals_enabled, transfer_known_peer_polling_enabled, desktop_start_on_login, desktop_start_silent, automatic_update_channel, automatic_update_notify_enabled, automatic_update_install_enabled, automatic_update_last_seen_revision FROM configuration ORDER BY id",
+                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region, transfer_public_proposals_enabled, transfer_known_peer_polling_enabled, desktop_start_on_login, desktop_start_silent, automatic_update_channel, automatic_update_notify_enabled, automatic_update_install_enabled, automatic_update_last_seen_revision FROM configuration ORDER BY id",
                 )
                 .fetch_all(db)
                 .await
@@ -914,7 +914,7 @@ impl BackendApiStore {
             ),
             ApiTable::Organ => serialize_value(
                 sqlx::query_as::<_, OrganRow>(
-                    "SELECT id, name, base_url, trust_state, contact_discovery_enabled, last_seen_at, last_transfer_polled_at, proximity, transfer_send_received_receipts, transfer_send_seen_receipts FROM organ ORDER BY LOWER(name), id",
+                    "SELECT id, name, base_url, trust_state, contact_discovery_enabled, last_seen_at, last_transfer_polled_at, proximity, transfer_send_received_receipts, transfer_send_seen_receipts, file_sync_enabled, file_sync_path FROM organ ORDER BY LOWER(name), id",
                 )
                 .fetch_all(db)
                 .await
@@ -1033,7 +1033,7 @@ impl BackendApiStore {
             ),
             ApiTable::Configuration => serialize_value(
                 sqlx::query_as::<_, ConfigurationRow>(
-                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region, file_sync_enabled, file_sync_path, transfer_public_proposals_enabled, transfer_known_peer_polling_enabled, desktop_start_on_login, desktop_start_silent, automatic_update_channel, automatic_update_notify_enabled, automatic_update_install_enabled, automatic_update_last_seen_revision FROM configuration WHERE id = ?",
+                    "SELECT id, quantity, name, language, timezone, style, show_command_notifications, command_notification_seconds, delete_confirmation, error_toast_seconds, keybinding_mode, bucket_enabled, bucket_username, bucket_password, bucket_uri, bucket_name, bucket_region, transfer_public_proposals_enabled, transfer_known_peer_polling_enabled, desktop_start_on_login, desktop_start_silent, automatic_update_channel, automatic_update_notify_enabled, automatic_update_install_enabled, automatic_update_last_seen_revision FROM configuration WHERE id = ?",
                 )
                 .bind(id)
                 .fetch_one(db)
@@ -1068,7 +1068,7 @@ impl BackendApiStore {
             ),
             ApiTable::Organ => serialize_value(
                 sqlx::query_as::<_, OrganRow>(
-                    "SELECT id, name, base_url, trust_state, contact_discovery_enabled, last_seen_at, last_transfer_polled_at, proximity, transfer_send_received_receipts, transfer_send_seen_receipts FROM organ WHERE id = ?",
+                    "SELECT id, name, base_url, trust_state, contact_discovery_enabled, last_seen_at, last_transfer_polled_at, proximity, transfer_send_received_receipts, transfer_send_seen_receipts, file_sync_enabled, file_sync_path FROM organ WHERE id = ?",
                 )
                 .bind(id)
                 .fetch_one(db)

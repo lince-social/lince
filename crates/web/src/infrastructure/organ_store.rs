@@ -18,6 +18,8 @@ pub struct Organ {
     pub proximity: i64,
     pub transfer_send_received_receipts: i64,
     pub transfer_send_seen_receipts: i64,
+    pub file_sync_enabled: i64,
+    pub file_sync_path: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, FromRow)]
@@ -41,7 +43,7 @@ impl OrganStore {
 
     pub async fn list(&self) -> Result<Vec<Organ>, String> {
         let mut organs = sqlx::query_as::<_, Organ>(
-            "SELECT id, name, base_url, trust_state, contact_discovery_enabled, last_seen_at, last_transfer_polled_at, proximity, transfer_send_received_receipts, transfer_send_seen_receipts FROM organ ORDER BY LOWER(name), id",
+            "SELECT id, name, base_url, trust_state, contact_discovery_enabled, last_seen_at, last_transfer_polled_at, proximity, transfer_send_received_receipts, transfer_send_seen_receipts, file_sync_enabled, file_sync_path FROM organ ORDER BY LOWER(name), id",
         )
         .fetch_all(&*self.db)
         .await
@@ -56,7 +58,7 @@ impl OrganStore {
         };
 
         sqlx::query_as::<_, Organ>(
-            "SELECT id, name, base_url, trust_state, contact_discovery_enabled, last_seen_at, last_transfer_polled_at, proximity, transfer_send_received_receipts, transfer_send_seen_receipts FROM organ WHERE id = ? LIMIT 1",
+            "SELECT id, name, base_url, trust_state, contact_discovery_enabled, last_seen_at, last_transfer_polled_at, proximity, transfer_send_received_receipts, transfer_send_seen_receipts, file_sync_enabled, file_sync_path FROM organ WHERE id = ? LIMIT 1",
         )
             .bind(organ_id)
             .fetch_optional(&*self.db)
@@ -120,6 +122,8 @@ impl OrganStore {
             proximity: 100,
             transfer_send_received_receipts: 1,
             transfer_send_seen_receipts: 1,
+            file_sync_enabled: 0,
+            file_sync_path: None,
         })
     }
 
@@ -308,6 +312,35 @@ impl OrganStore {
             )
             .await
             .map_err(|error| format!("Nao consegui atualizar sync do orgao: {error}"))?;
+        Ok(outcome.rows_affected > 0)
+    }
+
+    pub async fn set_file_sync(
+        &self,
+        organ_id: impl ToString,
+        enabled: bool,
+        path: Option<&str>,
+    ) -> Result<bool, String> {
+        let Some(organ_id) = parse_organ_id(organ_id) else {
+            return Ok(false);
+        };
+        let path = path
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(str::to_string);
+        let outcome = self
+            .writer
+            .execute_statement(
+                "UPDATE organ SET file_sync_enabled = ?, file_sync_path = ? WHERE id = ?"
+                    .to_string(),
+                vec![
+                    SqlParameter::Integer(if enabled { 1 } else { 0 }),
+                    path.map(SqlParameter::Text).unwrap_or(SqlParameter::Null),
+                    SqlParameter::Integer(organ_id),
+                ],
+            )
+            .await
+            .map_err(|error| format!("Nao consegui atualizar file sync do orgao: {error}"))?;
         Ok(outcome.rows_affected > 0)
     }
 

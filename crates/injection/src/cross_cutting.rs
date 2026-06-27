@@ -42,7 +42,7 @@ pub struct Injected {
     pub storage: Arc<StorageService>,
     pub writer: WriteCoordinatorHandle,
     pub karma_cache: Arc<KarmaCache>,
-    pub file_sync_config: Arc<RwLock<Option<FileSyncConfig>>>,
+    pub file_sync_config: Arc<RwLock<Vec<FileSyncConfig>>>,
     pub remote_organ_auth: Arc<RwLock<HashMap<i64, String>>>,
     pub notifications: Arc<NotificationStore>,
 }
@@ -51,6 +51,7 @@ pub type InjectedServices = Arc<Injected>;
 
 #[derive(Debug, Clone)]
 pub struct FileSyncConfig {
+    pub organ_id: i64,
     pub enabled: bool,
     pub path: PathBuf,
 }
@@ -173,7 +174,7 @@ pub fn dependency_injection(
         storage,
         writer,
         karma_cache: Arc::new(KarmaCache::default()),
-        file_sync_config: Arc::new(RwLock::new(None)),
+        file_sync_config: Arc::new(RwLock::new(Vec::new())),
         remote_organ_auth: Arc::new(RwLock::new(HashMap::new())),
         notifications: Arc::new(NotificationStore::default()),
     });

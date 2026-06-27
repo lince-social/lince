@@ -93,6 +93,9 @@ pub struct OrganRow {
     pub transfer_send_received_receipts: i64,
     #[table(default = "1", check = "transfer_send_seen_receipts IN (0, 1)")]
     pub transfer_send_seen_receipts: i64,
+    #[table(default = "0", check = "file_sync_enabled IN (0, 1)")]
+    pub file_sync_enabled: i64,
+    pub file_sync_path: Option<String>,
 }
 
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]

@@ -191,6 +191,8 @@ impl BackendApiService {
                 if let Some(id) = outcome.last_insert_rowid {
                     let _ = self.store_default_organ_sync_policy(id).await;
                 }
+                ::application::file_sync::configure_from_organs(self.services.clone()).await?;
+                ::application::file_sync::sync_after_record_change(self.services.clone()).await?;
                 Ok(outcome)
             }
             ApiTable::Command
@@ -324,7 +326,10 @@ impl BackendApiService {
             }
             ApiTable::Organ => {
                 let (sql, params) = self.store.build_standard_update(table, id, object)?;
-                self.services.writer.execute_statement(sql, params).await
+                let outcome = self.services.writer.execute_statement(sql, params).await?;
+                ::application::file_sync::configure_from_organs(self.services.clone()).await?;
+                ::application::file_sync::sync_after_record_change(self.services.clone()).await?;
+                Ok(outcome)
             }
             ApiTable::Command
             | ApiTable::Query
@@ -547,6 +552,10 @@ impl BackendApiService {
             ApiTable::AppUser | ApiTable::Role | ApiTable::RolePermission
         ) {
             self.auth.refresh_cache().await?;
+        }
+        if table == ApiTable::Organ && outcome.rows_affected > 0 {
+            ::application::file_sync::configure_from_organs(self.services.clone()).await?;
+            ::application::file_sync::sync_after_record_change(self.services.clone()).await?;
         }
 
         Ok(outcome)

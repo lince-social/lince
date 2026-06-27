@@ -456,7 +456,7 @@ pub(crate) fn source() -> SandWidgetSource {
         body: body(),
         body_scripts: vec![crate::sand::WidgetScript::inline(r#"
       const CARD_STATE_KEY = "organManagement";
-      const DEFAULT_FORM = { id: "", name: "", baseUrl: "", trustState: "known", contactDiscoveryEnabled: false };
+      const DEFAULT_FORM = { id: "", name: "", baseUrl: "", trustState: "known", contactDiscoveryEnabled: false, recordSyncMode: "none" };
       const app = document.getElementById("app");
       const searchInput = document.getElementById("search-input");
       const refreshButton = document.getElementById("refresh-button");
@@ -485,6 +485,7 @@ pub(crate) fn source() -> SandWidgetSource {
       const formBaseUrlEl = document.getElementById("field-base-url");
       const formTrustStateEl = document.getElementById("field-trust-state");
       const formContactDiscoveryEl = document.getElementById("field-contact-discovery");
+      const formRecordSyncModeEl = document.getElementById("field-record-sync-mode");
       const footerEl = document.getElementById("footer-meta");
 
       let bridgeBound = false;
@@ -516,6 +517,7 @@ pub(crate) fn source() -> SandWidgetSource {
             baseUrl: typeof scoped?.draft?.baseUrl === "string" ? scoped.draft.baseUrl : "",
             trustState: typeof scoped?.draft?.trustState === "string" ? scoped.draft.trustState : "known",
             contactDiscoveryEnabled: Boolean(scoped?.draft?.contactDiscoveryEnabled),
+            recordSyncMode: normalizeRecordSyncMode(scoped?.draft?.recordSyncMode),
           },
           draftMode: scoped?.draftMode === "create" ? "create" : "edit",
         };
@@ -565,6 +567,24 @@ pub(crate) fn source() -> SandWidgetSource {
         return new Date(unixValue * 1000).toLocaleString();
       }
 
+      function normalizeRecordSyncMode(value) {
+        const mode = String(value || "none").trim();
+        return ["none", "sync_outgoing", "sync_incoming", "sync_both"].includes(mode) ? mode : "none";
+      }
+
+      function formatRecordSyncMode(value) {
+        switch (normalizeRecordSyncMode(value)) {
+          case "sync_outgoing":
+            return "Sync outgoing";
+          case "sync_incoming":
+            return "Sync incoming";
+          case "sync_both":
+            return "Sync both";
+          default:
+            return "No record sync";
+        }
+      }
+
       function setStatus(text, tone) {
         statusEl.textContent = text;
         statusEl.dataset.tone = tone || "idle";
@@ -586,7 +606,7 @@ pub(crate) fn source() -> SandWidgetSource {
           return items;
         }
         return items.filter((organ) => {
-          const haystack = [organ.id, organ.name, organ.baseUrl, organ.sessionState, organ.usernameHint, organ.lastError]
+          const haystack = [organ.id, organ.name, organ.baseUrl, organ.sessionState, organ.usernameHint, organ.lastError, organ.recordSyncMode]
             .filter(Boolean)
             .join(" ")
             .toLowerCase();
@@ -627,6 +647,7 @@ pub(crate) fn source() -> SandWidgetSource {
           baseUrl: organ.baseUrl,
           trustState: organ.trustState,
           contactDiscoveryEnabled: organ.contactDiscoveryEnabled,
+          recordSyncMode: organ.recordSyncMode,
         };
       }
 
@@ -662,6 +683,7 @@ pub(crate) fn source() -> SandWidgetSource {
         }
         chips.push(chip(organ.trustState || "known", organ.trustState === "blocked" ? "danger" : organ.trustState === "unknown" ? "warn" : "ok"));
         chips.push(chip(organ.contactDiscoveryEnabled ? "discoverable" : "private", organ.contactDiscoveryEnabled ? "ok" : "accent"));
+        chips.push(chip(formatRecordSyncMode(organ.recordSyncMode), organ.recordSyncMode === "none" ? "accent" : "ok"));
         return chips.join("");
       }
 
@@ -733,6 +755,7 @@ pub(crate) fn source() -> SandWidgetSource {
         formBaseUrlEl.value = draft.baseUrl || "";
         formTrustStateEl.value = draft.trustState || "known";
         formContactDiscoveryEl.checked = Boolean(draft.contactDiscoveryEnabled);
+        formRecordSyncModeEl.value = normalizeRecordSyncMode(draft.recordSyncMode);
         deleteButton.disabled = isCreate || !organ || state.loading;
         saveButton.disabled = state.loading;
         resetButton.disabled = state.loading;
@@ -776,6 +799,7 @@ pub(crate) fn source() -> SandWidgetSource {
           baseUrl: String(nextDraft.baseUrl || ""),
           trustState: String(nextDraft.trustState || "known"),
           contactDiscoveryEnabled: Boolean(nextDraft.contactDiscoveryEnabled),
+          recordSyncMode: normalizeRecordSyncMode(nextDraft.recordSyncMode),
         };
         persistUiSoon();
         render();
@@ -801,6 +825,7 @@ pub(crate) fn source() -> SandWidgetSource {
             baseUrl: organ.baseUrl,
             trustState: organ.trustState,
             contactDiscoveryEnabled: organ.contactDiscoveryEnabled,
+            recordSyncMode: organ.recordSyncMode,
           };
         } else {
           state.ui.draftMode = "create";
@@ -857,6 +882,8 @@ pub(crate) fn source() -> SandWidgetSource {
           baseUrl: String(raw.baseUrl || "").trim(),
           trustState: String(raw.trustState || "known").trim() || "known",
           contactDiscoveryEnabled: Boolean(raw.contactDiscoveryEnabled),
+          syncResources: Array.isArray(raw.syncResources) ? raw.syncResources.map(String) : [],
+          recordSyncMode: normalizeRecordSyncMode(raw.recordSyncMode),
           requiresAuth: Boolean(raw.requiresAuth),
           authenticated: Boolean(raw.authenticated),
           sessionState: typeof raw.sessionState === "string" ? raw.sessionState : null,
@@ -872,6 +899,7 @@ pub(crate) fn source() -> SandWidgetSource {
           base_url: formBaseUrlEl.value.trim(),
           trust_state: formTrustStateEl.value || "known",
           contact_discovery_enabled: Boolean(formContactDiscoveryEl.checked),
+          record_sync_mode: normalizeRecordSyncMode(formRecordSyncModeEl.value),
         };
       }
 
@@ -989,6 +1017,10 @@ pub(crate) fn source() -> SandWidgetSource {
       });
       formContactDiscoveryEl.addEventListener("change", () => {
         patchDraft({ ...state.ui.draft, contactDiscoveryEnabled: Boolean(formContactDiscoveryEl.checked) });
+        requestPreviewFor(state.ui.draftMode === "create" ? "POST" : "PATCH", state.ui.draftMode === "create" ? "/organ" : "/organ/" + encodeURIComponent(state.ui.selectedId || "{organ_id}"), buildPayload());
+      });
+      formRecordSyncModeEl.addEventListener("change", () => {
+        patchDraft({ ...state.ui.draft, recordSyncMode: normalizeRecordSyncMode(formRecordSyncModeEl.value) });
         requestPreviewFor(state.ui.draftMode === "create" ? "POST" : "PATCH", state.ui.draftMode === "create" ? "/organ" : "/organ/" + encodeURIComponent(state.ui.selectedId || "{organ_id}"), buildPayload());
       });
 
@@ -1147,6 +1179,16 @@ fn body() -> Markup {
                                 label class="checkField" {
                                     input id="field-contact-discovery" type="checkbox";
                                     span class="fieldHint" { "Expose this Organ through contact discovery" }
+                                }
+                                div class="fieldWrap" {
+                                    label class="label" for="field-record-sync-mode" { "Record sync" }
+                                    select id="field-record-sync-mode" class="field" {
+                                        option value="none" selected { "None" }
+                                        option value="sync_outgoing" { "Sync outgoing records" }
+                                        option value="sync_incoming" { "Sync incoming records" }
+                                        option value="sync_both" { "Sync both directions" }
+                                    }
+                                    div class="fieldHint" { "Stores organ_sync_policy for record bundle sync. None is the default." }
                                 }
                                 div class="actions" {
                                     button id="save-button" class="button button--primary" type="button" { "Save organ" }

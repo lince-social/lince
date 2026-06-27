@@ -6,6 +6,7 @@ pub mod notifications;
 pub mod operation;
 pub mod packages;
 pub mod servers;
+pub mod sync;
 pub mod terminal;
 pub mod trail;
 pub mod widget_bridge;

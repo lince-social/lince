@@ -4,6 +4,12 @@ use lince_persistence_table_derive::Table;
 #[table(name = "record_extension")]
 #[table(strict)]
 #[table(index(
+    name = "uq_record_extension_sync_uid",
+    columns = "sync_uid",
+    unique,
+    where = "sync_uid IS NOT NULL"
+))]
+#[table(index(
     name = "idx_record_extension_namespace_record",
     columns = "namespace, record_id"
 ))]
@@ -23,6 +29,10 @@ pub struct RecordExtensionRow {
     pub version: i64,
     #[table(check = "json_valid(freestyle_data_structure)")]
     pub freestyle_data_structure: String,
+    #[table(check = "sync_uid IS NULL OR length(trim(sync_uid)) > 0")]
+    pub sync_uid: Option<String>,
+    #[table(references = "organ(id)", check = "origin_organ_id IS NULL OR origin_organ_id > 0")]
+    pub origin_organ_id: Option<i64>,
     #[table(
         default = "CURRENT_TIMESTAMP",
         check = "julianday(created_at) IS NOT NULL"
@@ -38,6 +48,12 @@ pub struct RecordExtensionRow {
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
 #[table(name = "record_link")]
 #[table(strict)]
+#[table(index(
+    name = "uq_record_link_sync_uid",
+    columns = "sync_uid",
+    unique,
+    where = "sync_uid IS NOT NULL"
+))]
 #[table(index(
     name = "idx_record_link_record_type",
     columns = "record_id, link_type, target_table"
@@ -65,6 +81,10 @@ pub struct RecordLinkRow {
     pub position: Option<f64>,
     #[table(check = "freestyle_data_structure IS NULL OR json_valid(freestyle_data_structure)")]
     pub freestyle_data_structure: Option<String>,
+    #[table(check = "sync_uid IS NULL OR length(trim(sync_uid)) > 0")]
+    pub sync_uid: Option<String>,
+    #[table(references = "organ(id)", check = "origin_organ_id IS NULL OR origin_organ_id > 0")]
+    pub origin_organ_id: Option<i64>,
     #[table(
         default = "CURRENT_TIMESTAMP",
         check = "julianday(created_at) IS NOT NULL"
@@ -80,6 +100,12 @@ pub struct RecordLinkRow {
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
 #[table(name = "record_comment")]
 #[table(strict)]
+#[table(index(
+    name = "uq_record_comment_sync_uid",
+    columns = "sync_uid",
+    unique,
+    where = "sync_uid IS NOT NULL"
+))]
 #[table(index(
     name = "idx_record_comment_record_created",
     columns = "record_id, created_at DESC"
@@ -108,11 +134,21 @@ pub struct RecordCommentRow {
     pub updated_at: String,
     #[table(check = "deleted_at IS NULL OR julianday(deleted_at) IS NOT NULL")]
     pub deleted_at: Option<String>,
+    #[table(check = "sync_uid IS NULL OR length(trim(sync_uid)) > 0")]
+    pub sync_uid: Option<String>,
+    #[table(references = "organ(id)", check = "origin_organ_id IS NULL OR origin_organ_id > 0")]
+    pub origin_organ_id: Option<i64>,
 }
 
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
 #[table(name = "record_worklog")]
 #[table(strict)]
+#[table(index(
+    name = "uq_record_worklog_sync_uid",
+    columns = "sync_uid",
+    unique,
+    where = "sync_uid IS NOT NULL"
+))]
 #[table(index(
     name = "idx_record_worklog_record_started",
     columns = "record_id, started_at DESC"
@@ -164,11 +200,21 @@ pub struct RecordWorklogRow {
         check = "julianday(updated_at) IS NOT NULL"
     )]
     pub updated_at: String,
+    #[table(check = "sync_uid IS NULL OR length(trim(sync_uid)) > 0")]
+    pub sync_uid: Option<String>,
+    #[table(references = "organ(id)", check = "origin_organ_id IS NULL OR origin_organ_id > 0")]
+    pub origin_organ_id: Option<i64>,
 }
 
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
 #[table(name = "record_resource_ref")]
 #[table(strict)]
+#[table(index(
+    name = "uq_record_resource_ref_sync_uid",
+    columns = "sync_uid",
+    unique,
+    where = "sync_uid IS NOT NULL"
+))]
 #[table(index(
     name = "idx_record_resource_ref_record_position",
     columns = "record_id, position, id"
@@ -203,12 +249,22 @@ pub struct RecordResourceRefRow {
         check = "julianday(updated_at) IS NOT NULL"
     )]
     pub updated_at: String,
+    #[table(check = "sync_uid IS NULL OR length(trim(sync_uid)) > 0")]
+    pub sync_uid: Option<String>,
+    #[table(references = "organ(id)", check = "origin_organ_id IS NULL OR origin_organ_id > 0")]
+    pub origin_organ_id: Option<i64>,
 }
 
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
 #[allow(dead_code)]
 #[table(name = "work_metadata")]
 #[table(strict)]
+#[table(index(
+    name = "uq_work_metadata_sync_uid",
+    columns = "sync_uid",
+    unique,
+    where = "sync_uid IS NOT NULL"
+))]
 #[table(index(name = "idx_work_metadata_owner", columns = "owner_kind, owner_id"))]
 #[table(index(name = "idx_work_metadata_status", columns = "status"))]
 #[table(index(
@@ -247,12 +303,22 @@ pub struct WorkMetadataRow {
         check = "julianday(updated_at) IS NOT NULL"
     )]
     pub updated_at: String,
+    #[table(check = "sync_uid IS NULL OR length(trim(sync_uid)) > 0")]
+    pub sync_uid: Option<String>,
+    #[table(references = "organ(id)", check = "origin_organ_id IS NULL OR origin_organ_id > 0")]
+    pub origin_organ_id: Option<i64>,
 }
 
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
 #[allow(dead_code)]
 #[table(name = "work_subject")]
 #[table(strict)]
+#[table(index(
+    name = "uq_work_subject_sync_uid",
+    columns = "sync_uid",
+    unique,
+    where = "sync_uid IS NOT NULL"
+))]
 #[table(index(
     name = "uq_work_subject_app_user",
     columns = "app_user_id",
@@ -305,12 +371,22 @@ pub struct WorkSubjectRow {
         check = "julianday(updated_at) IS NOT NULL"
     )]
     pub updated_at: String,
+    #[table(check = "sync_uid IS NULL OR length(trim(sync_uid)) > 0")]
+    pub sync_uid: Option<String>,
+    #[table(references = "organ(id)", check = "origin_organ_id IS NULL OR origin_organ_id > 0")]
+    pub origin_organ_id: Option<i64>,
 }
 
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
 #[allow(dead_code)]
 #[table(name = "work_assignment")]
 #[table(strict)]
+#[table(index(
+    name = "uq_work_assignment_sync_uid",
+    columns = "sync_uid",
+    unique,
+    where = "sync_uid IS NOT NULL"
+))]
 #[table(index(name = "idx_work_assignment_metadata", columns = "work_metadata_id"))]
 #[table(index(name = "idx_work_assignment_subject", columns = "work_subject_id"))]
 #[table(index(
@@ -340,4 +416,8 @@ pub struct WorkAssignmentRow {
         check = "julianday(updated_at) IS NOT NULL"
     )]
     pub updated_at: String,
+    #[table(check = "sync_uid IS NULL OR length(trim(sync_uid)) > 0")]
+    pub sync_uid: Option<String>,
+    #[table(references = "organ(id)", check = "origin_organ_id IS NULL OR origin_organ_id > 0")]
+    pub origin_organ_id: Option<i64>,
 }

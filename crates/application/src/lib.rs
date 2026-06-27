@@ -13,6 +13,7 @@ pub mod karma_analysis;
 pub mod mosca;
 pub mod operation;
 pub mod query;
+pub mod record_sync;
 pub mod subscription;
 pub mod sum;
 pub mod table;

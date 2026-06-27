@@ -7,6 +7,7 @@ use std::{
 };
 
 use crate::karma::{deliver_record_karma, deliver_transfer_karma, refresh_karma_cache};
+use crate::record_sync::{RecordSyncAction, SyncOrigin};
 
 pub async fn execute_record_insert_returning_id(
     services: InjectedServices,
@@ -20,7 +21,8 @@ pub async fn execute_record_insert_returning_id(
     if outcome.rows_affected > 0
         && let Some(id) = outcome.last_insert_rowid
     {
-        handle_record_change(services, [id as u32]).await?;
+        handle_record_change(services, [id as u32], RecordSyncAction::Insert, SyncOrigin::Local)
+            .await?;
     }
     Ok(outcome)
 }
@@ -34,7 +36,7 @@ pub async fn execute_record_update(
     let ids = record_ids.into_iter().collect::<Vec<_>>();
     let outcome = execute_statement(services.clone(), sql, params).await?;
     if outcome.rows_affected > 0 {
-        handle_record_change(services, ids).await?;
+        handle_record_change(services, ids, RecordSyncAction::Update, SyncOrigin::Local).await?;
     }
     Ok(outcome)
 }
@@ -45,10 +47,103 @@ pub async fn execute_record_delete(
     sql: impl Into<String>,
     params: Vec<SqlParameter>,
 ) -> Result<WriteOutcome, Error> {
+    let identity = crate::record_sync::capture_record_identity(services.clone(), id).await?;
     let outcome = execute_statement(services.clone(), sql, params).await?;
     if outcome.rows_affected > 0 {
         cleanup_deleted_record_sidecars(services.clone(), id).await?;
-        handle_record_change(services, [id]).await?;
+        crate::record_sync::enqueue_captured_record_delete(
+            services.clone(),
+            identity,
+            SyncOrigin::Local,
+        )
+        .await?;
+        handle_record_business_change(services, [id]).await?;
+    }
+    Ok(outcome)
+}
+
+pub async fn execute_record_sidecar_insert_returning_id(
+    services: InjectedServices,
+    table_name: &'static str,
+    root_record_id: Option<u32>,
+    sql: impl Into<String>,
+    params: Vec<SqlParameter>,
+) -> Result<WriteOutcome, Error> {
+    let outcome = services
+        .writer
+        .execute_statement_returning_id(sql.into(), params)
+        .await?;
+    if outcome.rows_affected > 0
+        && let Some(row_id) = outcome.last_insert_rowid
+        && let Some(root_record_id) = root_record_id
+    {
+        handle_record_business_change(services.clone(), [root_record_id]).await?;
+        crate::record_sync::enqueue_record_sidecar_operation(
+            services,
+            table_name,
+            row_id,
+            root_record_id,
+            RecordSyncAction::Insert,
+            SyncOrigin::Local,
+        )
+        .await?;
+    }
+    Ok(outcome)
+}
+
+pub async fn execute_record_sidecar_update(
+    services: InjectedServices,
+    table_name: &'static str,
+    row_id: i64,
+    root_record_id: Option<u32>,
+    sql: impl Into<String>,
+    params: Vec<SqlParameter>,
+) -> Result<WriteOutcome, Error> {
+    let root_record_id = match root_record_id {
+        Some(id) => Some(id),
+        None => resolve_record_sidecar_root_record_id(services.clone(), table_name, row_id).await?,
+    };
+    let outcome = execute_statement(services.clone(), sql, params).await?;
+    if outcome.rows_affected > 0
+        && let Some(root_record_id) = root_record_id
+    {
+        handle_record_business_change(services.clone(), [root_record_id]).await?;
+        crate::record_sync::enqueue_record_sidecar_operation(
+            services,
+            table_name,
+            row_id,
+            root_record_id,
+            RecordSyncAction::Update,
+            SyncOrigin::Local,
+        )
+        .await?;
+    }
+    Ok(outcome)
+}
+
+pub async fn execute_record_sidecar_delete(
+    services: InjectedServices,
+    table_name: &'static str,
+    row_id: i64,
+    sql: impl Into<String>,
+    params: Vec<SqlParameter>,
+) -> Result<WriteOutcome, Error> {
+    let root_record_id =
+        resolve_record_sidecar_root_record_id(services.clone(), table_name, row_id).await?;
+    let outcome = execute_statement(services.clone(), sql, params).await?;
+    if outcome.rows_affected > 0
+        && let Some(root_record_id) = root_record_id
+    {
+        handle_record_business_change(services.clone(), [root_record_id]).await?;
+        crate::record_sync::enqueue_record_sidecar_operation(
+            services,
+            table_name,
+            row_id,
+            root_record_id,
+            RecordSyncAction::Delete,
+            SyncOrigin::Local,
+        )
+        .await?;
     }
     Ok(outcome)
 }
@@ -160,7 +255,29 @@ pub async fn table_patch_row(
     .await?;
 
     if table == "record" && _outcome.rows_affected > 0 {
-        handle_record_change(services.clone(), [id as u32]).await?;
+        handle_record_change(
+            services.clone(),
+            [id as u32],
+            RecordSyncAction::Update,
+            SyncOrigin::Local,
+        )
+        .await?;
+    }
+    if is_record_sidecar_table(&table) && _outcome.rows_affected > 0 {
+        if let Some(root_record_id) =
+            resolve_record_sidecar_root_record_id(services.clone(), &table, id).await?
+        {
+            handle_record_business_change(services.clone(), [root_record_id]).await?;
+            crate::record_sync::enqueue_record_sidecar_operation(
+                services.clone(),
+                &table,
+                id,
+                root_record_id,
+                RecordSyncAction::Update,
+                SyncOrigin::Local,
+            )
+            .await?;
+        }
     }
     if table == "transfer" && _outcome.rows_affected > 0 {
         handle_transfer_change(services.clone(), [id as u32]).await?;
@@ -183,6 +300,20 @@ pub async fn table_delete_row(
         table.as_str(),
         "karma" | "karma_condition" | "karma_consequence"
     );
+    let deleted_record_identity = if table == "record" {
+        Some(crate::record_sync::capture_record_identity(
+            services.clone(),
+            id as u32,
+        )
+        .await?)
+    } else {
+        None
+    };
+    let deleted_sidecar_root_record_id = if is_record_sidecar_table(&table) {
+        resolve_record_sidecar_root_record_id(services.clone(), &table, id).await?
+    } else {
+        None
+    };
 
     let _outcome = execute_statement(
         services.clone(),
@@ -192,7 +323,30 @@ pub async fn table_delete_row(
     .await?;
 
     if table == "record" && _outcome.rows_affected > 0 {
-        handle_record_change(services.clone(), [id as u32]).await?;
+        if let Some(identity) = deleted_record_identity {
+            crate::record_sync::enqueue_captured_record_delete(
+                services.clone(),
+                identity,
+                SyncOrigin::Local,
+            )
+            .await?;
+        }
+        handle_record_business_change(services.clone(), [id as u32]).await?;
+    }
+    if is_record_sidecar_table(&table)
+        && _outcome.rows_affected > 0
+        && let Some(root_record_id) = deleted_sidecar_root_record_id
+    {
+        handle_record_business_change(services.clone(), [root_record_id]).await?;
+        crate::record_sync::enqueue_record_sidecar_operation(
+            services.clone(),
+            &table,
+            id,
+            root_record_id,
+            RecordSyncAction::Delete,
+            SyncOrigin::Local,
+        )
+        .await?;
     }
     if table == "transfer" && _outcome.rows_affected > 0 {
         handle_transfer_change(services.clone(), [id as u32]).await?;
@@ -214,6 +368,9 @@ pub async fn table_insert_row(
         table.as_str(),
         "karma" | "karma_condition" | "karma_consequence"
     );
+    let insert_root_record_id = values
+        .get("record_id")
+        .and_then(|value| value.parse::<u32>().ok());
     if values.is_empty() {
         let outcome = execute_statement(
             services.clone(),
@@ -225,7 +382,19 @@ pub async fn table_insert_row(
             && outcome.rows_affected > 0
             && let Some(id) = outcome.last_insert_rowid
         {
-            handle_record_change(services.clone(), [id as u32]).await?;
+            handle_record_change(
+                services.clone(),
+                [id as u32],
+                RecordSyncAction::Insert,
+                SyncOrigin::Local,
+            )
+            .await?;
+        }
+        if is_record_sidecar_table(&table)
+            && outcome.rows_affected > 0
+            && let Some(id) = outcome.last_insert_rowid
+        {
+            crate::record_sync::ensure_table_row_identity(services.clone(), &table, id).await?;
         }
         if table == "transfer"
             && outcome.rows_affected > 0
@@ -269,7 +438,32 @@ pub async fn table_insert_row(
         && outcome.rows_affected > 0
         && let Some(id) = outcome.last_insert_rowid
     {
-        handle_record_change(services.clone(), [id as u32]).await?;
+        handle_record_change(
+            services.clone(),
+            [id as u32],
+            RecordSyncAction::Insert,
+            SyncOrigin::Local,
+        )
+        .await?;
+    }
+    if is_record_sidecar_table(&table)
+        && outcome.rows_affected > 0
+        && let Some(id) = outcome.last_insert_rowid
+    {
+        if let Some(root_record_id) = insert_root_record_id {
+            handle_record_business_change(services.clone(), [root_record_id]).await?;
+            crate::record_sync::enqueue_record_sidecar_operation(
+                services.clone(),
+                &table,
+                id,
+                root_record_id,
+                RecordSyncAction::Insert,
+                SyncOrigin::Local,
+            )
+            .await?;
+        } else {
+            crate::record_sync::ensure_table_row_identity(services.clone(), &table, id).await?;
+        }
     }
     if table == "transfer"
         && outcome.rows_affected > 0
@@ -378,7 +572,13 @@ pub async fn set_record_quantity(
     .await?;
 
     if outcome.rows_affected > 0 {
-        handle_record_change(services.clone(), [id]).await?;
+        handle_record_change(
+            services.clone(),
+            [id],
+            RecordSyncAction::Update,
+            SyncOrigin::Local,
+        )
+        .await?;
     }
 
     Ok(())
@@ -503,7 +703,33 @@ fn optional_bool_parameter(value: Option<bool>) -> SqlParameter {
     }
 }
 
+fn is_record_sidecar_table(table_name: &str) -> bool {
+    matches!(
+        table_name,
+        "record_extension"
+            | "record_link"
+            | "record_comment"
+            | "record_worklog"
+            | "record_resource_ref"
+            | "work_metadata"
+            | "work_assignment"
+            | "work_subject"
+    )
+}
+
 async fn handle_record_change(
+    services: InjectedServices,
+    record_ids: impl IntoIterator<Item = u32>,
+    action: RecordSyncAction,
+    origin: SyncOrigin,
+) -> Result<(), Error> {
+    let ids = record_ids.into_iter().collect::<Vec<_>>();
+    handle_record_business_change(services.clone(), ids.clone()).await?;
+    crate::record_sync::enqueue_record_operations(services, ids, action, origin).await?;
+    Ok(())
+}
+
+async fn handle_record_business_change(
     services: InjectedServices,
     record_ids: impl IntoIterator<Item = u32>,
 ) -> Result<(), Error> {
@@ -513,6 +739,48 @@ async fn handle_record_change(
     }
     crate::file_sync::sync_after_record_change(services).await?;
     Ok(())
+}
+
+async fn resolve_record_sidecar_root_record_id(
+    services: InjectedServices,
+    table_name: &str,
+    row_id: i64,
+) -> Result<Option<u32>, Error> {
+    if row_id <= 0 {
+        return Ok(None);
+    }
+    let sql = match table_name {
+        "record_extension"
+        | "record_link"
+        | "record_comment"
+        | "record_worklog"
+        | "record_resource_ref" => {
+            format!("SELECT record_id FROM {table_name} WHERE id = ?")
+        }
+        "work_metadata" => {
+            "SELECT owner_id FROM work_metadata WHERE id = ? AND owner_kind = 'record'".to_string()
+        }
+        "work_assignment" => {
+            "SELECT metadata.owner_id
+             FROM work_assignment assignment
+             JOIN work_metadata metadata ON metadata.id = assignment.work_metadata_id
+             WHERE assignment.id = ? AND metadata.owner_kind = 'record'"
+                .to_string()
+        }
+        "work_subject" => return Ok(None),
+        _ => {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                format!("Table {table_name} is not part of record sync"),
+            ));
+        }
+    };
+    let id = sqlx::query_scalar::<_, i64>(&sql)
+        .bind(row_id)
+        .fetch_optional(&*services.db)
+        .await
+        .map_err(Error::other)?;
+    Ok(id.and_then(|value| u32::try_from(value).ok()))
 }
 
 async fn handle_transfer_change(

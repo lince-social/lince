@@ -20,6 +20,14 @@ pub struct Organ {
     pub transfer_send_seen_receipts: i64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct OrganSyncPolicy {
+    pub organ_id: i64,
+    pub sync_resources: String,
+    pub record_sync_mode: String,
+}
+
 #[derive(Clone)]
 pub struct OrganStore {
     db: Arc<Pool<Sqlite>>,
@@ -100,6 +108,7 @@ impl OrganStore {
         let Some(id) = outcome.last_insert_rowid else {
             return Err("Nao consegui obter o id do orgao criado.".into());
         };
+        self.set_record_sync_policy(id, "none").await?;
         Ok(Organ {
             id,
             name,
@@ -245,6 +254,63 @@ impl OrganStore {
         Ok(outcome.rows_affected > 0)
     }
 
+    pub async fn get_sync_policy(
+        &self,
+        organ_id: impl ToString,
+    ) -> Result<Option<OrganSyncPolicy>, String> {
+        let Some(organ_id) = parse_organ_id(organ_id) else {
+            return Ok(None);
+        };
+        sqlx::query_as::<_, OrganSyncPolicy>(
+            "SELECT organ_id, sync_resources, record_sync_mode
+             FROM organ_sync_policy
+             WHERE organ_id = ?
+             LIMIT 1",
+        )
+        .bind(organ_id)
+        .fetch_optional(&*self.db)
+        .await
+        .map_err(|error| format!("Nao consegui carregar politica de sync do orgao: {error}"))
+    }
+
+    pub async fn set_record_sync_policy(
+        &self,
+        organ_id: impl ToString,
+        record_sync_mode: &str,
+    ) -> Result<bool, String> {
+        let Some(organ_id) = parse_organ_id(organ_id) else {
+            return Ok(false);
+        };
+        let record_sync_mode = normalize_record_sync_mode(record_sync_mode)?;
+        let sync_resources = if record_sync_mode == "none" {
+            "[]"
+        } else {
+            r#"["record"]"#
+        };
+        let outcome = self
+            .writer
+            .execute_statement(
+                "INSERT INTO organ_sync_policy(
+                    organ_id,
+                    sync_resources,
+                    record_sync_mode
+                 ) VALUES (?, ?, ?)
+                 ON CONFLICT(organ_id) DO UPDATE SET
+                    sync_resources = excluded.sync_resources,
+                    record_sync_mode = excluded.record_sync_mode,
+                    updated_at = CURRENT_TIMESTAMP"
+                    .to_string(),
+                vec![
+                    SqlParameter::Integer(organ_id),
+                    SqlParameter::Text(sync_resources.to_string()),
+                    SqlParameter::Text(record_sync_mode),
+                ],
+            )
+            .await
+            .map_err(|error| format!("Nao consegui atualizar sync do orgao: {error}"))?;
+        Ok(outcome.rows_affected > 0)
+    }
+
     pub async fn mark_seen_by_base_url(&self, base_url: &str) -> Result<bool, String> {
         let Some(organ) = self.find_by_base_url(base_url).await? else {
             return Ok(false);
@@ -384,6 +450,14 @@ fn normalize_trust_state(value: &str) -> Result<String, String> {
     match value.as_str() {
         "unknown" | "known" | "blocked" => Ok(value),
         _ => Err("Estado de confianca do orgao invalido.".into()),
+    }
+}
+
+fn normalize_record_sync_mode(value: &str) -> Result<String, String> {
+    let value = value.trim().to_lowercase();
+    match value.as_str() {
+        "none" | "sync_outgoing" | "sync_incoming" | "sync_both" => Ok(value),
+        _ => Err("Modo de sync de record invalido.".into()),
     }
 }
 

@@ -95,5 +95,6 @@ jobs:
             REPO_DIR="$REPO_DIR" \
             BRANCH="$BRANCH" \
             SERVICE_NAME=lince \
+            LINCE_SERVICE_PATTERN='lince*.service' \
             REMOTE_BINARY=/tmp/lince-deploy/deploy-artifact/lince \
             bash "$REPO_DIR/scripts/deploy/dev.sh" install-remote-binary

@@ -37,6 +37,7 @@ pub async fn configure_from_active_configuration(services: InjectedServices) -> 
 }
 
 pub async fn configure_from_organs(services: InjectedServices) -> Result<(), Error> {
+    tracing::info!("file sync: loading organ file sync configuration");
     let rows = sqlx::query_as::<_, (i64, i64, Option<String>)>(
         "SELECT id, file_sync_enabled, file_sync_path FROM organ ORDER BY id",
     )
@@ -46,12 +47,26 @@ pub async fn configure_from_organs(services: InjectedServices) -> Result<(), Err
 
     let mut configs = Vec::with_capacity(rows.len());
     for (organ_id, enabled, path) in rows {
-        configs.push(FileSyncConfig {
+        let config = FileSyncConfig {
             organ_id,
             enabled: enabled != 0,
             path: resolve_sync_path(organ_id, path.as_deref())?,
-        });
+        };
+        tracing::info!(
+            organ_id = config.organ_id,
+            enabled = config.enabled,
+            path = %config.path.display(),
+            "file sync: loaded organ config"
+        );
+        configs.push(config);
     }
+
+    let enabled_count = configs.iter().filter(|config| config.enabled).count();
+    tracing::info!(
+        total = configs.len(),
+        enabled = enabled_count,
+        "file sync: organ configuration ready"
+    );
 
     *services
         .file_sync_config
@@ -63,7 +78,17 @@ pub async fn configure_from_organs(services: InjectedServices) -> Result<(), Err
 
 pub async fn start_if_enabled(services: InjectedServices) -> Result<(), Error> {
     let configs = active_configs(&services)?;
+    tracing::info!(
+        total = configs.len(),
+        enabled = configs.iter().filter(|config| config.enabled).count(),
+        "file sync: startup check"
+    );
     for config in configs.into_iter().filter(|config| config.enabled) {
+        tracing::info!(
+            organ_id = config.organ_id,
+            path = %config.path.display(),
+            "file sync: starting enabled organ sync"
+        );
         fs::create_dir_all(&config.path)?;
         mirror_records_to_files(services.clone(), &config).await?;
         tokio::spawn(watch_file_sync_dir(services.clone(), config));
@@ -73,10 +98,21 @@ pub async fn start_if_enabled(services: InjectedServices) -> Result<(), Error> {
 }
 
 pub async fn sync_after_record_change(services: InjectedServices) -> Result<(), Error> {
-    for config in active_configs(&services)?
+    let configs = active_configs(&services)?;
+    tracing::info!(
+        total = configs.len(),
+        enabled = configs.iter().filter(|config| config.enabled).count(),
+        "file sync: sync-after-change requested"
+    );
+    for config in configs
         .into_iter()
         .filter(|config| config.enabled)
     {
+        tracing::info!(
+            organ_id = config.organ_id,
+            path = %config.path.display(),
+            "file sync: mirroring records after change"
+        );
         fs::create_dir_all(&config.path)?;
         mirror_records_to_files(services.clone(), &config).await?;
     }
@@ -108,8 +144,22 @@ fn resolve_sync_path(organ_id: i64, configured_path: Option<&str>) -> Result<Pat
 async fn watch_file_sync_dir(services: InjectedServices, config: FileSyncConfig) {
     let mut snapshot = match scan_disk_files(&config.path) {
         Ok(files) => files,
-        Err(_) => BTreeMap::new(),
+        Err(error) => {
+            tracing::warn!(
+                organ_id = config.organ_id,
+                path = %config.path.display(),
+                error = %error,
+                "file sync: initial disk scan failed"
+            );
+            BTreeMap::new()
+        }
     };
+    tracing::info!(
+        organ_id = config.organ_id,
+        path = %config.path.display(),
+        files = snapshot.len(),
+        "file sync: watcher started"
+    );
     let mut interval = tokio::time::interval(WATCH_INTERVAL);
 
     loop {
@@ -117,12 +167,28 @@ async fn watch_file_sync_dir(services: InjectedServices, config: FileSyncConfig)
 
         let desired = match desired_files_from_records(&services, &config).await {
             Ok(files) => files,
-            Err(_) => continue,
+            Err(error) => {
+                tracing::warn!(
+                    organ_id = config.organ_id,
+                    path = %config.path.display(),
+                    error = %error,
+                    "file sync: watcher could not load desired records"
+                );
+                continue;
+            }
         };
 
         let current = match scan_disk_files(&config.path) {
             Ok(files) => files,
-            Err(_) => continue,
+            Err(error) => {
+                tracing::warn!(
+                    organ_id = config.organ_id,
+                    path = %config.path.display(),
+                    error = %error,
+                    "file sync: watcher disk scan failed"
+                );
+                continue;
+            }
         };
 
         if disk_matches_desired(&current, &desired) {
@@ -132,6 +198,14 @@ async fn watch_file_sync_dir(services: InjectedServices, config: FileSyncConfig)
 
         if apply_disk_changes_to_records(services.clone(), &config, &snapshot, &current)
             .await
+            .inspect_err(|error| {
+                tracing::warn!(
+                    organ_id = config.organ_id,
+                    path = %config.path.display(),
+                    error = %error,
+                    "file sync: applying disk changes failed"
+                );
+            })
             .is_err()
         {
             continue;
@@ -139,6 +213,14 @@ async fn watch_file_sync_dir(services: InjectedServices, config: FileSyncConfig)
 
         if mirror_records_to_files(services.clone(), &config)
             .await
+            .inspect_err(|error| {
+                tracing::warn!(
+                    organ_id = config.organ_id,
+                    path = %config.path.display(),
+                    error = %error,
+                    "file sync: watcher mirror failed"
+                );
+            })
             .is_err()
         {
             continue;
@@ -146,7 +228,15 @@ async fn watch_file_sync_dir(services: InjectedServices, config: FileSyncConfig)
 
         snapshot = match scan_disk_files(&config.path) {
             Ok(files) => files,
-            Err(_) => BTreeMap::new(),
+            Err(error) => {
+                tracing::warn!(
+                    organ_id = config.organ_id,
+                    path = %config.path.display(),
+                    error = %error,
+                    "file sync: post-mirror disk scan failed"
+                );
+                BTreeMap::new()
+            }
         };
     }
 }
@@ -164,6 +254,12 @@ async fn apply_disk_changes_to_records(
                 if let Some(id) =
                     record_id_for_head(&services, config.organ_id, &previous_file.head).await?
                 {
+                    tracing::info!(
+                        organ_id = config.organ_id,
+                        record_id = id,
+                        path = %path.display(),
+                        "file sync: updating record from changed file"
+                    );
                     crate::write::update_record_head_body_from_file_sync(
                         services.clone(),
                         id,
@@ -174,6 +270,11 @@ async fn apply_disk_changes_to_records(
                 }
             }
             None => {
+                tracing::info!(
+                    organ_id = config.organ_id,
+                    path = %path.display(),
+                    "file sync: inserting record from new file"
+                );
                 crate::write::insert_record_from_file_sync(
                     services.clone(),
                     config.organ_id,
@@ -189,6 +290,12 @@ async fn apply_disk_changes_to_records(
         if !current.contains_key(path)
             && let Some(id) = record_id_for_head(&services, config.organ_id, &file.head).await?
         {
+            tracing::info!(
+                organ_id = config.organ_id,
+                record_id = id,
+                path = %path.display(),
+                "file sync: deleting record for removed file"
+            );
             crate::write::delete_record_from_file_sync(services.clone(), id).await?;
         }
     }
@@ -223,6 +330,12 @@ async fn mirror_records_to_files(
     let dir = &config.path;
     let desired = desired_files_from_records(&services, config).await?;
     let desired_paths = desired.keys().cloned().collect::<BTreeSet<_>>();
+    tracing::info!(
+        organ_id = config.organ_id,
+        path = %dir.display(),
+        records = desired.len(),
+        "file sync: mirroring desired records to directory"
+    );
 
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
@@ -230,6 +343,11 @@ async fn mirror_records_to_files(
         if path.extension().and_then(|value| value.to_str()) == Some(MARKDOWN_EXTENSION)
             && !desired_paths.contains(&path)
         {
+            tracing::info!(
+                organ_id = config.organ_id,
+                path = %path.display(),
+                "file sync: removing stale markdown file"
+            );
             fs::remove_file(path)?;
         }
     }
@@ -238,6 +356,13 @@ async fn mirror_records_to_files(
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent)?;
         }
+        tracing::debug!(
+            organ_id = config.organ_id,
+            record_id = file.id,
+            path = %path.display(),
+            bytes = file.body.len(),
+            "file sync: writing markdown file"
+        );
         fs::write(path, file.body)?;
     }
 
@@ -258,6 +383,13 @@ async fn desired_files_from_records(
     .fetch_all(&*services.db)
     .await
     .map_err(Error::other)?;
+
+    tracing::info!(
+        organ_id = config.organ_id,
+        path = %config.path.display(),
+        records = rows.len(),
+        "file sync: loaded records for organ"
+    );
 
     Ok(records_to_files(&config.path, rows))
 }

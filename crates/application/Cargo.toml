@@ -26,6 +26,7 @@ jsonwebtoken.workspace = true
 serde = {workspace = true, features = ["derive"]}
 serde_json.workspace = true
 tokio = {workspace = true, features = ["rt-multi-thread", "process", "sync", "io-util", "time"] }
+tracing.workspace = true
 rhai.workspace = true
 regex.workspace = true
 reqwest = { workspace = true, default-features = false, features = ["json", "rustls-tls"] }

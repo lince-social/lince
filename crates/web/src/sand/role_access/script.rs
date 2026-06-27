@@ -60,7 +60,7 @@ pub(crate) fn script() -> String {
       headers: options.body ? { "content-type": "application/json" } : undefined,
       body: options.body ? JSON.stringify(options.body) : undefined,
     });
-    if (response.status === 401 || response.status === 403) {
+    if (response.status === 401) {
       window.LinceWidgetHost?.invalidateServerAuth?.(state.serverId);
     }
     const text = await response.text();

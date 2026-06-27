@@ -12,9 +12,17 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
-function buildPinnedMoveCandidate(origin, delta) {
-  const maxX = Math.max(0, window.innerWidth - origin.width);
-  const maxY = Math.max(0, window.innerHeight - origin.height);
+function boardBounds(element) {
+  const rect = element?.getBoundingClientRect?.();
+  return {
+    width: Math.max(1, rect?.width || window.innerWidth),
+    height: Math.max(1, rect?.height || window.innerHeight),
+  };
+}
+
+function buildPinnedMoveCandidate(origin, delta, bounds) {
+  const maxX = Math.max(0, bounds.width - origin.width);
+  const maxY = Math.max(0, bounds.height - origin.height);
 
   return {
     ...origin,
@@ -23,7 +31,7 @@ function buildPinnedMoveCandidate(origin, delta) {
   };
 }
 
-function buildPinnedResizeCandidate(origin, handle, delta) {
+function buildPinnedResizeCandidate(origin, handle, delta, bounds) {
   const minWidth = 48;
   const minHeight = 40;
   let x = origin.x;
@@ -46,10 +54,10 @@ function buildPinnedResizeCandidate(origin, handle, delta) {
     y = origin.y + delta.y;
   }
 
-  width = clamp(width, minWidth, Math.max(minWidth, window.innerWidth - x));
-  height = clamp(height, minHeight, Math.max(minHeight, window.innerHeight - y));
-  x = clamp(x, 0, Math.max(0, window.innerWidth - width));
-  y = clamp(y, 0, Math.max(0, window.innerHeight - height));
+  width = clamp(width, minWidth, Math.max(minWidth, bounds.width - x));
+  height = clamp(height, minHeight, Math.max(minHeight, bounds.height - y));
+  x = clamp(x, 0, Math.max(0, bounds.width - width));
+  y = clamp(y, 0, Math.max(0, bounds.height - height));
 
   return {
     ...origin,
@@ -170,8 +178,13 @@ export function attachBoardInteractions({
     const candidate =
       interaction.origin.pinned === true
         ? interaction.type === "move"
-          ? buildPinnedMoveCandidate(interaction.origin, delta)
-          : buildPinnedResizeCandidate(interaction.origin, interaction.handle, delta)
+          ? buildPinnedMoveCandidate(interaction.origin, delta, boardBounds(boardElement))
+          : buildPinnedResizeCandidate(
+              interaction.origin,
+              interaction.handle,
+              delta,
+              boardBounds(boardElement),
+            )
         : interaction.type === "move"
           ? buildMoveCandidate(interaction.origin, delta, config)
           : buildResizeCandidate(

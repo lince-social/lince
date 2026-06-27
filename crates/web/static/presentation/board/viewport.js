@@ -210,6 +210,7 @@ export function createBoardViewport({
     getCamera: cameraFromPanzoom,
     getScale: () => panzoom.getScale(),
     centerWorldPoint,
+    worldPointFromClient,
     cameraForWorldCenter,
     zoomBy,
     resetZoom,

@@ -1856,9 +1856,10 @@ function syncCardNode(node, card) {
   const workspacePopoverWidth = 260;
   const expandedWidth = card.width;
   const wantedExpandedHeight = isWorkspaceShell && workspacePopoverOpen ? 350 : card.height;
+  const canvasRect = boardCanvas.getBoundingClientRect();
   const expandedHeight =
     card.pinned === true
-      ? Math.max(card.height, Math.min(wantedExpandedHeight, window.innerHeight - card.y - 8))
+      ? Math.max(card.height, Math.min(wantedExpandedHeight, canvasRect.height - card.y))
       : wantedExpandedHeight;
   const anchoredX =
     isShellPopoverOpen && !isWorkspaceShell && card.pinned === true
@@ -1866,11 +1867,15 @@ function syncCardNode(node, card) {
       : card.x;
   const adjustedX =
     card.pinned === true
-      ? Math.max(8, Math.min(anchoredX, window.innerWidth - expandedWidth - 8))
+      ? Math.max(0, Math.min(anchoredX, canvasRect.width - expandedWidth))
       : anchoredX;
+  const adjustedY =
+    card.pinned === true
+      ? Math.max(0, Math.min(card.y, canvasRect.height - expandedHeight))
+      : card.y;
 
   node.style.left = `${adjustedX}px`;
-  node.style.top = `${card.y}px`;
+  node.style.top = `${adjustedY}px`;
   node.style.width = `${expandedWidth}px`;
   node.style.height = `${expandedHeight}px`;
   node.style.zIndex = String(
@@ -5041,9 +5046,20 @@ function handleCardActionClick(event) {
     if (!editMode) {
       return;
     }
+    const node = cardNodes.get(cardId);
+    const nodeRect = node?.getBoundingClientRect();
+    const canvasRect = boardCanvas.getBoundingClientRect();
     const updated = store.updateCard(cardId, (card) => ({
       ...card,
       pinned: card.pinned !== true,
+      ...(card.pinned === true && nodeRect
+        ? boardViewport.worldPointFromClient(nodeRect.left, nodeRect.top)
+        : nodeRect
+          ? {
+              x: nodeRect.left - canvasRect.left,
+              y: nodeRect.top - canvasRect.top,
+            }
+          : {}),
       zIndex: card.pinned === true ? 1 : Math.max(Number(card.zIndex) || 1, 50),
     }));
     if (!updated) {

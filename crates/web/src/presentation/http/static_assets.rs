@@ -35,6 +35,9 @@ fn embedded_asset(path: &str) -> Option<EmbeddedAsset> {
         "presentation/board/interactions.js" => Some(js(include_bytes!(
             "../../../static/presentation/board/interactions.js"
         ))),
+        "presentation/board/LynxDS-components.js" => Some(js(include_bytes!(
+            "../../../static/presentation/board/LynxDS-components.js"
+        ))),
         "presentation/board/main.js" => Some(js(include_bytes!(
             "../../../static/presentation/board/main.js"
         ))),

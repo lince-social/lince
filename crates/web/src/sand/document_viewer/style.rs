@@ -18,6 +18,7 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
     min-height: 100%;
     margin: 0;
     background: var(--bg);
+    overscroll-behavior: contain;
   }
 
   body {
@@ -37,6 +38,7 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
     min-height: 100vh;
     background: var(--bg);
     overflow: hidden;
+    overscroll-behavior: contain;
   }
 
   .configToggle {
@@ -172,6 +174,7 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
   .documentArea {
     min-height: 100vh;
     height: 100vh;
+    overscroll-behavior: contain;
   }
 
   .frame {
@@ -179,6 +182,7 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
     width: 100%;
     height: 100%;
     overflow: hidden;
+    overscroll-behavior: contain;
     border: 0;
     border-radius: 0;
     background: #0f1318;
@@ -192,6 +196,7 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
     height: 100%;
     border: 0;
     background: transparent;
+    overscroll-behavior: contain;
   }
 
   .image { object-fit: contain; }
@@ -215,6 +220,7 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
 
   .epubViewer.isScroll {
     overflow: auto;
+    overscroll-behavior: contain;
   }
 
   .epubViewer iframe {

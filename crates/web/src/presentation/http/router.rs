@@ -36,6 +36,9 @@ use {
                     update_server,
                 },
                 sync::connect_record_sync_socket,
+                sync::{
+                    apply_record_sync_operations, record_sync_operations, record_sync_snapshot,
+                },
                 terminal::{
                     connect_terminal_socket, create_terminal_session, delete_terminal_session,
                     get_terminal_output, post_terminal_input, post_terminal_resize,
@@ -132,6 +135,11 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
         .route("/widgets/{instance_id}/trail", get(get_trail_page))
         .route("/widgets/{instance_id}/trail/stream", get(get_trail_stream))
         .route("/sync/record/socket", get(connect_record_sync_socket))
+        .route("/sync/record/snapshot", get(record_sync_snapshot))
+        .route(
+            "/sync/record/operations",
+            get(record_sync_operations).post(apply_record_sync_operations),
+        )
         .route("/terminal/sessions", post(create_terminal_session))
         .route("/terminal/stream", get(connect_terminal_socket))
         .route(

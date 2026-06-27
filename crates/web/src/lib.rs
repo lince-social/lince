@@ -159,6 +159,7 @@ pub async fn serve_with_bound_addr_sender(
         transfer_widget,
         widget_runtime: WidgetRuntimeService::new(auth, board_state, local_auth_required, organs),
     };
+    crate::presentation::http::api::sync::spawn_record_sync_tasks(app_state.clone());
 
     let app = axum::Router::new().merge(build_router(app_state, mode));
 

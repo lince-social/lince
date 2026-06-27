@@ -327,14 +327,6 @@ impl BackendApiService {
             ApiTable::Organ => {
                 let (sql, params) = self.store.build_standard_update(table, id, object)?;
                 let outcome = self.services.writer.execute_statement(sql, params).await?;
-                tracing::info!(
-                    organ_id = id,
-                    rows_affected = outcome.rows_affected,
-                    file_sync_enabled =
-                        object.get("file_sync_enabled").and_then(|value| value.as_i64()),
-                    file_sync_path = object.get("file_sync_path").and_then(|value| value.as_str()),
-                    "backend api: organ update refreshing file sync"
-                );
                 ::application::file_sync::configure_from_organs(self.services.clone()).await?;
                 ::application::file_sync::sync_after_record_change(self.services.clone()).await?;
                 Ok(outcome)
@@ -562,11 +554,6 @@ impl BackendApiService {
             self.auth.refresh_cache().await?;
         }
         if table == ApiTable::Organ && outcome.rows_affected > 0 {
-            tracing::info!(
-                organ_id = id,
-                rows_affected = outcome.rows_affected,
-                "backend api: organ batch update refreshing file sync"
-            );
             ::application::file_sync::configure_from_organs(self.services.clone()).await?;
             ::application::file_sync::sync_after_record_change(self.services.clone()).await?;
         }

@@ -2,6 +2,7 @@ use chrono::Utc;
 use injection::cross_cutting::InjectedServices;
 use persistence::write_coordinator::{SqlParameter, WriteOutcome};
 use serde_json::json;
+use sqlx::Row;
 use std::{
     collections::BTreeSet,
     io::{Error, ErrorKind},
@@ -189,19 +190,13 @@ pub async fn enqueue_record_sidecar_operation(
     } else {
         ensure_table_row_identity(services.clone(), table_name, row_id).await?
     };
-    let payload = json!({
-        "local_id": row_id,
-        "root_record_id": root_record_id,
-    })
-    .to_string();
-
     enqueue_operation(
-        services,
+        services.clone(),
         &root.sync_uid,
         table_name,
         &row_sync_uid,
         action,
-        payload,
+        sidecar_payload(services, table_name, row_id, &root.sync_uid).await?,
         None,
     )
     .await
@@ -267,7 +262,7 @@ async fn enqueue_operation(
     validate_sync_table(table_name)?;
     let clock = operation_clock();
     let operation_uid = format!("{LOCAL_ORGAN_ID}:{clock}:{table_name}:{row_sync_uid}");
-    services
+    let outcome = services
         .writer
         .execute_statement(
             "INSERT OR IGNORE INTO record_sync_operation(
@@ -285,7 +280,7 @@ async fn enqueue_operation(
             ) VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)"
                 .to_string(),
             vec![
-                SqlParameter::Text(operation_uid),
+                SqlParameter::Text(operation_uid.clone()),
                 SqlParameter::Integer(LOCAL_ORGAN_ID),
                 SqlParameter::Text(root_record_sync_uid.to_string()),
                 SqlParameter::Text(table_name.to_string()),
@@ -298,7 +293,18 @@ async fn enqueue_operation(
                     .unwrap_or(SqlParameter::Null),
             ],
         )
-        .await
+        .await?;
+    tracing::info!(
+        operation_uid = %operation_uid,
+        source_organ_id = LOCAL_ORGAN_ID,
+        root_record_sync_uid,
+        table_name,
+        row_sync_uid,
+        action = action.as_str(),
+        rows_affected = outcome.rows_affected,
+        "record sync: queued local operation"
+    );
+    Ok(outcome)
 }
 
 async fn upsert_tombstone(
@@ -359,6 +365,108 @@ async fn record_payload(services: InjectedServices, record_id: u32) -> Result<St
         "sync_uid": sync_uid,
     })
     .to_string())
+}
+
+async fn sidecar_payload(
+    services: InjectedServices,
+    table_name: &str,
+    row_id: i64,
+    root_record_sync_uid: &str,
+) -> Result<String, Error> {
+    validate_sync_table(table_name)?;
+    let sql = format!("SELECT * FROM {table_name} WHERE id = ?");
+    let row = sqlx::query(&sql)
+        .bind(row_id)
+        .fetch_optional(&*services.db)
+        .await
+        .map_err(Error::other)?;
+    let Some(row) = row else {
+        return Ok("{}".to_string());
+    };
+    let mut payload = serde_json::Map::new();
+    payload.insert("root_record_sync_uid".into(), json!(root_record_sync_uid));
+    for column in sync_payload_columns(table_name) {
+        payload.insert(
+            (*column).into(),
+            sqlite_column_to_json(&row, column).unwrap_or(serde_json::Value::Null),
+        );
+    }
+    if table_name == "work_assignment" {
+        if let Some(uid) = sync_uid_for_local_id(&services, "work_metadata", row.get("work_metadata_id")).await? {
+            payload.insert("work_metadata_sync_uid".into(), json!(uid));
+        }
+        if let Some(uid) = sync_uid_for_local_id(&services, "work_subject", row.get("work_subject_id")).await? {
+            payload.insert("work_subject_sync_uid".into(), json!(uid));
+        }
+    }
+    Ok(serde_json::Value::Object(payload).to_string())
+}
+
+async fn sync_uid_for_local_id(
+    services: &InjectedServices,
+    table_name: &str,
+    id: i64,
+) -> Result<Option<String>, Error> {
+    validate_sync_table(table_name)?;
+    sqlx::query_scalar::<_, String>(&format!("SELECT sync_uid FROM {table_name} WHERE id = ?"))
+        .bind(id)
+        .fetch_optional(&*services.db)
+        .await
+        .map_err(Error::other)
+}
+
+fn sync_payload_columns(table_name: &str) -> &'static [&'static str] {
+    match table_name {
+        "record_extension" => &[
+            "record_id", "namespace", "version", "freestyle_data_structure", "sync_uid",
+            "origin_organ_id", "created_at", "updated_at",
+        ],
+        "record_link" => &[
+            "record_id", "link_type", "target_table", "target_id", "position",
+            "freestyle_data_structure", "sync_uid", "origin_organ_id", "created_at", "updated_at",
+        ],
+        "record_comment" => &[
+            "record_id", "author_user_id", "body", "created_at", "updated_at", "deleted_at",
+            "sync_uid", "origin_organ_id",
+        ],
+        "record_worklog" => &[
+            "record_id", "author_user_id", "started_at", "ended_at", "last_heartbeat_at",
+            "seconds", "note", "created_at", "updated_at", "sync_uid", "origin_organ_id",
+        ],
+        "record_resource_ref" => &[
+            "record_id", "provider", "resource_kind", "resource_path", "title", "position",
+            "freestyle_data_structure", "created_at", "updated_at", "sync_uid", "origin_organ_id",
+        ],
+        "work_metadata" => &[
+            "owner_kind", "owner_id", "task_type", "status", "start_at", "end_at",
+            "estimate_seconds", "completion_notes", "metadata_json", "created_at", "updated_at",
+            "sync_uid", "origin_organ_id",
+        ],
+        "work_subject" => &[
+            "subject_kind", "app_user_id", "organ_id", "transfer_party_id", "remote_base_url",
+            "remote_public_key", "remote_subject_uid", "display_name_snapshot",
+            "organ_name_snapshot", "created_at", "updated_at", "sync_uid", "origin_organ_id",
+        ],
+        "work_assignment" => &[
+            "work_metadata_id", "work_subject_id", "assignment_kind", "created_at", "updated_at",
+            "sync_uid", "origin_organ_id",
+        ],
+        _ => &[],
+    }
+}
+
+fn sqlite_column_to_json(row: &sqlx::sqlite::SqliteRow, column: &str) -> Option<serde_json::Value> {
+    use sqlx::Row;
+    if let Ok(value) = row.try_get::<Option<String>, _>(column) {
+        return Some(json!(value));
+    }
+    if let Ok(value) = row.try_get::<Option<i64>, _>(column) {
+        return Some(json!(value));
+    }
+    if let Ok(value) = row.try_get::<Option<f64>, _>(column) {
+        return Some(json!(value));
+    }
+    None
 }
 
 fn local_sync_uid(table_name: &str, id: i64) -> String {

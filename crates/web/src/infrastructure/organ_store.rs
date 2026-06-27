@@ -291,6 +291,7 @@ impl OrganStore {
         } else {
             r#"["record"]"#
         };
+        let logged_record_sync_mode = record_sync_mode.clone();
         let outcome = self
             .writer
             .execute_statement(
@@ -312,6 +313,13 @@ impl OrganStore {
             )
             .await
             .map_err(|error| format!("Nao consegui atualizar sync do orgao: {error}"))?;
+        tracing::info!(
+            organ_id,
+            record_sync_mode = %logged_record_sync_mode,
+            sync_resources,
+            rows_affected = outcome.rows_affected,
+            "record sync: organ policy updated"
+        );
         Ok(outcome.rows_affected > 0)
     }
 

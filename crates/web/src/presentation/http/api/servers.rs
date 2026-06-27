@@ -238,10 +238,23 @@ pub async fn login_server(
             &session_token,
             server.id,
             username.to_string(),
-            bearer_token,
+            bearer_token.clone(),
         )
         .await
         .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
+    let sync_state = state.clone();
+    let sync_server_id = server.id;
+    tokio::spawn(async move {
+        if let Err(error) =
+            super::sync::run_record_sync_for_organ(sync_state, sync_server_id, bearer_token).await
+        {
+            tracing::warn!(
+                organ_id = sync_server_id,
+                error = %error,
+                "record sync: login-triggered sync failed"
+            );
+        }
+    });
     state
         .services
         .notifications
@@ -361,6 +374,32 @@ pub async fn update_server(
             .set_record_sync_policy(profile.id, mode)
             .await
             .map_err(|message| api_error(StatusCode::BAD_REQUEST, message))?;
+        let session_token = parse_cookie_header(
+            headers
+                .get(header::COOKIE)
+                .and_then(|value| value.to_str().ok()),
+            session_cookie_name(),
+        );
+        if let Some(session) = state.auth.server_session(session_token.as_deref(), profile.id).await
+        {
+            let sync_state = state.clone();
+            let sync_server_id = profile.id;
+            tokio::spawn(async move {
+                if let Err(error) = super::sync::run_record_sync_for_organ(
+                    sync_state,
+                    sync_server_id,
+                    session.bearer_token,
+                )
+                .await
+                {
+                    tracing::warn!(
+                        organ_id = sync_server_id,
+                        error = %error,
+                        "record sync: policy-triggered sync failed"
+                    );
+                }
+            });
+        }
     }
     if payload.file_sync_enabled.is_some() || payload.file_sync_path.is_some() {
         let existing = state
@@ -504,7 +543,10 @@ async fn server_profile_response(
     }
 }
 
-async fn load_sync_policy(state: &AppState, organ_id: i64) -> ApiResult<(Vec<String>, String)> {
+pub(crate) async fn load_sync_policy(
+    state: &AppState,
+    organ_id: i64,
+) -> ApiResult<(Vec<String>, String)> {
     let Some(policy) = state
         .organs
         .get_sync_policy(organ_id)

@@ -56,6 +56,43 @@ pub(super) fn script() -> &'static str {
         let configOpen = false;
         let didAttemptInitialLoad = false;
         let bridgeBound = false;
+        const scrollConsumptionTargets = new WeakSet();
+
+        function consumeScrollInteraction(event) {
+          event.stopPropagation();
+        }
+
+        function bindScrollConsumption(target) {
+          if (!target || typeof target.addEventListener !== "function" || scrollConsumptionTargets.has(target)) {
+            return;
+          }
+          scrollConsumptionTargets.add(target);
+          target.addEventListener("wheel", consumeScrollInteraction, { capture: true, passive: true });
+          target.addEventListener("touchmove", consumeScrollInteraction, { capture: true, passive: true });
+        }
+
+        function bindFrameScrollConsumption(frameElement) {
+          bindScrollConsumption(frameElement);
+          try {
+            bindScrollConsumption(frameElement?.contentWindow);
+            bindScrollConsumption(frameElement?.contentDocument);
+            bindScrollConsumption(frameElement?.contentDocument?.documentElement);
+            bindScrollConsumption(frameElement?.contentDocument?.body);
+            bindScrollConsumption(frameElement?.contentDocument?.scrollingElement);
+          } catch (error) {
+          }
+        }
+
+        bindScrollConsumption(window);
+        bindScrollConsumption(document);
+        bindScrollConsumption(document.documentElement);
+        bindScrollConsumption(document.body);
+        bindScrollConsumption(app);
+        bindScrollConsumption(previewFrame);
+        bindScrollConsumption(image);
+        bindScrollConsumption(pdfFrame);
+        bindScrollConsumption(epubViewer);
+        pdfFrame.addEventListener("load", () => bindFrameScrollConsumption(pdfFrame));
 
         function setDebug(message) {
           debug.textContent = String(message || "");
@@ -367,6 +404,8 @@ pub(super) fn script() -> &'static str {
         function bindEpubScrollPersistence() {
           if (state.pdfMode !== "scroll") return;
           const target = getEpubScrollTarget();
+          bindScrollConsumption(target);
+          bindFrameScrollConsumption(epubViewer.querySelector("iframe"));
           target?.addEventListener?.("scroll", rememberEpubScroll, { passive: true });
         }
 
@@ -433,7 +472,7 @@ pub(super) fn script() -> &'static str {
             image.src = url;
             image.alt = title;
           }
-          navHit.hidden = false;
+          navHit.hidden = kind === "pdf";
           app.classList.add("hasDocument");
           renderModeControls(kind);
         }

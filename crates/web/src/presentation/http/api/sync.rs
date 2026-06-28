@@ -15,7 +15,10 @@ use {
     serde::{Deserialize, Deserializer, Serialize},
     serde_json::{Map, Value, json},
     sqlx::Row,
-    std::collections::BTreeSet,
+    std::{
+        collections::BTreeSet,
+        hash::{Hash, Hasher},
+    },
     utils::logging::{LogEntry, log},
 };
 
@@ -136,6 +139,14 @@ pub struct RecordSyncOperationsResponse {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct RecordSyncFingerprintResponse {
+    fingerprint: String,
+    row_count: i64,
+    max_operation_clock: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RecordSyncApplyRequest {
     source_base_url: Option<String>,
     source_name: Option<String>,
@@ -249,6 +260,38 @@ pub async fn record_sync_operations(
                 "record sync: operations request failed owners={:?} since={:?} error={error}",
                 query.owner_organ_id,
                 query.since_clock
+            ));
+            api_error(StatusCode::BAD_GATEWAY, error.to_string()).into_response()
+        }
+    }
+}
+
+pub async fn record_sync_fingerprint(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Query(query): Query<RecordSyncSnapshotQuery>,
+) -> impl IntoResponse {
+    let claims = match authenticate_record_sync(&state, &headers).await {
+        Ok(claims) => claims,
+        Err(response) => return response,
+    };
+    if let Err(error) =
+        claims.require_permission(::application::auth::PermissionKey::new("record", "read"))
+    {
+        return api_error(StatusCode::FORBIDDEN, error.to_string()).into_response();
+    }
+    match build_fingerprint(&state, &query.owner_organ_id).await {
+        Ok(response) => {
+            sync_log(format!(
+                "record sync: served fingerprint owners={:?} rows={} fingerprint={}",
+                query.owner_organ_id, response.row_count, response.fingerprint
+            ));
+            Json(response).into_response()
+        }
+        Err(error) => {
+            sync_log(format!(
+                "record sync: fingerprint request failed owners={:?} error={error}",
+                query.owner_organ_id
             ));
             api_error(StatusCode::BAD_GATEWAY, error.to_string()).into_response()
         }
@@ -498,6 +541,101 @@ async fn build_snapshot(
     }
 
     Ok(RecordSyncSnapshotResponse { rows })
+}
+
+async fn build_fingerprint(
+    state: &AppState,
+    owner_organ_ids: &[i64],
+) -> Result<RecordSyncFingerprintResponse, sqlx::Error> {
+    let owners = normalized_owners(owner_organ_ids);
+    ensure_snapshot_identities(state, &owners).await?;
+    let owners_json = json!(owners).to_string();
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    let mut row_count = 0_i64;
+
+    let records = sqlx::query(
+        "SELECT sync_uid, updated_at
+         FROM record
+         WHERE COALESCE(owner_organ_id, 1) IN (SELECT value FROM json_each(?))
+         ORDER BY sync_uid",
+    )
+    .bind(&owners_json)
+    .fetch_all(&*state.services.db)
+    .await?;
+    let root_sync_uids = records
+        .iter()
+        .map(|row| row.get::<String, _>("sync_uid"))
+        .collect::<Vec<_>>();
+    for row in records {
+        row_count += 1;
+        "record".hash(&mut hasher);
+        row.get::<String, _>("sync_uid").hash(&mut hasher);
+        row.get::<Option<String>, _>("updated_at").hash(&mut hasher);
+    }
+
+    for table in SYNC_TABLES.iter().copied().filter(|table| *table != "record") {
+        for row in fingerprint_sidecar_rows(state, table, &root_sync_uids).await? {
+            row_count += 1;
+            table.hash(&mut hasher);
+            row.0.hash(&mut hasher);
+            row.1.hash(&mut hasher);
+        }
+    }
+
+    for row in sqlx::query(
+        "SELECT table_name, row_sync_uid, delete_clock
+         FROM record_sync_tombstone
+         ORDER BY table_name, row_sync_uid",
+    )
+    .fetch_all(&*state.services.db)
+    .await?
+    {
+        "tombstone".hash(&mut hasher);
+        row.get::<String, _>("table_name").hash(&mut hasher);
+        row.get::<String, _>("row_sync_uid").hash(&mut hasher);
+        row.get::<String, _>("delete_clock").hash(&mut hasher);
+    }
+
+    let max_operation_clock = sqlx::query_scalar::<_, String>(
+        "SELECT MAX(operation_clock) FROM record_sync_operation",
+    )
+    .fetch_optional(&*state.services.db)
+    .await?;
+
+    Ok(RecordSyncFingerprintResponse {
+        fingerprint: format!("{:016x}", hasher.finish()),
+        row_count,
+        max_operation_clock,
+    })
+}
+
+async fn fingerprint_sidecar_rows(
+    state: &AppState,
+    table: &str,
+    root_sync_uids: &[String],
+) -> Result<Vec<(String, Option<String>)>, sqlx::Error> {
+    if root_sync_uids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let roots_json = json!(root_sync_uids).to_string();
+    let sql = match table {
+        "record_extension" => "SELECT t.sync_uid, t.updated_at FROM record_extension t JOIN record r ON r.id = t.record_id WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid",
+        "record_link" => "SELECT t.sync_uid, t.updated_at FROM record_link t JOIN record r ON r.id = t.record_id WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid",
+        "record_comment" => "SELECT t.sync_uid, t.updated_at FROM record_comment t JOIN record r ON r.id = t.record_id WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid",
+        "record_worklog" => "SELECT t.sync_uid, t.updated_at FROM record_worklog t JOIN record r ON r.id = t.record_id WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid",
+        "record_resource_ref" => "SELECT t.sync_uid, t.updated_at FROM record_resource_ref t JOIN record r ON r.id = t.record_id WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid",
+        "work_metadata" => "SELECT t.sync_uid, t.updated_at FROM work_metadata t JOIN record r ON r.id = t.owner_id AND t.owner_kind = 'record' WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid",
+        "work_subject" => "SELECT DISTINCT t.sync_uid, t.updated_at FROM work_subject t JOIN work_assignment wa ON wa.work_subject_id = t.id JOIN work_metadata wm ON wm.id = wa.work_metadata_id JOIN record r ON r.id = wm.owner_id AND wm.owner_kind = 'record' WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid",
+        "work_assignment" => "SELECT t.sync_uid, t.updated_at FROM work_assignment t JOIN work_metadata wm ON wm.id = t.work_metadata_id JOIN record r ON r.id = wm.owner_id AND wm.owner_kind = 'record' WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid",
+        _ => return Ok(Vec::new()),
+    };
+    Ok(sqlx::query(sql)
+        .bind(roots_json)
+        .fetch_all(&*state.services.db)
+        .await?
+        .into_iter()
+        .map(|row| (row.get("sync_uid"), row.get("updated_at")))
+        .collect())
 }
 
 async fn ensure_snapshot_identities(state: &AppState, owners: &[i64]) -> Result<(), sqlx::Error> {
@@ -963,8 +1101,15 @@ pub async fn run_record_sync_for_organ(
 
     tracing::info!(organ_id, mode = %mode, "record sync: run started");
     sync_log(format!("record sync: run started organ_id={organ_id} mode={mode}"));
-    pull_snapshot(&state, &organ.base_url, &bearer_token, organ_id, &owners).await?;
-    pull_operations(&state, &organ.base_url, &bearer_token, organ_id, &owners).await?;
+    if should_refresh_from_remote(&state, &organ.base_url, &bearer_token, organ_id, &owners).await?
+    {
+        pull_snapshot(&state, &organ.base_url, &bearer_token, organ_id, &owners).await?;
+        pull_operations(&state, &organ.base_url, &bearer_token, organ_id, &owners).await?;
+    } else {
+        sync_log(format!(
+            "record sync: fingerprint matched; skipped snapshot/pull organ_id={organ_id}"
+        ));
+    }
     push_operations(&state, &organ.base_url, &bearer_token, organ_id, &owners).await?;
     tracing::info!(organ_id, mode = %mode, "record sync: run finished");
     sync_log(format!("record sync: run finished organ_id={organ_id} mode={mode}"));
@@ -974,7 +1119,7 @@ pub async fn run_record_sync_for_organ(
 pub fn spawn_record_sync_tasks(state: AppState) {
     sync_log("record sync: background task spawned");
     tokio::spawn(async move {
-        let mut interval = tokio::time::interval(std::time::Duration::from_secs(5));
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(30));
         let mut logged_empty_tokens = false;
         loop {
             interval.tick().await;
@@ -997,6 +1142,9 @@ pub fn spawn_record_sync_tasks(state: AppState) {
                 tokens.len()
             ));
             for (organ_id, bearer_token) in tokens {
+                if !has_due_sync_work(&state, organ_id).await.unwrap_or(true) {
+                    continue;
+                }
                 if let Err(error) =
                     run_record_sync_for_organ(state.clone(), organ_id, bearer_token).await
                 {
@@ -1012,6 +1160,177 @@ pub fn spawn_record_sync_tasks(state: AppState) {
             }
         }
     });
+}
+
+async fn has_due_sync_work(state: &AppState, organ_id: i64) -> Result<bool, sqlx::Error> {
+    if has_unsent_operations_for_organ(state, organ_id).await? {
+        return Ok(true);
+    }
+    let interval = sync_check_interval_seconds(state, organ_id).await?;
+    if interval == 0 {
+        return Ok(false);
+    }
+    let owner_scope = owner_scope_for_organ(state, organ_id).await?;
+    let due = sqlx::query_scalar::<_, i64>(
+        "SELECT CASE
+            WHEN next_check_at IS NULL THEN 1
+            WHEN julianday(next_check_at) <= julianday(CURRENT_TIMESTAMP) THEN 1
+            ELSE 0
+         END
+         FROM record_sync_peer_state
+         WHERE organ_id = ? AND owner_scope = ?",
+    )
+    .bind(organ_id)
+    .bind(&owner_scope)
+    .fetch_optional(&*state.services.db)
+    .await?
+    .unwrap_or(1);
+    Ok(due != 0)
+}
+
+async fn has_unsent_operations_for_organ(
+    state: &AppState,
+    organ_id: i64,
+) -> Result<bool, sqlx::Error> {
+    let (_, mode) = super::servers::load_sync_policy(state, organ_id)
+        .await
+        .map_err(|(_, error)| sqlx::Error::Protocol(error.error.clone()))?;
+    let owners = owners_for_mode(&mode, organ_id);
+    if owners.is_empty() {
+        return Ok(false);
+    }
+    Ok(!load_operations_since(state, None, &owners)
+        .await?
+        .into_iter()
+        .filter(|operation| operation.sent_at.is_none())
+        .filter(|operation| operation.source_operation_uid.is_none())
+        .filter(|operation| operation.source_organ_id == LOCAL_ORGAN_ID)
+        .collect::<Vec<_>>()
+        .is_empty())
+}
+
+async fn sync_check_interval_seconds(state: &AppState, organ_id: i64) -> Result<i64, sqlx::Error> {
+    Ok(sqlx::query_scalar::<_, i64>(
+        "SELECT sync_check_interval_seconds FROM organ_sync_policy WHERE organ_id = ?",
+    )
+    .bind(organ_id)
+    .fetch_optional(&*state.services.db)
+    .await?
+    .unwrap_or(300)
+    .max(0))
+}
+
+async fn owner_scope_for_organ(state: &AppState, organ_id: i64) -> Result<String, sqlx::Error> {
+    let (_, mode) = super::servers::load_sync_policy(state, organ_id)
+        .await
+        .map_err(|(_, error)| sqlx::Error::Protocol(error.error.clone()))?;
+    Ok(owners_for_mode(&mode, organ_id)
+        .into_iter()
+        .map(|owner| owner.to_string())
+        .collect::<Vec<_>>()
+        .join(","))
+}
+
+async fn should_refresh_from_remote(
+    state: &AppState,
+    base_url: &str,
+    bearer_token: &str,
+    organ_id: i64,
+    owners: &[i64],
+) -> Result<bool, String> {
+    let remote = fetch_remote_fingerprint(state, base_url, bearer_token, organ_id, owners).await?;
+    let local = build_fingerprint(state, owners)
+        .await
+        .map_err(|error| error.to_string())?;
+    let owner_scope = owners
+        .iter()
+        .map(|owner| owner.to_string())
+        .collect::<Vec<_>>()
+        .join(",");
+    let changed = local.row_count == 0 || local.fingerprint != remote.fingerprint;
+    write_peer_state(state, organ_id, &owner_scope, &remote.fingerprint, changed)
+        .await
+        .map_err(|error| error.to_string())?;
+    sync_log(format!(
+        "record sync: fingerprint check organ_id={organ_id} local={} remote={} local_rows={} remote_rows={} changed={changed}",
+        local.fingerprint, remote.fingerprint, local.row_count, remote.row_count
+    ));
+    Ok(changed)
+}
+
+async fn fetch_remote_fingerprint(
+    state: &AppState,
+    base_url: &str,
+    bearer_token: &str,
+    organ_id: i64,
+    owners: &[i64],
+) -> Result<RecordSyncFingerprintResponse, String> {
+    let remote_owners = owners
+        .iter()
+        .map(|owner| if *owner == organ_id { LOCAL_ORGAN_ID } else { *owner })
+        .collect::<Vec<_>>();
+    let path = sync_path("/sync/record/fingerprint", &remote_owners);
+    let response = state
+        .manas
+        .send_backend_request(base_url, bearer_token, Method::GET, &path, None)
+        .await?;
+    let status = response.status();
+    if !status.is_success() {
+        let body = response.text().await.unwrap_or_default();
+        return Err(format!("Fingerprint sync failed with {status}: {body}"));
+    }
+    response
+        .json::<RecordSyncFingerprintResponse>()
+        .await
+        .map_err(|error| format!("Invalid fingerprint sync response: {error}"))
+}
+
+async fn write_peer_state(
+    state: &AppState,
+    organ_id: i64,
+    owner_scope: &str,
+    fingerprint: &str,
+    full_snapshot_due: bool,
+) -> Result<(), sqlx::Error> {
+    let interval = sync_check_interval_seconds(state, organ_id).await?;
+    state
+        .services
+        .writer
+        .execute_statement(
+            "INSERT INTO record_sync_peer_state(
+                organ_id, owner_scope, last_fingerprint, last_full_snapshot_at,
+                last_checked_at, next_check_at, last_error
+             ) VALUES (
+                ?, ?, ?,
+                CASE WHEN ? THEN CURRENT_TIMESTAMP ELSE NULL END,
+                CURRENT_TIMESTAMP,
+                CASE WHEN ? <= 0 THEN NULL ELSE datetime(CURRENT_TIMESTAMP, '+' || ? || ' seconds') END,
+                NULL
+             )
+             ON CONFLICT(organ_id, owner_scope) DO UPDATE SET
+                last_fingerprint = excluded.last_fingerprint,
+                last_full_snapshot_at = CASE
+                    WHEN ? THEN CURRENT_TIMESTAMP
+                    ELSE record_sync_peer_state.last_full_snapshot_at
+                END,
+                last_checked_at = CURRENT_TIMESTAMP,
+                next_check_at = excluded.next_check_at,
+                last_error = NULL,
+                updated_at = CURRENT_TIMESTAMP"
+                .to_string(),
+            vec![
+                int(organ_id),
+                text(owner_scope.to_string()),
+                text(fingerprint.to_string()),
+                int(if full_snapshot_due { 1 } else { 0 }),
+                int(interval),
+                int(interval),
+                int(if full_snapshot_due { 1 } else { 0 }),
+            ],
+        )
+        .await
+        .map_err(sqlx::Error::Io)?;
+    Ok(())
 }
 
 async fn pull_snapshot(
@@ -1153,6 +1472,7 @@ async fn push_operations(
         .await
         .map_err(|error| error.to_string())?
         .into_iter()
+        .filter(|operation| operation.sent_at.is_none())
         .filter(|operation| operation.source_operation_uid.is_none())
         .filter(|operation| operation.source_organ_id == LOCAL_ORGAN_ID)
         .collect::<Vec<_>>();
@@ -1162,23 +1482,32 @@ async fn push_operations(
     ));
     let mut local_owned = Vec::new();
     let mut remote_owned = Vec::new();
+    let mut local_owned_uids = Vec::new();
+    let mut remote_owned_uids = Vec::new();
     for operation in operations {
         match owner_for_operation(state, &operation)
             .await
             .map_err(|error| error.to_string())?
         {
             owner if owner == organ_id => {
+                remote_owned_uids.push(operation.operation_uid.clone());
                 let mut operation = operation;
                 remap_operation_for_remote(&mut operation, organ_id);
                 remote_owned.push(operation);
             }
-            LOCAL_ORGAN_ID => local_owned.push(operation),
+            LOCAL_ORGAN_ID => {
+                local_owned_uids.push(operation.operation_uid.clone());
+                local_owned.push(operation);
+            }
             _ => {}
         }
     }
     let mut pushed = 0_usize;
     if !remote_owned.is_empty() {
         pushed += post_operations_to_remote(state, base_url, bearer_token, None, remote_owned).await?;
+        mark_operations_sent(state, &remote_owned_uids)
+            .await
+            .map_err(|error| error.to_string())?;
     }
     if !local_owned.is_empty() {
         let source_base_url = format!("http://127.0.0.1:{}", state.listening_port);
@@ -1190,6 +1519,9 @@ async fn push_operations(
             local_owned,
         )
         .await?;
+        mark_operations_sent(state, &local_owned_uids)
+            .await
+            .map_err(|error| error.to_string())?;
     }
     tracing::info!(organ_id, operations = pushed, "record sync: operations pushed");
     sync_log(format!(
@@ -1243,6 +1575,28 @@ async fn post_operations_to_remote(
         result.applied, result.skipped
     ));
     Ok(result.applied + result.skipped)
+}
+
+async fn mark_operations_sent(
+    state: &AppState,
+    operation_uids: &[String],
+) -> Result<(), sqlx::Error> {
+    if operation_uids.is_empty() {
+        return Ok(());
+    }
+    for uid in operation_uids {
+        state
+            .services
+            .writer
+            .execute_statement(
+                "UPDATE record_sync_operation SET sent_at = CURRENT_TIMESTAMP WHERE operation_uid = ?"
+                    .to_string(),
+                vec![text(uid.clone())],
+            )
+            .await
+            .map_err(sqlx::Error::Io)?;
+    }
+    Ok(())
 }
 
 fn normalized_owners(owner_organ_ids: &[i64]) -> Vec<i64> {

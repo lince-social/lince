@@ -172,7 +172,12 @@ fn plan_schema_diff(
 
     for current_table in current {
         match previous_by_name.get(current_table.name.as_str()) {
-            None => statements.extend(create_table_and_indexes_statements(current_table)),
+            None => {
+                if manual_migration_creates_table(migrations_dir, current_table.name.as_str())? {
+                    continue;
+                }
+                statements.extend(create_table_and_indexes_statements(current_table));
+            }
             Some(previous_table) => {
                 statements.extend(plan_table_diff(
                     previous_table,
@@ -199,6 +204,26 @@ fn plan_schema_diff(
     }
 
     Ok(statements)
+}
+
+fn manual_migration_creates_table(migrations_dir: &Path, table_name: &str) -> Result<bool, Error> {
+    let create_table = format!("create table {table_name}");
+    let create_table_if_not_exists = format!("create table if not exists {table_name}");
+    for entry in fs::read_dir(migrations_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.extension().and_then(|extension| extension.to_str()) != Some("sql") {
+            continue;
+        }
+        let sql = fs::read_to_string(path)?.to_lowercase();
+        let normalized = sql.split_whitespace().collect::<Vec<_>>().join(" ");
+        if normalized.contains(&create_table)
+            || normalized.contains(&create_table_if_not_exists)
+        {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 fn manual_migration_drops_table(migrations_dir: &Path, table_name: &str) -> Result<bool, Error> {

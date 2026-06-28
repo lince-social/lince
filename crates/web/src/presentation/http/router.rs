@@ -37,7 +37,7 @@ use {
                 },
                 sync::{
                     apply_record_sync_operations, connect_record_sync_socket,
-                    record_sync_operations, record_sync_snapshot,
+                    record_sync_fingerprint, record_sync_operations, record_sync_snapshot,
                 },
                 terminal::{
                     connect_terminal_socket, create_terminal_session, delete_terminal_session,
@@ -70,6 +70,7 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
             .route("/openapi.json", get(openapi_json))
             .route("/swagger-ui", get(swagger_ui))
             .route("/sync/record/socket", get(connect_record_sync_socket))
+            .route("/sync/record/fingerprint", get(record_sync_fingerprint))
             .route("/sync/record/snapshot", get(record_sync_snapshot))
             .route(
                 "/sync/record/operations",
@@ -141,6 +142,7 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
         .route("/widgets/{instance_id}/trail", get(get_trail_page))
         .route("/widgets/{instance_id}/trail/stream", get(get_trail_stream))
         .route("/sync/record/socket", get(connect_record_sync_socket))
+        .route("/sync/record/fingerprint", get(record_sync_fingerprint))
         .route("/sync/record/snapshot", get(record_sync_snapshot))
         .route(
             "/sync/record/operations",
@@ -212,6 +214,7 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
         .route("/swagger-ui", get(swagger_ui))
         .merge(build_backend_router())
         .route("/sync/record/socket", get(connect_record_sync_socket))
+        .route("/sync/record/fingerprint", get(record_sync_fingerprint))
         .route("/sync/record/snapshot", get(record_sync_snapshot))
         .route(
             "/sync/record/operations",

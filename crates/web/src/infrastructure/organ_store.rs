@@ -28,6 +28,7 @@ pub struct OrganSyncPolicy {
     pub organ_id: i64,
     pub sync_resources: String,
     pub record_sync_mode: String,
+    pub sync_check_interval_seconds: i64,
 }
 
 #[derive(Clone)]
@@ -266,7 +267,7 @@ impl OrganStore {
             return Ok(None);
         };
         sqlx::query_as::<_, OrganSyncPolicy>(
-            "SELECT organ_id, sync_resources, record_sync_mode
+            "SELECT organ_id, sync_resources, record_sync_mode, sync_check_interval_seconds
              FROM organ_sync_policy
              WHERE organ_id = ?
              LIMIT 1",

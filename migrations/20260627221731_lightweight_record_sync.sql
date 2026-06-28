@@ -1,4 +1,5 @@
-ALTER TABLE organ_sync_policy ADD COLUMN sync_check_interval_seconds INTEGER NOT NULL DEFAULT 300 CHECK (sync_check_interval_seconds >= 0);
+-- Reset migration compatibility:
+-- organ_sync_policy.sync_check_interval_seconds is owned by 20260627145933_record_crdt_sync.sql.
 
 CREATE TABLE IF NOT EXISTS record_sync_peer_state (
     id INTEGER PRIMARY KEY,

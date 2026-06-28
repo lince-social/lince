@@ -1,2 +1,3 @@
-ALTER TABLE organ ADD COLUMN file_sync_enabled INTEGER NOT NULL DEFAULT 0 CHECK (file_sync_enabled IN (0, 1));
-ALTER TABLE organ ADD COLUMN file_sync_path TEXT;
+-- Reset migration compatibility:
+-- organ.file_sync_enabled and organ.file_sync_path are owned by the reset/base schema.
+-- Keep this migration file as a no-op so existing migration history remains valid.

@@ -13,6 +13,7 @@ mod lince_logo_led;
 mod markdown_notes;
 mod ops_clock;
 mod organ_management;
+pub(crate) mod record_editor;
 #[path = "relations/mod.rs"]
 mod relations;
 mod role_access;
@@ -104,7 +105,7 @@ impl OfficialWidgetBuilder {
     }
 }
 
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 31] = [
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 32] = [
     OfficialWidgetBuilder::Html {
         feature_flag: shell::FEATURE_FLAG,
         source_builder: shell::logo_source,
@@ -192,6 +193,10 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 31] = [
     OfficialWidgetBuilder::Html {
         feature_flag: markdown_notes::FEATURE_FLAG,
         source_builder: markdown_notes::source,
+    },
+    OfficialWidgetBuilder::Html {
+        feature_flag: record_editor::FEATURE_FLAG,
+        source_builder: record_editor::source,
     },
     OfficialWidgetBuilder::Html {
         feature_flag: organ_management::FEATURE_FLAG,

@@ -13,7 +13,7 @@ Injection: Dependency Injection.
 Application: Main application logic.
 Web: Web HTML version.
 
-In this repository the schema is owned by Rust structs in persistence, and the repo-root `migrations/` directory is embedded into the binary at compile time via `sqlx::migrate!`.
+In this repository the schema is owned by Rust structs in persistence, and the repo-root `migrations/` directory is embedded into the binary at compile time via `sqlx::migrate!`. DO NOT ALTER A PAST MIGRATION UNLESS ASKED TO.
 
 # Sand widgets
 

@@ -2,7 +2,12 @@ CREATE TABLE IF NOT EXISTS record (
     id INTEGER PRIMARY KEY,
     quantity REAL NOT NULL DEFAULT 1,
     head TEXT,
-    body TEXT
+    body TEXT,
+    owner_organ_id INTEGER REFERENCES organ(id),
+    sync_uid TEXT CHECK (sync_uid IS NULL OR length(trim(sync_uid)) > 0),
+    origin_organ_id INTEGER REFERENCES organ(id),
+    created_at TEXT,
+    updated_at TEXT
 );
 CREATE TABLE IF NOT EXISTS view (
     id INTEGER PRIMARY KEY,
@@ -435,7 +440,9 @@ CREATE TABLE IF NOT EXISTS organ (
     last_transfer_polled_at TEXT CHECK (last_transfer_polled_at IS NULL OR julianday(last_transfer_polled_at) IS NOT NULL),
     proximity INTEGER NOT NULL DEFAULT 100 CHECK (proximity >= 0),
     transfer_send_received_receipts INTEGER NOT NULL DEFAULT 1 CHECK (transfer_send_received_receipts IN (0, 1)),
-    transfer_send_seen_receipts INTEGER NOT NULL DEFAULT 1 CHECK (transfer_send_seen_receipts IN (0, 1))
+    transfer_send_seen_receipts INTEGER NOT NULL DEFAULT 1 CHECK (transfer_send_seen_receipts IN (0, 1)),
+    file_sync_enabled INTEGER NOT NULL DEFAULT 0 CHECK (file_sync_enabled IN (0, 1)),
+    file_sync_path TEXT
 ) STRICT;
 CREATE TABLE IF NOT EXISTS view_dependency (
     view_id INTEGER NOT NULL REFERENCES view(id) ON DELETE CASCADE CHECK (view_id > 0),
@@ -449,7 +456,9 @@ CREATE TABLE IF NOT EXISTS record_extension (
     version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1),
     freestyle_data_structure TEXT NOT NULL CHECK (json_valid(freestyle_data_structure)),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP CHECK (julianday(created_at) IS NOT NULL),
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP CHECK (julianday(updated_at) IS NOT NULL)
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP CHECK (julianday(updated_at) IS NOT NULL),
+    sync_uid TEXT CHECK (sync_uid IS NULL OR length(trim(sync_uid)) > 0),
+    origin_organ_id INTEGER REFERENCES organ(id)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS idx_record_extension_namespace_record ON record_extension(namespace, record_id);
 CREATE UNIQUE INDEX IF NOT EXISTS uq_record_extension_record_namespace ON record_extension(record_id, namespace);
@@ -462,7 +471,9 @@ CREATE TABLE IF NOT EXISTS record_link (
     position REAL,
     freestyle_data_structure TEXT CHECK (freestyle_data_structure IS NULL OR json_valid(freestyle_data_structure)),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP CHECK (julianday(created_at) IS NOT NULL),
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP CHECK (julianday(updated_at) IS NOT NULL)
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP CHECK (julianday(updated_at) IS NOT NULL),
+    sync_uid TEXT CHECK (sync_uid IS NULL OR length(trim(sync_uid)) > 0),
+    origin_organ_id INTEGER REFERENCES organ(id)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS idx_record_link_record_type ON record_link(record_id, link_type, target_table);
 CREATE INDEX IF NOT EXISTS idx_record_link_target_type ON record_link(target_table, target_id, link_type);
@@ -474,7 +485,9 @@ CREATE TABLE IF NOT EXISTS record_comment (
     body TEXT NOT NULL CHECK (length(trim(body)) > 0),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP CHECK (julianday(created_at) IS NOT NULL),
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP CHECK (julianday(updated_at) IS NOT NULL),
-    deleted_at TEXT CHECK (deleted_at IS NULL OR julianday(deleted_at) IS NOT NULL)
+    deleted_at TEXT CHECK (deleted_at IS NULL OR julianday(deleted_at) IS NOT NULL),
+    sync_uid TEXT CHECK (sync_uid IS NULL OR length(trim(sync_uid)) > 0),
+    origin_organ_id INTEGER REFERENCES organ(id)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS idx_record_comment_record_created ON record_comment(record_id, created_at DESC);
 CREATE TABLE IF NOT EXISTS record_worklog (
@@ -488,6 +501,8 @@ CREATE TABLE IF NOT EXISTS record_worklog (
     note TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP CHECK (julianday(created_at) IS NOT NULL),
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP CHECK (julianday(updated_at) IS NOT NULL),
+    sync_uid TEXT CHECK (sync_uid IS NULL OR length(trim(sync_uid)) > 0),
+    origin_organ_id INTEGER REFERENCES organ(id),
     CHECK (length(trim(started_at)) > 0 AND julianday(started_at) IS NOT NULL),
     CHECK (ended_at IS NULL OR (length(trim(ended_at)) > 0 AND julianday(ended_at) IS NOT NULL)),
     CHECK (last_heartbeat_at IS NULL OR (length(trim(last_heartbeat_at)) > 0 AND julianday(last_heartbeat_at) IS NOT NULL)),
@@ -507,7 +522,9 @@ CREATE TABLE IF NOT EXISTS record_resource_ref (
     position REAL,
     freestyle_data_structure TEXT CHECK (freestyle_data_structure IS NULL OR json_valid(freestyle_data_structure)),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP CHECK (julianday(created_at) IS NOT NULL),
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP CHECK (julianday(updated_at) IS NOT NULL)
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP CHECK (julianday(updated_at) IS NOT NULL),
+    sync_uid TEXT CHECK (sync_uid IS NULL OR length(trim(sync_uid)) > 0),
+    origin_organ_id INTEGER REFERENCES organ(id)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS idx_record_resource_ref_record_position ON record_resource_ref(record_id, position, id);
 CREATE UNIQUE INDEX IF NOT EXISTS uq_record_resource_ref_identity ON record_resource_ref(record_id, provider, resource_path);
@@ -523,7 +540,9 @@ CREATE TABLE IF NOT EXISTS work_metadata (
     completion_notes TEXT,
     metadata_json TEXT NOT NULL DEFAULT '{}' CHECK (json_valid(metadata_json)),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP CHECK (julianday(created_at) IS NOT NULL),
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP CHECK (julianday(updated_at) IS NOT NULL)
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP CHECK (julianday(updated_at) IS NOT NULL),
+    sync_uid TEXT CHECK (sync_uid IS NULL OR length(trim(sync_uid)) > 0),
+    origin_organ_id INTEGER REFERENCES organ(id)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS idx_work_metadata_owner ON work_metadata(owner_kind, owner_id);
 CREATE INDEX IF NOT EXISTS idx_work_metadata_status ON work_metadata(status);
@@ -540,7 +559,9 @@ CREATE TABLE IF NOT EXISTS work_subject (
     display_name_snapshot TEXT,
     organ_name_snapshot TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP CHECK (julianday(created_at) IS NOT NULL),
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP CHECK (julianday(updated_at) IS NOT NULL)
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP CHECK (julianday(updated_at) IS NOT NULL),
+    sync_uid TEXT CHECK (sync_uid IS NULL OR length(trim(sync_uid)) > 0),
+    origin_organ_id INTEGER REFERENCES organ(id)
 ) STRICT;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_work_subject_app_user ON work_subject(app_user_id) WHERE subject_kind = 'app_user' AND app_user_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_work_subject_organ ON work_subject(organ_id) WHERE subject_kind = 'organ' AND organ_id IS NOT NULL;
@@ -552,7 +573,9 @@ CREATE TABLE IF NOT EXISTS work_assignment (
     work_subject_id INTEGER NOT NULL REFERENCES work_subject(id) ON DELETE CASCADE,
     assignment_kind TEXT NOT NULL DEFAULT 'responsible' CHECK (assignment_kind IN ('responsible', 'observer', 'helper')),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP CHECK (julianday(created_at) IS NOT NULL),
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP CHECK (julianday(updated_at) IS NOT NULL)
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP CHECK (julianday(updated_at) IS NOT NULL),
+    sync_uid TEXT CHECK (sync_uid IS NULL OR length(trim(sync_uid)) > 0),
+    origin_organ_id INTEGER REFERENCES organ(id)
 ) STRICT;
 CREATE INDEX IF NOT EXISTS idx_work_assignment_metadata ON work_assignment(work_metadata_id);
 CREATE INDEX IF NOT EXISTS idx_work_assignment_subject ON work_assignment(work_subject_id);

@@ -16,6 +16,8 @@ pub struct OrganSyncPolicyRow {
         check = "record_sync_mode IN ('none', 'sync_outgoing', 'sync_incoming', 'sync_both')"
     )]
     pub record_sync_mode: String,
+    #[table(default = "300", check = "sync_check_interval_seconds >= 0")]
+    pub sync_check_interval_seconds: i64,
     #[table(
         default = "CURRENT_TIMESTAMP",
         check = "julianday(created_at) IS NOT NULL"
@@ -154,4 +156,35 @@ pub struct RecordSyncPendingDependencyRow {
     pub created_at: String,
     #[table(check = "resolved_at IS NULL OR julianday(resolved_at) IS NOT NULL")]
     pub resolved_at: Option<String>,
+}
+
+#[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
+#[table(name = "record_sync_peer_state")]
+#[table(strict)]
+#[table(index(
+    name = "uq_record_sync_peer_state_scope",
+    columns = "organ_id, owner_scope",
+    unique
+))]
+pub struct RecordSyncPeerStateRow {
+    #[table(primary_key)]
+    pub id: i64,
+    #[table(references = "organ(id) ON DELETE CASCADE", check = "organ_id > 0")]
+    pub organ_id: i64,
+    #[table(check = "length(trim(owner_scope)) > 0")]
+    pub owner_scope: String,
+    #[table(check = "last_fingerprint IS NULL OR length(trim(last_fingerprint)) > 0")]
+    pub last_fingerprint: Option<String>,
+    #[table(check = "last_full_snapshot_at IS NULL OR julianday(last_full_snapshot_at) IS NOT NULL")]
+    pub last_full_snapshot_at: Option<String>,
+    #[table(check = "last_checked_at IS NULL OR julianday(last_checked_at) IS NOT NULL")]
+    pub last_checked_at: Option<String>,
+    #[table(check = "next_check_at IS NULL OR julianday(next_check_at) IS NOT NULL")]
+    pub next_check_at: Option<String>,
+    pub last_error: Option<String>,
+    #[table(
+        default = "CURRENT_TIMESTAMP",
+        check = "julianday(updated_at) IS NOT NULL"
+    )]
+    pub updated_at: String,
 }

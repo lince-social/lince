@@ -1043,7 +1043,6 @@ async fn build_fingerprint(
     for row in records {
         row_count += 1;
         "record".hash(&mut hasher);
-        row.get::<String, _>("sync_uid").hash(&mut hasher);
         row.get::<Option<String>, _>("updated_at").hash(&mut hasher);
     }
 
@@ -1051,7 +1050,6 @@ async fn build_fingerprint(
         for row in fingerprint_sidecar_rows(state, table, &root_sync_uids).await? {
             row_count += 1;
             table.hash(&mut hasher);
-            row.0.hash(&mut hasher);
             row.1.hash(&mut hasher);
         }
     }
@@ -1068,6 +1066,20 @@ async fn build_fingerprint(
         row.get::<String, _>("table_name").hash(&mut hasher);
         row.get::<String, _>("row_sync_uid").hash(&mut hasher);
         row.get::<String, _>("delete_clock").hash(&mut hasher);
+    }
+
+    if let Some(max_crdt_clock) = sqlx::query_scalar::<_, Option<String>>(
+        "SELECT MAX(u.update_clock)
+         FROM record_text_crdt_update u
+         JOIN record r ON r.sync_uid = u.record_sync_uid
+         WHERE COALESCE(r.owner_organ_id, 1) IN (SELECT value FROM json_each(?))",
+    )
+    .bind(&owners_json)
+    .fetch_one(&*state.services.db)
+    .await?
+    {
+        "crdt".hash(&mut hasher);
+        max_crdt_clock.hash(&mut hasher);
     }
 
     let max_operation_clock = sqlx::query_scalar::<_, String>(
@@ -1258,6 +1270,15 @@ async fn snapshot_sidecar_rows(
             }
             if let Some(uid) = related_sync_uid(state, "work_subject", row.get("work_subject_id")).await? {
                 value["work_subject_sync_uid"] = Value::String(uid);
+            }
+        }
+        if table == "record_link" {
+            let target_table: String = row.get("target_table");
+            if target_table == "record" {
+                let target_id: i64 = row.get("target_id");
+                if let Some(uid) = related_sync_uid(state, "record", target_id).await? {
+                    value["target_sync_uid"] = Value::String(uid);
+                }
             }
         }
         rows.push(RecordSyncRowFrame {
@@ -1579,13 +1600,13 @@ pub async fn run_record_sync_for_organ(
     {
         pull_snapshot(&state, &organ.base_url, &bearer_token, organ_id, &owners).await?;
         pull_operations(&state, &organ.base_url, &bearer_token, organ_id, &owners).await?;
+        sync_text_crdt_for_organ(&state, &organ.base_url, &bearer_token, organ_id, &owners).await?;
     } else {
         sync_log(format!(
-            "record sync: fingerprint matched; skipped snapshot/pull organ_id={organ_id}"
+            "record sync: fingerprint matched; skipped snapshot/pull/crdt organ_id={organ_id}"
         ));
     }
     push_operations(&state, &organ.base_url, &bearer_token, organ_id, &owners).await?;
-    sync_text_crdt_for_organ(&state, &organ.base_url, &bearer_token, organ_id, &owners).await?;
     tracing::info!(organ_id, mode = %mode, "record sync: run finished");
     sync_log(format!("record sync: run finished organ_id={organ_id} mode={mode}"));
     Ok(())
@@ -1674,14 +1695,22 @@ async fn has_unsent_operations_for_organ(
     if owners.is_empty() {
         return Ok(false);
     }
-    Ok(!load_operations_since(state, None, &owners)
-        .await?
-        .into_iter()
-        .filter(|operation| operation.sent_at.is_none())
-        .filter(|operation| operation.source_operation_uid.is_none())
-        .filter(|operation| operation.source_organ_id == LOCAL_ORGAN_ID)
-        .collect::<Vec<_>>()
-        .is_empty())
+    let owners_json = json!(normalized_owners(&owners)).to_string();
+    let exists = sqlx::query_scalar::<_, i64>(
+        "SELECT EXISTS(
+            SELECT 1 FROM record_sync_operation o
+            JOIN record r ON r.sync_uid = o.root_record_sync_uid
+            WHERE o.sent_at IS NULL
+              AND o.source_operation_uid IS NULL
+              AND o.source_organ_id = ?
+              AND COALESCE(r.owner_organ_id, 1) IN (SELECT value FROM json_each(?))
+        )",
+    )
+    .bind(LOCAL_ORGAN_ID)
+    .bind(owners_json)
+    .fetch_one(&*state.services.db)
+    .await?;
+    Ok(exists != 0)
 }
 
 async fn sync_check_interval_seconds(state: &AppState, organ_id: i64) -> Result<i64, sqlx::Error> {
@@ -2070,7 +2099,7 @@ async fn pull_text_crdt_document(
 ) -> Result<usize, String> {
     let remote_document_uid = remap_document_uid_for_remote(document_uid, organ_id);
     let path = format!(
-        "/sync/crdt/text/snapshot?document_uid={}",
+        "/sync/crdt/text/snapshot?documentUid={}",
         urlencoding::encode(&remote_document_uid)
     );
     let response = state
@@ -2628,6 +2657,13 @@ async fn resolve_row_references(
             {
                 row["record_id"] = Value::Number(id.into());
             }
+            if table == "record_link"
+                && row.get("target_table").and_then(Value::as_str) == Some("record")
+                && let Some(uid) = row.get("target_sync_uid").and_then(Value::as_str)
+                && let Some(id) = local_id_for_sync_uid(state, "record", uid).await?
+            {
+                row["target_id"] = Value::Number(id.into());
+            }
         }
         "work_metadata" => {
             if row.get("owner_kind").and_then(Value::as_str) == Some("record")
@@ -2755,6 +2791,7 @@ fn remap_row_uid_fields(row: &mut Value, from: i64, to: i64) {
         "root_record_sync_uid",
         "work_metadata_sync_uid",
         "work_subject_sync_uid",
+        "target_sync_uid",
     ] {
         if let Some(value) = row.get_mut(key)
             && let Some(text_value) = value.as_str()

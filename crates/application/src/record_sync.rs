@@ -494,6 +494,14 @@ async fn sidecar_payload(
             payload.insert("work_subject_sync_uid".into(), json!(uid));
         }
     }
+    if table_name == "record_link" {
+        let target_table: String = row.get("target_table");
+        if target_table == "record" {
+            if let Some(uid) = sync_uid_for_local_id(&services, "record", row.get("target_id")).await? {
+                payload.insert("target_sync_uid".into(), json!(uid));
+            }
+        }
+    }
     Ok(serde_json::Value::Object(payload).to_string())
 }
 

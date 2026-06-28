@@ -736,7 +736,7 @@ pub(super) fn script() -> String {
         recordBodyInput.disabled = disabled;
         recordQuantityInput.disabled = disabled;
         recordCategoryInput.disabled = disabled;
-        recordSaveButton.disabled = disabled || !ready || !String(state.recordDraft.head || "").trim();
+        recordSaveButton.disabled = disabled || !String(state.recordDraft.head || "").trim();
         recordDeleteButton.disabled = !node || pending;
         recordDeleteButton.textContent = state.recordDeleteArmed ? "Confirm delete" : "Delete record";
     }
@@ -1059,8 +1059,7 @@ pub(super) fn script() -> String {
         const detail = Number(state.recordDetail?.record_id || 0) === Number(node?.id || 0)
             ? state.recordDetail
             : null;
-        if (!node || !detail) {
-            renderStatus("Record not ready", "error", "Load the selected record before saving edits.");
+        if (!node) {
             return;
         }
 
@@ -1077,7 +1076,7 @@ pub(super) fn script() -> String {
         }
 
         const quantity = parseOptionalInteger(state.recordDraft.quantity) ?? 0;
-        const assigneeIds = Array.isArray(detail.assignees)
+        const assigneeIds = Array.isArray(detail?.assignees)
             ? detail.assignees
                   .map((entry) => Number(entry?.id || 0))
                   .filter((value) => Number.isInteger(value) && value > 0)
@@ -1092,11 +1091,11 @@ pub(super) fn script() -> String {
             head,
             body: String(state.recordDraft.body || "").trim(),
             quantity,
-            taskType: detail.task_type || null,
+            taskType: detail?.task_type || null,
             categories: state.recordDraft.categories.slice(),
-            startAt: detail.start_at || null,
-            endAt: detail.end_at || null,
-            estimateSeconds: Number.isInteger(detail.estimate_seconds) ? detail.estimate_seconds : null,
+            startAt: detail?.start_at || null,
+            endAt: detail?.end_at || null,
+            estimateSeconds: Number.isInteger(detail?.estimate_seconds) ? detail.estimate_seconds : null,
             assigneeIds,
         })
             .then(() => {
@@ -1105,7 +1104,7 @@ pub(super) fn script() -> String {
                 state.recordDeleteArmed = false;
                 applyOptimisticRecordDraft(node, state.recordDraft);
                 state.recordDetail = {
-                    ...detail,
+                    ...(detail || {}),
                     head,
                     body: String(state.recordDraft.body || "").trim() || null,
                     quantity,

@@ -10,6 +10,8 @@ use {
         Json,
         response::IntoResponse,
     },
+    base64::{Engine as _, engine::general_purpose::STANDARD as BASE64},
+    chrono::Utc,
     futures::{SinkExt, StreamExt},
     reqwest::Method,
     serde::{Deserialize, Deserializer, Serialize},
@@ -158,6 +160,77 @@ pub struct RecordSyncApplyRequest {
 pub struct RecordSyncApplyResponse {
     applied: usize,
     skipped: usize,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextCrdtUpdatesQuery {
+    document_uid: String,
+    since_clock: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextCrdtSnapshotQuery {
+    document_uid: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct TextCrdtUpdateFrame {
+    update_uid: String,
+    document_uid: String,
+    record_sync_uid: String,
+    field_name: String,
+    source_organ_id: i64,
+    actor_user_id: Option<i64>,
+    update_clock: String,
+    update_kind: String,
+    update_bytes_base64: String,
+    materialized_text: Option<String>,
+    sent_at: Option<String>,
+    compacted_at: Option<String>,
+    created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextCrdtPushUpdate {
+    update_uid: Option<String>,
+    document_uid: String,
+    update_clock: Option<String>,
+    update_kind: Option<String>,
+    update_bytes_base64: String,
+    materialized_text: Option<String>,
+    source_organ_id: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextCrdtPushRequest {
+    source_base_url: Option<String>,
+    source_name: Option<String>,
+    updates: Vec<TextCrdtPushUpdate>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextCrdtUpdatesResponse {
+    updates: Vec<TextCrdtUpdateFrame>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextCrdtPushResponse {
+    applied: usize,
+    skipped: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextCrdtSnapshotResponse {
+    snapshot: Option<TextCrdtUpdateFrame>,
+    updates: Vec<TextCrdtUpdateFrame>,
 }
 
 pub async fn connect_record_sync_socket(
@@ -331,6 +404,122 @@ pub async fn apply_record_sync_operations(
     }
 }
 
+pub async fn text_crdt_updates(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Query(query): Query<TextCrdtUpdatesQuery>,
+) -> impl IntoResponse {
+    let claims = match authenticate_record_sync(&state, &headers).await {
+        Ok(claims) => claims,
+        Err(response) => return response,
+    };
+    if let Err(error) =
+        claims.require_permission(::application::auth::PermissionKey::new("record", "read"))
+    {
+        return api_error(StatusCode::FORBIDDEN, error.to_string()).into_response();
+    }
+    let document = match parse_text_crdt_document(&query.document_uid) {
+        Ok(document) => document,
+        Err(error) => return api_error(StatusCode::BAD_REQUEST, error).into_response(),
+    };
+    if let Err(error) = ensure_text_crdt_record_exists(&state, &document).await {
+        return api_error(StatusCode::NOT_FOUND, error.to_string()).into_response();
+    }
+    match load_text_crdt_updates(&state, &document.document_uid, query.since_clock.as_deref()).await
+    {
+        Ok(updates) => {
+            sync_log(format!(
+                "text crdt sync: served updates document_uid={} since={:?} updates={}",
+                document.document_uid,
+                query.since_clock,
+                updates.len()
+            ));
+            Json(TextCrdtUpdatesResponse { updates }).into_response()
+        }
+        Err(error) => {
+            sync_log(format!(
+                "text crdt sync: updates request failed document_uid={} error={error}",
+                document.document_uid
+            ));
+            api_error(StatusCode::BAD_GATEWAY, error.to_string()).into_response()
+        }
+    }
+}
+
+pub async fn text_crdt_snapshot(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Query(query): Query<TextCrdtSnapshotQuery>,
+) -> impl IntoResponse {
+    let claims = match authenticate_record_sync(&state, &headers).await {
+        Ok(claims) => claims,
+        Err(response) => return response,
+    };
+    if let Err(error) =
+        claims.require_permission(::application::auth::PermissionKey::new("record", "read"))
+    {
+        return api_error(StatusCode::FORBIDDEN, error.to_string()).into_response();
+    }
+    let document = match parse_text_crdt_document(&query.document_uid) {
+        Ok(document) => document,
+        Err(error) => return api_error(StatusCode::BAD_REQUEST, error).into_response(),
+    };
+    if let Err(error) = ensure_text_crdt_record_exists(&state, &document).await {
+        return api_error(StatusCode::NOT_FOUND, error.to_string()).into_response();
+    }
+    match load_text_crdt_snapshot(&state, &document.document_uid).await {
+        Ok(response) => {
+            sync_log(format!(
+                "text crdt sync: served snapshot document_uid={} snapshot={} deltas={}",
+                document.document_uid,
+                response.snapshot.is_some(),
+                response.updates.len()
+            ));
+            Json(response).into_response()
+        }
+        Err(error) => {
+            sync_log(format!(
+                "text crdt sync: snapshot request failed document_uid={} error={error}",
+                document.document_uid
+            ));
+            api_error(StatusCode::BAD_GATEWAY, error.to_string()).into_response()
+        }
+    }
+}
+
+pub async fn push_text_crdt_updates(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(payload): Json<TextCrdtPushRequest>,
+) -> impl IntoResponse {
+    let claims = match authenticate_record_sync(&state, &headers).await {
+        Ok(claims) => claims,
+        Err(response) => return response,
+    };
+    if let Err(error) =
+        claims.require_permission(::application::auth::PermissionKey::new("record", "update"))
+    {
+        return api_error(StatusCode::FORBIDDEN, error.to_string()).into_response();
+    }
+    let actor_user_id = match i64::try_from(claims.user_id) {
+        Ok(value) => Some(value),
+        Err(_) => return api_error(StatusCode::BAD_REQUEST, "user id is too large").into_response(),
+    };
+    match apply_text_crdt_updates(&state, actor_user_id, payload).await {
+        Ok(response) => {
+            sync_log(format!(
+                "text crdt sync: accepted pushed updates applied={} skipped={}",
+                response.applied, response.skipped
+            ));
+            Json(response).into_response()
+        }
+        Err(error) => {
+            sync_log(format!("text crdt sync: applying pushed updates failed error={error}"));
+            api_error(StatusCode::BAD_GATEWAY, error.to_string()).into_response()
+        }
+    }
+}
+
 async fn authenticate_record_sync(
     state: &AppState,
     headers: &HeaderMap,
@@ -344,6 +533,291 @@ async fn authenticate_record_sync(
         .authenticate_authorization(auth_header)
         .await
         .map_err(|error| api_error(StatusCode::UNAUTHORIZED, error.to_string()).into_response())
+}
+
+#[derive(Debug, Clone)]
+struct TextCrdtDocument {
+    document_uid: String,
+    record_sync_uid: String,
+    field_name: String,
+}
+
+fn parse_text_crdt_document(document_uid: &str) -> Result<TextCrdtDocument, String> {
+    let value = document_uid.trim();
+    if !value.starts_with("record:") {
+        return Err("document_uid must start with record:".to_string());
+    }
+    let Some((record_sync_uid, field_name)) = value["record:".len()..].rsplit_once(':') else {
+        return Err("document_uid must be record:<record_sync_uid>:<field>".to_string());
+    };
+    if record_sync_uid.trim().is_empty() {
+        return Err("record sync uid is required".to_string());
+    }
+    if !matches!(field_name, "head" | "body") {
+        return Err("field must be head or body".to_string());
+    }
+    Ok(TextCrdtDocument {
+        document_uid: value.to_string(),
+        record_sync_uid: record_sync_uid.to_string(),
+        field_name: field_name.to_string(),
+    })
+}
+
+async fn ensure_text_crdt_record_exists(
+    state: &AppState,
+    document: &TextCrdtDocument,
+) -> Result<i64, std::io::Error> {
+    sqlx::query_scalar::<_, i64>("SELECT id FROM record WHERE sync_uid = ? LIMIT 1")
+        .bind(&document.record_sync_uid)
+        .fetch_optional(&*state.services.db)
+        .await
+        .map_err(std::io::Error::other)?
+        .ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                format!("Record {} not found", document.record_sync_uid),
+            )
+        })
+}
+
+async fn load_text_crdt_updates(
+    state: &AppState,
+    document_uid: &str,
+    since_clock: Option<&str>,
+) -> Result<Vec<TextCrdtUpdateFrame>, sqlx::Error> {
+    sqlx::query_as::<_, TextCrdtUpdateFrame>(
+        "SELECT
+            update_uid,
+            document_uid,
+            record_sync_uid,
+            field_name,
+            source_organ_id,
+            actor_user_id,
+            update_clock,
+            update_kind,
+            update_bytes_base64,
+            materialized_text,
+            sent_at,
+            compacted_at,
+            created_at
+         FROM record_text_crdt_update
+         WHERE document_uid = ?
+           AND (? IS NULL OR update_clock > ?)
+           AND compacted_at IS NULL
+         ORDER BY update_clock, source_organ_id, update_uid
+         LIMIT 1000",
+    )
+    .bind(document_uid)
+    .bind(since_clock)
+    .bind(since_clock)
+    .fetch_all(&*state.services.db)
+    .await
+}
+
+async fn load_text_crdt_snapshot(
+    state: &AppState,
+    document_uid: &str,
+) -> Result<TextCrdtSnapshotResponse, sqlx::Error> {
+    let snapshot = sqlx::query_as::<_, TextCrdtUpdateFrame>(
+        "SELECT
+            update_uid,
+            document_uid,
+            record_sync_uid,
+            field_name,
+            source_organ_id,
+            actor_user_id,
+            update_clock,
+            update_kind,
+            update_bytes_base64,
+            materialized_text,
+            sent_at,
+            compacted_at,
+            created_at
+         FROM record_text_crdt_update
+         WHERE document_uid = ?
+           AND update_kind = 'snapshot'
+           AND compacted_at IS NULL
+         ORDER BY update_clock DESC, id DESC
+         LIMIT 1",
+    )
+    .bind(document_uid)
+    .fetch_optional(&*state.services.db)
+    .await?;
+    let since_clock = snapshot.as_ref().map(|row| row.update_clock.as_str());
+    let updates = load_text_crdt_updates(state, document_uid, since_clock).await?;
+    Ok(TextCrdtSnapshotResponse { snapshot, updates })
+}
+
+async fn apply_text_crdt_updates(
+    state: &AppState,
+    actor_user_id: Option<i64>,
+    payload: TextCrdtPushRequest,
+) -> Result<TextCrdtPushResponse, sqlx::Error> {
+    let peer_organ_id = match payload.source_base_url.as_deref() {
+        Some(base_url) if !base_url.trim().is_empty() => {
+            ensure_peer_organ(state, base_url, payload.source_name.as_deref()).await?
+        }
+        _ => LOCAL_ORGAN_ID,
+    };
+    let mut applied = 0_usize;
+    let mut skipped = 0_usize;
+    for mut update in payload.updates {
+        if peer_organ_id != LOCAL_ORGAN_ID {
+            remap_text_crdt_update_for_receiver(&mut update, peer_organ_id);
+        }
+        match apply_text_crdt_update(state, actor_user_id, update).await {
+            Ok(true) => applied += 1,
+            Ok(false) => skipped += 1,
+            Err(error) => {
+                tracing::warn!(error = %error, "text crdt sync: failed to apply update");
+                skipped += 1;
+            }
+        }
+    }
+    Ok(TextCrdtPushResponse { applied, skipped })
+}
+
+fn remap_text_crdt_update_for_receiver(update: &mut TextCrdtPushUpdate, peer_organ_id: i64) {
+    let from = format!("organ:{LOCAL_ORGAN_ID}:");
+    let to = format!("organ:{peer_organ_id}:");
+    update.document_uid = update.document_uid.replace(&from, &to);
+    update.source_organ_id = Some(peer_organ_id);
+}
+
+fn remap_text_crdt_update_for_local(update: &mut TextCrdtPushUpdate, remote_organ_id: i64) {
+    let from = format!("organ:{LOCAL_ORGAN_ID}:");
+    let to = format!("organ:{remote_organ_id}:");
+    update.document_uid = update.document_uid.replace(&from, &to);
+    update.source_organ_id = Some(remote_organ_id);
+}
+
+async fn apply_text_crdt_update(
+    state: &AppState,
+    actor_user_id: Option<i64>,
+    update: TextCrdtPushUpdate,
+) -> Result<bool, sqlx::Error> {
+    let document = parse_text_crdt_document(&update.document_uid).map_err(sqlx_io)?;
+    let record_id = ensure_text_crdt_record_exists(state, &document)
+        .await
+        .map_err(sqlx::Error::Io)?;
+    let update_kind = update.update_kind.unwrap_or_else(|| "delta".to_string());
+    if !matches!(update_kind.as_str(), "delta" | "snapshot") {
+        return Err(sqlx_io("update_kind must be delta or snapshot"));
+    }
+    if BASE64.decode(update.update_bytes_base64.as_bytes()).is_err() {
+        return Err(sqlx_io("update_bytes_base64 is not valid base64"));
+    }
+    let update_clock = update.update_clock.unwrap_or_else(text_crdt_clock);
+    let source_organ_id = update.source_organ_id.unwrap_or(LOCAL_ORGAN_ID);
+    if source_organ_id <= 0 {
+        return Err(sqlx_io("source_organ_id must be positive"));
+    }
+    let update_uid = update.update_uid.unwrap_or_else(|| {
+        format!(
+            "{source_organ_id}:{update_clock}:{}",
+            document.document_uid.replace(':', "_")
+        )
+    });
+    if sqlx::query_scalar::<_, i64>(
+        "SELECT id FROM record_text_crdt_update WHERE update_uid = ? LIMIT 1",
+    )
+    .bind(&update_uid)
+    .fetch_optional(&*state.services.db)
+    .await?
+    .is_some()
+    {
+        return Ok(false);
+    }
+
+    state
+        .services
+        .writer
+        .execute_statement(
+            "INSERT INTO record_text_crdt_update(
+                update_uid,
+                document_uid,
+                record_sync_uid,
+                field_name,
+                source_organ_id,
+                actor_user_id,
+                update_clock,
+                update_kind,
+                update_bytes_base64,
+                materialized_text
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                .to_string(),
+            vec![
+                text(update_uid.clone()),
+                text(document.document_uid.clone()),
+                text(document.record_sync_uid.clone()),
+                text(document.field_name.clone()),
+                int(source_organ_id),
+                optional_int(actor_user_id),
+                text(update_clock.clone()),
+                text(update_kind),
+                text(update.update_bytes_base64),
+                optional_text(update.materialized_text.clone()),
+            ],
+        )
+        .await
+        .map_err(sqlx::Error::Io)?;
+
+    if let Some(materialized_text) = update.materialized_text {
+        materialize_text_crdt_update(
+            state,
+            record_id,
+            &document.field_name,
+            materialized_text,
+            source_organ_id,
+            update_uid,
+        )
+        .await?;
+    }
+
+    Ok(true)
+}
+
+async fn materialize_text_crdt_update(
+    state: &AppState,
+    record_id: i64,
+    field_name: &str,
+    text_value: String,
+    source_organ_id: i64,
+    update_uid: String,
+) -> Result<(), sqlx::Error> {
+    let sql = match field_name {
+        "head" => "UPDATE record SET head = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        "body" => "UPDATE record SET body = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        _ => return Err(sqlx_io("field_name must be head or body")),
+    };
+    ::application::write::execute_record_update_with_origin(
+        state.services.clone(),
+        [record_id as u32],
+        sql,
+        vec![text(text_value), int(record_id)],
+        ::application::record_sync::SyncOrigin::RemoteCrdt {
+            source_organ_id,
+            update_uid: Some(update_uid),
+        },
+    )
+    .await
+    .map_err(sqlx::Error::Io)?;
+    Ok(())
+}
+
+fn text_crdt_clock() -> String {
+    let now = Utc::now();
+    let nanos = now
+        .timestamp_nanos_opt()
+        .unwrap_or_else(|| now.timestamp_micros() * 1_000);
+    format!("{nanos:020}:{LOCAL_ORGAN_ID}")
+}
+
+fn sqlx_io(message: impl Into<String>) -> sqlx::Error {
+    sqlx::Error::Io(std::io::Error::new(
+        std::io::ErrorKind::InvalidInput,
+        message.into(),
+    ))
 }
 
 async fn run_record_sync_socket(
@@ -1111,6 +1585,7 @@ pub async fn run_record_sync_for_organ(
         ));
     }
     push_operations(&state, &organ.base_url, &bearer_token, organ_id, &owners).await?;
+    sync_text_crdt_for_organ(&state, &organ.base_url, &bearer_token, organ_id, &owners).await?;
     tracing::info!(organ_id, mode = %mode, "record sync: run finished");
     sync_log(format!("record sync: run finished organ_id={organ_id} mode={mode}"));
     Ok(())
@@ -1528,6 +2003,249 @@ async fn push_operations(
         "record sync: operations pushed organ_id={organ_id} operations={pushed}"
     ));
     Ok(())
+}
+
+async fn sync_text_crdt_for_organ(
+    state: &AppState,
+    base_url: &str,
+    bearer_token: &str,
+    organ_id: i64,
+    owners: &[i64],
+) -> Result<(), String> {
+    let documents = text_crdt_documents_for_owners(state, owners)
+        .await
+        .map_err(|error| error.to_string())?;
+    if documents.is_empty() {
+        sync_log(format!(
+            "text crdt sync: skipped organ_id={organ_id} reason=no_documents owners={owners:?}"
+        ));
+        return Ok(());
+    }
+    sync_log(format!(
+        "text crdt sync: run started organ_id={organ_id} documents={}",
+        documents.len()
+    ));
+    let mut pulled = 0_usize;
+    for document_uid in &documents {
+        pulled += pull_text_crdt_document(state, base_url, bearer_token, organ_id, document_uid)
+            .await?;
+    }
+    let pushed = push_text_crdt_documents(state, base_url, bearer_token, organ_id, owners).await?;
+    sync_log(format!(
+        "text crdt sync: run finished organ_id={organ_id} pulled={pulled} pushed={pushed}"
+    ));
+    Ok(())
+}
+
+async fn text_crdt_documents_for_owners(
+    state: &AppState,
+    owners: &[i64],
+) -> Result<Vec<String>, sqlx::Error> {
+    let owners_json = json!(normalized_owners(owners)).to_string();
+    let record_sync_uids = sqlx::query_scalar::<_, String>(
+        "SELECT sync_uid
+         FROM record
+         WHERE sync_uid IS NOT NULL
+           AND COALESCE(owner_organ_id, 1) IN (SELECT value FROM json_each(?))
+         ORDER BY sync_uid
+         LIMIT 250",
+    )
+    .bind(owners_json)
+    .fetch_all(&*state.services.db)
+    .await?;
+    let mut documents = Vec::with_capacity(record_sync_uids.len() * 2);
+    for sync_uid in record_sync_uids {
+        documents.push(format!("record:{sync_uid}:head"));
+        documents.push(format!("record:{sync_uid}:body"));
+    }
+    Ok(documents)
+}
+
+async fn pull_text_crdt_document(
+    state: &AppState,
+    base_url: &str,
+    bearer_token: &str,
+    organ_id: i64,
+    document_uid: &str,
+) -> Result<usize, String> {
+    let remote_document_uid = remap_document_uid_for_remote(document_uid, organ_id);
+    let path = format!(
+        "/sync/crdt/text/snapshot?document_uid={}",
+        urlencoding::encode(&remote_document_uid)
+    );
+    let response = state
+        .manas
+        .send_backend_request(base_url, bearer_token, Method::GET, &path, None)
+        .await?;
+    let status = response.status();
+    if status == StatusCode::NOT_FOUND {
+        return Ok(0);
+    }
+    if !status.is_success() {
+        let body = response.text().await.unwrap_or_default();
+        sync_log(format!(
+            "text crdt sync: pull failed organ_id={organ_id} document_uid={document_uid} status={status} body={body}"
+        ));
+        return Err(format!("Text CRDT pull failed with {status}: {body}"));
+    }
+    let snapshot = response
+        .json::<TextCrdtSnapshotResponse>()
+        .await
+        .map_err(|error| format!("Invalid text CRDT snapshot response: {error}"))?;
+    let mut updates = Vec::new();
+    if let Some(snapshot_update) = snapshot.snapshot {
+        updates.push(snapshot_update);
+    }
+    updates.extend(snapshot.updates);
+    let total = updates.len();
+    let mut applied = 0_usize;
+    for frame in updates {
+        let mut update = text_crdt_push_update_from_frame(frame);
+        remap_text_crdt_update_for_local(&mut update, organ_id);
+        if apply_text_crdt_update(state, None, update)
+            .await
+            .map_err(|error| error.to_string())?
+        {
+            applied += 1;
+        }
+    }
+    sync_log(format!(
+        "text crdt sync: pulled document organ_id={organ_id} document_uid={document_uid} updates={total} applied={applied}"
+    ));
+    Ok(applied)
+}
+
+async fn push_text_crdt_documents(
+    state: &AppState,
+    base_url: &str,
+    bearer_token: &str,
+    organ_id: i64,
+    owners: &[i64],
+) -> Result<usize, String> {
+    let updates = local_text_crdt_updates_for_owners(state, owners)
+        .await
+        .map_err(|error| error.to_string())?;
+    if updates.is_empty() {
+        return Ok(0);
+    }
+    let update_uids = updates
+        .iter()
+        .filter_map(|update| update.update_uid.clone())
+        .collect::<Vec<_>>();
+    sync_log(format!(
+        "text crdt sync: posting updates organ_id={organ_id} updates={}",
+        updates.len()
+    ));
+    let response = state
+        .manas
+        .send_backend_request(
+            base_url,
+            bearer_token,
+            Method::POST,
+            "/sync/crdt/text/updates",
+            Some(json!(TextCrdtPushRequest {
+                source_base_url: Some(format!("http://127.0.0.1:{}", state.listening_port)),
+                source_name: Some("Lince".to_string()),
+                updates,
+            })),
+        )
+        .await?;
+    let status = response.status();
+    if !status.is_success() {
+        let body = response.text().await.unwrap_or_default();
+        sync_log(format!(
+            "text crdt sync: push failed organ_id={organ_id} status={status} body={body}"
+        ));
+        return Err(format!("Text CRDT push failed with {status}: {body}"));
+    }
+    let result = response
+        .json::<TextCrdtPushResponse>()
+        .await
+        .map_err(|error| format!("Invalid text CRDT push response: {error}"))?;
+    sync_log(format!(
+        "text crdt sync: push response organ_id={organ_id} applied={} skipped={}",
+        result.applied, result.skipped
+    ));
+    mark_text_crdt_updates_sent(state, &update_uids)
+        .await
+        .map_err(|error| error.to_string())?;
+    Ok(result.applied + result.skipped)
+}
+
+async fn mark_text_crdt_updates_sent(
+    state: &AppState,
+    update_uids: &[String],
+) -> Result<(), sqlx::Error> {
+    for uid in update_uids {
+        state
+            .services
+            .writer
+            .execute_statement(
+                "UPDATE record_text_crdt_update SET sent_at = CURRENT_TIMESTAMP WHERE update_uid = ?"
+                    .to_string(),
+                vec![text(uid.clone())],
+            )
+            .await
+            .map_err(sqlx::Error::Io)?;
+    }
+    Ok(())
+}
+
+async fn local_text_crdt_updates_for_owners(
+    state: &AppState,
+    owners: &[i64],
+) -> Result<Vec<TextCrdtPushUpdate>, sqlx::Error> {
+    let owners_json = json!(normalized_owners(owners)).to_string();
+    let frames = sqlx::query_as::<_, TextCrdtUpdateFrame>(
+        "SELECT
+            u.update_uid,
+            u.document_uid,
+            u.record_sync_uid,
+            u.field_name,
+            u.source_organ_id,
+            u.actor_user_id,
+            u.update_clock,
+            u.update_kind,
+            u.update_bytes_base64,
+            u.materialized_text,
+            u.sent_at,
+            u.compacted_at,
+            u.created_at
+         FROM record_text_crdt_update u
+         JOIN record r ON r.sync_uid = u.record_sync_uid
+         WHERE COALESCE(r.owner_organ_id, 1) IN (SELECT value FROM json_each(?))
+           AND u.source_organ_id = ?
+           AND u.sent_at IS NULL
+           AND u.compacted_at IS NULL
+         ORDER BY u.update_clock, u.source_organ_id, u.update_uid
+         LIMIT 500",
+    )
+    .bind(owners_json)
+    .bind(LOCAL_ORGAN_ID)
+    .fetch_all(&*state.services.db)
+    .await?;
+    Ok(frames
+        .into_iter()
+        .map(text_crdt_push_update_from_frame)
+        .collect())
+}
+
+fn text_crdt_push_update_from_frame(frame: TextCrdtUpdateFrame) -> TextCrdtPushUpdate {
+    TextCrdtPushUpdate {
+        update_uid: Some(frame.update_uid),
+        document_uid: frame.document_uid,
+        update_clock: Some(frame.update_clock),
+        update_kind: Some(frame.update_kind),
+        update_bytes_base64: frame.update_bytes_base64,
+        materialized_text: frame.materialized_text,
+        source_organ_id: Some(frame.source_organ_id),
+    }
+}
+
+fn remap_document_uid_for_remote(document_uid: &str, remote_organ_id: i64) -> String {
+    let from = format!("organ:{remote_organ_id}:");
+    let to = format!("organ:{LOCAL_ORGAN_ID}:");
+    document_uid.replace(&from, &to)
 }
 
 async fn post_operations_to_remote(

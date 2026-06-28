@@ -21,6 +21,7 @@ use crate::{
         sync::{
             OrganSyncPolicyRow, RecordSyncAckRow, RecordSyncOperationRow,
             RecordSyncPeerStateRow, RecordSyncPendingDependencyRow, RecordSyncTombstoneRow,
+            RecordTextCrdtUpdateRow,
         },
     },
     schema::types::{Table, TableSchema},
@@ -81,5 +82,6 @@ pub fn declared_tables() -> Vec<TableSchema> {
         RecordSyncAckRow::schema(),
         RecordSyncPendingDependencyRow::schema(),
         RecordSyncPeerStateRow::schema(),
+        RecordTextCrdtUpdateRow::schema(),
     ]
 }

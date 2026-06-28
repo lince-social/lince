@@ -5443,6 +5443,7 @@ version = "0.7.0"
 dependencies = [
  "argon2",
  "async-trait",
+ "base64 0.22.1",
  "chrono",
  "dirs 6.0.0",
  "jsonwebtoken",

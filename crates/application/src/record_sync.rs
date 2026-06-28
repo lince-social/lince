@@ -1,3 +1,4 @@
+use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use chrono::Utc;
 use injection::cross_cutting::InjectedServices;
 use persistence::write_coordinator::{SqlParameter, WriteOutcome};
@@ -16,6 +17,10 @@ pub enum SyncOrigin {
     Remote {
         source_organ_id: i64,
         source_operation_uid: Option<String>,
+    },
+    RemoteCrdt {
+        source_organ_id: i64,
+        update_uid: Option<String>,
     },
 }
 
@@ -170,6 +175,96 @@ pub async fn enqueue_record_operations(
     }
 
     Ok(())
+}
+
+pub async fn enqueue_record_text_crdt_updates(
+    services: InjectedServices,
+    record_ids: impl IntoIterator<Item = u32>,
+    origin: SyncOrigin,
+) -> Result<(), Error> {
+    if !origin.is_local() {
+        return Ok(());
+    }
+
+    let ids = record_ids.into_iter().collect::<BTreeSet<_>>();
+    for record_id in ids {
+        let identity = ensure_record_identity(services.clone(), record_id).await?;
+        let row = sqlx::query_as::<_, (Option<String>, Option<String>)>(
+            "SELECT head, body FROM record WHERE id = ?",
+        )
+        .bind(i64::from(record_id))
+        .fetch_optional(&*services.db)
+        .await
+        .map_err(Error::other)?;
+        let Some((head, body)) = row else {
+            continue;
+        };
+        enqueue_text_crdt_update(
+            services.clone(),
+            &identity.sync_uid,
+            "head",
+            head.unwrap_or_default(),
+        )
+        .await?;
+        enqueue_text_crdt_update(
+            services.clone(),
+            &identity.sync_uid,
+            "body",
+            body.unwrap_or_default(),
+        )
+        .await?;
+    }
+
+    Ok(())
+}
+
+async fn enqueue_text_crdt_update(
+    services: InjectedServices,
+    record_sync_uid: &str,
+    field_name: &str,
+    materialized_text: String,
+) -> Result<(), Error> {
+    let clock = operation_clock();
+    let document_uid = format!("record:{record_sync_uid}:{field_name}");
+    let update_uid = format!(
+        "{LOCAL_ORGAN_ID}:{clock}:text:{}:{}",
+        field_name,
+        record_sync_uid.replace(':', "_")
+    );
+    let payload = json!({
+        "type": "plain_text_replace",
+        "text": materialized_text,
+    });
+    let update_bytes_base64 = BASE64.encode(payload.to_string().as_bytes());
+    services
+        .writer
+        .execute_statement(
+            "INSERT OR IGNORE INTO record_text_crdt_update(
+                update_uid,
+                document_uid,
+                record_sync_uid,
+                field_name,
+                source_organ_id,
+                actor_user_id,
+                update_clock,
+                update_kind,
+                update_bytes_base64,
+                materialized_text
+            ) VALUES (?, ?, ?, ?, ?, NULL, ?, 'delta', ?, ?)"
+                .to_string(),
+            vec![
+                SqlParameter::Text(update_uid),
+                SqlParameter::Text(document_uid),
+                SqlParameter::Text(record_sync_uid.to_string()),
+                SqlParameter::Text(field_name.to_string()),
+                SqlParameter::Integer(LOCAL_ORGAN_ID),
+                SqlParameter::Text(clock),
+                SqlParameter::Text(update_bytes_base64),
+                SqlParameter::Text(materialized_text),
+            ],
+        )
+        .await
+        .map(|_| ())
 }
 
 pub async fn enqueue_record_sidecar_operation(

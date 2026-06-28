@@ -188,3 +188,56 @@ pub struct RecordSyncPeerStateRow {
     )]
     pub updated_at: String,
 }
+
+#[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
+#[table(name = "record_text_crdt_update")]
+#[table(strict)]
+#[table(index(
+    name = "uq_record_text_crdt_update_uid",
+    columns = "update_uid",
+    unique
+))]
+#[table(index(
+    name = "idx_record_text_crdt_update_document_clock",
+    columns = "document_uid, update_clock"
+))]
+#[table(index(
+    name = "idx_record_text_crdt_update_record_field",
+    columns = "record_sync_uid, field_name"
+))]
+#[table(index(
+    name = "idx_record_text_crdt_update_source_clock",
+    columns = "source_organ_id, update_clock"
+))]
+pub struct RecordTextCrdtUpdateRow {
+    #[table(primary_key)]
+    pub id: i64,
+    #[table(check = "length(trim(update_uid)) > 0")]
+    pub update_uid: String,
+    #[table(check = "length(trim(document_uid)) > 0")]
+    pub document_uid: String,
+    #[table(check = "length(trim(record_sync_uid)) > 0")]
+    pub record_sync_uid: String,
+    #[table(check = "field_name IN ('head', 'body')")]
+    pub field_name: String,
+    #[table(references = "organ(id)", check = "source_organ_id > 0")]
+    pub source_organ_id: i64,
+    #[table(references = "app_user(id)", check = "actor_user_id IS NULL OR actor_user_id > 0")]
+    pub actor_user_id: Option<i64>,
+    #[table(check = "length(trim(update_clock)) > 0")]
+    pub update_clock: String,
+    #[table(check = "update_kind IN ('delta', 'snapshot')")]
+    pub update_kind: String,
+    #[table(check = "length(trim(update_bytes_base64)) > 0")]
+    pub update_bytes_base64: String,
+    pub materialized_text: Option<String>,
+    #[table(check = "sent_at IS NULL OR julianday(sent_at) IS NOT NULL")]
+    pub sent_at: Option<String>,
+    #[table(check = "compacted_at IS NULL OR julianday(compacted_at) IS NOT NULL")]
+    pub compacted_at: Option<String>,
+    #[table(
+        default = "CURRENT_TIMESTAMP",
+        check = "julianday(created_at) IS NOT NULL"
+    )]
+    pub created_at: String,
+}

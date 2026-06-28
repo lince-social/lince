@@ -33,10 +33,20 @@ pub async fn execute_record_update(
     sql: impl Into<String>,
     params: Vec<SqlParameter>,
 ) -> Result<WriteOutcome, Error> {
+    execute_record_update_with_origin(services, record_ids, sql, params, SyncOrigin::Local).await
+}
+
+pub async fn execute_record_update_with_origin(
+    services: InjectedServices,
+    record_ids: impl IntoIterator<Item = u32>,
+    sql: impl Into<String>,
+    params: Vec<SqlParameter>,
+    origin: SyncOrigin,
+) -> Result<WriteOutcome, Error> {
     let ids = record_ids.into_iter().collect::<Vec<_>>();
     let outcome = execute_statement(services.clone(), sql, params).await?;
     if outcome.rows_affected > 0 {
-        handle_record_change(services, ids, RecordSyncAction::Update, SyncOrigin::Local).await?;
+        handle_record_change(services, ids, RecordSyncAction::Update, origin).await?;
     }
     Ok(outcome)
 }
@@ -727,6 +737,12 @@ async fn handle_record_change(
 ) -> Result<(), Error> {
     let ids = record_ids.into_iter().collect::<Vec<_>>();
     handle_record_business_change(services.clone(), ids.clone()).await?;
+    crate::record_sync::enqueue_record_text_crdt_updates(
+        services.clone(),
+        ids.clone(),
+        origin.clone(),
+    )
+    .await?;
     crate::record_sync::enqueue_record_operations(services, ids, action, origin).await?;
     Ok(())
 }

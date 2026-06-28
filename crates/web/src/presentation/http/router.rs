@@ -37,7 +37,8 @@ use {
                 },
                 sync::{
                     apply_record_sync_operations, connect_record_sync_socket,
-                    record_sync_fingerprint, record_sync_operations, record_sync_snapshot,
+                    push_text_crdt_updates, record_sync_fingerprint, record_sync_operations,
+                    record_sync_snapshot, text_crdt_snapshot, text_crdt_updates,
                 },
                 terminal::{
                     connect_terminal_socket, create_terminal_session, delete_terminal_session,
@@ -76,6 +77,11 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
                 "/sync/record/operations",
                 get(record_sync_operations).post(apply_record_sync_operations),
             )
+            .route(
+                "/sync/crdt/text/updates",
+                get(text_crdt_updates).post(push_text_crdt_updates),
+            )
+            .route("/sync/crdt/text/snapshot", get(text_crdt_snapshot))
             .merge(build_backend_router())
             .with_state(state);
     }
@@ -148,6 +154,11 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
             "/sync/record/operations",
             get(record_sync_operations).post(apply_record_sync_operations),
         )
+        .route(
+            "/sync/crdt/text/updates",
+            get(text_crdt_updates).post(push_text_crdt_updates),
+        )
+        .route("/sync/crdt/text/snapshot", get(text_crdt_snapshot))
         .route("/terminal/sessions", post(create_terminal_session))
         .route("/terminal/stream", get(connect_terminal_socket))
         .route(

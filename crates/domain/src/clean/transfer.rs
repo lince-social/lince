@@ -54,6 +54,8 @@ impl std::error::Error for TransferParseError {}
 pub enum AgreementType {
     Individual,
     Full,
+    /// Percentage of parties that must reach level 2. Threshold stored in transfer_identity.agreement_percentage.
+    Percentage,
     Dependency,
 }
 
@@ -62,6 +64,7 @@ storage_enum!(
     "agreement type",
     Individual => "individual",
     Full => "full",
+    Percentage => "percentage",
     Dependency => "dependency"
 );
 
@@ -256,3 +259,113 @@ storage_enum!(
     MustReceive => "must_receive",
     MustSettle => "must_settle"
 );
+
+/// Typed event payload variants. Each event kind maps to exactly one payload struct.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "event_type", rename_all = "snake_case")]
+pub enum TransferEventPayload {
+    ProposalCreated(ProposalCreatedPayload),
+    ProposalDuplicated(ProposalDuplicatedPayload),
+    ItemCreated(ItemCreatedPayload),
+    ItemEdited(ItemEditedPayload),
+    AgreementChanged(AgreementChangedPayload),
+    DeliveryConfirmed(ConfirmationPayload),
+    ReceiptConfirmed(ConfirmationPayload),
+    SettlementApplied(SettlementAppliedPayload),
+    TransferInactivated(TransferInactivatedPayload),
+    VisibilityWave(VisibilityWavePayload),
+    PackageReceived(PackageReceiptPayload),
+    PackageSeen(PackageReceiptPayload),
+    InteractionCreated(InteractionChangedPayload),
+    InteractionEdited(InteractionChangedPayload),
+    MessageSent(MessageSentPayload),
+}
+
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProposalCreatedPayload {
+    pub title: Option<String>,
+    pub local_role: Option<String>,
+    pub quantity: Option<f64>,
+    pub counterparty_label: Option<String>,
+    pub target_organ_id: Option<i64>,
+    pub target_organ_name: Option<String>,
+    pub topic_text: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProposalDuplicatedPayload {
+    pub source_transfer_uid: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ItemCreatedPayload {
+    pub role: Option<String>,
+    pub title: Option<String>,
+    pub item_uid: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ItemEditedPayload {
+    pub role: Option<String>,
+    pub title: Option<String>,
+    pub item_uid: Option<String>,
+    pub quantity: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgreementChangedPayload {
+    pub role: Option<String>,
+    pub agreement_type: Option<String>,
+    pub agreement_level: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConfirmationPayload {
+    pub role: Option<String>,
+    pub record_id: Option<i64>,
+    pub quantity: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SettlementAppliedPayload {
+    pub role: Option<String>,
+    pub record_id: Option<i64>,
+    pub quantity_delta: Option<f64>,
+    pub next_quantity: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TransferInactivatedPayload {
+    pub role: Option<String>,
+    pub progress_reset: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VisibilityWavePayload {
+    pub previous_max_visible_proximity: Option<i64>,
+    pub max_visible_proximity: Option<i64>,
+    pub reason: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PackageReceiptPayload {
+    pub source_base_url: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InteractionChangedPayload {
+    pub interaction_uid: Option<String>,
+    pub from_item_uid: Option<String>,
+    pub to_item_uid: Option<String>,
+    pub interaction_kind: Option<String>,
+    pub direction: Option<String>,
+    pub dependency_kind: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MessageSentPayload {
+    pub message_uid: Option<String>,
+    pub interaction_uid: Option<String>,
+    pub parent_message_uid: Option<String>,
+}

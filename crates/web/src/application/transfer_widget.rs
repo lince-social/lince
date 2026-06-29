@@ -125,6 +125,12 @@ impl TransferWidgetService {
                 "confirm-receipt",
                 "settle-local",
                 "settle-full",
+                "settle-all-local",
+                "add-chain-link",
+                "remove-chain-link",
+                "add-spectator",
+                "remove-spectator",
+                "set-satiation-policy",
                 "inactivate-transfer",
                 "delete-transfer",
                 "create-child-transfer",
@@ -287,6 +293,36 @@ impl TransferWidgetService {
                 self.settle_full(request.transfer_id).await?;
                 "Full Transfer quantity settled.".to_string()
             }
+            "settle-all-local" => {
+                let request = parse_payload::<TransferIdRequest>(payload)?;
+                self.settle_all_local(request.transfer_id).await?;
+                "All local party settlements applied.".to_string()
+            }
+            "add-chain-link" => {
+                let request = parse_payload::<AddChainLinkRequest>(payload)?;
+                let link_id = self.add_chain_link(request).await?;
+                format!("Chain link #{link_id} added.")
+            }
+            "remove-chain-link" => {
+                let request = parse_payload::<ChainLinkIdRequest>(payload)?;
+                self.remove_chain_link(request.link_id).await?;
+                "Chain link removed.".to_string()
+            }
+            "add-spectator" => {
+                let request = parse_payload::<AddSpectatorRequest>(payload)?;
+                let spectator_id = self.add_spectator(request).await?;
+                format!("Spectator watch #{spectator_id} added.")
+            }
+            "remove-spectator" => {
+                let request = parse_payload::<SpectatorIdRequest>(payload)?;
+                self.remove_spectator(request.spectator_id).await?;
+                "Spectator watch removed.".to_string()
+            }
+            "set-satiation-policy" => {
+                let request = parse_payload::<SetSatiationPolicyRequest>(payload)?;
+                self.set_satiation_policy(request.transfer_id, request.policy).await?;
+                "Satiation policy updated.".to_string()
+            }
             "inactivate-transfer" => {
                 let request = parse_payload::<TransferIdRequest>(payload)?;
                 self.inactivate_transfer(request.transfer_id).await?;
@@ -410,6 +446,46 @@ impl TransferWidgetService {
                 self.apply_visibility_wave(request).await?;
                 "Transfer visibility wave applied.".to_string()
             }
+            "create-transfer-item" => {
+                let request = parse_payload::<CreateTransferItemRequest>(payload)?;
+                let item_id = self.create_transfer_item(request).await?;
+                format!("Transfer item #{item_id} created.")
+            }
+            "edit-transfer-item" => {
+                let request = parse_payload::<EditTransferItemRequest>(payload)?;
+                self.edit_transfer_item(request).await?;
+                "Transfer item updated.".to_string()
+            }
+            "delete-transfer-item" => {
+                let request = parse_payload::<TransferItemIdRequest>(payload)?;
+                self.delete_transfer_item(request.item_id).await?;
+                "Transfer item deleted.".to_string()
+            }
+            "create-transfer-interaction" => {
+                let request = parse_payload::<CreateTransferInteractionRequest>(payload)?;
+                let interaction_id = self.create_transfer_interaction(request).await?;
+                format!("Transfer interaction #{interaction_id} created.")
+            }
+            "edit-transfer-interaction" => {
+                let request = parse_payload::<EditTransferInteractionRequest>(payload)?;
+                self.edit_transfer_interaction(request).await?;
+                "Transfer interaction updated.".to_string()
+            }
+            "delete-transfer-interaction" => {
+                let request = parse_payload::<TransferInteractionIdRequest>(payload)?;
+                self.delete_transfer_interaction(request.interaction_id).await?;
+                "Transfer interaction deleted.".to_string()
+            }
+            "send-transfer-message" => {
+                let request = parse_payload::<SendTransferMessageRequest>(payload)?;
+                self.send_transfer_message(request).await?;
+                "Message sent.".to_string()
+            }
+            "delete-transfer-message" => {
+                let request = parse_payload::<TransferMessageIdRequest>(payload)?;
+                self.delete_transfer_message(request.message_id).await?;
+                "Message deleted.".to_string()
+            }
             "refresh" => {
                 self.pulse_transfer_mesh().await?;
                 "Transfer mesh pulse completed.".to_string()
@@ -432,12 +508,21 @@ impl TransferWidgetService {
                 | "confirm-receipt"
                 | "settle-local"
                 | "settle-full"
+                | "settle-all-local"
                 | "inactivate-transfer"
                 | "create-child-transfer"
                 | "create-transfer-tree-from-record"
                 | "sync-transfer-tree"
                 | "set-transfer-branch-mode"
                 | "set-transfer-tree-sync-mode"
+                | "create-transfer-item"
+                | "edit-transfer-item"
+                | "delete-transfer-item"
+                | "create-transfer-interaction"
+                | "edit-transfer-interaction"
+                | "delete-transfer-interaction"
+                | "send-transfer-message"
+                | "delete-transfer-message"
         ) {
             self.flush_transfer_sync_outbox()
                 .await
@@ -1409,6 +1494,520 @@ impl TransferWidgetService {
         Ok(())
     }
 
+    async fn create_transfer_item(
+        &self,
+        request: CreateTransferItemRequest,
+    ) -> Result<i64, TransferWidgetError> {
+        let transfer = self
+            .load_transfer_summary(request.transfer_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        let local_identity = self.require_local_identity().await?;
+        let title = normalize_nonempty(&request.title, "Item title")?;
+        let role = request.role.trim().to_string();
+        if role.is_empty() {
+            return Err(TransferWidgetError::Invalid("Item role is required.".into()));
+        }
+        let item_uid = format!("item-{}-{role}-{}", transfer.id, Uuid::new_v4());
+        let quantity = request.quantity.map(|q| q.abs()).unwrap_or(0.0);
+        let record_id_param = optional_integer_parameter(request.source_record_id);
+        let description_param = optional_text_parameter(request.description.clone());
+        let unit_param = optional_text_parameter(request.unit.clone());
+
+        self.services
+            .writer
+            .execute_statement(
+                "INSERT INTO transfer_structured_item(
+                    transfer_id, item_uid, role, source_record_id,
+                    title, description, record_head_snapshot, quantity, unit,
+                    owner_party_id, version
+                 ) VALUES (
+                    ?, ?,
+                    ?,
+                    CASE WHEN ? IS NOT NULL AND EXISTS (SELECT 1 FROM record WHERE id = ?) THEN ? ELSE NULL END,
+                    ?, ?, ?, ?, ?,
+                    (SELECT id FROM transfer_party WHERE transfer_id = ? AND role_hint = ? ORDER BY id LIMIT 1),
+                    1
+                 )"
+                .to_string(),
+                vec![
+                    SqlParameter::Integer(transfer.id),
+                    SqlParameter::Text(item_uid.clone()),
+                    SqlParameter::Text(role.clone()),
+                    record_id_param.clone(),
+                    record_id_param.clone(),
+                    record_id_param,
+                    SqlParameter::Text(title.clone()),
+                    description_param,
+                    SqlParameter::Text(title.clone()),
+                    SqlParameter::Real(quantity),
+                    unit_param,
+                    SqlParameter::Integer(transfer.id),
+                    SqlParameter::Text(role.clone()),
+                ],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+
+        let item_id = sqlx::query_scalar::<_, i64>(
+            "SELECT id FROM transfer_structured_item WHERE transfer_id = ? AND item_uid = ?",
+        )
+        .bind(transfer.id)
+        .bind(&item_uid)
+        .fetch_optional(&*self.services.db)
+        .await
+        .map_err(|e| TransferWidgetError::from_io(Error::other(e)))?
+        .unwrap_or(0);
+
+        let identity = self
+            .load_transfer_identity_by_id(transfer.id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        self.append_signed_event(
+            &identity,
+            &local_identity,
+            EventKind::ItemCreated,
+            json!({
+                "event_type": "item_created",
+                "role": role,
+                "title": title,
+                "item_uid": item_uid,
+            }),
+        )
+        .await
+        .map_err(TransferWidgetError::from_io)?;
+        self.invalidate_structured_agreements_for_transfer_edit(transfer.id, None)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        Ok(item_id)
+    }
+
+    async fn edit_transfer_item(
+        &self,
+        request: EditTransferItemRequest,
+    ) -> Result<(), TransferWidgetError> {
+        let transfer = self
+            .load_transfer_summary(request.transfer_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        let local_identity = self.require_local_identity().await?;
+
+        let item_uid = sqlx::query_scalar::<_, String>(
+            "SELECT item_uid FROM transfer_structured_item WHERE id = ? AND transfer_id = ?",
+        )
+        .bind(request.item_id)
+        .bind(transfer.id)
+        .fetch_optional(&*self.services.db)
+        .await
+        .map_err(|e| TransferWidgetError::from_io(Error::other(e)))?
+        .ok_or_else(|| TransferWidgetError::Invalid("Transfer item not found.".into()))?;
+
+        let record_id_param = optional_integer_parameter(request.source_record_id);
+        let title_param = optional_text_parameter(request.title.clone());
+        let description_param = optional_text_parameter(request.description.clone());
+        let unit_param = optional_text_parameter(request.unit.clone());
+        let quantity_param = match request.quantity {
+            Some(q) => SqlParameter::Real(q.abs()),
+            None => SqlParameter::Null,
+        };
+
+        self.services
+            .writer
+            .execute_statement(
+                "UPDATE transfer_structured_item
+                 SET
+                    role = COALESCE(?, role),
+                    source_record_id = CASE
+                        WHEN ? IS NOT NULL AND EXISTS (SELECT 1 FROM record WHERE id = ?)
+                        THEN ? ELSE source_record_id
+                    END,
+                    title = COALESCE(?, title),
+                    description = CASE WHEN ? IS NOT NULL THEN ? ELSE description END,
+                    quantity = CASE WHEN ? IS NOT NULL THEN ? ELSE quantity END,
+                    unit = CASE WHEN ? IS NOT NULL THEN ? ELSE unit END,
+                    record_head_snapshot = COALESCE(?, record_head_snapshot),
+                    version = version + 1,
+                    updated_at = CURRENT_TIMESTAMP
+                 WHERE id = ? AND transfer_id = ?"
+                .to_string(),
+                vec![
+                    optional_text_parameter(request.role.clone()),
+                    record_id_param.clone(),
+                    record_id_param.clone(),
+                    record_id_param,
+                    title_param.clone(),
+                    description_param.clone(),
+                    description_param,
+                    quantity_param.clone(),
+                    quantity_param,
+                    unit_param.clone(),
+                    unit_param,
+                    title_param,
+                    SqlParameter::Integer(request.item_id),
+                    SqlParameter::Integer(transfer.id),
+                ],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+
+        let identity = self
+            .load_transfer_identity_by_id(transfer.id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        self.append_signed_event(
+            &identity,
+            &local_identity,
+            EventKind::ItemEdited,
+            json!({
+                "event_type": "item_edited",
+                "item_uid": item_uid,
+                "role": request.role,
+                "title": request.title,
+                "quantity": request.quantity,
+            }),
+        )
+        .await
+        .map_err(TransferWidgetError::from_io)?;
+        self.invalidate_structured_agreements_for_transfer_edit(transfer.id, None)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        Ok(())
+    }
+
+    async fn delete_transfer_item(&self, item_id: i64) -> Result<(), TransferWidgetError> {
+        #[derive(sqlx::FromRow)]
+        struct ItemRef {
+            transfer_id: i64,
+            item_uid: String,
+        }
+        let item_ref = sqlx::query_as::<_, ItemRef>(
+            "SELECT transfer_id, item_uid FROM transfer_structured_item WHERE id = ?",
+        )
+        .bind(item_id)
+        .fetch_optional(&*self.services.db)
+        .await
+        .map_err(|e| TransferWidgetError::from_io(Error::other(e)))?
+        .ok_or_else(|| TransferWidgetError::Invalid("Transfer item not found.".into()))?;
+        let (transfer_id, item_uid) = (item_ref.transfer_id, item_ref.item_uid);
+
+        let local_identity = self.require_local_identity().await?;
+
+        self.services
+            .writer
+            .execute_statement(
+                "UPDATE transfer_interaction
+                 SET from_item_id = CASE WHEN from_item_id = ? THEN NULL ELSE from_item_id END,
+                     to_item_id   = CASE WHEN to_item_id   = ? THEN NULL ELSE to_item_id END,
+                     updated_at   = CURRENT_TIMESTAMP
+                 WHERE from_item_id = ? OR to_item_id = ?"
+                .to_string(),
+                vec![
+                    SqlParameter::Integer(item_id),
+                    SqlParameter::Integer(item_id),
+                    SqlParameter::Integer(item_id),
+                    SqlParameter::Integer(item_id),
+                ],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+
+        self.services
+            .writer
+            .execute_statement(
+                "DELETE FROM transfer_structured_item WHERE id = ?".to_string(),
+                vec![SqlParameter::Integer(item_id)],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+
+        let identity = self
+            .load_transfer_identity_by_id(transfer_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        self.append_signed_event(
+            &identity,
+            &local_identity,
+            EventKind::ItemEdited,
+            json!({
+                "event_type": "item_edited",
+                "item_uid": item_uid,
+                "deleted": true,
+            }),
+        )
+        .await
+        .map_err(TransferWidgetError::from_io)?;
+        self.invalidate_structured_agreements_for_transfer_edit(transfer_id, None)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        Ok(())
+    }
+
+    async fn create_transfer_interaction(
+        &self,
+        request: CreateTransferInteractionRequest,
+    ) -> Result<i64, TransferWidgetError> {
+        let transfer = self
+            .load_transfer_summary(request.transfer_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        let local_identity = self.require_local_identity().await?;
+        let interaction_uid = format!("interaction-{}-{}", transfer.id, Uuid::new_v4());
+        let kind = request.interaction_kind.trim().to_string();
+        if kind.is_empty() {
+            return Err(TransferWidgetError::Invalid(
+                "Interaction kind is required.".into(),
+            ));
+        }
+        let direction = request.direction.unwrap_or_else(|| "outgoing".to_string());
+
+        self.services
+            .writer
+            .execute_statement(
+                "INSERT INTO transfer_interaction(
+                    transfer_id, interaction_uid, interaction_kind, direction,
+                    dependency_kind, from_item_id, to_item_id, quantity, state
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'proposed')"
+                .to_string(),
+                vec![
+                    SqlParameter::Integer(transfer.id),
+                    SqlParameter::Text(interaction_uid.clone()),
+                    SqlParameter::Text(kind.clone()),
+                    SqlParameter::Text(direction.clone()),
+                    optional_text_parameter(request.dependency_kind.clone()),
+                    optional_integer_parameter(request.from_item_id),
+                    optional_integer_parameter(request.to_item_id),
+                    SqlParameter::Real(request.quantity.map(|q| q.abs()).unwrap_or(0.0)),
+                ],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+
+        let interaction_id = sqlx::query_scalar::<_, i64>(
+            "SELECT id FROM transfer_interaction WHERE transfer_id = ? AND interaction_uid = ?",
+        )
+        .bind(transfer.id)
+        .bind(&interaction_uid)
+        .fetch_optional(&*self.services.db)
+        .await
+        .map_err(|e| TransferWidgetError::from_io(Error::other(e)))?
+        .unwrap_or(0);
+
+        let identity = self
+            .load_transfer_identity_by_id(transfer.id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        self.append_signed_event(
+            &identity,
+            &local_identity,
+            EventKind::InteractionCreated,
+            json!({
+                "event_type": "interaction_created",
+                "interaction_uid": interaction_uid,
+                "interaction_kind": kind,
+                "direction": direction,
+                "dependency_kind": request.dependency_kind,
+            }),
+        )
+        .await
+        .map_err(TransferWidgetError::from_io)?;
+        self.invalidate_structured_agreements_for_transfer_edit(transfer.id, None)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        Ok(interaction_id)
+    }
+
+    async fn edit_transfer_interaction(
+        &self,
+        request: EditTransferInteractionRequest,
+    ) -> Result<(), TransferWidgetError> {
+        #[derive(sqlx::FromRow)]
+        struct InteractionRef {
+            transfer_id: i64,
+            interaction_uid: String,
+        }
+        let iref = sqlx::query_as::<_, InteractionRef>(
+            "SELECT transfer_id, interaction_uid FROM transfer_interaction WHERE id = ?",
+        )
+        .bind(request.interaction_id)
+        .fetch_optional(&*self.services.db)
+        .await
+        .map_err(|e| TransferWidgetError::from_io(Error::other(e)))?
+        .ok_or_else(|| TransferWidgetError::Invalid("Transfer interaction not found.".into()))?;
+        let (transfer_id, interaction_uid) = (iref.transfer_id, iref.interaction_uid);
+
+        let local_identity = self.require_local_identity().await?;
+        let dep_kind_param = optional_text_parameter(request.dependency_kind.clone());
+        let quantity_param = match request.quantity {
+            Some(q) => SqlParameter::Real(q.abs()),
+            None => SqlParameter::Null,
+        };
+
+        self.services
+            .writer
+            .execute_statement(
+                "UPDATE transfer_interaction
+                 SET
+                    interaction_kind = COALESCE(?, interaction_kind),
+                    direction = COALESCE(?, direction),
+                    dependency_kind = CASE WHEN ? IS NOT NULL THEN ? ELSE dependency_kind END,
+                    quantity = CASE WHEN ? IS NOT NULL THEN ? ELSE quantity END,
+                    updated_at = CURRENT_TIMESTAMP
+                 WHERE id = ?"
+                .to_string(),
+                vec![
+                    optional_text_parameter(request.interaction_kind.clone()),
+                    optional_text_parameter(request.direction.clone()),
+                    dep_kind_param.clone(),
+                    dep_kind_param,
+                    quantity_param.clone(),
+                    quantity_param,
+                    SqlParameter::Integer(request.interaction_id),
+                ],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+
+        let identity = self
+            .load_transfer_identity_by_id(transfer_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        self.append_signed_event(
+            &identity,
+            &local_identity,
+            EventKind::InteractionEdited,
+            json!({
+                "event_type": "interaction_edited",
+                "interaction_uid": interaction_uid,
+                "interaction_kind": request.interaction_kind,
+                "direction": request.direction,
+                "dependency_kind": request.dependency_kind,
+                "quantity": request.quantity,
+            }),
+        )
+        .await
+        .map_err(TransferWidgetError::from_io)?;
+        self.invalidate_structured_agreements_for_transfer_edit(transfer_id, None)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        Ok(())
+    }
+
+    async fn delete_transfer_interaction(
+        &self,
+        interaction_id: i64,
+    ) -> Result<(), TransferWidgetError> {
+        #[derive(sqlx::FromRow)]
+        struct InteractionRef {
+            transfer_id: i64,
+            interaction_uid: String,
+        }
+        let iref = sqlx::query_as::<_, InteractionRef>(
+            "SELECT transfer_id, interaction_uid FROM transfer_interaction WHERE id = ?",
+        )
+        .bind(interaction_id)
+        .fetch_optional(&*self.services.db)
+        .await
+        .map_err(|e| TransferWidgetError::from_io(Error::other(e)))?
+        .ok_or_else(|| TransferWidgetError::Invalid("Transfer interaction not found.".into()))?;
+        let (transfer_id, interaction_uid) = (iref.transfer_id, iref.interaction_uid);
+
+        let local_identity = self.require_local_identity().await?;
+
+        self.services
+            .writer
+            .execute_statement(
+                "DELETE FROM transfer_interaction WHERE id = ?".to_string(),
+                vec![SqlParameter::Integer(interaction_id)],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+
+        let identity = self
+            .load_transfer_identity_by_id(transfer_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        self.append_signed_event(
+            &identity,
+            &local_identity,
+            EventKind::InteractionEdited,
+            json!({
+                "event_type": "interaction_edited",
+                "interaction_uid": interaction_uid,
+                "deleted": true,
+            }),
+        )
+        .await
+        .map_err(TransferWidgetError::from_io)?;
+        self.invalidate_structured_agreements_for_transfer_edit(transfer_id, None)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        Ok(())
+    }
+
+    async fn send_transfer_message(
+        &self,
+        request: SendTransferMessageRequest,
+    ) -> Result<(), TransferWidgetError> {
+        let body = request.body.trim().to_string();
+        if body.is_empty() {
+            return Err(TransferWidgetError::Invalid(
+                "Message body cannot be empty.".into(),
+            ));
+        }
+        let transfer = self
+            .load_transfer_summary(request.transfer_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        let local_identity = self.require_local_identity().await?;
+
+        self.services
+            .writer
+            .execute_statement(
+                "INSERT INTO message(transfer_id, interaction_id, parent_message_id, author_label, body)
+                 VALUES (?, ?, ?, ?, ?)"
+                .to_string(),
+                vec![
+                    SqlParameter::Integer(transfer.id),
+                    optional_integer_parameter(request.interaction_id),
+                    optional_integer_parameter(request.parent_message_id),
+                    optional_text_parameter(Some(local_identity.label.clone())),
+                    SqlParameter::Text(body),
+                ],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+
+        let identity = self
+            .load_transfer_identity_by_id(transfer.id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        self.append_signed_event(
+            &identity,
+            &local_identity,
+            EventKind::MessageSent,
+            json!({
+                "event_type": "message_sent",
+                "message_uid": Uuid::new_v4().to_string(),
+            }),
+        )
+        .await
+        .map_err(TransferWidgetError::from_io)?;
+        Ok(())
+    }
+
+    async fn delete_transfer_message(&self, message_id: i64) -> Result<(), TransferWidgetError> {
+        self.services
+            .writer
+            .execute_statement(
+                "UPDATE message SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND transfer_id IS NOT NULL"
+                .to_string(),
+                vec![SqlParameter::Integer(message_id)],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        Ok(())
+    }
+
     async fn invalidate_structured_agreements_for_transfer_edit(
         &self,
         transfer_id: i64,
@@ -2163,6 +2762,611 @@ impl TransferWidgetService {
             .await
             .map_err(TransferWidgetError::from_io)?;
 
+        Ok(())
+    }
+
+    async fn settle_all_local(&self, transfer_id: i64) -> Result<(), TransferWidgetError> {
+        let local_identity = self.require_local_identity().await?;
+        let identity = self
+            .load_transfer_identity_by_id(transfer_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+
+        // Ensure agreement + confirmation prereqs are met
+        let transfer = self
+            .load_transfer_summary(transfer_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        self.ensure_settlement_ready(&transfer).await?;
+
+        #[derive(sqlx::FromRow)]
+        struct LocalItemRow {
+            item_id: i64,
+            party_id: i64,
+            role: String,
+            quantity: f64,
+            source_record_id: i64,
+        }
+
+        let local_items = sqlx::query_as::<_, LocalItemRow>(
+            "SELECT tsi.id as item_id, tp.id as party_id, tsi.role,
+                    COALESCE(tsi.quantity, 0.0) as quantity,
+                    tsi.source_record_id
+             FROM transfer_party tp
+             JOIN transfer_structured_item tsi ON tsi.owner_party_id = tp.id
+             WHERE tp.transfer_id = ? AND tp.actor_label = ? AND tsi.source_record_id IS NOT NULL",
+        )
+        .bind(transfer_id)
+        .bind(&local_identity.label)
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(|e| TransferWidgetError::from_io(Error::other(e)))?;
+
+        if local_items.is_empty() {
+            return Err(TransferWidgetError::Invalid(
+                "No local structured items with records found for settlement.".into(),
+            ));
+        }
+
+        let mut settled_any = false;
+        let mut settled_roles: Vec<String> = Vec::new();
+        for item in &local_items {
+            let already = sqlx::query_scalar::<_, i64>(
+                "SELECT COUNT(1) FROM transfer_structured_settlement
+                 WHERE transfer_id = ? AND item_id = ? AND party_id = ?",
+            )
+            .bind(transfer_id)
+            .bind(item.item_id)
+            .bind(item.party_id)
+            .fetch_one(&*self.services.db)
+            .await
+            .map_err(|e| TransferWidgetError::from_io(Error::other(e)))?;
+            if already > 0 {
+                continue;
+            }
+
+            let delta = self
+                .compute_item_delta(item.item_id, &item.role, item.quantity)
+                .await
+                .map_err(TransferWidgetError::from_io)?;
+
+            self.apply_item_settlement_effect(
+                &identity,
+                &local_identity,
+                item.item_id,
+                item.party_id,
+                &item.role,
+                item.source_record_id,
+                delta,
+            )
+            .await?;
+            settled_any = true;
+            if !settled_roles.contains(&item.role) {
+                settled_roles.push(item.role.clone());
+            }
+        }
+
+        if settled_any {
+            self.trigger_chain_links(transfer_id)
+                .await
+                .map_err(TransferWidgetError::from_io)?;
+            for role in &settled_roles {
+                self.trigger_spectators(&identity, role)
+                    .await
+                    .map_err(TransferWidgetError::from_io)?;
+            }
+            self.apply_satiation(transfer_id)
+                .await
+                .map_err(TransferWidgetError::from_io)?;
+            self.refresh_transfer_reservation(transfer_id, ReservationRefreshTrigger::Settled)
+                .await
+                .map_err(TransferWidgetError::from_io)?;
+        }
+
+        Ok(())
+    }
+
+    async fn compute_item_delta(
+        &self,
+        item_id: i64,
+        role: &str,
+        item_quantity: f64,
+    ) -> Result<f64, Error> {
+        let is_outgoing = matches!(
+            role,
+            "contribution" | "support" | "task" | "reservation"
+        );
+        let interaction_qty: Option<f64> = if is_outgoing {
+            sqlx::query_scalar::<_, Option<f64>>(
+                "SELECT SUM(quantity) FROM transfer_interaction
+                 WHERE from_item_id = ? AND quantity IS NOT NULL
+                   AND interaction_kind = 'contributes_to'",
+            )
+            .bind(item_id)
+            .fetch_one(&*self.services.db)
+            .await
+            .map_err(Error::other)?
+        } else {
+            sqlx::query_scalar::<_, Option<f64>>(
+                "SELECT SUM(quantity) FROM transfer_interaction
+                 WHERE to_item_id = ? AND quantity IS NOT NULL
+                   AND interaction_kind = 'contributes_to'",
+            )
+            .bind(item_id)
+            .fetch_one(&*self.services.db)
+            .await
+            .map_err(Error::other)?
+        };
+        let effective = interaction_qty.unwrap_or(item_quantity).abs();
+        Ok(if is_outgoing { -effective } else { effective })
+    }
+
+    async fn apply_item_settlement_effect(
+        &self,
+        identity: &IdentityOnlyRow,
+        signer: &LocalIdentityRow,
+        item_id: i64,
+        party_id: i64,
+        role: &str,
+        record_id: i64,
+        delta: f64,
+    ) -> Result<(), TransferWidgetError> {
+        let record = self
+            .load_record_by_id(record_id)
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        let next_quantity = record.quantity + delta;
+
+        write::execute_record_update(
+            self.services.clone(),
+            [record.id as u32],
+            "UPDATE record SET quantity = ? WHERE id = ?",
+            vec![
+                SqlParameter::Real(next_quantity),
+                SqlParameter::Integer(record.id),
+            ],
+        )
+        .await
+        .map_err(TransferWidgetError::from_io)?;
+
+        let event_id = self
+            .append_signed_event(
+                identity,
+                signer,
+                EventKind::SettlementApplied,
+                json!({
+                    "role": role,
+                    "party_id": party_id,
+                    "record_id": record.id,
+                    "quantity_delta": delta,
+                    "next_quantity": next_quantity
+                }),
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+
+        self.services
+            .writer
+            .execute_statement(
+                "INSERT INTO transfer_local_settlement(
+                    transfer_id, local_record_id, local_actor_label, local_quantity_delta, event_id
+                 ) VALUES (?, ?, ?, ?, ?)".to_string(),
+                vec![
+                    SqlParameter::Integer(identity.transfer_id),
+                    SqlParameter::Integer(record.id),
+                    SqlParameter::Text(signer.label.clone()),
+                    SqlParameter::Real(delta),
+                    SqlParameter::Integer(event_id),
+                ],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+
+        self.services
+            .writer
+            .execute_statement(
+                "INSERT INTO transfer_structured_settlement(
+                    transfer_id, party_id, item_id, scope_kind, scope_id,
+                    local_record_id, quantity_delta, event_id
+                 ) VALUES (?, ?, ?, 'item', ?, ?, ?, ?)
+                 ON CONFLICT(transfer_id, party_id, local_record_id, scope_kind, scope_id)
+                 DO UPDATE SET quantity_delta = excluded.quantity_delta,
+                               event_id = excluded.event_id,
+                               settled_at = CURRENT_TIMESTAMP".to_string(),
+                vec![
+                    SqlParameter::Integer(identity.transfer_id),
+                    SqlParameter::Integer(party_id),
+                    SqlParameter::Integer(item_id),
+                    SqlParameter::Integer(item_id),
+                    SqlParameter::Integer(record.id),
+                    SqlParameter::Real(delta),
+                    SqlParameter::Integer(event_id),
+                ],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+
+        Ok(())
+    }
+
+    async fn trigger_chain_links(&self, transfer_id: i64) -> Result<(), Error> {
+        #[derive(sqlx::FromRow)]
+        struct ChainLinkTriggerRow {
+            id: i64,
+            downstream_item_id: Option<i64>,
+            amount_kind: String,
+            amount_value: f64,
+        }
+
+        let upstream_qty: f64 = sqlx::query_scalar::<_, Option<f64>>(
+            "SELECT SUM(quantity) FROM transfer_structured_item WHERE transfer_id = ?",
+        )
+        .bind(transfer_id)
+        .fetch_one(&*self.services.db)
+        .await
+        .map_err(Error::other)?
+        .unwrap_or(0.0);
+
+        let links = sqlx::query_as::<_, ChainLinkTriggerRow>(
+            "SELECT id, downstream_item_id, amount_kind, amount_value
+             FROM transfer_chain_link
+             WHERE upstream_transfer_id = ? AND state = 'pending'",
+        )
+        .bind(transfer_id)
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(Error::other)?;
+
+        for link in links {
+            let delta = match link.amount_kind.as_str() {
+                "percentage" => (link.amount_value / 100.0) * upstream_qty.abs(),
+                _ => link.amount_value,
+            };
+            let note = format!(
+                "Chain link from transfer #{transfer_id}: +{delta:.4} funded"
+            );
+            if let Some(item_id) = link.downstream_item_id {
+                self.services
+                    .writer
+                    .execute_statement(
+                        "UPDATE transfer_structured_item
+                         SET metadata_json = json_patch(metadata_json, json(?))
+                         WHERE id = ?".to_string(),
+                        vec![
+                            SqlParameter::Text(
+                                serde_json::json!({ "chain_funded": delta, "chain_note": note })
+                                    .to_string(),
+                            ),
+                            SqlParameter::Integer(item_id),
+                        ],
+                    )
+                    .await?;
+            }
+            self.services
+                .writer
+                .execute_statement(
+                    "UPDATE transfer_chain_link SET state = 'triggered', triggered_at = CURRENT_TIMESTAMP WHERE id = ?".to_string(),
+                    vec![SqlParameter::Integer(link.id)],
+                )
+                .await?;
+        }
+        Ok(())
+    }
+
+    async fn trigger_spectators(
+        &self,
+        identity: &IdentityOnlyRow,
+        settled_role: &str,
+    ) -> Result<(), Error> {
+        #[derive(sqlx::FromRow)]
+        struct SpectatorTriggerRow {
+            id: i64,
+            watcher_record_id: i64,
+            amount_kind: String,
+            amount_value: f64,
+        }
+
+        let settled_qty: f64 = sqlx::query_scalar::<_, Option<f64>>(
+            "SELECT SUM(ABS(quantity)) FROM transfer_structured_item
+             WHERE transfer_id = ? AND role = ?",
+        )
+        .bind(identity.transfer_id)
+        .bind(settled_role)
+        .fetch_one(&*self.services.db)
+        .await
+        .map_err(Error::other)?
+        .unwrap_or(0.0);
+
+        let source_uid: Option<String> = sqlx::query_scalar::<_, Option<String>>(
+            "SELECT COALESCE(source_transfer_uid, transfer_uid)
+             FROM transfer_identity WHERE transfer_id = ?",
+        )
+        .bind(identity.transfer_id)
+        .fetch_optional(&*self.services.db)
+        .await
+        .map_err(Error::other)?
+        .flatten();
+
+        let Some(source_uid) = source_uid else {
+            return Ok(());
+        };
+
+        let spectators = sqlx::query_as::<_, SpectatorTriggerRow>(
+            "SELECT id, watcher_record_id, amount_kind, amount_value
+             FROM transfer_spectator
+             WHERE watched_source_transfer_uid = ? AND watched_role = ? AND state = 'active'",
+        )
+        .bind(&source_uid)
+        .bind(settled_role)
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(Error::other)?;
+
+        for spectator in spectators {
+            let delta = match spectator.amount_kind.as_str() {
+                "percentage" => (spectator.amount_value / 100.0) * settled_qty,
+                _ => spectator.amount_value,
+            };
+            #[derive(sqlx::FromRow)]
+            struct LocalRecordRow {
+                id: i64,
+                quantity: f64,
+            }
+            let record = sqlx::query_as::<_, LocalRecordRow>(
+                "SELECT id, quantity FROM record WHERE id = ?",
+            )
+            .bind(spectator.watcher_record_id)
+            .fetch_optional(&*self.services.db)
+            .await
+            .map_err(Error::other)?;
+            if let Some(record) = record {
+                let next_qty = record.quantity + delta;
+                write::execute_record_update(
+                    self.services.clone(),
+                    [record.id as u32],
+                    "UPDATE record SET quantity = ? WHERE id = ?",
+                    vec![
+                        SqlParameter::Real(next_qty),
+                        SqlParameter::Integer(record.id),
+                    ],
+                )
+                .await?;
+            }
+            self.services
+                .writer
+                .execute_statement(
+                    "UPDATE transfer_spectator SET state = 'triggered', triggered_at = CURRENT_TIMESTAMP WHERE id = ?".to_string(),
+                    vec![SqlParameter::Integer(spectator.id)],
+                )
+                .await?;
+        }
+        Ok(())
+    }
+
+    async fn apply_satiation(&self, transfer_id: i64) -> Result<(), Error> {
+        #[derive(sqlx::FromRow)]
+        struct IdentRow {
+            transfer_uid: String,
+            source_transfer_uid: Option<String>,
+            satiation_policy: Option<String>,
+            parent_transfer_uid: Option<String>,
+        }
+
+        let root = sqlx::query_as::<_, IdentRow>(
+            "SELECT transfer_uid, source_transfer_uid, satiation_policy, parent_transfer_uid
+             FROM transfer_identity WHERE transfer_id = ?",
+        )
+        .bind(transfer_id)
+        .fetch_optional(&*self.services.db)
+        .await
+        .map_err(Error::other)?;
+
+        let Some(root) = root else {
+            return Ok(());
+        };
+
+        // Walk up parent chain iteratively — same pattern as resolve_effective_branch_mode
+        let effective_policy = {
+            let mut current_uid: Option<String> = Some(root.transfer_uid.clone());
+            let mut found: Option<String> = None;
+            let mut seen = std::collections::BTreeSet::new();
+            while let Some(uid) = current_uid {
+                if !seen.insert(uid.clone()) {
+                    break;
+                }
+                let row = sqlx::query_as::<_, IdentRow>(
+                    "SELECT transfer_uid, source_transfer_uid, satiation_policy, parent_transfer_uid
+                     FROM transfer_identity WHERE transfer_uid = ?",
+                )
+                .bind(&uid)
+                .fetch_optional(&*self.services.db)
+                .await
+                .map_err(Error::other)?;
+                match row {
+                    Some(r) if r.satiation_policy.is_some() => {
+                        found = r.satiation_policy;
+                        break;
+                    }
+                    Some(r) => current_uid = r.parent_transfer_uid,
+                    None => break,
+                }
+            }
+            if let Some(p) = found {
+                p
+            } else {
+                sqlx::query_scalar::<_, Option<String>>(
+                    "SELECT transfer_satiation_policy FROM configuration LIMIT 1",
+                )
+                .fetch_optional(&*self.services.db)
+                .await
+                .map_err(Error::other)?
+                .flatten()
+                .unwrap_or_else(|| "none".to_string())
+            }
+        };
+
+        let source_uid_opt = root.source_transfer_uid;
+        let settled_uid = root.transfer_uid;
+
+        if effective_policy != "first_completes" {
+            return Ok(());
+        }
+
+        let Some(source_uid) = source_uid_opt else {
+            return Ok(());
+        };
+
+        self.services
+            .writer
+            .execute_statement(
+                "UPDATE transfer_identity SET state = 'inactive'
+                 WHERE source_transfer_uid = ?
+                   AND transfer_uid != ?
+                   AND state NOT IN ('settled', 'inactive')"
+                    .to_string(),
+                vec![
+                    SqlParameter::Text(source_uid),
+                    SqlParameter::Text(settled_uid),
+                ],
+            )
+            .await?;
+        Ok(())
+    }
+
+    async fn add_chain_link(
+        &self,
+        request: AddChainLinkRequest,
+    ) -> Result<i64, TransferWidgetError> {
+        if request.amount_kind != "constant" && request.amount_kind != "percentage" {
+            return Err(TransferWidgetError::Invalid(
+                "amount_kind must be 'constant' or 'percentage'".into(),
+            ));
+        }
+        let sync_uid = Uuid::new_v4().to_string();
+        self.services
+            .writer
+            .execute_statement(
+                "INSERT INTO transfer_chain_link(
+                    upstream_transfer_id, upstream_item_id,
+                    downstream_transfer_id, downstream_item_id,
+                    amount_kind, amount_value, sync_uid
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?)"
+                    .to_string(),
+                vec![
+                    SqlParameter::Integer(request.upstream_transfer_id),
+                    optional_integer_parameter(request.upstream_item_id),
+                    SqlParameter::Integer(request.downstream_transfer_id),
+                    optional_integer_parameter(request.downstream_item_id),
+                    SqlParameter::Text(request.amount_kind),
+                    SqlParameter::Real(request.amount_value),
+                    SqlParameter::Text(sync_uid.clone()),
+                ],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        let link_id = sqlx::query_scalar::<_, i64>(
+            "SELECT id FROM transfer_chain_link WHERE sync_uid = ?",
+        )
+        .bind(&sync_uid)
+        .fetch_optional(&*self.services.db)
+        .await
+        .map_err(|e| TransferWidgetError::from_io(Error::other(e)))?
+        .unwrap_or(0);
+        Ok(link_id)
+    }
+
+    async fn remove_chain_link(&self, link_id: i64) -> Result<(), TransferWidgetError> {
+        self.services
+            .writer
+            .execute_statement(
+                "DELETE FROM transfer_chain_link WHERE id = ?".to_string(),
+                vec![SqlParameter::Integer(link_id)],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        Ok(())
+    }
+
+    async fn add_spectator(
+        &self,
+        request: AddSpectatorRequest,
+    ) -> Result<i64, TransferWidgetError> {
+        if request.amount_kind != "constant" && request.amount_kind != "percentage" {
+            return Err(TransferWidgetError::Invalid(
+                "amount_kind must be 'constant' or 'percentage'".into(),
+            ));
+        }
+        if request.watched_role != "contribution" && request.watched_role != "need" {
+            return Err(TransferWidgetError::Invalid(
+                "watched_role must be 'contribution' or 'need'".into(),
+            ));
+        }
+        let sync_uid = Uuid::new_v4().to_string();
+        self.services
+            .writer
+            .execute_statement(
+                "INSERT INTO transfer_spectator(
+                    watcher_record_id,
+                    watched_source_transfer_uid, watched_role,
+                    amount_kind, amount_value, sync_uid
+                 ) VALUES (?, ?, ?, ?, ?, ?)"
+                    .to_string(),
+                vec![
+                    SqlParameter::Integer(request.watcher_record_id),
+                    SqlParameter::Text(request.watched_source_transfer_uid),
+                    SqlParameter::Text(request.watched_role),
+                    SqlParameter::Text(request.amount_kind),
+                    SqlParameter::Real(request.amount_value),
+                    SqlParameter::Text(sync_uid.clone()),
+                ],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        let spectator_id =
+            sqlx::query_scalar::<_, i64>("SELECT id FROM transfer_spectator WHERE sync_uid = ?")
+                .bind(&sync_uid)
+                .fetch_optional(&*self.services.db)
+                .await
+                .map_err(|e| TransferWidgetError::from_io(Error::other(e)))?
+                .unwrap_or(0);
+        Ok(spectator_id)
+    }
+
+    async fn remove_spectator(&self, spectator_id: i64) -> Result<(), TransferWidgetError> {
+        self.services
+            .writer
+            .execute_statement(
+                "DELETE FROM transfer_spectator WHERE id = ?".to_string(),
+                vec![SqlParameter::Integer(spectator_id)],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
+        Ok(())
+    }
+
+    async fn set_satiation_policy(
+        &self,
+        transfer_id: i64,
+        policy: Option<String>,
+    ) -> Result<(), TransferWidgetError> {
+        if let Some(ref p) = policy {
+            if p != "none" && p != "first_completes" {
+                return Err(TransferWidgetError::Invalid(
+                    "satiation_policy must be 'none', 'first_completes', or null (inherit)".into(),
+                ));
+            }
+        }
+        self.services
+            .writer
+            .execute_statement(
+                "UPDATE transfer_identity SET satiation_policy = ? WHERE transfer_id = ?".to_string(),
+                vec![
+                    optional_text_parameter(policy),
+                    SqlParameter::Integer(transfer_id),
+                ],
+            )
+            .await
+            .map_err(TransferWidgetError::from_io)?;
         Ok(())
     }
 
@@ -4932,12 +6136,20 @@ impl TransferWidgetService {
         .map_err(Error::other)?;
         let relations = self.load_transfer_relations().await?;
         let configs = self.load_transfer_tree_configs().await?;
+        let global_satiation_default: String = sqlx::query_scalar::<_, Option<String>>(
+            "SELECT transfer_satiation_policy FROM configuration LIMIT 1",
+        )
+        .fetch_optional(&*self.services.db)
+        .await
+        .map_err(Error::other)?
+        .flatten()
+        .unwrap_or_else(|| "none".to_string());
         let transfer_lookup = transfers
             .iter()
             .map(|transfer| (transfer.transfer_uid.clone(), transfer.id))
             .collect::<std::collections::BTreeMap<_, _>>();
         let mut views = Vec::with_capacity(transfers.len());
-        for transfer in transfers {
+        for transfer in transfers.iter().cloned() {
             let events = self.load_transfer_events(transfer.id).await?;
             let cursors = self.load_transfer_cursors(transfer.id).await?;
             let settlements = self.load_transfer_settlements(transfer.id).await?;
@@ -4948,6 +6160,10 @@ impl TransferWidgetService {
             let interactions = self
                 .load_transfer_interaction_work_views(transfer.id)
                 .await?;
+            let messages = self.load_transfer_messages(transfer.id).await?;
+            let party_settlements = self.load_party_settlements(transfer.id).await?;
+            let chain_links = self.load_chain_links_for_transfer(transfer.id).await?;
+            let spectators = self.load_spectators_for_transfer(transfer.id).await?;
             views.push(TransferView::from_rows(
                 transfer,
                 events,
@@ -4958,6 +6174,12 @@ impl TransferWidgetService {
                 visibility,
                 items,
                 interactions,
+                messages,
+                party_settlements,
+                chain_links,
+                spectators,
+                &transfers,
+                &global_satiation_default,
                 &relations,
                 &configs,
                 &transfer_lookup,
@@ -5146,6 +6368,180 @@ impl TransferWidgetService {
         Ok(views)
     }
 
+    async fn load_transfer_messages(
+        &self,
+        transfer_id: i64,
+    ) -> Result<Vec<MessageView>, Error> {
+        #[derive(sqlx::FromRow)]
+        struct MessageRow {
+            id: i64,
+            parent_message_id: Option<i64>,
+            interaction_id: Option<i64>,
+            author_label: Option<String>,
+            body: String,
+            created_at: String,
+            deleted_at: Option<String>,
+        }
+        let rows = sqlx::query_as::<_, MessageRow>(
+            "SELECT id, parent_message_id, interaction_id, author_label, body, created_at, deleted_at
+             FROM message
+             WHERE transfer_id = ? AND deleted_at IS NULL
+             ORDER BY created_at, id",
+        )
+        .bind(transfer_id)
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(Error::other)?;
+        Ok(rows
+            .into_iter()
+            .map(|row| MessageView {
+                id: row.id,
+                parent_message_id: row.parent_message_id,
+                interaction_id: row.interaction_id,
+                author_label: row.author_label,
+                body: row.body,
+                created_at: sql_to_iso8601(&row.created_at),
+                deleted_at: row.deleted_at.as_deref().map(sql_to_iso8601),
+            })
+            .collect())
+    }
+
+    async fn load_party_settlements(
+        &self,
+        transfer_id: i64,
+    ) -> Result<Vec<PartySettlementView>, Error> {
+        #[derive(sqlx::FromRow)]
+        struct PartyRow {
+            party_id: i64,
+            actor_label: String,
+            role: String,
+            settled: i64,
+        }
+        let rows = sqlx::query_as::<_, PartyRow>(
+            "SELECT tp.id as party_id, tp.actor_label,
+                    COALESCE(tp.role_hint, 'unknown') as role,
+                    EXISTS(
+                        SELECT 1 FROM transfer_structured_settlement tss
+                        WHERE tss.transfer_id = ? AND tss.party_id = tp.id
+                    ) as settled
+             FROM transfer_party tp
+             WHERE tp.transfer_id = ? AND tp.placeholder = 0
+             ORDER BY tp.role_hint, tp.id",
+        )
+        .bind(transfer_id)
+        .bind(transfer_id)
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(Error::other)?;
+        Ok(rows
+            .into_iter()
+            .map(|r| PartySettlementView {
+                party_id: r.party_id,
+                actor_label: r.actor_label,
+                role: r.role,
+                settled: r.settled != 0,
+            })
+            .collect())
+    }
+
+    async fn load_chain_links_for_transfer(
+        &self,
+        transfer_id: i64,
+    ) -> Result<Vec<ChainLinkView>, Error> {
+        #[derive(sqlx::FromRow)]
+        struct ChainLinkRow {
+            id: i64,
+            upstream_transfer_id: i64,
+            upstream_item_id: Option<i64>,
+            downstream_transfer_id: i64,
+            downstream_item_id: Option<i64>,
+            amount_kind: String,
+            amount_value: f64,
+            state: String,
+            created_at: String,
+        }
+        let rows = sqlx::query_as::<_, ChainLinkRow>(
+            "SELECT id, upstream_transfer_id, upstream_item_id,
+                    downstream_transfer_id, downstream_item_id,
+                    amount_kind, amount_value, state, created_at
+             FROM transfer_chain_link
+             WHERE upstream_transfer_id = ? OR downstream_transfer_id = ?
+             ORDER BY id",
+        )
+        .bind(transfer_id)
+        .bind(transfer_id)
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(Error::other)?;
+        Ok(rows
+            .into_iter()
+            .map(|r| ChainLinkView {
+                id: r.id,
+                upstream_transfer_id: r.upstream_transfer_id,
+                upstream_item_id: r.upstream_item_id,
+                downstream_transfer_id: r.downstream_transfer_id,
+                downstream_item_id: r.downstream_item_id,
+                amount_kind: r.amount_kind,
+                amount_value: r.amount_value,
+                state: r.state,
+                created_at: sql_to_iso8601(&r.created_at),
+            })
+            .collect())
+    }
+
+    async fn load_spectators_for_transfer(
+        &self,
+        transfer_id: i64,
+    ) -> Result<Vec<SpectatorView>, Error> {
+        #[derive(sqlx::FromRow)]
+        struct SpectatorRow {
+            id: i64,
+            watcher_record_id: i64,
+            watched_source_transfer_uid: String,
+            watched_role: String,
+            amount_kind: String,
+            amount_value: f64,
+            state: String,
+            created_at: String,
+        }
+        let source_uid: Option<String> = sqlx::query_scalar::<_, Option<String>>(
+            "SELECT COALESCE(source_transfer_uid, transfer_uid)
+             FROM transfer_identity WHERE transfer_id = ?",
+        )
+        .bind(transfer_id)
+        .fetch_optional(&*self.services.db)
+        .await
+        .map_err(Error::other)?
+        .flatten();
+        let Some(source_uid) = source_uid else {
+            return Ok(vec![]);
+        };
+        let rows = sqlx::query_as::<_, SpectatorRow>(
+            "SELECT id, watcher_record_id, watched_source_transfer_uid,
+                    watched_role, amount_kind, amount_value, state, created_at
+             FROM transfer_spectator
+             WHERE watched_source_transfer_uid = ?
+             ORDER BY id",
+        )
+        .bind(&source_uid)
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(Error::other)?;
+        Ok(rows
+            .into_iter()
+            .map(|r| SpectatorView {
+                id: r.id,
+                watcher_record_id: r.watcher_record_id,
+                watched_source_transfer_uid: r.watched_source_transfer_uid,
+                watched_role: r.watched_role,
+                amount_kind: r.amount_kind,
+                amount_value: r.amount_value,
+                state: r.state,
+                created_at: sql_to_iso8601(&r.created_at),
+            })
+            .collect())
+    }
+
     async fn load_work_metadata_package(
         &self,
         owner_kind: &str,
@@ -5325,7 +6721,7 @@ impl TransferWidgetService {
             quantity_influences,
             messages: sqlx::query_as::<_, TransferMessagePackage>(
                 "SELECT body, created_at
-                 FROM transfer_message WHERE transfer_id = ? ORDER BY id",
+                 FROM message WHERE transfer_id = ? AND deleted_at IS NULL ORDER BY id",
             )
             .bind(transfer_id)
             .fetch_all(&*self.services.db)
@@ -5746,10 +7142,10 @@ impl TransferWidgetService {
             self.services
                 .writer
                 .execute_statement(
-                    "INSERT INTO transfer_message(transfer_id, body, created_at)
+                    "INSERT INTO message(transfer_id, body, created_at)
                  SELECT ?, ?, ?
                  WHERE NOT EXISTS (
-                    SELECT 1 FROM transfer_message
+                    SELECT 1 FROM message
                     WHERE transfer_id = ?
                       AND body = ?
                       AND created_at = ?
@@ -7064,6 +8460,9 @@ enum EventKind {
     SettlementApplied,
     TransferInactivated,
     VisibilityChanged,
+    InteractionCreated,
+    InteractionEdited,
+    MessageSent,
 }
 
 impl EventKind {
@@ -7080,6 +8479,9 @@ impl EventKind {
             Self::SettlementApplied => "settlement_applied",
             Self::TransferInactivated => "transfer_inactivated",
             Self::VisibilityChanged => "visibility_changed",
+            Self::InteractionCreated => "interaction_created",
+            Self::InteractionEdited => "interaction_edited",
+            Self::MessageSent => "message_sent",
         }
     }
 }
@@ -7172,6 +8574,120 @@ struct UpdateTransferLocalItemRequest {
     item_title: String,
     record_id: i64,
     quantity: f64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateTransferItemRequest {
+    transfer_id: i64,
+    role: String,
+    title: String,
+    description: Option<String>,
+    source_record_id: Option<i64>,
+    quantity: Option<f64>,
+    unit: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct EditTransferItemRequest {
+    item_id: i64,
+    transfer_id: i64,
+    role: Option<String>,
+    title: Option<String>,
+    description: Option<String>,
+    source_record_id: Option<i64>,
+    quantity: Option<f64>,
+    unit: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct TransferItemIdRequest {
+    item_id: i64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateTransferInteractionRequest {
+    transfer_id: i64,
+    from_item_id: Option<i64>,
+    to_item_id: Option<i64>,
+    interaction_kind: String,
+    direction: Option<String>,
+    dependency_kind: Option<String>,
+    quantity: Option<f64>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct EditTransferInteractionRequest {
+    interaction_id: i64,
+    interaction_kind: Option<String>,
+    direction: Option<String>,
+    dependency_kind: Option<String>,
+    quantity: Option<f64>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct TransferInteractionIdRequest {
+    interaction_id: i64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SendTransferMessageRequest {
+    transfer_id: i64,
+    body: String,
+    interaction_id: Option<i64>,
+    parent_message_id: Option<i64>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct TransferMessageIdRequest {
+    message_id: i64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AddChainLinkRequest {
+    upstream_transfer_id: i64,
+    upstream_item_id: Option<i64>,
+    downstream_transfer_id: i64,
+    downstream_item_id: Option<i64>,
+    amount_kind: String,
+    amount_value: f64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ChainLinkIdRequest {
+    link_id: i64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AddSpectatorRequest {
+    watcher_record_id: i64,
+    watched_source_transfer_uid: String,
+    watched_role: String,
+    amount_kind: String,
+    amount_value: f64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SpectatorIdRequest {
+    spectator_id: i64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SetSatiationPolicyRequest {
+    transfer_id: i64,
+    policy: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -7442,6 +8958,11 @@ struct TransferSummaryRow {
     need_quantity: f64,
     first_agreement: i64,
     second_agreement: i64,
+    agreement_type: Option<String>,
+    agreement_percentage: Option<i64>,
+    party_count: i64,
+    agreed_party_count: i64,
+    satiation_policy: Option<String>,
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -7724,6 +9245,54 @@ struct TransferTreeView {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+struct MessageView {
+    id: i64,
+    parent_message_id: Option<i64>,
+    interaction_id: Option<i64>,
+    author_label: Option<String>,
+    body: String,
+    created_at: String,
+    deleted_at: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PartySettlementView {
+    party_id: i64,
+    actor_label: String,
+    role: String,
+    settled: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ChainLinkView {
+    id: i64,
+    upstream_transfer_id: i64,
+    upstream_item_id: Option<i64>,
+    downstream_transfer_id: i64,
+    downstream_item_id: Option<i64>,
+    amount_kind: String,
+    amount_value: f64,
+    state: String,
+    created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SpectatorView {
+    id: i64,
+    watcher_record_id: i64,
+    watched_source_transfer_uid: String,
+    watched_role: String,
+    amount_kind: String,
+    amount_value: f64,
+    state: String,
+    created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct TransferView {
     id: i64,
     quantity: f64,
@@ -7755,6 +9324,11 @@ struct TransferView {
     visibility: TransferVisibilityView,
     items: Vec<TransferItemWorkView>,
     interactions: Vec<TransferInteractionWorkView>,
+    messages: Vec<MessageView>,
+    party_settlements: Vec<PartySettlementView>,
+    chain_links: Vec<ChainLinkView>,
+    spectators: Vec<SpectatorView>,
+    satiation_policy: Option<String>,
     package: TransferPackage,
     created_at: String,
     updated_at: String,
@@ -7771,11 +9345,22 @@ impl TransferView {
         visibility: TransferVisibilityView,
         items: Vec<TransferItemWorkView>,
         interactions: Vec<TransferInteractionWorkView>,
+        messages: Vec<MessageView>,
+        party_settlements: Vec<PartySettlementView>,
+        chain_links: Vec<ChainLinkView>,
+        spectators: Vec<SpectatorView>,
+        all_transfers: &[TransferSummaryRow],
+        global_satiation_default: &str,
         relations: &[TransferRelationRow],
         configs: &[TransferTreeConfigRow],
         transfer_lookup: &std::collections::BTreeMap<String, i64>,
         local_identity: Option<&LocalIdentityRow>,
     ) -> Self {
+        let effective_satiation_policy = resolve_effective_satiation_policy(
+            &transfer.transfer_uid,
+            all_transfers,
+            global_satiation_default,
+        );
         let local_role = local_role_for(&transfer, local_identity);
         let reset_after_index = events
             .iter()
@@ -7908,6 +9493,14 @@ impl TransferView {
             agreement: AgreementView {
                 contribution: transfer.first_agreement,
                 need: transfer.second_agreement,
+                agreement_type: transfer
+                    .agreement_type
+                    .clone()
+                    .unwrap_or_else(|| "individual".to_string()),
+                agreement_percentage: transfer.agreement_percentage,
+                party_count: transfer.party_count,
+                agreed_party_count: transfer.agreed_party_count,
+                complete: complete_agreement,
             },
             confirmations: ConfirmationView {
                 delivery: delivery_confirmed,
@@ -7931,6 +9524,11 @@ impl TransferView {
             visibility,
             items,
             interactions,
+            messages,
+            party_settlements,
+            chain_links,
+            spectators,
+            satiation_policy: Some(effective_satiation_policy),
             package,
             created_at: sql_to_iso8601(&transfer.created_at),
             updated_at: sql_to_iso8601(&transfer.updated_at),
@@ -8407,6 +10005,11 @@ struct TransferSideView {
 struct AgreementView {
     contribution: i64,
     need: i64,
+    agreement_type: String,
+    agreement_percentage: Option<i64>,
+    party_count: i64,
+    agreed_party_count: i64,
+    complete: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -8935,6 +10538,10 @@ fn optional_text_parameter(value: Option<String>) -> SqlParameter {
     value.map(SqlParameter::Text).unwrap_or(SqlParameter::Null)
 }
 
+fn optional_integer_parameter(value: Option<i64>) -> SqlParameter {
+    value.map(SqlParameter::Integer).unwrap_or(SqlParameter::Null)
+}
+
 fn optional_text_param(value: Option<&str>) -> SqlParameter {
     value
         .map(str::trim)
@@ -9244,24 +10851,47 @@ fn validate_packaged_event(
     }
 }
 
-fn payload_shape_matches_event_kind(event_kind: &str, payload_json: &str) -> bool {
-    let Ok(value) = serde_json::from_str::<Value>(payload_json) else {
-        return false;
+fn parse_event_payload(
+    event_kind: &str,
+    payload_json: &str,
+) -> Option<domain::clean::transfer::TransferEventPayload> {
+    let Ok(mut value) = serde_json::from_str::<Value>(payload_json) else {
+        return None;
     };
-    let Some(object) = value.as_object() else {
-        return false;
+    let tag = match event_kind {
+        "transfer_created" => "proposal_created",
+        "item_created" => "item_created",
+        "item_edited" => "item_edited",
+        "agreement_changed" => "agreement_changed",
+        "delivery_confirmed" => "delivery_confirmed",
+        "receipt_confirmed" => "receipt_confirmed",
+        "settlement_applied" => "settlement_applied",
+        "transfer_inactivated" => "transfer_inactivated",
+        "visibility_changed" => "visibility_wave",
+        "package_received" => "package_received",
+        "package_seen" => "package_seen",
+        "interaction_created" => "interaction_created",
+        "interaction_edited" => "interaction_edited",
+        "message_sent" => "message_sent",
+        _ => return None,
     };
-    match event_kind {
-        "transfer_created" => object.contains_key("event_type"),
-        "item_created" => object.contains_key("contribution") || object.contains_key("role"),
-        "item_edited" => object.contains_key("event_type") || object.contains_key("role"),
-        "agreement_changed" => object.contains_key("event_type") || object.contains_key("level"),
-        "delivery_confirmed" | "receipt_confirmed" | "settlement_applied" => {
-            object.contains_key("event_type") || object.contains_key("transfer_id")
-        }
-        "transfer_inactivated" => object.contains_key("event_type"),
-        _ => true,
+    if let Some(obj) = value.as_object_mut() {
+        obj.entry("event_type")
+            .or_insert_with(|| Value::String(tag.to_string()));
     }
+    serde_json::from_value(value).ok()
+}
+
+fn payload_shape_matches_event_kind(event_kind: &str, payload_json: &str) -> bool {
+    // Event kinds not yet typed pass through without validation.
+    let untyped = matches!(
+        event_kind,
+        "transfer_quantity_changed"
+            | "dispute_opened"
+            | "dispute_resolved"
+            | "settlement_reverted"
+    );
+    untyped || parse_event_payload(event_kind, payload_json).is_some()
 }
 
 fn validate_package(package: &TransferPackage) -> Result<(), TransferWidgetError> {
@@ -9590,7 +11220,29 @@ fn local_role_for(
 }
 
 fn agreements_complete(transfer: &TransferSummaryRow) -> bool {
-    transfer.first_agreement >= 2 && transfer.second_agreement >= 2
+    use {domain::clean::transfer::AgreementType, std::str::FromStr};
+    let agreement_type = transfer
+        .agreement_type
+        .as_deref()
+        .and_then(|s| AgreementType::from_str(s).ok())
+        .unwrap_or(AgreementType::Individual);
+    match agreement_type {
+        AgreementType::Individual => {
+            transfer.first_agreement >= 2 && transfer.second_agreement >= 2
+        }
+        AgreementType::Full => {
+            transfer.party_count > 0 && transfer.agreed_party_count >= transfer.party_count
+        }
+        AgreementType::Percentage => {
+            let pct = transfer.agreement_percentage.unwrap_or(100);
+            let threshold =
+                ((transfer.party_count as f64 * pct as f64) / 100.0).ceil() as i64;
+            transfer.party_count > 0 && transfer.agreed_party_count >= threshold
+        }
+        AgreementType::Dependency => {
+            transfer.first_agreement >= 2 && transfer.second_agreement >= 2
+        }
+    }
 }
 
 fn build_transfer_tree_view(
@@ -9642,6 +11294,28 @@ fn build_transfer_tree_view(
         config,
         effective_branch_mode,
     }
+}
+
+fn resolve_effective_satiation_policy(
+    transfer_uid: &str,
+    transfers: &[TransferSummaryRow],
+    global_default: &str,
+) -> String {
+    let mut current = Some(transfer_uid.to_string());
+    let mut seen = std::collections::BTreeSet::new();
+    while let Some(uid) = current {
+        if !seen.insert(uid.clone()) {
+            break;
+        }
+        let Some(row) = transfers.iter().find(|t| t.transfer_uid == uid) else {
+            break;
+        };
+        if let Some(ref policy) = row.satiation_policy {
+            return policy.clone();
+        }
+        current = row.parent_transfer_uid.clone();
+    }
+    global_default.to_string()
 }
 
 fn resolve_effective_branch_mode(
@@ -9755,7 +11429,12 @@ fn transfer_summary_sql(tail: &str) -> String {
             COALESCE(need_item.title, need_item.record_head_snapshot, '') AS need_head,
             COALESCE(need_item.quantity, 0) AS need_quantity,
             COALESCE(contribution_agreement.agreement_level, 0) AS first_agreement,
-            COALESCE(need_agreement.agreement_level, 0) AS second_agreement
+            COALESCE(need_agreement.agreement_level, 0) AS second_agreement,
+            ident.agreement_type,
+            ident.agreement_percentage,
+            COALESCE(party_counts.total_parties, 0) AS party_count,
+            COALESCE(party_counts.agreed_parties, 0) AS agreed_party_count,
+            ident.satiation_policy
          FROM transfer t
          JOIN transfer_identity ident ON ident.transfer_id = t.id
          LEFT JOIN contribution_item
@@ -9776,6 +11455,20 @@ fn transfer_summary_sql(tail: &str) -> String {
          LEFT JOIN need_agreement
            ON need_agreement.transfer_id = t.id
           AND need_agreement.scope_id = need_item.id
+         LEFT JOIN (
+             SELECT
+                 party.transfer_id,
+                 COUNT(*) AS total_parties,
+                 COUNT(CASE WHEN COALESCE(pa.max_level, 0) >= 2 THEN 1 END) AS agreed_parties
+             FROM transfer_party party
+             LEFT JOIN (
+                 SELECT party_id, MAX(agreement_level) AS max_level
+                 FROM transfer_agreement
+                 WHERE invalidated_at IS NULL
+                 GROUP BY party_id
+             ) pa ON pa.party_id = party.id
+             GROUP BY party.transfer_id
+         ) party_counts ON party_counts.transfer_id = t.id
          {tail}"
     )
 }

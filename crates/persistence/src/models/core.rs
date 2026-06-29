@@ -222,6 +222,9 @@ pub struct TransferIdentityRow {
     pub target_base_url: Option<String>,
     pub source_base_url: Option<String>,
     pub topic_text: Option<String>,
+    pub agreement_type: Option<String>,
+    #[table(check = "agreement_percentage IS NULL OR (agreement_percentage >= 0 AND agreement_percentage <= 100)")]
+    pub agreement_percentage: Option<i64>,
     #[table(default = "CURRENT_TIMESTAMP")]
     pub created_at: String,
     #[table(default = "CURRENT_TIMESTAMP")]
@@ -639,24 +642,52 @@ pub struct RecordTransferAvailabilityRow {
 
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
 #[allow(dead_code)]
-#[table(name = "transfer_message")]
+#[table(name = "message")]
 #[table(strict)]
 #[table(index(
-    name = "idx_transfer_message_transfer_created",
-    columns = "transfer_id, created_at"
+    name = "idx_message_record_created",
+    columns = "record_id, created_at DESC",
+    where = "record_id IS NOT NULL"
 ))]
-pub struct TransferMessageRow {
+#[table(index(
+    name = "idx_message_transfer_created",
+    columns = "transfer_id, created_at",
+    where = "transfer_id IS NOT NULL"
+))]
+#[table(index(
+    name = "uq_message_sync_uid",
+    columns = "sync_uid",
+    unique,
+    where = "sync_uid IS NOT NULL"
+))]
+pub struct MessageRow {
     #[table(primary_key)]
     pub id: i64,
+    #[table(references = "record(id) ON DELETE CASCADE")]
+    pub record_id: Option<i64>,
     #[table(references = "transfer(id) ON DELETE CASCADE")]
-    pub transfer_id: i64,
+    pub transfer_id: Option<i64>,
+    #[table(references = "transfer_interaction(id) ON DELETE SET NULL")]
     pub interaction_id: Option<i64>,
+    #[table(references = "message(id) ON DELETE CASCADE")]
+    pub parent_message_id: Option<i64>,
+    pub author_label: Option<String>,
+    #[table(references = "transfer_party(id) ON DELETE SET NULL")]
     pub party_id: Option<i64>,
+    #[table(references = "transfer_event(id) ON DELETE SET NULL")]
+    pub event_id: Option<i64>,
     #[table(check = "length(trim(body)) > 0")]
     pub body: String,
-    pub event_id: Option<i64>,
-    #[table(default = "CURRENT_TIMESTAMP")]
+    #[table(default = "CURRENT_TIMESTAMP", check = "julianday(created_at) IS NOT NULL")]
     pub created_at: String,
+    #[table(default = "CURRENT_TIMESTAMP", check = "julianday(updated_at) IS NOT NULL")]
+    pub updated_at: String,
+    #[table(check = "deleted_at IS NULL OR julianday(deleted_at) IS NOT NULL")]
+    pub deleted_at: Option<String>,
+    #[table(check = "sync_uid IS NULL OR length(trim(sync_uid)) > 0")]
+    pub sync_uid: Option<String>,
+    #[table(references = "organ(id)")]
+    pub origin_organ_id: Option<i64>,
 }
 
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]

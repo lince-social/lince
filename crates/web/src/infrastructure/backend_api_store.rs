@@ -16,7 +16,7 @@ pub enum ApiTable {
     Record,
     RecordExtension,
     RecordLink,
-    RecordComment,
+    Message,
     RecordWorklog,
     RecordResourceRef,
     Command,
@@ -159,10 +159,13 @@ struct RecordLinkRow {
 }
 
 #[derive(Debug, Serialize, FromRow)]
-struct RecordCommentRow {
+struct MessageRow {
     id: i64,
-    record_id: i64,
-    author_user_id: Option<i64>,
+    record_id: Option<i64>,
+    transfer_id: Option<i64>,
+    interaction_id: Option<i64>,
+    parent_message_id: Option<i64>,
+    author_label: Option<String>,
     body: String,
     created_at: String,
     updated_at: String,
@@ -403,14 +406,18 @@ const RECORD_LINK_FIELD_SPECS: [FieldSpec; 6] = [
     },
 ];
 
-const RECORD_COMMENT_FIELD_SPECS: [FieldSpec; 4] = [
+const MESSAGE_FIELD_SPECS: [FieldSpec; 5] = [
     FieldSpec {
         name: "record_id",
-        kind: FieldKind::Integer,
+        kind: FieldKind::NullableInteger,
     },
     FieldSpec {
-        name: "author_user_id",
+        name: "transfer_id",
         kind: FieldKind::NullableInteger,
+    },
+    FieldSpec {
+        name: "author_label",
+        kind: FieldKind::NullableText,
     },
     FieldSpec {
         name: "body",
@@ -811,9 +818,9 @@ impl BackendApiStore {
                 .await
                 .map_err(map_sqlx_error)?,
             ),
-            ApiTable::RecordComment => serialize_value(
-                sqlx::query_as::<_, RecordCommentRow>(
-                    "SELECT id, record_id, author_user_id, body, created_at, updated_at, deleted_at FROM record_comment ORDER BY id",
+            ApiTable::Message => serialize_value(
+                sqlx::query_as::<_, MessageRow>(
+                    "SELECT id, record_id, transfer_id, interaction_id, parent_message_id, author_label, body, created_at, updated_at, deleted_at FROM message ORDER BY id",
                 )
                 .fetch_all(db)
                 .await
@@ -952,9 +959,9 @@ impl BackendApiStore {
                 .await
                 .map_err(map_sqlx_error)?,
             ),
-            ApiTable::RecordComment => serialize_value(
-                sqlx::query_as::<_, RecordCommentRow>(
-                    "SELECT id, record_id, author_user_id, body, created_at, updated_at, deleted_at FROM record_comment WHERE id = ?",
+            ApiTable::Message => serialize_value(
+                sqlx::query_as::<_, MessageRow>(
+                    "SELECT id, record_id, transfer_id, interaction_id, parent_message_id, author_label, body, created_at, updated_at, deleted_at FROM message WHERE id = ?",
                 )
                 .bind(id)
                 .fetch_one(db)
@@ -1622,7 +1629,7 @@ impl ApiTable {
             ApiTable::KarmaCondition,
             ApiTable::KarmaConsequence,
             ApiTable::Query,
-            ApiTable::RecordComment,
+            ApiTable::Message,
             ApiTable::RecordExtension,
             ApiTable::RecordLink,
             ApiTable::RecordResourceRef,
@@ -1641,7 +1648,7 @@ impl ApiTable {
             ApiTable::Record => "record",
             ApiTable::RecordExtension => "record_extension",
             ApiTable::RecordLink => "record_link",
-            ApiTable::RecordComment => "record_comment",
+            ApiTable::Message => "message",
             ApiTable::RecordWorklog => "record_worklog",
             ApiTable::RecordResourceRef => "record_resource_ref",
             ApiTable::Command => "command",
@@ -1665,7 +1672,7 @@ impl ApiTable {
             ApiTable::Record => Some(RECORD_FIELD_SPECS.to_vec()),
             ApiTable::RecordExtension => Some(RECORD_EXTENSION_FIELD_SPECS.to_vec()),
             ApiTable::RecordLink => Some(RECORD_LINK_FIELD_SPECS.to_vec()),
-            ApiTable::RecordComment => Some(RECORD_COMMENT_FIELD_SPECS.to_vec()),
+            ApiTable::Message => Some(MESSAGE_FIELD_SPECS.to_vec()),
             ApiTable::RecordWorklog => Some(RECORD_WORKLOG_FIELD_SPECS.to_vec()),
             ApiTable::RecordResourceRef => Some(RECORD_RESOURCE_REF_FIELD_SPECS.to_vec()),
             ApiTable::Command => Some(COMMAND_FIELD_SPECS.to_vec()),
@@ -1699,7 +1706,7 @@ impl ApiTable {
                 .iter()
                 .map(|spec| table_create_field_schema(spec.name, spec.kind))
                 .collect(),
-            ApiTable::RecordComment => RECORD_COMMENT_FIELD_SPECS
+            ApiTable::Message => MESSAGE_FIELD_SPECS
                 .iter()
                 .map(|spec| table_create_field_schema(spec.name, spec.kind))
                 .collect(),
@@ -1846,7 +1853,7 @@ fn parse_api_table(table_name: &str) -> Result<ApiTable, Error> {
         "record" => Ok(ApiTable::Record),
         "record_extension" => Ok(ApiTable::RecordExtension),
         "record_link" => Ok(ApiTable::RecordLink),
-        "record_comment" => Ok(ApiTable::RecordComment),
+        "message" | "record_comment" => Ok(ApiTable::Message),
         "record_worklog" => Ok(ApiTable::RecordWorklog),
         "record_resource_ref" => Ok(ApiTable::RecordResourceRef),
         "command" => Ok(ApiTable::Command),

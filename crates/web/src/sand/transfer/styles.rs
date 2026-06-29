@@ -1161,6 +1161,46 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
     text-decoration: underline;
   }
 
+  .influenceFacts {
+    background: var(--surface-alt, var(--mantle));
+    border-radius: var(--radius-sm, 4px);
+    padding: var(--space-3);
+  }
+
+  .influenceFactList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    font-size: 0.85em;
+  }
+
+  .influenceFactRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .influenceRecord {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .influenceNow, .influencePlanned {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .influenceArrow {
+    opacity: 0.5;
+  }
+
+  .influenceDelta {
+    opacity: 0.6;
+    font-size: 0.9em;
+  }
+
   .partySettlementList {
     display: flex;
     flex-direction: column;
@@ -1189,5 +1229,42 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
 
   .partySettlementRow.settled .settleMark {
     color: var(--green, #a6e3a1);
+  }
+
+  .influenceReserved {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--yellow, #f9e2af);
+    font-size: 0.85em;
+  }
+
+  .influenceSurplus {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--green, #a6e3a1);
+    font-size: 0.85em;
+  }
+
+  .influenceSurplus.negative {
+    color: var(--red, #f38ba8);
+  }
+
+  .blockingDep > summary {
+    border-left: 3px solid var(--yellow, #f9e2af);
+    padding-left: var(--space-2);
+  }
+
+  .blockingBadge {
+    display: inline-block;
+    background: var(--yellow, #f9e2af);
+    color: var(--base, #1e1e2e);
+    font-size: 0.7em;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 3px;
+    vertical-align: middle;
+    margin-left: var(--space-1);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
 "#];

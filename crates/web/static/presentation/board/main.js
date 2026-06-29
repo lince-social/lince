@@ -770,6 +770,109 @@ const cardNodes = new Map(
   ).map((node) => [node.dataset.cardId, node]),
 );
 
+const cardControlsToolbar = document.createElement("div");
+cardControlsToolbar.id = "card-controls-toolbar";
+cardControlsToolbar.hidden = true;
+document.body.appendChild(cardControlsToolbar);
+
+let cardControlsHoveredCardId = null;
+let cardControlsHideTimer = null;
+
+function renderCardToolbarContent(card) {
+  const isEditable = isCardEditable(card);
+  const canConfigure = cardSupportsHostConfiguration(card) || cardSupportsPackagePreview(card);
+  const canDownload = cardHasRawHtmlSource(card);
+  return [
+    isEditable
+      ? `<button type="button" class="card-toolbar-btn card-toolbar-btn--danger" data-card-action="delete" aria-label="Excluir ${escapeHtml(card.title)}">${renderTrashIcon()}</button>`
+      : "",
+    canConfigure && isEditable
+      ? `<button type="button" class="card-toolbar-btn" data-card-action="configure" aria-label="Configurar ${escapeHtml(card.title)}">${renderConfigureIcon()}</button>`
+      : "",
+    isEditable
+      ? `<button type="button" class="card-toolbar-btn${card.pinned === true ? " is-pinned" : ""}" data-card-action="pin" aria-label="${card.pinned === true ? "Desafixar" : "Fixar"} ${escapeHtml(card.title)}" aria-pressed="${card.pinned === true}">${renderPinIcon(card.pinned === true)}</button>`
+      : "",
+    canDownload && isEditable
+      ? `<button type="button" class="card-toolbar-btn" data-card-action="download-raw-html" aria-label="Baixar HTML de ${escapeHtml(card.title)}">${renderDownloadIcon()}</button>`
+      : "",
+  ].join("");
+}
+
+function positionCardControlsToolbar(cardId) {
+  const node = cardNodes.get(cardId);
+  if (!node) return;
+
+  const cardRect = node.getBoundingClientRect();
+  const canvasRect = boardCanvas.getBoundingClientRect();
+  const toolbarRect = cardControlsToolbar.getBoundingClientRect();
+  const toolbarH = toolbarRect.height || 44;
+  const toolbarW = toolbarRect.width || 180;
+  const gap = 6;
+
+  const fitsAbove = cardRect.top - canvasRect.top >= toolbarH + gap;
+  const fitsBelow = cardRect.bottom + toolbarH + gap <= canvasRect.bottom;
+
+  let left, top;
+  if (fitsAbove) {
+    left = Math.max(canvasRect.left, Math.min(cardRect.left + cardRect.width / 2 - toolbarW / 2, canvasRect.right - toolbarW));
+    top = cardRect.top - toolbarH - gap;
+    cardControlsToolbar.dataset.placement = "above";
+  } else if (fitsBelow) {
+    left = Math.max(canvasRect.left, Math.min(cardRect.left + cardRect.width / 2 - toolbarW / 2, canvasRect.right - toolbarW));
+    top = cardRect.bottom + gap;
+    cardControlsToolbar.dataset.placement = "below";
+  } else {
+    const spaceRight = canvasRect.right - cardRect.right;
+    const spaceLeft = cardRect.left - canvasRect.left;
+    if (spaceRight >= toolbarW + gap || spaceRight >= spaceLeft) {
+      left = cardRect.right + gap;
+      cardControlsToolbar.dataset.placement = "right";
+    } else {
+      left = cardRect.left - toolbarW - gap;
+      cardControlsToolbar.dataset.placement = "left";
+    }
+    top = Math.max(canvasRect.top, Math.min(cardRect.top, canvasRect.bottom - toolbarH));
+  }
+
+  cardControlsToolbar.style.left = `${left}px`;
+  cardControlsToolbar.style.top = `${top}px`;
+}
+
+function showCardControlsToolbar(cardId) {
+  window.clearTimeout(cardControlsHideTimer);
+  cardControlsHideTimer = null;
+
+  const card = getCardById(cardId);
+  if (!card || !editMode || !isCardEditable(card)) {
+    if (cardControlsHoveredCardId && cardControlsHoveredCardId !== cardId) {
+      hideCardControlsToolbar();
+    }
+    return;
+  }
+
+  if (cardControlsHoveredCardId && cardControlsHoveredCardId !== cardId) {
+    cardNodes.get(cardControlsHoveredCardId)?.classList.remove("is-controls-hovered");
+  }
+
+  cardControlsHoveredCardId = cardId;
+  cardControlsToolbar.dataset.cardId = cardId;
+  cardControlsToolbar.innerHTML = renderCardToolbarContent(card);
+  cardControlsToolbar.hidden = false;
+  cardNodes.get(cardId)?.classList.add("is-controls-hovered");
+  positionCardControlsToolbar(cardId);
+}
+
+function hideCardControlsToolbar() {
+  window.clearTimeout(cardControlsHideTimer);
+  cardControlsHideTimer = null;
+  if (cardControlsHoveredCardId) {
+    cardNodes.get(cardControlsHoveredCardId)?.classList.remove("is-controls-hovered");
+    cardControlsHoveredCardId = null;
+  }
+  cardControlsToolbar.hidden = true;
+  delete cardControlsToolbar.dataset.cardId;
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -1819,11 +1922,7 @@ function renderCardMarkup(card) {
   if (isPackageCard) {
     return `
       <article class="board-card board-card--package panzoom-exclude" data-card-id="${escapeHtml(card.id)}" data-card-kind="${escapeHtml(card.kind || "package")}">
-        ${renderDeleteButton(card)}
-        ${renderConfigureButton(card)}
-        ${renderPinButton(card)}
         ${renderLeaveSelfEditButton(card)}
-        ${renderRawHtmlDownloadButton(card)}
         ${renderPackageBody(card)}
         ${renderHandles()}
       </article>
@@ -1832,8 +1931,6 @@ function renderCardMarkup(card) {
 
   return `
     <article class="board-card panzoom-exclude" data-card-id="${escapeHtml(card.id)}" data-card-kind="${escapeHtml(card.kind || "text")}">
-      ${renderDeleteButton(card)}
-      ${renderPinButton(card)}
       <header class="card-header">
         <span class="card-eyebrow">Widget</span>
         <h2 class="card-title" data-card-title>${escapeHtml(card.title)}</h2>
@@ -1943,11 +2040,7 @@ function syncCardNode(node, card) {
     const nextSignature = createPackageRenderSignature(card);
     if (node.dataset.packageRenderSignature !== nextSignature) {
       node.innerHTML =
-        renderDeleteButton(card) +
-        renderConfigureButton(card) +
-        renderPinButton(card) +
         renderLeaveSelfEditButton(card) +
-        renderRawHtmlDownloadButton(card) +
         renderPackageBody(card) +
         renderHandles();
       node.dataset.packageRenderSignature = nextSignature;
@@ -1958,7 +2051,6 @@ function syncCardNode(node, card) {
   const descriptionNode = node.querySelector("[data-card-description]");
   const textNode = node.querySelector("[data-card-text]");
   const frameNode = node.querySelector(".package-widget__frame");
-  const deleteButton = node.querySelector("[data-card-action='delete']");
 
   if (titleNode) {
     titleNode.textContent = card.title;
@@ -2005,40 +2097,9 @@ function syncCardNode(node, card) {
     frameNode.dataset.linceViewName = resolveCardViewName(card);
   }
 
-  if (deleteButton) {
-    deleteButton.setAttribute("aria-label", `Excluir ${card.title || "card"}`);
-  }
-
-  const configureButton = node.querySelector("[data-card-action='configure']");
-  if (configureButton) {
-    configureButton.setAttribute(
-      "aria-label",
-      `Configurar ${card.title || "card"}`,
-    );
-  }
-
-  const pinButton = node.querySelector("[data-card-action='pin']");
-  if (pinButton) {
-    pinButton.setAttribute(
-      "aria-label",
-      `${card.pinned === true ? "Desafixar" : "Fixar"} ${card.title || "card"}`,
-    );
-    pinButton.setAttribute("aria-pressed", String(card.pinned === true));
-    pinButton.classList.toggle("is-pinned", card.pinned === true);
-    const pinIcon = pinButton.querySelector(".card-delete-button__icon");
-    if (pinIcon) {
-      pinIcon.innerHTML = renderPinIcon(card.pinned === true);
-    }
-  }
-
-  const downloadButton = node.querySelector(
-    "[data-card-action='download-raw-html']",
-  );
-  if (downloadButton) {
-    downloadButton.setAttribute(
-      "aria-label",
-      `Baixar HTML de ${card.title || "card"}`,
-    );
+  if (cardControlsHoveredCardId === card.id && !cardControlsToolbar.hidden) {
+    cardControlsToolbar.innerHTML = renderCardToolbarContent(card);
+    positionCardControlsToolbar(card.id);
   }
 }
 
@@ -2068,6 +2129,10 @@ function resolveAllCardIds(allCardIds) {
 function renderCards(cards, allCardIds) {
   const resolvedAllCardIds = resolveAllCardIds(allCardIds);
   const seenIds = new Set(cards.map((card) => card.id));
+
+  if (cardControlsHoveredCardId && !seenIds.has(cardControlsHoveredCardId)) {
+    hideCardControlsToolbar();
+  }
 
   for (const card of cards) {
     const node = ensureCardNode(card);
@@ -3214,6 +3279,7 @@ function setEditMode(nextEditMode) {
     closeLocalPackagesModal();
     closeDnaPackagesModal();
     closeDeleteCardModal();
+    hideCardControlsToolbar();
   }
 
   widgetBridge.syncFrames();
@@ -4813,6 +4879,7 @@ attachBoardInteractions({
   onInteractionStart: (cardId, interactionType) => {
     boardViewport.setInteractionLocked(true);
     setActiveCard(cardId, interactionType);
+    hideCardControlsToolbar();
   },
   onInteractionEnd: () => {
     boardViewport.setInteractionLocked(false);
@@ -5144,6 +5211,47 @@ function handleCardActionClick(event) {
 
 cardsLayer.addEventListener("click", handleCardActionClick);
 pinnedLayer.addEventListener("click", handleCardActionClick);
+
+function onBoardMouseOver(event) {
+  if (!editMode) return;
+  const cardEl = event.target.closest("[data-card-id]");
+  const newCardId = cardEl?.dataset.cardId;
+  if (!newCardId) return;
+  if (newCardId === cardControlsHoveredCardId) {
+    window.clearTimeout(cardControlsHideTimer);
+    cardControlsHideTimer = null;
+    return;
+  }
+  showCardControlsToolbar(newCardId);
+}
+
+function onBoardMouseOut(event) {
+  if (!editMode || !cardControlsHoveredCardId) return;
+  const fromCard = event.target.closest("[data-card-id]");
+  if (!fromCard || fromCard.dataset.cardId !== cardControlsHoveredCardId) return;
+  if (event.relatedTarget && fromCard.contains(event.relatedTarget)) return;
+  cardControlsHideTimer = window.setTimeout(hideCardControlsToolbar, 80);
+}
+
+boardWorld.addEventListener("mouseover", onBoardMouseOver);
+boardWorld.addEventListener("mouseout", onBoardMouseOut);
+pinnedLayer.addEventListener("mouseover", onBoardMouseOver);
+pinnedLayer.addEventListener("mouseout", onBoardMouseOut);
+
+cardControlsToolbar.addEventListener("mouseenter", () => {
+  window.clearTimeout(cardControlsHideTimer);
+  cardControlsHideTimer = null;
+});
+cardControlsToolbar.addEventListener("mouseleave", () => {
+  cardControlsHideTimer = window.setTimeout(hideCardControlsToolbar, 80);
+});
+cardControlsToolbar.addEventListener("click", handleCardActionClick);
+
+boardWorld.addEventListener("panzoomchange", () => {
+  if (cardControlsHoveredCardId && !cardControlsToolbar.hidden) {
+    positionCardControlsToolbar(cardControlsHoveredCardId);
+  }
+});
 
 boardShell.addEventListener("dragenter", (event) => {
   if (!editMode || !hasFilePayload(event.dataTransfer)) {

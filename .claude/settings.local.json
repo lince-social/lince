@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(cargo check *)"
+      "Bash(cargo check *)",
+      "Bash(grep -E '\\\\.\\(rs|html|css|js|ts|svelte\\)$')",
+      "Bash(awk 'NR>=1 && NR<=80')"
     ]
   }
 }

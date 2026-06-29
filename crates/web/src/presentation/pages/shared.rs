@@ -83,7 +83,6 @@ pub(crate) fn render_card(card: &BoardCard) -> Markup {
                 card.x, card.y, card.width, card.height, card.z_index
             ))
         {
-            (render_card_delete_button(card.title.as_str()))
             @if is_package {
                 (render_package_body(card))
             } @else {
@@ -148,20 +147,6 @@ fn package_frame_src(package_name: &str) -> String {
         "/host/packages/local/by-filename/{}/content/index.html",
         urlencoding::encode(package_name)
     )
-}
-
-pub(crate) fn render_card_delete_button(title: &str) -> Markup {
-    html! {
-        button
-            type="button"
-            class="card-delete-button"
-            data-card-action="delete"
-            aria-label=(format!("Excluir {}", title))
-        {
-            span class="card-delete-button__icon" { (trash_icon()) }
-            span class="card-delete-button__label" { "REMOVER" }
-        }
-    }
 }
 
 pub(crate) fn render_text_body(text: &str) -> Markup {
@@ -250,14 +235,3 @@ pub(crate) fn chevron_down_icon() -> Markup {
     }
 }
 
-pub(crate) fn trash_icon() -> Markup {
-    html! {
-        svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" {
-            path d="M4 7h16" {}
-            path d="M9 3.5h6" {}
-            path d="M7 7l1 12h8l1-12" {}
-            path d="M10 11v5" {}
-            path d="M14 11v5" {}
-        }
-    }
-}

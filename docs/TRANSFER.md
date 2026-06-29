@@ -225,6 +225,23 @@ In a condition the token is replaced with the current Transfer quantity (0 if Tr
 - [/] Visibility can hide other parties.
 - [/] Visibility can hide locations and quantities.
 
+Field-level visibility design (when implemented):
+
+Subjects: an Organ, a specific user within an Organ (by `actor_label`), a Transfer role (`contribution`, `need`, `support`), or `public`. Rules attach to a field path on a Transfer, item, or interaction row. If no rule exists, the field falls back to the whole-Transfer visibility policy.
+
+Fields that can be scoped independently:
+- `transfer.title`, `transfer.topic_text`
+- `item.title`, `item.description` (visible without exposing source Record)
+- `item.source_record_id` / `item.record_head_snapshot` (the Record identity)
+- `item.quantity`
+- `party.actor_label` / `party.public_key` (hide other parties from each other)
+- `interaction.quantity`
+- Locations and units carried in item metadata
+
+A rule says "field X is visible to subject Y". Subjects are checked in order: exact actor_label match → role match → Organ match → public. The most specific matching rule wins. A field is hidden unless a matching rule grants access.
+
+Package export applies field rules before serializing: hidden fields are omitted or replaced with a placeholder. The Transfer recipient cannot tell whether a field was intentionally hidden or simply absent.
+
 ### Agreement And Editing
 
 - [x] Default agreement mode is individual.
@@ -249,8 +266,8 @@ In a condition the token is replaced with the current Transfer quantity (0 if Tr
 - [x] Signed events are implemented for local Transfer actions and imported packages.
 - [x] Event validation can be deterministic.
 - [x] Each EventKind has a typed payload struct in Rust.
-- [/] Event payload deserialization uses typed structs at the package import boundary.
-- [/] Invalid event payloads at import are rejected with a validation error.
+- [x] Event payload deserialization uses typed structs at the package import boundary.
+- [x] Invalid event payloads at import are rejected with a validation error.
 - [x] Messages are separate from generic comments.
 - [x] Messages belong to a Transfer.
 - [x] Messages can belong to a specific interaction.
@@ -264,8 +281,8 @@ In a condition the token is replaced with the current Transfer quantity (0 if Tr
 - [x] Messages support threaded replies via `parent_message_id`.
 - [x] Messages are soft-deletable.
 - [x] Kanban uses the unified message table for Record comments.
-- [/] Transfer packages include messages from the unified table.
-- [/] Transfer package import writes messages into the unified table.
+- [x] Transfer packages include messages from the unified table.
+- [x] Transfer package import writes messages into the unified table.
 - [x] The Transfer sand can display messages in threaded order.
 - [x] The Transfer sand can send new messages.
 - [x] The Transfer sand can reply to a message.
@@ -290,7 +307,7 @@ In a condition the token is replaced with the current Transfer quantity (0 if Tr
 - [x] Reserved incoming can be projected.
 - [x] Available can be projected for active hard local contribution reservations.
 - [x] Planned can be projected with the simple formula.
-- [/] Surplus can be projected. (Surplus = quantity you have beyond what is already committed to hard reservations — the "safe to give away" figure. Formula: `record.quantity - reserved_quantity`. Distinct from `available_quantity` in that surplus could also account for confirmed incoming deliveries not yet settled.)
+- [ ] Surplus can be projected. (Surplus = quantity you have beyond what is already committed to hard reservations — the "safe to give away" figure. Formula: `record.quantity - reserved_quantity`. Distinct from `available_quantity` in that surplus could also account for confirmed incoming deliveries not yet settled.)
 - [x] SQL views can explicitly join reservation availability.
 - [x] Relation sand can choose its projection view.
 
@@ -358,7 +375,6 @@ In a condition the token is replaced with the current Transfer quantity (0 if Tr
 - [x] Received/seen package facts can become signed outbound Transfer events.
 - [x] Karma consequences can widen restricted visibility with `transfer-proximity-broadening-{transfer_id}`.
 - [x] Offer ordering sends eligible Transfers to closer Organs first without exposing local proximity externally.
-- [/] Field-level visibility done now.
 - [x] Visibility-aware projection sharing is default-off and gated by configuration.
 
 ### Transfer Sand
@@ -388,7 +404,7 @@ In a condition the token is replaced with the current Transfer quantity (0 if Tr
 - [x] The Transfer sand can show delivery confirmation state.
 - [x] The Transfer sand can show receipt confirmation state.
 - [x] The Transfer sand can request settlement.
-- [/] The Transfer sand can show quantity influence facts when they exist. (Quantity influence facts are the planned +/− Record quantity changes stored in `record_transfer_availability`. Showing them means displaying, per Transfer, which Records are affected and by how much before settlement actually runs.) HUMAN: What does quanitity influence facts mean?
+- [x] The Transfer sand can show quantity influence facts when they exist. (Per Transfer, shows which local Records will be affected and by how much — `proposed_incoming`, `proposed_outgoing`, `planned_quantity` from `record_transfer_availability` — before settlement actually runs.)
 - [x] The Transfer backend projection exposes Transfer-level work metadata when it exists.
 - [x] The Transfer sand can edit Transfer work metadata.
 - [x] The Transfer sand can show and edit item work metadata.
@@ -470,3 +486,15 @@ When a Transfer or spectator settles, a satiation policy can auto-cancel sibling
 - [x] Satiation runs after `settle-all-local` and after spectator trigger.
 - [x] `set-satiation-policy` backend action.
 - [x] Transfer sand shows satiation policy picker with inherit/none/first_completes options.
+
+### Backend Features Without Transfer Sand UI
+
+Backend actions and capabilities that exist but have no UI surface in the Transfer sand yet.
+
+- [x] `set-transfer-reservation-policy` action exists but the Transfer sand has no control for it. The five reservation policies (`none`, `soft`, `hard_on_proposal`, `hard_on_consume`, `hard_on_lock`) can be set per Transfer but only via direct API calls. → Added reservation policy dropdown in the Transfer tree section.
+- [x] Transfer tree sync mode (`live` vs `snapshot`) can be configured per tree node but the Transfer sand only shows one-time sync buttons, not the configured mode or a toggle. → Configured sync mode dropdown already shown alongside "Sync now" button.
+- [x] Transfer tree branch mode (`inherit`, `duplicated`, `greedy`) is displayed in the Transfer sand tree section but the `greedy` option is not explained and the effect of changing it mid-tree is not surfaced. → Added `title` attributes to branch mode options explaining what each does.
+- [/] Reservation availability (`record_transfer_availability`) is maintained in the backend but not shown in the Record sand or Relation sand as a live projection alongside the Record's actual quantity.
+- [x] Transfer dependency interactions (`depends_on` kind with `must_agree`, `must_activate`, `must_deliver`, `must_receive`, `must_settle` dependency kinds) are stored but the Transfer sand does not show whether the dependency is currently blocking progress or satisfied. → Interactions with unresolved dependency kinds now show a yellow "blocking" badge and a left border.
+- [x] The global Transfer satiation policy default in `configuration.transfer_satiation_policy` has no UI in the Transfer sand configuration section. → Added global satiation policy select in the Network drawer; populated from `snapshot.globalSatiationPolicy`.
+- [x] `surplus_quantity` (actual minus hard reserved) is not computed or surfaced anywhere in the UI. → `surplus_quantity = actual − reserved − proposed_outgoing` now computed in `load_influence_facts` and displayed per-Record in the Quantity influence section.

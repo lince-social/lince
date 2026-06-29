@@ -151,6 +151,7 @@ impl TransferWidgetService {
                 "set-organ-receipt-policy",
                 "set-quantity-projection-sharing",
                 "apply-visibility-wave",
+                "set-global-satiation-policy",
                 "refresh"
             ],
             "snapshot": self.snapshot(session_token).await?,
@@ -322,6 +323,13 @@ impl TransferWidgetService {
                 let request = parse_payload::<SetSatiationPolicyRequest>(payload)?;
                 self.set_satiation_policy(request.transfer_id, request.policy).await?;
                 "Satiation policy updated.".to_string()
+            }
+            "set-global-satiation-policy" => {
+                let request = parse_payload::<SetGlobalSatiationPolicyRequest>(payload)?;
+                self.set_global_satiation_policy(request.policy)
+                    .await
+                    .map_err(TransferWidgetError::from_io)?;
+                "Global satiation policy updated.".to_string()
             }
             "inactivate-transfer" => {
                 let request = parse_payload::<TransferIdRequest>(payload)?;
@@ -743,6 +751,10 @@ impl TransferWidgetService {
             .transfer_share_quantity_projections()
             .await
             .map_err(TransferWidgetError::from_io)?;
+        let global_satiation_policy = self
+            .load_global_satiation_policy()
+            .await
+            .map_err(TransferWidgetError::from_io)?;
 
         Ok(json!({
             "localIdentity": LocalIdentityView::from(local_identity),
@@ -755,6 +767,7 @@ impl TransferWidgetService {
                 "shareQuantityProjections": share_quantity_projections,
             },
             "receiptPolicy": receipt_policy,
+            "globalSatiationPolicy": global_satiation_policy,
             "records": records,
             "organs": organs,
             "workAssigneeOptions": {
@@ -864,6 +877,47 @@ impl TransferWidgetService {
                     ) VALUES (1, 'Default', 'en', 0, 'catppuccin_macchiato', ?)"
                         .to_string(),
                     vec![SqlParameter::Integer(enabled)],
+                )
+                .await?;
+        }
+        Ok(())
+    }
+
+    async fn load_global_satiation_policy(&self) -> Result<Option<String>, Error> {
+        let value = sqlx::query_scalar::<_, Option<String>>(
+            "SELECT transfer_satiation_policy FROM configuration WHERE quantity = 1 ORDER BY id LIMIT 1",
+        )
+        .fetch_optional(&*self.services.db)
+        .await
+        .map_err(Error::other)?;
+        Ok(value.flatten())
+    }
+
+    async fn set_global_satiation_policy(
+        &self,
+        policy: Option<String>,
+    ) -> Result<(), Error> {
+        if let Some(ref p) = policy {
+            if p != "none" && p != "first_completes" {
+                return Err(Error::other("satiation_policy must be 'none', 'first_completes', or null"));
+            }
+        }
+        let outcome = self
+            .services
+            .writer
+            .execute_statement(
+                "UPDATE configuration SET transfer_satiation_policy = ? WHERE quantity = 1".to_string(),
+                vec![optional_text_parameter(policy.clone())],
+            )
+            .await?;
+        if outcome.rows_affected == 0 {
+            self.services
+                .writer
+                .execute_statement(
+                    "INSERT INTO configuration(quantity, name, language, timezone, style, transfer_satiation_policy)
+                     VALUES (1, 'Default', 'en', 0, 'catppuccin_macchiato', ?)"
+                        .to_string(),
+                    vec![optional_text_parameter(policy)],
                 )
                 .await?;
         }
@@ -1963,8 +2017,8 @@ impl TransferWidgetService {
         self.services
             .writer
             .execute_statement(
-                "INSERT INTO message(transfer_id, interaction_id, parent_message_id, author_label, body)
-                 VALUES (?, ?, ?, ?, ?)"
+                "INSERT INTO message(transfer_id, interaction_id, parent_message_id, author_label, body, sync_uid)
+                 VALUES (?, ?, ?, ?, ?, ?)"
                 .to_string(),
                 vec![
                     SqlParameter::Integer(transfer.id),
@@ -1972,6 +2026,7 @@ impl TransferWidgetService {
                     optional_integer_parameter(request.parent_message_id),
                     optional_text_parameter(Some(local_identity.label.clone())),
                     SqlParameter::Text(body),
+                    SqlParameter::Text(Uuid::new_v4().to_string()),
                 ],
             )
             .await
@@ -6161,6 +6216,7 @@ impl TransferWidgetService {
                 .load_transfer_interaction_work_views(transfer.id)
                 .await?;
             let messages = self.load_transfer_messages(transfer.id).await?;
+            let influence_facts = self.load_influence_facts(transfer.id).await?;
             let party_settlements = self.load_party_settlements(transfer.id).await?;
             let chain_links = self.load_chain_links_for_transfer(transfer.id).await?;
             let spectators = self.load_spectators_for_transfer(transfer.id).await?;
@@ -6175,6 +6231,7 @@ impl TransferWidgetService {
                 items,
                 interactions,
                 messages,
+                influence_facts,
                 party_settlements,
                 chain_links,
                 spectators,
@@ -6402,6 +6459,59 @@ impl TransferWidgetService {
                 body: row.body,
                 created_at: sql_to_iso8601(&row.created_at),
                 deleted_at: row.deleted_at.as_deref().map(sql_to_iso8601),
+            })
+            .collect())
+    }
+
+    async fn load_influence_facts(
+        &self,
+        transfer_id: i64,
+    ) -> Result<Vec<InfluenceFactView>, Error> {
+        #[derive(sqlx::FromRow)]
+        struct FactRow {
+            record_id: i64,
+            record_head: Option<String>,
+            actual_quantity: f64,
+            proposed_incoming_quantity: f64,
+            proposed_outgoing_quantity: f64,
+            reserved_quantity: f64,
+            reserved_incoming_quantity: f64,
+            planned_quantity: f64,
+        }
+        let rows = sqlx::query_as::<_, FactRow>(
+            "SELECT r.id AS record_id, r.head AS record_head,
+                    a.actual_quantity,
+                    a.proposed_incoming_quantity,
+                    a.proposed_outgoing_quantity,
+                    a.reserved_quantity,
+                    a.reserved_incoming_quantity,
+                    a.planned_quantity
+             FROM transfer_structured_item tsi
+             JOIN record r ON r.id = tsi.source_record_id
+             JOIN record_transfer_availability a ON a.record_id = r.id
+             WHERE tsi.transfer_id = ? AND tsi.source_record_id IS NOT NULL
+             GROUP BY r.id",
+        )
+        .bind(transfer_id)
+        .fetch_all(&*self.services.db)
+        .await
+        .map_err(Error::other)?;
+        Ok(rows
+            .into_iter()
+            .map(|r| {
+                let surplus_quantity =
+                    r.actual_quantity - r.reserved_quantity - r.proposed_outgoing_quantity;
+                InfluenceFactView {
+                    record_id: r.record_id,
+                    record_head: r.record_head,
+                    actual_quantity: r.actual_quantity,
+                    proposed_incoming: r.proposed_incoming_quantity,
+                    proposed_outgoing: r.proposed_outgoing_quantity,
+                    reserved_quantity: r.reserved_quantity,
+                    reserved_incoming_quantity: r.reserved_incoming_quantity,
+                    planned_quantity: r.planned_quantity,
+                    surplus_quantity,
+                }
             })
             .collect())
     }
@@ -6720,8 +6830,15 @@ impl TransferWidgetService {
             .map_err(Error::other)?,
             quantity_influences,
             messages: sqlx::query_as::<_, TransferMessagePackage>(
-                "SELECT body, created_at
-                 FROM message WHERE transfer_id = ? AND deleted_at IS NULL ORDER BY id",
+                "SELECT m.sync_uid, m.author_label, m.body,
+                        pm.sync_uid AS parent_sync_uid,
+                        ti.interaction_uid,
+                        m.created_at, m.deleted_at
+                 FROM message m
+                 LEFT JOIN message pm ON pm.id = m.parent_message_id
+                 LEFT JOIN transfer_interaction ti ON ti.id = m.interaction_id
+                 WHERE m.transfer_id = ?
+                 ORDER BY m.id",
             )
             .bind(transfer_id)
             .fetch_all(&*self.services.db)
@@ -7139,28 +7256,77 @@ impl TransferWidgetService {
             ).await?;
         }
         for message in &package.messages {
-            self.services
-                .writer
-                .execute_statement(
-                    "INSERT INTO message(transfer_id, body, created_at)
-                 SELECT ?, ?, ?
-                 WHERE NOT EXISTS (
-                    SELECT 1 FROM message
-                    WHERE transfer_id = ?
-                      AND body = ?
-                      AND created_at = ?
-                 )"
-                    .to_string(),
-                    vec![
-                        SqlParameter::Integer(transfer_id),
-                        SqlParameter::Text(message.body.clone()),
-                        SqlParameter::Text(message.created_at.clone()),
-                        SqlParameter::Integer(transfer_id),
-                        SqlParameter::Text(message.body.clone()),
-                        SqlParameter::Text(message.created_at.clone()),
-                    ],
-                )
-                .await?;
+            if let Some(ref uid) = message.sync_uid {
+                // Update tombstone on existing message (propagate deletions)
+                self.services
+                    .writer
+                    .execute_statement(
+                        "UPDATE message SET deleted_at = ? WHERE sync_uid = ? AND deleted_at IS NULL AND ? IS NOT NULL"
+                            .to_string(),
+                        vec![
+                            optional_text_parameter(message.deleted_at.clone()),
+                            SqlParameter::Text(uid.clone()),
+                            optional_text_parameter(message.deleted_at.clone()),
+                        ],
+                    )
+                    .await?;
+                // Insert new message by sync_uid (ignored if already exists)
+                self.services
+                    .writer
+                    .execute_statement(
+                        "INSERT OR IGNORE INTO message(
+                             transfer_id, sync_uid, author_label, body,
+                             parent_message_id, interaction_id,
+                             created_at, deleted_at
+                         )
+                         VALUES (
+                             ?,
+                             ?,
+                             ?,
+                             ?,
+                             (SELECT id FROM message WHERE sync_uid = ?),
+                             (SELECT id FROM transfer_interaction WHERE interaction_uid = ? AND transfer_id = ?),
+                             ?,
+                             ?
+                         )"
+                        .to_string(),
+                        vec![
+                            SqlParameter::Integer(transfer_id),
+                            SqlParameter::Text(uid.clone()),
+                            optional_text_parameter(message.author_label.clone()),
+                            SqlParameter::Text(message.body.clone()),
+                            optional_text_parameter(message.parent_sync_uid.clone()),
+                            optional_text_parameter(message.interaction_uid.clone()),
+                            SqlParameter::Integer(transfer_id),
+                            SqlParameter::Text(message.created_at.clone()),
+                            optional_text_parameter(message.deleted_at.clone()),
+                        ],
+                    )
+                    .await?;
+            } else {
+                // Legacy: no sync_uid, deduplicate by (transfer_id, body, created_at)
+                self.services
+                    .writer
+                    .execute_statement(
+                        "INSERT INTO message(transfer_id, author_label, body, created_at)
+                         SELECT ?, ?, ?, ?
+                         WHERE NOT EXISTS (
+                             SELECT 1 FROM message
+                             WHERE transfer_id = ? AND body = ? AND created_at = ?
+                         )"
+                        .to_string(),
+                        vec![
+                            SqlParameter::Integer(transfer_id),
+                            optional_text_parameter(message.author_label.clone()),
+                            SqlParameter::Text(message.body.clone()),
+                            SqlParameter::Text(message.created_at.clone()),
+                            SqlParameter::Integer(transfer_id),
+                            SqlParameter::Text(message.body.clone()),
+                            SqlParameter::Text(message.created_at.clone()),
+                        ],
+                    )
+                    .await?;
+            }
         }
         Ok(())
     }
@@ -8692,6 +8858,12 @@ struct SetSatiationPolicyRequest {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+struct SetGlobalSatiationPolicyRequest {
+    policy: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct UpdateTransferWorkRequest {
     transfer_id: i64,
     work: WorkMetadataInput,
@@ -9257,6 +9429,20 @@ struct MessageView {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+struct InfluenceFactView {
+    record_id: i64,
+    record_head: Option<String>,
+    actual_quantity: f64,
+    proposed_incoming: f64,
+    proposed_outgoing: f64,
+    reserved_quantity: f64,
+    reserved_incoming_quantity: f64,
+    planned_quantity: f64,
+    surplus_quantity: f64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct PartySettlementView {
     party_id: i64,
     actor_label: String,
@@ -9325,6 +9511,7 @@ struct TransferView {
     items: Vec<TransferItemWorkView>,
     interactions: Vec<TransferInteractionWorkView>,
     messages: Vec<MessageView>,
+    influence_facts: Vec<InfluenceFactView>,
     party_settlements: Vec<PartySettlementView>,
     chain_links: Vec<ChainLinkView>,
     spectators: Vec<SpectatorView>,
@@ -9346,6 +9533,7 @@ impl TransferView {
         items: Vec<TransferItemWorkView>,
         interactions: Vec<TransferInteractionWorkView>,
         messages: Vec<MessageView>,
+        influence_facts: Vec<InfluenceFactView>,
         party_settlements: Vec<PartySettlementView>,
         chain_links: Vec<ChainLinkView>,
         spectators: Vec<SpectatorView>,
@@ -9525,6 +9713,7 @@ impl TransferView {
             items,
             interactions,
             messages,
+            influence_facts,
             party_settlements,
             chain_links,
             spectators,
@@ -10198,8 +10387,13 @@ struct QuantityInfluencePackage {
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
 struct TransferMessagePackage {
+    sync_uid: Option<String>,
+    author_label: Option<String>,
     body: String,
+    parent_sync_uid: Option<String>,
+    interaction_uid: Option<String>,
     created_at: String,
+    deleted_at: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

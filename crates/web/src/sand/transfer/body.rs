@@ -117,6 +117,16 @@ pub(super) fn body() -> Markup {
                             }
                             button type="submit" { "Save receipts" }
                         }
+                        form id="global-satiation-form" class="formGrid" {
+                            label {
+                                span { "Global satiation default" }
+                                select id="global-satiation-policy" name="policy" {
+                                    option value="" { "None (each duplicate proceeds independently)" }
+                                    option value="first_completes" { "First completes — cancel siblings when any settles" }
+                                }
+                            }
+                            button type="submit" { "Save satiation default" }
+                        }
                         form id="contact-discovery-form" class="formGrid networkDiscoveryForm" {
                             label {
                                 span { "Node URL" }

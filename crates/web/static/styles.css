@@ -1775,68 +1775,25 @@ body.auth-pending .startup-auth-card {
     text-transform: uppercase;
 }
 
-.board-shell.is-editing .card-delete-button {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translate(-50%, -50%) scale(1);
-}
-
-.card-delete-button:hover {
-    border-color: rgba(255, 177, 187, 0.26);
-    background: rgba(61, 20, 26, 0.9);
-    color: #ffd8de;
-    transform: translate(-50%, -50%) scale(1.04);
-}
-
 .card-delete-button--secondary:hover {
     border-color: rgba(209, 221, 245, 0.24);
     background: rgba(20, 26, 38, 0.9);
     color: #eaf0ff;
 }
 
-.board-shell.is-editing .card-download-button,
-.board-shell.is-editing .card-leave-self-edit-button {
-    transform: translateY(0) scale(1);
-}
-
-.card-download-button:hover,
-.card-leave-self-edit-button:hover {
-    transform: translateY(0) scale(1.04);
-}
-
-.card-config-button {
-    left: 50%;
-}
-
-.card-pin-button {
-    left: calc(50% + 52px);
-}
-
-.card-pin-button.is-pinned {
-    color: var(--text-strong);
-    background: rgba(50, 55, 65, 0.92);
-}
-
-.card-download-button {
-    top: 18px;
-    left: auto;
-    right: 310px;
-    width: auto;
-    min-height: 42px;
-    padding: 0 18px;
-    gap: 10px;
-    transform: translateY(-6px) scale(0.96);
-}
-
 .card-leave-self-edit-button {
-    top: 18px;
+    top: 12px;
     left: auto;
-    right: 456px;
+    right: 12px;
     width: auto;
-    min-height: 42px;
-    padding: 0 18px;
-    gap: 10px;
-    transform: translateY(-6px) scale(0.96);
+    min-height: 36px;
+    padding: 0 14px;
+    gap: 8px;
+    transform: translateY(-4px) scale(0.96);
+}
+
+.card-leave-self-edit-button:hover {
+    transform: translateY(-4px) scale(1.04);
 }
 
 .board-card:not(.is-self-editing) .card-leave-self-edit-button {
@@ -1844,7 +1801,6 @@ body.auth-pending .startup-auth-card {
     pointer-events: none;
 }
 
-.board-card.is-edit-locked .card-delete-button,
 .board-card.is-edit-locked .resize-handle {
     opacity: 0;
     pointer-events: none;
@@ -1856,31 +1812,66 @@ body.auth-pending .startup-auth-card {
     transform: translateY(0) scale(1);
 }
 
-.board-card.is-compact .card-config-button,
-.board-card.is-tiny .card-config-button {
-    top: 50%;
-    left: calc(50% + 26px);
+#card-controls-toolbar {
+    position: fixed;
+    z-index: 1000;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 6px;
+    background: rgba(10, 12, 15, 0.94);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.36);
+    backdrop-filter: blur(8px);
+    pointer-events: auto;
 }
 
-.board-card.is-compact .card-download-button,
-.board-card.is-tiny .card-download-button {
-    top: 118px;
-    left: auto;
-    right: 18px;
-    transform: translateY(-6px) scale(0.96);
+.card-toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition:
+        border-color var(--transition-fast),
+        background var(--transition-fast),
+        color var(--transition-fast);
 }
 
-.board-card.is-compact .card-leave-self-edit-button,
-.board-card.is-tiny .card-leave-self-edit-button {
-    top: 168px;
-    left: auto;
-    right: 18px;
-    transform: translateY(-6px) scale(0.96);
+.card-toolbar-btn svg {
+    width: 16px;
+    height: 16px;
 }
 
-.board-card.is-dragging .card-delete-button,
-.board-card.is-resizing .card-delete-button {
-    opacity: 0;
+.card-toolbar-btn:hover {
+    border-color: rgba(209, 221, 245, 0.20);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-strong);
+}
+
+.card-toolbar-btn--danger:hover {
+    border-color: rgba(255, 177, 187, 0.26);
+    background: rgba(61, 20, 26, 0.9);
+    color: #ffd8de;
+}
+
+.card-toolbar-btn.is-pinned {
+    color: var(--text-strong);
+}
+
+.board-shell.is-editing .board-card.is-controls-hovered {
+    border-color: rgba(255, 255, 255, 0.26) !important;
+    box-shadow:
+        0 0 0 2px rgba(255, 255, 255, 0.10),
+        0 22px 50px rgba(0, 0, 0, 0.38);
 }
 
 .card-header {

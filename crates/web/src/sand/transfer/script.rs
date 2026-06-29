@@ -17,6 +17,8 @@ pub(super) fn script() -> String {
   const networkPolicyForm = document.getElementById("network-policy-form");
   const knownPeerPollingEnabled = document.getElementById("known-peer-polling-enabled");
   const shareQuantityProjections = document.getElementById("share-quantity-projections");
+  const globalSatiationForm = document.getElementById("global-satiation-form");
+  const globalSatiationPolicy = document.getElementById("global-satiation-policy");
   const receiptPolicyForm = document.getElementById("receipt-policy-form");
   const sendReceivedReceipts = document.getElementById("send-received-receipts");
   const sendSeenReceipts = document.getElementById("send-seen-receipts");
@@ -419,6 +421,7 @@ pub(super) fn script() -> String {
     sendReceivedReceipts.checked = receipt.sendReceivedReceipts !== false;
     sendSeenReceipts.checked = receipt.sendSeenReceipts !== false;
     anonymousPackageViewing.checked = Boolean(receipt.anonymousPackageViewing);
+    if (globalSatiationPolicy) globalSatiationPolicy.value = snapshot.globalSatiationPolicy || "";
     const knownCount = snapshot.organs.filter((organ) => organ.trustState === "known").length;
     const unknownCount = snapshot.organs.filter((organ) => organ.trustState === "unknown").length;
     const blockedCount = snapshot.organs.filter((organ) => organ.trustState === "blocked").length;
@@ -1243,11 +1246,14 @@ pub(super) fn script() -> String {
     const depOptions = ["", "must_agree", "must_activate", "must_deliver", "must_receive", "must_settle"]
       .map((d) => `<option value="${d}">${d ? d.replaceAll("_", " ") : "none"}</option>`)
       .join("");
-    const interactionRows = interactions.map((ia) => `
-      <details class="crudItem">
+    const terminalStates = new Set(["settled", "satisfied", "complete", "completed", "inactive", "cancelled"]);
+    const interactionRows = interactions.map((ia) => {
+      const isBlocking = ia.dependencyKind && !terminalStates.has(ia.state || "");
+      return `
+      <details class="crudItem ${isBlocking ? "blockingDep" : ""}">
         <summary>
           <span class="label">${escapeHtml((ia.interactionKind || "interaction").replaceAll("_", " "))}</span>
-          <span class="meta">${escapeHtml(ia.direction || "")}${ia.dependencyKind ? " / " + escapeHtml(ia.dependencyKind) : ""}${ia.quantity ? " / qty " + escapeHtml(formatQuantity(ia.quantity)) : ""}</span>
+          <span class="meta">${escapeHtml(ia.direction || "")}${ia.dependencyKind ? " / " + escapeHtml(ia.dependencyKind) : ""}${ia.quantity ? " / qty " + escapeHtml(formatQuantity(ia.quantity)) : ""}${isBlocking ? ' <span class="blockingBadge">blocking</span>' : ""}</span>
         </summary>
         <div class="crudForm formGrid">
           <label><span>Kind</span><select id="edit-ia-kind-${ia.id}" data-keep-enabled="true">${kindOptions.replace(`value="${ia.interactionKind}"`, `value="${ia.interactionKind}" selected`)}</select></label>
@@ -1260,7 +1266,7 @@ pub(super) fn script() -> String {
           </div>
         </div>
       </details>
-    `).join("");
+    `}).join("");
     return `
       <section class="panel crudSection" aria-labelledby="interactions-section-title">
         <div class="panelHead">
@@ -1338,6 +1344,32 @@ pub(super) fn script() -> String {
               <button type="button" id="message-cancel-reply" class="link" data-keep-enabled="true" style="display:none">Cancel reply</button>
             </div>
           </div>
+        </div>
+      </section>
+    `;
+  }
+
+  function renderInfluenceFactsSection(transfer) {
+    const facts = transfer.influenceFacts || [];
+    if (!facts.length) return "";
+    return `
+      <section class="transferSection influenceFacts">
+        <div class="sectionTitle">Quantity influence</div>
+        <div class="influenceFactList">
+          ${facts.map(f => {
+            const delta = (f.proposedIncoming || 0) - (f.proposedOutgoing || 0);
+            const sign = delta > 0 ? "+" : delta < 0 ? "" : "±";
+            const surplus = f.surplusQuantity ?? (f.actualQuantity - (f.reservedQuantity || 0) - (f.proposedOutgoing || 0));
+            return `
+            <div class="influenceFactRow">
+              <span class="influenceRecord">${escapeHtml(f.recordHead || "Record #" + f.recordId)}</span>
+              <span class="influenceNow" title="actual quantity">${escapeHtml(formatQuantity(f.actualQuantity))}</span>
+              <span class="influenceArrow">→</span>
+              <span class="influencePlanned" title="planned quantity">${escapeHtml(formatQuantity(f.plannedQuantity))} <span class="influenceDelta">(${sign}${escapeHtml(formatQuantity(Math.abs(delta)))})</span></span>
+              ${(f.reservedQuantity || 0) > 0 ? `<span class="influenceReserved" title="hard reserved outgoing">${escapeHtml(formatQuantity(f.reservedQuantity))} reserved</span>` : ""}
+              <span class="influenceSurplus ${surplus < 0 ? "negative" : ""}" title="surplus = actual − reserved − proposed outgoing">${escapeHtml(formatQuantity(surplus))} surplus</span>
+            </div>`;
+          }).join("")}
         </div>
       </section>
     `;
@@ -1479,6 +1511,7 @@ pub(super) fn script() -> String {
     const treeConfig = transfer.tree?.config || {};
     const branchMode = treeConfig.branchMode || "inherit";
     const syncMode = treeConfig.recordSyncMode || "none";
+    const reservationPolicy = treeConfig.reservationPolicy || "";
     transferDetail.dataset.inactive = transfer.status === "inactive" ? "true" : "false";
     transferDetail.innerHTML = `
       <div class="transferHero">
@@ -1501,6 +1534,8 @@ pub(super) fn script() -> String {
 
       ${renderItemsSection(transfer)}
 
+      ${renderInfluenceFactsSection(transfer)}
+
       ${renderInteractionsSection(transfer)}
 
       ${renderMessagesSection(transfer)}
@@ -1522,8 +1557,8 @@ pub(super) fn script() -> String {
               <span>Branch mode</span>
               <select id="tree-branch-mode" data-keep-enabled="true">
                 <option value="inherit" ${branchMode === "inherit" ? "selected" : ""}>Inherit</option>
-                <option value="duplicated" ${branchMode === "duplicated" ? "selected" : ""}>Duplicated</option>
-                <option value="greedy" ${branchMode === "greedy" ? "selected" : ""}>Greedy</option>
+                <option value="duplicated" ${branchMode === "duplicated" ? "selected" : ""} title="Each child duplicates this transfer's items independently">Duplicated</option>
+                <option value="greedy" ${branchMode === "greedy" ? "selected" : ""} title="Children consume from this transfer's quantity pool — first to settle wins the available quantity">Greedy</option>
               </select>
             </label>
             ${actionButton("set-transfer-branch-mode", "Save mode", false)}
@@ -1537,6 +1572,17 @@ pub(super) fn script() -> String {
             </label>
             ${actionButton("set-transfer-tree-sync-mode", "Save sync", false)}
             ${actionButton("sync-transfer-tree", "Sync now", syncMode !== "live")}
+            <label>
+              <span>Reservation policy</span>
+              <select id="tree-reservation-policy" data-keep-enabled="true">
+                <option value="" ${!reservationPolicy ? "selected" : ""}>None (default)</option>
+                <option value="soft" ${reservationPolicy === "soft" ? "selected" : ""}>Soft &mdash; planned state</option>
+                <option value="hard_on_proposal" ${reservationPolicy === "hard_on_proposal" ? "selected" : ""}>Hard on proposal &mdash; locks on active</option>
+                <option value="hard_on_consume" ${reservationPolicy === "hard_on_consume" ? "selected" : ""}>Hard on consume &mdash; locks on settle</option>
+                <option value="hard_on_lock" ${reservationPolicy === "hard_on_lock" ? "selected" : ""}>Hard on lock &mdash; locks on lock</option>
+              </select>
+            </label>
+            ${actionButton("set-transfer-reservation-policy", "Save reservation", false)}
           </div>
         </div>
       </div>
@@ -2015,6 +2061,12 @@ pub(super) fn script() -> String {
     });
   });
 
+  globalSatiationForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const policy = globalSatiationPolicy?.value || null;
+    postAction("set-global-satiation-policy", { policy: policy || null });
+  });
+
   contactDiscoveryForm.addEventListener("submit", (event) => {
     event.preventDefault();
     discoverContacts();
@@ -2469,6 +2521,11 @@ pub(super) fn script() -> String {
           transferId: transfer.id,
           recordSyncMode: document.getElementById("tree-sync-mode")?.value || "none",
         });
+        return;
+      }
+      if (action === "set-transfer-reservation-policy") {
+        const policy = document.getElementById("tree-reservation-policy")?.value || null;
+        postAction(action, { transferId: transfer.id, reservationPolicy: policy || null });
         return;
       }
       if (action === "set-transfer-visibility") {

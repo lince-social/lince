@@ -97,48 +97,6 @@ pub struct RecordLinkRow {
     pub updated_at: String,
 }
 
-#[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
-#[table(name = "record_comment")]
-#[table(strict)]
-#[table(index(
-    name = "uq_record_comment_sync_uid",
-    columns = "sync_uid",
-    unique,
-    where = "sync_uid IS NOT NULL"
-))]
-#[table(index(
-    name = "idx_record_comment_record_created",
-    columns = "record_id, created_at DESC"
-))]
-pub struct RecordCommentRow {
-    #[table(primary_key)]
-    pub id: i64,
-    #[table(references = "record(id) ON DELETE CASCADE", check = "record_id > 0")]
-    pub record_id: i64,
-    #[table(
-        references = "app_user(id) ON DELETE SET NULL",
-        check = "author_user_id IS NULL OR author_user_id > 0"
-    )]
-    pub author_user_id: Option<i64>,
-    #[table(check = "length(trim(body)) > 0")]
-    pub body: String,
-    #[table(
-        default = "CURRENT_TIMESTAMP",
-        check = "julianday(created_at) IS NOT NULL"
-    )]
-    pub created_at: String,
-    #[table(
-        default = "CURRENT_TIMESTAMP",
-        check = "julianday(updated_at) IS NOT NULL"
-    )]
-    pub updated_at: String,
-    #[table(check = "deleted_at IS NULL OR julianday(deleted_at) IS NOT NULL")]
-    pub deleted_at: Option<String>,
-    #[table(check = "sync_uid IS NULL OR length(trim(sync_uid)) > 0")]
-    pub sync_uid: Option<String>,
-    #[table(references = "organ(id)", check = "origin_organ_id IS NULL OR origin_organ_id > 0")]
-    pub origin_organ_id: Option<i64>,
-}
 
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
 #[table(name = "record_worklog")]

@@ -164,7 +164,7 @@ impl BackendApiService {
                 .await
             }
             ApiTable::RecordExtension
-            | ApiTable::RecordComment
+            | ApiTable::Message
             | ApiTable::RecordWorklog
             | ApiTable::RecordResourceRef => {
                 let (object, confirmed) = strip_karma_confirmation(table, object);
@@ -306,7 +306,7 @@ impl BackendApiService {
                 .await
             }
             ApiTable::RecordExtension
-            | ApiTable::RecordComment
+            | ApiTable::Message
             | ApiTable::RecordWorklog
             | ApiTable::RecordResourceRef => {
                 let (object, confirmed) = strip_karma_confirmation(table, object);
@@ -524,7 +524,7 @@ impl BackendApiService {
             }
             ApiTable::RecordExtension
             | ApiTable::RecordLink
-            | ApiTable::RecordComment
+            | ApiTable::Message
             | ApiTable::RecordWorklog
             | ApiTable::RecordResourceRef => {
                 write::execute_record_sidecar_delete(
@@ -945,7 +945,7 @@ fn table_permission_subject(table: ApiTable) -> &'static str {
         ApiTable::Record
         | ApiTable::RecordExtension
         | ApiTable::RecordLink
-        | ApiTable::RecordComment
+        | ApiTable::Message
         | ApiTable::RecordWorklog
         | ApiTable::RecordResourceRef => "record",
         ApiTable::Command => "command",

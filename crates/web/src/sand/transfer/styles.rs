@@ -1074,4 +1074,120 @@ pub(super) const INLINE_STYLES: &[&str] = &[r#"
       grid-template-columns: 1fr;
     }
   }
+
+  /* ── Items / Interactions / Messages CRUD ─────────────────────────── */
+  .crudSection {
+    margin-bottom: var(--space-4);
+  }
+
+  .crudSection .panelBody {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+  }
+
+  .crudItem summary {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    cursor: pointer;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm, 4px);
+    background: var(--surface-alt, var(--mantle));
+  }
+
+  .crudItem summary .label {
+    font-weight: 500;
+  }
+
+  .crudItem summary .meta {
+    font-size: 0.85em;
+    opacity: 0.7;
+  }
+
+  .crudItem .crudForm {
+    padding: var(--space-3) var(--space-3) var(--space-2);
+  }
+
+  /* Messages */
+  .messageItem {
+    border-left: 2px solid var(--surface-alt, var(--mantle));
+    padding: var(--space-2) var(--space-3);
+    margin-bottom: var(--space-2);
+  }
+
+  .messageHead {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-1);
+    font-size: 0.85em;
+  }
+
+  .messageAuthor {
+    font-weight: 600;
+  }
+
+  .messageMeta {
+    opacity: 0.6;
+    flex: 1;
+  }
+
+  .messageBody {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .messageReplies {
+    margin-top: var(--space-2);
+    padding-left: var(--space-3);
+    border-left: 2px solid var(--surface-alt, var(--mantle));
+  }
+
+  .messageCompose {
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--surface-alt, var(--mantle));
+  }
+
+  button.link {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--accent, var(--blue));
+    cursor: pointer;
+    font-size: 0.85em;
+    text-decoration: underline;
+  }
+
+  .partySettlementList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+    font-size: 0.85em;
+    border-top: 1px solid var(--surface-alt, var(--mantle));
+  }
+
+  .partySettlementRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+  .partySettlementRow.settled {
+    opacity: 0.6;
+  }
+
+  .settleMark {
+    font-size: 1em;
+    min-width: 1.2em;
+    text-align: center;
+  }
+
+  .partySettlementRow.settled .settleMark {
+    color: var(--green, #a6e3a1);
+  }
 "#];

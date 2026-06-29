@@ -1084,9 +1084,6 @@ impl KanbanActionService {
         let resolved = self
             .resolve_instance(session_token, instance_id, ActionPermission::WriteTableOnly)
             .await?;
-        let current_user_id = self
-            .resolve_current_user_id(session_token, instance_id, &resolved)
-            .await?;
         let body = payload.body.trim().to_string();
         if body.is_empty() {
             return Err(KanbanActionError::Validation(
@@ -1106,12 +1103,12 @@ impl KanbanActionService {
             session_token,
             &resolved.organ,
             resolved.bearer_token.as_deref(),
-            "record_comment",
+            "message",
             json!({
                 "record_id": payload.record_id,
-                "author_user_id": current_user_id,
+                "author_label": Value::Null,
                 "body": body,
-                "deleted_at": null,
+                "deleted_at": Value::Null,
             }),
         )
         .await?;
@@ -1141,7 +1138,7 @@ impl KanbanActionService {
             ));
         }
         let comment = self
-            .get_record_comment_by_id(
+            .get_message_by_id(
                 session_token,
                 &resolved.organ,
                 resolved.bearer_token.as_deref(),
@@ -1158,7 +1155,7 @@ impl KanbanActionService {
             session_token,
             &resolved.organ,
             resolved.bearer_token.as_deref(),
-            "record_comment",
+            "message",
             payload.comment_id,
             json!({
                 "body": body,
@@ -1170,7 +1167,7 @@ impl KanbanActionService {
         Ok(KanbanActionOutcome {
             action: "update-comment".into(),
             message: "Comment updated.".into(),
-            record_id: Some(comment.record_id),
+            record_id: comment.record_id,
             await_stream_refresh: true,
             detail: json!({ "comment_id": payload.comment_id }),
         })
@@ -1186,7 +1183,7 @@ impl KanbanActionService {
             .resolve_instance(session_token, instance_id, ActionPermission::WriteTableOnly)
             .await?;
         let comment = self
-            .get_record_comment_by_id(
+            .get_message_by_id(
                 session_token,
                 &resolved.organ,
                 resolved.bearer_token.as_deref(),
@@ -1198,7 +1195,7 @@ impl KanbanActionService {
             session_token,
             &resolved.organ,
             resolved.bearer_token.as_deref(),
-            "record_comment",
+            "message",
             payload.comment_id,
             json!({
                 "deleted_at": now_utc_string(),
@@ -1210,7 +1207,7 @@ impl KanbanActionService {
         Ok(KanbanActionOutcome {
             action: "delete-comment".into(),
             message: "Comment removed.".into(),
-            record_id: Some(comment.record_id),
+            record_id: comment.record_id,
             await_stream_refresh: true,
             detail: json!({ "comment_id": payload.comment_id }),
         })
@@ -1569,7 +1566,7 @@ impl KanbanActionService {
             .list_record_links(session_token, organ, bearer_token)
             .await?;
         let comments = self
-            .list_record_comments(session_token, organ, bearer_token)
+            .list_record_messages(session_token, organ, bearer_token)
             .await?;
         let resources = self
             .list_record_resources(session_token, organ, bearer_token)
@@ -1687,7 +1684,7 @@ impl KanbanActionService {
 
         let comment_rows = comments
             .iter()
-            .filter(|row| row.record_id == record.id && row.deleted_at.is_none())
+            .filter(|row| row.record_id == Some(record.id) && row.deleted_at.is_none())
             .cloned()
             .collect::<Vec<_>>();
         let comment_values = comment_rows
@@ -1695,7 +1692,8 @@ impl KanbanActionService {
             .map(|comment| {
                 json!({
                     "id": comment.id,
-                    "author_user_id": comment.author_user_id,
+                    "author_label": comment.author_label,
+                    "parent_message_id": comment.parent_message_id,
                     "body": comment.body,
                     "created_at": comment.created_at,
                     "updated_at": comment.updated_at,
@@ -1786,19 +1784,19 @@ impl KanbanActionService {
         )
     }
 
-    async fn get_record_comment_by_id(
+    async fn get_message_by_id(
         &self,
         session_token: Option<&str>,
         organ: &Organ,
         bearer_token: Option<&str>,
         comment_id: i64,
-    ) -> Result<RecordCommentRow, KanbanActionError> {
-        parse_record_comment_row(
+    ) -> Result<MessageRow, KanbanActionError> {
+        parse_message_row(
             self.get_table_row(
                 session_token,
                 organ,
                 bearer_token,
-                "record_comment",
+                "message",
                 comment_id,
             )
             .await?,
@@ -2378,14 +2376,14 @@ impl KanbanActionService {
         )
     }
 
-    async fn list_record_comments(
+    async fn list_record_messages(
         &self,
         session_token: Option<&str>,
         organ: &Organ,
         bearer_token: Option<&str>,
-    ) -> Result<Vec<RecordCommentRow>, KanbanActionError> {
+    ) -> Result<Vec<MessageRow>, KanbanActionError> {
         parse_rows(
-            self.list_table_rows(session_token, organ, bearer_token, "record_comment")
+            self.list_table_rows(session_token, organ, bearer_token, "message")
                 .await?,
         )
     }
@@ -2652,10 +2650,11 @@ struct AppUserRow {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-struct RecordCommentRow {
+struct MessageRow {
     id: i64,
-    record_id: i64,
-    author_user_id: Option<i64>,
+    record_id: Option<i64>,
+    author_label: Option<String>,
+    parent_message_id: Option<i64>,
     body: String,
     created_at: String,
     updated_at: String,
@@ -3029,8 +3028,8 @@ fn parse_record_row(value: Value) -> Result<RecordRow, KanbanActionError> {
         .map_err(|error| KanbanActionError::Internal(format!("Resposta JSON invalida: {error}")))
 }
 
-fn parse_record_comment_row(value: Value) -> Result<RecordCommentRow, KanbanActionError> {
-    serde_json::from_value::<RecordCommentRow>(value)
+fn parse_message_row(value: Value) -> Result<MessageRow, KanbanActionError> {
+    serde_json::from_value::<MessageRow>(value)
         .map_err(|error| KanbanActionError::Internal(format!("Resposta JSON invalida: {error}")))
 }
 

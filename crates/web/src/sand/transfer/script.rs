@@ -606,11 +606,20 @@ pub(super) fn script() -> String {
       : local
         ? editableSideHtml(label, side || {}, transfer)
         : sideHtml(label, side || {}, transfer);
+    const roleParties = (transfer.partySettlements || []).filter(p => p.role === sideName);
+    const multiPartyHtml = roleParties.length > 1
+      ? `<div class="partySettlementList">${roleParties.map(p => `
+          <span class="partySettlementRow ${p.settled ? "settled" : "unsettled"}">
+            ${escapeHtml(p.actorLabel)}
+            <span class="settleMark">${p.settled ? "✓" : "○"}</span>
+          </span>`).join("")}</div>`
+      : "";
     return `
       <section class="transferParty" data-local="${local ? "true" : "false"}">
         <div class="partyLabel">${escapeHtml(label)}</div>
         ${processButtons(transfer, sideName)}
         ${body}
+        ${multiPartyHtml}
       </section>
     `;
   }
@@ -1167,6 +1176,282 @@ pub(super) fn script() -> String {
     ).join("");
   }
 
+  function renderItemsSection(transfer) {
+    const items = transfer.items || [];
+    const roleOptions = ["contribution", "need", "support", "task", "information", "reservation"]
+      .map((r) => `<option value="${r}">${r}</option>`)
+      .join("");
+    const itemRows = items.map((item) => `
+      <details class="crudItem">
+        <summary>
+          <span class="label">${escapeHtml(item.title || "item")}</span>
+          <span class="meta">${escapeHtml(item.role || "")}${item.quantity != null ? " / " + escapeHtml(formatQuantity(item.quantity)) : ""}${item.unit ? " " + escapeHtml(item.unit) : ""}</span>
+        </summary>
+        <div class="crudForm formGrid">
+          <label><span>Role</span><select id="edit-item-role-${item.id}" data-keep-enabled="true">${roleOptions.replace(`value="${item.role}"`, `value="${item.role}" selected`)}</select></label>
+          <label><span>Title</span><input id="edit-item-title-${item.id}" value="${escapeHtml(item.title || "")}" autocomplete="off" data-keep-enabled="true"></label>
+          <label><span>Description</span><textarea id="edit-item-desc-${item.id}" rows="2" data-keep-enabled="true">${escapeHtml(item.description || "")}</textarea></label>
+          <label><span>Record</span>${recordSelectHtml("edit-item-record-" + item.id, item.sourceRecordId)}</label>
+          <label><span>Quantity</span><input id="edit-item-qty-${item.id}" inputmode="decimal" value="${item.quantity != null ? escapeHtml(String(item.quantity)) : ""}" data-keep-enabled="true"></label>
+          <label><span>Unit</span><input id="edit-item-unit-${item.id}" value="${escapeHtml(item.unit || "")}" data-keep-enabled="true"></label>
+          <div class="formActions">
+            ${actionButton("edit-transfer-item", "Save", false, `data-item-id="${item.id}" data-transfer-id="${transfer.id}" class="primary"`)}
+            ${actionButton("delete-transfer-item", "Delete", false, `data-item-id="${item.id}" class="danger"`)}
+          </div>
+        </div>
+      </details>
+    `).join("");
+    return `
+      <section class="panel crudSection" aria-labelledby="items-section-title">
+        <div class="panelHead">
+          <h2 id="items-section-title">Items</h2>
+          ${actionButton("settle-all-local", "Settle my parts", false, `data-transfer-id="${transfer.id}" class="primary"`)}
+        </div>
+        <div class="panelBody">
+          ${itemRows || '<p class="muted">No items yet.</p>'}
+          <details class="crudItem">
+            <summary>Add item</summary>
+            <div class="crudForm formGrid">
+              <label><span>Role</span><select id="new-item-role" data-keep-enabled="true">${roleOptions}</select></label>
+              <label><span>Title</span><input id="new-item-title" autocomplete="off" data-keep-enabled="true"></label>
+              <label><span>Description</span><textarea id="new-item-desc" rows="2" data-keep-enabled="true"></textarea></label>
+              <label><span>Record</span>${recordSelectHtml("new-item-record")}</label>
+              <label><span>Quantity</span><input id="new-item-qty" inputmode="decimal" data-keep-enabled="true"></label>
+              <label><span>Unit</span><input id="new-item-unit" data-keep-enabled="true"></label>
+              <div class="formActions">
+                ${actionButton("create-transfer-item", "Add item", false, `data-transfer-id="${transfer.id}" class="primary"`)}
+              </div>
+            </div>
+          </details>
+        </div>
+      </section>
+    `;
+  }
+
+  function renderInteractionsSection(transfer) {
+    const items = transfer.items || [];
+    const interactions = transfer.interactions || [];
+    const itemOptions = [`<option value="">None</option>`]
+      .concat(items.map((item) => `<option value="${item.id}">${escapeHtml(item.title || "item " + item.id)}</option>`))
+      .join("");
+    const kindOptions = ["contributes_to", "depends_on", "unblocks", "replaces", "informs"]
+      .map((k) => `<option value="${k}">${k.replaceAll("_", " ")}</option>`)
+      .join("");
+    const dirOptions = ["outgoing", "incoming", "mutual", "informational"]
+      .map((d) => `<option value="${d}">${d}</option>`)
+      .join("");
+    const depOptions = ["", "must_agree", "must_activate", "must_deliver", "must_receive", "must_settle"]
+      .map((d) => `<option value="${d}">${d ? d.replaceAll("_", " ") : "none"}</option>`)
+      .join("");
+    const interactionRows = interactions.map((ia) => `
+      <details class="crudItem">
+        <summary>
+          <span class="label">${escapeHtml((ia.interactionKind || "interaction").replaceAll("_", " "))}</span>
+          <span class="meta">${escapeHtml(ia.direction || "")}${ia.dependencyKind ? " / " + escapeHtml(ia.dependencyKind) : ""}${ia.quantity ? " / qty " + escapeHtml(formatQuantity(ia.quantity)) : ""}</span>
+        </summary>
+        <div class="crudForm formGrid">
+          <label><span>Kind</span><select id="edit-ia-kind-${ia.id}" data-keep-enabled="true">${kindOptions.replace(`value="${ia.interactionKind}"`, `value="${ia.interactionKind}" selected`)}</select></label>
+          <label><span>Direction</span><select id="edit-ia-dir-${ia.id}" data-keep-enabled="true">${dirOptions.replace(`value="${ia.direction}"`, `value="${ia.direction}" selected`)}</select></label>
+          <label><span>Dependency kind</span><select id="edit-ia-dep-${ia.id}" data-keep-enabled="true">${depOptions.replace(`value="${ia.dependencyKind || ""}"`, `value="${ia.dependencyKind || ""}" selected`)}</select></label>
+          <label><span>Quantity</span><input id="edit-ia-qty-${ia.id}" inputmode="decimal" value="${ia.quantity != null ? escapeHtml(String(ia.quantity)) : ""}" data-keep-enabled="true"></label>
+          <div class="formActions">
+            ${actionButton("edit-transfer-interaction", "Save", false, `data-interaction-id="${ia.id}" class="primary"`)}
+            ${actionButton("delete-transfer-interaction", "Delete", false, `data-interaction-id="${ia.id}" class="danger"`)}
+          </div>
+        </div>
+      </details>
+    `).join("");
+    return `
+      <section class="panel crudSection" aria-labelledby="interactions-section-title">
+        <div class="panelHead">
+          <h2 id="interactions-section-title">Interactions</h2>
+        </div>
+        <div class="panelBody">
+          ${interactionRows || '<p class="muted">No interactions yet.</p>'}
+          <details class="crudItem">
+            <summary>Add interaction</summary>
+            <div class="crudForm formGrid">
+              <label><span>From item</span><select id="new-ia-from" data-keep-enabled="true">${itemOptions}</select></label>
+              <label><span>To item</span><select id="new-ia-to" data-keep-enabled="true">${itemOptions}</select></label>
+              <label><span>Kind</span><select id="new-ia-kind" data-keep-enabled="true">${kindOptions}</select></label>
+              <label><span>Direction</span><select id="new-ia-dir" data-keep-enabled="true">${dirOptions}</select></label>
+              <label><span>Dependency kind</span><select id="new-ia-dep" data-keep-enabled="true">${depOptions}</select></label>
+              <label><span>Quantity</span><input id="new-ia-qty" inputmode="decimal" data-keep-enabled="true"></label>
+              <div class="formActions">
+                ${actionButton("create-transfer-interaction", "Add interaction", false, `data-transfer-id="${transfer.id}" class="primary"`)}
+              </div>
+            </div>
+          </details>
+        </div>
+      </section>
+    `;
+  }
+
+  function renderMessagesSection(transfer) {
+    const messages = transfer.messages || [];
+    const topLevel = messages.filter((m) => !m.parentMessageId);
+    const byParent = new Map();
+    for (const m of messages) {
+      if (m.parentMessageId) {
+        if (!byParent.has(m.parentMessageId)) byParent.set(m.parentMessageId, []);
+        byParent.get(m.parentMessageId).push(m);
+      }
+    }
+    function renderMessage(m) {
+      const replies = byParent.get(m.id) || [];
+      return `
+        <div class="messageItem" data-message-id="${m.id}">
+          <div class="messageHead">
+            <span class="messageAuthor">${escapeHtml(m.authorLabel || "anonymous")}</span>
+            <span class="messageMeta">${escapeHtml(m.createdAt || "")}</span>
+            <button type="button" class="link" data-reply-to="${m.id}" data-keep-enabled="true">Reply</button>
+            ${actionButton("delete-transfer-message", "Delete", false, `data-message-id="${m.id}" class="link"`)}
+          </div>
+          <div class="messageBody">${escapeHtml(m.body)}</div>
+          ${replies.length ? `<div class="messageReplies">${replies.map(renderMessage).join("")}</div>` : ""}
+        </div>
+      `;
+    }
+    const agreementInfo = transfer.agreement || {};
+    const agType = agreementInfo.agreementType || "individual";
+    let agProgress = "";
+    if (agType === "full" || agType === "percentage") {
+      const pct = agType === "percentage" ? ` (${agreementInfo.agreementPercentage || 100}%)` : "";
+      agProgress = `<span class="meta">${escapeHtml(agType)}${pct}: ${agreementInfo.agreedPartyCount || 0} / ${agreementInfo.partyCount || 0} parties agreed</span>`;
+    } else if (agType === "individual") {
+      agProgress = `<span class="meta">individual: contribution ${agreementInfo.contribution || 0}/2, need ${agreementInfo.need || 0}/2</span>`;
+    }
+    return `
+      <section class="panel crudSection" aria-labelledby="messages-section-title">
+        <div class="panelHead">
+          <h2 id="messages-section-title">Messages</h2>
+          ${agProgress}
+        </div>
+        <div class="panelBody">
+          <div id="messages-thread">${topLevel.map(renderMessage).join("") || '<p class="muted">No messages yet.</p>'}</div>
+          <div id="message-compose" class="messageCompose formGrid">
+            <input id="message-reply-to" type="hidden" value="">
+            <p id="message-reply-label" class="muted" style="display:none"></p>
+            <textarea id="message-body" rows="3" placeholder="Write a message…" data-keep-enabled="true"></textarea>
+            <div class="formActions">
+              ${actionButton("send-transfer-message", "Send", false, `data-transfer-id="${transfer.id}" class="primary"`)}
+              <button type="button" id="message-cancel-reply" class="link" data-keep-enabled="true" style="display:none">Cancel reply</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
+  function renderChainLinksSection(transfer) {
+    const links = transfer.chainLinks || [];
+    const upstream = links.filter(l => l.downstreamTransferId === transfer.id);
+    const downstream = links.filter(l => l.upstreamTransferId === transfer.id);
+    const fmt = l => {
+      const dir = l.upstreamTransferId === transfer.id ? "→ T#" + l.downstreamTransferId : "← T#" + l.upstreamTransferId;
+      const amt = l.amountKind === "percentage" ? l.amountValue + "%" : "constant " + l.amountValue;
+      return `<div class="crudItem" data-link-id="${l.id}">
+        <span>${escapeHtml(dir)} &mdash; ${escapeHtml(amt)} &mdash; <em>${escapeHtml(l.state)}</em></span>
+        ${actionButton("remove-chain-link", "Remove", false, `data-link-id="${l.id}" class="link"`)}
+      </div>`;
+    };
+    return `
+      <section class="panel crudSection" aria-labelledby="chainlinks-section-title">
+        <div class="panelHead"><h2 id="chainlinks-section-title">Chain Links</h2>
+          <span class="meta muted">Private &mdash; not shared in package</span>
+        </div>
+        <div class="panelBody">
+          ${upstream.length ? `<div class="meta">Upstream (feeds this Transfer):</div>${upstream.map(fmt).join("")}` : ""}
+          ${downstream.length ? `<div class="meta">Downstream (this Transfer feeds):</div>${downstream.map(fmt).join("")}` : ""}
+          ${!links.length ? '<p class="muted">No chain links.</p>' : ""}
+          <details class="crudItem">
+            <summary>Add chain link</summary>
+            <div class="crudForm formGrid">
+              <label>Direction
+                <select id="chain-direction" data-keep-enabled="true">
+                  <option value="upstream">This Transfer feeds another (downstream)</option>
+                  <option value="downstream">Another Transfer feeds this one (upstream)</option>
+                </select>
+              </label>
+              <label>Other Transfer ID <input id="chain-other-transfer" type="number" min="1" data-keep-enabled="true"></label>
+              <label>Amount kind
+                <select id="chain-amount-kind" data-keep-enabled="true">
+                  <option value="constant">Constant</option>
+                  <option value="percentage">Percentage</option>
+                </select>
+              </label>
+              <label>Amount <input id="chain-amount-value" type="number" step="0.01" data-keep-enabled="true"></label>
+              ${actionButton("add-chain-link", "Add link", false, `data-transfer-id="${transfer.id}" class="primary"`)}
+            </div>
+          </details>
+        </div>
+      </section>
+    `;
+  }
+
+  function renderSpectatorsSection(transfer) {
+    const spectators = transfer.spectators || [];
+    return `
+      <section class="panel crudSection" aria-labelledby="spectators-section-title">
+        <div class="panelHead"><h2 id="spectators-section-title">Watching</h2>
+          <span class="meta muted">Trigger a local Record delta when a source Transfer settles</span>
+        </div>
+        <div class="panelBody">
+          ${spectators.length ? spectators.map(s => `
+            <div class="crudItem">
+              <span>${escapeHtml(s.watchedRole)} of <code>${escapeHtml(s.watchedSourceTransferUid)}</code>
+                &rarr; record #${s.watcherRecordId}
+                &mdash; ${escapeHtml(s.amountKind === "percentage" ? s.amountValue + "%" : "constant " + s.amountValue)}
+                &mdash; <em>${escapeHtml(s.state)}</em>
+              </span>
+              ${actionButton("remove-spectator", "Remove", false, `data-spectator-id="${s.id}" class="link"`)}
+            </div>
+          `).join("") : '<p class="muted">Not watching any source Transfers.</p>'}
+          <details class="crudItem">
+            <summary>Add watch</summary>
+            <div class="crudForm formGrid">
+              <label>Source Transfer UID <input id="spectator-source-uid" type="text" placeholder="transfer-uid of the template" data-keep-enabled="true"></label>
+              <label>Role to watch
+                <select id="spectator-role" data-keep-enabled="true">
+                  <option value="need">Need (someone's need being met)</option>
+                  <option value="contribution">Contribution (someone contributing)</option>
+                </select>
+              </label>
+              <label>Apply to Record ID <input id="spectator-record-id" type="number" min="1" data-keep-enabled="true"></label>
+              <label>Amount kind
+                <select id="spectator-amount-kind" data-keep-enabled="true">
+                  <option value="constant">Constant</option>
+                  <option value="percentage">Percentage</option>
+                </select>
+              </label>
+              <label>Amount <input id="spectator-amount-value" type="number" step="0.01" data-keep-enabled="true"></label>
+              ${actionButton("add-spectator", "Add watch", false, `data-transfer-id="${transfer.id}" class="primary"`)}
+            </div>
+          </details>
+        </div>
+      </section>
+    `;
+  }
+
+  function renderSatiationSection(transfer) {
+    const current = transfer.satiationPolicy;
+    return `
+      <section class="panel crudSection" aria-labelledby="satiation-section-title">
+        <div class="panelHead"><h2 id="satiation-section-title">Satiation Policy</h2></div>
+        <div class="panelBody formGrid">
+          <label>Policy for duplicates from same source
+            <select id="satiation-policy" data-keep-enabled="true">
+              <option value="" ${!current ? "selected" : ""}>Inherit (global default)</option>
+              <option value="none" ${current === "none" ? "selected" : ""}>None &mdash; all duplicates proceed independently</option>
+              <option value="first_completes" ${current === "first_completes" ? "selected" : ""}>First completes &mdash; cancel siblings when any settles</option>
+            </select>
+          </label>
+          ${actionButton("set-satiation-policy", "Save", false, `data-transfer-id="${transfer.id}"`)}
+        </div>
+      </section>
+    `;
+  }
+
   function renderDetail() {
     if (detailMode === "create") {
       transferDetail.dataset.inactive = "false";
@@ -1213,6 +1498,18 @@ pub(super) fn script() -> String {
       </div>
 
       ${renderTransferWorkSection(transfer)}
+
+      ${renderItemsSection(transfer)}
+
+      ${renderInteractionsSection(transfer)}
+
+      ${renderMessagesSection(transfer)}
+
+      ${renderChainLinksSection(transfer)}
+
+      ${renderSpectatorsSection(transfer)}
+
+      ${renderSatiationSection(transfer)}
 
       ${renderTransferVisibilitySection(transfer)}
 
@@ -2210,10 +2507,163 @@ pub(super) fn script() -> String {
         }
         pendingDeleteTransferId = null;
       }
+      if (action === "create-transfer-item") {
+        const transferId = Number(transferAction.dataset.transferId || transfer.id);
+        postAction(action, {
+          transferId,
+          role: document.getElementById("new-item-role")?.value || "contribution",
+          title: document.getElementById("new-item-title")?.value || "",
+          description: document.getElementById("new-item-desc")?.value || null,
+          sourceRecordId: Number(document.getElementById("new-item-record")?.value || 0) || null,
+          quantity: parseNumber(document.getElementById("new-item-qty")?.value, null),
+          unit: document.getElementById("new-item-unit")?.value || null,
+        });
+        return;
+      }
+      if (action === "edit-transfer-item") {
+        const itemId = Number(transferAction.dataset.itemId || 0);
+        const transferId = Number(transferAction.dataset.transferId || transfer.id);
+        if (!itemId) { setStatus("Missing item id.", "danger"); return; }
+        postAction(action, {
+          itemId,
+          transferId,
+          role: document.getElementById("edit-item-role-" + itemId)?.value || null,
+          title: document.getElementById("edit-item-title-" + itemId)?.value || null,
+          description: document.getElementById("edit-item-desc-" + itemId)?.value || null,
+          sourceRecordId: Number(document.getElementById("edit-item-record-" + itemId)?.value || 0) || null,
+          quantity: parseNumber(document.getElementById("edit-item-qty-" + itemId)?.value, null),
+          unit: document.getElementById("edit-item-unit-" + itemId)?.value || null,
+        });
+        return;
+      }
+      if (action === "delete-transfer-item") {
+        const itemId = Number(transferAction.dataset.itemId || 0);
+        if (!itemId) { setStatus("Missing item id.", "danger"); return; }
+        postAction(action, { itemId });
+        return;
+      }
+      if (action === "create-transfer-interaction") {
+        const transferId = Number(transferAction.dataset.transferId || transfer.id);
+        postAction(action, {
+          transferId,
+          fromItemId: Number(document.getElementById("new-ia-from")?.value || 0) || null,
+          toItemId: Number(document.getElementById("new-ia-to")?.value || 0) || null,
+          interactionKind: document.getElementById("new-ia-kind")?.value || "contributes_to",
+          direction: document.getElementById("new-ia-dir")?.value || "outgoing",
+          dependencyKind: document.getElementById("new-ia-dep")?.value || null,
+          quantity: parseNumber(document.getElementById("new-ia-qty")?.value, null),
+        });
+        return;
+      }
+      if (action === "edit-transfer-interaction") {
+        const interactionId = Number(transferAction.dataset.interactionId || 0);
+        if (!interactionId) { setStatus("Missing interaction id.", "danger"); return; }
+        postAction(action, {
+          interactionId,
+          interactionKind: document.getElementById("edit-ia-kind-" + interactionId)?.value || null,
+          direction: document.getElementById("edit-ia-dir-" + interactionId)?.value || null,
+          dependencyKind: document.getElementById("edit-ia-dep-" + interactionId)?.value || null,
+          quantity: parseNumber(document.getElementById("edit-ia-qty-" + interactionId)?.value, null),
+        });
+        return;
+      }
+      if (action === "delete-transfer-interaction") {
+        const interactionId = Number(transferAction.dataset.interactionId || 0);
+        if (!interactionId) { setStatus("Missing interaction id.", "danger"); return; }
+        postAction(action, { interactionId });
+        return;
+      }
+      if (action === "send-transfer-message") {
+        const transferId = Number(transferAction.dataset.transferId || transfer.id);
+        const body = String(document.getElementById("message-body")?.value || "").trim();
+        if (!body) { setStatus("Message body is empty.", "danger"); return; }
+        const parentMessageId = Number(document.getElementById("message-reply-to")?.value || 0) || null;
+        postAction(action, {
+          transferId,
+          body,
+          parentMessageId,
+          interactionId: null,
+        });
+        document.getElementById("message-body").value = "";
+        document.getElementById("message-reply-to").value = "";
+        document.getElementById("message-reply-label").style.display = "none";
+        document.getElementById("message-cancel-reply").style.display = "none";
+        return;
+      }
+      if (action === "delete-transfer-message") {
+        const messageId = Number(transferAction.dataset.messageId || 0);
+        if (!messageId) { setStatus("Missing message id.", "danger"); return; }
+        postAction(action, { messageId });
+        return;
+      }
+      if (action === "add-chain-link") {
+        const direction = String(document.getElementById("chain-direction")?.value || "upstream");
+        const otherTransferId = Number(document.getElementById("chain-other-transfer")?.value || 0);
+        const amountKind = String(document.getElementById("chain-amount-kind")?.value || "constant");
+        const amountValue = Number(document.getElementById("chain-amount-value")?.value || 0);
+        if (!otherTransferId) { setStatus("Enter the other Transfer ID.", "danger"); return; }
+        const upstreamTransferId = direction === "upstream" ? transfer.id : otherTransferId;
+        const downstreamTransferId = direction === "upstream" ? otherTransferId : transfer.id;
+        postAction(action, { upstreamTransferId, upstreamItemId: null, downstreamTransferId, downstreamItemId: null, amountKind, amountValue });
+        return;
+      }
+      if (action === "remove-chain-link") {
+        const linkId = Number(transferAction.dataset.linkId || 0);
+        if (!linkId) { setStatus("Missing link id.", "danger"); return; }
+        postAction(action, { linkId });
+        return;
+      }
+      if (action === "add-spectator") {
+        const sourceUid = String(document.getElementById("spectator-source-uid")?.value || "").trim();
+        const watchedRole = String(document.getElementById("spectator-role")?.value || "need");
+        const recordId = Number(document.getElementById("spectator-record-id")?.value || 0);
+        const amountKind = String(document.getElementById("spectator-amount-kind")?.value || "constant");
+        const amountValue = Number(document.getElementById("spectator-amount-value")?.value || 0);
+        if (!sourceUid) { setStatus("Enter the source Transfer UID.", "danger"); return; }
+        if (!recordId) { setStatus("Enter the Record ID to receive the delta.", "danger"); return; }
+        postAction(action, { watcherRecordId: recordId, watchedSourceTransferUid: sourceUid, watchedRole, amountKind, amountValue });
+        return;
+      }
+      if (action === "remove-spectator") {
+        const spectatorId = Number(transferAction.dataset.spectatorId || 0);
+        if (!spectatorId) { setStatus("Missing spectator id.", "danger"); return; }
+        postAction(action, { spectatorId });
+        return;
+      }
+      if (action === "set-satiation-policy") {
+        const policy = String(document.getElementById("satiation-policy")?.value || "") || null;
+        postAction(action, { transferId: transfer.id, policy });
+        return;
+      }
+      if (action === "settle-all-local") {
+        postAction(action, { transferId: transfer.id });
+        return;
+      }
       postAction(action, { transferId: transfer.id });
       return;
     }
 
+    const replyButton = event.target.closest("[data-reply-to]");
+    if (replyButton) {
+      const messageId = replyButton.dataset.replyTo;
+      const replyInput = document.getElementById("message-reply-to");
+      const replyLabel = document.getElementById("message-reply-label");
+      const cancelBtn = document.getElementById("message-cancel-reply");
+      if (replyInput) replyInput.value = messageId;
+      if (replyLabel) { replyLabel.textContent = `Replying to message #${messageId}`; replyLabel.style.display = ""; }
+      if (cancelBtn) cancelBtn.style.display = "";
+      document.getElementById("message-body")?.focus();
+      return;
+    }
+    const cancelReply = event.target.closest("#message-cancel-reply");
+    if (cancelReply) {
+      const replyInput = document.getElementById("message-reply-to");
+      const replyLabel = document.getElementById("message-reply-label");
+      if (replyInput) replyInput.value = "";
+      if (replyLabel) replyLabel.style.display = "none";
+      cancelReply.style.display = "none";
+      return;
+    }
     if (event.target.closest("[data-copy-package]")) {
       const output = document.getElementById("package-output");
       try {

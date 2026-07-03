@@ -1812,7 +1812,8 @@ body.auth-pending .startup-auth-card {
     transform: translateY(0) scale(1);
 }
 
-#card-controls-toolbar {
+#card-controls-toolbar,
+#group-controls-toolbar {
     position: fixed;
     z-index: 1000;
     display: flex;
@@ -1825,6 +1826,12 @@ body.auth-pending .startup-auth-card {
     background: rgba(10, 12, 15, 0.94);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.36);
     backdrop-filter: blur(8px);
+    pointer-events: auto;
+}
+
+#card-controls-bridge {
+    position: fixed;
+    z-index: 999;
     pointer-events: auto;
 }
 
@@ -1865,6 +1872,33 @@ body.auth-pending .startup-auth-card {
 
 .card-toolbar-btn.is-pinned {
     color: var(--text-strong);
+}
+
+#board-marquee {
+    position: absolute;
+    z-index: 900;
+    border: 1px dashed rgba(140, 190, 255, 0.85);
+    border-radius: 4px;
+    background: rgba(96, 156, 255, 0.12);
+    pointer-events: none;
+}
+
+#group-outline {
+    position: absolute;
+    z-index: 98;
+    border: 1.5px dashed rgba(140, 190, 255, 0.7);
+    border-radius: 10px;
+    background: rgba(96, 156, 255, 0.05);
+    pointer-events: none;
+}
+
+#group-outline.is-locked {
+    border-style: solid;
+    border-color: rgba(140, 190, 255, 0.85);
+}
+
+#group-outline .resize-handle {
+    z-index: 99;
 }
 
 .board-shell.is-editing .board-card.is-controls-hovered {

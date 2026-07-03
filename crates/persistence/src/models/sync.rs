@@ -57,7 +57,10 @@ pub struct RecordSyncOperationRow {
     pub operation_uid: String,
     #[table(references = "organ(id)", check = "source_organ_id > 0")]
     pub source_organ_id: i64,
-    #[table(references = "app_user(id)", check = "actor_user_id IS NULL OR actor_user_id > 0")]
+    #[table(
+        references = "app_user(id)",
+        check = "actor_user_id IS NULL OR actor_user_id > 0"
+    )]
     pub actor_user_id: Option<i64>,
     #[table(check = "length(trim(root_record_sync_uid)) > 0")]
     pub root_record_sync_uid: String,
@@ -115,17 +118,15 @@ pub struct RecordSyncTombstoneRow {
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
 #[table(name = "record_sync_ack")]
 #[table(strict)]
-#[table(index(
-    name = "uq_record_sync_ack_organ",
-    columns = "organ_id",
-    unique
-))]
+#[table(index(name = "uq_record_sync_ack_organ", columns = "organ_id", unique))]
 pub struct RecordSyncAckRow {
     #[table(primary_key)]
     pub id: i64,
     #[table(references = "organ(id) ON DELETE CASCADE", check = "organ_id > 0")]
     pub organ_id: i64,
-    #[table(check = "last_ack_operation_clock IS NULL OR length(trim(last_ack_operation_clock)) > 0")]
+    #[table(
+        check = "last_ack_operation_clock IS NULL OR length(trim(last_ack_operation_clock)) > 0"
+    )]
     pub last_ack_operation_clock: Option<String>,
     #[table(check = "last_ack_operation_uid IS NULL OR length(trim(last_ack_operation_uid)) > 0")]
     pub last_ack_operation_uid: Option<String>,
@@ -152,7 +153,10 @@ pub struct RecordSyncPendingDependencyRow {
     pub missing_table_name: String,
     #[table(check = "length(trim(missing_row_sync_uid)) > 0")]
     pub missing_row_sync_uid: String,
-    #[table(default = "CURRENT_TIMESTAMP", check = "julianday(created_at) IS NOT NULL")]
+    #[table(
+        default = "CURRENT_TIMESTAMP",
+        check = "julianday(created_at) IS NOT NULL"
+    )]
     pub created_at: String,
     #[table(check = "resolved_at IS NULL OR julianday(resolved_at) IS NOT NULL")]
     pub resolved_at: Option<String>,
@@ -175,7 +179,9 @@ pub struct RecordSyncPeerStateRow {
     pub owner_scope: String,
     #[table(check = "last_fingerprint IS NULL OR length(trim(last_fingerprint)) > 0")]
     pub last_fingerprint: Option<String>,
-    #[table(check = "last_full_snapshot_at IS NULL OR julianday(last_full_snapshot_at) IS NOT NULL")]
+    #[table(
+        check = "last_full_snapshot_at IS NULL OR julianday(last_full_snapshot_at) IS NOT NULL"
+    )]
     pub last_full_snapshot_at: Option<String>,
     #[table(check = "last_checked_at IS NULL OR julianday(last_checked_at) IS NOT NULL")]
     pub last_checked_at: Option<String>,
@@ -222,7 +228,10 @@ pub struct RecordTextCrdtUpdateRow {
     pub field_name: String,
     #[table(references = "organ(id)", check = "source_organ_id > 0")]
     pub source_organ_id: i64,
-    #[table(references = "app_user(id)", check = "actor_user_id IS NULL OR actor_user_id > 0")]
+    #[table(
+        references = "app_user(id)",
+        check = "actor_user_id IS NULL OR actor_user_id > 0"
+    )]
     pub actor_user_id: Option<i64>,
     #[table(check = "length(trim(update_clock)) > 0")]
     pub update_clock: String,

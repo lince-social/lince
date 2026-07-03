@@ -1,4 +1,4 @@
-import { attachBoardInteractions } from "./interactions.js";
+import { attachBoardInteractions, groupBounds } from "./interactions.js";
 import { createGridConfig } from "./grid.js";
 import { createBoardStore } from "./store.js";
 import { createBoardViewport } from "./viewport.js";
@@ -9,6 +9,7 @@ const LEGACY_PACKAGE_EXTENSION = ".sand";
 const LEGACY_PACKAGE_ARCHIVE_EXTENSION = ".lince";
 const WORKSPACE_ARCHIVE_EXTENSION = ".workspace.sand";
 const LEGACY_WORKSPACE_ARCHIVE_EXTENSION = ".workspace.lince";
+const GROUP_ARCHIVE_EXTENSION = ".group.sand";
 const DEFAULT_DROP_MESSAGE =
   "Solte um widget .html, .sand ou .lince, ou um .workspace.sand para instalar no backend local.";
 
@@ -318,6 +319,9 @@ const widgetConfigStreamsField = document.getElementById(
 );
 const widgetConfigStreamsEnabled = document.getElementById(
   "widget-config-streams-enabled",
+);
+const widgetConfigAbiListen = document.getElementById(
+  "widget-config-abi-listen",
 );
 const widgetConfigPreviewField = document.getElementById(
   "widget-config-preview-field",
@@ -651,6 +655,9 @@ const widgetBridge = createWidgetBridge({
   getCardMeta(instanceId) {
     return getCardBridgeMeta(instanceId);
   },
+  getCardAbiListen(instanceId) {
+    return getCardById(instanceId)?.abiListen || [];
+  },
   setCardState(instanceId, nextState) {
     updateCardWidgetState(instanceId, nextState);
   },
@@ -737,6 +744,24 @@ boardViewport = createBoardViewport({
   },
 });
 
+// Panning/zooming is driven entirely by the panzoom transform on #board-world;
+// #board-canvas itself must never scroll. But it's still an overflow:hidden
+// scroll container, so focusing any element inside it (e.g. a widget iframe
+// calling .focus() without preventScroll, or default browser focus handling)
+// makes the browser auto-scroll the canvas to reveal it. That scroll offset
+// silently displaces every absolutely-positioned layer underneath it,
+// including #pinned-layer, by the same vector - pinned cards (and the zoom
+// controls) appear to vanish or jump until the page is reloaded. Force it
+// back to (0, 0) whenever it drifts.
+boardCanvas.scrollLeft = 0;
+boardCanvas.scrollTop = 0;
+boardCanvas.addEventListener("scroll", () => {
+  if (boardCanvas.scrollLeft !== 0 || boardCanvas.scrollTop !== 0) {
+    boardCanvas.scrollLeft = 0;
+    boardCanvas.scrollTop = 0;
+  }
+});
+
 function flushCameraState() {
   if (!lastCameraValue || !lastCameraWorkspaceId) {
     return;
@@ -775,6 +800,11 @@ cardControlsToolbar.id = "card-controls-toolbar";
 cardControlsToolbar.hidden = true;
 document.body.appendChild(cardControlsToolbar);
 
+const cardControlsBridge = document.createElement("div");
+cardControlsBridge.id = "card-controls-bridge";
+cardControlsBridge.hidden = true;
+document.body.appendChild(cardControlsBridge);
+
 let cardControlsHoveredCardId = null;
 let cardControlsHideTimer = null;
 
@@ -791,6 +821,18 @@ function renderCardToolbarContent(card) {
       : "",
     isEditable
       ? `<button type="button" class="card-toolbar-btn${card.pinned === true ? " is-pinned" : ""}" data-card-action="pin" aria-label="${card.pinned === true ? "Desafixar" : "Fixar"} ${escapeHtml(card.title)}" aria-pressed="${card.pinned === true}">${renderPinIcon(card.pinned === true)}</button>`
+      : "",
+    isEditable
+      ? `<button type="button" class="card-toolbar-btn" data-card-action="bring-to-front" aria-label="Trazer para frente ${escapeHtml(card.title)}">${renderBringToFrontIcon()}</button>`
+      : "",
+    isEditable
+      ? `<button type="button" class="card-toolbar-btn" data-card-action="bring-forward" aria-label="Avancar uma camada ${escapeHtml(card.title)}">${renderBringForwardIcon()}</button>`
+      : "",
+    isEditable
+      ? `<button type="button" class="card-toolbar-btn" data-card-action="send-backward" aria-label="Recuar uma camada ${escapeHtml(card.title)}">${renderSendBackwardIcon()}</button>`
+      : "",
+    isEditable
+      ? `<button type="button" class="card-toolbar-btn" data-card-action="send-to-back" aria-label="Enviar para tras ${escapeHtml(card.title)}">${renderSendToBackIcon()}</button>`
       : "",
     canDownload && isEditable
       ? `<button type="button" class="card-toolbar-btn" data-card-action="download-raw-html" aria-label="Baixar HTML de ${escapeHtml(card.title)}">${renderDownloadIcon()}</button>`
@@ -836,6 +878,37 @@ function positionCardControlsToolbar(cardId) {
 
   cardControlsToolbar.style.left = `${left}px`;
   cardControlsToolbar.style.top = `${top}px`;
+
+  const placement = cardControlsToolbar.dataset.placement;
+  const toolbarRight = left + toolbarW;
+  const toolbarBottom = top + toolbarH;
+  let bl, bt, bw, bh;
+  if (placement === "above") {
+    bl = Math.min(cardRect.left, left);
+    bt = top + toolbarH;
+    bw = Math.max(cardRect.right, toolbarRight) - bl;
+    bh = gap;
+  } else if (placement === "below") {
+    bl = Math.min(cardRect.left, left);
+    bt = cardRect.bottom;
+    bw = Math.max(cardRect.right, toolbarRight) - bl;
+    bh = gap;
+  } else if (placement === "right") {
+    bl = cardRect.right;
+    bt = Math.min(cardRect.top, top);
+    bw = gap;
+    bh = Math.max(cardRect.bottom, toolbarBottom) - bt;
+  } else {
+    bl = toolbarRight;
+    bt = Math.min(cardRect.top, top);
+    bw = gap;
+    bh = Math.max(cardRect.bottom, toolbarBottom) - bt;
+  }
+  cardControlsBridge.style.left = `${bl}px`;
+  cardControlsBridge.style.top = `${bt}px`;
+  cardControlsBridge.style.width = `${bw}px`;
+  cardControlsBridge.style.height = `${bh}px`;
+  cardControlsBridge.hidden = false;
 }
 
 function showCardControlsToolbar(cardId) {
@@ -870,8 +943,408 @@ function hideCardControlsToolbar() {
     cardControlsHoveredCardId = null;
   }
   cardControlsToolbar.hidden = true;
+  cardControlsBridge.hidden = true;
   delete cardControlsToolbar.dataset.cardId;
 }
+
+// --- Group selection: ctrl+drag marquee, group chrome, lock ---
+
+let activeGroup = null; // { id, cardIds: string[], locked: boolean }
+let marqueeState = null;
+let pendingDeleteGroup = false;
+let pendingPublishGroupIds = null;
+
+const marqueeElement = document.createElement("div");
+marqueeElement.id = "board-marquee";
+marqueeElement.hidden = true;
+boardCanvas.appendChild(marqueeElement);
+
+const groupOutline = document.createElement("div");
+groupOutline.id = "group-outline";
+groupOutline.hidden = true;
+groupOutline.innerHTML = ["nw", "ne", "sw", "se", "n", "e", "s", "w"]
+  .map(
+    (handle) =>
+      `<button type="button" class="resize-handle resize-handle--${handle}" tabindex="-1" aria-hidden="true" data-group-resize-handle="${handle}"></button>`,
+  )
+  .join("");
+boardWorld.appendChild(groupOutline);
+
+const groupControlsToolbar = document.createElement("div");
+groupControlsToolbar.id = "group-controls-toolbar";
+groupControlsToolbar.hidden = true;
+document.body.appendChild(groupControlsToolbar);
+
+function groupMemberCards() {
+  if (!activeGroup) {
+    return [];
+  }
+  const memberIds = new Set(activeGroup.cardIds);
+  return store
+    .getCards()
+    .filter(
+      (card) =>
+        memberIds.has(card.id) &&
+        card.pinned !== true &&
+        card.system !== true,
+    );
+}
+
+function dissolveActiveGroup() {
+  // Locked groups keep their persisted groupId; dissolving only hides the
+  // selection chrome until a member is picked again.
+  activeGroup = null;
+  syncGroupChrome();
+}
+
+function activateGroupFromCard(card) {
+  if (!card?.groupId) {
+    return null;
+  }
+
+  const members = store
+    .getCards()
+    .filter(
+      (entry) =>
+        entry.groupId === card.groupId &&
+        entry.pinned !== true &&
+        entry.system !== true,
+    );
+  if (members.length < 2) {
+    return null;
+  }
+
+  activeGroup = {
+    id: card.groupId,
+    cardIds: members.map((entry) => entry.id),
+    locked: true,
+  };
+  syncGroupChrome();
+  return activeGroup.cardIds;
+}
+
+function resolveCardGroupIds(card) {
+  if (!card) {
+    return null;
+  }
+
+  if (activeGroup && activeGroup.cardIds.includes(card.id)) {
+    return [...activeGroup.cardIds];
+  }
+
+  const activated = activateGroupFromCard(card);
+  if (activated) {
+    return [...activated];
+  }
+
+  if (activeGroup) {
+    dissolveActiveGroup();
+  }
+  return null;
+}
+
+function renderGroupToolbarContent() {
+  if (!activeGroup) {
+    return "";
+  }
+  const locked = activeGroup.locked === true;
+  const count = activeGroup.cardIds.length;
+  return [
+    `<button type="button" class="card-toolbar-btn card-toolbar-btn--danger" data-group-action="delete" aria-label="Excluir grupo de ${count} cards">${renderTrashIcon()}</button>`,
+    `<button type="button" class="card-toolbar-btn" data-group-action="pin" aria-label="Fixar grupo">${renderPinIcon(false)}</button>`,
+    `<button type="button" class="card-toolbar-btn${locked ? " is-pinned" : ""}" data-group-action="lock" aria-label="${locked ? "Destravar grupo" : "Travar grupo"}" aria-pressed="${locked}">${renderLockIcon(locked)}</button>`,
+    `<button type="button" class="card-toolbar-btn" data-group-action="publish" aria-label="Publicar grupo">${renderPublishIcon()}</button>`,
+  ].join("");
+}
+
+function positionGroupToolbar() {
+  if (groupOutline.hidden || !activeGroup) {
+    return;
+  }
+
+  const rect = groupOutline.getBoundingClientRect();
+  const toolbarRect = groupControlsToolbar.getBoundingClientRect();
+  const toolbarH = toolbarRect.height || 44;
+  const toolbarW = toolbarRect.width || 168;
+  const gap = 6;
+
+  const left = Math.max(
+    8,
+    Math.min(
+      rect.left + rect.width / 2 - toolbarW / 2,
+      window.innerWidth - toolbarW - 8,
+    ),
+  );
+  let top = rect.top - toolbarH - gap;
+  if (top < 8) {
+    top = Math.min(rect.bottom + gap, window.innerHeight - toolbarH - 8);
+  }
+
+  groupControlsToolbar.style.left = `${left}px`;
+  groupControlsToolbar.style.top = `${top}px`;
+}
+
+function syncGroupChrome() {
+  if (!activeGroup || !editMode) {
+    groupOutline.hidden = true;
+    groupControlsToolbar.hidden = true;
+    return;
+  }
+
+  const members = groupMemberCards();
+  if (!members.length) {
+    activeGroup = null;
+    groupOutline.hidden = true;
+    groupControlsToolbar.hidden = true;
+    return;
+  }
+
+  activeGroup.cardIds = members.map((card) => card.id);
+  const box = groupBounds(members);
+  const pad = 10;
+  groupOutline.style.left = `${box.x - pad}px`;
+  groupOutline.style.top = `${box.y - pad}px`;
+  groupOutline.style.width = `${box.width + pad * 2}px`;
+  groupOutline.style.height = `${box.height + pad * 2}px`;
+  groupOutline.classList.toggle("is-locked", activeGroup.locked === true);
+  groupOutline.hidden = false;
+
+  groupControlsToolbar.innerHTML = renderGroupToolbarContent();
+  groupControlsToolbar.hidden = false;
+  positionGroupToolbar();
+}
+
+function drawMarquee(clientX, clientY) {
+  if (!marqueeState) {
+    return;
+  }
+
+  const canvasRect = boardCanvas.getBoundingClientRect();
+  marqueeState.endX = clientX;
+  marqueeState.endY = clientY;
+  marqueeElement.style.left = `${Math.min(marqueeState.startX, clientX) - canvasRect.left}px`;
+  marqueeElement.style.top = `${Math.min(marqueeState.startY, clientY) - canvasRect.top}px`;
+  marqueeElement.style.width = `${Math.abs(clientX - marqueeState.startX)}px`;
+  marqueeElement.style.height = `${Math.abs(clientY - marqueeState.startY)}px`;
+  marqueeElement.hidden = false;
+}
+
+function onMarqueePointerDown(event) {
+  if (
+    !editMode ||
+    selfEditCardId ||
+    event.button !== 0 ||
+    !(event.ctrlKey || event.metaKey)
+  ) {
+    return;
+  }
+
+  if (event.target.closest("#card-controls-toolbar, #group-controls-toolbar")) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  boardViewport.setInteractionLocked(true);
+  hideCardControlsToolbar();
+
+  marqueeState = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    endX: event.clientX,
+    endY: event.clientY,
+  };
+  drawMarquee(event.clientX, event.clientY);
+
+  window.addEventListener("pointermove", onMarqueePointerMove);
+  window.addEventListener("pointerup", onMarqueePointerUp);
+  window.addEventListener("pointercancel", onMarqueePointerUp);
+}
+
+function onMarqueePointerMove(event) {
+  if (!marqueeState || event.pointerId !== marqueeState.pointerId) {
+    return;
+  }
+  event.preventDefault();
+  drawMarquee(event.clientX, event.clientY);
+}
+
+function onMarqueePointerUp(event) {
+  if (!marqueeState || (event.pointerId !== undefined && event.pointerId !== marqueeState.pointerId)) {
+    return;
+  }
+
+  window.removeEventListener("pointermove", onMarqueePointerMove);
+  window.removeEventListener("pointerup", onMarqueePointerUp);
+  window.removeEventListener("pointercancel", onMarqueePointerUp);
+  marqueeElement.hidden = true;
+  boardViewport.setInteractionLocked(false);
+
+  const state = marqueeState;
+  marqueeState = null;
+
+  const a = boardViewport.worldPointFromClient(state.startX, state.startY);
+  const b = boardViewport.worldPointFromClient(
+    event.clientX ?? state.endX,
+    event.clientY ?? state.endY,
+  );
+  const rect = {
+    x: Math.min(a.x, b.x),
+    y: Math.min(a.y, b.y),
+    width: Math.abs(a.x - b.x),
+    height: Math.abs(a.y - b.y),
+  };
+
+  if (rect.width < 4 && rect.height < 4) {
+    dissolveActiveGroup();
+    return;
+  }
+
+  // Fully contained, unpinned, non-system world cards only.
+  const members = store
+    .getCards()
+    .filter(
+      (card) =>
+        card.pinned !== true &&
+        card.system !== true &&
+        card.x >= rect.x &&
+        card.y >= rect.y &&
+        card.x + card.width <= rect.x + rect.width &&
+        card.y + card.height <= rect.y + rect.height,
+    );
+
+  if (!members.length) {
+    dissolveActiveGroup();
+    return;
+  }
+
+  // A marquee that matches a locked group exactly re-activates it as locked.
+  const lockedId = members[0].groupId;
+  const matchesLocked =
+    Boolean(lockedId) &&
+    members.every((card) => card.groupId === lockedId) &&
+    store.getCards().filter((card) => card.groupId === lockedId).length ===
+      members.length;
+
+  activeGroup = {
+    id: matchesLocked ? lockedId : `group-${crypto.randomUUID()}`,
+    cardIds: members.map((card) => card.id),
+    locked: matchesLocked,
+  };
+  syncGroupChrome();
+}
+
+boardCanvas.addEventListener("pointerdown", onMarqueePointerDown, true);
+
+function openDeleteGroupModal() {
+  const members = groupMemberCards();
+  if (!members.length) {
+    flashBoardBlocked();
+    return;
+  }
+
+  pendingDeleteGroup = true;
+  pendingDeleteCardId = null;
+  deleteCardModalTitle.textContent = "Excluir grupo?";
+  deleteCardModalName.textContent = `${members.length} cards`;
+  deleteCardModalDescription.textContent =
+    "Todos os cards do grupo serao removidos do workspace atual.";
+  deleteCardModalBackdrop.hidden = false;
+  syncModalLock();
+}
+
+function confirmDeleteGroup() {
+  pendingDeleteGroup = false;
+  const memberIds = new Set(activeGroup?.cardIds || []);
+  closeDeleteCardModal();
+  if (!memberIds.size) {
+    return;
+  }
+
+  const remaining = store.getCards().filter((card) => !memberIds.has(card.id));
+  dissolveActiveGroup();
+  store.replaceCards(remaining, { persist: true });
+}
+
+function pinActiveGroup() {
+  const members = groupMemberCards();
+  if (!members.length) {
+    flashBoardBlocked();
+    return;
+  }
+
+  const canvasRect = boardCanvas.getBoundingClientRect();
+  const rectById = new Map();
+  for (const card of members) {
+    const nodeRect = cardNodes.get(card.id)?.getBoundingClientRect();
+    if (nodeRect) {
+      rectById.set(card.id, nodeRect);
+    }
+  }
+
+  const memberIds = new Set(members.map((card) => card.id));
+  const next = store.getCards().map((card) => {
+    if (!memberIds.has(card.id)) {
+      return card;
+    }
+    const nodeRect = rectById.get(card.id);
+    return {
+      ...card,
+      pinned: true,
+      // Pinned cards are not valid group members, so pinning dissolves the
+      // group and clears any persisted lock.
+      groupId: null,
+      zIndex: 89,
+      ...(nodeRect
+        ? {
+            x: nodeRect.left - canvasRect.left,
+            y: nodeRect.top - canvasRect.top,
+          }
+        : {}),
+    };
+  });
+
+  dissolveActiveGroup();
+  store.replaceCards(next, { persist: true });
+}
+
+function toggleActiveGroupLock() {
+  if (!activeGroup) {
+    return;
+  }
+
+  if (activeGroup.locked === true) {
+    activeGroup.locked = false;
+    store.setCardsGroup(activeGroup.cardIds, null);
+  } else {
+    activeGroup.locked = true;
+    store.setCardsGroup(activeGroup.cardIds, activeGroup.id);
+  }
+  syncGroupChrome();
+}
+
+function handleGroupActionClick(event) {
+  const actionButton = event.target.closest("[data-group-action]");
+  if (!actionButton || !activeGroup || !editMode) {
+    return;
+  }
+
+  const action = actionButton.dataset.groupAction;
+  if (action === "delete") {
+    openDeleteGroupModal();
+  } else if (action === "pin") {
+    pinActiveGroup();
+  } else if (action === "lock") {
+    toggleActiveGroupLock();
+  } else if (action === "publish") {
+    openGroupPublishModal();
+  }
+}
+
+groupControlsToolbar.addEventListener("click", handleGroupActionClick);
+boardWorld.addEventListener("panzoomchange", positionGroupToolbar);
+window.addEventListener("resize", positionGroupToolbar);
 
 function escapeHtml(value) {
   return String(value)
@@ -1469,11 +1942,71 @@ function renderDownloadIcon() {
   `;
 }
 
+function renderBringToFrontIcon() {
+  return `
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3.5 3h9"></path>
+      <path d="M4.75 10.25 8 7l3.25 3.25"></path>
+      <path d="M8 7v6.25"></path>
+    </svg>
+  `;
+}
+
+function renderBringForwardIcon() {
+  return `
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4.75 8.25 8 5l3.25 3.25"></path>
+      <path d="M8 5v8.25"></path>
+    </svg>
+  `;
+}
+
+function renderSendBackwardIcon() {
+  return `
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4.75 7.75 8 11l3.25-3.25"></path>
+      <path d="M8 11V2.75"></path>
+    </svg>
+  `;
+}
+
+function renderSendToBackIcon() {
+  return `
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3.5 13h9"></path>
+      <path d="M4.75 5.75 8 9l3.25-3.25"></path>
+      <path d="M8 9V2.75"></path>
+    </svg>
+  `;
+}
+
 function renderPinIcon(pinned = false) {
   const fill = pinned ? ` fill="currentColor"` : "";
   return `
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path${fill} d="M14.5 4.5 19.5 9.5 16.8 12.2 17.3 17.2 15.9 18.6 11.9 14.6 7.3 19.2 4.8 16.7 9.4 12.1 5.4 8.1 6.8 6.7 11.8 7.2 14.5 4.5Z"></path>
+    </svg>
+  `;
+}
+
+function renderLockIcon(locked = false) {
+  const shackle = locked
+    ? '<path d="M5 7.5V5.5a3 3 0 0 1 6 0v2"></path>'
+    : '<path d="M5 7.5V5.5a3 3 0 0 1 5.9-.75"></path>';
+  return `
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3.5" y="7.5" width="9" height="6" rx="1.2"></rect>
+      ${shackle}
+    </svg>
+  `;
+}
+
+function renderPublishIcon() {
+  return `
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M8 9.75v-7"></path>
+      <path d="M5.25 5.5 8 2.75 10.75 5.5"></path>
+      <path d="M3.25 12.75h9.5"></path>
     </svg>
   `;
 }
@@ -1988,8 +2521,14 @@ function syncCardNode(node, card) {
   const expandedWidth = card.width;
   const wantedExpandedHeight = isWorkspaceShell && workspacePopoverOpen ? 350 : card.height;
   const canvasRect = boardCanvas.getBoundingClientRect();
+  // System cards are positioned by layoutShellPins (uses window.visualViewport).
+  // Re-clamping with getBoundingClientRect diverges from that source and causes
+  // visible shifts on recenter. Skip the clamp for system cards entirely.
+  // For user-pinned cards, guard against zero-size rects during layout transitions.
+  const canvasIsReady = canvasRect.width > 0 && canvasRect.height > 0;
+  const shouldClampPinned = card.pinned === true && !card.system && canvasIsReady;
   const expandedHeight =
-    card.pinned === true
+    shouldClampPinned
       ? Math.max(card.height, Math.min(wantedExpandedHeight, canvasRect.height - card.y))
       : wantedExpandedHeight;
   const anchoredX =
@@ -1997,11 +2536,11 @@ function syncCardNode(node, card) {
       ? card.x + card.width - expandedWidth
       : card.x;
   const adjustedX =
-    card.pinned === true
+    shouldClampPinned
       ? Math.max(0, Math.min(anchoredX, canvasRect.width - expandedWidth))
       : anchoredX;
   const adjustedY =
-    card.pinned === true
+    shouldClampPinned
       ? Math.max(0, Math.min(card.y, canvasRect.height - expandedHeight))
       : card.y;
 
@@ -2160,6 +2699,8 @@ function renderCards(cards, allCardIds) {
     node.remove();
     cardNodes.delete(cardId);
   }
+
+  syncGroupChrome();
 }
 
 function ensureBackgroundPackageCards(snapshot) {
@@ -3279,7 +3820,9 @@ function setEditMode(nextEditMode) {
     closeLocalPackagesModal();
     closeDnaPackagesModal();
     closeDeleteCardModal();
+    closeGroupPublishModal();
     hideCardControlsToolbar();
+    dissolveActiveGroup();
   }
 
   widgetBridge.syncFrames();
@@ -3935,6 +4478,9 @@ async function openWidgetConfigModal(cardId) {
   if (widgetConfigStreamsEnabled) {
     widgetConfigStreamsEnabled.checked = card.streamsEnabled !== false;
   }
+  if (widgetConfigAbiListen) {
+    widgetConfigAbiListen.value = (card.abiListen || []).join(", ");
+  }
   const hasCompiledSource = Boolean(buildPackageFrameSrc(card));
   widgetConfigPreviewField.hidden = !cardSupportsPackagePreview(card);
   if (widgetConfigWatchEnabled) {
@@ -4085,6 +4631,12 @@ function saveWidgetConfig(cardId, nextServerId, nextViewId) {
   const nextStreamsEnabled = widgetConfigStreamsEnabled
     ? widgetConfigStreamsEnabled.checked
     : null;
+  const nextAbiListen = widgetConfigAbiListen
+    ? widgetConfigAbiListen.value
+        .split(",")
+        .map((topic) => topic.trim())
+        .filter(Boolean)
+    : null;
   const nextWatchEnabled = widgetConfigWatchEnabled
     ? widgetConfigWatchEnabled.checked
     : null;
@@ -4107,6 +4659,7 @@ function saveWidgetConfig(cardId, nextServerId, nextViewId) {
       streamsEnabled: cardSupportsStream(card)
         ? (nextStreamsEnabled ?? card.streamsEnabled !== false)
         : card.streamsEnabled !== false,
+      abiListen: nextAbiListen ?? card.abiListen ?? [],
       widgetState: cardSupportsPackagePreview(card)
         ? applyJsonMergePatch(card.widgetState, {
             packagePreview: {
@@ -4352,6 +4905,7 @@ function syncModalLock() {
       !deleteCardModalBackdrop.hidden ||
       !serverLoginModalBackdrop.hidden ||
       !widgetConfigModalBackdrop.hidden ||
+      Boolean(groupPublishModalBackdrop && !groupPublishModalBackdrop.hidden) ||
       notificationsOpen,
   );
 }
@@ -4472,6 +5026,7 @@ function openDeleteCardModal(cardId) {
 
 function closeDeleteCardModal() {
   pendingDeleteCardId = null;
+  pendingDeleteGroup = false;
   deleteCardModalName.textContent = "";
   deleteCardModalBackdrop.hidden = true;
   syncModalLock();
@@ -4550,10 +5105,19 @@ function isWorkspaceArchiveFile(file) {
   );
 }
 
+function isGroupArchiveFile(file) {
+  return String(file?.name || "")
+    .toLowerCase()
+    .endsWith(GROUP_ARCHIVE_EXTENSION);
+}
+
 function getDroppedLinceFile(dataTransfer) {
   return (
     Array.from(dataTransfer?.files || []).find(
-      (file) => isLinceFile(file) && !isWorkspaceArchiveFile(file),
+      (file) =>
+        isLinceFile(file) &&
+        !isWorkspaceArchiveFile(file) &&
+        !isGroupArchiveFile(file),
     ) || null
   );
 }
@@ -4561,6 +5125,12 @@ function getDroppedLinceFile(dataTransfer) {
 function getDroppedWorkspaceFile(dataTransfer) {
   return (
     Array.from(dataTransfer?.files || []).find(isWorkspaceArchiveFile) || null
+  );
+}
+
+function getDroppedGroupFile(dataTransfer) {
+  return (
+    Array.from(dataTransfer?.files || []).find(isGroupArchiveFile) || null
   );
 }
 
@@ -4594,6 +5164,154 @@ async function importLinceFile(file) {
   } catch (error) {
     flashDropOverlayMessage(
       error instanceof Error ? error.message : "Falha ao importar.",
+    );
+  }
+}
+
+const groupPublishModalBackdrop = document.getElementById(
+  "group-publish-modal-backdrop",
+);
+const groupPublishNameInput = document.getElementById("group-publish-name");
+const groupPublishCount = document.getElementById("group-publish-count");
+const groupPublishConfirmButton = document.getElementById(
+  "group-publish-confirm-button",
+);
+const groupPublishCancelButton = document.getElementById(
+  "group-publish-cancel-button",
+);
+const groupPublishCloseButton = document.getElementById(
+  "group-publish-close-button",
+);
+
+function openGroupPublishModal() {
+  if (!groupPublishModalBackdrop) {
+    flashBoardBlocked();
+    return;
+  }
+
+  const members = groupMemberCards();
+  if (!members.length) {
+    flashBoardBlocked();
+    return;
+  }
+
+  pendingPublishGroupIds = members.map((card) => card.id);
+  if (groupPublishCount) {
+    groupPublishCount.textContent = `${members.length} cards`;
+  }
+  if (groupPublishNameInput) {
+    groupPublishNameInput.value = "";
+  }
+  groupPublishModalBackdrop.hidden = false;
+  syncModalLock();
+  groupPublishNameInput?.focus();
+}
+
+function closeGroupPublishModal() {
+  if (!groupPublishModalBackdrop) {
+    return;
+  }
+  pendingPublishGroupIds = null;
+  groupPublishModalBackdrop.hidden = true;
+  syncModalLock();
+}
+
+async function confirmGroupPublish() {
+  if (!pendingPublishGroupIds?.length) {
+    return;
+  }
+
+  const snapshot = store.getSnapshot();
+  const name = groupPublishNameInput?.value.trim() || "grupo";
+  if (groupPublishConfirmButton) {
+    groupPublishConfirmButton.disabled = true;
+  }
+
+  try {
+    const response = await fetch(
+      apiPath(
+        `/board/workspaces/${encodeURIComponent(snapshot.activeWorkspaceId)}/groups/export`,
+      ),
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, cardIds: pendingPublishGroupIds }),
+      },
+    );
+    if (!response.ok) {
+      const payload = await parseJsonResponse(response);
+      throw new Error(payload?.error || "Nao foi possivel publicar o grupo.");
+    }
+
+    const blob = await response.blob();
+    const slug =
+      name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "") || "grupo";
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${slug}${GROUP_ARCHIVE_EXTENSION}`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+    closeGroupPublishModal();
+  } catch (error) {
+    flashDropOverlayMessage(
+      error instanceof Error ? error.message : "Falha ao publicar grupo.",
+    );
+  } finally {
+    if (groupPublishConfirmButton) {
+      groupPublishConfirmButton.disabled = false;
+    }
+  }
+}
+
+groupPublishConfirmButton?.addEventListener("click", () => {
+  void confirmGroupPublish();
+});
+groupPublishCancelButton?.addEventListener("click", closeGroupPublishModal);
+groupPublishCloseButton?.addEventListener("click", closeGroupPublishModal);
+groupPublishModalBackdrop?.addEventListener("click", (event) => {
+  if (event.target === groupPublishModalBackdrop) {
+    closeGroupPublishModal();
+  }
+});
+
+async function requestGroupImport(file) {
+  const center = boardViewport.centerWorldPoint();
+  const formData = new FormData();
+  formData.append("group", file);
+  formData.append("centerX", String(Math.round(center.x)));
+  formData.append("centerY", String(Math.round(center.y)));
+
+  const response = await fetch(apiPath("/board/groups/import"), {
+    method: "POST",
+    body: formData,
+  });
+  const payload = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(payload?.error || "Nao foi possivel importar o grupo.");
+  }
+
+  return payload;
+}
+
+async function importGroupFile(file) {
+  showDropOverlay(`Importando ${file.name}...`, {
+    locked: true,
+    variant: "workspace",
+  });
+
+  try {
+    const boardState = await requestGroupImport(file);
+    store.replaceState(boardState, { persist: false });
+    hideDropOverlay();
+  } catch (error) {
+    flashDropOverlayMessage(
+      error instanceof Error ? error.message : "Falha ao importar grupo.",
     );
   }
 }
@@ -4675,9 +5393,15 @@ function defaultServerIdForPreview(preview) {
   return serverProfiles[0]?.id || "";
 }
 
+// Sands that ship with a default ABI listen configuration.
+const DEFAULT_ABI_LISTEN_BY_PACKAGE = {
+  "record-info.html": ["recordClicked"],
+};
+
 function createCardFromPreview(preview, sizeOverride = null) {
   const size = sizeOverride || resolvePreviewSize(preview);
   return store.addImportedCard({
+    abiListen: DEFAULT_ABI_LISTEN_BY_PACKAGE[String(preview.filename || "")] || [],
     title: preview.title,
     description: preview.description,
     author: preview.author,
@@ -4846,6 +5570,11 @@ async function confirmImportCard() {
 }
 
 function confirmDeleteCard() {
+  if (pendingDeleteGroup) {
+    confirmDeleteGroup();
+    return;
+  }
+
   if (!pendingDeleteCardId) {
     return;
   }
@@ -4876,6 +5605,8 @@ attachBoardInteractions({
   isEditMode: () => editMode,
   isCardEditable,
   getScale: () => boardViewport.getScale(),
+  resolveCardGroupIds,
+  getActiveGroupCardIds: () => (activeGroup ? [...activeGroup.cardIds] : null),
   onInteractionStart: (cardId, interactionType) => {
     boardViewport.setInteractionLocked(true);
     setActiveCard(cardId, interactionType);
@@ -5166,11 +5897,34 @@ function handleCardActionClick(event) {
               y: nodeRect.top - canvasRect.top,
             }
           : {}),
-      zIndex: card.pinned === true ? 1 : Math.max(Number(card.zIndex) || 1, 50),
+      // Re-slot at the top of the target band (unpinned tops at 49, pinned at
+      // 89) so a band switch never buries the card behind its new siblings.
+      zIndex: card.pinned === true ? 49 : 89,
     }));
     if (!updated) {
       flashBoardBlocked();
     }
+    return;
+  }
+
+  if (
+    action === "bring-to-front" ||
+    action === "bring-forward" ||
+    action === "send-backward" ||
+    action === "send-to-back"
+  ) {
+    if (!editMode) {
+      return;
+    }
+    const direction =
+      action === "bring-to-front"
+        ? "front"
+        : action === "bring-forward"
+          ? "forward"
+          : action === "send-backward"
+            ? "backward"
+            : "back";
+    store.reorderCard(cardId, direction);
     return;
   }
 
@@ -5247,6 +6001,14 @@ cardControlsToolbar.addEventListener("mouseleave", () => {
 });
 cardControlsToolbar.addEventListener("click", handleCardActionClick);
 
+cardControlsBridge.addEventListener("mouseenter", () => {
+  window.clearTimeout(cardControlsHideTimer);
+  cardControlsHideTimer = null;
+});
+cardControlsBridge.addEventListener("mouseleave", () => {
+  cardControlsHideTimer = window.setTimeout(hideCardControlsToolbar, 80);
+});
+
 boardWorld.addEventListener("panzoomchange", () => {
   if (cardControlsHoveredCardId && !cardControlsToolbar.hidden) {
     positionCardControlsToolbar(cardControlsHoveredCardId);
@@ -5299,6 +6061,12 @@ boardShell.addEventListener("drop", async (event) => {
   event.preventDefault();
   const linceFile = getDroppedLinceFile(event.dataTransfer);
   const workspaceFile = getDroppedWorkspaceFile(event.dataTransfer);
+  const groupFile = getDroppedGroupFile(event.dataTransfer);
+
+  if (groupFile) {
+    await importGroupFile(groupFile);
+    return;
+  }
 
   if (workspaceFile) {
     await importWorkspaceFile(workspaceFile);
@@ -5601,6 +6369,11 @@ workspaceImportInput.addEventListener("change", () => {
     return;
   }
 
+  if (isGroupArchiveFile(file)) {
+    void importGroupFile(file);
+    return;
+  }
+
   void importWorkspaceFile(file);
 });
 
@@ -5656,6 +6429,16 @@ document.addEventListener("keydown", (event) => {
     return;
   }
 
+  if (
+    groupPublishModalBackdrop &&
+    !groupPublishModalBackdrop.hidden &&
+    event.key === "Escape"
+  ) {
+    event.preventDefault();
+    closeGroupPublishModal();
+    return;
+  }
+
   if (!localPackagesModalBackdrop.hidden && event.key === "Escape") {
     event.preventDefault();
     closeLocalPackagesModal();
@@ -5690,7 +6473,34 @@ document.addEventListener("keydown", (event) => {
     return;
   }
 
+  if (event.key === "Escape" && activeGroup) {
+    event.preventDefault();
+    dissolveActiveGroup();
+    return;
+  }
+
   const key = event.key.toLowerCase();
+
+  if (
+    editMode &&
+    (event.ctrlKey || event.metaKey) &&
+    (event.code === "BracketRight" || event.code === "BracketLeft")
+  ) {
+    const reorderTargetCardId = cardControlsHoveredCardId || activeCardId;
+    if (reorderTargetCardId) {
+      event.preventDefault();
+      const raise = event.code === "BracketRight";
+      const direction = event.shiftKey
+        ? raise
+          ? "front"
+          : "back"
+        : raise
+          ? "forward"
+          : "backward";
+      store.reorderCard(reorderTargetCardId, direction);
+      return;
+    }
+  }
 
   if ((event.metaKey || event.ctrlKey) && event.shiftKey && key === "n") {
     event.preventDefault();

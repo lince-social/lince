@@ -385,7 +385,10 @@ pub async fn update_server(
                 .and_then(|value| value.to_str().ok()),
             session_cookie_name(),
         );
-        if let Some(session) = state.auth.server_session(session_token.as_deref(), profile.id).await
+        if let Some(session) = state
+            .auth
+            .server_session(session_token.as_deref(), profile.id)
+            .await
         {
             let sync_state = state.clone();
             let sync_server_id = profile.id;

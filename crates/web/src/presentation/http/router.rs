@@ -17,7 +17,10 @@ use {
                 },
                 backend::router as build_backend_router,
                 board::hydrated_board_state,
-                board::{export_workspace, get_board_state, import_workspace, put_board_state},
+                board::{
+                    export_workspace, export_workspace_group, get_board_state, import_group,
+                    import_workspace, put_board_state,
+                },
                 integrations::{
                     proxy_local_document_file, proxy_manas_file, proxy_manas_organ,
                     proxy_manas_table_collection, proxy_manas_table_item, proxy_manas_table_schema,
@@ -106,6 +109,11 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
             "/board/workspaces/{workspace_id}/export",
             get(export_workspace),
         )
+        .route(
+            "/board/workspaces/{workspace_id}/groups/export",
+            post(export_workspace_group),
+        )
+        .route("/board/groups/import", post(import_group))
         .route(
             "/integrations/servers/{server_id}/views/{view_id}/stream",
             get(proxy_manas_view),

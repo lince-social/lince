@@ -234,4 +234,3 @@ pub(crate) fn chevron_down_icon() -> Markup {
         }
     }
 }
-

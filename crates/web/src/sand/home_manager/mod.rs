@@ -1,4 +1,5 @@
 mod body;
+mod knowledge_base;
 mod script;
 mod style;
 
@@ -11,14 +12,14 @@ pub(crate) fn source() -> SandWidgetSource {
         filename: "home-manager.html",
         lang: "en",
         manifest: PackageManifest {
-            icon: "⌂".into(),
+            icon: "H".into(),
             title: "Home Manager".into(),
             author: "Lince Labs".into(),
-            version: "0.1.0".into(),
-            description: "Personal Home Manager control board for modules, packages, services, and generations.".into(),
-            details: "Tracks a local Home Manager profile plan inside the widget, including module toggles, package intent, service health, activation steps, and rollback notes. State is stored per widget instance.".into(),
-            initial_width: 8,
-            initial_height: 6,
+            version: "0.2.0".into(),
+            description: "Tabbed home operations sand with nutrition planning and bills.".into(),
+            details: "Nutrition embeds a Brazilian-guide-based food catalog, custom alimentum records, marmita planning, shopping lists, prices, and a lowest-price optimizer. Bills is a thin tab for a later pass.".into(),
+            initial_width: 10,
+            initial_height: 8,
             requires_server: false,
             permissions: vec!["bridge_state".into()],
         },

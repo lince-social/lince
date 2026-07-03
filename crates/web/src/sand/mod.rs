@@ -14,6 +14,7 @@ mod markdown_notes;
 mod ops_clock;
 mod organ_management;
 pub(crate) mod record_editor;
+mod record_info;
 #[path = "relations/mod.rs"]
 mod relations;
 mod role_access;
@@ -105,7 +106,7 @@ impl OfficialWidgetBuilder {
     }
 }
 
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 32] = [
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 33] = [
     OfficialWidgetBuilder::Html {
         feature_flag: shell::FEATURE_FLAG,
         source_builder: shell::logo_source,
@@ -197,6 +198,10 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 32] = [
     OfficialWidgetBuilder::Html {
         feature_flag: record_editor::FEATURE_FLAG,
         source_builder: record_editor::source,
+    },
+    OfficialWidgetBuilder::Html {
+        feature_flag: record_info::FEATURE_FLAG,
+        source_builder: record_info::source,
     },
     OfficialWidgetBuilder::Html {
         feature_flag: organ_management::FEATURE_FLAG,

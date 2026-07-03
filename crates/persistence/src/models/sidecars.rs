@@ -31,7 +31,10 @@ pub struct RecordExtensionRow {
     pub freestyle_data_structure: String,
     #[table(check = "sync_uid IS NULL OR length(trim(sync_uid)) > 0")]
     pub sync_uid: Option<String>,
-    #[table(references = "organ(id)", check = "origin_organ_id IS NULL OR origin_organ_id > 0")]
+    #[table(
+        references = "organ(id)",
+        check = "origin_organ_id IS NULL OR origin_organ_id > 0"
+    )]
     pub origin_organ_id: Option<i64>,
     #[table(
         default = "CURRENT_TIMESTAMP",
@@ -83,7 +86,10 @@ pub struct RecordLinkRow {
     pub freestyle_data_structure: Option<String>,
     #[table(check = "sync_uid IS NULL OR length(trim(sync_uid)) > 0")]
     pub sync_uid: Option<String>,
-    #[table(references = "organ(id)", check = "origin_organ_id IS NULL OR origin_organ_id > 0")]
+    #[table(
+        references = "organ(id)",
+        check = "origin_organ_id IS NULL OR origin_organ_id > 0"
+    )]
     pub origin_organ_id: Option<i64>,
     #[table(
         default = "CURRENT_TIMESTAMP",
@@ -96,7 +102,6 @@ pub struct RecordLinkRow {
     )]
     pub updated_at: String,
 }
-
 
 #[derive(Table, sqlx::FromRow, Debug, Clone, PartialEq)]
 #[table(name = "record_worklog")]
@@ -160,7 +165,10 @@ pub struct RecordWorklogRow {
     pub updated_at: String,
     #[table(check = "sync_uid IS NULL OR length(trim(sync_uid)) > 0")]
     pub sync_uid: Option<String>,
-    #[table(references = "organ(id)", check = "origin_organ_id IS NULL OR origin_organ_id > 0")]
+    #[table(
+        references = "organ(id)",
+        check = "origin_organ_id IS NULL OR origin_organ_id > 0"
+    )]
     pub origin_organ_id: Option<i64>,
 }
 
@@ -209,7 +217,10 @@ pub struct RecordResourceRefRow {
     pub updated_at: String,
     #[table(check = "sync_uid IS NULL OR length(trim(sync_uid)) > 0")]
     pub sync_uid: Option<String>,
-    #[table(references = "organ(id)", check = "origin_organ_id IS NULL OR origin_organ_id > 0")]
+    #[table(
+        references = "organ(id)",
+        check = "origin_organ_id IS NULL OR origin_organ_id > 0"
+    )]
     pub origin_organ_id: Option<i64>,
 }
 
@@ -263,7 +274,10 @@ pub struct WorkMetadataRow {
     pub updated_at: String,
     #[table(check = "sync_uid IS NULL OR length(trim(sync_uid)) > 0")]
     pub sync_uid: Option<String>,
-    #[table(references = "organ(id)", check = "origin_organ_id IS NULL OR origin_organ_id > 0")]
+    #[table(
+        references = "organ(id)",
+        check = "origin_organ_id IS NULL OR origin_organ_id > 0"
+    )]
     pub origin_organ_id: Option<i64>,
 }
 
@@ -331,7 +345,10 @@ pub struct WorkSubjectRow {
     pub updated_at: String,
     #[table(check = "sync_uid IS NULL OR length(trim(sync_uid)) > 0")]
     pub sync_uid: Option<String>,
-    #[table(references = "organ(id)", check = "origin_organ_id IS NULL OR origin_organ_id > 0")]
+    #[table(
+        references = "organ(id)",
+        check = "origin_organ_id IS NULL OR origin_organ_id > 0"
+    )]
     pub origin_organ_id: Option<i64>,
 }
 
@@ -376,6 +393,9 @@ pub struct WorkAssignmentRow {
     pub updated_at: String,
     #[table(check = "sync_uid IS NULL OR length(trim(sync_uid)) > 0")]
     pub sync_uid: Option<String>,
-    #[table(references = "organ(id)", check = "origin_organ_id IS NULL OR origin_organ_id > 0")]
+    #[table(
+        references = "organ(id)",
+        check = "origin_organ_id IS NULL OR origin_organ_id > 0"
+    )]
     pub origin_organ_id: Option<i64>,
 }

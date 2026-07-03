@@ -321,7 +321,8 @@ impl TransferWidgetService {
             }
             "set-satiation-policy" => {
                 let request = parse_payload::<SetSatiationPolicyRequest>(payload)?;
-                self.set_satiation_policy(request.transfer_id, request.policy).await?;
+                self.set_satiation_policy(request.transfer_id, request.policy)
+                    .await?;
                 "Satiation policy updated.".to_string()
             }
             "set-global-satiation-policy" => {
@@ -481,7 +482,8 @@ impl TransferWidgetService {
             }
             "delete-transfer-interaction" => {
                 let request = parse_payload::<TransferInteractionIdRequest>(payload)?;
-                self.delete_transfer_interaction(request.interaction_id).await?;
+                self.delete_transfer_interaction(request.interaction_id)
+                    .await?;
                 "Transfer interaction deleted.".to_string()
             }
             "send-transfer-message" => {
@@ -893,20 +895,20 @@ impl TransferWidgetService {
         Ok(value.flatten())
     }
 
-    async fn set_global_satiation_policy(
-        &self,
-        policy: Option<String>,
-    ) -> Result<(), Error> {
+    async fn set_global_satiation_policy(&self, policy: Option<String>) -> Result<(), Error> {
         if let Some(ref p) = policy {
             if p != "none" && p != "first_completes" {
-                return Err(Error::other("satiation_policy must be 'none', 'first_completes', or null"));
+                return Err(Error::other(
+                    "satiation_policy must be 'none', 'first_completes', or null",
+                ));
             }
         }
         let outcome = self
             .services
             .writer
             .execute_statement(
-                "UPDATE configuration SET transfer_satiation_policy = ? WHERE quantity = 1".to_string(),
+                "UPDATE configuration SET transfer_satiation_policy = ? WHERE quantity = 1"
+                    .to_string(),
                 vec![optional_text_parameter(policy.clone())],
             )
             .await?;
@@ -1560,7 +1562,9 @@ impl TransferWidgetService {
         let title = normalize_nonempty(&request.title, "Item title")?;
         let role = request.role.trim().to_string();
         if role.is_empty() {
-            return Err(TransferWidgetError::Invalid("Item role is required.".into()));
+            return Err(TransferWidgetError::Invalid(
+                "Item role is required.".into(),
+            ));
         }
         let item_uid = format!("item-{}-{role}-{}", transfer.id, Uuid::new_v4());
         let quantity = request.quantity.map(|q| q.abs()).unwrap_or(0.0);
@@ -1683,7 +1687,7 @@ impl TransferWidgetService {
                     version = version + 1,
                     updated_at = CURRENT_TIMESTAMP
                  WHERE id = ? AND transfer_id = ?"
-                .to_string(),
+                    .to_string(),
                 vec![
                     optional_text_parameter(request.role.clone()),
                     record_id_param.clone(),
@@ -1754,7 +1758,7 @@ impl TransferWidgetService {
                      to_item_id   = CASE WHEN to_item_id   = ? THEN NULL ELSE to_item_id END,
                      updated_at   = CURRENT_TIMESTAMP
                  WHERE from_item_id = ? OR to_item_id = ?"
-                .to_string(),
+                    .to_string(),
                 vec![
                     SqlParameter::Integer(item_id),
                     SqlParameter::Integer(item_id),
@@ -1821,7 +1825,7 @@ impl TransferWidgetService {
                     transfer_id, interaction_uid, interaction_kind, direction,
                     dependency_kind, from_item_id, to_item_id, quantity, state
                  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'proposed')"
-                .to_string(),
+                    .to_string(),
                 vec![
                     SqlParameter::Integer(transfer.id),
                     SqlParameter::Text(interaction_uid.clone()),
@@ -1907,7 +1911,7 @@ impl TransferWidgetService {
                     quantity = CASE WHEN ? IS NOT NULL THEN ? ELSE quantity END,
                     updated_at = CURRENT_TIMESTAMP
                  WHERE id = ?"
-                .to_string(),
+                    .to_string(),
                 vec![
                     optional_text_parameter(request.interaction_kind.clone()),
                     optional_text_parameter(request.direction.clone()),
@@ -2927,10 +2931,7 @@ impl TransferWidgetService {
         role: &str,
         item_quantity: f64,
     ) -> Result<f64, Error> {
-        let is_outgoing = matches!(
-            role,
-            "contribution" | "support" | "task" | "reservation"
-        );
+        let is_outgoing = matches!(role, "contribution" | "support" | "task" | "reservation");
         let interaction_qty: Option<f64> = if is_outgoing {
             sqlx::query_scalar::<_, Option<f64>>(
                 "SELECT SUM(quantity) FROM transfer_interaction
@@ -3005,7 +3006,8 @@ impl TransferWidgetService {
             .execute_statement(
                 "INSERT INTO transfer_local_settlement(
                     transfer_id, local_record_id, local_actor_label, local_quantity_delta, event_id
-                 ) VALUES (?, ?, ?, ?, ?)".to_string(),
+                 ) VALUES (?, ?, ?, ?, ?)"
+                    .to_string(),
                 vec![
                     SqlParameter::Integer(identity.transfer_id),
                     SqlParameter::Integer(record.id),
@@ -3027,7 +3029,8 @@ impl TransferWidgetService {
                  ON CONFLICT(transfer_id, party_id, local_record_id, scope_kind, scope_id)
                  DO UPDATE SET quantity_delta = excluded.quantity_delta,
                                event_id = excluded.event_id,
-                               settled_at = CURRENT_TIMESTAMP".to_string(),
+                               settled_at = CURRENT_TIMESTAMP"
+                    .to_string(),
                 vec![
                     SqlParameter::Integer(identity.transfer_id),
                     SqlParameter::Integer(party_id),
@@ -3077,16 +3080,15 @@ impl TransferWidgetService {
                 "percentage" => (link.amount_value / 100.0) * upstream_qty.abs(),
                 _ => link.amount_value,
             };
-            let note = format!(
-                "Chain link from transfer #{transfer_id}: +{delta:.4} funded"
-            );
+            let note = format!("Chain link from transfer #{transfer_id}: +{delta:.4} funded");
             if let Some(item_id) = link.downstream_item_id {
                 self.services
                     .writer
                     .execute_statement(
                         "UPDATE transfer_structured_item
                          SET metadata_json = json_patch(metadata_json, json(?))
-                         WHERE id = ?".to_string(),
+                         WHERE id = ?"
+                            .to_string(),
                         vec![
                             SqlParameter::Text(
                                 serde_json::json!({ "chain_funded": delta, "chain_note": note })
@@ -3167,13 +3169,12 @@ impl TransferWidgetService {
                 id: i64,
                 quantity: f64,
             }
-            let record = sqlx::query_as::<_, LocalRecordRow>(
-                "SELECT id, quantity FROM record WHERE id = ?",
-            )
-            .bind(spectator.watcher_record_id)
-            .fetch_optional(&*self.services.db)
-            .await
-            .map_err(Error::other)?;
+            let record =
+                sqlx::query_as::<_, LocalRecordRow>("SELECT id, quantity FROM record WHERE id = ?")
+                    .bind(spectator.watcher_record_id)
+                    .fetch_optional(&*self.services.db)
+                    .await
+                    .map_err(Error::other)?;
             if let Some(record) = record {
                 let next_qty = record.quantity + delta;
                 write::execute_record_update(
@@ -3319,14 +3320,13 @@ impl TransferWidgetService {
             )
             .await
             .map_err(TransferWidgetError::from_io)?;
-        let link_id = sqlx::query_scalar::<_, i64>(
-            "SELECT id FROM transfer_chain_link WHERE sync_uid = ?",
-        )
-        .bind(&sync_uid)
-        .fetch_optional(&*self.services.db)
-        .await
-        .map_err(|e| TransferWidgetError::from_io(Error::other(e)))?
-        .unwrap_or(0);
+        let link_id =
+            sqlx::query_scalar::<_, i64>("SELECT id FROM transfer_chain_link WHERE sync_uid = ?")
+                .bind(&sync_uid)
+                .fetch_optional(&*self.services.db)
+                .await
+                .map_err(|e| TransferWidgetError::from_io(Error::other(e)))?
+                .unwrap_or(0);
         Ok(link_id)
     }
 
@@ -3414,7 +3414,8 @@ impl TransferWidgetService {
         self.services
             .writer
             .execute_statement(
-                "UPDATE transfer_identity SET satiation_policy = ? WHERE transfer_id = ?".to_string(),
+                "UPDATE transfer_identity SET satiation_policy = ? WHERE transfer_id = ?"
+                    .to_string(),
                 vec![
                     optional_text_parameter(policy),
                     SqlParameter::Integer(transfer_id),
@@ -6425,10 +6426,7 @@ impl TransferWidgetService {
         Ok(views)
     }
 
-    async fn load_transfer_messages(
-        &self,
-        transfer_id: i64,
-    ) -> Result<Vec<MessageView>, Error> {
+    async fn load_transfer_messages(&self, transfer_id: i64) -> Result<Vec<MessageView>, Error> {
         #[derive(sqlx::FromRow)]
         struct MessageRow {
             id: i64,
@@ -10733,7 +10731,9 @@ fn optional_text_parameter(value: Option<String>) -> SqlParameter {
 }
 
 fn optional_integer_parameter(value: Option<i64>) -> SqlParameter {
-    value.map(SqlParameter::Integer).unwrap_or(SqlParameter::Null)
+    value
+        .map(SqlParameter::Integer)
+        .unwrap_or(SqlParameter::Null)
 }
 
 fn optional_text_param(value: Option<&str>) -> SqlParameter {
@@ -11080,10 +11080,7 @@ fn payload_shape_matches_event_kind(event_kind: &str, payload_json: &str) -> boo
     // Event kinds not yet typed pass through without validation.
     let untyped = matches!(
         event_kind,
-        "transfer_quantity_changed"
-            | "dispute_opened"
-            | "dispute_resolved"
-            | "settlement_reverted"
+        "transfer_quantity_changed" | "dispute_opened" | "dispute_resolved" | "settlement_reverted"
     );
     untyped || parse_event_payload(event_kind, payload_json).is_some()
 }
@@ -11429,8 +11426,7 @@ fn agreements_complete(transfer: &TransferSummaryRow) -> bool {
         }
         AgreementType::Percentage => {
             let pct = transfer.agreement_percentage.unwrap_or(100);
-            let threshold =
-                ((transfer.party_count as f64 * pct as f64) / 100.0).ceil() as i64;
+            let threshold = ((transfer.party_count as f64 * pct as f64) / 100.0).ceil() as i64;
             transfer.party_count > 0 && transfer.agreed_party_count >= threshold
         }
         AgreementType::Dependency => {
@@ -12174,6 +12170,8 @@ mod tests {
                     pinned: false,
                     system: false,
                     z_index: 1,
+                    group_id: None,
+                    abi_listen: Vec::new(),
                 }],
             }],
         }

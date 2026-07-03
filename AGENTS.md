@@ -1,4 +1,4 @@
-Instead of cargo build use cargo check. Warnings are treated as errors.
+Instead of cargo build use cargo check. Warnings are treated as errors. Do not use worktrees.
 
 # Architecture
 

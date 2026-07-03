@@ -303,14 +303,15 @@ pub async fn capture_record_identity(
     record_id: u32,
 ) -> Result<RecordRowSyncIdentity, Error> {
     let id = i64::from(record_id);
-    let sync_uid = sqlx::query_scalar::<_, Option<String>>("SELECT sync_uid FROM record WHERE id = ?")
-        .bind(id)
-        .fetch_optional(&*services.db)
-        .await
-        .map_err(Error::other)?
-        .flatten()
-        .filter(|value| !value.trim().is_empty())
-        .unwrap_or_else(|| local_sync_uid("record", id));
+    let sync_uid =
+        sqlx::query_scalar::<_, Option<String>>("SELECT sync_uid FROM record WHERE id = ?")
+            .bind(id)
+            .fetch_optional(&*services.db)
+            .await
+            .map_err(Error::other)?
+            .flatten()
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or_else(|| local_sync_uid("record", id));
     Ok(RecordRowSyncIdentity {
         record_id,
         sync_uid,
@@ -439,7 +440,17 @@ async fn upsert_tombstone(
 }
 
 async fn record_payload(services: InjectedServices, record_id: u32) -> Result<String, Error> {
-    let row = sqlx::query_as::<_, (i64, f64, Option<String>, Option<String>, Option<i64>, Option<String>)>(
+    let row = sqlx::query_as::<
+        _,
+        (
+            i64,
+            f64,
+            Option<String>,
+            Option<String>,
+            Option<i64>,
+            Option<String>,
+        ),
+    >(
         "SELECT id, quantity, head, body, owner_organ_id, sync_uid FROM record WHERE id = ?",
     )
     .bind(i64::from(record_id))
@@ -487,17 +498,23 @@ async fn sidecar_payload(
         );
     }
     if table_name == "work_assignment" {
-        if let Some(uid) = sync_uid_for_local_id(&services, "work_metadata", row.get("work_metadata_id")).await? {
+        if let Some(uid) =
+            sync_uid_for_local_id(&services, "work_metadata", row.get("work_metadata_id")).await?
+        {
             payload.insert("work_metadata_sync_uid".into(), json!(uid));
         }
-        if let Some(uid) = sync_uid_for_local_id(&services, "work_subject", row.get("work_subject_id")).await? {
+        if let Some(uid) =
+            sync_uid_for_local_id(&services, "work_subject", row.get("work_subject_id")).await?
+        {
             payload.insert("work_subject_sync_uid".into(), json!(uid));
         }
     }
     if table_name == "record_link" {
         let target_table: String = row.get("target_table");
         if target_table == "record" {
-            if let Some(uid) = sync_uid_for_local_id(&services, "record", row.get("target_id")).await? {
+            if let Some(uid) =
+                sync_uid_for_local_id(&services, "record", row.get("target_id")).await?
+            {
                 payload.insert("target_sync_uid".into(), json!(uid));
             }
         }
@@ -521,38 +538,101 @@ async fn sync_uid_for_local_id(
 fn sync_payload_columns(table_name: &str) -> &'static [&'static str] {
     match table_name {
         "record_extension" => &[
-            "record_id", "namespace", "version", "freestyle_data_structure", "sync_uid",
-            "origin_organ_id", "created_at", "updated_at",
+            "record_id",
+            "namespace",
+            "version",
+            "freestyle_data_structure",
+            "sync_uid",
+            "origin_organ_id",
+            "created_at",
+            "updated_at",
         ],
         "record_link" => &[
-            "record_id", "link_type", "target_table", "target_id", "position",
-            "freestyle_data_structure", "sync_uid", "origin_organ_id", "created_at", "updated_at",
+            "record_id",
+            "link_type",
+            "target_table",
+            "target_id",
+            "position",
+            "freestyle_data_structure",
+            "sync_uid",
+            "origin_organ_id",
+            "created_at",
+            "updated_at",
         ],
         "record_comment" => &[
-            "record_id", "author_user_id", "body", "created_at", "updated_at", "deleted_at",
-            "sync_uid", "origin_organ_id",
+            "record_id",
+            "author_user_id",
+            "body",
+            "created_at",
+            "updated_at",
+            "deleted_at",
+            "sync_uid",
+            "origin_organ_id",
         ],
         "record_worklog" => &[
-            "record_id", "author_user_id", "started_at", "ended_at", "last_heartbeat_at",
-            "seconds", "note", "created_at", "updated_at", "sync_uid", "origin_organ_id",
+            "record_id",
+            "author_user_id",
+            "started_at",
+            "ended_at",
+            "last_heartbeat_at",
+            "seconds",
+            "note",
+            "created_at",
+            "updated_at",
+            "sync_uid",
+            "origin_organ_id",
         ],
         "record_resource_ref" => &[
-            "record_id", "provider", "resource_kind", "resource_path", "title", "position",
-            "freestyle_data_structure", "created_at", "updated_at", "sync_uid", "origin_organ_id",
+            "record_id",
+            "provider",
+            "resource_kind",
+            "resource_path",
+            "title",
+            "position",
+            "freestyle_data_structure",
+            "created_at",
+            "updated_at",
+            "sync_uid",
+            "origin_organ_id",
         ],
         "work_metadata" => &[
-            "owner_kind", "owner_id", "task_type", "status", "start_at", "end_at",
-            "estimate_seconds", "completion_notes", "metadata_json", "created_at", "updated_at",
-            "sync_uid", "origin_organ_id",
+            "owner_kind",
+            "owner_id",
+            "task_type",
+            "status",
+            "start_at",
+            "end_at",
+            "estimate_seconds",
+            "completion_notes",
+            "metadata_json",
+            "created_at",
+            "updated_at",
+            "sync_uid",
+            "origin_organ_id",
         ],
         "work_subject" => &[
-            "subject_kind", "app_user_id", "organ_id", "transfer_party_id", "remote_base_url",
-            "remote_public_key", "remote_subject_uid", "display_name_snapshot",
-            "organ_name_snapshot", "created_at", "updated_at", "sync_uid", "origin_organ_id",
+            "subject_kind",
+            "app_user_id",
+            "organ_id",
+            "transfer_party_id",
+            "remote_base_url",
+            "remote_public_key",
+            "remote_subject_uid",
+            "display_name_snapshot",
+            "organ_name_snapshot",
+            "created_at",
+            "updated_at",
+            "sync_uid",
+            "origin_organ_id",
         ],
         "work_assignment" => &[
-            "work_metadata_id", "work_subject_id", "assignment_kind", "created_at", "updated_at",
-            "sync_uid", "origin_organ_id",
+            "work_metadata_id",
+            "work_subject_id",
+            "assignment_kind",
+            "created_at",
+            "updated_at",
+            "sync_uid",
+            "origin_organ_id",
         ],
         _ => &[],
     }

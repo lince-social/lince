@@ -1792,14 +1792,8 @@ impl KanbanActionService {
         comment_id: i64,
     ) -> Result<MessageRow, KanbanActionError> {
         parse_message_row(
-            self.get_table_row(
-                session_token,
-                organ,
-                bearer_token,
-                "message",
-                comment_id,
-            )
-            .await?,
+            self.get_table_row(session_token, organ, bearer_token, "message", comment_id)
+                .await?,
         )
     }
 

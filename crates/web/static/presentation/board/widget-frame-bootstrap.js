@@ -2,6 +2,7 @@ const HOST_TO_WIDGET_STATE = "lince:bridge-state";
 const WIDGET_READY = "lince:widget-ready";
 const WIDGET_ACTION = "lince:widget-action";
 const WIDGET_ERROR = "lince:bridge-error";
+const WIDGET_EVENT = "lince:bridge-event";
 
 (() => {
   if (window.__LINCE_WIDGET_HOST__) {
@@ -9,11 +10,18 @@ const WIDGET_ERROR = "lince:bridge-error";
   }
 
   window.__LINCE_WIDGET_HOST__ = true;
+
+  document.documentElement.style.overscrollBehavior = 'contain';
+  document.addEventListener('DOMContentLoaded', () => {
+    if (document.body) document.body.style.overscrollBehavior = 'contain';
+  });
+
   const instanceId =
     window.frameElement?.dataset?.packageInstanceId ||
     window.frameElement?.dataset?.packagePreviewId ||
     "preview";
   const listeners = new Set();
+  const eventHandlers = new Set();
   let lastDetail = {
     bridge: {},
     meta: {
@@ -120,6 +128,18 @@ const WIDGET_ERROR = "lince:bridge-error";
       return;
     }
 
+    if (event.data.type === WIDGET_EVENT) {
+      const payload = event.data.payload || {};
+      emit("lince-bridge-event", payload);
+
+      for (const entry of eventHandlers) {
+        if (!entry.topic || entry.topic === payload.topic) {
+          entry.handler(cloneJsonValue(payload, {}));
+        }
+      }
+      return;
+    }
+
     if (event.data.type === WIDGET_ERROR) {
       emit("lince-bridge-error", event.data.payload || {});
     }
@@ -184,6 +204,22 @@ const WIDGET_ERROR = "lince:bridge-error";
         command: String(command || ""),
         payload: cloneJsonValue(payload, {}),
       });
+    },
+    emit(topic, data) {
+      send(WIDGET_ACTION, {
+        action: "emit-event",
+        topic: String(topic || ""),
+        data: cloneJsonValue(data, null),
+      });
+    },
+    onEvent(topic, handler) {
+      if (typeof handler !== "function") {
+        return () => {};
+      }
+
+      const entry = { topic: String(topic || ""), handler };
+      eventHandlers.add(entry);
+      return () => eventHandlers.delete(entry);
     },
   };
 

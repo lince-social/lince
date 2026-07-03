@@ -281,7 +281,6 @@ pub enum TransferEventPayload {
     MessageSent(MessageSentPayload),
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProposalCreatedPayload {
     pub title: Option<String>,

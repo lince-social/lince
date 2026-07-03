@@ -9,7 +9,7 @@ const DEFAULT_CARD_SIZE = {
   height: 420,
 };
 
-const MIN_CARD_SIZE = {
+export const MIN_CARD_SIZE = {
   width: 240,
   height: 180,
 };
@@ -212,6 +212,8 @@ export function sanitizeCard(rawCard, index, config, placementPoint = null) {
       pinned,
       system: rawCard?.system === true,
       zIndex: Math.round(finiteNumber(rawCard?.zIndex, pinned ? 50 : 1)),
+      groupId: rawCard?.groupId ? String(rawCard.groupId) : null,
+      abiListen: sanitizePermissions(rawCard?.abiListen),
     },
     config,
   );

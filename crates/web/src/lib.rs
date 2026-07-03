@@ -12,8 +12,8 @@ use {
     crate::{
         application::{
             ai_builder::AiBuilderState, backend_api::BackendApiService,
-            kanban_actions::KanbanActionService, kanban_filters::KanbanFilterService,
-            kanban_streams::KanbanStreamService,
+            home_manager_widget::HomeManagerWidgetService, kanban_actions::KanbanActionService,
+            kanban_filters::KanbanFilterService, kanban_streams::KanbanStreamService,
             karma_orchestra_widget::KarmaOrchestraWidgetService, state::AppState,
             trail_widget::TrailWidgetService, transfer_widget::TransferWidgetService,
             widget_runtime::WidgetRuntimeService,
@@ -122,6 +122,7 @@ pub async fn serve_with_bound_addr_sender(
         package_previews: PackagePreviewStore::new(),
         terminal: TerminalSessionStore::new(),
         widget_bridge: WidgetBridgeStore::new(),
+        home_manager_widget: HomeManagerWidgetService::new(backend.clone(), board_state.clone()),
         kanban_actions: KanbanActionService::new(
             auth.clone(),
             backend.clone(),

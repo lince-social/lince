@@ -2328,6 +2328,20 @@ pub(super) fn script() -> String {
         renderPanel();
         renderSelection();
         requestDraw();
+
+        if (bridge && typeof bridge.emit === "function") {
+            bridge.emit("recordClicked", {
+                serverId: state.origin.serverId || "",
+                viewId: state.origin.viewId == null ? null : Number(state.origin.viewId) || null,
+                table: "record",
+                recordId: node.id,
+                record: {
+                    id: node.id,
+                    head: String(node.head || ""),
+                    quantity: node.quantity == null ? null : String(node.quantity),
+                },
+            });
+        }
     }
 
     function connectParent() {

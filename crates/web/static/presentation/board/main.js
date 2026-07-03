@@ -13,6 +13,7 @@ const LEGACY_WORKSPACE_ARCHIVE_EXTENSION = ".workspace.lince";
 const GROUP_ARCHIVE_EXTENSION = ".group.sand";
 const DEFAULT_DROP_MESSAGE =
   "Solte um widget .html, .sand ou .lince, ou um .workspace.sand para instalar no backend local.";
+const WIDGET_SPACE_PAN = "lince:widget-space-pan";
 
 function stripPackageExtension(filename) {
   const value = String(filename || "");
@@ -727,6 +728,7 @@ let shellPinRelayoutTimer = null;
 let lastAppliedCameraWorkspaceId = null;
 let lastCameraWorkspaceId = null;
 let lastCameraValue = null;
+let spacePanMode = false;
 
 boardViewport = createBoardViewport({
   viewportElement: boardCanvas,
@@ -736,16 +738,16 @@ boardViewport = createBoardViewport({
     renderCameraHud(camera);
     lastCameraWorkspaceId = snapshot.activeWorkspaceId;
     lastCameraValue = cloneJsonValue(camera, null);
-    writeCameraCache(snapshot.activeWorkspaceId, camera);
     store.updateActiveCamera(camera, { notify: false, persist: false });
     window.clearTimeout(cameraPersistTimer);
     cameraPersistTimer = window.setTimeout(() => {
+      writeCameraCache(snapshot.activeWorkspaceId, camera);
       store.updateActiveCamera(camera, { persist: true });
     }, 180);
   },
 });
 
-// Panning/zooming is driven entirely by the panzoom transform on #board-world;
+// Panning/zooming is driven entirely by the viewport transform on #board-world;
 // #board-canvas itself must never scroll. But it's still an overflow:hidden
 // scroll container, so focusing any element inside it (e.g. a widget iframe
 // calling .focus() without preventScroll, or default browser focus handling)
@@ -762,6 +764,32 @@ boardCanvas.addEventListener("scroll", () => {
     boardCanvas.scrollTop = 0;
   }
 });
+
+function setSpacePanMode(enabled) {
+  const next = Boolean(enabled);
+  if (spacePanMode === next) {
+    return;
+  }
+
+  spacePanMode = next;
+  boardShell.classList.toggle("is-space-panning", spacePanMode);
+  boardViewport?.setSpacePanMode?.(spacePanMode);
+}
+
+function handleWidgetSpacePanMessage(event) {
+  const data = event.data;
+  if (!data || typeof data !== "object" || data.type !== WIDGET_SPACE_PAN) {
+    return;
+  }
+
+  const instanceId = String(data.instanceId || "");
+  const frame = getPackageFrameNode(instanceId);
+  if (!frame || frame.contentWindow !== event.source) {
+    return;
+  }
+
+  setSpacePanMode(data.payload?.enabled === true);
+}
 
 function flushCameraState() {
   if (!lastCameraValue || !lastCameraWorkspaceId) {
@@ -6431,6 +6459,12 @@ document.addEventListener("keydown", (event) => {
     return;
   }
 
+  if (event.code === "Space" && !isTypingTarget(event.target)) {
+    event.preventDefault();
+    setSpacePanMode(true);
+    return;
+  }
+
   if (isTypingTarget(event.target)) {
     return;
   }
@@ -6488,12 +6522,22 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+document.addEventListener("keyup", (event) => {
+  if (event.code === "Space") {
+    setSpacePanMode(false);
+  }
+});
+
+window.addEventListener("message", handleWidgetSpacePanMessage);
 window.addEventListener("resize", () => {
   positionCanvasControls();
   scheduleShellPinRelayout();
 });
 window.addEventListener("scroll", positionCanvasControls, { passive: true });
 window.addEventListener("beforeunload", flushCameraState);
+window.addEventListener("blur", () => {
+  setSpacePanMode(false);
+});
 window.visualViewport?.addEventListener("resize", () => {
   positionCanvasControls();
   scheduleShellPinRelayout();

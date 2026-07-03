@@ -3,6 +3,7 @@ const WIDGET_READY = "lince:widget-ready";
 const WIDGET_ACTION = "lince:widget-action";
 const WIDGET_ERROR = "lince:bridge-error";
 const WIDGET_EVENT = "lince:bridge-event";
+const WIDGET_SPACE_PAN = "lince:widget-space-pan";
 
 (() => {
   if (window.__LINCE_WIDGET_HOST__) {
@@ -80,6 +81,18 @@ const WIDGET_EVENT = "lince:bridge-event";
     );
   }
 
+  function isTypingTarget(target) {
+    return Boolean(
+      target?.closest?.("input, textarea, select, [contenteditable='true']"),
+    );
+  }
+
+  function setHostSpacePan(enabled) {
+    send(WIDGET_SPACE_PAN, {
+      enabled: Boolean(enabled),
+    });
+  }
+
   function assignDetail(detail) {
     const nextDetail = detail && typeof detail === "object" ? detail : {};
     const nextMeta =
@@ -143,6 +156,25 @@ const WIDGET_EVENT = "lince:bridge-event";
     if (event.data.type === WIDGET_ERROR) {
       emit("lince-bridge-error", event.data.payload || {});
     }
+  });
+
+  window.addEventListener("keydown", (event) => {
+    if (event.code !== "Space" || isTypingTarget(event.target)) {
+      return;
+    }
+
+    event.preventDefault();
+    setHostSpacePan(true);
+  });
+
+  window.addEventListener("keyup", (event) => {
+    if (event.code === "Space") {
+      setHostSpacePan(false);
+    }
+  });
+
+  window.addEventListener("blur", () => {
+    setHostSpacePan(false);
   });
 
   window.LinceWidgetHost = {

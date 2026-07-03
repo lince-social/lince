@@ -1,6 +1,8 @@
 pub mod colorscheme;
 
 mod application;
+#[cfg(test)]
+mod board_js_tests;
 mod domain;
 mod infrastructure;
 mod presentation;

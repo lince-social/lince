@@ -1,4 +1,5 @@
 import { attachBoardInteractions, groupBounds } from "./interactions.js";
+import { buildGroupPinUpdates, resolveMarqueeGroup } from "./group-logic.js";
 import { createGridConfig } from "./grid.js";
 import { createBoardStore } from "./store.js";
 import { createBoardViewport } from "./viewport.js";
@@ -1201,37 +1202,13 @@ function onMarqueePointerUp(event) {
     return;
   }
 
-  // Fully contained, unpinned, non-system world cards only.
-  const members = store
-    .getCards()
-    .filter(
-      (card) =>
-        card.pinned !== true &&
-        card.system !== true &&
-        card.x >= rect.x &&
-        card.y >= rect.y &&
-        card.x + card.width <= rect.x + rect.width &&
-        card.y + card.height <= rect.y + rect.height,
-    );
-
-  if (!members.length) {
+  const group = resolveMarqueeGroup(store.getCards(), rect);
+  if (!group) {
     dissolveActiveGroup();
     return;
   }
 
-  // A marquee that matches a locked group exactly re-activates it as locked.
-  const lockedId = members[0].groupId;
-  const matchesLocked =
-    Boolean(lockedId) &&
-    members.every((card) => card.groupId === lockedId) &&
-    store.getCards().filter((card) => card.groupId === lockedId).length ===
-      members.length;
-
-  activeGroup = {
-    id: matchesLocked ? lockedId : `group-${crypto.randomUUID()}`,
-    cardIds: members.map((card) => card.id),
-    locked: matchesLocked,
-  };
+  activeGroup = group;
   syncGroupChrome();
 }
 
@@ -1283,27 +1260,12 @@ function pinActiveGroup() {
     }
   }
 
-  const memberIds = new Set(members.map((card) => card.id));
-  const next = store.getCards().map((card) => {
-    if (!memberIds.has(card.id)) {
-      return card;
-    }
-    const nodeRect = rectById.get(card.id);
-    return {
-      ...card,
-      pinned: true,
-      // Pinned cards are not valid group members, so pinning dissolves the
-      // group and clears any persisted lock.
-      groupId: null,
-      zIndex: 89,
-      ...(nodeRect
-        ? {
-            x: nodeRect.left - canvasRect.left,
-            y: nodeRect.top - canvasRect.top,
-          }
-        : {}),
-    };
-  });
+  const next = buildGroupPinUpdates(
+    store.getCards(),
+    members.map((card) => card.id),
+    rectById,
+    canvasRect,
+  );
 
   dissolveActiveGroup();
   store.replaceCards(next, { persist: true });

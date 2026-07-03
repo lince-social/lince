@@ -92,7 +92,7 @@ export function groupBounds(cards) {
   };
 }
 
-function buildGroupMoveCandidates(origins, delta, config) {
+export function buildGroupMoveCandidates(origins, delta, config) {
   const world = normalizeWorld(config.world);
   const box = groupBounds(origins);
   const dx = clamp(delta.x, -box.x, Math.max(-box.x, world.width - (box.x + box.width)));
@@ -110,7 +110,7 @@ function buildGroupMoveCandidates(origins, delta, config) {
   );
 }
 
-function buildGroupResizeCandidates(origins, handle, delta, config) {
+export function buildGroupResizeCandidates(origins, handle, delta, config) {
   const world = normalizeWorld(config.world);
   const base = groupBounds(origins);
   let left = base.x;

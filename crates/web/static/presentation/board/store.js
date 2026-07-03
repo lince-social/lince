@@ -290,6 +290,8 @@ function exportCard(card) {
     pinned,
     system,
     zIndex,
+    groupId,
+    abiListen,
   } = card;
 
   return {
@@ -314,6 +316,10 @@ function exportCard(card) {
     pinned: pinned === true,
     system: system === true,
     zIndex: Number(zIndex) || (pinned ? 50 : 1),
+    groupId: groupId || null,
+    abiListen: Array.isArray(abiListen)
+      ? abiListen.map((topic) => String(topic)).filter(Boolean)
+      : [],
   };
 }
 
@@ -360,6 +366,8 @@ function cardTemplate(index, centerPoint, config) {
     pinned: false,
     system: false,
     zIndex: 1,
+    groupId: null,
+    abiListen: [],
     ...position,
   };
 }
@@ -562,6 +570,9 @@ export function createBoardStore({
               : Number(cardDefinition.viewId) || null,
           streamsEnabled: cardDefinition?.streamsEnabled !== false,
           widgetState: cloneJsonValue(cardDefinition?.widgetState, {}),
+          abiListen: Array.isArray(cardDefinition?.abiListen)
+            ? cardDefinition.abiListen
+            : [],
           ...requestedSize,
           ...position,
         },
@@ -738,6 +749,69 @@ export function createBoardStore({
     setGlobalStreamsEnabled(enabled, options = {}) {
       state.globalStreamsEnabled = Boolean(enabled);
       return commit(options);
+    },
+    setCardsGroup(cardIds, groupId, options = {}) {
+      const ids = new Set(cardIds);
+      const activeWorkspace = getActiveWorkspace();
+      let changed = false;
+      activeWorkspace.cards = activeWorkspace.cards.map((card) => {
+        if (!ids.has(card.id)) {
+          return card;
+        }
+        changed = true;
+        return { ...card, groupId: groupId || null };
+      });
+      if (!changed) {
+        return null;
+      }
+      return commit(options);
+    },
+    reorderCard(cardId, direction, options = {}) {
+      for (const workspace of state.workspaces) {
+        const card = workspace.cards.find((entry) => entry.id === cardId);
+        if (!card) {
+          continue;
+        }
+        if (card.system === true) {
+          return null;
+        }
+
+        // Reorder only within the card's layer band: unpinned cards occupy
+        // z 1..49, pinned cards 50..89; system shell UI (90+) stays above.
+        const layer = workspace.cards
+          .filter(
+            (entry) => entry.pinned === card.pinned && entry.system !== true,
+          )
+          .sort((a, b) => (Number(a.zIndex) || 1) - (Number(b.zIndex) || 1));
+
+        const from = layer.indexOf(card);
+        const to =
+          direction === "front"
+            ? layer.length - 1
+            : direction === "back"
+              ? 0
+              : direction === "forward"
+                ? Math.min(from + 1, layer.length - 1)
+                : direction === "backward"
+                  ? Math.max(from - 1, 0)
+                  : from;
+        if (to === from) {
+          return null;
+        }
+
+        layer.splice(from, 1);
+        layer.splice(to, 0, card);
+
+        const base = card.pinned === true ? 50 : 1;
+        const cap = card.pinned === true ? 90 : 50;
+        layer.forEach((entry, index) => {
+          entry.zIndex = Math.min(base + index, cap - 1);
+        });
+        commit(options);
+        return cloneCard(card);
+      }
+
+      return null;
     },
     updateCard(cardId, updater, options = {}) {
       const mutator = typeof updater === "function" ? updater : null;

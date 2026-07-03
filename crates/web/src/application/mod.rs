@@ -1,5 +1,7 @@
 pub mod ai_builder;
 pub mod backend_api;
+pub mod home_manager_identity;
+pub mod home_manager_widget;
 pub mod kanban_actions;
 pub mod kanban_filters;
 pub mod kanban_identity;

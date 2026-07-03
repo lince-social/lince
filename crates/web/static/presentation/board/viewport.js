@@ -166,8 +166,29 @@ export function createBoardViewport({
     emitCameraChanged();
   }
 
+  function cardBlocksWheel(excludedCard) {
+    // A card opts out of canvas panning so its own content (e.g. a widget
+    // iframe) can handle the wheel natively. But in edit mode the widget
+    // iframe is set to pointer-events: none so card-dragging takes
+    // priority, which means it can never actually receive that wheel
+    // event - the browser routes it to the card underneath instead. In
+    // that case there's nothing to hand the scroll to, so fall through
+    // and let the canvas pan rather than silently dropping the input.
+    const frame = excludedCard.querySelector(".package-widget__frame");
+    if (!frame) {
+      return true;
+    }
+
+    return getComputedStyle(frame).pointerEvents !== "none";
+  }
+
   function handleWheel(event) {
     if (event.defaultPrevented) {
+      return;
+    }
+
+    const excludedCard = event.target?.closest?.(".panzoom-exclude");
+    if (excludedCard && cardBlocksWheel(excludedCard)) {
       return;
     }
 

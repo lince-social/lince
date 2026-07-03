@@ -1,6 +1,8 @@
 use {
     crate::{
         application::{
+            home_manager_identity::is_supported_home_manager_package_filename,
+            home_manager_widget::HomeManagerWidgetError,
             kanban_actions::{
                 CreateCommentRequest, CreateRecordRequest, CreateResourceRefRequest,
                 DeleteCommentRequest, DeleteRecordRequest, DeleteResourceRefRequest,
@@ -107,6 +109,20 @@ pub async fn get_widget_contract(
                 .await
                 .map_err(map_transfer_widget_error)?,
         )),
+        WidgetKind::HomeManager => Ok(Json(serde_json::json!({
+            "widget": {
+                "instanceId": instance_id,
+                "packageName": "home-manager.html"
+            },
+            "actions": [
+                "home-manager-list-alimenta",
+                "home-manager-create-alimentum",
+                "home-manager-update-alimentum"
+            ],
+            "dataContract": {
+                "alimentumExtensionNamespace": "nutrition.alimentum.v1"
+            }
+        }))),
     }
 }
 
@@ -144,6 +160,12 @@ pub async fn get_widget_stream(
             ));
         }
         WidgetKind::Transfer => render_transfer_stream(state.transfer_widget.subscribe_changes()),
+        WidgetKind::HomeManager => {
+            return Err(api_error(
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "Home Manager nao usa stream nesta versao.",
+            ));
+        }
     };
 
     Ok(response)
@@ -191,6 +213,14 @@ pub async fn post_widget_action(
                 .action(session_token.as_deref(), &instance_id, &action, payload)
                 .await
                 .map_err(map_transfer_widget_error)?;
+            return Ok(Json(outcome));
+        }
+        WidgetKind::HomeManager => {
+            let outcome = state
+                .home_manager_widget
+                .action(&instance_id, &action, payload)
+                .await
+                .map_err(map_home_manager_widget_error)?;
             return Ok(Json(outcome));
         }
         WidgetKind::Kanban => {}
@@ -665,11 +695,29 @@ fn map_transfer_widget_error(
     }
 }
 
+fn map_home_manager_widget_error(
+    error: HomeManagerWidgetError,
+) -> (
+    StatusCode,
+    Json<crate::presentation::http::api_error::ApiError>,
+) {
+    match error {
+        HomeManagerWidgetError::NotFound(message) => api_error(StatusCode::NOT_FOUND, message),
+        HomeManagerWidgetError::Invalid(message) => {
+            api_error(StatusCode::UNPROCESSABLE_ENTITY, message)
+        }
+        HomeManagerWidgetError::Internal(message) => {
+            api_error(StatusCode::INTERNAL_SERVER_ERROR, message)
+        }
+    }
+}
+
 enum WidgetKind {
     Kanban,
     Trail,
     KarmaOrchestra,
     Transfer,
+    HomeManager,
 }
 
 fn widget_kind(board_state: &BoardState, instance_id: &str) -> ApiResult<WidgetKind> {
@@ -687,6 +735,8 @@ fn widget_kind(board_state: &BoardState, instance_id: &str) -> ApiResult<WidgetK
         Ok(WidgetKind::KarmaOrchestra)
     } else if is_supported_transfer_package_filename(&card.package_name) {
         Ok(WidgetKind::Transfer)
+    } else if is_supported_home_manager_package_filename(&card.package_name) {
+        Ok(WidgetKind::HomeManager)
     } else {
         Err(api_error(
             StatusCode::UNPROCESSABLE_ENTITY,

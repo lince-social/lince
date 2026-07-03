@@ -1,6 +1,9 @@
 import {
+  MIN_CARD_SIZE,
   buildMoveCandidate,
   buildResizeCandidate,
+  clampCard,
+  normalizeWorld,
   screenDeltaToWorldDelta,
 } from "./grid.js";
 
@@ -68,6 +71,109 @@ function buildPinnedResizeCandidate(origin, handle, delta, bounds) {
   };
 }
 
+export function groupBounds(cards) {
+  let left = Infinity;
+  let top = Infinity;
+  let right = -Infinity;
+  let bottom = -Infinity;
+
+  for (const card of cards) {
+    left = Math.min(left, card.x);
+    top = Math.min(top, card.y);
+    right = Math.max(right, card.x + card.width);
+    bottom = Math.max(bottom, card.y + card.height);
+  }
+
+  return {
+    x: left,
+    y: top,
+    width: Math.max(1, right - left),
+    height: Math.max(1, bottom - top),
+  };
+}
+
+function buildGroupMoveCandidates(origins, delta, config) {
+  const world = normalizeWorld(config.world);
+  const box = groupBounds(origins);
+  const dx = clamp(delta.x, -box.x, Math.max(-box.x, world.width - (box.x + box.width)));
+  const dy = clamp(delta.y, -box.y, Math.max(-box.y, world.height - (box.y + box.height)));
+
+  return origins.map((card) =>
+    clampCard(
+      {
+        ...card,
+        x: card.x + dx,
+        y: card.y + dy,
+      },
+      config,
+    ),
+  );
+}
+
+function buildGroupResizeCandidates(origins, handle, delta, config) {
+  const world = normalizeWorld(config.world);
+  const base = groupBounds(origins);
+  let left = base.x;
+  let right = base.x + base.width;
+  let top = base.y;
+  let bottom = base.y + base.height;
+
+  if (handle?.includes("w")) {
+    left += delta.x;
+  }
+  if (handle?.includes("e")) {
+    right += delta.x;
+  }
+  if (handle?.includes("n")) {
+    top += delta.y;
+  }
+  if (handle?.includes("s")) {
+    bottom += delta.y;
+  }
+
+  // Stop scaling down once any member would go below the single-card minimum,
+  // so members never drift apart from the proportional layout.
+  const minScaleX = Math.max(
+    ...origins.map((card) => MIN_CARD_SIZE.width / Math.max(1, card.width)),
+  );
+  const minScaleY = Math.max(
+    ...origins.map((card) => MIN_CARD_SIZE.height / Math.max(1, card.height)),
+  );
+  const minWidth = base.width * Math.min(1, minScaleX);
+  const minHeight = base.height * Math.min(1, minScaleY);
+
+  const width = clamp(Math.abs(right - left), minWidth, world.width);
+  const height = clamp(Math.abs(bottom - top), minHeight, world.height);
+  if (handle?.includes("w")) {
+    left = right - width;
+  } else {
+    right = left + width;
+  }
+  if (handle?.includes("n")) {
+    top = bottom - height;
+  } else {
+    bottom = top + height;
+  }
+  left = clamp(left, 0, Math.max(0, world.width - width));
+  top = clamp(top, 0, Math.max(0, world.height - height));
+
+  const scaleX = width / base.width;
+  const scaleY = height / base.height;
+
+  return origins.map((card) =>
+    clampCard(
+      {
+        ...card,
+        x: left + (card.x - base.x) * scaleX,
+        y: top + (card.y - base.y) * scaleY,
+        width: card.width * scaleX,
+        height: card.height * scaleY,
+      },
+      config,
+    ),
+  );
+}
+
 export function attachBoardInteractions({
   boardElement,
   config,
@@ -76,6 +182,8 @@ export function attachBoardInteractions({
   isEditMode,
   isCardEditable,
   getScale,
+  resolveCardGroupIds,
+  getActiveGroupCardIds,
   onInteractionStart,
   onInteractionEnd,
   onEdgeTransferPreview,
@@ -104,8 +212,57 @@ export function attachBoardInteractions({
     return 0;
   }
 
+  function beginInteraction(event, fields) {
+    interaction = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      scale: typeof getScale === "function" ? getScale() : 1,
+      ...fields,
+    };
+
+    document.documentElement.classList.add("pointer-locked");
+    onInteractionStart(interaction.cardId, interaction.type);
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
+  }
+
   function onPointerDown(event) {
     if (!isEditMode() || event.button !== 0) {
+      return;
+    }
+
+    const groupHandle = event.target.closest("[data-group-resize-handle]");
+    if (groupHandle) {
+      const memberIds =
+        typeof getActiveGroupCardIds === "function"
+          ? getActiveGroupCardIds()
+          : null;
+      const cards = readCards();
+      const members = Array.isArray(memberIds)
+        ? cards.filter(
+            (entry) => memberIds.includes(entry.id) && entry.pinned !== true,
+          )
+        : [];
+      if (!members.length) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      beginInteraction(event, {
+        type: "group-resize",
+        handle: groupHandle.dataset.groupResizeHandle || "se",
+        cardId: members[0].id,
+        cardIds: members.map((entry) => entry.id),
+        originCards: members.map(cloneCard),
+        origin: cloneCard(members[0]),
+        currents: members.map(cloneCard),
+        current: cloneCard(members[0]),
+        baseCards: cards.map(cloneCard),
+      });
       return;
     }
 
@@ -134,29 +291,50 @@ export function attachBoardInteractions({
       return;
     }
 
+    const groupIds =
+      typeof resolveCardGroupIds === "function"
+        ? resolveCardGroupIds(card)
+        : null;
+    const members =
+      Array.isArray(groupIds) && groupIds.length > 1 && card.pinned !== true
+        ? cards.filter(
+            (entry) =>
+              groupIds.includes(entry.id) &&
+              entry.pinned !== true &&
+              entry.system !== true,
+          )
+        : null;
+
     event.preventDefault();
     event.stopPropagation();
 
-    interaction = {
-      pointerId: event.pointerId,
-      type: handle ? "resize" : "move",
-      handle: handle?.dataset.resizeHandle || null,
-      cardId: card.id,
-      origin: cloneCard(card),
-      current: cloneCard(card),
-      baseCards: cards.map(cloneCard),
-      startX: event.clientX,
-      startY: event.clientY,
-      scale: typeof getScale === "function" ? getScale() : 1,
-    };
+    if (members && members.length > 1) {
+      beginInteraction(event, {
+        type: handle ? "group-resize" : "group-move",
+        handle: handle?.dataset.resizeHandle || null,
+        cardId: card.id,
+        cardIds: members.map((entry) => entry.id),
+        originCards: members.map(cloneCard),
+        origin: cloneCard(card),
+        currents: members.map(cloneCard),
+        current: cloneCard(card),
+        baseCards: cards.map(cloneCard),
+      });
+    } else {
+      beginInteraction(event, {
+        type: handle ? "resize" : "move",
+        handle: handle?.dataset.resizeHandle || null,
+        cardId: card.id,
+        cardIds: [card.id],
+        originCards: [cloneCard(card)],
+        origin: cloneCard(card),
+        currents: [cloneCard(card)],
+        current: cloneCard(card),
+        baseCards: cards.map(cloneCard),
+      });
+    }
 
     cardElement.setPointerCapture?.(event.pointerId);
-    document.documentElement.classList.add("pointer-locked");
-    onInteractionStart(interaction.cardId, interaction.type);
-
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", onPointerUp);
-    window.addEventListener("pointercancel", onPointerUp);
   }
 
   function onPointerMove(event) {
@@ -175,32 +353,53 @@ export function attachBoardInteractions({
         ? screenDelta
         : screenDeltaToWorldDelta(screenDelta.x, screenDelta.y, interaction.scale);
 
-    const candidate =
-      interaction.origin.pinned === true
-        ? interaction.type === "move"
-          ? buildPinnedMoveCandidate(interaction.origin, delta, boardBounds(boardElement))
-          : buildPinnedResizeCandidate(
-              interaction.origin,
-              interaction.handle,
-              delta,
-              boardBounds(boardElement),
-            )
-        : interaction.type === "move"
-          ? buildMoveCandidate(interaction.origin, delta, config)
-          : buildResizeCandidate(
-              interaction.origin,
-              interaction.handle,
-              delta,
-              config,
-            );
+    let candidates;
+    if (interaction.type === "group-move") {
+      candidates = buildGroupMoveCandidates(
+        interaction.originCards,
+        delta,
+        config,
+      );
+    } else if (interaction.type === "group-resize") {
+      candidates = buildGroupResizeCandidates(
+        interaction.originCards,
+        interaction.handle,
+        delta,
+        config,
+      );
+    } else {
+      const candidate =
+        interaction.origin.pinned === true
+          ? interaction.type === "move"
+            ? buildPinnedMoveCandidate(interaction.origin, delta, boardBounds(boardElement))
+            : buildPinnedResizeCandidate(
+                interaction.origin,
+                interaction.handle,
+                delta,
+                boardBounds(boardElement),
+              )
+          : interaction.type === "move"
+            ? buildMoveCandidate(interaction.origin, delta, config)
+            : buildResizeCandidate(
+                interaction.origin,
+                interaction.handle,
+                delta,
+                config,
+              );
+      interaction.current = candidate;
+      candidates = [candidate];
+    }
 
     if (interaction.type === "move" && interaction.origin.pinned !== true) {
       onEdgeTransferPreview?.(resolveEdgeTransferDirection(event.clientX));
     }
 
-    interaction.current = candidate;
-    const preview = interaction.baseCards.map((card) =>
-      card.id === interaction.cardId ? candidate : cloneCard(card),
+    interaction.currents = candidates;
+    const candidateById = new Map(
+      candidates.map((candidate) => [candidate.id, candidate]),
+    );
+    const preview = interaction.baseCards.map(
+      (card) => candidateById.get(card.id) || cloneCard(card),
     );
 
     replaceCards(preview, { persist: false });
@@ -229,8 +428,11 @@ export function attachBoardInteractions({
       }
     }
 
-    const finalLayout = interaction.baseCards.map((card) =>
-      card.id === interaction.cardId ? interaction.current : cloneCard(card),
+    const candidateById = new Map(
+      interaction.currents.map((candidate) => [candidate.id, candidate]),
+    );
+    const finalLayout = interaction.baseCards.map(
+      (card) => candidateById.get(card.id) || cloneCard(card),
     );
 
     replaceCards(finalLayout, { persist: true });

@@ -1,0 +1,3 @@
+we could show a list of records in a big expansive canvas in Y axis, each record has for each number in x axis an indicator of a karma that affects it like a line that for quantity of that record smaller than 10 is all painted, and for above or equal to 10 is not painted up to 15 upwards (painted) and those are conditions. If we have for that condition a karma, we see an arrowline pointer to the thing that it affects (karma consequence) like setting quantity of another record to a known value/range or an unknown one.
+
+if in 2d i can see the effect on record, for 3d we need to choose if using for time or for the satelite tables of karma: frequency, command, query, sum...

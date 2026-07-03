@@ -18,6 +18,7 @@ const WORKSPACE_FILE_NAME: &str = "workspace.json";
 const PACKAGES_DIR_NAME: &str = "packages";
 const WORKSPACE_ARCHIVE_EXTENSION: &str = ".workspace.sand";
 const LEGACY_WORKSPACE_ARCHIVE_EXTENSION: &str = ".workspace.lince";
+const GROUP_ARCHIVE_EXTENSION: &str = ".group.sand";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -94,7 +95,7 @@ pub fn parse_workspace_archive(
     bytes: &[u8],
 ) -> Result<ImportedWorkspaceArchive, String> {
     if !is_workspace_archive_filename(filename) {
-        return Err("O arquivo precisa ter extensao .workspace.sand.".into());
+        return Err("O arquivo precisa ter extensao .workspace.sand ou .group.sand.".into());
     }
 
     let cursor = Cursor::new(bytes);
@@ -206,6 +207,7 @@ fn is_workspace_archive_filename(filename: &str) -> bool {
     let lowercase = filename.trim().to_ascii_lowercase();
     lowercase.ends_with(WORKSPACE_ARCHIVE_EXTENSION)
         || lowercase.ends_with(LEGACY_WORKSPACE_ARCHIVE_EXTENSION)
+        || lowercase.ends_with(GROUP_ARCHIVE_EXTENSION)
 }
 
 fn unique_packages(packages: &[LincePackage]) -> Vec<LincePackage> {
@@ -278,6 +280,8 @@ mod tests {
                 pinned: false,
                 system: false,
                 z_index: 1,
+                group_id: None,
+                abi_listen: Vec::new(),
             }],
         };
 

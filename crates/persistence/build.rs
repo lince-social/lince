@@ -217,9 +217,7 @@ fn manual_migration_creates_table(migrations_dir: &Path, table_name: &str) -> Re
         }
         let sql = fs::read_to_string(path)?.to_lowercase();
         let normalized = sql.split_whitespace().collect::<Vec<_>>().join(" ");
-        if normalized.contains(&create_table)
-            || normalized.contains(&create_table_if_not_exists)
-        {
+        if normalized.contains(&create_table) || normalized.contains(&create_table_if_not_exists) {
             return Ok(true);
         }
     }

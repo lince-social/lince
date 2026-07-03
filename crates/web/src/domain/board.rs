@@ -38,6 +38,10 @@ pub struct BoardCard {
     pub system: bool,
     #[serde(default = "default_card_z_index")]
     pub z_index: i32,
+    #[serde(default)]
+    pub group_id: Option<String>,
+    #[serde(default)]
+    pub abi_listen: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -366,6 +370,8 @@ fn package_card(
         pinned: false,
         system: false,
         z_index: default_card_z_index(),
+        group_id: None,
+        abi_listen: Vec::new(),
     }
 }
 

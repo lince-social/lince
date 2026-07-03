@@ -21,8 +21,13 @@ pub async fn execute_record_insert_returning_id(
     if outcome.rows_affected > 0
         && let Some(id) = outcome.last_insert_rowid
     {
-        handle_record_change(services, [id as u32], RecordSyncAction::Insert, SyncOrigin::Local)
-            .await?;
+        handle_record_change(
+            services,
+            [id as u32],
+            RecordSyncAction::Insert,
+            SyncOrigin::Local,
+        )
+        .await?;
     }
     Ok(outcome)
 }
@@ -313,11 +318,7 @@ pub async fn table_delete_row(
         "karma" | "karma_condition" | "karma_consequence"
     );
     let deleted_record_identity = if table == "record" {
-        Some(crate::record_sync::capture_record_identity(
-            services.clone(),
-            id as u32,
-        )
-        .await?)
+        Some(crate::record_sync::capture_record_identity(services.clone(), id as u32).await?)
     } else {
         None
     };
@@ -778,13 +779,11 @@ async fn resolve_record_sidecar_root_record_id(
         "work_metadata" => {
             "SELECT owner_id FROM work_metadata WHERE id = ? AND owner_kind = 'record'".to_string()
         }
-        "work_assignment" => {
-            "SELECT metadata.owner_id
+        "work_assignment" => "SELECT metadata.owner_id
              FROM work_assignment assignment
              JOIN work_metadata metadata ON metadata.id = assignment.work_metadata_id
              WHERE assignment.id = ? AND metadata.owner_kind = 'record'"
-                .to_string()
-        }
+            .to_string(),
         "work_subject" => return Ok(None),
         _ => {
             return Err(Error::new(

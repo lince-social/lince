@@ -426,6 +426,7 @@ fn render_app_modals(bootstrap: &AppBootstrap) -> Markup {
         (render_local_packages_modal_backdrop())
         (render_dna_packages_modal_backdrop())
         (render_delete_card_modal_backdrop())
+        (render_group_publish_modal_backdrop())
             (render_server_login_modal_backdrop())
             (render_notifications_panel(bootstrap))
             (render_widget_config_modal_backdrop())
@@ -721,6 +722,44 @@ fn render_delete_card_modal_backdrop() -> Markup {
     }
 }
 
+fn render_group_publish_modal_backdrop() -> Markup {
+    html! {
+        div id="group-publish-modal-backdrop" class="confirm-modal-backdrop" hidden="" {
+            section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="group-publish-modal-title" {
+                header class="confirm-modal__header" {
+                    div class="confirm-modal__lockup" {
+                        div class="confirm-modal__eyebrow" { "Publish group" }
+                        h2 id="group-publish-modal-title" class="confirm-modal__title" { "Publicar grupo?" }
+                        p class="confirm-modal__description" {
+                            "O grupo sera exportado como um unico arquivo .group.sand. Ao importar, os cards entram juntos no workspace atual."
+                        }
+                    }
+                    (render_modal_close_button("group-publish-close-button", "Fechar modal de publicacao"))
+                }
+                div class="confirm-modal__body" {
+                    div class="confirm-modal__card-preview" {
+                        span class="confirm-modal__card-label" { "Grupo" }
+                        strong id="group-publish-count" class="confirm-modal__card-name" {}
+                    }
+                    label class="confirm-modal__card-preview" for="group-publish-name" {
+                        span class="confirm-modal__card-label" { "Nome do grupo" }
+                        input id="group-publish-name" class="server-login__input" type="text" maxlength="80" placeholder="grupo";
+                    }
+                }
+                (render_modal_footer(
+                    "group-publish-cancel-button",
+                    "Cancelar",
+                    "group-publish-confirm-button",
+                    "Publicar grupo",
+                    "modal-button--primary",
+                    "button",
+                    None,
+                ))
+            }
+        }
+    }
+}
+
 fn render_server_login_modal_backdrop() -> Markup {
     html! {
         div id="server-login-modal-backdrop" class="confirm-modal-backdrop" hidden="" {
@@ -953,6 +992,22 @@ fn render_widget_config_form() -> Markup {
                             small { "Desative para pausar apenas esse widget sem perder sua configuracao." }
                         }
                     }
+                    label
+                        id="widget-config-abi-field"
+                        class="startup-field"
+                        for="widget-config-abi-listen"
+                    {
+                        span class="startup-field__checkbox-copy" {
+                            strong { "ABI events (listen)" }
+                            small { "Topicos de eventos que esse sand escuta, separados por virgula (ex: recordClicked). Vazio = nao escuta nada." }
+                        }
+                        input
+                            id="widget-config-abi-listen"
+                            class="server-login__input"
+                            type="text"
+                            name="abi_listen"
+                            placeholder="recordClicked";
+                    }
                     div id="widget-config-preview-field" class="startup-field startup-field--stack" hidden="" {
                         label class="startup-field startup-field--checkbox" for="widget-config-watch-enabled" {
                             input
@@ -1031,7 +1086,7 @@ fn render_modal_footer(
 fn render_hidden_inputs(bootstrap_json: &str) -> Markup {
     html! {
         input id="package-import-input" type="file" accept=".html,.sand,.lince,text/html,application/zip" hidden="";
-        input id="workspace-import-input" type="file" accept=".workspace.sand,.workspace.lince,application/zip" hidden="";
+        input id="workspace-import-input" type="file" accept=".workspace.sand,.workspace.lince,.group.sand,application/zip" hidden="";
         script id="lince-bootstrap" type="application/json" { (PreEscaped(bootstrap_json)) }
     }
 }

@@ -3,6 +3,7 @@ const HOST_TO_WIDGET_STATE = "lince:bridge-state";
 const WIDGET_READY = "lince:widget-ready";
 const WIDGET_ACTION = "lince:widget-action";
 const WIDGET_ERROR = "lince:bridge-error";
+const WIDGET_EVENT = "lince:bridge-event";
 
 function apiPath(path) {
   if (path.startsWith("http://") || path.startsWith("https://")) {
@@ -175,6 +176,7 @@ export function createWidgetBridge({
   getFrames,
   initialState,
   getCardMeta,
+  getCardAbiListen,
   setCardState,
   patchCardState,
   setCardStreamsEnabled,
@@ -183,6 +185,39 @@ export function createWidgetBridge({
   onError,
 }) {
   let bridgeState = normalizeBridgeState(initialState);
+
+  function frameListensTo(instanceId, topic) {
+    if (!instanceId || typeof getCardAbiListen !== "function") {
+      return false;
+    }
+
+    // Enforcement, not convention: a sand only ever sees the topics its card
+    // was configured to listen to (default: nothing).
+    const listen = getCardAbiListen(instanceId);
+    return Array.isArray(listen) && listen.includes(topic);
+  }
+
+  function emitWidgetEvent(sourceInstanceId, topic, data) {
+    const eventMessage = {
+      type: WIDGET_EVENT,
+      payload: {
+        topic,
+        data: cloneJsonValue(data, null),
+        sourceInstanceId: sourceInstanceId || "",
+      },
+    };
+
+    for (const frame of getFrames()) {
+      const frameInstanceId = frame?.dataset?.packageInstanceId || "";
+      if (frameInstanceId === eventMessage.payload.sourceInstanceId) {
+        continue;
+      }
+      if (!frameListensTo(frameInstanceId, topic)) {
+        continue;
+      }
+      frame.contentWindow?.postMessage(eventMessage, "*");
+    }
+  }
 
   function render(state) {
     bridgeState = normalizeBridgeState(state);
@@ -208,6 +243,14 @@ export function createWidgetBridge({
     }
 
     try {
+      if (action === "emit-event") {
+        const topic = String(message.payload?.topic || "").trim();
+        if (topic) {
+          emitWidgetEvent(message.instanceId || "", topic, message.payload?.data);
+        }
+        return;
+      }
+
       if (action === "print") {
         const nextState = await requestBridgePrint(
           message.instanceId || "widget-desconhecido",

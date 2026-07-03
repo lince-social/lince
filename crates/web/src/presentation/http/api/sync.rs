@@ -1,13 +1,12 @@
 use {
     crate::{application::state::AppState, presentation::http::api_error::api_error},
     axum::{
+        Json,
         extract::{
-            Query,
-            State,
+            Query, State,
             ws::{Message, WebSocket, WebSocketUpgrade},
         },
         http::{HeaderMap, StatusCode, header},
-        Json,
         response::IntoResponse,
     },
     base64::{Engine as _, engine::general_purpose::STANDARD as BASE64},
@@ -331,8 +330,7 @@ pub async fn record_sync_operations(
         Err(error) => {
             sync_log(format!(
                 "record sync: operations request failed owners={:?} since={:?} error={error}",
-                query.owner_organ_id,
-                query.since_clock
+                query.owner_organ_id, query.since_clock
             ));
             api_error(StatusCode::BAD_GATEWAY, error.to_string()).into_response()
         }
@@ -398,7 +396,9 @@ pub async fn apply_record_sync_operations(
             Json(response).into_response()
         }
         Err(error) => {
-            sync_log(format!("record sync: applying pushed operations failed error={error}"));
+            sync_log(format!(
+                "record sync: applying pushed operations failed error={error}"
+            ));
             api_error(StatusCode::BAD_GATEWAY, error.to_string()).into_response()
         }
     }
@@ -503,7 +503,9 @@ pub async fn push_text_crdt_updates(
     }
     let actor_user_id = match i64::try_from(claims.user_id) {
         Ok(value) => Some(value),
-        Err(_) => return api_error(StatusCode::BAD_REQUEST, "user id is too large").into_response(),
+        Err(_) => {
+            return api_error(StatusCode::BAD_REQUEST, "user id is too large").into_response();
+        }
     };
     match apply_text_crdt_updates(&state, actor_user_id, payload).await {
         Ok(response) => {
@@ -514,7 +516,9 @@ pub async fn push_text_crdt_updates(
             Json(response).into_response()
         }
         Err(error) => {
-            sync_log(format!("text crdt sync: applying pushed updates failed error={error}"));
+            sync_log(format!(
+                "text crdt sync: applying pushed updates failed error={error}"
+            ));
             api_error(StatusCode::BAD_GATEWAY, error.to_string()).into_response()
         }
     }
@@ -704,7 +708,10 @@ async fn apply_text_crdt_update(
     if !matches!(update_kind.as_str(), "delta" | "snapshot") {
         return Err(sqlx_io("update_kind must be delta or snapshot"));
     }
-    if BASE64.decode(update.update_bytes_base64.as_bytes()).is_err() {
+    if BASE64
+        .decode(update.update_bytes_base64.as_bytes())
+        .is_err()
+    {
         return Err(sqlx_io("update_bytes_base64 is not valid base64"));
     }
     let update_clock = update.update_clock.unwrap_or_else(text_crdt_clock);
@@ -881,12 +888,9 @@ async fn run_record_sync_socket(
         let table_name = operation.table_name.clone();
         let row_sync_uid = operation.row_sync_uid.clone();
         let action = operation.action.clone();
-        if send_socket_frame(
-            &mut sender,
-            RecordSyncSocketFrame::Operation { operation },
-        )
-        .await
-        .is_err()
+        if send_socket_frame(&mut sender, RecordSyncSocketFrame::Operation { operation })
+            .await
+            .is_err()
         {
             tracing::warn!(
                 user_id = claims.user_id,
@@ -1010,7 +1014,11 @@ async fn build_snapshot(
         });
     }
 
-    for table in SYNC_TABLES.iter().copied().filter(|table| *table != "record") {
+    for table in SYNC_TABLES
+        .iter()
+        .copied()
+        .filter(|table| *table != "record")
+    {
         rows.extend(snapshot_sidecar_rows(state, table, &root_sync_uids).await?);
     }
 
@@ -1046,7 +1054,11 @@ async fn build_fingerprint(
         row.get::<Option<String>, _>("updated_at").hash(&mut hasher);
     }
 
-    for table in SYNC_TABLES.iter().copied().filter(|table| *table != "record") {
+    for table in SYNC_TABLES
+        .iter()
+        .copied()
+        .filter(|table| *table != "record")
+    {
         for row in fingerprint_sidecar_rows(state, table, &root_sync_uids).await? {
             row_count += 1;
             table.hash(&mut hasher);
@@ -1082,11 +1094,10 @@ async fn build_fingerprint(
         max_crdt_clock.hash(&mut hasher);
     }
 
-    let max_operation_clock = sqlx::query_scalar::<_, String>(
-        "SELECT MAX(operation_clock) FROM record_sync_operation",
-    )
-    .fetch_optional(&*state.services.db)
-    .await?;
+    let max_operation_clock =
+        sqlx::query_scalar::<_, String>("SELECT MAX(operation_clock) FROM record_sync_operation")
+            .fetch_optional(&*state.services.db)
+            .await?;
 
     Ok(RecordSyncFingerprintResponse {
         fingerprint: format!("{:016x}", hasher.finish()),
@@ -1105,14 +1116,30 @@ async fn fingerprint_sidecar_rows(
     }
     let roots_json = json!(root_sync_uids).to_string();
     let sql = match table {
-        "record_extension" => "SELECT t.sync_uid, t.updated_at FROM record_extension t JOIN record r ON r.id = t.record_id WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid",
-        "record_link" => "SELECT t.sync_uid, t.updated_at FROM record_link t JOIN record r ON r.id = t.record_id WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid",
-        "record_comment" => "SELECT t.sync_uid, t.updated_at FROM record_comment t JOIN record r ON r.id = t.record_id WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid",
-        "record_worklog" => "SELECT t.sync_uid, t.updated_at FROM record_worklog t JOIN record r ON r.id = t.record_id WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid",
-        "record_resource_ref" => "SELECT t.sync_uid, t.updated_at FROM record_resource_ref t JOIN record r ON r.id = t.record_id WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid",
-        "work_metadata" => "SELECT t.sync_uid, t.updated_at FROM work_metadata t JOIN record r ON r.id = t.owner_id AND t.owner_kind = 'record' WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid",
-        "work_subject" => "SELECT DISTINCT t.sync_uid, t.updated_at FROM work_subject t JOIN work_assignment wa ON wa.work_subject_id = t.id JOIN work_metadata wm ON wm.id = wa.work_metadata_id JOIN record r ON r.id = wm.owner_id AND wm.owner_kind = 'record' WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid",
-        "work_assignment" => "SELECT t.sync_uid, t.updated_at FROM work_assignment t JOIN work_metadata wm ON wm.id = t.work_metadata_id JOIN record r ON r.id = wm.owner_id AND wm.owner_kind = 'record' WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid",
+        "record_extension" => {
+            "SELECT t.sync_uid, t.updated_at FROM record_extension t JOIN record r ON r.id = t.record_id WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid"
+        }
+        "record_link" => {
+            "SELECT t.sync_uid, t.updated_at FROM record_link t JOIN record r ON r.id = t.record_id WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid"
+        }
+        "record_comment" => {
+            "SELECT t.sync_uid, t.updated_at FROM record_comment t JOIN record r ON r.id = t.record_id WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid"
+        }
+        "record_worklog" => {
+            "SELECT t.sync_uid, t.updated_at FROM record_worklog t JOIN record r ON r.id = t.record_id WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid"
+        }
+        "record_resource_ref" => {
+            "SELECT t.sync_uid, t.updated_at FROM record_resource_ref t JOIN record r ON r.id = t.record_id WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid"
+        }
+        "work_metadata" => {
+            "SELECT t.sync_uid, t.updated_at FROM work_metadata t JOIN record r ON r.id = t.owner_id AND t.owner_kind = 'record' WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid"
+        }
+        "work_subject" => {
+            "SELECT DISTINCT t.sync_uid, t.updated_at FROM work_subject t JOIN work_assignment wa ON wa.work_subject_id = t.id JOIN work_metadata wm ON wm.id = wa.work_metadata_id JOIN record r ON r.id = wm.owner_id AND wm.owner_kind = 'record' WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid"
+        }
+        "work_assignment" => {
+            "SELECT t.sync_uid, t.updated_at FROM work_assignment t JOIN work_metadata wm ON wm.id = t.work_metadata_id JOIN record r ON r.id = wm.owner_id AND wm.owner_kind = 'record' WHERE r.sync_uid IN (SELECT value FROM json_each(?)) ORDER BY t.sync_uid"
+        }
         _ => return Ok(Vec::new()),
     };
     Ok(sqlx::query(sql)
@@ -1143,7 +1170,11 @@ async fn ensure_snapshot_identities(state: &AppState, owners: &[i64]) -> Result<
         .await
         .map_err(sqlx::Error::Io)?;
 
-    for table in SYNC_TABLES.iter().copied().filter(|table| *table != "record") {
+    for table in SYNC_TABLES
+        .iter()
+        .copied()
+        .filter(|table| *table != "record")
+    {
         let sql = match table {
             "work_metadata" => {
                 "UPDATE work_metadata
@@ -1265,10 +1296,14 @@ async fn snapshot_sidecar_rows(
             value["root_record_sync_uid"] = Value::String(root_sync_uid.clone());
         }
         if table == "work_assignment" {
-            if let Some(uid) = related_sync_uid(state, "work_metadata", row.get("work_metadata_id")).await? {
+            if let Some(uid) =
+                related_sync_uid(state, "work_metadata", row.get("work_metadata_id")).await?
+            {
                 value["work_metadata_sync_uid"] = Value::String(uid);
             }
-            if let Some(uid) = related_sync_uid(state, "work_subject", row.get("work_subject_id")).await? {
+            if let Some(uid) =
+                related_sync_uid(state, "work_subject", row.get("work_subject_id")).await?
+            {
                 value["work_subject_sync_uid"] = Value::String(uid);
             }
         }
@@ -1359,7 +1394,9 @@ async fn apply_operations_from_peer(
     payload: RecordSyncApplyRequest,
 ) -> Result<RecordSyncApplyResponse, sqlx::Error> {
     let peer_organ_id = match payload.source_base_url.as_deref() {
-        Some(base_url) if !base_url.trim().is_empty() => ensure_peer_organ(state, base_url, payload.source_name.as_deref()).await?,
+        Some(base_url) if !base_url.trim().is_empty() => {
+            ensure_peer_organ(state, base_url, payload.source_name.as_deref()).await?
+        }
         _ => LOCAL_ORGAN_ID,
     };
     let mut applied = 0_usize;
@@ -1387,10 +1424,11 @@ async fn ensure_peer_organ(
     base_url: &str,
     name: Option<&str>,
 ) -> Result<i64, sqlx::Error> {
-    if let Some(id) = sqlx::query_scalar::<_, i64>("SELECT id FROM organ WHERE base_url = ? LIMIT 1")
-        .bind(base_url.trim().trim_end_matches('/'))
-        .fetch_optional(&*state.services.db)
-        .await?
+    if let Some(id) =
+        sqlx::query_scalar::<_, i64>("SELECT id FROM organ WHERE base_url = ? LIMIT 1")
+            .bind(base_url.trim().trim_end_matches('/'))
+            .fetch_optional(&*state.services.db)
+            .await?
     {
         return Ok(id);
     }
@@ -1402,10 +1440,13 @@ async fn ensure_peer_organ(
         .services
         .writer
         .execute_statement_returning_id(
-            "INSERT INTO organ(name, base_url, trust_state) VALUES (?, ?, 'known') RETURNING id".to_string(),
+            "INSERT INTO organ(name, base_url, trust_state) VALUES (?, ?, 'known') RETURNING id"
+                .to_string(),
             vec![
                 persistence::write_coordinator::SqlParameter::Text(name.to_string()),
-                persistence::write_coordinator::SqlParameter::Text(base_url.trim().trim_end_matches('/').to_string()),
+                persistence::write_coordinator::SqlParameter::Text(
+                    base_url.trim().trim_end_matches('/').to_string(),
+                ),
             ],
         )
         .await
@@ -1441,12 +1482,20 @@ async fn apply_operation(
     Ok(true)
 }
 
-async fn apply_delete(state: &AppState, operation: &RecordSyncOperationFrame) -> Result<(), sqlx::Error> {
+async fn apply_delete(
+    state: &AppState,
+    operation: &RecordSyncOperationFrame,
+) -> Result<(), sqlx::Error> {
     let sql = format!("DELETE FROM {} WHERE sync_uid = ?", operation.table_name);
     state
         .services
         .writer
-        .execute_statement(sql, vec![persistence::write_coordinator::SqlParameter::Text(operation.row_sync_uid.clone())])
+        .execute_statement(
+            sql,
+            vec![persistence::write_coordinator::SqlParameter::Text(
+                operation.row_sync_uid.clone(),
+            )],
+        )
         .await
         .map_err(sqlx::Error::Io)?;
     Ok(())
@@ -1595,7 +1644,9 @@ pub async fn run_record_sync_for_organ(
     }
 
     tracing::info!(organ_id, mode = %mode, "record sync: run started");
-    sync_log(format!("record sync: run started organ_id={organ_id} mode={mode}"));
+    sync_log(format!(
+        "record sync: run started organ_id={organ_id} mode={mode}"
+    ));
     if should_refresh_from_remote(&state, &organ.base_url, &bearer_token, organ_id, &owners).await?
     {
         pull_snapshot(&state, &organ.base_url, &bearer_token, organ_id, &owners).await?;
@@ -1608,7 +1659,9 @@ pub async fn run_record_sync_for_organ(
     }
     push_operations(&state, &organ.base_url, &bearer_token, organ_id, &owners).await?;
     tracing::info!(organ_id, mode = %mode, "record sync: run finished");
-    sync_log(format!("record sync: run finished organ_id={organ_id} mode={mode}"));
+    sync_log(format!(
+        "record sync: run finished organ_id={organ_id} mode={mode}"
+    ));
     Ok(())
 }
 
@@ -1627,7 +1680,9 @@ pub fn spawn_record_sync_tasks(state: AppState) {
                 .clone();
             if tokens.is_empty() {
                 if !logged_empty_tokens {
-                    sync_log("record sync: background tick found no authenticated remote organ tokens");
+                    sync_log(
+                        "record sync: background tick found no authenticated remote organ tokens",
+                    );
                     logged_empty_tokens = true;
                 }
                 continue;
@@ -1771,7 +1826,13 @@ async fn fetch_remote_fingerprint(
 ) -> Result<RecordSyncFingerprintResponse, String> {
     let remote_owners = owners
         .iter()
-        .map(|owner| if *owner == organ_id { LOCAL_ORGAN_ID } else { *owner })
+        .map(|owner| {
+            if *owner == organ_id {
+                LOCAL_ORGAN_ID
+            } else {
+                *owner
+            }
+        })
         .collect::<Vec<_>>();
     let path = sync_path("/sync/record/fingerprint", &remote_owners);
     let response = state
@@ -1846,7 +1907,13 @@ async fn pull_snapshot(
 ) -> Result<(), String> {
     let remote_owners = owners
         .iter()
-        .map(|owner| if *owner == organ_id { LOCAL_ORGAN_ID } else { *owner })
+        .map(|owner| {
+            if *owner == organ_id {
+                LOCAL_ORGAN_ID
+            } else {
+                *owner
+            }
+        })
         .collect::<Vec<_>>();
     let path = sync_path("/sync/record/snapshot", &remote_owners);
     sync_log(format!(
@@ -1893,7 +1960,11 @@ async fn pull_snapshot(
         };
         let _ = apply_upsert(state, &operation, organ_id).await;
     }
-    tracing::info!(organ_id, rows = snapshot.rows.len(), "record sync: snapshot applied");
+    tracing::info!(
+        organ_id,
+        rows = snapshot.rows.len(),
+        "record sync: snapshot applied"
+    );
     sync_log(format!(
         "record sync: snapshot applied organ_id={organ_id} rows={}",
         snapshot.rows.len()
@@ -1913,7 +1984,13 @@ async fn pull_operations(
         .map_err(|error| error.to_string())?;
     let remote_owners = owners
         .iter()
-        .map(|owner| if *owner == organ_id { LOCAL_ORGAN_ID } else { *owner })
+        .map(|owner| {
+            if *owner == organ_id {
+                LOCAL_ORGAN_ID
+            } else {
+                *owner
+            }
+        })
         .collect::<Vec<_>>();
     let mut path = sync_path("/sync/record/operations", &remote_owners);
     if let Some(since) = since {
@@ -1955,9 +2032,16 @@ async fn pull_operations(
         last_clock = Some(operation.operation_clock.clone());
     }
     if let Some(clock) = last_clock {
-        write_ack(state, organ_id, &clock).await.map_err(|error| error.to_string())?;
+        write_ack(state, organ_id, &clock)
+            .await
+            .map_err(|error| error.to_string())?;
     }
-    tracing::info!(organ_id, operations = payload.operations.len(), applied, "record sync: operations pulled");
+    tracing::info!(
+        organ_id,
+        operations = payload.operations.len(),
+        applied,
+        "record sync: operations pulled"
+    );
     sync_log(format!(
         "record sync: operations pulled organ_id={organ_id} operations={} applied={applied}",
         payload.operations.len()
@@ -2008,7 +2092,8 @@ async fn push_operations(
     }
     let mut pushed = 0_usize;
     if !remote_owned.is_empty() {
-        pushed += post_operations_to_remote(state, base_url, bearer_token, None, remote_owned).await?;
+        pushed +=
+            post_operations_to_remote(state, base_url, bearer_token, None, remote_owned).await?;
         mark_operations_sent(state, &remote_owned_uids)
             .await
             .map_err(|error| error.to_string())?;
@@ -2027,7 +2112,11 @@ async fn push_operations(
             .await
             .map_err(|error| error.to_string())?;
     }
-    tracing::info!(organ_id, operations = pushed, "record sync: operations pushed");
+    tracing::info!(
+        organ_id,
+        operations = pushed,
+        "record sync: operations pushed"
+    );
     sync_log(format!(
         "record sync: operations pushed organ_id={organ_id} operations={pushed}"
     ));
@@ -2056,8 +2145,8 @@ async fn sync_text_crdt_for_organ(
     ));
     let mut pulled = 0_usize;
     for document_uid in &documents {
-        pulled += pull_text_crdt_document(state, base_url, bearer_token, organ_id, document_uid)
-            .await?;
+        pulled +=
+            pull_text_crdt_document(state, base_url, bearer_token, organ_id, document_uid).await?;
     }
     let pushed = push_text_crdt_documents(state, base_url, bearer_token, organ_id, owners).await?;
     sync_log(format!(
@@ -2695,10 +2784,12 @@ async fn local_id_for_sync_uid(
     table: &str,
     sync_uid: &str,
 ) -> Result<Option<i64>, sqlx::Error> {
-    sqlx::query_scalar::<_, i64>(&format!("SELECT id FROM {table} WHERE sync_uid = ? LIMIT 1"))
-        .bind(sync_uid)
-        .fetch_optional(&*state.services.db)
-        .await
+    sqlx::query_scalar::<_, i64>(&format!(
+        "SELECT id FROM {table} WHERE sync_uid = ? LIMIT 1"
+    ))
+    .bind(sync_uid)
+    .fetch_optional(&*state.services.db)
+    .await
 }
 
 async fn ack_clock(state: &AppState, organ_id: i64) -> Result<Option<String>, sqlx::Error> {
@@ -2730,7 +2821,8 @@ async fn write_ack(state: &AppState, organ_id: i64, clock: &str) -> Result<(), s
 
 fn remap_snapshot_row_for_local(row: &mut RecordSyncRowFrame, organ_id: i64) {
     row.row_sync_uid = remap_uid_prefix(&row.row_sync_uid, LOCAL_ORGAN_ID, organ_id);
-    row.root_record_sync_uid = remap_uid_prefix(&row.root_record_sync_uid, LOCAL_ORGAN_ID, organ_id);
+    row.root_record_sync_uid =
+        remap_uid_prefix(&row.root_record_sync_uid, LOCAL_ORGAN_ID, organ_id);
     remap_row_uid_fields(&mut row.row, LOCAL_ORGAN_ID, organ_id);
     remap_row_owner(&mut row.row, LOCAL_ORGAN_ID, organ_id);
 }
@@ -2761,9 +2853,13 @@ fn remap_operation_for_remote(operation: &mut RecordSyncOperationFrame, organ_id
 }
 
 fn remap_operation_for_receiver(operation: &mut RecordSyncOperationFrame, peer_organ_id: i64) {
-    operation.root_record_sync_uid =
-        remap_uid_prefix(&operation.root_record_sync_uid, LOCAL_ORGAN_ID, peer_organ_id);
-    operation.row_sync_uid = remap_uid_prefix(&operation.row_sync_uid, LOCAL_ORGAN_ID, peer_organ_id);
+    operation.root_record_sync_uid = remap_uid_prefix(
+        &operation.root_record_sync_uid,
+        LOCAL_ORGAN_ID,
+        peer_organ_id,
+    );
+    operation.row_sync_uid =
+        remap_uid_prefix(&operation.row_sync_uid, LOCAL_ORGAN_ID, peer_organ_id);
     if let Ok(mut row) = serde_json::from_str::<Value>(&operation.field_payload_json) {
         remap_row_uid_fields(&mut row, LOCAL_ORGAN_ID, peer_organ_id);
         remap_row_owner(&mut row, LOCAL_ORGAN_ID, peer_organ_id);
@@ -2832,7 +2928,9 @@ fn text(value: String) -> persistence::write_coordinator::SqlParameter {
 }
 
 fn optional_text(value: Option<String>) -> persistence::write_coordinator::SqlParameter {
-    value.map(text).unwrap_or(persistence::write_coordinator::SqlParameter::Null)
+    value
+        .map(text)
+        .unwrap_or(persistence::write_coordinator::SqlParameter::Null)
 }
 
 fn int(value: i64) -> persistence::write_coordinator::SqlParameter {
@@ -2840,7 +2938,9 @@ fn int(value: i64) -> persistence::write_coordinator::SqlParameter {
 }
 
 fn optional_int(value: Option<i64>) -> persistence::write_coordinator::SqlParameter {
-    value.map(int).unwrap_or(persistence::write_coordinator::SqlParameter::Null)
+    value
+        .map(int)
+        .unwrap_or(persistence::write_coordinator::SqlParameter::Null)
 }
 
 async fn send_socket_frame<S>(sender: &mut S, frame: RecordSyncSocketFrame) -> Result<(), ()>
@@ -2848,5 +2948,8 @@ where
     S: futures::Sink<Message> + Unpin,
 {
     let payload = serde_json::to_string(&frame).map_err(|_| ())?;
-    sender.send(Message::Text(payload.into())).await.map_err(|_| ())
+    sender
+        .send(Message::Text(payload.into()))
+        .await
+        .map_err(|_| ())
 }

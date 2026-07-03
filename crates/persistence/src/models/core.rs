@@ -15,11 +15,17 @@ pub struct RecordRow {
     pub quantity: f64,
     pub head: Option<String>,
     pub body: Option<String>,
-    #[table(references = "organ(id)", check = "owner_organ_id IS NULL OR owner_organ_id > 0")]
+    #[table(
+        references = "organ(id)",
+        check = "owner_organ_id IS NULL OR owner_organ_id > 0"
+    )]
     pub owner_organ_id: Option<i64>,
     #[table(check = "sync_uid IS NULL OR length(trim(sync_uid)) > 0")]
     pub sync_uid: Option<String>,
-    #[table(references = "organ(id)", check = "origin_organ_id IS NULL OR origin_organ_id > 0")]
+    #[table(
+        references = "organ(id)",
+        check = "origin_organ_id IS NULL OR origin_organ_id > 0"
+    )]
     pub origin_organ_id: Option<i64>,
     #[table(
         default = "CURRENT_TIMESTAMP",
@@ -223,7 +229,9 @@ pub struct TransferIdentityRow {
     pub source_base_url: Option<String>,
     pub topic_text: Option<String>,
     pub agreement_type: Option<String>,
-    #[table(check = "agreement_percentage IS NULL OR (agreement_percentage >= 0 AND agreement_percentage <= 100)")]
+    #[table(
+        check = "agreement_percentage IS NULL OR (agreement_percentage >= 0 AND agreement_percentage <= 100)"
+    )]
     pub agreement_percentage: Option<i64>,
     #[table(default = "CURRENT_TIMESTAMP")]
     pub created_at: String,
@@ -678,9 +686,15 @@ pub struct MessageRow {
     pub event_id: Option<i64>,
     #[table(check = "length(trim(body)) > 0")]
     pub body: String,
-    #[table(default = "CURRENT_TIMESTAMP", check = "julianday(created_at) IS NOT NULL")]
+    #[table(
+        default = "CURRENT_TIMESTAMP",
+        check = "julianday(created_at) IS NOT NULL"
+    )]
     pub created_at: String,
-    #[table(default = "CURRENT_TIMESTAMP", check = "julianday(updated_at) IS NOT NULL")]
+    #[table(
+        default = "CURRENT_TIMESTAMP",
+        check = "julianday(updated_at) IS NOT NULL"
+    )]
     pub updated_at: String,
     #[table(check = "deleted_at IS NULL OR julianday(deleted_at) IS NOT NULL")]
     pub deleted_at: Option<String>,

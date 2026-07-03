@@ -1,6 +1,7 @@
 use crate::{
     application::ai_builder::AiBuilderState,
     application::backend_api::BackendApiService,
+    application::home_manager_widget::HomeManagerWidgetService,
     application::kanban_actions::KanbanActionService,
     application::kanban_filters::KanbanFilterService,
     application::kanban_streams::KanbanStreamService,
@@ -32,6 +33,7 @@ pub struct AppState {
     pub package_previews: PackagePreviewStore,
     pub terminal: TerminalSessionStore,
     pub widget_bridge: WidgetBridgeStore,
+    pub home_manager_widget: HomeManagerWidgetService,
     pub kanban_actions: KanbanActionService,
     pub kanban_filters: KanbanFilterService,
     pub kanban_streams: KanbanStreamService,

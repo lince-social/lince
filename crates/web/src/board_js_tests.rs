@@ -15,6 +15,7 @@ const GRID_JS: &str = include_str!("../static/presentation/board/grid.js");
 const INTERACTIONS_JS: &str = include_str!("../static/presentation/board/interactions.js");
 const STORE_JS: &str = include_str!("../static/presentation/board/store.js");
 const GROUP_LOGIC_JS: &str = include_str!("../static/presentation/board/group-logic.js");
+const VIEWPORT_JS: &str = include_str!("../static/presentation/board/viewport.js");
 
 const PRELUDE: &str = r#"
 import assert from "node:assert/strict";
@@ -31,6 +32,7 @@ import {
   resolveMarqueeGroup,
   selectMarqueeMembers,
 } from "./group-logic.mjs";
+import { createBoardViewport } from "./viewport.mjs";
 
 globalThis.window = globalThis;
 globalThis.document = globalThis.document || {
@@ -115,6 +117,7 @@ fn stage_and_run(label: &str, body: &str) {
         ("interactions", INTERACTIONS_JS),
         ("store", STORE_JS),
         ("group-logic", GROUP_LOGIC_JS),
+        ("viewport", VIEWPORT_JS),
     ];
     for (name, source) in modules {
         // The staged copies import each other with .mjs specifiers so node
@@ -336,6 +339,90 @@ assert.strictEqual(byId(next, "b").x, 500);
 const untouched = byId(next, "z");
 assert.strictEqual(untouched.pinned, false);
 assert.strictEqual(untouched.x, 5000);
+"#,
+    );
+}
+
+#[test]
+fn ctrl_drag_reaches_marquee_instead_of_camera_pan() {
+    // Regression: the custom camera pan listens for pointerdown on window in
+    // the capture phase, which runs before the board's marquee listener on
+    // #board-canvas. It must yield to ctrl/meta+drag (the marquee gesture) or
+    // area selection can never start on empty canvas.
+    stage_and_run(
+        "viewport-ctrl-drag",
+        r#"
+const windowListeners = [];
+globalThis.addEventListener = (type, handler, options) => {
+  windowListeners.push({ type, handler, options });
+};
+globalThis.removeEventListener = () => {};
+globalThis.requestAnimationFrame = (fn) => { fn(); return 1; };
+
+function fakeViewportElement() {
+  return {
+    addEventListener() {},
+    removeEventListener() {},
+    getBoundingClientRect() {
+      return { left: 0, top: 0, right: 1600, bottom: 1000, width: 1600, height: 1000 };
+    },
+    contains: () => true,
+  };
+}
+
+function fakeWorldElement() {
+  return {
+    style: {},
+    addEventListener() {},
+    removeEventListener() {},
+    dispatchEvent() {},
+  };
+}
+
+createBoardViewport({
+  viewportElement: fakeViewportElement(),
+  worldElement: fakeWorldElement(),
+  onCameraChanged: () => {},
+});
+
+const pointerdownEntry = windowListeners.find((entry) => entry.type === "pointerdown");
+assert.ok(pointerdownEntry, "camera pan must register a window pointerdown listener");
+const pointerdown = pointerdownEntry.handler;
+
+function pointerEvent(overrides = {}) {
+  return {
+    button: 0,
+    pointerId: 7,
+    clientX: 400,
+    clientY: 300,
+    ctrlKey: false,
+    metaKey: false,
+    defaultPrevented: false,
+    stopped: false,
+    target: { closest: () => null },
+    preventDefault() { this.defaultPrevented = true; },
+    stopPropagation() { this.stopped = true; },
+    ...overrides,
+  };
+}
+
+// Ctrl+drag on empty canvas must fall through to the marquee listener.
+const ctrlDown = pointerEvent({ ctrlKey: true });
+pointerdown(ctrlDown);
+assert.strictEqual(ctrlDown.defaultPrevented, false, "ctrl+pointerdown must not start a camera pan");
+assert.strictEqual(ctrlDown.stopped, false, "ctrl+pointerdown must keep propagating to the board");
+
+// Meta behaves the same (mac).
+const metaDown = pointerEvent({ metaKey: true, pointerId: 8 });
+pointerdown(metaDown);
+assert.strictEqual(metaDown.defaultPrevented, false);
+assert.strictEqual(metaDown.stopped, false);
+
+// A plain drag still starts the camera pan.
+const panDown = pointerEvent({ pointerId: 9 });
+pointerdown(panDown);
+assert.strictEqual(panDown.defaultPrevented, true, "plain pointerdown still pans the camera");
+assert.strictEqual(panDown.stopped, true);
 "#,
     );
 }

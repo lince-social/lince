@@ -2006,6 +2006,10 @@ body.auth-pending .startup-auth-card {
     pointer-events: none;
 }
 
+.board-shell.is-space-panning .package-widget__frame {
+    pointer-events: none;
+}
+
 .board-shell.is-editing
     .board-card--pinned.board-card--system.board-card--shell-popover-open
     .package-widget__frame {

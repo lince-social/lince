@@ -16,4 +16,13 @@ description = "Run all Rust tests in the workspace"
 run = "cargo test --workspace --all-targets"
 
 [tasks.nix]
-run = "systemctl --user stop lince; nix develop"
+run = """
+mprocs --names hx,claude,codex,git,shell,run,restart \
+    "hx ." \
+    "claude" \
+    "codex" \
+    "lazygit" \
+    "$SHELL" \
+    "systemctl --user stop lince; nix develop" \
+    "systemctl --user restart lince;" \
+"""

@@ -23,6 +23,16 @@ const APP_ICON_PNG: &[u8] = include_bytes!("../../../assets/black_in_white.png")
     tauri::mobile_entry_point
 )]
 pub fn run() {
+    // On Linux, force GTK to use the XDG Desktop Portal for file dialogs.
+    // Without this, WebKitGTK tries to open the native GTK file chooser which
+    // requires the `org.gtk.Settings.FileChooser` GSettings schema — missing on
+    // NixOS — and aborts with a fatal GLib error.
+    #[cfg(target_os = "linux")]
+    if env::var_os("GTK_USE_PORTAL").is_none() {
+        // SAFETY: called before GTK / any threads are initialised.
+        unsafe { env::set_var("GTK_USE_PORTAL", "1") };
+    }
+
     let args = env::args().collect::<Vec<_>>();
     if args
         .iter()

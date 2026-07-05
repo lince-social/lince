@@ -1,0 +1,1 @@
+- [ ] Being able to grow different plants, in vases, or in the ground as a farm. One can select the species, remember to water them and have a small chance for them to die, not watering increases the chance.

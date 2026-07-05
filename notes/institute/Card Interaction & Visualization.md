@@ -1,0 +1,7 @@
+- [ ] Vertical scroll when too many cards occupy the height, horizontal scroll when too many columns or columns big enough occupy enough width. 
+- [ ] Being able to drag on the right side of the columns to change it's width.
+- [ ] Have modes to control the visualization of the body: none (showing only head), partly, showing 6-7 lines, or full (pictures included). This should be able to do for all columns and also make an exception for one column to have a different visualization, and inside that same column have another exception to make a singular card visualized differently.
+- [ ] Use Pretext to make the occupied space of the letters shorter.
+- [ ] Being able to drag on the right side of the columns to change it's width.
+- [ ] Being able to minimize column to make it a thin bar, and hide columns to not see them at all.
+- [ ] Hiding empty columns.

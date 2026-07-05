@@ -5,7 +5,7 @@ mprocs.log
 .config/lince/
 .rustup/
 .codex
-notes/institute
+# notes/institute
 trash/
 .claude
 .agents

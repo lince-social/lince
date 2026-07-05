@@ -1,0 +1,5 @@
+- [/] Stickers -> Rei do Sticker: 500 (250 b&w, 250 w&b) laminated. It will be 5x5cm. | Duds
+        - [/] Create the digital Tshirt design. Decide if its only logo and text close together, or if its logo in the heart part of the chest and 'Lince' in the other, or maybe in the back. Maybe have the name of the person in the other part of the chest and Lince in the back. | Nica & Duds (Website)
+          - [/] Embroider them with the logo: iguat | Duds
+        - [ ] Blender 3D logo | Nica
+          - [ ] 3D Keychain Items \@tecnopuc_crialab | Duds

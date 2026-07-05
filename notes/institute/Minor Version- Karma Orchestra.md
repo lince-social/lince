@@ -1,0 +1,6 @@
+This is a revamp of Karma, the main focus is making the workflows simpler, visual and powerful. The aspects to be changed are Frequency for greater fine tuning of occurences, Commands to interact and accompany it's execution like GitHub Actions, and in Karma with nodes of Conditions and Consequences that change Records (the connections).
+
+- [ ] Able to execute single Karma with visualization on the condition being evaluated
+- [ ] Karma Conditions poderem ser referenciadas em outras conditions tipo kd2 + kd6. Garantir que seja possível ter cadeias infinitas de condições: karma: kd2 = kd6 = ks2
+
+What if the vision of karma mimics exactly what we want for the 2d canvas? The best possible karma view is one that probably?: lets us see all karma, rearrange, arrows, sort based on type of karma, have the pieces show some information for the bigger picture and zoom gives the rest. We either make it limited in size and therefore internally scrollable or we integrate it into the 2d canvas since the ui, mechanics and interaction are very similar.

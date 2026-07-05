@@ -1,0 +1,1 @@
+We need to give the user the hability to understand if the rules they are creating are infinite loops, if they make data converge or diverge from a quantity. How the problem space looks like when they make certain Conditions

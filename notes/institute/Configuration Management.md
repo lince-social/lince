@@ -1,0 +1,1 @@
+Show configuration divided into sections/tabs, with toggle buttons for respective fields and input fields so the user doesnt have to just edit a table. For colorschemes show the possible ones. With examples for colors.

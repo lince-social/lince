@@ -1,0 +1,1 @@
+Have a way to set an order to do stuff. I want my daily habits to be X, then Y, then Z.

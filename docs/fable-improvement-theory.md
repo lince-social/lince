@@ -22,25 +22,23 @@ This document is the executable form of the Rebirth theory (the v3 essay lives i
 
 ## - [ ] 0.1 Crate layout
 
-Implemented crate names (the `rebirth-` prefix was dropped; the pure core cannot
-be called `core` — that name collides with Rust's built-in — so it is `nucleus`,
-the part of the Cell that holds the machinery of meaning):
-
 ```text
 crates/
-  nucleus/    # pure domain: types, ids, expression parser + eval, link-graph
-              # algorithms, frequency math. NO IO, NO SQL. DST-testable alone.
-  store/      # the only crate that speaks SQL. Schema, migrations, typed repos.
-  engine/     # the organism: fact appender, karma scheduler, effect runner;
-              # later: senses matcher, attention router, imagination, sync.
-  protein/    # (pending) Protein AST -> store queries; live subs; Action dispatch.
-  transport/  # (pending) first-party channel, ephemeral lanes, HTTP boundary.
+  rebirth-core/       # pure domain: types, ids, expression parser + eval, link-graph
+                      # algorithms, imagination fold. NO IO, NO SQL. DST-testable alone.
+  rebirth-store/      # the only crate that speaks SQL. Schema, migrations, tx helpers.
+  rebirth-engine/     # the organism: fact appender, karma scheduler, effect runner,
+                      # senses matcher, attention router, imagination service, sync.
+  rebirth-protein/    # Protein AST -> store queries; live subscriptions; Action dispatch.
+  rebirth-transport/  # first-party channel (websocket or gRPC — one binary choice),
+                      # ephemeral lanes, HTTP boundary for external systems.
+  rebirth-web/        # sand host (board, packages) — speaks only Protein/Actions.
 ```
 
-- [x] `nucleus` compiles with no async, no sqlx, no network deps.
-- [x] `store` exposes typed repositories only; no other crate imports sqlx (engine uses `store::sqlx` re-export for transaction types only).
-- [x] `engine` is the only writer; Protein will be read + Action forwarding.
-- [ ] A DST harness runs `nucleus` + in-memory `store` with a virtual clock and replays a fact log deterministically. (Foundations in place: every engine entry point takes explicit `now`, `Store::open_memory()` exists, `seal` is replay-deterministic — the harness itself is not built.)
+- [ ] `rebirth-core` compiles with no async, no sqlx, no network deps.
+- [ ] `rebirth-store` exposes typed repositories only; no other crate imports sqlx.
+- [ ] `rebirth-engine` is the only writer; `rebirth-protein` is read + Action forwarding.
+- [ ] A DST harness runs `core` + in-memory `store` with a virtual clock and replays a fact log deterministically.
 
 ## - [ ] 0.2 The engine loop
 
@@ -64,8 +62,8 @@ loop {
 }
 ```
 
-- [x] `fact_bus` is an in-process broadcast every appended fact is published to (`Engine::subscribe`).
-- [x] State changes funnel through `append()` (0.3) — grep-proven: `UPDATE record SET quantity` appears exactly once in the codebase. (The full `select!` loop with signal sampling, sync import, and senses arms lands with their stages; today `append`/`tick`/`run_due_effects` are the arms, called synchronously — deterministic and test-friendly.)
+- [ ] `fact_bus` is an in-process broadcast every appended fact is published to.
+- [ ] All six arms funnel state changes through `append()` (0.3) — grep-provable: `UPDATE record SET quantity` appears exactly once in the codebase.
 
 ## - [ ] 0.3 The one write path
 
@@ -81,10 +79,10 @@ pub fn append(tx: &mut Tx, new: NewFact) -> Result<Fact> {
 
 **The Fact is the truth; the quantity is the cache.** `record.quantity` is a real mutable column with exactly one writer — this function. Reads are O(1) column reads; nothing ever folds the log at read time.
 
-- [x] `append` is the only function that touches `record.quantity` (`engine/src/append.rs` + `store::records::bump_quantity`).
-- [x] Publishing to `fact_bus` happens post-commit (no ghost notifications on rollback).
-- [x] Batch variant `append_all` for settlements and sync imports (one tx, many facts).
-- [x] Idempotency: inserting a fact whose `uid` already exists is a no-op success (tested: replay leaves quantity untouched).
+- [ ] `append` is the only function that touches `record.quantity`.
+- [ ] Publishing to `fact_bus` happens post-commit (no ghost notifications on rollback).
+- [ ] Batch variant `append_all` for settlements and sync imports (one tx, many facts).
+- [ ] Idempotency: inserting a fact whose `uid` already exists is a no-op success (sync replay safety).
 
 ### Interactions (Part 0)
 - **Memory (II)** defines the fact row `append` writes. **Karma (VI)** consumes `fact_bus` and emits through `append` with `cause=rule:<uid>`. **Transfer (VIII)** settlement calls `append_all` with `cause=settlement:<uid>`. **Sync (XV)** imports by calling `append` with `cause=sync:<organ>` preserving original author signatures. **Protein (VII)** never writes; **Actions (VII)** terminate in `append` or sidecar-table updates inside the same engine. **DST** replays a recorded fact log through `core` with the virtual clock.
@@ -125,9 +123,9 @@ record  uid=r_2F7  slug=xfer.saturday-beans  kind=transfer                      
 record  uid=r_D40  slug=devices.kitchen-scale kind=device                               quantity=1
 ```
 
-- [x] ULID uid generation with `r_` prefix; uids never reused (`nucleus::id`).
-- [x] Slug: optional, unique, `[a-z0-9]+(\.[a-z0-9-]+)*`; rules resolve slugs to uids at registry load and keep both. (Rename Action + re-resolution event: pending with Actions.)
-- [x] `kind` enum in `nucleus` with sidecar-table mapping (rule/signal/frequency/decision/transfer sidecars in the schema).
+- [ ] ULID uid generation with `r_` prefix; uids never reused.
+- [ ] Slug: optional, unique, `[a-z0-9]+(\.[a-z0-9-]+)*`; renamable (uid is identity; slug rename is an Action that rewrites nothing else — rules resolve slugs at parse time to uids and store both, re-resolving on rename events).
+- [ ] `kind` enum in `rebirth-core` with sidecar-table mapping.
 - [ ] Text edits (`head`/`body`) go through the text-CRDT relay (XV) and drop a zero-delta provenance fact (II.3).
 - [ ] Time is deliberately NOT a column: record timing = Karma + Frequency counters, generated by interface sugar from a date-range picker. Declarative time lives on Promises (V).
 
@@ -184,14 +182,14 @@ f_03  apples.stock  -2  10:04  actor=@ana  cause=rule:rules.apple-donation      
 f_04  apples.stock   0  23:59  actor=engine cause=checkpoint payload={"level":10}
 ```
 
-- [x] Hash chain: `hash = H(prev_hash ‖ canonical(fact))`; one chain per Cell; `verify_chain_step` tested. (Verification *on import* lands with Sync, XV.)
-- [ ] Every fact signed by its author's key at creation (XI); imported facts keep the origin signature. (Column exists; signing lands with Trust.)
-- [x] `sum` over a trailing window as a query helper over `fact` (`store::facts::sum_window`) — the old `sum` table dies. (only-positive/only-negative/end-lag variants: pending.)
-- [ ] Undo = compensation fact (`cause_kind=compensation` exists; the undo Action lands with Part VII).
+- [ ] Hash chain: `hash = H(prev_hash ‖ canonical(fact))`; one chain per Cell; verified on import.
+- [ ] Every fact signed by its author's key at creation (XI); imported facts keep the origin signature.
+- [ ] `sum` semantics (delta / only-positive / only-negative over a window, with end-lag) reimplemented as one query helper over `fact` — the old `sum` table dies.
+- [ ] Undo = compensation fact (`cause_kind=compensation`, `cause_uid=<undone fact>`); never deletion.
 
 ## - [ ] II.2 Checkpoints & compaction (growth stays controlled)
 
-- [x] Checkpoint fact per record: `delta=0, payload={"level": q}` — `Engine::checkpoint_all` (tested: bypasses the cascade, idempotent sweep; wire it to a nightly rule/heartbeat when the daemon config lands).
+- [ ] Nightly checkpoint fact per active record: `delta=0, payload={"level": q}`.
 - [ ] Compaction: facts older than the retention horizon AND older than the last checkpoint can be folded into the checkpoint and archived to a cold file; hash chain restarts from an anchor fact recording the archive's hash.
 - [ ] Config: retention horizon per record kind (finance records may keep forever; signal records days).
 
@@ -240,8 +238,8 @@ c_BEF before   names: en:[before], pt-br:[antes]    parents: [c_PRE precedes]
 c_KG  kg       parents: [c_MASS mass]               (a unit is just a concept)
 ```
 
-- [x] `@name` resolution: canonical name, any language name ("Maçã" → `@apple`, tested), or uid. (Ambiguity as save-time error: pending with Actions.)
-- [x] Parent walks power widening queries: `concept in @food` matches `@apple` via the DAG (`store::concepts::descendants_including`, tested).
+- [ ] `@name` resolution: local concept by canonical_name or any name; ambiguity is a save-time error.
+- [ ] Parent walks power widening queries: `concept in @food` matches `@apple` via the DAG.
 - [ ] Fallback semantics: an engine that doesn't know `@blocks-softly` treats it as its parent `@blocks`.
 - [ ] Unit conversion (later): `concept_conversion(a, b, factor)` rows; only within a shared parent dimension.
 
@@ -287,9 +285,9 @@ pub fn derive_needs(root: Uid, qty: f64, g: &LinkGraph) -> Vec<(Uid, f64)>; // r
 pub fn cycle_check(kind: ConceptUid, g: &LinkGraph) -> Vec<Vec<Uid>>;       // SCCs, warn on save
 ```
 
-- [x] `topo_order` restricted to a candidate set (active Needs) keeps disjoint chains internally ordered; ties keep candidate order (tested in nucleus and end-to-end via the focus queue).
-- [x] `derive_needs(@cake, 2)` multiplies link quantities down the tree → "4 flour, 6 eggs" (tested, incl. shared sub-ingredients merging by sum).
-- [ ] Cycle warning on link creation for order-like kinds (children of `@precedes`). (`nucleus::graph::cycles` exists; the on-save hook lands with Actions.)
+- [ ] `topo_order` restricted to a candidate set (e.g. active Needs) keeps disjoint chains internally ordered; ties fall to the caller's secondary sort.
+- [ ] `derive_needs(@cake, 2)` multiplies link quantities down the `@needs` tree → "4 flour, 6 eggs".
+- [ ] Cycle warning on link creation for order-like kinds (children of `@precedes`).
 
 ### Interactions (Part IV)
 - **Lingua (III)** supplies kinds. **Protein (VII)** exposes `include: links(kind=@x)` and `order: topo(@x)`. **Imagination (XII)** walks `@needs` to propagate projected shortfalls. **Senses (X)** matches sub-needs from recipe explosions. **Focus queue (Window W1b)** = topo(@before) over active Needs. **Trails** = records + `@before`/`@requires`/`@part-of` links + concepts, published as packages.
@@ -430,9 +428,8 @@ Examples of full-math composition (all legal):
 freq(@weekly) * signal(@books-count) + sum(@reading.log, 7d)
 ```
 
-- [x] Parser extracts token set (`Expr::tokens()`) → registry resolves slugs to uids at load and keeps both.
-- [x] Purity enforced: conditions evaluate against a prefetched `MapResolver` — no command execution inside evaluation is even possible (Signals are separate rows with their own schedule; sampler pending).
-- [x] Implemented condition functions: bare `@x`/`quantity`, `freq`, `signal`, `sum(@x, <dur>)`, `value`, `promise_state`, `hours_since_fact`. Parsed-but-pending (error cleanly): `confidence`, `projected`, `distance`, `route_eta`, `demand` (Stages 3/5).
+- [ ] Parser extracts token set at save time → resolves slugs to uids → stores both (rename-safe).
+- [ ] Purity enforced: condition functions read the store only; no command execution inside evaluation (Signals sample the world on their own schedule and land as facts).
 
 ## - [ ] VI.3 The pipeline: condition → gate → carry → consequences
 
@@ -460,11 +457,11 @@ Consequence execution (each independent; all provenance `cause=rule:<uid>`):
 | `ask` | decision-record enqueued (XIII) — optional, never mandatory |
 | `notify` | notify effect routed per platform config (XIII) |
 
-- [x] **Zero consequences = named derived value.** Tested: a consumer reads `value(@rules.double-x) + 1`, and the dependency graph expands transitively so changes to the derived rule's *inputs* re-evaluate its consumers.
-- [x] Worked example — daily habit (tested): freq `@freq.daily-7am`; rule `condition: -1 * freq(@freq.daily-7am)`, gate `!=0`, carry `value`, consequence `set_quantity(@exercise)` → exercise becomes -1 on tick.
-- [x] Worked example — reorder ask (tested): `condition: @apples.stock`, gate `<3`, carry `one`, `ask("send reorder proposal?")` enqueues a decision-record; `emit_promise` variant creates a `proposed` promise naming its rule.
-- [ ] Worked example — trust-ahead: `condition: confidence(@p.maria-apples)`, gate `>0.9`, consequence `advance_transfer(...)`. (Parses today; `confidence` and `advance_transfer` land with Stages 4–5.)
-- [ ] Worked example — quiet hours: `deactivate(@rules.noisy-notifications)` — the consequence kind is implemented; the end-to-end example is untested.
+- [ ] **Zero consequences = named derived value.** `slug=rules.monthly-burn, condition=sum(@checking, -30d)/30`, no consequences: a spreadsheet cell other rules read via `value()` and Proteins can query.
+- [ ] Worked example — daily habit: freq `@daily-7am`; rule `condition: -1 * freq(@daily-7am)`, gate `!=0`, carry `value`, consequence `set_quantity(@exercise)` → exercise becomes -1 each morning.
+- [ ] Worked example — reorder ask: `condition: @apples.stock`, gate `<3`, carry `one`, consequences `[ask("send reorder proposal?"), ...on-yes → activate(@xfer.apple-reorder)]`.
+- [ ] Worked example — trust-ahead: `condition: confidence(@p.maria-apples)`, gate `>0.9`, consequence `advance_transfer(@xfer.weekly-apples, to=agreed)`.
+- [ ] Worked example — quiet hours: `condition: freq(@daily-22h)`, consequence `deactivate(@rules.noisy-notifications)` — Karma steering Karma, because rules are records.
 
 ## - [ ] VI.4 Reactive scheduler + Proof
 
@@ -472,10 +469,10 @@ Consequence execution (each independent; all provenance `cause=rule:<uid>`):
 struct DepGraph { reads: Map<RecordUid, Vec<RuleUid>>, writes: Map<RuleUid, Vec<RecordUid>> }
 ```
 
-- [x] Built from parsed tokens at registry load; the cascade re-evaluates only readers of changed records, follows their writes, and is capped (256/delivery) — a deliberate two-rule loop is survived in tests.
-- [x] Timer wheel from `frequency` rows (`Engine::tick(now)`); catch-up multiplies the returned count; day-of-week filter counts matching boundaries only.
-- [x] **Proof (static analysis)**: SCC over reads∘writes → "these N rules form a loop: a -> b", surfaced by `reload_rules()` and tested. (Divergence heuristic: pending.)
-- [x] The heartbeat: `Engine::heartbeat(now)` (timers fire, signals sample, effects run — DST calls it with a virtual clock) and `Engine::run(period)` as the daemon wrapper. Signal sampler implemented and tested: samples land as facts with `cause=signal` and trigger the ordinary cascade; unchanged values make no noise.
+- [ ] Built from parsed tokens at rule save; `on_change(fact)` re-evaluates only `reads[fact.record_uid]`, cascading through writes with a per-delivery iteration cap.
+- [ ] Timer wheel from `frequency` rows: next_at heap; catch-up multiplies the returned count.
+- [ ] **Proof (static analysis)**: SCC over reads∘writes → "these 3 rules form a loop"; simple divergence heuristic (loop with net positive self-feedback) → warning surfaced at save and in the rules sand.
+- [ ] The 60s heartbeat survives only as the floor for `schedule`-less checks; nothing else polls.
 
 ### Interactions (Part VI)
 - **Memory (II)**: every firing and signal sample is a fact; provenance total. **Promise (V)**: `emit_promise`, `promise_state`, scheduled actions as promises. **Transfer (VIII)**: `advance_transfer`, activation via quantity; Karma never invents parties or settles silently — it operates the same Actions a human may. **Imagination (XII)**: simulates rules by running this same pure evaluator on a virtual clock with Signals frozen at last-known values; exposes `confidence/projected` back to conditions. **Attention (XIII)**: `ask`/`notify` consequences; decision-records are rule-readable. **Protein (VII)**: rules/derived values queryable; the Karma Orchestra sand renders the DepGraph. **DST**: pure evaluator + virtual clock = deterministic replay.
@@ -912,7 +909,7 @@ CREATE TABLE visibility_rule (
 **Why.** The Window is the triage discipline: hold every workflow against the primitives; place each part on the altitude ladder; only what the deduction forces enters the core. Held against twenty-one workflows, the triage forced exactly four core additions — place Instinct, ephemeral lanes, messages-attach-to-anything, embed-honestly — and nothing else. Each case below is an acceptance test: check it when the workflow runs end-to-end on the rebirth.
 
 - [ ] **1. Todo / knowledge base** — records+links; Karma daily counters; todo/kanban sands. *Accept:* create task, habit re-arms daily, done posts a fact with cause.
-- [ ] **1b. Focus queue (ordered doing)** — order is links, never staggered frequencies. `@before` chains task records (recurring keep position across days; one-shots link in or fall to tail). Arrival=Karma+Frequency, sequence=`@before` graph, urgency=promise windows. One Protein: `where quantity<0, order: topo(@precedes), then window, then oldest`. Focus = head; next ones dimmed. Pinned corner sand is pure rendering; completing posts a fact and the stream recomputes; drag-reorder = `relink-order`. *Accept:* recurring+oneshot interleave in one queue; strict-sequence vs deadline-jump is a per-queue choice. — *Engine half done and tested* (`Engine::focus_queue`: active Needs × `topo(@before)` × oldest tie-break; completing the head promotes the next; same-pair multi-kind links verified). Missing: window tie-break (needs Promises in queue math), the sand, deadline-jump config.
+- [ ] **1b. Focus queue (ordered doing)** — order is links, never staggered frequencies. `@before` chains task records (recurring keep position across days; one-shots link in or fall to tail). Arrival=Karma+Frequency, sequence=`@before` graph, urgency=promise windows. One Protein: `where quantity<0, order: topo(@precedes), then window, then oldest`. Focus = head; next ones dimmed. Pinned corner sand is pure rendering; completing posts a fact and the stream recomputes; drag-reorder = `relink-order`. *Accept:* recurring+oneshot interleave in one queue; strict-sequence vs deadline-jump is a per-queue choice.
 - [ ] **2. Recurring tasks** — Karma+Frequency alone. *Accept:* monthly rule fires exactly once, catch-up works.
 - [ ] **3. Donation & buying** — open promises + Senses + Transfer + Trust; storefront sands; delivery = promise window + place route. *Accept:* the DONATION and SALE bundles (VIII.4) run against a second Cell.
 - [ ] **4. Transport A→B** — `route()` in core (IX); Senses matches by route×window overlap; ride sand shows both parties one proposal. *Accept:* the RIDE bundle drafts automatically from two Cells' open promises.
@@ -942,8 +939,8 @@ CREATE TABLE visibility_rule (
 
 Greenfield: no staged migration, no dual paths, no old API. Old data ported by hand at the end. Dependency order; each stage is usable alone — **live in each stage with real daily data before building the next** (the dogfood replaces the compatibility safety net).
 
-- [ ] **Stage 1 — Core schema + Spine** (Parts 0, I, II, III, IV, V schemas): record/concept/link/fact/promise; `append()`; quantity cache; checkpoints. *Usable as:* a ledgered todo/inventory. — *Done except compaction* (crates `nucleus`/`store`/`engine`; full schema migrated; append + cache + idempotency + hash chain + checkpoints + concepts/links repos, all tested).
-- [ ] **Stage 2 — Karma 2.0** (VI): pipeline, DepGraph, reactive delivery, Proof warnings, Signals/Effects. *Usable as:* habits + automation with provenance. — *Done except*: debounce, and the run_query/run_action/set_visibility/advance_transfer consequence kinds (they belong to Stages 3–4 anyway). Pipeline, derived values, transitive dep graph, tick, signal sampler with cascade, heartbeat/daemon, Proof loops, command/notify/ask/emit_promise consequences — all tested (42 tests).
+- [ ] **Stage 1 — Core schema + Spine** (Parts 0, I, II, III, IV, V schemas): record/concept/link/fact/promise; `append()`; quantity cache; checkpoints. *Usable as:* a ledgered todo/inventory.
+- [ ] **Stage 2 — Karma 2.0** (VI): pipeline, DepGraph, reactive delivery, Proof warnings, Signals/Effects. *Usable as:* habits + automation with provenance.
 - [ ] **Stage 3 — Protein + Actions + transport** (VII) + place functions (IX): includes, topo order, live subscriptions, ephemeral lanes, Action catalog. *Usable as:* the board rebuilt on one contract; the focus queue ships here.
 - [ ] **Stage 4 — Transfer** (VIII): bundles, agreement, settlement, worked standards. *Usable as:* two-Cell donations and sales.
 - [ ] **Stage 5 — Imagination** (XII): project(), confidence, tokens, the timeline sand (the scrubbable future).

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lince Cell</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh;
+      font: 15px/1.5 system-ui, -apple-system, sans-serif;
+      background: #0d1117; color: #c9d1d9;
+      display: grid; place-items: center;
+    }
+    .board { width: 100%; max-width: 720px; padding: 2rem; }
+    h1 { font-weight: 600; font-size: 1.1rem; color: #8b949e; letter-spacing: .02em; }
+    .corner {
+      position: fixed; right: 1.25rem; bottom: 1.25rem;
+      width: 320px; max-width: calc(100vw - 2.5rem);
+      border: 1px solid #30363d; border-radius: 12px; overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0,0,0,.5); background: #161b22;
+    }
+    iframe { width: 100%; height: 260px; border: 0; display: block; }
+  </style>
+</head>
+<body>
+  <div class="board">
+    <h1>Lince Cell — board</h1>
+    <p>The board hosts sands. Every sand speaks only Protein (reads) and Actions
+       (writes) over one WebSocket. The pinned focus queue is the first sand on
+       the new core.</p>
+  </div>
+  <div class="corner">
+    <iframe src="/sand/focus" title="Focus queue"></iframe>
+  </div>
+</body>
+</html>

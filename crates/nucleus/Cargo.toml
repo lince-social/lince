@@ -1,0 +1,15 @@
+[package]
+name = "nucleus"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Lince pure core: primitives, expression engine, graphs, frequency math. No IO, no SQL, DST-testable alone."
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true, features = ["serde"] }
+sha2 = { workspace = true }
+uuid = { workspace = true }

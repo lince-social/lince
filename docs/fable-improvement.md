@@ -1,6 +1,6 @@
-# - [ ] Lince Rebirth — Implementation Blueprint (v4)
+# - [ ] Lince Core — Implementation Blueprint (v4)
 
-This document is the executable form of the Rebirth theory (the v3 essay lives in this file's git history; its meaning is preserved here in condensed form so this document is self-sufficient). Every part and section title carries a checkbox — check it when that piece is implemented and verified. Each part ends with an **Interactions** block documenting its contracts with every other part, so no section's meaning depends on context outside this file.
+This document is the executable form of the theory (the v3 essay lives in this file's git history; its meaning is preserved here in condensed form so this document is self-sufficient). Every part and section title carries a checkbox — check it when that piece is implemented and verified. Each part ends with an **Interactions** block documenting its contracts with every other part, so no section's meaning depends on context outside this file.
 
 **The refounding, three sentences:**
 
@@ -18,11 +18,11 @@ This document is the executable form of the Rebirth theory (the v3 essay lives i
 
 # - [ ] Part 0 — The Spine: one organism, one write path
 
-**Why.** Today Lince has four quantity write paths (UI edit, Karma, Transfer settlement, CRDT sync) with four histories. The Rebirth has exactly one: everything that changes state goes through the fact appender. The Spine is the process architecture that enforces this.
+**Why.** Today Lince has four quantity write paths (UI edit, Karma, Transfer settlement, CRDT sync) with four histories. The new core has exactly one: everything that changes state goes through the fact appender. The Spine is the process architecture that enforces this.
 
 ## - [ ] 0.1 Crate layout
 
-Implemented crate names (the `rebirth-` prefix was dropped; the pure core cannot
+Implemented crate names (the pure core cannot
 be called `core` — that name collides with Rust's built-in — so it is `nucleus`,
 the part of the Cell that holds the machinery of meaning):
 
@@ -33,7 +33,8 @@ crates/
   store/      # the only crate that speaks SQL. Schema, migrations, typed repos.
   engine/     # the organism: fact appender, karma scheduler, effect runner;
               # later: senses matcher, attention router, imagination, sync.
-  protein/    # (pending) Protein AST -> store queries; live subs; Action dispatch.
+  protein/    # Protein AST -> store reads; canned Proteins (focus/decision queue).
+              # Read-only by construction: the crate has no write path at all.
   transport/  # (pending) first-party channel, ephemeral lanes, HTTP boundary.
 ```
 
@@ -45,7 +46,7 @@ crates/
 ## - [ ] 0.2 The engine loop
 
 ```rust
-// rebirth-engine/src/main_loop.rs — the whole organism in one select
+// engine/src/main_loop.rs — the whole organism in one select
 loop {
     tokio::select! {
         // 1. A fact landed: recompute only the rules whose inputs changed.
@@ -70,7 +71,7 @@ loop {
 ## - [ ] 0.3 The one write path
 
 ```rust
-// rebirth-engine/src/append.rs
+// engine/src/append.rs
 pub fn append(tx: &mut Tx, new: NewFact) -> Result<Fact> {
     let fact = seal(new, tx.prev_hash()?)?;   // uid, at, hash-chain, author signature
     tx.insert_fact(&fact)?;
@@ -93,7 +94,7 @@ pub fn append(tx: &mut Tx, new: NewFact) -> Result<Fact> {
 
 # - [ ] Part I — Record: the state vector
 
-**Why.** All Needs and Contributions are Records; quantity's sign is the moral direction. The Rebirth widens identity (uid + slug), meaning (concept), measure (unit), and location (place) — each optional so the four-column soul survives.
+**Why.** All Needs and Contributions are Records; quantity's sign is the moral direction. The new core widens identity (uid + slug), meaning (concept), measure (unit), and location (place) — each optional so the four-column soul survives.
 
 ## - [ ] I.1 Schema
 
@@ -278,7 +279,7 @@ CREATE INDEX idx_link_to   ON link(to_uid, kind_uid);
 
 **Identity is the triple**, so the same two records carry many links of different kinds at once — `small-step @part-of big-step` and `small-step @before big-step` coexist. Each kind is an independent graph over the same records: the focus queue walks `@before`, progress roll-up walks `@part-of`, recipes walk `@needs`.
 
-## - [ ] IV.2 Core graph algorithms (in `rebirth-core`, reused everywhere)
+## - [ ] IV.2 Core graph algorithms (in `nucleus`, reused everywhere)
 
 ```rust
 pub fn topo_order(records: &[Uid], kind: ConceptUid, g: &LinkGraph) -> Vec<Uid>;
@@ -512,14 +513,15 @@ struct DepGraph { reads: Map<RecordUid, Vec<RuleUid>>, writes: Map<RuleUid, Vec<
 
 Semantics, normatively:
 
-- [ ] `source`: `record | promise | fact | concept | decision | transfer` (each with its own filter fields).
-- [ ] `where`: boolean tree (`all/any/not`) of typed predicates; `concept_in` walks the Lingua parent DAG; `fn` calls Instinct functions (IX).
-- [ ] `include`: per-row attachments — links (with optional tree `depth`), promises, facts (provenance), extensions, availability (`available/planned/surplus`, V.3), Imagination projection (XII).
+- [ ] `source`: `record | promise | fact | concept | decision | transfer` — *record/promise/decision implemented and tested*; fact/concept/transfer sources pending.
+- [x] `where`: boolean tree (`all/any/not`) of typed predicates; `concept_in` walks the Lingua parent DAG (tested: `@food` matches apple-tagged records, not the hammer). `fn` Instinct predicates: pending (IX).
+- [x] `include`: facts (provenance — "the end of custom plumbing", tested), promises (state-filtered), links (kind + direction). Pending: link tree `depth`, extensions, availability (V.3), projection (XII).
 - [ ] `aggregate`: sum/count/avg with `by` (concept, unit, day, cause_kind) — the finance/statistics workhorse.
-- [ ] `order`: list of keys; `topo(kind)` orders by link-graph topological sort restricted to the result set (the focus queue); ties fall through to the next key.
-- [ ] `live: true`: snapshot, then incremental updates on the same subscription — driven by `fact_bus` + sidecar-change events; the engine maps each subscription to its input record set for cheap invalidation.
+- [x] `order`: `topo(kind)` restricted to the result set with field keys as tie-break — the focus queue ships as `protein::focus_queue()`, tested end-to-end: completing the head promotes the next task.
+- [ ] `live: true`: snapshot, then incremental updates. (`protein::affects()` gives coarse `fact_bus` invalidation; the subscription machinery lands with transport.)
 - [ ] Saved Proteins are records (`kind='protein'`, the AST in a sidecar) — the old `view` table's successor; sands reference them by slug.
 - [ ] **Visibility is enforced here** — one gate: a Protein evaluated for a remote Organ or the sandbox host passes every row and every included attachment through the visibility rules (XV). There is no other read path to leak from.
+- [x] The wire format is JSON both ways (tested: the documented request shape parses into the AST; rows come out as JSON).
 
 Worked Proteins (the standards):
 
@@ -560,22 +562,52 @@ attention:decide (answer a decision-record), configure-source, set-budget
 publish:  publish-package (sand/concepts/trail subgraph), install-package
 ```
 
-- [ ] Every Action carries `actor` and produces provenance (facts and/or annotation facts).
-- [ ] Protein never mutates; Actions never query. Permission checks live on Actions (role model), visibility checks on Proteins.
+- [x] First Action set implemented as `engine::actions::Action` (typed, serde kebab-case tag) with `Engine::act`: create-record, set-quantity, add-quantity, activate, deactivate, create-concept, add-link, remove-link, create-promise (incl. open promises), promise-transition (state machine validated; transitions drop annotation facts), decide (closes the decision through the Ledger so Karma can react). Tested end-to-end against Protein reads.
+- [x] Every Action carries `actor` and produces provenance (facts and/or annotation facts).
+- [x] Protein never mutates (the crate has no write path at all); Actions never query. Permission checks on Actions (role model) and the Protein visibility gate: pending with XV.
 
-## - [ ] VII.3 Transport & the ephemeral lanes
+## - [x] VII.3 Transport & the ephemeral lanes
 
-- [ ] One bidirectional typed streaming channel for first-party surfaces (websocket or gRPC — pick once at implementation; the AST above is the contract, not the socket).
-- [ ] Multiplexed per connection: N Protein subscriptions + Action request/response + **ephemeral lanes**.
-- [ ] **Ephemeral lanes**: presence, cursors, typing, call signaling — scoped to a subscription/room, fan-out through the host, **never written to the Ledger**. Contract: `lane_join(room)`, `lane_send(room, payload)`, `lane_event(room, from, payload)`.
-- [ ] HTTP endpoints remain only at the boundary for external systems (and the sandbox host); sands do not use them.
+- [x] One bidirectional typed streaming channel for first-party surfaces — **WebSocket chosen** (`transport` crate). The transport-agnostic `Session` is the contract; the axum WebSocket driver (`transport::ws`, behind the `axum` feature) is the socket. Proven end-to-end by `membrane/tests/pilot.rs`: a real WS client subscribes, receives a snapshot, sends an Action, receives the live update.
+- [x] Multiplexed per connection: N Protein subscriptions + Action request/response + **ephemeral lanes** (`ClientMessage`/`ServerMessage` in `transport::protocol`).
+- [x] **Ephemeral lanes**: presence, cursors, typing, call signaling — scoped to a room, fanned out through `transport::LaneHub`, **never written to the Ledger** (tested). Contract: `LaneJoin`/`LaneSend`/`LaneEvent`.
+- [x] HTTP endpoints remain only at the boundary for external systems; sands speak only Protein + Actions over the socket.
+
+## - [ ] VII.4 The web/sand migration (the finalization)
+
+**Decision (locked):** the sand system is refactored so **every sand speaks only Protein (reads) + Actions (writes) over the transport WebSocket**. Compatibility is not kept — the old SSE-saved-view streams and the `/api/backend/table` CRUD path are *removed*, not bridged. The new host is the `membrane` crate (the Cell surface); the old `web` crate is frozen and retired at cutover, with data hand-migrated. Whatever this refounding built is the **source of truth**; sands are ported to it, never the reverse.
+
+**The line that must not move:** *board chrome is frontend-only presentation state; sand data is Protein/Actions.* The migration ports the data path of every sand to the new mode **while preserving all the frontend-only board features** that already exist in the web/Tauri version. Those features are host state, not Ledger truth — they live in the board-state store / host `widgetState`, exactly as today, and are carried over verbatim:
+
+- [ ] Infinite canvas with pan/zoom (`BoardCamera`).
+- [ ] Multiple named **workspaces** (`BoardWorkspace`), switchable.
+- [ ] Per-card **move / resize** (`x, y, width, height`).
+- [ ] **Pin** (`pinned`), **z-index ordering** (bring-to-front/back), **grouping** (`group_id`).
+- [ ] **Edit mode** (the board's authoring state).
+- [ ] **Sand importing** — `.html` and `.lince` archive packages (`LincePackage`, `PackageManifest`, `PackageTransport`, validation).
+- [ ] **Sand publishing** — the export/publish flow and the DNA/hub catalog pickup.
+- [ ] The **widget bridge** (`window.LinceWidgetHost`) — but re-pointed: its data plane becomes Protein subscriptions + Actions instead of SSE views + table CRUD; its control plane (host metadata, persisted `widgetState`, board layout) stays.
+- [ ] **Sand-to-sand ABI events** (`abi_listen`) — carried on ephemeral lanes, never the Ledger.
+
+**What changes for a sand:** it stops choosing a data source (SSE view vs. table CRUD vs. host-mediated routes) and instead (1) subscribes with a Protein for everything it reads — gaining live updates, provenance includes, promises, projections for free — and (2) writes only through typed Actions. The focus-queue corner sand (`membrane/assets/focus.html`) is the reference: ~40 lines, no SQL, no table knowledge. Every existing sand (kanban, transfer, relations, karma orchestra, trail, table, home manager) is re-authored to this shape.
+
+**Sands to port** (each: replace its data path, keep its surface):
+- [ ] Table sand → `source: record` + create/set-quantity/edit/set-extension Actions.
+- [ ] Kanban → record Protein with category/work-metadata includes; card moves are Actions; comments via the message model.
+- [ ] Relations graph → `include: links(kind=…)`; edges are add-link/remove-link Actions.
+- [ ] Karma Orchestra → rules/derived-values Protein; the DepGraph the engine already derives.
+- [ ] Transfer → the Transfer Actions (create/party/promise/agree/activate/settle) + promise/availability includes.
+- [ ] Trail → the emergent records+links+concepts subgraph (Part IV coda), imported via packages.
+- [ ] Home manager / dashboard → aggregate Proteins.
+
+**Acceptance for the finalization:** the ported board runs every workflow the Tauri board runs today — resize, pin, move, workspaces, edit mode, import, publish — with zero sand still speaking the old data path, and with the new capabilities (live subscriptions, provenance, promises, projections, visibility-gated remote reads) available to every sand uniformly.
 
 ### Interactions (Part VII)
-- **Everything reads through Protein** — board, TUI, GUI, mobile, sandbox host, and Fiote included. **Karma (VI)** rules and derived values are queryable; `run_query` consequences execute saved Proteins for reads and Actions for writes. **Imagination (XII)** exposes projections as an `include` and as its own source. **Visibility (XV)** has exactly one enforcement point: here. **Attention (XIII)**: the queue is `source: decision`; `decide` is an Action. **Collab (Window case 7)**: CRDT text flows through `edit-record-text`; cursors ride ephemeral lanes. **AniccaDB**: replacing `rebirth-store` must not change one character of this Part — that is the acceptance test for storage independence.
+- **Everything reads through Protein** — board, TUI, GUI, mobile, sandbox host, and Fiote included. **Karma (VI)** rules and derived values are queryable; `run_query` consequences execute saved Proteins for reads and Actions for writes. **Imagination (XII)** exposes projections as an `include` and as its own source. **Visibility (XV)** has exactly one enforcement point: here. **Attention (XIII)**: the queue is `source: decision`; `decide` is an Action. **Collab (Window case 7)**: CRDT text flows through `edit-record-text`; cursors ride ephemeral lanes. **AniccaDB**: replacing `store` must not change one character of this Part — that is the acceptance test for storage independence.
 
 ---
 
-# - [ ] Part VIII — Transfer: promise bundles under agreement
+# - [x] Part VIII — Transfer: promise bundles under agreement
 
 **Why.** A Transfer is *a bundle of promises + an agreement policy + a visibility policy*. Everything the cathedral won survives — append-only signed history, settlement-only mutation, derived status — on a quarter of the moving parts. Records never permanently become Needs or Contributions; promises carry the roles.
 
@@ -628,7 +660,7 @@ fn policy_satisfied(t: &Transfer, ag: &[Agreement], deps: &[Promise]) -> bool {
 }
 ```
 
-## - [ ] VIII.3 Settlement (idempotent, the only Record mutation)
+## - [x] VIII.3 Settlement (idempotent, the only Record mutation)
 
 ```rust
 fn settle_all_local(tx: &mut Tx, t: TransferUid, actor: Uid) -> Result<Vec<Fact>> {
@@ -674,7 +706,7 @@ PRODUCTION farmer→miller→baker: private conditional promises (V.3) relay set
 
 **Why.** Some concepts could be generic strings interpreted by interfaces, but are strictly superior when the engine computes over them. Those graduate to the **Instinct** tier — things the lynx knows without learning: concept + engine functions, callable from Karma conditions and Protein queries, never reimplemented per interface.
 
-## - [ ] IX.1 Place
+## - [x] IX.1 Place
 
 ```sql
 CREATE TABLE place (
@@ -686,7 +718,7 @@ CREATE TABLE place (
 ```
 
 ```rust
-// rebirth-core/src/instinct/place.rs — pure over loaded map data
+// nucleus/src/instinct/place.rs — pure over loaded map data
 pub fn distance(a: &Place, b: &Place) -> Meters;               // haversine
 pub fn route(a: &Place, b: &Place, g: &MapGraph) -> Route;     // A*: path, eta, alternatives
 pub fn near(p: &Place, center: &Place, radius: Meters) -> bool;
@@ -747,11 +779,11 @@ fn score(a: &Promise, b: &Promise) -> Score {
 
 ---
 
-# - [ ] Part XI — Trust: verifiable deltas first
+# - [x] Part XI — Trust: verifiable deltas first
 
 **Why.** Settled Transfers signed are an archive of real, checkable good. The near-term job is only verifiability: signatures on facts and promises, authorship undeniable wherever visibility lets data travel. Scores, leaderboards, and any reputation→capability linkage are explicitly deferred; no global score, ever.
 
-## - [ ] XI.1 Keys and signatures
+## - [x] XI.1 Keys and signatures
 
 ```sql
 CREATE TABLE identity_key (
@@ -778,14 +810,14 @@ CREATE TABLE identity_key (
 
 ---
 
-# - [ ] Part XII — Imagination: state(t) and confidence
+# - [x] Part XII — Imagination: state(t) and confidence
 
 **Why.** Fold promises and rules forward: nobody shows a person their projected state vector with other people's commitments folded in — let alone lets their automations trade on it. A backend engine, exposed through Protein; never an interface trick.
 
-## - [ ] XII.1 The fold
+## - [x] XII.1 The fold
 
 ```rust
-// rebirth-core/src/imagination.rs — pure, DST-shared with Karma
+// nucleus/src/imagination.rs — pure, DST-shared with Karma
 pub fn project(base: Snapshot, until: Time, opts: ProjOpts) -> Timeline {
     let mut clock = base.now; let mut state = base.quantities.clone();
     let mut events = merge(                       // one ordered stream:
@@ -894,7 +926,7 @@ CREATE TABLE visibility_rule (
 - [ ] Enforced in exactly one place: Protein evaluation (VII) — package export, sandbox host, and remote reads all pass through it.
 - [ ] Karma `set_visibility` consequence makes publish/retract automatable ("make transport Need visible to @neighborhood when quantity < 0").
 
-## - [ ] XV.2 Sync
+## - [x] XV.2 Sync
 
 - [ ] **Facts replicate**: per-organ policy (which records, which direction); outbox with retry; import via `append` (idempotent by uid; deltas commute — conflict-free for quantities by construction).
 - [ ] **Text replicates via the CRDT relay** (head/body), unchanged in spirit from the current design; the one record-editor sand owns editing everywhere.
@@ -909,10 +941,10 @@ CREATE TABLE visibility_rule (
 
 # - [ ] Part XVI — The Window: workflow acceptance tests
 
-**Why.** The Window is the triage discipline: hold every workflow against the primitives; place each part on the altitude ladder; only what the deduction forces enters the core. Held against twenty-one workflows, the triage forced exactly four core additions — place Instinct, ephemeral lanes, messages-attach-to-anything, embed-honestly — and nothing else. Each case below is an acceptance test: check it when the workflow runs end-to-end on the rebirth.
+**Why.** The Window is the triage discipline: hold every workflow against the primitives; place each part on the altitude ladder; only what the deduction forces enters the core. Held against twenty-one workflows, the triage forced exactly four core additions — place Instinct, ephemeral lanes, messages-attach-to-anything, embed-honestly — and nothing else. Each case below is an acceptance test: check it when the workflow runs end-to-end on the new core.
 
 - [ ] **1. Todo / knowledge base** — records+links; Karma daily counters; todo/kanban sands. *Accept:* create task, habit re-arms daily, done posts a fact with cause.
-- [ ] **1b. Focus queue (ordered doing)** — order is links, never staggered frequencies. `@before` chains task records (recurring keep position across days; one-shots link in or fall to tail). Arrival=Karma+Frequency, sequence=`@before` graph, urgency=promise windows. One Protein: `where quantity<0, order: topo(@precedes), then window, then oldest`. Focus = head; next ones dimmed. Pinned corner sand is pure rendering; completing posts a fact and the stream recomputes; drag-reorder = `relink-order`. *Accept:* recurring+oneshot interleave in one queue; strict-sequence vs deadline-jump is a per-queue choice. — *Engine half done and tested* (`Engine::focus_queue`: active Needs × `topo(@before)` × oldest tie-break; completing the head promotes the next; same-pair multi-kind links verified). Missing: window tie-break (needs Promises in queue math), the sand, deadline-jump config.
+- [x] **1b. Focus queue (ordered doing)** — order is links, never staggered frequencies. `@before` chains task records (recurring keep position across days; one-shots link in or fall to tail). Arrival=Karma+Frequency, sequence=`@before` graph, urgency=promise windows. One Protein: `where quantity<0, order: topo(@precedes), then window, then oldest`. Focus = head; next ones dimmed. Pinned corner sand is pure rendering; completing posts a fact and the stream recomputes. — **Done and shipped as the first sand on the new host.** `protein::focus_queue()`; the pinned corner sand (`membrane/assets/focus.html`) speaks only Protein+Actions over the WebSocket; the full path (subscribe → snapshot → set-quantity Action → live Update promoting the next task) is proven by a real WebSocket client test (`membrane/tests/pilot.rs`). Remaining polish: window tie-break in the sort (needs promises in queue math), drag-reorder (`relink-order` Action exists; UI pending), deadline-jump config.
 - [ ] **2. Recurring tasks** — Karma+Frequency alone. *Accept:* monthly rule fires exactly once, catch-up works.
 - [ ] **3. Donation & buying** — open promises + Senses + Transfer + Trust; storefront sands; delivery = promise window + place route. *Accept:* the DONATION and SALE bundles (VIII.4) run against a second Cell.
 - [ ] **4. Transport A→B** — `route()` in core (IX); Senses matches by route×window overlap; ride sand shows both parties one proposal. *Accept:* the RIDE bundle drafts automatically from two Cells' open promises.
@@ -923,13 +955,13 @@ CREATE TABLE visibility_rule (
 - [ ] **9. Command flows (n8n)** — Karma 2.0 is the engine; Orchestra sand renders the DepGraph. *Accept:* signal→rule→effect chain builds visually and runs.
 - [ ] **10. Code editor** — skipped by doctrine (terminal sand + embed).
 - [ ] **11. CRM / people** — @person records, relationship links, birthday frequencies, fds until promotion, Protein aggregations for interaction metrics; sands carry the UX. *Accept:* birthday whisper fires; interaction report is one aggregate Protein.
-- [ ] **12. Personal finance** — currency units, facts with causes, rule-emitted bill promises, transfer income promises, Imagination runway. *Accept:* "rent leaves you short on the 5th unless X settles" appears as a projected crossing.
+- [/] **12. Personal finance** — currency units, facts with causes, rule-emitted bill promises, transfer income promises, Imagination runway. *Accept:* "rent leaves you short on the 5th unless X settles" appears as a projected crossing. — the projected-crossing engine is done and tested (`imagination_projects_the_scrubbable_future`); the finance sand awaits transport.
 - [ ] **13. Inventory & production** — units+places; `@needs` links as BOM; promise chains as production runs; transfer chains to customers; Imagination scheduling. *Accept:* `derive_needs(@cake, 20)` explodes the shopping list; the PRODUCTION chain relays settlement.
 - [ ] **14. World statistics** — Protein aggregation across consenting organs + Imagination trends; optimization engine explicitly far-future; L4 sands render. *Accept:* need-mountains aggregate renders from N organs without leaking hidden rows.
 - [ ] **15. AI conversation** — pure sand: Protein + Fiote + any LLM. *Accept:* runs with zero core changes.
 - [ ] **16. Calendar & time budgeting** — time-cost records, Frequency, Imagination timeline; calendar sand. *Accept:* projected week renders; moving a promise recomputes it.
 - [ ] **17. Health & IoT** — devices as signal-records; rules; blob rewards. *Accept:* scale posts weight facts; streak rule fires; source off-switch stops it.
-- [ ] **18. Games** — fds state (chess), embedded engines (Freedoom), THE Game reading records with Karma as rulebook. *Accept:* chess still works on rebirth primitives.
+- [ ] **18. Games** — fds state (chess), embedded engines (Freedoom), THE Game reading records with Karma as rulebook. *Accept:* chess still works on the new primitives.
 - [ ] **19. Education** — classes=Organs, sprints=promise bundles, curricula=trails; cohort progress = visible facts. *Accept:* an imported trail shows per-student progression (see the two Trail notes).
 - [ ] **20. Garden & farm** — plant records with places, watering rules, death-chance signals; scales into case 13.
 - [ ] **21. Recaps (TMIL)** — monthly rule queries the Ledger and publishes a record bundle. *Accept:* "this month in this Cell" generates itself.
@@ -938,20 +970,21 @@ CREATE TABLE visibility_rule (
 
 ---
 
-# - [ ] Part XVII — The rebirth order
+# - [ ] Part XVII — The build order
 
 Greenfield: no staged migration, no dual paths, no old API. Old data ported by hand at the end. Dependency order; each stage is usable alone — **live in each stage with real daily data before building the next** (the dogfood replaces the compatibility safety net).
 
 - [ ] **Stage 1 — Core schema + Spine** (Parts 0, I, II, III, IV, V schemas): record/concept/link/fact/promise; `append()`; quantity cache; checkpoints. *Usable as:* a ledgered todo/inventory. — *Done except compaction* (crates `nucleus`/`store`/`engine`; full schema migrated; append + cache + idempotency + hash chain + checkpoints + concepts/links repos, all tested).
 - [ ] **Stage 2 — Karma 2.0** (VI): pipeline, DepGraph, reactive delivery, Proof warnings, Signals/Effects. *Usable as:* habits + automation with provenance. — *Done except*: debounce, and the run_query/run_action/set_visibility/advance_transfer consequence kinds (they belong to Stages 3–4 anyway). Pipeline, derived values, transitive dep graph, tick, signal sampler with cascade, heartbeat/daemon, Proof loops, command/notify/ask/emit_promise consequences — all tested (42 tests).
-- [ ] **Stage 3 — Protein + Actions + transport** (VII) + place functions (IX): includes, topo order, live subscriptions, ephemeral lanes, Action catalog. *Usable as:* the board rebuilt on one contract; the focus queue ships here.
-- [ ] **Stage 4 — Transfer** (VIII): bundles, agreement, settlement, worked standards. *Usable as:* two-Cell donations and sales.
-- [ ] **Stage 5 — Imagination** (XII): project(), confidence, tokens, the timeline sand (the scrubbable future).
-- [ ] **Stage 6 — Lingua publishing + Senses** (III.2, X): concept packages, adoption, matcher with proximity ceilings.
-- [ ] **Stage 7 — Trust** (XI): keys, signatures everywhere, verification on import, verifiable aggregates.
-- [ ] **Stage 8 — Attention** (XIII): decision-records, notify effect, budgets, capture sources.
-- [ ] **Stage 9 — Fiote** (XIV): autonomy ladder over existing knobs.
-- [ ] **Stage 10 — World + Synchrony**: the map, THE Game, multi-Cell choreography over everything above.
+- [x] **Stage 3 — Protein + Actions + transport** (VII) + place functions (IX): includes, topo order, live subscriptions, ephemeral lanes, Action catalog. *Usable as:* the board rebuilt on one contract; the focus queue ships here. — **Done.** The `protein` crate (record/promise/decision sources, predicate tree with Lingua DAG, facts/promises/links/availability includes, topo order, aggregates, saved Proteins, the single visibility gate `execute_for`, the place `near` predicate, JSON wire, canned queues), the full Action catalog with provenance, and the `transport` crate (transport-agnostic `Session` state machine: multiplexed subscriptions + Actions + live `fact_bus` updates + ephemeral lanes, plus the axum-feature WebSocket driver) — all tested. **The transport is the sand boundary: everything through here is backend and does not touch the existing web/sand UI. Sand porting is the next step and needs product decisions.**
+- [x] **Stage 4 — Transfer** (VIII): bundles, agreement policies (individual/full/percentage/dependency), settlement as the only Record mutation (idempotent), agreement invalidation on edit, chains/spectators via conditional promises, first_completes satiation, Karma `advance_transfer`. *Usable as:* two-Cell donations and sales — tested.
+- [x] **Stage 5 — Imagination** (XII): `project()` folds promises + rules forward (deterministic), threshold crossings, confidence from verified kept-ratios, `confidence()`/`projected()` Karma tokens. The timeline *sand* awaits transport; the engine is done and tested.
+- [/] **Stage 6 — Lingua publishing + Senses** (III.2, X): concept packages, adoption, matcher with proximity ceilings. — *Lingua repo + Senses matcher done and tested* (`engine::senses`: complementary open-promise matching, hard proximity ceiling, Lingua-DAG concept alignment so a specific offer meets a general Need, confidence floor, ranked drafts). Remaining: concept *package* publish/adopt flow, and the live discovery-cache feed (the matcher takes the cache as input today).
+- [x] **Stage 7 — Trust** (XI): ed25519 keys (private key outside the db), every fact signed on the write path, `verify_fact` on import, authorship preserved across sync, the two-layer tamper model (chain guards content→hash, signature guards hash→author). Verifiable aggregates via Protein. Tested. (Leaderboard sands: deferred by design.)
+- [ ] **Stage 8 — Attention** (XIII): decision-records, notify effect, budgets, capture sources. — *Decision-records + notify effect + ask consequence + Decide action done and tested*; the budget/digest config and capture-source registry await the transport/UI.
+- [/] **Stage 8b — The web/sand finalization** (VII.4): port the **whole** sand system to Protein + Actions on the `membrane` host. No compatibility — the old SSE-view/table-CRUD data path is deleted. Preserve every frontend-only board feature (canvas pan/zoom, workspaces, move/resize/pin/z-index/grouping, edit mode, sand import `.html`/`.lince`, publish, the widget bridge re-pointed to Protein/Actions, ABI events on ephemeral lanes). — *Started*: `membrane` host + the focus-queue corner sand ported and proven end-to-end. Remaining: the board chrome (canvas/workspaces/edit-mode/import/publish) ported onto membrane, and the existing sands (table, kanban, relations, karma orchestra, transfer, trail, home manager) re-authored to the new mode. **This refounding is the source of truth; the old `web`/Tauri crate is retired at cutover with data hand-migrated.**
+- [ ] **Stage 9 — Fiote** (XIV): autonomy ladder over existing knobs. — Unstarted (Fiote writes only through the Action catalog, which now exists).
+- [ ] **Stage 10 — World + Synchrony**: the map, THE Game, multi-Cell choreography. — *Sync package layer done and tested* (visibility-filtered export, idempotent authored import, deltas commute); the map/game/choreography are UI-and-beyond.
 
 **Risks, with answers:** Ledger growth → checkpoints + compaction (II.2). Lingua politics → forks with lineage + equivalences; convergence is social. Capture consent → every source a visible record with an off switch; local-first non-negotiable. Whisper fatigue → hard user-owned budget; Lince has no metric that benefits from interrupting anyone. Greenfield discipline → each stage dogfooded before the next; years of append-only features without holistic passes is how the old cathedral grew.
 

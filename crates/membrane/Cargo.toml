@@ -1,0 +1,31 @@
+[package]
+name = "membrane"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Lince Cell surface: a minimal web host serving the transport WebSocket, the board shell, and sands. The fresh host on the new core."
+
+[[bin]]
+name = "membrane"
+path = "src/main.rs"
+
+[lib]
+name = "membrane"
+path = "src/lib.rs"
+
+[dependencies]
+nucleus = { workspace = true }
+store = { workspace = true }
+engine = { workspace = true }
+protein = { workspace = true }
+transport = { workspace = true, features = ["axum"] }
+axum = { workspace = true, features = ["ws"] }
+tokio = { workspace = true }
+serde_json = { workspace = true }
+dirs = { workspace = true }
+
+[dev-dependencies]
+tokio-tungstenite = "0.28.0"
+futures = { workspace = true }

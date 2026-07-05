@@ -12,8 +12,20 @@ members = [
     "crates/utils",
     "crates/tui",
     "crates/web",
+    "crates/nucleus",
+    "crates/store",
+    "crates/engine",
+    "crates/protein",
+    "crates/transport",
+    "crates/membrane",
 ]
 
+# gui and desktop are real workspace members so they inherit workspace fields
+# and `cargo metadata` parses them (the tauri/nix build needs this). They build
+# under `nix develop`, which supplies the GTK/Tauri system libs. A plain
+# `cargo build`/`cargo run` operates on `default-members` only (the lince
+# binary), so it does not pull GTK and works outside the nix shell. The new
+# core crates are built/tested explicitly with `-p` (e.g. `cargo run -p membrane`).
 default-members = ["crates/lince"]
 
 [workspace.package]
@@ -33,6 +45,12 @@ gui = { version = "=0.7.0", path = "crates/gui", package = "lince-gui" }
 tui = { version = "=0.7.0", path = "crates/tui", package = "lince-tui" }
 utils = { version = "=0.7.0", path = "crates/utils", package = "lince-utils" }
 web = { version = "=0.7.0", path = "crates/web", package = "lince-web" }
+nucleus = { version = "=0.7.0", path = "crates/nucleus" }
+store = { version = "=0.7.0", path = "crates/store" }
+engine = { version = "=0.7.0", path = "crates/engine" }
+protein = { version = "=0.7.0", path = "crates/protein" }
+transport = { version = "=0.7.0", path = "crates/transport" }
+membrane = { version = "=0.7.0", path = "crates/membrane" }
 
 argon2 = "0.5.3"
 async-stream = "0.3.6"

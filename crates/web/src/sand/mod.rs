@@ -3,7 +3,6 @@ mod chess;
 mod document_viewer;
 mod finance;
 mod freedoom;
-mod general_creation;
 mod home_manager;
 #[path = "kanban/mod.rs"]
 mod kanban;
@@ -106,7 +105,7 @@ impl OfficialWidgetBuilder {
     }
 }
 
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 33] = [
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 32] = [
     OfficialWidgetBuilder::Html {
         feature_flag: shell::FEATURE_FLAG,
         source_builder: shell::logo_source,
@@ -158,10 +157,6 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 33] = [
     OfficialWidgetBuilder::Html {
         feature_flag: finance::FEATURE_FLAG,
         source_builder: finance::source,
-    },
-    OfficialWidgetBuilder::Html {
-        feature_flag: general_creation::FEATURE_FLAG,
-        source_builder: general_creation::source,
     },
     OfficialWidgetBuilder::Html {
         feature_flag: home_manager::FEATURE_FLAG,

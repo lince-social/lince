@@ -1,0 +1,28 @@
+[package]
+name = "transport"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Lince first-party channel: multiplexed Protein subscriptions, typed Actions, and ephemeral presence lanes. The sand boundary."
+
+[features]
+default = []
+# The reference websocket driver over axum. Off by default so pure consumers
+# (and tests) don't pull axum.
+axum = ["dep:axum", "dep:futures"]
+
+[dependencies]
+nucleus = { workspace = true }
+store = { workspace = true }
+engine = { workspace = true }
+protein = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+axum = { workspace = true, optional = true, features = ["ws"] }
+futures = { workspace = true, optional = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt"] }

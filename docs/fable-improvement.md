@@ -1,8 +1,8 @@
-# Fable Improvement v2: The Lince Rebirth
+# Fable Improvement v3: The Lince Rebirth
 
 A deep analysis of Record, Karma, and Transfer; the structural change they are asking for; the pillars Lince still needs; and the experience that carries Lince from a tool you open to a synchrony you live inside.
 
-This is v2. The first version was annotated in place and every comment is absorbed here: names corrected (Record stays Record, Karma stays Karma, DNA goes back to being a synonym for the database and nothing more), embedded questions answered (relations, extensions, ledger speed, Lingua), and one major concept added that v1 missed entirely: **Protein**, the expression layer. Compatibility is deliberately and fully ignored — this describes the best architecture, to be built clean, with old data ported by hand at the end.
+This is v3. Beyond v2's refounding and Protein, this version absorbs a second round of annotations: **Instincts** (built-in concepts with engine muscle, place being the first), the precise Karma pipeline (full math kept, the bool workaround killed, many-in/many-out guaranteed), Imagination as an economic sense (confidence-driven proposals), the exact mechanics of where whispers arrive, and a whole new Part VII — **The Window** — that triages every app-domain Lince intends to cover and deduces, from first principles, what belongs in the core and what never should. The affected far-future notes in `notes/institute/` have been updated to match. Compatibility remains deliberately and fully ignored — best architecture, built clean, old data ported by hand at the end.
 
 ---
 
@@ -24,7 +24,7 @@ The pattern quietly repeats everywhere: every table (`karma`, `command`, `freque
 
 4. **Relations are second-class.** `record_link` exists, but link meaning lives in free strings and the mental model is a flat table. *Resolution:* one typed, quantified link primitive — `link(uid, from_record, kind, to_record, quantity?)` — where `kind` is a Lingua concept and the optional quantity makes links *recipes*: "cake —needs→ 2 flour". The graph becomes a bill-of-materials for life: a Need for one cake can derive Needs for its ingredients, Imagination walks the tree, Senses matches the sub-needs. Decomposition stops being prose and becomes structure.
 
-5. **`record_extension.freestyle_data_structure` is a confession.** Every JSON escape hatch marks a primitive the model lacks. *Resolution:* keep fds, but give structure a **promotion path** with a clear rule for each tier: fds is the private incubator (only one sand cares); a Lingua-typed attribute is the middle tier (Organs must *agree* on it, so it needs shared vocabulary); a core column is the top tier (the *engine* must compute over it — quantity, concept, unit, place). When the same key keeps appearing across many fds namespaces, that is the signal to graduate it. fds stops being a confession and becomes a nursery.
+5. **`record_extension.freestyle_data_structure` is a confession.** Every JSON escape hatch marks a primitive the model lacks. *Resolution:* keep fds, but give structure a **promotion path** with a clear rule for each tier: fds is the private incubator (only one sand cares); a Lingua-typed attribute is the middle tier (Organs must *agree* on it, so it needs shared vocabulary); an Instinct or core column is the top tier (the *engine* must compute over it). When the same key keeps appearing across many fds namespaces, that is the signal to graduate it. fds stops being a confession and becomes a nursery.
 
 ### Karma: a beautiful idea running on assembly-language ergonomics
 
@@ -40,9 +40,7 @@ Condition → Operator → Consequence is exactly the right size of idea: small 
 
 4. **Delivery every 60s is both too slow and too wasteful.** Too slow for "react to what I just did"; too wasteful for monthly rules. Spreadsheets solved this decades ago: recompute what depends on what changed. The loop must get better; Karma 2.0's derived dependency graph is how.
 
-**Accepted trade-offs, kept on purpose:** the Operator's conflation of trigger and payload (`=` passes non-zero and carries the value) stays — it is quirky but it is The Lince Way and it works. Shell Commands stay *out* of condition evaluation not as a loss but as an intentional gain: conditions that never touch the world are what make Deterministic Simulation Testing and Imagination possible. Commands become Signals (sampled on their own schedule, written as facts) and Effects (consequences, queued and logged) — the same power, honestly placed.
-
-H: i really like this, just make sure in the end i can make command, query, record quantities and frequency be inputs for Condition, control if it has a consequence or not and be able to run commands, queries and change records as Consequences (and if we are talking about everything being a record make sure in this lince rebirth karma will also control the visibility and transfers agreements and execution. I want many possible things to be fed into karma and for it to affect possibly many things.) (also i want to still have the hability to do full math on the condition side, it is meant to pull info from several places and give me the hability to do full math on it with eval after the replacing of the asm/token/slug apple.stock with real quantity so we can make condition: apple.stock + other_thing).
+**Accepted trade-offs, kept on purpose — and nothing narrows.** Shell Commands stay *out* of condition evaluation not as a loss but as an intentional gain: conditions that never touch the world are what make Deterministic Simulation Testing and Imagination possible. Commands become Signals (sampled on their own schedule, written as facts) and Effects (consequences, queued and logged) — the same power, honestly placed. The guarantee, spelled out in full in Karma 2.0 (Part III): commands, queries, record quantities, and frequencies all remain Condition inputs; commands, queries, and record changes all remain Consequences; full math over the condition survives exactly as today — tokens substituted, then the whole expression evaluated. The rebirth *widens* both ends: promises, transfer agreements, visibility, and every activatable thing become inputs and outputs too.
 
 ### Transfer: the cathedral next to the hut
 
@@ -104,12 +102,19 @@ Records gain three optional first-class fields (each nullable = today's behavior
 
 - `concept` — a reference into Lingua, the shared vocabulary.
 - `unit` — also a Lingua concept (`@count`, `@brl`, `@kg`, `@hour`).
-- `place` — where this Need/Contribution physically lives, for the map and logistics.
-H: lets make sure that place is a first class citizen 'unit' one that graduated to become a lince concept, let's have functions for it, lets be able to define it in world coordinates or address. The helpers should include A* route calculation and such. The concepts that are first class that could be generic unit strings dealt with by the interfaces but are superior should be called differently, suggest something. For now record adopts place.
+- `place` — where this Need/Contribution physically lives. Place is not a plain concept: it is Lince's first **Instinct** (below).
 
 Time is deliberately **not** a Record column: record-level timing is Karma + Frequency composed from first principles, with interface sugar that writes the counters for you when you pick a date range. Time lives declaratively on the Promise, where strangers need to read it.
 
 And Records get **names, not just ids**: UID for machines and sync, slug for humans and rules. Published Karma becomes readable, transplantable data.
+
+#### Instincts — concepts with engine muscle
+
+Some concepts could be left as generic strings for interfaces to interpret, but are strictly superior when the engine itself understands them. Those graduate into a named tier: an **Instinct** — something the lynx knows how to do without learning. An Instinct is a concept the core ships *functions* for, callable from Karma conditions and Protein queries alike, never reimplemented per interface.
+
+**Place is the first Instinct.** A place is world coordinates or an address (resolvable to coordinates), and the engine ships the operations: `distance(a, b)`, `route(a, b)` with A\* over map data (returning path, ETA, and alternatives), `near(place, radius)`, `within(place, area)`. A delivery route, "who is closest to Contribute", and "our routes cross Thursday at 18:04" are engine answers, not sand tricks. Map data (e.g. OSM extracts) loads as a resource; live traffic, if ever, arrives as Signals.
+
+Future Instinct candidates, each graduating only when the engine genuinely needs to compute over it: duration/calendar math (Frequency is already the proto-Instinct of time), currency conversion. The ladder from Part I stays intact and gains its top rung: **fds → Lingua attribute → Instinct/core column.**
 
 ### 2. Every change is a Fact (the Ledger — the Memory pillar)
 
@@ -128,6 +133,8 @@ fact  apples.stock  -2  10:04  cause=rule:rules.apple-donation      (donation ru
 ```
 
 **The Fact is the truth; the quantity is the cache.** `record.quantity` remains a real, mutable, instantly-readable column — but it gets exactly *one writer*: the fact-appender, which appends the fact and updates the column in the same transaction, like a bank keeps a balance column next to the statement. Simple GET workflows read the column at O(1); nothing ever folds events at read time. Periodic **checkpoint facts** snapshot a record's level so older facts can be archived or compacted — growth stays controlled by design, because facts are foldable.
+
+**Authorship travels with the data.** Facts and promises carry their author's signature. Visibility rules decide *what* leaves the Cell; the signature makes *who* undeniable wherever it goes. When your donation fact is visible in another Organ, that Organ knows it was you — traceability across Organs is what turns the Ledger into the raw material of Trust.
 
 What collapses into this one primitive:
 
@@ -149,10 +156,10 @@ Transfer already proved this architecture works — `transfer_event` *is* this, 
 ```
 promise(uid, record_uid | concept, delta, window, party_uid?,
         state: open|proposed|agreed|active|kept|broken|withdrawn,
-        condition?, transfer_uid?, rule_uid?)
+        condition?, transfer_uid?, rule_uid?, signature?)
 ```
 
-A promise is a fact that hasn't happened yet: a delta, a declarative time window, a party behind it (or an **open** party slot — see below), possibly a condition. Example:
+A promise is a fact that hasn't happened yet: a delta, a declarative time window, a party behind it (or an **open** party slot — see below), possibly a condition, signed by its author. Example:
 
 ```
 promise  apples.stock  +5  window[..Thu 18:00]  party=maria  state=agreed  transfer=xfer.saturday-beans
@@ -167,21 +174,28 @@ This one primitive replaces and unifies:
 - **Karma-scheduled actions** — a rule that will change something *emits a promise first* (instantly self-kept for immediate consequences, pending for scheduled ones). Automation becomes previewable and cancelable *in the same UI that shows human promises*.
 - **Simulation** — projection is now trivially defined: `state(t) = facts ≤ now + promises kept by t`. The farmer seeing "the chain unclogs in two days" is a query, not a feature.
 
-H: make sure that the data we create, (with due visibility) will be able to be seen in other organs knowing its us, so we can build traceability and trust.
-
 ### Karma 2.0: same soul, better body
 
 Split the tangle into three honest parts:
 
 - **Signals** — inputs sampled from outside (command output, sensor, HTTP, SQL), each with an explicit sampling schedule, written into the Ledger as facts on signal-records. Conditions become *pure*: they read the Ledger, never the world. Determinism restored; DST and Imagination become possible. (Simulation simply runs without live commands — intentional.)
-- **Rules** — reactive, named, pure: `when <records/signals change or timer fires> if <expr over projections> then <emit facts | promises | effects | ask>`. The engine derives the dependency graph from the expressions (the token parser already exists — this is close), recomputes only what changed (spreadsheet semantics; the 60s heartbeat survives only as a floor for timers), detects cycles statically, and warns: "these three rules form a loop that diverges." That is the Proof.md feature, falling out of the dependency graph nearly free.
+- **Rules** — reactive, named, pure. The engine derives the dependency graph from the expressions (the token parser already exists — this is close), recomputes only what changed (spreadsheet semantics; the 60s heartbeat survives only as a floor for timers), detects cycles statically, and warns: "these three rules form a loop that diverges." That is the Proof.md feature, falling out of the dependency graph nearly free.
 - **Effects** — shell/SQL/network actions, queued, logged as facts, never run inside evaluation.
 
-The consequence kind **`ask`** is new and small but load-bearing: instead of acting, the rule enqueues a human decision (see Attention, Part IV). "When apples < 3, *ask me* whether to send the reorder proposal" is a first-class rule, not a notification hack.
+**The rule pipeline, precisely:** `condition → gate → carry → consequences`.
 
-Rules reference records by slug. Every firing writes its fact with `cause = rule:<uid>` — automation that can always answer "why". Operator semantics (`=`, `=*`) survive unchanged inside the `if` expression.
+- **Condition** — full math, exactly as today: tokens/slugs are substituted with real values, then the whole expression is evaluated. `apples.stock + other_thing` stays legal; so does any composition of every input below. One repair: **booleans are native numbers** in evaluation (`true = 1`, `false = 0`), so `apples.stock < 3` needs no `* 1` workaround ever again.
+- **Gate** — optional and explicit, replacing the old operator's double duty: default `!= 0` (today's `=`), or `<`, `>`, `==` against a threshold, or `always` (today's `=*`).
+- **Carry** — what flows to the consequences: the condition's value (default), `1`, or a constant. Trigger and payload finally separate, without losing the old behavior.
+- **Consequences** — zero or more, each independent.
 
-H: i like the ask part, but it should be optional. I understand that we have an if statement inside the karma row evaluation i can make if record quantity < 3 do consequence by (rq1 < 3) * 1, operation '=', consequence X the * 1 is a workaround because the eval of rq1 < 3 is bool and in the engine i did with Rhai bool * 1 is 1 * 1, so it passes operator, we can do better than this without taking away the power and control it currently has. i want to continue doing full math inside conditions but the if of it can change to the better.
+**Many in, many out — the guarantee.** Condition inputs: record quantities (and other record fields), frequencies, commands and sensors (as Signals), queries, promise and transfer states, Imagination tokens (below), and other rules' values. Consequences: change records (facts), run commands (Effects), run queries and Actions, emit promises, change visibility, advance or activate or execute Transfers and their agreements, activate/deactivate *anything* — rules, sands, transfers, capture sources — because everything is a record, plus `ask` and `notify` (Part IV). Karma feeds on the whole organism and can move any part of it.
+
+**A rule with zero consequences is a named derived value** — a spreadsheet cell. Other rules reference it by slug; Proteins can query it. "Monthly burn rate" stops being a condition fragment copy-pasted into five rules and becomes one named formula.
+
+The consequence kind **`ask`** is available but never mandatory: instead of acting, the rule enqueues a human decision (see Attention, Part IV). "When apples < 3, *ask me* whether to send the reorder proposal" is a first-class rule, not a notification hack — and "when apples < 3, just send it" remains equally first-class.
+
+Rules reference records by slug. Every firing writes its fact with `cause = rule:<uid>` — automation that can always answer "why".
 
 ### Protein & Actions: the expression layer
 
@@ -201,16 +215,18 @@ protein {
 }
 ```
 
-- **Includes are the end of custom plumbing.** In v1 this was a hand-wave ("sands get provenance for free"); here is what it means: today, a sand that wants to show *why* a card's number changed would need bespoke joins across history tables that don't even exist coherently. Under Protein, it adds `facts(with: cause)` to its request — one line — and every sand on the platform gains provenance, promises, and projections the same way. The capability lives once, in the engine.
+- **Includes are the end of custom plumbing.** Today, a sand that wants to show *why* a card's number changed would need bespoke joins across history tables that don't even exist coherently. Under Protein, it adds `facts(with: cause)` to its request — one line — and every sand on the platform gains provenance, promises, and projections the same way. The capability lives once, in the engine.
+- **Instinct functions are callable in Proteins** — `where: distance(place, @home) < 2km`, `include: route(@home, place)` — the same functions Karma conditions use, computed once, in the core.
 - **Saved views are saved Proteins.** The `view` table's raw SQL becomes a named Protein; the SSE view stream becomes the `live: true` behavior of any Protein.
 - **Visibility is enforced here.** A Protein evaluated for a remote Organ passes through the same visibility rules as everything else — one gate, not one per endpoint.
+- **Ephemeral lanes.** The live transport also carries presence — cursors, typing indicators, call signaling — scoped to a Protein subscription and *never written to the Ledger*. Real-time togetherness without polluting Memory. (Part VII deduces why this must exist.)
 - **Storage-independence is the point.** The backend translates Protein to SQL today; when AniccaDB (the future Lince-native store) exists, Protein translates to Anicca queries and no interface notices. Protein is the contract that makes the storage engine replaceable.
 - **Writes are Actions**: semantic, typed verbs — `create-record`, `agree`, `settle-transfer`, `activate-rule` — the direction the widget contract already took, now universal. Protein never mutates; Actions never query. Every Action lands in the Ledger with its cause.
 - **Transport:** first-party surfaces need one bidirectional, typed, streaming channel (websocket, gRPC — an implementation choice, not a theory commitment). Plain HTTP endpoints remain — not for sands, but for the rest of the world: external systems integrating with a Cell speak HTTP; Lince's own interfaces speak Protein.
 
 ### What deliberately does not change
 
-Quantity stays central. The sign convention stays. Head/body stay. Cells and Organs stay. Sands stay. Karma keeps its name, its operator, its spirit. The Lince Way — model with numbers, join with math, act on thresholds — is not being replaced; it is being given a memory, a vocabulary, and a way to be seen.
+Quantity stays central. The sign convention stays. Head/body stay. Cells and Organs stay. Sands stay. Karma keeps its name, its full-math conditions, its spirit. The Lince Way — model with numbers, join with math, act on thresholds — is not being replaced; it is being given a memory, a vocabulary, and a way to be seen.
 
 ---
 
@@ -220,22 +236,21 @@ Ten pillars. Existing ones keep their names; new ones earn theirs.
 
 **1. Record.** *(existing → refounded)* The state of the world: identity + concept + unit + place, quantity as the universal knob. The nouns. Everything else in Lince is a way of interacting with Records — that sentence from the original notes survives every refounding.
 
-**2. Memory — the Ledger.** *(new, structural)* Every fact, forever, with its cause and optional signature. History, sync, undo, provenance, and audit are all this one pillar. The quantity cache makes it free to read; checkpoints make it bounded to keep.
+**2. Memory — the Ledger.** *(new, structural)* Every fact, forever, with its cause, its author's signature, and — wherever visibility lets it travel — undeniable authorship in other Organs. History, sync, undo, provenance, and audit are all this one pillar. The quantity cache makes it free to read; checkpoints make it bounded to keep.
 
-**3. Lingua — shared concepts.** *(new)* A `concept` table *in your own database* — Lingua is part of your DNA, not an external service. A concept is a shared tag with lineage: `concept(uid, names[], parents[], default_unit?)`. Names are plural and multilingual — "Apple" and "Maçã" are one concept. Your Record points at `@apple`; my Record points at the same uid; matching becomes a join instead of a human squint. You import slang the way you import a sand: inserting concept rows, published and versioned through the same package flow. Units are concepts too, so quantity dimensions ride the same system. No central ontology authority — Organs converge on vocabularies the way communities converge on slang, forks carry lineage, and Senses matches across declared equivalences. Without Lingua, Lince is a diary; with it, Lince is a language.
+**3. Lingua — shared concepts.** *(new)* A `concept` table *in your own database* — Lingua is part of your DNA, not an external service. A concept is a shared tag with lineage: `concept(uid, names[], parents[], default_unit?)`. Names are plural and multilingual — "Apple" and "Maçã" are one concept. Your Record points at `@apple`; my Record points at the same uid; matching becomes a join instead of a human squint. You import slang the way you import a sand: inserting concept rows, published and versioned through the same package flow. Units are concepts too, so quantity dimensions ride the same system. Above plain concepts sits the **Instinct** tier — concepts the engine ships functions for (place first; Part III). No central ontology authority — Organs converge on vocabularies the way communities converge on slang, forks carry lineage, and Senses matches across declared equivalences. Without Lingua, Lince is a diary; with it, Lince is a language.
 
-**4. Karma.** *(existing → refounded)* Signals, Rules, Effects, and `ask`. Reactive delivery over a derived dependency graph, static loop warnings, full provenance. Fast, explainable, previewable, provable — same name, same soul.
+**4. Karma.** *(existing → refounded)* Signals, Rules, Effects; the condition→gate→carry→consequences pipeline with full math preserved; many inputs, many outputs, zero-consequence rules as named values. Reactive delivery over a derived dependency graph, static loop warnings, full provenance. Fast, explainable, previewable, provable — same name, same soul.
 
-**5. Transfer.** *(existing → refounded)* An abstraction that *organizes* the primitives rather than owning its own machine: promises bundled under an agreement policy and a visibility policy. Everything already won survives — append-only, signed, derived status, settlement-only mutation — on a quarter of the moving parts, and the total moving-part count across all pillars goes *down*.
+**5. Transfer.** *(existing → refounded)* An abstraction that *organizes* the primitives rather than owning its own machine: promises bundled under an agreement policy and a visibility policy. Everything already won survives — append-only, signed, derived status, settlement-only mutation — on a quarter of the moving parts, and the total moving-part count across all pillars goes *down*. And because agreements and activation are record-shaped state, Karma can advance, activate, and execute Transfers as ordinary consequences.
 
-**6. Senses — discovery and matching.** *(new)* The layer that watches open promises across known Organs and *proposes* meetings: same concept, compatible units, overlapping windows, feasible places → draft Transfer. **Scoped by proximity, hard.** Automatic discovery and matching operate only within Organs at or under a proximity ceiling you set per matching rule — your ingroups, the Organs you actually know. Senses never auto-expands toward unknown or public Organs; widening the circle is a manual act or an explicitly Karma-gated one (the existing visibility-wave mechanism, kept deliberate). The lynx gets its famous eyesight, pointed only where you aim it.
+**6. Senses — discovery and matching.** *(new)* The layer that watches open promises across known Organs and *proposes* meetings: same concept, compatible units, overlapping windows, feasible places and routes (the place Instinct at work) → draft Transfer. **Scoped by proximity, hard.** Automatic discovery and matching operate only within Organs at or under a proximity ceiling you set per matching rule — your ingroups, the Organs you actually know. Senses never auto-expands toward unknown or public Organs; widening the circle is a manual act or an explicitly Karma-gated one (the existing visibility-wave mechanism, kept deliberate). The lynx gets its famous eyesight, pointed only where you aim it.
 
-**7. Trust.** *(new, minimal by intent)* The first and only near-term job: **make every interaction and delta verifiable.** Signatures on facts and promises (the transfer-event signing generalized), so your history of kept promises, donations, and settled Transfers is a public archive *you* can prove and others can check. On top of verifiability — later, carefully: search and aggregation ("who donated what"), and leaderboards only as an opt-in sand among Organs that mutually confide at a chosen trust level. Explicitly deferred: any linkage between reputation and capability — verifiable facts do not become tickets to do more on other nodes until that design is actually thought through. No global score, ever.
+**7. Trust.** *(new, minimal by intent)* The first and only near-term job: **make every interaction and delta verifiable.** Signatures on facts and promises (the transfer-event signing generalized), so your history of kept promises, donations, and settled Transfers is an archive *you* can prove and others can check — and since authorship travels with whatever visibility permits, doing verifiable good in one Organ is legible in another. On top of verifiability — later, carefully: search and aggregation ("who donated what"), and leaderboards only as an opt-in sand among Organs that mutually confide at a chosen trust level. Explicitly deferred: any linkage between reputation and capability — verifiable facts do not become tickets to do more on other nodes until that design is actually thought through. No global score, ever.
 
-**8. Imagination — projection.** *(new, the sleeper hit)* Fold promises and rules forward: `state(t)` for any future `t`. "Your apples run out Thursday. Rent leaves you 300 short on the 5th — unless the freelance Transfer settles, and Maria's verifiable history gives that 92% confidence." Todo apps show tasks; banks show balances; *nobody shows a person their projected state vector with other people's commitments folded in*. This is a **backend engine, a core Lince feature** — like Karma, it is computed in the core and exposed through Protein so every interface gets it at full speed; it is never an interface-side trick. Under Ledger + Promise it is a query loop, not a subsystem.
-H: it would be good to decide on percentage of confidence on certain future predictions to make proposals, like we are 90% sure that something is going to happen we propose or continue a proposal, so temporal data of facts and public proposals can help us make decisions, if people you know recurringly need certain stuff, you may propose to them ahead of time to surprise them, or buy something from them hidden and give it to them. Or imagination could have %chance on a normal curve for the price and demand of some stuff over the day, so you avoid rush hour and ask something before it.   
+**8. Imagination — projection.** *(new, the sleeper hit)* Fold promises and rules forward: `state(t)` for any future `t`. "Your apples run out Thursday. Rent leaves you 300 short on the 5th — unless the freelance Transfer settles, and Maria's verifiable history gives that 92% confidence." This is a **backend engine, a core Lince feature** — computed in the core and exposed through Protein so every interface gets it at full speed; never an interface-side trick. And it is an *economic sense*, not just a viewer: Imagination emits **confidence and distributions** — derived deterministically from the temporal shape of facts and public proposals — and exposes them as condition tokens: `confidence(promise)`, `projected(record, t)`, demand and price curves over the hours of a day. Rules can then act ahead of time: continue a proposal automatically when confidence ≥ 90%; notice that someone you know recurringly needs something and propose before they ask — or quietly buy it and surprise them; see the demand curve and make the purchase before rush hour. Todo apps show tasks; banks show balances; *nobody shows a person their projected state vector with other people's commitments folded in* — let alone lets their automations trade on it.
 
-**9. Protein — expression.** *(new, from the annotations)* The declarative read contract plus typed Actions (Part III). DNA is what you store; Protein is how it comes out and shows its power. Sands speak only Protein/Actions; HTTP remains for the outside world; storage stays swappable underneath (SQL now, AniccaDB later).
+**9. Protein — expression.** *(new, from the annotations)* The declarative read contract plus typed Actions (Part III). DNA is what you store; Protein is how it comes out and shows its power. Sands speak only Protein/Actions; HTTP remains for the outside world; storage stays swappable underneath (SQL now, AniccaDB later); the live transport carries the ephemeral presence lanes.
 
 **10. Attention — the Decision Queue.** *(new as a pillar, concrete and near-term)* One deterministic object: the queue of everything currently awaiting a human choice —
 
@@ -245,15 +260,13 @@ H: it would be good to decide on percentage of confidence on certain future pred
 - threshold crossings Imagination projects,
 - drafted rules and records awaiting one-tap approval (from UI sugar or from Fiote).
 
-A **whisper** is not generated; it is *routed* — a per-platform rendering of the queue (notification, sound, text digest; configured per device and per UI level) under a budget the user owns, with per-source on/off switches. Whispers also flow *inward*: devices are helpers doing the bulk work of making Records reflect reality — a phone, a scale, a sensor posting facts to your central node — and every capture source is a visible signal-record with an off switch. The everyday shape is plain: desktop for dense, powerful work; mobile for agile-first interactions; helpers whispering in both directions. The far-future ambient hardware (crowns, AR) is explicitly *not* the near-term design — the Decision Queue is, and it works with zero exotic hardware and **zero LLMs**.
-H: i feel like this whisper needs to arrive somewhere, is the Command signal of Karma the best place for it?
+**Where whispers arrive, mechanically.** Not through Karma's Command signal — capture and delivery are two different flows, and neither should impersonate a shell command. *Inward*, helpers speak **Signals**: a phone, a scale, a sensor posting facts to your central node, every capture source a visible signal-record with an off switch. *Outward*, delivery is a built-in **`notify` Effect** — a native sibling of shell Effects that routes a queue entry to a platform (notification, sound, text digest) per your configuration. And the queue entries themselves are **decision-records** — everything is a record — which closes the loop: Karma can read the queue, react to it, expire stale decisions, or escalate quiet ones. Whispers arrive as decision-records, are delivered by notify Effects, and are answered by Actions.
 
-**Fiote — the cub.** *(the optional operator, not a pillar)* An agent that turns the same knobs a human turns: it reads what you allow, and it creates Karma rules, drafts records, approves proposals — always as inspectable data with `cause = fiote`, always within a delegated autonomy level you set: *observe → suggest → draft → act-within-budget*. The human delegates to the AI the switching of knobs they could switch themselves; nothing Fiote does is a different *kind* of thing. Without an LLM, the Decision Queue works fully. With one, the quantity and quality of whispers rises, and — at the autonomy levels you grant — decisions leave the queue before they ever cost you attention. Theory only; no stack is chosen here.
-H: when lince talks to you it could be llmless, with like transfer proposal advanced to X stage, or if you have Fiote activated for updates on transfer it could read that update and give you his version of it, configured how you want.
+A **whisper** is therefore not generated; it is *routed* — rendered per platform under a budget the user owns, with per-source on/off switches. **The voice is LLM-less by default**: templated event text — "Transfer *Beans, Saturday* advanced to agreed", "apples below 3" — assembled from the same typed events everything else uses. If Fiote is active for a source, it reads the same update and gives you *its* version, configured how you want. The everyday shape is plain: desktop for dense, powerful work; mobile for agile-first interactions; helpers whispering in both directions. The far-future ambient hardware (crowns, AR) is explicitly *not* the near-term design — the Decision Queue is, and it works with zero exotic hardware and zero LLMs.
 
-**Where Alexandria went.** Trails of knowledge — the shareable bundles that install a capability ("keep a sourdough starter", "run a small farm") — are no longer a pillar or a feature, because they no longer need to be: a trail is an importable subgraph of records + links + concepts + rules + views, published through the ordinary package flow. Records give it identity, links give it structure, Lingua makes it transplantable, Protein makes it visible. A built-in capability with no built-in concept: the abstraction the primitives were sharpened to allow.
+**Fiote — the cub.** *(the optional operator, not a pillar)* An agent that turns the same knobs a human turns: it reads what you allow, and it creates Karma rules, drafts records, approves proposals — always as inspectable data with `cause = fiote`, always within a delegated autonomy level you set: *observe → suggest → draft → act-within-budget*. The human delegates to the AI the switching of knobs they could switch themselves; nothing Fiote does is a different *kind* of thing. Lince talks to you LLM-less by default; Fiote, where activated, narrates the same events its own way and — at the autonomy levels you grant — takes decisions out of the queue before they ever cost you attention (creating the same Karma automations you could create, approving proposals a rule could approve). Theory only; no stack is chosen here.
 
-H: this is good change the Trail markdown of lince notes to reflect the future plans of architecture for trail, it will be usefull as a collection of records, relationships defining order of implementation, lingua for the exact measures of stuff to build, and learn, other lince concepts helping it and a lot of work on the lince community to create a public library from basic subjects to phd level knowledge. If we pull certain trails from certain organs we can create a greater collection of records to add to our personal knowledge base.
+**Where Alexandria went.** Trails of knowledge — the shareable bundles that install a capability ("keep a sourdough starter", "run a small farm") — are no longer a pillar or a feature, because they no longer need to be: a trail is an importable subgraph of records + links + concepts + rules + views, published through the ordinary package flow. Records give it identity, links give it structure and order of implementation, Lingua gives it exact measures, Protein makes it visible — and a community can grow a public library from basic subjects to PhD level out of nothing but those primitives. A built-in capability with no built-in concept: the abstraction the primitives were sharpened to allow. (The institute notes — `Alexandria- Information Trail.md` and `Trail Progression Management.md` — now carry this architecture in implementation detail.)
 
 ---
 
@@ -267,10 +280,9 @@ Levels, from bedrock to air. Each level is complete — nobody is forced upward 
 
 **L2 — The Conversation.** Operation grows into a language; natural language compiles *to* it. "Every Monday I need to prep meals for the week" → a drafted rule + records shown for one-tap approval — never silently applied. Human and AI switch the same knobs: the AI's drafts are ordinary rules and promises with `cause = fiote`, reviewed in the ordinary queue. Explainability is structural, not aspirational.
 
-**L3 — The Whisper.** The Decision Queue, rendered. A few routed whispers a day — notification on the phone, a line of text on the desktop, a sound in the kitchen — each answerable by voice, one tap, or a pre-authorized nothing ("silence = yes" only where a rule explicitly granted it). Inward, the helpers work: the fridge photo becomes stock facts, the receipt posts deltas, each source visible and disableable. You live; helpers whisper reality into your Cell; the plan recompiles when reality diverges. No exotic hardware required, no LLM required — those only raise the ceiling.
-H: it is meant to be as much as possible ai-less, but if ai is the best tool to collect that whisper then it is completely fine to use it.
+**L3 — The Whisper.** The Decision Queue, rendered. A few routed whispers a day — notification on the phone, a line of text on the desktop, a sound in the kitchen — each answerable by voice, one tap, or a pre-authorized nothing ("silence = yes" only where a rule explicitly granted it). Inward, the helpers work: the fridge photo becomes stock facts, the receipt posts deltas, each source visible and disableable. As AI-less as possible by design — but where an AI is genuinely the best collector for a capture, using it is completely fine. You live; helpers whisper reality into your Cell; the plan recompiles when reality diverges.
 
-**L4 — The World.** The map and the game. Needs and Contributions rendered over real terrain — mountains of unmet Need, valleys of surplus — scoped by visibility and consent. Walk your neighborhood with the overlay: the bakery's flour Need, the school's volunteer window, the neighbor's surplus tomatoes on your literal route home. And THE Game: your real Records seed the landscape; Karma writes the game rules; finishing your tasks feeds the Lincegoshi blob that grows and bursts into light. Play and life stop pretending to be different activities.
+**L4 — The World.** The map and the game. Needs and Contributions rendered over real terrain — mountains of unmet Need, valleys of surplus — scoped by visibility and consent, drawn from the place Instinct the engine already computes with. Walk your neighborhood with the overlay: the bakery's flour Need, the school's volunteer window, the neighbor's surplus tomatoes on your literal route home. And THE Game: your real Records seed the landscape; Karma writes the game rules; finishing your tasks feeds the Lincegoshi blob that grows and bursts into light. Play and life stop pretending to be different activities.
 
 **L5 — Synchrony.** The level that doesn't exist anywhere yet, in any product. Multiple Cells' *projections* meet and negotiate ahead of time. My apples run out Thursday; your tree over-produces Wednesdays; Senses — inside the proximity circle we both allow — notices our routes cross Thursday 18:04, drafts the Transfer, both our queues agree (mine by rule, yours by nod), and Thursday evening the handoff happens like it was always going to. Scale it up: a street coordinating bulk purchases; a party where forty promises choreograph themselves; a farming co-op whose Transfer chains reschedule around weather signals; a city whose need-mountains visibly erode week by week. More needs met, more transactions peer-to-peer, more donations, more efficiency — the dance of the world, made executable.
 
@@ -298,15 +310,15 @@ If one thing gets built to define 2.0, build **the scrubbable future**: the time
 
 Compatibility is fully ignored: no staged migration, no dual-path bridges, no keeping the old API alive. Build the best architecture clean; at the end, old data is ported by hand into the new world, starting fresh. The order below is dependency order — each stage needs only the ones before it:
 
-1. **Core schema.** `record` (uid, slug, concept, unit, place, quantity-cache) + `concept` + `link` + `fact` + `promise`. The single write path: the fact-appender with its transactional quantity cache and checkpoint/compaction policy.
-2. **Karma 2.0 engine.** Signals, Rules, Effects, `ask`; dependency graph; reactive delivery; static loop warnings (Proof ships here); provenance on every firing.
-3. **Protein + Actions.** The read contract with includes and live streams; typed Actions; the first-party transport channel; HTTP kept at the boundary for external systems.
+1. **Core schema.** `record` (uid, slug, concept, unit, place, quantity-cache) + `concept` + `link` + `fact` + `promise`. The single write path: the fact-appender with its transactional quantity cache and checkpoint/compaction policy. Place lands here as a stored field; its functions come with stage 3.
+2. **Karma 2.0 engine.** Signals, Rules, Effects; the condition→gate→carry→consequences pipeline; dependency graph; reactive delivery; static loop warnings (Proof ships here); provenance on every firing.
+3. **Protein + Actions.** The read contract with includes and live streams; typed Actions; the first-party transport channel with its ephemeral presence lanes; the place Instinct's engine functions (distance, route, near) exposed to Proteins and Karma conditions; HTTP kept at the boundary for external systems.
 4. **Transfer on promises.** Bundles, parties, agreement policies, visibility policies; settlement as fact-appending; open promises as published Needs.
-5. **Imagination engine.** `state(t)` in the backend core; the timeline sand; the scrubbable future.
-6. **Lingua publishing + Senses.** Concept packages through the ordinary publication flow; the matcher over open promises, proximity-ceilinged, ingroup-only automation.
-7. **Trust.** Signatures on facts and promises; verifiable public history; search and aggregation over verified deltas. (Leaderboard sands and anything linking reputation to capability: explicitly later.)
-8. **Attention.** The Decision Queue; whisper routing per platform; capture sources as disableable signal-records.
-9. **Fiote.** The autonomy ladder over the existing knobs; `cause = fiote` everywhere.
+5. **Imagination engine.** `state(t)` in the backend core; confidence and distribution tokens for Karma; the timeline sand; the scrubbable future.
+6. **Lingua publishing + Senses.** Concept packages through the ordinary publication flow; the matcher over open promises — concept, unit, window, route — proximity-ceilinged, ingroup-only automation.
+7. **Trust.** Signatures on facts and promises; verifiable public history with authorship legible across Organs; search and aggregation over verified deltas. (Leaderboard sands and anything linking reputation to capability: explicitly later.)
+8. **Attention.** The Decision Queue as decision-records; the `notify` Effect; whisper routing per platform with templated LLM-less voice; capture sources as disableable signal-records.
+9. **Fiote.** The autonomy ladder over the existing knobs; `cause = fiote` everywhere; optional narration per source.
 10. **World + Synchrony.** The map, the game, multi-Cell choreography.
 
 **Risks worth respecting:**
@@ -319,35 +331,77 @@ Compatibility is fully ignored: no staged migration, no dual-path bridges, no ke
 
 ---
 
+## Part VII — The Window: deducing every app from first principles
+
+The list below is a window, not a roadmap. Its purpose is philosophical: take the workflows the world already runs on dedicated apps, hold each one against the primitives, and ask *where does each part land?* Two things come out of that exercise. First, a placement for every case, so nothing un-Lince-y ever leaks into the core — a workflow that would soil the primitives gets jammed into the web version as a sand, deliberately. Second, and more valuable: the cases that *don't* decompose cleanly are exactly the ones that reveal a missing primitive. The Window is how the core stays honest — abstractions are deduced from first principles, and only what the deduction forces gets added.
+
+### The altitude ladder
+
+Every part of every workflow lands on exactly one rung. It is never 8-or-80 — one app mixes rungs freely:
+
+1. **Primitive** — record, fact, promise, link, concept. Only what everything else is made of.
+2. **Pillar engine** — Karma, Transfer, Senses, Imagination, Trust, Attention, Protein. Computed in the backend core, exposed to every interface.
+3. **Instinct** — a concept with engine functions (place). Graduates only when the engine must compute over it.
+4. **Lingua concept / unit** — shared vocabulary with no engine functions. Meaning, not machinery.
+5. **fds sidecar** — structured data one sand alone cares about. The incubator.
+6. **Sand (web interface)** — everything that is *seen*; state abstractions; whole un-Lince-y apps.
+7. **Embedded foreign app** — the Freedoom pattern: when the world already built it well and the license allows, embed it in a sand and wire Lince's capabilities around it, honestly.
+
+**The placement rule:** *the core owns what must be computed, verified, or agreed across Organs; interfaces own what is seen; embed honestly what the world already built well.*
+
+### The cases
+
+**1. Todo, knowledge base, learning.** Records and links, Karma for the daily Need counters; the todo and kanban sands render. Learning and research organization is web-sand territory (easy HTML customization); trails of knowledge emerge from records + links + Lingua (Part IV). *Rungs: primitives + sands.*
+
+**2. Recurring tasks.** Karma + Frequency, nothing else — the frequency fires, the rule posts the fact, the Need appears on the set day. *Rung: pillar, pure.*
+
+**3. Donation and buying (iFood/Amazon-like).** Core-heavy: catalog items are records with concepts and units; offers and wants are open promises; Senses drafts the match; Transfer carries agreement and settlement; Trust makes the seller's history checkable; delivery is a promise window plus the place Instinct's route. The storefront, cart, and browsing experience are sands. *Rungs: primitives + four pillars + one Instinct + sands.*
+
+**4. Transport from A to B.** The case that forced an Instinct. `route(a, b)` — path, distance, ETA, alternatives via A\* over map data — is an engine function, because matching, choreography, and simulation all need it: Senses matches riders and drivers by route-overlap × window-overlap; both parties see the same proposal rendered by a ride sand. The ride-share *interface* is not core; the *route* is. Live traffic, if ever, arrives as Signals. *Rungs: Instinct + Senses/Transfer + sand.*
+
+**5. Group coordination and delegation.** Organs hold the people; assignment is a promise whose party is the assignee; task metadata rides work-metadata; kanban/gantt sands render the flow, and card-pushing automations are ordinary Karma. *Rungs: primitives + pillars + sands.*
+
+**6. Chat and calls (Discord/WhatsApp-like).** Thin core, deliberately: messages attach to *anything* (the unified message table generalized — a chat is messages referencing a record, a Transfer, an Organ), synced through the Ledger, streamed live through Protein. Presence and typing indicators ride the ephemeral lanes — never persisted. Calls: the AV transport is never core — embed an open-source stack (the Jitsi/Freedoom pattern) inside a sand; the core contributes what it is uniquely good at: the contact list (Organ users), a call-invite Action, and Karma-triggered calls — "call mom Sunday 19h" or "open a call with all parties when the Transfer reaches agreed" are rules ending in a notify Effect plus a call deep-link. *Rungs: primitives + ephemeral lanes + embed + sand.*
+
+**7. Real-time collaborative documents.** The text CRDT relay (already designed for `record.head`/`record.body`) plus the one record-editor sand every other sand embeds. Cursors and selections are ephemeral-lane presence, never Ledger. Document-specific settings sit in fds. *Rungs: pillar (Memory/sync) + ephemeral lanes + sand + fds.*
+
+**8. Social network (federated, mastodon-healthy).** Zero new core — the strongest proof the primitives are right. Posts are records with organ/public visibility and media resource refs; follows are Organ contacts; the feed is one Protein across followed Organs; boosts are republications; replies are messages. The public profile — "this is me, here is my verifiable history, here is what I offer" — is a published Collection served by the sandbox host already specified in `Playground.md`. Tweets, photos, long videos, blogposts: all of it lives in web sands, jammed there on purpose. *Rungs: primitives + existing pillars + sands.*
+
+**9. Command flows (n8n-like).** Karma 2.0 *is* an n8n: Signals in, rules as nodes, Effects out, the dependency graph already derived. The Karma Orchestra sand is the node-graph editor — pure rendering over rules that already exist as data. *Rung: pillar + sand.*
+
+**10. Code editor.** Skipped by doctrine. The terminal sand already carries helix and agent CLIs; classic terminal workflows should stay terminal workflows. The world built great editors; embed or ignore. *Rung: embed/none.*
+
+**11. CRM and people management.** Thin core, fat sand — and that is correct. People are records with `@person` concepts; relationships are links; birthdays are Frequencies; likes/dislikes/goals are fds until patterns earn Lingua promotion; interaction metrics are Protein aggregations over facts ("how did this Organ's members interact"). The pipeline views, profile pages, and reminders UX are sands. *Rungs: primitives + fds + Protein aggregation + sands.*
+
+**12. Personal finance.** The core showcase. Accounts are records with currency units; every movement is a fact with a cause; recurring bills are rule-emitted promises; income is transfer promises from other parties; runway and "will rent clear" are Imagination. The sand is mostly charts over Proteins. *Rungs: nearly all core; sand is presentation.*
+
+**13. Inventory, production, and scheduling (family producer → industry).** The second showcase. Stock is records with units and places; recipes and bills-of-material are quantified links; production runs are promise chains; customer connection is Transfer chains; scheduling and "can we deliver by the 12th" are Imagination over the whole graph. Gantt and planning boards are sands. *Rungs: primitives + links-as-recipes + pillars; sands render.*
+
+**14. World analysis and statistics.** Protein aggregation across consenting Organs (visibility gates everything) + Imagination trend projections; clustering, marginal-utility analysis, and chain-of-promises optimization are a far-future *Imagination extension* — in the backend when they come, exposed through Protein, never trapped in one interface. The heavy visualization (maps of need-mountains, trend dashboards) is L4-style sand work. *Rungs: pillar engines + sands; optimization explicitly future.*
+
+**15. AI conversation over your data.** Pure sand: Protein for the data, Fiote for the agency, any LLM behind it. Nothing about it touches the core, which is exactly why it is safe to build. *Rung: sand.*
+
+### Expansions — the same window, wider
+
+The variety above, checked against every note in the institute, extends without changing the pattern:
+
+**16. Calendar and time budgeting** *(Calendar.md)* — records with a time cost occupy the timeline; Frequency supplies recurrence; Imagination lays the projected calendar out; the calendar sand renders and edits. **17. Health, habits, and IoT** *(Microcontrollers, Computer Vision, Food)* — devices are Signal sources posting facts (the scale, the camera, the sensor), rules do the habit pressure, the Todo-blob does the reward; capture-heavy, UI-thin. **18. Games** *(Chess, Freedoom, Game of Life, THE Game)* — three honest shapes: game state in fds (chess today), embedded engines in sands (Freedoom), and THE Game reading real Records with Karma as the rulebook (L4). **19. Education** *(GdE)* — classes are Organs, sprints are promise bundles, curricula are trails, cohort progress is visible facts. **20. Garden and farm** *(Digital Garden.md)* — plant records with places, watering rules, death-chance signals; scales continuously up into case 13. **21. Recaps** *(TMIL)* — a monthly rule queries the Ledger and publishes a bundle of records; provenance makes "what happened this month" free.
+
+### What the Window deduces
+
+Held against twenty-one workflows, the triage forced exactly **four** additions into the core — and no more:
+
+1. **The place Instinct** — because matching, delivery, and choreography must compute routes, not render them.
+2. **The ephemeral lanes** — because presence, cursors, and call signaling are real-time truth that must *never* become Ledger facts.
+3. **Messages attach to anything** — because chat is not an app, it is a dimension of every shared object.
+4. **The embed-honestly doctrine** — because the cheapest correct implementation of a solved problem is the world's, wired to Lince's automation and contacts.
+
+Everything else in all twenty-one cases lands on sands, fds, Lingua, or pillars that already exist. That is the Window's verdict on the primitives: they are the right size. And its deeper lesson is the repetition — finance, inventory, the pantry, and the farm are *the same shape* (units + facts + promises + Imagination); chat, comments, and negotiation are the same shape (messages on a shared object); profiles, catalogs, and libraries are the same shape (published records behind visibility). Apps are projections of one organism. The Window is how we keep deducing the next abstraction from first principles instead of appending it.
+
+---
+
 ## Coda
 
 The current Lince proves the philosophy can be data. The reborn Lince makes the philosophy *executable at the level it was always aimed at*: not one person's spreadsheet of habits, but the connective tissue between people who intend to meet each other's Needs — remembering every change, speaking a common tongue, keeping its promises visible, imagining forward, and asking for a human only when a human is what's needed.
 
 Everything is a Record. Every change is a Fact. Every intended change is a Promise. The rest is choreography — and Protein is how the dance is seen.
-
-
-## Covered Cases and Workflows
-The web html version is the interface we throw all current workflows. So when i asked an ai to give me ideas for current existing apps and i wrote them down below (the ones Lince cares to attend) i did it merely so Lince is even more powerful with stronger primitives, and if we would soil it with a specific workflow very unlince like we put it in the web version, like how to turn the trust and record system into a social media with 'tweets' and 'photos' and long videos and blogposts. That is so not the potential for lince, but since we have good primitives we can implement it, so as to not soil lince we jam it into web version. The current list below is probably implementable with lince, i just want your help to understand the how, and if we agree, change the primitives and pillar to meet them better if they are important. Exaple: in the case of transport we might want routing to not be in fds and a sand to calculate it and show for both parties the proposal for that ride sharing transfer. The route is something important to core Lince, even though the interface for ride sharing is not. In video calls we might be able to do frontend-to-frontend only, calling an user of a certain organ or a group of people in an organ, but how much should be backend core lince and how much web interface because video calls are not a primitive? That's the current situation i'm in right now and i want your help. So here goes my list, how close to primitives do we put each part of each item, its not 8 or 80, some apps may be made with only fds and other with primitives only and others with a lot of units and others with adopted concepts like 'place' its a mix, i just want your help to triage them and if we are lacking something that is core (non interface only) then we add it, be it central like primitives/pillar or something like units and built-in concepts. The list is also usefull for us to see patterns and the big picture and question our pillars/primitives and evolve them even further.
-
-This is a list of cases Lince says it covers with the proposed features and ones user added with '?' to develop further the primitives/pillars and abstractions to make Lince good enough to work in those cases:
-
-1. Todo list, knowledge base and learning/research. (Simple records and relations, the learning and research is probably in web version for ease of customization with html)
-2. Recurring tasks. (Karma with frequency only changing records on the set day bc of frequency)
-3. Donation and buying of items (iFood and Amazon like with Transfers and Karma for automation) 
-4. Transport from point A to B? (I want to have a 'place' as a built-in concept of lince, to adopt that non generic property, full of helper functions for algorithms and operations, how can we make a point A to B calculation in route and distance and alternatives part of Lince? to be able to not use apps like Waze).
-5. Group coordination with delegation of tasks, from knowledge companies that push cards on kanbans when do work items in tech, marketing, event planning...
-6. Discord and Whatsapp? (Record of a chat with messages? video/voice/screensharing calls would be in desktop web interface sand probably right)
-7. In real time collaboration document editing (the document has crdt and a fds info about cursor positions or frontend only)?
-8. Social Networks for posting info you want. Being federated and healthy like mastodon.
-9. Commands flow like n8n (Karma and commands).
-10. Code editor for now lets skip it other ones do it well and doing one in web version is easy later (we can currently already use terminal sand for terminal workflows so helix and agent clis are already possible, dont worry about this part, some workflows like the classic terminal based should keeep it that way, lince web has a terminal, that's good enough for a lot of those workflows, lets focus on problem solving the rest of this list).
-11. CRM and HR-like people management for stuff like birthday, likes and dislikes, goals (probably some abstraction around record and fds and maybe organ users to see how they interacted with organs for metrics analysis, I cannot fathom what would be used, ideas? how much is web html sand frontend state abstraction? probably a lot in my opinion, but if you have any saying).
-12. Personal Finance (records and Karma, immagination to simulate future trends according to current promises (recurring or not) with ourselves (karma mostly) and others (transfer mostly)).
-13. Inventory management and production planning and scheduling for small family producers to massive industries, connected directly to their customers.
-14. World analysis and reports for statistics (probably a combination of some features of immagination with some organ data collection in bulk for analysis, data visualization, optimization of resources with marginal utility and solutions for chain of promises that need to be kept for optimal resource usage, probably frontend heavy for the graphs and trends and clustering of types of needs and such, very world interface like).
-15. ai conversation sand that pulls data from lince to analyze each part of it, 100% probably web html and other interfaces, uses Protein to query data, and the Fiote agent (any llm as core, but maybe our own too, just idea, dont focus on that specific part for now).
-
-The reason we avoid building from scratch things like code editors is that if they are good and open source we can use them, we might intergrate, embed one into a lince sand, people around the world may develop one lince text editor, but it will not be the institute (the points above are ideas for what we would have built-into a/many different lince interfaces). Same thing with video calls, maybe we dont need to implement our own, if the licenses match we might embed one into a sand like we do with freedoom (lets say that jitsi allows for it, then we only need to make the sand around the embedded jitsi interact with the calling app based on lince's capabilities (automation and organ/user as contact list being called automatically possibly or manually for video/audio calls) with all the power of lince, conditionally only if such and such thing happen with a transfer and record, (like call mom sunday 19h, or call people involved with transfer after it passes through an accepting stage X)).
-
-I also want you to go over the lince tasks (notes/institute) again, the docs/, the current plan and the code to make sure that this list is a big picture of what lince proposes to be, dont put every single possible human workflow here, see the variety of what i put in and expand.
-Feel free to change the notes/institute of the parts that are for the far future, like the Trail i commented on, if you find others that will change how they are done because we are rewritting primitives please do change the respective note with as much info as needed to implement inside and mention it only, in this plan.

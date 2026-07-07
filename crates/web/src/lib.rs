@@ -3,6 +3,7 @@ pub mod colorscheme;
 mod application;
 #[cfg(test)]
 mod board_js_tests;
+mod cell_bootstrap;
 mod domain;
 mod infrastructure;
 mod presentation;
@@ -104,6 +105,8 @@ pub async fn serve_with_bound_addr_sender(
     let cell_store = Store::open(&default_lince_db_url())
         .await
         .map_err(IoError::other)?;
+    // Seed the Cell's native app tables and, on first run, create the admin.
+    crate::cell_bootstrap::bootstrap_cell(&cell_store, local_auth_required).await?;
     let cell_engine = Arc::new(
         engine::Engine::new(cell_store)
             .await

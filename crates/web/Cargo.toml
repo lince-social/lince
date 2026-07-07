@@ -19,6 +19,7 @@ async-stream = { workspace = true }
 axum = { workspace = true, features = ["json", "multipart", "ws"] }
 base64 = { workspace = true }
 chrono = { workspace = true }
+crossterm = { workspace = true }
 dirs = { workspace = true }
 domain = { workspace = true }
 dotenvy = { workspace = true }

@@ -202,6 +202,13 @@ export function createWidgetBridge({
   let nextActionRequestId = 1;
   const subscriptions = new Map();
   const pendingActions = new Map();
+  // ABI sand-to-sand events ride transport ephemeral lanes (blueprint VII.3):
+  // one room per topic (`abi:<topic>`). The board joins a room for every topic
+  // its cards listen to AND every topic it emits, so events reach OTHER
+  // sessions/devices. Same-board siblings are still fanned out in-page because
+  // the whole board is a single connection and the transport suppresses
+  // self-echo — a server round-trip would never come back to this board.
+  const joinedRooms = new Set();
 
   function frameForInstance(instanceId) {
     return getFrames().find(
@@ -242,6 +249,11 @@ export function createWidgetBridge({
       socket.addEventListener("open", () => {
         for (const entry of subscriptions.values()) {
           sendTransport(entry.message);
+        }
+        // The server session is fresh on every (re)connect — re-join our lane
+        // rooms so ABI events keep flowing.
+        for (const room of joinedRooms) {
+          sendTransport({ type: "lane_join", room });
         }
         resolve();
       }, { once: true });
@@ -299,6 +311,18 @@ export function createWidgetBridge({
       return;
     }
 
+    if (type === "lane_event") {
+      const payload = message.payload || {};
+      const topic = String(payload.topic || "").trim();
+      if (topic) {
+        // An ABI event from another session/device. `sourceInstanceId` belongs
+        // to a remote board, so it won't match a local frame — delivery just
+        // fans out to whoever listens here.
+        deliverEventToFrames(topic, payload.data, payload.sourceInstanceId || "");
+      }
+      return;
+    }
+
     if (type === "action_ok" || type === "error") {
       const req = pendingActions.get(String(message.id || ""));
       if (!req) {
@@ -329,7 +353,57 @@ export function createWidgetBridge({
     return Array.isArray(listen) && listen.includes(topic);
   }
 
-  function emitWidgetEvent(sourceInstanceId, topic, data) {
+  function abiRoom(topic) {
+    return `abi:${topic}`;
+  }
+
+  // Join (idempotently) a lane room so this board both receives its events and
+  // is allowed to send to it (the session only fans out a `LaneSend` to rooms
+  // the sender has joined).
+  function ensureRoomJoined(room) {
+    if (joinedRooms.has(room)) {
+      return;
+    }
+    joinedRooms.add(room);
+    void connectTransport()
+      .then(() => sendTransport({ type: "lane_join", room }))
+      .catch(() => {});
+  }
+
+  // Reconcile lane membership with the topics the current cards listen to.
+  // Called whenever the frame set / listen config changes.
+  function refreshLaneRooms() {
+    if (typeof getCardAbiListen !== "function") {
+      return;
+    }
+    const desired = new Set();
+    for (const frame of getFrames()) {
+      const instanceId = frame?.dataset?.packageInstanceId || "";
+      const listen = instanceId ? getCardAbiListen(instanceId) : null;
+      if (Array.isArray(listen)) {
+        for (const topic of listen) {
+          if (topic) {
+            desired.add(abiRoom(topic));
+          }
+        }
+      }
+    }
+    // Leave rooms no card listens to anymore (emit-only rooms are transient and
+    // left implicitly on the next reconcile once nothing listens).
+    for (const room of [...joinedRooms]) {
+      if (!desired.has(room)) {
+        joinedRooms.delete(room);
+        sendTransport({ type: "lane_leave", room });
+      }
+    }
+    for (const room of desired) {
+      ensureRoomJoined(room);
+    }
+  }
+
+  // Deliver an ABI event to every local frame that listens to the topic and did
+  // not source it. Shared by same-board emit and remote lane events.
+  function deliverEventToFrames(topic, data, sourceInstanceId) {
     const eventMessage = {
       type: WIDGET_EVENT,
       payload: {
@@ -351,6 +425,28 @@ export function createWidgetBridge({
     }
   }
 
+  function emitWidgetEvent(sourceInstanceId, topic, data) {
+    // Same-board siblings: in-page fan-out (the board is one connection, so the
+    // transport would never echo this back to us).
+    deliverEventToFrames(topic, data, sourceInstanceId);
+    // Other sessions/devices: publish on the topic's ephemeral lane.
+    const room = abiRoom(topic);
+    ensureRoomJoined(room);
+    void connectTransport()
+      .then(() =>
+        sendTransport({
+          type: "lane_send",
+          room,
+          payload: {
+            topic,
+            data: cloneJsonValue(data, null),
+            sourceInstanceId: sourceInstanceId || "",
+          },
+        }),
+      )
+      .catch(() => {});
+  }
+
   function render(state) {
     bridgeState = normalizeBridgeState(state);
     dispatchBridgeState(statusNode, {
@@ -366,6 +462,9 @@ export function createWidgetBridge({
       );
       postBridgeState(frame, bridgeState, meta);
     }
+
+    // Frames or their listen config may have changed — reconcile lane rooms.
+    refreshLaneRooms();
   }
 
   async function handleAction(message) {

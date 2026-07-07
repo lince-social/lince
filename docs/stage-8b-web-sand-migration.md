@@ -71,14 +71,26 @@ features and make them run inside current web/Tauri.
   the previous view stream as fallback.
 - [x] Add `uid_eq` to Protein so current web sands can target one record
   directly instead of subscribing to a broad window and filtering client-side.
-- [ ] Move ABI events (`emit` / `onEvent`) from the in-page event bus onto
-  transport ephemeral lanes, preserving the same sand-facing API.
+- [x] Move ABI events (`emit` / `onEvent`) from the in-page event bus onto
+  transport ephemeral lanes, preserving the same sand-facing API. Each ABI
+  topic is a lane room `abi:<topic>`; the board joins the rooms its cards
+  listen to and emit on. Same-board siblings still fan out in-page (one board
+  is one connection and the transport suppresses self-echo), while other
+  sessions/devices receive the event over the lane. Transport substrate is
+  covered by `transport/tests/session.rs::ephemeral_lanes_fan_out_and_never_persist`;
+  the browser-driven bridge selftest is the remaining coverage.
 - [ ] Port the real current-web table sand to Protein/Actions without losing
   its current UX: drafts, schema selection, toasts, info panel, and LynxDS
   surface.
-- [ ] Add Actions required by table and editor parity:
+- [/] Add Actions required by table and editor parity:
   `edit-record-text`, `set-extension`, `set-slug`, `set-concept`, `set-unit`,
-  undo/compensation, and delete/deactivate semantics.
+  undo/compensation, and delete/deactivate semantics. DONE: `edit-record-text`,
+  `set-extension`, `set-slug`, `set-concept`, `set-unit` (engine `Action`
+  variants + `store::records` setters + `engine/tests/record_edits.rs`, 5
+  tests); each metadata edit drops a zero-delta annotation fact so live
+  subscriptions refresh. `Deactivate` already covers delete/deactivate
+  (append-only Ledger: delete == quantity→0). REMAINING: undo/compensation
+  (compensating-fact reversal), landing with the record editor.
 - [ ] Port kanban data plumbing to Protein/Actions while preserving current
   task metadata, categories, dates, estimates, assignees, comments, resource
   refs, worklogs, filters, and view settings.

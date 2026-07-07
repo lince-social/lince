@@ -162,6 +162,94 @@ pub async fn get_extension(
         .and_then(|r| serde_json::from_str(&r.get::<String, _>("fds")).ok()))
 }
 
+/// Edit a record's text (head/title and/or body). Not the quantity cache, so a
+/// plain `UPDATE` is allowed; provenance/live-refresh is the engine's job via an
+/// annotation fact. `None` leaves a field untouched.
+pub async fn set_text(
+    pool: &SqlitePool,
+    uid: &str,
+    head: Option<&str>,
+    body: Option<&str>,
+) -> Result<(), StoreError> {
+    let now = Utc::now().to_rfc3339();
+    let res = sqlx::query(
+        "UPDATE record
+           SET head = COALESCE(?, head),
+               body = COALESCE(?, body),
+               updated_at = ?
+         WHERE uid = ?",
+    )
+    .bind(head)
+    .bind(body)
+    .bind(&now)
+    .bind(uid)
+    .execute(pool)
+    .await?;
+    if res.rows_affected() == 0 {
+        return Err(sqlx::Error::RowNotFound);
+    }
+    Ok(())
+}
+
+/// Rename a record's slug (uniqueness is enforced by the `record.slug` UNIQUE
+/// index; an empty slug clears it).
+pub async fn set_slug(pool: &SqlitePool, uid: &str, slug: Option<&str>) -> Result<(), StoreError> {
+    if let Some(slug) = slug {
+        if !nucleus::valid_slug(slug) {
+            return Err(sqlx::Error::Protocol(format!("invalid slug `{slug}`")));
+        }
+    }
+    let now = Utc::now().to_rfc3339();
+    let res = sqlx::query("UPDATE record SET slug = ?, updated_at = ? WHERE uid = ?")
+        .bind(slug)
+        .bind(&now)
+        .bind(uid)
+        .execute(pool)
+        .await?;
+    if res.rows_affected() == 0 {
+        return Err(sqlx::Error::RowNotFound);
+    }
+    Ok(())
+}
+
+/// Set (or clear, with `None`) the record's Lingua concept classification.
+pub async fn set_concept(
+    pool: &SqlitePool,
+    uid: &str,
+    concept_uid: Option<&str>,
+) -> Result<(), StoreError> {
+    let now = Utc::now().to_rfc3339();
+    let res = sqlx::query("UPDATE record SET concept_uid = ?, updated_at = ? WHERE uid = ?")
+        .bind(concept_uid)
+        .bind(&now)
+        .bind(uid)
+        .execute(pool)
+        .await?;
+    if res.rows_affected() == 0 {
+        return Err(sqlx::Error::RowNotFound);
+    }
+    Ok(())
+}
+
+/// Set (or clear, with `None`) the record's unit-of-measure concept.
+pub async fn set_unit(
+    pool: &SqlitePool,
+    uid: &str,
+    unit_uid: Option<&str>,
+) -> Result<(), StoreError> {
+    let now = Utc::now().to_rfc3339();
+    let res = sqlx::query("UPDATE record SET unit_uid = ?, updated_at = ? WHERE uid = ?")
+        .bind(unit_uid)
+        .bind(&now)
+        .bind(uid)
+        .execute(pool)
+        .await?;
+    if res.rows_affected() == 0 {
+        return Err(sqlx::Error::RowNotFound);
+    }
+    Ok(())
+}
+
 /// The single writer of the quantity cache — called only from engine::append
 /// inside the fact transaction.
 pub async fn bump_quantity(

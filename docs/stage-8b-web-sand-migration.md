@@ -71,14 +71,16 @@ features and make them run inside current web/Tauri.
   the previous view stream as fallback.
 - [x] Add `uid_eq` to Protein so current web sands can target one record
   directly instead of subscribing to a broad window and filtering client-side.
-- [x] Move ABI events (`emit` / `onEvent`) from the in-page event bus onto
+- [/] Move ABI events (`emit` / `onEvent`) from the in-page event bus onto
   transport ephemeral lanes, preserving the same sand-facing API. Each ABI
   topic is a lane room `abi:<topic>`; the board joins the rooms its cards
   listen to and emit on. Same-board siblings still fan out in-page (one board
   is one connection and the transport suppresses self-echo), while other
   sessions/devices receive the event over the lane. Transport substrate is
-  covered by `transport/tests/session.rs::ephemeral_lanes_fan_out_and_never_persist`;
-  the browser-driven bridge selftest is the remaining coverage.
+  covered by `transport/tests/session.rs::ephemeral_lanes_fan_out_and_never_persist`.
+  REMAINING: the bridge relay itself has not been driven end-to-end (no JS
+  runtime here) — needs the browser selftest, incl. the room churn path where
+  emit-only rooms are left/rejoined across renders.
 - [ ] Port the real current-web table sand to Protein/Actions without losing
   its current UX: drafts, schema selection, toasts, info panel, and LynxDS
   surface.
@@ -146,6 +148,27 @@ plane is on the new system.
 - [x] The new database file is `lince.db`.
 - [/] Sand migration is underway.
 - [ ] Full current-web feature parity on the new data plane is not complete.
+
+### Known unresolved: migration boot collision on `lince.db`
+
+Verified (throwaway probe, not committed): with no `LINCE_DATA_DIR_OVERRIDE`,
+both the legacy `persistence` layer (`utils::config::lince_data_dir()` =
+`config_dir()/lince`, runs the root `migrations/`) and the new `store`
+(`crates/web` opens `config_dir()/lince/lince.db`, runs
+`crates/store/migrations/0001_init.sql`) open the **same file** `lince.db`
+with **different** sqlx migration sets. Whichever boots first wins; the second
+fails with e.g. `migration 20260625182502 was previously applied but is missing
+in the resolved migrations`. The new cell path also silently bypasses the
+`LINCE_DATA_DIR_OVERRIDE` that persistence honors.
+
+This is not cleanly fixable yet: the file split (`old_lince.db`) is vetoed, and
+removing the legacy persistence boot breaks the not-yet-ported sands that still
+read/write the old schema through `services.db`. Resolution lands with the sand
+ports — once every sand is on the new store, the legacy persistence boot (and
+the root `migrations/`, kept only as reference) is deleted and `lince.db` is
+owned solely by the new schema. Until then, running both paths against one file
+requires either the split or an override; do not tick "boots the new schema
+cleanly" while both boot.
 
 Cutover rule: deleting legacy web data paths is allowed sand by sand after parity.
 Deleting or replacing the current web/Tauri surface is out of scope.

@@ -2,7 +2,9 @@
 //! Everything above talks to typed repository functions; replacing this crate
 //! (AniccaDB later) must not change the engine or Protein contracts.
 
+pub mod auth;
 pub mod concepts;
+pub mod config;
 pub mod facts;
 pub mod freqs;
 pub mod links;
@@ -10,6 +12,7 @@ pub mod misc;
 pub mod places;
 pub mod records;
 pub mod rules;
+pub mod seed;
 pub mod transfers;
 pub mod visibility;
 

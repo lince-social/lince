@@ -208,3 +208,48 @@ CREATE TABLE identity_key (
     public_key TEXT NOT NULL,
     UNIQUE(actor_uid, key_id)
 );
+
+-- Native app tables (not Ledger records): singleton settings + the
+-- permission/role/user workflow. Configuration is as native and structured as
+-- the Transfer/Rule sidecars, so it gets a real typed table rather than a JSON
+-- extension; column DEFAULTs ARE the default policy, an UPDATE is the override.
+CREATE TABLE configuration (
+    id                           INTEGER PRIMARY KEY CHECK (id = 1), -- singleton
+    name                         TEXT NOT NULL DEFAULT 'Default',
+    language                     TEXT NOT NULL DEFAULT 'en',
+    timezone                     INTEGER NOT NULL DEFAULT 0,
+    style                        TEXT NOT NULL DEFAULT 'catppuccin_macchiato',
+    show_command_notifications   INTEGER NOT NULL DEFAULT 0,
+    command_notification_seconds REAL NOT NULL DEFAULT -1,
+    delete_confirmation          INTEGER NOT NULL DEFAULT 1,
+    error_toast_seconds          REAL NOT NULL DEFAULT 5,
+    keybinding_mode              INTEGER NOT NULL DEFAULT 0,
+    created_at                   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at                   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+) STRICT;
+
+CREATE TABLE role (
+    id   INTEGER PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE CHECK (length(trim(name)) > 0)
+) STRICT;
+CREATE TABLE permission (
+    id          INTEGER PRIMARY KEY,
+    subject     TEXT NOT NULL CHECK (length(trim(subject)) > 0),
+    action      TEXT NOT NULL CHECK (length(trim(action)) > 0),
+    description TEXT CHECK (description IS NULL OR length(trim(description)) > 0),
+    UNIQUE(subject, action)
+) STRICT;
+CREATE TABLE role_permission (
+    role_id       INTEGER NOT NULL REFERENCES role(id) ON DELETE CASCADE CHECK (role_id > 0),
+    permission_id INTEGER NOT NULL REFERENCES permission(id) ON DELETE CASCADE CHECK (permission_id > 0),
+    PRIMARY KEY (role_id, permission_id)
+) STRICT;
+CREATE TABLE app_user (
+    id            INTEGER PRIMARY KEY,
+    name          TEXT NOT NULL CHECK (length(trim(name)) > 0),
+    username      TEXT NOT NULL UNIQUE CHECK (length(trim(username)) > 0),
+    password_hash TEXT NOT NULL CHECK (length(trim(password_hash)) > 0),
+    created_at    TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    role_id       INTEGER REFERENCES role(id) CHECK (role_id IS NULL OR role_id > 0)
+) STRICT;

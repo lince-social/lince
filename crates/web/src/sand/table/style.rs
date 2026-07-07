@@ -612,6 +612,65 @@ const STYLE: &str = r#"
     color: #ffd9df;
   }
 
+  .dataTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  .dataTable th {
+    text-align: left;
+    padding: 0.4rem 0.6rem;
+    color: var(--muted);
+    font-weight: 600;
+    border-bottom: 1px solid var(--line-strong);
+    position: sticky;
+    top: 0;
+    background: var(--panel-soft);
+  }
+
+  .dataTable td {
+    padding: 0.35rem 0.6rem;
+    border-bottom: 1px solid var(--cell-line);
+    color: var(--text);
+    vertical-align: top;
+    white-space: pre-wrap;
+  }
+
+  .dataTable td.editable {
+    cursor: text;
+  }
+
+  .dataTable td.editable:hover {
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .dataTable tr:hover .rowActions button {
+    opacity: 1;
+  }
+
+  .rowActions {
+    text-align: right;
+    width: 2rem;
+  }
+
+  .rowActions button {
+    opacity: 0.35;
+    transition: opacity 120ms ease;
+    line-height: 1;
+  }
+
+  .field--input {
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    background: var(--panel-soft);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.9rem;
+  }
+
   @media (max-width: 900px) {
     body {
       overflow: auto;

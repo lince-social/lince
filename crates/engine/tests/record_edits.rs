@@ -130,6 +130,41 @@ async fn set_concept_and_unit_classify_and_clear() {
 }
 
 #[tokio::test]
+async fn compensate_reverses_a_quantity_fact() {
+    let e = engine().await;
+    let uid = plain(&e, "stock").await;
+
+    // a quantity change to undo
+    let out = e.act(Action::AddQuantity { target: uid.clone(), delta: 5.0 }, None).await.unwrap();
+    assert_eq!(store::records::quantity(&e.store.pool, &uid).await.unwrap(), Some(5.0));
+    let fact_uid = out.facts[0].uid.clone();
+
+    // undo it: an inverse (-5) compensation fact restores the level
+    let comp = e.act(Action::Compensate { fact: fact_uid }, None).await.unwrap();
+    assert_eq!(comp.facts.len(), 1);
+    assert_eq!(comp.facts[0].delta, -5.0);
+    assert_eq!(store::records::quantity(&e.store.pool, &uid).await.unwrap(), Some(0.0));
+}
+
+#[tokio::test]
+async fn compensate_zero_delta_fact_is_a_noop() {
+    let e = engine().await;
+    let uid = plain(&e, "note").await;
+
+    // a text edit produces a zero-delta annotation fact
+    let out = e
+        .act(Action::EditRecordText { target: uid.clone(), head: Some("H".into()), body: None }, None)
+        .await
+        .unwrap();
+    assert_eq!(out.facts[0].delta, 0.0);
+
+    // compensating it changes nothing (nothing to reverse) and errors on unknown
+    let comp = e.act(Action::Compensate { fact: out.facts[0].uid.clone() }, None).await.unwrap();
+    assert!(comp.facts.is_empty());
+    assert!(e.act(Action::Compensate { fact: "f_missing".into() }, None).await.is_err());
+}
+
+#[tokio::test]
 async fn set_extension_writes_readable_sidecar() {
     let e = engine().await;
     let uid = plain(&e, "widget").await;

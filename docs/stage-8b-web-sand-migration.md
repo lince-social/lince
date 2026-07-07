@@ -84,15 +84,16 @@ features and make them run inside current web/Tauri.
 - [ ] Port the real current-web table sand to Protein/Actions without losing
   its current UX: drafts, schema selection, toasts, info panel, and LynxDS
   surface.
-- [/] Add Actions required by table and editor parity:
+- [x] Add Actions required by table and editor parity:
   `edit-record-text`, `set-extension`, `set-slug`, `set-concept`, `set-unit`,
-  undo/compensation, and delete/deactivate semantics. DONE: `edit-record-text`,
-  `set-extension`, `set-slug`, `set-concept`, `set-unit` (engine `Action`
-  variants + `store::records` setters + `engine/tests/record_edits.rs`, 5
-  tests); each metadata edit drops a zero-delta annotation fact so live
-  subscriptions refresh. `Deactivate` already covers delete/deactivate
-  (append-only Ledger: delete == quantity→0). REMAINING: undo/compensation
-  (compensating-fact reversal), landing with the record editor.
+  undo/compensation, and delete/deactivate semantics. `edit-record-text`,
+  `set-extension`, `set-slug`, `set-concept`, `set-unit` are engine `Action`
+  variants + `store::records` setters; each metadata edit drops a zero-delta
+  annotation fact so live subscriptions refresh. `Deactivate` covers
+  delete/deactivate (append-only Ledger: delete == quantity→0). `Compensate
+  { fact }` is the undo primitive — appends the inverse delta caused by the
+  original (`CauseKind::Compensation`), no-op on zero-delta facts
+  (`store::facts::get`). Covered by `engine/tests/record_edits.rs` (7 tests).
 - [ ] Port kanban data plumbing to Protein/Actions while preserving current
   task metadata, categories, dates, estimates, assignees, comments, resource
   refs, worklogs, filters, and view settings.

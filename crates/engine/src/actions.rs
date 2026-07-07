@@ -46,6 +46,11 @@ pub enum Action {
     SetUnit { target: String, unit: Option<String> },
     /// Write a namespaced fds sidecar extension on a record (blueprint I.2).
     SetExtension { target: String, namespace: String, fds: serde_json::Value },
+    /// Undo a prior fact by appending its inverse (compensation, blueprint II.3):
+    /// an append-only Ledger never deletes, so undo is a new fact with the
+    /// opposite delta, caused by the original. Metadata/annotation facts
+    /// (delta 0) have nothing to reverse and compensate to a no-op.
+    Compensate { fact: String },
     CreateConcept {
         name: String,
         #[serde(default)]
@@ -242,6 +247,32 @@ impl Engine {
                 outcome.facts = self
                     .annotate(uid, actor, serde_json::json!({ "extension": namespace }), now)
                     .await?;
+            }
+            Action::Compensate { fact } => {
+                let original = store::facts::get(&self.store.pool, &fact)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(fact.clone()))?;
+                // Zero-delta facts (metadata/annotation) carry no quantity to
+                // reverse — undoing them is a no-op, not an error.
+                if original.delta != 0.0 {
+                    outcome.facts = self
+                        .append(
+                            NewFact {
+                                uid: None,
+                                record_uid: original.record_uid,
+                                delta: -original.delta,
+                                at: None,
+                                actor_uid: actor,
+                                cause: Cause {
+                                    kind: CauseKind::Compensation,
+                                    uid: Some(original.uid),
+                                },
+                                payload: None,
+                            },
+                            now,
+                        )
+                        .await?;
+                }
             }
             Action::CreateConcept { name, parents } => {
                 let mut parent_uids = Vec::new();

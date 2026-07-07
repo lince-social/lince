@@ -15,17 +15,17 @@ pub(crate) fn source() -> SandWidgetSource {
             title: "Table".into(),
             author: "Lince Labs".into(),
             version: "1.0.0".into(),
-            description: "Server-rendered table for arbitrary view snapshots.".into(),
+            description: "Live records table over Protein reads and typed Actions.".into(),
             details:
-                "Reads server_id and view_id from the host, streams datastar HTML fragments from the backend, keeps the table markup on the server, and opens a minimal create panel when you want to add a new row."
+                "Subscribes to a records Protein through the widget bridge, renders the table client-side, and creates/edits/deletes rows with typed Actions (create-record, set-slug, edit-record-text, set-quantity, deactivate). No server view stream required."
                     .into(),
             initial_width: 7,
             initial_height: 5,
-            requires_server: true,
+            requires_server: false,
             permissions: vec![
                 "bridge_state".into(),
-                "read_view_stream".into(),
-                "write_table".into(),
+                "protein_subscribe".into(),
+                "act".into(),
             ],
         },
         head_links: vec![],

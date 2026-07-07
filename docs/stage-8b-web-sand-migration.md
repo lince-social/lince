@@ -81,9 +81,20 @@ features and make them run inside current web/Tauri.
   REMAINING: the bridge relay itself has not been driven end-to-end (no JS
   runtime here) — needs the browser selftest, incl. the room churn path where
   emit-only rooms are left/rejoined across renders.
-- [ ] Port the real current-web table sand to Protein/Actions without losing
+- [x] Port the real current-web table sand to Protein/Actions without losing
   its current UX: drafts, schema selection, toasts, info panel, and LynxDS
-  surface.
+  surface. REBUILT fresh (feature parity, not pixel parity): the sand was a
+  server-rendered datastar table on an SSE stream; it is now a client-rendered
+  records table that subscribes to `{ source: record }` and writes via typed
+  Actions — cell edits map by column (slug→`set-slug`, head/body→
+  `edit-record-text`, quantity→`set-quantity`), Create→`create-record` (kind
+  select + draft fields), delete→`deactivate`. Live updates, toasts, info/metrics
+  panel preserved. Driven proof in headless chromium against a stubbed bridge:
+  `scripts/other/table-sand-selftest.sh` (snapshot render + `source=record` +
+  create-record & set-slug round-trip) — PASS. This sand is the fan-out TEMPLATE
+  for the rest. DEFERRED (was in the old server table, not yet rebuilt): rich
+  keyboard-grid navigation/caret editing, helix/common mode, the LynxDS "nerd"
+  surface, and concept/unit inline editors.
 - [x] Add Actions required by table and editor parity:
   `edit-record-text`, `set-extension`, `set-slug`, `set-concept`, `set-unit`,
   undo/compensation, and delete/deactivate semantics. `edit-record-text`,

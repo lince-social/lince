@@ -27,6 +27,25 @@ pub enum Action {
     AddQuantity { target: String, delta: f64 },
     Activate { target: String },
     Deactivate { target: String },
+    /// Edit a record's text — its head (title) and/or body. Each present field
+    /// is written; a zero-delta annotation fact carries provenance and refreshes
+    /// live subscriptions. The CRDT relay for collaborative body editing is a
+    /// separate surface (blueprint VII.4 record editor); this is the direct set.
+    EditRecordText {
+        target: String,
+        #[serde(default)]
+        head: Option<String>,
+        #[serde(default)]
+        body: Option<String>,
+    },
+    /// Rename a record's slug (`None`/empty clears it).
+    SetSlug { target: String, slug: Option<String> },
+    /// Classify a record under a Lingua concept (name or uid; `None` clears).
+    SetConcept { target: String, concept: Option<String> },
+    /// Set a record's unit-of-measure concept (name or uid; `None` clears).
+    SetUnit { target: String, unit: Option<String> },
+    /// Write a namespaced fds sidecar extension on a record (blueprint I.2).
+    SetExtension { target: String, namespace: String, fds: serde_json::Value },
     CreateConcept {
         name: String,
         #[serde(default)]
@@ -174,6 +193,55 @@ impl Engine {
             }
             Action::Deactivate { target } => {
                 return Box::pin(self.act(Action::SetQuantity { target, value: 0.0 }, actor)).await;
+            }
+            Action::EditRecordText { target, head, body } => {
+                let uid = self.resolve(&target).await?;
+                store::records::set_text(
+                    &self.store.pool,
+                    &uid,
+                    head.as_deref(),
+                    body.as_deref(),
+                )
+                .await?;
+                outcome.facts = self
+                    .annotate(
+                        uid,
+                        actor,
+                        serde_json::json!({ "edit": { "head": head, "body": body } }),
+                        now,
+                    )
+                    .await?;
+            }
+            Action::SetSlug { target, slug } => {
+                let uid = self.resolve(&target).await?;
+                let slug = slug.filter(|s| !s.is_empty());
+                store::records::set_slug(&self.store.pool, &uid, slug.as_deref()).await?;
+                outcome.facts = self
+                    .annotate(uid, actor, serde_json::json!({ "slug": slug }), now)
+                    .await?;
+            }
+            Action::SetConcept { target, concept } => {
+                let uid = self.resolve(&target).await?;
+                let concept_uid = self.resolve_concept_opt(concept).await?;
+                store::records::set_concept(&self.store.pool, &uid, concept_uid.as_deref()).await?;
+                outcome.facts = self
+                    .annotate(uid, actor, serde_json::json!({ "concept": concept_uid }), now)
+                    .await?;
+            }
+            Action::SetUnit { target, unit } => {
+                let uid = self.resolve(&target).await?;
+                let unit_uid = self.resolve_concept_opt(unit).await?;
+                store::records::set_unit(&self.store.pool, &uid, unit_uid.as_deref()).await?;
+                outcome.facts = self
+                    .annotate(uid, actor, serde_json::json!({ "unit": unit_uid }), now)
+                    .await?;
+            }
+            Action::SetExtension { target, namespace, fds } => {
+                let uid = self.resolve(&target).await?;
+                store::records::set_extension(&self.store.pool, &uid, &namespace, &fds).await?;
+                outcome.facts = self
+                    .annotate(uid, actor, serde_json::json!({ "extension": namespace }), now)
+                    .await?;
             }
             Action::CreateConcept { name, parents } => {
                 let mut parent_uids = Vec::new();
@@ -406,5 +474,47 @@ impl Engine {
             .await?
             .map(|r| r.uid)
             .ok_or_else(|| EngineError::UnknownRecord(token.to_string()))
+    }
+
+    /// Resolve an optional concept token (name or uid) to a uid. `None` and the
+    /// empty string both mean "clear" and resolve to `None`.
+    async fn resolve_concept_opt(
+        &self,
+        token: Option<String>,
+    ) -> Result<Option<String>, EngineError> {
+        match token.as_deref().map(str::trim).filter(|t| !t.is_empty()) {
+            Some(t) => Ok(Some(
+                store::concepts::resolve(&self.store.pool, t)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(t.to_string()))?,
+            )),
+            None => Ok(None),
+        }
+    }
+
+    /// Commit a zero-delta annotation fact on `record_uid`. Metadata edits
+    /// (text/slug/concept/unit/extension) are not quantity deltas, but a fact is
+    /// still appended so the edit is Ledger-visible provenance and so live
+    /// subscriptions invalidate and refresh (same pattern as `CreateRecord`).
+    async fn annotate(
+        &self,
+        record_uid: String,
+        actor: Option<String>,
+        payload: serde_json::Value,
+        now: chrono::DateTime<Utc>,
+    ) -> Result<Vec<Fact>, EngineError> {
+        self.append(
+            NewFact {
+                uid: None,
+                record_uid,
+                delta: 0.0,
+                at: None,
+                actor_uid: actor,
+                cause: Cause::user_edit(),
+                payload: Some(payload.to_string()),
+            },
+            now,
+        )
+        .await
     }
 }

@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Todo</title>
+  <script src="/board/frame.js"></script>
+  <style>
+    :root { color-scheme: dark; --bg: #101318; --panel: #171c22; --line: #29313b; --text: #e6edf3; --muted: #8b949e; --good: #3fb950; --warn: #d29922; }
+    * { box-sizing: border-box; }
+    body { margin: 0; height: 100vh; overflow: hidden; background: var(--bg); color: var(--text); font: 13px/1.45 system-ui, -apple-system, sans-serif; }
+    main { height: 100%; display: grid; grid-template-rows: auto 1fr auto; gap: 10px; padding: 12px; }
+    header { display: flex; align-items: center; gap: 8px; }
+    h1 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); flex: 1; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #f85149; }
+    .dot.live { background: var(--good); }
+    .toolbar { display: flex; gap: 6px; align-items: center; }
+    button, input { font: inherit; }
+    button { border: 1px solid var(--line); border-radius: 7px; background: #1f2630; color: var(--text); padding: 5px 9px; cursor: pointer; }
+    button:hover { border-color: #3d4856; background: #252d38; }
+    button.primary { border-color: rgba(63,185,80,.35); color: #d8f5e8; }
+    .queue { min-height: 0; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+    ul { list-style: none; margin: 0; padding: 0; }
+    li { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: start; padding: 10px; border-bottom: 1px solid var(--line); }
+    li:last-child { border-bottom: 0; }
+    li.active { background: rgba(63,185,80,.08); }
+    .done { width: 22px; height: 22px; border-radius: 50%; padding: 0; border-color: rgba(63,185,80,.7); background: transparent; }
+    .title { font-weight: 650; word-break: break-word; }
+    .body { margin-top: 3px; color: var(--muted); white-space: pre-wrap; word-break: break-word; }
+    .meta { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 11px; }
+    .empty { padding: 24px 12px; color: var(--muted); text-align: center; }
+    form { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+    input { min-width: 0; border: 1px solid var(--line); border-radius: 7px; background: #0d1117; color: var(--text); padding: 7px 9px; }
+    label { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 12px; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Todo focus</h1>
+      <div class="toolbar">
+        <label><input id="show-ids" type="checkbox" /> ids</label>
+        <span id="dot" class="dot"></span>
+      </div>
+    </header>
+    <section class="queue" aria-label="Todo queue">
+      <ul id="list"></ul>
+      <div id="empty" class="empty" hidden>Nothing needs doing.</div>
+    </section>
+    <form id="new-task">
+      <input id="new-head" placeholder="New task..." autocomplete="off" />
+      <button class="primary" type="submit">Add</button>
+    </form>
+  </main>
+  <script>
+    const H = window.LinceWidgetHost;
+    const list = document.getElementById("list");
+    const empty = document.getElementById("empty");
+    const dot = document.getElementById("dot");
+    const showIds = document.getElementById("show-ids");
+    const headInput = document.getElementById("new-head");
+    let rows = [];
+    let active = 0;
+    const storageKey = "lince.membrane.todo.showIds";
+
+    showIds.checked = localStorage.getItem(storageKey) === "true";
+    showIds.onchange = () => {
+      localStorage.setItem(storageKey, String(showIds.checked));
+      render();
+    };
+
+    H.onLive((live) => dot.classList.toggle("live", !!live));
+    H.subscribeProtein("todo", {
+      source: "record",
+      where: [{ quantity_lt: 0.0 }, { kind_eq: "plain" }],
+      order: [{ topo: "before" }, { asc: "created_at" }],
+    }, ({ rows: next }) => {
+      rows = Array.isArray(next) ? next : [];
+      if (active >= rows.length) active = Math.max(0, rows.length - 1);
+      render();
+    });
+
+    function render() {
+      list.innerHTML = "";
+      empty.hidden = rows.length > 0;
+      rows.forEach((row, index) => {
+        const li = document.createElement("li");
+        li.className = index === active ? "active" : "";
+        const done = document.createElement("button");
+        done.className = "done";
+        done.type = "button";
+        done.title = "Mark done";
+        done.onclick = () => complete(row.uid);
+        const content = document.createElement("div");
+        const title = document.createElement("div");
+        title.className = "title";
+        title.textContent = row.head || row.slug || row.uid;
+        content.appendChild(title);
+        if (row.body) {
+          const body = document.createElement("div");
+          body.className = "body";
+          body.textContent = row.body;
+          content.appendChild(body);
+        }
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.textContent = showIds.checked ? row.uid : `qty ${row.quantity}`;
+        li.append(done, content, meta);
+        li.onclick = () => { active = index; render(); };
+        list.appendChild(li);
+      });
+    }
+
+    function complete(uid) {
+      H.act({ action: "set-quantity", target: uid, value: 0 }).catch(console.warn);
+    }
+
+    document.getElementById("new-task").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const head = headInput.value.trim();
+      if (!head) return;
+      H.act({ action: "create-record", kind: "plain", head, body: "", quantity: -1 })
+        .then(() => { headInput.value = ""; })
+        .catch(console.warn);
+    });
+
+    window.addEventListener("keydown", (event) => {
+      if (event.target === headInput) return;
+      if (event.key === "j" || event.key === "ArrowDown") {
+        active = Math.min(rows.length - 1, active + 1); render(); event.preventDefault();
+      } else if (event.key === "k" || event.key === "ArrowUp") {
+        active = Math.max(0, active - 1); render(); event.preventDefault();
+      } else if ((event.key === " " || event.key === "Enter") && rows[active]) {
+        complete(rows[active].uid); event.preventDefault();
+      }
+    });
+  </script>
+</body>
+</html>

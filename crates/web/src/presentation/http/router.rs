@@ -48,6 +48,7 @@ use {
                     get_terminal_output, post_terminal_input, post_terminal_resize,
                 },
                 trail::{get_trail_page, get_trail_stream},
+                transport::connect_transport_socket,
                 widget_bridge::{get_widget_bridge_state, post_widget_bridge_print},
                 widgets::{get_widget_contract, get_widget_stream, post_widget_action},
             },
@@ -190,6 +191,7 @@ pub fn build_router(state: AppState, mode: HttpServeMode) -> Router {
             "/widget-bridge/actions/print",
             post(post_widget_bridge_print),
         )
+        .route("/transport/ws", get(connect_transport_socket))
         .route("/widgets/{instance_id}/contract", get(get_widget_contract))
         .route("/widgets/{instance_id}/stream", get(get_widget_stream))
         .route(

@@ -1,20 +1,30 @@
 # Fable Improvement Critique
 
-This critique focuses only on internal theory consistency in `docs/fable-improvement.md`.
-It deliberately ignores current implementation status. Each item names the tension, why it
-matters, and a concrete repair that keeps the blueprint's spirit intact.
+This critique reviews the current `docs/fable-improvement.md` as a theory document.
+It ignores whether the code happens to implement something differently. The question here is:
+does the markdown's model explain itself without contradiction?
+
+Status key:
+
+- **Still holds:** the earlier critique remains valid.
+- **Partially resolved:** new text helps, but the theory is still ambiguous.
+- **New:** introduced or exposed by the latest edits.
 
 ---
 
-## 1. "Everything is a Record" is too broad
+## 1. "Everything is a Record" is still too broad
+
+**Status:** Still holds.
 
 ### The tension
 
-The root axiom says:
+The root axiom still says:
 
-> Everything is a Record. Every change is a Fact. Every intended change is a Promise.
+```text
+Everything is a Record. Every change is a Fact. Every intended change is a Promise.
+```
 
-But the document's own model has many first-class things that are not Records:
+But the document's own model still has first-class things that are not Records:
 
 - `fact`
 - `promise`
@@ -26,223 +36,211 @@ But the document's own model has many first-class things that are not Records:
 - `visibility_rule`
 - `identity_key`
 
-The conflict becomes explicit in Part XV, where visibility says `target_uid` can be any
-record, including `concept`, even though concepts are their own table rather than records.
+The conflict is still visible in the visibility section, where `target_uid` says it can
+target "ANY record" and lists `concept`, even though concepts are modeled in their own table.
 
 ### Why it matters
 
-The phrase "Everything is a Record" is doing important conceptual work: it promises one
-activation knob, one visibility model, one sync model, one search surface, and one graph
-surface. If taken literally, every sidecar primitive should be a Record. If not taken
-literally, engineers need to know which things are record-addressable and which are lower
-level machinery.
-
-Without that boundary, later design decisions become ambiguous:
-
-- Should concepts have `quantity`?
-- Should facts be visible through `visibility_rule` directly, or only through their record?
-- Can a link be activated/deactivated?
-- Can a promise be searched as a Record, or only through Protein's `source: promise`?
-- Can a visibility rule itself be synced, signed, or published as a Record?
+"Everything is a Record" is the strongest phrase in the blueprint. It promises one
+activation knob, one visibility model, one sync model, one search model, and one graph model.
+If it is literal, the primitive tables should also be Records. If it is not literal, the
+document needs a boundary between record-addressable objects and structural rows.
 
 ### Proposed repair
 
-Narrow the axiom:
+Replace the axiom with:
 
-> Every user-addressable, activatable, publishable object is a Record. Every quantity change is a Fact. Every future, conditional, or social intended quantity change is a Promise.
+```text
+Everything user-addressable is a Record.
+Every quantity change is a Fact.
+Every future, conditional, or social intended quantity change is a Promise.
+```
 
-Then explicitly define the layers:
-
-- **Record layer:** things with identity, text, quantity activation, visibility, sync presence, and user-facing lifecycle.
-- **Primitive row layer:** facts, promises, links, concepts, places, keys, visibility rules, parties, agreements.
-- **Sidecar layer:** rows that specialize a Record kind, such as rule, signal, decision, transfer, protein, sand.
-
-Suggested addition near Part I:
+Then add a rule near Part I:
 
 ```text
 Recordhood rule:
-If a thing needs activation, user-facing text, visibility as a subject/object, publication,
-or first-class search as an object, it is a Record. If it is structural machinery under a
-Record, it is a primitive row. Primitive rows still sync and may be visible through their
-own source in Protein, but they do not carry `quantity`.
+If a thing needs activation, user-facing text, visibility as an object, publication,
+or first-class search as an object, it is a Record. If it is structural machinery under
+a Record, it is a primitive row. Primitive rows may be queryable through Protein, but
+they do not carry `quantity`.
 ```
 
-Then change the visibility wording from "ANY record (rule, transfer, plain, concept...)"
-to one of these:
+For visibility, pick one:
 
-- `target_kind, target_uid` if visibility directly covers records and primitive rows.
-- `target_record_uid` if primitive rows inherit visibility only through their owning record.
+```sql
+-- Direct visibility for both records and primitive rows:
+target_kind TEXT NOT NULL,
+target_uid  TEXT NOT NULL
+```
 
-The second option is simpler and better aligned with the "everything user-facing is a
-Record" correction.
+or:
+
+```sql
+-- Simpler: primitives inherit visibility from owner records:
+target_record_uid TEXT NOT NULL
+```
+
+The second option better matches the corrected doctrine.
 
 ---
 
-## 2. "Every intended change is a Promise" conflicts with Actions and Decisions
+## 2. "Every intended change is a Promise" still conflicts with Actions and Decisions
+
+**Status:** Still holds.
 
 ### The tension
 
-Actions are the typed write surface. Decisions execute Action lists. Karma consequences
-can enqueue effects or create decisions. These are all intended changes, but not all are
-Promises.
+The document now leans even harder on Actions:
 
-Meanwhile, Promise is defined as a future delta with window, party, state, condition, and
-settlement semantics. That is narrower than "every intended change."
+- sands write only through Actions
+- decision options execute Action lists
+- Karma can run actions/effects
+- Fiote writes through Actions
+
+Those are intended changes, but they are not all Promises. A Promise has future/social
+semantics: state, party, window, condition, transfer membership, settlement.
 
 ### Why it matters
 
-This is not just wording. It affects what should be previewable, cancelable, simulated,
-signed, synced, and trusted.
+Without this distinction, the model cannot answer when an intended change should be:
 
-Examples:
-
-- `set-slug` is an intended change, but making it a Promise would be awkward.
-- `set-extension` is an intended change, but not necessarily a quantity delta.
-- `create-concept` is an intended change, but has no obvious `delta`.
-- `notify` is an intended effect, not a promise to change state.
-- A decision option is an intended Action list, but the decision itself should not always
-  become a bundle of Promises.
+- immediate
+- previewable
+- cancelable
+- projected
+- matched by Senses
+- agreed by another party
+- settled into real quantity facts
 
 ### Proposed repair
 
-Separate intent types:
-
-- **Action:** immediate typed command, may mutate sidecars or append facts.
-- **Promise:** future, conditional, social, or scheduled intended quantity delta.
-- **Decision:** pending human choice over one or more Actions and/or Promises.
-- **Effect:** external IO or notification queued outside evaluation.
-
-Refine the axiom:
-
-> Every future, conditional, or social intended change is a Promise. Every immediate write is an Action. Every human choice is a Decision.
-
-Then define when Karma should emit a Promise versus an Action:
+Define four intent objects:
 
 ```text
-Karma emits a Promise when the change should be previewable, cancelable, projected, matched
-by Senses, or agreed with another party. Karma emits/runs an Action when the user already
-authorized immediate execution under the rule's scope and budget.
+Action: immediate typed command.
+Promise: future, conditional, social, or scheduled intended quantity delta.
+Decision: pending human choice over Actions and/or Promises.
+Effect: external IO or notification queued outside evaluation.
 ```
 
-This preserves the core power of Promises without forcing every write into the Promise
-state machine.
+Then add the rule:
+
+```text
+Karma emits a Promise when the change should be previewable, cancelable, projected,
+matched by Senses, or agreed with another party. Karma executes/enqueues an Action
+when the user has already authorized immediate execution under the rule's scope.
+```
 
 ---
 
-## 3. "One write path" says all state, but the mechanism covers quantity
+## 3. "One write path" still says all state, but really covers quantity
+
+**Status:** Still holds.
 
 ### The tension
 
-Part 0 says everything that changes state goes through the fact appender. But the blueprint
-also has many non-quantity state changes:
+Part 0 still says all state changes go through the fact appender. But the document contains
+many state changes that cannot be represented as quantity facts alone:
 
 - promise state transitions
-- link creation/removal
-- concept creation/adoption/equivalence
-- transfer party and agreement changes
-- visibility rule changes
-- text CRDT updates
+- links
+- concepts and equivalences
+- transfer parties and agreements
+- visibility rules
+- text CRDT edits
 - decision answers
 - identity keys
-- record metadata changes such as slug, concept, unit, place, extensions
-
-The appender only writes facts and bumps `record.quantity`.
+- record metadata
+- board/widget state in VII.4
 
 ### Why it matters
 
-The single-write-path idea is excellent, but if stated too broadly it becomes false as
-soon as sidecars are edited. The real invariant is not "all database mutations are facts."
-The real invariant appears to be:
-
-- All `record.quantity` mutations are Facts.
-- All semantic mutations happen through Actions or controlled engine processes.
-- Important non-quantity mutations leave provenance facts or signed state rows.
+The good invariant is "one quantity write path." The document currently suggests "one
+database write path," which is impossible given sidecars and host state.
 
 ### Proposed repair
 
-Rename the invariant:
-
-> One quantity write path: every `record.quantity` change goes through `append()`.
-
-Then add a second invariant:
-
-> One semantic write surface: all non-quantity state changes go through Actions or named
-engine processes, and each change either is itself signed/provenanced or emits a zero-delta
-annotation fact on the nearest owning Record.
-
-Suggested classification:
+Use two explicit invariants:
 
 ```text
-Quantity state:
-- record.quantity
-- always changed by Facts through append/append_all
+One quantity write path:
+Every `record.quantity` change goes through `append()` or `append_all()`.
 
-Semantic state:
-- record head/body/slug/concept/unit/place
-- sidecar rows
-- promise state
-- visibility rules
-- transfer agreements
-- links/concepts
-- changed by Actions or engine processes
-- provenance is either a zero-delta Fact or a signed row, depending on the primitive
+One semantic write surface:
+All non-quantity state changes go through Actions or named engine processes. Each such
+change either is itself signed/provenanced or emits a zero-delta annotation Fact on the
+nearest owning Record.
 ```
 
-This keeps the ledger meaningful without pretending every table is derived from facts.
+Then classify state:
+
+```text
+Ledger state:
+- record.quantity
+- fact log
+
+Semantic engine state:
+- promise states
+- links/concepts/visibility/agreements
+- record metadata
+- effect and decision sidecars
+
+Host presentation state:
+- board camera/workspaces/layout/widgetState
+- never Ledger truth
+```
+
+VII.4 already starts making this host-state distinction; Part 0 should adopt the same
+language so the doctrine is consistent.
 
 ---
 
-## 4. Imported signed facts conflict with a local hash chain
+## 4. Imported signed facts vs local hash chain is only partially resolved
 
-### The tension
+**Status:** Partially resolved.
 
-Sync says imported facts call `append` while preserving original author signatures.
-Memory says each fact has `prev_hash`, `hash`, and `signature` in one chain per Cell.
+### What improved
 
-If an imported fact keeps its original `hash` and `signature`, it cannot also have a new
-local `prev_hash` in the receiving Cell's chain. If the receiving Cell reseals it into the
-local chain, the original signature no longer verifies over the changed hash.
+The build order now says Trust has a "two-layer tamper model":
 
-### Why it matters
+```text
+chain guards content->hash, signature guards hash->author
+```
 
-This is a trust-model crack. The system needs both:
+That helps clarify hash vs signature.
 
-- origin authorship: who originally made the fact and signed it
-- local receipt/order: when this Cell accepted it into its own ledger
+### What still does not hold
 
-Trying to store both in one hash/signature field will eventually force either broken
-verification or lossy imports.
+Sync still says imported facts are brought in through `append` while preserving origin
+signatures. Memory still models one `prev_hash`, one `hash`, and one `signature` on the fact.
+
+If a remote fact keeps its origin `hash` and `signature`, it cannot also be resealed into
+the receiver's local chain by changing `prev_hash`. If it is resealed, the original signature
+no longer verifies.
+
+The newer "two-layer tamper model" does not yet define origin fact identity vs local receipt
+identity.
 
 ### Proposed repair
 
-Use two layers:
+Keep the origin fact immutable and add a local receipt:
 
 ```sql
 fact (
-  uid,
-  record_uid,
-  delta,
-  at,
-  actor_uid,
-  cause_kind,
-  cause_uid,
-  payload,
+  uid TEXT PRIMARY KEY,
+  record_uid TEXT NOT NULL,
+  delta REAL NOT NULL,
+  at TEXT NOT NULL,
+  actor_uid TEXT,
+  cause_kind TEXT NOT NULL,
+  cause_uid TEXT,
+  payload TEXT,
+  origin_prev_hash TEXT NOT NULL,
+  origin_hash TEXT NOT NULL,
+  origin_signature TEXT
+);
 
-  origin_prev_hash,
-  origin_hash,
-  origin_signature,
-  origin_cell_uid,
-
-  local_prev_hash,
-  local_hash,
-  local_signature,
-  imported_at
-)
-```
-
-Or keep `fact` as the origin object and add a receipt table:
-
-```sql
 fact_receipt (
   fact_uid TEXT PRIMARY KEY REFERENCES fact(uid),
   cell_uid TEXT NOT NULL,
@@ -250,17 +248,10 @@ fact_receipt (
   local_prev_hash TEXT NOT NULL,
   local_hash TEXT NOT NULL,
   local_signature TEXT
-)
+);
 ```
 
-The receipt-table version is cleaner:
-
-- origin fact remains immutable and verifiable
-- local ledger remains append-only and ordered
-- re-import is idempotent by `fact.uid`
-- quarantine can hold origin packages whose signature fails
-
-Update Sync language:
+Then change Sync wording:
 
 ```text
 Import preserves the origin fact hash/signature and appends a local receipt into this
@@ -269,114 +260,110 @@ Cell's chain. The quantity cache is bumped only once per origin fact uid.
 
 ---
 
-## 5. Promise roles are overloaded
+## 5. Promise roles remain overloaded
+
+**Status:** Still holds.
 
 ### The tension
 
-Promise has:
+Promise still has one role field:
 
-- `record_uid`: local target record
-- `concept_uid`: concept-level target for open/cross-organ promises
-- `party_uid`: "who keeps it"
-- `delta`
+```text
+party_uid -- who keeps it; NULL = OPEN slot
+```
 
-But worked transfers need more roles than that. In a sale, one person's account decreases,
-another person's account increases, one person gives the bike, another receives it. The
-single `party_uid` cannot clearly represent obligor, beneficiary, owner of the target
-record, and visible counterparty.
+But Transfer examples need several roles:
+
+- who owns the target record
+- who is obligated to perform
+- who receives the value
+- who may settle
+- whose trust history feeds confidence
+- who can see hidden source details
+
+The `SALE` example demonstrates this: money, bike, giver, receiver, and record owner are
+not all the same concept.
 
 ### Why it matters
 
-Transfer settlement, matching, balance checks, visibility, and trust all depend on role
-clarity.
-
-Questions the current model does not answer cleanly:
-
-- Who is obligated to keep the promise?
-- Whose record is changed?
-- Who receives the benefit?
-- Who is allowed to see the private source record?
-- Whose kept/broken history feeds confidence?
-- Who can settle or dispute the promise?
+Transfer settlement, matching, balance checks, trust, and visibility all depend on role
+clarity. A single `party_uid` cannot carry all of that without conventions hidden outside
+the schema.
 
 ### Proposed repair
 
-Split promise roles:
+Split roles:
 
 ```sql
 promise (
-  uid,
-  target_record_uid,
-  target_concept_uid,
-  delta,
-  obligor_uid,      -- who is expected to perform/keep it
-  beneficiary_uid,  -- who receives value, optional
-  owner_uid,        -- owner of target record when relevant, optional/derived
-  transfer_uid,
-  state,
-  condition,
-  window_start,
-  window_end,
-  reserve_from,
-  signature
+  uid TEXT PRIMARY KEY,
+  target_record_uid TEXT,
+  target_concept_uid TEXT,
+  delta REAL NOT NULL,
+  obligor_uid TEXT,      -- expected performer/keeper
+  beneficiary_uid TEXT,  -- expected receiver/beneficiary
+  owner_uid TEXT,        -- target record owner when not derivable
+  transfer_uid TEXT,
+  state TEXT NOT NULL,
+  condition TEXT,
+  window_start TEXT,
+  window_end TEXT,
+  reserve_from TEXT,
+  signature TEXT
 )
 ```
 
-For local-only promises, `target_record_uid` may imply owner. For cross-organ open promises,
-`target_concept_uid` plus place/window/details lets Senses match without revealing private
-records.
-
-Then describe common shapes:
+Then describe canonical shapes:
 
 ```text
-Need publication:
+Open Need:
 - target_concept_uid=@apple
 - delta=-3
 - obligor_uid=NULL
 - beneficiary_uid=@ana
 - state=open
 
-Contribution offer:
+Open Contribution:
 - target_concept_uid=@apple
 - delta=+3
 - obligor_uid=@bruno
-- beneficiary_uid=NULL or matched later
+- beneficiary_uid=NULL
 - state=open
 
-Settlement against local inventory:
+Local settlement:
 - target_record_uid=@apples.stock
 - delta=-3
 - obligor_uid=@ana
 - beneficiary_uid=@bruno
 ```
 
-This makes Senses, Transfer, and Trust much less ambiguous.
-
 ---
 
-## 6. Promise/place logistics assumes fields that do not exist
+## 6. Promise/place logistics still assumes fields that do not exist
+
+**Status:** Still holds; now more urgent because Place and Senses are marked further along.
 
 ### The tension
 
-Place says `record.place_uid` and promise windows together give logistics: a delivery is a
-promise with a window and two places. Senses scores promises using `a.place` and `b.place`.
-
-But Promise has no place fields. Concept-level open promises may not have a record either,
-so they cannot inherit `record.place_uid`.
+Place says `record.place_uid` plus promise windows are enough for logistics, and Senses
+scores promises with `a.place`/`b.place`. But Promise has no place fields. Concept-level
+open promises may not have a `record_uid`, so they cannot inherit a record place either.
 
 ### Why it matters
 
-Transport, delivery, ride matching, neighborhood visibility, Senses scoring, and route
-overlap depend on promise-level place. A record's place is not enough:
+Transport, ride matching, delivery, public/restricted proximity, and route overlap all need
+promise-level places.
 
-- The source place and destination place may differ.
-- A record may live at home, but delivery may happen at work.
-- A ride promise needs origin and destination.
-- An open concept-level promise needs location without exposing a private record.
+A record place is not enough:
+
+- source and destination may differ
+- delivery may happen away from the inventory's home
+- ride promises need origin and destination
+- open concept promises need location without revealing a private record
 
 ### Proposed repair
 
-Add place roles to Promise, either directly:
+Add Promise place roles:
 
 ```sql
 promise (
@@ -387,119 +374,95 @@ promise (
 )
 ```
 
-Or use typed links:
-
-```text
-promise @from_place place
-promise @to_place place
-promise @at_place place
-```
-
-Direct fields are better for core logistics and Senses performance. Typed links are more
-general but make the core matcher harder.
-
-Recommended compromise:
-
-- Direct `from_place_uid` and `to_place_uid` on Promise.
-- `at_place_uid` can be represented by setting both equal or allowing either from/to to be null.
-- Record place remains the default when promise place is omitted.
-
-Add fallback semantics:
+Define resolution:
 
 ```text
 Promise place resolution:
-1. use promise from/to place when present
+1. use promise from/to/at place when present
 2. otherwise inherit target record place
-3. otherwise match only on concept/window/trust, with place score unknown
+3. otherwise the place score is unknown and Senses may match only on concept/window/trust
 ```
+
+For a one-place event, use `at_place_uid` or set `from_place_uid = to_place_uid`.
 
 ---
 
-## 7. Transfer settlement says "only Record mutation" but mutates promises
+## 7. Transfer settlement still says "only Record mutation" but mutates promises
+
+**Status:** Still holds; sharper because VIII.3 and Stage 4 are now checked.
 
 ### The tension
 
-The settlement section is titled "idempotent, the only Record mutation." The pseudocode
-appends facts, sets promises to `Kept`, triggers conditional promises, and withdraws
-siblings.
+VIII.3 is now checked and still titled:
 
-That is not wrong behavior, but the heading is imprecise. It is not the only mutation in
-settlement; it is the only record quantity mutation.
+```text
+Settlement (idempotent, the only Record mutation)
+```
+
+The pseudocode appends facts, sets promises to `Kept`, triggers conditional promises, and
+withdraws siblings. Stage 4 also says "settlement as the only Record mutation."
+
+The intended invariant seems to be "only record quantity mutation," not "only mutation."
 
 ### Why it matters
 
-This matters because the settlement code is a high-trust path. It needs to be very clear
-which writes are allowed:
-
-- quantity facts
-- promise state transitions
-- annotation facts for confirmation
-- conditional promise activation
-- sibling withdrawal from satiation
-- maybe transfer agreement/status derivation
-
-If the invariant is phrased incorrectly, future contributors may either over-restrict
-settlement or accidentally bypass the intended provenance model.
+Settlement is the highest-trust write path. It should state exactly which non-quantity
+writes are allowed, because the pseudocode explicitly performs them.
 
 ### Proposed repair
 
-Rename VIII.3:
+Rename:
 
 ```text
 Settlement: idempotent, the only quantity mutation
 ```
 
-Then define the allowed settlement write set:
+Then state:
 
 ```text
 Settlement may only:
 1. append settlement facts for due active promises
 2. transition those promises active -> kept
-3. write settlement confirmation annotation facts when required
+3. write confirmation annotation facts when required
 4. activate conditional downstream promises whose conditions now hold
-5. withdraw sibling duplicated transfers/promises under satiation policy
+5. withdraw sibling duplicated promises/transfers under satiation policy
 
 Settlement may not:
-1. create new parties
-2. invent new promises
-3. alter transfer economics
-4. bypass agreement policy
-5. mutate record.quantity except through append_all
+1. create parties
+2. invent new economics
+3. bypass agreement policy
+4. mutate record.quantity except through append_all
 ```
-
-This keeps the "settlement is narrow" doctrine but makes it operational.
 
 ---
 
-## 8. Effect identity is muddy
+## 8. Effect identity remains muddy
+
+**Status:** Still holds.
 
 ### The tension
 
-Part VI says rule/signal/effect are records with sidecars. But the schema has `effect_queue`
-as a queue table, not an effect record sidecar. Consequence execution says command/query/action
-results are logged as facts on the effect's record, but no effect record exists in the schema.
+VI.1 says "rule/signal/effect are records with sidecars," but the schema has only
+`effect_queue`. Consequence execution says command/query/action results are logged as facts
+on "the effect's record," but no effect record sidecar is defined.
 
 ### Why it matters
 
-Effects need provenance, retries, status, permissions, and audit. There are two coherent
-models:
+Effects need a clear identity for:
 
-1. Effects are records: reusable named external side effects with activation, visibility,
-   and configuration.
-2. Effects are queue entries: one-off execution jobs caused by rules/actions.
+- permissions
+- retries
+- status
+- provenance
+- visibility
+- notification/channel config
 
-The current text mixes both.
+The document currently mixes two different models: reusable effect definitions and one-off
+queue entries.
 
 ### Proposed repair
 
-Pick one primary model.
-
-Recommended model:
-
-- **Effect definitions are Records** when they are reusable configured capabilities.
-- **Effect queue entries are execution attempts** generated by rule/action firing.
-
-Schema sketch:
+Make both explicit:
 
 ```sql
 CREATE TABLE effect (
@@ -521,55 +484,57 @@ CREATE TABLE effect_queue (
 );
 ```
 
-Then clarify logging:
+Then define logging:
 
 ```text
-If an effect definition record exists, execution results are annotation facts on that
-effect record and include `origin_uid`. If the effect is inline, results are annotation
-facts on the originating rule/action subject.
+If an effect definition record exists, execution results are annotation facts on the
+effect record and include `origin_uid`. If the effect is inline, execution results are
+annotation facts on the originating rule/action subject.
 ```
-
-This also makes device/channel notification config fit naturally as either effect records
-or device records referenced by notify effects.
 
 ---
 
-## 9. Messages are a forced core addition but lack a primitive
+## 9. Messages are still a required core primitive without a model
+
+**Status:** Still holds; stronger after VII.4.
 
 ### The tension
 
-The Window says triage forced exactly four core additions, including
-messages-attach-to-anything. Transfer also depends on `messages where subject = t_uid`.
-But there is no message schema, no record kind, no Protein source/include, and no interaction
-section for messages.
+Messages appear in several places:
+
+- Transfer chat: `messages where subject = t_uid`
+- Kanban comments via the message model
+- Window case 6 chat/calls
+- "messages-attach-to-anything" as one of four forced core additions
+- "chat = comments = negotiation" in the standing law
+
+But there is still no message schema, Action set, Protein include/source, visibility rule,
+sync behavior, or interaction section.
 
 ### Why it matters
 
-Messages touch several sensitive areas:
+Messages are not just UI text. They touch:
 
+- transfer negotiation
+- comments
+- social posts
+- call invites
+- threading
+- edits/deletes
 - visibility
 - sync
-- threading
-- attachments/media
+- signatures
+- attachments
 - retention
-- moderation/blocking
-- transfer negotiation
-- social posts/comments
-- call invites
-
-If messages are core, they need a minimal primitive. If they are just records, that needs
-to be said explicitly.
 
 ### Proposed repair
 
-Add a short Part for Messages, or fold into XV/VII with a schema.
-
-Recommended primitive:
+Add a small Message part:
 
 ```sql
 CREATE TABLE message (
   uid TEXT PRIMARY KEY,
-  subject_uid TEXT NOT NULL,      -- record or primitive subject, depending visibility model
+  subject_uid TEXT NOT NULL,
   author_uid TEXT,
   body TEXT NOT NULL,
   reply_to_uid TEXT REFERENCES message(uid),
@@ -581,170 +546,158 @@ CREATE TABLE message (
 CREATE INDEX idx_message_subject ON message(subject_uid, created_at);
 ```
 
-Message doctrine:
+Doctrine:
 
 ```text
-Messages attach to any user-addressable Record by default. They inherit subject visibility
-unless a stricter message-level visibility rule exists. Message edits are text CRDT updates
-or append-only revisions, but they do not change record.quantity. Calls are messages/events
-plus ephemeral lanes for live signaling.
+Messages attach to user-addressable Records by default. They inherit subject visibility
+unless a stricter message-level rule exists. Message edits are append-only revisions or
+text CRDT updates; they never change record.quantity. Calls are messages/events plus
+ephemeral lanes for live signaling.
 ```
 
-Protein:
+Protein and Actions:
 
 ```json
 { "include": { "messages": { "limit": 50 } } }
 ```
 
-Action:
-
 ```text
 message: post-message, edit-message, delete-message
 ```
 
-This makes chat/calls/social/transfer negotiation depend on one primitive instead of hidden
-assumptions.
-
 ---
 
-## 10. Concept fallback semantics are vague
+## 10. Concept fallback semantics are still vague
+
+**Status:** Still holds.
 
 ### The tension
 
 Lingua says an engine that does not know `@blocks-softly` treats it as parent `@blocks`.
-But concepts are rows in the local database and concept packages preserve uid/lineage. It is
-unclear what "does not know" means:
+But "does not know" can mean several things:
 
-- the concept row is absent
-- the concept row exists but the instinct function is unknown
-- the concept is known but not trusted/adopted
-- the concept has multiple parents
-- the parent chain is absent or partially imported
+- the row is absent
+- the row exists but is not adopted
+- the row exists but is untrusted
+- the row exists but its instinct function is unimplemented
+- the parent chain is missing
+- there are multiple parents
 
 ### Why it matters
 
-Fallback semantics affect Senses matching, Protein filters, rule evaluation, and package
-import. A vague fallback can cause false matches, surprising automation, or silent semantic
-downgrades.
+Fallback affects Senses, Protein filters, rule saves, rule evaluation, package import, and
+adoption. Silent fallback can create surprising automation.
 
 ### Proposed repair
 
-Define four states:
+Define concept states:
 
 ```text
-known: concept row exists and is adopted
-carried: concept row exists only because an imported package brought it
+known: row exists and is adopted
+carried: row exists only because an imported package brought it
 unknown: uid/name appears but no row exists
-unimplemented: concept row exists, but local engine has no function for its instinct
+unimplemented: row exists, but local engine has no function for its instinct
 ```
 
-Then define fallback:
+Define fallback:
 
 ```text
 Fallback applies only to known/carried concepts with an imported parent chain. It is allowed
-for matching and display, but not for executing instinct functions unless the parent function
-explicitly accepts the child. Unknown concepts do not fallback; they are unresolved.
+for search, matching, and display. It is not allowed for instinct execution unless the parent
+function explicitly accepts the child. Unknown concepts do not fallback.
 ```
 
-For multiple parents:
+Multiple parents:
 
 ```text
-Fallback may widen to any parent for search/matching. For rule execution, ambiguity is a
-save-time error unless the rule names the parent explicitly.
+Search/matching may widen to any parent. Rule execution must be unambiguous; otherwise save
+is rejected unless the rule names the parent explicitly.
 ```
-
-For adoption:
-
-```text
-Import can carry unknown concepts as inert rows. They become adopted only after user approval
-or a trust policy. Senses may score carried concepts lower than adopted concepts.
-```
-
-This preserves Lingua's social/forkable model while avoiding silent behavior changes.
 
 ---
 
-## 11. Visibility defaults need a subject/object model
+## 11. Visibility defaults still need a subject/object model
 
-### The tension
+**Status:** Partially resolved.
 
-Visibility says default hidden and most-specific rule wins, with subject kinds actor, role,
-organ, public, fiote. But the rest of the blueprint has multiple possible subjects and
-targets:
+### What improved
 
-- local user
-- local Cell
-- remote Organ
-- person record
-- Fiote agent
-- sandbox host
-- public
-- role
+Stage 3 now claims a single visibility gate, `execute_for`, and visibility-filtered export
+is mentioned later in the build order.
 
-Targets can be records, facts, promises, messages, primitive rows, fields, attachments, or
-included rows.
+### What still does not hold
 
-### Why it matters
+The theory section still has only:
 
-Visibility is the single read gate. If subject/target semantics are loose, package export,
-remote Protein, Senses discovery, and sandbox access will disagree.
+```text
+subject_kind: organ | actor | role | public | fiote
+target_uid: ANY record
+field
+grant
+```
+
+It does not define request contexts or target inheritance. VII.4 also adds sands as active
+callers over the WebSocket, but the visibility subject model does not say whether a sand is
+its own subject, runs as local user, or has per-sand capabilities.
 
 ### Proposed repair
 
-Define visibility as a request context:
+Define request subjects:
 
 ```text
 VisibilitySubject =
   LocalUser(actor_uid)
   RemoteOrgan(organ_uid)
   RemoteActor(actor_uid, via_organ_uid)
-  Sandbox(sand_uid)
-  Fiote(agent_uid)
+  Sandbox(sand_uid, acting_actor_uid)
+  Fiote(agent_uid, acting_actor_uid)
   Public
 ```
 
-Define target inheritance:
+Define inheritance:
 
 ```text
 Record visibility is primary.
-Primitive rows inherit from their owning Record unless explicitly overridden.
 Facts inherit from fact.record_uid.
 Promises inherit from target record, transfer, or concept publication rule.
-Messages inherit from subject record.
-Attachments inherit from their owner row.
+Links inherit from both endpoint records unless explicitly published as part of a package.
+Messages inherit from their subject.
+Attachments inherit from owner row.
+Primitive rows not covered above inherit from their owning Record.
 ```
 
-Define most-specific ordering with examples:
+Define conflict order:
 
 ```text
-field override > row override > owner record inheritance
+field override > row override > owner inheritance
 actor > role > organ > public
-explicit hidden beats visible at same specificity
+explicit hidden beats visible at the same specificity
 default hidden for non-local subjects
-local owner can always read unless explicitly locked by local privacy mode
+local owner can read unless local privacy mode locks it
 ```
-
-This turns the visibility doctrine into an enforceable policy.
 
 ---
 
-## 12. Dependency order puts Trust after Transfer, but Transfer theory depends on Trust
+## 12. Trust/Transfer dependency order is improved but still misleading
 
-### The tension
+**Status:** Partially resolved.
 
-Build order puts Transfer at Stage 4 and Trust at Stage 7. But Transfer's theory says signed
-promises and settlement facts are the verifiable good, settlement facts are signed, and Senses
-uses confidence/trust scoring. The Donation/Sale acceptance also mentions a second Cell, where
-authorship and import verification matter.
+### What improved
 
-### Why it matters
+Trust is now marked done, with signatures and import verification described in Stage 7.
 
-If Stage 4 Transfer is expected to work across two Cells, it needs some minimal trust/key model.
-If Trust is deferred to Stage 7, Stage 4 can only be local or explicitly unverified.
+### What still does not hold
+
+Build order still places Stage 4 Transfer before Stage 7 Trust, while Stage 4 says two-Cell
+donations and sales are usable/tested. Transfer theory depends on signed promises,
+settlement facts, authorship-preserving sync, and confidence/trust.
+
+If the build order is chronological, Transfer cannot be complete before basic Trust. If it
+is dependency order plus later retroactive status, the section should say so.
 
 ### Proposed repair
 
-Split Trust into two layers:
+Split Trust:
 
 ```text
 Trust A: identity and signature substrate
@@ -754,44 +707,458 @@ Trust A: identity and signature substrate
 - quarantine invalid packages
 - required before cross-Cell Transfer
 
-Trust B: verifiable aggregates and reputation-like views
+Trust B: verifiable aggregates and social trust views
 - kept ratios
-- leaderboards
-- verified aggregate Protein filters
-- Stage 7
+- verified aggregate Proteins
+- leaderboard sands
+- deferred
 ```
 
-Then update build order:
+Then move Trust A before cross-Cell Transfer in the build order, or explicitly say:
 
-- Stage 4 Transfer can include local transfer and unsigned test transfer.
-- Cross-Cell donation/sale requires Trust A.
-- Stage 7 remains advanced trust analytics, not basic signatures.
+```text
+Stage 4 local Transfer is usable without Trust A. Cross-Cell Transfer acceptance requires
+Trust A, implemented in Stage 7.
+```
 
-This removes a dependency contradiction without pulling reputation work earlier.
+---
+
+## 13. Checkbox semantics now conflict with local unchecked requirements
+
+**Status:** New.
+
+### The tension
+
+Several parent sections are checked while their local required bullets remain unchecked.
+Examples:
+
+- Part VIII Transfer is checked, but VIII.1 status derivation, edit invalidation, balance
+  check, and messages are unchecked.
+- VIII.3 Settlement is checked, but delivery/receipt confirmations and Karma settlement
+  policy bullets are unchecked.
+- IX.1 Place is checked, but map data, exposure, logistics, and future instinct bullets
+  are unchecked.
+- XI.1 Keys and signatures is checked, but all listed key/signature/import bullets are
+  unchecked.
+- XII.1 The fold is checked, but frozen signals, branching, and threshold extraction remain
+  unchecked.
+- Stage 3 is checked as done while Part VII still leaves sources, aggregates, live, saved
+  Proteins, and visibility unchecked.
+
+### Why it matters
+
+The document says every part and section title carries a checkbox and should be checked
+when implemented and verified. Parent checks now mean either:
+
+- all child requirements are complete, or
+- the implementation has progressed elsewhere and local bullets are stale.
+
+Both cannot be true.
+
+### Proposed repair
+
+Define checkbox semantics:
+
+```text
+Parent checkbox:
+- [ ] no acceptance slice complete
+- [/] usable slice exists, but listed child requirements remain
+- [x] every child requirement in the section is implemented and verified
+```
+
+Then change current parent sections with unchecked children to `[/]`, or mark the children
+with explicit "superseded by Stage N / implemented as X" notes.
+
+This is not cosmetic. The blueprint is supposed to be executable; checkboxes are part of
+the execution model.
+
+---
+
+## 14. Stage status and normative section status disagree
+
+**Status:** New.
+
+### The tension
+
+Stage 3 says Protein includes facts/promises/links/availability, aggregates, saved Proteins,
+single visibility gate, place `near`, JSON wire, and canned queues are done. But Part VII
+still marks several of those as pending or partially pending in the normative checklist.
+
+Stage 5 says confidence and `confidence()`/`projected()` Karma tokens are done. But Part XII
+still leaves Confidence unchecked and says exposed tokens are unchecked.
+
+Stage 7 says every fact is signed on the write path and import verification exists. But
+Part XI's bullets for Ed25519, signing, import verification, and automatic verification are
+unchecked.
+
+### Why it matters
+
+The build order is now doing status reporting that overrides the local theory sections. A
+reader cannot tell which source is authoritative.
+
+### Proposed repair
+
+Pick one:
+
+1. Local section checklists are authoritative. Stage bullets summarize them.
+2. Stage bullets are authoritative. Local section bullets must be updated or explicitly
+   labeled "remaining theory / not current status."
+
+Recommended:
+
+```text
+The section checklists are normative. Stage XVII may summarize progress but must not mark
+capabilities done unless their owning section is checked or marked superseded.
+```
+
+---
+
+## 15. Sand migration adds a capability/security gap
+
+**Status:** New.
+
+### The tension
+
+VII.4 says every sand will speak only Protein and Actions over the WebSocket. It also keeps
+sand import/publish and the widget bridge. But there is no theory for sand identity,
+capabilities, or per-sand permissions over the Action catalog.
+
+If a sand can send arbitrary Actions as the local actor, imported sands become a write
+capability problem.
+
+### Why it matters
+
+The old table CRUD path going away is good, but replacing it with full Action access is
+only safe if the host mediates permissions. This affects:
+
+- imported `.html` packages
+- published sands
+- widget bridge APIs
+- package trust
+- Action budgets
+- visibility subject for reads
+- destructive or high-trust Actions such as transfer settlement, visibility changes, and
+  package install
+
+### Proposed repair
+
+Add a Sand Capability Model:
+
+```text
+Every sand runs as VisibilitySubject::Sandbox(sand_uid, acting_actor_uid).
+The host grants each sand a capability set:
+- read Proteins by saved slug or inline shape
+- allowed Action kinds
+- allowed target scopes
+- allowed ephemeral lane rooms
+- network/embed permissions
+- package resource permissions
+```
+
+Example:
+
+```sql
+CREATE TABLE sand_capability (
+  sand_uid TEXT NOT NULL,
+  kind TEXT NOT NULL,        -- protein | action | lane | resource | network
+  scope TEXT NOT NULL,       -- JSON or structured selector
+  grant TEXT NOT NULL,
+  UNIQUE(sand_uid, kind, scope)
+);
+```
+
+Action execution should receive both `actor_uid` and `sand_uid`, and provenance should record
+both:
+
+```text
+actor=@ana, cause=sand:<sand_uid>, action=set-quantity
+```
+
+---
+
+## 16. Board/widget state needs an explicit owner and sync rule
+
+**Status:** New.
+
+### The tension
+
+VII.4 correctly says board chrome is frontend-only presentation state, not Ledger truth.
+But it also says existing board features are carried over verbatim through board-state store
+and host `widgetState`.
+
+The theory does not say:
+
+- whether board state syncs between devices
+- whether board state is local-only
+- whether it is visible/publishable
+- whether it participates in backup/export
+- whether it is per user, per Cell, per workspace, or per Organ
+- whether old board state is hand-migrated with data
+
+### Why it matters
+
+Board layout is not domain truth, but it is still user data. Losing it or syncing it
+unexpectedly would be bad. It also affects sand import/publish and workspaces.
+
+### Proposed repair
+
+Add a host-state doctrine:
+
+```text
+Host state is local user interface state, not Ledger truth. It is stored under the local
+Cell profile, may be backed up, and syncs only through explicit UI-profile sync. It is never
+visible to remote Organs unless exported as a package or workspace.
+```
+
+Define ownership:
+
+```text
+BoardWorkspace: owner_actor_uid, cell_uid
+BoardCard/widgetState: workspace_uid, sand_uid
+BoardCamera/edit mode: actor-local, not shared by default
+```
+
+This keeps the "presentation state is not the Ledger" rule while treating UI state as real
+data with lifecycle.
+
+---
+
+## 17. `source: timeline` is mentioned but absent from Protein sources
+
+**Status:** New.
+
+### The tension
+
+Part XII says Protein exposes Imagination as `include: projection` and `source: timeline`.
+Part VII's source list is:
+
+```text
+record | promise | fact | concept | decision | transfer
+```
+
+No `timeline` source appears there.
+
+### Why it matters
+
+Projection can be either:
+
+- an include attached to records/promises
+- its own queryable source for timeline views
+
+Both are useful, but the Protein contract needs to name both if both exist.
+
+### Proposed repair
+
+Add `timeline` to Protein sources:
+
+```text
+source: record | promise | fact | concept | decision | transfer | timeline
+```
+
+Define shape:
+
+```json
+{
+  "source": "timeline",
+  "where": { "all": [
+    { "record_in": ["@checking", "@rent"] },
+    { "between": ["at", "now", "+30d"] }
+  ]},
+  "include": { "cause": true, "confidence": true }
+}
+```
+
+Or remove `source: timeline` from Part XII and keep projection only as an include.
+
+---
+
+## 18. Senses as "kind='rule' variant 'sense'" lacks a schema home
+
+**Status:** New.
+
+### The tension
+
+The Senses matcher says:
+
+```text
+MatchRule itself is a record (kind='rule' variant 'sense')
+```
+
+But the Record kind list has `rule`, not `sense`, and the rule schema does not define a
+variant/subtype field. Senses rules are not ordinary Karma rules either: they have
+`watch`, `max_proximity`, `min_confidence`, and `auto`.
+
+### Why it matters
+
+Senses needs activation, scheduling, publication, and visibility like rules, but its config
+is not a Karma condition/consequence pipeline. Hiding it as a "variant" without schema will
+make Protein, Actions, and package import ambiguous.
+
+### Proposed repair
+
+Either add a sidecar:
+
+```sql
+CREATE TABLE sense_rule (
+  record_uid TEXT PRIMARY KEY REFERENCES record(uid), -- kind='rule' or kind='sense'
+  watch TEXT NOT NULL,
+  max_proximity INTEGER NOT NULL,
+  min_confidence REAL NOT NULL,
+  auto TEXT NOT NULL
+);
+```
+
+Or add `kind='sense'` to Record kinds.
+
+Recommended:
+
+```text
+Keep `kind='rule'` for Karma rules only. Add `kind='sense'` for Senses match rules.
+Both are activatable Records, but they have different sidecars and engines.
+```
+
+---
+
+## 19. Transfer derived status uses states not defined in Promise or Transfer schema
+
+**Status:** New.
+
+### The tension
+
+Transfer status is derived as:
+
+```text
+draft -> proposed -> agreed -> in_transfer -> settled
+inactive when quantity=0
+```
+
+But Promise states are:
+
+```text
+open | proposed | agreed | active | kept | broken | withdrawn
+```
+
+There is no `draft` promise state, no `in_transfer` promise state, and no explicit transfer
+state column because status is derived. The derivation rules are not defined.
+
+### Why it matters
+
+Transfer status drives UI, decisions, visibility, agreement requests, settlement availability,
+and Karma `advance_transfer`. If it is derived, the derivation must be deterministic.
+
+### Proposed repair
+
+Define transfer status as a pure function:
+
+```text
+inactive:
+  transfer record quantity == 0
+
+draft:
+  no parties have been notified OR all bundled promises are local draft promises
+
+proposed:
+  at least one party exists and at least one party agreement level < 2
+
+agreed:
+  agreement policy satisfied and no bundled promise is active/kept/broken
+
+in_transfer:
+  at least one bundled promise is active and not all due promises are terminal
+
+settled:
+  all required bundled promises are kept, withdrawn by satiation, or otherwise terminal
+
+broken:
+  any required active promise is broken and policy does not allow ignoring it
+```
+
+If `draft` is meaningful before proposal, add either:
+
+- a transfer visibility/proposal flag, or
+- a promise state `draft`, or
+- a rule that `quantity=0` + parties absent means draft.
+
+---
+
+## 20. "The engine is the only writer" conflicts with host-state and package operations
+
+**Status:** New/refined from item 3.
+
+### The tension
+
+Part 0 says `engine` is the only writer. VII.4 says board chrome and widget state live in
+host state and are preserved. Publish/import package flows also operate around sand assets,
+manifest validation, and catalog pickup.
+
+Those are writes, but not necessarily engine writes.
+
+### Why it matters
+
+There are now at least three write domains:
+
+- engine database writes
+- host UI state writes
+- package/resource filesystem or catalog writes
+
+They should not all be governed by the same "engine only writer" sentence.
+
+### Proposed repair
+
+Define write domains:
+
+```text
+Engine writer:
+  writes the Cell semantic database and Ledger.
+
+Host writer:
+  writes local presentation state, workspace layout, widgetState, and local UI preferences.
+
+Package writer:
+  writes package resources/catalog entries through the package installer/publisher.
+```
+
+Then state:
+
+```text
+Sands cannot write any domain directly. They request engine writes via Actions, host writes
+via host-control APIs, and package writes via package Actions that require explicit
+capabilities.
+```
 
 ---
 
 ## Recommended doctrine patch
 
-A concise replacement for the root doctrine could be:
+The root doctrine should become:
 
 ```text
 Everything user-addressable is a Record.
 Every quantity change is a Fact.
 Every future, conditional, or social intended quantity change is a Promise.
-Every immediate write is an Action.
-Every human choice is a Decision.
+Every immediate semantic write is an Action.
+Every pending human choice is a Decision.
+The rest is choreography, and Protein is how the dance is seen.
 ```
 
-And the core invariants:
+Core invariants:
 
 ```text
-1. `record.quantity` has exactly one writer: `append`.
-2. All non-quantity semantic writes go through Actions or named engine processes.
-3. Primitive rows inherit visibility from their owning Record unless explicitly overridden.
-4. Remote facts preserve origin signatures and receive local import receipts.
-5. Promises name roles explicitly: target, obligor, beneficiary, places, window.
+1. `record.quantity` has exactly one writer: `append` / `append_all`.
+2. All semantic database writes go through Actions or named engine processes.
+3. Host presentation state is real user data, but not Ledger truth.
+4. Primitive rows inherit visibility from their owning Record unless explicitly overridden.
+5. Remote facts preserve origin signatures and receive local import receipts.
+6. Promises name roles explicitly: target, obligor, beneficiary, places, window.
+7. Imported sands have explicit capabilities; they do not inherit arbitrary Action power.
 ```
 
-These changes keep the blueprint's main architecture while removing the places where the
-theory currently over-promises or compresses different kinds of state into one word.
+Highest-priority fixes to the markdown:
+
+1. Fix the root axiom and one-write-path wording.
+2. Define Promise roles and Promise place.
+3. Define Message as a primitive.
+4. Define sand capabilities.
+5. Normalize checkbox semantics so parent and child statuses agree.
+6. Add `timeline` or remove `source: timeline`.
+7. Split Sense rules out of Karma rule schema.

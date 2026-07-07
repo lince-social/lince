@@ -15,6 +15,7 @@ pub(super) fn script() -> String {
           status: "idle", // idle | loading | live | error
           statusLabel: "",
           stream: null,
+          proteinUnsubscribe: null,
           streamGeneration: 0,
         };
 
@@ -32,6 +33,10 @@ pub(super) fn script() -> String {
           if (state.stream) {
             state.stream.close();
             state.stream = null;
+          }
+          if (state.proteinUnsubscribe) {
+            state.proteinUnsubscribe();
+            state.proteinUnsubscribe = null;
           }
         }
 
@@ -65,6 +70,52 @@ pub(super) fn script() -> String {
           );
         }
 
+        function recordIdentity(recordId, record) {
+          const uid = String(record?.uid || "").trim();
+          if (uid) {
+            return { kind: "uid", value: uid };
+          }
+          const slug = String(record?.slug || "").trim();
+          if (slug) {
+            return { kind: "slug", value: slug };
+          }
+          const raw = String(recordId ?? "").trim();
+          if (raw.startsWith("rec_") || raw.startsWith("record_")) {
+            return { kind: "uid", value: raw };
+          }
+          return raw ? { kind: "legacy-id", value: raw } : null;
+        }
+
+        function findProteinRow(rows, identity) {
+          if (!identity) {
+            return null;
+          }
+          if (identity.kind === "uid") {
+            return rows.find((row) => String(row?.uid || "") === identity.value) || null;
+          }
+          if (identity.kind === "slug") {
+            return rows.find((row) => String(row?.slug || "") === identity.value) || null;
+          }
+          return null;
+        }
+
+        function proteinForIdentity(identity) {
+          const protein = {
+            source: "record",
+            include: { facts: { limit: 12 } },
+            order: [{ desc: "created_at" }],
+            limit: 200,
+          };
+          if (identity?.kind === "uid") {
+            protein.where = [{ uid_eq: identity.value }];
+            protein.limit = 1;
+          } else if (identity?.kind === "slug") {
+            protein.where = [{ slug_eq: identity.value }];
+            protein.limit = 1;
+          }
+          return protein;
+        }
+
         function fieldsForRender() {
           if (state.row && typeof state.row === "object") {
             return state.row;
@@ -73,6 +124,54 @@ pub(super) fn script() -> String {
             return state.active.record;
           }
           return null;
+        }
+
+        function formatValue(value) {
+          if (value === null || value === undefined) {
+            return "—";
+          }
+          if (Array.isArray(value) || typeof value === "object") {
+            try {
+              return JSON.stringify(value, null, 2);
+            } catch {
+              return String(value);
+            }
+          }
+          return String(value);
+        }
+
+        function renderFacts(fields) {
+          const facts = Array.isArray(fields?.facts) ? fields.facts : [];
+          if (!facts.length) {
+            return "";
+          }
+          return [
+            '<section class="recordInfoFacts">',
+            '<h3 class="recordInfoFacts__title">Proveniência</h3>',
+            '<ul class="recordInfoFacts__list">',
+            facts
+              .map((fact) => {
+                const delta = Number(fact?.delta || 0);
+                const sign = delta > 0 ? "+" : "";
+                const cause = [fact?.cause_kind, fact?.cause].filter(Boolean).join(" · ");
+                return (
+                  '<li class="recordInfoFact">' +
+                  '<span class="recordInfoFact__delta">' +
+                  escapeHtml(sign + String(delta)) +
+                  "</span>" +
+                  '<span class="recordInfoFact__cause">' +
+                  escapeHtml(cause || "fact") +
+                  "</span>" +
+                  '<span class="recordInfoFact__when">' +
+                  escapeHtml(fact?.at || "") +
+                  "</span>" +
+                  "</li>"
+                );
+              })
+              .join(""),
+            "</ul>",
+            "</section>",
+          ].join("");
         }
 
         function render() {
@@ -87,15 +186,18 @@ pub(super) fn script() -> String {
             ? String(fields.head)
             : "Record #" + String(state.active.recordId ?? "?");
           const entries = fields
-            ? Object.entries(fields).map(
-                ([key, value]) =>
-                  "<dt>" +
-                  escapeHtml(key) +
-                  "</dt><dd>" +
-                  escapeHtml(value === null || value === undefined ? "—" : value) +
-                  "</dd>",
-              )
+            ? Object.entries(fields)
+                .filter(([key]) => key !== "facts")
+                .map(
+                  ([key, value]) =>
+                    "<dt>" +
+                    escapeHtml(key) +
+                    "</dt><dd>" +
+                    escapeHtml(formatValue(value)) +
+                    "</dd>",
+                )
             : [];
+          const factsHtml = renderFacts(fields);
 
           root.innerHTML = [
             '<section class="recordInfoPanel">',
@@ -111,6 +213,7 @@ pub(super) fn script() -> String {
             entries.length
               ? '<dl class="recordInfoFields">' + entries.join("") + "</dl>"
               : '<p class="recordInfoEmpty">Sem dados para esse record ainda.</p>',
+            factsHtml,
             "</section>",
           ].join("");
         }
@@ -192,6 +295,36 @@ pub(super) fn script() -> String {
           });
         }
 
+        function openProtein(recordId, record) {
+          if (typeof bridge?.subscribeProtein !== "function") {
+            return false;
+          }
+          const identity = recordIdentity(recordId, record);
+          if (!identity || identity.kind === "legacy-id") {
+            return false;
+          }
+
+          teardownStream();
+          const generation = state.streamGeneration;
+          const protein = proteinForIdentity(identity);
+          state.proteinUnsubscribe = bridge.subscribeProtein(
+            "record-info",
+            protein,
+            ({ rows, live }) => {
+              if (generation !== state.streamGeneration) {
+                return;
+              }
+              const list = Array.isArray(rows) ? rows : [];
+              state.row = findProteinRow(list, identity);
+              setStatus(
+                live === false ? "loading" : "live",
+                state.row ? "" : "Record fora do Protein configurado.",
+              );
+            },
+          );
+          return true;
+        }
+
         function close() {
           teardownStream();
           state.active = null;
@@ -219,8 +352,11 @@ pub(super) fn script() -> String {
             record: data.record && typeof data.record === "object" ? data.record : null,
           };
           state.row = null;
-          setStatus("loading", "Consultando a view...");
-          openStream(origin, state.active.recordId);
+          setStatus("loading", "Consultando Protein...");
+          if (!openProtein(state.active.recordId, state.active.record)) {
+            setStatus("loading", "Consultando a view...");
+            openStream(origin, state.active.recordId);
+          }
         });
 
         render();

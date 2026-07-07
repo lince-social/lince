@@ -32,9 +32,12 @@ use {
     std::{
         io::{Error as IoError, ErrorKind},
         net::SocketAddr,
+        path::PathBuf,
         sync::Arc,
     },
+    store::Store,
     tokio::sync::oneshot,
+    transport::LaneHub,
     utils::logging::status,
 };
 
@@ -98,6 +101,15 @@ pub async fn serve_with_bound_addr_sender(
     let organs = OrganStore::new(services.db.clone(), services.writer.clone());
     let backend = BackendApiService::new(services.clone(), Arc::new(jwt_secret));
     let manas = ManasGateway::new().map_err(IoError::other)?;
+    let cell_store = Store::open(&default_lince_db_url())
+        .await
+        .map_err(IoError::other)?;
+    let cell_engine = Arc::new(
+        engine::Engine::new(cell_store)
+            .await
+            .map_err(IoError::other)?,
+    );
+    let cell_lanes = Arc::new(LaneHub::new());
     let kanban_filters = KanbanFilterService::new(board_state.clone());
     let transfer_widget = TransferWidgetService::new(
         auth.clone(),
@@ -116,6 +128,8 @@ pub async fn serve_with_bound_addr_sender(
         services: services.clone(),
         backend: backend.clone(),
         board_state: board_state.clone(),
+        cell_engine: cell_engine.clone(),
+        cell_lanes: cell_lanes.clone(),
         listening_port: local_addr.port(),
         local_auth_required,
         manas: manas.clone(),
@@ -184,4 +198,12 @@ fn local_base_url_from_socket_addr(address: SocketAddr) -> String {
         address.ip().to_string()
     };
     format!("http://{host}:{}", address.port())
+}
+
+fn default_lince_db_url() -> String {
+    let dir = dirs::config_dir()
+        .map(|d| d.join("lince"))
+        .unwrap_or_else(|| PathBuf::from("."));
+    let _ = std::fs::create_dir_all(&dir);
+    format!("sqlite://{}", dir.join("lince.db").display())
 }

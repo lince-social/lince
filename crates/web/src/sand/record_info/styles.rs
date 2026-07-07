@@ -145,6 +145,67 @@ pub(crate) const INLINE_STYLES: [&str; 1] = [r#"      :root {
         font-size: 13px;
       }
 
+      .recordInfoFacts {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-height: 0;
+        padding-top: 2px;
+        border-top: 1px solid var(--line);
+      }
+
+      .recordInfoFacts__title {
+        margin: 0;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .recordInfoFacts__list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin: 0;
+        padding: 0;
+        overflow: auto;
+        list-style: none;
+      }
+
+      .recordInfoFact {
+        display: grid;
+        grid-template-columns: minmax(38px, auto) minmax(0, 1fr);
+        gap: 2px 8px;
+        align-items: baseline;
+        padding: 6px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .recordInfoFact:last-child {
+        border-bottom: 0;
+      }
+
+      .recordInfoFact__delta {
+        color: var(--good);
+        font-family: "IBM Plex Mono", "SFMono-Regular", monospace;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .recordInfoFact__cause {
+        min-width: 0;
+        overflow-wrap: anywhere;
+        font-size: 12px;
+      }
+
+      .recordInfoFact__when {
+        grid-column: 2;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
       .recordInfoEmpty {
         margin: 0;
         color: var(--muted);

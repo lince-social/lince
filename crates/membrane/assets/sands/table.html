@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Table</title>
+  <!-- The frame bootstrap gives this sand window.LinceWidgetHost and nothing
+       else: its only door is Protein (reads) + Actions (writes). -->
+  <script src="/board/frame.js"></script>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 13px/1.45 system-ui, -apple-system, sans-serif;
+           background: #0d1117; color: #c9d1d9; padding: .75rem; }
+    .head { display: flex; align-items: center; gap: .5rem; margin-bottom: .6rem; }
+    .head h1 { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em;
+               color: #6e7681; margin: 0; flex: 1; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #f85149; }
+    .dot.live { background: #3fb950; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: .35rem .4rem; border-bottom: 1px solid #21262d; }
+    th { font-size: .65rem; text-transform: uppercase; letter-spacing: .06em; color: #6e7681; }
+    td.q { font-variant-numeric: tabular-nums; }
+    td.q input { width: 5rem; background: #161b22; border: 1px solid #30363d;
+                 color: #c9d1d9; border-radius: 5px; padding: .2rem .35rem; }
+    .new { display: flex; gap: .4rem; margin-top: .7rem; }
+    .new input { flex: 1; background: #161b22; border: 1px solid #30363d;
+                 color: #c9d1d9; border-radius: 6px; padding: .35rem .5rem; }
+    .new input.q { flex: none; width: 5rem; }
+    button { background: #238636; border: 0; color: #fff; border-radius: 6px;
+             padding: .35rem .7rem; cursor: pointer; font: inherit; }
+    button:hover { background: #2ea043; }
+    .empty { color: #6e7681; padding: .8rem .2rem; }
+  </style>
+</head>
+<body>
+  <div class="head">
+    <h1>Records</h1>
+    <span id="dot" class="dot"></span>
+  </div>
+  <table>
+    <thead><tr><th>head</th><th>slug</th><th>kind</th><th style="text-align:right">quantity</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div id="empty" class="empty" hidden>No records yet.</div>
+  <div class="new">
+    <input id="new-head" placeholder="New record head…" />
+    <input id="new-qty" class="q" type="number" step="1" value="0" title="quantity" />
+    <button id="add">Add</button>
+  </div>
+
+  <script>
+    const H = window.LinceWidgetHost;
+    const rowsEl = document.getElementById("rows");
+    const emptyEl = document.getElementById("empty");
+    const dot = document.getElementById("dot");
+
+    // The read: every record, newest first. No SQL, no table names — just the
+    // shape the engine returns for `source: record`.
+    const protein = { source: "record", order: [{ desc: "created_at" }] };
+
+    H.onLive((live) => dot.classList.toggle("live", live));
+
+    H.subscribeProtein("table", protein, ({ rows }) => render(rows));
+
+    function render(rows) {
+      rowsEl.innerHTML = "";
+      emptyEl.hidden = rows.length > 0;
+      for (const r of rows) {
+        const tr = document.createElement("tr");
+        tr.appendChild(cell(r.head || "—"));
+        tr.appendChild(cell(r.slug || ""));
+        tr.appendChild(cell(r.kind || "plain"));
+        const q = document.createElement("td");
+        q.className = "q"; q.style.textAlign = "right";
+        const input = document.createElement("input");
+        input.type = "number"; input.step = "1"; input.value = r.quantity;
+        // The write: set-quantity is a typed Action -> one fact. The server
+        // recomputes the subscription and pushes the new rows back.
+        input.onchange = () =>
+          H.act({ action: "set-quantity", target: r.uid, value: Number(input.value) })
+            .catch((e) => console.warn(e));
+        q.appendChild(input);
+        tr.appendChild(q);
+        rowsEl.appendChild(tr);
+      }
+    }
+
+    function cell(text) { const td = document.createElement("td"); td.textContent = text; return td; }
+
+    document.getElementById("add").onclick = () => {
+      const head = document.getElementById("new-head");
+      const qty = document.getElementById("new-qty");
+      const value = head.value.trim();
+      if (!value) return;
+      H.act({ action: "create-record", kind: "plain", head: value, body: "", quantity: Number(qty.value) || 0 })
+        .then(() => { head.value = ""; qty.value = "0"; })
+        .catch((e) => console.warn(e));
+    };
+  </script>
+</body>
+</html>

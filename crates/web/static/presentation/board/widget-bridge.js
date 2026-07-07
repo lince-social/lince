@@ -4,6 +4,17 @@ const WIDGET_READY = "lince:widget-ready";
 const WIDGET_ACTION = "lince:widget-action";
 const WIDGET_ERROR = "lince:bridge-error";
 const WIDGET_EVENT = "lince:bridge-event";
+const PROTEIN_SUBSCRIBE = "lince:protein-subscribe";
+const PROTEIN_SUBSCRIBE_SAVED = "lince:protein-subscribe-saved";
+const PROTEIN_UNSUBSCRIBE = "lince:protein-unsubscribe";
+const PROTEIN_ROWS = "lince:protein-rows";
+const PROTEIN_ACTION = "lince:protein-action";
+const PROTEIN_ACTION_RESULT = "lince:protein-action-result";
+
+function transportWsUrl() {
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${protocol}//${window.location.host}/host/transport/ws`;
+}
 
 function apiPath(path) {
   if (path.startsWith("http://") || path.startsWith("https://")) {
@@ -185,6 +196,127 @@ export function createWidgetBridge({
   onError,
 }) {
   let bridgeState = normalizeBridgeState(initialState);
+  let socket = null;
+  let socketReady = null;
+  let reconnectTimer = null;
+  let nextActionRequestId = 1;
+  const subscriptions = new Map();
+  const pendingActions = new Map();
+
+  function frameForInstance(instanceId) {
+    return getFrames().find(
+      (frame) => frame?.dataset?.packageInstanceId === instanceId,
+    );
+  }
+
+  function namespacedId(instanceId, subId) {
+    return `${instanceId || "unknown"}:${subId || "default"}`;
+  }
+
+  function postFrame(instanceId, message) {
+    frameForInstance(instanceId)?.contentWindow?.postMessage(message, "*");
+  }
+
+  function sendTransport(payload) {
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      return false;
+    }
+    socket.send(JSON.stringify(payload));
+    return true;
+  }
+
+  function connectTransport() {
+    if (socket && socket.readyState !== WebSocket.CLOSED) {
+      return socketReady || Promise.resolve();
+    }
+
+    socketReady = new Promise((resolve, reject) => {
+      try {
+        socket = new WebSocket(transportWsUrl());
+      } catch (error) {
+        socketReady = null;
+        reject(error);
+        return;
+      }
+
+      socket.addEventListener("open", () => {
+        for (const entry of subscriptions.values()) {
+          sendTransport(entry.message);
+        }
+        resolve();
+      }, { once: true });
+
+      socket.addEventListener("message", (event) => {
+        let message = null;
+        try {
+          message = JSON.parse(event.data);
+        } catch {
+          return;
+        }
+        handleTransportMessage(message);
+      });
+
+      socket.addEventListener("close", () => {
+        socket = null;
+        socketReady = null;
+        for (const { instanceId, subId } of subscriptions.values()) {
+          postFrame(instanceId, {
+            type: PROTEIN_ROWS,
+            payload: { subId, rows: [], live: false },
+          });
+        }
+        if (!reconnectTimer && subscriptions.size > 0) {
+          reconnectTimer = window.setTimeout(() => {
+            reconnectTimer = null;
+            void connectTransport().catch(() => {});
+          }, 1000);
+        }
+      });
+
+      socket.addEventListener("error", () => {
+        reject(new Error("Unable to connect to Lince transport."));
+      }, { once: true });
+    });
+
+    return socketReady;
+  }
+
+  function handleTransportMessage(message) {
+    const type = String(message?.type || "");
+    if (type === "snapshot" || type === "update") {
+      const entry = subscriptions.get(String(message.id || ""));
+      if (!entry) {
+        return;
+      }
+      postFrame(entry.instanceId, {
+        type: PROTEIN_ROWS,
+        payload: {
+          subId: entry.subId,
+          rows: cloneJsonValue(message.rows, []),
+          live: true,
+        },
+      });
+      return;
+    }
+
+    if (type === "action_ok" || type === "error") {
+      const req = pendingActions.get(String(message.id || ""));
+      if (!req) {
+        return;
+      }
+      pendingActions.delete(String(message.id || ""));
+      postFrame(req.instanceId, {
+        type: PROTEIN_ACTION_RESULT,
+        payload: {
+          reqId: req.reqId,
+          ok: type === "action_ok",
+          created: message.created || null,
+          facts: Number(message.facts) || 0,
+          message: String(message.message || ""),
+        },
+      });
+    }
+  }
 
   function frameListensTo(instanceId, topic) {
     if (!instanceId || typeof getCardAbiListen !== "function") {
@@ -334,6 +466,71 @@ export function createWidgetBridge({
     }
   }
 
+  async function handleProteinSubscribe(data, saved = false) {
+    const instanceId = data.instanceId || "";
+    const subId = String(data.payload?.subId || "");
+    if (!instanceId || !subId) {
+      return;
+    }
+
+    const id = namespacedId(instanceId, subId);
+    const transportMessage = saved
+      ? {
+          type: "subscribe_saved",
+          id,
+          name: String(data.payload?.name || ""),
+        }
+      : {
+          type: "subscribe",
+          id,
+          protein: cloneJsonValue(data.payload?.protein, {}),
+        };
+
+    subscriptions.set(id, { instanceId, subId, message: transportMessage });
+    try {
+      await connectTransport();
+      sendTransport(transportMessage);
+    } catch (error) {
+      postFrame(instanceId, {
+        type: WIDGET_ERROR,
+        payload: {
+          message: error instanceof Error ? error.message : "Unable to subscribe.",
+        },
+      });
+    }
+  }
+
+  function handleProteinUnsubscribe(data) {
+    const id = namespacedId(data.instanceId || "", data.payload?.subId || "");
+    subscriptions.delete(id);
+    sendTransport({ type: "unsubscribe", id });
+  }
+
+  async function handleProteinAction(data) {
+    const instanceId = data.instanceId || "";
+    const reqId = String(data.payload?.reqId || "");
+    const id = `act:${instanceId}:${nextActionRequestId++}`;
+    pendingActions.set(id, { instanceId, reqId });
+    try {
+      await connectTransport();
+      sendTransport({
+        type: "act",
+        id,
+        action: cloneJsonValue(data.payload?.action, {}),
+      });
+    } catch (error) {
+      pendingActions.delete(id);
+      postFrame(instanceId, {
+        type: PROTEIN_ACTION_RESULT,
+        payload: {
+          reqId,
+          ok: false,
+          message: error instanceof Error ? error.message : "Unable to send Action.",
+        },
+      });
+    }
+  }
+
   function handleMessage(event) {
     const data = event.data;
     if (!data || typeof data !== "object" || typeof data.type !== "string") {
@@ -359,6 +556,26 @@ export function createWidgetBridge({
 
     if (data.type === WIDGET_ACTION) {
       void handleAction(data);
+      return;
+    }
+
+    if (data.type === PROTEIN_SUBSCRIBE) {
+      void handleProteinSubscribe(data, false);
+      return;
+    }
+
+    if (data.type === PROTEIN_SUBSCRIBE_SAVED) {
+      void handleProteinSubscribe(data, true);
+      return;
+    }
+
+    if (data.type === PROTEIN_UNSUBSCRIBE) {
+      handleProteinUnsubscribe(data);
+      return;
+    }
+
+    if (data.type === PROTEIN_ACTION) {
+      void handleProteinAction(data);
     }
   }
 

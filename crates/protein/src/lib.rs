@@ -74,6 +74,7 @@ pub enum Predicate {
     QuantityLt(f64),
     QuantityGt(f64),
     QuantityEq(f64),
+    UidEq(String),
     KindEq(String),
     SlugEq(String),
     /// Lingua-DAG aware: `concept_in("food")` matches records tagged `@apple`
@@ -464,6 +465,7 @@ impl PredicateCtx {
                 Predicate::QuantityLt(n) => r.quantity < *n,
                 Predicate::QuantityGt(n) => r.quantity > *n,
                 Predicate::QuantityEq(n) => r.quantity == *n,
+                Predicate::UidEq(uid) => r.uid == *uid,
                 Predicate::KindEq(k) => r.kind == *k,
                 Predicate::SlugEq(s) => r.slug.as_deref() == Some(s.as_str()),
                 Predicate::ConceptIn(name) => {

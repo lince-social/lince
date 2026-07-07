@@ -201,9 +201,11 @@ fn local_base_url_from_socket_addr(address: SocketAddr) -> String {
 }
 
 fn default_lince_db_url() -> String {
-    let dir = dirs::config_dir()
-        .map(|d| d.join("lince"))
-        .unwrap_or_else(|| PathBuf::from("."));
+    // The new store owns `lince.db`. Resolve the directory the same way the
+    // legacy layer does (`utils::config::lince_data_dir`) so both honor
+    // `LINCE_DATA_DIR_OVERRIDE` and always land side by side — `lince.db` (new
+    // schema) next to `lince-legacy.db` (legacy) — never the same file.
+    let dir = utils::config::lince_data_dir().unwrap_or_else(|| PathBuf::from("."));
     let _ = std::fs::create_dir_all(&dir);
     format!("sqlite://{}", dir.join("lince.db").display())
 }

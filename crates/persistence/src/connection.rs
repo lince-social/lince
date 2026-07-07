@@ -8,7 +8,15 @@ pub fn sqlite_db_path() -> Result<PathBuf, Error> {
     let lince_config_dir: PathBuf = utils::config::lince_data_dir()
         .ok_or_else(|| Error::other("Unable to resolve user config directory"))?;
     create_dir_all(&lince_config_dir)?;
-    Ok(lince_config_dir.join("lince.db"))
+    // `lince.db` is now owned exclusively by the new `store` crate's Cell schema
+    // (`crates/store/migrations/0001_init.sql`). This legacy layer keeps its own
+    // file so the two sqlx migration sets never collide on the same
+    // `_sqlx_migrations` table. It is still load-bearing at boot (config, local
+    // admin, karma cache, views/collections live in this schema), so it keeps
+    // creating/migrating THIS file — but it never touches `lince.db`. As each
+    // sand ports onto the new store, this schema shrinks toward
+    // consultation-only, and the file is dropped once nothing reads it.
+    Ok(lince_config_dir.join("lince-legacy.db"))
 }
 
 pub fn sqlite_connect_options() -> Result<SqliteConnectOptions, Error> {

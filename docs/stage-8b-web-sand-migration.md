@@ -149,26 +149,33 @@ plane is on the new system.
 - [/] Sand migration is underway.
 - [ ] Full current-web feature parity on the new data plane is not complete.
 
-### Known unresolved: migration boot collision on `lince.db`
+### Migration boot: `store` owns `lince.db`, legacy owns `lince-legacy.db`
 
-Verified (throwaway probe, not committed): with no `LINCE_DATA_DIR_OVERRIDE`,
-both the legacy `persistence` layer (`utils::config::lince_data_dir()` =
-`config_dir()/lince`, runs the root `migrations/`) and the new `store`
-(`crates/web` opens `config_dir()/lince/lince.db`, runs
-`crates/store/migrations/0001_init.sql`) open the **same file** `lince.db`
-with **different** sqlx migration sets. Whichever boots first wins; the second
-fails with e.g. `migration 20260625182502 was previously applied but is missing
-in the resolved migrations`. The new cell path also silently bypasses the
-`LINCE_DATA_DIR_OVERRIDE` that persistence honors.
+The collision (verified: with no `LINCE_DATA_DIR_OVERRIDE`, both the legacy
+`persistence` layer and the new `store` opened the **same** `lince.db` with
+**different** sqlx migration sets, so the second to boot failed with
+`migration 20260625182502 was previously applied but is missing in the resolved
+migrations`) is **resolved by a file split**:
 
-This is not cleanly fixable yet: the file split (`old_lince.db`) is vetoed, and
-removing the legacy persistence boot breaks the not-yet-ported sands that still
-read/write the old schema through `services.db`. Resolution lands with the sand
-ports — once every sand is on the new store, the legacy persistence boot (and
-the root `migrations/`, kept only as reference) is deleted and `lince.db` is
-owned solely by the new schema. Until then, running both paths against one file
-requires either the split or an override; do not tick "boots the new schema
-cleanly" while both boot.
+- `store` (new Cell schema, `crates/store/migrations/0001_init.sql`) is the sole
+  creator/owner of `lince.db`.
+- `persistence` (legacy schema) now uses `lince-legacy.db`
+  (`crates/persistence/src/connection.rs`). It keeps creating/migrating that
+  file because it is still **load-bearing at boot** — local admin, active
+  configuration, karma cache, views/collections all live in the legacy schema
+  (`bootstrap_database` → `seed`, `ensure_local_admin_if_needed`,
+  `configuration.get_active`, `refresh_karma_cache`). It is not yet
+  consultation-only; the legacy schema shrinks toward that as sands port over,
+  and `lince-legacy.db` + the root `migrations/` (reference only) are deleted
+  once nothing reads them.
+- Both files resolve through `utils::config::lince_data_dir()` now (the new cell
+  path was updated to match), so they always sit side by side and both honor
+  `LINCE_DATA_DIR_OVERRIDE` — the earlier bypass is gone.
+
+Note: the pre-existing `lince-persistence` unit test
+`embedded_migrations_create_structured_transfer_tables` fails on `dev`
+independent of this split (the root `migrations/` no longer create the
+`transfer_*`/`work_*` tables it asserts — refactor drift, not caused here).
 
 Cutover rule: deleting legacy web data paths is allowed sand by sand after parity.
 Deleting or replacing the current web/Tauri surface is out of scope.

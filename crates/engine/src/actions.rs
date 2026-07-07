@@ -123,17 +123,20 @@ impl Engine {
                     },
                 )
                 .await?;
-                if quantity != 0.0 {
-                    outcome.facts = self
-                        .append(
-                            NewFact {
-                                actor_uid: actor,
-                                ..NewFact::quantity(rec.uid.clone(), quantity, Cause::user_edit())
-                            },
-                            now,
-                        )
-                        .await?;
-                }
+                // Always drop a creation fact — the initial level as a delta
+                // (zero-delta when quantity==0, blueprint I.1/II.3 provenance).
+                // Without it, a record created at quantity 0 commits no fact and
+                // never invalidates live subscriptions, so it stays invisible to
+                // every subscribed sand until some later fact touches it.
+                outcome.facts = self
+                    .append(
+                        NewFact {
+                            actor_uid: actor,
+                            ..NewFact::quantity(rec.uid.clone(), quantity, Cause::user_edit())
+                        },
+                        now,
+                    )
+                    .await?;
                 outcome.created = Some(rec.uid);
             }
             Action::SetQuantity { target, value } => {

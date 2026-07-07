@@ -16,7 +16,10 @@ use crate::{
         widget_bridge_store::WidgetBridgeStore,
     },
 };
+use engine::Engine;
 use injection::cross_cutting::InjectedServices;
+use std::sync::Arc;
+use transport::LaneHub;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -25,6 +28,8 @@ pub struct AppState {
     pub services: InjectedServices,
     pub backend: BackendApiService,
     pub board_state: BoardStateStore,
+    pub cell_engine: Arc<Engine>,
+    pub cell_lanes: Arc<LaneHub>,
     pub listening_port: u16,
     pub local_auth_required: bool,
     pub manas: ManasGateway,

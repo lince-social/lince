@@ -568,39 +568,71 @@ publish:  publish-package (sand/concepts/trail subgraph), install-package
 
 ## - [x] VII.3 Transport & the ephemeral lanes
 
-- [x] One bidirectional typed streaming channel for first-party surfaces — **WebSocket chosen** (`transport` crate). The transport-agnostic `Session` is the contract; the axum WebSocket driver (`transport::ws`, behind the `axum` feature) is the socket. Proven end-to-end by `membrane/tests/pilot.rs`: a real WS client subscribes, receives a snapshot, sends an Action, receives the live update.
+- [x] One bidirectional typed streaming channel for first-party surfaces — **WebSocket chosen** (`transport` crate). The transport-agnostic `Session` is the contract; the axum WebSocket driver (`transport::ws`, behind the `axum` feature) is the socket. Proven end-to-end by WebSocket pilot tests: a real WS client subscribes, receives a snapshot, sends an Action, receives the live update.
 - [x] Multiplexed per connection: N Protein subscriptions + Action request/response + **ephemeral lanes** (`ClientMessage`/`ServerMessage` in `transport::protocol`).
 - [x] **Ephemeral lanes**: presence, cursors, typing, call signaling — scoped to a room, fanned out through `transport::LaneHub`, **never written to the Ledger** (tested). Contract: `LaneJoin`/`LaneSend`/`LaneEvent`.
 - [x] HTTP endpoints remain only at the boundary for external systems; sands speak only Protein + Actions over the socket.
 
 ## - [ ] VII.4 The web/sand migration (the finalization)
 
-**Decision (locked):** the sand system is refactored so **every sand speaks only Protein (reads) + Actions (writes) over the transport WebSocket**. Compatibility is not kept — the old SSE-saved-view streams and the `/api/backend/table` CRUD path are *removed*, not bridged. The new host is the `membrane` crate (the Cell surface); the old `web` crate is frozen and retired at cutover, with data hand-migrated. Whatever this refounding built is the **source of truth**; sands are ported to it, never the reverse.
+**Decision:** the existing **web/Tauri surface remains the product**. The board,
+package/import/publish flow, widget chrome, and mature sand UX are refactored in
+place. The migration replaces the data plane underneath current web; it does not
+replace current web with a second frontend.
 
-**The line that must not move:** *board chrome is frontend-only presentation state; sand data is Protein/Actions.* The migration ports the data path of every sand to the new mode **while preserving all the frontend-only board features** that already exist in the web/Tauri version. Those features are host state, not Ledger truth — they live in the board-state store / host `widgetState`, exactly as today, and are carried over verbatim:
+**Short term:** move the new Cell features into current web/Tauri and port every
+current sand to the new data path.
 
-- [ ] Infinite canvas with pan/zoom (`BoardCamera`).
-- [ ] Multiple named **workspaces** (`BoardWorkspace`), switchable.
-- [ ] Per-card **move / resize** (`x, y, width, height`).
-- [ ] **Pin** (`pinned`), **z-index ordering** (bring-to-front/back), **grouping** (`group_id`).
-- [ ] **Edit mode** (the board's authoring state).
-- [ ] **Sand importing** — `.html` and `.lince` archive packages (`LincePackage`, `PackageManifest`, `PackageTransport`, validation).
-- [ ] **Sand publishing** — the export/publish flow and the DNA/hub catalog pickup.
-- [ ] The **widget bridge** (`window.LinceWidgetHost`) — but re-pointed: its data plane becomes Protein subscriptions + Actions instead of SSE views + table CRUD; its control plane (host metadata, persisted `widgetState`, board layout) stays.
-- [ ] **Sand-to-sand ABI events** (`abi_listen`) — carried on ephemeral lanes, never the Ledger.
+- [x] Current web opens the new `lince.db` Cell schema for the
+  `store`/`engine`/`transport` path.
+- [x] Current web exposes a transport WebSocket under the existing host.
+- [x] `widget-bridge.js` and `widget-frame-bootstrap.js` expose
+  `LinceWidgetHost.subscribeProtein`, `subscribeSaved`, and `act` while keeping
+  the existing control-plane API.
+- [x] Per-sand subscriptions and Actions are multiplexed through the parent
+  bridge and routed back to the correct iframe.
+- [x] `record_info` reads `source: record` with `include: facts` first, and
+  falls back to the previous view stream only when needed.
+- [x] Protein supports `uid_eq` for direct single-record lookup.
+- [ ] Move `emit`/`onEvent` ABI events to transport ephemeral lanes while
+  preserving the current sand-facing API shape.
+- [ ] Port table, todo, kanban, relations, transfer, home manager/dashboard,
+  karma/rules, trail, and record editor to Protein reads and Action writes.
+- [ ] Add missing Actions required by current-web parity:
+  `edit-record-text`, `set-extension`, `set-slug`, `set-concept`, `set-unit`,
+  undo/compensation, delete/deactivate semantics, comments, worklogs, resource
+  refs, persistent view settings, rule CRUD, and transfer lifecycle writes.
+- [ ] Preserve legacy HTTP/SSE paths only for sands not yet ported; delete each
+  path after the corresponding current web sand has parity on Protein/Actions.
+- [ ] Add driven browser tests for each ported sand: snapshot, Action
+  request/response, and live update after write.
 
-**What changes for a sand:** it stops choosing a data source (SSE view vs. table CRUD vs. host-mediated routes) and instead (1) subscribes with a Protein for everything it reads — gaining live updates, provenance includes, promises, projections for free — and (2) writes only through typed Actions. The focus-queue corner sand (`membrane/assets/focus.html`) is the reference: ~40 lines, no SQL, no table knowledge. Every existing sand (kanban, transfer, relations, karma orchestra, trail, table, home manager) is re-authored to this shape.
+**Long term:** frontend and product work that should not block the data-plane
+migration.
 
-**Sands to port** (each: replace its data path, keep its surface):
-- [ ] Table sand → `source: record` + create/set-quantity/edit/set-extension Actions.
-- [ ] Kanban → record Protein with category/work-metadata includes; card moves are Actions; comments via the message model.
-- [ ] Relations graph → `include: links(kind=…)`; edges are add-link/remove-link Actions.
-- [ ] Karma Orchestra → rules/derived-values Protein; the DepGraph the engine already derives.
-- [ ] Transfer → the Transfer Actions (create/party/promise/agree/activate/settle) + promise/availability includes.
-- [ ] Trail → the emergent records+links+concepts subgraph (Part IV coda), imported via packages.
-- [ ] Home manager / dashboard → aggregate Proteins.
+- [ ] Host-state sync for board presentation state across devices.
+- [ ] Package import/publish on the new record/package model.
+- [ ] Per-sand capabilities and Action permissions before imported sands can
+  write freely.
+- [ ] Sand provenance such as `cause=sand:<uid>`.
+- [ ] Broader browser selftests for pan, zoom, grouping, resize, pin,
+  workspaces, import, publish, and sand-to-sand events.
+- [ ] Frontend polish/redesign after current web is on the new data plane.
+- [ ] New product surfaces: transfer marketplace, route/ride planning, group
+  coordination, calls/chat, calendar/time budgeting, finance projections,
+  social feed, and Fiote/AI conversation sands.
 
-**Acceptance for the finalization:** the ported board runs every workflow the Tauri board runs today — resize, pin, move, workspaces, edit mode, import, publish — with zero sand still speaking the old data path, and with the new capabilities (live subscriptions, provenance, promises, projections, visibility-gated remote reads) available to every sand uniformly.
+**The line that must not move:** *board chrome is frontend-only presentation
+state; sand data is Protein/Actions.* Current-web presentation features stay as
+host state: pan/zoom, workspaces, move/resize, pin, z-index, grouping, edit
+mode, package metadata, and per-card `widgetState`. Domain data moves to
+Protein subscriptions and typed Actions.
+
+**Acceptance for the finalization:** the existing Tauri board runs every
+workflow it runs today with no completed sand still speaking the legacy data path,
+and with live Protein subscriptions, typed Actions, provenance includes,
+link/promise/availability includes, aggregates, projections, ephemeral lanes,
+and visibility-gated remote reads available uniformly.
 
 ### Interactions (Part VII)
 - **Everything reads through Protein** — board, TUI, GUI, mobile, sandbox host, and Fiote included. **Karma (VI)** rules and derived values are queryable; `run_query` consequences execute saved Proteins for reads and Actions for writes. **Imagination (XII)** exposes projections as an `include` and as its own source. **Visibility (XV)** has exactly one enforcement point: here. **Attention (XIII)**: the queue is `source: decision`; `decide` is an Action. **Collab (Window case 7)**: CRDT text flows through `edit-record-text`; cursors ride ephemeral lanes. **AniccaDB**: replacing `store` must not change one character of this Part — that is the acceptance test for storage independence.
@@ -944,7 +976,7 @@ CREATE TABLE visibility_rule (
 **Why.** The Window is the triage discipline: hold every workflow against the primitives; place each part on the altitude ladder; only what the deduction forces enters the core. Held against twenty-one workflows, the triage forced exactly four core additions — place Instinct, ephemeral lanes, messages-attach-to-anything, embed-honestly — and nothing else. Each case below is an acceptance test: check it when the workflow runs end-to-end on the new core.
 
 - [ ] **1. Todo / knowledge base** — records+links; Karma daily counters; todo/kanban sands. *Accept:* create task, habit re-arms daily, done posts a fact with cause.
-- [x] **1b. Focus queue (ordered doing)** — order is links, never staggered frequencies. `@before` chains task records (recurring keep position across days; one-shots link in or fall to tail). Arrival=Karma+Frequency, sequence=`@before` graph, urgency=promise windows. One Protein: `where quantity<0, order: topo(@precedes), then window, then oldest`. Focus = head; next ones dimmed. Pinned corner sand is pure rendering; completing posts a fact and the stream recomputes. — **Done and shipped as the first sand on the new host.** `protein::focus_queue()`; the pinned corner sand (`membrane/assets/focus.html`) speaks only Protein+Actions over the WebSocket; the full path (subscribe → snapshot → set-quantity Action → live Update promoting the next task) is proven by a real WebSocket client test (`membrane/tests/pilot.rs`). Remaining polish: window tie-break in the sort (needs promises in queue math), drag-reorder (`relink-order` Action exists; UI pending), deadline-jump config.
+- [x] **1b. Focus queue (ordered doing)** — order is links, never staggered frequencies. `@before` chains task records (recurring keep position across days; one-shots link in or fall to tail). Arrival=Karma+Frequency, sequence=`@before` graph, urgency=promise windows. One Protein: `where quantity<0, order: topo(@precedes), then window, then oldest`. Focus = head; next ones dimmed. Pinned corner sand is pure rendering; completing posts a fact and the stream recomputes. — **Done as the first sand data-path proof.** `protein::focus_queue()` speaks only Protein+Actions over the WebSocket; the full path (subscribe → snapshot → set-quantity Action → live Update promoting the next task) is proven by a real WebSocket client test. Remaining polish: window tie-break in the sort (needs promises in queue math), drag-reorder (`relink-order` Action exists; UI pending), deadline-jump config.
 - [ ] **2. Recurring tasks** — Karma+Frequency alone. *Accept:* monthly rule fires exactly once, catch-up works.
 - [ ] **3. Donation & buying** — open promises + Senses + Transfer + Trust; storefront sands; delivery = promise window + place route. *Accept:* the DONATION and SALE bundles (VIII.4) run against a second Cell.
 - [ ] **4. Transport A→B** — `route()` in core (IX); Senses matches by route×window overlap; ride sand shows both parties one proposal. *Accept:* the RIDE bundle drafts automatically from two Cells' open promises.
@@ -982,7 +1014,7 @@ Greenfield: no staged migration, no dual paths, no old API. Old data ported by h
 - [/] **Stage 6 — Lingua publishing + Senses** (III.2, X): concept packages, adoption, matcher with proximity ceilings. — *Lingua repo + Senses matcher done and tested* (`engine::senses`: complementary open-promise matching, hard proximity ceiling, Lingua-DAG concept alignment so a specific offer meets a general Need, confidence floor, ranked drafts). Remaining: concept *package* publish/adopt flow, and the live discovery-cache feed (the matcher takes the cache as input today).
 - [x] **Stage 7 — Trust** (XI): ed25519 keys (private key outside the db), every fact signed on the write path, `verify_fact` on import, authorship preserved across sync, the two-layer tamper model (chain guards content→hash, signature guards hash→author). Verifiable aggregates via Protein. Tested. (Leaderboard sands: deferred by design.)
 - [ ] **Stage 8 — Attention** (XIII): decision-records, notify effect, budgets, capture sources. — *Decision-records + notify effect + ask consequence + Decide action done and tested*; the budget/digest config and capture-source registry await the transport/UI.
-- [/] **Stage 8b — The web/sand finalization** (VII.4): port the **whole** sand system to Protein + Actions on the `membrane` host. No compatibility — the old SSE-view/table-CRUD data path is deleted. Preserve every frontend-only board feature (canvas pan/zoom, workspaces, move/resize/pin/z-index/grouping, edit mode, sand import `.html`/`.lince`, publish, the widget bridge re-pointed to Protein/Actions, ABI events on ephemeral lanes). — *Started*: `membrane` host + the focus-queue corner sand ported and proven end-to-end. Remaining: the board chrome (canvas/workspaces/edit-mode/import/publish) ported onto membrane, and the existing sands (table, kanban, relations, karma orchestra, transfer, trail, home manager) re-authored to the new mode. **This refounding is the source of truth; the old `web`/Tauri crate is retired at cutover with data hand-migrated.**
+- [/] **Stage 8b — The web/sand finalization** (VII.4): move the existing web/Tauri board and sand system onto Protein + Actions + transport without replacing the user-facing Tauri UX. Preserve every frontend-only board feature (canvas pan/zoom, workspaces, move/resize/pin/z-index/grouping, edit mode, sand import `.html`/`.lince`, publish, the widget bridge, ABI events) while progressively replacing the legacy SSE-view/table-CRUD data plane. `lince-desktop` boots the current `web` FullUi; the current web board modules remain the UX source of truth. Detailed plan + running tracker: **`docs/stage-8b-web-sand-migration.md`**. Remaining work is to refactor `crates/web` in place: re-point `widget-bridge.js`/`widget-frame-bootstrap.js` to Protein/Actions, port current sands without rebuilding their UX from scratch, and add missing Actions for record edits, extensions, comments, worklogs, delete/deactivate semantics, persistent view settings, Trail creation, Karma rule CRUD, and Home Manager custom alimenta.
 - [ ] **Stage 9 — Fiote** (XIV): autonomy ladder over existing knobs. — Unstarted (Fiote writes only through the Action catalog, which now exists).
 - [ ] **Stage 10 — World + Synchrony**: the map, THE Game, multi-Cell choreography. — *Sync package layer done and tested* (visibility-filtered export, idempotent authored import, deltas commute); the map/game/choreography are UI-and-beyond.
 

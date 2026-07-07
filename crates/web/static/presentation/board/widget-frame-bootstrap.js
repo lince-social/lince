@@ -4,6 +4,12 @@ const WIDGET_ACTION = "lince:widget-action";
 const WIDGET_ERROR = "lince:bridge-error";
 const WIDGET_EVENT = "lince:bridge-event";
 const WIDGET_SPACE_PAN = "lince:widget-space-pan";
+const PROTEIN_SUBSCRIBE = "lince:protein-subscribe";
+const PROTEIN_SUBSCRIBE_SAVED = "lince:protein-subscribe-saved";
+const PROTEIN_UNSUBSCRIBE = "lince:protein-unsubscribe";
+const PROTEIN_ROWS = "lince:protein-rows";
+const PROTEIN_ACTION = "lince:protein-action";
+const PROTEIN_ACTION_RESULT = "lince:protein-action-result";
 
 (() => {
   if (window.__LINCE_WIDGET_HOST__) {
@@ -23,6 +29,9 @@ const WIDGET_SPACE_PAN = "lince:widget-space-pan";
     "preview";
   const listeners = new Set();
   const eventHandlers = new Set();
+  const proteinHandlers = new Map();
+  const pendingActions = new Map();
+  let nextActionRequestId = 1;
   let lastDetail = {
     bridge: {},
     meta: {
@@ -155,6 +164,44 @@ const WIDGET_SPACE_PAN = "lince:widget-space-pan";
 
     if (event.data.type === WIDGET_ERROR) {
       emit("lince-bridge-error", event.data.payload || {});
+      for (const pending of pendingActions.values()) {
+        pending.reject(
+          new Error(event.data.payload?.message || "Lince transport error."),
+        );
+      }
+      pendingActions.clear();
+      return;
+    }
+
+    if (event.data.type === PROTEIN_ROWS) {
+      const payload = event.data.payload || {};
+      const subId = String(payload.subId || "");
+      const handler = proteinHandlers.get(subId);
+      if (handler) {
+        handler({
+          rows: cloneJsonValue(payload.rows, []),
+          live: payload.live !== false,
+        });
+      }
+      return;
+    }
+
+    if (event.data.type === PROTEIN_ACTION_RESULT) {
+      const payload = event.data.payload || {};
+      const reqId = String(payload.reqId || "");
+      const pending = pendingActions.get(reqId);
+      if (!pending) {
+        return;
+      }
+      pendingActions.delete(reqId);
+      if (payload.ok) {
+        pending.resolve({
+          created: payload.created || null,
+          facts: Number(payload.facts) || 0,
+        });
+      } else {
+        pending.reject(new Error(payload.message || "Action failed."));
+      }
     }
   });
 
@@ -222,6 +269,53 @@ const WIDGET_SPACE_PAN = "lince:widget-space-pan";
       send(WIDGET_ACTION, {
         action: "set-card-streams-enabled",
         enabled: Boolean(enabled),
+      });
+    },
+    subscribeProtein(subId, protein, handler) {
+      const id = String(subId || "default");
+      if (typeof handler !== "function") {
+        return () => {};
+      }
+      proteinHandlers.set(id, handler);
+      send(PROTEIN_SUBSCRIBE, {
+        subId: id,
+        protein: cloneJsonValue(protein, {}),
+      });
+      return () => {
+        proteinHandlers.delete(id);
+        send(PROTEIN_UNSUBSCRIBE, { subId: id });
+      };
+    },
+    subscribeSaved(subId, name, handler) {
+      const id = String(subId || "default");
+      if (typeof handler !== "function") {
+        return () => {};
+      }
+      proteinHandlers.set(id, handler);
+      send(PROTEIN_SUBSCRIBE_SAVED, {
+        subId: id,
+        name: String(name || ""),
+      });
+      return () => {
+        proteinHandlers.delete(id);
+        send(PROTEIN_UNSUBSCRIBE, { subId: id });
+      };
+    },
+    act(action) {
+      const reqId = String(nextActionRequestId++);
+      return new Promise((resolve, reject) => {
+        pendingActions.set(reqId, { resolve, reject });
+        window.setTimeout(() => {
+          if (!pendingActions.has(reqId)) {
+            return;
+          }
+          pendingActions.delete(reqId);
+          reject(new Error("Action timed out."));
+        }, 15000);
+        send(PROTEIN_ACTION, {
+          reqId,
+          action: cloneJsonValue(action, {}),
+        });
       });
     },
     invalidateServerAuth(serverId) {

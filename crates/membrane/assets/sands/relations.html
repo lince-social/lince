@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Relations</title>
+  <script src="/board/frame.js"></script>
+  <style>
+    :root { color-scheme: dark; --bg: #101318; --panel: #171c22; --line: #2a333d; --text: #e6edf3; --muted: #8b949e; --accent: #7aa2f7; --good: #3fb950; }
+    * { box-sizing: border-box; }
+    body { margin: 0; height: 100vh; overflow: hidden; background: var(--bg); color: var(--text); font: 13px/1.45 system-ui, -apple-system, sans-serif; }
+    main { height: 100%; display: grid; grid-template-rows: auto auto 1fr; gap: 10px; padding: 12px; }
+    header { display: flex; align-items: center; gap: 8px; }
+    h1 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); flex: 1; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #f85149; }
+    .dot.live { background: var(--good); }
+    form { display: grid; grid-template-columns: 1fr auto 1fr auto; gap: 8px; }
+    select, button { font: inherit; border: 1px solid var(--line); border-radius: 7px; background: #0d1117; color: var(--text); padding: 7px 9px; min-width: 0; }
+    button { background: #1f2630; cursor: pointer; }
+    button:hover { border-color: #3c4857; }
+    .graph { min-height: 0; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 8px; }
+    .node { border: 1px solid var(--line); border-radius: 8px; padding: 9px; margin-bottom: 8px; background: #11161d; }
+    .node-title { font-weight: 650; }
+    .edges { margin-top: 7px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .edge { display: inline-flex; align-items: center; gap: 5px; border: 1px solid rgba(122,162,247,.26); border-radius: 999px; padding: 3px 7px; color: #d9e5ff; background: rgba(122,162,247,.08); }
+    .edge button { border: 0; background: transparent; padding: 0 2px; color: var(--muted); }
+    .muted { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Relations · before</h1>
+      <span id="dot" class="dot"></span>
+    </header>
+    <form id="link-form">
+      <select id="from"></select>
+      <button type="submit">before</button>
+      <select id="to"></select>
+      <button id="refresh" type="button">Refresh</button>
+    </form>
+    <section id="graph" class="graph" aria-label="Relations graph"></section>
+  </main>
+  <script>
+    const H = window.LinceWidgetHost;
+    const dot = document.getElementById("dot");
+    const graph = document.getElementById("graph");
+    const from = document.getElementById("from");
+    const to = document.getElementById("to");
+    let rows = [];
+
+    const protein = {
+      source: "record",
+      where: [{ kind_eq: "plain" }],
+      order: [{ asc: "created_at" }],
+      include: { links: { kind: "before" } },
+    };
+
+    H.onLive((live) => dot.classList.toggle("live", !!live));
+    H.subscribeProtein("relations", protein, ({ rows: next }) => {
+      rows = Array.isArray(next) ? next : [];
+      render();
+    });
+
+    function render() {
+      const selectedFrom = from.value;
+      const selectedTo = to.value;
+      from.innerHTML = "";
+      to.innerHTML = "";
+      for (const row of rows) {
+        from.appendChild(option(row));
+        to.appendChild(option(row));
+      }
+      if (selectedFrom) from.value = selectedFrom;
+      if (selectedTo) to.value = selectedTo;
+      graph.innerHTML = "";
+      if (!rows.length) {
+        const empty = document.createElement("div");
+        empty.className = "muted";
+        empty.textContent = "No records yet.";
+        graph.appendChild(empty);
+        return;
+      }
+      const byUid = new Map(rows.map((row) => [row.uid, row]));
+      for (const row of rows) {
+        const node = document.createElement("article");
+        node.className = "node";
+        const title = document.createElement("div");
+        title.className = "node-title";
+        title.textContent = row.head || row.slug || row.uid;
+        node.appendChild(title);
+        const edges = document.createElement("div");
+        edges.className = "edges";
+        const links = Array.isArray(row.links) ? row.links : [];
+        if (!links.length) {
+          const none = document.createElement("span");
+          none.className = "muted";
+          none.textContent = "No before links";
+          edges.appendChild(none);
+        }
+        for (const link of links) {
+          const otherUid = link.other;
+          const target = byUid.get(otherUid);
+          const pill = document.createElement("span");
+          pill.className = "edge";
+          const label = document.createElement("span");
+          label.textContent = (link.direction === "out" ? "-> " : "<- ") + ((target && (target.head || target.slug)) || otherUid);
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.title = "Remove link";
+          remove.textContent = "x";
+          remove.onclick = () => H.act({
+            action: "remove-link",
+            from: link.direction === "out" ? row.uid : otherUid,
+            kind: "before",
+            to: link.direction === "out" ? otherUid : row.uid,
+          }).catch(console.warn);
+          pill.append(label, remove);
+          edges.appendChild(pill);
+        }
+        node.appendChild(edges);
+        graph.appendChild(node);
+      }
+    }
+
+    function option(row) {
+      const opt = document.createElement("option");
+      opt.value = row.uid;
+      opt.textContent = row.head || row.slug || row.uid;
+      return opt;
+    }
+
+    document.getElementById("link-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (!from.value || !to.value || from.value === to.value) return;
+      H.act({ action: "add-link", from: from.value, kind: "before", to: to.value, quantity: null }).catch(console.warn);
+    });
+    document.getElementById("refresh").onclick = () => render();
+  </script>
+</body>
+</html>

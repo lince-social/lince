@@ -46,7 +46,17 @@ pub async fn serve(
         tokio::select! {
             // inbound client message
             incoming = stream.next() => {
-                let Some(Ok(Message::Text(text))) = incoming else { break };
+                // Stream ended or errored -> the connection is gone.
+                let Some(Ok(message)) = incoming else { break };
+                // Real browsers send Ping/Pong (keep-alive) and Close frames on
+                // the same stream. Only Text carries a ClientMessage; ignore
+                // control/binary frames (breaking on them would drop the socket
+                // mid-session and starve live updates), and close on Close.
+                let text = match message {
+                    Message::Text(text) => text,
+                    Message::Close(_) => break,
+                    _ => continue,
+                };
                 match serde_json::from_str::<ClientMessage>(&text) {
                     Ok(ClientMessage::LaneJoin { room }) => {
                         session.handle(ClientMessage::LaneJoin { room: room.clone() }).await;

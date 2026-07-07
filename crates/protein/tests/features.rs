@@ -80,6 +80,19 @@ async fn availability_reflects_active_outgoing_promises() {
 }
 
 #[tokio::test]
+async fn uid_eq_targets_one_record_directly() {
+    let e = engine().await;
+    let target = make(&e, "target.record", RecordKind::Plain, 3.0).await;
+    make(&e, "other.record", RecordKind::Plain, 3.0).await;
+
+    let p = base(Source::Record, vec![Predicate::UidEq(target)]);
+    let rows = protein::execute(&e.store, &p).await.unwrap();
+
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0]["slug"], "target.record");
+}
+
+#[tokio::test]
 async fn visibility_gate_is_the_one_read_boundary() {
     let e = engine().await;
     let public_need = make(&e, "public.apples", RecordKind::Plain, -1.0).await;

@@ -67,6 +67,15 @@ fn map_fact(r: sqlx::sqlite::SqliteRow) -> Fact {
     }
 }
 
+/// Fetch a single sealed fact by uid (the target of a compensation/undo).
+pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<Fact>, StoreError> {
+    Ok(sqlx::query("SELECT * FROM fact WHERE uid = ?")
+        .bind(uid)
+        .fetch_optional(pool)
+        .await?
+        .map(map_fact))
+}
+
 pub async fn for_record(
     pool: &SqlitePool,
     record_uid: &str,

@@ -43,6 +43,8 @@ pub(super) fn script() -> String {
           rows: [],
           live: false,
           unsubscribe: null,
+          subKey: "",
+          drivingLabel: "all records",
           editing: null, // { uid, key }
           createOpen: false,
           infoOpen: false,
@@ -193,6 +195,7 @@ pub(super) fn script() -> String {
               span.textContent = label;
               metrics.appendChild(span);
             };
+            pill("protein: " + state.drivingLabel);
             pill("rows: " + state.rows.length);
             pill("columns: " + COLUMNS.length);
             pill("live: " + (state.live ? "yes" : "connecting"));
@@ -288,21 +291,49 @@ pub(super) fn script() -> String {
 
         // ---- subscription ----------------------------------------------------
 
+        // The card's chosen Protein drives the data (the new "view selection"):
+        // cardState.savedProtein = a saved-Protein slug, or cardState.protein =
+        // an inline AST. Absent either, fall back to a broad records window.
+        function drivingSpec() {
+          const cardState = (typeof host?.getCardState === "function" ? host.getCardState() : null) || {};
+          const saved = String(cardState.savedProtein || "").trim();
+          if (saved) return { kind: "saved", key: "saved:" + saved, name: saved, label: saved };
+          if (cardState.protein && typeof cardState.protein === "object") {
+            return { kind: "ast", key: "ast:" + JSON.stringify(cardState.protein), protein: cardState.protein, label: cardState.protein.source || "record" };
+          }
+          return { kind: "all", key: "all", protein: { source: "record", limit: 500 }, label: "all records" };
+        }
+
+        function onRows(payload) {
+          // Tolerant-ignore: render the record fields we understand; any extra
+          // included data (facts/promises/links/aggregates) is simply dropped.
+          const rows = Array.isArray(payload?.rows) ? payload.rows : [];
+          state.rows = rows;
+          state.live = payload?.live !== false;
+          setStatus(state.live ? (rows.length + " rows") : "waiting", state.live ? "ok" : "idle");
+          renderTable();
+          renderDetails();
+        }
+
         function subscribe() {
           if (typeof host?.subscribeProtein !== "function") {
             setStatus("bridge unavailable", "error");
             return;
           }
+          const spec = drivingSpec();
+          if (spec.key === state.subKey) return; // driving Protein unchanged
+          if (typeof state.unsubscribe === "function") { state.unsubscribe(); state.unsubscribe = null; }
+          state.subKey = spec.key;
+          state.drivingLabel = spec.label;
+          state.rows = [];
+          state.live = false;
+          renderTable();
           setStatus("connecting…", "busy");
-          const protein = { source: "record", limit: 500 };
-          state.unsubscribe = host.subscribeProtein("table", protein, (payload) => {
-            const rows = Array.isArray(payload?.rows) ? payload.rows : [];
-            state.rows = rows;
-            state.live = payload?.live !== false;
-            setStatus(state.live ? (rows.length + " rows") : "waiting", state.live ? "ok" : "idle");
-            renderTable();
-            renderDetails();
-          });
+          if (spec.kind === "saved" && typeof host.subscribeSaved === "function") {
+            state.unsubscribe = host.subscribeSaved("table", spec.name, onRows);
+          } else {
+            state.unsubscribe = host.subscribeProtein("table", spec.protein, onRows);
+          }
         }
 
         // ---- wire up ---------------------------------------------------------
@@ -318,6 +349,11 @@ pub(super) fn script() -> String {
         renderCreateFields();
         renderTable();
         subscribe();
+
+        // The host pushes card state after the ready handshake and whenever the
+        // sand-settings modal changes the driving Protein — re-subscribe on any
+        // change (subscribe() no-ops when the driving Protein is unchanged).
+        document.addEventListener("lince-bridge-state", () => subscribe());
 
         window.addEventListener("beforeunload", () => {
           if (typeof state.unsubscribe === "function") state.unsubscribe();

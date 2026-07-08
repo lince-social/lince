@@ -41,13 +41,20 @@ cat > "$WORK/harness.html" <<'HTML'
 </div>
 <script>
   window.__acts = [];
+  window.__cardState = {}; // the host-side card state; the modal writes this
   window.LinceWidgetHost = {
+    getCardState() { return window.__cardState; },
     subscribeProtein(subId, protein, handler) {
       window.__protein = protein;
       handler({ rows: [
         { uid: "r_1", slug: "apples", kind: "plain", head: "Apples", body: "red", quantity: 3 },
         { uid: "r_2", slug: null, kind: "person", head: "Ana", body: "", quantity: 1 },
       ], live: true });
+      return () => {};
+    },
+    subscribeSaved(subId, name, handler) {
+      window.__savedName = name;
+      handler({ rows: [{ uid: "r_9", slug: "x", kind: "plain", head: "X", body: "", quantity: 1 }], live: true });
       return () => {};
     },
     act(action) { window.__acts.push(action); return Promise.resolve({ ok: true, created: "r_new" }); },
@@ -64,9 +71,13 @@ cat > "$WORK/harness.html" <<'HTML'
   const editor = document.querySelector('#table-body .cellEditor');
   editor.value = "oranges";
   editor.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+  // the modal picks a saved Protein to drive this card: set card state + notify
+  window.__cardState = { savedProtein: "views.stock" };
+  document.dispatchEvent(new CustomEvent("lince-bridge-state", { detail: {} }));
   setTimeout(() => {
     const rows = document.querySelectorAll('#table-body tbody tr').length;
     document.title = "ROWS=" + rows + " SRC=" + (window.__protein && window.__protein.source)
+      + " SAVED=" + (window.__savedName || "")
       + " ACTS=" + JSON.stringify(window.__acts);
   }, 50);
 </script>
@@ -80,9 +91,10 @@ TITLE="$(cd "$WORK" && timeout 60 "$CHROMIUM" --headless --disable-gpu --no-sand
 echo "result: $TITLE"
 
 fail=0
-grep -q "ROWS=2" <<<"$TITLE" || { echo "FAIL: expected 2 rendered rows (snapshot)"; fail=1; }
-grep -q "SRC=record" <<<"$TITLE" || { echo "FAIL: expected subscription to source=record"; fail=1; }
+grep -q "SRC=record" <<<"$TITLE" || { echo "FAIL: expected default subscription to source=record"; fail=1; }
 grep -q '"action":"create-record"' <<<"$TITLE" || { echo "FAIL: Create did not issue create-record"; fail=1; }
 grep -q '"action":"set-slug","target":"r_1","slug":"oranges"' <<<"$TITLE" || { echo "FAIL: inline edit did not issue set-slug"; fail=1; }
+grep -q "SAVED=views.stock" <<<"$TITLE" || { echo "FAIL: picking a saved Protein did not re-subscribe via subscribeSaved"; fail=1; }
+grep -q "ROWS=1" <<<"$TITLE" || { echo "FAIL: expected the saved-Protein rows to render after the swap"; fail=1; }
 
-[ "$fail" -eq 0 ] && echo "PASS: table sand snapshot + read shape + Action round-trip" || exit 1
+[ "$fail" -eq 0 ] && echo "PASS: table sand snapshot + read shape + Action round-trip + driving-Protein swap" || exit 1

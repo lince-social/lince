@@ -53,8 +53,15 @@ async fn save_protein_creates_updates_deletes_and_reactivates() {
         .created
         .unwrap();
     assert_eq!(updated, created, "upsert must reuse the record, not collide");
-    assert_eq!(store::records::get(&e.store.pool, &created).await.unwrap().unwrap().head, "Stock v2");
+    let updated_row = store::records::get(&e.store.pool, &created).await.unwrap().unwrap();
+    assert_eq!(updated_row.head, "Stock v2");
     assert_eq!(ast(&e, &created).await, json!({ "source": "record", "limit": 10 }));
+    // the AST is mirrored into body so a records Protein can list saved Proteins
+    // with their query text for the editor.
+    assert_eq!(
+        serde_json::from_str::<serde_json::Value>(&updated_row.body).unwrap(),
+        json!({ "source": "record", "limit": 10 })
+    );
 
     // delete = deactivate (append-only: hide, don't erase)
     e.act(Action::Deactivate { target: "views.stock".into() }, None).await.unwrap();

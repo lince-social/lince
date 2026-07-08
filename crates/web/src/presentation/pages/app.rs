@@ -971,6 +971,43 @@ fn render_widget_config_form() -> Markup {
                             placeholder="View id";
                     }
                 }
+                section id="widget-config-protein-section" class="widget-config-section" {
+                    div class="widget-config-section__head" {
+                        div class="import-modal__details-label" { "Data (Protein)" }
+                        p class="import-modal__details-copy" { "Pick the saved Protein that drives this card, or write the query. Reads are Protein — every feature is available in the AST." }
+                    }
+                    label class="startup-field" for="widget-config-protein-driver" {
+                        span class="startup-field__label" { "Drives this card" }
+                        select id="widget-config-protein-driver" class="startup-field__input" name="protein_driver" {}
+                    }
+                    div id="widget-config-protein-editor" class="startup-field startup-field--stack" {
+                        input
+                            id="widget-config-protein-name"
+                            class="startup-field__input"
+                            type="text"
+                            autocomplete="off"
+                            spellcheck="false"
+                            placeholder="name (slug), e.g. views.stock";
+                        input
+                            id="widget-config-protein-title"
+                            class="startup-field__input"
+                            type="text"
+                            autocomplete="off"
+                            placeholder="title";
+                        textarea
+                            id="widget-config-protein-ast"
+                            class="startup-field__input widget-config-protein-ast"
+                            rows="8"
+                            spellcheck="false"
+                            placeholder="{ \"source\": \"record\", \"where\": [{ \"kind_eq\": \"plain\" }], \"limit\": 200 }" {}
+                        div class="widget-config-protein-actions" {
+                            button id="widget-config-protein-validate" class="button button--ghost" type="button" { "Validate" }
+                            button id="widget-config-protein-save" class="button button--accent" type="button" { "Save" }
+                            button id="widget-config-protein-delete" class="button button--ghost" type="button" { "Delete" }
+                        }
+                        p id="widget-config-protein-help" class="startup-error-message" hidden="" {}
+                    }
+                }
                 section class="widget-config-section" {
                     div class="widget-config-section__head" {
                         div class="import-modal__details-label" { "Behavior" }

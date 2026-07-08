@@ -111,40 +111,52 @@ features and make them run inside current web/Tauri.
   `create-thread` and `create-message` create the records and links, Protein
   `include: { threads: ... }` reads nested message trees, and the Record Info
   sand can create threads plus root/reply messages for the clicked record.
-- [ ] Port kanban to the new core. Kanban is REBUILT fresh on the table-sand
+- [/] Port kanban to the new core. Kanban is REBUILT fresh on the table-sand
   template (do **not** lift the ~3.7k-line legacy `crates/web/src/sand/kanban/
-  script.rs`; read it for the feature list only). The work splits into two
+  script.rs`; read it for the feature list only). Track A (data port) is DONE;
+  Track B (group infrastructure) is the remaining work. The work splits into two
   independent, separately-landable tracks: the **data port** (kanban reads/writes
   on Protein + Actions) and the **group infrastructure** (the user's headline
   "extra features" — kanban ships and imports as a *group of sands*). Land one
   increment with a driven selftest before starting the next; the data port is the
   safe first landing, the group infra is the novel/risky part.
 
-  ### Track A — Kanban data port (Protein reads + Action writes)
+  ### Track A — Kanban data port (Protein reads + Action writes) — DONE
 
-  - [ ] Rebuild the kanban sand on the table template: subscribe a driving
-    Protein, render the board (columns + cards) client-side, and write via typed
-    Actions only (move column → `set-concept`/`set-state`/`set-quantity` depending
-    on the column field; edit title/body → `edit-record-text`; create card →
-    `create-record`; delete → `deactivate`). Manifest `requires_server = false`;
-    drop the `read_view_stream` permission.
-  - [ ] Drive kanban from a GENERAL, reusable Protein — **not** a kanban-specific
-    one. The sand is tolerant-ignore of extra included data: it renders the fields
-    it understands and silently drops the rest, so the same Protein can also feed
-    sands that carry more or less data. Honor the card's saved/inline Protein
-    chosen in the Data panel (`cardState.savedProtein` / `cardState.protein`),
-    re-subscribing on `lince-bridge-state` — exactly as the table and todo sands do.
-  - [ ] Choose the "column" mapping: kanban columns are the distinct values of one
-    configurable record field. Default = group by `concept` (Lingua); the column
-    field is part of the kanban config, not hard-coded. A card's move between
-    columns is the Action that rewrites that field.
-  - [ ] Preserve the old task metadata / categories / dates / estimates /
-    assignees / comments / resource refs / worklogs / filters / view settings by
-    mapping each to a new-core home; where none exists yet, document the gap in
-    the field map below and move on (per user: "if you cant, document and move on").
-  - [ ] Add a driven selftest (headless chromium vs a stubbed `LinceWidgetHost`)
-    proving snapshot render, column layout, and Action round-trips — mirror
-    `scripts/other/table-sand-selftest.sh`.
+  Landed: `crates/web/src/sand/kanban/{mod,body,styles,script}.rs` rebuilt fresh
+  (the old 3.7k-line SSE sand replaced). Proven by
+  `scripts/other/kanban-sand-selftest.sh` (headless chromium vs a stubbed bridge):
+  columns bucket, default `source=record`, drag-move → `set-concept`, per-column
+  add → `create-record`+`set-concept`, card click → `recordClicked` ABI, saved-
+  Protein swap → `subscribeSaved`. Caveat: a full `cargo check -p lince-web` is
+  currently blocked by unrelated pre-existing working-tree WIP (`ServerBootstrap`
+  not imported in `web/src/lib.rs`); the Rust here mirrors the known-good table
+  template field-for-field — re-run the crate check once that WIP compiles.
+
+  - [x] Rebuild the kanban sand on the table template: subscribes a driving
+    Protein, renders the board (columns + cards) client-side, writes via typed
+    Actions only (move column → `set-concept` by default, extensible via a
+    `COLUMN_ACTIONS` map that also covers `set-quantity`; edit title →
+    `edit-record-text`; create card → `create-record` (+ classify); delete →
+    `deactivate`). Manifest `requires_server = false`; `read_view_stream` dropped
+    (permissions now `bridge_state`/`protein_subscribe`/`act`).
+  - [x] Driven by a GENERAL, reusable Protein — not kanban-specific. Tolerant-
+    ignore of extra included data (renders uid/head/slug/body + the column field,
+    drops the rest). Honors the card's saved/inline Protein from the Data panel
+    (`cardState.savedProtein` / `cardState.protein`), re-subscribing on
+    `lince-bridge-state` — same pattern as table/todo.
+  - [x] Column mapping: columns are the distinct values of one configurable record
+    field (`cardState.kanban.columnField`, default `concept`) unioned with any
+    configured `columns`, minus `hiddenColumns` ("hiding part of the kanban"). A
+    card move rewrites that field via the mapped Action. COSMETIC GAP: when
+    grouping by `concept` the column label is the concept *uid* (Protein returns
+    `concept_uid`, not the name) — configured columns can supply friendly labels;
+    resolving concept names in the Protein row is a follow-up.
+  - [x] Old task metadata / categories / dates / estimates / assignees / comments /
+    resource refs / worklogs / filters / view settings mapped below; gaps
+    (dates/estimates/worklogs) documented, not invented, per user guidance.
+  - [x] Driven selftest `scripts/other/kanban-sand-selftest.sh` — PASS (mirrors
+    `table-sand-selftest.sh`).
 
   #### Old→new kanban field map
 
@@ -175,9 +187,13 @@ features and make them run inside current web/Tauri.
   - **Worklogs** → no native worklog/time-entry table. Candidate future model:
     facts carrying a time-concept delta on the record. GAP.
 
-  Note: the `record_info` sand (Track B) still reads over the legacy SSE
-  `/snapshot`+`/stream` view path, not Protein. Porting record_info's own reads to
-  Protein is a separate follow-up; it does not block wiring kanban into it.
+  Note: the `record_info` sand (Track B) is **Protein-first** — its
+  `recordClicked` handler calls `openProtein(recordId, record)`, subscribing
+  `{ source: record, where: [{ uid_eq }] , include:{ facts, threads } }` whenever
+  the event payload carries `record.uid` (or `slug`); it only falls back to the
+  legacy SSE `/snapshot`+`/stream` view path for legacy numeric ids. So a
+  Protein-based kanban that emits `recordClicked` with `data.record = { uid, … }`
+  drives record_info over Protein with no server view stream.
 
   ### Track B — Kanban group infrastructure (the "extra features")
 

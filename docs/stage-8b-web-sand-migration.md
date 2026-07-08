@@ -104,15 +104,130 @@ features and make them run inside current web/Tauri.
   delete/deactivate (append-only Ledger: delete == quantity→0). `Compensate
   { fact }` is the undo primitive — appends the inverse delta caused by the
   original (`CauseKind::Compensation`), no-op on zero-delta facts
-  (`store::facts::get`). Covered by `engine/tests/record_edits.rs` (7 tests).
-- [ ] Port kanban data plumbing to Protein/Actions while preserving current
-  task metadata, categories, dates, estimates, assignees, comments, resource
-  refs, worklogs, filters, and view settings.
+  (`store::facts::get`). Covered by `engine/tests/record_edits.rs`.
+- [x] Add new-Cell record threads/messages for Record Info: threads and
+  messages are ordinary records (`kind=thread`, `kind=message`) connected by
+  Lingua link kinds (`thread-of`, `message-in`, `reply-to`). Actions
+  `create-thread` and `create-message` create the records and links, Protein
+  `include: { threads: ... }` reads nested message trees, and the Record Info
+  sand can create threads plus root/reply messages for the clicked record.
+- [ ] Port kanban to the new core. Kanban is REBUILT fresh on the table-sand
+  template (do **not** lift the ~3.7k-line legacy `crates/web/src/sand/kanban/
+  script.rs`; read it for the feature list only). The work splits into two
+  independent, separately-landable tracks: the **data port** (kanban reads/writes
+  on Protein + Actions) and the **group infrastructure** (the user's headline
+  "extra features" — kanban ships and imports as a *group of sands*). Land one
+  increment with a driven selftest before starting the next; the data port is the
+  safe first landing, the group infra is the novel/risky part.
+
+  ### Track A — Kanban data port (Protein reads + Action writes)
+
+  - [ ] Rebuild the kanban sand on the table template: subscribe a driving
+    Protein, render the board (columns + cards) client-side, and write via typed
+    Actions only (move column → `set-concept`/`set-state`/`set-quantity` depending
+    on the column field; edit title/body → `edit-record-text`; create card →
+    `create-record`; delete → `deactivate`). Manifest `requires_server = false`;
+    drop the `read_view_stream` permission.
+  - [ ] Drive kanban from a GENERAL, reusable Protein — **not** a kanban-specific
+    one. The sand is tolerant-ignore of extra included data: it renders the fields
+    it understands and silently drops the rest, so the same Protein can also feed
+    sands that carry more or less data. Honor the card's saved/inline Protein
+    chosen in the Data panel (`cardState.savedProtein` / `cardState.protein`),
+    re-subscribing on `lince-bridge-state` — exactly as the table and todo sands do.
+  - [ ] Choose the "column" mapping: kanban columns are the distinct values of one
+    configurable record field. Default = group by `concept` (Lingua); the column
+    field is part of the kanban config, not hard-coded. A card's move between
+    columns is the Action that rewrites that field.
+  - [ ] Preserve the old task metadata / categories / dates / estimates /
+    assignees / comments / resource refs / worklogs / filters / view settings by
+    mapping each to a new-core home; where none exists yet, document the gap in
+    the field map below and move on (per user: "if you cant, document and move on").
+  - [ ] Add a driven selftest (headless chromium vs a stubbed `LinceWidgetHost`)
+    proving snapshot render, column layout, and Action round-trips — mirror
+    `scripts/other/table-sand-selftest.sh`.
+
+  #### Old→new kanban field map
+
+  Maps cleanly (implement):
+
+  - **Task metadata** (title/description) → record `head` / `body`.
+  - **Comments** → threads + messages (`kind=thread`/`kind=message`, link kinds
+    `thread-of`/`message-in`/`reply-to`); Actions `create-thread`/`create-message`,
+    Protein `include:{ threads }`. This is the already-`[x]` record-threads item.
+  - **Filters** → Protein predicates (`kind_eq`, `concept_in`, `slug_eq`,
+    `quantity_lt|gt|eq`, `state_in`, `near`) in the driving Protein's `where`.
+  - **View settings** → the saved Protein (successor to a named SQL view) plus
+    per-card board chrome in `widgetState` (host state, not Ledger).
+  - **Categories** → Lingua concepts on the record (`concept`), filtered via
+    `concept_in`. Columns can also group by concept.
+  - **Assignees / resource refs** → Lingua **links** to person/resource records
+    (link kinds e.g. `assigned-to`, `resource-of`); Protein `include:{ links:{ kind } }`.
+    Link primitives exist; the specific kinds + the referenced person/resource
+    records need seeding — implement the link plumbing, seed kinds as needed.
+
+  GAPS — no native new-core home yet (document, don't invent tables now):
+
+  - **Dates** (start/due) → no native date column on `record`. Park in
+    `record_extension` (open-ended fds JSON) for now, or model as annotation
+    facts later. GAP.
+  - **Estimates** → no native estimate field (`quantity` is the delta cache, not a
+    per-record estimate). Park in `record_extension`. GAP.
+  - **Worklogs** → no native worklog/time-entry table. Candidate future model:
+    facts carrying a time-concept delta on the record. GAP.
+
+  Note: the `record_info` sand (Track B) still reads over the legacy SSE
+  `/snapshot`+`/stream` view path, not Protein. Porting record_info's own reads to
+  Protein is a separate follow-up; it does not block wiring kanban into it.
+
+  ### Track B — Kanban group infrastructure (the "extra features")
+
+  Kanban is the first sand to exercise these. They generalize the flat grouping
+  system (ultraplan Feature 2, all `[x]`, single `groupId` per card) into nesting
+  and sand-as-group packaging.
+
+  - [ ] **Nested groups (groups within groups).** A group may contain groups.
+    Disbanding/unlocking the OUTER group must NOT disband/unlock the inner groups —
+    they survive as their own groups. (Current model is a single flat
+    `groupId: Option<String>` per card; nesting needs a representation that a card/
+    group can belong to a parent group while keeping its own inner group identity.)
+  - [ ] **Sand-as-group packaging.** Shipping/importing a sand can ship a *group*
+    of sub-sands with a relative layout + z-order, not a single card. Shipping
+    kanban ships the group — the kanban board with its columns and kanban config
+    (which parts are hidden) — but **not** the record-info side data (assignees,
+    worklogs, estimates, filters, views).
+  - [ ] **Kanban imports-as-group by default.** Out of the box a kanban sand is a
+    group of two sands: the kanban board (bottom layer) and a `record_info` sand
+    (upper z-index, **same size** as the kanban, record on top), the record_info
+    mostly hidden until a card is clicked.
+  - [ ] **Delete kanban's built-in record sidepanel.** The reusable `record_info`
+    sand replaces it, so record-detail viewing is coded once and reused everywhere.
+  - [ ] **Scoped `recordClicked` delivery.** Clicking a kanban card emits
+    `recordClicked` that reaches ONLY the `record_info` sand in the SAME group
+    (group-scoped ABI fanout, not board-wide), which then displays that record.
+  - [ ] **Groupception.** A kanban group can nest inside another group (e.g. a todo
+    sand + a kanban sand). Disbanding/unlocking the outer group releases the todo
+    and kanban but PRESERVES kanban's internal grouping (its columns + config + its
+    record_info sand). This is the concrete test case for nested groups above.
+  - [ ] **INCOMPLETE — needs the user.** The source note trailed off mid-sentence:
+    "make sure the sands can also show a …". Intent unknown; finish the thought
+    before building. (Best guess to confirm: sands should also be able to *show a
+    preview/collapsed state* of themselves, but do not build on a guess.)
+
 - [ ] Port relations data plumbing to Protein/Actions while preserving current
   graph behavior, relation/category filters, edits, delete/deactivate behavior,
   and projection settings.
-- [ ] Port todo with current-web parity: focus queue over Protein, create and
-  complete via Actions, then restore undo/history/details behavior.
+- [/] Port todo with current-web parity: focus queue over Protein, create and
+  complete via Actions, then restore undo/history/details behavior. CURRENT:
+  the current-web todo sand now defaults to the Protein focus queue
+  (`quantity_lt 0`, `kind_eq plain`, `topo("before")`) and also honors the
+  card's saved/inline Protein from the Data panel. Completion plus local
+  undo/redo writes use typed `set-quantity` Actions through the widget bridge;
+  the old server/view SSE stream and table PATCH path are removed from the sand.
+  Driven proof against a stubbed bridge:
+  `scripts/other/todo-sand-selftest.sh` (snapshot + focus Protein shape +
+  set-quantity round-trip + driving-Protein swap) — PASS.
+  REMAINING: create task UI/Action, richer history backed by compensation/facts,
+  details parity, and a live-update browser path beyond the stubbed bridge.
 - [ ] Port transfer to Transfer Actions and promise/availability includes.
 - [ ] Port home manager/dashboard to aggregate Proteins and Action writes.
 - [ ] Port karma/rules surfaces to rule records, derived values, and rule
@@ -176,10 +291,9 @@ migrations`) is **resolved by a file split**:
   file because it is still **load-bearing at boot** — local admin, active
   configuration, karma cache, views/collections all live in the legacy schema
   (`bootstrap_database` → `seed`, `ensure_local_admin_if_needed`,
-  `configuration.get_active`, `refresh_karma_cache`). It is not yet
-  consultation-only; the legacy schema shrinks toward that as sands port over,
-  and `lince-legacy.db` + the root `migrations/` (reference only) are deleted
-  once nothing reads them.
+  `configuration.get_active`, `refresh_karma_cache`). The legacy layer no
+  longer creates `lince-legacy.db` if it is missing; it may still open/migrate
+  an existing file while remaining old surfaces are removed or ported.
 - Both files resolve through `utils::config::lince_data_dir()` now (the new cell
   path was updated to match), so they always sit side by side and both honor
   `LINCE_DATA_DIR_OVERRIDE` — the earlier bypass is gone.

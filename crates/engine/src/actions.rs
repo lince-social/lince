@@ -458,7 +458,10 @@ impl Engine {
                 // Upsert by slug so a saved Protein is full CRUD: saving the same
                 // name again updates the title + AST (and reactivates it if it
                 // had been deactivated/"deleted"), rather than colliding on the
-                // UNIQUE slug.
+                // UNIQUE slug. The pretty AST is also stored in `body` so a plain
+                // records Protein can list saved Proteins WITH their query for the
+                // editor (the `lince.protein` extension stays canonical for reads).
+                let body = serde_json::to_string_pretty(&ast).unwrap_or_default();
                 let uid = match store::records::resolve(&self.store.pool, &slug).await? {
                     Some(existing) => {
                         if existing.kind != RecordKind::Protein.as_str() {
@@ -467,8 +470,13 @@ impl Engine {
                                 existing.kind
                             )));
                         }
-                        store::records::set_text(&self.store.pool, &existing.uid, Some(&head), None)
-                            .await?;
+                        store::records::set_text(
+                            &self.store.pool,
+                            &existing.uid,
+                            Some(&head),
+                            Some(&body),
+                        )
+                        .await?;
                         if existing.quantity == 0.0 {
                             Box::pin(self.act(
                                 Action::SetQuantity { target: existing.uid.clone(), value: 1.0 },
@@ -485,7 +493,7 @@ impl Engine {
                                 slug: Some(&slug),
                                 kind: RecordKind::Protein,
                                 head: &head,
-                                body: "",
+                                body: &body,
                                 quantity: 1.0,
                             },
                         )

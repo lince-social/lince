@@ -4,6 +4,7 @@ import { createGridConfig } from "./grid.js";
 import { createBoardStore } from "./store.js";
 import { createBoardViewport } from "./viewport.js";
 import { createWidgetBridge, enhancePackageHtml } from "./widget-bridge.js";
+import { createProteinConfigPanel } from "./protein-config.js";
 
 const PACKAGE_EXTENSION = ".html";
 const LEGACY_PACKAGE_EXTENSION = ".sand";
@@ -686,6 +687,13 @@ const widgetBridge = createWidgetBridge({
   onError(message) {
     flashDropOverlayMessage(message);
   },
+});
+// The sand-settings "Data (Protein)" panel — CRUD over saved Proteins and the
+// picker that drives which Protein feeds the card (writes card widgetState).
+const proteinConfigPanel = createProteinConfigPanel({
+  getCard: (id) => getCardById(id),
+  patchCardState: (id, patch) => patchCardWidgetState(id, patch),
+  syncFrames: () => widgetBridge.syncFrames(),
 });
 let activeCardId = null;
 let activeInteractionType = null;
@@ -4496,6 +4504,7 @@ async function openWidgetConfigModal(cardId) {
   widgetConfigModalBackdrop.hidden = false;
   syncModalLock();
   widgetConfigSaveButton.disabled = false;
+  proteinConfigPanel.open(card.id);
   syncWidgetConfigDebug(card);
   void refreshWidgetConfigModalState();
   window.setTimeout(() => {
@@ -4535,6 +4544,7 @@ function closeWidgetConfigModal() {
   widgetConfigViewSummary.textContent = "";
   widgetConfigViewSearch.value = "";
   setWidgetConfigPreviewHelp("");
+  proteinConfigPanel.close();
   syncModalLock();
 }
 

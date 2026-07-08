@@ -2192,37 +2192,174 @@ body.auth-pending .startup-auth-card {
 }
 
 .widget-config-grid {
-    display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 16px;
-    align-items: start;
+    align-items: flex-start;
 }
 
 .widget-config-section {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 14px;
     min-width: 0;
+    flex: 1 1 300px;
+    max-width: 460px;
     padding: 18px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 20px;
     background: rgba(15, 18, 23, 0.92);
 }
 
-.widget-config-section:nth-child(1) {
-    grid-column: span 5;
-}
-
-.widget-config-section:nth-child(2) {
-    grid-column: span 4;
-}
-
-.widget-config-section:nth-child(3) {
-    grid-column: span 3;
+.widget-config-section[hidden] {
+    display: none;
 }
 
 .widget-config-section__head {
     display: grid;
     gap: 4px;
+}
+
+/* Data (Protein) panel — saved-Protein list + GUI builder */
+.protein-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.protein-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 4px 6px;
+}
+
+.protein-item.is-active {
+    border-color: rgba(138, 180, 255, 0.6);
+    background: rgba(138, 180, 255, 0.08);
+}
+
+.protein-item__pick {
+    flex: 1 1 auto;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+    padding: 4px 6px;
+    font: inherit;
+    border-radius: 8px;
+}
+
+.protein-item__pick:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.protein-item__edit,
+.protein-item__del,
+.protein-row__del,
+.protein-add {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: inherit;
+    border-radius: 8px;
+    cursor: pointer;
+    padding: 2px 8px;
+    font: inherit;
+    font-size: 0.85em;
+}
+
+.protein-item__del,
+.protein-row__del {
+    line-height: 1;
+}
+
+.protein-builder {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.protein-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.protein-field__label {
+    font-size: 0.8em;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.protein-input {
+    width: 100%;
+}
+
+.protein-input--sm {
+    max-width: 120px;
+}
+
+.protein-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 10px;
+}
+
+.protein-group__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.8em;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.protein-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.protein-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.protein-row > select,
+.protein-row > input {
+    flex: 1 1 120px;
+    min-width: 0;
+}
+
+.protein-checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    align-items: center;
+}
+
+.protein-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9em;
+}
+
+.protein-actions {
+    display: flex;
+    gap: 8px;
+    padding-top: 4px;
+}
+
+.startup-error-message.is-ok {
+    color: rgba(141, 240, 185, 0.9);
 }
 
 .widget-config-stack {

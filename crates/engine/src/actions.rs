@@ -455,20 +455,46 @@ impl Engine {
                 );
             }
             Action::SaveProtein { slug, head, ast } => {
-                let rec = store::records::create(
-                    &self.store.pool,
-                    store::records::NewRecord {
-                        slug: Some(&slug),
-                        kind: RecordKind::Protein,
-                        head: &head,
-                        body: "",
-                        quantity: 1.0,
-                    },
-                )
-                .await?;
-                store::records::set_extension(&self.store.pool, &rec.uid, "lince.protein", &ast)
-                    .await?;
-                outcome.created = Some(rec.uid);
+                // Upsert by slug so a saved Protein is full CRUD: saving the same
+                // name again updates the title + AST (and reactivates it if it
+                // had been deactivated/"deleted"), rather than colliding on the
+                // UNIQUE slug.
+                let uid = match store::records::resolve(&self.store.pool, &slug).await? {
+                    Some(existing) => {
+                        if existing.kind != RecordKind::Protein.as_str() {
+                            return Err(EngineError::Consequence(format!(
+                                "slug `{slug}` is a {} record, not a saved protein",
+                                existing.kind
+                            )));
+                        }
+                        store::records::set_text(&self.store.pool, &existing.uid, Some(&head), None)
+                            .await?;
+                        if existing.quantity == 0.0 {
+                            Box::pin(self.act(
+                                Action::SetQuantity { target: existing.uid.clone(), value: 1.0 },
+                                actor.clone(),
+                            ))
+                            .await?;
+                        }
+                        existing.uid
+                    }
+                    None => {
+                        store::records::create(
+                            &self.store.pool,
+                            store::records::NewRecord {
+                                slug: Some(&slug),
+                                kind: RecordKind::Protein,
+                                head: &head,
+                                body: "",
+                                quantity: 1.0,
+                            },
+                        )
+                        .await?
+                        .uid
+                    }
+                };
+                store::records::set_extension(&self.store.pool, &uid, "lince.protein", &ast).await?;
+                outcome.created = Some(uid);
             }
             Action::Decide { decision, answer } => {
                 store::misc::answer_decision(&self.store.pool, &decision, &answer).await?;

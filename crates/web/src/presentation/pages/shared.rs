@@ -209,15 +209,6 @@ pub(crate) fn server_status_icon() -> Markup {
     }
 }
 
-pub(crate) fn home_icon() -> Markup {
-    html! {
-        svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" {
-            path d="M4 11.5 12 5l8 6.5" {}
-            path d="M6 10.5V19h12v-8.5" {}
-        }
-    }
-}
-
 pub(crate) fn eye_icon() -> Markup {
     html! {
         svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" {

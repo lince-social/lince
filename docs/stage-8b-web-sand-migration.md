@@ -71,16 +71,21 @@ features and make them run inside current web/Tauri.
   the previous view stream as fallback.
 - [x] Add `uid_eq` to Protein so current web sands can target one record
   directly instead of subscribing to a broad window and filtering client-side.
-- [/] Move ABI events (`emit` / `onEvent`) from the in-page event bus onto
+- [x] Move ABI events (`emit` / `onEvent`) from the in-page event bus onto
   transport ephemeral lanes, preserving the same sand-facing API. Each ABI
   topic is a lane room `abi:<topic>`; the board joins the rooms its cards
   listen to and emit on. Same-board siblings still fan out in-page (one board
   is one connection and the transport suppresses self-echo), while other
   sessions/devices receive the event over the lane. Transport substrate is
   covered by `transport/tests/session.rs::ephemeral_lanes_fan_out_and_never_persist`.
-  REMAINING: the bridge relay itself has not been driven end-to-end (no JS
-  runtime here) — needs the browser selftest, incl. the room churn path where
-  emit-only rooms are left/rejoined across renders.
+  The bridge relay in `widget-bridge.js` is now driven end-to-end in headless
+  chromium against a stubbed WebSocket + fake frames by
+  `scripts/other/abi-lane-selftest.sh` (PASS): in-page fan-out to listening
+  siblings with self-echo suppression (source frame that itself listens is not
+  echoed), lane mirror (`lane_send` on `abi:<topic>`), inbound `lane_event`
+  delivery (feeding the exact recorded send payload back proves send/receive
+  shapes can't drift), and the full room-churn cycle — join on listen, leave
+  when no card listens (incl. emit-only rooms), and re-join on re-emit.
 - [x] Port the real current-web table sand to Protein/Actions without losing
   its current UX: drafts, schema selection, toasts, info panel, and LynxDS
   surface. REBUILT fresh (feature parity, not pixel parity): the sand was a
@@ -111,10 +116,15 @@ features and make them run inside current web/Tauri.
   `create-thread` and `create-message` create the records and links, Protein
   `include: { threads: ... }` reads nested message trees, and the Record Info
   sand can create threads plus root/reply messages for the clicked record.
-- [/] Port kanban to the new core. Kanban is REBUILT fresh on the table-sand
+- [x] Port kanban to the new core. Kanban is REBUILT fresh on the table-sand
   template (do **not** lift the ~3.7k-line legacy `crates/web/src/sand/kanban/
-  script.rs`; read it for the feature list only). Track A (data port) is DONE;
-  Track B (group infrastructure) is the remaining work. The work splits into two
+  script.rs`; read it for the feature list only). Track A (data port) DONE;
+  Track B (group infrastructure) DONE (2026-07-10): nested groups, sand-as-group
+  packaging, and the add-as-group default all landed + selftested — kanban now
+  adds from the catalog as a group (board + record_info), and the two sands emit/
+  listen `recordClicked` over the unified bridge's group-scoped ABI room. See the
+  Phase 3 note under Track B and "Base task 2" for details. Pending only the
+  user's visual confirmation in the running app. The work splits into two
   independent, separately-landable tracks: the **data port** (kanban reads/writes
   on Protein + Actions) and the **group infrastructure** (the user's headline
   "extra features" — kanban ships and imports as a *group of sands*). Land one
@@ -172,12 +182,22 @@ features and make them run inside current web/Tauri.
     per-card board chrome in `widgetState` (host state, not Ledger).
   - **Categories** → Lingua concepts on the record (`concept`), filtered via
     `concept_in`. Columns can also group by concept.
+    - [ ] Human note: back then i wanted a feature to cluster records, so if i have a normal record and i want to cluster them with tags (independently of them being an organ record or command record), so like 'Tasks', or 'Project A'. Make sure that is possible, to filter with inluding and excluding in protein to only show 'Tasks' and 'Project A' or only show not 'Project B'.
+      - RESOLVED → multi-valued via **Lingua** (`tag: []`). See **Track B, Phase 5**
+        below for the full plan. Decision (user): a record carries *many* tags, not
+        one. `record.concept_uid` is single-valued (`crates/store/migrations/
+        0001_init.sql:11`), so tags are **links** (already multi-valued and first-
+        class): a `tag`/`in-cluster` link kind from the record to a **cluster
+        concept**. Include+exclude then composes with the existing boolean
+        predicates, but needs one NEW filterable predicate (links are only surfaced
+        via Protein `include` today, not `where`).
   - **Assignees / resource refs** → Lingua **links** to person/resource records
     (link kinds e.g. `assigned-to`, `resource-of`); Protein `include:{ links:{ kind } }`.
     Link primitives exist; the specific kinds + the referenced person/resource
     records need seeding — implement the link plumbing, seed kinds as needed.
 
   GAPS — no native new-core home yet (document, don't invent tables now):
+  For now skip it. I'll ask you later.
 
   - **Dates** (start/due) → no native date column on `record`. Park in
     `record_extension` (open-ended fds JSON) for now, or model as annotation
@@ -194,6 +214,15 @@ features and make them run inside current web/Tauri.
   legacy SSE `/snapshot`+`/stream` view path for legacy numeric ids. So a
   Protein-based kanban that emits `recordClicked` with `data.record = { uid, … }`
   drives record_info over Protein with no server view stream.
+  - [ ] Make sure we dont fall back to legacy, refactor if you need to.
+    - RESOLVED → READY TO BUILD (no infra needed). In `crates/web/src/sand/
+      record_info/script.rs`, delete the legacy SSE path: `openStream`,
+      `loadSnapshot`, `streamBase`, `resolveOrigin`, `findRecordRow`, the
+      `EventSource` machinery, and the `else` fallback at ~509–512; keep only
+      `openProtein`. Guard before deleting: confirm no record is reachable *only* by
+      a legacy numeric id (`openProtein` bails on `legacy-id`). ADDITIVE-safe: this
+      removes only the *sand's client fallback*, not any server SSE endpoint. See
+      **Track B, Phase 1**.
 
   ### Track B — Kanban group infrastructure (the "extra features")
 
@@ -211,27 +240,384 @@ features and make them run inside current web/Tauri.
     kanban ships the group — the kanban board with its columns and kanban config
     (which parts are hidden) — but **not** the record-info side data (assignees,
     worklogs, estimates, filters, views).
-  - [ ] **Kanban imports-as-group by default.** Out of the box a kanban sand is a
-    group of two sands: the kanban board (bottom layer) and a `record_info` sand
-    (upper z-index, **same size** as the kanban, record on top), the record_info
-    mostly hidden until a card is clicked.
-  - [ ] **Delete kanban's built-in record sidepanel.** The reusable `record_info`
-    sand replaces it, so record-detail viewing is coded once and reused everywhere.
-  - [ ] **Scoped `recordClicked` delivery.** Clicking a kanban card emits
-    `recordClicked` that reaches ONLY the `record_info` sand in the SAME group
-    (group-scoped ABI fanout, not board-wide), which then displays that record.
+      - [ ] Do a refactoring of all the sands, i want them inside rust, so we can make a build process that creates the group and reuse components between sands (like lego, we have the kanban sand, the record info sand and both of them in a group that makes it when i click in a card in kanban it events it to record info), we still maintain the embedding and spitting in lince/web/sand on startup. The old web stuff still has examples in the web crate, look at how we did.
+        - RESOLVED (user decision) → **Rust `OFFICIAL_WIDGETS` build path is canonical.**
+          There are two embed subsystems today, both writing to `~/.config/lince/web/
+          sand/`: (a) the mature Rust path — ~30 sands as maud `mod/body/styles/
+          script.rs`, registered in `OFFICIAL_WIDGETS` (`crates/web/src/sand/mod.rs:
+          102-227`) and emitted by `render_official_widgets` (`:236-251`); (b) a newer
+          `cell_surface.rs` path — `include_dir!` over `cell-sand-src/sands/` holding 5
+          thin `.html` sands (`kanban/record_info/relations/table/todo`, 100–170 lines
+          each) + an `example-bundle/` directory-bundle (`index.html` + `manifest.toml`
+          {title,description,entry} + assets = an unpacked `.lince`). **Fold the 5
+          `.html` sands' content INTO their Rust namesakes and make bundling/grouping a
+          Rust build step — WITHOUT losing the 5 sands' content** (acceptance bar). The
+          Rust versions are far richer (364–1469 lines), so this is mostly: port any
+          Cell-transport wiring the `.html` has that Rust lacks, then delete the
+          duplicate `.html`. See **Track B, Phase 2**. NOTE: `cargo check -p lince-web`
+          is currently red (`ServerBootstrap` unimported in `crates/web/src/lib.rs:306,
+          319`, pre-existing Cell-cutover WIP) — **Phase 0** clears that first.
+  - [x] **Kanban imports-as-group by default.** DONE (2026-07-10). Adding "Kanban"
+    from the catalog yields the group: kanban board (z=1) + `record_info` (z=2, same
+    rect, record on top), mostly hidden until a card is clicked. Server surfaces the
+    group as the "Kanban" catalog entry; `store.addImportedGroup` drops both. See
+    "Base task 2".
+  - [x] **Delete kanban's built-in record sidepanel.** DONE (Track A rebuild ships no
+    sidepanel; the reusable `record_info` sand is the detail view).
+  - [x] **Scoped `recordClicked` delivery.** DONE (2026-07-10). kanban's `kanban.html`
+    emits `H.emit("recordClicked", {record})` on card click; `record_info.html`
+    `joinRoom`s + `onLane`s it and re-subscribes focused on that record's `uid_eq`.
+    The unified bridge (base task 1) delivers it in-page, group-scoped — only the
+    record_info packaged in the SAME group receives it. Bridge mechanism proven by
+    `bridge-unification-selftest.sh`; sands wired + served (verified via curl).
   - [ ] **Groupception.** A kanban group can nest inside another group (e.g. a todo
     sand + a kanban sand). Disbanding/unlocking the outer group releases the todo
-    and kanban but PRESERVES kanban's internal grouping (its columns + config + its
-    record_info sand). This is the concrete test case for nested groups above.
-  - [ ] **INCOMPLETE — needs the user.** The source note trailed off mid-sentence:
-    "make sure the sands can also show a …". Intent unknown; finish the thought
-    before building. (Best guess to confirm: sands should also be able to *show a
-    preview/collapsed state* of themselves, but do not build on a guess.)
+    and kanban but PRESERVES kanban's internal grouping. The data model + logic are
+    DONE & tested (Phase 3: nested `group_ids`, stack-aware lock/unlock, `import_group`
+    prepends the outer group; `store.addImportedGroup` re-homes to a fresh inner id so
+    inner grouping survives an outer disband). The specific todo+kanban nesting is
+    exercisable in-app; not separately selftested here.
+  - [ ] **DEFERRED (user).** The source note trailed off mid-sentence: "make sure the
+    sands can also show a …". Best guess was a *preview/collapsed state* of a sand;
+    user chose to defer — do not build in this pass. Revisit when the user finishes
+    the thought.
 
-- [ ] Port relations data plumbing to Protein/Actions while preserving current
-  graph behavior, relation/category filters, edits, delete/deactivate behavior,
-  and projection settings.
+  ### Track B — implementation plan (decisions resolved)
+
+  Land + selftest each phase separately (driven headless-chromium selftests mirroring
+  `scripts/other/kanban-sand-selftest.sh`). `cargo check -p lince-web` green after each.
+  Phase 3 is the novel/risky core. Tick tracker boxes only for implemented + selftested
+  items.
+
+  - [ ] **Phase 0 — restore a compiling baseline (unblocker).** Fix `crates/web/src/
+    lib.rs` so the crate compiles: import `ServerBootstrap` (exists in `domain::board`)
+    or revert the incomplete WIP hunk at `:306,319`. Do the minimal thing that
+    compiles — do NOT try to finish the broader stalled Cell cutover. Verify `cargo
+    check -p lince-web` green + `kanban-sand-selftest.sh` still PASS.
+
+  - [x] **Phase 1 — ready-now cleanups (no new infra).** DONE.
+    - [x] Kill record_info's legacy SSE fallback: deleted `openStream`/`loadSnapshot`/
+      `streamBase`/`resolveOrigin`/`findRecordRow`/`EventSource` + the `else` fallback
+      in `record_info/script.rs`; kept `openProtein`. Guard verified: kanban is the
+      only `recordClicked` emitter and always sends `record.uid`. Selftest
+      `scripts/other/record-info-sand-selftest.sh` — PASS (SRC=record,
+      WHERE=[{uid_eq}], PANEL=yes, ES=0).
+    - [x] Delete kanban's built-in sidepanel — already satisfied by the Track A
+      rebuild (new kanban ships no sidepanel). No code; box closed here.
+
+  - [x] **Phase 2b — New-way connect path is the default** (user: "adhere completely
+    to the new mode"). The 5 migrated sands load `/board/frame.js` and call
+    `H.subscribeProtein`/`H.act`/`H.onLive`. Implemented:
+    - [x] Restored the membrane pair into `crates/web/static/presentation/board/`:
+      `frame.js` (sand-side host → `window.LinceWidgetHost`) + `bridge.js` (board-side,
+      one WebSocket, multiplexes Protein subs + Actions). `bridge.js` ws URL repointed
+      to `/host/transport/ws`. Served: `/board/frame.js` route on both routers +
+      `bridge.js` in `static_assets`.
+    - [x] `main.js` instantiates `createBridge({})` (self-wires via global message +
+      `lince:ready`). `enhancePackageHtml` no longer injects the legacy bootstrap for
+      sands that load `/board/frame.js`. `frame.js` reads the board's
+      `data-package-instance-id` so per-card routing works.
+    - [x] Wire protocol VERIFIED statically against the known-good `widget-bridge.js`:
+      bare `new WebSocket` (no auth handshake), identical envelope
+      (`{type:subscribe,id,protein}` / `{type:act,id,action}` out; `{id,rows}` /
+      `{action_ok,created,facts}` back). So the data plane genuinely traverses
+      frame→bridge→server→back. `frame.js`/`bridge.js` load in chromium exposing the
+      expected API. (Live rendering in a real browser vs a running server still app-gated.)
+    - [x] **Retired every old-way sand from wiring** (kept files, per user): `OFFICIAL_
+      WIDGETS` reduced 31 → 13 (8 `shell` chrome + the 5 new sands). The 18 old sands'
+      modules/sources remain on disk under `#[allow(dead_code)]`; not built/emitted/
+      served. Seed workspace only places `shell-*` cards, so nothing strands on boot.
+    - CAVEATS: (1) RESOLVED (2026-07-10, base task 1) — the two WebSockets are now
+      ONE. See "Base task 1" below. (2) `recordClicked`/kanban-as-group interaction:
+      the bridge substrate now exists (scoped room fan-out for new sands), still
+      needs the kanban/record_info sands to emit/listen (kanban Track B). (3) ABI
+      lanes: the unified bridge handles BOTH legacy `abi:<topic>` rooms and new-way
+      arbitrary rooms, dispatched by the server's `lane_event.room`.
+
+  - [x] **Base task 1 — merge the two WebSockets into ONE (full bridge
+    unification)** (2026-07-10, user chose full unification over a minimal socket-
+    share). The board opened up to three sockets to `/host/transport/ws`
+    (`bridge.js` new sands + `widget-bridge.js` chrome + `protein-config.js` Data
+    panel). Now:
+    - [x] New `static/presentation/board/transport.js`: the single shared,
+      reconnecting socket. Exposes `send`/`onMessage`/`onOpen`/`onLive`; consumers
+      filter inbound by subscription/request `id` (which never collide across
+      consumers) and lane `room`. Served via `static_assets.rs` + ServeDir.
+    - [x] `widget-bridge.js` is now the ONE unified bridge: it serves BOTH the
+      legacy nested-`payload` chrome protocol AND the new-way flat protocol
+      (`frame.js`: `lince:ready`/flat `protein-subscribe`/`lince:action`/`lane-join`/
+      `lane-send`), routing rows/action-results back in each frame's shape. It adds
+      in-page, GROUP-SCOPED ABI fan-out for new-way sands (room-membership map +
+      `inEventScope`) — the exact path kanban's scoped `recordClicked` needs — plus
+      the server lane mirror for cross-session. `bridge.js` DELETED; `main.js`
+      instantiates only the unified bridge; `protein-config.js` shares the socket.
+    - [x] Driven proof (headless chromium, stubbed socket + fake frames):
+      `scripts/other/abi-lane-selftest.sh` (legacy topic ABI still intact through the
+      unified bridge + shared transport — PASS, updated to bundle transport.js and to
+      feed the server's real room-tagged `lane_event`) and NEW
+      `scripts/other/bridge-unification-selftest.sh` (one socket; flat subscribe→rows
+      and action→result in the FLAT shape; scoped emit reaches only the same-group
+      sibling, blocks a different-group sand, suppresses the source; lane mirror;
+      ungrouped source broadcasts — PASS). `protein-config-selftest.sh` updated to
+      copy transport.js — PASS.
+
+  - [x] **Phase 2 — Rust-canonical sand build; the 5 new sands ARE their `.html`
+    strings** (line-222 decision, redone per user's reorg). The user moved each new
+    `.html` into its sand dir and deleted `cell-sand-src`. Implemented:
+    - [x] Each of `kanban/record_info/table/todo/relations` is now a self-contained
+      `.html` string: `mod.rs` does `include_str!("<name>.html")` + a Rust
+      `PackageManifest` → `LincePackage::new(".html")` (Html transport). Old
+      `body.rs`/`script.rs`/`styles.rs` DELETED; `OFFICIAL_WIDGETS` entries switched
+      to `Package{package}`. `relations` drops the old d3 `graph_view` archive (the
+      shared `d3.v7.min.js`/`LICENSE.txt`, still used by karma_orchestra/transfer,
+      were kept). All 31 official packages build; `kanban.html` emits as a raw servable
+      HTML doc that talks to `window.LinceWidgetHost` (the board injects the host
+      bridge via `enhancePackageHtml`; the `/board/frame.js` tag is a harmless 404).
+    - [x] `cell_surface.rs` `include_dir!` extraction RETIRED (its `cell-sand-src` tree
+      is gone). `serve_cell_api_only` now populates `/sand/*` via
+      `sand::render_official_widgets` + `render_official_groups`;
+      `cell_surface::guess_content_type` kept for the route.
+    - [x] Groups/bundles ship as `.lince`: `render_official_groups` emits
+      `kanban.lince` (a workspace archive = kanban board + record_info, shared inner
+      group). Catalog `list()` skips workspace archives via a new content peek
+      (`is_workspace_archive_bytes`, checks for `workspace.json`) so a group `.lince`
+      is never mis-parsed as a single sand; `is_workspace_archive_filename` accepts
+      `.lince`. Roundtrip test updated + PASS; runtime emit test confirms
+      `kanban.html` raw + `kanban.lince` group in the sand dir.
+    - Incidental WIP fixes to unbreak the crate (the reorg left it non-compiling):
+      restored tracked `crates/web/src/presentation/mod.rs` (deleted in worktree but
+      still used) and removed the orphaned `pub mod colorscheme;` (no file, no uses).
+      Deleted the obsolete `kanban`/`record-info` selftests (they extracted JS from the
+      now-deleted `script.rs`).
+    - [x] DONE (2026-07-10, base task 3): `example-bundle/` is now wired as an official
+      widget. New `crates/web/src/sand/example-bundle/mod.rs` embeds its files
+      (`index.html` entry + `script.js`/`style.css` assets) and builds
+      `example-bundle.lince` via `LincePackage::new_archive`; registered in
+      `OFFICIAL_WIDGETS` (14 entries). It emits to the sand dir at boot, is a SINGLE
+      archive package (no `workspace.json`, so `is_workspace_archive_bytes` does not
+      exclude it), shows in the catalog, and its assets serve relative to the entry.
+      It is the reference multi-file directory-bundle format template.
+    - [ ] REMAINING (unrelated to example-bundle): client drag/drop of a `.lince` GROUP
+      still routes by extension (`isGroupArchiveFile` checks `.group.sand`), so
+      surfacing `.lince` GROUPS in the catalog/import UI is the app-run wiring under
+      Phase 3 / base task 2 below.
+
+  - [/] **Phase 3 — nested groups + sand-as-group packaging** (Track B core). Data
+    model + logic + build artifact DONE & tested; catalog-UI surfacing is the one
+    remaining wiring step (needs the running app).
+    - [x] Nested-group representation: ADDED `group_ids: Vec<String>` (outermost →
+      innermost) to `BoardCard` (`crates/web/src/domain/board.rs`), authoritative for
+      nesting; `group_id` kept in sync as the innermost id for flat-group back-compat
+      (less invasive than a hard replace). Pure logic in `group-logic.js`:
+      `groupStackOf`/`wrapInGroup`/`disbandGroup`/`sharesGroup`/`inner|outermostGroupId`.
+      Persistence round-trips `groupIds` (`store.js` `exportCard`, `grid.js`
+      `sanitizeCard`). Interactive lock/unlock is stack-aware (`store.js`
+      `setCardsGroup`: lock prepends outer, unlock peels only the outer;
+      `main.js` `activateGroupFromCard` activates the OUTERMOST container). Verified:
+      `board_js_tests.rs::nested_groups_disband_outer_preserves_inner` (node/CI) +
+      chromium replicas of the disband, scope, and lock/unlock truth tables — all PASS.
+    - [x] Sand-as-group build artifact: `sand::build_kanban_group_archive` +
+      `render_official_groups` (`crates/web/src/sand/mod.rs`) build a `.group.sand`
+      workspace archive with 2 cards + both packages embedded; emitted at startup via
+      `PackageCatalogStore::new`. Reuses the runtime `import_group`
+      (`api/board.rs`) — which now PREPENDS the import group as the outermost, so inner
+      grouping survives (groupception). Roundtrip test
+      `sand::group_tests::kanban_ships_as_a_group_of_board_plus_record_info` — PASS.
+    - [x] Kanban-as-group archive BUILT + tested: [kanban board (z=1) + record_info
+      (z=2, **same rect**, `abi_listen:["recordClicked"]`)] sharing one inner group;
+      ships board+config, not record-info side data.
+    - [x] DONE (2026-07-10, base task 2 / kanban B — user chose add-as-group by
+      default). Kanban now adds as a GROUP from the catalog:
+      - **Server (cell path):** `InstalledPackageSummary` gains `is_group` +
+        `member_count`; `PackageCatalogStore::list()` surfaces each workspace-archive
+        `.lince` as ONE `is_group` entry (`summary_from_group`, title/metadata from the
+        workspace name + lowest-z "primary" member). A group named the same as a single
+        sand REPLACES it (kanban.lince id "kanban" hides kanban.html) — so "Kanban" IS
+        the group; reusable members (record_info) keep their own single entry. New
+        `GET /host/packages/local/group/{filename}` returns the parsed member cards
+        (relative layout, z, group ids, ABI listen, HTML). Curl-verified: kanban entry
+        `isGroup:true memberCount:2`, kanban.html suppressed, endpoint returns
+        kanban+record_info with `recordClicked`.
+      - **Client:** `store.addImportedGroup` drops all members at once, preserving
+        relative layout/z/ABI-listen and re-homing the archive's inner group id to a
+        FRESH id (repeated adds = independent groups; inner grouping survives outer
+        disband = groupception). `addLocalPackageToWorkspace` branches on `isGroup` →
+        `addLocalGroupToWorkspace` (fetch cards → `addImportedGroup`); catalog card
+        shows a "grupo · N sands" pill. Driven proof:
+        `scripts/other/group-add-selftest.sh` (headless chromium, store+grid+group-logic
+        as ES modules) — PASS (two members, fresh unique ids, one shared fresh inner
+        group, same rect, z-order, recordClicked preserved, repositioned off the archive
+        coords, second add independent).
+      - **Sands wired + verified end-to-end (node-free):** `kanban.html` emits
+        `recordClicked` on card click; `record_info.html` `joinRoom`s/`onLane`s it and
+        re-subscribes focused (`uid_eq`). Proven by the COMPOSED selftest
+        `scripts/other/kanban-group-e2e-selftest.sh` — real srcdoc-less iframes running
+        the REAL served `kanban.html`/`record_info.html` + REAL `frame.js` + REAL
+        unified bridge (only the WebSocket stubbed): a real kanban card click drives the
+        same-group record_info to re-subscribe on the clicked uid, while a
+        DIFFERENT-group record_info does NOT (proves frame.js's instanceId lines up with
+        the id `getCardGroupStack` is keyed on, so scoping holds and does not degrade to
+        a board-wide broadcast). PASS.
+      - PENDING only the user's visual confirmation in the running app: click "Kanban"
+        in the catalog modal → two grouped cards appear → click a card → record_info
+        panel updates. (The functional composition above is already proven; this is the
+        pixels-and-catalog-modal layer.)
+
+  - [x] **Phase 4 — scoped `recordClicked` delivery.** DONE. Added `inEventScope` +
+    a `getCardGroupStack` accessor to `widget-bridge.js`: a GROUPED source only reaches
+    frames whose stack contains the source's **innermost** (tightest) group — so a
+    kanban card's `recordClicked` reaches only the record_info packaged with it, not a
+    record_info in another group nor an unrelated sand sharing only an outer container.
+    An UNGROUPED source still broadcasts board-wide (back-compat). `main.js` provides
+    `getCardGroupStack`. Verified via chromium truth table (kanban→own record_info ✓,
+    kanban→other-group record_info ✗, kanban→outer-only sibling ✗, ungrouped→broadcast ✓).
+    Cross-session lane-room group qualifier deferred (local in-page scoping covers the
+    kanban+record_info case).
+
+  - [x] **Phase 5 — Lingua multi-tag clustering** (line-180 decision). DONE (built on
+    the WIP's link infrastructure).
+    - [x] Model: tags are **links** of a `tag` kind from a record to a **cluster
+      record** (`tag: []` = the set of linked targets). Multi-valued; `record.
+      concept_uid` stays the single classification, tags are orthogonal. Write path
+      already exists in the WIP (`AddLink`/`RemoveLink`); links surfaced via
+      `LinksInclude`.
+    - [x] New core work — the filterable predicate. Added
+      `Predicate::LinkedTo { kind, to }` to `crates/protein/src/lib.rs` (enum +
+      `PredicateCtx.link_sources` preload via `store::links::records_to` + match arm).
+      General over link kinds (also covers assignees `LinkedTo{assigned-to,…}`).
+      Include+exclude composes with `Any`/`Not`/`All`. Wire form:
+      `{ "linked_to": { "kind": "tag", "to": "tasks" } }`.
+    - [x] Test `crates/protein/tests/features.rs::
+      linked_to_filters_by_tag_cluster_with_include_and_exclude` — PASS. Verifies a
+      multi-tagged record + `All([Any([tasks,project-a]), Not(project-b)])` returns
+      exactly the right set. Full protein suite green (10 tests).
+    - Kanban/table filter-by-tag works TODAY via the driving Protein (Data panel) — no
+      sand code needed. Column-group-BY-tag is DEFERRED: a card can be in many clusters
+      → many columns, which is semantically odd for a board; revisit if wanted.
+
+- [x] Merge Relations and Trail into one **Relation** sand on Protein/Actions.
+  Relation is the default graph sand for showing records as nodes and links as
+  typed relations. The old Trail sand is not a separate concept anymore; it is a
+  mode of Relation where one configured order-like link kind is interpreted as a
+  chain.
+  - [x] **Correct primitive:** relation edges are `link` rows. A statement like
+    `Task A @order Task B` is stored as `link.from_uid = Task A`,
+    `link.kind_uid = @order`, `link.to_uid = Task B`. The right-side record is
+    the next/root-facing node for chain traversal when the configured mode wants
+    to read left-to-right as `left @link right`.
+  - [x] **Protein controls edge types:** the card config stores either an inline
+    Protein or saved Protein. Relation starts with zero edges; every link type
+    to show must be explicit in the card/Protein config. Protein uses
+    `include:{ links:{ kinds, direction, depth } }` and `order:[{topo:kind}]`
+    where chain order is required. Legacy one-kind `{ kind }` still parses.
+  - [x] **Multi-edge rendering:** if two records have multiple selected links,
+    Relation can render either one collapsed line or all relation fibers. In
+    fiber mode, one edge is straight only when the edge count is odd; remaining
+    edges are paired as curved parenthesis-like arcs around the center. When the
+    count is even, no center line exists; half curve to one side and half to the
+    other. Labels/tooltips expose each link kind and quantity.
+  - [x] **Graph mode:** default mode renders selected Protein records as nodes
+    and explicit selected links as relation fibers. Reads use Protein and writes
+    use Actions; the old SQL view filters/projection settings are not part of
+    the new Relation data path.
+  - [x] **Trail mode:** chain mode uses the same ordering solution as the Todo
+    focus queue: order is links, not special trail rows. The Protein result set
+    is sequenced with `topo(@precedes)`/`topo(@order)` and then field tie-breaks
+    such as `created_at` or promise windows. `relink-order` remains the drag
+    reorder Action.
+  - [x] **Trail visual rules:** in trail mode, the first negative record in the
+    chain is the immediate need and renders orange. Later negative descendants
+    are dim orange while blocked by the current immediate need. When the current
+    node is made positive, it becomes green and the next child/descendant step is
+    promoted to orange; if that promoted child was not already negative, Relation
+    writes `set-quantity` to `-1` through Actions. Non-current descendants stay
+    gray/dim until their turn.
+  - [x] **No separate Trail package:** old Trail package/routes/services were
+    removed. New cards instantiate the Relation sand with `mode: "trail"` and a
+    configured order link kind; old Trail data compatibility is intentionally
+    not preserved.
+    Here is the plan that was thought of later after making more decisions, use it if you need to finish the task and these points are not implemented.
+
+  # Relation + Trail Refactor Plan
+
+  ## Summary
+
+  Merge Trail into Relation as trail mode, with no standalone Trail package/service/data compatibility. Relation becomes a pure Protein/Actions sand: Protein controls which records and link
+  kinds are visible, Actions mutate records, quantities, and links. Existing Trail-specific abstractions can be removed; old DB/data compatibility is not required.
+
+  ## Key Changes
+
+  - Extend Protein link includes from single-kind links to explicit selected kinds:
+      - New shape: include: { links: { kinds: ["before", "contributes"], direction: "both", depth: 0 } }.
+      - No implicit edges: if kinds is empty/missing, Relation shows records with zero links.
+      - Keep parsing legacy { links: { kind: "before" } } only as a harmless alias for one kind.
+      - Link rows returned to sands include enough graph data: uid, from, to, kind, quantity, direction, other.
+
+  - Refactor Relation sand:
+      - Replace old SSE /host/widgets/.../stream data path with LinceWidgetHost.subscribeProtein.
+      - Replace old postAction("set-need")/SQL-view writes with bridge.act.
+      - Card state owns Relation config:
+          - mode: "graph" | "trail"
+          - protein or savedProtein
+          - linkKinds: []
+          - edgeRender: "fibers" | "collapsed" default "fibers"
+          - trail.orderKind
+          - trail.direction: "from_to" | "to_from" default "from_to"
+
+      - Graph mode renders only configured link kinds; with multiple links between two records, default to curved fiber edges, with a collapsed-line toggle.
+
+  - Implement Relation trail mode:
+      - UI label remains “Trail mode”, but it is only a Relation mode, not a separate package/concept.
+      - Requires explicit trail.orderKind; no fallback to before/order/precedes.
+      - Default order reads A @order B as A then B; per-card direction can reverse to read B then A.
+      - Uses Protein order: [{ topo: orderKind }, ...tieBreakers].
+      - Visual quantity rules:
+          - first negative record in ordered chain is current and orange;
+          - positive records are green;
+          - later negative records blocked by current are dim orange;
+          - non-current descendants are gray/dim;
+          - completing current writes set-quantity; if the promoted next node is not negative, write set-quantity to -1.
+
+  - Actions and cleanup:
+      - Use existing add-link, remove-link, set-quantity, edit-record-text, deactivate.
+      - Add relink-order Action for drag reorder: it rewrites adjacent order links for the configured kind over the provided ordered UID list.
+      - Remove standalone Trail package registration, Trail routes/pages/services, and Trail widget identity checks after Relation trail mode is working.
+      - Update docs to say Trail is only Relation’s ordered mode; no separate Trail data compatibility is promised.
+
+  ## Test Plan
+
+  - Protein tests:
+      - multiple selected link kinds are included;
+      - empty/missing kinds returns no links;
+      - legacy single kind still parses;
+      - topo ordering still works with selected order kind.
+
+  - Engine/transport tests:
+      - relink-order creates adjacent order links and removes stale order links inside the reordered set;
+      - Relation-style subscribe plus set-quantity live update promotes the next trail item;
+      - add-link/remove-link produce live Protein updates.
+
+  - Web sand tests:
+      - Relation graph subscribes through subscribeProtein, not old stream APIs;
+      - graph with no link kinds shows nodes and zero edges;
+      - multiple links render as fibers by default and collapse when toggled;
+      - Trail mode setup state appears when no orderKind is configured;
+      - Trail forward and reverse directions produce opposite chain order;
+      - old Trail package no longer appears in official package list.
+
+  - Verification:
+      - Run timeout 180s nix develop -c cargo check --workspace --all-targets.
+      - Add or update a Relation sand selftest script following the existing table/todo/kanban selftest pattern.
+
+  ## Assumptions
+
+  - It is acceptable to lose old standalone Trail card/data compatibility.
+  - Existing local DB can be removed/reset during development if old Trail/Relation state blocks the new model.
+  - “Trail” remains a UI mode name inside Relation, but there is no standalone Trail package, service, route, or backend concept.
+  - Graph mode starts with zero edges unless link kinds are explicitly configured in Protein/card state.   
+
+END_OF_RELATION/TRAIL_REFACTOR_PLAN
+
 - [/] Port todo with current-web parity: focus queue over Protein, create and
   complete via Actions, then restore undo/history/details behavior. CURRENT:
   the current-web todo sand now defaults to the Protein focus queue
@@ -248,8 +634,8 @@ features and make them run inside current web/Tauri.
 - [ ] Port home manager/dashboard to aggregate Proteins and Action writes.
 - [ ] Port karma/rules surfaces to rule records, derived values, and rule
   Actions.
-- [ ] Port trail/knowledge graph surfaces to records + links + concepts
-  Proteins and package import.
+- [x] Remove the standalone Trail implementation after Relation trail mode has a
+  driven test and current cards can migrate to Relation config.
 - [ ] Build the record editor around `edit-record-text` and the CRDT relay.
 - [ ] Keep embed-honest sands working: terminal, freedoom, document viewer,
   chess, and similar packages. When touched, preserve required vendored
@@ -282,6 +668,44 @@ plane is on the new system.
 
 ## Current Status
 
+- [x] TEST INFRA (2026-07-10): node is permanently unavailable in this
+  environment, so the `board_js_tests` (which shell out to `node`) now SKIP
+  cleanly via a `node_available()` guard instead of panicking at
+  `expect("failed to launch node")` — `cargo test -p lince-web` is meaningful
+  again (46 passed). The same board JS logic is covered node-free by chromium
+  selftests under `scripts/other/`. Remaining `cargo test` failures
+  (`transfer_widget` ×2, `terminal_store` ×1) are pre-existing WIP / PTY-env,
+  unrelated to this work. All new selftests use chromium, never node.
+- [x] FIX (2026-07-11): kanban group layout + stale-JS cache.
+  - **Layout:** the group stacked `record_info` at the SAME rect on top of the
+    kanban board — but an opaque iframe there just HID the board, so adding kanban
+    showed only record_info's "Provenance" panel and no visible group. Now
+    `build_kanban_group_archive` places record_info BESIDE the board (to its
+    right, 320-wide); both are visible, the board stays usable, and clicking a
+    card focuses record_info via the scoped `recordClicked`. record_info now shows
+    a placeholder ("clique num card…") by default and only fills in on a click
+    (it is an event-consumer sand). Group test updated.
+  - **Stale JS:** the board JS is served via ServeDir with only `Last-Modified`
+    (no `Cache-Control`), so the Tauri webview heuristically cached a stale
+    `store.js` next to a fresh `main.js` → "store.addImportedGroup is not a
+    function". Added `Cache-Control: no-cache, must-revalidate` app-wide
+    (`map_response` layer) + on the embedded `static_assets` path.
+- [x] BUGFIX (2026-07-10): clicking a sand in the catalog did not add it. The
+  client add-flow fetches `GET /host/packages/local/{id}` for the single-package
+  preview, but the cell path (`serve_cell_api_only`) had only `list` + `group` +
+  `content` routes — never the single-package route (the catalog was empty before
+  the fix above, so it was never exercised). Added `get_local_package` (returns
+  the sand's HTML + manifest as the snake_case preview the client's
+  `createCardFromPreview` expects) at `/host/packages/local/{package_id}`. Groups
+  keep going through `/host/packages/local/group/{filename}`.
+- [x] BUGFIX (2026-07-10): the "Catálogo de widgets" was empty on the desktop.
+  The desktop boots `serve_cell_api_only`, which stubbed `/host/packages/local`
+  to `list_empty_authed` (`[]`), so no on-disk sand ever showed. Wired it to a
+  real `list_local_packages` handler backed by a `PackageCatalogStore` field on
+  `CellApiState` (mirrors the FullUi handler). Verified against a live headless
+  boot: the endpoint now returns all 13 sands, `kanban.lince` correctly excluded.
+  Also removed the stale `record_info.html` orphan (underscore duplicate the
+  retired `cell-sand-src` extractor left in `~/.config/lince/web/sand/`).
 - [x] Current web/Tauri is restored as the product runtime.
 - [x] Current web has a new transport route wired to `store`, `engine`, and
   `LaneHub`.
@@ -292,7 +716,19 @@ plane is on the new system.
 - [/] Sand migration is underway.
 - [ ] Full current-web feature parity on the new data plane is not complete.
 
-### Migration boot: `store` owns `lince.db`, legacy owns `lince-legacy.db`
+### Migration boot — RESOLVED 2026-07-11: the legacy layer is DELETED
+
+The split below is history. `crates/persistence`, `persistence-table-derive`,
+`injection`, `application`, `domain`, `tui`, and `gui` were removed from the
+workspace; `lince-legacy.db` is never created or opened. Everything wires to
+`store::`/engine/Protein. The legacy FullUi serve path is gone — `lince`,
+desktop, and the cell server all boot `serve_cell_api_only` (which also now
+imports the installer's staged admin password + language into the Cell). The
+permission catalog moved to `utils::auth`; `serve_package_asset` survived into
+`presentation/http/package_assets.rs`. Anything below is kept only as the
+record of how the split used to work.
+
+### (historical) Migration boot: `store` owns `lince.db`, legacy owns `lince-legacy.db`
 
 The collision (verified: with no `LINCE_DATA_DIR_OVERRIDE`, both the legacy
 `persistence` layer and the new `store` opened the **same** `lince.db` with

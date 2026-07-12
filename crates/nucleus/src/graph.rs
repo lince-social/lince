@@ -12,11 +12,19 @@ pub struct Edge {
 
 impl Edge {
     pub fn new(from: impl Into<String>, to: impl Into<String>) -> Self {
-        Self { from: from.into(), to: to.into(), quantity: None }
+        Self {
+            from: from.into(),
+            to: to.into(),
+            quantity: None,
+        }
     }
 
     pub fn qty(from: impl Into<String>, to: impl Into<String>, q: f64) -> Self {
-        Self { from: from.into(), to: to.into(), quantity: Some(q) }
+        Self {
+            from: from.into(),
+            to: to.into(),
+            quantity: Some(q),
+        }
     }
 }
 
@@ -25,8 +33,11 @@ impl Edge {
 /// both candidates are ignored. Ties keep candidate order (deterministic);
 /// cycles break by candidate order too (members surface in input order).
 pub fn topo_order(candidates: &[String], edges: &[Edge]) -> Vec<String> {
-    let index: HashMap<&str, usize> =
-        candidates.iter().enumerate().map(|(i, c)| (c.as_str(), i)).collect();
+    let index: HashMap<&str, usize> = candidates
+        .iter()
+        .enumerate()
+        .map(|(i, c)| (c.as_str(), i))
+        .collect();
     let mut indegree: Vec<usize> = vec![0; candidates.len()];
     let mut succ: Vec<Vec<usize>> = vec![Vec::new(); candidates.len()];
     for e in edges {
@@ -38,8 +49,9 @@ pub fn topo_order(candidates: &[String], edges: &[Edge]) -> Vec<String> {
     for s in &mut succ {
         s.sort_unstable();
     }
-    let mut ready: VecDeque<usize> =
-        (0..candidates.len()).filter(|&i| indegree[i] == 0).collect();
+    let mut ready: VecDeque<usize> = (0..candidates.len())
+        .filter(|&i| indegree[i] == 0)
+        .collect();
     let mut out = Vec::with_capacity(candidates.len());
     let mut done = vec![false; candidates.len()];
     while let Some(i) = ready.pop_front() {
@@ -108,7 +120,11 @@ fn walk(
 /// Strongly connected components with >1 member, plus self-loops.
 /// Powers Proof (blueprint VI.4): "these N rules form a loop".
 pub fn cycles(nodes: &[String], edges: &[(String, String)]) -> Vec<Vec<String>> {
-    let index: HashMap<&str, usize> = nodes.iter().enumerate().map(|(i, n)| (n.as_str(), i)).collect();
+    let index: HashMap<&str, usize> = nodes
+        .iter()
+        .enumerate()
+        .map(|(i, n)| (n.as_str(), i))
+        .collect();
     let mut succ: Vec<Vec<usize>> = vec![Vec::new(); nodes.len()];
     let mut self_loop = vec![false; nodes.len()];
     for (f, t) in edges {

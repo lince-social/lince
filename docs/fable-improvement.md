@@ -16,6 +16,48 @@ This document is the executable form of the theory (the v3 essay lives in this f
 
 ---
 
+# Decision log — 2026-07-11 (the backend finalization)
+
+Decisions taken to wrap the backend refactor. Recorded here because this file is
+canonical; the boxes below in each part are the execution tracker.
+
+1. **The legacy layer dies now.** `crates/persistence` (+
+   `persistence-table-derive`) and `lince-legacy.db` are removed from the
+   workspace. Every surface that still touched them is rewired to `store::` /
+   engine Actions / Protein, or deleted with the legacy feature it served. No
+   new code may import `persistence`. This finishes Part 0's placement rule:
+   `store` is the only crate that speaks SQL.
+2. **Completion discipline:** parts are closed **in order** (0 → XV), each one
+   100% implemented *and tested* before the next starts. Web/sand work (VII.4 /
+   Stage 8b) stays additive and is NOT gated on this pass; **Fiote (XIV) is
+   explicitly deferred** — nothing in this pass builds toward it beyond the
+   Action catalog it will one day call.
+3. **Promise expiry is a heartbeat arm** (V.2): past-window promises move
+   `agreed/active → broken`, `open/proposed → withdrawn`, each dropping an
+   annotation fact and (when configured) enqueuing a decision-record. Without
+   this, confidence and availability lie.
+4. **MatchRule becomes a record** (X.1): `kind='rule'`, sense sidecar —
+   activatable, publishable, syncable like everything else. The senses pass and
+   the Imagination crossing sweep run as heartbeat arms; their outputs are
+   decision-records. That loop (Senses drafts + crossings + expiry → Decision
+   Queue → `decide`) IS the "what should I do next / how can I contribute"
+   engine, and it ships backend-only over the existing transport
+   (`source: decision, live: true`).
+5. **Protein grows the missing sources/includes** (VII.1): `source: fact`
+   (aggregation over deltas — the finance/statistics workhorse), `source:
+   concept`, `source: transfer` (rows carry the *derived* status, VIII.1);
+   includes `projection` (Imagination is built, just exposed), `extension`,
+   link-tree `depth`.
+6. **Organ networking (XV) is the last construction**: organ contacts
+   (`unknown/known/blocked`, numeric proximity, base_url, per-organ policy), an
+   outbox drained by the heartbeat with retry, an HTTP boundary endpoint
+   receiving the existing signed sync `Package` (organ↔organ is HTTP at the
+   boundary; the WebSocket stays first-party), import hardening (chain
+   verification + quarantine), and the discovery cache that feeds Senses.
+   Acceptance: the DONATION bundle (VIII.4) between two engines over the wire.
+
+---
+
 # - [ ] Part 0 — The Spine: one organism, one write path
 
 **Why.** Today Lince has four quantity write paths (UI edit, Karma, Transfer settlement, CRDT sync) with four histories. The new core has exactly one: everything that changes state goes through the fact appender. The Spine is the process architecture that enforces this.
@@ -35,13 +77,18 @@ crates/
               # later: senses matcher, attention router, imagination, sync.
   protein/    # Protein AST -> store reads; canned Proteins (focus/decision queue).
               # Read-only by construction: the crate has no write path at all.
-  transport/  # (pending) first-party channel, ephemeral lanes, HTTP boundary.
+  transport/  # built: transport-agnostic Session, ephemeral lanes, axum WS driver.
 ```
 
 - [x] `nucleus` compiles with no async, no sqlx, no network deps.
 - [x] `store` exposes typed repositories only; no other crate imports sqlx (engine uses `store::sqlx` re-export for transaction types only).
 - [x] `engine` is the only writer; Protein will be read + Action forwarding.
-- [ ] A DST harness runs `nucleus` + in-memory `store` with a virtual clock and replays a fact log deterministically. (Foundations in place: every engine entry point takes explicit `now`, `Store::open_memory()` exists, `seal` is replay-deterministic — the harness itself is not built.)
+- [x] **Legacy layer removed** (decision 1): `crates/persistence`,
+  `persistence-table-derive`, and `lince-legacy.db` are gone from the
+  workspace; former users (web legacy widget/api paths, `application` modules,
+  `injection`, `tui`, `gui`, `lince` CLI, `desktop`) are rewired to `store::`
+  or deleted with the retired feature they served.
+- [x] A DST harness runs the engine + in-memory `store` on a virtual clock and replays a fact log deterministically (`engine/tests/dst.rs`): the same scripted week yields identical Ledgers (uids/hashes excluded — ULIDs are random per run), and a recorded log replays into a fresh engine idempotently to the same state vector. `Engine::act_at(action, actor, now)` makes the Action layer DST-drivable too.
 
 ## - [ ] 0.2 The engine loop
 
@@ -146,7 +193,7 @@ CREATE TABLE record_extension (            -- unchanged in spirit from today
 
 **Promotion path:** fds (one sand cares) → Lingua-typed attribute (Organs must agree) → Instinct/core column (the engine must compute). When one key recurs across many namespaces, graduate it.
 
-- [ ] fds CRUD via Actions; namespaced; never holds widget UI state (that stays in host widgetState).
+- [x] fds CRUD via Actions (`set-extension`, namespaced, JSON-validated); widget UI state stays in host widgetState by doctrine.
 
 ### Interactions (Part I)
 - **Memory (II)** owns all quantity changes; Record's `quantity` is its cache. **Lingua (III)** supplies `concept_uid`/`unit_uid` and link kinds. **Link (IV)** connects records. **Karma (VI)** reads any record by slug/uid, writes via facts, and treats `quantity` of rule/transfer/device records as activation. **Protein (VII)** is the only read surface; **Actions** the only write surface. **Instinct place (IX)** backs `place_uid`. **Sync (XV)** replicates records by uid; slugs are local conveniences that travel as suggestions, never as identity.
@@ -187,14 +234,14 @@ f_04  apples.stock   0  23:59  actor=engine cause=checkpoint payload={"level":10
 
 - [x] Hash chain: `hash = H(prev_hash ‖ canonical(fact))`; one chain per Cell; `verify_chain_step` tested. (Verification *on import* lands with Sync, XV.)
 - [ ] Every fact signed by its author's key at creation (XI); imported facts keep the origin signature. (Column exists; signing lands with Trust.)
-- [x] `sum` over a trailing window as a query helper over `fact` (`store::facts::sum_window`) — the old `sum` table dies. (only-positive/only-negative/end-lag variants: pending.)
-- [ ] Undo = compensation fact (`cause_kind=compensation` exists; the undo Action lands with Part VII).
+- [x] `sum` over a trailing window as a query helper over `fact` (`store::facts::sum_window`) — the old `sum` table dies. Variants done: `sum_pos_window`/`sum_neg_window` (inflow/outflow split) and `sum_window_lagged` (end-lag), tested in `engine/tests/compaction.rs`.
+- [x] Undo = compensation fact — the `compensate` Action appends the inverse delta with `cause_kind=compensation`; no-op on zero-delta facts (tested in `engine/tests/record_edits.rs`).
 
 ## - [ ] II.2 Checkpoints & compaction (growth stays controlled)
 
 - [x] Checkpoint fact per record: `delta=0, payload={"level": q}` — `Engine::checkpoint_all` (tested: bypasses the cascade, idempotent sweep; wire it to a nightly rule/heartbeat when the daemon config lands).
-- [ ] Compaction: facts older than the retention horizon AND older than the last checkpoint can be folded into the checkpoint and archived to a cold file; hash chain restarts from an anchor fact recording the archive's hash.
-- [ ] Config: retention horizon per record kind (finance records may keep forever; signal records days).
+- [x] Compaction: `Engine::compact(now, archive_dir)` — facts older than the retention horizon AND older than the record's last checkpoint fold into the checkpoint and move to a cold JSONL archive; a zero-delta anchor fact on the local organ record carries the archive's SHA-256. Per-step chain verification survives (each fact recomputes its own hash from its recorded `prev_hash`); archived facts stay verifiable inside the file. Idempotent; tested (`engine/tests/compaction.rs`).
+- [x] Config: retention horizon per record kind (`retention_policy` table, `store::facts::set_retention`; no policy = keep forever).
 
 ## - [ ] II.3 Provenance answers "why"
 
@@ -243,13 +290,13 @@ c_KG  kg       parents: [c_MASS mass]               (a unit is just a concept)
 
 - [x] `@name` resolution: canonical name, any language name ("Maçã" → `@apple`, tested), or uid. (Ambiguity as save-time error: pending with Actions.)
 - [x] Parent walks power widening queries: `concept in @food` matches `@apple` via the DAG (`store::concepts::descendants_including`, tested).
-- [ ] Fallback semantics: an engine that doesn't know `@blocks-softly` treats it as its parent `@blocks`.
-- [ ] Unit conversion (later): `concept_conversion(a, b, factor)` rows; only within a shared parent dimension.
+- [x] Fallback semantics: `store::concepts::nearest_ancestor_in(uid, known)` — itself if known, else the nearest known ancestor up the parent DAG (the dialect-fallback primitive Senses/Protein consume). Tested (`store/tests/concepts.rs`).
+- [x] Unit conversion: `concept_conversion(a, b, factor)` rows (one authoritative row per unordered pair; reverse derived as `1/factor` at read time); `convert` requires a shared ancestor dimension. Tested.
 
 ## - [ ] III.2 Publishing & adoption
 
-- [ ] Concept packages ride the exact same publication flow as sands (record + extension + resource ref); importing = inserting concept rows preserving uid + lineage.
-- [ ] One-tap adoption: when an inbound Transfer/Trail uses unknown concepts, the package carries them; the import UI offers "adopt N concepts".
+- [x] Concept packages ride the sync flow: `export_package` carries every concept (uid + name + ancestors) its records speak; importing adopts them with lineage (`origin_organ = from_organ`) before the records land. Tested (`engine/tests/organ_sync.rs`).
+- [/] One-tap adoption: imports adopt automatically today (idempotent, uid-preserving); the "adopt N concepts" confirmation UI is surface work.
 - [ ] No central authority: forks are normal; `concept_equivalence` lets Senses match across dialects; convergence is social.
 
 ### Interactions (Part III)
@@ -290,10 +337,10 @@ pub fn cycle_check(kind: ConceptUid, g: &LinkGraph) -> Vec<Vec<Uid>>;       // S
 
 - [x] `topo_order` restricted to a candidate set (active Needs) keeps disjoint chains internally ordered; ties keep candidate order (tested in nucleus and end-to-end via the focus queue).
 - [x] `derive_needs(@cake, 2)` multiplies link quantities down the tree → "4 flour, 6 eggs" (tested, incl. shared sub-ingredients merging by sum).
-- [ ] Cycle warning on link creation for order-like kinds (children of `@precedes`). (`nucleus::graph::cycles` exists; the on-save hook lands with Actions.)
+- [x] Cycle warning on link creation for order-like kinds (`@precedes`/`@before`/`@order` or descendants): `add-link` returns `ActionOutcome.warnings` naming the loop; the save still succeeds. Non-order kinds never warn. Tested (`engine/tests/cycle_warning.rs`).
 
 ### Interactions (Part IV)
-- **Lingua (III)** supplies kinds. **Protein (VII)** exposes `include: links(kind=@x)` and `order: topo(@x)`. **Imagination (XII)** walks `@needs` to propagate projected shortfalls. **Senses (X)** matches sub-needs from recipe explosions. **Focus queue (Window W1b)** = topo(@before) over active Needs. **Trails** = records + `@before`/`@requires`/`@part-of` links + concepts, published as packages.
+- **Lingua (III)** supplies kinds. **Protein (VII)** exposes `include: links(kind=@x)` and `order: topo(@x)`. **Imagination (XII)** walks `@needs` to propagate projected shortfalls. **Senses (X)** matches sub-needs from recipe explosions. **Focus queue (Window W1b)** = topo(@before) over active Needs. **Relation sand** is the one graph surface: default mode shows records as nodes and typed links as relation fibers; trail mode is just a chain view over order-like links (`@before`, `@precedes`, `@order`, or children of those concepts), not a separate primitive or package.
 
 ---
 
@@ -342,7 +389,7 @@ open ──claim──> proposed ──agree──> agreed ──activate──>
 
 - [ ] Transitions are Actions (VII), each dropping a zero-delta annotation fact on the target record for provenance.
 - [ ] `kept` is only ever set by settlement (VIII) or by the rule engine for self-promises — and always alongside the real delta fact.
-- [ ] Expiry: a background check moves past-window promises to `broken` (if agreed/active) or `withdrawn` (if open/proposed) and enqueues a decision (XIII) when configured.
+- [x] Expiry: a heartbeat arm (decision 3, `Engine::expire_promises`) moves past-window promises to `broken` (if agreed/active) or `withdrawn` (if open/proposed), drops a zero-delta annotation fact per transition, and enqueues an `expiry` decision for every broken commitment (lapsed offers stay quiet). Runs first in `heartbeat` so rules see true states. Tested (`engine/tests/expiry.rs`).
 
 ## - [ ] V.3 Derived quantities (replaces reservation machinery)
 
@@ -353,7 +400,7 @@ planned(r,t)  = r.quantity + Σ delta of promises with state>=agreed and window_
 surplus(r)    = r.quantity - Σ reserved outgoing
 ```
 
-- [ ] The five old reservation policies collapse into `reserve_from` per promise (default from transfer config).
+- [x] The five old reservation policies collapse into `reserve_from` per promise: explicit value → the bundle transfer's `reserve_default` → `'active'` (tested in `engine/tests/expiry.rs`).
 - [ ] Chain links = private promises with `condition: promise_state(@p_upstream) == kept`.
 - [ ] Spectators = zero-party local promises watching a source transfer's role settlement, same condition grammar.
 
@@ -433,7 +480,7 @@ freq(@weekly) * signal(@books-count) + sum(@reading.log, 7d)
 
 - [x] Parser extracts token set (`Expr::tokens()`) → registry resolves slugs to uids at load and keeps both.
 - [x] Purity enforced: conditions evaluate against a prefetched `MapResolver` — no command execution inside evaluation is even possible (Signals are separate rows with their own schedule; sampler pending).
-- [x] Implemented condition functions: bare `@x`/`quantity`, `freq`, `signal`, `sum(@x, <dur>)`, `value`, `promise_state`, `hours_since_fact`. Parsed-but-pending (error cleanly): `confidence`, `projected`, `distance`, `route_eta`, `demand` (Stages 3/5).
+- [x] Implemented condition functions: bare `@x`/`quantity`, `freq`, `signal`, `sum(@x, <dur>)` + `sum_pos`/`sum_neg` variants, `value`, `promise_state`, `hours_since_fact`, `confidence`, `projected`. Parsed-but-pending (error cleanly): `distance`, `route_eta`, `demand` (Part IX).
 
 ## - [ ] VI.3 The pipeline: condition → gate → carry → consequences
 
@@ -464,8 +511,9 @@ Consequence execution (each independent; all provenance `cause=rule:<uid>`):
 - [x] **Zero consequences = named derived value.** Tested: a consumer reads `value(@rules.double-x) + 1`, and the dependency graph expands transitively so changes to the derived rule's *inputs* re-evaluate its consumers.
 - [x] Worked example — daily habit (tested): freq `@freq.daily-7am`; rule `condition: -1 * freq(@freq.daily-7am)`, gate `!=0`, carry `value`, consequence `set_quantity(@exercise)` → exercise becomes -1 on tick.
 - [x] Worked example — reorder ask (tested): `condition: @apples.stock`, gate `<3`, carry `one`, `ask("send reorder proposal?")` enqueues a decision-record; `emit_promise` variant creates a `proposed` promise naming its rule.
-- [ ] Worked example — trust-ahead: `condition: confidence(@p.maria-apples)`, gate `>0.9`, consequence `advance_transfer(...)`. (Parses today; `confidence` and `advance_transfer` land with Stages 4–5.)
-- [ ] Worked example — quiet hours: `deactivate(@rules.noisy-notifications)` — the consequence kind is implemented; the end-to-end example is untested.
+- [x] Worked example — trust-ahead (tested, `engine/tests/karma_effects.rs`): nine kept promises give Maria confidence ~0.909; `condition: @trigger * confidence(@p)`, gate `>0.9`, `advance_transfer` moves the agreed bundle to active within policy.
+- [x] Worked example — quiet hours (tested): a rule's `deactivate(@rules.noisy)` sets the noisy rule's quantity to 0 and it stops firing — live activation is checked per delivery, no reload needed.
+- [x] Debounce (VI.1): a rule that fired at T holds until T+debounce even when inputs change (in-memory `last_fired`, resets on reload; tested). `run_action` effects re-enter `Engine::act` with the typed Action from the queue; `run_query` effects execute a saved Protein and log the row count — both with zero-delta provenance facts on the rule record (tested).
 
 ## - [ ] VI.4 Reactive scheduler + Proof
 
@@ -513,13 +561,13 @@ struct DepGraph { reads: Map<RecordUid, Vec<RuleUid>>, writes: Map<RuleUid, Vec<
 
 Semantics, normatively:
 
-- [ ] `source`: `record | promise | fact | concept | decision | transfer` — *record/promise/decision implemented and tested*; fact/concept/transfer sources pending.
+- [x] `source`: `record | promise | fact | concept | decision | transfer` — all six implemented and tested (`protein/tests/sources.rs`). Fact source supports `at_since` (trailing duration or absolute), `cause_kind_eq`, `record_eq` (W-provenance), and Lingua-DAG `concept_in` over the fact's record; transfer rows carry the derived status (VIII.1).
 - [x] `where`: boolean tree (`all/any/not`) of typed predicates; `concept_in` walks the Lingua parent DAG (tested: `@food` matches apple-tagged records, not the hammer). `fn` Instinct predicates: pending (IX).
-- [x] `include`: facts (provenance — "the end of custom plumbing", tested), promises (state-filtered), links (kind + direction). Pending: link tree `depth`, extensions, availability (V.3), projection (XII).
-- [ ] `aggregate`: sum/count/avg with `by` (concept, unit, day, cause_kind) — the finance/statistics workhorse.
+- [x] `include`: facts (provenance — "the end of custom plumbing", tested), promises (state-filtered), links (kind + direction + tree `depth` via BFS with per-link `hop`), threads, extensions (one fds namespace), availability (V.3), and `projection` — the promise fold: `projected = quantity + Σ agreed/active deltas closing by t` (full rule simulation stays engine-side in `Engine::project`, keeping this crate read-only by construction). All tested.
+- [x] `aggregate`: sum/count with `by` concept/kind (records) and cause_kind/day/concept (facts) — the finance/statistics workhorse (W-finance tested). The gate applies before aggregation so hidden rows never leak into sums. (avg + unit grouping: add when a surface needs them.)
 - [x] `order`: `topo(kind)` restricted to the result set with field keys as tie-break — the focus queue ships as `protein::focus_queue()`, tested end-to-end: completing the head promotes the next task.
-- [ ] `live: true`: snapshot, then incremental updates. (`protein::affects()` gives coarse `fact_bus` invalidation; the subscription machinery lands with transport.)
-- [ ] Saved Proteins are records (`kind='protein'`, the AST in a sidecar) — the old `view` table's successor; sands reference them by slug.
+- [x] `live: true`: snapshot, then re-execution on relevant commits — `protein::affects()` gives coarse `fact_bus` invalidation and the transport `Session` carries the subscription (proven by the WebSocket pilot tests; per-predicate refinement is a later optimization).
+- [x] Saved Proteins are records (`kind='protein'`, the AST in the `lince.protein` extension) — the old `view` table's successor; the `save-protein` Action writes them; sands reference them by slug.
 - [ ] **Visibility is enforced here** — one gate: a Protein evaluated for a remote Organ or the sandbox host passes every row and every included attachment through the visibility rules (XV). There is no other read path to leak from.
 - [x] The wire format is JSON both ways (tested: the documented request shape parses into the AST; rows come out as JSON).
 
@@ -563,6 +611,7 @@ publish:  publish-package (sand/concepts/trail subgraph), install-package
 ```
 
 - [x] First Action set implemented as `engine::actions::Action` (typed, serde kebab-case tag) with `Engine::act`: create-record, set-quantity, add-quantity, activate, deactivate, create-concept, add-link, remove-link, create-promise (incl. open promises), promise-transition (state machine validated; transitions drop annotation facts), decide (closes the decision through the Ledger so Karma can react). Tested end-to-end against Protein reads.
+- [x] Karma CRUD + Lingua Actions (2026-07-11, tested in `engine/tests/rule_crud.rs`): create-rule / update-rule (both reload the registry and surface Proof loop warnings on the outcome), create-signal, create-frequency, adopt-concepts (uid + lineage preserved, idempotent), declare-equivalence. `Engine::act_at` is the explicit-clock variant (Part 0/DST).
 - [x] Every Action carries `actor` and produces provenance (facts and/or annotation facts).
 - [x] Protein never mutates (the crate has no write path at all); Actions never query. Permission checks on Actions (role model) and the Protein visibility gate: pending with XV.
 
@@ -596,8 +645,9 @@ current sand to the new data path.
 - [x] Protein supports `uid_eq` for direct single-record lookup.
 - [ ] Move `emit`/`onEvent` ABI events to transport ephemeral lanes while
   preserving the current sand-facing API shape.
-- [ ] Port table, todo, kanban, relations, transfer, home manager/dashboard,
-  karma/rules, trail, and record editor to Protein reads and Action writes.
+- [ ] Port table, todo, kanban, Relation (including trail mode), transfer, home
+  manager/dashboard, karma/rules, and record editor to Protein reads and Action
+  writes.
 - [ ] Add missing Actions required by current-web parity:
   `edit-record-text`, `set-extension`, `set-slug`, `set-concept`, `set-unit`,
   undo/compensation, delete/deactivate semantics, comments, worklogs, resource
@@ -674,10 +724,10 @@ CREATE TABLE transfer_agreement (
 -- (hiding the private source record) lives on the promise via a small annotation, not a table.
 ```
 
-- [ ] Status is derived, never stored: from promise states + agreement levels + policy (`draft → proposed → agreed → in_transfer → settled`; `inactive` when quantity=0).
-- [ ] Edits to a bundled promise reset connected parties' agreement to level 0 (counteroffers are edits; agreement returns when parties re-accept).
-- [ ] Balance check (advisory, per Lingua concept across parties): a trade sums to zero per concept; donations are deliberately unbalanced.
-- [ ] Messages: the unified message model attaches to any record (Window case 6), so transfer chat is simply `messages where subject = t_uid` — no transfer-specific message table.
+- [x] Status is derived, never stored: `source: transfer` Protein rows carry `status` computed from promise states + agreement levels + policy (`draft → proposed → agreed → in_transfer → settled`; `inactive` when quantity=0). The full ladder is walked in `protein/tests/sources.rs`.
+- [x] Edits to a bundled promise reset connected parties' agreement to level 0 (counteroffers are edits; agreement returns when parties re-accept). Tested (`engine/tests/transfer.rs`).
+- [x] Balance check (advisory): `source: transfer` rows carry `balance` (per-concept promise sums) and `balanced`; a trade sums to zero per concept, donations deliberately do not. Tested (`engine/tests/confirmations.rs`).
+- [x] Messages: threads/messages are records linked to any record (Window case 6) — transfer chat is `create-thread` on the transfer record + the `threads` include; no transfer-specific message table. Tested.
 
 ## - [ ] VIII.2 Agreement policies
 
@@ -710,8 +760,8 @@ fn settle_all_local(tx: &mut Tx, t: TransferUid, actor: Uid) -> Result<Vec<Fact>
 }
 ```
 
-- [ ] Delivery/receipt confirmations: two annotation facts (`cause=settlement`) gate `active → kept` when the transfer demands confirmation (per-transfer config).
-- [ ] Karma may `advance_transfer` and `activate/deactivate` transfers but never invents parties and never settles silently — it calls the same Actions under the same policy checks.
+- [x] Delivery/receipt confirmations: the `confirm-transfer` Action drops `cause=settlement` annotation facts; when `require_confirmation` is set on the transfer, settlement refuses until both `delivery` and `receipt` are in. Tested (`engine/tests/confirmations.rs`).
+- [x] Karma may `advance_transfer` and `activate/deactivate` transfers but never invents parties and never settles silently — `activate_promises` re-checks the agreement policy (trust-ahead test proves the path).
 
 ## - [ ] VIII.4 Worked bundles (the standards)
 
@@ -759,7 +809,7 @@ pub fn routes_cross(r1: &Route, r2: &Route, slack: Meters) -> Option<CrossPoint>
 ```
 
 - [ ] Map data: OSM extracts loaded as a local resource (offline-first); geocoding local against the extract; live traffic, if ever, arrives as Signals — never as hidden network calls inside evaluation.
-- [ ] Exposure: Karma condition functions `distance(@a,@b)`, `route_eta(@a,@b)`; Protein predicates `near/within` and include `route(a,b)`.
+- [/] Exposure: Karma `distance(@a,@b)` (haversine over `place` rows, multi-ref token) and `demand(@concept)` (hourly Ledger histogram, XII.2) are live and tested; Protein `near` predicate is live. Pending on local OSM data: `route_eta`, polygon `within`, and the `route(a,b)` include.
 - [ ] `record.place_uid` and promise windows together give logistics: a delivery is a promise with a window and two places.
 - [ ] Future Instincts, each only when the engine must compute over it: duration/calendar math (Frequency is the proto-Instinct of time), currency conversion (over Lingua dimension `@money`).
 
@@ -773,6 +823,12 @@ pub fn routes_cross(r1: &Route, r2: &Route, slack: Meters) -> Option<CrossPoint>
 **Why.** The join Lingua enables becomes proposals: watch open promises across known Organs, propose meetings. Scoped by proximity, hard — automation only inside your ingroups; widening the circle is always a deliberate act.
 
 ## - [ ] X.1 The matcher
+
+Decision 4 (2026-07-11): `MatchRule` is stored as a record (`kind='rule'`,
+sense sidecar) — today it is a plain struct passed to the matcher; promoting it
+closes the last "everything is a record" hole in the engine. The match pass and
+the Imagination crossing sweep run as heartbeat arms; drafts land as
+decision-records with accept/dismiss options.
 
 ```rust
 struct MatchRule {                        // itself a record (kind='rule' variant 'sense')
@@ -802,9 +858,9 @@ fn score(a: &Promise, b: &Promise) -> Score {
 }
 ```
 
-- [ ] Discovery cache: known-organ open promises polled/pushed under existing contact + trust states (`unknown | known | blocked`); blocked organs excluded everywhere.
-- [ ] **Never auto-expands**: no matching against organs beyond `max_proximity`; no public-pool matching unless a rule explicitly says `@public` — and such rules default to `draft_only`.
-- [ ] Output: draft transfer (VIII) + decision-record (XIII); `auto_propose` only sends the proposal — agreement always stays with humans or their explicit Karma.
+- [/] Discovery cache: the `discovery_cache` table holds known-organ open promises with proximity + confidence; the matcher and the heartbeat arm read it. The live poll/push feed under contact + trust states lands with Part XV.
+- [x] **Never auto-expands**: no matching against organs beyond `max_proximity` — the hard ceiling is tested (`engine/tests/senses_pass.rs`); match rules default to `draft_only`.
+- [/] Output: drafts land as decision-records (`kind=draft`, propose/dismiss options, deduped per local|remote pair, idempotent pass — tested). MatchRule is a record (`sense_rule` sidecar, `create-match-rule` Action, deactivatable like any rule). Turning "propose" into a sent transfer proposal lands with Part XV.
 
 ### Interactions (Part X)
 - **Lingua (III)** is the retina (concepts/equivalences/parents). **Promise (V)**: open promises are the search space. **Place (IX)**: feasibility and ride matching. **Trust (XI)/Imagination (XII)**: counterparty confidence in scoring. **Transfer (VIII)**: drafts. **Attention (XIII)**: drafts arrive as decisions. **Sync (XV)** feeds the discovery cache. **Karma (VI)**: match rules are records — activatable, schedulable, publishable like any rule.
@@ -828,7 +884,7 @@ CREATE TABLE identity_key (
 
 - [ ] Ed25519 per user and per Cell/Organ; private keys outside the db and repo (OS keychain / file with tight perms).
 - [ ] `signature = sign(fact.hash)` at creation (facts) and on each state transition (promises).
-- [ ] Import verifies: unknown key → fetch via organ introduction; bad signature → reject row, keep package (quarantine list).
+- [x] Import verifies: keys arrive via the introduction handshake (`Engine::introduction`/`adopt_introduction`); a bad chain step or signature rejects the row into the `sync_quarantine` list and keeps the package. Tested (tamper test).
 - [ ] Verification is automatic and silent (like sand package checks today) — no user ceremony.
 
 ## - [ ] XI.2 Verifiable aggregates (read-only, later UI)
@@ -866,9 +922,9 @@ pub fn project(base: Snapshot, until: Time, opts: ProjOpts) -> Timeline {
 }
 ```
 
-- [ ] Signals frozen at last-known values during projection (pure by construction).
-- [ ] Branching: `project` with modified inputs (toggle a rule, drag a promise) = the scrubbable future; diffing two timelines = the 5D compare view.
-- [ ] Threshold-crossing extraction ("apples hit 0 on Thursday", "checking < rent on the 5th") feeds Attention.
+- [x] Signals frozen at last-known values during projection (pure by construction: the Snapshot carries cached quantities; no sampler runs inside `project`).
+- [x] Branching: `Engine::snapshot(now)` hands out the mutable Snapshot — toggle a rule, drag a promise, re-fold with `nucleus::imagination::project`; diffing two timelines is the compare view (tested in `engine/tests/attention.rs`).
+- [x] Threshold-crossing extraction feeds Attention: the `crossings_pass` heartbeat arm projects a week ahead and enqueues a `crossing` decision per plain record heading below zero ("apples hit 0 on Thursday"), deduped per record. Tested.
 
 ## - [ ] XII.2 Confidence (deterministic, from verified history)
 
@@ -907,8 +963,8 @@ CREATE TABLE decision (
 
 Sources (all deterministic): promises entering `proposed`/`open` targeting you; Senses drafts; Karma `ask` consequences; Imagination threshold crossings; drafted rules/records from UI sugar or Fiote.
 
-- [ ] Everything is a record ⇒ Karma can read the queue: expire stale decisions, escalate quiet ones, batch low-urgency ones into a digest.
-- [ ] `decide` Action executes the chosen option's Action list and drops provenance.
+- [/] Everything is a record ⇒ Karma can read the queue (`source: decision`); stale decisions expire through the heartbeat (`expire_decisions`, `expires_at`), and over-budget notifies park in the digest. Escalation rules are user Karma, not core.
+- [x] `decide` Action executes the chosen option's Action (options carry `{label, action}`), closes the decision through the Ledger, and drops provenance. Tested.
 
 ## - [ ] XIII.2 Whisper routing (outward) and capture (inward)
 
@@ -960,11 +1016,11 @@ CREATE TABLE visibility_rule (
 
 ## - [x] XV.2 Sync
 
-- [ ] **Facts replicate**: per-organ policy (which records, which direction); outbox with retry; import via `append` (idempotent by uid; deltas commute — conflict-free for quantities by construction).
+- [x] **Facts replicate**: per-organ policy (`organ_contact.sync_out/sync_in`), `sync_outbox` with retry (failed rows re-drain), visibility-gated export (`enqueue_sync_to`), import via the one write path (idempotent by uid; deltas commute). The HTTP boundary: `POST /organ/inbox`, `GET /organ/introduction`, `GET /organ/open-promises` on the Cell server; `drain_outbox` takes the sender so tests run the same path in memory. Tested end-to-end (`engine/tests/organ_sync.rs`).
 - [ ] **Text replicates via the CRDT relay** (head/body), unchanged in spirit from the current design; the one record-editor sand owns editing everywhere.
-- [ ] **Rows replicate by uid** (records, promises, links, concepts); slugs travel as suggestions, never identity.
-- [ ] Organ contacts, introduction, polling, and `unknown/known/blocked` trust states carry over from the current networking design; blocked rejects everything everywhere.
-- [ ] Proximity is a per-organ numeric property (Senses ceilings and restricted visibility use it); offer-ordering sends to closer organs first without exposing local proximity.
+- [x] **Rows replicate by uid** (records, concepts with lineage; promises/links ride transfers): slugs travel as suggestions and are dropped on collision, never identity. Tested.
+- [/] Organ contacts, introduction, and `unknown/known/blocked` trust states are live (blocked rejects imports AND discovery, tested); the periodic web-side polling task over the HTTP boundary is the remaining wire-up.
+- [x] Proximity is a per-organ numeric property on the contact row; the discovery receiver stamps it locally — `open_promise_export` never carries the sender's proximity outward.
 
 ### Interactions (Part XV)
 - **Memory (II)** is the transport unit. **Trust (XI)**: origin signatures survive relay. **Senses (X)** reads the discovery cache this layer maintains. **Transfer (VIII)** packages = filtered projections of records+promises+parties under visibility. **Protein (VII)** is the only gate. **Everything-is-a-record (I)** is what makes one visibility table govern rules, transfers, sands, and plain records alike.
@@ -975,8 +1031,13 @@ CREATE TABLE visibility_rule (
 
 **Why.** The Window is the triage discipline: hold every workflow against the primitives; place each part on the altitude ladder; only what the deduction forces enters the core. Held against twenty-one workflows, the triage forced exactly four core additions — place Instinct, ephemeral lanes, messages-attach-to-anything, embed-honestly — and nothing else. Each case below is an acceptance test: check it when the workflow runs end-to-end on the new core.
 
-- [ ] **1. Todo / knowledge base** — records+links; Karma daily counters; todo/kanban sands. *Accept:* create task, habit re-arms daily, done posts a fact with cause.
+- [ ] **1. Todo / knowledge base** — records+links; Karma daily counters; todo/kanban/Relation sands. *Accept:* create task, habit re-arms daily, done posts a fact with cause.
 - [x] **1b. Focus queue (ordered doing)** — order is links, never staggered frequencies. `@before` chains task records (recurring keep position across days; one-shots link in or fall to tail). Arrival=Karma+Frequency, sequence=`@before` graph, urgency=promise windows. One Protein: `where quantity<0, order: topo(@precedes), then window, then oldest`. Focus = head; next ones dimmed. Pinned corner sand is pure rendering; completing posts a fact and the stream recomputes. — **Done as the first sand data-path proof.** `protein::focus_queue()` speaks only Protein+Actions over the WebSocket; the full path (subscribe → snapshot → set-quantity Action → live Update promoting the next task) is proven by a real WebSocket client test. Remaining polish: window tie-break in the sort (needs promises in queue math), drag-reorder (`relink-order` Action exists; UI pending), deadline-jump config.
+- [x] **1c. Relation trail mode** — the old Trail concept is folded into
+  Relation. A chain is a Protein result ordered by `topo(@order)`/`topo(@before)`
+  over link rows. The active negative node renders orange; blocked negative
+  descendants render dim orange; completed positive nodes render green; promotion
+  writes the next node to `-1` with `set-quantity` if needed.
 - [ ] **2. Recurring tasks** — Karma+Frequency alone. *Accept:* monthly rule fires exactly once, catch-up works.
 - [ ] **3. Donation & buying** — open promises + Senses + Transfer + Trust; storefront sands; delivery = promise window + place route. *Accept:* the DONATION and SALE bundles (VIII.4) run against a second Cell.
 - [ ] **4. Transport A→B** — `route()` in core (IX); Senses matches by route×window overlap; ride sand shows both parties one proposal. *Accept:* the RIDE bundle drafts automatically from two Cells' open promises.
@@ -994,7 +1055,7 @@ CREATE TABLE visibility_rule (
 - [ ] **16. Calendar & time budgeting** — time-cost records, Frequency, Imagination timeline; calendar sand. *Accept:* projected week renders; moving a promise recomputes it.
 - [ ] **17. Health & IoT** — devices as signal-records; rules; blob rewards. *Accept:* scale posts weight facts; streak rule fires; source off-switch stops it.
 - [ ] **18. Games** — fds state (chess), embedded engines (Freedoom), THE Game reading records with Karma as rulebook. *Accept:* chess still works on the new primitives.
-- [ ] **19. Education** — classes=Organs, sprints=promise bundles, curricula=trails; cohort progress = visible facts. *Accept:* an imported trail shows per-student progression (see the two Trail notes).
+- [ ] **19. Education** — classes=Organs, sprints=promise bundles, curricula=Relation trail-mode subgraphs; cohort progress = visible facts. *Accept:* an imported Relation trail view shows per-student progression.
 - [ ] **20. Garden & farm** — plant records with places, watering rules, death-chance signals; scales into case 13.
 - [ ] **21. Recaps (TMIL)** — monthly rule queries the Ledger and publishes a record bundle. *Accept:* "this month in this Cell" generates itself.
 
@@ -1006,17 +1067,26 @@ CREATE TABLE visibility_rule (
 
 Greenfield: no staged migration, no dual paths, no old API. Old data ported by hand at the end. Dependency order; each stage is usable alone — **live in each stage with real daily data before building the next** (the dogfood replaces the compatibility safety net).
 
+**The backend finalization pass (2026-07-11, decision 2):** the stages below
+mostly landed; what remains is closed **part-by-part in blueprint order** —
+legacy kill (Part 0) → DST harness (0) → II compaction/sum variants → III/IV
+leftovers → V expiry → VI debounce/effect-consequences → VII missing
+sources/includes/rule-CRUD Actions → VIII derived status/confirmations → IX/X
+distance token + MatchRule-as-record + senses heartbeat arm → XII/XIII crossing
+sweep + budgets → XV organ networking. Each part 100% done and tested before
+the next; Fiote (XIV) deferred; web/sand (VII.4/Stage 8b) proceeds separately.
+
 - [ ] **Stage 1 — Core schema + Spine** (Parts 0, I, II, III, IV, V schemas): record/concept/link/fact/promise; `append()`; quantity cache; checkpoints. *Usable as:* a ledgered todo/inventory. — *Done except compaction* (crates `nucleus`/`store`/`engine`; full schema migrated; append + cache + idempotency + hash chain + checkpoints + concepts/links repos, all tested).
-- [ ] **Stage 2 — Karma 2.0** (VI): pipeline, DepGraph, reactive delivery, Proof warnings, Signals/Effects. *Usable as:* habits + automation with provenance. — *Done except*: debounce, and the run_query/run_action/set_visibility/advance_transfer consequence kinds (they belong to Stages 3–4 anyway). Pipeline, derived values, transitive dep graph, tick, signal sampler with cascade, heartbeat/daemon, Proof loops, command/notify/ask/emit_promise consequences — all tested (42 tests).
+- [x] **Stage 2 — Karma 2.0** (VI): pipeline, DepGraph, reactive delivery, Proof warnings, Signals/Effects. *Usable as:* habits + automation with provenance. — **Done** (2026-07-11): debounce and every consequence kind (incl. run_query/run_action/set_visibility/advance_transfer) implemented and tested; the divergence heuristic stays open as a Proof refinement (the 256-delivery cascade cap is the runtime guard).
 - [x] **Stage 3 — Protein + Actions + transport** (VII) + place functions (IX): includes, topo order, live subscriptions, ephemeral lanes, Action catalog. *Usable as:* the board rebuilt on one contract; the focus queue ships here. — **Done.** The `protein` crate (record/promise/decision sources, predicate tree with Lingua DAG, facts/promises/links/availability includes, topo order, aggregates, saved Proteins, the single visibility gate `execute_for`, the place `near` predicate, JSON wire, canned queues), the full Action catalog with provenance, and the `transport` crate (transport-agnostic `Session` state machine: multiplexed subscriptions + Actions + live `fact_bus` updates + ephemeral lanes, plus the axum-feature WebSocket driver) — all tested. **The transport is the sand boundary: everything through here is backend and does not touch the existing web/sand UI. Sand porting is the next step and needs product decisions.**
 - [x] **Stage 4 — Transfer** (VIII): bundles, agreement policies (individual/full/percentage/dependency), settlement as the only Record mutation (idempotent), agreement invalidation on edit, chains/spectators via conditional promises, first_completes satiation, Karma `advance_transfer`. *Usable as:* two-Cell donations and sales — tested.
 - [x] **Stage 5 — Imagination** (XII): `project()` folds promises + rules forward (deterministic), threshold crossings, confidence from verified kept-ratios, `confidence()`/`projected()` Karma tokens. The timeline *sand* awaits transport; the engine is done and tested.
-- [/] **Stage 6 — Lingua publishing + Senses** (III.2, X): concept packages, adoption, matcher with proximity ceilings. — *Lingua repo + Senses matcher done and tested* (`engine::senses`: complementary open-promise matching, hard proximity ceiling, Lingua-DAG concept alignment so a specific offer meets a general Need, confidence floor, ranked drafts). Remaining: concept *package* publish/adopt flow, and the live discovery-cache feed (the matcher takes the cache as input today).
+- [/] **Stage 6 — Lingua publishing + Senses** (III.2, X): matcher + proximity ceilings done; MatchRule-as-record + the heartbeat senses arm + drafts-as-decisions done (2026-07-11); `adopt-concepts`/`declare-equivalence` Actions done. Remaining: the concept *package* publish flow and the live discovery-cache feed — both Part XV wire work.
 - [x] **Stage 7 — Trust** (XI): ed25519 keys (private key outside the db), every fact signed on the write path, `verify_fact` on import, authorship preserved across sync, the two-layer tamper model (chain guards content→hash, signature guards hash→author). Verifiable aggregates via Protein. Tested. (Leaderboard sands: deferred by design.)
-- [ ] **Stage 8 — Attention** (XIII): decision-records, notify effect, budgets, capture sources. — *Decision-records + notify effect + ask consequence + Decide action done and tested*; the budget/digest config and capture-source registry await the transport/UI.
+- [/] **Stage 8 — Attention** (XIII): decision-records, ask/notify, Decide (incl. option-Action execution), decision expiry, the hard daily budget with digest parking, senses/crossing sweeps feeding the queue — all tested. Remaining: platform channel rendering (device-record routing) and capture-source UI, both surface work.
 - [/] **Stage 8b — The web/sand finalization** (VII.4): move the existing web/Tauri board and sand system onto Protein + Actions + transport without replacing the user-facing Tauri UX. Preserve every frontend-only board feature (canvas pan/zoom, workspaces, move/resize/pin/z-index/grouping, edit mode, sand import `.html`/`.lince`, publish, the widget bridge, ABI events) while progressively replacing the legacy SSE-view/table-CRUD data plane. `lince-desktop` boots the current `web` FullUi; the current web board modules remain the UX source of truth. Detailed plan + running tracker: **`docs/stage-8b-web-sand-migration.md`**. Remaining work is to refactor `crates/web` in place: re-point `widget-bridge.js`/`widget-frame-bootstrap.js` to Protein/Actions, port current sands without rebuilding their UX from scratch, and add missing Actions for record edits, extensions, comments, worklogs, delete/deactivate semantics, persistent view settings, Trail creation, Karma rule CRUD, and Home Manager custom alimenta.
 - [ ] **Stage 9 — Fiote** (XIV): autonomy ladder over existing knobs. — Unstarted (Fiote writes only through the Action catalog, which now exists).
-- [ ] **Stage 10 — World + Synchrony**: the map, THE Game, multi-Cell choreography. — *Sync package layer done and tested* (visibility-filtered export, idempotent authored import, deltas commute); the map/game/choreography are UI-and-beyond.
+- [/] **Stage 10 — World + Synchrony**: the sync/organ layer is DONE (2026-07-11: contacts, introduction+keys, outbox+retry, HTTP boundary, hardened import with quarantine, concept transport, discovery feed → Senses → Decision Queue — the two-Cell DONATION acceptance passes). The map, THE Game, and choreography surfaces remain UI-and-beyond.
 
 **Risks, with answers:** Ledger growth → checkpoints + compaction (II.2). Lingua politics → forks with lineage + equivalences; convergence is social. Capture consent → every source a visible record with an off switch; local-first non-negotiable. Whisper fatigue → hard user-owned budget; Lince has no metric that benefits from interrupting anyone. Greenfield discipline → each stage dogfooded before the next; years of append-only features without holistic passes is how the old cathedral grew.
 

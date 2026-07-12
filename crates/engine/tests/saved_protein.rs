@@ -2,8 +2,8 @@
 //! `lince.protein` extension) — the successor to a named SQL view. `SaveProtein`
 //! is a full-CRUD upsert so the sand-settings Protein editor can create AND edit.
 
-use engine::actions::Action;
 use engine::Engine;
+use engine::actions::Action;
 use nucleus::RecordKind;
 use serde_json::json;
 
@@ -12,7 +12,10 @@ async fn engine() -> Engine {
 }
 
 async fn ast(e: &Engine, uid: &str) -> serde_json::Value {
-    store::records::get_extension(&e.store.pool, uid, "lince.protein").await.unwrap().unwrap()
+    store::records::get_extension(&e.store.pool, uid, "lince.protein")
+        .await
+        .unwrap()
+        .unwrap()
 }
 
 #[tokio::test]
@@ -33,7 +36,10 @@ async fn save_protein_creates_updates_deletes_and_reactivates() {
         .unwrap()
         .created
         .unwrap();
-    let row = store::records::get(&e.store.pool, &created).await.unwrap().unwrap();
+    let row = store::records::get(&e.store.pool, &created)
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(row.kind, RecordKind::Protein.as_str());
     assert_eq!(row.head, "Stock");
     assert_eq!(ast(&e, &created).await, json!({ "source": "record" }));
@@ -52,10 +58,19 @@ async fn save_protein_creates_updates_deletes_and_reactivates() {
         .unwrap()
         .created
         .unwrap();
-    assert_eq!(updated, created, "upsert must reuse the record, not collide");
-    let updated_row = store::records::get(&e.store.pool, &created).await.unwrap().unwrap();
+    assert_eq!(
+        updated, created,
+        "upsert must reuse the record, not collide"
+    );
+    let updated_row = store::records::get(&e.store.pool, &created)
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(updated_row.head, "Stock v2");
-    assert_eq!(ast(&e, &created).await, json!({ "source": "record", "limit": 10 }));
+    assert_eq!(
+        ast(&e, &created).await,
+        json!({ "source": "record", "limit": 10 })
+    );
     // the AST is mirrored into body so a records Protein can list saved Proteins
     // with their query text for the editor.
     assert_eq!(
@@ -64,8 +79,20 @@ async fn save_protein_creates_updates_deletes_and_reactivates() {
     );
 
     // delete = deactivate (append-only: hide, don't erase)
-    e.act(Action::Deactivate { target: "views.stock".into() }, None).await.unwrap();
-    assert_eq!(store::records::quantity(&e.store.pool, &created).await.unwrap(), Some(0.0));
+    e.act(
+        Action::Deactivate {
+            target: "views.stock".into(),
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        store::records::quantity(&e.store.pool, &created)
+            .await
+            .unwrap(),
+        Some(0.0)
+    );
 
     // saving again reactivates the same record
     let back = e
@@ -82,7 +109,12 @@ async fn save_protein_creates_updates_deletes_and_reactivates() {
         .created
         .unwrap();
     assert_eq!(back, created);
-    assert_eq!(store::records::quantity(&e.store.pool, &created).await.unwrap(), Some(1.0));
+    assert_eq!(
+        store::records::quantity(&e.store.pool, &created)
+            .await
+            .unwrap(),
+        Some(1.0)
+    );
 }
 
 #[tokio::test]
@@ -101,8 +133,8 @@ async fn save_protein_refuses_to_clobber_a_non_protein_slug() {
     .await
     .unwrap();
 
-    assert!(e
-        .act(
+    assert!(
+        e.act(
             Action::SaveProtein {
                 slug: "plain.thing".into(),
                 head: "nope".into(),
@@ -111,5 +143,6 @@ async fn save_protein_refuses_to_clobber_a_non_protein_slug() {
             None,
         )
         .await
-        .is_err());
+        .is_err()
+    );
 }

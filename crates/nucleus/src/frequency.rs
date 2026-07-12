@@ -141,12 +141,18 @@ mod tests {
 
     #[test]
     fn not_due_returns_none() {
-        assert!(daily("2026-07-06T07:00:00Z", false).fire(at("2026-07-05T10:00:00Z")).is_none());
+        assert!(
+            daily("2026-07-06T07:00:00Z", false)
+                .fire(at("2026-07-05T10:00:00Z"))
+                .is_none()
+        );
     }
 
     #[test]
     fn due_once_advances_past_now() {
-        let (p, next) = daily("2026-07-05T07:00:00Z", false).fire(at("2026-07-05T10:00:00Z")).unwrap();
+        let (p, next) = daily("2026-07-05T07:00:00Z", false)
+            .fire(at("2026-07-05T10:00:00Z"))
+            .unwrap();
         assert_eq!(p, 1.0);
         assert_eq!(next, at("2026-07-06T07:00:00Z"));
     }

@@ -2,7 +2,7 @@ mod bootstrap_config;
 mod runtime;
 
 #[cfg(any(target_os = "macos", windows))]
-use std::time::Duration;
+use tauri_plugin_autostart::ManagerExt;
 use std::{env, io::Error};
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder, image::Image};
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -11,8 +11,6 @@ use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
 };
-#[cfg(any(target_os = "macos", windows))]
-use tauri_plugin_autostart::ManagerExt;
 use utils::desktop_setup::{DesktopInstallSetup, detected_language_default, write_staged_setup};
 
 const MAIN_WINDOW_LABEL: &str = "main";
@@ -71,9 +69,6 @@ pub fn run() {
                     if let Err(error) = sync_autostart(&handle, runtime.start_on_login) {
                         eprintln!("Failed to sync Lince desktop autostart: {error}");
                     }
-
-                    #[cfg(any(target_os = "macos", windows))]
-                    spawn_autostart_sync_loop(handle.clone(), runtime.services.clone());
 
                     let should_open_window =
                         !(autostart_launch && runtime.start_on_login && runtime.start_silent);
@@ -154,32 +149,6 @@ fn sync_autostart(app: &tauri::AppHandle, enabled: bool) -> tauri::Result<()> {
             .map_err(|error| tauri::Error::Anyhow(anyhow::anyhow!(error)))?;
     }
     Ok(())
-}
-
-#[cfg(any(target_os = "macos", windows))]
-fn spawn_autostart_sync_loop(
-    app: tauri::AppHandle,
-    services: injection::cross_cutting::InjectedServices,
-) {
-    tauri::async_runtime::spawn(async move {
-        let mut last_enabled = None;
-        loop {
-            match services.repository.configuration.get_active().await {
-                Ok(configuration) => {
-                    let enabled = configuration.desktop_start_on_login == Some(1);
-                    if last_enabled != Some(enabled) {
-                        if let Err(error) = sync_autostart(&app, enabled) {
-                            eprintln!("Failed to sync Lince desktop autostart: {error}");
-                        } else {
-                            last_enabled = Some(enabled);
-                        }
-                    }
-                }
-                Err(error) => eprintln!("Failed to read desktop startup configuration: {error}"),
-            }
-            tokio::time::sleep(Duration::from_secs(30)).await;
-        }
-    });
 }
 
 #[cfg(not(any(target_os = "android", target_os = "ios")))]

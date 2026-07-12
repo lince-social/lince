@@ -1,0 +1,3 @@
+title = "Example Bundle"
+description = "Demonstrates a directory-bundle sand: a folder of files, extracted as one unit into <lince_data_dir>/web/sand/example-bundle/."
+entry = "index.html"

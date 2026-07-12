@@ -9,6 +9,7 @@ import {
   sanitizeCamera,
   sanitizeCard,
 } from "./grid.js";
+import { newGroupId } from "./group-logic.js";
 
 const DEFAULT_CARD_SIZE = { width: 640, height: 420 };
 
@@ -291,6 +292,7 @@ function exportCard(card) {
     system,
     zIndex,
     groupId,
+    groupIds,
     abiListen,
   } = card;
 
@@ -317,6 +319,11 @@ function exportCard(card) {
     system: system === true,
     zIndex: Number(zIndex) || (pinned ? 50 : 1),
     groupId: groupId || null,
+    // Nested-group stack, outermost -> innermost (Stage 8b, Phase 3). Persisted
+    // alongside groupId so nested groups survive save/reload.
+    groupIds: Array.isArray(groupIds)
+      ? groupIds.map((id) => String(id)).filter(Boolean)
+      : [],
     abiListen: Array.isArray(abiListen)
       ? abiListen.map((topic) => String(topic)).filter(Boolean)
       : [],
@@ -583,6 +590,78 @@ export function createBoardStore({
       replaceActiveWorkspaceCards([...activeWorkspace.cards, created]);
       return created;
     },
+    // Drop a whole sand GROUP (e.g. kanban = board + record_info) onto the board
+    // at once (Stage 8b, base task 2). Preserves each member's relative layout,
+    // z-order, and ABI listen topics, and re-homes the archive's inner group id
+    // to a FRESH id so repeated adds are independent groups (and inner grouping
+    // survives a later outer disband — groupception).
+    addImportedGroup(groupCards, options = {}) {
+      const activeWorkspace = getActiveWorkspace();
+      const members = Array.isArray(groupCards) ? groupCards : [];
+      if (!members.length) {
+        return [];
+      }
+
+      const numberOr = (value, fallback) => Number(value) || fallback;
+      const minX = Math.min(...members.map((card) => numberOr(card.x, 0)));
+      const minY = Math.min(...members.map((card) => numberOr(card.y, 0)));
+      const maxX = Math.max(
+        ...members.map(
+          (card) => numberOr(card.x, 0) + numberOr(card.width, DEFAULT_CARD_SIZE.width),
+        ),
+      );
+      const maxY = Math.max(
+        ...members.map(
+          (card) => numberOr(card.y, 0) + numberOr(card.height, DEFAULT_CARD_SIZE.height),
+        ),
+      );
+      const origin = findOpenPosition(
+        activeWorkspace.cards,
+        { width: maxX - minX, height: maxY - minY },
+        config,
+        options.center,
+      );
+
+      // Every archive group id maps to a fresh id for THIS instance (all members
+      // typically share one inner id).
+      const groupRemap = new Map();
+      const freshGroup = (id) => {
+        if (!id) {
+          return null;
+        }
+        if (!groupRemap.has(id)) {
+          groupRemap.set(id, newGroupId());
+        }
+        return groupRemap.get(id);
+      };
+
+      const created = members
+        .slice()
+        .sort((left, right) => numberOr(left.zIndex, 0) - numberOr(right.zIndex, 0))
+        .map((card, index) => {
+          const groupIds = (Array.isArray(card.groupIds) ? card.groupIds : [])
+            .map(freshGroup)
+            .filter(Boolean);
+          return sanitizeCard(
+            {
+              ...card,
+              id: nextEntityId("card"),
+              kind: "package",
+              serverId: "",
+              viewId: null,
+              x: origin.x + (numberOr(card.x, 0) - minX),
+              y: origin.y + (numberOr(card.y, 0) - minY),
+              groupId: groupIds[groupIds.length - 1] || null,
+              groupIds,
+            },
+            activeWorkspace.cards.length + index,
+            config,
+          );
+        });
+
+      replaceActiveWorkspaceCards([...activeWorkspace.cards, ...created]);
+      return created;
+    },
     removeCard(cardId) {
       const activeWorkspace = getActiveWorkspace();
       const nextCards = activeWorkspace.cards.filter(
@@ -759,7 +838,26 @@ export function createBoardStore({
           return card;
         }
         changed = true;
-        return { ...card, groupId: groupId || null };
+        // Stack-aware (Stage 8b, Phase 3). A truthy groupId LOCKS: it becomes the
+        // outermost container, preserving any inner grouping. A null groupId
+        // UNLOCKS: it peels off only the outermost layer, so nested inner groups
+        // survive. groupId mirrors the innermost for flat-group back-compat.
+        const stack =
+          Array.isArray(card.groupIds) && card.groupIds.length
+            ? card.groupIds.slice()
+            : card.groupId
+              ? [card.groupId]
+              : [];
+        const next = groupId
+          ? stack[0] === groupId
+            ? stack
+            : [groupId, ...stack]
+          : stack.slice(1);
+        return {
+          ...card,
+          groupIds: next,
+          groupId: next.length ? next[next.length - 1] : null,
+        };
       });
       if (!changed) {
         return null;

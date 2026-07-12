@@ -4,8 +4,8 @@ use chrono::Utc;
 use nucleus::{PromiseState, RecordKind};
 use sqlx::{Row, SqlitePool};
 
-use crate::records::{self, NewRecord};
 use crate::StoreError;
+use crate::records::{self, NewRecord};
 
 // ------------------------------------------------------------------ promises
 
@@ -34,15 +34,32 @@ pub struct NewPromise {
     pub condition: Option<String>,
     pub transfer_uid: Option<String>,
     pub rule_uid: Option<String>,
+    /// None = inherit: the transfer's `reserve_default`, else 'active' (V.3).
+    pub reserve_from: Option<String>,
 }
 
 pub async fn insert_promise(pool: &SqlitePool, p: NewPromise) -> Result<String, StoreError> {
     let uid = nucleus::new_uid("p");
     let now = Utc::now().to_rfc3339();
+    // reserve_from inheritance (blueprint V.3): explicit wins, then the
+    // bundle's transfer.reserve_default, then the global default 'active'.
+    let mut reserve_from = p.reserve_from;
+    if reserve_from.is_none() {
+        if let Some(transfer_uid) = &p.transfer_uid {
+            reserve_from =
+                sqlx::query("SELECT reserve_default FROM transfer WHERE record_uid = ?")
+                    .bind(transfer_uid)
+                    .fetch_optional(pool)
+                    .await?
+                    .and_then(|r| r.get::<Option<String>, _>("reserve_default"));
+        }
+    }
+    let reserve_from = reserve_from.unwrap_or_else(|| "active".to_string());
     sqlx::query(
         "INSERT INTO promise (uid, record_uid, concept_uid, delta, window_end, party_uid,
-                              state, condition, transfer_uid, rule_uid, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                              state, condition, transfer_uid, rule_uid, reserve_from,
+                              created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind(&uid)
     .bind(&p.record_uid)
@@ -54,6 +71,7 @@ pub async fn insert_promise(pool: &SqlitePool, p: NewPromise) -> Result<String, 
     .bind(&p.condition)
     .bind(&p.transfer_uid)
     .bind(&p.rule_uid)
+    .bind(&reserve_from)
     .bind(&now)
     .bind(&now)
     .execute(pool)
@@ -61,11 +79,27 @@ pub async fn insert_promise(pool: &SqlitePool, p: NewPromise) -> Result<String, 
     Ok(uid)
 }
 
-pub async fn set_promise_delta(
+/// Promises whose window has passed while still undone (blueprint V.2): the
+/// expiry sweep moves agreed/active → broken, open/proposed → withdrawn.
+pub async fn expired_promises(
     pool: &SqlitePool,
-    uid: &str,
-    delta: f64,
-) -> Result<(), StoreError> {
+    now_rfc3339: &str,
+) -> Result<Vec<PromiseRow>, StoreError> {
+    Ok(sqlx::query(
+        "SELECT * FROM promise
+          WHERE window_end IS NOT NULL AND window_end < ?
+            AND state IN ('open', 'proposed', 'agreed', 'active')
+          ORDER BY created_at",
+    )
+    .bind(now_rfc3339)
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .filter_map(map_promise)
+    .collect())
+}
+
+pub async fn set_promise_delta(pool: &SqlitePool, uid: &str, delta: f64) -> Result<(), StoreError> {
     sqlx::query("UPDATE promise SET delta = ?, updated_at = ? WHERE uid = ?")
         .bind(delta)
         .bind(Utc::now().to_rfc3339())
@@ -140,7 +174,10 @@ pub async fn set_promise_state(
     Ok(())
 }
 
-pub async fn promise_state(pool: &SqlitePool, uid: &str) -> Result<Option<PromiseState>, StoreError> {
+pub async fn promise_state(
+    pool: &SqlitePool,
+    uid: &str,
+) -> Result<Option<PromiseState>, StoreError> {
     Ok(sqlx::query("SELECT state FROM promise WHERE uid = ?")
         .bind(uid)
         .fetch_optional(pool)
@@ -180,20 +217,22 @@ pub struct EffectRow {
 }
 
 pub async fn due_effects(pool: &SqlitePool) -> Result<Vec<EffectRow>, StoreError> {
-    Ok(sqlx::query("SELECT * FROM effect_queue WHERE status = 'queued' ORDER BY rowid")
-        .fetch_all(pool)
-        .await?
-        .into_iter()
-        .filter_map(|r| {
-            let payload: String = r.get("payload");
-            Some(EffectRow {
-                uid: r.get("uid"),
-                kind: r.get("kind"),
-                payload: serde_json::from_str(&payload).ok()?,
-                origin_uid: r.get("origin_uid"),
+    Ok(
+        sqlx::query("SELECT * FROM effect_queue WHERE status = 'queued' ORDER BY rowid")
+            .fetch_all(pool)
+            .await?
+            .into_iter()
+            .filter_map(|r| {
+                let payload: String = r.get("payload");
+                Some(EffectRow {
+                    uid: r.get("uid"),
+                    kind: r.get("kind"),
+                    payload: serde_json::from_str(&payload).ok()?,
+                    origin_uid: r.get("origin_uid"),
+                })
             })
-        })
-        .collect())
+            .collect(),
+    )
 }
 
 pub async fn finish_effect(
@@ -224,7 +263,7 @@ pub struct NewSignal<'a> {
     pub head: &'a str,
     pub source_kind: &'a str, // command | http | sensor | query
     pub source: &'a str,
-    pub schedule: &'a str,    // duration literal: '90s', '5m', '1h', '1d'
+    pub schedule: &'a str, // duration literal: '90s', '5m', '1h', '1d'
 }
 
 pub async fn create_signal(pool: &SqlitePool, new: NewSignal<'_>) -> Result<String, StoreError> {
@@ -326,7 +365,78 @@ pub async fn create_decision(
     Ok(rec.uid)
 }
 
-pub async fn open_decisions(pool: &SqlitePool) -> Result<Vec<(String, String, String)>, StoreError> {
+/// Create a decision with a deadline (blueprint XIII.1 `expires_at`); the
+/// heartbeat closes it as 'expired' past that instant.
+pub async fn create_decision_expiring(
+    pool: &SqlitePool,
+    subject_uid: &str,
+    kind: &str,
+    question: &str,
+    options: &serde_json::Value,
+    expires_at: &str,
+) -> Result<String, StoreError> {
+    let uid = create_decision(pool, subject_uid, kind, question, options).await?;
+    sqlx::query("UPDATE decision SET expires_at = ? WHERE record_uid = ?")
+        .bind(expires_at)
+        .bind(&uid)
+        .execute(pool)
+        .await?;
+    Ok(uid)
+}
+
+/// Open decisions whose deadline has passed.
+pub async fn expired_open_decisions(
+    pool: &SqlitePool,
+    now_rfc3339: &str,
+) -> Result<Vec<String>, StoreError> {
+    Ok(sqlx::query(
+        "SELECT d.record_uid FROM decision d
+         JOIN record r ON r.uid = d.record_uid
+         WHERE r.quantity != 0 AND d.expires_at IS NOT NULL AND d.expires_at < ?",
+    )
+    .bind(now_rfc3339)
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .map(|r| r.get("record_uid"))
+    .collect())
+}
+
+/// Notify effects delivered (not parked) since an instant — the budget meter.
+pub async fn notifies_delivered_since(
+    pool: &SqlitePool,
+    since_rfc3339: &str,
+) -> Result<i64, StoreError> {
+    Ok(sqlx::query(
+        "SELECT COUNT(1) AS n FROM effect_queue
+         WHERE kind = 'notify' AND status = 'done'
+           AND result NOT LIKE 'parked%' AND finished_at >= ?",
+    )
+    .bind(since_rfc3339)
+    .fetch_one(pool)
+    .await?
+    .get("n"))
+}
+
+/// `(subject_uid, kind)` of every OPEN decision — the dedup key for sweeps
+/// (senses drafts, crossings, expiry) so one situation asks only once.
+pub async fn open_decision_subjects(
+    pool: &SqlitePool,
+) -> Result<std::collections::HashSet<(String, String)>, StoreError> {
+    Ok(sqlx::query(
+        "SELECT d.subject_uid, d.kind FROM decision d
+         JOIN record r ON r.uid = d.record_uid WHERE r.quantity != 0",
+    )
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .map(|r| (r.get("subject_uid"), r.get("kind")))
+    .collect())
+}
+
+pub async fn open_decisions(
+    pool: &SqlitePool,
+) -> Result<Vec<(String, String, String)>, StoreError> {
     Ok(sqlx::query(
         "SELECT d.record_uid, d.kind, r.head FROM decision d
          JOIN record r ON r.uid = d.record_uid WHERE r.quantity != 0",

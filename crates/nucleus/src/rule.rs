@@ -189,18 +189,30 @@ pub struct RuleDef {
     pub condition: Expr,
     pub gate: Gate,
     pub carry: Carry,
+    /// Minimum interval between firings (blueprint VI.1 `debounce`), parsed
+    /// from a duration literal ('90s', '2h'). None = fire on every delivery.
+    pub debounce_secs: Option<i64>,
     pub consequences: Vec<ConsequenceSpec>,
 }
 
 impl RuleDef {
+    #[allow(clippy::too_many_arguments)]
     pub fn parse(
         uid: impl Into<String>,
         slug: Option<String>,
         condition: &str,
         gate: &str,
         carry: &str,
+        debounce: Option<&str>,
         consequences: Vec<ConsequenceSpec>,
     ) -> Result<RuleDef, NucleusError> {
+        let debounce_secs = match debounce.map(str::trim).filter(|s| !s.is_empty()) {
+            Some(s) => Some(
+                crate::frequency::parse_duration(s)
+                    .ok_or_else(|| NucleusError::Parse(format!("bad debounce `{s}`")))?,
+            ),
+            None => None,
+        };
         Ok(RuleDef {
             uid: uid.into(),
             slug,
@@ -208,6 +220,7 @@ impl RuleDef {
             condition: Expr::parse(condition)?,
             gate: Gate::parse(gate)?,
             carry: Carry::parse(carry)?,
+            debounce_secs,
             consequences,
         })
     }
@@ -245,7 +258,16 @@ mod tests {
     use crate::expr::MapResolver;
 
     fn rule(cond: &str, gate: &str, carry: &str) -> RuleDef {
-        RuleDef::parse("r_R1", Some("rules.t".into()), cond, gate, carry, vec![]).unwrap()
+        RuleDef::parse(
+            "r_R1",
+            Some("rules.t".into()),
+            cond,
+            gate,
+            carry,
+            None,
+            vec![],
+        )
+        .unwrap()
     }
 
     #[test]
@@ -262,17 +284,31 @@ mod tests {
         let mut r = MapResolver::default();
         r.set("quantity", "apples.stock", None, 8.0);
         // gate <3 blocks at 8
-        assert!(rule("@apples.stock", "<3", "one").evaluate(&mut r).unwrap().is_none());
+        assert!(
+            rule("@apples.stock", "<3", "one")
+                .evaluate(&mut r)
+                .unwrap()
+                .is_none()
+        );
         // at 2 it fires, and carry=one decouples the payload from the value
         r.set("quantity", "apples.stock", None, 2.0);
-        let f = rule("@apples.stock", "<3", "one").evaluate(&mut r).unwrap().unwrap();
+        let f = rule("@apples.stock", "<3", "one")
+            .evaluate(&mut r)
+            .unwrap()
+            .unwrap();
         assert_eq!(f.condition_value, 2.0);
         assert_eq!(f.carried, 1.0);
         // carry=value keeps today's semantics
-        let f = rule("@apples.stock", "always", "value").evaluate(&mut r).unwrap().unwrap();
+        let f = rule("@apples.stock", "always", "value")
+            .evaluate(&mut r)
+            .unwrap()
+            .unwrap();
         assert_eq!(f.carried, 2.0);
         // carry=const
-        let f = rule("@apples.stock", "always", "const:7.5").evaluate(&mut r).unwrap().unwrap();
+        let f = rule("@apples.stock", "always", "const:7.5")
+            .evaluate(&mut r)
+            .unwrap()
+            .unwrap();
         assert_eq!(f.carried, 7.5);
     }
 
@@ -282,10 +318,16 @@ mod tests {
         r.set("freq", "daily-7am", None, 0.0);
         // today's '=': non-zero passes. -1 * 0 = 0 -> blocked.
         assert!(
-            rule("-1 * freq(@daily-7am)", "!=0", "value").evaluate(&mut r).unwrap().is_none()
+            rule("-1 * freq(@daily-7am)", "!=0", "value")
+                .evaluate(&mut r)
+                .unwrap()
+                .is_none()
         );
         r.set("freq", "daily-7am", None, 1.0);
-        let f = rule("-1 * freq(@daily-7am)", "!=0", "value").evaluate(&mut r).unwrap().unwrap();
+        let f = rule("-1 * freq(@daily-7am)", "!=0", "value")
+            .evaluate(&mut r)
+            .unwrap()
+            .unwrap();
         assert_eq!(f.carried, -1.0);
     }
 }

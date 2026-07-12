@@ -1,9 +1,9 @@
 //! Transfer (blueprint VIII) + Trust (XI) + Imagination (XII) acceptance.
 
 use chrono::{DateTime, TimeDelta, Utc};
+use engine::Engine;
 use engine::actions::Action;
 use engine::trust::{self, Signer};
-use engine::Engine;
 use nucleus::RecordKind;
 
 async fn engine() -> Engine {
@@ -66,6 +66,8 @@ async fn a_sale_settles_only_through_agreement() {
                 agreement_pct: None,
                 satiation: None,
                 source: None,
+                reserve_default: None,
+                require_confirmation: false,
             },
             None,
         )
@@ -74,13 +76,25 @@ async fn a_sale_settles_only_through_agreement() {
         .created
         .unwrap();
     let ana_party = e
-        .act(Action::AddParty { transfer: transfer.clone(), actor: ana.clone() }, None)
+        .act(
+            Action::AddParty {
+                transfer: transfer.clone(),
+                actor: ana.clone(),
+            },
+            None,
+        )
         .await
         .unwrap()
         .created
         .unwrap();
     let _carlos_party = e
-        .act(Action::AddParty { transfer: transfer.clone(), actor: carlos.clone() }, None)
+        .act(
+            Action::AddParty {
+                transfer: transfer.clone(),
+                actor: carlos.clone(),
+            },
+            None,
+        )
         .await
         .unwrap()
         .created
@@ -113,12 +127,20 @@ async fn a_sale_settles_only_through_agreement() {
     .unwrap();
 
     // settlement refused before agreement (full policy: nobody committed)
-    assert!(e.settle_all_local(&transfer, &ana, Utc::now()).await.is_err());
+    assert!(
+        e.settle_all_local(&transfer, &ana, Utc::now())
+            .await
+            .is_err()
+    );
 
     // both parties reach level 2; Ana's promises become agreed
     for party in [&ana_party] {
         e.act(
-            Action::AgreeTransfer { transfer: transfer.clone(), party: party.clone(), level: 2 },
+            Action::AgreeTransfer {
+                transfer: transfer.clone(),
+                party: party.clone(),
+                level: 2,
+            },
             None,
         )
         .await
@@ -132,21 +154,51 @@ async fn a_sale_settles_only_through_agreement() {
         .find(|(_, actor, _)| actor == &carlos)
         .unwrap()
         .0;
-    e.act(Action::AgreeTransfer { transfer: transfer.clone(), party: carlos_party, level: 2 }, None)
-        .await
-        .unwrap();
+    e.act(
+        Action::AgreeTransfer {
+            transfer: transfer.clone(),
+            party: carlos_party,
+            level: 2,
+        },
+        None,
+    )
+    .await
+    .unwrap();
 
     assert!(e.transfer_agreed(&transfer).await.unwrap());
-    e.act(Action::ActivateTransfer { transfer: transfer.clone() }, None).await.unwrap();
+    e.act(
+        Action::ActivateTransfer {
+            transfer: transfer.clone(),
+        },
+        None,
+    )
+    .await
+    .unwrap();
 
     // settle Ana's side: the bike leaves, money arrives — the ONLY record mutation
-    let facts = e.settle_all_local(&transfer, &ana, Utc::now()).await.unwrap();
+    let facts = e
+        .settle_all_local(&transfer, &ana, Utc::now())
+        .await
+        .unwrap();
     assert_eq!(facts.len(), 2);
-    assert_eq!(store::records::quantity(&e.store.pool, &bike).await.unwrap(), Some(0.0));
-    assert_eq!(store::records::quantity(&e.store.pool, &ana_money).await.unwrap(), Some(300.0));
+    assert_eq!(
+        store::records::quantity(&e.store.pool, &bike)
+            .await
+            .unwrap(),
+        Some(0.0)
+    );
+    assert_eq!(
+        store::records::quantity(&e.store.pool, &ana_money)
+            .await
+            .unwrap(),
+        Some(300.0)
+    );
 
     // idempotent: promises are kept now, re-settling changes nothing
-    let again = e.settle_all_local(&transfer, &ana, Utc::now()).await.unwrap();
+    let again = e
+        .settle_all_local(&transfer, &ana, Utc::now())
+        .await
+        .unwrap();
     assert!(again.is_empty());
 }
 
@@ -164,6 +216,8 @@ async fn editing_a_bundled_promise_invalidates_agreement() {
                 agreement_pct: None,
                 satiation: None,
                 source: None,
+                reserve_default: None,
+                require_confirmation: false,
             },
             None,
         )
@@ -172,7 +226,13 @@ async fn editing_a_bundled_promise_invalidates_agreement() {
         .created
         .unwrap();
     let party = e
-        .act(Action::AddParty { transfer: transfer.clone(), actor: ana.clone() }, None)
+        .act(
+            Action::AddParty {
+                transfer: transfer.clone(),
+                actor: ana.clone(),
+            },
+            None,
+        )
         .await
         .unwrap()
         .created
@@ -193,38 +253,67 @@ async fn editing_a_bundled_promise_invalidates_agreement() {
         .unwrap()
         .created
         .unwrap();
-    e.act(Action::AgreeTransfer { transfer: transfer.clone(), party, level: 2 }, None)
-        .await
-        .unwrap();
+    e.act(
+        Action::AgreeTransfer {
+            transfer: transfer.clone(),
+            party,
+            level: 2,
+        },
+        None,
+    )
+    .await
+    .unwrap();
     assert!(e.transfer_agreed(&transfer).await.unwrap());
 
     // a counteroffer is an edit: agreement drops back to 0
-    e.act(Action::EditPromiseDelta { promise, delta: -3.0 }, None).await.unwrap();
-    assert!(!e.transfer_agreed(&transfer).await.unwrap(), "edit invalidated agreement");
+    e.act(
+        Action::EditPromiseDelta {
+            promise,
+            delta: -3.0,
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    assert!(
+        !e.transfer_agreed(&transfer).await.unwrap(),
+        "edit invalidated agreement"
+    );
 }
 
 #[tokio::test]
 async fn every_fact_is_signed_and_verifiable() {
     let e = engine().await;
-    e.set_signer(Signer::generate("ana", "ed25519:ana:2026-07")).await.unwrap();
+    e.set_signer(Signer::generate("ana", "ed25519:ana:2026-07"))
+        .await
+        .unwrap();
     let apples = plain(&e, "apples", 8.0).await;
 
     let facts = e.append_user(&apples, -1.0).await.unwrap();
     let fact = &facts[0];
     assert!(fact.signature.is_some(), "facts are signed");
     assert_eq!(fact.actor_uid.as_deref(), Some("ana"));
-    assert!(trust::verify_fact(&e.store, fact).await.unwrap(), "signature verifies");
+    assert!(
+        trust::verify_fact(&e.store, fact).await.unwrap(),
+        "signature verifies"
+    );
 
     // two-layer tamper detection: the chain guards the content -> hash link,
     // the signature guards the hash -> author link.
     assert!(nucleus::fact::verify_chain_step(fact));
     let mut delta_tampered = fact.clone();
     delta_tampered.delta = -999.0;
-    assert!(!nucleus::fact::verify_chain_step(&delta_tampered), "chain catches delta tampering");
+    assert!(
+        !nucleus::fact::verify_chain_step(&delta_tampered),
+        "chain catches delta tampering"
+    );
 
     let mut hash_tampered = fact.clone();
     hash_tampered.hash = "deadbeef".into();
-    assert!(!trust::verify_fact(&e.store, &hash_tampered).await.unwrap(), "signature catches hash tampering");
+    assert!(
+        !trust::verify_fact(&e.store, &hash_tampered).await.unwrap(),
+        "signature catches hash tampering"
+    );
 }
 
 #[tokio::test]
@@ -256,7 +345,11 @@ async fn imagination_projects_the_scrubbable_future() {
             condition: "-1 * freq(@freq.daily)",
             gate: "!=0",
             carry: "value",
-            consequences: vec![(nucleus::ConsequenceKind::AddQuantity, Some("@apples.stock".into()), None)],
+            consequences: vec![(
+                nucleus::ConsequenceKind::AddQuantity,
+                Some("@apples.stock".into()),
+                None,
+            )],
         },
     )
     .await

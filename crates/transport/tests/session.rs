@@ -4,8 +4,8 @@
 
 use std::sync::Arc;
 
-use engine::actions::Action;
 use engine::Engine;
+use engine::actions::Action;
 use nucleus::RecordKind;
 use transport::{ClientMessage, LaneHub, ServerMessage, Session};
 
@@ -15,7 +15,10 @@ async fn setup() -> (Arc<Engine>, Arc<LaneHub>) {
 }
 
 fn subscribe_focus(id: &str) -> ClientMessage {
-    ClientMessage::Subscribe { id: id.into(), protein: protein::focus_queue("before") }
+    ClientMessage::Subscribe {
+        id: id.into(),
+        protein: protein::focus_queue("before"),
+    }
 }
 
 #[tokio::test]
@@ -42,17 +45,28 @@ async fn subscribe_act_and_live_update_over_one_channel() {
 
     // subscribe to the focus queue: immediate snapshot of both Needs
     let out = s.handle(subscribe_focus("q")).await;
-    let ServerMessage::Snapshot { rows, .. } = &out[0] else { panic!("expected snapshot") };
+    let ServerMessage::Snapshot { rows, .. } = &out[0] else {
+        panic!("expected snapshot")
+    };
     assert_eq!(rows.len(), 2);
 
     // completing a Need is an Action -> a fact; feeding that fact to the session
     // pushes a live Update with the shrunken queue
-    let facts = engine.append_user(
-        &store::records::resolve(&engine.store.pool, "exercise").await.unwrap().unwrap().uid,
-        1.0, // -1 -> 0: no longer a Need
-    ).await.unwrap();
+    let facts = engine
+        .append_user(
+            &store::records::resolve(&engine.store.pool, "exercise")
+                .await
+                .unwrap()
+                .unwrap()
+                .uid,
+            1.0, // -1 -> 0: no longer a Need
+        )
+        .await
+        .unwrap();
     let updates = s.on_fact(&facts[0]).await;
-    let ServerMessage::Update { rows, id } = &updates[0] else { panic!("expected update") };
+    let ServerMessage::Update { rows, id } = &updates[0] else {
+        panic!("expected update")
+    };
     assert_eq!(id, "q");
     assert_eq!(rows.len(), 1, "queue recomputed live");
     assert_eq!(rows[0]["slug"], "shower");
@@ -112,8 +126,15 @@ async fn visibility_subject_gates_the_session() {
         order: vec![],
         limit: None,
     };
-    let out = guest.handle(ClientMessage::Subscribe { id: "q".into(), protein: p }).await;
-    let ServerMessage::Snapshot { rows, .. } = &out[0] else { panic!() };
+    let out = guest
+        .handle(ClientMessage::Subscribe {
+            id: "q".into(),
+            protein: p,
+        })
+        .await;
+    let ServerMessage::Snapshot { rows, .. } = &out[0] else {
+        panic!()
+    };
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0]["slug"], "public");
 }
@@ -125,8 +146,15 @@ async fn ephemeral_lanes_fan_out_and_never_persist() {
     let mut bob = Session::new(engine.clone(), hub.clone(), "bob", None);
 
     // both join the same room; Bob holds a receiver
-    alice.handle(ClientMessage::LaneJoin { room: "doc-42".into() }).await;
-    bob.handle(ClientMessage::LaneJoin { room: "doc-42".into() }).await;
+    alice
+        .handle(ClientMessage::LaneJoin {
+            room: "doc-42".into(),
+        })
+        .await;
+    bob.handle(ClientMessage::LaneJoin {
+        room: "doc-42".into(),
+    })
+    .await;
     let mut bob_rx = hub.join("doc-42");
 
     // Alice sends a cursor position; Bob receives it
@@ -141,7 +169,9 @@ async fn ephemeral_lanes_fan_out_and_never_persist() {
     assert_eq!(event.payload["cursor"], 12);
 
     // nothing about presence touched the Ledger
-    let facts = store::facts::for_record(&engine.store.pool, "doc-42", 10).await.unwrap();
+    let facts = store::facts::for_record(&engine.store.pool, "doc-42", 10)
+        .await
+        .unwrap();
     assert!(facts.is_empty(), "lanes never persist");
     // keep bob's subscription alive to the end
     let _ = &mut bob;
@@ -177,8 +207,13 @@ async fn saved_protein_subscription() {
 
     let mut s = Session::new(engine, hub, "c", None);
     let out = s
-        .handle(ClientMessage::SubscribeSaved { id: "v".into(), name: "views.needs".into() })
+        .handle(ClientMessage::SubscribeSaved {
+            id: "v".into(),
+            name: "views.needs".into(),
+        })
         .await;
-    let ServerMessage::Snapshot { rows, .. } = &out[0] else { panic!("expected snapshot") };
+    let ServerMessage::Snapshot { rows, .. } = &out[0] else {
+        panic!("expected snapshot")
+    };
     assert_eq!(rows.len(), 1);
 }

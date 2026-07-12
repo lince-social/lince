@@ -2,8 +2,8 @@
 //! through typed Actions, reads come back through Proteins, and the two never
 //! trade places.
 
-use engine::actions::Action;
 use engine::Engine;
+use engine::actions::Action;
 use nucleus::{ConsequenceKind, PromiseState, RecordKind};
 use protein::{FactsInclude, Include, Order, Predicate, Protein, Source};
 
@@ -37,27 +37,57 @@ async fn focus_queue_is_a_protein() {
     create(&e, "breakfast", -1.0).await;
     create(&e, "someday", 0.0).await; // not a Need: never appears
 
-    e.act(Action::CreateConcept { name: "before".into(), parents: vec![] }, None).await.unwrap();
     e.act(
-        Action::AddLink { from: "exercise".into(), kind: "before".into(), to: "shower".into(), quantity: None },
+        Action::CreateConcept {
+            name: "before".into(),
+            parents: vec![],
+        },
         None,
     )
     .await
     .unwrap();
     e.act(
-        Action::AddLink { from: "shower".into(), kind: "before".into(), to: "breakfast".into(), quantity: None },
+        Action::AddLink {
+            from: "exercise".into(),
+            kind: "before".into(),
+            to: "shower".into(),
+            quantity: None,
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    e.act(
+        Action::AddLink {
+            from: "shower".into(),
+            kind: "before".into(),
+            to: "breakfast".into(),
+            quantity: None,
+        },
         None,
     )
     .await
     .unwrap();
 
-    let queue = protein::execute(&e.store, &protein::focus_queue("before")).await.unwrap();
+    let queue = protein::execute(&e.store, &protein::focus_queue("before"))
+        .await
+        .unwrap();
     let slugs: Vec<&str> = queue.iter().map(|r| r["slug"].as_str().unwrap()).collect();
     assert_eq!(slugs, vec!["exercise", "shower", "breakfast"]);
 
     // completing the focus (a SetQuantity Action -> fact) promotes the next
-    e.act(Action::SetQuantity { target: "@exercise".into(), value: 0.0 }, None).await.unwrap();
-    let queue = protein::execute(&e.store, &protein::focus_queue("before")).await.unwrap();
+    e.act(
+        Action::SetQuantity {
+            target: "@exercise".into(),
+            value: 0.0,
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    let queue = protein::execute(&e.store, &protein::focus_queue("before"))
+        .await
+        .unwrap();
     assert_eq!(queue[0]["slug"], "shower", "next task takes the focus");
     assert_eq!(queue.len(), 2);
 }
@@ -69,14 +99,37 @@ async fn concept_dag_filter_and_provenance_include() {
     create(&e, "hammer", -1.0).await;
 
     // Lingua: apple -> fruit -> food
-    e.act(Action::CreateConcept { name: "food".into(), parents: vec![] }, None).await.unwrap();
-    e.act(Action::CreateConcept { name: "fruit".into(), parents: vec!["food".into()] }, None)
+    e.act(
+        Action::CreateConcept {
+            name: "food".into(),
+            parents: vec![],
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    e.act(
+        Action::CreateConcept {
+            name: "fruit".into(),
+            parents: vec!["food".into()],
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    e.act(
+        Action::CreateConcept {
+            name: "apple".into(),
+            parents: vec!["fruit".into()],
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    let apple_uid = store::concepts::resolve(&e.store.pool, "apple")
         .await
+        .unwrap()
         .unwrap();
-    e.act(Action::CreateConcept { name: "apple".into(), parents: vec!["fruit".into()] }, None)
-        .await
-        .unwrap();
-    let apple_uid = store::concepts::resolve(&e.store.pool, "apple").await.unwrap().unwrap();
     store::sqlx::query("UPDATE record SET concept_uid = ? WHERE uid = ?")
         .bind(&apple_uid)
         .bind(&apples)
@@ -86,8 +139,14 @@ async fn concept_dag_filter_and_provenance_include() {
 
     let p = Protein {
         source: Source::Record,
-        filter: vec![Predicate::QuantityLt(0.0), Predicate::ConceptIn("food".into())],
-        include: Include { facts: Some(FactsInclude { limit: 5 }), ..Default::default() },
+        filter: vec![
+            Predicate::QuantityLt(0.0),
+            Predicate::ConceptIn("food".into()),
+        ],
+        include: Include {
+            facts: Some(FactsInclude { limit: 5 }),
+            ..Default::default()
+        },
         aggregate: None,
         order: vec![],
         limit: None,
@@ -126,14 +185,26 @@ async fn decision_queue_protein_and_decide_action() {
     e.reload_rules().await.unwrap();
     e.append_user(&apples, -1.0).await.unwrap(); // fires the ask
 
-    let queue = protein::execute(&e.store, &protein::decision_queue()).await.unwrap();
+    let queue = protein::execute(&e.store, &protein::decision_queue())
+        .await
+        .unwrap();
     assert_eq!(queue.len(), 1);
     assert_eq!(queue[0]["question"], "send reorder proposal?");
 
     // answering is an Action; the queue empties; the answer is Ledger-visible
     let decision_uid = queue[0]["uid"].as_str().unwrap().to_string();
-    e.act(Action::Decide { decision: decision_uid, answer: "yes".into() }, None).await.unwrap();
-    let queue = protein::execute(&e.store, &protein::decision_queue()).await.unwrap();
+    e.act(
+        Action::Decide {
+            decision: decision_uid,
+            answer: "yes".into(),
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    let queue = protein::execute(&e.store, &protein::decision_queue())
+        .await
+        .unwrap();
     assert!(queue.is_empty());
 }
 
@@ -159,14 +230,30 @@ async fn promise_lifecycle_through_actions() {
         .unwrap();
 
     // open -> proposed -> agreed -> active: each transition validated
-    for state in [PromiseState::Proposed, PromiseState::Agreed, PromiseState::Active] {
-        e.act(Action::PromiseTransition { promise: promise.clone(), to: state }, None)
-            .await
-            .unwrap();
+    for state in [
+        PromiseState::Proposed,
+        PromiseState::Agreed,
+        PromiseState::Active,
+    ] {
+        e.act(
+            Action::PromiseTransition {
+                promise: promise.clone(),
+                to: state,
+            },
+            None,
+        )
+        .await
+        .unwrap();
     }
     // kept is settlement-only: the state machine refuses it here
     let err = e
-        .act(Action::PromiseTransition { promise: promise.clone(), to: PromiseState::Open }, None)
+        .act(
+            Action::PromiseTransition {
+                promise: promise.clone(),
+                to: PromiseState::Open,
+            },
+            None,
+        )
         .await;
     assert!(err.is_err(), "active -> open is not a legal transition");
 

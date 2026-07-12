@@ -25,7 +25,8 @@ pub async fn append_one(
     let mut new = new;
     if let Some(signer) = signer {
         // the Cell's identity authors what nobody else claimed
-        new.actor_uid.get_or_insert_with(|| signer.actor_uid.clone());
+        new.actor_uid
+            .get_or_insert_with(|| signer.actor_uid.clone());
     }
     let prev = store::facts::last_hash(&mut tx).await?;
     let mut fact = nucleus::fact::seal(new, &prev, now);
@@ -63,7 +64,8 @@ pub async fn append_all(
         }
         let mut new = new;
         if let Some(signer) = signer {
-            new.actor_uid.get_or_insert_with(|| signer.actor_uid.clone());
+            new.actor_uid
+                .get_or_insert_with(|| signer.actor_uid.clone());
         }
         let prev = match out.last() {
             Some(f) => f.hash.clone(),

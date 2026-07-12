@@ -135,7 +135,11 @@ impl Expr {
                 if !refs.is_empty() {
                     out.push(TokenKey {
                         func: name.clone(),
-                        slug: refs.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("|"),
+                        slug: refs
+                            .iter()
+                            .map(|s| s.as_str())
+                            .collect::<Vec<_>>()
+                            .join("|"),
                         dur_secs: dur,
                     });
                 }
@@ -224,7 +228,11 @@ pub struct MapResolver {
 impl MapResolver {
     pub fn set(&mut self, func: &str, slug: &str, dur_secs: Option<i64>, value: f64) {
         self.values.insert(
-            TokenKey { func: func.into(), slug: slug.into(), dur_secs },
+            TokenKey {
+                func: func.into(),
+                slug: slug.into(),
+                dur_secs,
+            },
             value,
         );
     }
@@ -249,7 +257,11 @@ impl Resolver for MapResolver {
             Value::Dur(s) => Some(*s),
             _ => None,
         });
-        let key = TokenKey { func: name.into(), slug: slug.clone(), dur_secs: dur };
+        let key = TokenKey {
+            func: name.into(),
+            slug: slug.clone(),
+            dur_secs: dur,
+        };
         self.values
             .get(&key)
             .copied()
@@ -602,7 +614,12 @@ mod tests {
     fn booleans_are_numbers_no_times_one_workaround() {
         // The old Rhai workaround `(rq1 < 3) * 1` is dead: bools ARE numbers.
         assert_eq!(
-            eval("(@apples.stock < 3) + 2", |r| r.set("quantity", "apples.stock", None, 2.0)),
+            eval("(@apples.stock < 3) + 2", |r| r.set(
+                "quantity",
+                "apples.stock",
+                None,
+                2.0
+            )),
             3.0
         );
         assert_eq!(eval("!0", |_| {}), 1.0);
@@ -623,7 +640,12 @@ mod tests {
     fn full_math_composition_from_the_blueprint() {
         // -1 * freq(@daily-7am)
         assert_eq!(
-            eval("-1 * freq(@daily-7am)", |r| r.set("freq", "daily-7am", None, 1.0)),
+            eval("-1 * freq(@daily-7am)", |r| r.set(
+                "freq",
+                "daily-7am",
+                None,
+                1.0
+            )),
             -1.0
         );
         // (@checking - value(@rules.monthly-burn)) < 500
@@ -651,8 +673,16 @@ mod tests {
     fn token_extraction() {
         let e = Expr::parse("freq(@weekly) * @books + sum(@reading.log, 7d)").unwrap();
         let t = e.tokens();
-        assert!(t.contains(&TokenKey { func: "freq".into(), slug: "weekly".into(), dur_secs: None }));
-        assert!(t.contains(&TokenKey { func: "quantity".into(), slug: "books".into(), dur_secs: None }));
+        assert!(t.contains(&TokenKey {
+            func: "freq".into(),
+            slug: "weekly".into(),
+            dur_secs: None
+        }));
+        assert!(t.contains(&TokenKey {
+            func: "quantity".into(),
+            slug: "books".into(),
+            dur_secs: None
+        }));
         assert!(t.contains(&TokenKey {
             func: "sum".into(),
             slug: "reading.log".into(),

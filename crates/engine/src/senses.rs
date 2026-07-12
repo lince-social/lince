@@ -12,8 +12,8 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::error::EngineError;
 use crate::Engine;
+use crate::error::EngineError;
 
 /// A remote open promise seen through the discovery cache (blueprint X.1).
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -50,7 +50,11 @@ pub struct MatchRule {
 
 impl Default for MatchRule {
     fn default() -> Self {
-        MatchRule { watch_concept: None, max_proximity: 1, min_confidence: 0.0 }
+        MatchRule {
+            watch_concept: None,
+            max_proximity: 1,
+            min_confidence: 0.0,
+        }
     }
 }
 
@@ -62,7 +66,85 @@ pub struct Draft {
     pub score: f64,
 }
 
+impl From<store::senses::SenseRuleRow> for MatchRule {
+    fn from(row: store::senses::SenseRuleRow) -> Self {
+        MatchRule {
+            watch_concept: row.watch_concept,
+            max_proximity: row.max_proximity,
+            min_confidence: row.min_confidence,
+        }
+    }
+}
+
+impl From<store::senses::RemoteOpenRow> for RemoteOpen {
+    fn from(row: store::senses::RemoteOpenRow) -> Self {
+        RemoteOpen {
+            promise_uid: row.promise_uid,
+            organ: row.organ,
+            proximity: row.proximity,
+            concept: row.concept,
+            unit: row.unit,
+            delta: row.delta,
+            window_start: row.window_start,
+            window_end: row.window_end,
+            confidence: row.confidence,
+        }
+    }
+}
+
 impl Engine {
+    /// The heartbeat senses arm (blueprint X, decision 4): every ACTIVE match
+    /// rule (a record with the `sense_rule` sidecar) runs against the persisted
+    /// discovery cache; each draft lands as a decision-record (`kind='draft'`)
+    /// with propose/dismiss options. One situation asks once: the
+    /// `local|remote` pair is the dedup subject. Returns created decision uids.
+    pub async fn senses_pass(&self) -> Result<Vec<String>, EngineError> {
+        let rules = store::senses::active_sense_rules(&self.store.pool).await?;
+        if rules.is_empty() {
+            return Ok(vec![]);
+        }
+        let cache: Vec<RemoteOpen> = store::senses::list_remote_open(&self.store.pool)
+            .await?
+            .into_iter()
+            .map(RemoteOpen::from)
+            .collect();
+        if cache.is_empty() {
+            return Ok(vec![]);
+        }
+        let mut asked = store::misc::open_decision_subjects(&self.store.pool).await?;
+        let mut created = Vec::new();
+        for rule_row in rules {
+            let rule = MatchRule::from(rule_row);
+            for draft in self.senses_match(&rule, &cache).await? {
+                let subject = format!("{}|{}", draft.local_promise, draft.remote_promise);
+                if !asked.insert((subject.clone(), "draft".to_string())) {
+                    continue;
+                }
+                created.push(
+                    store::misc::create_decision(
+                        &self.store.pool,
+                        &subject,
+                        "draft",
+                        &format!(
+                            "Match: your promise {} meets {} from {} (score {:.2})",
+                            draft.local_promise, draft.remote_promise, draft.organ, draft.score
+                        ),
+                        &serde_json::json!([
+                            {
+                                "label": "propose",
+                                "remote": draft.remote_promise,
+                                "organ": draft.organ,
+                            },
+                            { "label": "dismiss" },
+                        ]),
+                    )
+                    .await?,
+                );
+            }
+        }
+        Ok(created)
+    }
+
     /// One matching pass. Pure over the passed-in discovery cache: no network,
     /// deterministic given the same inputs (DST-friendly). Drafts are ranked
     /// best-first.
@@ -90,7 +172,9 @@ impl Engine {
             if local.state != nucleus::PromiseState::Open || local.party_uid.is_some() {
                 continue; // only OPEN promises with an unfilled party slot
             }
-            let Some(local_record) = &local.record_uid else { continue };
+            let Some(local_record) = &local.record_uid else {
+                continue;
+            };
             let local_concept = self.record_concept(local_record).await?;
             // rule scope
             if let (Some(family), Some(c)) = (&watch_family, &local_concept) {
@@ -109,10 +193,17 @@ impl Engine {
                     continue;
                 }
                 // complementary: sign-opposite deltas (a Need meets a Contribution)
-                if local.delta == 0.0 || remote.delta == 0.0 || local.delta.signum() == remote.delta.signum() {
+                if local.delta == 0.0
+                    || remote.delta == 0.0
+                    || local.delta.signum() == remote.delta.signum()
+                {
                     continue;
                 }
-                if !concepts_align(&local_family, local_concept.as_deref(), remote.concept.as_deref()) {
+                if !concepts_align(
+                    &local_family,
+                    local_concept.as_deref(),
+                    remote.concept.as_deref(),
+                ) {
                     continue;
                 }
                 if !units_compatible(local.record_uid.as_deref(), &remote) {
@@ -135,7 +226,9 @@ impl Engine {
     }
 
     async fn record_concept(&self, record_uid: &str) -> Result<Option<String>, EngineError> {
-        Ok(store::records::get(&self.store.pool, record_uid).await?.and_then(|r| r.concept_uid))
+        Ok(store::records::get(&self.store.pool, record_uid)
+            .await?
+            .and_then(|r| r.concept_uid))
     }
 
     async fn concept_family(
@@ -190,7 +283,11 @@ fn score(local: &store::misc::PromiseRow, remote: &RemoteOpen) -> f64 {
     let fit = {
         let want = local.delta.abs();
         let have = remote.delta.abs();
-        if want == 0.0 || have == 0.0 { 0.0 } else { (want.min(have)) / (want.max(have)) }
+        if want == 0.0 || have == 0.0 {
+            0.0
+        } else {
+            (want.min(have)) / (want.max(have))
+        }
     };
     0.5 * remote.confidence + 0.3 * proximity_term + 0.2 * fit
 }

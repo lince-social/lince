@@ -5,11 +5,11 @@
 
 use chrono::{DateTime, Utc};
 use nucleus::expr::Expr;
-use nucleus::transfer::{policy_satisfied, AgreementType};
+use nucleus::transfer::{AgreementType, policy_satisfied};
 use nucleus::{Cause, Fact, NewFact, PromiseState};
 
-use crate::error::EngineError;
 use crate::Engine;
+use crate::error::EngineError;
 
 /// Is the bundle's agreement policy satisfied right now? (Free function so the
 /// Karma `advance_transfer` consequence can use it without an Engine handle.)
@@ -24,7 +24,11 @@ pub async fn agreed(store: &store::Store, transfer_uid: &str) -> Result<bool, En
         .into_iter()
         .map(|(_, _, level)| level)
         .collect();
-    Ok(policy_satisfied(agreement, t.agreement_pct.map(|p| p as u8), &levels))
+    Ok(policy_satisfied(
+        agreement,
+        t.agreement_pct.map(|p| p as u8),
+        &levels,
+    ))
 }
 
 /// Move a transfer's `agreed` promises to `active` — Karma's `advance_transfer`
@@ -74,12 +78,31 @@ impl Engine {
             .await?
             .ok_or_else(|| EngineError::UnknownRecord(transfer_uid.into()))?;
         if !t.active {
-            return Err(EngineError::Consequence(format!("transfer {transfer_uid} is inactive")));
+            return Err(EngineError::Consequence(format!(
+                "transfer {transfer_uid} is inactive"
+            )));
         }
         if !self.transfer_agreed(transfer_uid).await? {
             return Err(EngineError::Consequence(format!(
                 "transfer {transfer_uid}: agreement policy not satisfied"
             )));
+        }
+        // Delivery/receipt confirmations (VIII.3): when the transfer demands
+        // them, two annotation facts on the transfer record gate active -> kept.
+        if t.require_confirmation {
+            let log = store::facts::for_record(&self.store.pool, transfer_uid, 10_000).await?;
+            let confirmed = |kind: &str| {
+                log.iter().any(|f| {
+                    f.payload
+                        .as_deref()
+                        .is_some_and(|p| p.contains(&format!("\"confirmation\":\"{kind}\"")))
+                })
+            };
+            if !confirmed("delivery") || !confirmed("receipt") {
+                return Err(EngineError::Consequence(format!(
+                    "transfer {transfer_uid}: awaiting delivery/receipt confirmation"
+                )));
+            }
         }
 
         let mut committed = Vec::new();
@@ -87,7 +110,9 @@ impl Engine {
             if p.state != PromiseState::Active || p.party_uid.as_deref() != Some(actor) {
                 continue;
             }
-            let Some(record_uid) = p.record_uid.clone() else { continue };
+            let Some(record_uid) = p.record_uid.clone() else {
+                continue;
+            };
             let facts = self
                 .append(
                     NewFact {
@@ -116,8 +141,12 @@ impl Engine {
     pub async fn trigger_conditional_promises(&self) -> Result<usize, EngineError> {
         let mut triggered = 0;
         for p in store::transfers::conditional_pending(&self.store.pool).await? {
-            let Some(condition) = &p.condition else { continue };
-            let Ok(expr) = Expr::parse(condition) else { continue };
+            let Some(condition) = &p.condition else {
+                continue;
+            };
+            let Ok(expr) = Expr::parse(condition) else {
+                continue;
+            };
             let fired = match eval_promise_condition(self, &expr).await {
                 Ok(v) => v != 0.0,
                 Err(_) => false,
@@ -145,13 +174,16 @@ impl Engine {
         if t.satiation.as_deref() != Some("first_completes") {
             return Ok(());
         }
-        let Some(source) = &t.source_uid else { return Ok(()) };
+        let Some(source) = &t.source_uid else {
+            return Ok(());
+        };
         for sibling in
             store::transfers::siblings_of_source(&self.store.pool, source, &t.record_uid).await?
         {
             // deactivate the sibling bundle; withdraw its unkept promises
-            let current =
-                store::records::quantity(&self.store.pool, &sibling).await?.unwrap_or(0.0);
+            let current = store::records::quantity(&self.store.pool, &sibling)
+                .await?
+                .unwrap_or(0.0);
             if current != 0.0 {
                 self.append(
                     NewFact {
@@ -169,8 +201,12 @@ impl Engine {
             }
             for p in store::transfers::promises_of(&self.store.pool, &sibling).await? {
                 if PromiseState::can_transition(p.state, PromiseState::Withdrawn) {
-                    store::misc::set_promise_state(&self.store.pool, &p.uid, PromiseState::Withdrawn)
-                        .await?;
+                    store::misc::set_promise_state(
+                        &self.store.pool,
+                        &p.uid,
+                        PromiseState::Withdrawn,
+                    )
+                    .await?;
                 }
             }
         }

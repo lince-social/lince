@@ -78,12 +78,14 @@ pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<RecordRow>, Stor
 
 /// Resolve `@token`: slug first, uid fallback.
 pub async fn resolve(pool: &SqlitePool, token: &str) -> Result<Option<RecordRow>, StoreError> {
-    Ok(sqlx::query("SELECT * FROM record WHERE slug = ? OR uid = ? LIMIT 1")
-        .bind(token)
-        .bind(token)
-        .fetch_optional(pool)
-        .await?
-        .map(map_row))
+    Ok(
+        sqlx::query("SELECT * FROM record WHERE slug = ? OR uid = ? LIMIT 1")
+            .bind(token)
+            .bind(token)
+            .fetch_optional(pool)
+            .await?
+            .map(map_row),
+    )
 }
 
 pub async fn quantity(pool: &SqlitePool, uid: &str) -> Result<Option<f64>, StoreError> {
@@ -154,12 +156,14 @@ pub async fn get_extension(
     record_uid: &str,
     namespace: &str,
 ) -> Result<Option<serde_json::Value>, StoreError> {
-    Ok(sqlx::query("SELECT fds FROM record_extension WHERE record_uid = ? AND namespace = ?")
-        .bind(record_uid)
-        .bind(namespace)
-        .fetch_optional(pool)
-        .await?
-        .and_then(|r| serde_json::from_str(&r.get::<String, _>("fds")).ok()))
+    Ok(
+        sqlx::query("SELECT fds FROM record_extension WHERE record_uid = ? AND namespace = ?")
+            .bind(record_uid)
+            .bind(namespace)
+            .fetch_optional(pool)
+            .await?
+            .and_then(|r| serde_json::from_str(&r.get::<String, _>("fds")).ok()),
+    )
 }
 
 /// Edit a record's text (head/title and/or body). Not the quantity cache, so a
@@ -258,12 +262,13 @@ pub async fn bump_quantity(
     delta: f64,
     now_rfc3339: &str,
 ) -> Result<(), StoreError> {
-    let res = sqlx::query("UPDATE record SET quantity = quantity + ?, updated_at = ? WHERE uid = ?")
-        .bind(delta)
-        .bind(now_rfc3339)
-        .bind(uid)
-        .execute(&mut **tx)
-        .await?;
+    let res =
+        sqlx::query("UPDATE record SET quantity = quantity + ?, updated_at = ? WHERE uid = ?")
+            .bind(delta)
+            .bind(now_rfc3339)
+            .bind(uid)
+            .execute(&mut **tx)
+            .await?;
     if res.rows_affected() == 0 {
         return Err(sqlx::Error::RowNotFound);
     }

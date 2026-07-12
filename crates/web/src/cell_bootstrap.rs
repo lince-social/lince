@@ -11,53 +11,94 @@
 use std::io::{self, IsTerminal, Write};
 
 use crossterm::{
-    event::{read, Event, KeyCode, KeyEventKind},
+    event::{Event, KeyCode, KeyEventKind, read},
     terminal::{disable_raw_mode, enable_raw_mode},
 };
 use store::Store;
 use utils::auth::hash_password;
+use utils::desktop_setup::DesktopInstallSetup;
 use utils::logging::status;
 
 /// Seed the Cell's app tables and ensure an initial admin exists on first run.
-pub async fn bootstrap_cell(store: &Store, auth_required: bool) -> Result<(), io::Error> {
-    // The permission catalog is owned by `application::auth`; store stays
+///
+/// `staged` carries the installer's one-shot setup (initial admin password,
+/// language) when the caller found a staged setup file; it wins over the
+/// interactive prompt so headless installer flows work.
+pub async fn bootstrap_cell(
+    store: &Store,
+    auth_required: bool,
+    local_base_url: &str,
+    staged: Option<&DesktopInstallSetup>,
+) -> Result<(), io::Error> {
+    // The permission catalog is owned by `utils::auth`; store stays
     // decoupled and just persists whatever pairs it is handed.
-    let permissions: Vec<(&str, &str)> = ::application::auth::ALL_PERMISSIONS
+    let permissions: Vec<(&str, &str)> = utils::auth::ALL_PERMISSIONS
         .iter()
         .map(|permission| (permission.subject, permission.action))
         .collect();
     store::seed::seed(&store.pool, &permissions)
         .await
         .map_err(io::Error::other)?;
+    store::organs::ensure_local(&store.pool, local_base_url)
+        .await
+        .map_err(io::Error::other)?;
+
+    if let Some(language) = staged
+        .and_then(|setup| setup.language.as_deref())
+        .map(str::trim)
+        .filter(|language| !language.is_empty())
+    {
+        store::config::set_language(&store.pool, language)
+            .await
+            .map_err(io::Error::other)?;
+    }
 
     if !auth_required {
         return Ok(());
     }
-    if store::auth::admin_exists(&store.pool).await.map_err(io::Error::other)? {
+    if store::auth::admin_exists(&store.pool)
+        .await
+        .map_err(io::Error::other)?
+    {
         return Ok(());
     }
 
-    // First run with auth on and no admin yet.
-    if !io::stdin().is_terminal() || !io::stdout().is_terminal() {
+    // First run with auth on and no admin yet: an installer-staged password
+    // wins; otherwise prompt when a terminal is available.
+    let (username, password) = if let Some(password) = staged
+        .and_then(|setup| setup.initial_admin_password.as_deref())
+        .map(str::trim)
+        .filter(|password| !password.is_empty())
+    {
+        ("user".to_string(), password.to_string())
+    } else if !io::stdin().is_terminal() || !io::stdout().is_terminal() {
         status(
             "Auth is required but the new store has no admin yet. \
              Start Lince once in an interactive terminal (or complete the \
              installer's setup) to create the initial admin.",
         );
         return Ok(());
-    }
-
-    let (username, password) = tokio::task::spawn_blocking(prompt_admin_credentials)
-        .await
-        .map_err(io::Error::other)??;
+    } else {
+        tokio::task::spawn_blocking(prompt_admin_credentials)
+            .await
+            .map_err(io::Error::other)??
+    };
     let password_hash = hash_password(&password)?;
     let admin_role = store::auth::ensure_role(&store.pool, store::auth::ADMIN_ROLE)
         .await
         .map_err(io::Error::other)?;
-    store::auth::create_user(&store.pool, &username, &username, &password_hash, admin_role)
-        .await
-        .map_err(io::Error::other)?;
-    status(format!("Created initial admin user `{username}` on the new store."));
+    store::auth::create_user(
+        &store.pool,
+        &username,
+        &username,
+        &password_hash,
+        admin_role,
+    )
+    .await
+    .map_err(io::Error::other)?;
+    status(format!(
+        "Created initial admin user `{username}` on the new store."
+    ));
     Ok(())
 }
 

@@ -25,7 +25,9 @@ async fn seed_is_idempotent_and_grants_admin_everything() {
     assert_eq!(config.delete_confirmation, true);
 
     // admin role holds EVERY seeded permission, exactly once.
-    let mut admin_perms = store::auth::role_permission_keys(&store.pool, "admin").await.unwrap();
+    let mut admin_perms = store::auth::role_permission_keys(&store.pool, "admin")
+        .await
+        .unwrap();
     admin_perms.sort();
     assert_eq!(
         admin_perms,
@@ -38,7 +40,12 @@ async fn seed_is_idempotent_and_grants_admin_everything() {
     );
 
     // the `lince` role exists but was granted nothing.
-    assert!(store::auth::role_permission_keys(&store.pool, "lince").await.unwrap().is_empty());
+    assert!(
+        store::auth::role_permission_keys(&store.pool, "lince")
+            .await
+            .unwrap()
+            .is_empty()
+    );
 }
 
 #[tokio::test]
@@ -49,8 +56,12 @@ async fn admin_bootstrap_flips_admin_exists() {
     // fresh store: no admin user yet (first run would prompt).
     assert!(!store::auth::admin_exists(&store.pool).await.unwrap());
 
-    let admin_role = store::auth::ensure_role(&store.pool, store::auth::ADMIN_ROLE).await.unwrap();
-    store::auth::create_user(&store.pool, "Root", "root", "hash:xyz", admin_role).await.unwrap();
+    let admin_role = store::auth::ensure_role(&store.pool, store::auth::ADMIN_ROLE)
+        .await
+        .unwrap();
+    store::auth::create_user(&store.pool, "Root", "root", "hash:xyz", admin_role)
+        .await
+        .unwrap();
 
     assert!(store::auth::admin_exists(&store.pool).await.unwrap());
 }

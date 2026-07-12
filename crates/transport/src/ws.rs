@@ -32,7 +32,9 @@ pub async fn serve(
     // Writer task: drain outbound messages to the socket.
     let writer = tokio::spawn(async move {
         while let Some(msg) = out_rx.recv().await {
-            let Ok(text) = serde_json::to_string(&msg) else { continue };
+            let Ok(text) = serde_json::to_string(&msg) else {
+                continue;
+            };
             if sink.send(Message::Text(text.into())).await.is_err() {
                 break;
             }

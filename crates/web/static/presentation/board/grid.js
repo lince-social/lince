@@ -213,6 +213,9 @@ export function sanitizeCard(rawCard, index, config, placementPoint = null) {
       system: rawCard?.system === true,
       zIndex: Math.round(finiteNumber(rawCard?.zIndex, pinned ? 50 : 1)),
       groupId: rawCard?.groupId ? String(rawCard.groupId) : null,
+      groupIds: Array.isArray(rawCard?.groupIds)
+        ? rawCard.groupIds.map((id) => String(id)).filter(Boolean)
+        : [],
       abiListen: sanitizePermissions(rawCard?.abiListen),
     },
     config,

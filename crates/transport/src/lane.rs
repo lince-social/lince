@@ -37,7 +37,10 @@ impl LaneHub {
     /// Publish to a room. Returns how many receivers saw it (0 = empty room).
     pub fn send(&self, event: LaneEvent) -> usize {
         let rooms = self.rooms.lock().unwrap();
-        rooms.get(&event.room).map(|tx| tx.send(event).unwrap_or(0)).unwrap_or(0)
+        rooms
+            .get(&event.room)
+            .map(|tx| tx.send(event).unwrap_or(0))
+            .unwrap_or(0)
     }
 
     /// Drop a room's sender if nobody is listening — keeps the map from growing.

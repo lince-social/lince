@@ -7,7 +7,8 @@
 #   1. list    : subscribes to the saved-Protein list and renders pickable items
 #   2. drive   : picking a saved Protein writes { savedProtein } to the card state
 #   3. build   : "+ New" + Name + "+ filter" + Save issues save-protein with the
-#                GUI-built AST and a slug derived from the name (no AST typed)
+#                GUI-built AST and a slug derived from the name (no AST typed),
+#                including inclusive quantity operators.
 #
 # Requires: chromium on PATH. Usage: scripts/other/protein-config-selftest.sh
 set -euo pipefail
@@ -20,6 +21,10 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
 cp "$ROOT/crates/web/static/presentation/board/protein-config.js" "$WORK/protein-config.js"
+# protein-config.js now imports the shared transport (Stage 8b, base task 1),
+# so the module needs it resolvable beside it. The FakeWS stub (set before the
+# module runs) is what the lazily-connecting transport uses.
+cp "$ROOT/crates/web/static/presentation/board/transport.js" "$WORK/transport.js"
 
 cat > "$WORK/pharness.html" <<'HTML'
 <!doctype html><html><head><meta charset="utf-8"></head><body>
@@ -59,6 +64,13 @@ cat > "$WORK/pharness.html" <<'HTML'
     const nameInput = b.querySelector(".protein-field input");
     nameInput.value = "My Query"; nameInput.dispatchEvent(new Event("input"));
     b.querySelectorAll(".protein-add")[0].click();                 // + filter (kind_eq plain)
+    const filterRow = b.querySelector(".protein-row");
+    const filterSelect = filterRow.querySelector("select");
+    filterSelect.value = "quantity_gte";
+    filterSelect.dispatchEvent(new Event("change"));
+    const quantityInput = b.querySelector(".protein-row input");
+    quantityInput.value = "0";
+    quantityInput.dispatchEvent(new Event("input"));
     b.querySelector(".protein-actions .button--accent").click();   // Save
     setTimeout(() => {
       const sent = window.__sent || [];
@@ -67,7 +79,7 @@ cat > "$WORK/pharness.html" <<'HTML'
         + " DRIVE=" + (window.__patch[0]?.savedProtein)
         + " SLUG=" + (save?.action?.slug)
         + " HEAD=" + (save?.action?.head)
-        + " KIND=" + (save?.action?.ast?.where?.[0]?.kind_eq)
+        + " QGTE=" + (save?.action?.ast?.where?.[0]?.quantity_gte)
         + " SUB=" + (sent.some(m=>m.type==="subscribe"&&m.id==="protein-list")?"yes":"no");
     }, 40);
   }, 40);
@@ -87,6 +99,6 @@ grep -q "ITEMS=2" <<<"$TITLE" || { echo "FAIL: expected 'All records' + 1 saved 
 grep -q "DRIVE=views.stock" <<<"$TITLE" || { echo "FAIL: picking a saved Protein did not drive the card"; fail=1; }
 grep -q "SLUG=my-query" <<<"$TITLE" || { echo "FAIL: Save did not derive the slug from the name"; fail=1; }
 grep -q "HEAD=My Query" <<<"$TITLE" || { echo "FAIL: Save did not send the name as head"; fail=1; }
-grep -q "KIND=plain" <<<"$TITLE" || { echo "FAIL: the GUI filter did not build into the AST"; fail=1; }
+grep -q "QGTE=0" <<<"$TITLE" || { echo "FAIL: the GUI quantity >= filter did not build into the AST"; fail=1; }
 
 [ "$fail" -eq 0 ] && echo "PASS: Data panel list + drive + GUI build/save" || exit 1

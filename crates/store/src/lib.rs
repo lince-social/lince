@@ -9,19 +9,21 @@ pub mod facts;
 pub mod freqs;
 pub mod links;
 pub mod misc;
+pub mod organs;
 pub mod places;
 pub mod records;
 pub mod rules;
 pub mod seed;
+pub mod senses;
 pub mod transfers;
 pub mod visibility;
 
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::SqlitePool;
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use std::str::FromStr;
 
 pub use sqlx; // engine uses transactions; sqlx types come from here so only
-              // `store` decides the driver.
+// `store` decides the driver.
 
 #[derive(Debug, Clone)]
 pub struct Store {
@@ -36,11 +38,17 @@ impl Store {
         let opts = SqliteConnectOptions::from_str(url)?
             .create_if_missing(true)
             .foreign_keys(true);
-        let pool = SqlitePoolOptions::new().max_connections(4).connect_with(opts).await?;
-        sqlx::migrate!("./migrations").run(&pool).await.map_err(|e| match e {
-            sqlx::migrate::MigrateError::Execute(e) => e,
-            other => sqlx::Error::Protocol(other.to_string()),
-        })?;
+        let pool = SqlitePoolOptions::new()
+            .max_connections(4)
+            .connect_with(opts)
+            .await?;
+        sqlx::migrate!("./migrations")
+            .run(&pool)
+            .await
+            .map_err(|e| match e {
+                sqlx::migrate::MigrateError::Execute(e) => e,
+                other => sqlx::Error::Protocol(other.to_string()),
+            })?;
         Ok(Store { pool })
     }
 
@@ -54,10 +62,13 @@ impl Store {
             .max_lifetime(None)
             .connect_with(opts)
             .await?;
-        sqlx::migrate!("./migrations").run(&pool).await.map_err(|e| match e {
-            sqlx::migrate::MigrateError::Execute(e) => e,
-            other => sqlx::Error::Protocol(other.to_string()),
-        })?;
+        sqlx::migrate!("./migrations")
+            .run(&pool)
+            .await
+            .map_err(|e| match e {
+                sqlx::migrate::MigrateError::Execute(e) => e,
+                other => sqlx::Error::Protocol(other.to_string()),
+            })?;
         Ok(Store { pool })
     }
 }

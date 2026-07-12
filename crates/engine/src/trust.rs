@@ -9,8 +9,8 @@ use ed25519_dalek::{Signature, Signer as _, SigningKey, Verifier as _, Verifying
 use nucleus::Fact;
 use store::Store;
 
-use crate::error::EngineError;
 use crate::Engine;
+use crate::error::EngineError;
 
 #[derive(Clone)]
 pub struct Signer {
@@ -64,6 +64,39 @@ impl Engine {
     }
 }
 
+/// A peer's published keys, for the introduction export.
+pub async fn keys_of(
+    store: &Store,
+    actor_uid: &str,
+) -> Result<Vec<(String, String)>, EngineError> {
+    Ok(store::sqlx::query_as::<_, (String, String)>(
+        "SELECT key_id, public_key FROM identity_key WHERE actor_uid = ?",
+    )
+    .bind(actor_uid)
+    .fetch_all(&store.pool)
+    .await?)
+}
+
+/// Store a foreign actor's public key (introduction, blueprint XI.1) so their
+/// signed facts verify on import.
+pub async fn adopt_key(
+    store: &Store,
+    actor_uid: &str,
+    key_id: &str,
+    public_key_b64: &str,
+) -> Result<(), EngineError> {
+    store::sqlx::query(
+        "INSERT INTO identity_key (actor_uid, key_id, public_key) VALUES (?, ?, ?)
+         ON CONFLICT(actor_uid, key_id) DO UPDATE SET public_key = excluded.public_key",
+    )
+    .bind(actor_uid)
+    .bind(key_id)
+    .bind(public_key_b64)
+    .execute(&store.pool)
+    .await?;
+    Ok(())
+}
+
 /// Verify a fact's signature against the actor's published keys.
 /// `Ok(true)` = verified; `Ok(false)` = no signature or no matching key;
 /// `Err` only on storage failure. Tampering shows up as `false`.
@@ -71,18 +104,27 @@ pub async fn verify_fact(store: &Store, fact: &Fact) -> Result<bool, EngineError
     let (Some(signature), Some(actor)) = (&fact.signature, &fact.actor_uid) else {
         return Ok(false);
     };
-    let Ok(sig_bytes) = B64.decode(signature) else { return Ok(false) };
-    let Ok(sig) = Signature::from_slice(&sig_bytes) else { return Ok(false) };
-    let keys: Vec<String> = store::sqlx::query_scalar(
-        "SELECT public_key FROM identity_key WHERE actor_uid = ?",
-    )
-    .bind(actor)
-    .fetch_all(&store.pool)
-    .await?;
+    let Ok(sig_bytes) = B64.decode(signature) else {
+        return Ok(false);
+    };
+    let Ok(sig) = Signature::from_slice(&sig_bytes) else {
+        return Ok(false);
+    };
+    let keys: Vec<String> =
+        store::sqlx::query_scalar("SELECT public_key FROM identity_key WHERE actor_uid = ?")
+            .bind(actor)
+            .fetch_all(&store.pool)
+            .await?;
     for key_b64 in keys {
-        let Ok(bytes) = B64.decode(&key_b64) else { continue };
-        let Ok(bytes32) = <[u8; 32]>::try_from(bytes.as_slice()) else { continue };
-        let Ok(key) = VerifyingKey::from_bytes(&bytes32) else { continue };
+        let Ok(bytes) = B64.decode(&key_b64) else {
+            continue;
+        };
+        let Ok(bytes32) = <[u8; 32]>::try_from(bytes.as_slice()) else {
+            continue;
+        };
+        let Ok(key) = VerifyingKey::from_bytes(&bytes32) else {
+            continue;
+        };
         if key.verify(fact.hash.as_bytes(), &sig).is_ok() {
             return Ok(true);
         }

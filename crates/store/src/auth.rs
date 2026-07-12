@@ -101,3 +101,86 @@ pub async fn role_permission_keys(
     .fetch_all(pool)
     .await
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct AuthUser {
+    pub id: i64,
+    pub username: String,
+    pub password_hash: String,
+    pub role_id: i64,
+    pub role: String,
+    pub permissions: Vec<String>,
+}
+
+pub async fn user_by_username(
+    pool: &SqlitePool,
+    username: &str,
+) -> Result<Option<AuthUser>, StoreError> {
+    let Some(row) = sqlx::query_as::<_, (i64, String, String, Option<i64>, Option<String>)>(
+        "
+        SELECT u.id, u.username, u.password_hash, u.role_id, r.name
+        FROM app_user u
+        LEFT JOIN role r ON r.id = u.role_id
+        WHERE u.username = ?
+        ",
+    )
+    .bind(username)
+    .fetch_optional(pool)
+    .await?
+    else {
+        return Ok(None);
+    };
+
+    let (id, username, password_hash, role_id, role) = row;
+    let role_id = role_id.unwrap_or_default();
+    let role = role.unwrap_or_default();
+    let permissions = if role.is_empty() {
+        Vec::new()
+    } else {
+        role_permission_keys(pool, &role).await?
+    };
+
+    Ok(Some(AuthUser {
+        id,
+        username,
+        password_hash,
+        role_id,
+        role,
+        permissions,
+    }))
+}
+
+pub async fn user_by_id(pool: &SqlitePool, user_id: i64) -> Result<Option<AuthUser>, StoreError> {
+    let Some(row) = sqlx::query_as::<_, (i64, String, String, Option<i64>, Option<String>)>(
+        "
+        SELECT u.id, u.username, u.password_hash, u.role_id, r.name
+        FROM app_user u
+        LEFT JOIN role r ON r.id = u.role_id
+        WHERE u.id = ?
+        ",
+    )
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await?
+    else {
+        return Ok(None);
+    };
+
+    let (id, username, password_hash, role_id, role) = row;
+    let role_id = role_id.unwrap_or_default();
+    let role = role.unwrap_or_default();
+    let permissions = if role.is_empty() {
+        Vec::new()
+    } else {
+        role_permission_keys(pool, &role).await?
+    };
+
+    Ok(Some(AuthUser {
+        id,
+        username,
+        password_hash,
+        role_id,
+        role,
+        permissions,
+    }))
+}

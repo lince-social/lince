@@ -95,7 +95,12 @@ mod tests {
 
     #[test]
     fn happy_path() {
-        for (a, b) in [(Open, Proposed), (Proposed, Agreed), (Agreed, Active), (Active, Kept)] {
+        for (a, b) in [
+            (Open, Proposed),
+            (Proposed, Agreed),
+            (Agreed, Active),
+            (Active, Kept),
+        ] {
             assert!(PromiseState::can_transition(a, b), "{a:?}->{b:?}");
         }
     }
@@ -108,6 +113,9 @@ mod tests {
     #[test]
     fn kept_is_terminal_and_settlement_only() {
         assert!(!PromiseState::can_transition(Kept, Broken));
-        assert!(!PromiseState::can_transition(Proposed, Kept), "kept only from active");
+        assert!(
+            !PromiseState::can_transition(Proposed, Kept),
+            "kept only from active"
+        );
     }
 }

@@ -7,10 +7,10 @@
 //! (rules needing signals/sums are skipped — signals are frozen world state);
 //! only quantity-shaped consequences (set/add/activate/deactivate) simulate.
 
+use crate::NucleusError;
 use crate::expr::{Resolver, Value};
 use crate::frequency::FrequencySpec;
 use crate::rule::{ConsequenceKind, RuleDef};
-use crate::NucleusError;
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 
@@ -57,7 +57,9 @@ pub struct Timeline {
 impl Timeline {
     /// First projected moment `record` crosses at-or-below `threshold`.
     pub fn crossing_below(&self, record_uid: &str, threshold: f64) -> Option<&TimelinePoint> {
-        self.points.iter().find(|p| p.record_uid == record_uid && p.quantity <= threshold)
+        self.points
+            .iter()
+            .find(|p| p.record_uid == record_uid && p.quantity <= threshold)
     }
 
     pub fn projected(&self, record_uid: &str) -> Option<f64> {
@@ -77,7 +79,9 @@ struct VirtualResolver<'a> {
 impl VirtualResolver<'_> {
     fn uid_of(&self, token: &str) -> Option<String> {
         self.slugs.get(token).cloned().or_else(|| {
-            self.quantities.contains_key(token).then(|| token.to_string())
+            self.quantities
+                .contains_key(token)
+                .then(|| token.to_string())
         })
     }
 }
@@ -94,11 +98,15 @@ impl Resolver for VirtualResolver<'_> {
         match name {
             "quantity" | "signal" => {
                 let uid = self.uid_of(&slug).ok_or(NucleusError::UnknownToken(slug))?;
-                Ok(Value::Num(self.quantities.get(&uid).copied().unwrap_or(0.0)))
+                Ok(Value::Num(
+                    self.quantities.get(&uid).copied().unwrap_or(0.0),
+                ))
             }
             "freq" => {
                 let uid = self.uid_of(&slug).ok_or(NucleusError::UnknownToken(slug))?;
-                Ok(Value::Num(self.freq_fired.get(&uid).copied().unwrap_or(0.0)))
+                Ok(Value::Num(
+                    self.freq_fired.get(&uid).copied().unwrap_or(0.0),
+                ))
             }
             "value" => {
                 if self.depth > 4 {
@@ -108,12 +116,17 @@ impl Resolver for VirtualResolver<'_> {
                     .rules_by_token
                     .get(&slug)
                     .ok_or(NucleusError::UnknownToken(slug))?;
-                let mut inner = VirtualResolver { depth: self.depth + 1, ..*self };
+                let mut inner = VirtualResolver {
+                    depth: self.depth + 1,
+                    ..*self
+                };
                 Ok(Value::Num(rule.condition.eval(&mut inner)?))
             }
             // signals stay frozen at snapshot values via `signal` above; sums,
             // confidence, place functions are not simulated in v1
-            _ => Err(NucleusError::UnknownToken(format!("{name}() in projection"))),
+            _ => Err(NucleusError::UnknownToken(format!(
+                "{name}() in projection"
+            ))),
         }
     }
 }
@@ -185,9 +198,13 @@ pub fn project(snapshot: &Snapshot, until: DateTime<Utc>) -> Timeline {
                 freq_fired: &fired,
                 depth: 0,
             };
-            let Ok(Some(firing)) = rule.evaluate(&mut resolver) else { continue };
+            let Ok(Some(firing)) = rule.evaluate(&mut resolver) else {
+                continue;
+            };
             for c in &rule.consequences {
-                let Some(target) = c.target.as_deref() else { continue };
+                let Some(target) = c.target.as_deref() else {
+                    continue;
+                };
                 let token = target.trim_start_matches('@');
                 let Some(uid) = snapshot
                     .slugs
@@ -218,7 +235,10 @@ pub fn project(snapshot: &Snapshot, until: DateTime<Utc>) -> Timeline {
         }
     }
 
-    Timeline { points, final_state: state }
+    Timeline {
+        points,
+        final_state: state,
+    }
 }
 
 #[cfg(test)]
@@ -259,20 +279,23 @@ mod tests {
                     catch_up: false,
                 },
             }],
-            rules: vec![RuleDef::parse(
-                "r_RULE",
-                Some("rules.eat".into()),
-                "-1 * freq(@freq.daily)",
-                "!=0",
-                "value",
-                vec![ConsequenceSpec {
-                    kind: ConsequenceKind::AddQuantity,
-                    target: Some("@apples.stock".into()),
-                    params: None,
-                    position: 0,
-                }],
-            )
-            .unwrap()],
+            rules: vec![
+                RuleDef::parse(
+                    "r_RULE",
+                    Some("rules.eat".into()),
+                    "-1 * freq(@freq.daily)",
+                    "!=0",
+                    "value",
+                    None,
+                    vec![ConsequenceSpec {
+                        kind: ConsequenceKind::AddQuantity,
+                        target: Some("@apples.stock".into()),
+                        params: None,
+                        position: 0,
+                    }],
+                )
+                .unwrap(),
+            ],
         };
         // ten days out: 8 - 10 (rule) + 5 (promise) = 3
         let timeline = project(&snapshot, now + TimeDelta::days(10));

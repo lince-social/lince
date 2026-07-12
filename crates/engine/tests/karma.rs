@@ -12,7 +12,13 @@ async fn engine() -> Engine {
 async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
     store::records::create(
         &e.store.pool,
-        NewRecord { slug: Some(slug), kind: RecordKind::Plain, head: slug, body: "", quantity },
+        NewRecord {
+            slug: Some(slug),
+            kind: RecordKind::Plain,
+            head: slug,
+            body: "",
+            quantity,
+        },
     )
     .await
     .expect("record")
@@ -30,16 +36,31 @@ async fn append_updates_cache_and_is_idempotent() {
 
     let facts = e.append_user(&apples, -1.0).await.unwrap();
     assert_eq!(facts.len(), 1);
-    assert_eq!(store::records::quantity(&e.store.pool, &apples).await.unwrap(), Some(7.0));
+    assert_eq!(
+        store::records::quantity(&e.store.pool, &apples)
+            .await
+            .unwrap(),
+        Some(7.0)
+    );
 
     // replaying the same fact uid is a no-op success (sync replay safety)
-    let replay = NewFact { uid: Some(facts[0].uid.clone()), ..facts[0].clone().into_new() };
+    let replay = NewFact {
+        uid: Some(facts[0].uid.clone()),
+        ..facts[0].clone().into_new()
+    };
     let again = e.append(replay, Utc::now()).await.unwrap();
     assert!(again.is_empty());
-    assert_eq!(store::records::quantity(&e.store.pool, &apples).await.unwrap(), Some(7.0));
+    assert_eq!(
+        store::records::quantity(&e.store.pool, &apples)
+            .await
+            .unwrap(),
+        Some(7.0)
+    );
 
     // hash chain holds
-    let log = store::facts::for_record(&e.store.pool, &apples, 10).await.unwrap();
+    let log = store::facts::for_record(&e.store.pool, &apples, 10)
+        .await
+        .unwrap();
     assert!(log.iter().all(nucleus::fact::verify_chain_step));
 }
 
@@ -89,14 +110,30 @@ async fn rule_fires_on_change_with_provenance() {
 
     // 8 -> 5: gate blocks
     e.append_user(&apples, -3.0).await.unwrap();
-    assert_eq!(store::records::quantity(&e.store.pool, &alert).await.unwrap(), Some(0.0));
+    assert_eq!(
+        store::records::quantity(&e.store.pool, &alert)
+            .await
+            .unwrap(),
+        Some(0.0)
+    );
 
     // 5 -> 2: fires, alert = 1, cause = rule:<uid>
     let facts = e.append_user(&apples, -3.0).await.unwrap();
-    assert_eq!(store::records::quantity(&e.store.pool, &alert).await.unwrap(), Some(1.0));
-    let rule_fact = facts.iter().find(|f| f.record_uid == alert).expect("cascade fact");
+    assert_eq!(
+        store::records::quantity(&e.store.pool, &alert)
+            .await
+            .unwrap(),
+        Some(1.0)
+    );
+    let rule_fact = facts
+        .iter()
+        .find(|f| f.record_uid == alert)
+        .expect("cascade fact");
     assert_eq!(rule_fact.cause.kind, CauseKind::Rule);
-    assert!(rule_fact.cause.uid.is_some(), "automation always answers why");
+    assert!(
+        rule_fact.cause.uid.is_some(),
+        "automation always answers why"
+    );
 }
 
 #[tokio::test]
@@ -135,7 +172,11 @@ async fn derived_value_rules_are_spreadsheet_cells() {
     .unwrap();
     e.reload_rules().await.unwrap();
 
-    let x_uid = store::records::resolve(&e.store.pool, "x").await.unwrap().unwrap().uid;
+    let x_uid = store::records::resolve(&e.store.pool, "x")
+        .await
+        .unwrap()
+        .unwrap()
+        .uid;
     e.append_user(&x_uid, 1.0).await.unwrap(); // x: 4 -> 5
     assert_eq!(
         store::records::quantity(&e.store.pool, &y).await.unwrap(),
@@ -183,7 +224,9 @@ async fn frequency_tick_drives_the_daily_habit() {
     let facts = e.tick(now).await.unwrap();
     assert!(!facts.is_empty());
     assert_eq!(
-        store::records::quantity(&e.store.pool, &exercise).await.unwrap(),
+        store::records::quantity(&e.store.pool, &exercise)
+            .await
+            .unwrap(),
         Some(-1.0),
         "exercise became a Need"
     );
@@ -218,11 +261,16 @@ async fn rules_emit_promises_previewable_automation() {
     e.reload_rules().await.unwrap();
 
     e.append_user(&apples, -6.0).await.unwrap(); // 8 -> 2, fires
-    let promises = store::misc::promises_for_record(&e.store.pool, &apples).await.unwrap();
+    let promises = store::misc::promises_for_record(&e.store.pool, &apples)
+        .await
+        .unwrap();
     assert_eq!(promises.len(), 1);
     assert_eq!(promises[0].delta, 5.0);
     assert_eq!(promises[0].state, nucleus::PromiseState::Proposed);
-    assert!(promises[0].rule_uid.is_some(), "automation-born promises name their rule");
+    assert!(
+        promises[0].rule_uid.is_some(),
+        "automation-born promises name their rule"
+    );
 }
 
 #[tokio::test]
@@ -330,6 +378,11 @@ async fn effects_run_outside_evaluation_with_provenance() {
     assert_eq!(outcomes[0].result, "lince");
 
     // result logged as a zero-delta provenance fact on the rule record
-    let log = store::facts::for_record(&e.store.pool, &rule_uid, 5).await.unwrap();
-    assert!(log.iter().any(|f| f.delta == 0.0 && f.cause.kind == CauseKind::Action));
+    let log = store::facts::for_record(&e.store.pool, &rule_uid, 5)
+        .await
+        .unwrap();
+    assert!(
+        log.iter()
+            .any(|f| f.delta == 0.0 && f.cause.kind == CauseKind::Action)
+    );
 }

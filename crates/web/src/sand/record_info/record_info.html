@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Provenance</title>
+  <script src="/board/frame.js"></script>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 13px/1.45 system-ui, -apple-system, sans-serif;
+           background: #0d1117; color: #c9d1d9; padding: .75rem; }
+    .head { display: flex; align-items: center; gap: .5rem; margin-bottom: .6rem; }
+    .head h1 { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em;
+               color: #6e7681; margin: 0; flex: 1; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #f85149; }
+    .dot.live { background: #3fb950; }
+    .rec { border: 1px solid #21262d; border-radius: 8px; margin-bottom: .55rem; overflow: hidden; }
+    .rec > .t { display: flex; justify-content: space-between; gap: .5rem;
+                padding: .45rem .6rem; background: #161b22; }
+    .rec > .t .name { font-weight: 600; color: #e6edf3; }
+    .rec > .t .q { font-variant-numeric: tabular-nums; color: #8b949e; }
+    ul { list-style: none; margin: 0; padding: .25rem .6rem .5rem; }
+    li { display: flex; gap: .5rem; align-items: baseline; padding: .2rem 0;
+         border-top: 1px solid #161b22; font-size: .78rem; }
+    li:first-child { border-top: 0; }
+    .delta { font-variant-numeric: tabular-nums; min-width: 3.2rem; }
+    .delta.pos { color: #3fb950; } .delta.neg { color: #f85149; } .delta.zero { color: #6e7681; }
+    .cause { color: #8b949e; flex: 1; }
+    .when { color: #6e7681; }
+    .none { color: #6e7681; padding: .2rem 0; }
+    .empty { color: #6e7681; padding: .8rem .2rem; }
+  </style>
+</head>
+<body>
+  <div class="head">
+    <h1>Provenance — why things changed</h1>
+    <span id="dot" class="dot"></span>
+  </div>
+  <div id="list"></div>
+  <div id="empty" class="empty" hidden>No records yet.</div>
+
+  <script>
+    // The blueprint's W-provenance standard (VII.1): every record with the
+    // fact log that made it. `include: facts` — "the end of custom plumbing":
+    // provenance for free on the same read the table sand uses.
+    const H = window.LinceWidgetHost;
+    const listEl = document.getElementById("list");
+    const emptyEl = document.getElementById("empty");
+    const dot = document.getElementById("dot");
+
+    H.onLive((live) => dot.classList.toggle("live", live));
+    // This sand is an event consumer: it shows NOTHING until a record is chosen.
+    // When a sand in the same group (e.g. a kanban card) is clicked, we focus on
+    // THAT record via the `recordClicked` ABI room — the unified bridge delivers
+    // it group-scoped (Stage 8b, base task 1 + kanban B).
+    let unsubscribe = null;
+    showPlaceholder();
+
+    H.joinRoom("recordClicked");
+    H.onLane("recordClicked", (payload) => {
+      const record = payload && payload.record ? payload.record : payload;
+      const uid = record && (record.uid || record.slug);
+      if (!uid) return;
+      if (typeof unsubscribe === "function") unsubscribe();
+      unsubscribe = H.subscribeProtein(
+        "provenance",
+        {
+          source: "record",
+          where: [{ uid_eq: String(uid) }],
+          include: { facts: { limit: 20 } },
+        },
+        ({ rows }) => render(rows),
+      );
+    });
+
+    function showPlaceholder() {
+      listEl.innerHTML = "";
+      emptyEl.textContent = "Clique num card do Kanban para ver o histórico dele.";
+      emptyEl.hidden = false;
+    }
+
+    function render(rows) {
+      listEl.innerHTML = "";
+      emptyEl.textContent = "No records yet.";
+      emptyEl.hidden = rows.length > 0;
+      for (const r of rows) {
+        const box = document.createElement("div");
+        box.className = "rec";
+        const t = document.createElement("div");
+        t.className = "t";
+        const name = document.createElement("span");
+        name.className = "name"; name.textContent = r.head || r.slug || r.uid;
+        const q = document.createElement("span");
+        q.className = "q"; q.textContent = `qty ${r.quantity}`;
+        t.append(name, q);
+        box.appendChild(t);
+
+        const ul = document.createElement("ul");
+        const facts = Array.isArray(r.facts) ? r.facts : [];
+        if (facts.length === 0) {
+          const li = document.createElement("li");
+          li.className = "none"; li.textContent = "no facts yet";
+          ul.appendChild(li);
+        }
+        for (const f of facts) {
+          const li = document.createElement("li");
+          const d = document.createElement("span");
+          const sign = f.delta > 0 ? "pos" : f.delta < 0 ? "neg" : "zero";
+          d.className = `delta ${sign}`;
+          d.textContent = f.delta > 0 ? `+${f.delta}` : `${f.delta}`;
+          const c = document.createElement("span");
+          c.className = "cause";
+          c.textContent = f.cause_kind + (f.cause ? ` · ${f.cause}` : "");
+          const w = document.createElement("span");
+          w.className = "when"; w.textContent = shortTime(f.at);
+          li.append(d, c, w);
+          ul.appendChild(li);
+        }
+        box.appendChild(ul);
+        listEl.appendChild(box);
+      }
+    }
+
+    function shortTime(iso) {
+      try { return new Date(iso).toLocaleTimeString(); } catch { return ""; }
+    }
+  </script>
+</body>
+</html>

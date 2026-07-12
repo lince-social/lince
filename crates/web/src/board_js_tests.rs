@@ -28,9 +28,14 @@ import {
 import { createBoardStore } from "./store.mjs";
 import {
   buildGroupPinUpdates,
+  disbandGroup,
+  groupStackOf,
+  innermostGroupId,
   newGroupId,
   resolveMarqueeGroup,
   selectMarqueeMembers,
+  sharesGroup,
+  wrapInGroup,
 } from "./group-logic.mjs";
 import { createBoardViewport } from "./viewport.mjs";
 
@@ -101,7 +106,23 @@ function byId(cards, id) {
 }
 "#;
 
+/// These tests drive the board JS through `node`. Some environments have no
+/// node (and never will), so skip cleanly instead of failing when it is absent
+/// — the same JS logic is also covered by node-free chromium selftests under
+/// `scripts/other/` (e.g. `group-add-selftest.sh`, `kanban-group-e2e-selftest.sh`).
+fn node_available() -> bool {
+    Command::new("node")
+        .arg("--version")
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
 fn stage_and_run(label: &str, body: &str) {
+    if !node_available() {
+        eprintln!("SKIP board_js test `{label}`: node is not available on PATH");
+        return;
+    }
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("clock")
@@ -186,6 +207,49 @@ assert.deepStrictEqual(members.map((entry) => entry.id), ["normal"]);
 
 // An empty marquee forms no group.
 assert.strictEqual(resolveMarqueeGroup(cards, { x: 9000, y: 9000, width: 100, height: 100 }), null);
+"#,
+    );
+}
+
+#[test]
+fn nested_groups_disband_outer_preserves_inner() {
+    stage_and_run(
+        "nested-groups",
+        r#"
+// A kanban sand ships as its own inner group: board + record_info.
+let cards = [
+  card("kanban", 100, 100, 400, 400),
+  card("recinfo", 100, 100, 400, 400),
+  card("todo", 600, 100, 300, 300),
+];
+cards = wrapInGroup(cards, ["kanban", "recinfo"], "g-kanban");
+assert.deepStrictEqual(groupStackOf(byId(cards, "kanban")), ["g-kanban"]);
+assert.strictEqual(innermostGroupId(byId(cards, "kanban")), "g-kanban");
+
+// The user marquees the kanban group together with the todo into an OUTER group.
+cards = wrapInGroup(cards, ["kanban", "recinfo", "todo"], "g-outer");
+assert.deepStrictEqual(groupStackOf(byId(cards, "kanban")), ["g-outer", "g-kanban"]);
+assert.deepStrictEqual(groupStackOf(byId(cards, "todo")), ["g-outer"]);
+// groupId mirrors the innermost for flat-group back-compat.
+assert.strictEqual(byId(cards, "kanban").groupId, "g-kanban");
+assert.strictEqual(byId(cards, "todo").groupId, "g-outer");
+
+// Groupception: disbanding the OUTER group releases todo, but the kanban's
+// inner group (board + record_info) survives.
+cards = disbandGroup(cards, "g-outer");
+assert.deepStrictEqual(groupStackOf(byId(cards, "kanban")), ["g-kanban"]);
+assert.deepStrictEqual(groupStackOf(byId(cards, "recinfo")), ["g-kanban"]);
+assert.deepStrictEqual(groupStackOf(byId(cards, "todo")), []);
+assert.strictEqual(byId(cards, "todo").groupId, null);
+
+// Event scoping: kanban and record_info still share a group; todo does not.
+assert.ok(sharesGroup(byId(cards, "kanban"), byId(cards, "recinfo")));
+assert.ok(!sharesGroup(byId(cards, "kanban"), byId(cards, "todo")));
+
+// Disbanding the inner group finally ungroups the kanban pair.
+cards = disbandGroup(cards, "g-kanban");
+assert.deepStrictEqual(groupStackOf(byId(cards, "kanban")), []);
+assert.ok(!sharesGroup(byId(cards, "kanban"), byId(cards, "recinfo")));
 "#,
     );
 }

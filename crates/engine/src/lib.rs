@@ -14,6 +14,7 @@ pub mod append;
 pub mod checkpoint;
 pub mod effects;
 pub mod error;
+pub mod expiry;
 pub mod imagination;
 pub mod karma;
 pub mod senses;
@@ -25,7 +26,7 @@ pub mod trust;
 use chrono::{DateTime, Utc};
 use nucleus::{Cause, Fact, NewFact};
 use store::Store;
-use tokio::sync::{broadcast, Mutex};
+use tokio::sync::{Mutex, broadcast};
 
 pub use error::EngineError;
 pub use karma::ProofWarning;
@@ -101,8 +102,16 @@ impl Engine {
     }
 
     /// Convenience: user edits a quantity by delta, clocked now.
-    pub async fn append_user(&self, record_uid: &str, delta: f64) -> Result<Vec<Fact>, EngineError> {
-        self.append(NewFact::quantity(record_uid, delta, Cause::user_edit()), Utc::now()).await
+    pub async fn append_user(
+        &self,
+        record_uid: &str,
+        delta: f64,
+    ) -> Result<Vec<Fact>, EngineError> {
+        self.append(
+            NewFact::quantity(record_uid, delta, Cause::user_edit()),
+            Utc::now(),
+        )
+        .await
     }
 
     /// The timer wheel: fire every due Frequency, evaluate rules reading it.
@@ -112,7 +121,9 @@ impl Engine {
         let registry = self.registry.lock().await;
         let mut committed = Vec::new();
         for freq in due {
-            let Some((periods, next_at)) = freq.spec.fire(now) else { continue };
+            let Some((periods, next_at)) = freq.spec.fire(now) else {
+                continue;
+            };
             store::freqs::set_next_at(&self.store.pool, &freq.record_uid, next_at).await?;
             if periods == 0.0 {
                 continue; // day_of_week skipped this boundary
@@ -137,18 +148,21 @@ impl Engine {
     }
 
     /// Run queued effects (blueprint VI: Effects never run inside evaluation).
-    pub async fn run_due_effects(&self) -> Result<Vec<effects::EffectOutcome>, EngineError> {
-        let signer = self.signer.lock().await.clone();
-        effects::run_due(&self.store, signer.as_ref()).await
-    }
-
-    /// One beat of the organism (blueprint 0.2, callable form): timers fire,
-    /// signals sample, effects run. The daemon wraps this in an interval; DST
-    /// calls it with a virtual clock.
+    /// One beat of the organism (blueprint 0.2, callable form): promises
+    /// expire, timers fire, signals sample, effects run. The daemon wraps this
+    /// in an interval; DST calls it with a virtual clock.
     pub async fn heartbeat(&self, now: DateTime<Utc>) -> Result<Vec<Fact>, EngineError> {
-        let mut facts = self.tick(now).await?;
+        // Expiry first: rules evaluated by the tick must see true promise states.
+        let mut facts = self.expire_promises(now).await?;
+        facts.extend(self.expire_decisions(now).await?);
+        facts.extend(self.tick(now).await?);
         facts.extend(self.sample_due_signals(now).await?);
         self.run_due_effects().await?;
+        // Senses (X): match open promises against the discovery cache; drafts
+        // land in the Decision Queue.
+        self.senses_pass().await?;
+        // Imagination (XII): projected threshold crossings become decisions.
+        self.crossings_pass(now).await?;
         Ok(facts)
     }
 

@@ -4,8 +4,8 @@ use chrono::{DateTime, Utc};
 use nucleus::{FrequencySpec, RecordKind};
 use sqlx::{Row, SqlitePool};
 
-use crate::records::{self, NewRecord};
 use crate::StoreError;
+use crate::records::{self, NewRecord};
 
 #[derive(Debug, Clone)]
 pub struct FreqRow {
@@ -92,7 +92,9 @@ fn map_rows(rows: Vec<sqlx::sqlite::SqliteRow>) -> Result<Vec<FreqRow>, StoreErr
                     days: row.get::<i64, _>("days"),
                     months: row.get::<i64, _>("months"),
                     day_of_week: row.get::<Option<i64>, _>("day_of_week").map(|d| d as u8),
-                    next_at: DateTime::parse_from_rfc3339(&next_at).ok()?.with_timezone(&Utc),
+                    next_at: DateTime::parse_from_rfc3339(&next_at)
+                        .ok()?
+                        .with_timezone(&Utc),
                     finish_at: finish_at
                         .and_then(|f| DateTime::parse_from_rfc3339(&f).ok())
                         .map(|f| f.with_timezone(&Utc)),

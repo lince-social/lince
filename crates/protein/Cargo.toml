@@ -8,6 +8,7 @@ homepage.workspace = true
 description = "Lince expression layer: the declarative read contract every interface speaks. Protein never mutates."
 
 [dependencies]
+chrono = { workspace = true }
 nucleus = { workspace = true }
 store = { workspace = true }
 serde = { workspace = true }

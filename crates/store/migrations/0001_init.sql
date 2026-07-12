@@ -215,18 +215,47 @@ CREATE TABLE identity_key (
 -- extension; column DEFAULTs ARE the default policy, an UPDATE is the override.
 CREATE TABLE configuration (
     id                           INTEGER PRIMARY KEY CHECK (id = 1), -- singleton
+    quantity                     INTEGER NOT NULL DEFAULT 0,
     name                         TEXT NOT NULL DEFAULT 'Default',
     language                     TEXT NOT NULL DEFAULT 'en',
     timezone                     INTEGER NOT NULL DEFAULT 0,
     style                        TEXT NOT NULL DEFAULT 'catppuccin_macchiato',
-    show_command_notifications   INTEGER NOT NULL DEFAULT 0,
-    command_notification_seconds REAL NOT NULL DEFAULT -1,
+    command_notification_seconds REAL NOT NULL DEFAULT 0, -- If its zero we dont show, any positive number enables it and uses the value.
     delete_confirmation          INTEGER NOT NULL DEFAULT 1,
     error_toast_seconds          REAL NOT NULL DEFAULT 5,
     keybinding_mode              INTEGER NOT NULL DEFAULT 0,
     created_at                   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at                   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+
+    -- Features that are wanted later.
+    -- 
+    -- desktop_start_on_login INTEGER,
+    -- desktop_start_silent INTEGER,
+    -- automatic_update_channel TEXT NOT NULL DEFAULT 'rolling',
+    -- automatic_update_notify_enabled INTEGER NOT NULL DEFAULT 1,
+    -- automatic_update_install_enabled INTEGER NOT NULL DEFAULT 1,
+    -- automatic_update_last_seen_revision TEXT
+    -- 
+    -- file_sync_enabled INTEGER NOT NULL DEFAULT 0,
+    -- file_sync_path TEXT,
+    -- 
+    -- bucket_enabled INTEGER NOT NULL DEFAULT 0,
+    -- bucket_username TEXT,
+    -- bucket_password TEXT,
+    -- bucket_uri TEXT,
+    -- bucket_name TEXT,
+    -- bucket_region TEXT,
+    -- 
+    -- Since these involve the new transfer system we need to refactor them, these configurations where transfer specific, now if visibility policies are for record-wide then the anonymous package is not transfer specific and should be more generic policy, same for other properties, only do this looking into how they where used and porting the intention of each of these features (if they are still needed and not superseeded by new features) to new system if asked to.
+    -- transfer_public_proposals_enabled INTEGER NOT NULL DEFAULT 0,
+    -- transfer_known_peer_polling_enabled INTEGER NOT NULL DEFAULT 1 CHECK (transfer_known_peer_polling_enabled IN (0, 1)),
+    -- transfer_reservation_policy TEXT NOT NULL DEFAULT 'soft' CHECK (transfer_reservation_policy IN ('none', 'soft', 'hard_on_proposal', 'hard_on_consume', 'hard_on_lock')),
+    -- transfer_send_received_receipts INTEGER NOT NULL DEFAULT 1 CHECK (transfer_send_received_receipts IN (0, 1)),
+    -- transfer_send_seen_receipts INTEGER NOT NULL DEFAULT 1 CHECK (transfer_send_seen_receipts IN (0, 1)),
+    -- transfer_anonymous_package_viewing INTEGER NOT NULL DEFAULT 0 CHECK (transfer_anonymous_package_viewing IN (0, 1)),
+    -- transfer_share_quantity_projections INTEGER NOT NULL DEFAULT 0 CHECK (transfer_share_quantity_projections IN (0, 1))
 ) STRICT;
+
 
 CREATE TABLE role (
     id   INTEGER PRIMARY KEY,

@@ -21,6 +21,17 @@ pub async fn favicon() -> Response {
     })
 }
 
+/// The new-way sand host (`frame.js`), served at the absolute `/board/frame.js`
+/// that every migrated sand loads. Runs inside the sand iframe (srcdoc, so the
+/// URL resolves against the board origin) and exposes `window.LinceWidgetHost`
+/// (Protein subscriptions + Actions + onLive) talking to the board-side unified
+/// widget bridge over the one shared transport WebSocket.
+pub async fn frame_js() -> Response {
+    asset_response(js(include_bytes!(
+        "../../../static/presentation/board/frame.js"
+    )))
+}
+
 fn embedded_asset(path: &str) -> Option<EmbeddedAsset> {
     match path {
         "styles.css" => Some(css(include_bytes!("../../../static/styles.css"))),
@@ -47,6 +58,16 @@ fn embedded_asset(path: &str) -> Option<EmbeddedAsset> {
         "presentation/board/widget-bridge.js" => Some(js(include_bytes!(
             "../../../static/presentation/board/widget-bridge.js"
         ))),
+        // The board's single shared transport socket (Stage 8b, base task 1):
+        // the one WebSocket that the unified widget bridge and the Data-panel
+        // Protein config multiplex over.
+        "presentation/board/transport.js" => Some(js(include_bytes!(
+            "../../../static/presentation/board/transport.js"
+        ))),
+        // New-way sand host, also served at `/board/frame.js` (see `frame_js`).
+        "presentation/board/frame.js" => Some(js(include_bytes!(
+            "../../../static/presentation/board/frame.js"
+        ))),
         "vendored/d3.v7.min.js" => Some(js(include_bytes!(
             "../../../src/sand/relations/d3.v7.min.js"
         ))),
@@ -63,6 +84,16 @@ fn asset_response(asset: EmbeddedAsset) -> Response {
     response.headers_mut().insert(
         header::CONTENT_TYPE,
         HeaderValue::from_static(asset.content_type),
+    );
+    // These embedded board assets (main.js, store.js, widget-bridge.js, …) are
+    // rebuilt in place during development. Without a revalidation header the
+    // Tauri/desktop webview happily serves a STALE copy, which shows up as a
+    // NEW main.js calling a method a stale store.js hasn't got yet
+    // ("store.addImportedGroup is not a function"). Force revalidation so the
+    // whole board's JS is always coherent.
+    response.headers_mut().insert(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("no-cache, must-revalidate"),
     );
     response
 }

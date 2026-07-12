@@ -26,7 +26,7 @@ pub mod transfer;
 pub use error::NucleusError;
 pub use expr::{Expr, MapResolver, Resolver, TokenKey, Value};
 pub use fact::{Cause, CauseKind, Fact, NewFact};
-pub use frequency::{parse_duration, FrequencySpec};
+pub use frequency::{FrequencySpec, parse_duration};
 pub use id::{new_uid, ulid_from, valid_slug};
 pub use promise::PromiseState;
 pub use record::RecordKind;

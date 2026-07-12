@@ -15,6 +15,9 @@ mprocs --names lince,test \
 description = "Run all Rust tests in the workspace"
 run = "cargo test --workspace --all-targets"
 
+[tasks.stop]
+run = "systemctl --user stop lince; nix develop"
+
 [tasks.nix]
 run = """
 mprocs --names hx,claude,codex,git,shell,run,restart \

@@ -6,16 +6,13 @@
 use chrono::{DateTime, TimeDelta, Utc};
 use nucleus::{Cause, Fact, NewFact};
 
-use crate::error::EngineError;
 use crate::Engine;
+use crate::error::EngineError;
 
 impl Engine {
     /// Sample every due, enabled signal. Returns all committed facts
     /// (samples plus their cascades).
-    pub async fn sample_due_signals(
-        &self,
-        now: DateTime<Utc>,
-    ) -> Result<Vec<Fact>, EngineError> {
+    pub async fn sample_due_signals(&self, now: DateTime<Utc>) -> Result<Vec<Fact>, EngineError> {
         let mut committed = Vec::new();
         for signal in store::misc::list_signals(&self.store.pool).await? {
             let Some(interval) = nucleus::parse_duration(&signal.schedule) else {
@@ -35,8 +32,12 @@ impl Engine {
                 // http | sensor | query samplers land with their integrations
                 _ => None,
             };
-            store::misc::set_signal_sampled(&self.store.pool, &signal.record_uid, &now.to_rfc3339())
-                .await?;
+            store::misc::set_signal_sampled(
+                &self.store.pool,
+                &signal.record_uid,
+                &now.to_rfc3339(),
+            )
+            .await?;
             let Some(value) = sampled else { continue };
             let delta = value - signal.current_value;
             if delta == 0.0 {
@@ -59,7 +60,12 @@ impl Engine {
 }
 
 async fn sample_command(cmd: &str) -> Option<f64> {
-    let output = tokio::process::Command::new("sh").arg("-c").arg(cmd).output().await.ok()?;
+    let output = tokio::process::Command::new("sh")
+        .arg("-c")
+        .arg(cmd)
+        .output()
+        .await
+        .ok()?;
     if !output.status.success() {
         return None;
     }

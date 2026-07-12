@@ -5,8 +5,8 @@ use chrono::Utc;
 use nucleus::RecordKind;
 use sqlx::{Row, SqlitePool};
 
-use crate::records::{self, NewRecord};
 use crate::StoreError;
+use crate::records::{self, NewRecord};
 
 #[derive(Debug, Clone)]
 pub struct TransferRow {
@@ -19,6 +19,8 @@ pub struct TransferRow {
     pub parent_uid: Option<String>,
     pub source_uid: Option<String>,
     pub active: bool,
+    /// Settlement demands delivery+receipt confirmation facts (VIII.3).
+    pub require_confirmation: bool,
 }
 
 pub struct NewTransfer<'a> {
@@ -28,6 +30,11 @@ pub struct NewTransfer<'a> {
     pub agreement_pct: Option<i64>,
     pub satiation: Option<&'a str>,
     pub source_uid: Option<&'a str>,
+    /// Default `reserve_from` for promises bundled into this transfer (V.3);
+    /// None = the global default ('active').
+    pub reserve_default: Option<&'a str>,
+    /// Settlement demands delivery+receipt confirmation facts (VIII.3).
+    pub require_confirmation: bool,
 }
 
 pub async fn create(pool: &SqlitePool, new: NewTransfer<'_>) -> Result<String, StoreError> {
@@ -43,17 +50,57 @@ pub async fn create(pool: &SqlitePool, new: NewTransfer<'_>) -> Result<String, S
     )
     .await?;
     sqlx::query(
-        "INSERT INTO transfer (record_uid, agreement_type, agreement_pct, satiation, source_uid)
-         VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO transfer (record_uid, agreement_type, agreement_pct, satiation, source_uid,
+                               reserve_default, require_confirmation)
+         VALUES (?, ?, ?, ?, ?, ?, ?)",
     )
     .bind(&rec.uid)
     .bind(new.agreement_type)
     .bind(new.agreement_pct)
     .bind(new.satiation)
     .bind(new.source_uid)
+    .bind(new.reserve_default)
+    .bind(new.require_confirmation as i64)
     .execute(pool)
     .await?;
     Ok(rec.uid)
+}
+
+/// A transfer with its record's identity — the `source: transfer` Protein feed.
+#[derive(Debug, Clone)]
+pub struct TransferListRow {
+    pub transfer: TransferRow,
+    pub slug: Option<String>,
+    pub head: String,
+}
+
+/// Every transfer joined to its record, oldest first.
+pub async fn list_all(pool: &SqlitePool) -> Result<Vec<TransferListRow>, StoreError> {
+    Ok(sqlx::query(
+        "SELECT t.*, r.slug, r.head, r.quantity FROM transfer t
+           JOIN record r ON r.uid = t.record_uid
+          ORDER BY r.created_at",
+    )
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .map(|r| TransferListRow {
+        transfer: TransferRow {
+            record_uid: r.get("record_uid"),
+            agreement_type: r.get("agreement_type"),
+            agreement_pct: r.get("agreement_pct"),
+            settlement: r.get("settlement"),
+            visibility: r.get("visibility"),
+            satiation: r.get("satiation"),
+            parent_uid: r.get("parent_uid"),
+            source_uid: r.get("source_uid"),
+            active: r.get::<f64, _>("quantity") != 0.0,
+            require_confirmation: r.get::<i64, _>("require_confirmation") != 0,
+        },
+        slug: r.get("slug"),
+        head: r.get("head"),
+    })
+    .collect())
 }
 
 pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<TransferRow>, StoreError> {
@@ -74,6 +121,7 @@ pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<TransferRow>, St
         parent_uid: r.get("parent_uid"),
         source_uid: r.get("source_uid"),
         active: r.get::<f64, _>("quantity") != 0.0,
+        require_confirmation: r.get::<i64, _>("require_confirmation") != 0,
     }))
 }
 
@@ -165,14 +213,16 @@ pub async fn siblings_of_source(
     source_uid: &str,
     except: &str,
 ) -> Result<Vec<String>, StoreError> {
-    Ok(sqlx::query("SELECT record_uid FROM transfer WHERE source_uid = ? AND record_uid != ?")
-        .bind(source_uid)
-        .bind(except)
-        .fetch_all(pool)
-        .await?
-        .into_iter()
-        .map(|r| r.get("record_uid"))
-        .collect())
+    Ok(
+        sqlx::query("SELECT record_uid FROM transfer WHERE source_uid = ? AND record_uid != ?")
+            .bind(source_uid)
+            .bind(except)
+            .fetch_all(pool)
+            .await?
+            .into_iter()
+            .map(|r| r.get("record_uid"))
+            .collect(),
+    )
 }
 
 /// Promises with a condition that are waiting to activate (chains/spectators).

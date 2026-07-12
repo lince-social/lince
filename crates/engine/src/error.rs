@@ -6,6 +6,8 @@ pub enum EngineError {
     Nucleus(nucleus::NucleusError),
     UnknownRecord(String),
     Consequence(String),
+    Io(std::io::Error),
+    Json(serde_json::Error),
 }
 
 impl fmt::Display for EngineError {
@@ -15,6 +17,8 @@ impl fmt::Display for EngineError {
             Self::Nucleus(e) => write!(f, "nucleus: {e}"),
             Self::UnknownRecord(t) => write!(f, "unknown record `{t}`"),
             Self::Consequence(m) => write!(f, "consequence: {m}"),
+            Self::Io(e) => write!(f, "io: {e}"),
+            Self::Json(e) => write!(f, "json: {e}"),
         }
     }
 }

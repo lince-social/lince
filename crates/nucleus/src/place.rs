@@ -43,7 +43,11 @@ pub struct Route {
 impl Route {
     /// Seconds at an average speed (m/s) — `route_eta` in Karma/Protein.
     pub fn eta_seconds(&self, speed_m_s: f64) -> f64 {
-        if speed_m_s <= 0.0 { f64::INFINITY } else { self.meters / speed_m_s }
+        if speed_m_s <= 0.0 {
+            f64::INFINITY
+        } else {
+            self.meters / speed_m_s
+        }
     }
 }
 
@@ -79,7 +83,10 @@ pub fn route(graph: &MapGraph, from: usize, to: usize) -> Option<Route> {
                 at = p;
             }
             path.reverse();
-            return Some(Route { path, meters: best[&to] });
+            return Some(Route {
+                path,
+                meters: best[&to],
+            });
         }
         let g = best[&current];
         for &(next, meters) in graph.edges.get(&current).into_iter().flatten() {

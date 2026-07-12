@@ -9,28 +9,12 @@ homepage.workspace = true
 readme = "README.md"
 keywords = ["registry", "automation", "self-hosted"]
 
-[features]
-default = ["karma", "http"]
-karma = []
-gui = ["gui/gui"]
-tui = ["tui/tui"]
-http = ["dep:web"]
-
 [dependencies]
-application = { workspace = true }
-domain = { workspace = true }
-injection = { workspace = true }
-persistence = { workspace = true }
-crossterm = { workspace = true }
-gui = { workspace = true, optional = true }
-tui = { workspace = true, optional = true }
-web = { workspace = true, optional = true }
+web = { workspace = true }
 utils = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "process", "time", "macros"] }
-sqlx = { workspace = true}
 serde = { workspace = true }
 serde_json = { workspace = true }
-chrono = { workspace = true }
 dirs = { workspace = true }
 toml = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }

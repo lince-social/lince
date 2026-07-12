@@ -62,16 +62,28 @@ pub struct Cause {
 
 impl Cause {
     pub fn user_edit() -> Self {
-        Self { kind: CauseKind::UserEdit, uid: None }
+        Self {
+            kind: CauseKind::UserEdit,
+            uid: None,
+        }
     }
     pub fn rule(uid: impl Into<String>) -> Self {
-        Self { kind: CauseKind::Rule, uid: Some(uid.into()) }
+        Self {
+            kind: CauseKind::Rule,
+            uid: Some(uid.into()),
+        }
     }
     pub fn settlement(uid: impl Into<String>) -> Self {
-        Self { kind: CauseKind::Settlement, uid: Some(uid.into()) }
+        Self {
+            kind: CauseKind::Settlement,
+            uid: Some(uid.into()),
+        }
     }
     pub fn signal(uid: impl Into<String>) -> Self {
-        Self { kind: CauseKind::Signal, uid: Some(uid.into()) }
+        Self {
+            kind: CauseKind::Signal,
+            uid: Some(uid.into()),
+        }
     }
 }
 
@@ -168,6 +180,14 @@ fn hex(bytes: &[u8]) -> String {
         s.push_str(&format!("{b:02x}"));
     }
     s
+}
+
+/// SHA-256 of arbitrary bytes as lowercase hex — used by compaction to anchor
+/// an archive file's content into the Ledger (blueprint II.2).
+pub fn sha256_hex(bytes: &[u8]) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(bytes);
+    hex(&hasher.finalize())
 }
 
 #[cfg(test)]

@@ -31,8 +31,13 @@ pub fn valid_slug(slug: &str) -> bool {
     }
     slug.split('.').all(|seg| {
         !seg.is_empty()
-            && seg.chars().next().is_some_and(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
-            && seg.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+            && seg
+                .chars()
+                .next()
+                .is_some_and(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
+            && seg
+                .chars()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
     })
 }
 

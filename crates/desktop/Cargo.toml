@@ -11,9 +11,6 @@ description = "Desktop HTML webview shell for Lince."
 tauri-build = { workspace = true }
 
 [dependencies]
-application = { workspace = true }
-injection = { workspace = true }
-persistence = { workspace = true }
 utils = { workspace = true }
 web = { workspace = true }
 sqlx = { workspace = true }

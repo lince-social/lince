@@ -8,7 +8,6 @@ use {
     zip::{CompressionMethod, ZipArchive, ZipWriter, write::SimpleFileOptions},
 };
 
-pub const MAX_PACKAGE_BYTES: usize = 64 * 1024 * 1024;
 pub const PACKAGE_EXTENSION: &str = ".html";
 pub const LEGACY_PACKAGE_EXTENSION: &str = ".sand";
 pub const LEGACY_PACKAGE_ARCHIVE_EXTENSION: &str = ".lince";
@@ -159,18 +158,6 @@ impl LincePackage {
     pub fn html_document(&self) -> String {
         upsert_manifest_script(&self.html, &self.manifest)
     }
-}
-
-pub fn validate_package_upload(filename: &str, bytes: &[u8]) -> Result<(), String> {
-    if !is_package_filename(filename) {
-        return Err("O arquivo precisa ter extensao .html, .sand ou .lince.".into());
-    }
-
-    if bytes.len() > MAX_PACKAGE_BYTES {
-        return Err("O widget excede o limite de tamanho aceito.".into());
-    }
-
-    Ok(())
 }
 
 pub fn parse_lince_package(

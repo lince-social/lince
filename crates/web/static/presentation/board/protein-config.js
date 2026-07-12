@@ -7,10 +7,7 @@
 // Deps: getCard(cardId) -> { id, widgetState }, patchCardState(cardId, patch),
 // syncFrames().
 
-function transportUrl() {
-  const scheme = window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${scheme}//${window.location.host}/host/transport/ws`;
-}
+import { getSharedTransport } from "./transport.js";
 
 const LIST_PROTEIN = {
   source: "record",
@@ -19,7 +16,7 @@ const LIST_PROTEIN = {
 };
 
 // The record kinds and predicate/order vocabulary offered in the dropdowns.
-const KINDS = ["plain", "rule", "signal", "transfer", "decision", "device", "organ", "person", "protein", "sand"];
+const KINDS = ["plain", "rule", "signal", "transfer", "decision", "device", "organ", "person", "protein", "sand", "thread", "message"];
 const SOURCES = ["record", "promise", "decision"];
 const FILTERS = [
   { type: "kind_eq", label: "kind is", input: "kind" },
@@ -27,7 +24,9 @@ const FILTERS = [
   { type: "uid_eq", label: "uid is", input: "text" },
   { type: "concept_in", label: "concept in", input: "text" },
   { type: "quantity_gt", label: "quantity >", input: "number" },
+  { type: "quantity_gte", label: "quantity >=", input: "number" },
   { type: "quantity_lt", label: "quantity <", input: "number" },
+  { type: "quantity_lte", label: "quantity <=", input: "number" },
   { type: "quantity_eq", label: "quantity =", input: "number" },
   { type: "state_in", label: "state in (comma)", input: "text" },
 ];
@@ -165,8 +164,13 @@ export function createProteinConfigPanel({ getCard, patchCardState, syncFrames }
   let list = []; // [{ uid, slug, head, body }]
   let mode = "list"; // "list" | "edit"
   let builder = blankBuilder();
-  let socket = null;
+  // Shares the board's single transport socket (Stage 8b, base task 1) instead
+  // of opening its own. Our ids (`protein-list`, `pa-<n>`) never collide with
+  // the widget bridge's (`<instanceId>:<subId>`, `act:<...>`), so filtering by
+  // id keeps our messages ours.
+  const transport = getSharedTransport();
   let nextReq = 1;
+  let subscribed = false;
   const pending = new Map();
 
   function setHelp(text, isError) {
@@ -175,15 +179,14 @@ export function createProteinConfigPanel({ getCard, patchCardState, syncFrames }
     help.classList.toggle("is-ok", Boolean(text) && !isError);
   }
 
+  function subscribeList() {
+    transport.send({ type: "subscribe", id: "protein-list", protein: LIST_PROTEIN });
+  }
+
   function ensureSocket() {
-    if (socket && socket.readyState <= WebSocket.OPEN) return socket;
-    socket = new WebSocket(transportUrl());
-    socket.addEventListener("open", () => {
-      socket.send(JSON.stringify({ type: "subscribe", id: "protein-list", protein: LIST_PROTEIN }));
-    });
-    socket.addEventListener("message", (event) => {
-      let msg = null;
-      try { msg = JSON.parse(event.data); } catch { return; }
+    if (subscribed) return;
+    subscribed = true;
+    transport.onMessage((msg) => {
       if ((msg.type === "snapshot" || msg.type === "update") && msg.id === "protein-list") {
         list = (msg.rows || []).map((r) => ({ uid: r.uid, slug: r.slug, head: r.head, body: r.body }));
         if (mode === "list") renderList();
@@ -192,18 +195,17 @@ export function createProteinConfigPanel({ getCard, patchCardState, syncFrames }
         if (resolve) { pending.delete(String(msg.id)); resolve(msg); }
       }
     });
-    socket.addEventListener("close", () => { socket = null; });
-    return socket;
+    // Re-subscribe on every (re)connect; the Cell session is fresh each time.
+    transport.onOpen(subscribeList);
+    subscribeList();
   }
 
   function act(action) {
     return new Promise((resolve) => {
-      const sock = ensureSocket();
+      ensureSocket();
       const id = "pa-" + nextReq++;
       pending.set(id, resolve);
-      const send = () => sock.send(JSON.stringify({ type: "act", id, action }));
-      if (sock.readyState === WebSocket.OPEN) send();
-      else sock.addEventListener("open", send, { once: true });
+      transport.send({ type: "act", id, action });
       window.setTimeout(() => {
         if (pending.has(id)) { pending.delete(id); resolve({ type: "error", message: "timed out" }); }
       }, 15000);

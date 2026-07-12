@@ -6,7 +6,7 @@
 
 use sqlx::SqlitePool;
 
-use crate::{auth, config, StoreError};
+use crate::{StoreError, auth, config};
 
 /// Ensure the configuration singleton, the `admin`/`lince` roles, the full
 /// permission catalog, and a grant of EVERY permission to `admin`.

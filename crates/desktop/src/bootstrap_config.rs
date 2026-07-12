@@ -45,11 +45,11 @@ pub fn load_or_init_bootstrap_config() -> Result<BootstrapConfig, Error> {
         .secret
         .as_deref()
         .map(str::trim)
-        .filter(|value| !value.is_empty())
+        .filter(|value| is_strong_secret(value))
     {
         Some(secret) => secret.to_string(),
         None => {
-            let next = uuid::Uuid::new_v4().simple().to_string();
+            let next = generate_secret();
             raw.auth.secret = Some(next.clone());
             changed = true;
             next
@@ -80,17 +80,16 @@ pub fn set_auth_enabled(enabled: bool) -> Result<(), Error> {
     };
 
     raw.auth.enabled = Some(enabled);
-    if raw
+    if !raw
         .auth
         .secret
         .as_deref()
         .map(str::trim)
-        .unwrap_or_default()
-        .is_empty()
+        .map(is_strong_secret)
+        .unwrap_or(false)
     {
-        raw.auth.secret = Some(uuid::Uuid::new_v4().simple().to_string());
+        raw.auth.secret = Some(generate_secret());
     }
-
     persist_bootstrap_config(&path, &raw)
 }
 
@@ -104,4 +103,15 @@ fn persist_bootstrap_config(path: &Path, config: &BootstrapConfigFile) -> Result
     let raw = toml::to_string_pretty(config).map_err(Error::other)?;
     fs::write(path, raw)?;
     Ok(())
+}
+
+fn generate_secret() -> String {
+    let mut bytes = [0u8; 32];
+    bytes[..16].copy_from_slice(uuid::Uuid::new_v4().as_bytes());
+    bytes[16..].copy_from_slice(uuid::Uuid::new_v4().as_bytes());
+    bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+fn is_strong_secret(secret: &str) -> bool {
+    secret.as_bytes().len() >= 64
 }

@@ -28,7 +28,10 @@ pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<Place>, StoreErr
         .fetch_optional(pool)
         .await?
         .and_then(|r| {
-            Some(Place { lat: r.get::<Option<f64>, _>("lat")?, lon: r.get::<Option<f64>, _>("lon")? })
+            Some(Place {
+                lat: r.get::<Option<f64>, _>("lat")?,
+                lon: r.get::<Option<f64>, _>("lon")?,
+            })
         }))
 }
 

@@ -1,10 +1,9 @@
 use {
     axum::{Json, http::StatusCode},
     serde::Serialize,
-    utoipa::ToSchema,
 };
 
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize)]
 pub struct ApiError {
     pub error: String,
 }
@@ -17,15 +16,5 @@ pub fn api_error(status: StatusCode, message: impl Into<String>) -> (StatusCode,
         Json(ApiError {
             error: message.into(),
         }),
-    )
-}
-
-pub fn invalid_multipart(
-    error: axum::extract::multipart::MultipartError,
-) -> (StatusCode, Json<ApiError>) {
-    tracing::warn!("multipart request failed: {error}");
-    api_error(
-        StatusCode::BAD_REQUEST,
-        "Nao foi possivel ler o upload do widget HTML.",
     )
 }

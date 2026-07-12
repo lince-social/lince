@@ -40,6 +40,11 @@ pub struct BoardCard {
     pub z_index: i32,
     #[serde(default)]
     pub group_id: Option<String>,
+    /// Nested-group membership stack, outermost -> innermost (Stage 8b, Phase 3).
+    /// `group_id` mirrors the innermost id for flat-group back-compat; empty for
+    /// ungrouped cards. Disbanding the outer group pops the front, inner survives.
+    #[serde(default)]
+    pub group_ids: Vec<String>,
     #[serde(default)]
     pub abi_listen: Vec<String>,
 }
@@ -371,6 +376,7 @@ fn package_card(
         system: false,
         z_index: default_card_z_index(),
         group_id: None,
+        group_ids: Vec::new(),
         abi_listen: Vec::new(),
     }
 }

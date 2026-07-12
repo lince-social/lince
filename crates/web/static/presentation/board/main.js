@@ -1,5 +1,10 @@
 import { attachBoardInteractions, groupBounds } from "./interactions.js";
-import { buildGroupPinUpdates, resolveMarqueeGroup } from "./group-logic.js";
+import {
+  buildGroupPinUpdates,
+  groupStackOf,
+  outermostGroupId,
+  resolveMarqueeGroup,
+} from "./group-logic.js";
 import { createGridConfig } from "./grid.js";
 import { createBoardStore } from "./store.js";
 import { createBoardViewport } from "./viewport.js";
@@ -648,6 +653,13 @@ let appNotifications = [];
 let notificationsOpen = false;
 let boardViewport = null;
 let workspacePopoverOpen = false;
+// One unified widget bridge (Stage 8b, base task 1): a single board-owned
+// transport WebSocket multiplexes BOTH the new-way sands (which load
+// `/board/frame.js`, announce `lince:ready`, and speak the flat protocol) and
+// the legacy chrome (nested `payload` protocol). The same in-page ABI fan-out +
+// group-scope logic now serves every sand, which is what kanban's scoped
+// `recordClicked` to its packaged record_info relies on. It self-wires via a
+// global message listener.
 const widgetBridge = createWidgetBridge({
   statusNode: null,
   initialState: bootstrap.widgetBridge,
@@ -660,6 +672,15 @@ const widgetBridge = createWidgetBridge({
   },
   getCardAbiListen(instanceId) {
     return getCardById(instanceId)?.abiListen || [];
+  },
+  getCardGroupStack(instanceId) {
+    // Outermost -> innermost group membership; falls back to the flat groupId
+    // for cards that predate nested groups. Scopes ABI event delivery.
+    const card = getCardById(instanceId);
+    if (Array.isArray(card?.groupIds) && card.groupIds.length) {
+      return card.groupIds;
+    }
+    return card?.groupId ? [card.groupId] : [];
   },
   setCardState(instanceId, nextState) {
     updateCardWidgetState(instanceId, nextState);
@@ -1035,7 +1056,12 @@ function dissolveActiveGroup() {
 }
 
 function activateGroupFromCard(card) {
-  if (!card?.groupId) {
+  // Activate the OUTERMOST container the card belongs to. Unlocking/deleting it
+  // then peels off just that outer layer, leaving any inner groups intact
+  // (nested groups, Stage 8b Phase 3). For flat groups outermost == innermost,
+  // so this is unchanged behavior.
+  const outer = outermostGroupId(card);
+  if (!outer) {
     return null;
   }
 
@@ -1043,7 +1069,7 @@ function activateGroupFromCard(card) {
     .getCards()
     .filter(
       (entry) =>
-        entry.groupId === card.groupId &&
+        outermostGroupId(entry) === outer &&
         entry.pinned !== true &&
         entry.system !== true,
     );
@@ -1052,7 +1078,7 @@ function activateGroupFromCard(card) {
   }
 
   activeGroup = {
-    id: card.groupId,
+    id: outer,
     cardIds: members.map((entry) => entry.id),
     locked: true,
   };
@@ -3240,6 +3266,13 @@ function renderLocalPackageCard(pkg) {
         <span class="local-package-card__footer">
           <span class="local-package-card__pill">Local</span>
           ${
+            pkg.isGroup
+              ? `<span class="local-package-card__pill local-package-card__pill--accent">grupo${
+                  Number(pkg.memberCount) ? ` · ${Number(pkg.memberCount)} sands` : ""
+                }</span>`
+              : ""
+          }
+          ${
             permissions.length
               ? permissions
                   .map(
@@ -3410,6 +3443,21 @@ async function requestInstalledPackage(packageId) {
   }
 
   return payload;
+}
+
+// Fetch a sand GROUP's member cards (Stage 8b, base task 2). The server parses
+// the installed `.lince` group archive and returns the cards with their relative
+// layout, z-order, group ids, ABI listen topics and HTML.
+async function requestInstalledGroup(filename) {
+  const response = await fetch(
+    apiPath(`/packages/local/group/${encodeURIComponent(filename)}`),
+  );
+  const payload = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(payload?.error || "Falha ao abrir o grupo de sands.");
+  }
+
+  return Array.isArray(payload?.cards) ? payload.cards : [];
 }
 
 async function installUploadedPackage(file) {
@@ -5441,9 +5489,16 @@ function createRawHtmlCardFromPreview(preview) {
 }
 
 async function addLocalPackageToWorkspace(packageId) {
-  const preview = await requestInstalledPackage(packageId);
   const packageSummary =
     installedPackages.find((entry) => entry.id === packageId) || null;
+
+  // A GROUP entry (e.g. kanban = board + record_info) drops the whole group at
+  // once (Stage 8b, base task 2 / kanban Track B).
+  if (packageSummary?.isGroup) {
+    return addLocalGroupToWorkspace(packageSummary);
+  }
+
+  const preview = await requestInstalledPackage(packageId);
   const created = createCardFromPreview(
     preview,
     resolvePreviewSize(packageSummary, preview),
@@ -5453,6 +5508,25 @@ async function addLocalPackageToWorkspace(packageId) {
   }
 
   setActiveCard(created.id, null);
+  closeLocalPackagesModal();
+  return created;
+}
+
+async function addLocalGroupToWorkspace(packageSummary) {
+  const cards = await requestInstalledGroup(packageSummary.filename);
+  if (!cards.length) {
+    throw new Error("Esse grupo de sands esta vazio.");
+  }
+
+  const created = store.addImportedGroup(cards, {
+    center: boardViewport.centerWorldPoint(),
+  });
+  if (!Array.isArray(created) || !created.length) {
+    throw new Error("Nao encontrei espaco livre na grid para esse grupo.");
+  }
+
+  // Activate the top-most (last, highest z) card of the group.
+  setActiveCard(created[created.length - 1].id, null);
   closeLocalPackagesModal();
   return created;
 }

@@ -29,6 +29,36 @@ pub async fn ensure_default(pool: &SqlitePool) -> Result<(), StoreError> {
     Ok(())
 }
 
+/// The hard daily interruption budget (blueprint XIII.2).
+pub async fn attention_budget(pool: &SqlitePool) -> Result<i64, StoreError> {
+    ensure_default(pool).await?;
+    Ok(
+        sqlx::query("SELECT attention_budget_per_day FROM configuration WHERE id = 1")
+            .fetch_one(pool)
+            .await?
+            .get("attention_budget_per_day"),
+    )
+}
+
+pub async fn set_attention_budget(pool: &SqlitePool, per_day: i64) -> Result<(), StoreError> {
+    ensure_default(pool).await?;
+    sqlx::query("UPDATE configuration SET attention_budget_per_day = ? WHERE id = 1")
+        .bind(per_day)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+/// Set the interface language (installer/staged setup import).
+pub async fn set_language(pool: &SqlitePool, language: &str) -> Result<(), StoreError> {
+    ensure_default(pool).await?;
+    sqlx::query("UPDATE configuration SET language = ? WHERE id = 1")
+        .bind(language)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
 /// Read the singleton configuration (present after `ensure_default`).
 pub async fn get(pool: &SqlitePool) -> Result<Option<Configuration>, StoreError> {
     Ok(sqlx::query("SELECT * FROM configuration WHERE id = 1")
@@ -39,7 +69,9 @@ pub async fn get(pool: &SqlitePool) -> Result<Option<Configuration>, StoreError>
             language: r.get("language"),
             timezone: r.get("timezone"),
             style: r.get("style"),
-            show_command_notifications: r.get::<i64, _>("show_command_notifications") != 0,
+            // The schema folds the toggle into the seconds value: zero means
+            // "don't show", any positive number enables it (0001_init.sql).
+            show_command_notifications: r.get::<f64, _>("command_notification_seconds") > 0.0,
             command_notification_seconds: r.get("command_notification_seconds"),
             delete_confirmation: r.get::<i64, _>("delete_confirmation") != 0,
             error_toast_seconds: r.get("error_toast_seconds"),

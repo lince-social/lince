@@ -37,11 +37,7 @@ impl AgreementType {
 /// promises, so the bundle-level gate is always open; per-promise checks are
 /// the engine's job. `Dependency` is resolved by the engine through the
 /// bundled promises' conditions (upstream transfers), not here.
-pub fn policy_satisfied(
-    agreement: AgreementType,
-    pct: Option<u8>,
-    party_levels: &[i64],
-) -> bool {
+pub fn policy_satisfied(agreement: AgreementType, pct: Option<u8>, party_levels: &[i64]) -> bool {
     let n = party_levels.len();
     let committed = party_levels.iter().filter(|&&l| l >= 2).count();
     match agreement {
@@ -66,8 +62,20 @@ mod tests {
         assert!(policy_satisfied(AgreementType::Full, None, &[2, 2]));
         assert!(!policy_satisfied(AgreementType::Full, None, &[]));
         // ceil semantics: 50% of 3 parties needs 2 committed
-        assert!(!policy_satisfied(AgreementType::Percentage, Some(50), &[2, 0, 0]));
-        assert!(policy_satisfied(AgreementType::Percentage, Some(50), &[2, 2, 0]));
-        assert!(!policy_satisfied(AgreementType::Percentage, Some(80), &[2, 2, 0]));
+        assert!(!policy_satisfied(
+            AgreementType::Percentage,
+            Some(50),
+            &[2, 0, 0]
+        ));
+        assert!(policy_satisfied(
+            AgreementType::Percentage,
+            Some(50),
+            &[2, 2, 0]
+        ));
+        assert!(!policy_satisfied(
+            AgreementType::Percentage,
+            Some(80),
+            &[2, 2, 0]
+        ));
     }
 }

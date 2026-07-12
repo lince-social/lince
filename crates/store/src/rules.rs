@@ -4,8 +4,8 @@
 use nucleus::{ConsequenceKind, ConsequenceSpec, RecordKind};
 use sqlx::{Row, SqlitePool};
 
-use crate::records::{self, NewRecord};
 use crate::StoreError;
+use crate::records::{self, NewRecord};
 
 #[derive(Debug, Clone)]
 pub struct RuleRow {
@@ -15,6 +15,8 @@ pub struct RuleRow {
     pub condition: String,
     pub gate: String,
     pub carry: String,
+    /// Minimum interval between firings (duration literal, e.g. '90s').
+    pub debounce: Option<String>,
     pub consequences: Vec<ConsequenceSpec>,
 }
 
@@ -63,9 +65,81 @@ pub async fn create(pool: &SqlitePool, new: NewRule<'_>) -> Result<String, Store
     Ok(rec.uid)
 }
 
+/// Update a rule's sidecar (blueprint VII.2 `update-rule`). `None` keeps the
+/// current value; `Some(consequences)` replaces the whole consequence list.
+pub async fn update(
+    pool: &SqlitePool,
+    rule_uid: &str,
+    condition: Option<&str>,
+    gate: Option<&str>,
+    carry: Option<&str>,
+    debounce: Option<Option<&str>>,
+    consequences: Option<Vec<(ConsequenceKind, Option<String>, Option<serde_json::Value>)>>,
+) -> Result<(), StoreError> {
+    if let Some(condition) = condition {
+        sqlx::query("UPDATE rule SET condition = ? WHERE record_uid = ?")
+            .bind(condition)
+            .bind(rule_uid)
+            .execute(pool)
+            .await?;
+    }
+    if let Some(gate) = gate {
+        sqlx::query("UPDATE rule SET gate = ? WHERE record_uid = ?")
+            .bind(gate)
+            .bind(rule_uid)
+            .execute(pool)
+            .await?;
+    }
+    if let Some(carry) = carry {
+        sqlx::query("UPDATE rule SET carry = ? WHERE record_uid = ?")
+            .bind(carry)
+            .bind(rule_uid)
+            .execute(pool)
+            .await?;
+    }
+    if let Some(debounce) = debounce {
+        set_debounce(pool, rule_uid, debounce).await?;
+    }
+    if let Some(consequences) = consequences {
+        sqlx::query("DELETE FROM rule_consequence WHERE rule_uid = ?")
+            .bind(rule_uid)
+            .execute(pool)
+            .await?;
+        for (i, (kind, target, params)) in consequences.into_iter().enumerate() {
+            sqlx::query(
+                "INSERT INTO rule_consequence (uid, rule_uid, position, kind, target, params)
+                 VALUES (?, ?, ?, ?, ?, ?)",
+            )
+            .bind(nucleus::new_uid("q"))
+            .bind(rule_uid)
+            .bind(i as i64)
+            .bind(kind.as_str())
+            .bind(target)
+            .bind(params.map(|p| p.to_string()))
+            .execute(pool)
+            .await?;
+        }
+    }
+    Ok(())
+}
+
+/// Set (or clear) a rule's debounce — the minimum interval between firings.
+pub async fn set_debounce(
+    pool: &SqlitePool,
+    rule_uid: &str,
+    debounce: Option<&str>,
+) -> Result<(), StoreError> {
+    sqlx::query("UPDATE rule SET debounce = ? WHERE record_uid = ?")
+        .bind(debounce)
+        .bind(rule_uid)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
 pub async fn load_all(pool: &SqlitePool) -> Result<Vec<RuleRow>, StoreError> {
     let rows = sqlx::query(
-        "SELECT r.uid, r.slug, r.quantity, ru.condition, ru.gate, ru.carry
+        "SELECT r.uid, r.slug, r.quantity, ru.condition, ru.gate, ru.carry, ru.debounce
          FROM rule ru JOIN record r ON r.uid = ru.record_uid",
     )
     .fetch_all(pool)
@@ -101,6 +175,7 @@ pub async fn load_all(pool: &SqlitePool) -> Result<Vec<RuleRow>, StoreError> {
             condition: row.get("condition"),
             gate: row.get("gate"),
             carry: row.get("carry"),
+            debounce: row.get("debounce"),
             consequences,
         });
     }

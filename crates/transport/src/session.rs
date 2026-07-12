@@ -69,7 +69,11 @@ impl Session {
             }
             ClientMessage::LaneSend { room, payload } => {
                 if self.joined_rooms.contains(&room) {
-                    self.hub.send(LaneEvent { room, from: self.connection_id.clone(), payload });
+                    self.hub.send(LaneEvent {
+                        room,
+                        from: self.connection_id.clone(),
+                        payload,
+                    });
                 }
                 vec![] // presence is fire-and-forget; senders don't echo to self
             }
@@ -82,7 +86,10 @@ impl Session {
                 self.subscriptions.insert(id.clone(), protein);
                 vec![ServerMessage::Snapshot { id, rows }]
             }
-            Err(e) => vec![ServerMessage::Error { id, message: e.to_string() }],
+            Err(e) => vec![ServerMessage::Error {
+                id,
+                message: e.to_string(),
+            }],
         }
     }
 
@@ -98,16 +105,24 @@ impl Session {
                 }
                 vec![ServerMessage::Snapshot { id, rows }]
             }
-            Err(e) => vec![ServerMessage::Error { id, message: e.to_string() }],
+            Err(e) => vec![ServerMessage::Error {
+                id,
+                message: e.to_string(),
+            }],
         }
     }
 
     async fn act(&self, id: String, action: engine::actions::Action) -> ServerMessage {
         match self.engine.act(action, self.subject.clone()).await {
-            Ok(outcome) => {
-                ServerMessage::ActionOk { id, created: outcome.created, facts: outcome.facts.len() }
-            }
-            Err(e) => ServerMessage::Error { id, message: e.to_string() },
+            Ok(outcome) => ServerMessage::ActionOk {
+                id,
+                created: outcome.created,
+                facts: outcome.facts.len(),
+            },
+            Err(e) => ServerMessage::Error {
+                id,
+                message: e.to_string(),
+            },
         }
     }
 
@@ -122,8 +137,14 @@ impl Session {
                 continue;
             }
             match protein::execute_for(&self.engine.store, protein, self.subject.as_deref()).await {
-                Ok(rows) => out.push(ServerMessage::Update { id: id.clone(), rows }),
-                Err(e) => out.push(ServerMessage::Error { id: id.clone(), message: e.to_string() }),
+                Ok(rows) => out.push(ServerMessage::Update {
+                    id: id.clone(),
+                    rows,
+                }),
+                Err(e) => out.push(ServerMessage::Error {
+                    id: id.clone(),
+                    message: e.to_string(),
+                }),
             }
         }
         out

@@ -16,6 +16,8 @@ pub enum RecordKind {
     Person,
     Protein,
     Sand,
+    Thread,
+    Message,
 }
 
 impl RecordKind {
@@ -31,6 +33,8 @@ impl RecordKind {
             Self::Person => "person",
             Self::Protein => "protein",
             Self::Sand => "sand",
+            Self::Thread => "thread",
+            Self::Message => "message",
         }
     }
 
@@ -46,6 +50,8 @@ impl RecordKind {
             "person" => Self::Person,
             "protein" => Self::Protein,
             "sand" => Self::Sand,
+            "thread" => Self::Thread,
+            "message" => Self::Message,
             _ => return None,
         })
     }

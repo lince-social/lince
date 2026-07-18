@@ -29,6 +29,11 @@ const FILTERS = [
   { type: "quantity_lte", label: "quantity <=", input: "number" },
   { type: "quantity_eq", label: "quantity =", input: "number" },
   { type: "state_in", label: "state in (comma)", input: "text" },
+  // Link predicates (K4 base-UI work, 2026-07-17): cluster-tag / graph
+  // filtering is the Data panel's job, never sand chrome. `assignee` is
+  // sugar for linked_to kind=assigned-to.
+  { type: "linked_to", label: "linked to", input: "pair" },
+  { type: "assignee", label: "assignee is", input: "text" },
 ];
 const SORT_DIRS = [
   { value: "desc", label: "high → low" },
@@ -97,6 +102,12 @@ function buildAst(b) {
     if (f.type === "state_in") {
       const states = String(f.value || "").split(",").map((s) => s.trim()).filter(Boolean);
       if (states.length) where.push({ state_in: states });
+    } else if (f.type === "linked_to") {
+      const kind = String(f.kind || "").trim();
+      const to = String(f.to || "").trim();
+      if (kind && to) where.push({ linked_to: { kind, to } });
+    } else if (f.type === "assignee") {
+      if (String(f.value || "").trim()) where.push({ linked_to: { kind: "assigned-to", to: String(f.value).trim() } });
     } else if (f.type.startsWith("quantity_")) {
       if (f.value !== "" && f.value != null) where.push({ [f.type]: Number(f.value) });
     } else if (String(f.value || "").trim()) {
@@ -136,6 +147,12 @@ function builderFromAst(name, slug, ast) {
     const key = Object.keys(pred || {})[0];
     if (!key) continue;
     if (key === "state_in") b.filters.push({ type: "state_in", value: (pred[key] || []).join(", ") });
+    else if (key === "linked_to") {
+      const kind = String(pred.linked_to?.kind || "");
+      const to = String(pred.linked_to?.to || "");
+      if (kind === "assigned-to") b.filters.push({ type: "assignee", value: to });
+      else b.filters.push({ type: "linked_to", kind, to });
+    }
     else if (FILTERS.some((f) => f.type === key)) b.filters.push({ type: key, value: String(pred[key]) });
   }
   const inc = ast.include || {};
@@ -295,6 +312,16 @@ export function createProteinConfigPanel({ getCard, patchCardState, syncFrames }
       const spec = FILTERS.find((x) => x.type === f.type) || FILTERS[0];
       const valueControl = spec.input === "kind"
         ? dropdown(KINDS, f.value || "plain", (v) => { f.value = v; })
+        : spec.input === "pair"
+        ? (() => {
+            const kindInp = h("input", { class: "startup-field__input protein-input protein-input--sm",
+              type: "text", value: f.kind || "", placeholder: "link kind (tag)" });
+            kindInp.addEventListener("input", () => { f.kind = kindInp.value; });
+            const toInp = h("input", { class: "startup-field__input protein-input",
+              type: "text", value: f.to || "", placeholder: "to (slug/uid)" });
+            toInp.addEventListener("input", () => { f.to = toInp.value; });
+            return h("span", { class: "protein-pair", style: "display:flex;gap:4px;flex:1;min-width:0" }, kindInp, toInp);
+          })()
         : (() => {
             const inp = h("input", { class: "startup-field__input protein-input",
               type: spec.input === "number" ? "number" : "text", value: f.value || "",

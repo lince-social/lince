@@ -3,7 +3,13 @@ use crate::domain::lince_package::{LincePackage, PackageManifest};
 pub(crate) const FEATURE_FLAG: &str = "sand.relations";
 
 // Record graph / relations sand as a self-contained HTML string over Protein +
-// Actions (the old d3 `graph_view` archive is retired).
+// Actions: the retired d3 force graph (8f0a5df^ script.rs) ported to the new
+// data plane — one live Protein (record source + links include), typed
+// add-link/remove-link Actions, group-scoped `recordClicked`/`recordCreate`
+// instead of the old sidepanels. d3 loads from the embedded
+// `/static/vendored/d3.v7.min.js` (LICENSE served beside it). Ships as the
+// GROUP `relations.lince` (this sand + record_info) — see
+// `sand::build_relations_group_archive`.
 const HTML: &str = include_str!("relations.html");
 
 pub(crate) fn manifest() -> PackageManifest {
@@ -11,10 +17,10 @@ pub(crate) fn manifest() -> PackageManifest {
         icon: "⟠".into(),
         title: "Relations".into(),
         author: "Lince Labs".into(),
-        version: "0.2.0".into(),
-        description: "Record graph and ordered trail view over typed links.".into(),
+        version: "0.3.0".into(),
+        description: "Force-directed record graph over typed links.".into(),
         details:
-            "Default graph sand for records and their Lingua links. Trail is a Relation mode over order-like links, not a separate package."
+            "d3 force graph for records and their Lingua links: live Protein reads, Shift+drag to link, edge ✕ to unlink, local physics. Node click opens the grouped Record Info; trail mode lands as a view over a root's tree."
                 .into(),
         initial_width: 7,
         initial_height: 6,

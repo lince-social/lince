@@ -3,9 +3,19 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Provenance</title>
+  <title>Record Info</title>
   <script src="/board/frame.js"></script>
+  <script src="/board/editor.js"></script>
   <style>
+    /* record_info IS the editing surface (K4+K5, 2026-07-17): the kanban board
+       only toggles checkboxes and moves columns — head/body/slug/quantity,
+       work metadata (dates/estimate/worklogs on the `work` record_extension),
+       assignees (`assigned-to`), parent/children (`part-of`), resources
+       (`resource-of`), a real multi-THREAD system (named threads as tabs,
+       switchable, each scoping its own messages + compose box, @slug
+       references) and both kinds of removal (Zero = deactivate, Delete =
+       HARD delete-record) all live here. Reusable: any sand that emits
+       recordClicked drives it. */
     :root { color-scheme: dark; }
     * { box-sizing: border-box; }
     body { margin: 0; font: 13px/1.45 system-ui, -apple-system, sans-serif;
@@ -15,11 +25,63 @@
                color: #6e7681; margin: 0; flex: 1; }
     .dot { width: 7px; height: 7px; border-radius: 50%; background: #f85149; }
     .dot.live { background: #3fb950; }
+    .dot.busy { background: #d29922; animation: pulse 1s ease-in-out infinite; }
+    @keyframes pulse { 50% { opacity: .35; } }
     .rec { border: 1px solid #21262d; border-radius: 8px; margin-bottom: .55rem; overflow: hidden; }
-    .rec > .t { display: flex; justify-content: space-between; gap: .5rem;
+    .rec > .t { display: flex; align-items: center; gap: .5rem;
                 padding: .45rem .6rem; background: #161b22; }
-    .rec > .t .name { font-weight: 600; color: #e6edf3; }
+    .rec > .t .name { font-weight: 600; color: #e6edf3; flex: 1; word-break: break-word; }
     .rec > .t .q { font-variant-numeric: tabular-nums; color: #8b949e; }
+    .tbtn { width: auto; border: 1px solid #21262d; border-radius: 6px;
+            background: #0d1117; font-size: .68rem; padding: .1rem .45rem; cursor: pointer; }
+    #btn-zero { color: #d29922; }
+    #btn-zero:hover { border-color: #d29922; }
+    #btn-delete { color: #f85149; }
+    #btn-delete:hover { border-color: #f85149; }
+    .fields { padding: .45rem .6rem; display: grid; gap: .35rem; }
+    .frow { display: flex; gap: .5rem; align-items: baseline; font-size: .78rem; }
+    .frow .k { color: #6e7681; min-width: 4.2rem; text-transform: uppercase; font-size: .68rem; letter-spacing: .05em; }
+    .frow .v { color: #c9d1d9; white-space: pre-wrap; word-break: break-word; flex: 1; }
+    .frow.edit { align-items: center; }
+    details { border-top: 1px solid #161b22; }
+    details > summary { cursor: pointer; list-style: none; padding: .4rem .6rem;
+                        font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: #6e7681; }
+    details > summary::before { content: "▸ "; }
+    details[open] > summary::before { content: "▾ "; }
+    .sec { padding: 0 .6rem .55rem; display: grid; gap: .4rem; }
+    .chips { display: flex; flex-wrap: wrap; gap: .35rem; }
+    .chip { display: inline-flex; align-items: center; gap: .3rem; border: 1px solid #21262d;
+            border-radius: 999px; padding: .1rem .55rem; font-size: .75rem; background: #161b22; }
+    .chip button { border: 0; background: none; color: #8b949e; padding: 0; cursor: pointer; font-size: .8rem; }
+    .chip button:hover { color: #f85149; }
+    .chip.nav { cursor: pointer; }
+    .chip.nav:hover { border-color: #1f4b8e; }
+    .chip.active { border-color: #1f4b8e; background: #12233c; color: #7aa2f7; }
+    .chip.newthread { border-style: dashed; color: #6e7681; cursor: pointer; }
+    .chip.newthread:hover { border-color: #1f4b8e; color: #7aa2f7; }
+    /* `.inline`'s `display:flex` otherwise beats the `hidden` attribute (same
+       author-origin cascade tie the kanban board's `.bulkbar[hidden]` already
+       works around) — this needs to win by specificity, not rely on order. */
+    #thread-new[hidden] { display: none; }
+    .inline { display: flex; gap: .4rem; align-items: center; }
+    .inline input, .inline select { flex: 1; min-width: 0; }
+    .inline button { flex: 0 0 auto; }
+    .subrow { display: flex; gap: .4rem; align-items: center; font-size: .78rem; }
+    .subrow .lbl { color: #6e7681; min-width: 4.2rem; font-size: .68rem; text-transform: uppercase; letter-spacing: .05em; }
+    .subrow input { flex: 1; min-width: 0; }
+    .loglist { display: grid; gap: .25rem; }
+    .logrow { display: flex; gap: .5rem; align-items: baseline; font-size: .75rem; color: #8b949e; }
+    .logrow .span { flex: 1; }
+    .logrow.open .span { color: #3fb950; }
+    .logrow button { border: 0; background: none; color: #8b949e; cursor: pointer; padding: 0 .2rem; }
+    .logrow button:hover { color: #f85149; }
+    .total { font-size: .72rem; color: #6e7681; }
+    .msg { border-top: 1px solid #161b22; padding: .35rem 0; font-size: .78rem; }
+    .msg .body { white-space: pre-wrap; word-break: break-word; }
+    .msg img { max-width: 100%; border-radius: 6px; margin-top: .25rem; display: block; }
+    .msg .ref { display: inline-block; border: 1px solid #1f4b8e; border-radius: 999px;
+                background: #12233c; color: #7aa2f7; padding: 0 .45rem; font-size: .72rem;
+                cursor: pointer; }
     ul { list-style: none; margin: 0; padding: .25rem .6rem .5rem; }
     li { display: flex; gap: .5rem; align-items: baseline; padding: .2rem 0;
          border-top: 1px solid #161b22; font-size: .78rem; }
@@ -28,33 +90,197 @@
     .delta.pos { color: #3fb950; } .delta.neg { color: #f85149; } .delta.zero { color: #6e7681; }
     .cause { color: #8b949e; flex: 1; }
     .when { color: #6e7681; }
-    .none { color: #6e7681; padding: .2rem 0; }
+    .none { color: #6e7681; padding: .2rem 0; font-size: .78rem; }
     .empty { color: #6e7681; padding: .8rem .2rem; }
+    /* Creation mode: the SAME fields the display shows on a get, writable and
+       empty. Entered via the group's `recordCreate` event ("New task"). */
+    #create { display: none; border: 1px solid #21262d; border-radius: 8px; overflow: hidden; }
+    #create.open { display: block; }
+    #create .t { padding: .45rem .6rem; background: #161b22; font-weight: 600; color: #e6edf3; }
+    #create .fields { border-bottom: 0; }
+    input, textarea, select, button { font: inherit; }
+    input, textarea, select { width: 100%; border: 1px solid #21262d; border-radius: 6px;
+                              background: #0d1117; color: #e6edf3; padding: .35rem .5rem; }
+    textarea { min-height: 70px; resize: vertical; }
+    .actions { display: flex; gap: .5rem; justify-content: flex-end; padding: .45rem .6rem .6rem; }
+    button { border: 1px solid #21262d; border-radius: 6px; background: #161b22;
+             color: #e6edf3; padding: .3rem .7rem; cursor: pointer; }
+    button:hover { border-color: #30363d; }
+    button:disabled { opacity: .4; cursor: default; }
+    button.accent { border-color: #1f4b8e; background: #12233c; }
+    .err { color: #f85149; font-size: .75rem; padding: 0 .6rem .4rem; }
+    .hint { color: #6e7681; font-size: .72rem; }
+    /* rendered body preview (K6): same blocks the board card renderer shows */
+    .preview { white-space: pre-wrap; word-break: break-word; border: 1px dashed #21262d;
+               border-radius: 6px; padding: .4rem .55rem; font-size: .78rem; color: #c9d1d9; }
   </style>
 </head>
 <body>
   <div class="head">
-    <h1>Provenance — why things changed</h1>
-    <span id="dot" class="dot"></span>
+    <h1 id="title">Record Info</h1>
+    <span id="dot" class="dot" title="red = reconnecting · amber = update in flight · green = live"></span>
   </div>
-  <div id="list"></div>
+
+  <div id="create">
+    <div class="t">New record</div>
+    <div class="fields">
+      <div class="frow edit"><span class="k">Head</span><input id="c-head" type="text" autocomplete="off" /></div>
+      <div class="frow edit"><span class="k">Slug</span><input id="c-slug" type="text" autocomplete="off" placeholder="optional.dot.case" /></div>
+      <div class="frow edit"><span class="k">Quantity</span><input id="c-quantity" type="number" step="1" /></div>
+      <div class="frow edit"><span class="k">Body</span><textarea id="c-body"></textarea></div>
+    </div>
+    <div id="c-error" class="err" hidden></div>
+    <div class="actions">
+      <button id="c-cancel" type="button">Cancel</button>
+      <button id="c-submit" type="button" class="accent">Create</button>
+    </div>
+  </div>
+
+  <div id="focus" class="rec" hidden>
+    <div class="t">
+      <span class="name" id="f-name"></span>
+      <span class="q" id="f-qty"></span>
+      <button id="btn-zero" type="button" class="tbtn" title="Zero the quantity (deactivate) — the record stays">Zero</button>
+      <button id="btn-delete" type="button" class="tbtn" title="HARD delete — the record disappears everywhere; its Ledger history stays">Delete</button>
+    </div>
+
+    <div class="fields">
+      <div class="frow edit"><span class="k">Head</span><input id="f-head" type="text" autocomplete="off" /></div>
+      <div class="frow edit"><span class="k">Slug</span><input id="f-slug" type="text" autocomplete="off" placeholder="dot.case" /></div>
+      <div class="frow edit"><span class="k">Quantity</span><input id="f-quantity" type="number" step="1" /></div>
+      <div class="frow edit"><span class="k">Body</span><textarea id="f-body"></textarea></div>
+      <div id="f-preview" class="preview" hidden></div>
+      <div class="actions" style="padding:0">
+        <span id="f-error" class="err" style="padding:0; margin-right:auto" hidden></span>
+        <button id="f-save" type="button" class="accent" disabled>Save</button>
+      </div>
+    </div>
+
+    <details id="sec-work" open>
+      <summary>Work</summary>
+      <div class="sec">
+        <div class="subrow"><span class="lbl">Start</span><input id="w-start" type="date" /></div>
+        <div class="subrow"><span class="lbl">Due</span><input id="w-due" type="date" /></div>
+        <div class="subrow"><span class="lbl">Estimate</span><input id="w-estimate" type="number" min="0" step="5" placeholder="minutes" /></div>
+        <div class="inline">
+          <button id="w-play" type="button" class="accent">▶ Play</button>
+          <button id="w-pause" type="button">⏸ Pause</button>
+          <span id="w-total" class="total"></span>
+        </div>
+        <div id="worklog-list" class="loglist"></div>
+      </div>
+    </details>
+
+    <details id="sec-people" open>
+      <summary>Assignees</summary>
+      <div class="sec">
+        <div id="assignee-list" class="chips"></div>
+        <div class="inline">
+          <select id="a-pick"></select>
+          <button id="a-add" type="button">Assign</button>
+        </div>
+      </div>
+    </details>
+
+    <details id="sec-parent">
+      <summary>Parent &amp; children</summary>
+      <div class="sec">
+        <div id="parent-view" class="chips"></div>
+        <div class="inline">
+          <input id="p-input" type="text" placeholder="parent slug or uid" />
+          <button id="p-set" type="button">Set</button>
+        </div>
+        <div class="hint">Children (linked part-of here):</div>
+        <div id="children-list" class="chips"></div>
+      </div>
+    </details>
+
+    <details id="sec-resources">
+      <summary>Resources</summary>
+      <div class="sec">
+        <div id="resource-list" class="chips"></div>
+        <div class="inline">
+          <input id="r-input" type="text" placeholder="URL (creates a resource) or slug/uid" />
+          <button id="r-add" type="button">Add</button>
+        </div>
+      </div>
+    </details>
+
+    <details id="sec-comments" open>
+      <summary>Threads</summary>
+      <div class="sec">
+        <div id="thread-tabs" class="chips"></div>
+        <div id="thread-new" class="inline" hidden>
+          <input id="th-name" type="text" placeholder="Thread name" autocomplete="off" />
+          <button id="th-create" type="button" class="accent">Create</button>
+          <button id="th-cancel" type="button">Cancel</button>
+        </div>
+        <div id="comments-list"></div>
+        <div class="inline">
+          <textarea id="cm-body" placeholder="Message… (@slug references a record; image URLs render)" style="min-height:44px"></textarea>
+          <button id="cm-post" type="button" class="accent">Post</button>
+        </div>
+      </div>
+    </details>
+
+    <details id="sec-facts" open>
+      <summary>History</summary>
+      <ul id="facts-list"></ul>
+    </details>
+  </div>
+
   <div id="empty" class="empty" hidden>No records yet.</div>
 
   <script>
-    // The blueprint's W-provenance standard (VII.1): every record with the
-    // fact log that made it. `include: facts` — "the end of custom plumbing":
-    // provenance for free on the same read the table sand uses.
+    // The blueprint's W-provenance standard (VII.1) grown into the expanded
+    // card: GET (recordClicked) shows the record with EVERYTHING editable;
+    // CREATE (recordCreate) shows the same fields writable and empty.
     const H = window.LinceWidgetHost;
-    const listEl = document.getElementById("list");
-    const emptyEl = document.getElementById("empty");
-    const dot = document.getElementById("dot");
+    // The reusable K6 body editor (slash blocks, @-mentions, block renderer).
+    // Optional: a missing module degrades to plain textareas + text bodies.
+    const Editor = window.LinceBodyEditor || null;
+    const $ = (id) => document.getElementById(id);
+    const emptyEl = $("empty");
+    const WORK_NS = "work";
 
-    H.onLive((live) => dot.classList.toggle("live", live));
-    // This sand is an event consumer: it shows NOTHING until a record is chosen.
-    // When a sand in the same group (e.g. a kanban card) is clicked, we focus on
-    // THAT record via the `recordClicked` ABI room — the unified bridge delivers
-    // it group-scoped (Stage 8b, base task 1 + kanban B).
+    // ---- live dot with an "update in flight" state ---------------------------
+    let liveNow = false;
+    let pendingActs = 0;
+    function syncDot() {
+      const dot = $("dot");
+      dot.classList.toggle("busy", pendingActs > 0);
+      dot.classList.toggle("live", liveNow && pendingActs === 0);
+    }
+    function act(action) {
+      pendingActs++; syncDot();
+      return H.act(action).finally(() => { pendingActs--; syncDot(); });
+    }
+    H.onLive((live) => {
+      liveNow = live;
+      syncDot();
+      if (live) flushPendingWork();
+    });
+
+    // ---- state ----------------------------------------------------------------
     let unsubscribe = null;
+    let creating = false;
+    let row = null;           // the focused record's latest protein row
+    let fieldsDirty = false;  // user is typing: live updates must not clobber
+    let workDirty = false;
+    let activeThreadUid = null; // which of the record's threads is showing/composing
+    // uid -> {head, slug, kind}; slug -> uid. For pickers, chips, @references.
+    let names = {};
+    let slugToUid = {};
+    H.subscribeProtein("names", { source: "record", limit: 500 }, ({ rows }) => {
+      names = {}; slugToUid = {};
+      for (const r of rows || []) {
+        names[r.uid] = { head: r.head, slug: r.slug, kind: r.kind };
+        if (r.slug) slugToUid[r.slug] = r.uid;
+      }
+      if (row && !creating) renderLinks();
+      renderPersonPicker();
+    });
+
     showPlaceholder();
 
     H.joinRoom("recordClicked");
@@ -62,68 +288,657 @@
       const record = payload && payload.record ? payload.record : payload;
       const uid = record && (record.uid || record.slug);
       if (!uid) return;
+      closeCreate();
+      focusRecord(String(uid));
+    });
+
+    H.joinRoom("recordCreate");
+    H.onLane("recordCreate", (payload) => {
+      const seed = payload && payload.record ? payload.record : {};
+      openCreate(seed);
+    });
+
+    function focusRecord(uid) {
       if (typeof unsubscribe === "function") unsubscribe();
+      fieldsDirty = false;
+      workDirty = false;
+      activeThreadUid = null; // a different record's threads are unrelated
+      $("thread-new").hidden = true;
       unsubscribe = H.subscribeProtein(
         "provenance",
         {
           source: "record",
-          where: [{ uid_eq: String(uid) }],
-          include: { facts: { limit: 20 } },
+          where: [{ uid_eq: uid }],
+          include: {
+            facts: { limit: 20 },
+            links: { kinds: ["assigned-to", "part-of", "resource-of", "references"], direction: "both" },
+            threads: { messages_limit: 50 },
+            extension: { namespace: WORK_NS },
+          },
         },
-        ({ rows }) => render(rows),
+        ({ rows }) => {
+          if (creating) return;
+          row = (rows && rows[0]) || null;
+          renderFocus();
+        },
       );
+    }
+
+    // ---- creation mode -------------------------------------------------------
+    function openCreate(seed) {
+      creating = true;
+      $("title").textContent = "New record";
+      $("focus").hidden = true;
+      emptyEl.hidden = true;
+      $("c-error").hidden = true;
+      $("c-head").value = "";
+      $("c-slug").value = "";
+      $("c-quantity").value = String(Number(seed?.quantity) || 0);
+      $("c-body").value = "";
+      $("create").classList.add("open");
+      $("c-head").focus();
+      $("create").dataset.kind = typeof seed?.kind === "string" && seed.kind ? seed.kind : "plain";
+    }
+    function closeCreate() {
+      creating = false;
+      $("title").textContent = "Record Info";
+      $("create").classList.remove("open");
+    }
+    $("c-cancel").addEventListener("click", () => { closeCreate(); showPlaceholder(); });
+    $("c-submit").addEventListener("click", async () => {
+      const head = $("c-head").value.trim();
+      const slug = $("c-slug").value.trim();
+      const quantity = Number($("c-quantity").value) || 0;
+      const body = $("c-body").value;
+      if (!head && !slug) {
+        $("c-error").textContent = "Give the record a head (or at least a slug).";
+        $("c-error").hidden = false;
+        return;
+      }
+      try {
+        const outcome = await act({
+          action: "create-record",
+          kind: $("create").dataset.kind || "plain",
+          head, body, quantity,
+        });
+        const created = outcome && outcome.created;
+        if (slug && created) {
+          await act({ action: "set-slug", target: created, slug });
+        }
+        if (created) await addBodyRefs(String(created), body, []);
+        closeCreate();
+        if (created) focusRecord(String(created));
+        else showPlaceholder();
+      } catch (err) {
+        $("c-error").textContent = String(err && err.message ? err.message : err);
+        $("c-error").hidden = false;
+      }
     });
 
+    // ---- placeholder -----------------------------------------------------------
     function showPlaceholder() {
-      listEl.innerHTML = "";
-      emptyEl.textContent = "Clique num card do Kanban para ver o histórico dele.";
+      $("focus").hidden = true;
+      emptyEl.textContent = "Clique num card do Kanban para ver e editar o registro.";
       emptyEl.hidden = false;
     }
 
-    function render(rows) {
-      listEl.innerHTML = "";
-      emptyEl.textContent = "No records yet.";
-      emptyEl.hidden = rows.length > 0;
-      for (const r of rows) {
-        const box = document.createElement("div");
-        box.className = "rec";
-        const t = document.createElement("div");
-        t.className = "t";
-        const name = document.createElement("span");
-        name.className = "name"; name.textContent = r.head || r.slug || r.uid;
-        const q = document.createElement("span");
-        q.className = "q"; q.textContent = `qty ${r.quantity}`;
-        t.append(name, q);
-        box.appendChild(t);
+    // ---- focused render --------------------------------------------------------
+    function renderFocus() {
+      if (!row) {
+        $("focus").hidden = true;
+        emptyEl.textContent = "Record deleted (or none focused).";
+        emptyEl.hidden = false;
+        return;
+      }
+      emptyEl.hidden = true;
+      $("focus").hidden = false;
+      $("f-name").textContent = row.head || row.slug || row.uid;
+      $("f-qty").textContent = `qty ${row.quantity}`;
+      if (!fieldsDirty) {
+        $("f-head").value = row.head || "";
+        $("f-slug").value = row.slug || "";
+        $("f-quantity").value = String(row.quantity ?? 0);
+        $("f-body").value = row.body || "";
+        $("f-save").disabled = true;
+        $("f-error").hidden = true;
+      }
+      renderBodyPreview();
+      renderWork();
+      renderLinks();
+      renderComments();
+      renderFacts();
+    }
 
-        const ul = document.createElement("ul");
-        const facts = Array.isArray(r.facts) ? r.facts : [];
-        if (facts.length === 0) {
-          const li = document.createElement("li");
-          li.className = "none"; li.textContent = "no facts yet";
-          ul.appendChild(li);
+    // ---- editable fields: the get view IS the edit view ------------------------
+    for (const id of ["f-head", "f-slug", "f-quantity", "f-body"]) {
+      $(id).addEventListener("input", () => { fieldsDirty = true; $("f-save").disabled = false; });
+    }
+    $("f-body").addEventListener("input", () => renderBodyPreview());
+    $("f-save").addEventListener("click", async () => {
+      if (!row) return;
+      const head = $("f-head").value.trim();
+      const slug = $("f-slug").value.trim();
+      const quantity = Number($("f-quantity").value) || 0;
+      const body = $("f-body").value;
+      try {
+        if (head !== (row.head || "") || body !== (row.body || "")) {
+          await act({ action: "edit-record-text", target: row.uid, head, body });
         }
-        for (const f of facts) {
-          const li = document.createElement("li");
-          const d = document.createElement("span");
-          const sign = f.delta > 0 ? "pos" : f.delta < 0 ? "neg" : "zero";
-          d.className = `delta ${sign}`;
-          d.textContent = f.delta > 0 ? `+${f.delta}` : `${f.delta}`;
-          const c = document.createElement("span");
-          c.className = "cause";
-          c.textContent = f.cause_kind + (f.cause ? ` · ${f.cause}` : "");
-          const w = document.createElement("span");
-          w.className = "when"; w.textContent = shortTime(f.at);
-          li.append(d, c, w);
-          ul.appendChild(li);
+        if (slug !== (row.slug || "")) {
+          await act({ action: "set-slug", target: row.uid, slug: slug || null });
         }
-        box.appendChild(ul);
-        listEl.appendChild(box);
+        if (quantity !== (Number(row.quantity) || 0)) {
+          await act({ action: "set-quantity", target: row.uid, value: quantity });
+        }
+        // K6: every resolvable @slug in the body becomes a real `references`
+        // link (the ones already linked are skipped, so re-saving is a no-op).
+        await addBodyRefs(row.uid, body, linksOf("references", "out").map((l) => l.other));
+        fieldsDirty = false;
+        $("f-save").disabled = true;
+        $("f-error").hidden = true;
+      } catch (err) {
+        $("f-error").textContent = String(err && err.message ? err.message : err);
+        $("f-error").hidden = false;
+      }
+    });
+
+    // ---- K6: the slash-block editor + rendered body preview --------------------
+    const editorNames = () => Object.entries(names)
+      .map(([uid, n]) => ({ uid, slug: n.slug, head: n.head }));
+    if (Editor) {
+      Editor.attach($("f-body"), { getNames: editorNames });
+      Editor.attach($("c-body"), { getNames: editorNames });
+      Editor.attach($("cm-body"), { getNames: editorNames });
+    }
+    const refResolver = (token) => {
+      const uid = resolveToken(token);
+      return uid ? { uid, label: token } : null;
+    };
+    function renderBodyPreview() {
+      const holder = $("f-preview");
+      holder.innerHTML = "";
+      const source = $("f-body").value;
+      holder.hidden = !Editor || !source.trim();
+      if (holder.hidden) return;
+      holder.appendChild(Editor.renderMarkdown(source, {
+        resolveRef: refResolver,
+        onNavigate: (uid) => focusRecord(uid),
+        onToggle: (lineAt) => toggleBodyLine(lineAt),
+      }));
+    }
+    // Preview checkboxes: clean form -> write immediately (like a kanban card);
+    // dirty form -> flip the draft only, Save commits it.
+    function toggleBodyLine(lineAt) {
+      const area = $("f-body");
+      const lines = String(area.value || "").split("\n");
+      const m = (lines[lineAt] || "").match(/^(\s*)- \[( |x|X)\] (.*)$/);
+      if (!m) return;
+      lines[lineAt] = `${m[1]}- [${m[2] === " " ? "x" : " "}] ${m[3]}`;
+      const nextBody = lines.join("\n");
+      area.value = nextBody;
+      if (!fieldsDirty && row) {
+        row.body = nextBody;
+        renderBodyPreview();
+        act({ action: "edit-record-text", target: row.uid, head: row.head || "", body: nextBody })
+          .catch((err) => console.warn(err));
+      } else {
+        fieldsDirty = true;
+        $("f-save").disabled = false;
+        renderBodyPreview();
+      }
+    }
+    async function addBodyRefs(sourceUid, body, existingUids) {
+      REF_RE.lastIndex = 0;
+      const seen = new Set(existingUids || []);
+      for (let m; (m = REF_RE.exec(body)); ) {
+        const uid = resolveToken(m[1]);
+        if (uid && uid !== sourceUid && !seen.has(uid)) {
+          seen.add(uid);
+          await act({ action: "add-link", from: sourceUid, kind: "references", to: uid });
+        }
+      }
+    }
+
+    // ---- Zero vs Delete: two DIFFERENT things (2026-07-17) ---------------------
+    // Zero = deactivate (quantity -> 0, record stays). Delete = HARD delete
+    // (`delete-record`: gone from every read surface; Ledger history stays).
+    $("btn-zero").addEventListener("click", () => {
+      if (!row) return;
+      act({ action: "deactivate", target: row.uid }).catch((err) => console.warn(err));
+    });
+    $("btn-delete").addEventListener("click", () => {
+      if (!row) return;
+      act({ action: "delete-record", target: row.uid }).catch((err) => console.warn(err));
+    });
+
+    // ---- Work: dates + estimate + worklogs on the `work` record_extension ------
+    // Data model per the standing preset precedent: freestyle record_extension
+    // (namespace "work": {start, due, estimate_min, logs:[{start,end}]}).
+    function workData() {
+      const ext = row && row.extension && typeof row.extension === "object" ? row.extension : {};
+      return {
+        start: typeof ext.start === "string" ? ext.start : "",
+        due: typeof ext.due === "string" ? ext.due : "",
+        estimate_min: Number.isFinite(Number(ext.estimate_min)) && ext.estimate_min !== null
+          ? Number(ext.estimate_min) : null,
+        logs: Array.isArray(ext.logs)
+          ? ext.logs.filter((l) => l && typeof l.start === "string") : [],
+      };
+    }
+    const openLog = (work) => work.logs.find((l) => !l.end);
+    function fmtMinutes(min) {
+      if (min >= 60) return `${Math.floor(min / 60)}h${String(Math.round(min % 60)).padStart(2, "0")}`;
+      return `${Math.round(min)}min`;
+    }
+    function renderWork() {
+      const work = workData();
+      if (!workDirty) {
+        $("w-start").value = work.start;
+        $("w-due").value = work.due;
+        $("w-estimate").value = work.estimate_min === null ? "" : String(work.estimate_min);
+      }
+      const running = openLog(work);
+      $("w-play").disabled = !!running;
+      $("w-pause").disabled = !running;
+      let total = 0;
+      const list = $("worklog-list");
+      list.innerHTML = "";
+      work.logs.forEach((log, at) => {
+        const end = log.end ? new Date(log.end) : new Date();
+        const minutes = Math.max(0, (end - new Date(log.start)) / 60000);
+        total += minutes;
+        const rowEl = document.createElement("div");
+        rowEl.className = log.end ? "logrow" : "logrow open";
+        const span = document.createElement("span");
+        span.className = "span";
+        span.textContent = `${shortDate(log.start)} · ${fmtMinutes(minutes)}${log.end ? "" : " (running)"}`;
+        const del = document.createElement("button");
+        del.type = "button";
+        del.textContent = "✕";
+        del.title = "Remove this worklog entry";
+        del.dataset.logDelete = String(at);
+        del.addEventListener("click", () => {
+          const work2 = workData();
+          work2.logs.splice(at, 1);
+          saveWork(work2);
+        });
+        rowEl.append(span, del);
+        list.appendChild(rowEl);
+      });
+      const est = work.estimate_min !== null ? ` / est ${fmtMinutes(work.estimate_min)}` : "";
+      $("w-total").textContent = work.logs.length ? `${fmtMinutes(total)}${est}` : est.replace(" / ", "");
+    }
+    // All work writes funnel here; failures queue in localStorage and flush on
+    // reconnect (the old sand's offline pending-stop queue, generalized).
+    const pendingKey = `lince-recinfo-pending:${H.instanceId || "preview"}`;
+    function readPendingWork() {
+      try { return JSON.parse(localStorage.getItem(pendingKey) || "[]"); } catch { return []; }
+    }
+    function queuePendingWork(op) {
+      const q = readPendingWork().filter((p) => p.uid !== op.uid); // last write wins per record
+      q.push(op);
+      try { localStorage.setItem(pendingKey, JSON.stringify(q)); } catch {}
+    }
+    async function flushPendingWork() {
+      const q = readPendingWork();
+      if (!q.length) return;
+      try { localStorage.setItem(pendingKey, "[]"); } catch {}
+      for (const op of q) {
+        try {
+          await act({ action: "set-extension", target: op.uid, namespace: WORK_NS, fds: op.fds });
+        } catch (err) { console.warn(err); queuePendingWork(op); }
+      }
+    }
+    function saveWork(work) {
+      if (!row) return;
+      const fds = {
+        start: work.start || null,
+        due: work.due || null,
+        estimate_min: work.estimate_min,
+        logs: work.logs,
+      };
+      // optimistic: reflect immediately, then write (or queue when offline)
+      row.extension = fds;
+      workDirty = false;
+      renderWork();
+      act({ action: "set-extension", target: row.uid, namespace: WORK_NS, fds })
+        .catch((err) => { console.warn(err); queuePendingWork({ uid: row.uid, fds }); });
+    }
+    for (const id of ["w-start", "w-due", "w-estimate"]) {
+      $(id).addEventListener("input", () => { workDirty = true; });
+      $(id).addEventListener("change", () => {
+        const work = workData();
+        work.start = $("w-start").value;
+        work.due = $("w-due").value;
+        work.estimate_min = $("w-estimate").value === "" ? null : Number($("w-estimate").value);
+        saveWork(work);
+      });
+    }
+    $("w-play").addEventListener("click", () => {
+      const work = workData();
+      if (openLog(work)) return;
+      work.logs.push({ start: new Date().toISOString(), end: null });
+      saveWork(work);
+    });
+    $("w-pause").addEventListener("click", () => {
+      const work = workData();
+      const running = openLog(work);
+      if (!running) return;
+      running.end = new Date().toISOString();
+      saveWork(work);
+    });
+
+    // ---- links: assignees / parent+children / resources -------------------------
+    const linksOf = (kind, direction) => (Array.isArray(row?.links) ? row.links : [])
+      .filter((l) => l.kind === kind && l.direction === direction && l.hop === 1);
+    const nameOf = (uid) => (names[uid] && (names[uid].head || names[uid].slug)) || String(uid).slice(0, 8);
+    const resolveToken = (token) => slugToUid[token] || (names[token] ? token : null);
+    function chip(label, { onRemove, onClick, dataset } = {}) {
+      const el = document.createElement("span");
+      el.className = onClick ? "chip nav" : "chip";
+      const text = document.createElement("span");
+      text.textContent = label;
+      el.appendChild(text);
+      if (dataset) for (const [k, v] of Object.entries(dataset)) el.dataset[k] = v;
+      if (onClick) el.addEventListener("click", onClick);
+      if (onRemove) {
+        const x = document.createElement("button");
+        x.type = "button";
+        x.textContent = "✕";
+        x.addEventListener("click", (e) => { e.stopPropagation(); onRemove(); });
+        el.appendChild(x);
+      }
+      return el;
+    }
+    function renderPersonPicker() {
+      const pick = $("a-pick");
+      const previous = pick.value;
+      pick.innerHTML = "";
+      const people = Object.entries(names).filter(([, n]) => n.kind === "person");
+      for (const [uid, n] of people) {
+        const opt = document.createElement("option");
+        opt.value = uid;
+        opt.textContent = n.head || n.slug || uid;
+        pick.appendChild(opt);
+      }
+      if (!people.length) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "no person records yet";
+        pick.appendChild(opt);
+      }
+      if ([...pick.options].some((o) => o.value === previous)) pick.value = previous;
+    }
+    function renderLinks() {
+      if (!row) return;
+      // assignees: out `assigned-to` links
+      const aList = $("assignee-list");
+      aList.innerHTML = "";
+      for (const l of linksOf("assigned-to", "out")) {
+        aList.appendChild(chip(nameOf(l.other), {
+          dataset: { assignee: l.other },
+          onRemove: () => act({ action: "remove-link", from: row.uid, kind: "assigned-to", to: l.other })
+            .catch((err) => console.warn(err)),
+        }));
+      }
+      if (!aList.children.length) aList.appendChild(hintNode("nobody assigned"));
+      // parent: out `part-of`; children: in `part-of`
+      const pView = $("parent-view");
+      pView.innerHTML = "";
+      for (const l of linksOf("part-of", "out")) {
+        pView.appendChild(chip(nameOf(l.other), {
+          dataset: { parent: l.other },
+          onClick: () => focusRecord(l.other),
+          onRemove: () => act({ action: "remove-link", from: row.uid, kind: "part-of", to: l.other })
+            .catch((err) => console.warn(err)),
+        }));
+      }
+      if (!pView.children.length) pView.appendChild(hintNode("no parent"));
+      const cList = $("children-list");
+      cList.innerHTML = "";
+      for (const l of linksOf("part-of", "in")) {
+        cList.appendChild(chip(nameOf(l.other), {
+          dataset: { child: l.other },
+          onClick: () => focusRecord(l.other),
+        }));
+      }
+      if (!cList.children.length) cList.appendChild(hintNode("none"));
+      // resources: in `resource-of` links (resource --resource-of--> record)
+      const rList = $("resource-list");
+      rList.innerHTML = "";
+      for (const l of linksOf("resource-of", "in")) {
+        const info = names[l.other] || {};
+        const holder = document.createElement("span");
+        holder.appendChild(chip(info.head || nameOf(l.other), {
+          dataset: { resource: l.other },
+          onClick: () => focusRecord(l.other),
+          onRemove: () => act({ action: "remove-link", from: l.other, kind: "resource-of", to: row.uid })
+            .catch((err) => console.warn(err)),
+        }));
+        rList.appendChild(holder);
+      }
+      if (!rList.children.length) rList.appendChild(hintNode("none"));
+    }
+    function hintNode(text) {
+      const el = document.createElement("span");
+      el.className = "hint";
+      el.textContent = text;
+      return el;
+    }
+    $("a-add").addEventListener("click", () => {
+      const to = $("a-pick").value;
+      if (!row || !to) return;
+      act({ action: "add-link", from: row.uid, kind: "assigned-to", to }).catch((err) => console.warn(err));
+    });
+    $("p-set").addEventListener("click", async () => {
+      const token = $("p-input").value.trim();
+      if (!row || !token) return;
+      try {
+        for (const l of linksOf("part-of", "out")) {
+          await act({ action: "remove-link", from: row.uid, kind: "part-of", to: l.other });
+        }
+        await act({ action: "add-link", from: row.uid, kind: "part-of", to: token });
+        $("p-input").value = "";
+      } catch (err) { console.warn(err); }
+    });
+    $("r-add").addEventListener("click", async () => {
+      const token = $("r-input").value.trim();
+      if (!row || !token) return;
+      try {
+        let resourceUid = null;
+        if (/^https?:\/\//i.test(token)) {
+          // a URL: mint a resource record carrying it in the body
+          const tail = token.split("/").filter(Boolean).pop() || token;
+          const outcome = await act({
+            action: "create-record", kind: "plain",
+            head: decodeURIComponent(tail).slice(0, 80), body: token, quantity: 1,
+          });
+          resourceUid = outcome && outcome.created;
+        } else {
+          resourceUid = resolveToken(token) || token; // slug/uid of an existing record
+        }
+        if (!resourceUid) return;
+        await act({ action: "add-link", from: resourceUid, kind: "resource-of", to: row.uid });
+        $("r-input").value = "";
+      } catch (err) { console.warn(err); }
+    });
+
+    // ---- threads: a REAL multi-thread system, not one flattened message list --
+    // (2026-07-18) A record can carry any number of named `thread` records
+    // (`create-thread` target+head); each shows as a tab/chip. Only the ACTIVE
+    // thread's messages render, and the compose box posts into that thread's
+    // uid specifically — switching tabs re-scopes both. `activeThreadUid`
+    // resets on focusRecord() (a different record's threads are unrelated) and
+    // defaults to the first thread returned (oldest) whenever the previous
+    // selection no longer exists in the current row.
+    const IMG_RE = /!\[[^\]]*\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s]+\.(?:png|jpe?g|gif|webp)(?:\?[^\s]*)?)/gi;
+    const REF_RE = /@([a-z0-9][a-z0-9.\-]*)/gi;
+    function commentThreads() {
+      return Array.isArray(row?.threads) ? row.threads : [];
+    }
+    function activeThread() {
+      const threads = commentThreads();
+      if (!threads.length) return null;
+      return threads.find((t) => t.uid === activeThreadUid) || threads[0];
+    }
+    function renderComments() {
+      const threads = commentThreads();
+      const current = activeThread();
+      activeThreadUid = current ? current.uid : null;
+      renderThreadTabs(threads, current);
+      const list = $("comments-list");
+      list.innerHTML = "";
+      const messages = current && Array.isArray(current.messages) ? current.messages : [];
+      if (!threads.length) list.appendChild(hintNode("no threads yet — start one below"));
+      else if (!messages.length) list.appendChild(hintNode("no messages in this thread yet"));
+      for (const m of messages) {
+        const el = document.createElement("div");
+        el.className = "msg";
+        el.dataset.messageUid = m.uid;
+        el.appendChild(renderMessageBody(String(m.body || "")));
+        list.appendChild(el);
+      }
+    }
+    function renderThreadTabs(threads, current) {
+      const wrap = $("thread-tabs");
+      wrap.innerHTML = "";
+      for (const t of threads) {
+        const el = chip(t.head || "thread", {
+          dataset: { thread: t.uid },
+          onClick: () => { activeThreadUid = t.uid; renderComments(); },
+        });
+        el.classList.toggle("active", !!current && t.uid === current.uid);
+        wrap.appendChild(el);
+      }
+      const addBtn = chip("+ New thread", { dataset: { newThread: "1" } });
+      addBtn.classList.add("newthread");
+      addBtn.addEventListener("click", () => {
+        $("thread-new").hidden = false;
+        $("th-name").value = "";
+        $("th-name").focus();
+      });
+      wrap.appendChild(addBtn);
+    }
+    $("th-cancel").addEventListener("click", () => { $("thread-new").hidden = true; });
+    $("th-create").addEventListener("click", async () => {
+      const name = $("th-name").value.trim();
+      if (!row || !name) return;
+      try {
+        const made = await act({ action: "create-thread", target: row.uid, head: name });
+        if (made && made.created) activeThreadUid = made.created;
+        $("thread-new").hidden = true;
+      } catch (err) { console.warn(err); }
+    });
+    $("th-name").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); $("th-create").click(); }
+      else if (e.key === "Escape") { $("thread-new").hidden = true; }
+    });
+    // Body -> nodes via the shared K6 renderer (same blocks everywhere);
+    // regex fallback keeps @hops + images when the module is unavailable.
+    function renderMessageBody(body) {
+      const holder = document.createElement("div");
+      holder.className = "body";
+      if (Editor) {
+        holder.appendChild(Editor.renderMarkdown(body, {
+          resolveRef: refResolver,
+          onNavigate: (uid) => focusRecord(uid),
+        }));
+        return holder;
+      }
+      const images = [];
+      let text = body.replace(IMG_RE, (match, mdUrl, bareUrl) => {
+        images.push(mdUrl || bareUrl);
+        return "";
+      });
+      let last = 0;
+      REF_RE.lastIndex = 0;
+      for (let m; (m = REF_RE.exec(text)); ) {
+        const uid = resolveToken(m[1]);
+        if (!uid) continue;
+        holder.appendChild(document.createTextNode(text.slice(last, m.index)));
+        const ref = document.createElement("button");
+        ref.type = "button";
+        ref.className = "ref";
+        ref.textContent = `@${m[1]}`;
+        ref.dataset.ref = uid;
+        ref.addEventListener("click", () => focusRecord(uid));
+        holder.appendChild(ref);
+        last = m.index + m[0].length;
+      }
+      holder.appendChild(document.createTextNode(text.slice(last)));
+      for (const url of images) {
+        const img = document.createElement("img");
+        img.src = url;
+        img.loading = "lazy";
+        img.alt = "";
+        holder.appendChild(img);
+      }
+      return holder;
+    }
+    $("cm-post").addEventListener("click", async () => {
+      const body = $("cm-body").value.trim();
+      if (!row || !body) return;
+      try {
+        // No thread exists yet at all (brand new record): posting still works
+        // by starting a default-named one, same as before this became a real
+        // multi-thread system — it just no longer forces every later comment
+        // onto that same thread.
+        let threadUid = activeThreadUid;
+        if (!threadUid) {
+          const made = await act({ action: "create-thread", target: row.uid, head: "General" });
+          threadUid = made && made.created;
+          activeThreadUid = threadUid;
+        }
+        if (!threadUid) return;
+        const posted = await act({ action: "create-message", thread: threadUid, body });
+        // every resolvable @slug becomes a real `references` link from the message
+        const messageUid = posted && posted.created;
+        if (messageUid) {
+          REF_RE.lastIndex = 0;
+          const seen = new Set();
+          for (let m; (m = REF_RE.exec(body)); ) {
+            const uid = resolveToken(m[1]);
+            if (uid && !seen.has(uid)) {
+              seen.add(uid);
+              await act({ action: "add-link", from: messageUid, kind: "references", to: uid });
+            }
+          }
+        }
+        $("cm-body").value = "";
+      } catch (err) { console.warn(err); }
+    });
+
+    // ---- facts ------------------------------------------------------------------
+    function renderFacts() {
+      const ul = $("facts-list");
+      ul.innerHTML = "";
+      const facts = Array.isArray(row?.facts) ? row.facts : [];
+      if (facts.length === 0) {
+        const li = document.createElement("li");
+        li.className = "none"; li.textContent = "no facts yet";
+        ul.appendChild(li);
+      }
+      for (const f of facts) {
+        const li = document.createElement("li");
+        const d = document.createElement("span");
+        const sign = f.delta > 0 ? "pos" : f.delta < 0 ? "neg" : "zero";
+        d.className = `delta ${sign}`;
+        d.textContent = f.delta > 0 ? `+${f.delta}` : `${f.delta}`;
+        const c = document.createElement("span");
+        c.className = "cause";
+        c.textContent = f.cause_kind + (f.cause ? ` · ${f.cause}` : "");
+        const w = document.createElement("span");
+        w.className = "when"; w.textContent = shortTime(f.at);
+        li.append(d, c, w);
+        ul.appendChild(li);
       }
     }
 
     function shortTime(iso) {
       try { return new Date(iso).toLocaleTimeString(); } catch { return ""; }
+    }
+    function shortDate(iso) {
+      try { return new Date(iso).toLocaleDateString(); } catch { return ""; }
     }
   </script>
 </body>

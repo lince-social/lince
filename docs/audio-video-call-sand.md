@@ -276,7 +276,7 @@ decides whether the effect is allowed.
 
 - Local: `notes/institute/Sand.md`
 - Local: `notes/institute/Karma.md`
-- Local: `docs/stage-8b-web-sand-migration.md`
+- Local: `docs/new-version-capabilities-and-maneirisms.md`
 - MDN: `RTCPeerConnection`, `MediaRecorder`, and `getDisplayMedia`
 - LiveKit docs: Egress overview and screen sharing
 - LiveKit GitHub: Apache-2.0 SFU and Apache-2.0 Egress service

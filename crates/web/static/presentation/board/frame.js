@@ -20,6 +20,11 @@
   const laneHandlers = new Set(); // {room, handler}
   let live = false;
   const liveHandlers = new Set();
+  // Per-card host state (widgetState) — board chrome, never the Ledger. The
+  // bridge pushes it down as `lince:bridge-state`; sands persist UI prefs
+  // (e.g. kanban body modes) back up with patchCardState.
+  let cardState = {};
+  const cardStateHandlers = new Set();
   let reqSeq = 0;
   const nextReqId = () => `${instanceId}:a${++reqSeq}`;
 
@@ -43,7 +48,7 @@
         const waiter = actionWaiters.get(data.reqId);
         if (waiter) {
           actionWaiters.delete(data.reqId);
-          if (data.ok) waiter.resolve({ created: data.created, facts: data.facts });
+          if (data.ok) waiter.resolve({ created: data.created, facts: data.facts, warnings: data.warnings || [] });
           else waiter.reject(new Error(data.message || "action failed"));
         }
         break;
@@ -55,6 +60,14 @@
         live = Boolean(data.live);
         for (const h of liveHandlers) h(live);
         break;
+      case "lince:bridge-state": {
+        const next = data.payload?.meta?.cardState;
+        if (next && typeof next === "object") {
+          cardState = next;
+          for (const h of cardStateHandlers) h(cardState);
+        }
+        break;
+      }
     }
   });
 
@@ -84,7 +97,9 @@
       };
     },
 
-    // WRITE: forward a typed Action; resolves { created, facts } or rejects.
+    // WRITE: forward a typed Action; resolves { created, facts, warnings } or
+    // rejects. Warnings are non-fatal advisories (cycles, Proof loops) — show
+    // them, never treat them as errors.
     act(action) {
       const reqId = nextReqId();
       return new Promise((resolve, reject) => {
@@ -107,6 +122,15 @@
       handler(live);
       return () => liveHandlers.delete(handler);
     },
+
+    // Host state: the card's persisted UI prefs (host chrome, not sand data).
+    getCardState() { return cardState; },
+    onCardState(handler) {
+      cardStateHandlers.add(handler);
+      handler(cardState);
+      return () => cardStateHandlers.delete(handler);
+    },
+    patchCardState(patch) { post({ type: "lince:patch-card-state", patch }); },
   };
 
   post({ type: "lince:ready" });

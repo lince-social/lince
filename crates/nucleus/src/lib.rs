@@ -1,6 +1,6 @@
 //! Lince pure core.
 //!
-//! Blueprint: `docs/fable-improvement.md`. This crate cannot be called `core`
+//! Blueprint: `docs/new-version-capabilities-and-maneirisms.md`. This crate cannot be called `core`
 //! (Rust built-in), so it is `nucleus` — the part of the Cell that holds the
 //! machinery of meaning.
 //!

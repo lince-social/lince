@@ -32,6 +32,34 @@ pub async fn frame_js() -> Response {
     )))
 }
 
+/// The reusable body editor (K6): slash block palette + @-mention picker +
+/// the shared markdown block renderer, served at the absolute
+/// `/board/editor.js` beside frame.js. Sands that show or edit a record body
+/// load it and get `window.LinceBodyEditor`.
+pub async fn editor_js() -> Response {
+    asset_response(js(include_bytes!(
+        "../../../static/presentation/board/editor.js"
+    )))
+}
+
+/// Vendored d3 v7 for the relations force graph, served at the absolute
+/// `/board/vendor/d3.v7.min.js`. This MUST be an always-registered route like
+/// frame.js/editor.js: when `static_dir` exists on disk, `/static/*` goes to
+/// ServeDir alone and the embedded fallback below is never wired — d3 under
+/// `/static/vendored/` 404'd there and the graph lost all physics. The
+/// license travels beside it (AGENTS.md rule).
+pub async fn d3_js() -> Response {
+    asset_response(js(include_bytes!(
+        "../../../src/sand/relations/d3.v7.min.js"
+    )))
+}
+
+pub async fn d3_license() -> Response {
+    asset_response(text(include_bytes!(
+        "../../../src/sand/relations/LICENSE.txt"
+    )))
+}
+
 fn embedded_asset(path: &str) -> Option<EmbeddedAsset> {
     match path {
         "styles.css" => Some(css(include_bytes!("../../../static/styles.css"))),
@@ -67,9 +95,6 @@ fn embedded_asset(path: &str) -> Option<EmbeddedAsset> {
         // New-way sand host, also served at `/board/frame.js` (see `frame_js`).
         "presentation/board/frame.js" => Some(js(include_bytes!(
             "../../../static/presentation/board/frame.js"
-        ))),
-        "vendored/d3.v7.min.js" => Some(js(include_bytes!(
-            "../../../src/sand/relations/d3.v7.min.js"
         ))),
         "vendored/datastar.js" => Some(js(include_bytes!("../../../static/vendored/datastar.js"))),
         "vendored/DatastarReference" => Some(text(include_bytes!(

@@ -66,7 +66,15 @@ cat > "$WORK/harness.html" <<'HTML'
     addEventListener(t, f) { if (t === "open") this._open.push(f);
       else if (t === "message") this._msg = f; else if (t === "close") this._close = f;
       else if (t === "error") this._err = f; }
-    send(raw) { window.__sent.push(JSON.parse(raw)); }
+    send(raw) {
+      const msg = JSON.parse(raw);
+      window.__sent.push(msg);
+      // Auto-ACK Actions so sands awaiting H.act(...) proceed (creation flow).
+      if (msg.type === "act") {
+        setTimeout(() => window.__inbound(
+          { type: "action_ok", id: msg.id, created: "r_new", facts: [] }), 0);
+      }
+    }
     close() { this.readyState = 3; }
   }
   FakeWS.CONNECTING=0; FakeWS.OPEN=1; FakeWS.CLOSING=2; FakeWS.CLOSED=3;
@@ -77,7 +85,11 @@ cat > "$WORK/harness.html" <<'HTML'
   // a DIFFERENT group. Same ids the iframes carry; getCardGroupStack keyed on
   // them, exactly like main.js.
   const groups = { "card-kanban": ["g1"], "card-recinfo": ["g1"], "card-recinfo-other": ["g2"] };
-  const abiListen = { "card-kanban": [], "card-recinfo": ["recordClicked"], "card-recinfo-other": ["recordClicked"] };
+  const abiListen = {
+    "card-kanban": [],
+    "card-recinfo": ["recordClicked", "recordCreate"],
+    "card-recinfo-other": ["recordClicked", "recordCreate"],
+  };
 
   function makeIframe(id, file) {
     const f = document.createElement("iframe");
@@ -126,7 +138,8 @@ cat > "$WORK/harness.html" <<'HTML'
     await wait(150);
 
     // The card rendered inside the REAL kanban iframe?
-    const cardEl = kanban.contentDocument && kanban.contentDocument.querySelector(".card");
+    // Click the TITLE (2026-07-17: title -> record_info; body -> in-place edit).
+    const cardEl = kanban.contentDocument && kanban.contentDocument.querySelector(".card .card-title");
     results.card_rendered = !!cardEl;
 
     // Click it. Now only assert on frames sent AFTER the click.
@@ -140,6 +153,27 @@ cat > "$WORK/harness.html" <<'HTML'
     // the emit was not a board-wide broadcast).
     results.same_group_focused = uidEqSubForCard("card-recinfo", "r_click");
     results.diff_group_not_focused = !uidEqSubForCard("card-recinfo-other", "r_click");
+
+    // "New task" in kanban opens CREATION MODE in the same-group record_info:
+    // the same fields the get shows, writable and empty. Scoped like clicks.
+    window.__sent.length = 0;
+    kanban.contentDocument.getElementById("open-create").click();
+    await wait(250);
+    const rc = recinfo.contentDocument;
+    const oc = other.contentDocument;
+    results.create_mode_same_group = rc.getElementById("create").classList.contains("open");
+    results.create_mode_scoped = !oc.getElementById("create").classList.contains("open");
+    results.create_fields_empty = rc.getElementById("c-head").value === ""
+      && rc.getElementById("c-body").value === "";
+
+    // Fill + submit: record_info writes create-record, then focuses the
+    // created record (the ack's uid) with a uid_eq subscription.
+    rc.getElementById("c-head").value = "Fresh";
+    rc.getElementById("c-submit").click();
+    await wait(300);
+    results.create_action = window.__sent.some((m) => m.type === "act"
+      && m.action && m.action.action === "create-record" && m.action.head === "Fresh");
+    results.created_focused = uidEqSubForCard("card-recinfo", "r_new");
 
     document.title = "RESULT=" + JSON.stringify(results);
   })();
@@ -162,5 +196,10 @@ check kanban_subscribed      "the real kanban sand did not subscribe its driving
 check card_rendered          "the real kanban sand did not render a clickable card from the snapshot"
 check same_group_focused     "clicking a kanban card did not focus the same-group record_info on that uid"
 check diff_group_not_focused "the click leaked to a different-group record_info (scoping broken / broadcast)"
+check create_mode_same_group "New task did not open creation mode in the same-group record_info"
+check create_mode_scoped     "creation mode leaked to a different-group record_info"
+check create_fields_empty    "creation mode fields were not empty/writable"
+check create_action          "record_info creation did not send create-record"
+check created_focused        "record_info did not focus the created record after the ack"
 
-[ "$fail" -eq 0 ] && echo "PASS: real iframe -> frame.js -> unified bridge -> group-scoped recordClicked -> record_info focus" || exit 1
+[ "$fail" -eq 0 ] && echo "PASS: real iframe -> frame.js -> unified bridge -> group-scoped recordClicked/recordCreate -> record_info focus + creation" || exit 1

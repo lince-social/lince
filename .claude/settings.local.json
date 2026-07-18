@@ -6,7 +6,8 @@
       "Bash(awk 'NR>=1 && NR<=80')",
       "Bash(git log *)",
       "Bash(git ls-tree *)",
-      "Bash(env)"
+      "Bash(env)",
+      "Bash(bash scripts/other/*)"
     ]
   }
 }

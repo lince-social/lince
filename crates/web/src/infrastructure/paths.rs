@@ -16,6 +16,13 @@ pub fn sand_dir() -> PathBuf {
     web_config_dir().join("sand")
 }
 
+/// Where uploaded body images live (2026-07-17) — the ONLY directory a
+/// record body's `![](...)` can ever point an image at on disk. Files here
+/// get opaque generated names; see `presentation::http::media_assets`.
+pub fn media_dir() -> PathBuf {
+    web_config_dir().join("media")
+}
+
 pub fn web_config_dir() -> PathBuf {
     config_root_dir().join("web")
 }

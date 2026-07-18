@@ -63,6 +63,11 @@ quote = "1.0"
 ratatui = { version = "0.30.0" }
 regex = "1.12.2"
 reqwest = { version = "0.12.24", default-features = false, features = ["json", "rustls-tls"] }
+# xdg-portal only, no gtk3 feature: talks to xdg-desktop-portal via ashpd
+# (pure Rust D-Bus client) with zero GTK/WebKit involvement — see
+# presentation::http::media_assets::pick_image's doc comment for why this
+# specific feature choice matters (a GTK-based picker is what crashes).
+rfd = { version = "0.15", default-features = false, features = ["xdg-portal", "tokio"] }
 rhai = "1.24.0"
 ropey = "1.6.1"
 semver = "1.0.27"

@@ -71,6 +71,23 @@ cat > "$WORK/pharness.html" <<'HTML'
     const quantityInput = b.querySelector(".protein-row input");
     quantityInput.value = "0";
     quantityInput.dispatchEvent(new Event("input"));
+    // + filter #2: assignee sugar (linked_to kind=assigned-to)
+    b.querySelectorAll(".protein-add")[0].click();
+    let rows = b.querySelectorAll(".protein-row");
+    let sel = rows[1].querySelector("select");
+    sel.value = "assignee"; sel.dispatchEvent(new Event("change"));
+    rows = b.querySelectorAll(".protein-row");
+    const aInput = rows[1].querySelector("input");
+    aInput.value = "ana"; aInput.dispatchEvent(new Event("input"));
+    // + filter #3: raw linked_to (kind + to pair)
+    b.querySelectorAll(".protein-add")[0].click();
+    rows = b.querySelectorAll(".protein-row");
+    sel = rows[2].querySelector("select");
+    sel.value = "linked_to"; sel.dispatchEvent(new Event("change"));
+    rows = b.querySelectorAll(".protein-row");
+    const pair = rows[2].querySelectorAll("input");
+    pair[0].value = "tag"; pair[0].dispatchEvent(new Event("input"));
+    pair[1].value = "tasks"; pair[1].dispatchEvent(new Event("input"));
     b.querySelector(".protein-actions .button--accent").click();   // Save
     setTimeout(() => {
       const sent = window.__sent || [];
@@ -80,6 +97,8 @@ cat > "$WORK/pharness.html" <<'HTML'
         + " SLUG=" + (save?.action?.slug)
         + " HEAD=" + (save?.action?.head)
         + " QGTE=" + (save?.action?.ast?.where?.[0]?.quantity_gte)
+        + " ASSIGNEE=" + JSON.stringify(save?.action?.ast?.where?.[1]?.linked_to)
+        + " LINKED=" + JSON.stringify(save?.action?.ast?.where?.[2]?.linked_to)
         + " SUB=" + (sent.some(m=>m.type==="subscribe"&&m.id==="protein-list")?"yes":"no");
     }, 40);
   }, 40);
@@ -100,5 +119,7 @@ grep -q "DRIVE=views.stock" <<<"$TITLE" || { echo "FAIL: picking a saved Protein
 grep -q "SLUG=my-query" <<<"$TITLE" || { echo "FAIL: Save did not derive the slug from the name"; fail=1; }
 grep -q "HEAD=My Query" <<<"$TITLE" || { echo "FAIL: Save did not send the name as head"; fail=1; }
 grep -q "QGTE=0" <<<"$TITLE" || { echo "FAIL: the GUI quantity >= filter did not build into the AST"; fail=1; }
+grep -q 'ASSIGNEE={"kind":"assigned-to","to":"ana"}' <<<"$TITLE" || { echo "FAIL: assignee sugar did not build linked_to kind=assigned-to"; fail=1; }
+grep -q 'LINKED={"kind":"tag","to":"tasks"}' <<<"$TITLE" || { echo "FAIL: linked_to pair did not build into the AST"; fail=1; }
 
 [ "$fail" -eq 0 ] && echo "PASS: Data panel list + drive + GUI build/save" || exit 1

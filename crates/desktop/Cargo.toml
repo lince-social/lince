@@ -12,7 +12,11 @@ tauri-build = { workspace = true }
 
 [dependencies]
 utils = { workspace = true }
-web = { workspace = true }
+# native-picker: the "/image" slash block's system file dialog (2026-07-18,
+# runs server-side via rfd's xdg-portal backend — see
+# web::presentation::http::media_assets::pick_and_store_image). Only the
+# desktop shell enables it; the plain lince CLI doesn't need a local display.
+web = { workspace = true, features = ["native-picker"] }
 sqlx = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "process", "time", "macros", "sync"] }
 tauri = { workspace = true, features = ["image-png", "tray-icon"] }

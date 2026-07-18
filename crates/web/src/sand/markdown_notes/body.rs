@@ -1,7 +1,0 @@
-use maud::{Markup, html};
-
-pub(super) fn body() -> Markup {
-    html! {
-        main class="noteApp" data-note-record-editor="" {}
-    }
-}

@@ -941,39 +941,8 @@ fn render_widget_config_form() -> Markup {
                         p id="widget-config-auth-help" class="startup-error-message" hidden="" {}
                     }
                 }
-                // Views is retired (Stage 8b): data now comes from the Data
-                // (Protein) section. Kept hidden so the legacy main.js view
-                // elements still resolve until that code path is deleted.
-                section id="widget-config-views-section" class="widget-config-section" hidden="" {
-                    div class="widget-config-section__head" {
-                        div class="import-modal__details-label" { "Views" }
-                        p class="import-modal__details-copy" { "Busque por nome ou id. A lista filtra no cliente enquanto voce digita." }
-                    }
-                    div id="widget-config-view-field" class="startup-field startup-field--stack" hidden="" {
-                        label class="startup-field" for="widget-config-view-search" {
-                            input
-                                id="widget-config-view-search"
-                                class="startup-field__input"
-                                type="search"
-                                autocomplete="off"
-                                spellcheck="false"
-                                placeholder="Buscar views por nome ou id";
-                        }
-                        div class="startup-field__meta" id="widget-config-view-summary" {}
-                        div id="widget-config-view-list" class="widget-config-view-list" aria-live="polite" {}
-                        p id="widget-config-view-help" class="startup-error-message" hidden="" {}
-                    }
-                    label id="widget-config-view-id-field" class="startup-field" for="widget-config-view-id" hidden="" {
-                        input
-                            id="widget-config-view-id"
-                            class="startup-field__input"
-                            type="number"
-                            min="1"
-                            step="1"
-                            name="view_id"
-                            placeholder="View id";
-                    }
-                }
+                // Views (legacy table-CRUD) is DELETED (2026-07-17): data
+                // comes from the Data (Protein) section.
                 section id="widget-config-protein-section" class="widget-config-section" {
                     div class="widget-config-section__head" {
                         div class="import-modal__details-label" { "Data" }

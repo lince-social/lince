@@ -5,104 +5,952 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kanban</title>
   <script src="/board/frame.js"></script>
+  <script src="/board/editor.js"></script>
   <style>
-    :root { color-scheme: dark; --bg: #0e1116; --panel: #151a21; --panel2: #1b222b; --line: #2b3440; --text: #e6edf3; --muted: #8b949e; --accent: #7aa2f7; --good: #3fb950; }
+    /* Ported from the retired server-rendered kanban (git ea54ead^): panel
+       header with query introspection + status, lane columns with
+       collapse/resize, an edit sheet, optimistic drag moves — client-rendered
+       on Protein/Actions. Filtering/sorting and the Protein choice are BASE UI
+       (the card's Data panel), not sand chrome; creation happens in the
+       grouped record_info (the `recordCreate` event), not a kanban sheet.
+       K3 adds the column system: a Columns sheet (create/rename/delete/sort/
+       hide, value or range or @concept buckets), presets as sand-config
+       records, concept-name resolution, multi-select bulk move.
+       K2 (checkbox part) + editing-surface decision (2026-07-16, revised
+       2026-07-17): the kanban itself writes checkbox toggles, in-place body
+       edits, column moves, AND bulk delete of selected cards (confirmed via
+       an in-sand modal) — head/metadata/assignees/resources edits are still
+       the grouped record_info's job, so the old full edit sheet stays gone. */
+    :root { color-scheme: dark; --bg: #0e1116; --panel: #151a21; --panel2: #1b222b; --line: #2b3440; --text: #e6edf3; --muted: #8b949e; --accent: #7aa2f7; --good: #3fb950; --warn: #d29922; }
     * { box-sizing: border-box; }
     body { margin: 0; height: 100vh; overflow: hidden; background: var(--bg); color: var(--text); font: 13px/1.4 system-ui, -apple-system, sans-serif; }
-    main { height: 100%; display: grid; grid-template-rows: auto 1fr auto; gap: 10px; padding: 12px; }
-    header { display: flex; align-items: center; gap: 8px; }
-    h1 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); flex: 1; }
-    .dot { width: 7px; height: 7px; border-radius: 50%; background: #f85149; }
-    .dot.live { background: var(--good); }
+    /* glued to the wall (2026-07-18): the sand's own edges carry no padding —
+       the header's divider line and each column's own internal padding are
+       the only whitespace left. */
+    main { height: 100%; display: grid; grid-template-rows: auto 1fr; gap: 0; padding: 0; }
     input, select, button, textarea { font: inherit; }
-    input, select, textarea { border: 1px solid var(--line); border-radius: 7px; background: #0d1117; color: var(--text); padding: 7px 9px; }
-    button { border: 1px solid var(--line); border-radius: 7px; background: var(--panel2); color: var(--text); padding: 7px 10px; cursor: pointer; }
+    input, select, textarea { border: 1px solid var(--line); border-radius: 2px; background: #0d1117; color: var(--text); padding: 7px 9px; }
+    textarea { min-height: 90px; resize: vertical; }
+    button { border: 1px solid var(--line); border-radius: 2px; background: var(--panel2); color: var(--text); padding: 6px 10px; cursor: pointer; }
     button:hover { border-color: #3c4857; }
-    .columns { min-height: 0; overflow-x: auto; display: grid; grid-template-columns: repeat(5, minmax(210px, 1fr)); gap: 10px; }
-    .col { min-height: 0; display: grid; grid-template-rows: auto 1fr; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
-    .col header { padding: 9px 10px; border-bottom: 1px solid var(--line); }
+    button.accent { border-color: #35507e; background: #1c2c4a; }
+    button:disabled { opacity: .4; cursor: default; }
+    /* header (revised 2026-07-18): no boxed panel — a single 2rem line with
+       a bottom divider is the ONLY line separating it from the board below.
+       Nothing inside carries its own padding — only `gap` separates pieces,
+       and `justify-content` (not a spacer element) splits left from right,
+       so every control ends up the same height. */
+    .panel { padding: .5rem; background: var(--panel); border-bottom: 1px solid var(--line); }
+    .topbar { height: 2rem; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .topbar-left, .topbar-right { height: 100%; display: flex; align-items: center; gap: 8px; }
+    .topbar button, .topbar .modes button { height: 2rem; padding: 0; box-sizing: border-box;
+      display: inline-flex; align-items: center; justify-content: center; }
+    /* the "+" is the only topbar control meant to read as a square icon */
+    #open-create { width: 2rem; }
+    h1 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+    #status-label { font-size: 11px; color: var(--muted); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #f85149; display: inline-block; }
+    .dot.live { background: var(--good); }
+    .dot.busy { background: var(--warn); animation: pulse 1s ease-in-out infinite; }
+    @keyframes pulse { 50% { opacity: .35; } }
+    .modes { height: 100%; display: inline-flex; border: 1px solid var(--line); border-radius: 2px; overflow: hidden; }
+    .modes button { border: 0; border-radius: 0; font-size: 13px; line-height: 1; color: var(--muted); background: var(--panel2); min-width: 2rem; }
+    .modes button + button { border-left: 1px solid var(--line); }
+    .modes button.on { color: var(--text); background: #26303c; }
+    /* K8: bulk actions float as a pill anchored to the bottom of the sand
+       (position:fixed is relative to the iframe's own viewport, so it never
+       leaves the kanban sand) — every control in the row is the same height. */
+    .bulkbar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%);
+               display: flex; align-items: center; gap: 6px; padding: 6px 8px;
+               border: 1px solid var(--line); border-radius: 2px; background: var(--panel2);
+               box-shadow: 0 8px 24px rgba(0,0,0,.4); z-index: 25; font-size: 12px; }
+    .bulkbar[hidden] { display: none; }
+    #bulk-count { color: var(--muted); padding: 0 2px; white-space: nowrap; }
+    .bulkbar select, .bulkbar button { height: 28px; box-sizing: border-box; padding: 0 10px;
+                                        font-size: 12px; display: inline-flex; align-items: center; }
+    .bulkbar button { justify-content: center; min-width: 28px; }
+    .board { min-height: 0; overflow-x: auto; display: flex; gap: 0; align-items: stretch; }
+    /* columns are flush against each other (2026-07-18: no vertical divider
+       line, no gap — columns touch, and an optional column background color
+       is what tells them apart when that's turned on). The only lines left
+       are horizontal: under the header (.panel) and under each column's own
+       name (.col-head). */
+    .col { position: relative; flex: 0 0 auto; min-height: 0; display: grid; grid-template-rows: auto 1fr; }
+    .col.is-collapsed { width: 34px !important; }
+    .col-head { display: flex; align-items: center; gap: 6px; padding: 8px 9px; border-bottom: 1px solid var(--line); }
+    .col.is-collapsed .col-head { flex-direction: column; border-bottom: 0; padding: 9px 4px; }
+    .col.is-collapsed .col-head h2 { writing-mode: vertical-rl; }
     .col h2 { margin: 0; font-size: 12px; flex: 1; }
-    .count { color: var(--muted); font-variant-numeric: tabular-nums; }
+    .count { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 11px; }
+    .lane-toggle { border: 0; background: none; color: var(--muted); padding: 0 3px; font-size: 11px; }
+    .lane-toggle:hover { color: var(--text); }
+    .lane-handle { position: absolute; top: 0; right: -4px; width: 8px; height: 100%; cursor: col-resize; }
     .cards { min-height: 80px; overflow: auto; padding: 8px; }
+    .col.is-collapsed .cards { display: none; }
     .cards.dragover { outline: 2px solid rgba(122,162,247,.5); outline-offset: -4px; }
-    .card { border: 1px solid var(--line); border-radius: 8px; background: #11161d; padding: 9px; margin-bottom: 8px; cursor: grab; }
+    .card { position: relative; border: 1px solid var(--line); border-radius: 2px; background: #11161d; padding: 9px; margin-bottom: 8px; cursor: grab; }
     .card:active { cursor: grabbing; }
-    .card-title { font-weight: 650; word-break: break-word; }
+    .card.selected { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .card-top { display: flex; align-items: baseline; gap: 6px; }
+    .card-title { font-weight: 650; word-break: break-word; flex: 1; }
+    .parent-ctx { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
+    .assignee-chip { border: 1px solid var(--line); border-radius: 2px; background: var(--panel2);
+                     color: var(--accent); font-size: 10px; padding: 0 6px; }
     .card-body { margin-top: 5px; color: var(--muted); white-space: pre-wrap; word-break: break-word; }
-    .card-meta { margin-top: 7px; color: var(--muted); font-size: 11px; display: flex; justify-content: space-between; gap: 8px; }
-    form { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; }
+    /* the institute "Pretext" nicety: compact excerpts render tighter so the
+       6-line window holds more */
+    .card-body.compact { font-size: 12px; line-height: 1.25; }
+    .card-body .md-todo input { accent-color: var(--accent); }
+    .card-body.empty-body { color: #444c56; font-style: italic; cursor: text; }
+    /* editing (2026-07-17): no boxed sub-widget — the textarea blends into the
+       card so clicking the body feels like it just grew a cursor, not like a
+       different UI opened. Height tracks content (see the JS `resize()`). */
+    .card-body.editing { padding: 0; }
+    .card-body.editing textarea {
+      display: block; width: 100%; border: none; background: transparent; padding: 0; margin: 0;
+      color: var(--muted); font: inherit; line-height: 1.4; resize: none; outline: none;
+      box-shadow: none; overflow: hidden; caret-color: var(--accent);
+    }
+    .card-meta { margin-top: 7px; color: var(--muted); font-size: 11px; display: flex; gap: 8px; }
+    .concept-chip { color: var(--accent); }
+    /* card-actions overlays the top-right corner on hover only (2026-07-18):
+       the checkbox and the three per-card mode icons sit side by side in one
+       row, above the title/body content (z-index), so they never overlap it. */
+    .card-actions { position: absolute; top: 5px; right: 5px; display: none; align-items: center; gap: 4px; z-index: 5; background: #11161d; }
+    .card:hover .card-actions, .card:focus-within .card-actions, .card.selected .card-actions { display: inline-flex; }
+    .card-actions input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer; }
+    .col-head input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; }
+    .mode-cycle { border: 0; background: none; color: var(--muted); font-size: 10px; padding: 1px 4px; cursor: pointer; border-radius: 2px; }
+    .mode-cycle:hover { color: var(--text); background: var(--panel2); }
+    .mode-cycle.overridden { color: var(--accent); }
+    .mode-mini { border: 0; background: none; color: var(--muted); font-size: 10px; padding: 1px 3px; cursor: pointer; border-radius: 2px; line-height: 1; }
+    .mode-mini:hover { color: var(--text); background: var(--panel2); }
+    .mode-mini.on { color: var(--accent); }
     .empty { color: var(--muted); padding: 12px; text-align: center; }
+    .sheet-overlay { position: fixed; inset: 0; display: none; z-index: 30; }
+    .sheet-overlay.open { display: block; }
+    .sheet-backdrop { position: absolute; inset: 0; border: 0; border-radius: 0; background: rgba(4,8,14,.6); cursor: default; }
+    .sheet-panel { position: absolute; top: 0; right: 0; height: 100%; width: min(430px, 92vw); overflow: auto; background: var(--panel); border-left: 1px solid var(--line); padding: 14px; display: grid; gap: 12px; align-content: start; }
+    /* the bulk-delete confirmation is a small centered dialog, not a right-side drawer */
+    #sheet-confirm .sheet-panel { position: absolute; top: 50%; left: 50%; right: auto; height: auto;
+      width: min(360px, 90vw); transform: translate(-50%, -50%); border-left: none;
+      border: 1px solid var(--line); border-radius: 2px; }
+    button.danger { border-color: #7d2b2b; background: #3a1f1f; color: #ffb4b4; }
+    button.danger:hover { border-color: #a33a3a; }
+    .sheet-head { display: flex; align-items: baseline; gap: 8px; }
+    .sheet-head h2 { margin: 0; font-size: 14px; flex: 1; }
+    .sheet-sub { margin: 2px 0 0; font-size: 11px; color: var(--muted); }
+    .field-block { display: grid; gap: 5px; }
+    .field-label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+    .sheet-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .sheet-actions.start { justify-content: flex-start; align-items: center; }
+    .col-row { display: flex; gap: 6px; align-items: center; }
+    .col-row .col-label { flex: 1; min-width: 0; padding: 5px 8px; }
+    .col-row .col-value { width: 86px; padding: 5px 8px; }
+    .col-row .col-color { width: 34px; height: 30px; padding: 2px; flex: 0 0 auto; }
+    .col-row .col-err { border-color: #f85149; }
+    .icon-btn { padding: 4px 7px; font-size: 11px; }
+    .preset-row { display: flex; align-items: center; gap: 8px; }
+    .preset-row .preset-name { flex: 1; word-break: break-word; }
+    .hint { font-size: 11px; color: var(--muted); }
   </style>
 </head>
 <body>
   <main>
-    <header>
-      <h1>Kanban</h1>
-      <input id="search" placeholder="Filter cards..." />
-      <span id="dot" class="dot"></span>
-    </header>
-    <section id="columns" class="columns" aria-label="Kanban columns"></section>
-    <form id="new-card">
-      <input id="new-head" placeholder="New task..." autocomplete="off" />
-      <select id="new-lane"></select>
-      <button type="submit">Add</button>
-    </form>
+    <div class="panel">
+      <div class="topbar">
+        <div class="topbar-left"><h1>Kanban</h1></div>
+        <div class="topbar-right">
+          <span id="all-modes" class="modes" title="Body view for every card (per-column and per-card buttons override)">
+            <button type="button" data-mode="head" title="Head — title only">▁</button>
+            <button type="button" data-mode="compact" title="Compact — condensed body">▄</button>
+            <button type="button" data-mode="full" title="Full — entire body">█</button>
+          </span>
+          <button id="open-columns" type="button" title="Configure columns and presets">Columns</button>
+          <button id="open-create" type="button" class="accent" title="New task">+</button>
+          <span id="status-label"></span>
+          <span id="dot" class="dot"></span>
+        </div>
+      </div>
+    </div>
+    <section id="columns" class="board" aria-label="Kanban columns"></section>
   </main>
+
+  <div id="bulk-bar" class="bulkbar" hidden>
+    <span id="bulk-count"></span>
+    <select id="bulk-lane" title="Bulk-move the selected cards into this column"></select>
+    <button id="bulk-move" type="button" title="Move selected cards here">→</button>
+    <button id="bulk-delete" type="button" class="danger" title="Delete selected cards">⌫</button>
+    <button id="bulk-clear" type="button" title="Clear selection">✕</button>
+  </div>
+
+  <div class="sheet-overlay" id="sheet-columns">
+    <button class="sheet-backdrop" type="button" data-close="sheet-columns"></button>
+    <div class="sheet-panel">
+      <div class="sheet-head"><h2>Columns</h2><button type="button" data-close="sheet-columns">Close</button></div>
+      <p class="sheet-sub" title="Done is quantity 1 — you only need to know if you want to change it.">Columns bucket cards by <b>quantity</b>: a value (<code>1</code>), a range (<code>3..10</code> — moving a card in writes the range's first value), or a concept (<code>@food</code> — moving writes <code>set-concept</code>). Done is quantity 1; you only need to know that if you want to change it. The checkbox hides a column.</p>
+      <div id="columns-list" class="field-block"></div>
+      <div class="sheet-actions start">
+        <button id="column-add" type="button">+ Add column</button>
+        <label class="hint" style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="hide-empty" /> Hide empty columns</label>
+        <label class="hint" style="display:flex;align-items:center;gap:5px" title="Board option: the old showParentContext"><input type="checkbox" id="show-parent" /> Parent above titles</label>
+        <label class="hint" style="display:flex;align-items:center;gap:5px" title="Tints each column's whole background with its color, instead of no color at all"><input type="checkbox" id="color-columns" /> Color columns</label>
+      </div>
+      <div class="sheet-actions">
+        <button id="columns-reset" type="button" title="Back to the default Backlog/Next/WIP/Review/Done">Reset</button>
+        <button id="columns-save" type="button" class="accent">Save columns</button>
+      </div>
+      <div class="field-block">
+        <span class="field-label">Presets</span>
+        <div id="preset-list" class="field-block"></div>
+        <div class="sheet-actions start">
+          <input id="preset-name" type="text" placeholder="Preset name" />
+          <button id="preset-save" type="button" title="Saves the board's current columns as a sand-configuration record (kind sand, extension kanban.columns) — visible to every kanban on this cell">Save current as preset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet-overlay" id="sheet-confirm">
+    <button class="sheet-backdrop" type="button" data-close="sheet-confirm"></button>
+    <div class="sheet-panel">
+      <div class="sheet-head"><h2 id="confirm-title">Delete?</h2></div>
+      <p class="sheet-sub" id="confirm-desc"></p>
+      <div class="sheet-actions">
+        <button id="confirm-cancel" type="button" data-close="sheet-confirm">Cancel</button>
+        <button id="confirm-ok" type="button" class="danger">Delete</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const H = window.LinceWidgetHost;
-    const columnsEl = document.getElementById("columns");
-    const dot = document.getElementById("dot");
-    const search = document.getElementById("search");
-    const newHead = document.getElementById("new-head");
-    const newLane = document.getElementById("new-lane");
-    const lanes = [
-      { key: "backlog", label: "Backlog", value: 0 },
-      { key: "next", label: "Next", value: -1 },
-      { key: "wip", label: "WIP", value: -2 },
-      { key: "review", label: "Review", value: -3 },
-      { key: "done", label: "Done", value: 1 },
+    const $ = (id) => document.getElementById(id);
+    const columnsEl = $("columns");
+
+    // ---- lanes (the column system, K3) --------------------------------------
+    // A column is {key,label} plus HOW it buckets: a quantity `value` (with an
+    // optional `to` making it a RANGE — moving a card in writes the
+    // representative `value`), or a `concept` name/uid (moving writes
+    // `set-concept`). cardState.kanban.lanesDef overrides the defaults; the
+    // Columns sheet edits it; presets swap it in one tap.
+    const DEFAULT_LANES = [
+      { key: "backlog", label: "Backlog", value: 0, color: "#6e7681" },
+      { key: "next", label: "Next", value: -1, color: "#7aa2f7" },
+      { key: "wip", label: "WIP", value: -2, color: "#d29922" },
+      { key: "review", label: "Review", value: -3, color: "#bc8cff" },
+      { key: "done", label: "Done", value: 1, color: "#3fb950" },
     ];
+    let lanes = DEFAULT_LANES;
+    let conceptNames = {}; // uid -> canonical name (rows carry concept UIDs)
+    const DEFAULT_WIDTH = 260;
+    const clampWidth = (v) => Math.max(120, Math.min(560, Number(v) || DEFAULT_WIDTH));
+
+    const HEX_COLOR_RE = /^#[0-9a-f]{6}$/i;
+    function normalizeLanesDef(raw) {
+      if (!Array.isArray(raw)) return null;
+      const out = [];
+      for (const l of raw) {
+        if (!l || !l.key) continue;
+        const lane = { key: String(l.key), label: String(l.label || l.key) };
+        if (typeof l.concept === "string" && l.concept.trim()) {
+          lane.concept = l.concept.trim();
+        } else if (Number.isFinite(Number(l.value))) {
+          lane.value = Number(l.value);
+          if (l.to !== undefined && Number.isFinite(Number(l.to)) && Number(l.to) >= lane.value) lane.to = Number(l.to);
+        } else continue;
+        if (typeof l.color === "string" && HEX_COLOR_RE.test(l.color)) lane.color = l.color;
+        out.push(lane);
+      }
+      return out.length ? out : null;
+    }
+    // Low-alpha tint so the column color reads as background wash, not a
+    // block of fully-saturated color under the card text (2026-07-18: the
+    // per-card left-color bar moved here, to the whole column, on toggle).
+    function hexToRgba(hex, alpha) {
+      const m = HEX_COLOR_RE.exec(hex || "");
+      if (!m) return null;
+      const n = parseInt(hex.slice(1), 16);
+      const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+    function conceptMatchesLane(rowConcept, lane) {
+      if (!rowConcept) return false;
+      return rowConcept === lane.concept || conceptNames[rowConcept] === lane.concept;
+    }
+    function laneBuckets(row, lane) {
+      const q = Number(row.quantity) || 0;
+      if (lane.concept) return conceptMatchesLane(row.concept, lane);
+      if (lane.to !== undefined) return q >= lane.value && q <= lane.to;
+      return q === lane.value;
+    }
+    function laneFor(row) {
+      for (const lane of lanes) if (laneBuckets(row, lane)) return lane.key;
+      const q = Number(row.quantity) || 0;
+      if (q > 0) { const pos = lanes.filter((l) => l.value > 0); if (pos.length) return pos[pos.length - 1].key; }
+      return (lanes.find((l) => l.value !== undefined) || lanes[0]).key;
+    }
+    const laneByKey = (key) => lanes.find((l) => l.key === key);
+    function conceptLabel(uid) {
+      return conceptNames[uid] || String(uid).slice(0, 8);
+    }
+    function conceptUidFor(name) {
+      for (const [uid, n] of Object.entries(conceptNames)) if (n === name || uid === name) return uid;
+      return name;
+    }
+
+    // ---- UI state (host state: cardState.kanban; localStorage fallback) ----
+    const BODY_MODES = ["head", "compact", "full"];
+    const COMPACT_LINES = 6;
+    const uiStorageKey = `lince-kanban-ui:${H.instanceId || "preview"}`;
+    let ui = defaultUi();
+    function defaultUi() {
+      return { defaultBodyMode: "full", columnModes: {}, cardModes: {}, lanes: {}, lanesDef: null, hideEmpty: false, showParent: false, columnColor: false };
+    }
+    const isBodyMode = (v) => BODY_MODES.includes(v);
+    function normalizeUi(raw) {
+      const next = defaultUi();
+      if (raw && typeof raw === "object") {
+        if (isBodyMode(raw.defaultBodyMode)) next.defaultBodyMode = raw.defaultBodyMode;
+        for (const [k, v] of Object.entries(raw.columnModes || {})) if (isBodyMode(v)) next.columnModes[k] = v;
+        for (const [k, v] of Object.entries(raw.cardModes || {})) if (isBodyMode(v)) next.cardModes[k] = v;
+        for (const [k, v] of Object.entries(raw.lanes || {})) {
+          if (v && typeof v === "object") next.lanes[k] = { collapsed: Boolean(v.collapsed), width: clampWidth(v.width), hidden: Boolean(v.hidden) };
+        }
+        next.lanesDef = normalizeLanesDef(raw.lanesDef);
+        next.hideEmpty = Boolean(raw.hideEmpty);
+        next.showParent = Boolean(raw.showParent);
+        next.columnColor = Boolean(raw.columnColor);
+      }
+      return next;
+    }
+    function syncLanes() { lanes = ui.lanesDef || DEFAULT_LANES; }
+    try { ui = normalizeUi(JSON.parse(localStorage.getItem(uiStorageKey) || "null")); } catch {}
+    syncLanes();
+    function persistUi() {
+      try { localStorage.setItem(uiStorageKey, JSON.stringify(ui)); } catch {}
+      if (typeof H.patchCardState === "function") H.patchCardState({ kanban: ui });
+      syncLanes();
+      render();
+    }
+
+    // ---- rows + multi-select -------------------------------------------------
     let rows = [];
+    let rowsByUid = {};
+    const selected = new Set(); // uids picked for bulk move
+    function acceptRows(next) {
+      rows = next;
+      rowsByUid = {};
+      for (const r of rows) rowsByUid[r.uid] = r;
+      const uids = new Set(rows.map((r) => r.uid));
+      for (const uid of [...selected]) if (!uids.has(uid)) selected.delete(uid);
+      render();
+    }
 
-    lanes.forEach((lane) => {
-      const opt = document.createElement("option");
-      opt.value = String(lane.value);
-      opt.textContent = lane.label;
-      newLane.appendChild(opt);
+    // ---- act with an "update in flight" dot state (K4's cuter ball) ----------
+    let liveNow = false;
+    let pendingActs = 0;
+    function syncDot() {
+      $("dot").classList.toggle("busy", pendingActs > 0);
+      $("dot").classList.toggle("live", liveNow && pendingActs === 0);
+      $("status-label").textContent = pendingActs > 0 ? "Saving…" : liveNow ? "" : "Reconnecting";
+    }
+    function act(action) {
+      pendingActs++; syncDot();
+      return H.act(action).finally(() => { pendingActs--; syncDot(); });
+    }
+
+    // People names for assignee badges (persons are not in the plain-record
+    // driving rows).
+    let personNames = {};
+    H.subscribeProtein("kanban-people", {
+      source: "record", where: [{ kind_eq: "person" }],
+    }, ({ rows: incoming }) => {
+      personNames = {};
+      for (const p of incoming || []) if (p && p.uid) personNames[p.uid] = p.head || p.slug || p.uid;
+      render();
     });
+    const linksOf = (row, kind) => (Array.isArray(row.links) ? row.links : [])
+      .filter((l) => l.kind === kind && l.direction === "out" && l.hop === 1);
 
-    H.onLive((live) => dot.classList.toggle("live", !!live));
-    H.subscribeProtein("kanban", {
+    // ---- driving Protein (Data panel: savedProtein / inline / default) -----
+    // Links ride along so cards can badge assignee + parent (K4/K5): sands are
+    // tolerant-ignore, so a custom Protein without the include just means no
+    // badges.
+    const DEFAULT_PROTEIN = {
       source: "record",
       where: [{ kind_eq: "plain" }],
       order: [{ asc: "quantity" }, { asc: "created_at" }],
-    }, ({ rows: next }) => {
-      rows = Array.isArray(next) ? next : [];
-      render();
-    });
-
-    search.addEventListener("input", render);
-
-    function laneFor(quantity) {
-      const q = Number(quantity) || 0;
-      if (q > 0) return "done";
-      return (lanes.find((lane) => lane.value === q) || lanes[0]).key;
+      include: { links: { kinds: ["assigned-to", "part-of"], direction: "out" } },
+    };
+    let driver = null;
+    let unsubscribe = null;
+    function pickDriver(cardState) {
+      const saved = typeof cardState?.savedProtein === "string" ? cardState.savedProtein.trim() : "";
+      if (saved) return { kind: "saved", name: saved };
+      if (cardState?.protein && typeof cardState.protein === "object") return { kind: "inline", protein: cardState.protein };
+      return { kind: "default", protein: DEFAULT_PROTEIN };
+    }
+    function resubscribe(cardState) {
+      const next = pickDriver(cardState);
+      if (driver && JSON.stringify(next) === JSON.stringify(driver)) return;
+      driver = next;
+      if (typeof unsubscribe === "function") unsubscribe();
+      const onRows = ({ rows: incoming }) => acceptRows(Array.isArray(incoming) ? incoming : []);
+      unsubscribe = next.kind === "saved"
+        ? H.subscribeSaved("kanban", next.name, onRows)
+        : H.subscribeProtein("kanban", next.protein, onRows);
     }
 
+    if (typeof H.onCardState === "function") {
+      H.onCardState((state) => {
+        if (state?.kanban && typeof state.kanban === "object") {
+          ui = normalizeUi(state.kanban);
+          syncLanes();
+        }
+        resubscribe(state);
+        render();
+      });
+    }
+    resubscribe(null); // covers preview/selftest runs with no board card state
+
+    // ---- side subscriptions: concept names + column presets ------------------
+    // Rows carry concept UIDs; resolve display NAMES from the Lingua source.
+    H.subscribeProtein("kanban-concepts", { source: "concept" }, ({ rows: incoming }) => {
+      conceptNames = {};
+      for (const c of incoming || []) if (c && c.uid) conceptNames[c.uid] = c.name;
+      render();
+    });
+    // Column presets are sand-configuration RECORDS (kind `sand`, extension
+    // namespace `kanban.columns` holding {columns:[...]}) — full CRUD from the
+    // Columns sheet, shared by every kanban instance on the cell, "deleted" by
+    // deactivation like everything else.
+    const PRESET_NAMESPACE = "kanban.columns";
+    let presetRecords = [];
+    H.subscribeProtein("kanban-presets", {
+      source: "record",
+      where: [{ kind_eq: "sand" }, { quantity_gt: 0 }],
+      include: { extension: { namespace: PRESET_NAMESPACE } },
+    }, ({ rows: incoming }) => {
+      presetRecords = (incoming || []).filter((r) => r?.extension && Array.isArray(r.extension.columns));
+      renderPresetList();
+    });
+
+    // ---- header: live dot (green live / amber in-flight / red reconnecting) --
+    H.onLive((live) => {
+      liveNow = !!live;
+      syncDot();
+    });
+
+    // ---- body view modes (K1) ----------------------------------------------
+    const modeFor = (row, laneKey) => ui.cardModes[row.uid] || ui.columnModes[laneKey] || ui.defaultBodyMode;
+    // head -> compact -> full -> head, wrapping forever (2026-07-17: it used to
+    // clear back to "auto" after full, which looked like a dead click whenever
+    // the board default was also full — a real cycle always lands on head next).
+    function nextMode(current) {
+      if (!current) return BODY_MODES[0];
+      const at = BODY_MODES.indexOf(current);
+      return BODY_MODES[(at + 1) % BODY_MODES.length];
+    }
+    const MODE_ICON = { head: "▁", compact: "▄", full: "█" };
+    $("all-modes").addEventListener("click", (e) => {
+      const mode = e.target?.dataset?.mode;
+      if (!isBodyMode(mode)) return;
+      // "All X" is total: it sets the board default AND clears every override.
+      ui.defaultBodyMode = mode;
+      ui.columnModes = {};
+      ui.cardModes = {};
+      persistUi();
+    });
+    function modeCycleButton(kind, key, current) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = current ? "mode-cycle overridden" : "mode-cycle";
+      btn.dataset[kind] = key;
+      // unset = inherits the column/board default; a distinct dot (not one of
+      // the three body icons) so it doesn't misrepresent what a click does
+      btn.textContent = current ? MODE_ICON[current] : "∘";
+      btn.title = (kind === "columnMode"
+        ? "Body view for this column (overrides the board default)"
+        : "Body view for this card (overrides column and board)")
+        + (current ? ` — now ${current}` : " — inherited, click to override");
+      return btn;
+    }
+
+    // ---- creation: delegated to the grouped record_info ----------------------
+    // "New task" does not open a kanban sheet; it asks the record_info packaged
+    // in this group to enter CREATION MODE (same fields it shows on a get, but
+    // writable and empty). Group-scoped, like recordClicked.
+    $("open-create").addEventListener("click", () => {
+      const firstValueLane = lanes.find((l) => l.value !== undefined);
+      H.emit("recordCreate", { record: { kind: "plain", quantity: firstValueLane ? firstValueLane.value : 0 } });
+    });
+
+    // ---- sheets ---------------------------------------------------------------
+    function openSheet(id) { $(id).classList.add("open"); }
+    function closeSheet(id) { $(id).classList.remove("open"); }
+    document.addEventListener("click", (e) => {
+      const target = e.target?.dataset?.close;
+      if (!target) return;
+      closeSheet(target);
+      if (target === "sheet-confirm" && confirmResolve) { confirmResolve(false); confirmResolve = null; }
+    });
+
+    // ---- confirm dialog (base app modal convention: title + description +
+    // Cancel/OK) — kanban has no host-modal bridge, so this is built in-sand
+    // on the same sheet-overlay used by the Columns drawer.
+    let confirmResolve = null;
+    function confirmDialog({ title, description, confirmLabel }) {
+      $("confirm-title").textContent = title || "Are you sure?";
+      $("confirm-desc").textContent = description || "";
+      $("confirm-ok").textContent = confirmLabel || "OK";
+      openSheet("sheet-confirm");
+      return new Promise((resolve) => { confirmResolve = resolve; });
+    }
+    $("confirm-ok").addEventListener("click", () => {
+      closeSheet("sheet-confirm");
+      if (confirmResolve) { confirmResolve(true); confirmResolve = null; }
+    });
+
+    // ---- card bodies: shared blocks + IN-PLACE editing (K2 close, 2026-07-17)
+    // Bodies render through /board/editor.js's renderMarkdown — headings,
+    // REAL checkboxes, `![](...)` images (http(s):// URLs render directly;
+    // local images come ONLY from the editor's "/image" block, which picks a
+    // file, uploads it via `POST /host/media` — sniffed, opaquely named,
+    // never an arbitrary disk path — and inserts `![](/host/media/<name>)`),
+    // @slug chips that hop to record_info. Clicking the TITLE opens record_info
+    // (`recordClicked`); clicking the BODY (in a body-showing mode) edits it
+    // RIGHT THERE — a textarea with the slash palette; Ctrl+Enter or blur
+    // saves (`edit-record-text`, optimistic), Escape cancels. Board record
+    // writes are: checkbox toggles, column moves, body edits.
+    const Editor = window.LinceBodyEditor || null;
+    const CHECKBOX_RE = /^(\s*)- \[( |x|X)\] (.*)$/;
+    function toggleCheckbox(row, lineAt) {
+      const lines = String(row.body || "").split("\n");
+      const m = (lines[lineAt] || "").match(CHECKBOX_RE);
+      if (!m) return;
+      lines[lineAt] = `${m[1]}- [${m[2] === " " ? "x" : " "}] ${m[3]}`;
+      const previous = row.body;
+      row.body = lines.join("\n");
+      render();
+      act({ action: "edit-record-text", target: row.uid, head: row.head || "", body: row.body }).catch((err) => {
+        console.warn(err);
+        row.body = previous;
+        render();
+      });
+    }
+    // Which lines a mode shows: full = the raw body; compact = the body with
+    // blank edges dropped, capped at COMPACT_LINES (+ "..." when truncated).
+    // Indexes stay ORIGINAL so a toggle edits the real line.
+    function visibleBodyLines(row, mode) {
+      const lines = String(row.body || "").split("\n");
+      if (mode !== "compact") return { lines, start: 0, end: lines.length, truncated: false };
+      let start = 0;
+      let last = lines.length;
+      while (start < last && !lines[start].trim()) start++;
+      while (last > start && !lines[last - 1].trim()) last--;
+      const end = Math.min(last, start + COMPACT_LINES);
+      return { lines, start, end, truncated: end < last };
+    }
+    const editorNames = () => rows.map((r) => ({ uid: r.uid, slug: r.slug, head: r.head }))
+      .concat(Object.entries(personNames).map(([uid, head]) => ({ uid, slug: null, head })));
+    function refResolver(token) {
+      const hit = rows.find((r) => r.slug === token || r.uid === token);
+      return hit ? { uid: hit.uid, label: token } : null;
+    }
+
+    let bodyEdit = null; // { uid, draft, caret, detach }
+    function closeBodyEdit() {
+      if (bodyEdit && typeof bodyEdit.detach === "function") bodyEdit.detach();
+      bodyEdit = null;
+    }
+    function openBodyEdit(row) {
+      if (bodyEdit && bodyEdit.uid === row.uid) return;
+      closeBodyEdit();
+      bodyEdit = { uid: row.uid, draft: String(row.body || ""), caret: null, detach: null };
+      render();
+    }
+    function commitBodyEdit(row) {
+      const draft = bodyEdit ? bodyEdit.draft : null;
+      closeBodyEdit();
+      if (draft === null || draft === (row.body || "")) { render(); return; }
+      const previous = row.body;
+      row.body = draft;
+      render();
+      act({ action: "edit-record-text", target: row.uid, head: row.head || "", body: draft }).catch((err) => {
+        console.warn(err);
+        row.body = previous;
+        render();
+      });
+    }
+    const paletteOpen = () => {
+      const pal = document.querySelector(".lince-editor-palette");
+      return !!pal && pal.style.display === "block";
+    };
+    function bodyEditNode(row) {
+      const holder = document.createElement("div");
+      holder.className = "card-body editing";
+      const area = document.createElement("textarea");
+      area.value = bodyEdit.draft;
+      area.rows = 1;
+      // grows with content — no fixed box, so typing feels like the card body
+      // just gained a cursor rather than swapping to a different widget
+      const resize = () => { area.style.height = "auto"; area.style.height = `${area.scrollHeight}px`; };
+      area.addEventListener("input", () => {
+        bodyEdit.draft = area.value;
+        bodyEdit.caret = [area.selectionStart, area.selectionEnd];
+        resize();
+      });
+      area.addEventListener("click", (e) => e.stopPropagation());
+      area.addEventListener("keydown", (e) => {
+        e.stopPropagation(); // card drag/select shortcuts stay out
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); commitBodyEdit(row); }
+        else if (e.key === "Escape" && !paletteOpen()) { closeBodyEdit(); render(); }
+      });
+      // blur saves — but not when focus just moved into the slash palette
+      area.addEventListener("blur", () => {
+        setTimeout(() => {
+          if (bodyEdit && bodyEdit.uid === row.uid && document.activeElement !== area) commitBodyEdit(row);
+        }, 150);
+      });
+      if (Editor) bodyEdit.detach = Editor.attach(area, { getNames: editorNames }).detach;
+      holder.appendChild(area);
+      setTimeout(() => {
+        area.focus();
+        resize();
+        if (bodyEdit && bodyEdit.caret) {
+          area.selectionStart = bodyEdit.caret[0];
+          area.selectionEnd = bodyEdit.caret[1];
+        }
+      }, 0);
+      return holder;
+    }
+    function cardBodyNode(row, mode) {
+      if (bodyEdit && bodyEdit.uid === row.uid) return bodyEditNode(row);
+      const el = document.createElement("div");
+      el.className = mode === "compact" ? "card-body compact" : "card-body";
+      if (!String(row.body || "").trim()) {
+        el.classList.add("empty-body");
+        el.textContent = "add body…";
+      } else if (Editor) {
+        const { start, end, truncated } = visibleBodyLines(row, mode);
+        el.appendChild(Editor.renderMarkdown(row.body, {
+          lines: [start, end],
+          resolveRef: refResolver,
+          onNavigate: (uid) => H.emit("recordClicked", { record: { uid } }),
+          onToggle: (lineAt) => toggleCheckbox(row, lineAt),
+        }));
+        if (truncated) el.appendChild(document.createTextNode("\n..."));
+      } else {
+        // editor.js unavailable: plain text, still windowed
+        const { lines, start, end, truncated } = visibleBodyLines(row, mode);
+        el.textContent = lines.slice(start, end).join("\n") + (truncated ? "\n..." : "");
+      }
+      el.addEventListener("click", (event) => {
+        if (event.ctrlKey || event.metaKey) return; // bubbles to card multi-select
+        if (event.target.closest("input,button,img")) return; // toggles/chips/images keep their jobs
+        event.stopPropagation();
+        openBodyEdit(row);
+      });
+      return el;
+    }
+
+    // ---- Columns sheet: column CRUD + presets (K3) ---------------------------
+    let draftLanes = null; // working copy while the sheet is open
+    const BUILTIN_PRESETS = [
+      { name: "Todo / WIP / Done", columns: [
+        { key: "todo", label: "Todo", value: 0, color: "#6e7681" },
+        { key: "wip", label: "WIP", value: -1, color: "#d29922" },
+        { key: "done", label: "Done", value: 1, color: "#3fb950" },
+      ] },
+      { name: "Backlog / Next / WIP / Finished", columns: [
+        { key: "backlog", label: "Backlog", value: 0, color: "#6e7681" },
+        { key: "next", label: "Next", value: -1, color: "#7aa2f7" },
+        { key: "wip", label: "WIP", value: -2, color: "#d29922" },
+        { key: "finished", label: "Finished", value: 1, color: "#3fb950" },
+      ] },
+    ];
+    const laneValueText = (lane) => lane.concept ? `@${lane.concept}`
+      : lane.to !== undefined ? `${lane.value}..${lane.to}` : String(lane.value);
+    function parseLaneValue(text) {
+      const t = String(text || "").trim();
+      if (!t) return null;
+      if (t.startsWith("@")) { const c = t.slice(1).trim(); return c ? { concept: c } : null; }
+      const range = t.match(/^(-?\d+(?:\.\d+)?)\s*\.\.\s*(-?\d+(?:\.\d+)?)$/);
+      if (range) {
+        const from = Number(range[1]); const to = Number(range[2]);
+        return to >= from ? { value: from, to } : null;
+      }
+      const n = Number(t);
+      return Number.isFinite(n) ? { value: n } : null;
+    }
+    function freshLaneKey(label, taken) {
+      const base = String(label || "column").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "column";
+      let key = base; let n = 2;
+      while (taken.has(key)) key = `${base}-${n++}`;
+      return key;
+    }
+    function iconButton(text, title) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "icon-btn";
+      btn.textContent = text;
+      btn.title = title;
+      return btn;
+    }
+    function snapshotDraft() {
+      draftLanes = lanes.map((lane) => ({ ...lane, hidden: Boolean(ui.lanes[lane.key]?.hidden) }));
+    }
+    $("open-columns").addEventListener("click", () => {
+      snapshotDraft();
+      $("hide-empty").checked = Boolean(ui.hideEmpty);
+      $("show-parent").checked = Boolean(ui.showParent);
+      $("color-columns").checked = Boolean(ui.columnColor);
+      renderColumnsSheet();
+      openSheet("sheet-columns");
+    });
+    function renderColumnsSheet() {
+      renderPresetList();
+      if (!draftLanes) return;
+      const list = $("columns-list");
+      list.innerHTML = "";
+      draftLanes.forEach((lane, at) => {
+        const rowEl = document.createElement("div");
+        rowEl.className = "col-row";
+        const up = iconButton("↑", "Move up");
+        up.disabled = at === 0;
+        up.addEventListener("click", () => { draftLanes.splice(at - 1, 0, draftLanes.splice(at, 1)[0]); renderColumnsSheet(); });
+        const down = iconButton("↓", "Move down");
+        down.disabled = at === draftLanes.length - 1;
+        down.addEventListener("click", () => { draftLanes.splice(at + 1, 0, draftLanes.splice(at, 1)[0]); renderColumnsSheet(); });
+        const label = document.createElement("input");
+        label.type = "text";
+        label.className = "col-label";
+        label.placeholder = "Name";
+        label.value = lane.label;
+        label.addEventListener("input", () => { lane.label = label.value; });
+        const value = document.createElement("input");
+        value.type = "text";
+        value.className = "col-value";
+        value.value = laneValueText(lane);
+        value.title = "A quantity (1), a range (3..10), or a concept (@food)";
+        value.addEventListener("input", () => {
+          const parsed = parseLaneValue(value.value);
+          value.classList.toggle("col-err", !parsed);
+          if (parsed) {
+            delete lane.value; delete lane.to; delete lane.concept;
+            Object.assign(lane, parsed);
+          }
+        });
+        const color = document.createElement("input");
+        color.type = "color";
+        color.className = "col-color";
+        color.value = HEX_COLOR_RE.test(lane.color || "") ? lane.color : "#6e7681";
+        color.title = "Column color (used when \"Color columns\" is on)";
+        color.addEventListener("input", () => { lane.color = color.value; });
+        const hide = document.createElement("input");
+        hide.type = "checkbox";
+        hide.checked = Boolean(lane.hidden);
+        hide.title = "Hide this column";
+        hide.addEventListener("change", () => { lane.hidden = hide.checked; });
+        const del = iconButton("✕", "Delete column");
+        del.addEventListener("click", () => { draftLanes.splice(at, 1); renderColumnsSheet(); });
+        rowEl.append(up, down, label, value, color, hide, del);
+        list.appendChild(rowEl);
+      });
+    }
+    $("column-add").addEventListener("click", () => {
+      if (!draftLanes) return;
+      let v = 0;
+      const used = new Set(draftLanes.filter((l) => l.concept === undefined).map((l) => l.value));
+      while (used.has(v)) v -= 1;
+      draftLanes.push({ key: "", label: "", value: v, color: "#6e7681" });
+      renderColumnsSheet();
+    });
+    $("columns-save").addEventListener("click", () => {
+      if (!draftLanes) return;
+      const taken = new Set();
+      const next = [];
+      for (const lane of draftLanes) {
+        const labelText = String(lane.label || "").trim();
+        const bucket = lane.concept ? { concept: lane.concept }
+          : Number.isFinite(lane.value) ? { value: lane.value, ...(lane.to !== undefined ? { to: lane.to } : {}) }
+          : null;
+        if (!bucket || !labelText) continue;
+        const key = lane.key && !taken.has(lane.key) ? lane.key : freshLaneKey(labelText, taken);
+        taken.add(key);
+        next.push({ key, label: labelText, ...bucket, ...(HEX_COLOR_RE.test(lane.color || "") ? { color: lane.color } : {}) });
+        ui.lanes[key] = {
+          collapsed: Boolean(ui.lanes[key]?.collapsed),
+          width: clampWidth(ui.lanes[key]?.width),
+          hidden: Boolean(lane.hidden),
+        };
+      }
+      if (!next.length) return;
+      ui.lanesDef = next;
+      ui.hideEmpty = $("hide-empty").checked;
+      ui.showParent = $("show-parent").checked;
+      ui.columnColor = $("color-columns").checked;
+      persistUi();
+      closeSheet("sheet-columns");
+      draftLanes = null;
+    });
+    $("columns-reset").addEventListener("click", () => {
+      ui.lanesDef = null; // merge-patch deletes the key: back to defaults
+      ui.hideEmpty = $("hide-empty").checked;
+      persistUi();
+      snapshotDraft();
+      renderColumnsSheet();
+    });
+    function renderPresetList() {
+      const list = $("preset-list");
+      list.innerHTML = "";
+      const addRow = (name, columns, record) => {
+        const rowEl = document.createElement("div");
+        rowEl.className = "preset-row";
+        const label = document.createElement("span");
+        label.className = "preset-name";
+        label.textContent = record ? name : `${name} (built-in)`;
+        const apply = document.createElement("button");
+        apply.type = "button";
+        apply.className = "icon-btn";
+        apply.dataset.applyPreset = name;
+        apply.textContent = "Apply";
+        apply.addEventListener("click", () => applyPreset(columns));
+        rowEl.append(label, apply);
+        if (record) {
+          const del = iconButton("✕", "Delete preset (deactivates the record)");
+          del.dataset.deletePreset = record.uid;
+          del.addEventListener("click", () => {
+            act({ action: "deactivate", target: record.uid }).catch((err) => console.warn(err));
+          });
+          rowEl.appendChild(del);
+        }
+        list.appendChild(rowEl);
+      };
+      for (const preset of BUILTIN_PRESETS) addRow(preset.name, preset.columns, null);
+      for (const record of presetRecords) addRow(record.head || record.slug || record.uid, record.extension.columns, record);
+    }
+    function applyPreset(columns) {
+      const next = normalizeLanesDef(columns);
+      if (!next) return;
+      ui.lanesDef = next;
+      persistUi();
+      if (draftLanes) { snapshotDraft(); renderColumnsSheet(); }
+    }
+    $("preset-save").addEventListener("click", async () => {
+      const name = $("preset-name").value.trim();
+      if (!name) return;
+      try {
+        const outcome = await act({ action: "create-record", kind: "sand", head: name, quantity: 1 });
+        await act({ action: "set-extension", target: outcome.created, namespace: PRESET_NAMESPACE, fds: { columns: lanes } });
+        $("preset-name").value = "";
+      } catch (err) { console.warn(err); }
+    });
+
+    // ---- multi-select + bulk move / bulk delete ------------------------------
+    function toggleSelect(uid) {
+      if (!selected.delete(uid)) selected.add(uid);
+      render();
+    }
+    function renderBulkBar() {
+      const bar = $("bulk-bar");
+      bar.hidden = !selected.size;
+      if (!selected.size) return;
+      $("bulk-count").textContent = `${selected.size} selected`;
+      const select = $("bulk-lane");
+      const previous = select.value;
+      select.innerHTML = "";
+      for (const lane of lanes) {
+        const opt = document.createElement("option");
+        opt.value = lane.key;
+        opt.textContent = lane.label;
+        select.appendChild(opt);
+      }
+      if ([...select.options].some((o) => o.value === previous)) select.value = previous;
+    }
+    $("bulk-move").addEventListener("click", () => {
+      const key = $("bulk-lane").value;
+      for (const uid of [...selected]) move(uid, key);
+      selected.clear();
+      render();
+    });
+    $("bulk-clear").addEventListener("click", () => { selected.clear(); render(); });
+    // HARD delete (`delete-record`, distinct from `deactivate`): the only way
+    // selected cards actually leave every board that queries them. Optimistic
+    // like move()/checkbox toggles — splice locally, roll a card back on reject.
+    $("bulk-delete").addEventListener("click", async () => {
+      const uids = [...selected];
+      if (!uids.length) return;
+      const ok = await confirmDialog({
+        title: uids.length === 1 ? "Delete this card?" : `Delete ${uids.length} cards?`,
+        description: "This removes the card everywhere. It cannot be undone.",
+        confirmLabel: "Delete",
+      });
+      if (!ok) return;
+      const removed = rows.filter((r) => uids.includes(r.uid));
+      selected.clear();
+      acceptRows(rows.filter((r) => !uids.includes(r.uid)));
+      for (const row of removed) {
+        act({ action: "delete-record", target: row.uid }).catch((err) => {
+          console.warn(err);
+          acceptRows([...rows, row]);
+        });
+      }
+    });
+
+    // ---- board render --------------------------------------------------------
     function render() {
-      const q = search.value.trim().toLowerCase();
-      const visible = q
-        ? rows.filter((row) => `${row.head || ""} ${row.body || ""} ${row.slug || ""}`.toLowerCase().includes(q))
-        : rows;
       columnsEl.innerHTML = "";
       for (const lane of lanes) {
+        const laneUi = ui.lanes[lane.key] || {};
+        if (laneUi.hidden) continue;
+        const laneRows = rows.filter((row) => laneFor(row) === lane.key);
+        if (ui.hideEmpty && !laneRows.length) continue;
         const col = document.createElement("section");
-        col.className = "col";
-        const head = document.createElement("header");
+        col.className = laneUi.collapsed ? "col is-collapsed" : "col";
+        col.style.width = `${clampWidth(laneUi.width)}px`;
+        col.style.background = (ui.columnColor && hexToRgba(lane.color, 0.14)) || "";
+        const head = document.createElement("div");
+        head.className = "col-head";
+        // K8: select the whole column at once (in addition to ctrl-click / the
+        // per-card checkbox) — indeterminate when only some cards are picked.
+        const selectAll = document.createElement("input");
+        selectAll.type = "checkbox";
+        selectAll.title = "Select all cards in this column";
+        const laneUids = laneRows.map((r) => r.uid);
+        const laneSelCount = laneUids.filter((uid) => selected.has(uid)).length;
+        selectAll.checked = laneUids.length > 0 && laneSelCount === laneUids.length;
+        selectAll.indeterminate = laneSelCount > 0 && laneSelCount < laneUids.length;
+        selectAll.addEventListener("click", (event) => event.stopPropagation());
+        selectAll.addEventListener("change", () => {
+          if (selectAll.checked) laneUids.forEach((uid) => selected.add(uid));
+          else laneUids.forEach((uid) => selected.delete(uid));
+          render();
+        });
         const title = document.createElement("h2");
         title.textContent = lane.label;
         const count = document.createElement("span");
         count.className = "count";
+        count.textContent = String(laneRows.length);
+        const toggle = document.createElement("button");
+        toggle.type = "button";
+        toggle.className = "lane-toggle";
+        toggle.dataset.laneToggle = lane.key;
+        toggle.textContent = laneUi.collapsed ? "▸" : "▾";
+        toggle.title = laneUi.collapsed ? "Expand column" : "Collapse column";
+        toggle.addEventListener("click", () => {
+          ui.lanes[lane.key] = { ...laneUi, collapsed: !laneUi.collapsed, width: clampWidth(laneUi.width) };
+          persistUi();
+        });
+        const colMode = modeCycleButton("columnMode", lane.key, ui.columnModes[lane.key]);
+        colMode.addEventListener("click", () => {
+          const next = nextMode(ui.columnModes[lane.key]);
+          if (next) ui.columnModes[lane.key] = next;
+          else delete ui.columnModes[lane.key];
+          persistUi();
+        });
+        head.append(selectAll, title, count, colMode, toggle);
         const list = document.createElement("div");
         list.className = "cards";
         list.dataset.lane = lane.key;
@@ -112,73 +960,173 @@
           event.preventDefault();
           list.classList.remove("dragover");
           const uid = event.dataTransfer.getData("text/lince-record");
-          if (uid) move(uid, lane.value);
+          if (uid) move(uid, lane.key);
         });
-        const laneRows = visible.filter((row) => laneFor(row.quantity) === lane.key);
-        count.textContent = String(laneRows.length);
-        head.append(title, count);
-        for (const row of laneRows) list.appendChild(card(row));
+        for (const row of laneRows) list.appendChild(card(row, lane.key));
         if (!laneRows.length) {
           const empty = document.createElement("div");
           empty.className = "empty";
           empty.textContent = "No cards";
           list.appendChild(empty);
         }
-        col.append(head, list);
+        // Width drag (old lane resize): live while dragging, persisted on release.
+        const handle = document.createElement("div");
+        handle.className = "lane-handle";
+        handle.addEventListener("pointerdown", (event) => {
+          event.preventDefault();
+          const startX = event.clientX;
+          const startWidth = clampWidth(laneUi.width);
+          const onMove = (ev) => { col.style.width = `${clampWidth(startWidth + ev.clientX - startX)}px`; };
+          const onUp = (ev) => {
+            window.removeEventListener("pointermove", onMove);
+            window.removeEventListener("pointerup", onUp);
+            ui.lanes[lane.key] = { ...laneUi, collapsed: Boolean(laneUi.collapsed), width: clampWidth(startWidth + ev.clientX - startX) };
+            persistUi();
+          };
+          window.addEventListener("pointermove", onMove);
+          window.addEventListener("pointerup", onUp);
+        });
+        col.append(head, list, handle);
         columnsEl.appendChild(col);
       }
+      for (const btn of $("all-modes").querySelectorAll("button")) {
+        btn.classList.toggle("on", btn.dataset.mode === ui.defaultBodyMode);
+      }
+      renderBulkBar();
     }
 
-    function card(row) {
+    function card(row, laneKey) {
       const el = document.createElement("article");
-      el.className = "card";
-      el.draggable = true;
+      el.className = `card lane-${laneKey}${selected.has(row.uid) ? " selected" : ""}`;
+      el.dataset.recordUid = row.uid;
+      el.draggable = !(bodyEdit && bodyEdit.uid === row.uid); // typing ≠ dragging
       el.addEventListener("dragstart", (event) => {
         event.dataTransfer.setData("text/lince-record", row.uid);
       });
-      // Clicking a card announces it on the `recordClicked` ABI room. The
-      // unified bridge fans this out, group-scoped, to the record_info sand
-      // packaged in the same kanban group (Stage 8b, base task 1 + kanban B).
-      el.addEventListener("click", () => {
-        H.emit("recordClicked", {
-          record: {
-            uid: row.uid,
-            head: row.head,
-            slug: row.slug,
-            body: row.body,
-            quantity: row.quantity,
-          },
-        });
+      // Click targets (2026-07-17): the TITLE opens record_info (group-scoped
+      // `recordClicked`); the BODY edits in place (cardBodyNode). Ctrl/Cmd-
+      // click anywhere selects for bulk operations.
+      el.addEventListener("click", (event) => {
+        if (event.ctrlKey || event.metaKey) toggleSelect(row.uid);
       });
+      const mode = modeFor(row, laneKey);
+      // parent context above the title (the old `showParentContext`, board
+      // option in the Columns sheet; parent = out `part-of` link)
+      if (ui.showParent) {
+        const parentLink = linksOf(row, "part-of")[0];
+        if (parentLink) {
+          const parentRow = rowsByUid[parentLink.other];
+          const ctx = document.createElement("div");
+          ctx.className = "parent-ctx";
+          ctx.textContent = `↑ ${parentRow ? (parentRow.head || parentRow.slug || parentLink.other)
+            : personNames[parentLink.other] || String(parentLink.other).slice(0, 8)}`;
+          el.appendChild(ctx);
+        }
+      }
+      const top = document.createElement("div");
+      top.className = "card-top";
       const title = document.createElement("div");
       title.className = "card-title";
       title.textContent = row.head || row.slug || row.uid;
-      el.appendChild(title);
-      if (row.body) {
-        const body = document.createElement("div");
-        body.className = "card-body";
-        body.textContent = row.body;
-        el.appendChild(body);
+      title.title = "Open in Record Info";
+      title.addEventListener("click", (event) => {
+        if (event.ctrlKey || event.metaKey) return; // let the card handle select
+        event.stopPropagation();
+        H.emit("recordClicked", {
+          record: { uid: row.uid, head: row.head, slug: row.slug, body: row.body, quantity: row.quantity },
+        });
+      });
+      // assignee badge (institute: assignee + parent are the two worth showing
+      // on the big picture)
+      let badge = null;
+      const assigneeLink = linksOf(row, "assigned-to")[0];
+      if (assigneeLink) {
+        badge = document.createElement("span");
+        badge.className = "assignee-chip";
+        badge.textContent = personNames[assigneeLink.other] || String(assigneeLink.other).slice(0, 8);
+        badge.title = "Assignee (edit in Record Info)";
       }
-      const meta = document.createElement("div");
-      meta.className = "card-meta";
-      meta.innerHTML = `<span>qty ${Number(row.quantity) || 0}</span><span>${row.slug || row.uid.slice(0, 8)}</span>`;
-      el.appendChild(meta);
+      top.append(title, ...(badge ? [badge] : []));
+      el.appendChild(top);
+      // body renders whenever the mode shows it — EMPTY bodies included, so
+      // "click the body to start writing" always has a target
+      if (mode !== "head") el.appendChild(cardBodyNode(row, mode));
+      // no quantity/slug here (bug #2): the column TITLE already says what
+      // column the card is on, and the slug is only useful inside record_info.
+      if (row.concept) {
+        const meta = document.createElement("div");
+        meta.className = "card-meta";
+        const chip = document.createElement("span");
+        chip.className = "concept-chip";
+        chip.textContent = `@${conceptLabel(row.concept)}`;
+        meta.appendChild(chip);
+        el.appendChild(meta);
+      }
+      // hover-only overlay (2026-07-18): the select checkbox and the three
+      // per-card mode icons sit in one row, above the card's own content
+      // (z-index), so they never overlap each other — replaces the old
+      // always-visible single mode-cycle button.
+      const actions = document.createElement("div");
+      actions.className = "card-actions";
+      const activeCardMode = ui.cardModes[row.uid] || "";
+      for (const m of BODY_MODES) {
+        const modeBtn = document.createElement("button");
+        modeBtn.type = "button";
+        modeBtn.className = activeCardMode === m ? "mode-mini on" : "mode-mini";
+        modeBtn.dataset.cardMode = m;
+        modeBtn.textContent = MODE_ICON[m];
+        modeBtn.title = `Body view for this card: ${m}${activeCardMode === m ? " (click to clear override)" : ""}`;
+        modeBtn.addEventListener("click", (event) => {
+          event.stopPropagation();
+          if (ui.cardModes[row.uid] === m) delete ui.cardModes[row.uid];
+          else ui.cardModes[row.uid] = m;
+          persistUi();
+        });
+        actions.appendChild(modeBtn);
+      }
+      const sel = document.createElement("input");
+      sel.type = "checkbox";
+      sel.dataset.selectRecord = row.uid;
+      sel.checked = selected.has(row.uid);
+      sel.title = "Select for bulk-move (or Ctrl-click the card)";
+      sel.addEventListener("click", (event) => event.stopPropagation());
+      sel.addEventListener("change", () => toggleSelect(row.uid));
+      actions.append(sel);
+      el.appendChild(actions);
       return el;
     }
 
-    function move(uid, value) {
-      H.act({ action: "set-quantity", target: uid, value }).catch(console.warn);
+    // Optimistic move (old optimisticMoveCard/rollbackBoard, over rows instead
+    // of server HTML): apply locally, write the typed Action, roll back on
+    // reject. A value/range column writes its representative `value` through
+    // `set-quantity`; a concept column writes `set-concept`.
+    function move(uid, laneKey) {
+      const row = rows.find((r) => r.uid === uid);
+      const lane = laneByKey(laneKey);
+      if (!row || !lane) return;
+      if (laneBuckets(row, lane)) return; // already there (range keeps its exact quantity)
+      if (lane.concept) {
+        const previous = row.concept;
+        row.concept = conceptUidFor(lane.concept);
+        render();
+        act({ action: "set-concept", target: uid, concept: lane.concept }).catch((err) => {
+          console.warn(err);
+          row.concept = previous;
+          render();
+        });
+        return;
+      }
+      const previous = row.quantity;
+      row.quantity = lane.value;
+      render();
+      act({ action: "set-quantity", target: uid, value: lane.value }).catch((err) => {
+        console.warn(err);
+        row.quantity = previous;
+        render();
+      });
     }
 
-    document.getElementById("new-card").addEventListener("submit", (event) => {
-      event.preventDefault();
-      const head = newHead.value.trim();
-      if (!head) return;
-      H.act({ action: "create-record", kind: "plain", head, body: "", quantity: Number(newLane.value) || 0 })
-        .then(() => { newHead.value = ""; })
-        .catch(console.warn);
-    });
+    render();
   </script>
 </body>
 </html>

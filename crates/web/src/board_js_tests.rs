@@ -62,7 +62,6 @@ function card(id, x, y, width, height, extra = {}) {
     packageName: "",
     requiresServer: false,
     serverId: "",
-    viewId: null,
     streamsEnabled: true,
     widgetState: {},
     x,

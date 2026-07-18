@@ -26,6 +26,7 @@ const FLAT_LANE_JOIN = "lince:lane-join";
 const FLAT_LANE_SEND = "lince:lane-send";
 const FLAT_LANE_EVENT = "lince:lane-event";
 const FLAT_LIVE = "lince:live";
+const FLAT_PATCH_CARD_STATE = "lince:patch-card-state";
 
 function apiPath(path) {
   if (path.startsWith("http://") || path.startsWith("https://")) {
@@ -280,7 +281,10 @@ export function createWidgetBridge({
   }
 
   // Post an Action result in the shape the frame's protocol expects.
-  function postActionResult(req, ok, created, facts, message) {
+  // Warnings are non-fatal advisories (link cycles, Proof loops) — they ride
+  // alongside ok, never turn a success into an error.
+  function postActionResult(req, ok, created, facts, message, warnings) {
+    const safeWarnings = Array.isArray(warnings) ? warnings : [];
     if (req.protocol === "flat") {
       postFrame(req.instanceId, {
         type: FLAT_ACTION_RESULT,
@@ -289,6 +293,7 @@ export function createWidgetBridge({
         created: created || null,
         facts: Number(facts) || 0,
         message: String(message || ""),
+        warnings: safeWarnings,
       });
       return;
     }
@@ -300,6 +305,7 @@ export function createWidgetBridge({
         created: created || null,
         facts: Number(facts) || 0,
         message: String(message || ""),
+        warnings: safeWarnings,
       },
     });
   }
@@ -350,6 +356,7 @@ export function createWidgetBridge({
         message.created || null,
         message.facts,
         message.message,
+        message.warnings,
       );
     }
   }
@@ -847,6 +854,20 @@ export function createWidgetBridge({
 
     if (data.type === FLAT_LANE_SEND) {
       handleFlatLaneSend(data);
+      return;
+    }
+
+    // New-way sand persisting its UI prefs into the card's widgetState (host
+    // state). Mirrors the legacy "patch-card-state" action; re-render pushes
+    // the updated cardState back down to every frame.
+    if (data.type === FLAT_PATCH_CARD_STATE) {
+      if (typeof patchCardState === "function") {
+        patchCardState(
+          String(data.instanceId || ""),
+          cloneJsonValue(data.patch, {}),
+        );
+        render(bridgeState);
+      }
     }
   }
 

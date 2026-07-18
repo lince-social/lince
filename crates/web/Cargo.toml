@@ -12,6 +12,13 @@ name = "web"
 
 [features]
 browser-watch = []
+# The server-side native "/image" file picker (rfd's xdg-portal backend)
+# pulls in wayland-sys, which needs pkg-config + wayland dev headers at
+# build time — fine inside the desktop crate's nix devShell, but the plain
+# `lince` CLI binary must keep building with just cargo + rustc (see the
+# workspace Cargo.toml comment on `default-members`). Only lince-desktop
+# enables this feature.
+native-picker = ["dep:rfd"]
 
 [dependencies]
 axum = { workspace = true, features = ["json", "multipart", "ws"] }
@@ -23,6 +30,7 @@ include_dir = { workspace = true }
 maud = { workspace = true }
 nucleus = { workspace = true }
 protein = { workspace = true }
+rfd = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 store = { workspace = true }
@@ -34,5 +42,6 @@ transport = { workspace = true, features = ["axum"] }
 tracing = { workspace = true }
 urlencoding = { workspace = true }
 utils = { workspace = true }
+uuid = { workspace = true, features = ["v4"] }
 zip = { workspace = true, default-features = false, features = ["deflate"] }
 

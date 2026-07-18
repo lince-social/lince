@@ -197,7 +197,6 @@ mod tests {
                 package_name: "demo-widget.html".into(),
                 requires_server: false,
                 server_id: String::new(),
-                view_id: None,
                 streams_enabled: true,
                 widget_state: Value::Object(Map::new()),
                 x: 49_000.0,

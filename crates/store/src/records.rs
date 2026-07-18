@@ -69,41 +69,65 @@ pub async fn create(pool: &SqlitePool, new: NewRecord<'_>) -> Result<RecordRow, 
 }
 
 pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<RecordRow>, StoreError> {
-    Ok(sqlx::query("SELECT * FROM record WHERE uid = ?")
-        .bind(uid)
-        .fetch_optional(pool)
-        .await?
-        .map(map_row))
-}
-
-/// Resolve `@token`: slug first, uid fallback.
-pub async fn resolve(pool: &SqlitePool, token: &str) -> Result<Option<RecordRow>, StoreError> {
     Ok(
-        sqlx::query("SELECT * FROM record WHERE slug = ? OR uid = ? LIMIT 1")
-            .bind(token)
-            .bind(token)
+        sqlx::query("SELECT * FROM record WHERE uid = ? AND deleted_at IS NULL")
+            .bind(uid)
             .fetch_optional(pool)
             .await?
             .map(map_row),
     )
 }
 
+/// Resolve `@token`: slug first, uid fallback.
+pub async fn resolve(pool: &SqlitePool, token: &str) -> Result<Option<RecordRow>, StoreError> {
+    Ok(sqlx::query(
+        "SELECT * FROM record WHERE (slug = ? OR uid = ?) AND deleted_at IS NULL LIMIT 1",
+    )
+    .bind(token)
+    .bind(token)
+    .fetch_optional(pool)
+    .await?
+    .map(map_row))
+}
+
 pub async fn quantity(pool: &SqlitePool, uid: &str) -> Result<Option<f64>, StoreError> {
-    Ok(sqlx::query("SELECT quantity FROM record WHERE uid = ?")
-        .bind(uid)
-        .fetch_optional(pool)
-        .await?
-        .map(|r| r.get::<f64, _>("quantity")))
+    Ok(
+        sqlx::query("SELECT quantity FROM record WHERE uid = ? AND deleted_at IS NULL")
+            .bind(uid)
+            .fetch_optional(pool)
+            .await?
+            .map(|r| r.get::<f64, _>("quantity")),
+    )
+}
+
+/// HARD delete = tombstone (2026-07-17), DISTINCT from `deactivate` (quantity
+/// -> 0). The row stays (uids/provenance stay resolvable in the Ledger's
+/// history) but no read path returns it again; the UNIQUE slug is freed for
+/// reuse. Facts are never touched — the hash chain stays verifiable.
+pub async fn mark_deleted(pool: &SqlitePool, uid: &str) -> Result<bool, StoreError> {
+    let now = Utc::now().to_rfc3339();
+    let res = sqlx::query(
+        "UPDATE record SET deleted_at = ?, slug = NULL, updated_at = ?
+         WHERE uid = ? AND deleted_at IS NULL",
+    )
+    .bind(&now)
+    .bind(&now)
+    .bind(uid)
+    .execute(pool)
+    .await?;
+    Ok(res.rows_affected() > 0)
 }
 
 /// Every record, oldest first — the Protein `source: record` base set.
 pub async fn list_all(pool: &SqlitePool) -> Result<Vec<RecordRow>, StoreError> {
-    Ok(sqlx::query("SELECT * FROM record ORDER BY created_at, uid")
-        .fetch_all(pool)
-        .await?
-        .into_iter()
-        .map(map_row)
-        .collect())
+    Ok(
+        sqlx::query("SELECT * FROM record WHERE deleted_at IS NULL ORDER BY created_at, uid")
+            .fetch_all(pool)
+            .await?
+            .into_iter()
+            .map(map_row)
+            .collect(),
+    )
 }
 
 /// Active Needs in stable tie-break order (oldest first) — the focus-queue
@@ -111,7 +135,9 @@ pub async fn list_all(pool: &SqlitePool) -> Result<Vec<RecordRow>, StoreError> {
 /// with Promises; created_at is the final tie-break already.
 pub async fn active_needs(pool: &SqlitePool) -> Result<Vec<RecordRow>, StoreError> {
     Ok(sqlx::query(
-        "SELECT * FROM record WHERE quantity < 0 AND kind = 'plain' ORDER BY created_at, uid",
+        "SELECT * FROM record
+         WHERE quantity < 0 AND kind = 'plain' AND deleted_at IS NULL
+         ORDER BY created_at, uid",
     )
     .fetch_all(pool)
     .await?
@@ -122,7 +148,7 @@ pub async fn active_needs(pool: &SqlitePool) -> Result<Vec<RecordRow>, StoreErro
 
 /// (uid, quantity) of every record — checkpoint sweep input (blueprint II.2).
 pub async fn all_levels(pool: &SqlitePool) -> Result<Vec<(String, f64)>, StoreError> {
-    Ok(sqlx::query("SELECT uid, quantity FROM record")
+    Ok(sqlx::query("SELECT uid, quantity FROM record WHERE deleted_at IS NULL")
         .fetch_all(pool)
         .await?
         .into_iter()

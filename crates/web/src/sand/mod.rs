@@ -10,28 +10,17 @@ mod example_bundle;
 mod finance;
 #[allow(dead_code)]
 mod freedoom;
-#[allow(dead_code)]
-mod home_manager;
 #[path = "kanban/mod.rs"]
 mod kanban;
 #[allow(dead_code)]
-mod karma_orchestra;
-#[allow(dead_code)]
 mod lince_logo_led;
-#[allow(dead_code)]
-#[path = "markdown_notes/mod.rs"]
-mod markdown_notes;
 #[allow(dead_code)]
 mod ops_clock;
 #[allow(dead_code)]
 mod organ_management;
-#[allow(dead_code)]
-pub(crate) mod record_editor;
 mod record_info;
 #[path = "relations/mod.rs"]
 mod relations;
-#[allow(dead_code)]
-mod role_access;
 #[allow(dead_code)]
 mod sand_publisher;
 #[allow(dead_code)]
@@ -44,8 +33,6 @@ mod table;
 #[allow(dead_code)]
 mod terminal;
 mod todo;
-#[allow(dead_code)]
-mod transfer;
 #[allow(dead_code)]
 mod weather;
 
@@ -245,7 +232,6 @@ fn card_from_package(
         package_name: package.archive_filename(),
         requires_server: package.manifest.requires_server,
         server_id: String::new(),
-        view_id: None,
         streams_enabled: true,
         widget_state: Value::Object(Map::new()),
         x,
@@ -293,7 +279,7 @@ pub fn build_kanban_group_archive() -> Result<Vec<u8>, String> {
             info_rect,
             2,
             vec![inner_group],
-            vec!["recordClicked".into()],
+            vec!["recordClicked".into(), "recordCreate".into()],
         ),
     ];
 
@@ -307,19 +293,68 @@ pub fn build_kanban_group_archive() -> Result<Vec<u8>, String> {
     build_workspace_archive(&workspace, &[kanban, record_info])
 }
 
-/// Emit the official sand-GROUP archives (currently: kanban) into the sand dir,
-/// alongside the single-sand packages from `render_official_widgets`.
+/// Build the default Relations GROUP: the relations graph plus a record_info
+/// sand BESIDE it (to the right), sharing one inner group id — the same
+/// side-by-side shape as the kanban group. Clicking a graph node scopes a
+/// `recordClicked` to this record_info (which replaces the old sand's
+/// sidepanel); "New record" scopes a `recordCreate` to its creation mode.
+/// Returns a `.lince` workspace archive.
+pub fn build_relations_group_archive() -> Result<Vec<u8>, String> {
+    let relations = relations::package();
+    let record_info = record_info::package();
+
+    let inner_group = format!("group-relations-{}", package_id_from_filename("relations"));
+    let graph_rect = (49_000.0, 49_000.0, 720.0, 520.0);
+    // record_info sits immediately to the right of the graph.
+    let info_rect = (49_000.0 + 720.0 + 16.0, 49_000.0, 320.0, 520.0);
+
+    let cards = vec![
+        card_from_package(
+            &relations,
+            "card-relations",
+            graph_rect,
+            1,
+            vec![inner_group.clone()],
+            Vec::new(),
+        ),
+        card_from_package(
+            &record_info,
+            "card-relations-record-info",
+            info_rect,
+            2,
+            vec![inner_group],
+            vec!["recordClicked".into(), "recordCreate".into()],
+        ),
+    ];
+
+    let workspace = BoardWorkspace {
+        id: "relations-group".into(),
+        name: "Relations".into(),
+        camera: default_camera(),
+        cards,
+    };
+
+    build_workspace_archive(&workspace, &[relations, record_info])
+}
+
+/// Emit the official sand-GROUP archives (kanban, relations) into the sand
+/// dir, alongside the single-sand packages from `render_official_widgets`.
 pub fn render_official_groups(target_dir: &Path) -> Result<(), String> {
     std::fs::create_dir_all(target_dir)
         .map_err(|error| format!("Nao consegui criar ~/.config/lince/web/sand: {error}"))?;
     // Groups ship as `.lince` workspace archives (a group of sub-sands with
     // layout + z-order). The catalog `list()` skips workspace archives by peeking
-    // for `workspace.json`, so this `.lince` is not mistaken for a single sand.
-    let filename = "kanban.lince";
-    let bytes = build_kanban_group_archive()?;
-    let path = target_dir.join(filename);
-    std::fs::write(&path, bytes)
-        .map_err(|error| format!("Nao consegui escrever {}: {error}", path.display()))?;
+    // for `workspace.json`, so this `.lince` is not mistaken for a single sand,
+    // and a group whose id matches a single sand's REPLACES it in the catalog
+    // ("Relations" IS the group).
+    for (filename, bytes) in [
+        ("kanban.lince", build_kanban_group_archive()?),
+        ("relations.lince", build_relations_group_archive()?),
+    ] {
+        let path = target_dir.join(filename);
+        std::fs::write(&path, bytes)
+            .map_err(|error| format!("Nao consegui escrever {}: {error}", path.display()))?;
+    }
     Ok(())
 }
 
@@ -431,9 +466,51 @@ mod group_tests {
         assert_eq!(board.y, info.y, "record_info shares the board's top edge");
         assert!(info.z_index > board.z_index, "record_info is above the board");
 
-        // Only record_info listens for the board's recordClicked event.
-        assert_eq!(info.abi_listen, vec!["recordClicked".to_string()]);
+        // Only record_info listens for the board's events: card clicks focus
+        // it, "New task" opens its creation mode.
+        assert_eq!(
+            info.abi_listen,
+            vec!["recordClicked".to_string(), "recordCreate".to_string()]
+        );
         assert!(board.abi_listen.is_empty());
+
+        // Both packages travel in the archive so the import is self-contained.
+        assert_eq!(imported.packages.len(), 2);
+    }
+
+    #[test]
+    fn relations_ships_as_a_group_of_graph_plus_record_info() {
+        let bytes = build_relations_group_archive().expect("build relations group archive");
+        assert!(
+            crate::domain::workspace_archive::is_workspace_archive_bytes(&bytes),
+            "group archive is detectable by content so the catalog skips it",
+        );
+        let imported = parse_workspace_archive("relations.lince", &bytes)
+            .expect("parse relations group archive");
+
+        let cards = &imported.workspace.cards;
+        assert_eq!(cards.len(), 2, "relations group is exactly graph + record_info");
+
+        let graph = &cards[0];
+        let info = &cards[1];
+
+        // Both sub-sands share ONE inner group (keeps them together + scopes ABI).
+        assert_eq!(graph.group_ids.len(), 1);
+        assert_eq!(graph.group_ids, info.group_ids, "shared inner group id");
+        assert_eq!(graph.group_id, graph.group_ids.last().cloned());
+
+        // record_info sits BESIDE the graph (to its right), not covering it.
+        assert!(info.x >= graph.x + graph.width, "record_info is right of the graph");
+        assert_eq!(graph.y, info.y, "record_info shares the graph's top edge");
+        assert!(info.z_index > graph.z_index, "record_info is above the graph");
+
+        // Only record_info listens for the graph's events: node clicks focus
+        // it, "New record" opens its creation mode.
+        assert_eq!(
+            info.abi_listen,
+            vec!["recordClicked".to_string(), "recordCreate".to_string()]
+        );
+        assert!(graph.abi_listen.is_empty());
 
         // Both packages travel in the archive so the import is self-contained.
         assert_eq!(imported.packages.len(), 2);

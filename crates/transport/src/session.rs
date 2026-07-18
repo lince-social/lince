@@ -118,6 +118,7 @@ impl Session {
                 id,
                 created: outcome.created,
                 facts: outcome.facts.len(),
+                warnings: outcome.warnings,
             },
             Err(e) => ServerMessage::Error {
                 id,

@@ -19,7 +19,7 @@ use {
         infrastructure::{
             board_state_store::BoardStateStore, package_catalog_store::PackageCatalogStore,
         },
-        presentation::http::static_assets,
+        presentation::http::{media_assets, static_assets},
     },
     std::{
         io::{Error as IoError, ErrorKind},
@@ -57,8 +57,8 @@ pub async fn serve_cell_api_only(
 ) -> Result<(), IoError> {
     use axum::{
         Json,
-        extract::{Path, State, WebSocketUpgrade, ws::WebSocket},
-        http::{HeaderMap, HeaderValue, StatusCode, header},
+        extract::{Multipart, Path, State, WebSocketUpgrade, ws::WebSocket},
+        http::{HeaderMap, HeaderName, HeaderValue, StatusCode, header},
         response::{Html, IntoResponse, Response},
         routing::{get, post},
     };
@@ -408,6 +408,82 @@ pub async fn serve_cell_api_only(
         Ok(([(header::CONTENT_TYPE, content_type)], bytes))
     }
 
+    // ---- body images (2026-07-17): the ONLY way a `![](...)` in a record
+    // body reaches a local file — upload sniffs bytes against a raster
+    // allowlist and stores under an opaque name; nothing serves an arbitrary
+    // path (see `presentation::http::media_assets` for why).
+    async fn upload_media(
+        State(state): State<CellApiState>,
+        headers: HeaderMap,
+        mut multipart: Multipart,
+    ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        authenticate_headers(&state, &headers).await?;
+        let mut bytes = None;
+        while let Some(field) = multipart
+            .next_field()
+            .await
+            .map_err(|error| (StatusCode::BAD_REQUEST, error.to_string()))?
+        {
+            if field.name() == Some("file") {
+                bytes = Some(
+                    field
+                        .bytes()
+                        .await
+                        .map_err(|error| (StatusCode::BAD_REQUEST, error.to_string()))?,
+                );
+                break;
+            }
+        }
+        let bytes =
+            bytes.ok_or_else(|| (StatusCode::BAD_REQUEST, "missing `file` field".to_string()))?;
+        let path = media_assets::store_media_bytes(&bytes).await?;
+        Ok(Json(serde_json::json!({ "path": path })))
+    }
+
+    // Server-side native file picker (2026-07-18): opens the system file
+    // dialog via xdg-desktop-portal in THIS process — no WebKitGTK file
+    // chooser (crashes on this box, see media_assets::pick_and_store_image's
+    // doc comment) and no Tauri IPC/capability wall. Assumes the browser and
+    // the Cell are the same machine (the sand only calls this when it thinks
+    // it's local — see editor.js). Only compiled into lince-desktop (see the
+    // `native-picker` feature comment on lince-web's Cargo.toml) — the plain
+    // `lince` CLI doesn't register this route at all.
+    #[cfg(feature = "native-picker")]
+    async fn pick_media(
+        State(state): State<CellApiState>,
+        headers: HeaderMap,
+    ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        authenticate_headers(&state, &headers).await?;
+        let path = media_assets::pick_and_store_image().await?;
+        Ok(Json(serde_json::json!({ "path": path })))
+    }
+
+    async fn get_media(
+        State(state): State<CellApiState>,
+        headers: HeaderMap,
+        Path(name): Path<String>,
+    ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        authenticate_headers(&state, &headers).await?;
+        if !media_assets::valid_media_filename(&name) {
+            return Err((StatusCode::BAD_REQUEST, "invalid media filename".to_string()));
+        }
+        let path = crate::infrastructure::paths::media_dir().join(&name);
+        let bytes = tokio::fs::read(&path)
+            .await
+            .map_err(|_| (StatusCode::NOT_FOUND, "image not found".to_string()))?;
+        let ext = name.rsplit_once('.').map(|(_, e)| e).unwrap_or("");
+        let mut response_headers = HeaderMap::new();
+        response_headers.insert(
+            header::CONTENT_TYPE,
+            HeaderValue::from_static(media_assets::content_type_for_ext(ext)),
+        );
+        response_headers.insert(
+            HeaderName::from_static("x-content-type-options"),
+            HeaderValue::from_static("nosniff"),
+        );
+        Ok((response_headers, bytes))
+    }
+
     // ---- the organ↔organ HTTP boundary (blueprint XV; no local JWT — the
     // visibility gate, signatures, and the blocked-organ check do the gating)
 
@@ -529,6 +605,9 @@ pub async fn serve_cell_api_only(
         .route("/", get(index))
         .route("/favicon.ico", get(static_assets::favicon))
         .route("/board/frame.js", get(static_assets::frame_js))
+        .route("/board/editor.js", get(static_assets::editor_js))
+        .route("/board/vendor/d3.v7.min.js", get(static_assets::d3_js))
+        .route("/board/vendor/d3.LICENSE.txt", get(static_assets::d3_license))
         .route("/api/auth/login", post(login))
         .route("/auth/login", post(login))
         .route("/host/auth/login", post(login))
@@ -543,11 +622,17 @@ pub async fn serve_cell_api_only(
             get(get_official_package_content),
         )
         .route("/sand/{*path}", get(sand_asset))
+        .route("/host/media", post(upload_media))
+        .route("/host/media/{name}", get(get_media))
         .route("/organ/introduction", get(organ_introduction))
         .route("/organ/inbox", post(organ_inbox))
         .route("/organ/open-promises", get(organ_open_promises))
-        .route("/host/transport/ws", get(connect))
-        .with_state(state);
+        .route("/host/transport/ws", get(connect));
+    // Only lince-desktop enables `native-picker` (see the Cargo.toml
+    // comment) — the plain `lince` CLI never registers this route.
+    #[cfg(feature = "native-picker")]
+    let router = router.route("/host/media/pick", post(pick_media));
+    let router = router.with_state(state);
     let app = if static_dir.exists() {
         router
             .nest_service("/static", ServeDir::new(&static_dir))

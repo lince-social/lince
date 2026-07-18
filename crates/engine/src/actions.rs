@@ -37,6 +37,14 @@ pub enum Action {
     Deactivate {
         target: String,
     },
+    /// HARD delete (2026-07-17) — DISTINCT from `deactivate` (quantity -> 0).
+    /// Tombstones the record: it vanishes from every read surface (record
+    /// Proteins, slug resolution, rule inputs) and its UNIQUE slug is freed;
+    /// the Ledger's facts are untouched (append-only, chain intact) and a
+    /// final zero-delta annotation records the deletion + the freed slug.
+    DeleteRecord {
+        target: String,
+    },
     /// Edit a record's text — its head (title) and/or body. Each present field
     /// is written; a zero-delta annotation fact carries provenance and refreshes
     /// live subscriptions. The CRDT relay for collaborative body editing is a
@@ -443,6 +451,23 @@ impl Engine {
             Action::Deactivate { target } => {
                 return Box::pin(self.act(Action::SetQuantity { target, value: 0.0 }, actor)).await;
             }
+            Action::DeleteRecord { target } => {
+                let uid = self.resolve(&target).await?;
+                let old_slug = store::records::get(&self.store.pool, &uid)
+                    .await?
+                    .and_then(|r| r.slug);
+                // Annotate FIRST (the appender needs a live record), then
+                // tombstone; the fact survives the record's disappearance.
+                outcome.facts = self
+                    .annotate(
+                        uid.clone(),
+                        actor,
+                        serde_json::json!({ "deleted": true, "slug": old_slug }),
+                        now,
+                    )
+                    .await?;
+                store::records::mark_deleted(&self.store.pool, &uid).await?;
+            }
             Action::EditRecordText { target, head, body } => {
                 let uid = self.resolve(&target).await?;
                 store::records::set_text(&self.store.pool, &uid, head.as_deref(), body.as_deref())
@@ -548,9 +573,10 @@ impl Engine {
             } => {
                 let from = self.resolve(&from).await?;
                 let to = self.resolve(&to).await?;
-                let kind_uid = store::concepts::resolve(&self.store.pool, &kind)
-                    .await?
-                    .ok_or_else(|| EngineError::UnknownRecord(kind.clone()))?;
+                // Ensure like the thread kinds do (2026-07-17): sands link with
+                // vocabulary kinds (`assigned-to`, `part-of`, `resource-of`)
+                // that need no ceremony before first use.
+                let kind_uid = store::concepts::ensure(&self.store.pool, &kind).await?;
                 outcome.created = Some(
                     store::links::add(&self.store.pool, &from, &kind_uid, &to, quantity).await?,
                 );

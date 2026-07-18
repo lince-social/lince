@@ -18,8 +18,6 @@ pub struct BoardCard {
     pub requires_server: bool,
     #[serde(default)]
     pub server_id: String,
-    #[serde(default)]
-    pub view_id: Option<u32>,
     #[serde(default = "default_true")]
     pub streams_enabled: bool,
     #[serde(default = "default_widget_state")]
@@ -365,7 +363,6 @@ fn package_card(
         package_name: package_name.into(),
         requires_server: false,
         server_id: String::new(),
-        view_id: None,
         streams_enabled: true,
         widget_state: default_widget_state(),
         x,

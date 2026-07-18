@@ -102,8 +102,6 @@ const PERMISSION_DESCRIPTIONS = {
   read_table:
     "Permite carregar linhas mock para tabelas, listas e pequenos datagrids.",
   read_tasks: "Permite ler tarefas persistidas pelo proprio widget.",
-  read_view_stream:
-    "Permite consumir um stream SSE de view mediado pelo backend local do host.",
   read_weather: "Permite ler dados mock de clima, temperatura e previsao.",
   terminal_session:
     "Permite abrir uma sessao de shell local via backend do host. Trate como capability de desenvolvimento.",
@@ -309,19 +307,6 @@ const widgetConfigAuthLogout = document.getElementById(
   "widget-config-auth-logout",
 );
 const widgetConfigAuthHelp = document.getElementById("widget-config-auth-help");
-const widgetConfigViewField = document.getElementById("widget-config-view-field");
-const widgetConfigViewSearch = document.getElementById(
-  "widget-config-view-search",
-);
-const widgetConfigViewSummary = document.getElementById(
-  "widget-config-view-summary",
-);
-const widgetConfigViewList = document.getElementById("widget-config-view-list");
-const widgetConfigViewHelp = document.getElementById("widget-config-view-help");
-const widgetConfigViewIdField = document.getElementById(
-  "widget-config-view-id-field",
-);
-const widgetConfigViewId = document.getElementById("widget-config-view-id");
 const widgetConfigStreamsField = document.getElementById(
   "widget-config-streams-field",
 );
@@ -472,13 +457,6 @@ if (
   !widgetConfigAuthLogin ||
   !widgetConfigAuthLogout ||
   !widgetConfigAuthHelp ||
-  !widgetConfigViewField ||
-  !widgetConfigViewSearch ||
-  !widgetConfigViewSummary ||
-  !widgetConfigViewList ||
-  !widgetConfigViewHelp ||
-  !widgetConfigViewIdField ||
-  !widgetConfigViewId ||
   !widgetConfigHelp ||
   !widgetConfigCancelButton ||
   !widgetConfigSaveButton ||
@@ -745,9 +723,6 @@ let pendingServerLogin = null;
 let notificationsTimer = null;
 let pendingWidgetConfigCardId = null;
 let pendingWidgetConfigServerId = "";
-let pendingWidgetConfigViewId = null;
-let pendingWidgetConfigViewSearch = "";
-const widgetConfigViewsByServer = new Map();
 const PACKAGE_PREVIEW_WATCH_INTERVAL_MS = 2500;
 const packagePreviewRefreshState = new Map();
 let packagePreviewWatchTimer = null;
@@ -1465,145 +1440,8 @@ function getServerProfile(serverId) {
   );
 }
 
-function normalizeViewDefinition(rawView) {
-  return {
-    id: Number(rawView?.id) || 0,
-    name: String(rawView?.name || ""),
-    query: String(rawView?.query || ""),
-  };
-}
-
-function resolveCardViewName(card) {
-  const widgetState = card?.widgetState && typeof card.widgetState === "object"
-    ? card.widgetState
-    : {};
-  const runtimeState = widgetState?.graph_runtime || widgetState?.kanban_runtime || {};
-  const directName = String(
-    runtimeState?.source_view_name ||
-      runtimeState?.view_name ||
-      runtimeState?.viewName ||
-      widgetState?.source_view_name ||
-      widgetState?.view_name ||
-      widgetState?.viewName ||
-      "",
-  ).trim();
-  return directName;
-}
-
-function viewSearchTokens(view) {
-  return [
-    String(view.id || ""),
-    view.name || "",
-    view.query || "",
-  ]
-    .join(" ")
-    .toLowerCase();
-}
-
-function normalizeViewSearchQuery(value) {
-  return String(value || "").trim().toLowerCase();
-}
-
-function filterViewCatalog(views, query) {
-  const normalized = normalizeViewSearchQuery(query);
-  const list = Array.isArray(views) ? views : [];
-  if (!normalized) {
-    return list;
-  }
-
-  return list.filter((view) => viewSearchTokens(view).includes(normalized));
-}
-
-function renderWidgetConfigViewList(card, views) {
-  const filteredViews = filterViewCatalog(views, pendingWidgetConfigViewSearch);
-
-  widgetConfigViewSummary.textContent = filteredViews.length
-    ? `${filteredViews.length} view${filteredViews.length === 1 ? "" : "s"}`
-    : "Nenhuma view encontrada";
-
-  if (!filteredViews.length) {
-    widgetConfigViewList.innerHTML = `
-      <div class="local-package-empty">
-        <strong>Nenhuma view</strong>
-        <span>Ajuste a busca por id ou nome para refinar a lista.</span>
-      </div>
-    `;
-    return;
-  }
-
-  widgetConfigViewList.innerHTML = filteredViews
-    .map((view) => {
-      const isSelected =
-        Number(card?.viewId) === view.id || pendingWidgetConfigViewId === view.id;
-      return `
-        <button
-          type="button"
-          class="local-package-card${isSelected ? " is-selected" : ""}"
-          data-widget-config-view-id="${escapeHtml(String(view.id))}"
-        >
-          <span class="local-package-card__title">
-            <strong>#${escapeHtml(String(view.id))}</strong>
-            <span>${escapeHtml(view.name || "View")}</span>
-          </span>
-          <span class="local-package-card__meta">${escapeHtml(view.query || "")}</span>
-        </button>
-      `;
-    })
-    .join("");
-}
-
-function syncWidgetConfigViewState(card) {
-  const views = widgetConfigViewsByServer.get(pendingWidgetConfigServerId) || [];
-  renderWidgetConfigViewList(card, views);
-}
-
-async function requestServerViews(serverId) {
-  const response = await fetch(
-    apiPath(`/integrations/servers/${encodeURIComponent(serverId)}/table/view`),
-  );
-  const payload = await parseJsonResponse(response);
-  if (!response.ok) {
-    throw new Error(payload?.error || "Falha ao carregar a lista de views.");
-  }
-
-  return Array.isArray(payload)
-    ? payload.map(normalizeViewDefinition).filter((view) => view.id > 0)
-    : [];
-}
-
-async function ensureWidgetConfigServerViews(serverId) {
-  const key = String(serverId || "").trim();
-  if (!key) {
-    widgetConfigViewsByServer.set("", []);
-    return [];
-  }
-
-  if (!widgetConfigViewsByServer.has(key)) {
-    widgetConfigViewsByServer.set(key, []);
-    const views = await requestServerViews(key);
-    widgetConfigViewsByServer.set(key, views);
-  }
-
-  return widgetConfigViewsByServer.get(key) || [];
-}
-
-async function refreshWidgetConfigViews() {
-  const card = pendingWidgetConfigCardId
-    ? getCardById(pendingWidgetConfigCardId)
-    : null;
-  if (!card || !pendingWidgetConfigServerId) {
-    widgetConfigViewSummary.textContent = "0 views";
-    widgetConfigViewList.innerHTML = "";
-    return [];
-  }
-
-  setWidgetConfigViewHelp("Carregando views...");
-  const views = await ensureWidgetConfigServerViews(pendingWidgetConfigServerId);
-  widgetConfigViewSearch.value = pendingWidgetConfigViewSearch;
-  renderWidgetConfigViewList(card, views);
-  setWidgetConfigViewHelp("");
-  return views;
-}
+// Views (the legacy table-CRUD catalog) is DELETED (2026-07-17): sands read
+// Protein through the Data panel; no table/view REST remains.
 
 function cardSupportsHostConfiguration(card) {
   return card?.kind === "package" && cardRequiresServer(card);
@@ -1619,19 +1457,14 @@ function cardRequiresServer(card) {
   }
   const permissions = Array.isArray(card?.permissions) ? card.permissions : [];
   return (
-    permissions.includes("read_view_stream") ||
     permissions.includes("write_records") ||
     permissions.includes("write_table")
   );
 }
 
-function cardRequiresViewId(card) {
-  const permissions = Array.isArray(card?.permissions) ? card.permissions : [];
-  return permissions.includes("read_view_stream");
-}
-
-function cardSupportsStream(card) {
-  return cardRequiresViewId(card);
+// Legacy view-stream sands are gone; no card carries a dedicated stream.
+function cardSupportsStream() {
+  return false;
 }
 
 function getCardRecord(cardId) {
@@ -1692,8 +1525,6 @@ function getCardBridgeMeta(cardId) {
     source: "host",
     mode: editMode ? "edit" : "view",
     serverId: card?.serverId || "",
-    viewId: card?.viewId ?? null,
-    viewName: resolveCardViewName(card),
     cardState: cloneJsonValue(card?.widgetState, {}),
     shell: card?.system === true ? shellMeta(snapshot) : {},
     streams: {
@@ -2431,8 +2262,7 @@ function renderPackageBody(card) {
   const gate = resolveCardServerState(card);
   const frameSrc = buildPackageFrameSrc(card);
   const frameAttributes =
-    `data-lince-server-id="${escapeHtml(card.serverId || "")}" ` +
-    `data-lince-view-id="${escapeHtml(card.viewId == null ? "" : String(card.viewId))}"`;
+    `data-lince-server-id="${escapeHtml(card.serverId || "")}"`;
 
   if (gate.state !== "ready") {
     return `
@@ -2655,9 +2485,6 @@ function syncCardNode(node, card) {
     frameNode.setAttribute("title", card.title || "External card");
     frameNode.dataset.packageInstanceId = card.id || "";
     frameNode.dataset.linceServerId = card.serverId || "";
-    frameNode.dataset.linceViewId =
-      card.viewId == null ? "" : String(card.viewId);
-    frameNode.dataset.linceViewName = resolveCardViewName(card);
   }
 
   if (cardControlsHoveredCardId === card.id && !cardControlsToolbar.hidden) {
@@ -4439,12 +4266,6 @@ function setWidgetConfigPreviewHelp(message) {
   widgetConfigPreviewHelp.hidden = !text;
 }
 
-function setWidgetConfigViewHelp(message) {
-  const text = String(message || "").trim();
-  widgetConfigViewHelp.textContent = text;
-  widgetConfigViewHelp.hidden = !text;
-}
-
 function syncWidgetConfigDebug(card) {
   if (!card) {
     return;
@@ -4469,13 +4290,7 @@ function syncWidgetConfigDebug(card) {
   }
 
   if (cardSupportsHostConfiguration(card)) {
-    if (cardRequiresViewId(card)) {
-      parts.push(
-        "Depois de conectar, pesquise a view por nome ou id e selecione uma linha da lista.",
-      );
-    } else {
-      parts.push("Depois de escolher o servidor, salve a configuracao.");
-    }
+    parts.push("Depois de escolher o servidor, salve a configuracao.");
   }
 
   if (cardSupportsPackagePreview(card)) {
@@ -4506,18 +4321,11 @@ async function openWidgetConfigModal(cardId) {
 
   pendingWidgetConfigCardId = card.id;
   pendingWidgetConfigServerId = String(card.serverId || "");
-  pendingWidgetConfigViewId =
-    card.viewId == null ? null : Number(card.viewId) || null;
-  pendingWidgetConfigViewSearch = "";
   widgetConfigModalDescription.textContent = cardSupportsHostConfiguration(card)
-    ? `Escolha um servidor, conecte se preciso e selecione uma view para ${card.title}.`
+    ? `Escolha um servidor e conecte se preciso para ${card.title}.`
     : `Controle o preview compilado usado por ${card.title}.`;
   widgetConfigServerIdField.hidden = !cardSupportsHostConfiguration(card);
   syncServerOptions(pendingWidgetConfigServerId || "");
-  widgetConfigViewSearch.value = "";
-  widgetConfigViewField.hidden = !cardRequiresViewId(card);
-  widgetConfigViewIdField.hidden = true;
-  widgetConfigViewId.value = "";
   if (widgetConfigStreamsField) {
     widgetConfigStreamsField.hidden = !cardSupportsStream(card);
   }
@@ -4568,12 +4376,6 @@ async function openWidgetConfigModal(cardId) {
       return;
     }
 
-    if (cardRequiresViewId(card)) {
-      widgetConfigViewSearch.focus();
-      widgetConfigViewSearch.select();
-      return;
-    }
-
     widgetConfigSaveButton.focus();
   }, 0);
 }
@@ -4581,16 +4383,10 @@ async function openWidgetConfigModal(cardId) {
 function closeWidgetConfigModal() {
   pendingWidgetConfigCardId = null;
   pendingWidgetConfigServerId = "";
-  pendingWidgetConfigViewId = null;
-  pendingWidgetConfigViewSearch = "";
   widgetConfigModalBackdrop.hidden = true;
   widgetConfigSaveButton.disabled = false;
   setWidgetConfigHelp("");
   setWidgetConfigAuthHelp("");
-  setWidgetConfigViewHelp("");
-  widgetConfigViewList.innerHTML = "";
-  widgetConfigViewSummary.textContent = "";
-  widgetConfigViewSearch.value = "";
   setWidgetConfigPreviewHelp("");
   proteinConfigPanel.close();
   syncModalLock();
@@ -4604,22 +4400,13 @@ async function refreshWidgetConfigModalState() {
     return;
   }
 
-  widgetConfigViewSearch.value = pendingWidgetConfigViewSearch;
   const server = getServerProfile(pendingWidgetConfigServerId);
   const requiresAuth = Boolean(server?.requiresAuth);
   const authenticated = Boolean(server?.authenticated);
-  const requiresViewSelection = cardRequiresViewId(card);
-  const canShowViews =
-    requiresViewSelection &&
-    Boolean(pendingWidgetConfigServerId) &&
-    (!requiresAuth || authenticated);
   const needsHostSelection =
     cardSupportsHostConfiguration(card) &&
       (!pendingWidgetConfigServerId ||
-        (requiresAuth && !authenticated) ||
-      (requiresViewSelection &&
-        canShowViews &&
-        pendingWidgetConfigViewId == null));
+        (requiresAuth && !authenticated));
 
   widgetConfigAuthField.hidden = !requiresAuth;
   widgetConfigAuthEnabled.checked = requiresAuth && !authenticated;
@@ -4644,38 +4431,9 @@ async function refreshWidgetConfigModalState() {
         : "",
   );
 
-  widgetConfigViewField.hidden = !canShowViews;
-  widgetConfigViewIdField.hidden = true;
-
-  if (!canShowViews) {
-    widgetConfigViewSummary.textContent = "0 views";
-    widgetConfigViewList.innerHTML = "";
-    setWidgetConfigViewHelp(
-      requiresViewSelection
-        ? pendingWidgetConfigServerId
-          ? "Conecte para carregar a lista de views."
-          : "Escolha um servidor para carregar as views."
-        : "",
-    );
-    return;
-  }
-
-  try {
-    const views = await ensureWidgetConfigServerViews(pendingWidgetConfigServerId);
-    renderWidgetConfigViewList(card, views);
-    setWidgetConfigViewHelp("");
-  } catch (error) {
-    widgetConfigViewSummary.textContent = "0 views";
-    widgetConfigViewList.innerHTML = "";
-    setWidgetConfigViewHelp(
-      error instanceof Error
-        ? error.message
-        : "Falha ao carregar a lista de views.",
-    );
-  }
 }
 
-function saveWidgetConfig(cardId, nextServerId, nextViewId) {
+function saveWidgetConfig(cardId, nextServerId) {
   const nextStreamsEnabled = widgetConfigStreamsEnabled
     ? widgetConfigStreamsEnabled.checked
     : null;
@@ -4688,12 +4446,6 @@ function saveWidgetConfig(cardId, nextServerId, nextViewId) {
   const nextWatchEnabled = widgetConfigWatchEnabled
     ? widgetConfigWatchEnabled.checked
     : null;
-  const serverKey = String(nextServerId || "").trim();
-  const selectedView =
-    (widgetConfigViewsByServer.get(serverKey) || []).find(
-      (view) => Number(view.id) === Number(nextViewId || 0),
-    ) || null;
-  const selectedViewName = String(selectedView?.name || "").trim();
   store.updateCard(
     cardId,
     (card) => ({
@@ -4701,9 +4453,6 @@ function saveWidgetConfig(cardId, nextServerId, nextViewId) {
       serverId: cardSupportsHostConfiguration(card)
         ? nextServerId
         : card.serverId,
-      viewId: cardSupportsHostConfiguration(card)
-        ? nextViewId
-        : card.viewId,
       streamsEnabled: cardSupportsStream(card)
         ? (nextStreamsEnabled ?? card.streamsEnabled !== false)
         : card.streamsEnabled !== false,
@@ -4713,10 +4462,6 @@ function saveWidgetConfig(cardId, nextServerId, nextViewId) {
             packagePreview: {
               watchCompiledHtml:
                 nextWatchEnabled ?? isPackagePreviewWatchEnabled(card),
-            },
-            graph_runtime: {
-              source_view_id: nextViewId == null ? null : Number(nextViewId) || null,
-              source_view_name: selectedViewName || null,
             },
           })
         : card.widgetState,
@@ -4747,11 +4492,7 @@ function handleWidgetConfigFormSubmit(event) {
     }
   }
 
-  saveWidgetConfig(
-    pendingWidgetConfigCardId,
-    pendingWidgetConfigServerId.trim(),
-    pendingWidgetConfigViewId,
-  );
+  saveWidgetConfig(pendingWidgetConfigCardId, pendingWidgetConfigServerId.trim());
   closeWidgetConfigModal();
 }
 
@@ -4771,12 +4512,6 @@ function updateWidgetConfigCardServer(serverId) {
   }
 
   pendingWidgetConfigServerId = String(serverId || "").trim();
-  pendingWidgetConfigViewId = null;
-  pendingWidgetConfigViewSearch = "";
-  widgetConfigViewSearch.value = "";
-  widgetConfigViewList.innerHTML = "";
-  widgetConfigViewSummary.textContent = "0 views";
-  setWidgetConfigViewHelp("");
 }
 
 async function handleWidgetConfigServerChange() {
@@ -4855,40 +4590,6 @@ async function handleWidgetConfigAuthLogout() {
   } finally {
     widgetConfigAuthLogout.disabled = false;
   }
-}
-
-async function handleWidgetConfigViewSearchInput() {
-  const card = pendingWidgetConfigCardId
-    ? getCardById(pendingWidgetConfigCardId)
-    : null;
-  if (!card) {
-    return;
-  }
-
-  pendingWidgetConfigViewSearch = widgetConfigViewSearch.value;
-  const views = widgetConfigViewsByServer.get(pendingWidgetConfigServerId) || [];
-  renderWidgetConfigViewList(card, views);
-}
-
-function selectWidgetConfigView(viewId) {
-  const card = pendingWidgetConfigCardId
-    ? getCardById(pendingWidgetConfigCardId)
-    : null;
-  if (!card) {
-    return;
-  }
-
-  const parsedViewId = Number(viewId) || null;
-  if (!parsedViewId) {
-    return;
-  }
-
-  pendingWidgetConfigViewId = parsedViewId;
-  widgetConfigViewId.value = String(parsedViewId);
-  widgetConfigViewSummary.textContent = `View selecionada #${parsedViewId}`;
-  widgetConfigSaveButton.disabled = false;
-  const views = widgetConfigViewsByServer.get(pendingWidgetConfigServerId) || [];
-  renderWidgetConfigViewList(card, views);
 }
 
 async function bootWorkspace() {
@@ -5431,10 +5132,7 @@ function defaultServerIdForPreview(preview) {
   const permissions = Array.isArray(preview?.permissions)
     ? preview.permissions
     : [];
-  if (
-    !permissions.includes("read_view_stream") &&
-    !permissions.includes("write_records")
-  ) {
+  if (!permissions.includes("write_records")) {
     return "";
   }
 
@@ -5443,7 +5141,7 @@ function defaultServerIdForPreview(preview) {
 
 // Sands that ship with a default ABI listen configuration.
 const DEFAULT_ABI_LISTEN_BY_PACKAGE = {
-  "record-info.html": ["recordClicked"],
+  "record-info.html": ["recordClicked", "recordCreate"],
 };
 
 function createCardFromPreview(preview, sizeOverride = null) {
@@ -5458,7 +5156,6 @@ function createCardFromPreview(preview, sizeOverride = null) {
     requiresServer: preview?.requires_server === true || preview?.requiresServer === true,
     html: preview.html,
     serverId: defaultServerIdForPreview(preview),
-    viewId: null,
     width: size.width,
     height: size.height,
   }, { center: boardViewport.centerWorldPoint() });
@@ -5482,7 +5179,6 @@ function createRawHtmlCardFromPreview(preview) {
     requiresServer: false,
     html: preview.html,
     serverId: "",
-    viewId: null,
     width: size.width,
     height: size.height,
   }, { center: boardViewport.centerWorldPoint() });
@@ -6365,18 +6061,6 @@ widgetConfigAuthLogout.addEventListener("click", () => {
   void handleWidgetConfigAuthLogout();
 });
 
-widgetConfigViewSearch.addEventListener("input", () => {
-  void handleWidgetConfigViewSearchInput();
-});
-
-widgetConfigViewList.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-widget-config-view-id]");
-  if (!button?.dataset.widgetConfigViewId) {
-    return;
-  }
-
-  selectWidgetConfigView(button.dataset.widgetConfigViewId);
-});
 
 if (widgetConfigStreamsEnabled) {
   widgetConfigStreamsEnabled.addEventListener("change", () => {

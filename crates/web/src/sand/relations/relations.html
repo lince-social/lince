@@ -5,137 +5,2035 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Relations</title>
   <script src="/board/frame.js"></script>
+  <script src="/board/vendor/d3.v7.min.js"></script>
+  <!--
+    The d3 force-graph Relations sand on the new data plane (ported from the
+    retired script.rs at 8f0a5df^, keeping its physics/layout/gesture code):
+    reads ride ONE live Protein (record source + links include — kinds and
+    direction are sand chrome below; FILTERING is the card's Data panel via
+    cardState.savedProtein/.protein, tolerant-ignore if a custom Protein
+    lacks the links include), writes are typed Actions (add-link /
+    remove-link). The old record/create sidepanels are GONE by decision:
+    left-click emits the group-scoped `recordClicked` for the grouped
+    record_info, "New record" emits `recordCreate`. UI prefs (physics, kinds,
+    direction, depth, trail mode prefs) are host state under
+    cardState.relations via patchCardState (localStorage fallback outside a
+    board).
+
+    TRAIL MODE (ported from the retired trail sand): pick a root + an
+    order-like link kind and the sand lays that root's link tree out as an
+    ordered path (left -> right topo layers, physics off). The selected node
+    gets Done/Undo buttons riding the old promotion cascade (completing
+    requires all parents done; a completed parent promotes its road-ahead
+    children to next; undoing cascades descendants back). STATUS PRESETS
+    (kanban column presets style) map step status to quantity values/ranges
+    or @concepts and drive node colors in BOTH modes; writes follow the
+    bucket kind (set-quantity / set-concept), so a concept preset and a
+    kanban concept column share one status vocabulary. User presets are
+    kind:"sand" records with the extension namespace `relations.trail`
+    ({steps:[...]}), shared live by every relations group on the cell;
+    delete = deactivate.
+  -->
   <style>
-    :root { color-scheme: dark; --bg: #101318; --panel: #171c22; --line: #2a333d; --text: #e6edf3; --muted: #8b949e; --accent: #7aa2f7; --good: #3fb950; }
+    :root { color-scheme: dark; --bg: #0d1117; --panel: #161b22; --line: #2a333d; --text: #e6edf3; --muted: #8b949e; --accent: #78d7ff; --good: #7ef0c6; --warn: #f2bb78; --bad: #f85149; }
     * { box-sizing: border-box; }
+    /* `hidden` must beat every display rule below (.panel/.empty/.edgeChip
+       set flex/grid, which would otherwise show "hidden" overlays — the
+       2026-07-17 always-visible empty-state bug). */
+    [hidden] { display: none !important; }
     body { margin: 0; height: 100vh; overflow: hidden; background: var(--bg); color: var(--text); font: 13px/1.45 system-ui, -apple-system, sans-serif; }
-    main { height: 100%; display: grid; grid-template-rows: auto auto 1fr; gap: 10px; padding: 12px; }
-    header { display: flex; align-items: center; gap: 8px; }
-    h1 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); flex: 1; }
-    .dot { width: 7px; height: 7px; border-radius: 50%; background: #f85149; }
+    main { position: relative; height: 100%; }
+    canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+    canvas.is-dragging { cursor: grabbing; }
+    .hud { position: absolute; display: flex; align-items: center; gap: 8px; z-index: 3; }
+    .hud--topleft { top: 10px; left: 12px; }
+    .hud--topright { top: 10px; right: 12px; }
+    h1 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bad); flex: none; }
     .dot.live { background: var(--good); }
-    form { display: grid; grid-template-columns: 1fr auto 1fr auto; gap: 8px; }
-    select, button { font: inherit; border: 1px solid var(--line); border-radius: 7px; background: #0d1117; color: var(--text); padding: 7px 9px; min-width: 0; }
-    button { background: #1f2630; cursor: pointer; }
+    .dot.pending { background: var(--warn); animation: pulse 1s ease-in-out infinite; }
+    @keyframes pulse { 50% { opacity: .35; } }
+    .pill { border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; font-size: 11px; color: var(--muted); background: rgba(13,17,23,.82); }
+    button, select, input { font: inherit; border: 1px solid var(--line); border-radius: 7px; background: #11161d; color: var(--text); padding: 6px 9px; }
+    button { background: rgba(31,38,48,.92); cursor: pointer; }
     button:hover { border-color: #3c4857; }
-    .graph { min-height: 0; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 8px; }
-    .node { border: 1px solid var(--line); border-radius: 8px; padding: 9px; margin-bottom: 8px; background: #11161d; }
-    .node-title { font-weight: 650; }
-    .edges { margin-top: 7px; display: flex; flex-wrap: wrap; gap: 6px; }
-    .edge { display: inline-flex; align-items: center; gap: 5px; border: 1px solid rgba(122,162,247,.26); border-radius: 999px; padding: 3px 7px; color: #d9e5ff; background: rgba(122,162,247,.08); }
-    .edge button { border: 0; background: transparent; padding: 0 2px; color: var(--muted); }
-    .muted { color: var(--muted); }
+    button.primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+    .status { position: absolute; top: 44px; left: 12px; z-index: 3; max-width: 60%; padding: 6px 10px; border-radius: 7px; border: 1px solid var(--line); background: rgba(13,17,23,.92); font-size: 12px; color: var(--muted); }
+    .status[data-tone="error"] { color: var(--bad); border-color: rgba(248,81,73,.5); }
+    .status[data-tone="warn"] { color: var(--warn); border-color: rgba(242,187,120,.5); }
+    .status[data-tone="ok"] { color: var(--good); }
+    .edgeChip { position: absolute; top: 44px; right: 12px; z-index: 3; display: flex; align-items: center; gap: 6px; padding: 4px 6px 4px 10px; border: 1px solid rgba(120,215,255,.4); border-radius: 999px; background: rgba(13,17,23,.92); font-size: 12px; }
+    .edgeChip button { border: 0; background: transparent; color: var(--muted); padding: 0 4px; }
+    .edgeChip button:hover { color: var(--bad); }
+    .empty { position: absolute; inset: 0; display: grid; place-items: center; z-index: 2; pointer-events: none; }
+    .empty__box { text-align: center; color: var(--muted); }
+    .empty__eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; }
+    .empty__title { margin: 6px 0 4px; color: var(--text); font-size: 16px; }
+    .panel { position: absolute; top: 0; right: 0; bottom: 0; width: 300px; z-index: 4; display: flex; flex-direction: column; border-left: 1px solid var(--line); background: var(--panel); }
+    .panelHead { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+    .panelHead h2 { margin: 0; font-size: 13px; }
+    .panelBody { flex: 1; overflow-y: auto; padding: 12px 14px; display: grid; gap: 18px; align-content: start; }
+    .section { display: grid; gap: 8px; }
+    .sectionLabel { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+    .muted { color: var(--muted); font-size: 12px; margin: 0; }
+    .chipList { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid rgba(120,215,255,.3); border-radius: 999px; padding: 3px 8px; background: rgba(120,215,255,.08); color: #d9e5ff; font-size: 12px; }
+    .chip button { border: 0; background: transparent; padding: 0 2px; color: var(--muted); }
+    .row { display: flex; gap: 8px; }
+    .row > input { flex: 1; min-width: 0; }
+    .sliderRow { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+    .slider { width: 100%; padding: 0; }
+    .trailChip { position: absolute; top: 84px; right: 12px; z-index: 3; display: flex; align-items: center; gap: 6px; padding: 4px 6px 4px 10px; border: 1px solid rgba(126,240,198,.4); border-radius: 999px; background: rgba(13,17,23,.92); font-size: 12px; }
+    .trailChip button { border: 1px solid var(--line); background: rgba(31,38,48,.92); border-radius: 999px; padding: 2px 10px; }
+    .trailChip button:disabled { opacity: .4; cursor: default; }
+    .stepDot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
   </style>
 </head>
 <body>
-  <main>
-    <header>
-      <h1>Relations · before</h1>
-      <span id="dot" class="dot"></span>
-    </header>
-    <form id="link-form">
-      <select id="from"></select>
-      <button type="submit">before</button>
-      <select id="to"></select>
-      <button id="refresh" type="button">Refresh</button>
-    </form>
-    <section id="graph" class="graph" aria-label="Relations graph"></section>
-  </main>
-  <script>
-    const H = window.LinceWidgetHost;
-    const dot = document.getElementById("dot");
-    const graph = document.getElementById("graph");
-    const from = document.getElementById("from");
-    const to = document.getElementById("to");
-    let rows = [];
+  <main id="app">
+    <canvas id="graph" aria-label="Relations graph"></canvas>
 
-    const protein = {
-      source: "record",
-      where: [{ kind_eq: "plain" }],
-      order: [{ asc: "created_at" }],
-      include: { links: { kinds: ["before"] } },
+    <div id="empty-state" class="empty" hidden>
+      <div class="empty__box">
+        <div class="empty__eyebrow">waiting</div>
+        <h3 class="empty__title">No records yet</h3>
+        <p class="muted">Add records on the board, or clear the Data panel filter.</p>
+      </div>
+    </div>
+
+    <header class="hud hud--topleft">
+      <span id="dot" class="dot"></span>
+      <h1>Relations</h1>
+      <span id="row-pill" class="pill">0 nodes</span>
+      <span id="link-pill" class="pill">0 links</span>
+    </header>
+
+    <div id="status" class="status" hidden></div>
+
+    <div id="edge-chip" class="edgeChip" hidden>
+      <span id="edge-chip-label"></span>
+      <button id="edge-remove" type="button" title="Remove link">✕</button>
+    </div>
+
+    <div id="trail-chip" class="trailChip" hidden>
+      <span id="trail-chip-label"></span>
+      <button id="trail-done" type="button" title="Mark done — all parents must be done first; road-ahead children become next automatically">Done</button>
+      <button id="trail-undo" type="button" title="Back to road ahead — descendants cascade back">Undo</button>
+    </div>
+
+    <div class="hud hud--topright">
+      <button id="zoom-out" type="button" aria-label="Zoom out">−</button>
+      <button id="zoom-fit" type="button" title="Fit to nodes">Fit</button>
+      <button id="zoom-in" type="button" aria-label="Zoom in">+</button>
+      <button id="create-open" type="button" class="primary">New record</button>
+      <button id="panel-toggle" type="button" title="Graph controls">⚙</button>
+    </div>
+
+    <aside id="controls-panel" class="panel" hidden>
+      <div class="panelHead">
+        <h2>Graph controls</h2>
+        <button id="panel-close" type="button">Close</button>
+      </div>
+      <div class="panelBody">
+        <section class="section">
+          <div class="sectionLabel">Link kinds</div>
+          <p class="muted">Which link kinds the graph shows. Changing this re-subscribes the Protein.</p>
+          <div id="kind-list" class="chipList"></div>
+          <div class="row">
+            <input id="kind-input" type="text" autocomplete="off" spellcheck="false" placeholder="Add kind (e.g. needs)" />
+            <button id="kind-add" type="button">Add</button>
+          </div>
+          <label class="sliderRow" for="direction-select"><span>Direction</span></label>
+          <select id="direction-select">
+            <option value="both">both</option>
+            <option value="out">out</option>
+            <option value="in">in</option>
+          </select>
+          <label class="sliderRow" for="depth-input"><span>Tree depth</span><span id="depth-value">0</span></label>
+          <input id="depth-input" class="slider" type="range" min="0" max="4" step="1" value="0" />
+          <label class="sliderRow" for="link-kind-select"><span>New links (Shift+drag) use kind</span></label>
+          <select id="link-kind-select"></select>
+        </section>
+
+        <section class="section">
+          <div class="sectionLabel">Trail</div>
+          <p class="muted">Trail mode lays one root's link tree out as an ordered path (physics off). Select a node there to mark it Done/Undo — next steps are set automatically. The tree needs depth: raise Tree depth above if it looks cut.</p>
+          <label class="sliderRow" for="mode-select"><span>Mode</span></label>
+          <select id="mode-select">
+            <option value="graph">Graph</option>
+            <option value="trail">Trail</option>
+          </select>
+          <label class="sliderRow" for="trail-root-select"><span>Root</span></label>
+          <select id="trail-root-select"></select>
+          <div class="row">
+            <button id="trail-root-selected" type="button">Use selected node as root</button>
+          </div>
+          <label class="sliderRow" for="trail-kind-select"><span>Trail order kind</span></label>
+          <select id="trail-kind-select"></select>
+          <label class="sliderRow" for="trail-preset-select"><span>Status preset</span></label>
+          <select id="trail-preset-select"></select>
+          <div id="trail-steps" class="chipList"></div>
+          <p class="muted">A preset buckets steps by quantity (a value <code>1</code> or range <code>3..10</code>) or concept (<code>@done</code>) — writes follow the bucket: <code>set-quantity</code> or <code>set-concept</code>, shared with kanban columns.</p>
+          <div class="row">
+            <input id="trail-preset-name" type="text" autocomplete="off" placeholder="Preset name" />
+            <button id="trail-preset-save" type="button" title="Saves the active preset's steps as a sand-configuration record (kind sand, extension relations.trail) — visible to every relations group on this cell">Save</button>
+          </div>
+          <div class="row">
+            <button id="trail-preset-delete" type="button" title="Delete the active user preset (deactivates the record)">Delete active preset</button>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="sectionLabel">Local physics</div>
+          <label class="sliderRow" for="physics-charge"><span>Charge</span><span id="physics-charge-value">-220</span></label>
+          <input id="physics-charge" class="slider" type="range" min="-600" max="-20" step="10" value="-220" />
+          <label class="sliderRow" for="physics-distance"><span>Link distance</span><span id="physics-distance-value">110</span></label>
+          <input id="physics-distance" class="slider" type="range" min="30" max="240" step="5" value="110" />
+          <label class="sliderRow" for="physics-collision"><span>Collision radius</span><span id="physics-collision-value">24</span></label>
+          <input id="physics-collision" class="slider" type="range" min="10" max="60" step="1" value="24" />
+          <label class="sliderRow" for="physics-center"><span>Center force</span><span id="physics-center-value">0.04</span></label>
+          <input id="physics-center" class="slider" type="range" min="0" max="1" step="0.01" value="0.04" />
+          <div class="row">
+            <button id="reset-physics" type="button">Reset physics</button>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="sectionLabel">Gestures</div>
+          <p class="muted">Click a node to open it in Record Info. Drag to move. Shift+drag node → node to link. Click an edge, then ✕ above, to unlink. Wheel zooms, background drag pans.</p>
+        </section>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+  (function () {
+    const H = window.LinceWidgetHost;
+    const d3 = window.d3;
+
+    const app = document.getElementById("app");
+    const canvas = document.getElementById("graph");
+    const ctx = canvas.getContext("2d");
+    const dot = document.getElementById("dot");
+    const rowPill = document.getElementById("row-pill");
+    const linkPill = document.getElementById("link-pill");
+    const statusEl = document.getElementById("status");
+    const emptyState = document.getElementById("empty-state");
+    const edgeChip = document.getElementById("edge-chip");
+    const edgeChipLabel = document.getElementById("edge-chip-label");
+    const edgeRemoveButton = document.getElementById("edge-remove");
+    const panel = document.getElementById("controls-panel");
+    const kindList = document.getElementById("kind-list");
+    const kindInput = document.getElementById("kind-input");
+    const kindAddButton = document.getElementById("kind-add");
+    const directionSelect = document.getElementById("direction-select");
+    const depthInput = document.getElementById("depth-input");
+    const depthValue = document.getElementById("depth-value");
+    const linkKindSelect = document.getElementById("link-kind-select");
+    const trailChip = document.getElementById("trail-chip");
+    const trailChipLabel = document.getElementById("trail-chip-label");
+    const trailDoneButton = document.getElementById("trail-done");
+    const trailUndoButton = document.getElementById("trail-undo");
+    const modeSelect = document.getElementById("mode-select");
+    const trailRootSelect = document.getElementById("trail-root-select");
+    const trailRootSelectedButton = document.getElementById("trail-root-selected");
+    const trailKindSelect = document.getElementById("trail-kind-select");
+    const trailPresetSelect = document.getElementById("trail-preset-select");
+    const trailSteps = document.getElementById("trail-steps");
+    const trailPresetName = document.getElementById("trail-preset-name");
+    const trailPresetSave = document.getElementById("trail-preset-save");
+    const trailPresetDelete = document.getElementById("trail-preset-delete");
+
+    const CARD_STATE_KEY = "relations";
+    const DEFAULT_PHYSICS = { charge: -220, linkDistance: 110, collisionRadius: 24, centerForce: 0.04 };
+    const DEFAULT_KINDS = ["before"];
+    const MIN_ZOOM = 0.35;
+    const MAX_ZOOM = 3.5;
+    const INITIAL_TICKS = 140;
+    const LABEL_START_SCALE = 0.75;
+    const LABEL_FULL_SCALE = 1.75;
+
+    // Trail presets (kanban column presets style): ordered steps, first =
+    // road ahead, second = next (the auto-promotion target), last = done.
+    // A step buckets by quantity value/range (writes set-quantity, a range
+    // writes its first value) or by concept (writes set-concept) — the same
+    // rule as kanban columns, so `@done` here and a kanban @done column are
+    // ONE shared status vocabulary across sands.
+    const TRAIL_PRESET_NAMESPACE = "relations.trail";
+    const BUILTIN_TRAIL_PRESETS = [
+      {
+        id: "builtin:classic",
+        name: "Classic trail",
+        steps: [
+          { key: "road", label: "Road ahead", value: 0 },
+          { key: "next", label: "Next", value: -1 },
+          { key: "past", label: "Past", value: 1 },
+        ],
+      },
+      {
+        id: "builtin:concepts",
+        name: "Concept trail (@todo → @done)",
+        steps: [
+          { key: "todo", label: "To do", concept: "todo" },
+          { key: "next", label: "Next", concept: "next" },
+          { key: "wip", label: "WIP", concept: "wip" },
+          { key: "done", label: "Done", concept: "done" },
+        ],
+      },
+    ];
+
+    const state = {
+      rows: [],
+      nodes: [],
+      // Edge descriptors ({id, sourceId, targetId, kind, pending?}); `links`
+      // is the derived d3 view with node objects resolved.
+      edges: [],
+      links: [],
+      pendingEdges: [],
+      pendingActions: 0,
+      physics: { ...DEFAULT_PHYSICS },
+      kinds: [...DEFAULT_KINDS],
+      direction: "both",
+      depth: 0,
+      linkKind: DEFAULT_KINDS[0],
+      // Trail mode (ported trail sand): root + order kind + status preset.
+      mode: "graph",
+      trailRoot: null,
+      trailKind: DEFAULT_KINDS[0],
+      trailPreset: BUILTIN_TRAIL_PRESETS[0].id,
+      trailTree: null, // {ids:Set, parents:Map, children:Map, layers:Map} | null
+      presetRecords: [],
+      conceptNames: {},
+      driverKey: null,
+      unsubscribe: null,
+      selectedId: null,
+      selectedEdgeId: null,
+      live: false,
+      width: 0,
+      height: 0,
+      viewport: { scale: 1, x: 0, y: 0, initialized: false },
+      pointer: null,
+      linkDrag: null,
+      simulation: null,
+      needsRedraw: false,
+      physicsPersistTimer: null,
+      statusTimer: null,
+      resizeObserver: null,
     };
 
-    H.onLive((live) => dot.classList.toggle("live", !!live));
-    H.subscribeProtein("relations", protein, ({ rows: next }) => {
-      rows = Array.isArray(next) ? next : [];
-      render();
-    });
+    // --- small helpers --------------------------------------------------------
 
-    function render() {
-      const selectedFrom = from.value;
-      const selectedTo = to.value;
-      from.innerHTML = "";
-      to.innerHTML = "";
-      for (const row of rows) {
-        from.appendChild(option(row));
-        to.appendChild(option(row));
+    function clampNumber(value, min, max, fallback) {
+      const parsed = Number(value);
+      if (!Number.isFinite(parsed)) return fallback;
+      return Math.min(max, Math.max(min, parsed));
+    }
+
+    function uniqueStrings(values) {
+      const seen = new Set();
+      const out = [];
+      for (const raw of Array.isArray(values) ? values : []) {
+        const value = String(raw || "").trim();
+        if (!value) continue;
+        const key = value.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(value);
       }
-      if (selectedFrom) from.value = selectedFrom;
-      if (selectedTo) to.value = selectedTo;
-      graph.innerHTML = "";
-      if (!rows.length) {
-        const empty = document.createElement("div");
-        empty.className = "muted";
-        empty.textContent = "No records yet.";
-        graph.appendChild(empty);
+      return out;
+    }
+
+    // djb2 — stable numeric seed per uid for the deterministic layout jitter
+    // (the old sand used integer record ids directly).
+    function hashUid(uid) {
+      let hash = 5381;
+      const text = String(uid);
+      for (let index = 0; index < text.length; index += 1) {
+        hash = ((hash << 5) + hash + text.charCodeAt(index)) | 0;
+      }
+      return Math.abs(hash) + 1;
+    }
+
+    function asObject(value) {
+      return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+    }
+
+    // --- persisted UI prefs (host state, never the Ledger) --------------------
+
+    function localStorageKey() {
+      return `lince.widget.relations.${H.instanceId || "preview"}.ui`;
+    }
+
+    function readLocalUi() {
+      try {
+        const raw = window.localStorage?.getItem?.(localStorageKey());
+        const parsed = raw ? JSON.parse(raw) : null;
+        return parsed && typeof parsed === "object" ? parsed : null;
+      } catch {
+        return null;
+      }
+    }
+
+    function writeLocalUi(ui) {
+      try {
+        window.localStorage?.setItem?.(localStorageKey(), JSON.stringify(ui));
+      } catch {
+      }
+    }
+
+    function normalizePhysics(raw) {
+      const next = asObject(raw);
+      return {
+        charge: clampNumber(next.charge, -600, -20, DEFAULT_PHYSICS.charge),
+        linkDistance: clampNumber(next.linkDistance, 30, 240, DEFAULT_PHYSICS.linkDistance),
+        collisionRadius: clampNumber(next.collisionRadius, 10, 60, DEFAULT_PHYSICS.collisionRadius),
+        centerForce: clampNumber(next.centerForce, 0, 1, DEFAULT_PHYSICS.centerForce),
+      };
+    }
+
+    function currentUiPrefs() {
+      return {
+        physics: { ...state.physics },
+        kinds: [...state.kinds],
+        direction: state.direction,
+        depth: state.depth,
+        linkKind: state.linkKind,
+        mode: state.mode,
+        trailRoot: state.trailRoot,
+        trailKind: state.trailKind,
+        trailPreset: state.trailPreset,
+      };
+    }
+
+    function persistUiPrefs() {
+      writeLocalUi(currentUiPrefs());
+      H.patchCardState({ [CARD_STATE_KEY]: currentUiPrefs() });
+    }
+
+    function persistPhysicsSoon() {
+      if (state.physicsPersistTimer) window.clearTimeout(state.physicsPersistTimer);
+      state.physicsPersistTimer = window.setTimeout(() => {
+        state.physicsPersistTimer = null;
+        persistUiPrefs();
+      }, 140);
+    }
+
+    // cardState.relations wins (host-persisted); localStorage is the fallback
+    // outside a board. An empty cardState leaves current values untouched.
+    function applyUiPrefs(cardState) {
+      const scoped = asObject(asObject(cardState)[CARD_STATE_KEY]);
+      const source = Object.keys(scoped).length ? scoped : asObject(readLocalUi());
+      if (!Object.keys(source).length) return;
+      state.physics = normalizePhysics(source.physics || state.physics);
+      const kinds = uniqueStrings(source.kinds);
+      if (kinds.length || Array.isArray(source.kinds)) state.kinds = kinds;
+      if (["both", "out", "in"].includes(source.direction)) state.direction = source.direction;
+      state.depth = clampNumber(source.depth, 0, 4, state.depth);
+      state.linkKind = String(source.linkKind || state.kinds[0] || DEFAULT_KINDS[0]);
+      if (source.mode === "trail" || source.mode === "graph") state.mode = source.mode;
+      state.trailRoot = source.trailRoot ? String(source.trailRoot) : null;
+      state.trailKind = String(source.trailKind || state.kinds[0] || DEFAULT_KINDS[0]);
+      state.trailPreset = String(source.trailPreset || BUILTIN_TRAIL_PRESETS[0].id);
+      applyMode();
+      renderControls();
+    }
+
+    // --- the driving Protein (Data panel driver, kanban pattern) --------------
+
+    function defaultProtein() {
+      return {
+        source: "record",
+        include: {
+          links: { kinds: state.kinds, direction: state.direction, depth: state.depth },
+        },
+      };
+    }
+
+    function pickDriver(cardState) {
+      const saved = String(cardState?.savedProtein || "").trim();
+      if (saved) return { kind: "saved", name: saved };
+      if (cardState?.protein && typeof cardState.protein === "object") {
+        return { kind: "inline", protein: cardState.protein };
+      }
+      return { kind: "default" };
+    }
+
+    function resubscribe() {
+      const driver = pickDriver(H.getCardState());
+      const key = driver.kind === "saved"
+        ? `saved:${driver.name}`
+        : driver.kind === "inline"
+          ? `inline:${JSON.stringify(driver.protein)}`
+          : `default:${JSON.stringify(defaultProtein())}`;
+      if (key === state.driverKey) return;
+      state.driverKey = key;
+      if (typeof state.unsubscribe === "function") state.unsubscribe();
+      // A custom (saved/inline) Protein replaces the default wholesale — if it
+      // lacks the links include the graph draws nodes without edges
+      // (tolerant-ignore, same rule as kanban badges).
+      if (driver.kind === "saved") {
+        state.unsubscribe = H.subscribeSaved("graph", driver.name, onRows);
+      } else {
+        state.unsubscribe = H.subscribeProtein(
+          "graph",
+          driver.kind === "inline" ? driver.protein : defaultProtein(),
+          onRows,
+        );
+      }
+    }
+
+    // --- status + chrome -------------------------------------------------------
+
+    function renderStatus(label, tone, detail) {
+      if (state.statusTimer) {
+        window.clearTimeout(state.statusTimer);
+        state.statusTimer = null;
+      }
+      if (!label) {
+        statusEl.hidden = true;
         return;
       }
-      const byUid = new Map(rows.map((row) => [row.uid, row]));
-      for (const row of rows) {
-        const node = document.createElement("article");
-        node.className = "node";
-        const title = document.createElement("div");
-        title.className = "node-title";
-        title.textContent = row.head || row.slug || row.uid;
-        node.appendChild(title);
-        const edges = document.createElement("div");
-        edges.className = "edges";
-        const links = Array.isArray(row.links) ? row.links : [];
-        if (!links.length) {
-          const none = document.createElement("span");
-          none.className = "muted";
-          none.textContent = "No before links";
-          edges.appendChild(none);
-        }
-        for (const link of links) {
-          const otherUid = link.other;
-          const target = byUid.get(otherUid);
-          const pill = document.createElement("span");
-          pill.className = "edge";
-          const label = document.createElement("span");
-          label.textContent = (link.direction === "out" ? "-> " : "<- ") + ((target && (target.head || target.slug)) || otherUid);
-          const remove = document.createElement("button");
-          remove.type = "button";
-          remove.title = "Remove link";
-          remove.textContent = "x";
-          remove.onclick = () => H.act({
-            action: "remove-link",
-            from: link.direction === "out" ? row.uid : otherUid,
-            kind: "before",
-            to: link.direction === "out" ? otherUid : row.uid,
-          }).catch(console.warn);
-          pill.append(label, remove);
-          edges.appendChild(pill);
-        }
-        node.appendChild(edges);
-        graph.appendChild(node);
+      statusEl.hidden = false;
+      statusEl.dataset.tone = tone || "neutral";
+      statusEl.textContent = detail ? `${label} — ${detail}` : label;
+      if (tone === "ok") {
+        state.statusTimer = window.setTimeout(() => {
+          statusEl.hidden = true;
+        }, 5000);
       }
     }
 
-    function option(row) {
-      const opt = document.createElement("option");
-      opt.value = row.uid;
-      opt.textContent = row.head || row.slug || row.uid;
-      return opt;
+    // Three-state dot (K4): green live, amber while an Action awaits its ack,
+    // red disconnected.
+    function renderDot() {
+      dot.classList.toggle("live", state.live && !state.pendingActions);
+      dot.classList.toggle("pending", state.live && state.pendingActions > 0);
     }
 
-    document.getElementById("link-form").addEventListener("submit", (event) => {
-      event.preventDefault();
-      if (!from.value || !to.value || from.value === to.value) return;
-      H.act({ action: "add-link", from: from.value, kind: "before", to: to.value, quantity: null }).catch(console.warn);
-    });
-    document.getElementById("refresh").onclick = () => render();
+    function renderCounters() {
+      if (state.mode === "trail") {
+        rowPill.textContent = `${state.trailTree ? state.trailTree.ids.size : 0} steps`;
+        linkPill.textContent = state.trailRoot ? `root: ${(state.nodes.find((node) => node.id === state.trailRoot) || {}).head || "?"}` : "no root";
+      } else {
+        rowPill.textContent = `${state.nodes.length} nodes`;
+        linkPill.textContent = `${state.links.length} links`;
+      }
+    }
+
+    function renderZoomPill() {
+      const fit = document.getElementById("zoom-fit");
+      fit.textContent = state.viewport.initialized ? `${Math.round(state.viewport.scale * 100)}%` : "Fit";
+    }
+
+    function renderControls() {
+      kindList.innerHTML = "";
+      if (!state.kinds.length) {
+        const none = document.createElement("span");
+        none.className = "muted";
+        none.textContent = "No kinds — the graph shows nodes only.";
+        kindList.appendChild(none);
+      }
+      for (const kind of state.kinds) {
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        const label = document.createElement("span");
+        label.textContent = kind;
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.textContent = "✕";
+        remove.title = `Stop showing ${kind}`;
+        remove.addEventListener("click", () => {
+          state.kinds = state.kinds.filter((value) => value !== kind);
+          if (!state.kinds.includes(state.linkKind)) state.linkKind = state.kinds[0] || "";
+          persistUiPrefs();
+          renderControls();
+          resubscribe();
+        });
+        chip.append(label, remove);
+        kindList.appendChild(chip);
+      }
+      directionSelect.value = state.direction;
+      depthInput.value = String(state.depth);
+      depthValue.textContent = String(state.depth);
+      linkKindSelect.innerHTML = "";
+      for (const kind of state.kinds) {
+        const option = document.createElement("option");
+        option.value = kind;
+        option.textContent = kind;
+        linkKindSelect.appendChild(option);
+      }
+      linkKindSelect.value = state.linkKind;
+      renderTrailControls();
+      renderPhysicsControls();
+    }
+
+    function renderPhysicsControls() {
+      for (const [key, id] of [
+        ["charge", "physics-charge"],
+        ["linkDistance", "physics-distance"],
+        ["collisionRadius", "physics-collision"],
+        ["centerForce", "physics-center"],
+      ]) {
+        const input = document.getElementById(id);
+        const value = document.getElementById(`${id}-value`);
+        input.value = String(state.physics[key]);
+        value.textContent = key === "centerForce" ? state.physics[key].toFixed(2) : String(state.physics[key]);
+      }
+    }
+
+    function renderEdgeChip() {
+      const edge = state.edges.find((item) => item.id === state.selectedEdgeId) || null;
+      edgeChip.hidden = !edge;
+      if (!edge) return;
+      const from = state.nodes.find((node) => node.id === edge.sourceId);
+      const to = state.nodes.find((node) => node.id === edge.targetId);
+      edgeChipLabel.textContent = `${edge.kind}: ${from?.head || edge.sourceId} → ${to?.head || edge.targetId}`;
+    }
+
+    function renderPanel() {
+      panel.hidden = !state.panelOpen;
+    }
+
+    // --- graph data ------------------------------------------------------------
+
+    function buildGraphData(rows) {
+      const nodes = [];
+      for (const row of Array.isArray(rows) ? rows : []) {
+        const uid = String(row?.uid || "").trim();
+        if (!uid) continue;
+        nodes.push({
+          id: uid,
+          seed: hashUid(uid),
+          head: String(row.head || row.slug || "Untitled"),
+          slug: row.slug || null,
+          body: String(row.body || ""),
+          quantity: Number(row.quantity) || 0,
+          concept: row.concept || null,
+          degree: 0,
+        });
+      }
+      const byId = new Map(nodes.map((node) => [node.id, node]));
+      const edgeMap = new Map();
+      for (const row of Array.isArray(rows) ? rows : []) {
+        for (const link of Array.isArray(row?.links) ? row.links : []) {
+          const from = String(link?.from || "");
+          const to = String(link?.to || "");
+          if (!byId.has(from) || !byId.has(to) || from === to) continue;
+          const id = String(link?.uid || `${from}|${link?.kind || "link"}|${to}`);
+          if (edgeMap.has(id)) continue; // direction "both" echoes each link twice
+          edgeMap.set(id, {
+            id,
+            sourceId: from,
+            targetId: to,
+            kind: String(link?.kind || "link"),
+            hop: Number(link?.hop) || 1,
+          });
+        }
+      }
+      return { nodes, edges: [...edgeMap.values()] };
+    }
+
+    function deterministicOffset(seed, spread) {
+      const value = Math.sin(seed * 12.9898) * 43758.5453;
+      const normalized = value - Math.floor(value);
+      return (normalized - 0.5) * spread;
+    }
+
+    function nodeRadius(node) {
+      return 11 + Math.min(8, (node.degree || 0) * 1.5);
+    }
+
+    function applyInitialLayout(nodes) {
+      const sorted = nodes.slice().sort((left, right) =>
+        left.head.toLowerCase().localeCompare(right.head.toLowerCase()) || left.seed - right.seed,
+      );
+      const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+      for (let index = 0; index < sorted.length; index += 1) {
+        const node = sorted[index];
+        const radius = 34 * Math.sqrt(index + 1);
+        const angle = index * goldenAngle;
+        node.x = Math.cos(angle) * radius + deterministicOffset(node.seed, 14);
+        node.y = Math.sin(angle) * radius + deterministicOffset(node.seed + 17, 14);
+        node.vx = 0;
+        node.vy = 0;
+        node.fx = null;
+        node.fy = null;
+      }
+    }
+
+    function currentCentroid(nodes) {
+      const positioned = (nodes || []).filter((node) => Number.isFinite(node.x) && Number.isFinite(node.y));
+      if (!positioned.length) return { x: 0, y: 0 };
+      let x = 0;
+      let y = 0;
+      for (const node of positioned) {
+        x += node.x;
+        y += node.y;
+      }
+      return { x: x / positioned.length, y: y / positioned.length };
+    }
+
+    // New nodes appear next to a linked neighbor when one has a position,
+    // else near the graph's centroid (old: next to the parent).
+    function seedNewNodePosition(node, nodesById, previousNodesById) {
+      if (Number.isFinite(node.x) && Number.isFinite(node.y)) return;
+      const neighborIds = new Set();
+      for (const edge of state.edges) {
+        if (edge.sourceId === node.id) neighborIds.add(edge.targetId);
+        if (edge.targetId === node.id) neighborIds.add(edge.sourceId);
+      }
+      const neighbors = [...neighborIds]
+        .map((id) => nodesById.get(id) || previousNodesById.get(id))
+        .filter((candidate) => candidate && Number.isFinite(candidate.x) && Number.isFinite(candidate.y));
+      if (neighbors.length) {
+        const centroid = currentCentroid(neighbors);
+        node.x = centroid.x + 96 + deterministicOffset(node.seed, 20);
+        node.y = centroid.y + deterministicOffset(node.seed + 11, 70);
+      } else {
+        const centroid = currentCentroid(state.nodes);
+        node.x = centroid.x + deterministicOffset(node.seed, 120);
+        node.y = centroid.y + deterministicOffset(node.seed + 23, 120);
+      }
+      node.vx = 0;
+      node.vy = 0;
+      node.fx = null;
+      node.fy = null;
+    }
+
+    function graphSignature(nodes, edges) {
+      const nodePart = (Array.isArray(nodes) ? nodes : [])
+        .map((node) => node.id)
+        .sort()
+        .join(",");
+      const edgePart = (Array.isArray(edges) ? edges : [])
+        .map((edge) => edge.id)
+        .sort()
+        .join(",");
+      return `${nodePart}|${edgePart}`;
+    }
+
+    // Rebuild the d3 link view from the edge descriptors (real + pending),
+    // resolving node objects and counting degrees.
+    function refreshLinks() {
+      const byId = new Map(state.nodes.map((node) => [node.id, node]));
+      for (const node of state.nodes) node.degree = 0;
+      const realTriples = new Set(
+        state.edges.map((edge) => `${edge.sourceId}|${edge.kind}|${edge.targetId}`),
+      );
+      const descriptors = [...state.edges];
+      for (const pending of state.pendingEdges) {
+        if (realTriples.has(`${pending.sourceId}|${pending.kind}|${pending.targetId}`)) continue;
+        descriptors.push(pending);
+      }
+      const links = [];
+      for (const edge of descriptors) {
+        const source = byId.get(edge.sourceId);
+        const target = byId.get(edge.targetId);
+        if (!source || !target) continue;
+        source.degree += 1;
+        target.degree += 1;
+        links.push({ ...edge, source, target });
+      }
+      state.links = links;
+    }
+
+    function reconcileGraph(graph) {
+      const previousNodesById = new Map(state.nodes.map((node) => [node.id, node]));
+      const nextNodes = [];
+      for (const rawNode of graph.nodes) {
+        const existing = previousNodesById.get(rawNode.id);
+        if (existing) {
+          existing.head = rawNode.head;
+          existing.slug = rawNode.slug;
+          existing.body = rawNode.body;
+          existing.quantity = rawNode.quantity;
+          existing.concept = rawNode.concept;
+          nextNodes.push(existing);
+        } else {
+          nextNodes.push({ ...rawNode, x: Number.NaN, y: Number.NaN, vx: 0, vy: 0, fx: null, fy: null });
+        }
+      }
+      if (!previousNodesById.size) applyInitialLayout(nextNodes);
+
+      state.edges = graph.edges;
+      const nextNodesById = new Map(nextNodes.map((node) => [node.id, node]));
+      for (const node of nextNodes) seedNewNodePosition(node, nextNodesById, previousNodesById);
+
+      state.rows = nextNodes;
+      state.nodes = nextNodes;
+      if (state.selectedId && !nextNodesById.has(state.selectedId)) state.selectedId = null;
+      if (state.selectedEdgeId && !state.edges.some((edge) => edge.id === state.selectedEdgeId)) {
+        state.selectedEdgeId = null;
+      }
+      refreshLinks();
+    }
+
+    function onRows({ rows }) {
+      const graph = buildGraphData(rows);
+      const hadNodes = state.nodes.length > 0;
+      const previousSignature = graphSignature(state.nodes, state.edges);
+      const nextSignature = graphSignature(graph.nodes, graph.edges);
+      reconcileGraph(graph);
+      renderTrailControls();
+      ensureCanvasSize();
+      if (state.mode === "trail") {
+        applyMode(); // rebuilds the tree, re-pins the layered layout, draws
+        if (!hadNodes && state.nodes.length) fitViewportToNodes();
+      } else {
+        renderCounters();
+        renderEdgeChip();
+        renderEmptyState();
+        applySimulationForces();
+        if (!hadNodes && state.nodes.length) {
+          settleInitialLayout();
+          fitViewportToNodes();
+        } else if (previousSignature !== nextSignature) {
+          nudgeSimulation(0.16);
+        }
+        requestDraw();
+      }
+    }
+
+    // --- simulation (ported physics) ------------------------------------------
+
+    function ensureCanvasSize() {
+      const rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return false;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      state.width = rect.width;
+      state.height = rect.height;
+      return true;
+    }
+
+    function applySimulationForces() {
+      if (!d3 || !state.nodes.length) return;
+      if (state.mode === "trail") return; // physics is graph-mode only
+      if (!state.simulation) {
+        state.simulation = d3.forceSimulation(state.nodes);
+        state.simulation.alphaDecay(0.08);
+        state.simulation.velocityDecay(0.3);
+        state.simulation.on("tick", requestDraw);
+        state.simulation.stop();
+      } else {
+        state.simulation.nodes(state.nodes);
+      }
+
+      const linkForce = state.simulation.force("link") || d3.forceLink().id((node) => node.id);
+      linkForce
+        .id((node) => node.id)
+        .links(state.links)
+        .distance(state.physics.linkDistance)
+        .strength(0.82);
+
+      state.simulation
+        .force("link", linkForce)
+        .force("charge", d3.forceManyBody().strength(state.physics.charge))
+        .force(
+          "collide",
+          d3.forceCollide()
+            .radius((node) => Math.max(state.physics.collisionRadius, nodeRadius(node) + 6))
+            .iterations(2),
+        )
+        .force("x", d3.forceX(0).strength(state.physics.centerForce))
+        .force("y", d3.forceY(0).strength(state.physics.centerForce));
+    }
+
+    function nudgeSimulation(alpha) {
+      if (!state.simulation) return;
+      state.simulation.alpha(Math.max(state.simulation.alpha(), alpha)).restart();
+    }
+
+    function settleInitialLayout() {
+      if (!state.simulation) return;
+      state.simulation.alpha(1);
+      for (let index = 0; index < INITIAL_TICKS; index += 1) state.simulation.tick();
+      state.simulation.alpha(0);
+      state.simulation.stop();
+    }
+
+    // --- viewport (ported pan/zoom) --------------------------------------------
+
+    function measureBounds(nodes) {
+      if (!Array.isArray(nodes) || !nodes.length) return null;
+      let minX = Number.POSITIVE_INFINITY;
+      let minY = Number.POSITIVE_INFINITY;
+      let maxX = Number.NEGATIVE_INFINITY;
+      let maxY = Number.NEGATIVE_INFINITY;
+      for (const node of nodes) {
+        const radius = nodeRadius(node);
+        minX = Math.min(minX, node.x - radius);
+        minY = Math.min(minY, node.y - radius);
+        maxX = Math.max(maxX, node.x + radius);
+        maxY = Math.max(maxY, node.y + radius);
+      }
+      return { minX, minY, maxX, maxY, width: Math.max(1, maxX - minX), height: Math.max(1, maxY - minY) };
+    }
+
+    function fitViewportToNodes() {
+      const visible = state.nodes.filter(nodeVisible);
+      if (!visible.length || !state.width || !state.height) return;
+      const bounds = measureBounds(visible);
+      if (!bounds) return;
+      const padding = 88;
+      const scaleX = (state.width - padding * 2) / bounds.width;
+      const scaleY = (state.height - padding * 2) / bounds.height;
+      const nextScale = clampNumber(Math.min(scaleX, scaleY, 1.3), MIN_ZOOM, MAX_ZOOM, 1);
+      state.viewport.scale = nextScale;
+      state.viewport.x = (state.width - (bounds.minX + bounds.maxX) * nextScale) / 2;
+      state.viewport.y = (state.height - (bounds.minY + bounds.maxY) * nextScale) / 2;
+      state.viewport.initialized = true;
+      renderZoomPill();
+      requestDraw();
+    }
+
+    function worldToScreen(x, y) {
+      return { x: x * state.viewport.scale + state.viewport.x, y: y * state.viewport.scale + state.viewport.y };
+    }
+
+    function screenToWorld(x, y) {
+      return { x: (x - state.viewport.x) / state.viewport.scale, y: (y - state.viewport.y) / state.viewport.scale };
+    }
+
+    function zoomAt(screenX, screenY, factor) {
+      const oldScale = state.viewport.scale;
+      const nextScale = clampNumber(oldScale * factor, MIN_ZOOM, MAX_ZOOM, oldScale);
+      if (Math.abs(nextScale - oldScale) < 0.0001) return;
+      const worldPoint = screenToWorld(screenX, screenY);
+      state.viewport.scale = nextScale;
+      state.viewport.x = screenX - worldPoint.x * nextScale;
+      state.viewport.y = screenY - worldPoint.y * nextScale;
+      state.viewport.initialized = true;
+      renderZoomPill();
+      requestDraw();
+    }
+
+    // --- drawing (ported renderer) ----------------------------------------------
+
+    function requestDraw() {
+      if (state.needsRedraw) return;
+      state.needsRedraw = true;
+      window.requestAnimationFrame(() => {
+        state.needsRedraw = false;
+        drawGraph();
+      });
+    }
+
+    function drawArrow(from, to, color) {
+      const angle = Math.atan2(to.y - from.y, to.x - from.x);
+      const size = 8 / state.viewport.scale;
+      ctx.save();
+      ctx.translate(to.x, to.y);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.moveTo(-size, -size * 0.5);
+      ctx.lineTo(0, 0);
+      ctx.lineTo(-size, size * 0.5);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2 / state.viewport.scale;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawDirectedLink(link, highlight, offsetIndex) {
+      const source = link.source;
+      const target = link.target;
+      if (!source || !target) return;
+      const sourceRadius = nodeRadius(source) + 2 / state.viewport.scale;
+      const targetRadius = nodeRadius(target) + 4 / state.viewport.scale;
+      const dx = target.x - source.x;
+      const dy = target.y - source.y;
+      const distance = Math.hypot(dx, dy);
+      if (!distance) return;
+      const ux = dx / distance;
+      const uy = dy / distance;
+      // Parallel edges (same pair, different kinds) fan out perpendicular.
+      const normal = offsetIndex ? (offsetIndex * 5) / state.viewport.scale : 0;
+      const px = -uy * normal;
+      const py = ux * normal;
+      const startX = source.x + ux * sourceRadius + px;
+      const startY = source.y + uy * sourceRadius + py;
+      const endX = target.x - ux * targetRadius + px;
+      const endY = target.y - uy * targetRadius + py;
+      const color = link.pending
+        ? "rgba(242, 187, 120, 0.55)"
+        : highlight
+          ? "rgba(120, 215, 255, 0.56)"
+          : "rgba(120, 215, 255, 0.34)";
+
+      ctx.beginPath();
+      if (link.pending) ctx.setLineDash([6 / state.viewport.scale, 5 / state.viewport.scale]);
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = (highlight ? 2.6 : 1.8) / state.viewport.scale;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      drawArrow({ x: startX, y: startY }, { x: endX, y: endY }, color);
+
+      // Kind label along the edge once zoomed in enough to read it.
+      const labelAlpha = clampNumber(
+        (state.viewport.scale - LABEL_FULL_SCALE) / (MAX_ZOOM - LABEL_FULL_SCALE),
+        0, 1, 0,
+      );
+      if (labelAlpha > 0.02 || highlight) {
+        const alpha = highlight ? 0.9 : labelAlpha * 0.8;
+        ctx.fillStyle = `rgba(139, 148, 158, ${alpha})`;
+        ctx.font = `${11 / state.viewport.scale}px ${getComputedStyle(document.body).fontFamily}`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(link.kind, (startX + endX) / 2 + px, (startY + endY) / 2 + py - 6 / state.viewport.scale);
+        ctx.textAlign = "start";
+      }
+    }
+
+    function nodeFill(node) {
+      if (node.id === state.selectedId) return "#d8f5e8";
+      return node.quantity !== 0 ? "#12212a" : "#182733";
+    }
+
+    function nodeStroke(node) {
+      if (node.id === state.selectedId) return "#78d7ff";
+      // Preset-driven colors in BOTH modes (under the classic built-in this is
+      // exactly the old quantity-sign coloring: 0 dim blue, -1 orange, 1 green).
+      const preset = activePreset();
+      return stepColor(preset, stepIndexForNode(node, preset));
+    }
+
+    function drawNodeLabel(node, radius) {
+      const baseAlpha = clampNumber(
+        (state.viewport.scale - LABEL_START_SCALE) / (LABEL_FULL_SCALE - LABEL_START_SCALE),
+        0, 1, 0,
+      );
+      const alpha = node.id === state.selectedId ? 1 : Math.pow(baseAlpha, 1.5);
+      if (alpha <= 0.01) return;
+      const point = worldToScreen(node.x, node.y);
+      const fontSize = clampNumber(11 + (state.viewport.scale - 1) * 2.4, 11, 16, 12);
+      ctx.fillStyle = `rgba(230, 237, 243, ${alpha})`;
+      ctx.font = `600 ${fontSize}px ${getComputedStyle(document.body).fontFamily}`;
+      ctx.textBaseline = "middle";
+      ctx.fillText(node.head, point.x + radius * state.viewport.scale + 10, point.y + 1);
+    }
+
+    function drawGraph() {
+      const width = state.width || canvas.clientWidth;
+      const height = state.height || canvas.clientHeight;
+      if (!width || !height) return;
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.save();
+      ctx.translate(state.viewport.x, state.viewport.y);
+      ctx.scale(state.viewport.scale, state.viewport.scale);
+
+      // Offset index per unordered pair so parallel kinds fan out.
+      const pairCounts = new Map();
+      for (const link of state.links) {
+        if (!linkVisible(link)) continue;
+        const pairKey = [link.sourceId, link.targetId].sort().join("|");
+        const index = pairCounts.get(pairKey) || 0;
+        pairCounts.set(pairKey, index + 1);
+        const highlight =
+          link.id === state.selectedEdgeId ||
+          link.sourceId === state.selectedId ||
+          link.targetId === state.selectedId;
+        drawDirectedLink(link, highlight, index);
+      }
+
+      // The in-progress Shift+drag link line.
+      if (state.linkDrag && state.linkDrag.source) {
+        ctx.beginPath();
+        ctx.setLineDash([5 / state.viewport.scale, 5 / state.viewport.scale]);
+        ctx.moveTo(state.linkDrag.source.x, state.linkDrag.source.y);
+        ctx.lineTo(state.linkDrag.worldX, state.linkDrag.worldY);
+        ctx.strokeStyle = "rgba(242, 187, 120, 0.7)";
+        ctx.lineWidth = 2 / state.viewport.scale;
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      for (const node of state.nodes) {
+        if (!nodeVisible(node)) continue;
+        const radius = nodeRadius(node);
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = nodeFill(node);
+        ctx.fill();
+        ctx.lineWidth = (node.id === state.selectedId ? 2.4 : 1.3) / state.viewport.scale;
+        ctx.strokeStyle = nodeStroke(node);
+        ctx.stroke();
+
+        if (node.id === state.selectedId) {
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, radius + 5 / state.viewport.scale, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(120, 215, 255, 0.18)";
+          ctx.lineWidth = 2 / state.viewport.scale;
+          ctx.stroke();
+        }
+
+        if (state.mode === "trail" && node.id === state.trailRoot) {
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, radius + 9 / state.viewport.scale, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(126, 240, 198, 0.5)";
+          ctx.lineWidth = 1.6 / state.viewport.scale;
+          ctx.stroke();
+        }
+      }
+
+      ctx.restore();
+
+      for (const node of state.nodes) {
+        if (nodeVisible(node)) drawNodeLabel(node, nodeRadius(node));
+      }
+    }
+
+    // --- hit testing -------------------------------------------------------------
+
+    function nodeHitRadius(node) {
+      return nodeRadius(node) + 8 / state.viewport.scale;
+    }
+
+    function isPointInsideNode(node, worldPoint) {
+      if (!node || !worldPoint) return false;
+      return Math.hypot(node.x - worldPoint.x, node.y - worldPoint.y) <= nodeHitRadius(node);
+    }
+
+    function findNodeAtPoint(screenX, screenY) {
+      const point = screenToWorld(screenX, screenY);
+      if (state.mode !== "trail" && state.simulation && typeof state.simulation.find === "function") {
+        const searchRadius = Math.max(
+          ...state.nodes.map((node) => nodeHitRadius(node)),
+          24 / state.viewport.scale,
+        );
+        const candidate = state.simulation.find(point.x, point.y, searchRadius) || null;
+        if (candidate && isPointInsideNode(candidate, point)) return candidate;
+      }
+      for (const node of state.nodes) {
+        if (nodeVisible(node) && isPointInsideNode(node, point)) return node;
+      }
+      return null;
+    }
+
+    function distanceToSegment(point, a, b) {
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const lengthSquared = dx * dx + dy * dy;
+      if (!lengthSquared) return Math.hypot(point.x - a.x, point.y - a.y);
+      const t = clampNumber(((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSquared, 0, 1, 0);
+      return Math.hypot(point.x - (a.x + t * dx), point.y - (a.y + t * dy));
+    }
+
+    function findEdgeAtPoint(screenX, screenY) {
+      const point = screenToWorld(screenX, screenY);
+      const tolerance = 6 / state.viewport.scale;
+      let best = null;
+      let bestDistance = tolerance;
+      for (const link of state.links) {
+        if (!linkVisible(link)) continue;
+        const distance = distanceToSegment(point, link.source, link.target);
+        if (distance <= bestDistance) {
+          best = link;
+          bestDistance = distance;
+        }
+      }
+      return best;
+    }
+
+    // --- trail mode (ported trail sand): tree, presets, cascade -----------------
+
+    function normalizeSteps(raw) {
+      const out = [];
+      for (const rawStep of Array.isArray(raw) ? raw : []) {
+        if (!rawStep || !rawStep.key) continue;
+        const step = { key: String(rawStep.key), label: String(rawStep.label || rawStep.key) };
+        if (typeof rawStep.concept === "string" && rawStep.concept.trim()) {
+          step.concept = rawStep.concept.trim().replace(/^@/, "");
+        } else if (Number.isFinite(Number(rawStep.value))) {
+          step.value = Number(rawStep.value);
+          if (rawStep.to !== undefined && Number.isFinite(Number(rawStep.to)) && Number(rawStep.to) >= step.value) {
+            step.to = Number(rawStep.to);
+          }
+        } else continue;
+        out.push(step);
+      }
+      return out;
+    }
+
+    function allPresets() {
+      const records = state.presetRecords
+        .map((record) => ({
+          id: record.uid,
+          name: String(record.head || record.slug || record.uid),
+          steps: normalizeSteps(record.extension?.steps),
+          record,
+        }))
+        .filter((preset) => preset.steps.length);
+      return [...BUILTIN_TRAIL_PRESETS, ...records];
+    }
+
+    function activePreset() {
+      const presets = allPresets();
+      return presets.find((preset) => preset.id === state.trailPreset) || presets[0];
+    }
+
+    // Positional palette: first step (road ahead) dim blue, last (done) green,
+    // the auto-promotion "next" step orange — the old trail's colors — and any
+    // intermediate steps cycle orange/violet/cyan.
+    const TRAIL_STEP_HUES = ["#f2bb78", "#d3a8ff", "#78d7ff"];
+    function stepColor(preset, index) {
+      if (index === preset.steps.length - 1) return "#7ef0c6";
+      if (index === 0) return "rgba(120, 215, 255, 0.4)";
+      return TRAIL_STEP_HUES[(index - 1) % TRAIL_STEP_HUES.length];
+    }
+
+    function stepSpecText(step) {
+      if (step.concept) return `@${step.concept}`;
+      return step.to !== undefined ? `${step.value}..${step.to}` : String(step.value);
+    }
+
+    function stepMatchesNode(node, step) {
+      if (step.concept) {
+        // Rows carry concept UIDs; presets carry NAMES (resolve via the Lingua
+        // subscription). An optimistic local write stores the name itself.
+        return !!node.concept && (node.concept === step.concept || state.conceptNames[node.concept] === step.concept);
+      }
+      const quantity = Number(node.quantity) || 0;
+      if (step.to !== undefined) return quantity >= step.value && quantity <= step.to;
+      return quantity === step.value;
+    }
+
+    // First matching step wins; unmatched records fall back like kanban lanes
+    // (positive quantity reads as done, everything else as road ahead).
+    function stepIndexForNode(node, preset) {
+      for (let index = 0; index < preset.steps.length; index += 1) {
+        if (stepMatchesNode(node, preset.steps[index])) return index;
+      }
+      return (Number(node.quantity) || 0) > 0 ? preset.steps.length - 1 : 0;
+    }
+
+    // The root's tree: forward reachability along the trail kind (the road
+    // AHEAD), with longest-path topo layers for the layered layout.
+    function computeTrailTree() {
+      if (state.mode !== "trail" || !state.trailRoot) return null;
+      const byId = new Map(state.nodes.map((node) => [node.id, node]));
+      if (!byId.has(state.trailRoot)) return null;
+      const children = new Map();
+      const parents = new Map();
+      for (const edge of state.edges) {
+        if (edge.kind !== state.trailKind) continue;
+        if (!byId.has(edge.sourceId) || !byId.has(edge.targetId)) continue;
+        if (!children.has(edge.sourceId)) children.set(edge.sourceId, []);
+        children.get(edge.sourceId).push(edge.targetId);
+        if (!parents.has(edge.targetId)) parents.set(edge.targetId, []);
+        parents.get(edge.targetId).push(edge.sourceId);
+      }
+      const ids = new Set([state.trailRoot]);
+      const queue = [state.trailRoot];
+      while (queue.length) {
+        const current = queue.shift();
+        for (const child of children.get(current) || []) {
+          if (ids.has(child)) continue;
+          ids.add(child);
+          queue.push(child);
+        }
+      }
+      const layers = new Map([[state.trailRoot, 0]]);
+      let changed = true;
+      let guard = ids.size + 1;
+      while (changed && guard > 0) {
+        changed = false;
+        guard -= 1;
+        for (const id of ids) {
+          if (layers.has(id)) continue;
+          const treeParents = (parents.get(id) || []).filter((parent) => ids.has(parent));
+          if (treeParents.some((parent) => !layers.has(parent))) continue;
+          layers.set(id, treeParents.length ? Math.max(...treeParents.map((parent) => layers.get(parent))) + 1 : 0);
+          changed = true;
+        }
+      }
+      for (const id of ids) if (!layers.has(id)) layers.set(id, layers.size); // cycle leftovers
+      return { ids, parents, children, layers };
+    }
+
+    function layoutTrail() {
+      const tree = state.trailTree;
+      if (!tree) return;
+      const byId = new Map(state.nodes.map((node) => [node.id, node]));
+      const byLayer = new Map();
+      for (const id of tree.ids) {
+        const layer = tree.layers.get(id) || 0;
+        if (!byLayer.has(layer)) byLayer.set(layer, []);
+        byLayer.get(layer).push(id);
+      }
+      for (const [layer, ids] of byLayer) {
+        ids.sort((left, right) =>
+          (byId.get(left)?.head || "").toLowerCase().localeCompare((byId.get(right)?.head || "").toLowerCase())
+          || left.localeCompare(right));
+        for (let index = 0; index < ids.length; index += 1) {
+          const node = byId.get(ids[index]);
+          if (!node) continue;
+          node.x = layer * 180;
+          node.y = (index - (ids.length - 1) / 2) * 110;
+          node.vx = 0;
+          node.vy = 0;
+          node.fx = node.x; // pinned: the physics simulation is off in trail mode
+          node.fy = node.y;
+        }
+      }
+    }
+
+    function nodeVisible(node) {
+      if (state.mode !== "trail") return true;
+      return !!state.trailTree && state.trailTree.ids.has(node.id);
+    }
+
+    function linkVisible(link) {
+      if (state.mode !== "trail") return true;
+      return link.kind === state.trailKind && nodeVisible(link.source) && nodeVisible(link.target);
+    }
+
+    // Idempotent mode side effects: (re)build the tree and pin the layered
+    // layout with the simulation frozen — or unpin and reheat it in graph
+    // mode. Called by setMode, applyUiPrefs, and after every snapshot.
+    function applyMode() {
+      if (state.mode === "trail") {
+        state.trailTree = computeTrailTree();
+        layoutTrail();
+        state.selectedEdgeId = null;
+        if (state.simulation) state.simulation.stop();
+      } else {
+        state.trailTree = null;
+        for (const node of state.nodes) {
+          if (!state.pointer || state.pointer.node !== node) {
+            node.fx = null;
+            node.fy = null;
+          }
+        }
+        if (state.nodes.length) {
+          applySimulationForces();
+          nudgeSimulation(0.3);
+        }
+      }
+      renderCounters();
+      renderEdgeChip();
+      renderTrailChip();
+      renderEmptyState();
+      requestDraw();
+    }
+
+    function setMode(mode) {
+      if (mode !== "trail" && mode !== "graph") return;
+      state.mode = mode;
+      applyMode();
+      persistUiPrefs();
+      renderControls();
+      if (state.nodes.length) fitViewportToNodes();
+    }
+
+    // The old trail promotion cascade (trail/logic.js), generalized over the
+    // active preset's buckets: Done needs every parent done; a done parent
+    // promotes its road-ahead children to next; Undo sends the node back to
+    // road ahead and cascades descendants back (done descendants stay done).
+    function computeTrailChanges(targetId, intent) {
+      const tree = state.trailTree;
+      if (!tree || !tree.ids.has(targetId)) {
+        return { changes: [], error: "No trail tree — switch to trail mode and pick a root first." };
+      }
+      const preset = activePreset();
+      const last = preset.steps.length - 1;
+      const nextIndex = preset.steps.length > 2 ? 1 : 0; // 2-step presets have no distinct "next"
+      const byId = new Map(state.nodes.map((node) => [node.id, node]));
+      const status = new Map();
+      for (const id of tree.ids) status.set(id, stepIndexForNode(byId.get(id), preset));
+      const original = new Map(status);
+      const parentsComplete = (id) =>
+        (tree.parents.get(id) || [])
+          .filter((parent) => tree.ids.has(parent))
+          .every((parent) => status.get(parent) === last);
+
+      if (intent === "done") {
+        if (targetId !== state.trailRoot && !parentsComplete(targetId)) {
+          return { changes: [], error: "All parents must be done before this step." };
+        }
+        status.set(targetId, last);
+      } else {
+        status.set(targetId, 0);
+      }
+
+      const queue = [targetId];
+      const visited = new Set();
+      while (queue.length) {
+        const current = queue.shift();
+        if (visited.has(current)) continue;
+        visited.add(current);
+        for (const child of tree.children.get(current) || []) {
+          if (!tree.ids.has(child)) continue;
+          const existing = status.get(child);
+          if (parentsComplete(child)) {
+            if (existing === 0) status.set(child, nextIndex);
+          } else if (existing !== last) {
+            status.set(child, 0);
+          }
+          queue.push(child);
+        }
+      }
+
+      const changes = [];
+      for (const [id, stepIndex] of status) {
+        if (original.get(id) !== stepIndex) changes.push({ id, stepIndex });
+      }
+      return { changes, error: null };
+    }
+
+    function applyStepLocal(node, step) {
+      // Optimistic write; the live refresh replaces a concept NAME with its uid.
+      if (step.concept) node.concept = step.concept;
+      else node.quantity = step.value;
+    }
+
+    // Done/Undo: compute the cascade, apply it optimistically, then write one
+    // Action per changed node IN ORDER (set-quantity / set-concept by bucket
+    // kind — the kanban column rule). Any reject rolls the whole batch back.
+    function trailSetStatus(node, intent) {
+      const { changes, error } = computeTrailChanges(node.id, intent);
+      if (error) {
+        renderStatus("Trail", "error", error);
+        return;
+      }
+      if (!changes.length) {
+        renderStatus("No change", "ok", "That step is already there.");
+        return;
+      }
+      const preset = activePreset();
+      const snapshot = new Map();
+      for (const change of changes) {
+        const target = state.nodes.find((candidate) => candidate.id === change.id);
+        if (!target) continue;
+        snapshot.set(change.id, { quantity: target.quantity, concept: target.concept });
+        applyStepLocal(target, preset.steps[change.stepIndex]);
+      }
+      renderTrailChip();
+      requestDraw();
+      state.pendingActions += 1;
+      renderDot();
+      (async () => {
+        const warnings = [];
+        for (const change of changes) {
+          const step = preset.steps[change.stepIndex];
+          const result = await (step.concept
+            ? H.act({ action: "set-concept", target: change.id, concept: step.concept })
+            : H.act({ action: "set-quantity", target: change.id, value: step.value }));
+          warnings.push(...(Array.isArray(result?.warnings) ? result.warnings : []));
+        }
+        return warnings;
+      })()
+        .then((warnings) => {
+          state.pendingActions -= 1;
+          renderDot();
+          if (warnings.length) renderStatus("Warning", "warn", warnings.join(" · "));
+        })
+        .catch((writeError) => {
+          state.pendingActions -= 1;
+          renderDot();
+          for (const change of changes) {
+            const target = state.nodes.find((candidate) => candidate.id === change.id);
+            const saved = snapshot.get(change.id);
+            if (target && saved) {
+              target.quantity = saved.quantity;
+              target.concept = saved.concept;
+            }
+          }
+          renderTrailChip();
+          requestDraw();
+          renderStatus("Trail error", "error", writeError instanceof Error ? writeError.message : String(writeError));
+        });
+    }
+
+    // Trail presets are sand-configuration RECORDS (kind `sand`, extension
+    // namespace `relations.trail` holding {steps:[...]}) — saved from the
+    // active preset, shared live by every relations group on the cell,
+    // "deleted" by deactivation like everything else (kanban precedent).
+    function saveActivePreset() {
+      const name = String(trailPresetName.value || "").trim();
+      if (!name) return;
+      const steps = activePreset().steps.map((step) => ({ ...step }));
+      trailPresetName.value = "";
+      trackPending(
+        (async () => {
+          const outcome = await H.act({ action: "create-record", kind: "sand", head: name, quantity: 1 });
+          return H.act({ action: "set-extension", target: outcome.created, namespace: TRAIL_PRESET_NAMESPACE, fds: { steps } });
+        })(),
+        null,
+        "Preset saved",
+      );
+    }
+
+    function deleteActivePreset() {
+      const preset = activePreset();
+      if (!preset.record) return;
+      trackPending(
+        H.act({ action: "deactivate", target: preset.record.uid }),
+        null,
+        "Preset deleted",
+      );
+      state.trailPreset = BUILTIN_TRAIL_PRESETS[0].id;
+      persistUiPrefs();
+      renderControls();
+      renderTrailChip();
+      requestDraw();
+    }
+
+    function renderTrailChip() {
+      const node = state.mode === "trail" && state.selectedId
+        ? state.nodes.find((candidate) => candidate.id === state.selectedId && nodeVisible(candidate))
+        : null;
+      trailChip.hidden = !node;
+      if (!node) return;
+      const preset = activePreset();
+      const index = stepIndexForNode(node, preset);
+      trailChipLabel.textContent = `${node.head} — ${preset.steps[index].label}`;
+      trailDoneButton.disabled = index === preset.steps.length - 1;
+      trailUndoButton.disabled = index === 0;
+    }
+
+    function renderEmptyState() {
+      const title = emptyState.querySelector(".empty__title");
+      const copy = emptyState.querySelector(".empty__box .muted");
+      if (state.mode === "trail") {
+        if (!state.trailRoot) {
+          title.textContent = "No trail root";
+          copy.textContent = "Pick a root in Graph controls → Trail.";
+          emptyState.hidden = false;
+          return;
+        }
+        if (!state.trailTree) {
+          title.textContent = "Root not in the graph";
+          copy.textContent = "The picked root is outside the current Data panel filter.";
+          emptyState.hidden = false;
+          return;
+        }
+      } else {
+        title.textContent = "No records yet";
+        copy.textContent = "Add records on the board, or clear the Data panel filter.";
+      }
+      emptyState.hidden = state.nodes.length > 0;
+    }
+
+    function renderTrailControls() {
+      modeSelect.value = state.mode;
+      const byHead = state.nodes.slice().sort((left, right) =>
+        left.head.toLowerCase().localeCompare(right.head.toLowerCase()) || left.id.localeCompare(right.id));
+      trailRootSelect.innerHTML = "";
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = state.nodes.length ? "Pick a root…" : "No records yet";
+      trailRootSelect.appendChild(placeholder);
+      for (const node of byHead) {
+        const option = document.createElement("option");
+        option.value = node.id;
+        option.textContent = node.head;
+        trailRootSelect.appendChild(option);
+      }
+      trailRootSelect.value = state.trailRoot && byHead.some((node) => node.id === state.trailRoot) ? state.trailRoot : "";
+      trailKindSelect.innerHTML = "";
+      for (const kind of state.kinds) {
+        const option = document.createElement("option");
+        option.value = kind;
+        option.textContent = kind;
+        trailKindSelect.appendChild(option);
+      }
+      trailKindSelect.value = state.trailKind;
+      trailPresetSelect.innerHTML = "";
+      for (const preset of allPresets()) {
+        const option = document.createElement("option");
+        option.value = preset.id;
+        option.textContent = preset.record ? preset.name : `${preset.name} (built-in)`;
+        trailPresetSelect.appendChild(option);
+      }
+      const preset = activePreset();
+      trailPresetSelect.value = preset.id;
+      trailSteps.innerHTML = "";
+      preset.steps.forEach((step, index) => {
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        const dotEl = document.createElement("span");
+        dotEl.className = "stepDot";
+        dotEl.style.background = stepColor(preset, index);
+        const label = document.createElement("span");
+        label.textContent = `${step.label} ${stepSpecText(step)}`;
+        chip.append(dotEl, label);
+        trailSteps.appendChild(chip);
+      });
+      trailPresetDelete.disabled = !preset.record;
+    }
+
+    // --- selection + group events -------------------------------------------------
+
+    function selectNode(node) {
+      state.selectedEdgeId = null;
+      if (!node) {
+        state.selectedId = null;
+        renderEdgeChip();
+        renderTrailChip();
+        requestDraw();
+        return;
+      }
+      state.selectedId = node.id;
+      renderEdgeChip();
+      renderTrailChip();
+      requestDraw();
+      // The group-scoped event: the record_info beside this sand (same
+      // innermost group) focuses the record. This REPLACES the old sidepanel.
+      H.emit("recordClicked", {
+        record: { uid: node.id, head: node.head, slug: node.slug, body: node.body, quantity: node.quantity },
+      });
+    }
+
+    function selectEdge(edge) {
+      state.selectedId = null;
+      state.selectedEdgeId = edge ? edge.id : null;
+      renderEdgeChip();
+      renderTrailChip();
+      requestDraw();
+    }
+
+    // --- link Actions (optimistic, warnings as advice) ----------------------------
+
+    function trackPending(actionPromise, rollback, okStatus) {
+      state.pendingActions += 1;
+      renderDot();
+      return actionPromise
+        .then((result) => {
+          state.pendingActions -= 1;
+          renderDot();
+          const warnings = Array.isArray(result?.warnings) ? result.warnings : [];
+          if (warnings.length) {
+            renderStatus("Warning", "warn", warnings.join(" · "));
+          } else if (okStatus) {
+            renderStatus(okStatus, "ok");
+          }
+        })
+        .catch((error) => {
+          state.pendingActions -= 1;
+          renderDot();
+          if (typeof rollback === "function") rollback();
+          renderStatus("Action error", "error", error instanceof Error ? error.message : String(error));
+        });
+    }
+
+    function createLink(fromNode, toNode) {
+      const kind = state.linkKind || state.kinds[0];
+      if (!kind) {
+        renderStatus("No kind", "error", "Add a link kind in the controls first.");
+        return;
+      }
+      const pending = {
+        id: `pending:${Date.now()}:${fromNode.id}`,
+        sourceId: fromNode.id,
+        targetId: toNode.id,
+        kind,
+        pending: true,
+      };
+      state.pendingEdges.push(pending);
+      refreshLinks();
+      renderCounters();
+      applySimulationForces();
+      nudgeSimulation(0.12);
+      requestDraw();
+      trackPending(
+        H.act({ action: "add-link", from: fromNode.id, kind, to: toNode.id }),
+        () => {
+          state.pendingEdges = state.pendingEdges.filter((edge) => edge.id !== pending.id);
+          refreshLinks();
+          renderCounters();
+          requestDraw();
+        },
+        null, // the live subscription delivers the real edge; no ok toast
+      ).then(() => {
+        state.pendingEdges = state.pendingEdges.filter((edge) => edge.id !== pending.id);
+        refreshLinks();
+      });
+    }
+
+    function removeSelectedEdge() {
+      const edge = state.edges.find((item) => item.id === state.selectedEdgeId) || null;
+      if (!edge) return;
+      const removed = edge;
+      state.edges = state.edges.filter((item) => item.id !== removed.id);
+      state.selectedEdgeId = null;
+      refreshLinks();
+      renderCounters();
+      renderEdgeChip();
+      requestDraw();
+      trackPending(
+        H.act({ action: "remove-link", from: removed.sourceId, kind: removed.kind, to: removed.targetId }),
+        () => {
+          state.edges.push(removed);
+          refreshLinks();
+          renderCounters();
+          requestDraw();
+        },
+        "Link removed",
+      );
+    }
+
+    // --- pointer gestures (ported, + Shift-drag linking) --------------------------
+
+    function capturePointer(event) {
+      // Synthetic pointers (driven tests, some webviews) can't be captured.
+      try { canvas.setPointerCapture(event.pointerId); } catch { }
+    }
+
+    function releasePointer(event) {
+      try {
+        if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+      } catch { }
+    }
+
+    function handlePointerDown(event) {
+      const rect = canvas.getBoundingClientRect();
+      const screenX = event.clientX - rect.left;
+      const screenY = event.clientY - rect.top;
+      const node = event.button === 0 ? findNodeAtPoint(screenX, screenY) : null;
+
+      if (node && event.shiftKey) {
+        const world = screenToWorld(screenX, screenY);
+        state.linkDrag = { pointerId: event.pointerId, source: node, worldX: world.x, worldY: world.y };
+        capturePointer(event);
+        canvas.classList.add("is-dragging");
+        requestDraw();
+        return;
+      }
+
+      if (node) {
+        const world = screenToWorld(screenX, screenY);
+        state.pointer = {
+          kind: "node",
+          pointerId: event.pointerId,
+          node,
+          startX: screenX,
+          startY: screenY,
+          grabOffsetX: world.x - node.x,
+          grabOffsetY: world.y - node.y,
+          moved: false,
+          // Trail mode pins the layered layout: nodes are click-only there.
+          clickOnly: state.mode === "trail",
+        };
+        capturePointer(event);
+        canvas.classList.add("is-dragging");
+        if (state.mode === "trail") return;
+        node.fx = node.x;
+        node.fy = node.y;
+        if (state.simulation) state.simulation.alphaTarget(0.2).restart();
+        return;
+      }
+
+      if (event.button !== 0 && event.button !== 1) return;
+
+      state.pointer = {
+        kind: "pan",
+        pointerId: event.pointerId,
+        startX: screenX,
+        startY: screenY,
+        originX: state.viewport.x,
+        originY: state.viewport.y,
+        moved: false,
+      };
+      capturePointer(event);
+      canvas.classList.add("is-dragging");
+    }
+
+    function handlePointerMove(event) {
+      const rect = canvas.getBoundingClientRect();
+      const screenX = event.clientX - rect.left;
+      const screenY = event.clientY - rect.top;
+
+      if (state.linkDrag && state.linkDrag.pointerId === event.pointerId) {
+        const world = screenToWorld(screenX, screenY);
+        state.linkDrag.worldX = world.x;
+        state.linkDrag.worldY = world.y;
+        requestDraw();
+        return;
+      }
+
+      const pointer = state.pointer;
+      if (!pointer || pointer.pointerId !== event.pointerId) return;
+      const deltaX = screenX - pointer.startX;
+      const deltaY = screenY - pointer.startY;
+      if (Math.hypot(deltaX, deltaY) > 3) pointer.moved = true;
+
+      if (pointer.kind === "node") {
+        if (pointer.clickOnly) return; // trail mode: dragging never moves nodes
+        const world = screenToWorld(screenX, screenY);
+        const nextX = world.x - (pointer.grabOffsetX || 0);
+        const nextY = world.y - (pointer.grabOffsetY || 0);
+        pointer.node.x = nextX;
+        pointer.node.y = nextY;
+        pointer.node.fx = nextX;
+        pointer.node.fy = nextY;
+        pointer.node.vx = 0;
+        pointer.node.vy = 0;
+        requestDraw();
+        return;
+      }
+
+      state.viewport.x = pointer.originX + deltaX;
+      state.viewport.y = pointer.originY + deltaY;
+      state.viewport.initialized = true;
+      requestDraw();
+    }
+
+    function handlePointerUp(event) {
+      if (state.linkDrag && state.linkDrag.pointerId === event.pointerId) {
+        const rect = canvas.getBoundingClientRect();
+        const target = findNodeAtPoint(event.clientX - rect.left, event.clientY - rect.top);
+        const source = state.linkDrag.source;
+        state.linkDrag = null;
+        canvas.classList.remove("is-dragging");
+        releasePointer(event);
+        if (target && target.id !== source.id) createLink(source, target);
+        requestDraw();
+        return;
+      }
+
+      const pointer = state.pointer;
+      if (!pointer || pointer.pointerId !== event.pointerId) return;
+      canvas.classList.remove("is-dragging");
+      if (pointer.kind === "node") {
+        if (!pointer.clickOnly) {
+          pointer.node.fx = null;
+          pointer.node.fy = null;
+        }
+        if (!pointer.moved) selectNode(pointer.node);
+      } else if (!pointer.moved) {
+        const rect = canvas.getBoundingClientRect();
+        const edge = findEdgeAtPoint(event.clientX - rect.left, event.clientY - rect.top);
+        if (edge) selectEdge(edge);
+        else selectNode(null);
+      }
+      if (state.mode !== "trail" && state.simulation) {
+        state.simulation.alpha(Math.max(state.simulation.alpha(), 0.16)).alphaTarget(0).restart();
+      }
+      state.pointer = null;
+      releasePointer(event);
+    }
+
+    // --- events --------------------------------------------------------------------
+
+    function bindEvents() {
+      document.getElementById("zoom-in").addEventListener("click", () => zoomAt(state.width / 2, state.height / 2, 1.18));
+      document.getElementById("zoom-out").addEventListener("click", () => zoomAt(state.width / 2, state.height / 2, 1 / 1.18));
+      document.getElementById("zoom-fit").addEventListener("click", fitViewportToNodes);
+      document.getElementById("create-open").addEventListener("click", () => {
+        // Creation lives in the grouped record_info (group-scoped event).
+        H.emit("recordCreate", { record: { kind: "plain", quantity: 0 } });
+      });
+      document.getElementById("panel-toggle").addEventListener("click", () => {
+        state.panelOpen = !state.panelOpen;
+        renderPanel();
+      });
+      document.getElementById("panel-close").addEventListener("click", () => {
+        state.panelOpen = false;
+        renderPanel();
+      });
+      edgeRemoveButton.addEventListener("click", removeSelectedEdge);
+
+      kindAddButton.addEventListener("click", addKindFromInput);
+      kindInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          addKindFromInput();
+        }
+      });
+      directionSelect.addEventListener("change", () => {
+        state.direction = directionSelect.value;
+        persistUiPrefs();
+        resubscribe();
+      });
+      depthInput.addEventListener("input", () => {
+        state.depth = clampNumber(depthInput.value, 0, 4, 0);
+        depthValue.textContent = String(state.depth);
+        persistUiPrefs();
+        resubscribe();
+      });
+      linkKindSelect.addEventListener("change", () => {
+        state.linkKind = linkKindSelect.value;
+        persistUiPrefs();
+      });
+
+      modeSelect.addEventListener("change", () => setMode(modeSelect.value));
+      trailRootSelect.addEventListener("change", () => {
+        state.trailRoot = trailRootSelect.value || null;
+        applyMode();
+        persistUiPrefs();
+        if (state.mode === "trail" && state.nodes.length) fitViewportToNodes();
+      });
+      trailRootSelectedButton.addEventListener("click", () => {
+        if (!state.selectedId) {
+          renderStatus("No selection", "warn", "Click a node first, then use it as the trail root.");
+          return;
+        }
+        state.trailRoot = state.selectedId;
+        applyMode();
+        persistUiPrefs();
+        renderControls();
+        if (state.mode === "trail" && state.nodes.length) fitViewportToNodes();
+      });
+      trailKindSelect.addEventListener("change", () => {
+        state.trailKind = trailKindSelect.value;
+        applyMode();
+        persistUiPrefs();
+        if (state.mode === "trail" && state.nodes.length) fitViewportToNodes();
+      });
+      trailPresetSelect.addEventListener("change", () => {
+        state.trailPreset = trailPresetSelect.value;
+        persistUiPrefs();
+        renderControls();
+        renderTrailChip();
+        requestDraw();
+      });
+      trailPresetSave.addEventListener("click", saveActivePreset);
+      trailPresetDelete.addEventListener("click", deleteActivePreset);
+      trailDoneButton.addEventListener("click", () => {
+        const node = state.nodes.find((candidate) => candidate.id === state.selectedId);
+        if (node) trailSetStatus(node, "done");
+      });
+      trailUndoButton.addEventListener("click", () => {
+        const node = state.nodes.find((candidate) => candidate.id === state.selectedId);
+        if (node) trailSetStatus(node, "undone");
+      });
+
+      for (const [id, key] of [
+        ["physics-charge", "charge"],
+        ["physics-distance", "linkDistance"],
+        ["physics-collision", "collisionRadius"],
+        ["physics-center", "centerForce"],
+      ]) {
+        const input = document.getElementById(id);
+        input.addEventListener("input", () => {
+          state.physics[key] = Number(input.value);
+          renderPhysicsControls();
+          applySimulationForces();
+          persistPhysicsSoon();
+          nudgeSimulation(0.08);
+          requestDraw();
+        });
+      }
+      document.getElementById("reset-physics").addEventListener("click", () => {
+        state.physics = { ...DEFAULT_PHYSICS };
+        renderPhysicsControls();
+        applySimulationForces();
+        persistUiPrefs();
+        nudgeSimulation(0.18);
+        requestDraw();
+      });
+
+      canvas.addEventListener("wheel", (event) => {
+        event.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const sensitivity = event.ctrlKey ? 0.0024 : 0.0016;
+        zoomAt(event.clientX - rect.left, event.clientY - rect.top, Math.exp(-event.deltaY * sensitivity));
+      }, { passive: false });
+
+      canvas.addEventListener("pointerdown", handlePointerDown);
+      canvas.addEventListener("pointermove", handlePointerMove);
+      canvas.addEventListener("pointerup", handlePointerUp);
+      canvas.addEventListener("pointercancel", handlePointerUp);
+      window.addEventListener("resize", resizeCanvas);
+    }
+
+    function addKindFromInput() {
+      const value = String(kindInput.value || "").trim();
+      if (!value) return;
+      state.kinds = uniqueStrings([...state.kinds, value]);
+      if (!state.linkKind) state.linkKind = value;
+      kindInput.value = "";
+      persistUiPrefs();
+      renderControls();
+      resubscribe();
+    }
+
+    function resizeCanvas() {
+      if (!ensureCanvasSize()) return;
+      if (!state.viewport.initialized && state.nodes.length) fitViewportToNodes();
+      else {
+        renderZoomPill();
+        requestDraw();
+      }
+    }
+
+    // --- boot ----------------------------------------------------------------------
+
+    function start() {
+      renderPanel();
+      renderControls();
+      renderCounters();
+      renderDot();
+      if (!d3) {
+        renderStatus("d3 missing", "error", "The vendored d3 script did not load — the graph has no physics.");
+      } else {
+        renderStatus("Booting", "neutral", "Waiting for the Protein snapshot.");
+      }
+      bindEvents();
+      H.onLive((live) => {
+        state.live = !!live;
+        renderDot();
+        if (live) renderStatus(null);
+        else renderStatus("Disconnected", "error", "The board socket is down.");
+      });
+      H.onCardState((cardState) => {
+        applyUiPrefs(cardState);
+        resubscribe();
+      });
+      resubscribe(); // preview/selftest: no bridge-state push ever comes
+
+      // Side subscriptions (kanban pattern): trail preset records (kind sand +
+      // the relations.trail extension) and concept names (rows carry concept
+      // UIDs; presets carry NAMES — resolve for display and bucket matching).
+      H.subscribeProtein("trail-presets", {
+        source: "record",
+        where: [{ kind_eq: "sand" }, { quantity_gt: 0 }],
+        include: { extension: { namespace: TRAIL_PRESET_NAMESPACE } },
+      }, ({ rows: incoming }) => {
+        state.presetRecords = (Array.isArray(incoming) ? incoming : [])
+          .filter((row) => row?.extension && Array.isArray(row.extension.steps));
+        renderTrailControls();
+        renderTrailChip();
+        requestDraw();
+      });
+      H.subscribeProtein("trail-concepts", { source: "concept" }, ({ rows: incoming }) => {
+        state.conceptNames = {};
+        for (const concept of Array.isArray(incoming) ? incoming : []) {
+          if (concept && concept.uid) state.conceptNames[concept.uid] = concept.name;
+        }
+        renderTrailControls();
+        renderTrailChip();
+        requestDraw();
+      });
+      state.resizeObserver = new ResizeObserver(resizeCanvas);
+      state.resizeObserver.observe(app);
+      resizeCanvas();
+    }
+
+    start();
+
+    // Test/probe handle (driven chromium selftests ride this).
+    window.RelationsWidget = {
+      state,
+      fitViewportToNodes,
+      resubscribe,
+      worldToScreen,
+      findNodeAtPoint,
+      findEdgeAtPoint,
+      setMode,
+      applyMode,
+      activePreset,
+      computeTrailChanges,
+      stepIndexForNode,
+      nodeVisible,
+    };
+  })();
   </script>
 </body>
 </html>

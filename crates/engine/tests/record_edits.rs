@@ -526,3 +526,70 @@ async fn relink_order_rewrites_adjacent_order_links() {
     assert!(edges.iter().any(|edge| edge.from == a && edge.to == b));
     assert!(edges.iter().any(|edge| edge.from == b && edge.to == c));
 }
+
+#[tokio::test]
+async fn delete_record_is_distinct_from_deactivate() {
+    let e = engine().await;
+    let uid = plain(&e, "doomed").await;
+    e.act(Action::SetQuantity { target: uid.clone(), value: 3.0 }, None)
+        .await
+        .expect("give it a quantity");
+
+    // Deactivate ONLY zeroes the quantity — the record stays readable.
+    e.act(Action::Deactivate { target: uid.clone() }, None)
+        .await
+        .expect("deactivate");
+    let row = store::records::get(&e.store.pool, &uid)
+        .await
+        .unwrap()
+        .expect("deactivated record still exists");
+    assert_eq!(row.quantity, 0.0);
+    assert_eq!(row.slug.as_deref(), Some("doomed"));
+
+    // HARD delete tombstones it: gone from get/resolve/list, slug freed,
+    // Ledger facts untouched (the deletion annotation is the last one).
+    let out = e
+        .act(Action::DeleteRecord { target: "doomed".into() }, None)
+        .await
+        .expect("delete");
+    assert_eq!(out.facts.len(), 1);
+    assert_eq!(out.facts[0].delta, 0.0);
+    assert!(
+        store::records::get(&e.store.pool, &uid).await.unwrap().is_none(),
+        "deleted record must not be readable"
+    );
+    assert!(
+        store::records::resolve(&e.store.pool, "doomed").await.unwrap().is_none(),
+        "deleted record must not resolve by slug"
+    );
+    assert!(
+        !store::records::list_all(&e.store.pool)
+            .await
+            .unwrap()
+            .iter()
+            .any(|r| r.uid == uid),
+        "deleted record must not appear in the record base set"
+    );
+    let facts = store::facts::for_record(&e.store.pool, &uid, 50).await.unwrap();
+    assert!(
+        facts.len() >= 3,
+        "creation-era + deactivate + deletion facts stay in the Ledger"
+    );
+
+    // The freed slug is reusable by a NEW record.
+    let reused = e
+        .act(
+            Action::CreateRecord {
+                slug: Some("doomed".into()),
+                kind: nucleus::RecordKind::Plain,
+                head: "reborn".into(),
+                body: String::new(),
+                quantity: 0.0,
+            },
+            None,
+        )
+        .await
+        .expect("slug is free again");
+    let new_uid = reused.created.expect("created uid");
+    assert_ne!(new_uid, uid);
+}

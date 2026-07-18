@@ -51,11 +51,15 @@ pub enum ServerMessage {
     Snapshot { id: String, rows: Vec<Value> },
     /// A recomputed result pushed after a relevant commit (v1: full re-send).
     Update { id: String, rows: Vec<Value> },
-    /// Result of an Action: the created uid (if any) and committed fact count.
+    /// Result of an Action: the created uid (if any), committed fact count,
+    /// and non-fatal advisories (link cycles, rule Proof loops). Warnings are
+    /// advice, never rejections — clients should show them, not error on them.
     ActionOk {
         id: String,
         created: Option<String>,
         facts: usize,
+        #[serde(default)]
+        warnings: Vec<String>,
     },
     /// An Action or subscription failed.
     Error { id: String, message: String },

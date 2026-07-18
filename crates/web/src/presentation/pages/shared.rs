@@ -118,7 +118,6 @@ pub(crate) fn render_package_body(card: &BoardCard) -> Markup {
                     loading="lazy"
                     data-package-instance-id=(card.id.as_str())
                     data-lince-server-id=(card.server_id.as_str())
-                    data-lince-view-id=(card.view_id.map(|value| value.to_string()).unwrap_or_default())
                     sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-popups"
                     allow="fullscreen; webgpu"
                     allowfullscreen=""
@@ -131,7 +130,6 @@ pub(crate) fn render_package_body(card: &BoardCard) -> Markup {
                     loading="lazy"
                     data-package-instance-id=(card.id.as_str())
                     data-lince-server-id=(card.server_id.as_str())
-                    data-lince-view-id=(card.view_id.map(|value| value.to_string()).unwrap_or_default())
                     sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-popups"
                     allow="fullscreen; webgpu"
                     allowfullscreen=""

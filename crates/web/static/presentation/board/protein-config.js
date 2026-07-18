@@ -15,6 +15,12 @@ const LIST_PROTEIN = {
   limit: 200,
 };
 
+// Explicit "show everything" — NOT the same as clearing to
+// `{ savedProtein: null, protein: null }`, which sands now read as "no data
+// source configured yet" (2026-07-18 no-automatic-fallback change) and render
+// as an empty/prompt state rather than all records.
+const ALL_RECORDS_PROTEIN = { source: "record" };
+
 // The record kinds and predicate/order vocabulary offered in the dropdowns.
 const KINDS = ["plain", "rule", "signal", "transfer", "decision", "device", "organ", "person", "protein", "sand", "thread", "message"];
 const SOURCES = ["record", "promise", "decision"];
@@ -23,6 +29,7 @@ const FILTERS = [
   { type: "slug_eq", label: "slug is", input: "text" },
   { type: "uid_eq", label: "uid is", input: "text" },
   { type: "concept_in", label: "concept in", input: "text" },
+  { type: "organ_eq", label: "organ is", input: "text" },
   { type: "quantity_gt", label: "quantity >", input: "number" },
   { type: "quantity_gte", label: "quantity >=", input: "number" },
   { type: "quantity_lt", label: "quantity <", input: "number" },
@@ -86,7 +93,7 @@ function blankBuilder() {
     name: "",
     source: "record",
     filters: [],
-    include: { facts: false, factsLimit: 10, promises: false, links: false, linksKind: "", availability: false },
+    include: { facts: false, factsLimit: 10, promises: false, links: false, linksKinds: [], availability: false },
     aggregate: { on: false, op: "sum", by: "concept" },
     sorts: [],
     limit: "",
@@ -119,7 +126,14 @@ function buildAst(b) {
   const include = {};
   if (b.include.facts) include.facts = { limit: Number(b.include.factsLimit) || 10 };
   if (b.include.promises) include.promises = {};
-  if (b.include.links && String(b.include.linksKind || "").trim()) include.links = { kind: b.include.linksKind.trim() };
+  if (b.include.links) {
+    // Many kinds (2026-07-18): each entry is one link kind, "*" = every kind.
+    // The relations graph fans parallel kinds out as bent lines between the
+    // same pair of nodes.
+    const kinds = (Array.isArray(b.include.linksKinds) ? b.include.linksKinds : [])
+      .map((kind) => String(kind || "").trim()).filter(Boolean);
+    if (kinds.length) include.links = { kinds: [...new Set(kinds)] };
+  }
   if (b.include.availability) include.availability = true;
   if (Object.keys(include).length) ast.include = include;
 
@@ -158,7 +172,13 @@ function builderFromAst(name, slug, ast) {
   const inc = ast.include || {};
   if (inc.facts) { b.include.facts = true; b.include.factsLimit = inc.facts.limit ?? 10; }
   if (inc.promises) b.include.promises = true;
-  if (inc.links) { b.include.links = true; b.include.linksKind = inc.links.kind || ""; }
+  if (inc.links) {
+    b.include.links = true;
+    // Round-trip both spellings: `kinds` (multi) and the legacy single `kind`.
+    const kinds = [...(Array.isArray(inc.links.kinds) ? inc.links.kinds : [])];
+    if (inc.links.kind) kinds.unshift(inc.links.kind);
+    b.include.linksKinds = [...new Set(kinds.map((kind) => String(kind || "").trim()).filter(Boolean))];
+  }
   if (inc.availability) b.include.availability = true;
   if (ast.aggregate) b.aggregate = { on: true, op: ast.aggregate.op || "sum", by: ast.aggregate.by || "concept" };
   for (const o of Array.isArray(ast.order) ? ast.order : []) {
@@ -181,6 +201,10 @@ export function createProteinConfigPanel({ getCard, patchCardState, syncFrames }
   let list = []; // [{ uid, slug, head, body }]
   let mode = "list"; // "list" | "edit"
   let builder = blankBuilder();
+  // Link kinds (and concept_in) are Lingua vocabulary (blueprint III), i.e.
+  // concept slugs, not a fixed enum — offered here as free-text autocomplete
+  // rather than a dropdown, since the catalog is open-ended and user-grown.
+  let conceptNames = []; // [string]
   // Shares the board's single transport socket (Stage 8b, base task 1) instead
   // of opening its own. Our ids (`protein-list`, `pa-<n>`) never collide with
   // the widget bridge's (`<instanceId>:<subId>`, `act:<...>`), so filtering by
@@ -198,6 +222,7 @@ export function createProteinConfigPanel({ getCard, patchCardState, syncFrames }
 
   function subscribeList() {
     transport.send({ type: "subscribe", id: "protein-list", protein: LIST_PROTEIN });
+    transport.send({ type: "subscribe", id: "protein-concepts", protein: { source: "concept" } });
   }
 
   function ensureSocket() {
@@ -207,6 +232,9 @@ export function createProteinConfigPanel({ getCard, patchCardState, syncFrames }
       if ((msg.type === "snapshot" || msg.type === "update") && msg.id === "protein-list") {
         list = (msg.rows || []).map((r) => ({ uid: r.uid, slug: r.slug, head: r.head, body: r.body }));
         if (mode === "list") renderList();
+      } else if ((msg.type === "snapshot" || msg.type === "update") && msg.id === "protein-concepts") {
+        conceptNames = (msg.rows || []).map((r) => r.name).filter(Boolean);
+        if (mode === "edit") renderBuilder();
       } else if (msg.type === "action_ok" || msg.type === "error") {
         const resolve = pending.get(String(msg.id));
         if (resolve) { pending.delete(String(msg.id)); resolve(msg); }
@@ -232,7 +260,8 @@ export function createProteinConfigPanel({ getCard, patchCardState, syncFrames }
   function currentDriver() {
     const ws = getCard(cardId)?.widgetState || {};
     if (ws.savedProtein) return { kind: "saved", value: String(ws.savedProtein) };
-    return { kind: "all" };
+    if (ws.protein && typeof ws.protein === "object") return { kind: "all" };
+    return { kind: "none" };
   }
 
   function drive(patch, label) {
@@ -250,7 +279,7 @@ export function createProteinConfigPanel({ getCard, patchCardState, syncFrames }
 
     const allRow = h("div", { class: "protein-item" + (driver.kind === "all" ? " is-active" : "") },
       h("button", { type: "button", class: "protein-item__pick",
-        onclick: () => drive({ savedProtein: null, protein: null }, "This card shows all records.") }, "All records"),
+        onclick: () => drive({ savedProtein: null, protein: ALL_RECORDS_PROTEIN }, "This card shows all records.") }, "All records"),
     );
     listEl.append(allRow);
 
@@ -277,7 +306,7 @@ export function createProteinConfigPanel({ getCard, patchCardState, syncFrames }
   async function deleteProtein(p) {
     const res = await act({ action: "deactivate", target: p.slug });
     if (res.type === "error") { setHelp("Delete failed: " + (res.message || "rejected"), true); return; }
-    if (currentDriver().value === p.slug) drive({ savedProtein: null, protein: null }, `Deleted "${p.head || p.slug}".`);
+    if (currentDriver().value === p.slug) drive({ savedProtein: null, protein: ALL_RECORDS_PROTEIN }, `Deleted "${p.head || p.slug}". Showing all records.`);
     else setHelp(`Deleted "${p.head || p.slug}".`, false);
   }
 
@@ -315,7 +344,7 @@ export function createProteinConfigPanel({ getCard, patchCardState, syncFrames }
         : spec.input === "pair"
         ? (() => {
             const kindInp = h("input", { class: "startup-field__input protein-input protein-input--sm",
-              type: "text", value: f.kind || "", placeholder: "link kind (tag)" });
+              type: "text", value: f.kind || "", placeholder: "link kind (tag)", list: "protein-link-kinds" });
             kindInp.addEventListener("input", () => { f.kind = kindInp.value; });
             const toInp = h("input", { class: "startup-field__input protein-input",
               type: "text", value: f.to || "", placeholder: "to (slug/uid)" });
@@ -348,14 +377,32 @@ export function createProteinConfigPanel({ getCard, patchCardState, syncFrames }
     };
     const factsLimit = h("input", { class: "startup-field__input protein-input protein-input--sm", type: "number", value: inc.factsLimit });
     factsLimit.addEventListener("input", () => { inc.factsLimit = factsLimit.value; });
-    const linksKind = h("input", { class: "startup-field__input protein-input", type: "text", placeholder: "link kind", value: inc.linksKind });
-    linksKind.addEventListener("input", () => { inc.linksKind = linksKind.value; });
+    // Links include: any number of link kinds (each with the autocomplete
+    // datalist; "*" = every kind). One protein can therefore pull several
+    // link types at once — the relations graph draws them as fanned-out
+    // bent lines between the same two nodes.
+    const linksKindsWrap = h("div", { class: "protein-rows" });
+    inc.linksKinds.forEach((kind, i) => {
+      const kindInput = h("input", { class: "startup-field__input protein-input", type: "text",
+        placeholder: "link kind (* = all)", value: kind, list: "protein-link-kinds" });
+      kindInput.addEventListener("input", () => { inc.linksKinds[i] = kindInput.value; });
+      linksKindsWrap.append(h("div", { class: "protein-row" },
+        kindInput,
+        h("button", { type: "button", class: "protein-row__del", onclick: () => { inc.linksKinds.splice(i, 1); renderBuilder(); } }, "×"),
+      ));
+    });
+    const linksKindsField = h("div", { class: "protein-group" },
+      h("div", { class: "protein-group__head" }, "of kinds",
+        h("button", { type: "button", class: "protein-add",
+          onclick: () => { inc.linksKinds.push(""); renderBuilder(); } }, "+ kind")),
+      linksKindsWrap);
 
     // sorts
     const sortsWrap = h("div", { class: "protein-rows" });
     b.sorts.forEach((s, i) => {
       const fieldInput = h("input", { class: "startup-field__input protein-input", type: "text",
-        placeholder: s.dir === "topo" ? "link kind" : "field (quantity, slug)", value: s.field || "" });
+        placeholder: s.dir === "topo" ? "link kind" : "field (quantity, slug)", value: s.field || "",
+        list: s.dir === "topo" ? "protein-link-kinds" : null });
       fieldInput.addEventListener("input", () => { s.field = fieldInput.value; });
       sortsWrap.append(h("div", { class: "protein-row" },
         fieldInput,
@@ -381,8 +428,11 @@ export function createProteinConfigPanel({ getCard, patchCardState, syncFrames }
           inc.facts ? field("how many", factsLimit) : null,
           check("promises", inc.promises, (v) => { inc.promises = v; }),
           check("availability", inc.availability, (v) => { inc.availability = v; }),
-          check("links", inc.links, (v) => { inc.links = v; }),
-          inc.links ? field("of kind", linksKind) : null,
+          check("links", inc.links, (v) => {
+            inc.links = v;
+            if (v && !inc.linksKinds.length) inc.linksKinds.push(""); // show one input right away
+          }),
+          inc.links ? linksKindsField : null,
         )),
       h("div", { class: "protein-group" },
         h("div", { class: "protein-group__head" }, "Aggregate",
@@ -405,6 +455,7 @@ export function createProteinConfigPanel({ getCard, patchCardState, syncFrames }
         h("button", { type: "button", class: "button button--accent", onclick: () => void save() }, "Save"),
         h("button", { type: "button", class: "button button--ghost", onclick: () => renderList() }, "Cancel"),
       ),
+      h("datalist", { id: "protein-link-kinds" }, ...conceptNames.map((n) => h("option", { value: n }))),
     );
   }
 

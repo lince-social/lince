@@ -31,6 +31,22 @@ async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
     .uid
 }
 
+async fn person(e: &Engine, slug: &str) -> String {
+    store::records::create(
+        &e.store.pool,
+        NewRecord {
+            slug: Some(slug),
+            kind: RecordKind::Person,
+            head: slug,
+            body: "",
+            quantity: 1.0,
+        },
+    )
+    .await
+    .expect("person")
+    .uid
+}
+
 fn at(s: &str) -> DateTime<Utc> {
     DateTime::parse_from_rfc3339(s).unwrap().with_timezone(&Utc)
 }
@@ -157,7 +173,7 @@ async fn concept_source_reads_the_lingua_dag() {
 async fn transfer_source_derives_the_status_ladder() {
     let e = engine().await;
     plain(&e, "ana.apples", 10.0).await;
-    plain(&e, "maria", 0.0).await;
+    person(&e, "maria").await;
 
     let transfer = e
         .act(

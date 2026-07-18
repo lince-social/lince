@@ -13,7 +13,10 @@ pub use crate::domain::lince_package::{LincePackage, slugify};
 use {
     crate::{
         domain::{
-            board::{AppBootstrap, AppRuntimeInfo, BoardCard, BoardState, ServerBootstrap},
+            board::{
+                AppBootstrap, AppRuntimeInfo, BoardCard, BoardState, ServerBootstrap,
+                ViewerBootstrap,
+            },
             widget_bridge::WidgetBridgeSnapshot,
         },
         infrastructure::{
@@ -138,6 +141,30 @@ pub async fn serve_cell_api_only(
         Ok(Some(claims.sub.to_string()))
     }
 
+    /// Best-effort viewer resolution for the SSR bootstrap: unlike
+    /// `authenticate_headers`, never errors — the page must render whether or
+    /// not the visitor is logged in (there is no separate login page to fall
+    /// back to). Missing/invalid/stale tokens and no-auth-required Cells all
+    /// resolve to `None` (no viewer identity to show), never a hard failure.
+    async fn viewer_from_headers(state: &CellApiState, headers: &HeaderMap) -> Option<ViewerBootstrap> {
+        if !state.local_auth_required {
+            return None;
+        }
+        let token = bearer_token(headers).ok().flatten()?;
+        let claims = utils::auth::decode_jwt(state.jwt_secret.as_str(), &token).ok()?;
+        let user = store::auth::user_by_id(&state.store.pool, claims.sub as i64)
+            .await
+            .ok()
+            .flatten()?;
+        Some(ViewerBootstrap {
+            id: user.id.to_string(),
+            username: user.username,
+            name: user.name,
+            role: user.role,
+            permissions: utils::auth::normalized_permission_strings(user.permissions),
+        })
+    }
+
     fn server_bootstrap_from_organ(
         organ: store::organs::OrganRecord,
         local_auth_required: bool,
@@ -165,9 +192,10 @@ pub async fn serve_cell_api_only(
             .collect()
     }
 
-    async fn index(State(state): State<CellApiState>) -> impl IntoResponse {
+    async fn index(State(state): State<CellApiState>, headers: HeaderMap) -> impl IntoResponse {
         let board_state = state.board_state.snapshot().await;
         let servers = local_server_bootstrap(&state).await;
+        let viewer = viewer_from_headers(&state, &headers).await;
         let bootstrap = AppBootstrap::new(
             WidgetBridgeSnapshot::default(),
             board_state,
@@ -176,6 +204,7 @@ pub async fn serve_cell_api_only(
                 port: state.listening_port,
                 version: env!("CARGO_PKG_VERSION"),
             },
+            viewer,
         );
         Html(crate::presentation::pages::render_app(&bootstrap))
     }
@@ -585,13 +614,20 @@ pub async fn serve_cell_api_only(
         staged_setup.as_ref(),
     )
     .await?;
+    let engine = Arc::new(
+        engine::Engine::new(cell_store.clone())
+            .await
+            .map_err(IoError::other)?,
+    );
+    // Simplest v1: read each organ's `lince.file_sync` config once at boot and
+    // spawn its watch loop if enabled. A toggle from the Organ sand takes
+    // effect on the next boot; no live start/stop supervisor yet.
+    engine::file_sync::spawn_configured_watchers(engine.clone())
+        .await
+        .map_err(IoError::other)?;
     let state = CellApiState {
         board_state: BoardStateStore::new().map_err(IoError::other)?,
-        engine: Arc::new(
-            engine::Engine::new(cell_store.clone())
-                .await
-                .map_err(IoError::other)?,
-        ),
+        engine,
         jwt_secret: Arc::new(jwt_secret),
         lanes: Arc::new(LaneHub::new()),
         listening_port: local_addr.port(),

@@ -125,3 +125,134 @@ async fn export_respects_the_visibility_gate() {
     );
     assert_eq!(package.records[0].slug.as_deref(), Some("public.thing"));
 }
+
+#[tokio::test]
+async fn create_record_stamps_the_local_organ_as_origin() {
+    let e = cell().await;
+    let organ = store::organs::ensure_local(&e.store.pool, "http://cell-a")
+        .await
+        .unwrap()
+        .uid;
+    let apple = plain(&e, "apple", 1.0).await;
+    let row = store::records::get(&e.store.pool, &apple)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(row.organ_uid.as_deref(), Some(organ.as_str()));
+}
+
+#[tokio::test]
+async fn organ_lineage_survives_a_relay_through_a_second_cell() {
+    // Ana creates a record (stamped with her own organ), Bruno imports it,
+    // then Carla imports FROM Bruno — the record's origin must still say Ana,
+    // not Bruno (blueprint: Protein `organ_eq` must resolve the TRUE origin
+    // even after relaying, not just the last hop).
+    let ana = cell().await;
+    let ana_organ = store::organs::ensure_local(&ana.store.pool, "http://cell-ana")
+        .await
+        .unwrap()
+        .uid;
+    let apples = plain(&ana, "ana.apples", 5.0).await;
+    ana.act(
+        Action::GrantVisibility {
+            subject_kind: "organ".into(),
+            subject: Some("organ.everyone".into()),
+            target: apples.clone(),
+        },
+        None,
+    )
+    .await
+    .unwrap();
+
+    let bruno = cell().await;
+    let package_to_bruno = ana
+        .export_package("organ.everyone", &ana_organ)
+        .await
+        .unwrap();
+    assert_eq!(
+        package_to_bruno.records[0].organ_uid.as_deref(),
+        Some(ana_organ.as_str())
+    );
+    bruno.import_package(&package_to_bruno).await.unwrap();
+    bruno
+        .act(
+            Action::GrantVisibility {
+                subject_kind: "organ".into(),
+                subject: Some("organ.carla".into()),
+                target: apples.clone(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+
+    let carla = cell().await;
+    let bruno_organ = store::organs::ensure_local(&bruno.store.pool, "http://cell-bruno")
+        .await
+        .unwrap()
+        .uid;
+    let package_to_carla = bruno
+        .export_package("organ.carla", &bruno_organ)
+        .await
+        .unwrap();
+    assert_eq!(
+        package_to_carla.records[0].organ_uid.as_deref(),
+        Some(ana_organ.as_str()),
+        "relayed record keeps Ana as its true origin, not Bruno"
+    );
+    carla.import_package(&package_to_carla).await.unwrap();
+    let carla_row = store::records::get(&carla.store.pool, &apples)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(carla_row.organ_uid.as_deref(), Some(ana_organ.as_str()));
+}
+
+#[tokio::test]
+async fn file_sync_writes_and_reimports_records_selected_by_a_protein() {
+    use protein::{Predicate, Protein, Source};
+
+    let ana = cell().await;
+    let organ = store::organs::ensure_local(&ana.store.pool, "http://cell-ana")
+        .await
+        .unwrap()
+        .uid;
+    plain(&ana, "ana.exported", 3.0).await;
+    plain(&ana, "ana.excluded", 9.0).await;
+
+    let path = std::env::temp_dir().join(format!("{}.json", nucleus::new_uid("filesync-test")));
+
+    let protein = Protein {
+        source: Source::Record,
+        filter: vec![Predicate::SlugEq("ana.exported".into())],
+        include: Default::default(),
+        aggregate: None,
+        order: vec![],
+        limit: None,
+    };
+    let written = ana.sync_to_disk(&path, &protein).await.unwrap();
+    assert_eq!(written, 1, "only the Protein-selected record was written");
+
+    let bruno = cell().await;
+    let applied = bruno.sync_from_disk(&path).await.unwrap();
+    std::fs::remove_file(&path).ok();
+
+    assert!(!applied.is_empty());
+    let imported = store::records::resolve(&bruno.store.pool, "ana.exported")
+        .await
+        .unwrap()
+        .expect("the selected record landed on Bruno's Cell");
+    assert_eq!(imported.quantity, 3.0);
+    assert_eq!(
+        imported.organ_uid.as_deref(),
+        Some(organ.as_str()),
+        "origin travels with a file-synced record too"
+    );
+    assert!(
+        store::records::resolve(&bruno.store.pool, "ana.excluded")
+            .await
+            .unwrap()
+            .is_none(),
+        "the record the Protein did not select never left the disk file"
+    );
+}

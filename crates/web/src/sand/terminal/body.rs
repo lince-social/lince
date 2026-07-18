@@ -3,43 +3,48 @@ use maud::{Markup, html};
 pub(super) fn body() -> Markup {
     html! {
         main class="ghosttyTerminal" {
-            header class="ghosttyChrome" {
-                div class="ghosttyHeading" {
-                    div class="ghosttyEyebrow" { "libghostty-vt" }
-                    h1 class="ghosttyTitle" { "Ghostty Terminal" }
-                }
-
-                div class="ghosttyActions" {
-                    button id="follow-button" class="ghosttyButton" type="button" data-state="on" {
-                        "Follow"
-                    }
-                    button id="interrupt-button" class="ghosttyButton ghosttyButton--danger" type="button" {
-                        "Ctrl+C"
-                    }
-                    button id="restart-button" class="ghosttyButton" type="button" {
-                        "Restart"
-                    }
-                }
-            }
-
             section id="viewport" class="ghosttyViewport" tabindex="0" aria-label="Ghostty terminal" {
                 style id="ghostty-theme" {}
                 div id="buffer" class="ghosttyBuffer" {}
             }
 
-            footer class="ghosttyStatusbar" {
-                div class="ghosttyStatusline" {
-                    span id="status-pill" class="ghosttyPill" data-tone="busy" { "Booting" }
-                    span id="session-meta" class="ghosttyMeta" { "Starting shell" }
+            button
+                id="connection-button"
+                class="ghosttyConnection"
+                type="button"
+                data-tone="busy"
+                aria-controls="info-panel"
+                aria-expanded="false"
+                aria-label="Open terminal controls; connection is starting"
+                title="Terminal connection" {}
+
+            aside id="info-panel" class="ghosttyPanel" aria-label="Terminal controls" hidden {
+                div class="ghosttyPanelHeader" {
+                    strong { "Ghostty VT" }
+                    button id="close-panel-button" class="ghosttyIconButton" type="button" aria-label="Close terminal controls" title="Close" {
+                        "X"
+                    }
                 }
 
-                div class="ghosttyStatusline ghosttyStatusline--right" {
-                    a class="ghosttyLink" href="vendor/UPSTREAM.txt" target="_blank" rel="noreferrer" {
-                        "Upstream"
+                div class="ghosttyConnectionInfo" {
+                    span id="panel-status-dot" class="ghosttyPanelDot" data-tone="busy" aria-hidden="true" {}
+                    div {
+                        div id="status-pill" class="ghosttyStatus" { "Booting" }
+                        div id="session-meta" class="ghosttyMeta" { "Starting shell" }
                     }
-                    a class="ghosttyLink" href="vendor/LICENSE.txt" target="_blank" rel="noreferrer" {
-                        "MIT License"
-                    }
+                }
+
+                p class="ghosttyLicense" {
+                    "Terminal emulation is powered by libghostty-vt and distributed under the MIT License."
+                }
+                nav class="ghosttyLinks" aria-label="Ghostty notices" {
+                    a href="vendor/UPSTREAM.txt" target="_blank" rel="noreferrer" { "Upstream" }
+                    a href="vendor/LICENSE.txt" target="_blank" rel="noreferrer" { "MIT License" }
+                }
+
+                div class="ghosttyActions" {
+                    button id="interrupt-button" class="ghosttyButton ghosttyButton--danger" type="button" { "Ctrl+C" }
+                    button id="restart-button" class="ghosttyButton" type="button" { "Restart shell" }
                 }
             }
 

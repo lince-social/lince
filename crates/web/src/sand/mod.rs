@@ -1,40 +1,24 @@
-#[allow(dead_code)]
-mod calendar;
-#[allow(dead_code)]
-mod chess;
-#[allow(dead_code)]
 mod document_viewer;
-#[path = "example-bundle/mod.rs"]
-mod example_bundle;
 #[allow(dead_code)]
 mod finance;
-#[allow(dead_code)]
 mod freedoom;
 #[path = "kanban/mod.rs"]
 mod kanban;
-#[allow(dead_code)]
 mod lince_logo_led;
-#[allow(dead_code)]
-mod ops_clock;
+mod organ;
 #[allow(dead_code)]
 mod organ_management;
-mod record_info;
+mod permissions;
+mod record;
 #[path = "relations/mod.rs"]
 mod relations;
 #[allow(dead_code)]
 mod sand_publisher;
-#[allow(dead_code)]
-#[path = "shared_markdown/mod.rs"]
-mod shared_markdown;
 mod shell;
-#[allow(dead_code)]
-mod spotify_control;
 mod table;
-#[allow(dead_code)]
 mod terminal;
 mod todo;
-#[allow(dead_code)]
-mod weather;
+mod transfer;
 
 use {
     crate::domain::{
@@ -112,13 +96,10 @@ impl OfficialWidgetBuilder {
     }
 }
 
-// Stage 8b: only the NEW-WAY sands (self-contained `.html` strings that connect
-// via `/board/frame.js` + the transport WebSocket) are wired for construction,
-// plus `shell` (the board's own chrome). Every other sand still depends on the
-// old host/maud way and is RETIRED from wiring — its module + source files stay
-// on disk (see the `mod` list above) to be rebuilt into the new way later, but
-// it is not built, emitted, or served. Re-add an entry here once migrated.
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 14] = [
+// Only current frame.js sands are wired for construction, plus `shell` (the
+// board's own chrome). Legacy sources may remain under `sand/`, but stay
+// unwired until rebuilt on the current bridge and explicitly added here.
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 20] = [
     OfficialWidgetBuilder::Html {
         feature_flag: shell::FEATURE_FLAG,
         source_builder: shell::logo_source,
@@ -152,6 +133,22 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 14] = [
         source_builder: shell::tutorial_source,
     },
     OfficialWidgetBuilder::Package {
+        feature_flag: document_viewer::FEATURE_FLAG,
+        package_builder: document_viewer::package,
+    },
+    OfficialWidgetBuilder::Package {
+        feature_flag: freedoom::FEATURE_FLAG,
+        package_builder: freedoom::package,
+    },
+    OfficialWidgetBuilder::Package {
+        feature_flag: lince_logo_led::FEATURE_FLAG,
+        package_builder: lince_logo_led::package,
+    },
+    OfficialWidgetBuilder::Package {
+        feature_flag: terminal::FEATURE_FLAG,
+        package_builder: terminal::package,
+    },
+    OfficialWidgetBuilder::Package {
         feature_flag: kanban::FEATURE_FLAG,
         package_builder: kanban::package,
     },
@@ -160,21 +157,28 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 14] = [
         package_builder: relations::package,
     },
     OfficialWidgetBuilder::Package {
-        feature_flag: record_info::FEATURE_FLAG,
-        package_builder: record_info::package,
+        feature_flag: record::FEATURE_FLAG,
+        package_builder: record::package,
+    },
+    OfficialWidgetBuilder::Package {
+        feature_flag: organ::FEATURE_FLAG,
+        package_builder: organ::package,
     },
     OfficialWidgetBuilder::Package {
         feature_flag: table::FEATURE_FLAG,
         package_builder: table::package,
     },
     OfficialWidgetBuilder::Package {
+        feature_flag: permissions::FEATURE_FLAG,
+        package_builder: permissions::package,
+    },
+    OfficialWidgetBuilder::Package {
         feature_flag: todo::FEATURE_FLAG,
         package_builder: todo::package,
     },
-    // Reference directory-bundle sand (base task 3): ships as `example-bundle.lince`.
     OfficialWidgetBuilder::Package {
-        feature_flag: example_bundle::FEATURE_FLAG,
-        package_builder: example_bundle::package,
+        feature_flag: transfer::FEATURE_FLAG,
+        package_builder: transfer::package,
     },
 ];
 
@@ -247,22 +251,22 @@ fn card_from_package(
     }
 }
 
-/// Build the default kanban GROUP: the kanban board plus a record_info sand
+/// Build the default kanban GROUP: the kanban board plus a Record sand
 /// BESIDE it (to the right), sharing one inner group id. Both are visible so the
 /// group reads as a group and the board stays usable; clicking a kanban card
-/// scopes a `recordClicked` to this record_info, which then shows that record.
-/// (An earlier design stacked record_info at the SAME rect on top, but an opaque
+/// scopes a `recordClicked` to this Record, which then shows that record.
+/// (An earlier design stacked Record at the SAME rect on top, but an opaque
 /// iframe there just hid the board — hence side-by-side.) Disbanding an outer
 /// group later leaves the pair intact (groupception). Returns a `.group.sand`
 /// archive.
 pub fn build_kanban_group_archive() -> Result<Vec<u8>, String> {
     let kanban = kanban::package();
-    let record_info = record_info::package();
+    let record = record::package();
 
     let inner_group = format!("group-kanban-{}", package_id_from_filename("kanban"));
     let board_rect = (49_000.0, 49_000.0, 720.0, 520.0);
-    // record_info sits immediately to the right of the board.
-    let info_rect = (49_000.0 + 720.0 + 16.0, 49_000.0, 320.0, 520.0);
+    // Record sits immediately to the right of the board.
+    let record_rect = (49_000.0 + 720.0 + 16.0, 49_000.0, 320.0, 520.0);
 
     let cards = vec![
         card_from_package(
@@ -274,9 +278,9 @@ pub fn build_kanban_group_archive() -> Result<Vec<u8>, String> {
             Vec::new(),
         ),
         card_from_package(
-            &record_info,
-            "card-kanban-record-info",
-            info_rect,
+            &record,
+            "card-kanban-record",
+            record_rect,
             2,
             vec![inner_group],
             vec!["recordClicked".into(), "recordCreate".into()],
@@ -290,23 +294,23 @@ pub fn build_kanban_group_archive() -> Result<Vec<u8>, String> {
         cards,
     };
 
-    build_workspace_archive(&workspace, &[kanban, record_info])
+    build_workspace_archive(&workspace, &[kanban, record])
 }
 
-/// Build the default Relations GROUP: the relations graph plus a record_info
+/// Build the default Relations GROUP: the relations graph plus a Record
 /// sand BESIDE it (to the right), sharing one inner group id — the same
 /// side-by-side shape as the kanban group. Clicking a graph node scopes a
-/// `recordClicked` to this record_info (which replaces the old sand's
+/// `recordClicked` to this Record (which replaces the old sand's
 /// sidepanel); "New record" scopes a `recordCreate` to its creation mode.
 /// Returns a `.lince` workspace archive.
 pub fn build_relations_group_archive() -> Result<Vec<u8>, String> {
     let relations = relations::package();
-    let record_info = record_info::package();
+    let record = record::package();
 
     let inner_group = format!("group-relations-{}", package_id_from_filename("relations"));
     let graph_rect = (49_000.0, 49_000.0, 720.0, 520.0);
-    // record_info sits immediately to the right of the graph.
-    let info_rect = (49_000.0 + 720.0 + 16.0, 49_000.0, 320.0, 520.0);
+    // Record sits immediately to the right of the graph.
+    let record_rect = (49_000.0 + 720.0 + 16.0, 49_000.0, 320.0, 520.0);
 
     let cards = vec![
         card_from_package(
@@ -318,9 +322,9 @@ pub fn build_relations_group_archive() -> Result<Vec<u8>, String> {
             Vec::new(),
         ),
         card_from_package(
-            &record_info,
-            "card-relations-record-info",
-            info_rect,
+            &record,
+            "card-relations-record",
+            record_rect,
             2,
             vec![inner_group],
             vec!["recordClicked".into(), "recordCreate".into()],
@@ -334,7 +338,7 @@ pub fn build_relations_group_archive() -> Result<Vec<u8>, String> {
         cards,
     };
 
-    build_workspace_archive(&workspace, &[relations, record_info])
+    build_workspace_archive(&workspace, &[relations, record])
 }
 
 /// Emit the official sand-GROUP archives (kanban, relations) into the sand
@@ -440,17 +444,37 @@ mod group_tests {
     use crate::domain::workspace_archive::parse_workspace_archive;
 
     #[test]
-    fn kanban_ships_as_a_group_of_board_plus_record_info() {
+    fn requested_current_way_sands_are_in_the_official_catalog() {
+        let packages = official_packages().expect("build official sand catalog");
+        for filename in [
+            "document-viewer.lince",
+            "freedoom-portal.lince",
+            "lince-logo-led.html",
+            "ghostty-terminal.lince",
+        ] {
+            let package = packages
+                .iter()
+                .find(|package| package.archive_filename() == filename)
+                .unwrap_or_else(|| panic!("{filename} is missing from the official catalog"));
+            assert!(
+                package.html_document().contains("/board/frame.js"),
+                "{filename} must use the current frame bridge"
+            );
+        }
+    }
+
+    #[test]
+    fn kanban_ships_as_a_group_of_board_plus_record() {
         let bytes = build_kanban_group_archive().expect("build kanban group archive");
         assert!(
             crate::domain::workspace_archive::is_workspace_archive_bytes(&bytes),
             "group archive is detectable by content so the catalog skips it",
         );
-        let imported = parse_workspace_archive("kanban.lince", &bytes)
-            .expect("parse kanban group archive");
+        let imported =
+            parse_workspace_archive("kanban.lince", &bytes).expect("parse kanban group archive");
 
         let cards = &imported.workspace.cards;
-        assert_eq!(cards.len(), 2, "kanban group is exactly board + record_info");
+        assert_eq!(cards.len(), 2, "kanban group is exactly board + Record");
 
         let board = &cards[0];
         let info = &cards[1];
@@ -460,13 +484,19 @@ mod group_tests {
         assert_eq!(board.group_ids, info.group_ids, "shared inner group id");
         assert_eq!(board.group_id, board.group_ids.last().cloned());
 
-        // record_info sits BESIDE the board (to its right), not covering it, so
+        // Record sits BESIDE the board (to its right), not covering it, so
         // both are visible as a group and the board stays usable.
-        assert!(info.x >= board.x + board.width, "record_info is right of the board");
-        assert_eq!(board.y, info.y, "record_info shares the board's top edge");
-        assert!(info.z_index > board.z_index, "record_info is above the board");
+        assert!(
+            info.x >= board.x + board.width,
+            "Record is right of the board"
+        );
+        assert_eq!(board.y, info.y, "Record shares the board's top edge");
+        assert!(
+            info.z_index > board.z_index,
+            "Record is above the board"
+        );
 
-        // Only record_info listens for the board's events: card clicks focus
+        // Only Record listens for the board's events: card clicks focus
         // it, "New task" opens its creation mode.
         assert_eq!(
             info.abi_listen,
@@ -479,7 +509,7 @@ mod group_tests {
     }
 
     #[test]
-    fn relations_ships_as_a_group_of_graph_plus_record_info() {
+    fn relations_ships_as_a_group_of_graph_plus_record() {
         let bytes = build_relations_group_archive().expect("build relations group archive");
         assert!(
             crate::domain::workspace_archive::is_workspace_archive_bytes(&bytes),
@@ -489,7 +519,7 @@ mod group_tests {
             .expect("parse relations group archive");
 
         let cards = &imported.workspace.cards;
-        assert_eq!(cards.len(), 2, "relations group is exactly graph + record_info");
+        assert_eq!(cards.len(), 2, "relations group is exactly graph + Record");
 
         let graph = &cards[0];
         let info = &cards[1];
@@ -499,12 +529,18 @@ mod group_tests {
         assert_eq!(graph.group_ids, info.group_ids, "shared inner group id");
         assert_eq!(graph.group_id, graph.group_ids.last().cloned());
 
-        // record_info sits BESIDE the graph (to its right), not covering it.
-        assert!(info.x >= graph.x + graph.width, "record_info is right of the graph");
-        assert_eq!(graph.y, info.y, "record_info shares the graph's top edge");
-        assert!(info.z_index > graph.z_index, "record_info is above the graph");
+        // Record sits BESIDE the graph (to its right), not covering it.
+        assert!(
+            info.x >= graph.x + graph.width,
+            "Record is right of the graph"
+        );
+        assert_eq!(graph.y, info.y, "Record shares the graph's top edge");
+        assert!(
+            info.z_index > graph.z_index,
+            "Record is above the graph"
+        );
 
-        // Only record_info listens for the graph's events: node clicks focus
+        // Only Record listens for the graph's events: node clicks focus
         // it, "New record" opens its creation mode.
         assert_eq!(
             info.abi_listen,

@@ -17,6 +17,7 @@
   const parent = window.parent;
   const proteinHandlers = new Map(); // subId -> handler({rows})
   const actionWaiters = new Map(); // reqId -> {resolve, reject}
+  const terminalSessions = new Map(); // sessionId -> callbacks + open waiter
   const laneHandlers = new Set(); // {room, handler}
   let live = false;
   const liveHandlers = new Set();
@@ -25,8 +26,58 @@
   // (e.g. kanban body modes) back up with patchCardState.
   let cardState = {};
   const cardStateHandlers = new Set();
+  // The logged-in user's identity + permissions (null pre-login or when auth
+  // isn't required) — a display hint for the sand's own UI (e.g. a delete
+  // button's visibility). The engine, not this value, is what actually
+  // enforces record:delete / record:delete_own.
+  let viewer = null;
+  const viewerHandlers = new Set();
   let reqSeq = 0;
   const nextReqId = () => `${instanceId}:a${++reqSeq}`;
+  let terminalSeq = 0;
+
+  function bytesToBase64(value) {
+    const bytes = typeof value === "string"
+      ? new TextEncoder().encode(value)
+      : value instanceof Uint8Array
+        ? value
+        : ArrayBuffer.isView(value)
+          ? new Uint8Array(value.buffer, value.byteOffset, value.byteLength)
+          : value instanceof ArrayBuffer
+            ? new Uint8Array(value)
+            : new Uint8Array();
+    let binary = "";
+    for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+    }
+    return window.btoa(binary);
+  }
+
+  function base64ToBytes(value) {
+    const binary = window.atob(String(value || ""));
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index);
+    }
+    return bytes;
+  }
+
+  function terminalHandle(sessionId, info) {
+    return {
+      id: sessionId,
+      shell: String(info?.shell || ""),
+      cwd: String(info?.cwd || ""),
+      write(data) {
+        post({ type: "lince:terminal-input", sessionId, dataBase64: bytesToBase64(data) });
+      },
+      resize(geometry = {}) {
+        post({ type: "lince:terminal-resize", sessionId, geometry });
+      },
+      close() {
+        post({ type: "lince:terminal-close", sessionId });
+      },
+    };
+  }
 
   function post(msg) {
     parent.postMessage({ instanceId, ...msg }, "*");
@@ -53,6 +104,39 @@
         }
         break;
       }
+      case "lince:terminal-opened": {
+        const entry = terminalSessions.get(data.sessionId);
+        if (entry && !entry.opened) {
+          entry.opened = true;
+          entry.resolve(terminalHandle(data.sessionId, data));
+        }
+        break;
+      }
+      case "lince:terminal-data": {
+        const entry = terminalSessions.get(data.sessionId);
+        if (entry) entry.onData(base64ToBytes(data.dataBase64));
+        break;
+      }
+      case "lince:terminal-exit": {
+        const entry = terminalSessions.get(data.sessionId);
+        if (entry) {
+          terminalSessions.delete(data.sessionId);
+          entry.onExit(data.exitCode ?? null);
+        }
+        break;
+      }
+      case "lince:terminal-error": {
+        const entry = terminalSessions.get(data.sessionId);
+        if (entry) {
+          if (!entry.opened) {
+            terminalSessions.delete(data.sessionId);
+            entry.reject(new Error(data.message || "terminal session failed"));
+          } else {
+            entry.onError(new Error(data.message || "terminal session failed"));
+          }
+        }
+        break;
+      }
       case "lince:lane-event":
         for (const entry of laneHandlers) if (entry.room === data.room) entry.handler(data.payload, data.from);
         break;
@@ -65,6 +149,11 @@
         if (next && typeof next === "object") {
           cardState = next;
           for (const h of cardStateHandlers) h(cardState);
+        }
+        const nextViewer = data.payload?.meta?.viewer;
+        if (nextViewer !== undefined && nextViewer !== viewer) {
+          viewer = nextViewer;
+          for (const h of viewerHandlers) h(viewer);
         }
         break;
       }
@@ -108,6 +197,24 @@
       });
     },
 
+    // Ephemeral host capability: PTY bytes share the board's transport socket
+    // but are not Protein rows, Actions, lanes, or persisted state.
+    openTerminalSession(options = {}) {
+      const sessionId = `t${++terminalSeq}`;
+      const geometry = options.geometry || options;
+      return new Promise((resolve, reject) => {
+        terminalSessions.set(sessionId, {
+          resolve,
+          reject,
+          opened: false,
+          onData: typeof options.onData === "function" ? options.onData : () => {},
+          onExit: typeof options.onExit === "function" ? options.onExit : () => {},
+          onError: typeof options.onError === "function" ? options.onError : () => {},
+        });
+        post({ type: "lince:terminal-open", sessionId, geometry });
+      });
+    },
+
     // Control plane: sand-to-sand ABI over ephemeral lanes (never the Ledger).
     joinRoom(room) { post({ type: "lince:lane-join", room }); },
     emit(room, payload) { post({ type: "lince:lane-send", room, payload }); },
@@ -131,6 +238,15 @@
       return () => cardStateHandlers.delete(handler);
     },
     patchCardState(patch) { post({ type: "lince:patch-card-state", patch }); },
+
+    // The logged-in user (null pre-login / no-auth Cells) — display hint
+    // only, see the `viewer` comment above.
+    getViewer() { return viewer; },
+    onViewer(handler) {
+      viewerHandlers.add(handler);
+      handler(viewer);
+      return () => viewerHandlers.delete(handler);
+    },
   };
 
   post({ type: "lince:ready" });

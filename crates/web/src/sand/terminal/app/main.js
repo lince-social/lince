@@ -1,15 +1,18 @@
 import { GhosttyRuntime } from "./ghostty-runtime.js";
+import { openHostTerminalSession } from "./host-session.js";
 import { createQueryReplyInterpreter } from "./query-replies.js";
-import { openTerminalSocket } from "./socket.js";
 
 const viewport = document.getElementById("viewport");
 const buffer = document.getElementById("buffer");
 const themeStyle = document.getElementById("ghostty-theme");
 const statusPill = document.getElementById("status-pill");
+const connectionButton = document.getElementById("connection-button");
+const panelStatusDot = document.getElementById("panel-status-dot");
+const infoPanel = document.getElementById("info-panel");
+const closePanelButton = document.getElementById("close-panel-button");
 const sessionMeta = document.getElementById("session-meta");
 const restartButton = document.getElementById("restart-button");
 const interruptButton = document.getElementById("interrupt-button");
-const followButton = document.getElementById("follow-button");
 const measureWidth = document.getElementById("measure-width");
 const measureHeight = document.getElementById("measure-height");
 
@@ -18,7 +21,7 @@ const RESIZE_DELAY_MS = 90;
 const state = {
   runtime: null,
   session: null,
-  socket: null,
+  hostSession: null,
   geometry: null,
   resizeTimer: 0,
   renderFrame: 0,
@@ -32,20 +35,13 @@ const state = {
 
 function setStatus(text, tone) {
   statusPill.textContent = text;
-  statusPill.dataset.tone = tone;
+  connectionButton.dataset.tone = tone;
+  panelStatusDot.dataset.tone = tone;
+  connectionButton.setAttribute("aria-label", `Open terminal controls; ${text}`);
 }
 
 function setMeta(text) {
   sessionMeta.textContent = text || "Idle";
-}
-
-function setFollow(enabled) {
-  state.followOutput = Boolean(enabled);
-  followButton.dataset.state = state.followOutput ? "on" : "off";
-  followButton.textContent = state.followOutput ? "Follow" : "Paused";
-  if (state.followOutput) {
-    scrollToBottom();
-  }
 }
 
 function scrollToBottom() {
@@ -119,7 +115,6 @@ function renderTerminal(note = "") {
     return;
   }
 
-  const followBeforeRender = state.followOutput || isNearBottom();
   const formatted = state.runtime.formatHtml();
 
   if (formatted.css !== state.renderedCss) {
@@ -132,7 +127,7 @@ function renderTerminal(note = "") {
     state.renderedHtml = formatted.html || "";
   }
 
-  if (followBeforeRender && state.followOutput) {
+  if (state.followOutput) {
     scrollToBottom();
   }
 
@@ -181,8 +176,10 @@ async function syncGeometry() {
   state.runtime.resize(nextGeometry);
   scheduleRender();
 
-  if (state.socket) {
-    state.socket.resize(nextGeometry);
+  if (state.hostSession) {
+    state.hostSession.resize(nextGeometry);
+    state.session = { ...state.session, cols: nextGeometry.cols, rows: nextGeometry.rows };
+    setMeta(formatSessionMeta(state.session));
   }
 }
 
@@ -197,11 +194,11 @@ function scheduleResize() {
 }
 
 function enqueueInput(bytes) {
-  if (!(bytes instanceof Uint8Array) || bytes.length === 0 || !state.socket) {
+  if (!(bytes instanceof Uint8Array) || bytes.length === 0 || !state.hostSession) {
     return;
   }
 
-  state.socket.sendInput(bytes);
+  state.hostSession.write(bytes);
 }
 
 function enqueueInputText(text) {
@@ -266,9 +263,10 @@ async function startSession() {
   setStatus("Opening", "busy");
   setMeta("Starting shell");
 
-  const socket = openTerminalSocket(state.geometry, {
+  let hostSession = null;
+  hostSession = openHostTerminalSession(state.geometry, {
     onReady(session) {
-      if (state.socket !== socket) {
+      if (state.hostSession !== hostSession) {
         return;
       }
       applySessionSnapshot(session);
@@ -277,60 +275,37 @@ async function startSession() {
       viewport.focus();
     },
     onBytes(bytes) {
-      if (state.socket !== socket) {
+      if (state.hostSession !== hostSession) {
         return;
       }
       processOutputBytes(bytes);
     },
-    onSnapshot(session) {
-      if (state.socket !== socket) {
-        return;
-      }
-      applySessionSnapshot(session);
-      scheduleRender();
-    },
-    onReset(session) {
-      if (state.socket !== socket) {
-        return;
-      }
-      applySessionSnapshot(session);
-      if (state.geometry) {
-        state.geometry = {
-          ...state.geometry,
-          cols: session.cols || state.geometry.cols,
-          rows: session.rows || state.geometry.rows,
-          pixelWidth: session.pixelWidth || state.geometry.pixelWidth,
-          pixelHeight: session.pixelHeight || state.geometry.pixelHeight,
-        };
-      }
-      resetTerminalRuntime("resynced");
-    },
     onClosed(session) {
-      if (state.socket !== socket) {
+      if (state.hostSession !== hostSession) {
         return;
       }
       applySessionSnapshot(session);
       const exitCode = session?.exitCode;
       setStatus(exitCode == null ? "Closed" : `Exit ${exitCode}`, "error");
       scheduleRender("session ended");
-      state.socket = null;
+      state.hostSession = null;
     },
     onError(message) {
-      if (state.socket !== socket) {
+      if (state.hostSession !== hostSession) {
         return;
       }
-      setStatus("Socket Error", "error");
+      setStatus("Host Error", "error");
       setMeta(message || "Falha no stream do terminal.");
     },
   });
 
-  state.socket = socket;
+  state.hostSession = hostSession;
 
   try {
-    await socket.ready;
+    await hostSession.ready;
   } catch (error) {
-    if (state.socket === socket) {
-      state.socket = null;
+    if (state.hostSession === hostSession) {
+      state.hostSession = null;
       setStatus("Boot Error", "error");
       setMeta(error.message || "Falha ao iniciar o Ghostty terminal.");
     }
@@ -338,11 +313,25 @@ async function startSession() {
 }
 
 function stopSession() {
-  const socket = state.socket;
-  state.socket = null;
-  if (socket) {
-    socket.close();
+  const hostSession = state.hostSession;
+  state.hostSession = null;
+  if (hostSession) {
+    hostSession.close();
   }
+}
+
+function openInfoPanel() {
+  connectionButton.hidden = true;
+  connectionButton.setAttribute("aria-expanded", "true");
+  infoPanel.hidden = false;
+  closePanelButton.focus();
+}
+
+function closeInfoPanel() {
+  infoPanel.hidden = true;
+  connectionButton.hidden = false;
+  connectionButton.setAttribute("aria-expanded", "false");
+  viewport.focus();
 }
 
 async function restartSession() {
@@ -367,7 +356,7 @@ function shouldAllowBrowserShortcut(event) {
 }
 
 function handleKeyboard(event) {
-  if (!state.runtime || !state.socket || event.isComposing) {
+  if (!state.runtime || !state.hostSession || event.isComposing) {
     return;
   }
 
@@ -389,7 +378,7 @@ function handleKeyboard(event) {
 }
 
 function handlePaste(event) {
-  if (!state.socket) {
+  if (!state.hostSession) {
     return;
   }
 
@@ -437,19 +426,22 @@ async function main() {
     viewport.addEventListener("keyup", handleKeyboard);
     viewport.addEventListener("paste", handlePaste);
     viewport.addEventListener("scroll", () => {
-      if (state.followOutput && !isNearBottom()) {
-        setFollow(false);
-      }
+      state.followOutput = isNearBottom();
     });
 
+    connectionButton.addEventListener("click", openInfoPanel);
+    closePanelButton.addEventListener("click", closeInfoPanel);
+    infoPanel.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeInfoPanel();
+      }
+    });
     restartButton.addEventListener("click", () => {
       void restartSession();
     });
     interruptButton.addEventListener("click", () => {
       enqueueInput(new Uint8Array([0x03]));
-    });
-    followButton.addEventListener("click", () => {
-      setFollow(!state.followOutput);
     });
 
     await startSession();

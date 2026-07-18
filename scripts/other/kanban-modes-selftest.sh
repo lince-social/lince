@@ -67,7 +67,17 @@ cat > "$WORK/harness.html" <<'HTML'
   window.__inbound = (obj) => window.__ws._msg({ data: JSON.stringify(obj) });
 
   const patches = [];
-  const metaStore = { cardState: {} };
+  // A kanban card ships with NO driving Protein by default (2026-07-18) — it
+  // subscribes to nothing until the Data panel picks one. Seed the same
+  // shape the sand's own (now-removed) DEFAULT_PROTEIN used to auto-apply so
+  // this test still exercises the real subscribe/render path.
+  const KANBAN_TEST_PROTEIN = {
+    source: "record",
+    where: [{ kind_eq: "plain" }],
+    order: [{ asc: "quantity" }, { asc: "created_at" }],
+    include: { links: { kinds: ["assigned-to", "part-of"], direction: "out" } },
+  };
+  const metaStore = { cardState: { protein: KANBAN_TEST_PROTEIN } };
 
   const frame = document.createElement("iframe");
   frame.className = "package-widget__frame";
@@ -109,6 +119,11 @@ cat > "$WORK/harness.html" <<'HTML'
   (async () => {
     const results = {};
     await wait(400);
+    // The bridge's own initial render() fires before the iframe finishes
+    // loading (postMessage to a still-loading frame is lost) — re-push the
+    // seeded Protein now that it's up.
+    bridge.syncFrames();
+    await wait(150);
 
     results.one_socket = window.__wsCount === 1;
     results.kanban_subscribed = window.__sent.some((m) =>
@@ -126,7 +141,8 @@ cat > "$WORK/harness.html" <<'HTML'
     results.full_default = !!full && full.includes("l10") && !full.includes("...");
 
     // Host pushes cardState (e.g. restored board) -> the sand adopts compact.
-    metaStore.cardState = { kanban: { defaultBodyMode: "compact" } };
+    // (merge, not replace — the seeded `protein` must survive this push too)
+    metaStore.cardState = Object.assign({}, metaStore.cardState, { kanban: { defaultBodyMode: "compact" } });
     bridge.syncFrames();
     await wait(150);
     const compact = bodyText("Long");

@@ -3,8 +3,9 @@
 //! logic lives in `Session`. Enabled by the `axum` feature.
 //!
 //! One connection multiplexes: inbound client messages (subscriptions,
-//! actions, lane sends), outbound subscription snapshots/updates driven by the
-//! engine `fact_bus`, and outbound lane events from joined rooms.
+//! actions, lane sends, terminal capability frames), outbound subscription
+//! snapshots/updates driven by the engine `fact_bus`, and outbound ephemeral
+//! events/streams.
 
 use std::sync::Arc;
 
@@ -16,6 +17,7 @@ use tokio::sync::mpsc;
 use crate::lane::LaneHub;
 use crate::protocol::{ClientMessage, ServerMessage};
 use crate::session::Session;
+use crate::terminal::{TerminalHost, pty_size};
 
 /// Drive one connection to completion. `subject = None` is the local Cell;
 /// `Some(id)` applies that subject's visibility to every read.
@@ -28,6 +30,7 @@ pub async fn serve(
 ) {
     let (mut sink, mut stream) = socket.split();
     let (out_tx, mut out_rx) = mpsc::channel::<ServerMessage>(256);
+    let (terminal_done_tx, mut terminal_done_rx) = mpsc::channel::<String>(32);
 
     // Writer task: drain outbound messages to the socket.
     let writer = tokio::spawn(async move {
@@ -42,6 +45,7 @@ pub async fn serve(
     });
 
     let mut session = Session::new(engine.clone(), hub.clone(), connection_id.clone(), subject);
+    let mut terminals = TerminalHost::new();
     let mut bus = engine.subscribe();
 
     loop {
@@ -64,6 +68,43 @@ pub async fn serve(
                         session.handle(ClientMessage::LaneJoin { room: room.clone() }).await;
                         spawn_lane_forwarder(&hub, &room, &connection_id, out_tx.clone());
                     }
+                    Ok(ClientMessage::TerminalOpen {
+                        id,
+                        cols,
+                        rows,
+                        pixel_width,
+                        pixel_height,
+                    }) => {
+                        let result = terminals
+                            .open(
+                                id.clone(),
+                                pty_size(cols, rows, pixel_width, pixel_height),
+                                out_tx.clone(),
+                                terminal_done_tx.clone(),
+                            )
+                            .await;
+                        send_terminal_error(result, id, &out_tx).await;
+                    }
+                    Ok(ClientMessage::TerminalInput { id, data_base64 }) => {
+                        let result = terminals.input(&id, &data_base64).await;
+                        send_terminal_error(result, id, &out_tx).await;
+                    }
+                    Ok(ClientMessage::TerminalResize {
+                        id,
+                        cols,
+                        rows,
+                        pixel_width,
+                        pixel_height,
+                    }) => {
+                        let result = terminals
+                            .resize(&id, pty_size(cols, rows, pixel_width, pixel_height))
+                            .await;
+                        send_terminal_error(result, id, &out_tx).await;
+                    }
+                    Ok(ClientMessage::TerminalClose { id }) => {
+                        let result = terminals.close(&id).await;
+                        send_terminal_error(result, id, &out_tx).await;
+                    }
                     Ok(msg) => {
                         for reply in session.handle(msg).await {
                             if out_tx.send(reply).await.is_err() { break; }
@@ -83,9 +124,23 @@ pub async fn serve(
                     if out_tx.send(update).await.is_err() { break; }
                 }
             }
+            Some(id) = terminal_done_rx.recv() => {
+                terminals.forget(&id);
+            }
         }
     }
+    terminals.shutdown().await;
     writer.abort();
+}
+
+async fn send_terminal_error(
+    result: Result<(), String>,
+    id: String,
+    out_tx: &mpsc::Sender<ServerMessage>,
+) {
+    if let Err(message) = result {
+        let _ = out_tx.send(ServerMessage::Error { id, message }).await;
+    }
 }
 
 fn spawn_lane_forwarder(

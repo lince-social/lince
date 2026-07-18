@@ -77,6 +77,13 @@ impl Session {
                 }
                 vec![] // presence is fire-and-forget; senders don't echo to self
             }
+            ClientMessage::TerminalOpen { id, .. }
+            | ClientMessage::TerminalInput { id, .. }
+            | ClientMessage::TerminalResize { id, .. }
+            | ClientMessage::TerminalClose { id } => vec![ServerMessage::Error {
+                id,
+                message: "terminal capability requires a host transport driver".into(),
+            }],
         }
     }
 

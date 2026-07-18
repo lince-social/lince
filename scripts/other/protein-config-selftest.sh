@@ -9,6 +9,15 @@
 #   3. build   : "+ New" + Name + "+ filter" + Save issues save-protein with the
 #                GUI-built AST and a slug derived from the name (no AST typed),
 #                including inclusive quantity operators.
+#   4. all     : "All records" drives an EXPLICIT { source: "record" } Protein,
+#                not { savedProtein: null, protein: null } — that sentinel now
+#                means "no data source configured" to kanban/relations sands
+#                (2026-07-18 no-automatic-fallback change), which would render
+#                as empty instead of everything (the bug this regression-tests).
+#   5. autocomplete: link-kind text inputs (the "of kind" include and the
+#                linked_to pair filter) subscribe to { source: "concept" } and
+#                offer the results via a shared <datalist>, since link kinds
+#                are open-ended Lingua vocabulary, not a fixed enum.
 #
 # Requires: chromium on PATH. Usage: scripts/other/protein-config-selftest.sh
 set -euo pipefail
@@ -55,14 +64,28 @@ cat > "$WORK/pharness.html" <<'HTML'
     window.__ws.emit({ type: "snapshot", id: "protein-list", rows: [
       { uid: "p1", slug: "views.stock", kind: "protein", head: "Stock", body: '{"source":"record","limit":5}', quantity: 1 },
     ]});
+    window.__ws.emit({ type: "snapshot", id: "protein-concepts", rows: [
+      { uid: "c1", name: "before" }, { uid: "c2", name: "blocks" },
+    ]});
     const listEl = document.getElementById("widget-config-protein-list");
     const items = listEl.querySelectorAll(".protein-item").length; // All records + Stock
+    listEl.querySelectorAll(".protein-item__pick")[0].click();     // drive with "All records"
+    const allDrive = JSON.stringify(window.__patch[0]);
     listEl.querySelectorAll(".protein-item__pick")[1].click();     // drive with "Stock"
 
     document.querySelector(".protein-new").click();                // + New Protein
     const b = document.getElementById("widget-config-protein-builder");
     const nameInput = b.querySelector(".protein-field input");
     nameInput.value = "My Query"; nameInput.dispatchEvent(new Event("input"));
+    // links include: multi-kind rows, each wired to the link-kind datalist
+    const checks = Array.from(b.querySelectorAll(".protein-check"));
+    const linksCheck = checks.find((l) => l.textContent.includes("links"));
+    linksCheck.querySelector("input").click();
+    const kindInputs = () => Array.from(b.querySelectorAll(".protein-checks .protein-row input"));
+    const linksKindList = kindInputs()[0].getAttribute("list");
+    kindInputs()[0].value = "before"; kindInputs()[0].dispatchEvent(new Event("input"));
+    b.querySelector(".protein-checks .protein-add").click();       // + kind
+    kindInputs()[1].value = "blocks"; kindInputs()[1].dispatchEvent(new Event("input"));
     b.querySelectorAll(".protein-add")[0].click();                 // + filter (kind_eq plain)
     const filterRow = b.querySelector(".protein-row");
     const filterSelect = filterRow.querySelector("select");
@@ -86,20 +109,29 @@ cat > "$WORK/pharness.html" <<'HTML'
     sel.value = "linked_to"; sel.dispatchEvent(new Event("change"));
     rows = b.querySelectorAll(".protein-row");
     const pair = rows[2].querySelectorAll("input");
+    const pairKindList = pair[0].getAttribute("list");
     pair[0].value = "tag"; pair[0].dispatchEvent(new Event("input"));
     pair[1].value = "tasks"; pair[1].dispatchEvent(new Event("input"));
+    const datalist = document.getElementById("protein-link-kinds");
+    const datalistOptions = datalist ? Array.from(datalist.querySelectorAll("option")).map((o) => o.value) : [];
     b.querySelector(".protein-actions .button--accent").click();   // Save
     setTimeout(() => {
       const sent = window.__sent || [];
       const save = sent.find(m => m.type==="act" && m.action?.action==="save-protein");
       document.title = "ITEMS=" + items
-        + " DRIVE=" + (window.__patch[0]?.savedProtein)
+        + " DRIVE=" + (window.__patch[1]?.savedProtein)
+        + " ALLDRIVE=" + allDrive
+        + " LINKSKINDLIST=" + linksKindList
+        + " LINKSKINDS=" + JSON.stringify(save?.action?.ast?.include?.links?.kinds)
+        + " PAIRKINDLIST=" + pairKindList
+        + " DATALIST=" + JSON.stringify(datalistOptions)
         + " SLUG=" + (save?.action?.slug)
         + " HEAD=" + (save?.action?.head)
         + " QGTE=" + (save?.action?.ast?.where?.[0]?.quantity_gte)
         + " ASSIGNEE=" + JSON.stringify(save?.action?.ast?.where?.[1]?.linked_to)
         + " LINKED=" + JSON.stringify(save?.action?.ast?.where?.[2]?.linked_to)
-        + " SUB=" + (sent.some(m=>m.type==="subscribe"&&m.id==="protein-list")?"yes":"no");
+        + " SUB=" + (sent.some(m=>m.type==="subscribe"&&m.id==="protein-list")?"yes":"no")
+        + " SUBCONCEPT=" + (sent.some(m=>m.type==="subscribe"&&m.id==="protein-concepts"&&m.protein?.source==="concept")?"yes":"no");
     }, 40);
   }, 40);
 </script>
@@ -114,12 +146,18 @@ echo "result: $TITLE"
 
 fail=0
 grep -q "SUB=yes" <<<"$TITLE" || { echo "FAIL: panel did not subscribe to the saved-Protein list"; fail=1; }
+grep -q "SUBCONCEPT=yes" <<<"$TITLE" || { echo "FAIL: panel did not subscribe to { source: concept } for link-kind autocomplete"; fail=1; }
 grep -q "ITEMS=2" <<<"$TITLE" || { echo "FAIL: expected 'All records' + 1 saved item"; fail=1; }
+grep -q 'ALLDRIVE={"savedProtein":null,"protein":{"source":"record"}}' <<<"$TITLE" || { echo "FAIL: 'All records' must drive an explicit { source: record } Protein, not the { savedProtein: null, protein: null } no-data-source sentinel"; fail=1; }
 grep -q "DRIVE=views.stock" <<<"$TITLE" || { echo "FAIL: picking a saved Protein did not drive the card"; fail=1; }
+grep -q "LINKSKINDLIST=protein-link-kinds" <<<"$TITLE" || { echo "FAIL: the links 'of kinds' input is not wired to the link-kind datalist"; fail=1; }
+grep -q 'LINKSKINDS=\["before","blocks"\]' <<<"$TITLE" || { echo "FAIL: the links include did not build MULTIPLE kinds into the AST"; fail=1; }
+grep -q "PAIRKINDLIST=protein-link-kinds" <<<"$TITLE" || { echo "FAIL: the linked_to pair filter's kind input is not wired to the link-kind datalist"; fail=1; }
+grep -q 'DATALIST=\["before","blocks"\]' <<<"$TITLE" || { echo "FAIL: the link-kind datalist did not offer the existing concepts"; fail=1; }
 grep -q "SLUG=my-query" <<<"$TITLE" || { echo "FAIL: Save did not derive the slug from the name"; fail=1; }
 grep -q "HEAD=My Query" <<<"$TITLE" || { echo "FAIL: Save did not send the name as head"; fail=1; }
 grep -q "QGTE=0" <<<"$TITLE" || { echo "FAIL: the GUI quantity >= filter did not build into the AST"; fail=1; }
 grep -q 'ASSIGNEE={"kind":"assigned-to","to":"ana"}' <<<"$TITLE" || { echo "FAIL: assignee sugar did not build linked_to kind=assigned-to"; fail=1; }
 grep -q 'LINKED={"kind":"tag","to":"tasks"}' <<<"$TITLE" || { echo "FAIL: linked_to pair did not build into the AST"; fail=1; }
 
-[ "$fail" -eq 0 ] && echo "PASS: Data panel list + drive + GUI build/save" || exit 1
+[ "$fail" -eq 0 ] && echo "PASS: Data panel list + drive + GUI build/save + all-records fix + link-kind autocomplete" || exit 1

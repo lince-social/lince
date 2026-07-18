@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # COMPOSED end-to-end verification of the kanban add-as-group flow (Stage 8b,
 # base task 1 + task 2 / kanban Track B) with the REAL pieces, node-free:
-#   - the real served sands `kanban.html` + `record_info.html`
+#   - the real served sands `kanban.html` + `Record.html`
 #   - the real `frame.js` sand host running INSIDE real iframes
 #   - the real unified `widget-bridge.js` + shared `transport.js`
 #   - wired with `getFrames`/`getCardGroupStack` exactly as `main.js` does
 # Only the transport WebSocket is stubbed. This closes the seam every other
 # selftest stubs: real iframe -> frame.js reading `data-package-instance-id` ->
 # postMessage -> unified bridge -> group-scoped `recordClicked` -> the packaged
-# record_info re-subscribing FOCUSED on the clicked record (`uid_eq`).
+# Record re-subscribing FOCUSED on the clicked record (`uid_eq`).
 #
 # The sharp risk it guards: if frame.js's resolved instanceId did NOT line up
 # with the id `getCardGroupStack` is keyed on, the emit would read as ungrouped
 # and broadcast board-wide (scoping silently broken). So it asserts BOTH that the
-# same-group record_info focuses AND that a different-group record_info does not.
+# same-group Record focuses AND that a different-group Record does not.
 #
 # Requires: chromium on PATH (NO node). Usage: scripts/other/kanban-group-e2e-selftest.sh
 set -euo pipefail
@@ -50,7 +50,7 @@ inline_frame() {
   grep -q "LinceWidgetHost" "$out" || { echo "frame.js inline failed for $src"; exit 1; }
 }
 inline_frame "$SAND/kanban/kanban.html"        "$WORK/kanban-frame.html"
-inline_frame "$SAND/record_info/record_info.html" "$WORK/recinfo-frame.html"
+inline_frame "$SAND/record/record.html" "$WORK/recinfo-frame.html"
 
 cat > "$WORK/harness.html" <<'HTML'
 <!doctype html><html><head><meta charset="utf-8"></head><body>
@@ -81,7 +81,7 @@ cat > "$WORK/harness.html" <<'HTML'
   window.WebSocket = FakeWS;
   window.__inbound = (obj) => window.__ws._msg({ data: JSON.stringify(obj) });
 
-  // Three cards, mirroring an added kanban group + an unrelated record_info in
+  // Three cards, mirroring an added kanban group + an unrelated Record in
   // a DIFFERENT group. Same ids the iframes carry; getCardGroupStack keyed on
   // them, exactly like main.js.
   const groups = { "card-kanban": ["g1"], "card-recinfo": ["g1"], "card-recinfo-other": ["g2"] };
@@ -104,11 +104,27 @@ cat > "$WORK/harness.html" <<'HTML'
   const other = makeIframe("card-recinfo-other", "recinfo-frame.html");
   const frames = [kanban, recinfo, other];
 
+  // A kanban card ships with NO driving Protein by default (2026-07-18) — it
+  // subscribes to nothing until the Data panel picks one. Seed the same
+  // shape the sand's own (now-removed) DEFAULT_PROTEIN used to auto-apply so
+  // this test still exercises the real subscribe/render path. Relies on the
+  // widget-bridge `lince:ready` handshake re-pushing bridge-state to a frame
+  // once it's actually listening (2026-07-18 fix) rather than a manual
+  // `syncFrames()` call — this proves that fix works, not just papers over it.
+  const cardMeta = {
+    "card-kanban": { cardState: { protein: {
+      source: "record",
+      where: [{ kind_eq: "plain" }],
+      order: [{ asc: "quantity" }, { asc: "created_at" }],
+      include: { links: { kinds: ["assigned-to", "part-of"], direction: "out" } },
+    } } },
+  };
+
   createWidgetBridge({
     statusNode: document.getElementById("status"),
     getFrames: () => frames,
     initialState: {},
-    getCardMeta: () => ({}),
+    getCardMeta: (id) => cardMeta[id] || {},
     getCardAbiListen: (id) => abiListen[id] || [],
     getCardGroupStack: (id) => groups[id] || [],
     setCardState: () => {}, patchCardState: () => {}, setCardStreamsEnabled: () => {},
@@ -138,7 +154,7 @@ cat > "$WORK/harness.html" <<'HTML'
     await wait(150);
 
     // The card rendered inside the REAL kanban iframe?
-    // Click the TITLE (2026-07-17: title -> record_info; body -> in-place edit).
+    // Click the TITLE (2026-07-17: title -> Record; body -> in-place edit).
     const cardEl = kanban.contentDocument && kanban.contentDocument.querySelector(".card .card-title");
     results.card_rendered = !!cardEl;
 
@@ -147,14 +163,14 @@ cat > "$WORK/harness.html" <<'HTML'
     if (cardEl) cardEl.click();
     await wait(200);
 
-    // Same-group record_info re-subscribed FOCUSED on the clicked uid (proves
+    // Same-group Record re-subscribed FOCUSED on the clicked uid (proves
     // click -> scoped ABI -> frame.js instanceId lines up with the group id ->
-    // record_info focus). Different-group record_info did NOT (scoping holds;
+    // Record focus). Different-group Record did NOT (scoping holds;
     // the emit was not a board-wide broadcast).
     results.same_group_focused = uidEqSubForCard("card-recinfo", "r_click");
     results.diff_group_not_focused = !uidEqSubForCard("card-recinfo-other", "r_click");
 
-    // "New task" in kanban opens CREATION MODE in the same-group record_info:
+    // "New task" in kanban opens CREATION MODE in the same-group Record:
     // the same fields the get shows, writable and empty. Scoped like clicks.
     window.__sent.length = 0;
     kanban.contentDocument.getElementById("open-create").click();
@@ -166,7 +182,7 @@ cat > "$WORK/harness.html" <<'HTML'
     results.create_fields_empty = rc.getElementById("c-head").value === ""
       && rc.getElementById("c-body").value === "";
 
-    // Fill + submit: record_info writes create-record, then focuses the
+    // Fill + submit: Record writes create-record, then focuses the
     // created record (the ack's uid) with a uid_eq subscription.
     rc.getElementById("c-head").value = "Fresh";
     rc.getElementById("c-submit").click();
@@ -194,12 +210,12 @@ check() { grep -q "\"$1\":true" <<<"$JSON" || { echo "FAIL: $2"; fail=1; }; }
 check one_socket             "more than one transport socket was opened"
 check kanban_subscribed      "the real kanban sand did not subscribe its driving Protein"
 check card_rendered          "the real kanban sand did not render a clickable card from the snapshot"
-check same_group_focused     "clicking a kanban card did not focus the same-group record_info on that uid"
-check diff_group_not_focused "the click leaked to a different-group record_info (scoping broken / broadcast)"
-check create_mode_same_group "New task did not open creation mode in the same-group record_info"
-check create_mode_scoped     "creation mode leaked to a different-group record_info"
+check same_group_focused     "clicking a kanban card did not focus the same-group Record on that uid"
+check diff_group_not_focused "the click leaked to a different-group Record (scoping broken / broadcast)"
+check create_mode_same_group "New task did not open creation mode in the same-group Record"
+check create_mode_scoped     "creation mode leaked to a different-group Record"
 check create_fields_empty    "creation mode fields were not empty/writable"
-check create_action          "record_info creation did not send create-record"
-check created_focused        "record_info did not focus the created record after the ack"
+check create_action          "Record creation did not send create-record"
+check created_focused        "Record did not focus the created record after the ack"
 
-[ "$fail" -eq 0 ] && echo "PASS: real iframe -> frame.js -> unified bridge -> group-scoped recordClicked/recordCreate -> record_info focus + creation" || exit 1
+[ "$fail" -eq 0 ] && echo "PASS: real iframe -> frame.js -> unified bridge -> group-scoped recordClicked/recordCreate -> Record focus + creation" || exit 1

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# COMPOSED end-to-end verification of the Relations group (graph + record_info)
+# COMPOSED end-to-end verification of the Relations group (graph + Record)
 # on the new data plane with the REAL pieces, node-free:
-#   - the real served sands `relations.html` (d3 force graph) + `record_info.html`
+#   - the real served sands `relations.html` (d3 force graph) + `Record.html`
 #   - the real vendored d3.v7.min.js running the actual force simulation
 #   - the real `frame.js` sand host running INSIDE real iframes
 #   - the real unified `widget-bridge.js` + shared `transport.js`
@@ -11,7 +11,7 @@
 #
 # It proves: the graph renders nodes+edges from a live Protein snapshot (the
 # direction:"both" link echo deduped), a node click emits the group-scoped
-# `recordClicked` and ONLY the same-group record_info focuses, Shift+drag
+# `recordClicked` and ONLY the same-group Record focuses, Shift+drag
 # node->node sends add-link and a CYCLE WARNING in the ack rides the new
 # warnings plumbing (protocol -> bridge -> frame.js) into the sand's status
 # line as advice (not an error), edge click + the header chip sends
@@ -64,9 +64,9 @@ inline_script "$WORK/relations-step1.html" '<script src="/board/vendor/d3.v7.min
 grep -q "LinceWidgetHost" "$WORK/relations-frame.html" || { echo "frame.js inline failed"; exit 1; }
 grep -q "forceSimulation" "$WORK/relations-frame.html" || { echo "d3 inline failed"; exit 1; }
 
-inline_script "$SAND/record_info/record_info.html" '<script src="/board/frame.js"></script>' \
+inline_script "$SAND/record/record.html" '<script src="/board/frame.js"></script>' \
   "$BOARD/frame.js" "$WORK/recinfo-frame.html"
-grep -q "LinceWidgetHost" "$WORK/recinfo-frame.html" || { echo "frame.js inline failed for record_info"; exit 1; }
+grep -q "LinceWidgetHost" "$WORK/recinfo-frame.html" || { echo "frame.js inline failed for Record"; exit 1; }
 
 cat > "$WORK/harness.html" <<'HTML'
 <!doctype html><html><head><meta charset="utf-8">
@@ -103,7 +103,7 @@ cat > "$WORK/harness.html" <<'HTML'
   window.WebSocket = FakeWS;
   window.__inbound = (obj) => window.__ws._msg({ data: JSON.stringify(obj) });
 
-  // Four cards: an added relations group + an unrelated record_info in a
+  // Four cards: an added relations group + an unrelated Record in a
   // DIFFERENT group (the scoping canary, same as the kanban e2e) + a SECOND
   // relations group (proves trail presets live-share across groups).
   const groups = { "card-relations": ["g1"], "card-recinfo": ["g1"], "card-recinfo-other": ["g2"], "card-relations-b": ["g3"] };
@@ -128,11 +128,25 @@ cat > "$WORK/harness.html" <<'HTML'
   const relationsB = makeIframe("card-relations-b", "relations-frame.html");
   const frames = [relations, recinfo, other, relationsB];
 
-  createWidgetBridge({
+  // A relations card ships with NO driving Protein and NO link kinds by
+  // default (2026-07-18) — it subscribes to nothing until the Data panel
+  // picks one and shows no edges until the user adds kinds. Both relations
+  // cards here carry an explicit inline Protein (what the sand's own
+  // defaultProtein() used to auto-apply) plus the kind chrome a user would
+  // have set, so this test still exercises the real
+  // graph-subscription/rendering path instead of the new empty state.
+  const RELATIONS_TEST_PROTEIN = { source: "record", include: { links: { kinds: ["before"], direction: "both", depth: 0 } } };
+  const RELATIONS_TEST_PREFS = { kinds: ["before"], linkKind: "before", trailKind: "before" };
+  const cardMeta = {
+    "card-relations": { cardState: { protein: RELATIONS_TEST_PROTEIN, relations: RELATIONS_TEST_PREFS } },
+    "card-relations-b": { cardState: { protein: RELATIONS_TEST_PROTEIN, relations: RELATIONS_TEST_PREFS } },
+  };
+
+  const bridge = createWidgetBridge({
     statusNode: document.getElementById("status"),
     getFrames: () => frames,
     initialState: {},
-    getCardMeta: () => ({}),
+    getCardMeta: (id) => cardMeta[id] || {},
     getCardAbiListen: (id) => abiListen[id] || [],
     getCardGroupStack: (id) => groups[id] || [],
     setCardState: () => {}, patchCardState: () => {}, setCardStreamsEnabled: () => {},
@@ -169,6 +183,12 @@ cat > "$WORK/harness.html" <<'HTML'
   (async () => {
     const results = {};
     await wait(400);
+    // The bridge's own initial render() fires before the iframes finish
+    // loading (postMessage to a still-loading frame is lost) — re-push the
+    // per-card Protein config now that they're up, same fix the kanban
+    // selftests already use for this exact race.
+    bridge.syncFrames();
+    await wait(150);
 
     results.one_socket = window.__wsCount === 1;
 
@@ -215,8 +235,8 @@ cat > "$WORK/harness.html" <<'HTML'
     canvasEvent(relations, "pointerup", pointP);
     await wait(100);
 
-    // NODE CLICK -> group-scoped recordClicked: same-group record_info focuses
-    // the clicked uid, different-group record_info does NOT.
+    // NODE CLICK -> group-scoped recordClicked: same-group Record focuses
+    // the clicked uid, different-group Record does NOT.
     window.__sent.length = 0;
     const pointA = nodeScreen("r_a");
     results.node_positioned = !!pointA;
@@ -260,7 +280,7 @@ cat > "$WORK/harness.html" <<'HTML'
       && m.action.from === "r_a" && m.action.kind === "before" && m.action.to === "r_b");
 
     // "New record" -> group-scoped recordCreate: creation mode opens in the
-    // same-group record_info only, fields writable and empty.
+    // same-group Record only, fields writable and empty.
     window.__sent.length = 0;
     relations.contentDocument.getElementById("create-open").click();
     await wait(250);
@@ -396,6 +416,47 @@ cat > "$WORK/harness.html" <<'HTML'
       .map((m) => `${m.action.target}:${m.action.concept}`);
     results.concept_status_writes = conceptWrites.includes("r_a:done") && conceptWrites.includes("r_b:next");
 
+    // ---- NODE GRAVITY (tree-weight physics) ----------------------------------
+    // Real panel controls: strength 0.9, root sinks. Weights come from the
+    // trail tree's topo depth (root 1 .. leaves 0, outsiders weigh like
+    // leaves); in trail mode the pins come off and only tree nodes simulate.
+    const gravStr = relations.contentDocument.getElementById("gravity-strength");
+    gravStr.value = "0.9";
+    gravStr.dispatchEvent(new relations.contentWindow.Event("input"));
+    const gravDir = relations.contentDocument.getElementById("gravity-direction");
+    gravDir.value = "down";
+    gravDir.dispatchEvent(new relations.contentWindow.Event("change"));
+    await wait(150);
+    const gTree = w.computeTree("r_a", "before");
+    const nD = w.state.nodes.find((n) => n.id === "r_d");
+    results.gravity_weights = w.nodeGravityWeight(nA, gTree) === 1
+      && w.nodeGravityWeight(nB, gTree) === 0.5
+      && w.nodeGravityWeight(nC, gTree) === 0
+      && w.nodeGravityWeight(nD, gTree) === 0;
+    results.gravity_targets_down = w.gravityTargetY(nA, gTree) > 0 && w.gravityTargetY(nC, gTree) < 0;
+    results.gravity_unpins_trail = nA.fx === null && nA.fy === null
+      && w.gravityActive()
+      && !w.state.simulation.nodes().some((n) => n.id === "r_d");
+    gravDir.value = "up";
+    gravDir.dispatchEvent(new relations.contentWindow.Event("change"));
+    await wait(120);
+    results.gravity_targets_up = w.gravityTargetY(nA, gTree) < w.gravityTargetY(nC, gTree);
+    // Off restores the classic pinned trail layout.
+    gravDir.value = "off";
+    gravDir.dispatchEvent(new relations.contentWindow.Event("change"));
+    await wait(120);
+    results.gravity_off_pins = typeof nA.fx === "number" && nA.fy === nA.y;
+    // Graph mode: the tree stratifies by weight under the live simulation.
+    gravDir.value = "down";
+    gravDir.dispatchEvent(new relations.contentWindow.Event("change"));
+    modeSel.value = "graph";
+    modeSel.dispatchEvent(new relations.contentWindow.Event("change"));
+    await wait(200);
+    const gravSim = w.state.simulation;
+    gravSim.alpha(1);
+    for (let tick = 0; tick < 300; tick += 1) gravSim.tick();
+    results.gravity_settles_graph = nA.y > nC.y && nB.y < nA.y && nB.y > nC.y;
+
     document.title = "RESULT=" + JSON.stringify(results);
   })();
 </script>
@@ -421,15 +482,15 @@ check empty_state_hidden     "the empty-state overlay shows over a populated gra
 check panel_closes           "the controls panel does not close"
 check physics_heat_on_drag   "dragging a node does not heat the simulation"
 check node_positioned        "node r_a had no settled position to click"
-check same_group_focused     "node click did not focus the same-group record_info on that uid"
-check diff_group_not_focused "the click leaked to a different-group record_info (scoping broken)"
+check same_group_focused     "node click did not focus the same-group Record on that uid"
+check diff_group_not_focused "the click leaked to a different-group Record (scoping broken)"
 check add_link_sent          "Shift+drag node->node did not send add-link with the active kind"
 check warning_shown          "the add-link cycle warning did not surface in the sand status as advice"
 check action_settled         "an Action was still pending after its ack"
 check edge_selected          "clicking an edge did not select it (header chip)"
 check remove_link_sent       "the edge chip's remove did not send remove-link"
-check create_mode_same_group "New record did not open creation mode in the same-group record_info"
-check create_mode_scoped     "creation mode leaked to a different-group record_info"
+check create_mode_same_group "New record did not open creation mode in the same-group Record"
+check create_mode_scoped     "creation mode leaked to a different-group Record"
 check create_fields_empty    "creation mode fields were not empty/writable"
 check trail_tree_scoped      "trail tree is not scoped to the root's forward reachable set"
 check trail_layered          "trail layout is not layered by topo depth (or non-tree nodes still show)"
@@ -439,6 +500,12 @@ check trail_cascade_writes   "Done did not write set-quantity for the node AND a
 check trail_optimistic       "the cascade did not apply optimistically before the acks"
 check trail_settled          "a trail Action was still pending after its ack"
 check trail_undo_cascade     "Undo did not cascade the node and its promoted child back to road ahead"
+check gravity_weights        "node gravity weight is not root 1 .. leaf/outsider 0 by topo depth"
+check gravity_targets_down   "root-sinks gravity does not pull the root down and the leaves up"
+check gravity_unpins_trail   "trail mode with gravity on still pins nodes (or simulates non-tree nodes)"
+check gravity_targets_up     "root-floats gravity does not invert the pull"
+check gravity_off_pins       "turning gravity off did not restore the pinned trail layout"
+check gravity_settles_graph  "the graph-mode simulation does not stratify the tree by weight"
 check preset_saved           "preset save did not create-record kind sand + set-extension relations.trail"
 check preset_listed_live     "a saved preset did not live-appear in the preset select"
 check preset_shared_across_groups "a saved preset did not live-appear in the SECOND relations group"
@@ -446,4 +513,4 @@ check preset_applied         "applying a preset from the select did not switch t
 check concept_steps_shown    "the concept preset's steps are not shown in the panel"
 check concept_status_writes  "the concept preset did not write set-concept for done AND the auto-promoted @next"
 
-[ "$fail" -eq 0 ] && echo "PASS: relations graph + trail on Protein/Actions — render, scoped recordClicked/recordCreate, add/remove-link with warnings-as-advice, trail tree layout, Done/Undo cascade with gating, preset CRUD shared across groups, concept status vocabulary" || exit 1
+[ "$fail" -eq 0 ] && echo "PASS: relations graph + trail on Protein/Actions — render, scoped recordClicked/recordCreate, add/remove-link with warnings-as-advice, trail tree layout, Done/Undo cascade with gating, preset CRUD shared across groups, concept status vocabulary, node gravity tree-weight physics in both modes" || exit 1

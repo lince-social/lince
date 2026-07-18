@@ -19,6 +19,10 @@ pub struct RecordSeed {
     pub head: String,
     pub concept_uid: Option<String>,
     pub unit_uid: Option<String>,
+    /// True origin organ, carried through relaying (blueprint: Protein-driven
+    /// Sync). `#[serde(default)]` so packages from an older peer still import.
+    #[serde(default)]
+    pub organ_uid: Option<String>,
 }
 
 /// One concept riding a package (blueprint III.2: unknown concepts travel with
@@ -66,6 +70,11 @@ impl Engine {
                     }
                 }
             }
+            // Lineage: keep the record's true origin if it already has one
+            // (relaying through an intermediate organ), else this Cell is the
+            // origin — stamp `from_organ` (blueprint: Sync/File Sync carry
+            // origin so a downstream Protein `organ_eq` still resolves).
+            let organ_uid = r.organ_uid.clone().or_else(|| Some(from_organ.to_string()));
             records.push(RecordSeed {
                 uid: r.uid.clone(),
                 slug: r.slug,
@@ -73,6 +82,7 @@ impl Engine {
                 head: r.head,
                 concept_uid: r.concept_uid,
                 unit_uid: r.unit_uid,
+                organ_uid,
             });
             facts.extend(store::facts::for_record(&self.store.pool, &r.uid, 10_000).await?);
         }
@@ -94,6 +104,91 @@ impl Engine {
             records,
             facts,
         })
+    }
+
+    /// Export a Package selected by an arbitrary Protein instead of a
+    /// visibility subject — the primitive File Sync (and any future
+    /// Protein-scoped organ sync) shares with `export_package`. No visibility
+    /// gating: the caller's Protein IS the selection rule (e.g. combine
+    /// `organ_eq` with any other filter to pick exactly what leaves).
+    pub async fn export_package_by_protein(
+        &self,
+        protein: &protein::Protein,
+        from_organ: &str,
+    ) -> Result<Package, EngineError> {
+        let matched = protein::matching_records(&self.store, protein, None).await?;
+        let mut records = Vec::new();
+        let mut facts = Vec::new();
+        let mut concept_uids: Vec<String> = Vec::new();
+        for r in matched {
+            for c in [&r.concept_uid, &r.unit_uid].into_iter().flatten() {
+                for ancestor in store::concepts::ancestors_including(&self.store.pool, c).await? {
+                    if !concept_uids.contains(&ancestor) {
+                        concept_uids.push(ancestor);
+                    }
+                }
+            }
+            let organ_uid = r.organ_uid.clone().or_else(|| Some(from_organ.to_string()));
+            records.push(RecordSeed {
+                uid: r.uid.clone(),
+                slug: r.slug,
+                kind: r.kind,
+                head: r.head,
+                concept_uid: r.concept_uid,
+                unit_uid: r.unit_uid,
+                organ_uid,
+            });
+            facts.extend(store::facts::for_record(&self.store.pool, &r.uid, 10_000).await?);
+        }
+        facts.sort_by(|a, b| a.at.cmp(&b.at));
+        let all = store::concepts::list_all(&self.store.pool).await?;
+        let concepts = concept_uids
+            .into_iter()
+            .filter_map(|uid| {
+                all.iter().find(|c| c.uid == uid).map(|c| ConceptSeed {
+                    uid: c.uid.clone(),
+                    name: c.canonical_name.clone(),
+                    parents: c.parents.clone(),
+                })
+            })
+            .collect();
+        Ok(Package {
+            from_organ: from_organ.to_string(),
+            concepts,
+            records,
+            facts,
+        })
+    }
+
+    /// File Sync (blueprint: Sync/CRDT — Protein-driven target selection):
+    /// write the Protein-selected records + their facts to one JSON file at
+    /// `path`, the disk-organ analogue of `enqueue_sync_to`. Not queued — the
+    /// caller (a Karma signal/frequency, a CLI command) decides the cadence.
+    pub async fn sync_to_disk(
+        &self,
+        path: &std::path::Path,
+        protein: &protein::Protein,
+    ) -> Result<usize, EngineError> {
+        let organ = store::organs::local(&self.store.pool)
+            .await?
+            .map(|o| o.uid)
+            .unwrap_or_default();
+        let package = self.export_package_by_protein(protein, &organ).await?;
+        let count = package.records.len();
+        let json = serde_json::to_vec_pretty(&package).map_err(EngineError::Json)?;
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent).map_err(EngineError::Io)?;
+        }
+        std::fs::write(path, json).map_err(EngineError::Io)?;
+        Ok(count)
+    }
+
+    /// Import a package a File Sync wrote to disk (this Cell's own export, or
+    /// another organ's, dropped at a shared path) — mirrors `import_package`.
+    pub async fn sync_from_disk(&self, path: &std::path::Path) -> Result<Vec<Fact>, EngineError> {
+        let raw = std::fs::read(path).map_err(EngineError::Io)?;
+        let package: Package = serde_json::from_slice(&raw).map_err(EngineError::Json)?;
+        self.import_package(&package).await
     }
 
     /// Import a package: ensure the records exist locally by uid, then re-append
@@ -124,7 +219,7 @@ impl Engine {
             .await?;
         }
         for seed in &package.records {
-            ensure_record(&self.store, seed).await?;
+            ensure_record(&self.store, seed, &package.from_organ).await?;
         }
         let mut applied = Vec::new();
         for fact in &package.facts {
@@ -387,7 +482,11 @@ impl Engine {
     }
 }
 
-async fn ensure_record(store: &Store, seed: &RecordSeed) -> Result<(), EngineError> {
+async fn ensure_record(
+    store: &Store,
+    seed: &RecordSeed,
+    fallback_organ: &str,
+) -> Result<(), EngineError> {
     if store::records::get(&store.pool, &seed.uid).await?.is_some() {
         return Ok(());
     }
@@ -397,10 +496,16 @@ async fn ensure_record(store: &Store, seed: &RecordSeed) -> Result<(), EngineErr
         Some(slug) => store::records::resolve(&store.pool, slug).await?.is_some(),
         None => false,
     };
+    // Older peers may not send `organ_uid` yet — fall back to the sending
+    // organ so lineage still resolves (blueprint: Protein-driven Sync).
+    let organ_uid = seed
+        .organ_uid
+        .clone()
+        .or_else(|| Some(fallback_organ.to_string()));
     let now = Utc::now().to_rfc3339();
     store::sqlx::query(
-        "INSERT INTO record (uid, slug, kind, head, body, quantity, concept_uid, unit_uid, created_at, updated_at)
-         VALUES (?, ?, ?, ?, '', 0, ?, ?, ?, ?)",
+        "INSERT INTO record (uid, slug, kind, head, body, quantity, concept_uid, unit_uid, organ_uid, created_at, updated_at)
+         VALUES (?, ?, ?, ?, '', 0, ?, ?, ?, ?, ?)",
     )
     .bind(&seed.uid)
     .bind(if slug_taken { None } else { seed.slug.clone() })
@@ -408,6 +513,7 @@ async fn ensure_record(store: &Store, seed: &RecordSeed) -> Result<(), EngineErr
     .bind(&seed.head)
     .bind(&seed.concept_uid)
     .bind(&seed.unit_uid)
+    .bind(&organ_uid)
     .bind(&now)
     .bind(&now)
     .execute(&store.pool)

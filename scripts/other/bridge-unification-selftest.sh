@@ -2,7 +2,7 @@
 # Behavioral verification that the ONE unified widget bridge (Stage 8b, base
 # task 1) serves the NEW-WAY (flat) sand protocol over the single shared
 # transport, including group-scoped in-page ABI fan-out — the exact substrate
-# kanban Track B's scoped `recordClicked` -> its packaged record_info needs.
+# kanban Track B's scoped `recordClicked` -> its packaged Record needs.
 #
 # Drives `transport.js` + `widget-bridge.js` end-to-end in headless chromium
 # against a STUBBED WebSocket + fake sand frames, asserting the flat contract:
@@ -14,6 +14,7 @@
 #   4. scoped ABI      : an emit reaches ONLY the same-group sibling in-page,
 #                        never a different-group sand; ungrouped source broadcasts
 #   5. lane mirror     : the emit is also mirrored to the server lane
+#   6. terminal stream : capability-gated PTY frames share that same socket
 #
 # Requires: chromium on PATH. Usage: scripts/other/bridge-unification-selftest.sh
 set -euo pipefail
@@ -67,16 +68,18 @@ cat > "$WORK/harness.html" <<'HTML'
   // ---- Fake new-way sand frames. ----
   function makeFrame(id) {
     const posts = [];
-    return {
-      dataset: { packageInstanceId: id },
-      contentWindow: { postMessage: (m) => posts.push(m) },
-      __posts: posts,
-    };
+    const frame = document.createElement("iframe");
+    frame.dataset.packageInstanceId = id;
+    frame.__posts = posts;
+    document.body.append(frame);
+    frame.contentWindow.addEventListener("message", (event) => posts.push(event.data));
+    return frame;
   }
   const kanban = makeFrame("kanban");   // emitter, group g1
   const recinfo = makeFrame("recinfo"); // same group g1 -> should receive
   const other = makeFrame("other");     // group g2 -> must NOT receive
-  const frames = [kanban, recinfo, other];
+  const terminal = makeFrame("terminal");
+  const frames = [kanban, recinfo, other, terminal];
 
   // Group stacks (outermost -> innermost). kanban+recinfo share g1; other is g2.
   const groups = { kanban: ["g1"], recinfo: ["g1"], other: ["g2"] };
@@ -85,7 +88,7 @@ cat > "$WORK/harness.html" <<'HTML'
     statusNode: document.getElementById("status"),
     getFrames: () => frames,
     initialState: {},
-    getCardMeta: () => ({}),
+    getCardMeta: (id) => ({ permissions: id === "terminal" ? ["terminal_session"] : [] }),
     getCardAbiListen: () => [],
     getCardGroupStack: (id) => groups[id] || [],
     setCardState: () => {},
@@ -100,8 +103,16 @@ cat > "$WORK/harness.html" <<'HTML'
   // proves ONE socket is used, not one-per-consumer.
   const shared = getSharedTransport();
 
-  // Post a flat frame message up to the bridge, exactly as frame.js does.
-  const post = (instanceId, msg) => window.postMessage({ instanceId, ...msg }, "*");
+  // Post a flat frame message up to the bridge with the owning frame as the
+  // MessageEvent source. Privileged capabilities bind identity to the source
+  // window, so an instanceId string alone is intentionally insufficient.
+  const post = (instanceId, msg, sourceId = instanceId) => {
+    const source = frames.find((frame) => frame.dataset.packageInstanceId === sourceId)?.contentWindow;
+    window.dispatchEvent(new MessageEvent("message", {
+      data: { instanceId, ...msg },
+      source,
+    }));
+  };
   const postsOf = (frame, type) => frame.__posts.filter((m) => m.type === type);
   const sentHas = (pred) => window.__sent.some(pred);
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -136,6 +147,43 @@ cat > "$WORK/harness.html" <<'HTML'
     const ar = postsOf(kanban, "lince:action-result");
     results.flat_action_result =
       ar.length === 1 && ar[0].reqId === "k1" && ar[0].ok === true && ar[0].payload === undefined;
+
+    // 3b. Explicit terminal capability stays on this same transport socket.
+    window.__sent.length = 0;
+    post("terminal", {
+      type: "lince:terminal-open",
+      sessionId: "t1",
+      geometry: { cols: 100, rows: 30, pixelWidth: 800, pixelHeight: 480 },
+    });
+    await wait(10);
+    const terminalOpen = window.__sent.find((m) => m.type === "terminal_open");
+    results.terminal_open_sent = !!terminalOpen && terminalOpen.cols === 100 && terminalOpen.rows === 30;
+    window.__inbound({ type: "terminal_opened", id: terminalOpen.id, shell: "/bin/sh", cwd: "/tmp" });
+    window.__inbound({ type: "terminal_data", id: terminalOpen.id, data_base64: "b2s=" });
+    await wait(10);
+    results.terminal_stream_delivered =
+      postsOf(terminal, "lince:terminal-opened").length === 1 &&
+      postsOf(terminal, "lince:terminal-data")[0]?.dataBase64 === "b2s=";
+    post("terminal", { type: "lince:terminal-input", sessionId: "t1", dataBase64: "bHMNCg==" });
+    post("terminal", { type: "lince:terminal-resize", sessionId: "t1", geometry: { cols: 120, rows: 40 } });
+    await wait(10);
+    results.terminal_commands_sent =
+      sentHas((m) => m.type === "terminal_input" && m.id === terminalOpen.id) &&
+      sentHas((m) => m.type === "terminal_resize" && m.id === terminalOpen.id && m.cols === 120);
+    window.__inbound({ type: "terminal_exit", id: terminalOpen.id, exit_code: 0 });
+    await wait(10);
+    results.terminal_exit_delivered = postsOf(terminal, "lince:terminal-exit")[0]?.exitCode === 0;
+
+    post("kanban", { type: "lince:terminal-open", sessionId: "denied", geometry: {} });
+    await wait(10);
+    results.terminal_permission_enforced =
+      postsOf(kanban, "lince:terminal-error").some((m) => m.sessionId === "denied") &&
+      !sentHas((m) => m.type === "terminal_open" && m.id.includes("denied"));
+
+    post("terminal", { type: "lince:terminal-open", sessionId: "spoofed", geometry: {} }, "kanban");
+    await wait(10);
+    results.terminal_source_enforced =
+      !sentHas((m) => m.type === "terminal_open" && m.id.includes("spoofed"));
 
     // 4. Scoped ABI: recinfo + other join the same room; kanban emits.
     post("recinfo", { type: "lince:lane-join", room: "recordClicked" });
@@ -186,6 +234,12 @@ check flat_subscribe_sent      "flat lince:protein-subscribe did not become a tr
 check flat_rows_delivered      "snapshot rows were not delivered in the FLAT shape to the sand"
 check flat_action_sent         "flat lince:action did not become a transport act"
 check flat_action_result       "action_ok was not delivered in the FLAT shape to the sand"
+check terminal_open_sent       "terminal open did not use the shared transport"
+check terminal_stream_delivered "terminal output did not return to the owning sand"
+check terminal_commands_sent   "terminal input/resize did not use the shared transport"
+check terminal_exit_delivered  "terminal exit did not return to the owning sand"
+check terminal_permission_enforced "terminal opened without the declared capability"
+check terminal_source_enforced "terminal opened for a spoofed card instance id"
 check scope_same_group         "scoped emit did not reach the same-group sibling in-page"
 check scope_diff_group_blocked "scoped emit leaked to a different-group sand"
 check scope_source_suppressed  "scoped emit echoed back to the source sand"

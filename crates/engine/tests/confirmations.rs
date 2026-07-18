@@ -26,10 +26,26 @@ async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
     .uid
 }
 
+async fn person(e: &Engine, slug: &str) -> String {
+    store::records::create(
+        &e.store.pool,
+        NewRecord {
+            slug: Some(slug),
+            kind: RecordKind::Person,
+            head: slug,
+            body: "",
+            quantity: 1.0,
+        },
+    )
+    .await
+    .expect("person")
+    .uid
+}
+
 /// Build an agreed, activated single-promise transfer with Maria as the party.
 async fn agreed_transfer(e: &Engine, require_confirmation: bool) -> (String, String) {
     plain(e, "ana.apples", 10.0).await;
-    plain(e, "maria", 0.0).await;
+    person(e, "maria").await;
     let transfer = e
         .act(
             Action::CreateTransfer {
@@ -210,8 +226,8 @@ async fn balance_is_advisory_per_concept_and_chat_rides_threads() {
     store::records::set_concept(&e.store.pool, &carlos_money, Some(&money))
         .await
         .unwrap();
-    plain(&e, "ana", 0.0).await;
-    plain(&e, "carlos", 0.0).await;
+    person(&e, "ana").await;
+    person(&e, "carlos").await;
 
     let transfer = e
         .act(

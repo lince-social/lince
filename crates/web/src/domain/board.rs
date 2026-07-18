@@ -98,6 +98,23 @@ pub struct AppBootstrap {
     pub board_state: BoardState,
     pub widget_bridge: WidgetBridgeSnapshot,
     pub servers: Vec<ServerBootstrap>,
+    pub viewer: Option<ViewerBootstrap>,
+}
+
+/// The logged-in user's identity + permissions, best-effort resolved from the
+/// request's JWT (`None` when unauthenticated or auth isn't required). Sands
+/// never see raw JWTs — this flows down through the widget-bridge's per-card
+/// meta (alongside cardState) so a sand's delete buttons can be shown/hidden
+/// without a round trip, though the engine (`record:delete`/`record:delete_own`)
+/// is the actual enforcement boundary, not this hint.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ViewerBootstrap {
+    pub id: String,
+    pub username: String,
+    pub name: String,
+    pub role: String,
+    pub permissions: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -127,6 +144,7 @@ impl AppBootstrap {
         board_state: BoardState,
         servers: Vec<ServerBootstrap>,
         runtime: AppRuntimeInfo,
+        viewer: Option<ViewerBootstrap>,
     ) -> Self {
         let density = clamp_density(board_state.density);
         let cards = board_state
@@ -145,6 +163,7 @@ impl AppBootstrap {
             board_state,
             widget_bridge,
             servers,
+            viewer,
         }
     }
 }
@@ -159,6 +178,7 @@ impl Default for AppBootstrap {
                 port: 6174,
                 version: env!("CARGO_PKG_VERSION"),
             },
+            None,
         )
     }
 }

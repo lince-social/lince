@@ -9,11 +9,15 @@
 //! socket at all.
 //!
 //! Multiplexed over one connection: N Protein subscriptions + Action
-//! request/response + ephemeral presence lanes. Lanes never touch the Ledger.
+//! request/response + ephemeral presence lanes + capability-scoped host
+//! streams such as terminal sessions. Ephemeral traffic never touches the
+//! Ledger.
 
 pub mod lane;
 pub mod protocol;
 pub mod session;
+#[cfg(feature = "axum")]
+mod terminal;
 #[cfg(feature = "axum")]
 pub mod ws;
 

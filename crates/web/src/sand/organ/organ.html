@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Organ</title>
+  <script src="/board/frame.js"></script>
+  <style>
+    :root { color-scheme: dark; --bg: #101318; --panel: #171c22; --line: #29313b;
+            --text: #e6edf3; --muted: #8b949e; --good: #3fb950; --warn: #d29922; }
+    * { box-sizing: border-box; }
+    body { margin: 0; height: 100vh; overflow: hidden; background: var(--bg); color: var(--text);
+           font: 13px/1.45 system-ui, -apple-system, sans-serif; }
+    main { height: 100%; display: grid; grid-template-rows: auto 1fr; gap: 10px; padding: 12px; min-height: 0; }
+    header { display: flex; align-items: center; gap: 8px; }
+    h1 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); flex: 1; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #f85149; }
+    .dot.live { background: var(--good); }
+    .cols { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; min-height: 0; }
+    .list { min-height: 0; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+    ul { list-style: none; margin: 0; padding: 0; }
+    li { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); cursor: pointer; }
+    li:last-child { border-bottom: 0; }
+    li:hover { background: #1b222b; }
+    li.active { background: rgba(63,185,80,.08); }
+    .name { flex: 1; font-weight: 650; word-break: break-word; }
+    .badge { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted);
+             border: 1px solid var(--line); border-radius: 999px; padding: 2px 7px; }
+    .badge.on { color: #d8f5e8; border-color: rgba(63,185,80,.5); }
+    .empty { padding: 24px 12px; color: var(--muted); text-align: center; }
+    #detail { min-height: 0; overflow: auto; border: 1px solid var(--line); border-radius: 8px;
+              background: var(--panel); padding: 12px; display: grid; gap: 10px; align-content: start; }
+    #detail[hidden] { display: none; }
+    .d-head { font-weight: 650; font-size: 14px; }
+    .d-url { color: var(--muted); font-size: 12px; word-break: break-all; }
+    .panel { border-top: 1px solid var(--line); padding-top: 10px; display: grid; gap: 8px; }
+    .row { display: flex; align-items: center; gap: 8px; }
+    .row label.check { display: inline-flex; align-items: center; gap: 6px; }
+    input[type="text"], input:not([type]) { font: inherit; min-width: 0; flex: 1; border: 1px solid var(--line);
+           border-radius: 7px; background: #0d1117; color: var(--text); padding: 6px 9px; }
+    button { font: inherit; border: 1px solid var(--line); border-radius: 7px; background: #1f2630;
+             color: var(--text); padding: 6px 11px; cursor: pointer; }
+    button:hover { border-color: #3d4856; background: #252d38; }
+    button.primary { border-color: rgba(63,185,80,.35); color: #d8f5e8; }
+    .status { color: var(--muted); font-size: 12px; }
+    .status.err { color: #f85149; }
+    .hint { color: var(--muted); font-size: 11.5px; line-height: 1.5; }
+    .placeholder { color: var(--muted); padding: 8px 2px; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Organs</h1>
+      <span id="dot" class="dot"></span>
+    </header>
+    <div class="cols">
+      <section class="list" aria-label="Organs">
+        <ul id="organs"></ul>
+        <div id="empty" class="empty" hidden>No organs yet.</div>
+      </section>
+      <section id="detail" hidden>
+        <div class="d-head" id="d-head"></div>
+        <div class="d-url" id="d-url"></div>
+        <div class="panel">
+          <div class="row">
+            <label class="check"><input type="checkbox" id="fs-enabled" /> File sync to disk</label>
+          </div>
+          <div class="row">
+            <input id="fs-path" placeholder="/path/on/disk" />
+          </div>
+          <div class="row">
+            <button class="primary" id="fs-save" type="button">Save</button>
+            <span class="status" id="fs-status"></span>
+          </div>
+          <p class="hint">Every plain record whose origin is <em>this</em> organ mirrors
+            to a markdown file here — head is the filename, body is the file's content.
+            Editing a file's content updates the record; deleting a file (after two
+            consecutive misses, to survive an editor's atomic save) deletes the record;
+            a new file becomes a new record. Picking exactly which records sync — beyond
+            "belongs to this organ" — is a Protein filter, and it's future work, not
+            wired up here yet.</p>
+        </div>
+      </section>
+    </div>
+    <div id="placeholder" class="placeholder" hidden>Select an organ to configure File Sync.</div>
+  </main>
+  <script>
+    const H = window.LinceWidgetHost;
+    const $ = (id) => document.getElementById(id);
+    let organs = [];
+    let selectedUid = null;
+
+    H.onLive((live) => $("dot").classList.toggle("live", !!live));
+
+    H.subscribeProtein("organs", {
+      source: "record",
+      where: [{ kind_eq: "organ" }],
+      include: { extension: { namespace: "lince.file_sync" } },
+      order: [{ asc: "head" }],
+    }, ({ rows }) => {
+      organs = Array.isArray(rows) ? rows : [];
+      renderList();
+      renderDetail();
+    });
+
+    function renderList() {
+      const ul = $("organs");
+      ul.innerHTML = "";
+      $("empty").hidden = organs.length > 0;
+      for (const o of organs) {
+        const li = document.createElement("li");
+        li.className = o.uid === selectedUid ? "active" : "";
+        const name = document.createElement("span");
+        name.className = "name";
+        name.textContent = o.head || o.slug || o.uid;
+        const badge = document.createElement("span");
+        const enabled = !!(o.extension && o.extension.enabled);
+        badge.className = "badge" + (enabled ? " on" : "");
+        badge.textContent = enabled ? "sync on" : "sync off";
+        li.append(name, badge);
+        li.onclick = () => { selectedUid = o.uid; renderList(); renderDetail(); };
+        ul.appendChild(li);
+      }
+    }
+
+    function selected() {
+      return organs.find((o) => o.uid === selectedUid) || null;
+    }
+
+    function renderDetail() {
+      const row = selected();
+      $("detail").hidden = !row;
+      $("placeholder").hidden = !!row;
+      if (!row) return;
+      $("d-head").textContent = row.head || row.slug || row.uid;
+      $("d-url").textContent = row.body || "";
+      const cfg = row.extension || {};
+      $("fs-enabled").checked = !!cfg.enabled;
+      $("fs-path").value = cfg.path || "";
+      $("fs-status").textContent = "";
+      $("fs-status").className = "status";
+    }
+
+    $("fs-save").addEventListener("click", () => {
+      const row = selected();
+      if (!row) return;
+      const fds = { enabled: $("fs-enabled").checked, path: $("fs-path").value.trim() };
+      const status = $("fs-status");
+      status.className = "status";
+      status.textContent = "Saving…";
+      H.act({ action: "set-extension", target: row.uid, namespace: "lince.file_sync", fds })
+        .then(() => { status.textContent = "Saved."; })
+        .catch((err) => {
+          status.className = "status err";
+          status.textContent = "Error: " + (err && err.message ? err.message : err);
+        });
+    });
+  </script>
+</body>
+</html>

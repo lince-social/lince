@@ -13,6 +13,7 @@ nucleus = { workspace = true }
 store = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+utils = { workspace = true }
 
 [dev-dependencies]
 engine = { workspace = true }

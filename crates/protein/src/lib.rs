@@ -19,6 +19,7 @@
 //! from agreed/active commitments). Full rule simulation needs the Karma
 //! registry and stays engine-side (`Engine::project`) so this crate keeps its
 //! read-only-by-construction guarantee.
+#![recursion_limit = "256"]
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -78,8 +79,21 @@ pub enum Source {
     Fact,
     /// The Lingua vocabulary.
     Concept,
-    /// Transfers with their derived status (blueprint VIII.1).
+    /// Transfers with their derived status (blueprint VIII.1). The first row
+    /// is `kind: "transfer_context"`, carrying server-derived viewer identity,
+    /// creation capability, and blocker codes even when no transfers exist;
+    /// actual rows are `kind: "transfer"` and carry per-transfer capabilities.
     Transfer,
+    /// The permission/role/user system (`store::auth` — native SQL state,
+    /// not Ledger records, per blueprint's split). Rows are heterogeneous,
+    /// distinguished by `kind`: `"role"` (id, name, permissions), `"user"`
+    /// (id, username, name, role — never a password hash), and one
+    /// `"permission_catalog"` row (the full static key list, for building a
+    /// grant UI). No filter/include support — it's a small, fixed listing.
+    /// Gated at the session boundary (`execute_for`): a remote/authenticated
+    /// subject needs `role:read`, `user:read`, or `permission:read`; the
+    /// local Cell (`subject: None`) always sees it, like every other source.
+    Auth,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -125,6 +139,13 @@ pub enum Predicate {
         of: String,
         meters: f64,
     },
+    /// The record's origin organ (slug or uid, resolved like any `@token`)
+    /// equals this one. Records with no known origin never match. The
+    /// selection primitive behind Protein-driven Sync/File Sync: "every
+    /// record belonging to organ X".
+    OrganEq(String),
+    /// Like `organ_eq`, but any of these organs (slug or uid each).
+    OrganIn(Vec<String>),
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -174,7 +195,8 @@ pub struct LinksInclude {
     /// Legacy single-kind spelling. New sands should use `kinds`.
     #[serde(default)]
     pub kind: Option<String>,
-    /// Explicit link kinds to include. Empty means no links.
+    /// Explicit link kinds to include. Empty means no links; a `"*"` entry
+    /// means EVERY kind (Record's all-links view).
     #[serde(default)]
     pub kinds: Vec<String>,
     #[serde(default)]
@@ -253,8 +275,66 @@ pub async fn execute_for(
         Source::Fact => execute_facts(store, protein, visible).await?,
         // Lingua is shared vocabulary by design (III): concepts travel freely.
         Source::Concept => execute_concepts(store, protein).await?,
-        Source::Transfer => execute_transfers(store, protein, visible).await?,
+        Source::Transfer => execute_transfers(store, protein, visible, subject).await?,
+        Source::Auth => {
+            if let Some(actor) = subject {
+                if !actor_can_read_auth(store, actor).await? {
+                    return Ok(vec![]); // same "hidden, not an error" shape as Decision
+                }
+            }
+            execute_auth(store).await?
+        }
     })
+}
+
+/// Best-effort: any failure to resolve the actor (not a numeric app_user id,
+/// no such user) reads as "can't read", not an error — a Protein snapshot
+/// should never fail just because of who's asking.
+async fn actor_can_read_auth(store: &Store, actor: &str) -> Result<bool, ProteinError> {
+    let Ok(user_id) = actor.parse::<i64>() else {
+        return Ok(false);
+    };
+    let Some(user) = store::auth::user_by_id(&store.pool, user_id).await? else {
+        return Ok(false);
+    };
+    Ok(user
+        .permissions
+        .iter()
+        .any(|p| p == "role:read" || p == "user:read" || p == "permission:read"))
+}
+
+async fn execute_auth(store: &Store) -> Result<Vec<Value>, ProteinError> {
+    let mut out = Vec::new();
+    for (id, name, permissions) in store::auth::list_roles(&store.pool).await? {
+        out.push(json!({
+            "kind": "role",
+            "id": id.to_string(),
+            "name": name,
+            "permissions": permissions,
+        }));
+    }
+    for (id, username, name, role) in store::auth::list_users(&store.pool).await? {
+        let person = store::auth::person_for_user(&store.pool, id).await?;
+        let person_record = match person.as_deref() {
+            Some(uid) => store::records::get(&store.pool, uid).await?,
+            None => None,
+        };
+        out.push(json!({
+            "kind": "user",
+            "id": id.to_string(),
+            "username": username,
+            "name": name,
+            "role": role,
+            "person": person,
+            "person_head": person_record.as_ref().map(|record| record.head.as_str()),
+            "person_slug": person_record.as_ref().and_then(|record| record.slug.as_deref()),
+        }));
+    }
+    out.push(json!({
+        "kind": "permission_catalog",
+        "keys": utils::auth::all_permission_keys(),
+    }));
+    Ok(out)
 }
 
 /// Execute a saved Protein (a record of kind='protein' whose AST lives in the
@@ -281,17 +361,21 @@ pub async fn execute_saved(
 pub fn affects(protein: &Protein, _fact: &nucleus::Fact) -> bool {
     matches!(
         protein.source,
-        Source::Record | Source::Promise | Source::Decision
+        Source::Record | Source::Promise | Source::Decision | Source::Transfer
     )
 }
 
 // ------------------------------------------------------------------- records
 
-async fn execute_records(
+/// Records matching a Protein's filter, ignoring aggregate/order/limit — the
+/// selection primitive shared by `execute_records` and any consumer that
+/// needs actual rows rather than the JSON wire shape (Protein-driven Sync and
+/// File Sync: resolve WHICH records travel by evaluating a saved Protein).
+pub async fn matching_records(
     store: &Store,
     protein: &Protein,
     visible: Option<&HashSet<String>>,
-) -> Result<Vec<Value>, ProteinError> {
+) -> Result<Vec<store::records::RecordRow>, ProteinError> {
     let all = store::records::list_all(&store.pool).await?;
     let ctx = PredicateCtx::prepare(store, &protein.filter).await?;
     let mut rows: Vec<store::records::RecordRow> = Vec::new();
@@ -303,6 +387,15 @@ async fn execute_records(
             rows.push(r);
         }
     }
+    Ok(rows)
+}
+
+async fn execute_records(
+    store: &Store,
+    protein: &Protein,
+    visible: Option<&HashSet<String>>,
+) -> Result<Vec<Value>, ProteinError> {
+    let mut rows = matching_records(store, protein, visible).await?;
 
     // aggregation short-circuits row output (blueprint VII.1)
     if let Some(agg) = &protein.aggregate {
@@ -325,6 +418,7 @@ async fn execute_records(
             "quantity": r.quantity,
             "concept": r.concept_uid,
             "unit": r.unit_uid,
+            "organ": r.organ_uid,
         });
         attach_includes(store, &mut row, &r.uid, r.quantity, &protein.include).await?;
         out.push(row);
@@ -532,11 +626,17 @@ async fn links_for_record(
     record_uid: &str,
     links: &LinksInclude,
 ) -> Result<Vec<Value>, ProteinError> {
-    let kind_uids = resolve_link_kind_uids(store, links).await?;
-    if kind_uids.is_empty() {
-        return Ok(vec![]);
-    }
-    let rows = store::links::links_of_kinds(&store.pool, &kind_uids).await?;
+    let wants_all = links.kind.as_deref().map(str::trim) == Some("*")
+        || links.kinds.iter().any(|kind| kind.trim() == "*");
+    let rows = if wants_all {
+        store::links::all_links(&store.pool).await?
+    } else {
+        let kind_uids = resolve_link_kind_uids(store, links).await?;
+        if kind_uids.is_empty() {
+            return Ok(vec![]);
+        }
+        store::links::links_of_kinds(&store.pool, &kind_uids).await?
+    };
 
     // BFS over the loaded kind-graph: hop 1 = direct links (depth 0/1 —
     // the default), deeper hops expand the tree (blueprint IV.2/VII.1).
@@ -623,26 +723,65 @@ async fn threads_for_record(
                     .map(|r| r.uid),
                 None => None,
             };
+            let created_at = store::records::created_at(&store.pool, &message.uid).await?;
+            let (created_by, sender) = creator_info(store, &message.uid).await?;
             messages.push(json!({
                 "uid": message.uid,
                 "head": message.head,
                 "body": message.body,
                 "quantity": message.quantity,
                 "parent_message_uid": parent_message_uid,
+                "created_at": created_at,
+                "created_by": created_by,
+                "sender": sender,
             }));
             if messages.len() >= messages_limit {
                 break;
             }
         }
+        let thread_created_at = store::records::created_at(&store.pool, &thread.uid).await?;
+        let (thread_created_by, thread_sender) = creator_info(store, &thread.uid).await?;
         out.push(json!({
             "uid": thread.uid,
             "head": thread.head,
             "body": thread.body,
             "quantity": thread.quantity,
+            "created_at": thread_created_at,
+            "created_by": thread_created_by,
+            "sender": thread_sender,
             "messages": messages,
         }));
     }
     Ok(out)
+}
+
+/// A record's creator (its earliest fact's actor_uid, the logged-in
+/// `app_user.id` as a string — a DIFFERENT identity namespace than the
+/// Ledger's record/concept uids): the raw id (for the client's "is this
+/// mine" delete-button check, matched against its own viewer id) and a
+/// best-effort display name (falling back to username). Both are `None`
+/// when there's no creator (local-no-auth mode, every action's actor is
+/// `None`) or the actor_uid isn't a numeric app_user id. Never an error: a
+/// name is a nicety, not something a message should fail to render over.
+async fn creator_info(
+    store: &Store,
+    record_uid: &str,
+) -> Result<(Option<String>, Option<String>), ProteinError> {
+    let Some(actor_uid) = store::facts::creator_uid(&store.pool, record_uid).await? else {
+        return Ok((None, None));
+    };
+    let Ok(user_id) = actor_uid.parse::<i64>() else {
+        return Ok((None, None));
+    };
+    let Some(user) = store::auth::user_by_id(&store.pool, user_id).await? else {
+        return Ok((None, None));
+    };
+    let name = if user.name.trim().is_empty() {
+        user.username
+    } else {
+        user.name
+    };
+    Ok((Some(actor_uid), Some(name)))
 }
 
 // ---------------------------------------------------------------- predicates
@@ -654,6 +793,8 @@ struct PredicateCtx {
     anchors: HashMap<String, Option<nucleus::place::Place>>,
     /// (kind, to) token -> set of record uids that have a `kind`-link to `to`.
     link_sources: HashMap<(String, String), HashSet<String>>,
+    /// organ token (slug or uid) -> resolved organ uid (`None` = unresolvable).
+    organs: HashMap<String, Option<String>>,
 }
 
 impl PredicateCtx {
@@ -662,6 +803,7 @@ impl PredicateCtx {
             concept_families: HashMap::new(),
             anchors: HashMap::new(),
             link_sources: HashMap::new(),
+            organs: HashMap::new(),
         };
         for p in preds {
             ctx.prepare_one(store, p).await?;
@@ -703,6 +845,23 @@ impl PredicateCtx {
                     _ => HashSet::new(),
                 };
                 self.link_sources.insert((kind.clone(), to.clone()), sources);
+            }
+            Predicate::OrganEq(token) => {
+                let resolved = store::records::resolve(&store.pool, token)
+                    .await?
+                    .map(|r| r.uid);
+                self.organs.insert(token.clone(), resolved);
+            }
+            Predicate::OrganIn(tokens) => {
+                for token in tokens {
+                    if self.organs.contains_key(token) {
+                        continue;
+                    }
+                    let resolved = store::records::resolve(&store.pool, token)
+                        .await?
+                        .map(|r| r.uid);
+                    self.organs.insert(token.clone(), resolved);
+                }
             }
             Predicate::All(ps) | Predicate::Any(ps) => {
                 for inner in ps {
@@ -783,6 +942,18 @@ impl PredicateCtx {
                         _ => false,
                     }
                 }
+                Predicate::OrganEq(token) => {
+                    match (self.organs.get(token).and_then(|o| o.as_deref()), &r.organ_uid) {
+                        (Some(resolved), Some(actual)) => resolved == actual,
+                        _ => false,
+                    }
+                }
+                Predicate::OrganIn(tokens) => match &r.organ_uid {
+                    Some(actual) => tokens.iter().any(|token| {
+                        self.organs.get(token).and_then(|o| o.as_deref()) == Some(actual.as_str())
+                    }),
+                    None => false,
+                },
             })
         })
     }
@@ -1037,17 +1208,22 @@ fn derive_transfer_status(
     if !active {
         return "inactive";
     }
-    let live: Vec<_> = promise_states
-        .iter()
-        .filter(|s| !matches!(s, Withdrawn))
-        .collect();
-    if live.is_empty() {
+    if promise_states.is_empty() {
         return "draft";
     }
-    if live.iter().all(|s| matches!(s, Kept)) {
+    if promise_states.iter().all(|s| matches!(s, Withdrawn)) {
+        return "withdrawn";
+    }
+    if promise_states.iter().all(|s| matches!(s, Kept)) {
         return "settled";
     }
-    if live.iter().any(|s| matches!(s, Active)) {
+    if promise_states.iter().any(|s| matches!(s, Kept)) {
+        return "partially_settled";
+    }
+    if promise_states.iter().any(|s| matches!(s, Broken)) {
+        return "broken";
+    }
+    if promise_states.iter().any(|s| matches!(s, Active)) {
         return "in_transfer";
     }
     let policy = nucleus::transfer::AgreementType::parse(agreement_type)
@@ -1059,30 +1235,98 @@ fn derive_transfer_status(
             )
         })
         .unwrap_or(false);
-    if policy && live.iter().all(|s| matches!(s, Agreed | Kept)) {
+    if policy
+        && promise_states
+            .iter()
+            .filter(|state| !matches!(state, Withdrawn))
+            .all(|state| matches!(state, Agreed | Kept))
+    {
         return "agreed";
     }
-    if live.iter().any(|s| matches!(s, Proposed | Agreed)) {
+    if promise_states
+        .iter()
+        .any(|s| matches!(s, Proposed | Agreed))
+    {
         return "proposed";
     }
     "draft"
+}
+
+fn agreement_required(agreement_type: &str, agreement_pct: Option<i64>, parties: usize) -> usize {
+    match agreement_type {
+        "full" => parties,
+        "percentage" => {
+            let pct = agreement_pct.unwrap_or(100).clamp(0, 100) as usize;
+            parties.saturating_mul(pct).div_ceil(100)
+        }
+        // Individual/dependency readiness is path-derived. The overview still
+        // reports how many people have committed without inventing a bundle
+        // quorum for those policies.
+        _ => 0,
+    }
 }
 
 async fn execute_transfers(
     store: &Store,
     protein: &Protein,
     visible: Option<&HashSet<String>>,
+    subject: Option<&str>,
 ) -> Result<Vec<Value>, ProteinError> {
-    // record -> concept, for the advisory per-concept balance (VIII.1)
-    let mut record_concept: HashMap<String, Option<String>> = HashMap::new();
-    for r in store::records::list_all(&store.pool).await? {
-        record_concept.insert(r.uid, r.concept_uid);
-    }
-    let mut out = Vec::new();
+    let records = store::records::list_all(&store.pool).await?;
+    let records_by_uid: HashMap<_, _> = records
+        .iter()
+        .cloned()
+        .map(|record| (record.uid.clone(), record))
+        .collect();
+    let concept_names: HashMap<_, _> = store::concepts::list_all(&store.pool)
+        .await?
+        .into_iter()
+        .map(|concept| (concept.uid, concept.canonical_name))
+        .collect();
+    let viewer = TransferViewer::resolve(store, subject).await?;
+    let create_blockers = viewer.create_blockers();
+    let create = create_blockers.is_empty();
+    let person_record = match viewer.person.as_deref() {
+        Some(uid) => records_by_uid.get(uid),
+        None => None,
+    };
+    // Transfer is a mixed Protein source: the context row remains available
+    // even when a new Cell has no transfers, so creation controls never infer
+    // authority from an empty list or from client-side viewer state.
+    let mut out = vec![json!({
+        "kind": "transfer_context",
+        "viewer": {
+            "local": viewer.local,
+            "recognized": viewer.recognized,
+            "app_user": viewer.subject,
+            "person": viewer.person,
+            "person_head": person_record.map(|record| record.head.as_str()),
+            "person_slug": person_record.and_then(|record| record.slug.as_deref()),
+        },
+        "capabilities": { "create": create },
+        "blocking_reasons": { "create": create_blockers },
+    })];
+    let mut transfer_count = 0usize;
     for t in store::transfers::list_all(&store.pool).await? {
         let uid = &t.transfer.record_uid;
-        if visible.is_some_and(|v| !v.contains(uid)) {
-            continue;
+        let creator = store::facts::creator_uid(&store.pool, uid).await?;
+        if visible.is_some_and(|targets| !targets.contains(uid)) {
+            let viewer_created = viewer
+                .subject
+                .as_deref()
+                .is_some_and(|subject| creator.as_deref() == Some(subject));
+            let viewer_participates = match viewer.person.as_deref() {
+                Some(person) => store::transfers::party_for_actor(&store.pool, uid, person)
+                    .await?
+                    .is_some(),
+                None => false,
+            };
+            // Hidden remains the default, but creator and named parties are
+            // intrinsic recipients of the commitment and cannot be hidden
+            // from their own Transfer by a missing legacy visibility rule.
+            if !viewer_created && !viewer_participates {
+                continue;
+            }
         }
         let matches = protein.filter.iter().all(|p| match p {
             Predicate::UidEq(u) => uid == u,
@@ -1110,45 +1354,282 @@ async fn execute_transfers(
             let key = p
                 .record_uid
                 .as_ref()
-                .and_then(|r| record_concept.get(r).cloned().flatten())
+                .and_then(|r| records_by_uid.get(r))
+                .and_then(|record| record.concept_uid.clone())
                 .unwrap_or_else(|| "(none)".into());
             *balance.entry(key).or_insert(0.0) += p.delta;
         }
         let balanced = !balance.is_empty() && balance.values().all(|v| v.abs() < 1e-9);
+        let balance_detail = balance
+            .iter()
+            .map(|(concept, delta)| {
+                json!({
+                    "concept": if concept == "(none)" { None } else { Some(concept) },
+                    "concept_name": if concept == "(none)" {
+                        None
+                    } else {
+                        concept_names.get(concept)
+                    },
+                    "delta": delta,
+                })
+            })
+            .collect::<Vec<_>>();
+        let committed = levels.iter().filter(|level| **level >= 2).count();
+        let reviewed = levels.iter().filter(|level| **level >= 1).count();
+        let required = agreement_required(
+            &t.transfer.agreement_type,
+            t.transfer.agreement_pct,
+            parties.len(),
+        );
+        let policy_satisfied = nucleus::transfer::AgreementType::parse(
+            &t.transfer.agreement_type,
+        )
+        .map(|agreement| {
+            nucleus::transfer::policy_satisfied(
+                agreement,
+                t.transfer.agreement_pct.map(|pct| pct as u8),
+                &levels,
+            )
+        })
+        .unwrap_or(false);
+        let viewer_party = viewer.person.as_deref().and_then(|person| {
+            parties
+                .iter()
+                .find(|(_, actor, _)| actor == person)
+                .map(|(party, _, _)| party.clone())
+        });
+        let is_creator = viewer.local
+            || viewer
+                .subject
+                .as_deref()
+                .is_some_and(|subject| creator.as_deref() == Some(subject));
+        let is_participant = viewer.local || viewer_party.is_some();
+        let has_identity = viewer.local || viewer.person.is_some();
+        let can_update = viewer.local || viewer.has_permission("transfer:update");
+        let can_edit = has_identity && can_update && (is_creator || is_participant);
+        let can_agree = has_identity && can_update && is_participant;
+        let can_activate = can_edit && policy_satisfied;
+
+        let edit_blockers = viewer.update_blockers(is_creator || is_participant);
+        let agree_blockers = viewer.update_blockers(is_participant);
+        let mut activate_blockers = edit_blockers.clone();
+        if !policy_satisfied {
+            activate_blockers.push("agreement_policy_not_satisfied");
+        }
+        let mut confirmation_blockers = agree_blockers.clone();
+        confirmation_blockers.push("confirmation_scope_not_modeled");
+        let mut settlement_blockers = agree_blockers.clone();
+        settlement_blockers.push("settlement_scope_not_modeled");
+        let mut state_counts: std::collections::BTreeMap<&str, usize> = Default::default();
+        for state in &states {
+            *state_counts.entry(state.as_str()).or_default() += 1;
+        }
+        let confirmations = store::facts::for_record(&store.pool, uid, 10_000)
+            .await?
+            .into_iter()
+            .filter_map(|fact| {
+                let payload = serde_json::from_str::<Value>(fact.payload.as_deref()?).ok()?;
+                let kind = payload.get("confirmation")?.as_str()?;
+                Some(json!({
+                    "kind": kind,
+                    "actor": fact.actor_uid,
+                    "at": fact.at,
+                    "fact": fact.uid,
+                }))
+            })
+            .collect::<Vec<_>>();
         out.push(json!({
+            "kind": "transfer",
             "uid": uid,
             "slug": t.slug,
             "head": t.head,
             "status": status,
             "balance": balance,
+            "balance_detail": balance_detail,
             "balanced": balanced,
             "active": t.transfer.active,
             "agreement_type": t.transfer.agreement_type,
             "agreement_pct": t.transfer.agreement_pct,
             "settlement": t.transfer.settlement,
+            "visibility": t.transfer.visibility,
+            "max_proximity": t.transfer.max_proximity,
             "satiation": t.transfer.satiation,
+            "parent": t.transfer.parent_uid,
+            "parent_head": t.transfer.parent_uid.as_ref()
+                .and_then(|uid| records_by_uid.get(uid))
+                .map(|record| record.head.as_str()),
+            "parent_slug": t.transfer.parent_uid.as_ref()
+                .and_then(|uid| records_by_uid.get(uid))
+                .and_then(|record| record.slug.as_deref()),
+            "source": t.transfer.source_uid,
+            "source_head": t.transfer.source_uid.as_ref()
+                .and_then(|uid| records_by_uid.get(uid))
+                .map(|record| record.head.as_str()),
+            "source_slug": t.transfer.source_uid.as_ref()
+                .and_then(|uid| records_by_uid.get(uid))
+                .and_then(|record| record.slug.as_deref()),
+            "reserve_default": t.transfer.reserve_default,
+            "require_confirmation": t.transfer.require_confirmation,
+            "viewer_party": viewer_party,
+            "capabilities": {
+                "edit_terms": can_edit,
+                "add_party": can_edit,
+                "add_promise": can_edit,
+                "review": can_agree,
+                "commit": can_agree,
+                "activate": can_activate,
+                // Confirmation and settlement are deliberately not advertised
+                // until evidence is occurrence- and side-specific.
+                "confirm_delivery": false,
+                "confirm_receipt": false,
+                "settle": false,
+            },
+            "blocking_reasons": {
+                "edit_terms": edit_blockers,
+                "add_party": edit_blockers,
+                "add_promise": edit_blockers,
+                "review": agree_blockers,
+                "commit": agree_blockers,
+                "activate": activate_blockers,
+                "confirm_delivery": confirmation_blockers,
+                "confirm_receipt": confirmation_blockers,
+                "settle": settlement_blockers,
+            },
+            "agreement": {
+                "reviewed": reviewed,
+                "committed": committed,
+                "required": required,
+                "total": parties.len(),
+                "policy_satisfied": policy_satisfied,
+            },
+            "progress": state_counts,
+            "confirmations": confirmations,
             "parties": parties
                 .iter()
                 .map(|(party, actor, level)| json!({
-                    "uid": party, "actor": actor, "level": level,
+                    "uid": party,
+                    "actor": actor,
+                    "actor_head": records_by_uid.get(actor).map(|record| record.head.as_str()),
+                    "actor_slug": records_by_uid.get(actor).and_then(|record| record.slug.as_deref()),
+                    "level": level,
                 }))
                 .collect::<Vec<_>>(),
             "promises": promises
                 .iter()
-                .map(|p| json!({
-                    "uid": p.uid,
-                    "record": p.record_uid,
-                    "delta": p.delta,
-                    "state": p.state.as_str(),
-                    "party": p.party_uid,
-                }))
+                .map(|p| {
+                    let record = p.record_uid.as_ref().and_then(|uid| records_by_uid.get(uid));
+                    json!({
+                        "uid": p.uid,
+                        "record": p.record_uid,
+                        "record_head": record.map(|record| record.head.as_str()),
+                        "record_slug": record.and_then(|record| record.slug.as_deref()),
+                        "record_quantity": record.map(|record| record.quantity),
+                        "concept": record.and_then(|record| record.concept_uid.as_deref()),
+                        "concept_name": record
+                            .and_then(|record| record.concept_uid.as_ref())
+                            .and_then(|uid| concept_names.get(uid)),
+                        "unit": record.and_then(|record| record.unit_uid.as_deref()),
+                        "unit_name": record
+                            .and_then(|record| record.unit_uid.as_ref())
+                            .and_then(|uid| concept_names.get(uid)),
+                        "delta": p.delta,
+                        "state": p.state.as_str(),
+                        "party": p.party_uid,
+                        "window_end": p.window_end,
+                        "condition": p.condition,
+                        "reserve_from": p.reserve_from,
+                    })
+                })
                 .collect::<Vec<_>>(),
         }));
-        if protein.limit.is_some_and(|l| out.len() >= l) {
+        transfer_count += 1;
+        if protein.limit.is_some_and(|limit| transfer_count >= limit) {
             break;
         }
     }
     Ok(out)
+}
+
+#[derive(Debug, Default)]
+struct TransferViewer {
+    local: bool,
+    recognized: bool,
+    subject: Option<String>,
+    person: Option<String>,
+    permissions: HashSet<String>,
+}
+
+impl TransferViewer {
+    async fn resolve(store: &Store, subject: Option<&str>) -> Result<Self, ProteinError> {
+        let Some(subject) = subject else {
+            return Ok(Self {
+                local: true,
+                recognized: true,
+                ..Self::default()
+            });
+        };
+        let Ok(user_id) = subject.parse::<i64>() else {
+            return Ok(Self {
+                subject: Some(subject.to_string()),
+                ..Self::default()
+            });
+        };
+        let Some(user) = store::auth::user_by_id(&store.pool, user_id).await? else {
+            return Ok(Self {
+                subject: Some(subject.to_string()),
+                ..Self::default()
+            });
+        };
+        let person = store::auth::person_for_user(&store.pool, user.id).await?;
+        Ok(Self {
+            local: false,
+            recognized: true,
+            subject: Some(subject.to_string()),
+            person,
+            permissions: user.permissions.into_iter().collect(),
+        })
+    }
+
+    fn has_permission(&self, permission: &str) -> bool {
+        self.permissions.contains(permission)
+    }
+
+    fn create_blockers(&self) -> Vec<&'static str> {
+        if self.local {
+            return Vec::new();
+        }
+        let mut blockers = Vec::new();
+        if !self.recognized {
+            blockers.push("auth_subject_unrecognized");
+        }
+        if self.person.is_none() {
+            blockers.push("missing_person_identity");
+        }
+        if !self.has_permission("transfer:create") {
+            blockers.push("missing_transfer_create_permission");
+        }
+        blockers
+    }
+
+    fn update_blockers(&self, has_relationship: bool) -> Vec<&'static str> {
+        if self.local {
+            return Vec::new();
+        }
+        let mut blockers = Vec::new();
+        if !self.recognized {
+            blockers.push("auth_subject_unrecognized");
+        }
+        if self.person.is_none() {
+            blockers.push("missing_person_identity");
+        }
+        if !self.has_permission("transfer:update") {
+            blockers.push("missing_transfer_update_permission");
+        }
+        if !has_relationship {
+            blockers.push("not_transfer_creator_or_participant");
+        }
+        blockers
+    }
 }
 
 // -------------------------------------------------------- canned Proteins

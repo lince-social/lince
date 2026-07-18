@@ -636,7 +636,7 @@ let workspacePopoverOpen = false;
 // `/board/frame.js`, announce `lince:ready`, and speak the flat protocol) and
 // the legacy chrome (nested `payload` protocol). The same in-page ABI fan-out +
 // group-scope logic now serves every sand, which is what kanban's scoped
-// `recordClicked` to its packaged record_info relies on. It self-wires via a
+// `recordClicked` to its packaged Record sand relies on. It self-wires via a
 // global message listener.
 const widgetBridge = createWidgetBridge({
   statusNode: null,
@@ -1526,6 +1526,10 @@ function getCardBridgeMeta(cardId) {
     mode: editMode ? "edit" : "view",
     serverId: card?.serverId || "",
     cardState: cloneJsonValue(card?.widgetState, {}),
+    permissions: Array.isArray(card?.permissions) ? card.permissions : [],
+    // The logged-in user (not this card's own widget permissions above) —
+    // same viewer object on every card, sourced once from the SSR bootstrap.
+    viewer: cloneJsonValue(bootstrap.viewer, null),
     shell: card?.system === true ? shellMeta(snapshot) : {},
     streams: {
       globalEnabled,
@@ -5141,7 +5145,7 @@ function defaultServerIdForPreview(preview) {
 
 // Sands that ship with a default ABI listen configuration.
 const DEFAULT_ABI_LISTEN_BY_PACKAGE = {
-  "record-info.html": ["recordClicked", "recordCreate"],
+  "record.html": ["recordClicked", "recordCreate"],
 };
 
 function createCardFromPreview(preview, sizeOverride = null) {
@@ -5188,7 +5192,7 @@ async function addLocalPackageToWorkspace(packageId) {
   const packageSummary =
     installedPackages.find((entry) => entry.id === packageId) || null;
 
-  // A GROUP entry (e.g. kanban = board + record_info) drops the whole group at
+  // A GROUP entry (e.g. kanban = board + Record) drops the whole group at
   // once (Stage 8b, base task 2 / kanban Track B).
   if (packageSummary?.isGroup) {
     return addLocalGroupToWorkspace(packageSummary);

@@ -5,7 +5,7 @@
 // typing `###` by hand produce the SAME stored text and the SAME visual
 // block. Served embedded at the absolute `/board/editor.js` (like frame.js);
 // exposes `window.LinceBodyEditor = { attach, renderMarkdown, BLOCKS }`.
-// record_info uses it first; any sand with a body (todo, table) can attach.
+// Record uses it first; any sand with a body (todo, table) can attach.
 (function () {
   // ---- blocks ---------------------------------------------------------------
   // Selectable by NAME ("/h3", "/image", "/check") or by typing the underlying

@@ -12,18 +12,21 @@
        collapse/resize, an edit sheet, optimistic drag moves — client-rendered
        on Protein/Actions. Filtering/sorting and the Protein choice are BASE UI
        (the card's Data panel), not sand chrome; creation happens in the
-       grouped record_info (the `recordCreate` event), not a kanban sheet.
+       grouped Record sand (the `recordCreate` event), not a kanban sheet.
        K3 adds the column system: a Columns sheet (create/rename/delete/sort/
        hide, value or range or @concept buckets), presets as sand-config
        records, concept-name resolution, multi-select bulk move.
        K2 (checkbox part) + editing-surface decision (2026-07-16, revised
        2026-07-17): the kanban itself writes checkbox toggles, in-place body
        edits, column moves, AND bulk delete of selected cards (confirmed via
-       an in-sand modal) — head/metadata/assignees/resources edits are still
-       the grouped record_info's job, so the old full edit sheet stays gone. */
+       an in-sand modal) — head/metadata/assignees edits are still
+       the grouped Record sand's job, so the old full edit sheet stays gone. */
     :root { color-scheme: dark; --bg: #0e1116; --panel: #151a21; --panel2: #1b222b; --line: #2b3440; --text: #e6edf3; --muted: #8b949e; --accent: #7aa2f7; --good: #3fb950; --warn: #d29922; }
     * { box-sizing: border-box; }
-    body { margin: 0; height: 100vh; overflow: hidden; background: var(--bg); color: var(--text); font: 13px/1.4 system-ui, -apple-system, sans-serif; }
+    /* the sand's own boundary (2026-07-18): a 1px border so the whole widget
+       reads as delimited even when the host page happens to share --bg —
+       header and columns otherwise have nothing marking where the sand ends. */
+    body { margin: 0; height: 100vh; overflow: hidden; background: var(--bg); color: var(--text); font: 13px/1.4 system-ui, -apple-system, sans-serif; border: 1px solid var(--line); }
     /* glued to the wall (2026-07-18): the sand's own edges carry no padding —
        the header's divider line and each column's own internal padding are
        the only whitespace left. */
@@ -70,6 +73,7 @@
                                         font-size: 12px; display: inline-flex; align-items: center; }
     .bulkbar button { justify-content: center; min-width: 28px; }
     .board { min-height: 0; overflow-x: auto; display: flex; gap: 0; align-items: stretch; }
+    .no-protein-prompt { padding: 2rem 1.2rem; color: var(--muted); max-width: 32rem; }
     /* columns are flush against each other (2026-07-18: no vertical divider
        line, no gap — columns touch, and an optional column background color
        is what tells them apart when that's turned on). The only lines left
@@ -87,6 +91,14 @@
     .lane-handle { position: absolute; top: 0; right: -4px; width: 8px; height: 100%; cursor: col-resize; }
     .cards { min-height: 80px; overflow: auto; padding: 8px; }
     .col.is-collapsed .cards { display: none; }
+    /* WebKitGTK (the desktop shell) renders classic, always-reserved
+       scrollbars — an opaque gray track shows even when there's nothing to
+       scroll, reading as a stray dark line down the right edge of whichever
+       column happens to sit at the sand's own edge. Transparent track +
+       thin thumb makes it disappear until it's actually needed. */
+    .cards::-webkit-scrollbar { width: 8px; }
+    .cards::-webkit-scrollbar-track { background: transparent; }
+    .cards::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }
     .cards.dragover { outline: 2px solid rgba(122,162,247,.5); outline-offset: -4px; }
     .card { position: relative; border: 1px solid var(--line); border-radius: 2px; background: #11161d; padding: 9px; margin-bottom: 8px; cursor: grab; }
     .card:active { cursor: grabbing; }
@@ -96,10 +108,12 @@
     .parent-ctx { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
     .assignee-chip { border: 1px solid var(--line); border-radius: 2px; background: var(--panel2);
                      color: var(--accent); font-size: 10px; padding: 0 6px; }
+    /* compact and full share the SAME font-size/line-height (2026-07-18):
+       compact's only distinguishing behavior is the JS line-window
+       truncation (visibleBodyLines) — a size difference here made even a
+       one-word body look "bigger" in full mode, which read as a bug, not a
+       density choice. */
     .card-body { margin-top: 5px; color: var(--muted); white-space: pre-wrap; word-break: break-word; }
-    /* the institute "Pretext" nicety: compact excerpts render tighter so the
-       6-line window holds more */
-    .card-body.compact { font-size: 12px; line-height: 1.25; }
     .card-body .md-todo input { accent-color: var(--accent); }
     .card-body.empty-body { color: #444c56; font-style: italic; cursor: text; }
     /* editing (2026-07-17): no boxed sub-widget — the textarea blends into the
@@ -126,7 +140,6 @@
     .mode-mini { border: 0; background: none; color: var(--muted); font-size: 10px; padding: 1px 3px; cursor: pointer; border-radius: 2px; line-height: 1; }
     .mode-mini:hover { color: var(--text); background: var(--panel2); }
     .mode-mini.on { color: var(--accent); }
-    .empty { color: var(--muted); padding: 12px; text-align: center; }
     .sheet-overlay { position: fixed; inset: 0; display: none; z-index: 30; }
     .sheet-overlay.open { display: block; }
     .sheet-backdrop { position: absolute; inset: 0; border: 0; border-radius: 0; background: rgba(4,8,14,.6); cursor: default; }
@@ -159,7 +172,11 @@
   <main>
     <div class="panel">
       <div class="topbar">
-        <div class="topbar-left"><h1>Kanban</h1></div>
+        <div class="topbar-left">
+          <h1>Kanban</h1>
+          <span id="status-label"></span>
+          <span id="dot" class="dot"></span>
+        </div>
         <div class="topbar-right">
           <span id="all-modes" class="modes" title="Body view for every card (per-column and per-card buttons override)">
             <button type="button" data-mode="head" title="Head — title only">▁</button>
@@ -168,8 +185,6 @@
           </span>
           <button id="open-columns" type="button" title="Configure columns and presets">Columns</button>
           <button id="open-create" type="button" class="accent" title="New task">+</button>
-          <span id="status-label"></span>
-          <span id="dot" class="dot"></span>
         </div>
       </div>
     </div>
@@ -338,12 +353,24 @@
     let rows = [];
     let rowsByUid = {};
     const selected = new Set(); // uids picked for bulk move
+    // uid -> {key, node}: the rendered body content (markdown incl. any
+    // `<img>`), reused across renders when unchanged (2026-07-18). `render()`
+    // tears down and rebuilds every column/card from scratch on ANY board
+    // change (a column-resize release, another card moving lanes, a mode
+    // toggle...); recreating an <img> node forces a re-decode even on a cache
+    // hit, which reads as a visible flicker — reported as "release the drag
+    // and the image flickers" for a card that wasn't even the one dragged.
+    // Keying on (mode, body) and reusing the SAME node (appendChild moves an
+    // already-attached node rather than recreating it) fixes that generally,
+    // for every render trigger, not just drag release specifically.
+    const bodyContentCache = new Map();
     function acceptRows(next) {
       rows = next;
       rowsByUid = {};
       for (const r of rows) rowsByUid[r.uid] = r;
       const uids = new Set(rows.map((r) => r.uid));
       for (const uid of [...selected]) if (!uids.has(uid)) selected.delete(uid);
+      for (const uid of [...bodyContentCache.keys()]) if (!uids.has(uid)) bodyContentCache.delete(uid);
       render();
     }
 
@@ -373,29 +400,32 @@
     const linksOf = (row, kind) => (Array.isArray(row.links) ? row.links : [])
       .filter((l) => l.kind === kind && l.direction === "out" && l.hop === 1);
 
-    // ---- driving Protein (Data panel: savedProtein / inline / default) -----
+    // ---- driving Protein (Data panel: savedProtein / inline / NONE) --------
     // Links ride along so cards can badge assignee + parent (K4/K5): sands are
     // tolerant-ignore, so a custom Protein without the include just means no
-    // badges.
-    const DEFAULT_PROTEIN = {
-      source: "record",
-      where: [{ kind_eq: "plain" }],
-      order: [{ asc: "quantity" }, { asc: "created_at" }],
-      include: { links: { kinds: ["assigned-to", "part-of"], direction: "out" } },
-    };
+    // badges. No automatic fallback (2026-07-18): a Cell with a lot of
+    // records would otherwise dump ALL of them onto a freshly-added board by
+    // default. A brand new kanban card subscribes to NOTHING until the user
+    // opens the Data panel (edit mode) and picks a Protein — `render()` shows
+    // a prompt instead of a board in that state.
     let driver = null;
     let unsubscribe = null;
     function pickDriver(cardState) {
       const saved = typeof cardState?.savedProtein === "string" ? cardState.savedProtein.trim() : "";
       if (saved) return { kind: "saved", name: saved };
       if (cardState?.protein && typeof cardState.protein === "object") return { kind: "inline", protein: cardState.protein };
-      return { kind: "default", protein: DEFAULT_PROTEIN };
+      return { kind: "none" };
     }
     function resubscribe(cardState) {
       const next = pickDriver(cardState);
       if (driver && JSON.stringify(next) === JSON.stringify(driver)) return;
       driver = next;
       if (typeof unsubscribe === "function") unsubscribe();
+      unsubscribe = null;
+      if (next.kind === "none") {
+        acceptRows([]); // clears rows + re-renders the "pick a Protein" prompt
+        return;
+      }
       const onRows = ({ rows: incoming }) => acceptRows(Array.isArray(incoming) ? incoming : []);
       unsubscribe = next.kind === "saved"
         ? H.subscribeSaved("kanban", next.name, onRows)
@@ -477,8 +507,8 @@
       return btn;
     }
 
-    // ---- creation: delegated to the grouped record_info ----------------------
-    // "New task" does not open a kanban sheet; it asks the record_info packaged
+    // ---- creation: delegated to the grouped Record sand -----------------------
+    // "New task" does not open a kanban sheet; it asks the Record sand packaged
     // in this group to enter CREATION MODE (same fields it shows on a get, but
     // writable and empty). Group-scoped, like recordClicked.
     $("open-create").addEventListener("click", () => {
@@ -518,7 +548,7 @@
     // local images come ONLY from the editor's "/image" block, which picks a
     // file, uploads it via `POST /host/media` — sniffed, opaquely named,
     // never an arbitrary disk path — and inserts `![](/host/media/<name>)`),
-    // @slug chips that hop to record_info. Clicking the TITLE opens record_info
+    // @slug chips that hop to Record. Clicking the TITLE opens Record
     // (`recordClicked`); clicking the BODY (in a body-showing mode) edits it
     // RIGHT THERE — a textarea with the slash palette; Ctrl+Enter or blur
     // saves (`edit-record-text`, optimistic), Escape cancels. Board record
@@ -627,6 +657,9 @@
     }
     function cardBodyNode(row, mode) {
       if (bodyEdit && bodyEdit.uid === row.uid) return bodyEditNode(row);
+      const cacheKey = `${mode}::${row.body || ""}`;
+      const cached = bodyContentCache.get(row.uid);
+      if (cached && cached.key === cacheKey) return cached.node;
       const el = document.createElement("div");
       el.className = mode === "compact" ? "card-body compact" : "card-body";
       if (!String(row.body || "").trim()) {
@@ -637,8 +670,11 @@
         el.appendChild(Editor.renderMarkdown(row.body, {
           lines: [start, end],
           resolveRef: refResolver,
+          // resolve the row FRESH by uid, not the closed-over `row` param —
+          // this node may be reused (from cache) across a later render where
+          // a NEW row object came off the wire for the same uid
           onNavigate: (uid) => H.emit("recordClicked", { record: { uid } }),
-          onToggle: (lineAt) => toggleCheckbox(row, lineAt),
+          onToggle: (lineAt) => toggleCheckbox(rowsByUid[row.uid] || row, lineAt),
         }));
         if (truncated) el.appendChild(document.createTextNode("\n..."));
       } else {
@@ -650,8 +686,9 @@
         if (event.ctrlKey || event.metaKey) return; // bubbles to card multi-select
         if (event.target.closest("input,button,img")) return; // toggles/chips/images keep their jobs
         event.stopPropagation();
-        openBodyEdit(row);
+        openBodyEdit(rowsByUid[row.uid] || row);
       });
+      bodyContentCache.set(row.uid, { key: cacheKey, node: el });
       return el;
     }
 
@@ -902,6 +939,17 @@
     // ---- board render --------------------------------------------------------
     function render() {
       columnsEl.innerHTML = "";
+      if (!driver || driver.kind === "none") {
+        const prompt = document.createElement("div");
+        prompt.className = "no-protein-prompt";
+        prompt.textContent = "No data source selected. Open this card's Data panel (edit mode) and choose a Protein to show records here.";
+        columnsEl.appendChild(prompt);
+        for (const btn of $("all-modes").querySelectorAll("button")) {
+          btn.classList.toggle("on", btn.dataset.mode === ui.defaultBodyMode);
+        }
+        renderBulkBar();
+        return;
+      }
       for (const lane of lanes) {
         const laneUi = ui.lanes[lane.key] || {};
         if (laneUi.hidden) continue;
@@ -963,12 +1011,6 @@
           if (uid) move(uid, lane.key);
         });
         for (const row of laneRows) list.appendChild(card(row, lane.key));
-        if (!laneRows.length) {
-          const empty = document.createElement("div");
-          empty.className = "empty";
-          empty.textContent = "No cards";
-          list.appendChild(empty);
-        }
         // Width drag (old lane resize): live while dragging, persisted on release.
         const handle = document.createElement("div");
         handle.className = "lane-handle";
@@ -1003,7 +1045,7 @@
       el.addEventListener("dragstart", (event) => {
         event.dataTransfer.setData("text/lince-record", row.uid);
       });
-      // Click targets (2026-07-17): the TITLE opens record_info (group-scoped
+      // Click targets (2026-07-17): the TITLE opens Record (group-scoped
       // `recordClicked`); the BODY edits in place (cardBodyNode). Ctrl/Cmd-
       // click anywhere selects for bulk operations.
       el.addEventListener("click", (event) => {
@@ -1028,7 +1070,7 @@
       const title = document.createElement("div");
       title.className = "card-title";
       title.textContent = row.head || row.slug || row.uid;
-      title.title = "Open in Record Info";
+      title.title = "Open in Record";
       title.addEventListener("click", (event) => {
         if (event.ctrlKey || event.metaKey) return; // let the card handle select
         event.stopPropagation();
@@ -1044,7 +1086,7 @@
         badge = document.createElement("span");
         badge.className = "assignee-chip";
         badge.textContent = personNames[assigneeLink.other] || String(assigneeLink.other).slice(0, 8);
-        badge.title = "Assignee (edit in Record Info)";
+        badge.title = "Assignee (edit in Record)";
       }
       top.append(title, ...(badge ? [badge] : []));
       el.appendChild(top);
@@ -1052,7 +1094,7 @@
       // "click the body to start writing" always has a target
       if (mode !== "head") el.appendChild(cardBodyNode(row, mode));
       // no quantity/slug here (bug #2): the column TITLE already says what
-      // column the card is on, and the slug is only useful inside record_info.
+      // column the card is on, and the slug is only useful inside Record.
       if (row.concept) {
         const meta = document.createElement("div");
         meta.className = "card-meta";

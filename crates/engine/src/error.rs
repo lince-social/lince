@@ -8,6 +8,7 @@ pub enum EngineError {
     Consequence(String),
     Io(std::io::Error),
     Json(serde_json::Error),
+    Forbidden(String),
 }
 
 impl fmt::Display for EngineError {
@@ -19,6 +20,7 @@ impl fmt::Display for EngineError {
             Self::Consequence(m) => write!(f, "consequence: {m}"),
             Self::Io(e) => write!(f, "io: {e}"),
             Self::Json(e) => write!(f, "json: {e}"),
+            Self::Forbidden(m) => write!(f, "forbidden: {m}"),
         }
     }
 }

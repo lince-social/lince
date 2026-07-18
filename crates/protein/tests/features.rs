@@ -115,6 +115,76 @@ async fn uid_eq_targets_one_record_directly() {
 }
 
 #[tokio::test]
+async fn organ_eq_and_organ_in_filter_by_record_origin() {
+    let e = engine().await;
+    // Created BEFORE any local organ exists: no origin ever stamped (record
+    // creation, wherever it happens, only stamps when a local organ IS set).
+    store::records::create(
+        &e.store.pool,
+        store::records::NewRecord {
+            slug: Some("orphan"),
+            kind: RecordKind::Plain,
+            head: "orphan",
+            body: "",
+            quantity: 0.0,
+        },
+    )
+    .await
+    .unwrap();
+
+    // A local organ so every record creation from here on stamps origin
+    // (blueprint: Sync/File Sync pick WHAT travels by pointing a Protein at
+    // an organ) — centralized in `store::records::create`, not just the
+    // top-level CreateRecord action, so threads/messages/saved-Proteins get
+    // it too.
+    let organ_a = store::organs::ensure_local(&e.store.pool, "http://cell-a")
+        .await
+        .unwrap()
+        .uid;
+    let organ_b = store::organs::add_contact(
+        &e.store.pool,
+        "organ_b_uid",
+        Some("organ.b"),
+        "Cell B",
+        "http://cell-b",
+        1,
+    )
+    .await
+    .unwrap();
+
+    let _apple = make(&e, "apple", RecordKind::Plain, 1.0).await; // stamped organ_a
+    let mango = make(&e, "mango", RecordKind::Plain, 1.0).await;
+    store::records::set_organ_origin(&e.store.pool, &mango, Some(&organ_b))
+        .await
+        .unwrap();
+
+    let a_only = protein::execute(
+        &e.store,
+        &base(Source::Record, vec![Predicate::OrganEq(organ_a.clone())]),
+    )
+    .await
+    .unwrap();
+    assert_eq!(a_only.len(), 1);
+    assert_eq!(a_only[0]["slug"], "apple");
+
+    let a_or_b = protein::execute(
+        &e.store,
+        &base(
+            Source::Record,
+            vec![Predicate::OrganIn(vec![organ_a, organ_b])],
+        ),
+    )
+    .await
+    .unwrap();
+    let mut slugs: Vec<String> = a_or_b
+        .iter()
+        .map(|r| r["slug"].as_str().unwrap().to_string())
+        .collect();
+    slugs.sort();
+    assert_eq!(slugs, vec!["apple", "mango"]); // orphan (no origin) never matches
+}
+
+#[tokio::test]
 async fn quantity_lte_and_gte_include_the_boundary() {
     let e = engine().await;
     make(&e, "low", RecordKind::Plain, -1.0).await;
@@ -227,6 +297,26 @@ async fn links_include_is_explicit_and_supports_multiple_kinds() {
     .unwrap();
     let rows = protein::execute(&e.store, &legacy).await.unwrap();
     assert_eq!(rows[0]["links"].as_array().unwrap().len(), 1);
+
+    // The "*" wildcard includes links of EVERY kind (Record's all-links
+    // view), still honoring direction.
+    let mut all = base(Source::Record, vec![Predicate::UidEq(a.clone())]);
+    all.include.links = Some(LinksInclude {
+        kind: None,
+        kinds: vec!["*".into()],
+        direction: LinkDirection::Both,
+        depth: 0,
+    });
+    let rows = protein::execute(&e.store, &all).await.unwrap();
+    let links = rows[0]["links"].as_array().unwrap();
+    assert_eq!(links.len(), 2);
+    assert!(links.iter().any(|link| link["kind"] == "before"));
+    assert!(links.iter().any(|link| link["kind"] == "contributes"));
+    all.include.links.as_mut().unwrap().direction = LinkDirection::In;
+    let rows = protein::execute(&e.store, &all).await.unwrap();
+    let links = rows[0]["links"].as_array().unwrap();
+    assert_eq!(links.len(), 1);
+    assert_eq!(links[0]["kind"], "contributes");
 }
 
 #[tokio::test]
@@ -358,6 +448,75 @@ async fn threads_include_returns_nested_record_messages() {
         Some(first.as_str())
     );
     assert_eq!(messages[1]["uid"].as_str(), Some(reply.as_str()));
+    // A thread system UI (Record) needs "when" to feel like a real
+    // conversation — both the thread and each message carry created_at.
+    assert!(threads[0]["created_at"].as_str().is_some());
+    assert!(messages[0]["created_at"].as_str().is_some());
+    assert!(messages[1]["created_at"].as_str().is_some());
+    // No actor (local-no-auth mode, every act() call above passed None) ->
+    // no sender/creator to resolve, not an error.
+    assert!(threads[0]["sender"].is_null());
+    assert!(messages[0]["sender"].is_null());
+    assert!(threads[0]["created_by"].is_null());
+    assert!(messages[0]["created_by"].is_null());
+}
+
+#[tokio::test]
+async fn threads_include_resolves_sender_name_from_the_actor() {
+    let e = engine().await;
+    let role_id = store::auth::ensure_role(&e.store.pool, "lince").await.unwrap();
+    let user_id = store::auth::create_user(
+        &e.store.pool,
+        "Ana Diaz",
+        "ana",
+        "hash-not-checked-here",
+        role_id,
+    )
+    .await
+    .unwrap();
+
+    let subject = make(&e, "abstract-idea", RecordKind::Plain, 0.0).await;
+    let thread = e
+        .act(
+            Action::CreateThread {
+                target: subject.clone(),
+                head: "Discussion B".into(),
+            },
+            Some(user_id.to_string()),
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    e.act(
+        Action::CreateMessage {
+            thread,
+            body: "hi from ana".into(),
+            parent: None,
+        },
+        Some(user_id.to_string()),
+    )
+    .await
+    .unwrap();
+
+    let p = Protein {
+        source: Source::Record,
+        filter: vec![Predicate::UidEq(subject)],
+        include: Include {
+            threads: Some(ThreadsInclude { messages_limit: 20 }),
+            ..Default::default()
+        },
+        aggregate: None,
+        order: vec![],
+        limit: None,
+    };
+    let rows = protein::execute(&e.store, &p).await.unwrap();
+    let threads = rows[0]["threads"].as_array().unwrap();
+    assert_eq!(threads[0]["sender"].as_str(), Some("Ana Diaz"));
+    assert_eq!(threads[0]["created_by"].as_str(), Some(user_id.to_string()).as_deref());
+    let messages = threads[0]["messages"].as_array().unwrap();
+    assert_eq!(messages[0]["sender"].as_str(), Some("Ana Diaz"));
+    assert_eq!(messages[0]["created_by"].as_str(), Some(user_id.to_string()).as_deref());
 }
 
 #[tokio::test]
@@ -479,4 +638,85 @@ async fn near_predicate_uses_the_place_instinct() {
     let rows = protein::execute(&e.store, &p).await.unwrap();
     let slugs: Vec<&str> = rows.iter().map(|r| r["slug"].as_str().unwrap()).collect();
     assert_eq!(slugs, vec!["market.needs"], "only the nearby need matches");
+}
+
+#[tokio::test]
+async fn auth_source_lists_roles_users_and_the_permission_catalog() {
+    let e = engine().await;
+    e.act(Action::CreateRole { name: "support".into() }, None)
+        .await
+        .unwrap();
+    e.act(
+        Action::GrantPermission {
+            role: "support".into(),
+            permission: "record:delete_own".into(),
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    e.act(
+        Action::CreateUser {
+            username: "amy".into(),
+            name: "Amy".into(),
+            password: "hunter2".into(),
+            role: "support".into(),
+        },
+        None,
+    )
+    .await
+    .unwrap();
+
+    let rows = protein::execute(&e.store, &base(Source::Auth, vec![])).await.unwrap();
+    let role = rows
+        .iter()
+        .find(|r| r["kind"] == "role" && r["name"] == "support")
+        .expect("the new role is listed");
+    assert!(
+        role["permissions"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|p| p == "record:delete_own")
+    );
+    let user = rows
+        .iter()
+        .find(|r| r["kind"] == "user" && r["username"] == "amy")
+        .expect("the new user is listed");
+    assert_eq!(user["role"], "support");
+    assert!(user.get("password_hash").is_none(), "never expose the hash");
+    assert!(
+        rows.iter().any(|r| r["kind"] == "permission_catalog"
+            && r["keys"].as_array().unwrap().iter().any(|k| k == "record:delete")),
+        "the static permission catalog is listed for building a grant UI"
+    );
+}
+
+#[tokio::test]
+async fn auth_source_is_gated_by_read_permission_for_a_remote_subject() {
+    let e = engine().await;
+    let bystander_role = store::auth::ensure_role(&e.store.pool, "bystander").await.unwrap();
+    let bystander = store::auth::create_user(&e.store.pool, "B", "bystander", "hash", bystander_role)
+        .await
+        .unwrap();
+    let reader_role = store::auth::ensure_role(&e.store.pool, "reader").await.unwrap();
+    let perm_id = store::auth::ensure_permission(&e.store.pool, "role", "read").await.unwrap();
+    store::auth::grant(&e.store.pool, reader_role, perm_id).await.unwrap();
+    let reader = store::auth::create_user(&e.store.pool, "R", "reader", "hash", reader_role)
+        .await
+        .unwrap();
+
+    let p = base(Source::Auth, vec![]);
+    let hidden = protein::execute_for(&e.store, &p, Some(&bystander.to_string()))
+        .await
+        .unwrap();
+    assert!(hidden.is_empty(), "no role/user/permission read grant -> nothing");
+
+    let visible = protein::execute_for(&e.store, &p, Some(&reader.to_string()))
+        .await
+        .unwrap();
+    assert!(!visible.is_empty(), "role:read grants the whole listing");
+
+    let local = protein::execute_for(&e.store, &p, None).await.unwrap();
+    assert!(!local.is_empty(), "the local Cell (subject: None) always sees it");
 }

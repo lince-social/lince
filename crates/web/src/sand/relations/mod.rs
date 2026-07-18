@@ -8,7 +8,7 @@ pub(crate) const FEATURE_FLAG: &str = "sand.relations";
 // add-link/remove-link Actions, group-scoped `recordClicked`/`recordCreate`
 // instead of the old sidepanels. d3 loads from the embedded
 // `/static/vendored/d3.v7.min.js` (LICENSE served beside it). Ships as the
-// GROUP `relations.lince` (this sand + record_info) — see
+// GROUP `relations.lince` (this sand + Record) — see
 // `sand::build_relations_group_archive`.
 const HTML: &str = include_str!("relations.html");
 
@@ -20,7 +20,7 @@ pub(crate) fn manifest() -> PackageManifest {
         version: "0.3.0".into(),
         description: "Force-directed record graph over typed links.".into(),
         details:
-            "d3 force graph for records and their Lingua links: live Protein reads, Shift+drag to link, edge ✕ to unlink, local physics. Node click opens the grouped Record Info; trail mode lands as a view over a root's tree."
+            "d3 force graph for records and their Lingua links: live Protein reads, Shift+drag to link, edge ✕ to unlink, local physics. Node click opens the grouped Record; trail mode lands as a view over a root's tree."
                 .into(),
         initial_width: 7,
         initial_height: 6,

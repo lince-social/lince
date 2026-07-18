@@ -28,6 +28,22 @@ async fn plain(e: &Engine, slug: &str) -> String {
     .uid
 }
 
+async fn person(e: &Engine, slug: &str) -> String {
+    store::records::create(
+        &e.store.pool,
+        NewRecord {
+            slug: Some(slug),
+            kind: RecordKind::Person,
+            head: slug,
+            body: "",
+            quantity: 1.0,
+        },
+    )
+    .await
+    .expect("person")
+    .uid
+}
+
 fn at(s: &str) -> DateTime<Utc> {
     DateTime::parse_from_rfc3339(s).unwrap().with_timezone(&Utc)
 }
@@ -93,7 +109,7 @@ async fn expiry_breaks_commitments_and_withdraws_lapsed_offers() {
 async fn reserve_from_inherits_the_transfer_default() {
     let e = engine().await;
     plain(&e, "ana.apples").await;
-    plain(&e, "ana").await;
+    person(&e, "ana").await;
 
     let transfer = e
         .act(

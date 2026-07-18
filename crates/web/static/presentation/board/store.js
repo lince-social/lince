@@ -590,7 +590,7 @@ export function createBoardStore({
       replaceActiveWorkspaceCards([...activeWorkspace.cards, created]);
       return created;
     },
-    // Drop a whole sand GROUP (e.g. kanban = board + record_info) onto the board
+    // Drop a whole sand GROUP (e.g. kanban = board + Record) onto the board
     // at once (Stage 8b, base task 2). Preserves each member's relative layout,
     // z-order, and ABI listen topics, and re-homes the archive's inner group id
     // to a FRESH id so repeated adds are independent groups (and inner grouping

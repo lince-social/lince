@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Document Viewer</title>
+  <script src="/board/frame.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app" class="app">
+    <button id="config-toggle" class="configToggle" type="button" aria-expanded="true"
+            aria-controls="config-panel" title="Document settings"></button>
+
+    <aside id="config-panel" class="configPanel">
+      <div class="controls">
+        <div class="fieldRow fieldRow--source">
+          <select id="source-select" class="field field--select" aria-label="Document source">
+            <option value="file">Device file</option>
+            <option value="media">Host media</option>
+            <option value="url">Internet URL</option>
+          </select>
+          <div class="actionRow">
+            <button id="load-button" class="button button--primary" type="button">Load</button>
+            <button id="unload-button" class="button" type="button">Unload</button>
+          </div>
+        </div>
+        <div class="fieldRow fieldRow--path">
+          <input id="path-input" class="field" type="text" inputmode="url" autocomplete="off"
+                 spellcheck="false" placeholder="Choose a PDF, EPUB, JPEG, or PNG">
+          <button id="pick-button" class="button" type="button">Choose</button>
+          <input id="file-input" class="fileInput" type="file"
+                 accept="application/pdf,application/epub+zip,.epub,image/png,image/jpeg,image/gif,image/webp" hidden>
+        </div>
+        <div id="view-mode-row" class="fieldRow fieldRow--mode" hidden>
+          <select id="pdf-mode-select" class="field field--select" aria-label="Reading mode">
+            <option value="scroll">Infinite scroll</option>
+            <option value="page">Paging</option>
+          </select>
+          <input id="pdf-page-input" class="field pageField" type="number" min="1" step="1"
+                 inputmode="numeric" value="1" aria-label="PDF page">
+        </div>
+        <div id="epub-controls" class="fieldRow fieldRow--epub" hidden>
+          <button id="epub-prev" class="button" type="button" title="Previous EPUB section">&#x2190;</button>
+          <button id="epub-next" class="button" type="button" title="Next EPUB section">&#x2192;</button>
+        </div>
+        <div class="licenseRow">
+          <span>Reader libraries:</span>
+          <a href="vendor/EPUBJS-LICENSE.txt" target="_blank" rel="noreferrer">epub.js BSD</a>
+          <a href="vendor/JSZIP-LICENSE.txt" target="_blank" rel="noreferrer">JSZip MIT</a>
+        </div>
+      </div>
+      <pre id="debug" class="debug" aria-live="polite"></pre>
+    </aside>
+
+    <main class="documentArea" aria-label="Document preview">
+      <div id="frame" class="frame">
+        <img id="image" class="image" alt="Document preview" hidden>
+        <iframe id="pdf-frame" class="pdfFrame" title="PDF preview" hidden></iframe>
+        <div id="epub-viewer" class="epubViewer" hidden></div>
+        <div id="nav-hit" class="navHit" aria-hidden="true" hidden>
+          <button id="nav-prev" class="navZone navZone--prev" type="button" title="Previous"></button>
+          <button id="nav-next" class="navZone navZone--next" type="button" title="Next"></button>
+        </div>
+        <div id="empty" class="empty">
+          <div class="emptyEyebrow">No document selected</div>
+          <div id="empty-title" class="emptyTitle">Choose a file or URL</div>
+          <div id="empty-copy" class="emptyCopy">Open settings to select a document.</div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="vendor/jszip.min.js"></script>
+  <script src="vendor/epub.min.js"></script>
+  <script src="app/state.js"></script>
+  <script src="app/sources.js"></script>
+  <script src="app/main.js"></script>
+</body>
+</html>

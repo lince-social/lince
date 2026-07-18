@@ -15,7 +15,7 @@ pub(crate) fn manifest() -> PackageManifest {
         version: "2.0.0".into(),
         description: "Live kanban board over Protein reads and typed Actions.".into(),
         details:
-            "Subscribes to a records Protein through the widget bridge, buckets records into columns, moves cards with typed Actions, and emits the recordClicked ABI event so a Record Info sand can show details."
+            "Subscribes to a records Protein through the widget bridge, buckets records into columns, moves cards with typed Actions, and emits the recordClicked ABI event so a Record sand can show details."
                 .into(),
         initial_width: 7,
         initial_height: 5,

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # K0 — the LIVE end-to-end: the real `lince` cell server, the real board page
 # ("/" with main.js + unified bridge + one real WebSocket), the real emitted
-# kanban group (board + record_info from `kanban.lince`), driven in headless
+# kanban group (board + Record from `kanban.lince`), driven in headless
 # chromium on the REAL clock (no virtual time, no stubs anywhere):
 #   boot -> seed the board state with the kanban group (the same cards the
 #   catalog add uses; seeded via curl+jq) -> both sands come up LIVE (green dot
 #   = the transport socket actually connected) -> "New task" opens
-#   record_info's creation mode (group-scoped recordCreate) -> fill head ->
-#   Create -> record_info focuses the REAL created record AND the kanban board
+#   Record's creation mode (group-scoped recordCreate) -> fill head ->
+#   Create -> Record focuses the REAL created record AND the kanban board
 #   grows the new card via the live Protein update. This is the seam every
 #   other selftest stubs.
 #
@@ -48,12 +48,18 @@ done
 
 # Seed the board with the kanban GROUP — the exact member cards the catalog
 # add-as-group flow drops (same endpoint), positioned side by side in view.
+# A kanban card ships with an EMPTY widgetState (no default Protein,
+# 2026-07-18 — the user must configure one via the Data panel), so this test
+# patches one in here, the same way a real user's Data panel edit would, to
+# exercise the real subscribe/render path instead of the new empty prompt.
 curl -sf "$BASE/host/packages/local/group/kanban.lince" > "$WORK/group.json"
 curl -sf "$BASE/host/board/state" > "$WORK/state.json"
 jq -s '
-  (.[0].cards | map(
-    if .id == "card-kanban" then . + {x: 4400, y: 4400, width: 760, height: 560}
-    elif .id == "card-kanban-record-info" then . + {x: 5180, y: 4400, width: 380, height: 560}
+  {source: "record", where: [{kind_eq: "plain"}], order: [{asc: "quantity"}, {asc: "created_at"}],
+   include: {links: {kinds: ["assigned-to", "part-of"], direction: "out"}}} as $protein
+  | (.[0].cards | map(
+    if .id == "card-kanban" then . + {x: 4400, y: 4400, width: 760, height: 560, widgetState: {protein: $protein}}
+    elif .id == "card-kanban-record" then . + {x: 5180, y: 4400, width: 380, height: 560}
     else . end)) as $group
   | .[1]
   | .workspaces[0].cards += $group
@@ -104,7 +110,7 @@ cat > "$HARNESS" <<'HTML'
     });
     results.kanban_rendered = !!kb; mark();
     const ri = await poll(() => {
-      const d = sandDoc("card-kanban-record-info");
+      const d = sandDoc("card-kanban-record");
       return d && d.getElementById("create") ? d : null;
     });
     results.recinfo_loaded = !!ri; mark();
@@ -115,7 +121,7 @@ cat > "$HARNESS" <<'HTML'
       () => kb.getElementById("dot").classList.contains("live")));
     mark();
 
-    // "New task" -> record_info creation mode (same fields, writable, empty).
+    // "New task" -> Record creation mode (same fields, writable, empty).
     kb.getElementById("open-create").click();
     results.create_mode = !!(await poll(
       () => ri.getElementById("create").classList.contains("open"), 6000));
@@ -124,7 +130,7 @@ cat > "$HARNESS" <<'HTML'
       && ri.getElementById("c-head").value === "";
     mark();
 
-    // Create for real: the server appends the record; record_info focuses it
+    // Create for real: the server appends the record; Record focuses it
     // and the kanban board grows the card through the live subscription.
     ri.getElementById("c-head").value = "Fresh";
     ri.getElementById("c-submit").click();
@@ -162,11 +168,11 @@ echo "result: $JSON"
 fail=0
 check() { grep -q "\"$1\":true" <<<"$JSON" || { echo "FAIL: $2"; fail=1; }; }
 check kanban_rendered    "the real board did not render the kanban sand"
-check recinfo_loaded     "the real board did not render the record_info sand"
+check recinfo_loaded     "the real board did not render the Record sand"
 check kanban_live        "the kanban dot never went live (transport socket not connected)"
-check create_mode        "New task did not open record_info's creation mode"
+check create_mode        "New task did not open Record's creation mode"
 check create_fields      "creation mode is missing head/body/quantity fields"
-check created_focused    "record_info did not focus the REAL created record"
+check created_focused    "Record did not focus the REAL created record"
 check kanban_live_update "the kanban board did not grow the created card via live update"
 
 [ "$fail" -eq 0 ] && echo "PASS: live K0 — real server + real board + kanban group: create flow works end-to-end" || exit 1

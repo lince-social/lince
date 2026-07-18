@@ -27,6 +27,10 @@ const FLAT_LANE_SEND = "lince:lane-send";
 const FLAT_LANE_EVENT = "lince:lane-event";
 const FLAT_LIVE = "lince:live";
 const FLAT_PATCH_CARD_STATE = "lince:patch-card-state";
+const FLAT_TERMINAL_OPEN = "lince:terminal-open";
+const FLAT_TERMINAL_INPUT = "lince:terminal-input";
+const FLAT_TERMINAL_RESIZE = "lince:terminal-resize";
+const FLAT_TERMINAL_CLOSE = "lince:terminal-close";
 
 function apiPath(path) {
   if (path.startsWith("http://") || path.startsWith("https://")) {
@@ -74,7 +78,11 @@ function normalizeBridgeMeta(rawMeta, instanceId = "") {
     serverId: String(rawMeta?.serverId || ""),
     viewId: rawMeta?.viewId == null ? null : Number(rawMeta.viewId) || null,
     cardState: cloneJsonValue(rawMeta?.cardState, {}),
+    viewer: cloneJsonValue(rawMeta?.viewer, null),
     shell: cloneJsonValue(rawMeta?.shell, {}),
+    permissions: Array.isArray(rawMeta?.permissions)
+      ? rawMeta.permissions.map((value) => String(value))
+      : [],
     streams: {
       globalEnabled,
       cardEnabled,
@@ -219,6 +227,9 @@ export function createWidgetBridge({
   // decides the shape of the rows/error message posted back to the frame.
   const subscriptions = new Map();
   const pendingActions = new Map();
+  // transport terminal id -> owning sand/session. PTYs are scoped to this
+  // board socket and are never replayed after reconnect.
+  const terminalSessions = new Map();
   // instanceId of new-way (flat-protocol) frames, learned when they announce
   // `lince:ready`. Lets the reconnect signal reach them as `lince:live`.
   const flatFrames = new Set();
@@ -226,7 +237,7 @@ export function createWidgetBridge({
   // in-page, group-scoped fan-out of `lince:lane-send` between sibling sands on
   // this board (the server suppresses self-echo, so same-session siblings must
   // be delivered in-page — this is exactly what kanban's scoped `recordClicked`
-  // to its packaged record_info needs).
+  // to its packaged Record needs).
   const roomMembers = new Map();
   // ABI sand-to-sand events ride transport ephemeral lanes (blueprint VII.3):
   // one room per topic (`abi:<topic>`). The board joins a room for every topic
@@ -344,6 +355,51 @@ export function createWidgetBridge({
       return;
     }
 
+    if (type === "terminal_opened" || type === "terminal_data" || type === "terminal_exit") {
+      const entry = terminalSessions.get(String(message.id || ""));
+      if (!entry) {
+        return;
+      }
+      if (type === "terminal_opened") {
+        entry.opened = true;
+        postFrame(entry.instanceId, {
+          type: "lince:terminal-opened",
+          sessionId: entry.sessionId,
+          shell: String(message.shell || ""),
+          cwd: String(message.cwd || ""),
+        });
+      } else if (type === "terminal_data") {
+        postFrame(entry.instanceId, {
+          type: "lince:terminal-data",
+          sessionId: entry.sessionId,
+          dataBase64: String(message.data_base64 || ""),
+        });
+      } else {
+        terminalSessions.delete(String(message.id || ""));
+        postFrame(entry.instanceId, {
+          type: "lince:terminal-exit",
+          sessionId: entry.sessionId,
+          exitCode: message.exit_code ?? null,
+        });
+      }
+      return;
+    }
+
+    if (type === "error") {
+      const terminal = terminalSessions.get(String(message.id || ""));
+      if (terminal) {
+        if (!terminal.opened) {
+          terminalSessions.delete(String(message.id || ""));
+        }
+        postFrame(terminal.instanceId, {
+          type: "lince:terminal-error",
+          sessionId: terminal.sessionId,
+          message: String(message.message || "terminal session failed"),
+        });
+        return;
+      }
+    }
+
     if (type === "action_ok" || type === "error") {
       const req = pendingActions.get(String(message.id || ""));
       if (!req) {
@@ -410,6 +466,14 @@ export function createWidgetBridge({
     for (const instanceId of flatFrames) {
       postFrame(instanceId, { type: FLAT_LIVE, live: false });
     }
+    for (const entry of terminalSessions.values()) {
+      postFrame(entry.instanceId, {
+        type: "lince:terminal-error",
+        sessionId: entry.sessionId,
+        message: "terminal transport disconnected",
+      });
+    }
+    terminalSessions.clear();
     for (const entry of subscriptions.values()) {
       if (entry.protocol !== "flat") {
         postRows(entry, [], false);
@@ -430,8 +494,8 @@ export function createWidgetBridge({
 
   // Group-scoped ABI fan-out (Stage 8b, Phase 4). A GROUPED source sand only
   // reaches sibling sands in its OWN (innermost, tightest) group — e.g. a kanban
-  // card's `recordClicked` reaches only the record_info sand packaged with it,
-  // not a record_info in another group nor an unrelated sand that merely shares
+  // card's `recordClicked` reaches only the Record sand packaged with it,
+  // not a Record in another group nor an unrelated sand that merely shares
   // an outer container. An UNGROUPED source still broadcasts board-wide,
   // preserving the pre-grouping behavior. Remote lane events (no local source
   // card) are never restricted here.
@@ -563,6 +627,12 @@ export function createWidgetBridge({
 
     // Frames or their listen config may have changed — reconcile lane rooms.
     refreshLaneRooms();
+    for (const [id, entry] of [...terminalSessions]) {
+      if (!frameForInstance(entry.instanceId)) {
+        sendTransport({ type: "terminal_close", id });
+        terminalSessions.delete(id);
+      }
+    }
   }
 
   async function handleAction(message) {
@@ -731,6 +801,23 @@ export function createWidgetBridge({
     }
     flatFrames.add(instanceId);
     postFrame(instanceId, { type: FLAT_LIVE, live: transport.isReady() });
+    // Also re-push THIS frame's current bridge-state/cardState now (2026-07-18).
+    // A cold page load creates the iframe and calls the bridge's initial
+    // render() essentially back-to-back — postMessage to a still-loading
+    // iframe (frame.js hasn't attached its listener yet) is silently
+    // dropped, so that first cardState push can vanish. `lince:ready` only
+    // fires once frame.js IS listening, so replying here guarantees every
+    // sand eventually sees its real cardState (a Data-panel Protein, saved
+    // UI prefs, ...) instead of only picking it up on some LATER unrelated
+    // board change. This gap existed before too; it just stayed invisible
+    // while kanban/relations still had an auto-applied default Protein to
+    // fall back on.
+    const frame = frameForInstance(instanceId);
+    if (frame) {
+      const meta =
+        typeof getCardMeta === "function" ? getCardMeta(instanceId) : null;
+      postBridgeState(frame, bridgeState, meta);
+    }
   }
 
   function handleFlatLaneJoin(data) {
@@ -787,6 +874,89 @@ export function createWidgetBridge({
       room,
       payload: cloneJsonValue(payload, null),
     });
+  }
+
+  function terminalTransportId(instanceId, sessionId) {
+    return `terminal:${instanceId}:${sessionId}`;
+  }
+
+  function terminalGeometry(raw) {
+    const bounded = (value, fallback, min, max) =>
+      Math.max(min, Math.min(max, Math.trunc(Number(value) || fallback)));
+    return {
+      cols: bounded(raw?.cols, 80, 1, 1000),
+      rows: bounded(raw?.rows, 24, 1, 1000),
+      pixel_width: bounded(raw?.pixelWidth ?? raw?.pixel_width, 0, 0, 65535),
+      pixel_height: bounded(raw?.pixelHeight ?? raw?.pixel_height, 0, 0, 65535),
+    };
+  }
+
+  function terminalEntry(data) {
+    const instanceId = String(data.instanceId || "");
+    const sessionId = String(data.sessionId || "");
+    const id = terminalTransportId(instanceId, sessionId);
+    return { id, instanceId, sessionId, current: terminalSessions.get(id) };
+  }
+
+  function isCurrentFrameSource(instanceId, source) {
+    return frameForInstance(instanceId)?.contentWindow === source;
+  }
+
+  function handleTerminalOpen(data, source) {
+    const entry = terminalEntry(data);
+    const permissions =
+      typeof getCardMeta === "function"
+        ? getCardMeta(entry.instanceId)?.permissions
+        : [];
+    if (
+      !entry.instanceId ||
+      !entry.sessionId ||
+      !isCurrentFrameSource(entry.instanceId, source) ||
+      !Array.isArray(permissions) ||
+      !permissions.includes("terminal_session")
+    ) {
+      postFrame(entry.instanceId, {
+        type: "lince:terminal-error",
+        sessionId: entry.sessionId,
+        message: "terminal_session permission is required",
+      });
+      return;
+    }
+    if (entry.current) {
+      return;
+    }
+    terminalSessions.set(entry.id, { ...entry, opened: false });
+    sendTransport({
+      type: "terminal_open",
+      id: entry.id,
+      ...terminalGeometry(data.geometry),
+    });
+  }
+
+  function handleTerminalCommand(data, source) {
+    const entry = terminalEntry(data);
+    if (
+      !entry.current ||
+      entry.current.instanceId !== entry.instanceId ||
+      !isCurrentFrameSource(entry.instanceId, source)
+    ) {
+      return;
+    }
+    if (data.type === FLAT_TERMINAL_INPUT) {
+      sendTransport({
+        type: "terminal_input",
+        id: entry.id,
+        data_base64: String(data.dataBase64 || ""),
+      });
+    } else if (data.type === FLAT_TERMINAL_RESIZE) {
+      sendTransport({
+        type: "terminal_resize",
+        id: entry.id,
+        ...terminalGeometry(data.geometry),
+      });
+    } else {
+      sendTransport({ type: "terminal_close", id: entry.id });
+    }
   }
 
   function handleMessage(event) {
@@ -857,6 +1027,20 @@ export function createWidgetBridge({
       return;
     }
 
+    if (data.type === FLAT_TERMINAL_OPEN) {
+      handleTerminalOpen(data, event.source);
+      return;
+    }
+
+    if (
+      data.type === FLAT_TERMINAL_INPUT ||
+      data.type === FLAT_TERMINAL_RESIZE ||
+      data.type === FLAT_TERMINAL_CLOSE
+    ) {
+      handleTerminalCommand(data, event.source);
+      return;
+    }
+
     // New-way sand persisting its UI prefs into the card's widgetState (host
     // state). Mirrors the legacy "patch-card-state" action; re-render pushes
     // the updated cardState back down to every frame.
@@ -885,6 +1069,10 @@ export function createWidgetBridge({
       render(bridgeState);
     },
     destroy() {
+      for (const id of terminalSessions.keys()) {
+        sendTransport({ type: "terminal_close", id });
+      }
+      terminalSessions.clear();
       window.removeEventListener("message", handleMessage);
     },
   };

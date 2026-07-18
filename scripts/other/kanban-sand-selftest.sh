@@ -4,7 +4,7 @@
 #   - the real unified `widget-bridge.js` + shared `transport.js`
 #   - only the transport WebSocket is stubbed (acts are auto-ACKed)
 # Proves the ported board-level features: default driving Protein -> "New task"
-# delegates creation to the grouped record_info (`recordCreate` lane event, no
+# delegates creation to the grouped Record (`recordCreate` lane event, no
 # kanban create sheet) -> checkbox lines in card bodies render as REAL
 # checkboxes and toggling writes the flipped body (`edit-record-text`,
 # optimistic, not a recordClicked) -> optimistic drag/drop move
@@ -12,7 +12,7 @@
 # host state -> Data-panel saved-Protein swap (`subscribe_saved`).
 # Surfaces gone BY DECISION: view/filter chrome (Protein control is base UI —
 # the Data panel) and the full edit sheet (head/metadata/assignees/resources
-# stay the grouped record_info's job). Revised 2026-07-17: the kanban DOES
+# stay the grouped Record's job). Revised 2026-07-17: the kanban DOES
 # perform one more record write beyond checkbox toggles/body edits/column
 # moves — bulk delete of selected cards (`delete-record`, confirmed via an
 # in-sand modal), covered by its own block below.
@@ -81,7 +81,17 @@ cat > "$WORK/harness.html" <<'HTML'
   window.__inbound = (obj) => window.__ws._msg({ data: JSON.stringify(obj) });
 
   const patches = [];
-  const metaStore = { cardState: {} };
+  // A kanban card ships with NO driving Protein by default (2026-07-18) — it
+  // subscribes to nothing until the Data panel picks one. Seed the same
+  // shape the sand's own (now-removed) DEFAULT_PROTEIN used to auto-apply so
+  // this test still exercises the real subscribe/render path.
+  const KANBAN_TEST_PROTEIN = {
+    source: "record",
+    where: [{ kind_eq: "plain" }],
+    order: [{ asc: "quantity" }, { asc: "created_at" }],
+    include: { links: { kinds: ["assigned-to", "part-of"], direction: "out" } },
+  };
+  const metaStore = { cardState: { protein: KANBAN_TEST_PROTEIN } };
 
   const frame = document.createElement("iframe");
   frame.className = "package-widget__frame";
@@ -114,11 +124,17 @@ cat > "$WORK/harness.html" <<'HTML'
   (async () => {
     const results = {};
     await wait(400);
+    // The bridge's own initial render() fires before the iframe finishes
+    // loading (postMessage to a still-loading frame is lost) — re-push the
+    // seeded Protein now that it's up.
+    bridge.syncFrames();
+    await wait(150);
 
-    // 1. Default driving Protein.
+    // 1. The Data-panel-configured driving Protein reaches the sand (there is
+    //    no auto-applied default anymore, 2026-07-18 — see KANBAN_TEST_PROTEIN).
     const sub = window.__sent.find((m) => m.type === "subscribe"
       && String(m.id || "") === "card-kanban:kanban");
-    results.default_protein = !!sub && sub.protein
+    results.configured_protein_subscribed = !!sub && sub.protein
       && sub.protein.source === "record"
       && JSON.stringify(sub.protein.where || []).includes('"kind_eq":"plain"');
 
@@ -154,7 +170,7 @@ cat > "$WORK/harness.html" <<'HTML'
       .some((c) => c.textContent.includes("Beta"));
 
     // 2. "New task" emits the group-scoped recordCreate event (creation lives
-    //    in record_info, not a kanban sheet); the lane also mirrors to the
+    //    in Record, not a kanban sheet); the lane also mirrors to the
     //    server for other sessions.
     doc().getElementById("open-create").click();
     await wait(150);
@@ -182,7 +198,7 @@ cat > "$WORK/harness.html" <<'HTML'
     results.checkbox_not_click = !window.__sent.some((m) => m.type === "lane_send"
       && m.room === "recordClicked");
 
-    // 3c. Click targets (2026-07-17): the TITLE opens record_info; the BODY
+    // 3c. Click targets (2026-07-17): the TITLE opens Record; the BODY
     //     edits IN PLACE (textarea + slash palette, Ctrl+Enter saves via
     //     edit-record-text); body click emits NO recordClicked; images and
     //     @chips render on the card through the shared editor.js renderer.
@@ -209,7 +225,10 @@ cat > "$WORK/harness.html" <<'HTML'
     const picBody = cardByTitle("Pic").querySelector(".card-body");
     results.body_image_renders = !!picBody.querySelector('img[src="https://x.test/shot.png"]');
     results.body_ref_chip = !!picBody.querySelector('[data-ref="r_b"]');
-
+    // the SAME <img> element, not a same-src replacement — recreating it on
+    // an unrelated re-render forces a re-decode that reads as a flicker
+    // (2026-07-18: reported when releasing a drag elsewhere on the board)
+    const picImgBeforeMove = picBody.querySelector("img");
 
     // 4. Optimistic drag/drop: Beta (next) -> WIP. The card moves BEFORE any
     //    server update lands, and set-quantity goes out.
@@ -223,9 +242,12 @@ cat > "$WORK/harness.html" <<'HTML'
     results.optimistic_move = !!beta && beta.closest(".cards").dataset.lane === "wip";
     results.move_action = acts().some((a) => a && a.action === "set-quantity"
       && a.target === "r_b" && a.value === -2);
+    const picImgAfterMove = cardByTitle("Pic").querySelector(".card-body img");
+    results.image_node_stable_across_unrelated_move =
+      !!picImgBeforeMove && picImgBeforeMove === picImgAfterMove;
 
     // 5. The full edit sheet is GONE: head/metadata/assignees/resources still
-    //    edit in the grouped record_info, not a kanban sheet.
+    //    edit in the grouped Record, not a kanban sheet.
     results.no_edit_surface = !doc().getElementById("sheet-record")
       && !doc().querySelector("[data-edit-record]");
 
@@ -280,7 +302,7 @@ JSON="${TITLE#RESULT=}"
 
 fail=0
 check() { grep -q "\"$1\":true" <<<"$JSON" || { echo "FAIL: $2"; fail=1; }; }
-check default_protein     "default driving Protein is not source=record kind_eq=plain"
+check configured_protein_subscribed "the configured driving Protein is not source=record kind_eq=plain"
 check links_included      "default Protein does not include assigned-to/part-of links"
 check assignee_badge      "assignee did not badge on the card"
 check parent_ctx_off      "parent context wrongly shows before the board option is on"
@@ -297,9 +319,10 @@ check body_edit_saves     "Ctrl+Enter did not save the edited body via edit-reco
 check body_edit_optimistic "the edited body did not render optimistically (new checkbox line)"
 check body_image_renders  "![](url) in a body did not render as an image on the card"
 check body_ref_chip       "@slug in a body did not render as a reference chip on the card"
+check image_node_stable_across_unrelated_move "an unrelated card's move recreated (flickered) another card's <img>"
 check optimistic_move     "dropped card did not move before the server ack"
 check move_action         "drop did not send set-quantity"
-check no_edit_surface     "a full edit surface is still in the kanban (record_info's job)"
+check no_edit_surface     "a full edit surface is still in the kanban (Record's job)"
 check delete_confirm_opens "bulk-delete did not open the confirm modal"
 check delete_action        "confirming bulk-delete did not send delete-record"
 check delete_removes_card  "the deleted card did not disappear from the board"

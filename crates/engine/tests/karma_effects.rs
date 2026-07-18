@@ -28,6 +28,22 @@ async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
     .uid
 }
 
+async fn person(e: &Engine, slug: &str) -> String {
+    store::records::create(
+        &e.store.pool,
+        NewRecord {
+            slug: Some(slug),
+            kind: RecordKind::Person,
+            head: slug,
+            body: "",
+            quantity: 1.0,
+        },
+    )
+    .await
+    .expect("person")
+    .uid
+}
+
 fn at(s: &str) -> DateTime<Utc> {
     DateTime::parse_from_rfc3339(s).unwrap().with_timezone(&Utc)
 }
@@ -285,7 +301,7 @@ async fn quiet_hours_deactivates_a_noisy_rule() {
 async fn trust_ahead_advances_a_transfer_on_high_confidence() {
     let e = engine().await;
     plain(&e, "ana.apples", 10.0).await;
-    let maria = plain(&e, "maria", 0.0).await;
+    let maria = person(&e, "maria").await;
     plain(&e, "trigger.ping", 0.0).await;
 
     // Maria's verified history: nine kept promises, zero broken -> Laplace

@@ -593,3 +593,92 @@ async fn delete_record_is_distinct_from_deactivate() {
     let new_uid = reused.created.expect("created uid");
     assert_ne!(new_uid, uid);
 }
+
+async fn user_with(e: &Engine, name: &str, username: &str, perms: &[&str]) -> i64 {
+    let role_id = store::auth::ensure_role(&e.store.pool, username).await.unwrap();
+    for perm in perms {
+        let (subject, action) = perm.split_once(':').unwrap();
+        let perm_id = store::auth::ensure_permission(&e.store.pool, subject, action)
+            .await
+            .unwrap();
+        store::auth::grant(&e.store.pool, role_id, perm_id).await.unwrap();
+    }
+    store::auth::create_user(&e.store.pool, name, username, "hash-not-checked-here", role_id)
+        .await
+        .unwrap()
+}
+
+#[tokio::test]
+async fn delete_record_without_permission_is_forbidden() {
+    let e = engine().await;
+    let uid = plain(&e, "unauthorized-target").await;
+    let bystander = user_with(&e, "Bystander", "bystander", &[]).await;
+
+    let err = e
+        .act(Action::DeleteRecord { target: uid.clone() }, Some(bystander.to_string()))
+        .await
+        .expect_err("no record:delete or record:delete_own grant");
+    assert!(err.to_string().contains("forbidden"));
+    assert!(
+        store::records::get(&e.store.pool, &uid).await.unwrap().is_some(),
+        "record must survive a denied delete"
+    );
+}
+
+#[tokio::test]
+async fn delete_own_permission_allows_only_the_creator() {
+    let e = engine().await;
+    let owner = user_with(&e, "Owner", "owner", &["record:delete_own"]).await;
+    let stranger = user_with(&e, "Stranger", "stranger", &["record:delete_own"]).await;
+
+    let mine = plain(&e, "mine").await;
+    e.act(
+        Action::SetQuantity { target: mine.clone(), value: 1.0 },
+        Some(owner.to_string()),
+    )
+    .await
+    .expect("owner's first fact establishes creator_uid");
+
+    // A stranger holding only delete_own cannot delete someone else's record.
+    let err = e
+        .act(Action::DeleteRecord { target: mine.clone() }, Some(stranger.to_string()))
+        .await
+        .expect_err("delete_own does not cover records the actor didn't create");
+    assert!(err.to_string().contains("forbidden"));
+
+    // The creator can delete it.
+    e.act(Action::DeleteRecord { target: mine.clone() }, Some(owner.to_string()))
+        .await
+        .expect("delete_own covers the actor's own record");
+    assert!(store::records::get(&e.store.pool, &mine).await.unwrap().is_none());
+}
+
+#[tokio::test]
+async fn delete_permission_allows_deleting_any_record() {
+    let e = engine().await;
+    let owner = user_with(&e, "Owner", "owner2", &[]).await;
+    let admin = user_with(&e, "Admin", "admin2", &["record:delete"]).await;
+
+    let theirs = plain(&e, "theirs").await;
+    e.act(
+        Action::SetQuantity { target: theirs.clone(), value: 1.0 },
+        Some(owner.to_string()),
+    )
+    .await
+    .expect("owner's first fact establishes creator_uid");
+
+    e.act(Action::DeleteRecord { target: theirs.clone() }, Some(admin.to_string()))
+        .await
+        .expect("record:delete covers any record regardless of creator");
+    assert!(store::records::get(&e.store.pool, &theirs).await.unwrap().is_none());
+}
+
+#[tokio::test]
+async fn delete_record_with_no_actor_is_unrestricted() {
+    let e = engine().await;
+    let uid = plain(&e, "local-mode").await;
+    e.act(Action::DeleteRecord { target: uid.clone() }, None)
+        .await
+        .expect("local-no-auth mode (actor = None) is unrestricted");
+    assert!(store::records::get(&e.store.pool, &uid).await.unwrap().is_none());
+}

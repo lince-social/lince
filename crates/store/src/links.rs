@@ -85,6 +85,25 @@ pub async fn links_of_kinds(
     Ok(out)
 }
 
+/// Every link in the store, any kind — backs the links-include `*` wildcard
+/// (Record's "show me ALL of this record's links").
+pub async fn all_links(pool: &SqlitePool) -> Result<Vec<LinkRow>, StoreError> {
+    Ok(sqlx::query(
+        "
+        SELECT l.uid, l.from_uid, l.to_uid, l.kind_uid, c.canonical_name AS kind,
+               l.quantity, l.created_at
+          FROM link l
+          JOIN concept c ON c.uid = l.kind_uid
+         ORDER BY l.created_at, l.uid
+        ",
+    )
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .map(map_link_row)
+    .collect())
+}
+
 pub async fn remove(
     pool: &SqlitePool,
     from_uid: &str,
@@ -134,6 +153,7 @@ fn map_record_row(r: sqlx::sqlite::SqliteRow) -> RecordRow {
         concept_uid: r.get("concept_uid"),
         unit_uid: r.get("unit_uid"),
         place_uid: r.get("place_uid"),
+        organ_uid: r.get("organ_uid"),
     }
 }
 

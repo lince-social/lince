@@ -19,6 +19,12 @@ pub struct RecordRow {
     pub concept_uid: Option<String>,
     pub unit_uid: Option<String>,
     pub place_uid: Option<String>,
+    /// The organ (a `kind='organ'` record) this record originated from —
+    /// `None` means "no known origin" (e.g. created before this column, or
+    /// never stamped). Lets Protein filter records by organ (`organ_eq` /
+    /// `organ_in`) and lets Sync/File Sync select WHAT travels where by
+    /// pointing at a Protein instead of a hardcoded rule.
+    pub organ_uid: Option<String>,
 }
 
 fn map_row(r: sqlx::sqlite::SqliteRow) -> RecordRow {
@@ -32,6 +38,7 @@ fn map_row(r: sqlx::sqlite::SqliteRow) -> RecordRow {
         concept_uid: r.get("concept_uid"),
         unit_uid: r.get("unit_uid"),
         place_uid: r.get("place_uid"),
+        organ_uid: r.get("organ_uid"),
     }
 }
 
@@ -65,6 +72,15 @@ pub async fn create(pool: &SqlitePool, new: NewRecord<'_>) -> Result<RecordRow, 
     .bind(&now)
     .execute(pool)
     .await?;
+    // Stamp the origin organ (this Cell) so Protein/Sync can filter by it
+    // later — centralized here so EVERY create path gets it (threads,
+    // messages, saved Proteins, ...), not just the top-level CreateRecord
+    // action. No local organ yet (early bootstrap, most unit tests, and the
+    // organ-bootstrap insert itself, which bypasses this fn) = no stamp,
+    // origin stays "unknown" rather than erroring.
+    if let Some(organ) = crate::organs::local(pool).await? {
+        set_organ_origin(pool, &uid, Some(&organ.uid)).await?;
+    }
     get(pool, &uid).await.map(|r| r.expect("just inserted"))
 }
 
@@ -97,6 +113,19 @@ pub async fn quantity(pool: &SqlitePool, uid: &str) -> Result<Option<f64>, Store
             .fetch_optional(pool)
             .await?
             .map(|r| r.get::<f64, _>("quantity")),
+    )
+}
+
+/// ISO timestamp a record was created — threads/messages surface this so a
+/// Record-style UI can show "when" without RecordRow carrying it
+/// everywhere (most callers never need it).
+pub async fn created_at(pool: &SqlitePool, uid: &str) -> Result<Option<String>, StoreError> {
+    Ok(
+        sqlx::query("SELECT created_at FROM record WHERE uid = ? AND deleted_at IS NULL")
+            .bind(uid)
+            .fetch_optional(pool)
+            .await?
+            .map(|r| r.get::<String, _>("created_at")),
     )
 }
 
@@ -251,6 +280,27 @@ pub async fn set_concept(
     let now = Utc::now().to_rfc3339();
     let res = sqlx::query("UPDATE record SET concept_uid = ?, updated_at = ? WHERE uid = ?")
         .bind(concept_uid)
+        .bind(&now)
+        .bind(uid)
+        .execute(pool)
+        .await?;
+    if res.rows_affected() == 0 {
+        return Err(sqlx::Error::RowNotFound);
+    }
+    Ok(())
+}
+
+/// Set (or clear, with `None`) the record's origin organ — stamped locally on
+/// creation (the local organ) or carried through Sync (the true origin, so
+/// lineage survives relaying through an intermediate organ).
+pub async fn set_organ_origin(
+    pool: &SqlitePool,
+    uid: &str,
+    organ_uid: Option<&str>,
+) -> Result<(), StoreError> {
+    let now = Utc::now().to_rfc3339();
+    let res = sqlx::query("UPDATE record SET organ_uid = ?, updated_at = ? WHERE uid = ?")
+        .bind(organ_uid)
         .bind(&now)
         .bind(uid)
         .execute(pool)

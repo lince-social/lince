@@ -15,6 +15,7 @@ pub mod checkpoint;
 pub mod effects;
 pub mod error;
 pub mod expiry;
+pub mod file_sync;
 pub mod imagination;
 pub mod karma;
 pub mod senses;
@@ -78,26 +79,37 @@ impl Engine {
     /// signed when a signer is installed (Trust, XI).
     pub async fn append(&self, new: NewFact, now: DateTime<Utc>) -> Result<Vec<Fact>, EngineError> {
         let signer = self.signer.lock().await.clone();
-        let mut committed = Vec::new();
         if let Some(fact) = append::append_one(&self.store, new, now, signer.as_ref()).await? {
-            let _ = self.bus.send(fact.clone());
-            let changed = vec![fact.record_uid.clone()];
-            committed.push(fact);
-            let registry = self.registry.lock().await;
-            let cascade = karma::cascade(
-                &self.store,
-                &registry,
-                changed,
-                &Default::default(),
-                now,
-                signer.as_ref(),
-            )
-            .await?;
-            for f in &cascade {
-                let _ = self.bus.send(f.clone());
-            }
-            committed.extend(cascade);
+            return self.observe_committed_fact(fact, now).await;
         }
+        Ok(Vec::new())
+    }
+
+    /// Publish a Fact that was committed inside a larger semantic transaction,
+    /// then run the same reactive cascade as the normal append path.
+    pub(crate) async fn observe_committed_fact(
+        &self,
+        fact: Fact,
+        now: DateTime<Utc>,
+    ) -> Result<Vec<Fact>, EngineError> {
+        let signer = self.signer.lock().await.clone();
+        let _ = self.bus.send(fact.clone());
+        let changed = vec![fact.record_uid.clone()];
+        let mut committed = vec![fact];
+        let registry = self.registry.lock().await;
+        let cascade = karma::cascade(
+            &self.store,
+            &registry,
+            changed,
+            &Default::default(),
+            now,
+            signer.as_ref(),
+        )
+        .await?;
+        for fact in &cascade {
+            let _ = self.bus.send(fact.clone());
+        }
+        committed.extend(cascade);
         Ok(committed)
     }
 

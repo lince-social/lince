@@ -1,8 +1,8 @@
 //! Frontend tests for the board grouping logic (marquee selection, group
 //! move/resize, group pin, lock persistence). The board JS is written as ES
 //! modules, so each test stages the real files as `.mjs` in a temp dir and
-//! runs node against them - the same node-driven pattern as the trail sand
-//! tests, but with real module imports instead of source concatenation.
+//! runs node against them - the retired trail sand's node-driven pattern,
+//! but with real module imports instead of source concatenation.
 
 use std::{
     fs,
@@ -215,7 +215,7 @@ fn nested_groups_disband_outer_preserves_inner() {
     stage_and_run(
         "nested-groups",
         r#"
-// A kanban sand ships as its own inner group: board + record_info.
+// A kanban sand ships as its own inner group: board + Record.
 let cards = [
   card("kanban", 100, 100, 400, 400),
   card("recinfo", 100, 100, 400, 400),
@@ -234,14 +234,14 @@ assert.strictEqual(byId(cards, "kanban").groupId, "g-kanban");
 assert.strictEqual(byId(cards, "todo").groupId, "g-outer");
 
 // Groupception: disbanding the OUTER group releases todo, but the kanban's
-// inner group (board + record_info) survives.
+// inner group (board + Record) survives.
 cards = disbandGroup(cards, "g-outer");
 assert.deepStrictEqual(groupStackOf(byId(cards, "kanban")), ["g-kanban"]);
 assert.deepStrictEqual(groupStackOf(byId(cards, "recinfo")), ["g-kanban"]);
 assert.deepStrictEqual(groupStackOf(byId(cards, "todo")), []);
 assert.strictEqual(byId(cards, "todo").groupId, null);
 
-// Event scoping: kanban and record_info still share a group; todo does not.
+// Event scoping: kanban and Record still share a group; todo does not.
 assert.ok(sharesGroup(byId(cards, "kanban"), byId(cards, "recinfo")));
 assert.ok(!sharesGroup(byId(cards, "kanban"), byId(cards, "todo")));
 

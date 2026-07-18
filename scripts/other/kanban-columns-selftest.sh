@@ -71,7 +71,17 @@ cat > "$WORK/harness.html" <<'HTML'
   window.__inbound = (obj) => window.__ws._msg({ data: JSON.stringify(obj) });
 
   const patches = [];
-  const metaStore = { cardState: {} };
+  // A kanban card ships with NO driving Protein by default (2026-07-18) — it
+  // subscribes to nothing until the Data panel picks one. Seed the same
+  // shape the sand's own (now-removed) DEFAULT_PROTEIN used to auto-apply so
+  // this test still exercises the real subscribe/render path.
+  const KANBAN_TEST_PROTEIN = {
+    source: "record",
+    where: [{ kind_eq: "plain" }],
+    order: [{ asc: "quantity" }, { asc: "created_at" }],
+    include: { links: { kinds: ["assigned-to", "part-of"], direction: "out" } },
+  };
+  const metaStore = { cardState: { protein: KANBAN_TEST_PROTEIN } };
 
   const frame = document.createElement("iframe");
   frame.className = "package-widget__frame";
@@ -113,6 +123,11 @@ cat > "$WORK/harness.html" <<'HTML'
     const mark = () => { document.title = "RESULT=" + JSON.stringify(results); };
     try {
     await wait(400);
+    // The bridge's own initial render() fires before the iframe finishes
+    // loading (postMessage to a still-loading frame is lost) — re-push the
+    // seeded Protein now that it's up.
+    bridge.syncFrames();
+    await wait(150);
 
     // Feed the driving snapshot + concepts + one saved preset record.
     window.__inbound({ type: "snapshot", id: "card-kanban:kanban", rows: [

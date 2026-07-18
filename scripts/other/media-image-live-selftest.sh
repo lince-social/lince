@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Media image, LIVE end-to-end (2026-07-17) — the real `lince` cell server,
-# the real board page, the real kanban+record_info group, no stubs:
+# the real board page, the real kanban+Record group, no stubs:
 #   upload a real PNG through `POST /host/media` (curl, standing in for the
 #   editor.js file-picker upload — headless chromium cannot drive a native
 #   OS file chooser, so `body-editor-selftest.sh` covers the picker/placeholder
 #   half and this covers the render half) -> seed the kanban group -> "New
 #   task" -> fill a body with `![](<the uploaded /host/media path>)` -> Create
 #   for real -> the SAME shared editor.js renderer runs in both the kanban
-#   card and record_info -> both actually load the image (`naturalWidth > 0`,
+#   card and Record -> both actually load the image (`naturalWidth > 0`,
 #   not just an <img> tag existing — that was the older, weaker check).
 #
 # Requires: chromium + jq on PATH, target/debug/lince (cargo build -p lince).
@@ -57,12 +57,17 @@ case "$IMG_PATH" in
 esac
 
 # Seed the board with the kanban GROUP (same fixture as kanban-live-k0-selftest.sh).
+# A kanban card ships with an EMPTY widgetState (no default Protein,
+# 2026-07-18 — the user must configure one via the Data panel), so this
+# patches one in, the same way a real Data panel edit would.
 curl -sf "$BASE/host/packages/local/group/kanban.lince" > "$WORK/group.json"
 curl -sf "$BASE/host/board/state" > "$WORK/state.json"
 jq -s '
-  (.[0].cards | map(
-    if .id == "card-kanban" then . + {x: 4400, y: 4400, width: 760, height: 560}
-    elif .id == "card-kanban-record-info" then . + {x: 5180, y: 4400, width: 380, height: 560}
+  {source: "record", where: [{kind_eq: "plain"}], order: [{asc: "quantity"}, {asc: "created_at"}],
+   include: {links: {kinds: ["assigned-to", "part-of"], direction: "out"}}} as $protein
+  | (.[0].cards | map(
+    if .id == "card-kanban" then . + {x: 4400, y: 4400, width: 760, height: 560, widgetState: {protein: $protein}}
+    elif .id == "card-kanban-record" then . + {x: 5180, y: 4400, width: 380, height: 560}
     else . end)) as $group
   | .[1]
   | .workspaces[0].cards += $group
@@ -101,7 +106,7 @@ cat > "$HARNESS" <<'HTML'
       return inner && inner.readyState !== "loading" ? inner : null;
     };
     const kb = await poll(() => { const d = sandDoc("card-kanban"); return d && d.querySelector(".col") ? d : null; });
-    const ri = await poll(() => { const d = sandDoc("card-kanban-record-info"); return d && d.getElementById("create") ? d : null; });
+    const ri = await poll(() => { const d = sandDoc("card-kanban-record"); return d && d.getElementById("create") ? d : null; });
     if (!kb || !ri) throw new Error("sands did not render");
 
     kb.getElementById("open-create").click();
@@ -148,7 +153,7 @@ fail=0
 check() { grep -q "\"$1\":true" <<<"$JSON" || { echo "FAIL: $2"; fail=1; }; }
 check kanban_img_present  "the kanban card did not render an <img> for the uploaded media path"
 check kanban_img_loaded   "the kanban card's image did not actually load (naturalWidth was 0)"
-check recinfo_img_present "record_info did not render an <img> for the uploaded media path"
-check recinfo_img_loaded  "record_info's image did not actually load (naturalWidth was 0)"
+check recinfo_img_present "Record did not render an <img> for the uploaded media path"
+check recinfo_img_loaded  "Record's image did not actually load (naturalWidth was 0)"
 
-[ "$fail" -eq 0 ] && echo "PASS: uploaded /host/media image actually renders in both kanban and record_info (shared editor.js renderer)" || exit 1
+[ "$fail" -eq 0 ] && echo "PASS: uploaded /host/media image actually renders in both kanban and Record (shared editor.js renderer)" || exit 1

@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Roles &amp; Permissions</title>
+  <script src="/board/frame.js"></script>
+  <style>
+    /* Roles/users/permission-grant CRUD (2026-07-18) — auth state comes from
+       one Protein subscription and Person candidates from a second, filtered
+       Record subscription. Auth is re-read after every mutating Action since
+       those native SQL tables emit no facts for live invalidation. The engine
+       remains the authority for every permission check. */
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 13px/1.45 system-ui, -apple-system, sans-serif;
+           background: #0d1117; color: #c9d1d9; padding: .75rem; }
+    .head { display: flex; align-items: center; gap: .5rem; margin-bottom: .6rem; }
+    .head h1 { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em;
+               color: #6e7681; margin: 0; flex: 1; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #f85149; }
+    .dot.live { background: #3fb950; }
+    .dot.busy { background: #d29922; animation: pulse 1s ease-in-out infinite; }
+    @keyframes pulse { 50% { opacity: .35; } }
+    .err { color: #f85149; font-size: .72rem; margin-bottom: .5rem; min-height: 1em; }
+    .hint { color: #6e7681; font-size: .72rem; }
+    section { border: 1px solid #21262d; border-radius: 8px; margin-bottom: .6rem; overflow: hidden; }
+    section > h2 { font-size: .68rem; text-transform: uppercase; letter-spacing: .06em;
+                   color: #6e7681; margin: 0; padding: .4rem .6rem; background: #161b22; }
+    .body { padding: .5rem .6rem; display: grid; gap: .5rem; }
+    .role { border: 1px solid #21262d; border-radius: 6px; padding: .4rem .5rem; }
+    .role .name { font-weight: 600; color: #e6edf3; }
+    .grants { display: flex; flex-wrap: wrap; gap: .3rem .7rem; margin-top: .35rem; }
+    .grant { display: flex; align-items: center; gap: .3rem; font-size: .72rem; color: #8b949e; }
+    .grant input { margin: 0; }
+    table { width: 100%; border-collapse: collapse; font-size: .78rem; }
+    th, td { text-align: left; padding: .2rem .3rem; border-bottom: 1px solid #161b22; }
+    th { color: #6e7681; font-size: .68rem; text-transform: uppercase; letter-spacing: .05em; }
+    select, input[type=text], input[type=password] {
+      background: #0d1117; color: #c9d1d9; border: 1px solid #21262d; border-radius: 6px;
+      padding: .2rem .4rem; font: inherit;
+    }
+    .row { display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; }
+    button { border: 1px solid #21262d; border-radius: 6px; background: #161b22;
+             color: #c9d1d9; padding: .25rem .6rem; font-size: .75rem; cursor: pointer; }
+    button:hover { border-color: #1f4b8e; }
+    button:disabled { opacity: .5; cursor: default; }
+    .person-select { width: min(100%, 18rem); }
+    .person-select.unassigned { color: #d29922; }
+    @media (max-width: 620px) {
+      #users-table, #users-table tbody, #users-table tr, #users-table td { display: block; }
+      #users-table thead { display: none; }
+      #users-table tr { padding: .35rem 0; border-bottom: 1px solid #161b22; }
+      #users-table td { border: 0; padding: .18rem .3rem; }
+      #users-table td::before { content: attr(data-label); display: inline-block; width: 5rem;
+                                color: #6e7681; font-size: .68rem; text-transform: uppercase; }
+      .person-select { width: calc(100% - 5.4rem); }
+    }
+  </style>
+</head>
+<body>
+  <div class="head">
+    <h1>Roles &amp; Permissions</h1>
+    <span id="dot" class="dot"></span>
+  </div>
+  <div id="error" class="err"></div>
+
+  <section>
+    <h2>Roles</h2>
+    <div class="body">
+      <div id="roles-list"></div>
+      <div class="row">
+        <input id="role-name" type="text" placeholder="new role name" autocomplete="off" />
+        <button id="role-create">+ New role</button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Users</h2>
+    <div class="body">
+      <table id="users-table">
+        <thead><tr><th>Username</th><th>Name</th><th>Role</th><th>Person</th></tr></thead>
+        <tbody id="users-body"></tbody>
+      </table>
+      <div class="row">
+        <input id="u-username" type="text" placeholder="username" autocomplete="off" />
+        <input id="u-name" type="text" placeholder="display name" autocomplete="off" />
+        <input id="u-password" type="password" placeholder="password" autocomplete="new-password" />
+        <select id="u-role"></select>
+        <button id="u-create">+ New user</button>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const H = window.LinceWidgetHost;
+    const $ = (id) => document.getElementById(id);
+
+    let liveNow = false;
+    let pendingActs = 0;
+    function syncDot() {
+      const dot = $("dot");
+      dot.classList.toggle("busy", pendingActs > 0);
+      dot.classList.toggle("live", liveNow && pendingActs === 0);
+    }
+    H.onLive((live) => { liveNow = live; syncDot(); });
+
+    let roles = [];   // { kind:"role", id, name, permissions: [] }
+    let users = [];   // { kind:"user", id, username, name, role, person }
+    let people = [];  // Ledger Person records available to this viewer
+    let catalog = []; // permission keys ("subject:action")
+    let unsubscribeAuth = null;
+
+    function refresh() {
+      if (typeof unsubscribeAuth === "function") unsubscribeAuth();
+      unsubscribeAuth = H.subscribeProtein("auth", { source: "auth" }, ({ rows }) => {
+        roles = (rows || []).filter((r) => r.kind === "role");
+        users = (rows || []).filter((r) => r.kind === "user");
+        const cat = (rows || []).find((r) => r.kind === "permission_catalog");
+        catalog = cat ? cat.keys || [] : [];
+        render();
+      });
+    }
+
+    H.subscribeProtein("auth-people", {
+      source: "record",
+      where: [{ kind_eq: "person" }],
+      limit: 2000,
+    }, ({ rows }) => {
+      people = (rows || []).filter((row) => row && row.uid);
+      renderUsers();
+    });
+
+    async function act(action) {
+      $("error").textContent = "";
+      pendingActs++; syncDot();
+      try {
+        const outcome = await H.act(action);
+        refresh();
+        return outcome;
+      } catch (err) {
+        $("error").textContent = err && err.message ? err.message : String(err);
+        throw err;
+      } finally {
+        pendingActs--; syncDot();
+      }
+    }
+
+    function groupBySubject(keys) {
+      const groups = new Map();
+      for (const key of keys) {
+        const subject = key.split(":")[0];
+        if (!groups.has(subject)) groups.set(subject, []);
+        groups.get(subject).push(key);
+      }
+      return groups;
+    }
+
+    function renderRoles() {
+      const wrap = $("roles-list");
+      wrap.innerHTML = "";
+      if (!roles.length) {
+        wrap.appendChild(Object.assign(document.createElement("div"), {
+          className: "hint",
+          textContent: "no roles visible — you may lack role:read, or none exist yet",
+        }));
+        return;
+      }
+      for (const role of roles) {
+        const card = document.createElement("div");
+        card.className = "role";
+        card.dataset.role = role.name;
+        const name = document.createElement("div");
+        name.className = "name";
+        name.textContent = role.name;
+        card.appendChild(name);
+
+        const grants = document.createElement("div");
+        grants.className = "grants";
+        const granted = new Set(role.permissions || []);
+        for (const [subject, keys] of groupBySubject(catalog)) {
+          for (const key of keys) {
+            const label = document.createElement("label");
+            label.className = "grant";
+            label.dataset.permission = key;
+            const box = document.createElement("input");
+            box.type = "checkbox";
+            box.checked = granted.has(key);
+            box.addEventListener("change", () => {
+              act({
+                action: box.checked ? "grant-permission" : "revoke-permission",
+                role: role.name,
+                permission: key,
+              }).catch(() => { box.checked = !box.checked; });
+            });
+            label.appendChild(box);
+            label.appendChild(document.createTextNode(key));
+            grants.appendChild(label);
+          }
+        }
+        card.appendChild(grants);
+        wrap.appendChild(card);
+      }
+    }
+
+    function renderRoleOptions(select, current) {
+      select.innerHTML = "";
+      for (const role of roles) {
+        const opt = document.createElement("option");
+        opt.value = role.name;
+        opt.textContent = role.name;
+        select.appendChild(opt);
+      }
+      if (current && [...select.options].some((o) => o.value === current)) {
+        select.value = current;
+      }
+    }
+
+    function renderUsers() {
+      const body = $("users-body");
+      body.innerHTML = "";
+      if (!users.length) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 4;
+        td.className = "hint";
+        td.textContent = "no users visible — you may lack user:read, or none exist yet";
+        tr.appendChild(td);
+        body.appendChild(tr);
+      }
+      for (const user of users) {
+        const tr = document.createElement("tr");
+        tr.dataset.user = user.id;
+        const uname = document.createElement("td");
+        uname.dataset.label = "Username";
+        uname.textContent = user.username;
+        const name = document.createElement("td");
+        name.dataset.label = "Name";
+        name.textContent = user.name;
+        const roleCell = document.createElement("td");
+        roleCell.dataset.label = "Role";
+        const select = document.createElement("select");
+        renderRoleOptions(select, user.role);
+        select.addEventListener("change", () => {
+          act({ action: "assign-role", user: String(user.id), role: select.value })
+            .catch(() => { select.value = user.role; });
+        });
+        roleCell.appendChild(select);
+
+        const personCell = document.createElement("td");
+        personCell.dataset.label = "Person";
+        const personSelect = document.createElement("select");
+        personSelect.className = "person-select";
+        personSelect.setAttribute("aria-label", `Person represented by ${user.username}`);
+
+        const unassigned = document.createElement("option");
+        unassigned.value = "";
+        unassigned.textContent = "Not assigned";
+        unassigned.disabled = Boolean(user.person);
+        personSelect.appendChild(unassigned);
+
+        const assignedElsewhere = new Map(
+          users.filter((candidate) => candidate.person && candidate.id !== user.id)
+            .map((candidate) => [candidate.person, candidate.username]),
+        );
+        const visiblePeople = new Map(people.map((person) => [person.uid, person]));
+        if (user.person && !visiblePeople.has(user.person)) {
+          visiblePeople.set(user.person, {
+            uid: user.person,
+            head: user.person_head,
+            slug: user.person_slug,
+          });
+        }
+        for (const person of [...visiblePeople.values()].sort((a, b) => {
+          const aLabel = a.head || a.slug || a.uid;
+          const bLabel = b.head || b.slug || b.uid;
+          return aLabel.localeCompare(bLabel);
+        })) {
+          const owner = assignedElsewhere.get(person.uid);
+          const option = document.createElement("option");
+          option.value = person.uid;
+          option.textContent = `${person.head || person.slug || person.uid}${owner ? ` · ${owner}` : ""}`;
+          option.disabled = Boolean(owner);
+          personSelect.appendChild(option);
+        }
+        personSelect.value = user.person || "";
+        personSelect.classList.toggle("unassigned", !user.person);
+        personSelect.addEventListener("change", () => {
+          const person = personSelect.value;
+          if (!person) return;
+          personSelect.disabled = true;
+          act({ action: "assign-user-person", user: String(user.id), person })
+            .catch(() => {
+              personSelect.disabled = false;
+              personSelect.value = user.person || "";
+            });
+        });
+        personCell.appendChild(personSelect);
+
+        tr.appendChild(uname);
+        tr.appendChild(name);
+        tr.appendChild(roleCell);
+        tr.appendChild(personCell);
+        body.appendChild(tr);
+      }
+      renderRoleOptions($("u-role"), null);
+    }
+
+    function render() {
+      renderRoles();
+      renderUsers();
+    }
+
+    $("role-create").addEventListener("click", () => {
+      const name = $("role-name").value.trim();
+      if (!name) return;
+      act({ action: "create-role", name }).then(() => { $("role-name").value = ""; }).catch(() => {});
+    });
+    $("role-name").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); $("role-create").click(); }
+    });
+
+    $("u-create").addEventListener("click", () => {
+      const username = $("u-username").value.trim();
+      const name = $("u-name").value.trim();
+      const password = $("u-password").value;
+      const role = $("u-role").value;
+      if (!username || !password || !role) return;
+      act({ action: "create-user", username, name: name || username, password, role })
+        .then(() => {
+          $("u-username").value = "";
+          $("u-name").value = "";
+          $("u-password").value = "";
+        })
+        .catch(() => {});
+    });
+
+    refresh();
+  </script>
+</body>
+</html>

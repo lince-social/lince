@@ -30,7 +30,7 @@ pub struct InstalledPackageSummary {
     pub initial_height: u8,
     pub requires_server: bool,
     pub permissions: Vec<String>,
-    // Sand GROUPS (e.g. kanban ships as board + record_info) surface as a single
+    // Sand GROUPS (e.g. kanban ships as board + Record) surface as a single
     // catalog entry with `is_group = true`; adding it drops the whole group.
     // `member_count` is how many sub-sands the group carries.
     #[serde(default)]
@@ -51,7 +51,7 @@ impl PackageCatalogStore {
             format!("Nao consegui criar a pasta ~/.config/lince/web/sand: {error}")
         })?;
         sand::render_official_widgets(&dir)?;
-        // Sand-as-group archives (e.g. kanban = board + record_info) are emitted
+        // Sand-as-group archives (e.g. kanban = board + Record) are emitted
         // alongside the single-sand packages (Stage 8b, Phase 3).
         sand::render_official_groups(&dir)?;
 
@@ -92,7 +92,7 @@ impl PackageCatalogStore {
         // A group named the same as a single sand (kanban.lince vs kanban.html,
         // both id "kanban") REPLACES that single sand — so "Kanban" in the
         // catalog is the group, per the add-as-group default. Members that are
-        // reusable on their own (e.g. record_info) keep their own single entry.
+        // reusable on their own (e.g. Record) keep their own single entry.
         let group_ids: std::collections::HashSet<String> =
             groups.iter().map(|group| group.id.clone()).collect();
         singles.retain(|single| !group_ids.contains(&single.id));
@@ -158,7 +158,7 @@ fn summary_from_group(filename: &str, bytes: &[u8]) -> Result<InstalledPackageSu
     let member_count = imported.workspace.cards.len();
 
     // The primary member is the lowest z-order card (the base layer, e.g. the
-    // kanban board under its record_info). Fall back to the first package.
+    // kanban board under its Record). Fall back to the first package.
     let primary = imported
         .workspace
         .cards

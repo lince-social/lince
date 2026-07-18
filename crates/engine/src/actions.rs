@@ -161,6 +161,31 @@ pub enum Action {
         #[serde(default)]
         require_confirmation: bool,
     },
+    /// Create a complete, reviewed manual draft in one typed Action. Every
+    /// token is resolved and every term is validated before the store commits
+    /// the transfer record, sidecar, parties, and promises together.
+    CreateTransferDraft {
+        slug: Option<String>,
+        head: String,
+        #[serde(default = "default_typed_agreement")]
+        agreement: nucleus::transfer::AgreementType,
+        agreement_pct: Option<u8>,
+        #[serde(default)]
+        satiation: TransferSatiation,
+        parent: Option<String>,
+        source: Option<String>,
+        #[serde(default)]
+        visibility: TransferVisibility,
+        max_proximity: Option<u32>,
+        #[serde(default)]
+        reserve_default: TransferReservePoint,
+        #[serde(default)]
+        require_confirmation: bool,
+        #[serde(default)]
+        parties: Vec<String>,
+        #[serde(default)]
+        promises: Vec<TransferPromiseInput>,
+    },
     /// Record a delivery/receipt confirmation as an annotation fact (VIII.3).
     ConfirmTransfer {
         transfer: String,
@@ -284,6 +309,113 @@ pub enum Action {
         a: String,
         b: String,
     },
+    /// The permission/role/user system (2026-07-18): native SQL state
+    /// (`store::auth`), NOT Ledger records — no facts, no `created` uid
+    /// convention beyond the new row's numeric id. Each variant is gated on
+    /// the matching key already in `utils::auth::ALL_PERMISSIONS`
+    /// (`role:create`, `user:create`, `user:assign_role`, `permission:assign`).
+    CreateRole {
+        name: String,
+    },
+    CreateUser {
+        username: String,
+        name: String,
+        password: String,
+        /// Role name — must already exist (`CreateRole` first); this action
+        /// does not silently create one (that's `role:create`'s job alone).
+        role: String,
+    },
+    AssignRole {
+        /// The target `app_user.id`, as a string (same convention as `actor`).
+        user: String,
+        role: String,
+    },
+    /// Establish which Ledger Person an authenticated app user may represent.
+    /// This is an administrative identity decision, not a client-supplied
+    /// Transfer field.
+    AssignUserPerson {
+        user: String,
+        person: String,
+    },
+    GrantPermission {
+        role: String,
+        /// `"subject:action"`, e.g. `"record:delete_own"`.
+        permission: String,
+    },
+    RevokePermission {
+        role: String,
+        permission: String,
+    },
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TransferSatiation {
+    #[default]
+    None,
+    FirstCompletes,
+}
+
+impl TransferSatiation {
+    fn as_option(self) -> Option<String> {
+        match self {
+            Self::None => None,
+            Self::FirstCompletes => Some("first_completes".into()),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TransferVisibility {
+    #[default]
+    Hidden,
+    Public,
+    Proximity,
+}
+
+impl TransferVisibility {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Hidden => "hidden",
+            Self::Public => "public",
+            Self::Proximity => "proximity",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TransferReservePoint {
+    #[default]
+    None,
+    Proposed,
+    Agreed,
+    Active,
+}
+
+impl TransferReservePoint {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::Proposed => "proposed",
+            Self::Agreed => "agreed",
+            Self::Active => "active",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TransferPromiseInput {
+    pub record: String,
+    pub party: String,
+    pub delta: f64,
+    #[serde(default)]
+    pub window_end: Option<String>,
+    #[serde(default)]
+    pub condition: Option<String>,
+    #[serde(default)]
+    pub reserve_from: Option<TransferReservePoint>,
 }
 
 /// One consequence in the rule-CRUD wire form.
@@ -346,6 +478,10 @@ mod double_option {
 
 fn default_agreement() -> String {
     "individual".into()
+}
+
+fn default_typed_agreement() -> nucleus::transfer::AgreementType {
+    nucleus::transfer::AgreementType::Individual
 }
 
 #[derive(Debug, Default)]
@@ -453,6 +589,7 @@ impl Engine {
             }
             Action::DeleteRecord { target } => {
                 let uid = self.resolve(&target).await?;
+                self.check_delete_permission(&uid, actor.as_deref()).await?;
                 let old_slug = store::records::get(&self.store.pool, &uid)
                     .await?
                     .and_then(|r| r.slug);
@@ -859,12 +996,33 @@ impl Engine {
                 }
             }
             Action::EditPromiseDelta { promise, delta } => {
+                if !delta.is_finite() || delta == 0.0 {
+                    return Err(EngineError::Consequence(
+                        "promise delta must be finite and non-zero".into(),
+                    ));
+                }
                 let row = store::misc::get_promise(&self.store.pool, &promise)
                     .await?
                     .ok_or_else(|| EngineError::UnknownRecord(promise.clone()))?;
+                if let Some(transfer_uid) = row.transfer_uid.as_deref() {
+                    self.require_transfer_editor(transfer_uid, actor.as_deref())
+                        .await?;
+                }
                 store::misc::set_promise_delta(&self.store.pool, &promise, delta).await?;
                 if let Some(transfer_uid) = row.transfer_uid {
                     store::transfers::invalidate_agreements(&self.store.pool, &transfer_uid)
+                        .await?;
+                    outcome.facts = self
+                        .annotate(
+                            transfer_uid,
+                            actor,
+                            serde_json::json!({
+                                "promise": promise,
+                                "action": "edit-promise-delta",
+                                "delta": delta,
+                            }),
+                            now,
+                        )
                         .await?;
                 }
             }
@@ -874,12 +1032,63 @@ impl Engine {
                 agreement,
                 agreement_pct,
                 satiation,
-                source,
+                mut source,
                 reserve_default,
                 require_confirmation,
             } => {
-                outcome.created = Some(
-                    store::transfers::create(
+                if head.trim().is_empty() || head.chars().count() > 200 {
+                    return Err(EngineError::Consequence(
+                        "transfer title must contain 1 to 200 characters".into(),
+                    ));
+                }
+                let agreement_kind = nucleus::transfer::AgreementType::parse(&agreement)
+                    .ok_or_else(|| {
+                        EngineError::Consequence(format!(
+                            "unknown transfer agreement `{agreement}`"
+                        ))
+                    })?;
+                match agreement_kind {
+                    nucleus::transfer::AgreementType::Percentage => {
+                        if !agreement_pct.is_some_and(|pct| (1..=100).contains(&pct)) {
+                            return Err(EngineError::Consequence(
+                                "percentage agreement requires a threshold from 1 to 100".into(),
+                            ));
+                        }
+                    }
+                    _ if agreement_pct.is_some() => {
+                        return Err(EngineError::Consequence(
+                            "agreement_pct is valid only for percentage agreement".into(),
+                        ));
+                    }
+                    _ => {}
+                }
+                if satiation
+                    .as_deref()
+                    .is_some_and(|value| value != "first_completes")
+                {
+                    return Err(EngineError::Consequence(
+                        "satiation must be `first_completes` or omitted".into(),
+                    ));
+                }
+                if satiation.as_deref() == Some("first_completes") && source.is_none() {
+                    return Err(EngineError::Consequence(
+                        "first_completes requires a source record".into(),
+                    ));
+                }
+                if reserve_default.as_deref().is_some_and(|value| {
+                    !matches!(value, "none" | "proposed" | "agreed" | "active")
+                }) {
+                    return Err(EngineError::Consequence(
+                        "reserve_default must be none, proposed, agreed, active, or omitted"
+                            .into(),
+                    ));
+                }
+                if let Some(token) = source.as_deref() {
+                    source = Some(self.resolve(token).await?);
+                }
+                let creator_person = self.require_transfer_creator(actor.as_deref()).await?;
+                let visibility_actor = actor.clone();
+                let transfer = store::transfers::create(
                         &self.store.pool,
                         store::transfers::NewTransfer {
                             slug: slug.as_deref(),
@@ -892,8 +1101,264 @@ impl Engine {
                             require_confirmation,
                         },
                     )
-                    .await?,
-                );
+                    .await?;
+                if let Some(person) = creator_person {
+                    store::transfers::add_party(&self.store.pool, &transfer, &person).await?;
+                }
+                if let Some(subject) = visibility_actor.as_deref() {
+                    store::visibility::grant(
+                        &self.store.pool,
+                        "actor",
+                        Some(subject),
+                        &transfer,
+                    )
+                    .await?;
+                }
+                outcome.facts = self
+                    .append(
+                        NewFact {
+                            actor_uid: actor,
+                            ..NewFact::quantity(
+                                transfer.clone(),
+                                1.0,
+                                Cause::user_edit(),
+                            )
+                        },
+                        now,
+                    )
+                    .await?;
+                outcome.created = Some(transfer);
+            }
+            Action::CreateTransferDraft {
+                slug,
+                head,
+                agreement,
+                agreement_pct,
+                satiation,
+                parent,
+                source,
+                visibility,
+                max_proximity,
+                reserve_default,
+                require_confirmation,
+                parties,
+                promises,
+            } => {
+                let creator_person = self.require_transfer_creator(actor.as_deref()).await?;
+                let visibility_actor = actor.clone();
+                let head = head.trim().to_string();
+                if head.is_empty() || head.chars().count() > 200 {
+                    return Err(EngineError::Consequence(
+                        "transfer title must contain 1 to 200 characters".into(),
+                    ));
+                }
+                let slug = slug
+                    .map(|value| value.trim().to_string())
+                    .filter(|value| !value.is_empty());
+                if let Some(value) = slug.as_deref() {
+                    if !nucleus::valid_slug(value) {
+                        return Err(EngineError::Consequence(format!(
+                            "invalid transfer slug `{value}`"
+                        )));
+                    }
+                }
+
+                match agreement {
+                    nucleus::transfer::AgreementType::Percentage => {
+                        if !agreement_pct.is_some_and(|pct| (1..=100).contains(&pct)) {
+                            return Err(EngineError::Consequence(
+                                "percentage agreement requires a threshold from 1 to 100".into(),
+                            ));
+                        }
+                    }
+                    _ if agreement_pct.is_some() => {
+                        return Err(EngineError::Consequence(
+                            "agreement_pct is valid only for percentage agreement".into(),
+                        ));
+                    }
+                    _ => {}
+                }
+                match visibility {
+                    TransferVisibility::Proximity => {
+                        if !max_proximity.is_some_and(|value| value > 0) {
+                            return Err(EngineError::Consequence(
+                                "proximity visibility requires max_proximity greater than zero"
+                                    .into(),
+                            ));
+                        }
+                    }
+                    _ if max_proximity.is_some() => {
+                        return Err(EngineError::Consequence(
+                            "max_proximity is valid only for proximity visibility".into(),
+                        ));
+                    }
+                    _ => {}
+                }
+                if (parties.is_empty() && creator_person.is_none()) || parties.len() > 64 {
+                    return Err(EngineError::Consequence(
+                        "a transfer draft requires 1 to 64 parties".into(),
+                    ));
+                }
+                if promises.is_empty() || promises.len() > 256 {
+                    return Err(EngineError::Consequence(
+                        "a transfer draft requires 1 to 256 promises".into(),
+                    ));
+                }
+
+                let parent_uid = match parent.as_deref().map(str::trim).filter(|v| !v.is_empty()) {
+                    Some(token) => {
+                        let uid = self.resolve(token).await?;
+                        let row = store::records::get(&self.store.pool, &uid)
+                            .await?
+                            .ok_or_else(|| EngineError::UnknownRecord(uid.clone()))?;
+                        if row.kind != RecordKind::Transfer.as_str() {
+                            return Err(EngineError::Consequence(
+                                "a transfer parent must be another transfer".into(),
+                            ));
+                        }
+                        Some(uid)
+                    }
+                    None => None,
+                };
+                let source_uid = match source.as_deref().map(str::trim).filter(|v| !v.is_empty()) {
+                    Some(token) => Some(self.resolve(token).await?),
+                    None => None,
+                };
+                if matches!(satiation, TransferSatiation::FirstCompletes)
+                    && source_uid.is_none()
+                {
+                    return Err(EngineError::Consequence(
+                        "first_completes requires a source record shared with its siblings".into(),
+                    ));
+                }
+
+                let mut people = Vec::with_capacity(parties.len());
+                let mut seen_people = std::collections::HashSet::new();
+                for token in parties {
+                    let person_uid = self.resolve(token.trim()).await?;
+                    let row = store::records::get(&self.store.pool, &person_uid)
+                        .await?
+                        .ok_or_else(|| EngineError::UnknownRecord(person_uid.clone()))?;
+                    if row.kind != RecordKind::Person.as_str() {
+                        return Err(EngineError::Consequence(format!(
+                            "transfer party `{}` is not a Person record",
+                            row.slug.as_deref().unwrap_or(&person_uid)
+                        )));
+                    }
+                    if !seen_people.insert(person_uid.clone()) {
+                        return Err(EngineError::Consequence(
+                            "the same Person cannot be added twice".into(),
+                        ));
+                    }
+                    people.push(person_uid);
+                }
+                if let Some(person_uid) = creator_person {
+                    if seen_people.insert(person_uid.clone()) {
+                        people.insert(0, person_uid);
+                    }
+                }
+                if people.len() > 64 {
+                    return Err(EngineError::Consequence(
+                        "a transfer draft supports at most 64 parties".into(),
+                    ));
+                }
+
+                let mut draft_promises = Vec::with_capacity(promises.len());
+                for input in promises {
+                    if !input.delta.is_finite() || input.delta == 0.0 {
+                        return Err(EngineError::Consequence(
+                            "every promise delta must be finite and non-zero".into(),
+                        ));
+                    }
+                    let record_uid = self.resolve(input.record.trim()).await?;
+                    let person_uid = self.resolve(input.party.trim()).await?;
+                    if !seen_people.contains(&person_uid) {
+                        return Err(EngineError::Consequence(
+                            "every promise party must be included in the reviewed party list"
+                                .into(),
+                        ));
+                    }
+                    let window_end = input
+                        .window_end
+                        .map(|value| value.trim().to_string())
+                        .filter(|value| !value.is_empty());
+                    if let Some(value) = window_end.as_deref() {
+                        let parsed = DateTime::parse_from_rfc3339(value).map_err(|_| {
+                            EngineError::Consequence(format!(
+                                "promise window `{value}` must be an RFC3339 date and time"
+                            ))
+                        })?;
+                        if parsed.with_timezone(&Utc) <= now {
+                            return Err(EngineError::Consequence(
+                                "promise window must end in the future".into(),
+                            ));
+                        }
+                    }
+                    let condition = input
+                        .condition
+                        .map(|value| value.trim().to_string())
+                        .filter(|value| !value.is_empty());
+                    if let Some(value) = condition.as_deref() {
+                        nucleus::expr::Expr::parse(value).map_err(|error| {
+                            EngineError::Consequence(format!(
+                                "invalid promise condition: {error}"
+                            ))
+                        })?;
+                    }
+                    draft_promises.push(store::transfers::DraftPromise {
+                        record_uid,
+                        person_uid,
+                        delta: input.delta,
+                        window_end,
+                        condition,
+                        reserve_from: input
+                            .reserve_from
+                            .unwrap_or(reserve_default)
+                            .as_str()
+                            .into(),
+                    });
+                }
+                if matches!(agreement, nucleus::transfer::AgreementType::Dependency)
+                    && !draft_promises.iter().any(|promise| promise.condition.is_some())
+                {
+                    return Err(EngineError::Consequence(
+                        "dependency agreement requires at least one promise condition".into(),
+                    ));
+                }
+
+                let organ_uid = store::organs::local(&self.store.pool)
+                    .await?
+                    .map(|organ| organ.uid);
+                let signer = self.signer.lock().await.clone();
+                let fact_actor = actor
+                    .clone()
+                    .or_else(|| signer.as_ref().map(|value| value.actor_uid.clone()));
+                let created = store::transfers::create_draft(
+                    &self.store.pool,
+                    store::transfers::NewTransferDraft {
+                        slug,
+                        head,
+                        agreement_type: agreement.as_str().into(),
+                        agreement_pct: agreement_pct.map(i64::from),
+                        satiation: satiation.as_option(),
+                        parent_uid,
+                        source_uid,
+                        visibility: visibility.as_str().into(),
+                        max_proximity: max_proximity.map(i64::from),
+                        reserve_default: reserve_default.as_str().into(),
+                        require_confirmation,
+                        people,
+                        promises: draft_promises,
+                        organ_uid,
+                    },
+                    now,
+                    fact_actor,
+                    visibility_actor,
+                    |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+                )
+                .await?;
+                outcome.facts = self.observe_committed_fact(created.fact, now).await?;
+                outcome.created = Some(created.transfer_uid);
             }
             Action::ConfirmTransfer {
                 transfer,
@@ -905,6 +1370,8 @@ impl Engine {
                     )));
                 }
                 let transfer = self.resolve(&transfer).await?;
+                self.require_transfer_participant(&transfer, actor.as_deref())
+                    .await?;
                 outcome.facts = self
                     .append(
                         NewFact {
@@ -922,11 +1389,37 @@ impl Engine {
                     )
                     .await?;
             }
-            Action::AddParty { transfer, actor } => {
+            Action::AddParty {
+                transfer,
+                actor: person,
+            } => {
                 let transfer = self.resolve(&transfer).await?;
-                let actor = self.resolve(&actor).await?;
-                outcome.created =
-                    Some(store::transfers::add_party(&self.store.pool, &transfer, &actor).await?);
+                self.require_transfer_editor(&transfer, actor.as_deref())
+                    .await?;
+                let person = self.resolve(&person).await?;
+                let actor_record = store::records::get(&self.store.pool, &person)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(person.clone()))?;
+                if actor_record.kind != RecordKind::Person.as_str() {
+                    return Err(EngineError::Consequence(
+                        "transfer parties must be person records".into(),
+                    ));
+                }
+                let party =
+                    store::transfers::add_party(&self.store.pool, &transfer, &person).await?;
+                outcome.facts = self
+                    .annotate(
+                        transfer,
+                        actor,
+                        serde_json::json!({
+                            "action": "add-party",
+                            "party": party,
+                            "person": person,
+                        }),
+                        now,
+                    )
+                    .await?;
+                outcome.created = Some(party);
             }
             Action::AddPromiseToTransfer {
                 transfer,
@@ -936,25 +1429,77 @@ impl Engine {
                 window_end,
                 condition,
             } => {
+                if !delta.is_finite() || delta == 0.0 {
+                    return Err(EngineError::Consequence(
+                        "promise delta must be finite and non-zero".into(),
+                    ));
+                }
                 let transfer = self.resolve(&transfer).await?;
+                self.require_transfer_editor(&transfer, actor.as_deref())
+                    .await?;
                 let record = self.resolve(&record).await?;
                 let party = self.resolve(&party).await?;
-                outcome.created = Some(
-                    store::misc::insert_promise(
+                let party_record = store::records::get(&self.store.pool, &party)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(party.clone()))?;
+                if party_record.kind != RecordKind::Person.as_str() {
+                    return Err(EngineError::Consequence(
+                        "promise parties must be person records".into(),
+                    ));
+                }
+                let window_end = window_end
+                    .map(|value| value.trim().to_string())
+                    .filter(|value| !value.is_empty());
+                if let Some(value) = window_end.as_deref() {
+                    let parsed = DateTime::parse_from_rfc3339(value).map_err(|_| {
+                        EngineError::Consequence(format!(
+                            "promise window `{value}` must be an RFC3339 date and time"
+                        ))
+                    })?;
+                    if parsed.with_timezone(&Utc) <= now {
+                        return Err(EngineError::Consequence(
+                            "promise window must end in the future".into(),
+                        ));
+                    }
+                }
+                let condition = condition
+                    .map(|value| value.trim().to_string())
+                    .filter(|value| !value.is_empty());
+                if let Some(value) = condition.as_deref() {
+                    nucleus::expr::Expr::parse(value).map_err(|error| {
+                        EngineError::Consequence(format!(
+                            "invalid promise condition: {error}"
+                        ))
+                    })?;
+                }
+                let promise = store::misc::insert_promise(
                         &self.store.pool,
                         store::misc::NewPromise {
-                            record_uid: Some(record),
+                            record_uid: Some(record.clone()),
                             delta,
                             window_end,
-                            party_uid: Some(party),
+                            party_uid: Some(party.clone()),
                             state: Some(PromiseState::Proposed),
                             condition,
-                            transfer_uid: Some(transfer),
+                            transfer_uid: Some(transfer.clone()),
                             ..Default::default()
                         },
                     )
-                    .await?,
-                );
+                    .await?;
+                outcome.facts = self
+                    .annotate_many(
+                        vec![transfer, record],
+                        actor,
+                        serde_json::json!({
+                            "action": "add-promise-to-transfer",
+                            "promise": promise,
+                            "party": party,
+                            "delta": delta,
+                        }),
+                        now,
+                    )
+                    .await?;
+                outcome.created = Some(promise);
             }
             Action::AgreeTransfer {
                 transfer,
@@ -967,11 +1512,26 @@ impl Engine {
                     )));
                 }
                 let transfer = self.resolve(&transfer).await?;
+                self.require_transfer_party(&transfer, &party, actor.as_deref())
+                    .await?;
+                let party_actor = store::transfers::party_actor(
+                    &self.store.pool,
+                    &transfer,
+                    &party,
+                )
+                .await?
+                .ok_or_else(|| {
+                    EngineError::Consequence(
+                        "agreement party does not belong to this transfer".into(),
+                    )
+                })?;
                 store::transfers::set_agreement(&self.store.pool, &transfer, &party, level).await?;
                 // level 2 commits the party: its proposed promises become agreed
                 if level == 2 {
                     for p in store::transfers::promises_of(&self.store.pool, &transfer).await? {
-                        if p.state == PromiseState::Proposed {
+                        if p.state == PromiseState::Proposed
+                            && p.party_uid.as_deref() == Some(party_actor.as_str())
+                        {
                             store::misc::set_promise_state(
                                 &self.store.pool,
                                 &p.uid,
@@ -981,15 +1541,46 @@ impl Engine {
                         }
                     }
                 }
+                outcome.facts = self
+                    .annotate(
+                        transfer,
+                        actor,
+                        serde_json::json!({
+                            "action": "agree-transfer",
+                            "party": party,
+                            "person": party_actor,
+                            "level": level,
+                        }),
+                        now,
+                    )
+                    .await?;
             }
             Action::ActivateTransfer { transfer } => {
                 let transfer = self.resolve(&transfer).await?;
-                crate::transfer::activate_promises(&self.store, &transfer).await?;
+                self.require_transfer_editor(&transfer, actor.as_deref())
+                    .await?;
+                let activated = crate::transfer::activate_promises(&self.store, &transfer).await?;
+                outcome.facts = self
+                    .annotate(
+                        transfer,
+                        actor,
+                        serde_json::json!({
+                            "action": "activate-transfer",
+                            "activated_promises": activated,
+                        }),
+                        now,
+                    )
+                    .await?;
             }
-            Action::SettleTransfer { transfer, actor } => {
+            Action::SettleTransfer {
+                transfer,
+                actor: person,
+            } => {
                 let transfer = self.resolve(&transfer).await?;
-                let actor = self.resolve(&actor).await?;
-                outcome.facts = self.settle_all_local(&transfer, &actor, now).await?;
+                let person = self.resolve(&person).await?;
+                self.require_transfer_person(&transfer, &person, actor.as_deref())
+                    .await?;
+                outcome.facts = self.settle_all_local(&transfer, &person, now).await?;
             }
             Action::SetPlace {
                 target,
@@ -1278,6 +1869,86 @@ impl Engine {
                 store::concepts::declare_equivalence(&self.store.pool, &a, &b, actor.as_deref())
                     .await?;
             }
+            Action::CreateRole { name } => {
+                self.require_permission(actor.as_deref(), "role:create").await?;
+                let role_id = store::auth::ensure_role(&self.store.pool, &name).await?;
+                outcome.created = Some(role_id.to_string());
+            }
+            Action::CreateUser { username, name, password, role } => {
+                self.require_permission(actor.as_deref(), "user:create").await?;
+                let role_id = store::auth::role_by_name(&self.store.pool, &role)
+                    .await?
+                    .ok_or_else(|| EngineError::Consequence(format!("unknown role `{role}`")))?;
+                let password_hash = utils::auth::hash_password(&password).map_err(EngineError::Io)?;
+                let user_id = store::auth::create_user(
+                    &self.store.pool,
+                    &name,
+                    &username,
+                    &password_hash,
+                    role_id,
+                )
+                .await?;
+                outcome.created = Some(user_id.to_string());
+            }
+            Action::AssignRole { user, role } => {
+                self.require_permission(actor.as_deref(), "user:assign_role").await?;
+                let user_id: i64 = user
+                    .parse()
+                    .map_err(|_| EngineError::Consequence(format!("bad user id `{user}`")))?;
+                let role_id = store::auth::role_by_name(&self.store.pool, &role)
+                    .await?
+                    .ok_or_else(|| EngineError::Consequence(format!("unknown role `{role}`")))?;
+                store::auth::set_user_role(&self.store.pool, user_id, role_id).await?;
+            }
+            Action::AssignUserPerson { user, person } => {
+                self.require_permission(actor.as_deref(), "user:assign_person")
+                    .await?;
+                let user_id: i64 = user
+                    .parse()
+                    .map_err(|_| EngineError::Consequence(format!("bad user id `{user}`")))?;
+                if store::auth::user_by_id(&self.store.pool, user_id)
+                    .await?
+                    .is_none()
+                {
+                    return Err(EngineError::Consequence(format!(
+                        "unknown user `{user}`"
+                    )));
+                }
+                let person = self.resolve(&person).await?;
+                let record = store::records::get(&self.store.pool, &person)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(person.clone()))?;
+                if record.kind != RecordKind::Person.as_str() {
+                    return Err(EngineError::Consequence(
+                        "an app user can only be assigned to a person record".into(),
+                    ));
+                }
+                store::auth::set_user_person(&self.store.pool, user_id, &person).await?;
+            }
+            Action::GrantPermission { role, permission } => {
+                self.require_permission(actor.as_deref(), "permission:assign").await?;
+                let (subject, action_name) = permission
+                    .split_once(':')
+                    .ok_or_else(|| EngineError::Consequence(format!("bad permission `{permission}`")))?;
+                let role_id = store::auth::role_by_name(&self.store.pool, &role)
+                    .await?
+                    .ok_or_else(|| EngineError::Consequence(format!("unknown role `{role}`")))?;
+                let permission_id =
+                    store::auth::ensure_permission(&self.store.pool, subject, action_name).await?;
+                store::auth::grant(&self.store.pool, role_id, permission_id).await?;
+            }
+            Action::RevokePermission { role, permission } => {
+                self.require_permission(actor.as_deref(), "permission:assign").await?;
+                let (subject, action_name) = permission
+                    .split_once(':')
+                    .ok_or_else(|| EngineError::Consequence(format!("bad permission `{permission}`")))?;
+                let role_id = store::auth::role_by_name(&self.store.pool, &role)
+                    .await?
+                    .ok_or_else(|| EngineError::Consequence(format!("unknown role `{role}`")))?;
+                let permission_id =
+                    store::auth::ensure_permission(&self.store.pool, subject, action_name).await?;
+                store::auth::revoke(&self.store.pool, role_id, permission_id).await?;
+            }
         }
         Ok(outcome)
     }
@@ -1288,6 +1959,195 @@ impl Engine {
             .await?
             .map(|r| r.uid)
             .ok_or_else(|| EngineError::UnknownRecord(token.to_string()))
+    }
+
+    /// Resolve an actor id to the `app_user` it names. Every permission check
+    /// goes through this — a `Some` actor that doesn't resolve to a real user
+    /// (stale JWT, deleted account) is denied rather than silently treated as
+    /// local, and it's the one place that parses the actor-id-as-string
+    /// convention shared with `created_by`/provenance.
+    async fn actor_user(&self, actor: &str) -> Result<store::auth::AuthUser, EngineError> {
+        let user_id: i64 = actor
+            .parse()
+            .map_err(|_| EngineError::Forbidden("unrecognized actor".into()))?;
+        store::auth::user_by_id(&self.store.pool, user_id)
+            .await?
+            .ok_or_else(|| EngineError::Forbidden("unrecognized actor".into()))
+    }
+
+    /// `actor == None` is the local, no-auth Cell — unrestricted, matching
+    /// every other action's local-mode convention. A `Some` actor must hold
+    /// `permission` (a `"subject:action"` key from `utils::auth::ALL_
+    /// PERMISSIONS`) on their role.
+    async fn require_permission(
+        &self,
+        actor: Option<&str>,
+        permission: &str,
+    ) -> Result<(), EngineError> {
+        let Some(actor) = actor else {
+            return Ok(());
+        };
+        let user = self.actor_user(actor).await?;
+        if user.permissions.iter().any(|p| p == permission) {
+            return Ok(());
+        }
+        Err(EngineError::Forbidden(format!("missing {permission} permission")))
+    }
+
+    /// Resolve the authenticated app user to the Person they are allowed to
+    /// represent. Local no-auth mode stays trusted and returns `None`; an
+    /// authenticated session without an explicit binding is blocked instead
+    /// of accepting a Person uid supplied by the client.
+    async fn actor_person(&self, actor: Option<&str>) -> Result<Option<String>, EngineError> {
+        let Some(actor) = actor else {
+            return Ok(None);
+        };
+        let user = self.actor_user(actor).await?;
+        store::auth::person_for_user(&self.store.pool, user.id)
+            .await?
+            .map(Some)
+            .ok_or_else(|| {
+                EngineError::Forbidden(
+                    "authenticated user has no assigned person identity".into(),
+                )
+            })
+    }
+
+    /// Creation needs both the role grant and a social identity. The returned
+    /// Person is inserted as the creator's initial Transfer party.
+    async fn require_transfer_creator(
+        &self,
+        actor: Option<&str>,
+    ) -> Result<Option<String>, EngineError> {
+        self.require_permission(actor, "transfer:create").await?;
+        self.actor_person(actor).await
+    }
+
+    /// Terms may be edited by the authenticated creator or by a represented
+    /// participant (counteroffers). Permission remains an independent gate.
+    async fn require_transfer_editor(
+        &self,
+        transfer_uid: &str,
+        actor: Option<&str>,
+    ) -> Result<(), EngineError> {
+        let Some(actor) = actor else {
+            return Ok(());
+        };
+        self.require_permission(Some(actor), "transfer:update").await?;
+        let person = self.actor_person(Some(actor)).await?.expect("authenticated actor");
+        if store::facts::creator_uid(&self.store.pool, transfer_uid)
+            .await?
+            .as_deref()
+            == Some(actor)
+        {
+            return Ok(());
+        }
+        if store::transfers::party_for_actor(&self.store.pool, transfer_uid, &person)
+            .await?
+            .is_some()
+        {
+            return Ok(());
+        }
+        Err(EngineError::Forbidden(
+            "transfer update requires its creator or a participant".into(),
+        ))
+    }
+
+    async fn require_transfer_participant(
+        &self,
+        transfer_uid: &str,
+        actor: Option<&str>,
+    ) -> Result<(), EngineError> {
+        let Some(actor) = actor else {
+            return Ok(());
+        };
+        self.require_permission(Some(actor), "transfer:update").await?;
+        let person = self.actor_person(Some(actor)).await?.expect("authenticated actor");
+        if store::transfers::party_for_actor(&self.store.pool, transfer_uid, &person)
+            .await?
+            .is_some()
+        {
+            return Ok(());
+        }
+        Err(EngineError::Forbidden(
+            "transfer action requires a participant".into(),
+        ))
+    }
+
+    /// Agreement is always authored for the authenticated user's own party.
+    async fn require_transfer_party(
+        &self,
+        transfer_uid: &str,
+        party_uid: &str,
+        actor: Option<&str>,
+    ) -> Result<(), EngineError> {
+        let Some(actor) = actor else {
+            return Ok(());
+        };
+        self.require_permission(Some(actor), "transfer:update").await?;
+        let expected = self.actor_person(Some(actor)).await?.expect("authenticated actor");
+        let actual = store::transfers::party_actor(&self.store.pool, transfer_uid, party_uid)
+            .await?
+            .ok_or_else(|| {
+                EngineError::Forbidden("agreement party is not in this transfer".into())
+            })?;
+        if actual == expected {
+            return Ok(());
+        }
+        Err(EngineError::Forbidden(
+            "cannot author another participant's agreement".into(),
+        ))
+    }
+
+    /// Legacy settlement still carries a Person field on the wire. In an
+    /// authenticated session it must match the server-side identity exactly.
+    async fn require_transfer_person(
+        &self,
+        transfer_uid: &str,
+        person_uid: &str,
+        actor: Option<&str>,
+    ) -> Result<(), EngineError> {
+        let Some(actor) = actor else {
+            return Ok(());
+        };
+        self.require_permission(Some(actor), "transfer:update").await?;
+        let expected = self.actor_person(Some(actor)).await?.expect("authenticated actor");
+        if expected == person_uid
+            && store::transfers::party_for_actor(&self.store.pool, transfer_uid, person_uid)
+                .await?
+                .is_some()
+        {
+            return Ok(());
+        }
+        Err(EngineError::Forbidden(
+            "cannot settle as another transfer participant".into(),
+        ))
+    }
+
+    /// Deletion is split into two grants (blueprint permission system):
+    /// `record:delete` (any record) and `record:delete_own` (only records
+    /// this actor created, per the earliest fact's `actor_uid`).
+    async fn check_delete_permission(
+        &self,
+        record_uid: &str,
+        actor: Option<&str>,
+    ) -> Result<(), EngineError> {
+        let Some(actor) = actor else {
+            return Ok(());
+        };
+        let user = self.actor_user(actor).await?;
+        if user.permissions.iter().any(|p| p == "record:delete") {
+            return Ok(());
+        }
+        if user.permissions.iter().any(|p| p == "record:delete_own") {
+            let creator = store::facts::creator_uid(&self.store.pool, record_uid).await?;
+            if creator.as_deref() == Some(actor) {
+                return Ok(());
+            }
+        }
+        Err(EngineError::Forbidden(
+            "missing record:delete or record:delete_own permission".into(),
+        ))
     }
 
     /// Resolve an optional concept token (name or uid) to a uid. `None` and the

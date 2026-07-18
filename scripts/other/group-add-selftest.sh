@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Behavioral verification of the client-side add-as-group flow (Stage 8b, base
 # task 2 / kanban Track B): the board store drops a whole sand GROUP (kanban =
-# board + record_info) onto the canvas at once, preserving each member's
+# board + Record) onto the canvas at once, preserving each member's
 # relative layout + z-order + ABI listen topics and re-homing the archive's
 # inner group id to a FRESH id so repeated adds are independent groups.
 #
@@ -35,14 +35,14 @@ cat > "$WORK/harness.html" <<'HTML'
   });
 
   // Exactly the shape the /host/packages/local/group/{filename} endpoint returns
-  // (camelCase BoardCard): kanban board (z=1) + record_info (z=2, same rect,
+  // (camelCase BoardCard): kanban board (z=1) + Record (z=2, same rect,
   // listens recordClicked), both sharing one inner group id.
   const groupCards = [
     { id: "card-kanban", kind: "package", title: "Kanban", html: "<!doctype html><p>kanban</p>",
       packageName: "kanban.html", x: 49000, y: 49000, width: 720, height: 520, zIndex: 1,
       groupId: "group-kanban-kanban", groupIds: ["group-kanban-kanban"], abiListen: [] },
-    { id: "card-kanban-record-info", kind: "package", title: "Record Info",
-      html: "<!doctype html><p>recinfo</p>", packageName: "record-info.html",
+    { id: "card-kanban-record", kind: "package", title: "Record",
+      html: "<!doctype html><p>recinfo</p>", packageName: "record.html",
       x: 49000, y: 49000, width: 720, height: 520, zIndex: 2,
       groupId: "group-kanban-kanban", groupIds: ["group-kanban-kanban"],
       abiListen: ["recordClicked"] },
@@ -54,19 +54,19 @@ cat > "$WORK/harness.html" <<'HTML'
 
   const byTitle = (cards, t) => cards.find((c) => c.title === t);
   const board = byTitle(a, "Kanban");
-  const info = byTitle(a, "Record Info");
+  const info = byTitle(a, "Record");
 
   // Fresh unique card ids (not the archive ids).
   results.fresh_ids = !!board && !!info && board.id !== "card-kanban" &&
-    info.id !== "card-kanban-record-info" && board.id !== info.id;
+    info.id !== "card-kanban-record" && board.id !== info.id;
   // Both share ONE fresh inner group id (not the archive's).
   results.shared_fresh_group = !!board && !!info &&
     innermostGroupId(board) === innermostGroupId(info) &&
     !!innermostGroupId(board) && innermostGroupId(board) !== "group-kanban-kanban";
-  // Same rect (record_info stacked on the board) and z-order preserved.
+  // Same rect (Record stacked on the board) and z-order preserved.
   results.same_rect = !!board && !!info && board.x === info.x && board.y === info.y;
   results.z_order = !!board && !!info && info.zIndex > board.zIndex;
-  // ABI listen preserved on record_info, absent on the board.
+  // ABI listen preserved on Record, absent on the board.
   results.abi_listen = !!info && Array.isArray(info.abiListen) &&
     info.abiListen.includes("recordClicked") &&
     !!board && (board.abiListen || []).length === 0;
@@ -99,11 +99,11 @@ check() { grep -q "\"$1\":true" <<<"$JSON" || { echo "FAIL: $2"; fail=1; }; }
 check added_two          "adding the group did not create both member cards"
 check fresh_ids          "group cards kept the archive ids instead of fresh unique ones"
 check shared_fresh_group "group members do not share one FRESH inner group id"
-check same_rect          "record_info was not stacked on the board at the same rect"
-check z_order            "record_info is not above the board in z-order"
-check abi_listen         "recordClicked ABI listen was not preserved on record_info"
+check same_rect          "Record was not stacked on the board at the same rect"
+check z_order            "Record is not above the board in z-order"
+check abi_listen         "recordClicked ABI listen was not preserved on Record"
 check repositioned       "group was not repositioned from the archive coords to the board"
 check html_carried       "member sand HTML was not carried through"
 check second_independent "a second add was not an independent group (id collision)"
 
-[ "$fail" -eq 0 ] && echo "PASS: add-as-group drops board+record_info as one fresh, scoped, repositioned group" || exit 1
+[ "$fail" -eq 0 ] && echo "PASS: add-as-group drops board+Record as one fresh, scoped, repositioned group" || exit 1

@@ -41,12 +41,9 @@ impl Engine {
                 // the digest instead of interrupting.
                 "notify" => {
                     let budget = store::config::attention_budget(&self.store.pool).await?;
-                    let midnight = Utc::now()
-                        .format("%Y-%m-%dT00:00:00+00:00")
-                        .to_string();
+                    let midnight = Utc::now().format("%Y-%m-%dT00:00:00+00:00").to_string();
                     let delivered =
-                        store::misc::notifies_delivered_since(&self.store.pool, &midnight)
-                            .await?;
+                        store::misc::notifies_delivered_since(&self.store.pool, &midnight).await?;
                     if delivered >= budget {
                         (true, format!("parked:digest {}", effect.payload))
                     } else {
@@ -60,10 +57,7 @@ impl Engine {
                     .map(serde_json::from_value::<crate::actions::Action>)
                 {
                     Some(Ok(action)) => match self.act(action, None).await {
-                        Ok(outcome) => (
-                            true,
-                            format!("{} facts committed", outcome.facts.len()),
-                        ),
+                        Ok(outcome) => (true, format!("{} facts committed", outcome.facts.len())),
                         Err(e) => (false, e.to_string()),
                     },
                     Some(Err(e)) => (false, format!("bad action payload: {e}")),

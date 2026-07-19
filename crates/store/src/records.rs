@@ -177,12 +177,14 @@ pub async fn active_needs(pool: &SqlitePool) -> Result<Vec<RecordRow>, StoreErro
 
 /// (uid, quantity) of every record — checkpoint sweep input (blueprint II.2).
 pub async fn all_levels(pool: &SqlitePool) -> Result<Vec<(String, f64)>, StoreError> {
-    Ok(sqlx::query("SELECT uid, quantity FROM record WHERE deleted_at IS NULL")
-        .fetch_all(pool)
-        .await?
-        .into_iter()
-        .map(|r| (r.get("uid"), r.get("quantity")))
-        .collect())
+    Ok(
+        sqlx::query("SELECT uid, quantity FROM record WHERE deleted_at IS NULL")
+            .fetch_all(pool)
+            .await?
+            .into_iter()
+            .map(|r| (r.get("uid"), r.get("quantity")))
+            .collect(),
+    )
 }
 
 /// Namespaced fds sidecar (blueprint I.2) — also where saved Proteins live

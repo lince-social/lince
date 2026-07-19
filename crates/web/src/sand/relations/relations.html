@@ -36,12 +36,15 @@
     ({steps:[...]}), shared live by every relations group on the cell;
     delete = deactivate.
 
-    NODE GRAVITY (tree weight): an extra physics variable on top of the
-    existing forces — nodes get a weight from their depth in the trail
-    root's tree (root heaviest, lighter each hop out; nodes outside the
-    tree weigh like leaves). A vertical gravity bias settles the tree
-    root-down/leaves-up or inverted. Works in graph mode (added force) and
-    trail mode (layers keep x, gravity owns y instead of pinned rows).
+    NODE GRAVITY (tree weight): an extra physics variable — nodes get a
+    weight from their depth in the trail root's tree (root heaviest, lighter
+    each hop out; nodes outside the tree weigh like leaves) and weight maps
+    to BUOYANCY: a constant vertical acceleration, heavy one way, light the
+    other. Nodes keep falling until their link tethers them, so links hang
+    vertically and the tree settles like a mobile. The center forces stay on
+    (cohesion); charge/link soften so siblings can fall past each other.
+    Works in graph mode and trail mode (layers keep x, buoyancy + the center
+    spring own y instead of pinned rows).
   -->
   <style>
     :root { color-scheme: dark; --bg: #0d1117; --panel: #161b22; --line: #2a333d; --text: #e6edf3; --muted: #8b949e; --accent: #78d7ff; --good: #7ef0c6; --warn: #f2bb78; --bad: #f85149; }
@@ -219,7 +222,7 @@
 
         <section class="section">
           <div class="sectionLabel">Node gravity</div>
-          <p class="muted">Weighs nodes by depth in the Trail root's tree: the root sinks (or floats) and each hop out gets lighter — records outside the tree weigh like leaves. The tree settles vertically; all other forces keep working. Uses the root and order kind from the Trail section.</p>
+          <p class="muted">Weighs nodes by depth in the Trail root's tree: the root sinks (or floats) and each hop out gets lighter — records outside the tree weigh like leaves. Lighter nodes keep falling until their link tethers them, so the tree hangs like a mobile. Center forces stay on; charge/link soften. Uses the root and order kind from the Trail section.</p>
           <label class="sliderRow" for="gravity-direction"><span>Direction</span></label>
           <select id="gravity-direction">
             <option value="off">Off</option>
@@ -283,7 +286,6 @@
     const DEFAULT_PHYSICS = { charge: -220, linkDistance: 110, collisionRadius: 24, centerForce: 0.04 };
     // Node gravity: off | root sinks (tree settles root-down) | root floats.
     const DEFAULT_GRAVITY = { direction: "off", strength: 0.5 };
-    const GRAVITY_SPREAD = 260; // world px from the center to a full-weight pull
     // Fresh cards start with NO link kinds (2026-07-18): nothing is
     // pre-configured — the user picks the kinds (and the Data panel Protein)
     // themselves.
@@ -936,33 +938,52 @@
       linkForce.id((node) => node.id);
 
       if (trailGravity) {
-        // Simulate the tree nodes only: x anchored to the topo layer, y
-        // owned by gravity — the tree settles by weight, not by fixed rows.
+        // Simulate the tree nodes only: x anchored to the topo layer, y =
+        // center spring + buoyancy — each generation hangs below its parent.
         const tree = state.trailTree;
         const treeNodes = state.nodes.filter((node) => tree.ids.has(node.id));
         const treeLinks = state.links.filter((link) =>
           link.kind === state.trailKind && tree.ids.has(link.sourceId) && tree.ids.has(link.targetId));
         state.simulation.nodes(treeNodes);
-        linkForce.links(treeLinks).distance(state.physics.linkDistance * 0.7).strength(0.4);
+        linkForce.links(treeLinks).distance(state.physics.linkDistance * 0.7).strength(0.3);
         state.simulation
           .force("link", linkForce)
-          .force("charge", d3.forceManyBody().strength(state.physics.charge * 0.4))
+          .force("charge", d3.forceManyBody().strength(state.physics.charge * 0.25))
           .force("collide", d3.forceCollide()
             .radius((node) => Math.max(state.physics.collisionRadius, nodeRadius(node) + 6))
             .iterations(2))
           .force("x", d3.forceX((node) => (tree.layers.get(node.id) || 0) * 180).strength(0.7))
-          .force("y", d3.forceY((node) => gravityTargetY(node, tree)).strength(state.gravity.strength))
-          .force("gravity", null);
+          .force("y", d3.forceY(0).strength(state.physics.centerForce))
+          .force("gravity", buoyancyForce(tree));
         return;
       }
 
       state.simulation.nodes(state.nodes);
+
+      const gravityTree = computeGravityTree();
+      if (gravityTree) {
+        // Center forces STAY (the graph keeps its usual cohesion) and
+        // buoyancy rides on top as a constant acceleration; charge and link
+        // soften so siblings fall past each other and links tether instead
+        // of holding nodes sideways.
+        linkForce.links(state.links).distance(state.physics.linkDistance).strength(0.25);
+        state.simulation
+          .force("link", linkForce)
+          .force("charge", d3.forceManyBody().strength(state.physics.charge * 0.25))
+          .force("collide", d3.forceCollide()
+            .radius((node) => Math.max(state.physics.collisionRadius, nodeRadius(node) + 6))
+            .iterations(2))
+          .force("x", d3.forceX(0).strength(state.physics.centerForce))
+          .force("y", d3.forceY(0).strength(state.physics.centerForce))
+          .force("gravity", buoyancyForce(gravityTree));
+        return;
+      }
+
       linkForce
         .links(state.links)
         .distance(state.physics.linkDistance)
         .strength(0.82);
 
-      const gravityTree = computeGravityTree();
       state.simulation
         .force("link", linkForce)
         .force("charge", d3.forceManyBody().strength(state.physics.charge))
@@ -973,12 +994,7 @@
             .iterations(2),
         )
         .force("x", d3.forceX(0).strength(state.physics.centerForce))
-        .force(
-          "y",
-          gravityTree
-            ? d3.forceY((node) => gravityTargetY(node, gravityTree)).strength(state.gravity.strength)
-            : d3.forceY(0).strength(state.physics.centerForce),
-        )
+        .force("y", d3.forceY(0).strength(state.physics.centerForce))
         .force("gravity", null);
     }
 
@@ -1426,12 +1442,27 @@
       return maxDepth ? 1 - depth / maxDepth : 1;
     }
 
-    // Vertical target per node: heavy (root) pulled one way, light (leaves
-    // and strangers) the other, so the tree stratifies around the center.
-    function gravityTargetY(node, tree) {
+    // Buoyancy, not a target line: a constant per-tick vertical acceleration
+    // from weight — heavy goes one way, light the other. A node never
+    // "arrives"; it keeps falling until its link tethers it, so links align
+    // vertically and the tree hangs like a mobile. Unlinked nodes weigh like
+    // leaves and sink/float past everything.
+    const BUOYANCY_ACCEL = 1.2;
+    function nodeBuoyancy(node, tree) {
       const centered = nodeGravityWeight(node, tree) - 0.5;
       const sign = state.gravity.direction === "down" ? 1 : -1;
-      return centered * 2 * GRAVITY_SPREAD * sign;
+      return centered * BUOYANCY_ACCEL * state.gravity.strength * sign;
+    }
+
+    function buoyancyForce(tree) {
+      // Constant acceleration — NOT scaled by alpha, so the pull stays just
+      // as strong while the simulation cools (an alpha-scaled pull fades to
+      // nothing and feels like gravity switched off).
+      function force() {
+        const nodes = state.simulation ? state.simulation.nodes() : [];
+        for (const node of nodes) node.vy += nodeBuoyancy(node, tree);
+      }
+      return force;
     }
 
     function layoutTrail() {
@@ -2337,7 +2368,7 @@
       computeTree,
       gravityActive,
       nodeGravityWeight,
-      gravityTargetY,
+      nodeBuoyancy,
       applyGravityChange,
     };
   })();

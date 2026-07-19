@@ -1,6 +1,7 @@
 //! Promises, effects, and decisions (blueprint V, VI.3, XIII.1).
 
 use chrono::Utc;
+use nucleus::transfer::{OpenPromiseReusePolicy, TransferLocationSnapshot};
 use nucleus::{PromiseState, RecordKind};
 use sqlx::{Row, SqlitePool};
 
@@ -13,14 +14,20 @@ use crate::records::{self, NewRecord};
 pub struct PromiseRow {
     pub uid: String,
     pub record_uid: Option<String>,
+    pub concept_uid: Option<String>,
+    pub unit_uid: Option<String>,
     pub delta: f64,
+    pub window_start: Option<String>,
     pub window_end: Option<String>,
+    pub location: Option<TransferLocationSnapshot>,
     pub party_uid: Option<String>,
     pub state: PromiseState,
     pub condition: Option<String>,
     pub transfer_uid: Option<String>,
     pub rule_uid: Option<String>,
     pub reserve_from: String,
+    pub revision: u64,
+    pub open_reuse_policy: OpenPromiseReusePolicy,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -34,27 +41,29 @@ pub struct NewPromise {
     pub condition: Option<String>,
     pub transfer_uid: Option<String>,
     pub rule_uid: Option<String>,
-    /// None = inherit: the transfer's `reserve_default`, else 'active' (V.3).
+    /// None = inherit Transfer, then Cell default (`none` by default).
     pub reserve_from: Option<String>,
 }
 
 pub async fn insert_promise(pool: &SqlitePool, p: NewPromise) -> Result<String, StoreError> {
     let uid = nucleus::new_uid("p");
     let now = Utc::now().to_rfc3339();
-    // reserve_from inheritance (blueprint V.3): explicit wins, then the
-    // bundle's transfer.reserve_default, then the global default 'active'.
+    // Reservation precedence: promise override, Transfer default, Cell
+    // default, then the schema/code default `none`.
     let mut reserve_from = p.reserve_from;
     if reserve_from.is_none() {
         if let Some(transfer_uid) = &p.transfer_uid {
-            reserve_from =
-                sqlx::query("SELECT reserve_default FROM transfer WHERE record_uid = ?")
-                    .bind(transfer_uid)
-                    .fetch_optional(pool)
-                    .await?
-                    .and_then(|r| r.get::<Option<String>, _>("reserve_default"));
+            reserve_from = sqlx::query("SELECT reserve_default FROM transfer WHERE record_uid = ?")
+                .bind(transfer_uid)
+                .fetch_optional(pool)
+                .await?
+                .and_then(|r| r.get::<Option<String>, _>("reserve_default"));
         }
     }
-    let reserve_from = reserve_from.unwrap_or_else(|| "active".to_string());
+    let reserve_from = match reserve_from {
+        Some(value) => value,
+        None => crate::config::transfer_reservation_default(pool).await?,
+    };
     sqlx::query(
         "INSERT INTO promise (uid, record_uid, concept_uid, delta, window_end, party_uid,
                               state, condition, transfer_uid, rule_uid, reserve_from,
@@ -127,14 +136,31 @@ fn map_promise(r: sqlx::sqlite::SqliteRow) -> Option<PromiseRow> {
     Some(PromiseRow {
         uid: r.get("uid"),
         record_uid: r.get("record_uid"),
+        concept_uid: r.get("concept_uid"),
+        unit_uid: r.get("unit_uid"),
         delta: r.get("delta"),
+        window_start: r.get("window_start"),
         window_end: r.get("window_end"),
+        location: {
+            let lat: Option<f64> = r.get("location_lat");
+            let lon: Option<f64> = r.get("location_lon");
+            let address: Option<String> = r.get("location_address");
+            if lat.is_none() && lon.is_none() && address.is_none() {
+                None
+            } else {
+                Some(TransferLocationSnapshot { lat, lon, address })
+            }
+        },
         party_uid: r.get("party_uid"),
         state: PromiseState::parse(&state)?,
         condition: r.get("condition"),
         transfer_uid: r.get("transfer_uid"),
         rule_uid: r.get("rule_uid"),
         reserve_from: r.get("reserve_from"),
+        revision: r.get::<i64, _>("revision") as u64,
+        open_reuse_policy: OpenPromiseReusePolicy::parse(
+            r.get::<String, _>("open_reuse_policy").as_str(),
+        )?,
     })
 }
 

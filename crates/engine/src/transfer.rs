@@ -5,8 +5,7 @@
 
 use chrono::{DateTime, Utc};
 use nucleus::expr::Expr;
-use nucleus::transfer::{AgreementType, policy_satisfied};
-use nucleus::{Cause, Fact, NewFact, PromiseState};
+use nucleus::{Fact, PromiseState};
 
 use crate::Engine;
 use crate::error::EngineError;
@@ -14,42 +13,25 @@ use crate::error::EngineError;
 /// Is the bundle's agreement policy satisfied right now? (Free function so the
 /// Karma `advance_transfer` consequence can use it without an Engine handle.)
 pub async fn agreed(store: &store::Store, transfer_uid: &str) -> Result<bool, EngineError> {
-    let t = store::transfers::get(&store.pool, transfer_uid)
+    store::transfers::get(&store.pool, transfer_uid)
         .await?
         .ok_or_else(|| EngineError::UnknownRecord(transfer_uid.into()))?;
-    let agreement = AgreementType::parse(&t.agreement_type)
-        .ok_or_else(|| EngineError::Consequence(format!("bad agreement {}", t.agreement_type)))?;
-    let levels: Vec<i64> = store::transfers::party_levels(&store.pool, transfer_uid)
-        .await?
-        .into_iter()
-        .map(|(_, _, level)| level)
-        .collect();
-    Ok(policy_satisfied(
-        agreement,
-        t.agreement_pct.map(|p| p as u8),
-        &levels,
-    ))
+    Ok(protein::transfer_agreement_ready(store, transfer_uid).await?)
 }
 
-/// Move a transfer's `agreed` promises to `active` — Karma's `advance_transfer`
-/// lands here, and it never bypasses the agreement policy.
+/// Phase 4 will replace this compatibility entry point with occurrence-aware,
+/// participant-scoped activation. Keep every caller, including Karma, from
+/// bypassing that sequencing gate in the meantime.
 pub async fn activate_promises(
-    store: &store::Store,
+    _store: &store::Store,
     transfer_uid: &str,
 ) -> Result<usize, EngineError> {
-    if !agreed(store, transfer_uid).await? {
-        return Err(EngineError::Consequence(format!(
-            "transfer {transfer_uid}: agreement policy not satisfied"
-        )));
-    }
-    let mut activated = 0;
-    for p in store::transfers::promises_of(&store.pool, transfer_uid).await? {
-        if p.state == PromiseState::Agreed {
-            store::misc::set_promise_state(&store.pool, &p.uid, PromiseState::Active).await?;
-            activated += 1;
-        }
-    }
-    Ok(activated)
+    Err(EngineError::Conflict {
+        code: "transfer_phase_4_not_available",
+        message: format!(
+            "transfer {transfer_uid}: activation is unavailable before occurrence modeling"
+        ),
+    })
 }
 
 impl Engine {
@@ -64,76 +46,22 @@ impl Engine {
         activate_promises(&self.store, transfer_uid).await
     }
 
-    /// Settle every ACTIVE promise of this transfer whose party is `actor`
-    /// (blueprint VIII.3). Facts land with `cause = settlement`; promises move
-    /// to `kept`; conditional promises (chains/spectators) get their shot;
-    /// satiation runs last.
+    /// Legacy bundle settlement cannot preserve occurrence-specific claims,
+    /// reviewed quantities, private formulas, or first-completes evidence.
+    /// Keep the compatibility entry point fail-closed so callers cannot bypass
+    /// the typed occurrence settlement Action.
     pub async fn settle_all_local(
         &self,
         transfer_uid: &str,
-        actor: &str,
-        now: DateTime<Utc>,
+        _actor: &str,
+        _now: DateTime<Utc>,
     ) -> Result<Vec<Fact>, EngineError> {
-        let t = store::transfers::get(&self.store.pool, transfer_uid)
-            .await?
-            .ok_or_else(|| EngineError::UnknownRecord(transfer_uid.into()))?;
-        if !t.active {
-            return Err(EngineError::Consequence(format!(
-                "transfer {transfer_uid} is inactive"
-            )));
-        }
-        if !self.transfer_agreed(transfer_uid).await? {
-            return Err(EngineError::Consequence(format!(
-                "transfer {transfer_uid}: agreement policy not satisfied"
-            )));
-        }
-        // Delivery/receipt confirmations (VIII.3): when the transfer demands
-        // them, two annotation facts on the transfer record gate active -> kept.
-        if t.require_confirmation {
-            let log = store::facts::for_record(&self.store.pool, transfer_uid, 10_000).await?;
-            let confirmed = |kind: &str| {
-                log.iter().any(|f| {
-                    f.payload
-                        .as_deref()
-                        .is_some_and(|p| p.contains(&format!("\"confirmation\":\"{kind}\"")))
-                })
-            };
-            if !confirmed("delivery") || !confirmed("receipt") {
-                return Err(EngineError::Consequence(format!(
-                    "transfer {transfer_uid}: awaiting delivery/receipt confirmation"
-                )));
-            }
-        }
-
-        let mut committed = Vec::new();
-        for p in store::transfers::promises_of(&self.store.pool, transfer_uid).await? {
-            if p.state != PromiseState::Active || p.party_uid.as_deref() != Some(actor) {
-                continue;
-            }
-            let Some(record_uid) = p.record_uid.clone() else {
-                continue;
-            };
-            let facts = self
-                .append(
-                    NewFact {
-                        uid: None,
-                        record_uid,
-                        delta: p.delta,
-                        at: None,
-                        actor_uid: Some(actor.to_string()),
-                        cause: Cause::settlement(transfer_uid.to_string()),
-                        payload: Some(serde_json::json!({ "promise": p.uid }).to_string()),
-                    },
-                    now,
-                )
-                .await?;
-            store::misc::set_promise_state(&self.store.pool, &p.uid, PromiseState::Kept).await?;
-            committed.extend(facts);
-        }
-
-        self.trigger_conditional_promises().await?;
-        self.apply_satiation(&t, now).await?;
-        Ok(committed)
+        Err(EngineError::Conflict {
+            code: "transfer_occurrence_settlement_required",
+            message: format!(
+                "transfer {transfer_uid}: use reviewed occurrence settlement; legacy bundle settlement is disabled"
+            ),
+        })
     }
 
     /// Chains and spectators (blueprint V.3): promises whose `condition`
@@ -164,53 +92,6 @@ impl Engine {
             }
         }
         Ok(triggered)
-    }
-
-    async fn apply_satiation(
-        &self,
-        t: &store::transfers::TransferRow,
-        now: DateTime<Utc>,
-    ) -> Result<(), EngineError> {
-        if t.satiation.as_deref() != Some("first_completes") {
-            return Ok(());
-        }
-        let Some(source) = &t.source_uid else {
-            return Ok(());
-        };
-        for sibling in
-            store::transfers::siblings_of_source(&self.store.pool, source, &t.record_uid).await?
-        {
-            // deactivate the sibling bundle; withdraw its unkept promises
-            let current = store::records::quantity(&self.store.pool, &sibling)
-                .await?
-                .unwrap_or(0.0);
-            if current != 0.0 {
-                self.append(
-                    NewFact {
-                        uid: None,
-                        record_uid: sibling.clone(),
-                        delta: -current,
-                        at: None,
-                        actor_uid: None,
-                        cause: Cause::settlement(t.record_uid.clone()),
-                        payload: Some(r#"{"satiation":"first_completes"}"#.into()),
-                    },
-                    now,
-                )
-                .await?;
-            }
-            for p in store::transfers::promises_of(&self.store.pool, &sibling).await? {
-                if PromiseState::can_transition(p.state, PromiseState::Withdrawn) {
-                    store::misc::set_promise_state(
-                        &self.store.pool,
-                        &p.uid,
-                        PromiseState::Withdrawn,
-                    )
-                    .await?;
-                }
-            }
-        }
-        Ok(())
     }
 }
 

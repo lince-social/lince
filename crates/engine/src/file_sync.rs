@@ -121,8 +121,13 @@ impl Engine {
             }
         }
         for (path, uid) in to_delete {
-            self.act(Action::DeleteRecord { target: uid.clone() }, None)
-                .await?;
+            self.act(
+                Action::DeleteRecord {
+                    target: uid.clone(),
+                },
+                None,
+            )
+            .await?;
             report.deleted.push(uid);
             state.known.remove(&path);
         }

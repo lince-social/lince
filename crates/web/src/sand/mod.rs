@@ -1,3 +1,6 @@
+mod archive;
+#[path = "communication/mod.rs"]
+mod communication;
 mod document_viewer;
 #[allow(dead_code)]
 mod finance;
@@ -99,7 +102,7 @@ impl OfficialWidgetBuilder {
 // Only current frame.js sands are wired for construction, plus `shell` (the
 // board's own chrome). Legacy sources may remain under `sand/`, but stay
 // unwired until rebuilt on the current bridge and explicitly added here.
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 20] = [
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 22] = [
     OfficialWidgetBuilder::Html {
         feature_flag: shell::FEATURE_FLAG,
         source_builder: shell::logo_source,
@@ -179,6 +182,14 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 20] = [
     OfficialWidgetBuilder::Package {
         feature_flag: transfer::FEATURE_FLAG,
         package_builder: transfer::package,
+    },
+    OfficialWidgetBuilder::Package {
+        feature_flag: archive::FEATURE_FLAG,
+        package_builder: archive::package,
+    },
+    OfficialWidgetBuilder::Package {
+        feature_flag: communication::FEATURE_FLAG,
+        package_builder: communication::package,
     },
 ];
 
@@ -341,6 +352,53 @@ pub fn build_relations_group_archive() -> Result<Vec<u8>, String> {
     build_workspace_archive(&workspace, &[relations, record])
 }
 
+/// Build the default Communication GROUP: the Communication sand plus a
+/// Record sand BESIDE it (to the right), sharing one inner group id — the same
+/// side-by-side shape as kanban and relations. Clicking a conversation row
+/// scopes a `recordClicked` to this Record (which shows the conversation's
+/// threads), while the Communication sand itself drops into its room mode.
+/// Returns a `.lince` workspace archive.
+pub fn build_communication_group_archive() -> Result<Vec<u8>, String> {
+    let communication = communication::package();
+    let record = record::package();
+
+    let inner_group = format!(
+        "group-communication-{}",
+        package_id_from_filename("communication")
+    );
+    let comm_rect = (49_000.0, 49_000.0, 420.0, 620.0);
+    // Record sits immediately to the right of the Communication sand.
+    let record_rect = (49_000.0 + 420.0 + 16.0, 49_000.0, 340.0, 620.0);
+
+    let cards = vec![
+        card_from_package(
+            &communication,
+            "card-communication",
+            comm_rect,
+            1,
+            vec![inner_group.clone()],
+            Vec::new(),
+        ),
+        card_from_package(
+            &record,
+            "card-communication-record",
+            record_rect,
+            2,
+            vec![inner_group],
+            vec!["recordClicked".into(), "recordCreate".into()],
+        ),
+    ];
+
+    let workspace = BoardWorkspace {
+        id: "communication-group".into(),
+        name: "Communication".into(),
+        camera: default_camera(),
+        cards,
+    };
+
+    build_workspace_archive(&workspace, &[communication, record])
+}
+
 /// Emit the official sand-GROUP archives (kanban, relations) into the sand
 /// dir, alongside the single-sand packages from `render_official_widgets`.
 pub fn render_official_groups(target_dir: &Path) -> Result<(), String> {
@@ -354,6 +412,7 @@ pub fn render_official_groups(target_dir: &Path) -> Result<(), String> {
     for (filename, bytes) in [
         ("kanban.lince", build_kanban_group_archive()?),
         ("relations.lince", build_relations_group_archive()?),
+        ("communication.lince", build_communication_group_archive()?),
     ] {
         let path = target_dir.join(filename);
         std::fs::write(&path, bytes)
@@ -547,6 +606,48 @@ mod group_tests {
             vec!["recordClicked".to_string(), "recordCreate".to_string()]
         );
         assert!(graph.abi_listen.is_empty());
+
+        // Both packages travel in the archive so the import is self-contained.
+        assert_eq!(imported.packages.len(), 2);
+    }
+
+    #[test]
+    fn communication_ships_as_a_group_of_sand_plus_record() {
+        let bytes =
+            build_communication_group_archive().expect("build communication group archive");
+        assert!(
+            crate::domain::workspace_archive::is_workspace_archive_bytes(&bytes),
+            "group archive is detectable by content so the catalog skips it",
+        );
+        let imported = parse_workspace_archive("communication.lince", &bytes)
+            .expect("parse communication group archive");
+
+        let cards = &imported.workspace.cards;
+        assert_eq!(cards.len(), 2, "communication group is exactly sand + Record");
+
+        let comm = &cards[0];
+        let info = &cards[1];
+
+        // Both sub-sands share ONE inner group (keeps them together + scopes ABI).
+        assert_eq!(comm.group_ids.len(), 1);
+        assert_eq!(comm.group_ids, info.group_ids, "shared inner group id");
+        assert_eq!(comm.group_id, comm.group_ids.last().cloned());
+
+        // Record sits BESIDE the Communication sand (to its right), not covering it.
+        assert!(
+            info.x >= comm.x + comm.width,
+            "Record is right of the Communication sand"
+        );
+        assert_eq!(comm.y, info.y, "Record shares the sand's top edge");
+        assert!(info.z_index > comm.z_index, "Record is above the sand");
+
+        // Only Record listens for the sand's events: conversation clicks focus
+        // it, "New conversation" opens its creation mode.
+        assert_eq!(
+            info.abi_listen,
+            vec!["recordClicked".to_string(), "recordCreate".to_string()]
+        );
+        assert!(comm.abi_listen.is_empty());
 
         // Both packages travel in the archive so the import is self-contained.
         assert_eq!(imported.packages.len(), 2);

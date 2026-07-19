@@ -130,12 +130,13 @@ pub async fn remove_kind_within_set(
             if from == to {
                 continue;
             }
-            let res = sqlx::query("DELETE FROM link WHERE from_uid = ? AND kind_uid = ? AND to_uid = ?")
-                .bind(from)
-                .bind(kind_uid)
-                .bind(to)
-                .execute(pool)
-                .await?;
+            let res =
+                sqlx::query("DELETE FROM link WHERE from_uid = ? AND kind_uid = ? AND to_uid = ?")
+                    .bind(from)
+                    .bind(kind_uid)
+                    .bind(to)
+                    .execute(pool)
+                    .await?;
             affected += res.rows_affected();
         }
     }

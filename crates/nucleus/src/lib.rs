@@ -10,6 +10,7 @@
 //! - Booleans are numbers (`true = 1.0`) in the expression engine.
 //! - The rule pipeline is `condition -> gate -> carry -> consequences`.
 
+pub mod action_intent;
 pub mod error;
 pub mod expr;
 pub mod fact;
@@ -22,6 +23,7 @@ pub mod promise;
 pub mod record;
 pub mod rule;
 pub mod transfer;
+pub mod transfer_delivery;
 
 pub use error::NucleusError;
 pub use expr::{Expr, MapResolver, Resolver, TokenKey, Value};

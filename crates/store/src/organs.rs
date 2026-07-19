@@ -18,10 +18,7 @@ pub struct OrganRecord {
     pub local: bool,
 }
 
-pub async fn ensure_local(
-    pool: &SqlitePool,
-    base_url: &str,
-) -> Result<OrganRecord, StoreError> {
+pub async fn ensure_local(pool: &SqlitePool, base_url: &str) -> Result<OrganRecord, StoreError> {
     let base_url = normalize_base_url(base_url);
     let now = Utc::now().to_rfc3339();
     let existing_uid = sqlx::query_scalar::<_, String>("SELECT uid FROM record WHERE slug = ?")

@@ -257,6 +257,33 @@ pub fn default_camera() -> BoardCamera {
     }
 }
 
+pub const RECORD_PIN_ID: &str = "shell-record";
+
+/// Screen coordinate parked far past any real viewport so the pinned-card
+/// clamp in `syncCardNode` (main.js) always flushes this card to the
+/// bottom-right corner, regardless of window size, in both its icon and
+/// full-panel sizes.
+const PINNED_CORNER: f64 = 99_999.0;
+
+/// The Record sand, seeded pinned at the bottom-right corner. Starts
+/// collapsed to an icon (`widgetState.recordExpanded` is absent/false) and
+/// expands in place when it receives a `recordClicked`/`recordCreate` ABI
+/// event; see `syncCardNode` in main.js for the icon<->full geometry.
+pub fn record_pin_card() -> BoardCard {
+    let mut card = package_card(
+        RECORD_PIN_ID,
+        "Record",
+        "record.html",
+        PINNED_CORNER,
+        PINNED_CORNER,
+        340.0,
+        520.0,
+    );
+    card.pinned = true;
+    card.z_index = 50;
+    card
+}
+
 fn seed_workspace_cards(include_seed_cards: bool) -> Vec<BoardCard> {
     let mut cards = vec![
         shell_card(
@@ -320,6 +347,8 @@ fn seed_workspace_cards(include_seed_cards: bool) -> Vec<BoardCard> {
             95,
         ),
     ];
+
+    cards.push(record_pin_card());
 
     if include_seed_cards {
         cards.push(package_card(

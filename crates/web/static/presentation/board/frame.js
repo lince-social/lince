@@ -21,6 +21,15 @@
   const laneHandlers = new Set(); // {room, handler}
   let live = false;
   const liveHandlers = new Set();
+  let signingState = Object.freeze({
+    status: "connecting",
+    available: false,
+    required: null,
+    person: null,
+    code: "session_challenge_pending",
+    message: "Waiting for the Cell signing challenge.",
+  });
+  const signingStateHandlers = new Set();
   // Per-card host state (widgetState) — board chrome, never the Ledger. The
   // bridge pushes it down as `lince:bridge-state`; sands persist UI prefs
   // (e.g. kanban body modes) back up with patchCardState.
@@ -100,7 +109,11 @@
         if (waiter) {
           actionWaiters.delete(data.reqId);
           if (data.ok) waiter.resolve({ created: data.created, facts: data.facts, warnings: data.warnings || [] });
-          else waiter.reject(new Error(data.message || "action failed"));
+          else {
+            const error = new Error(data.message || "action failed");
+            if (data.code) error.code = data.code;
+            waiter.reject(error);
+          }
         }
         break;
       }
@@ -143,6 +156,17 @@
       case "lince:live":
         live = Boolean(data.live);
         for (const h of liveHandlers) h(live);
+        break;
+      case "lince:signing-state":
+        signingState = Object.freeze({
+          status: String(data.status || "unavailable"),
+          available: Boolean(data.available),
+          required: data.required == null ? null : Boolean(data.required),
+          person: data.person == null ? null : String(data.person),
+          code: String(data.code || ""),
+          message: String(data.message || ""),
+        });
+        for (const h of signingStateHandlers) h(signingState);
         break;
       case "lince:bridge-state": {
         const next = data.payload?.meta?.cardState;
@@ -230,6 +254,16 @@
       return () => liveHandlers.delete(handler);
     },
 
+    // Authenticated writes are signed by the board host, outside the sand.
+    // This is status only: no sand receives the CryptoKey or chooses the Person
+    // bound by the server's authenticated session.
+    getSigningState() { return signingState; },
+    onSigningState(handler) {
+      signingStateHandlers.add(handler);
+      handler(signingState);
+      return () => signingStateHandlers.delete(handler);
+    },
+
     // Host state: the card's persisted UI prefs (host chrome, not sand data).
     getCardState() { return cardState; },
     onCardState(handler) {
@@ -238,6 +272,13 @@
       return () => cardStateHandlers.delete(handler);
     },
     patchCardState(patch) { post({ type: "lince:patch-card-state", patch }); },
+
+    // Host capability: ask the board chrome to export the CURRENT workspace as
+    // one static, request-free HTML file (this sand's own card is excluded).
+    // The chrome does the capture — a sand cannot read sibling iframes.
+    archiveWorkspace(options = {}) {
+      post({ type: "lince:archive-workspace", options: options || {} });
+    },
 
     // The logged-in user (null pre-login / no-auth Cells) — display hint
     // only, see the `viewer` comment above.

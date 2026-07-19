@@ -1,0 +1,115 @@
+import { renderDeliveryConflicts } from "./delivery/conflicts.js";
+import { capability, projectedAction, withActionInput } from "./delivery/model.js";
+import { renderDeliveryRecipients } from "./delivery/recipients.js";
+import { renderPackageReceipts } from "./delivery/receipts.js";
+import { compactId, el, formatDate, status, statusLabel } from "./inspection/shared.js";
+
+export function renderSocialDelivery(row, options) {
+  const delivery = row.social_delivery;
+  if (!delivery) return null;
+  const section = el("section", "inspectionBand socialDeliveryBand");
+  const heading = el("header", "inspectionBandHeading socialDeliveryHeading");
+  const identity = el("div", "socialDeliveryIdentity");
+  identity.append(
+    el("div", "eyebrow", "Cell-to-Cell"),
+    el("h4", "", "Social delivery"),
+  );
+  const headingState = el("div", "socialDeliveryHeadingState");
+  if (delivery.mode) headingState.append(status(delivery.mode));
+  headingState.append(status(delivery.freshness.state || delivery.state || "unknown"));
+  heading.append(identity, headingState);
+  section.append(heading, authorityFacts(delivery));
+
+  const refresh = refreshControl(row, delivery, options);
+  if (refresh) section.append(refresh);
+  section.append(
+    renderDeliveryRecipients(row, delivery, options),
+    renderPackageReceipts(delivery),
+    renderDeliveryConflicts(row, delivery, options),
+  );
+  const history = replicaHistory(delivery);
+  if (history) section.append(history);
+  return section;
+}
+
+function authorityFacts(delivery) {
+  const facts = el("dl", "socialDeliveryFacts");
+  facts.append(
+    fact("Authority", delivery.authority_organ ? compactId(delivery.authority_organ) : null),
+    fact("This view", delivery.authority_role ? statusLabel(delivery.authority_role) : null),
+    fact("Canonical writes", delivery.canonical_writes ? statusLabel(delivery.canonical_writes) : null),
+    fact("Local Organ", delivery.local_organ ? compactId(delivery.local_organ) : null),
+    fact("Fresh at", delivery.freshness.projected_at ? formatDate(delivery.freshness.projected_at) : null),
+    fact("Cursor", cursorLabel(delivery.freshness)),
+  );
+  if (delivery.freshness.last_error) {
+    const error = el("div", "socialDeliveryFreshnessError", delivery.freshness.last_error);
+    error.setAttribute("role", "status");
+    facts.append(error);
+  }
+  return facts;
+}
+
+function refreshControl(transfer, delivery, options) {
+  if (!capability(delivery, "refresh", "pull")) return null;
+  const template = projectedAction(delivery, "refresh") || projectedAction(delivery, "pull");
+  if (!template) return null;
+  const key = `delivery:${transfer.uid}:refresh`;
+  const state = options.actionState?.(key);
+  const block = el("div", "socialDeliveryRefresh");
+  const copy = el("div", "socialDeliveryRefreshCopy");
+  copy.append(
+    el("strong", "", "Authoritative refresh"),
+    el("span", "", delivery.freshness.last_pull_at
+      ? `Last pull ${formatDate(delivery.freshness.last_pull_at)}` : "No completed pull is projected"),
+  );
+  const button = el("button", "secondaryButton", state?.waiting ? "Awaiting live evidence" : state?.busy ? "Refreshing" : "Refresh");
+  button.type = "button";
+  button.disabled = options.mutationsEnabled === false || Boolean(state?.busy || state?.waiting);
+  button.addEventListener("click", () => {
+    const action = withActionInput(template);
+    if (action) options.onAction?.(key, action);
+  });
+  block.append(copy, button);
+  if (state?.error) {
+    const alert = el("div", "inlineAlert", state.error);
+    alert.setAttribute("role", "alert");
+    block.append(alert);
+  }
+  return block;
+}
+
+function replicaHistory(delivery) {
+  if (!delivery.replica_history.length) return null;
+  const section = el("section", "deliveryEvidenceGroup replicaHistory");
+  const heading = el("header", "deliveryGroupHeading");
+  heading.append(el("strong", "", "Replica history"), el("span", "", `${delivery.replica_history.length} retained`));
+  const list = el("ol", "replicaHistoryList");
+  for (const raw of delivery.replica_history) {
+    const item = raw && typeof raw === "object" ? raw : { revision: raw };
+    const row = el("li", "replicaHistoryRow");
+    row.append(
+      el("strong", "", item.revision == null ? "Revision unavailable" : `Revision ${item.revision}`),
+      el("span", "", [
+        item.cursor != null && `Cursor ${item.cursor}`,
+        item.at && formatDate(item.at),
+        item.envelope && `Envelope ${compactId(item.envelope)}`,
+      ].filter(Boolean).join(" · ")),
+    );
+    list.append(row);
+  }
+  section.append(heading, list);
+  return section;
+}
+
+function fact(label, value) {
+  const item = el("div", "deliveryFact");
+  item.append(el("dt", "", label), el("dd", "", value == null || value === "" ? "Unavailable" : String(value)));
+  return item;
+}
+
+function cursorLabel(freshness) {
+  if (freshness.cursor == null && freshness.origin_cursor == null) return null;
+  if (freshness.origin_cursor == null) return String(freshness.cursor);
+  return `${freshness.cursor ?? "?"} / ${freshness.origin_cursor}`;
+}

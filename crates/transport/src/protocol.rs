@@ -30,6 +30,30 @@ pub enum ClientMessage {
         id: String,
         action: Action,
     },
+    /// Bind an authenticated WebSocket to the private key held by its client.
+    /// `person_uid` must equal the server-side app_user -> Person mapping
+    /// announced in `SessionChallenge`; it is never trusted independently.
+    SessionAuthenticate {
+        id: String,
+        session_id: String,
+        session_challenge: String,
+        person_uid: String,
+        key_id: String,
+        public_key_base64: String,
+        signature: String,
+    },
+    /// A remote typed write. The decoded `action_base64` must be exactly one
+    /// Action JSON value and its bytes, message id, sequence, session id and
+    /// challenge are covered by the registered key's signature. Person and
+    /// key identity come from the authenticated session, not this frame.
+    SignedAct {
+        id: String,
+        session_id: String,
+        session_challenge: String,
+        sequence: u64,
+        action_base64: String,
+        signature: String,
+    },
     /// Join an ephemeral room (presence/cursors/call signaling).
     LaneJoin {
         room: String,
@@ -75,6 +99,24 @@ pub enum ClientMessage {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ServerMessage {
+    /// Sent once as the first application frame on every connection. For an
+    /// authenticated remote subject, `person` is the authoritative Ledger
+    /// identity mapped by the server and signing is mandatory for Actions.
+    SessionChallenge {
+        session_id: String,
+        challenge: String,
+        algorithm: String,
+        person: Option<String>,
+        signing_required: bool,
+    },
+    /// The connection proved possession of the key now bound to its mapped
+    /// Person. This is session state only; no private key reaches the server.
+    SessionAuthenticated {
+        id: String,
+        session_id: String,
+        person: String,
+        key_id: String,
+    },
     /// The full current result of a subscription.
     Snapshot {
         id: String,
@@ -99,6 +141,8 @@ pub enum ServerMessage {
     Error {
         id: String,
         message: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        code: Option<String>,
     },
     /// A message from another session in a joined room.
     LaneEvent {

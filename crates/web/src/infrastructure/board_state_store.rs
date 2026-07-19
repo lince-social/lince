@@ -1,6 +1,9 @@
 use {
     crate::{
-        domain::board::{BOARD_STATE_SCHEMA_VERSION, BoardState, default_board_state},
+        domain::board::{
+            BOARD_STATE_SCHEMA_VERSION, BoardState, RECORD_PIN_ID, default_board_state,
+            record_pin_card,
+        },
         infrastructure::paths,
     },
     std::{path::PathBuf, sync::Arc},
@@ -46,9 +49,10 @@ impl BoardStateStore {
 fn load_state_from_disk(path: &PathBuf) -> Result<BoardState, String> {
     match std::fs::read_to_string(path) {
         Ok(raw) => {
-            let state = serde_json::from_str::<BoardState>(&raw)
+            let mut state = serde_json::from_str::<BoardState>(&raw)
                 .map_err(|error| format!("Nao consegui interpretar o board salvo: {error}"))?;
             if state.schema_version == BOARD_STATE_SCHEMA_VERSION {
+                ensure_record_pin(&mut state);
                 Ok(state)
             } else {
                 Ok(default_board_state())
@@ -56,6 +60,18 @@ fn load_state_from_disk(path: &PathBuf) -> Result<BoardState, String> {
         }
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(default_board_state()),
         Err(error) => Err(format!("Nao consegui ler o board salvo: {error}")),
+    }
+}
+
+/// Non-destructive top-up for boards persisted before the Record pin existed:
+/// inject it into any workspace that doesn't already have one, leaving
+/// everything else (positions, other cards) untouched.
+fn ensure_record_pin(state: &mut BoardState) {
+    for workspace in &mut state.workspaces {
+        let already_present = workspace.cards.iter().any(|card| card.id == RECORD_PIN_ID);
+        if !already_present {
+            workspace.cards.push(record_pin_card());
+        }
     }
 }
 

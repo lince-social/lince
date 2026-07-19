@@ -70,7 +70,11 @@ pub async fn role_by_name(pool: &SqlitePool, name: &str) -> Result<Option<i64>, 
 }
 
 /// Move a user to a different role (idempotent).
-pub async fn set_user_role(pool: &SqlitePool, user_id: i64, role_id: i64) -> Result<(), StoreError> {
+pub async fn set_user_role(
+    pool: &SqlitePool,
+    user_id: i64,
+    role_id: i64,
+) -> Result<(), StoreError> {
     sqlx::query("UPDATE app_user SET role_id = ? WHERE id = ?")
         .bind(role_id)
         .bind(user_id)
@@ -141,7 +145,9 @@ pub async fn list_roles(pool: &SqlitePool) -> Result<Vec<(i64, String, Vec<Strin
 
 /// Every user with their role name (no password hash — this is a read
 /// surface for the role-management sand, never an auth check).
-pub async fn list_users(pool: &SqlitePool) -> Result<Vec<(i64, String, String, String)>, StoreError> {
+pub async fn list_users(
+    pool: &SqlitePool,
+) -> Result<Vec<(i64, String, String, String)>, StoreError> {
     sqlx::query_as::<_, (i64, String, String, Option<String>)>(
         "SELECT u.id, u.username, u.name, r.name
          FROM app_user u

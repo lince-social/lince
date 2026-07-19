@@ -244,6 +244,7 @@ fn spawn_reader(
                         let _ = out_tx.blocking_send(ServerMessage::Error {
                             id: id.clone(),
                             message: format!("terminal output failed: {error}"),
+                            code: None,
                         });
                         return;
                     }

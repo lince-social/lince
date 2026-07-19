@@ -45,6 +45,14 @@ pub async fn serve(
     });
 
     let mut session = Session::new(engine.clone(), hub.clone(), connection_id.clone(), subject);
+    // The challenge is always the first application frame. Remote clients
+    // must bind their mapped Person key before any Action; local trusted mode
+    // is announced explicitly so clients never infer it from missing fields.
+    let challenge = session.initialize_action_intent().await;
+    if out_tx.send(challenge).await.is_err() {
+        writer.abort();
+        return;
+    }
     let mut terminals = TerminalHost::new();
     let mut bus = engine.subscribe();
 
@@ -112,7 +120,7 @@ pub async fn serve(
                     }
                     Err(e) => {
                         let _ = out_tx
-                            .send(ServerMessage::Error { id: "-".into(), message: e.to_string() })
+                            .send(ServerMessage::Error { id: "-".into(), message: e.to_string(), code: None })
                             .await;
                     }
                 }
@@ -139,7 +147,13 @@ async fn send_terminal_error(
     out_tx: &mpsc::Sender<ServerMessage>,
 ) {
     if let Err(message) = result {
-        let _ = out_tx.send(ServerMessage::Error { id, message }).await;
+        let _ = out_tx
+            .send(ServerMessage::Error {
+                id,
+                message,
+                code: None,
+            })
+            .await;
     }
 }
 

@@ -97,7 +97,13 @@
     .cause { color: #8b949e; flex: 1; }
     .when { color: #6e7681; }
     .none { color: #6e7681; padding: .2rem 0; font-size: .78rem; }
-    .empty { color: #6e7681; padding: .8rem .2rem; }
+    /* Default idle state: pinned bottom-right, collapsed to just this glyph
+       until a recordClicked/recordCreate ABI event expands the card. */
+    body.collapsed .head { display: none; }
+    .iconview { color: #6e7681; font-size: 1.6rem; }
+    .iconview:not([hidden]) {
+      display: flex; align-items: center; justify-content: center; height: 100%;
+    }
     /* Creation mode: the SAME fields the display shows on a get, writable and
        empty. Entered via the group's `recordCreate` event ("New task"). */
     #create { display: none; border: 1px solid #21262d; border-radius: 8px; overflow: hidden; }
@@ -125,6 +131,7 @@
   <div class="head">
     <h1 id="title">Record</h1>
     <span id="dot" class="dot" title="red = reconnecting · amber = update in flight · green = live"></span>
+    <button id="btn-collapse" type="button" class="tbtn" title="Hide (Esc)">✕</button>
   </div>
 
   <div id="create">
@@ -227,7 +234,7 @@
     </details>
   </div>
 
-  <div id="empty" class="empty" hidden>No records yet.</div>
+  <div id="icon" class="iconview" hidden>◉</div>
 
   <script>
     // The blueprint's W-provenance standard (VII.1) grown into the expanded
@@ -238,7 +245,7 @@
     // Optional: a missing module degrades to plain textareas + text bodies.
     const Editor = window.LinceBodyEditor || null;
     const $ = (id) => document.getElementById(id);
-    const emptyEl = $("empty");
+    const iconEl = $("icon");
     const WORK_NS = "work";
 
     // ---- live dot with an "update in flight" state ---------------------------
@@ -306,7 +313,7 @@
       }
     }
 
-    showPlaceholder();
+    goIdle();
 
     H.joinRoom("recordClicked");
     H.onLane("recordClicked", (payload) => {
@@ -324,6 +331,7 @@
     });
 
     function focusRecord(uid) {
+      expand();
       if (typeof unsubscribe === "function") unsubscribe();
       fieldsDirty = false;
       workDirty = false;
@@ -353,10 +361,10 @@
 
     // ---- creation mode -------------------------------------------------------
     function openCreate(seed) {
+      expand();
       creating = true;
       $("title").textContent = "New record";
       $("focus").hidden = true;
-      emptyEl.hidden = true;
       $("c-error").hidden = true;
       $("c-head").value = "";
       $("c-slug").value = "";
@@ -371,7 +379,7 @@
       $("title").textContent = "Record";
       $("create").classList.remove("open");
     }
-    $("c-cancel").addEventListener("click", () => { closeCreate(); showPlaceholder(); });
+    $("c-cancel").addEventListener("click", () => { closeCreate(); goIdle(); });
     $("c-submit").addEventListener("click", async () => {
       const head = $("c-head").value.trim();
       const slug = $("c-slug").value.trim();
@@ -395,29 +403,57 @@
         if (created) await addBodyRefs(String(created), body, []);
         closeCreate();
         if (created) focusRecord(String(created));
-        else showPlaceholder();
+        else goIdle();
       } catch (err) {
         $("c-error").textContent = String(err && err.message ? err.message : err);
         $("c-error").hidden = false;
       }
     });
 
-    // ---- placeholder -----------------------------------------------------------
-    function showPlaceholder() {
-      $("focus").hidden = true;
-      emptyEl.textContent = "Clique num card do Kanban para ver e editar o registro.";
-      emptyEl.hidden = false;
+    // ---- icon <-> full panel ----------------------------------------------------
+    // Pinned bottom-right; idle by default (just the glyph), expands in place
+    // on a recordClicked/recordCreate ABI event, collapses back on Esc or the
+    // header's close button — dropping the live subscription each time so a
+    // reopen never flashes the previous record's stale data.
+    function expand() {
+      document.body.classList.remove("collapsed");
+      iconEl.hidden = true;
+      H.patchCardState({ recordExpanded: true });
     }
+    function goIdle() {
+      if (typeof unsubscribe === "function") unsubscribe();
+      unsubscribe = null;
+      row = null;
+      creating = false;
+      fieldsDirty = false;
+      workDirty = false;
+      activeThreadUid = null;
+      threadSearch = "";
+      $("thread-search").value = "";
+      $("thread-new").hidden = true;
+      $("title").textContent = "Record";
+      $("focus").hidden = true;
+      $("create").classList.remove("open");
+      document.body.classList.add("collapsed");
+      iconEl.hidden = false;
+      H.patchCardState({ recordExpanded: false });
+    }
+    $("btn-collapse").addEventListener("click", goIdle);
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      const tag = event.target && event.target.tagName;
+      // Fields keep editing until explicitly saved/cancelled; the thread-name
+      // box has its own local Escape. Only collapse when not mid-typing.
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (creating || row) goIdle();
+    });
 
     // ---- focused render --------------------------------------------------------
     function renderFocus() {
       if (!row) {
-        $("focus").hidden = true;
-        emptyEl.textContent = "Record deleted (or none focused).";
-        emptyEl.hidden = false;
+        goIdle();
         return;
       }
-      emptyEl.hidden = true;
       $("focus").hidden = false;
       $("f-name").textContent = row.head || row.slug || row.uid;
       $("f-qty").textContent = `qty ${row.quantity}`;

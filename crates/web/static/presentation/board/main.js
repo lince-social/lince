@@ -10,6 +10,7 @@ import { createBoardStore } from "./store.js";
 import { createBoardViewport } from "./viewport.js";
 import { createWidgetBridge, enhancePackageHtml } from "./widget-bridge.js";
 import { createProteinConfigPanel } from "./protein-config.js";
+import { buildWorkspaceArchive } from "./archive.js";
 
 const PACKAGE_EXTENSION = ".html";
 const LEGACY_PACKAGE_EXTENSION = ".sand";
@@ -671,6 +672,9 @@ const widgetBridge = createWidgetBridge({
   },
   handleShellAction(instanceId, command, payload) {
     handleShellAction(instanceId, command, payload);
+  },
+  archiveWorkspace(instanceId, options) {
+    return runWorkspaceArchive(instanceId, options);
   },
   async invalidateServerAuth(serverId) {
     const target = String(serverId || "").trim();
@@ -2035,6 +2039,36 @@ function downloadRawHtmlCard(card) {
   );
 }
 
+// The Archive sand's trigger (see archive.js for the capture rules): export
+// the ACTIVE workspace as one static, request-free HTML file and hand it to
+// the browser as a download. The requesting card is excluded from its own
+// output; shell pins are excluded inside the builder.
+async function runWorkspaceArchive(requestingCardId, options = {}) {
+  try {
+    const snapshot = store.getSnapshot();
+    const result = await buildWorkspaceArchive({
+      workspaceName: snapshot.activeWorkspace?.name || "Workspace",
+      cards: snapshot.cards,
+      excludeCardIds: [requestingCardId],
+      frameForCard: (cardId) => getPackageFrameNode(cardId),
+      filename: options?.filename,
+    });
+    downloadTextFile(result.filename, result.html, "text/html;charset=utf-8");
+    const skippedNote = result.skipped.length
+      ? ` (${result.skipped.length} pulados: ${result.skipped
+          .map((entry) => entry.title || entry.id)
+          .join(", ")})`
+      : "";
+    flashDropOverlayMessage(
+      `Arquivo estatico gerado: ${result.included} cards em ${result.filename}${skippedNote}.`,
+    );
+  } catch (error) {
+    flashDropOverlayMessage(
+      error instanceof Error ? error.message : "Falha ao arquivar o workspace.",
+    );
+  }
+}
+
 function applyCacheBust(url) {
   const base = String(url || "");
   if (!base) {
@@ -2371,13 +2405,23 @@ function createPackageRenderSignature(card) {
   return `${gate.state}:${gate.server?.id || ""}:${gate.message || ""}:${card.title || ""}`;
 }
 
+const RECORD_ICON_SIZE = 56;
+
 function syncCardNode(node, card) {
   const isWorkspaceShell = card.system === true && card.packageName === "lince-shell-workspaces.html";
   const isEditShell = isShellEditCard(card);
   const isShellPopoverOpen = (isWorkspaceShell && workspacePopoverOpen) || (isEditShell && editMode);
+  const isRecordPin =
+    card.pinned === true && !card.system && card.packageName === "record.html";
+  const recordExpanded = isRecordPin && Boolean(card.widgetState?.recordExpanded);
   const workspacePopoverWidth = 260;
-  const expandedWidth = card.width;
-  const wantedExpandedHeight = isWorkspaceShell && workspacePopoverOpen ? 350 : card.height;
+  const expandedWidth = isRecordPin && !recordExpanded ? RECORD_ICON_SIZE : card.width;
+  const wantedExpandedHeight =
+    isRecordPin && !recordExpanded
+      ? RECORD_ICON_SIZE
+      : isWorkspaceShell && workspacePopoverOpen
+        ? 350
+        : card.height;
   const canvasRect = boardCanvas.getBoundingClientRect();
   // System cards are positioned by layoutShellPins (uses window.visualViewport).
   // Re-clamping with getBoundingClientRect diverges from that source and causes
@@ -2385,22 +2429,24 @@ function syncCardNode(node, card) {
   // For user-pinned cards, guard against zero-size rects during layout transitions.
   const canvasIsReady = canvasRect.width > 0 && canvasRect.height > 0;
   const shouldClampPinned = card.pinned === true && !card.system && canvasIsReady;
-  const expandedHeight =
-    shouldClampPinned
+  const expandedHeight = isRecordPin
+    ? wantedExpandedHeight
+    : shouldClampPinned
       ? Math.max(card.height, Math.min(wantedExpandedHeight, canvasRect.height - card.y))
       : wantedExpandedHeight;
   const anchoredX =
-    isShellPopoverOpen && !isWorkspaceShell && card.pinned === true
+    (isShellPopoverOpen && !isWorkspaceShell && card.pinned === true) || isRecordPin
       ? card.x + card.width - expandedWidth
       : card.x;
+  const anchoredY = isRecordPin ? card.y + card.height - expandedHeight : card.y;
   const adjustedX =
     shouldClampPinned
       ? Math.max(0, Math.min(anchoredX, canvasRect.width - expandedWidth))
       : anchoredX;
   const adjustedY =
     shouldClampPinned
-      ? Math.max(0, Math.min(card.y, canvasRect.height - expandedHeight))
-      : card.y;
+      ? Math.max(0, Math.min(anchoredY, canvasRect.height - expandedHeight))
+      : anchoredY;
 
   node.style.left = `${adjustedX}px`;
   node.style.top = `${adjustedY}px`;
@@ -5146,6 +5192,7 @@ function defaultServerIdForPreview(preview) {
 // Sands that ship with a default ABI listen configuration.
 const DEFAULT_ABI_LISTEN_BY_PACKAGE = {
   "record.html": ["recordClicked", "recordCreate"],
+  "transfer.html": ["transferCreate"],
 };
 
 function createCardFromPreview(preview, sizeOverride = null) {
@@ -6229,6 +6276,23 @@ document.addEventListener("keydown", (event) => {
     event.preventDefault();
     setWorkspacePopoverOpen(false);
     return;
+  }
+
+  if (event.key === "Escape") {
+    // Fallback for when focus sits on the canvas rather than inside the
+    // Record sand's own iframe (which handles its own Escape-to-collapse).
+    const snapshot = store.getSnapshot();
+    const workspace = snapshot.workspaces.find(
+      (entry) => entry.id === snapshot.activeWorkspaceId,
+    );
+    const expandedRecordCard = workspace?.cards.find(
+      (card) => card.packageName === "record.html" && card.widgetState?.recordExpanded === true,
+    );
+    if (expandedRecordCard) {
+      event.preventDefault();
+      patchCardWidgetState(expandedRecordCard.id, { recordExpanded: false });
+      return;
+    }
   }
 
   if (event.code === "Space" && !isTypingTarget(event.target)) {

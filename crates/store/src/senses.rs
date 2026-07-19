@@ -90,10 +90,7 @@ pub struct RemoteOpenRow {
 
 /// Upsert one remote open promise into the discovery cache (Part XV feeds
 /// this; tests and the matcher read it).
-pub async fn upsert_remote_open(
-    pool: &SqlitePool,
-    row: &RemoteOpenRow,
-) -> Result<(), StoreError> {
+pub async fn upsert_remote_open(pool: &SqlitePool, row: &RemoteOpenRow) -> Result<(), StoreError> {
     sqlx::query(
         "INSERT INTO discovery_cache
             (promise_uid, organ, proximity, concept, unit, delta,
@@ -122,20 +119,22 @@ pub async fn upsert_remote_open(
 }
 
 pub async fn list_remote_open(pool: &SqlitePool) -> Result<Vec<RemoteOpenRow>, StoreError> {
-    Ok(sqlx::query("SELECT * FROM discovery_cache ORDER BY promise_uid")
-        .fetch_all(pool)
-        .await?
-        .into_iter()
-        .map(|r| RemoteOpenRow {
-            promise_uid: r.get("promise_uid"),
-            organ: r.get("organ"),
-            proximity: r.get::<i64, _>("proximity") as u32,
-            concept: r.get("concept"),
-            unit: r.get("unit"),
-            delta: r.get("delta"),
-            window_start: r.get("window_start"),
-            window_end: r.get("window_end"),
-            confidence: r.get("confidence"),
-        })
-        .collect())
+    Ok(
+        sqlx::query("SELECT * FROM discovery_cache ORDER BY promise_uid")
+            .fetch_all(pool)
+            .await?
+            .into_iter()
+            .map(|r| RemoteOpenRow {
+                promise_uid: r.get("promise_uid"),
+                organ: r.get("organ"),
+                proximity: r.get::<i64, _>("proximity") as u32,
+                concept: r.get("concept"),
+                unit: r.get("unit"),
+                delta: r.get("delta"),
+                window_start: r.get("window_start"),
+                window_end: r.get("window_end"),
+                confidence: r.get("confidence"),
+            })
+            .collect(),
+    )
 }

@@ -619,6 +619,21 @@ pub async fn serve_cell_api_only(
             .await
             .map_err(IoError::other)?,
     );
+    let local_organ = store::organs::local(&cell_store.pool)
+        .await
+        .map_err(IoError::other)?
+        .ok_or_else(|| IoError::other("local Organ was not initialized"))?;
+    let key_dir = utils::config::lince_data_dir().unwrap_or_else(|| PathBuf::from("."));
+    let organ_signer = engine::trust::Signer::load_or_create(
+        &key_dir.join("keys").join("organ-ed25519-v1.key"),
+        &local_organ.uid,
+        "ed25519:organ:v1",
+    )
+    .map_err(IoError::other)?;
+    engine
+        .set_organ_signer(organ_signer)
+        .await
+        .map_err(IoError::other)?;
     // Simplest v1: read each organ's `lince.file_sync` config once at boot and
     // spawn its watch loop if enabled. A toggle from the Organ sand takes
     // effect on the next boot; no live start/stop supervisor yet.
@@ -663,12 +678,36 @@ pub async fn serve_cell_api_only(
         .route("/organ/introduction", get(organ_introduction))
         .route("/organ/inbox", post(organ_inbox))
         .route("/organ/open-promises", get(organ_open_promises))
+        .route(
+            "/organ/transfers/envelopes",
+            post(crate::presentation::http::transfer_delivery::receive_envelope),
+        )
+        .route(
+            "/organ/transfers/pull",
+            post(crate::presentation::http::transfer_delivery::pull_envelope),
+        )
+        .route(
+            "/organ/transfers/receipts",
+            post(crate::presentation::http::transfer_delivery::receive_receipt),
+        )
+        .route(
+            "/organ/transfers/commands",
+            post(crate::presentation::http::transfer_delivery::receive_command),
+        )
+        .route(
+            "/organ/transfers/policy-events",
+            post(crate::presentation::http::transfer_delivery::receive_policy_event),
+        )
+        .route(
+            "/organ/transfers/application-attestations",
+            post(crate::presentation::http::transfer_delivery::receive_application_attestation),
+        )
         .route("/host/transport/ws", get(connect));
     // Only lince-desktop enables `native-picker` (see the Cargo.toml
     // comment) — the plain `lince` CLI never registers this route.
     #[cfg(feature = "native-picker")]
     let router = router.route("/host/media/pick", post(pick_media));
-    let router = router.with_state(state);
+    let router = router.with_state(state.clone());
     let app = if static_dir.exists() {
         router
             .nest_service("/static", ServeDir::new(&static_dir))
@@ -698,6 +737,7 @@ pub async fn serve_cell_api_only(
     if let Some(sender) = bound_addr_sender {
         let _ = sender.send(local_addr);
     }
+    crate::presentation::http::transfer_delivery::spawn_worker(state.clone());
     status(format!("Cell API listening at http://{local_addr}"));
     axum::serve(listener, app).await.map_err(IoError::other)
 }

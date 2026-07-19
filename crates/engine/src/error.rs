@@ -9,6 +9,7 @@ pub enum EngineError {
     Io(std::io::Error),
     Json(serde_json::Error),
     Forbidden(String),
+    Conflict { code: &'static str, message: String },
 }
 
 impl fmt::Display for EngineError {
@@ -21,6 +22,18 @@ impl fmt::Display for EngineError {
             Self::Io(e) => write!(f, "io: {e}"),
             Self::Json(e) => write!(f, "json: {e}"),
             Self::Forbidden(m) => write!(f, "forbidden: {m}"),
+            Self::Conflict { message, .. } => write!(f, "conflict: {message}"),
+        }
+    }
+}
+
+impl EngineError {
+    pub fn code(&self) -> Option<&'static str> {
+        match self {
+            Self::Conflict { code, .. } => Some(code),
+            Self::Forbidden(_) => Some("forbidden"),
+            Self::UnknownRecord(_) => Some("unknown_record"),
+            _ => None,
         }
     }
 }
@@ -36,5 +49,11 @@ impl From<store::StoreError> for EngineError {
 impl From<nucleus::NucleusError> for EngineError {
     fn from(e: nucleus::NucleusError) -> Self {
         Self::Nucleus(e)
+    }
+}
+
+impl From<std::io::Error> for EngineError {
+    fn from(error: std::io::Error) -> Self {
+        Self::Io(error)
     }
 }

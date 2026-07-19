@@ -14,6 +14,23 @@ const APP_MODEL_JS: &str = include_str!("app/model.js");
 const APP_RENDER_JS: &str = include_str!("app/render.js");
 const APP_CREATE_JS: &str = include_str!("app/create.js");
 const APP_CREATE_MODEL_JS: &str = include_str!("app/create-model.js");
+const APP_AGREEMENT_JS: &str = include_str!("app/agreement.js");
+const APP_NEGOTIATION_JS: &str = include_str!("app/negotiation.js");
+const APP_OCCURRENCE_JS: &str = include_str!("app/occurrence.js");
+const APP_HIERARCHY_JS: &str = include_str!("app/hierarchy.js");
+const APP_BULK_JS: &str = include_str!("app/bulk.js");
+const APP_DELIVERY_JS: &str = include_str!("app/delivery.js");
+const APP_DELIVERY_MODEL_JS: &str = include_str!("app/delivery/model.js");
+const APP_DELIVERY_RECIPIENTS_JS: &str = include_str!("app/delivery/recipients.js");
+const APP_DELIVERY_RECEIPTS_JS: &str = include_str!("app/delivery/receipts.js");
+const APP_DELIVERY_CONFLICTS_JS: &str = include_str!("app/delivery/conflicts.js");
+const APP_INSPECTION_JS: &str = include_str!("app/inspection.js");
+const APP_INSPECTION_ACCOUNTING_JS: &str = include_str!("app/inspection/accounting.js");
+const APP_INSPECTION_CORRECTIONS_JS: &str = include_str!("app/inspection/corrections.js");
+const APP_INSPECTION_DISCLOSURE_JS: &str = include_str!("app/inspection/disclosure.js");
+const APP_INSPECTION_PROOF_DRAWER_JS: &str = include_str!("app/inspection/proof-drawer.js");
+const APP_INSPECTION_SHARED_JS: &str = include_str!("app/inspection/shared.js");
+const APP_INSPECTION_TIMELINE_JS: &str = include_str!("app/inspection/timeline.js");
 
 pub(crate) fn package() -> LincePackage {
     let manifest = PackageManifest {
@@ -43,6 +60,68 @@ pub(crate) fn package() -> LincePackage {
     assets.insert(
         "app/create-model.js".into(),
         APP_CREATE_MODEL_JS.as_bytes().to_vec(),
+    );
+    assets.insert(
+        "app/agreement.js".into(),
+        APP_AGREEMENT_JS.as_bytes().to_vec(),
+    );
+    assets.insert(
+        "app/negotiation.js".into(),
+        APP_NEGOTIATION_JS.as_bytes().to_vec(),
+    );
+    assets.insert(
+        "app/occurrence.js".into(),
+        APP_OCCURRENCE_JS.as_bytes().to_vec(),
+    );
+    assets.insert(
+        "app/hierarchy.js".into(),
+        APP_HIERARCHY_JS.as_bytes().to_vec(),
+    );
+    assets.insert("app/bulk.js".into(), APP_BULK_JS.as_bytes().to_vec());
+    assets.insert("app/delivery.js".into(), APP_DELIVERY_JS.as_bytes().to_vec());
+    assets.insert(
+        "app/delivery/model.js".into(),
+        APP_DELIVERY_MODEL_JS.as_bytes().to_vec(),
+    );
+    assets.insert(
+        "app/delivery/recipients.js".into(),
+        APP_DELIVERY_RECIPIENTS_JS.as_bytes().to_vec(),
+    );
+    assets.insert(
+        "app/delivery/receipts.js".into(),
+        APP_DELIVERY_RECEIPTS_JS.as_bytes().to_vec(),
+    );
+    assets.insert(
+        "app/delivery/conflicts.js".into(),
+        APP_DELIVERY_CONFLICTS_JS.as_bytes().to_vec(),
+    );
+    assets.insert(
+        "app/inspection.js".into(),
+        APP_INSPECTION_JS.as_bytes().to_vec(),
+    );
+    assets.insert(
+        "app/inspection/accounting.js".into(),
+        APP_INSPECTION_ACCOUNTING_JS.as_bytes().to_vec(),
+    );
+    assets.insert(
+        "app/inspection/corrections.js".into(),
+        APP_INSPECTION_CORRECTIONS_JS.as_bytes().to_vec(),
+    );
+    assets.insert(
+        "app/inspection/disclosure.js".into(),
+        APP_INSPECTION_DISCLOSURE_JS.as_bytes().to_vec(),
+    );
+    assets.insert(
+        "app/inspection/proof-drawer.js".into(),
+        APP_INSPECTION_PROOF_DRAWER_JS.as_bytes().to_vec(),
+    );
+    assets.insert(
+        "app/inspection/shared.js".into(),
+        APP_INSPECTION_SHARED_JS.as_bytes().to_vec(),
+    );
+    assets.insert(
+        "app/inspection/timeline.js".into(),
+        APP_INSPECTION_TIMELINE_JS.as_bytes().to_vec(),
     );
 
     LincePackage::new_archive(
@@ -91,6 +170,23 @@ mod tests {
         assert!(assets.contains(&"app/render.js"));
         assert!(assets.contains(&"app/create.js"));
         assert!(assets.contains(&"app/create-model.js"));
+        assert!(assets.contains(&"app/agreement.js"));
+        assert!(assets.contains(&"app/negotiation.js"));
+        assert!(assets.contains(&"app/occurrence.js"));
+        assert!(assets.contains(&"app/hierarchy.js"));
+        assert!(assets.contains(&"app/bulk.js"));
+        assert!(assets.contains(&"app/delivery.js"));
+        assert!(assets.contains(&"app/delivery/model.js"));
+        assert!(assets.contains(&"app/delivery/recipients.js"));
+        assert!(assets.contains(&"app/delivery/receipts.js"));
+        assert!(assets.contains(&"app/delivery/conflicts.js"));
+        assert!(assets.contains(&"app/inspection.js"));
+        assert!(assets.contains(&"app/inspection/accounting.js"));
+        assert!(assets.contains(&"app/inspection/corrections.js"));
+        assert!(assets.contains(&"app/inspection/disclosure.js"));
+        assert!(assets.contains(&"app/inspection/proof-drawer.js"));
+        assert!(assets.contains(&"app/inspection/shared.js"));
+        assert!(assets.contains(&"app/inspection/timeline.js"));
         assert_eq!(
             package.manifest.permissions,
             vec![

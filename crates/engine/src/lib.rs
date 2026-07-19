@@ -9,9 +9,11 @@
 //! - `reload_rules`: rebuilds the in-memory rule registry + dependency graph,
 //!   returning Proof warnings (rule loops).
 
+pub mod action_intent;
 pub mod actions;
 pub mod append;
 pub mod checkpoint;
+pub mod communication;
 pub mod effects;
 pub mod error;
 pub mod expiry;
@@ -22,6 +24,7 @@ pub mod senses;
 pub mod signals;
 pub mod sync;
 pub mod transfer;
+pub mod transfer_delivery;
 pub mod trust;
 
 use chrono::{DateTime, Utc};
@@ -37,6 +40,7 @@ pub struct Engine {
     registry: Mutex<karma::Registry>,
     bus: broadcast::Sender<Fact>,
     pub(crate) signer: Mutex<Option<trust::Signer>>,
+    pub(crate) organ_signer: Mutex<Option<trust::Signer>>,
 }
 
 impl Engine {
@@ -47,6 +51,7 @@ impl Engine {
             registry: Mutex::new(karma::Registry::default()),
             bus,
             signer: Mutex::new(None),
+            organ_signer: Mutex::new(None),
         };
         engine.reload_rules().await?;
         Ok(engine)
@@ -113,6 +118,14 @@ impl Engine {
         Ok(committed)
     }
 
+    /// Publish semantic transaction evidence without running Karma. Transfer
+    /// revisions use this until the dedicated Transfer/Karma phase defines
+    /// which signed term changes may drive recommendations or automation.
+    pub(crate) fn publish_committed_fact(&self, fact: Fact) -> Vec<Fact> {
+        let _ = self.bus.send(fact.clone());
+        vec![fact]
+    }
+
     /// Convenience: user edits a quantity by delta, clocked now.
     pub async fn append_user(
         &self,
@@ -166,6 +179,7 @@ impl Engine {
     pub async fn heartbeat(&self, now: DateTime<Utc>) -> Result<Vec<Fact>, EngineError> {
         // Expiry first: rules evaluated by the tick must see true promise states.
         let mut facts = self.expire_promises(now).await?;
+        facts.extend(self.expire_due_transfer_invitations(now).await?);
         facts.extend(self.expire_decisions(now).await?);
         facts.extend(self.tick(now).await?);
         facts.extend(self.sample_due_signals(now).await?);

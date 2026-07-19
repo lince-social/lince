@@ -21,12 +21,14 @@ const PROTEIN_ACTION_RESULT = "lince:protein-action-result";
 const FLAT_READY = "lince:ready";
 const FLAT_ACTION = "lince:action";
 const FLAT_ACTION_RESULT = "lince:action-result";
+const FLAT_SIGNING_STATE = "lince:signing-state";
 const FLAT_PROTEIN_ERROR = "lince:protein-error";
 const FLAT_LANE_JOIN = "lince:lane-join";
 const FLAT_LANE_SEND = "lince:lane-send";
 const FLAT_LANE_EVENT = "lince:lane-event";
 const FLAT_LIVE = "lince:live";
 const FLAT_PATCH_CARD_STATE = "lince:patch-card-state";
+const FLAT_ARCHIVE_WORKSPACE = "lince:archive-workspace";
 const FLAT_TERMINAL_OPEN = "lince:terminal-open";
 const FLAT_TERMINAL_INPUT = "lince:terminal-input";
 const FLAT_TERMINAL_RESIZE = "lince:terminal-resize";
@@ -217,10 +219,12 @@ export function createWidgetBridge({
   setCardStreamsEnabled,
   handleShellAction,
   invalidateServerAuth,
+  archiveWorkspace,
   onError,
 }) {
   let bridgeState = normalizeBridgeState(initialState);
   const transport = getSharedTransport();
+  let signingState = transport.getSigningState();
   let nextActionRequestId = 1;
   // subscription id -> { instanceId, subId, message, protocol } where protocol
   // is "flat" (new-way frame.js sand) or "nested" (legacy chrome). The protocol
@@ -294,7 +298,7 @@ export function createWidgetBridge({
   // Post an Action result in the shape the frame's protocol expects.
   // Warnings are non-fatal advisories (link cycles, Proof loops) — they ride
   // alongside ok, never turn a success into an error.
-  function postActionResult(req, ok, created, facts, message, warnings) {
+  function postActionResult(req, ok, created, facts, message, warnings, code) {
     const safeWarnings = Array.isArray(warnings) ? warnings : [];
     if (req.protocol === "flat") {
       postFrame(req.instanceId, {
@@ -304,6 +308,7 @@ export function createWidgetBridge({
         created: created || null,
         facts: Number(facts) || 0,
         message: String(message || ""),
+        code: String(code || ""),
         warnings: safeWarnings,
       });
       return;
@@ -316,6 +321,7 @@ export function createWidgetBridge({
         created: created || null,
         facts: Number(facts) || 0,
         message: String(message || ""),
+        code: String(code || ""),
         warnings: safeWarnings,
       },
     });
@@ -413,6 +419,7 @@ export function createWidgetBridge({
         message.facts,
         message.message,
         message.warnings,
+        message.code,
       );
     }
   }
@@ -474,9 +481,38 @@ export function createWidgetBridge({
       });
     }
     terminalSessions.clear();
+    if (!live) {
+      for (const req of pendingActions.values()) {
+        postActionResult(
+          req,
+          false,
+          null,
+          0,
+          "The Cell connection closed before the Action completed.",
+          [],
+          "session_disconnected",
+        );
+      }
+      pendingActions.clear();
+    }
     for (const entry of subscriptions.values()) {
       if (entry.protocol !== "flat") {
         postRows(entry, [], false);
+      }
+    }
+  });
+  transport.onSigningState((state) => {
+    const becameAvailable = !signingState?.available && Boolean(state?.available);
+    signingState = cloneJsonValue(state, {});
+    for (const instanceId of flatFrames) {
+      postFrame(instanceId, { type: FLAT_SIGNING_STATE, ...signingState });
+    }
+    // Capability-bearing Protein rows may have been projected while the
+    // session was still proving its key. Refresh them once that signer becomes
+    // usable so controls do not remain falsely disabled until another Fact.
+    if (becameAvailable) {
+      for (const entry of subscriptions.values()) {
+        sendTransport(entry.message);
       }
     }
   });
@@ -788,7 +824,22 @@ export function createWidgetBridge({
       reqId: fields.reqId,
       protocol: fields.protocol,
     });
-    sendTransport({ type: "act", id, action: cloneJsonValue(fields.action, {}) });
+    void transport
+      .sendAction(id, cloneJsonValue(fields.action, {}))
+      .catch((error) => {
+        const request = pendingActions.get(id);
+        if (!request) return;
+        pendingActions.delete(id);
+        postActionResult(
+          request,
+          false,
+          null,
+          0,
+          error?.message || "Session signing is unavailable.",
+          [],
+          error?.code || "session_signing_unavailable",
+        );
+      });
   }
 
   // A new-way sand announced itself (`frame.js` posts `lince:ready`). Register
@@ -801,6 +852,7 @@ export function createWidgetBridge({
     }
     flatFrames.add(instanceId);
     postFrame(instanceId, { type: FLAT_LIVE, live: transport.isReady() });
+    postFrame(instanceId, { type: FLAT_SIGNING_STATE, ...signingState });
     // Also re-push THIS frame's current bridge-state/cardState now (2026-07-18).
     // A cold page load creates the iframe and calls the bridge's initial
     // render() essentially back-to-back — postMessage to a still-loading
@@ -1038,6 +1090,26 @@ export function createWidgetBridge({
       data.type === FLAT_TERMINAL_CLOSE
     ) {
       handleTerminalCommand(data, event.source);
+      return;
+    }
+
+    // Archive sand requesting a static export of the current workspace. Only
+    // the card's REAL iframe may trigger it (same guard as terminals) — a
+    // page-level impostor posting a stolen instanceId is ignored. The chrome
+    // callback does the capture and the download; the disclosure decision is
+    // the user's click inside that sand.
+    if (data.type === FLAT_ARCHIVE_WORKSPACE) {
+      const requestingInstanceId = String(data.instanceId || "");
+      if (
+        typeof archiveWorkspace === "function" &&
+        requestingInstanceId &&
+        isCurrentFrameSource(requestingInstanceId, event.source)
+      ) {
+        void archiveWorkspace(
+          requestingInstanceId,
+          cloneJsonValue(data.options, {}),
+        );
+      }
       return;
     }
 

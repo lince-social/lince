@@ -82,12 +82,17 @@ pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<Fact>, StoreErro
 /// latest edit). Used for "who created this" (record ownership checks,
 /// message/thread sender resolution) — a record's own row carries no creator
 /// column, only its facts do.
-pub async fn creator_uid(pool: &SqlitePool, record_uid: &str) -> Result<Option<String>, StoreError> {
-    Ok(sqlx::query("SELECT actor_uid FROM fact WHERE record_uid = ? ORDER BY rowid ASC LIMIT 1")
-        .bind(record_uid)
-        .fetch_optional(pool)
-        .await?
-        .and_then(|r| r.get::<Option<String>, _>("actor_uid")))
+pub async fn creator_uid(
+    pool: &SqlitePool,
+    record_uid: &str,
+) -> Result<Option<String>, StoreError> {
+    Ok(
+        sqlx::query("SELECT actor_uid FROM fact WHERE record_uid = ? ORDER BY rowid ASC LIMIT 1")
+            .bind(record_uid)
+            .fetch_optional(pool)
+            .await?
+            .and_then(|r| r.get::<Option<String>, _>("actor_uid")),
+    )
 }
 
 pub async fn for_record(

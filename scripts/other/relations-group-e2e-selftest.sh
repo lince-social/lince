@@ -433,14 +433,14 @@ cat > "$WORK/harness.html" <<'HTML'
       && w.nodeGravityWeight(nB, gTree) === 0.5
       && w.nodeGravityWeight(nC, gTree) === 0
       && w.nodeGravityWeight(nD, gTree) === 0;
-    results.gravity_targets_down = w.gravityTargetY(nA, gTree) > 0 && w.gravityTargetY(nC, gTree) < 0;
+    results.gravity_pull_down = w.nodeBuoyancy(nA, gTree) > 0 && w.nodeBuoyancy(nC, gTree) < 0;
     results.gravity_unpins_trail = nA.fx === null && nA.fy === null
       && w.gravityActive()
       && !w.state.simulation.nodes().some((n) => n.id === "r_d");
     gravDir.value = "up";
     gravDir.dispatchEvent(new relations.contentWindow.Event("change"));
     await wait(120);
-    results.gravity_targets_up = w.gravityTargetY(nA, gTree) < w.gravityTargetY(nC, gTree);
+    results.gravity_pull_up = w.nodeBuoyancy(nA, gTree) < w.nodeBuoyancy(nC, gTree);
     // Off restores the classic pinned trail layout.
     gravDir.value = "off";
     gravDir.dispatchEvent(new relations.contentWindow.Event("change"));
@@ -501,9 +501,9 @@ check trail_optimistic       "the cascade did not apply optimistically before th
 check trail_settled          "a trail Action was still pending after its ack"
 check trail_undo_cascade     "Undo did not cascade the node and its promoted child back to road ahead"
 check gravity_weights        "node gravity weight is not root 1 .. leaf/outsider 0 by topo depth"
-check gravity_targets_down   "root-sinks gravity does not pull the root down and the leaves up"
+check gravity_pull_down      "root-sinks buoyancy does not accelerate the root down and the leaves up"
 check gravity_unpins_trail   "trail mode with gravity on still pins nodes (or simulates non-tree nodes)"
-check gravity_targets_up     "root-floats gravity does not invert the pull"
+check gravity_pull_up        "root-floats buoyancy does not invert the acceleration"
 check gravity_off_pins       "turning gravity off did not restore the pinned trail layout"
 check gravity_settles_graph  "the graph-mode simulation does not stratify the tree by weight"
 check preset_saved           "preset save did not create-record kind sand + set-extension relations.trail"

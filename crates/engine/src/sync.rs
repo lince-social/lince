@@ -62,9 +62,7 @@ impl Engine {
                 continue;
             }
             for c in [&r.concept_uid, &r.unit_uid].into_iter().flatten() {
-                for ancestor in
-                    store::concepts::ancestors_including(&self.store.pool, c).await?
-                {
+                for ancestor in store::concepts::ancestors_including(&self.store.pool, c).await? {
                     if !concept_uids.contains(&ancestor) {
                         concept_uids.push(ancestor);
                     }
@@ -197,8 +195,7 @@ impl Engine {
     /// packages from blocked organs are rejected wholesale (XV).
     pub async fn import_package(&self, package: &Package) -> Result<Vec<Fact>, EngineError> {
         // blocked rejects everything everywhere (blueprint XV.2)
-        if let Some(contact) =
-            store::organs::contact(&self.store.pool, &package.from_organ).await?
+        if let Some(contact) = store::organs::contact(&self.store.pool, &package.from_organ).await?
         {
             if contact.trust == "blocked" {
                 return Err(EngineError::Consequence(format!(

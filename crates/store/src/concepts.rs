@@ -118,13 +118,11 @@ pub async fn adopt(
     .execute(pool)
     .await?;
     for parent in parents {
-        sqlx::query(
-            "INSERT OR IGNORE INTO concept_parent (concept_uid, parent_uid) VALUES (?, ?)",
-        )
-        .bind(uid)
-        .bind(parent)
-        .execute(pool)
-        .await?;
+        sqlx::query("INSERT OR IGNORE INTO concept_parent (concept_uid, parent_uid) VALUES (?, ?)")
+            .bind(uid)
+            .bind(parent)
+            .execute(pool)
+            .await?;
     }
     Ok(())
 }
@@ -292,13 +290,12 @@ pub async fn convert(
         return Ok(Some(quantity));
     }
 
-    let direct =
-        sqlx::query("SELECT factor FROM concept_conversion WHERE a_uid = ? AND b_uid = ?")
-            .bind(from_uid)
-            .bind(to_uid)
-            .fetch_optional(pool)
-            .await?
-            .map(|row| row.get::<f64, _>("factor"));
+    let direct = sqlx::query("SELECT factor FROM concept_conversion WHERE a_uid = ? AND b_uid = ?")
+        .bind(from_uid)
+        .bind(to_uid)
+        .fetch_optional(pool)
+        .await?
+        .map(|row| row.get::<f64, _>("factor"));
     let factor = match direct {
         Some(factor) => factor,
         None => {

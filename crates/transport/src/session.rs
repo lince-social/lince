@@ -6,8 +6,10 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use engine::Engine;
+use engine::action_intent::ActionIntentSession;
+use engine::{Engine, EngineError};
 use nucleus::Fact;
+use nucleus::action_intent::{ActionIntentSessionProof, SignedActionIntent};
 use protein::Protein;
 
 use crate::lane::{LaneEvent, LaneHub};
@@ -23,6 +25,9 @@ pub struct Session {
     /// Active subscriptions: subscription id -> the Protein to re-run.
     subscriptions: HashMap<String, Protein>,
     joined_rooms: Vec<String>,
+    action_intent: Option<ActionIntentSession>,
+    action_intent_initialization_error: Option<(String, Option<String>)>,
+    action_intent_initialized: bool,
 }
 
 impl Session {
@@ -39,11 +44,58 @@ impl Session {
             connection_id: connection_id.into(),
             subscriptions: HashMap::new(),
             joined_rooms: Vec::new(),
+            action_intent: None,
+            action_intent_initialization_error: None,
+            action_intent_initialized: false,
         }
     }
 
     pub fn joined_rooms(&self) -> &[String] {
         &self.joined_rooms
+    }
+
+    /// Initialize remote Action authentication and return the connection's
+    /// first application frame. The mapped Person comes only from the engine's
+    /// authenticated app_user lookup. Local Cell sessions remain an explicit
+    /// trusted mode and may continue to use raw `Act` frames.
+    pub async fn initialize_action_intent(&mut self) -> ServerMessage {
+        if !self.action_intent_initialized {
+            self.action_intent_initialized = true;
+            if let Some(subject) = self.subject.as_deref() {
+                match self.engine.begin_action_intent_session(subject).await {
+                    Ok(session) => self.action_intent = Some(session),
+                    Err(error) => {
+                        let (message, code) = engine_error(&error);
+                        self.action_intent_initialization_error = Some((
+                            message,
+                            code.or(Some("action_intent_session_unavailable".into())),
+                        ));
+                    }
+                }
+            }
+        }
+
+        let person = self
+            .action_intent
+            .as_ref()
+            .map(|session| session.person_uid().to_string());
+        let session_id = self
+            .action_intent
+            .as_ref()
+            .map(|session| session.session_id().to_string())
+            .unwrap_or_else(|| nucleus::new_uid("unavailable-action-intent"));
+        let challenge = self
+            .action_intent
+            .as_ref()
+            .map(|session| session.challenge().to_string())
+            .unwrap_or_else(|| nucleus::new_uid("unavailable-action-challenge"));
+        ServerMessage::SessionChallenge {
+            session_id,
+            challenge,
+            algorithm: "ed25519".into(),
+            person,
+            signing_required: self.subject.is_some(),
+        }
     }
 
     /// Handle one inbound client message, producing the responses to send back.
@@ -55,7 +107,61 @@ impl Session {
                 self.subscriptions.remove(&id);
                 vec![]
             }
-            ClientMessage::Act { id, action } => vec![self.act(id, action).await],
+            ClientMessage::Act { id, action } => {
+                if self.subject.is_some() {
+                    vec![ServerMessage::Error {
+                        id,
+                        message: "authenticated WebSocket Actions require a signed intent".into(),
+                        code: Some("action_intent_required".into()),
+                    }]
+                } else {
+                    vec![self.act(id, action).await]
+                }
+            }
+            ClientMessage::SessionAuthenticate {
+                id,
+                session_id,
+                session_challenge,
+                person_uid,
+                key_id,
+                public_key_base64,
+                signature,
+            } => {
+                vec![
+                    self.authenticate_action_intent(
+                        id,
+                        ActionIntentSessionProof {
+                            session_id,
+                            session_challenge,
+                            person_uid,
+                            key_id,
+                            public_key_base64,
+                            signature,
+                        },
+                    )
+                    .await,
+                ]
+            }
+            ClientMessage::SignedAct {
+                id,
+                session_id,
+                session_challenge,
+                sequence,
+                action_base64,
+                signature,
+            } => {
+                vec![
+                    self.signed_act(SignedActionIntent {
+                        session_id,
+                        session_challenge,
+                        sequence,
+                        message_id: id,
+                        action_base64,
+                        signature,
+                    })
+                    .await,
+                ]
+            }
             ClientMessage::LaneJoin { room } => {
                 if !self.joined_rooms.contains(&room) {
                     self.joined_rooms.push(room);
@@ -83,12 +189,21 @@ impl Session {
             | ClientMessage::TerminalClose { id } => vec![ServerMessage::Error {
                 id,
                 message: "terminal capability requires a host transport driver".into(),
+                code: None,
             }],
         }
     }
 
     async fn subscribe(&mut self, id: String, protein: Protein) -> Vec<ServerMessage> {
-        match protein::execute_for(&self.engine.store, &protein, self.subject.as_deref()).await {
+        let signer_actor = self.available_signer_actor().await;
+        match protein::execute_for_with_signer(
+            &self.engine.store,
+            &protein,
+            self.subject.as_deref(),
+            signer_actor.as_deref(),
+        )
+        .await
+        {
             Ok(rows) => {
                 self.subscriptions.insert(id.clone(), protein);
                 vec![ServerMessage::Snapshot { id, rows }]
@@ -96,25 +211,41 @@ impl Session {
             Err(e) => vec![ServerMessage::Error {
                 id,
                 message: e.to_string(),
+                code: protein::error_code(&e),
             }],
         }
     }
 
     async fn subscribe_saved(&mut self, id: String, name: String) -> Vec<ServerMessage> {
-        match protein::execute_saved(&self.engine.store, &name, self.subject.as_deref()).await {
+        let signer_actor = self.available_signer_actor().await;
+        match protein::execute_saved_with_signer(
+            &self.engine.store,
+            &name,
+            self.subject.as_deref(),
+            signer_actor.as_deref(),
+        )
+        .await
+        {
             Ok(rows) => {
                 // materialize the saved AST so future `on_fact` recomputes it
                 match load_saved(&self.engine, &name).await {
                     Ok(protein) => {
                         self.subscriptions.insert(id.clone(), protein);
                     }
-                    Err(e) => return vec![ServerMessage::Error { id, message: e }],
+                    Err(e) => {
+                        return vec![ServerMessage::Error {
+                            id,
+                            message: e,
+                            code: None,
+                        }];
+                    }
                 }
                 vec![ServerMessage::Snapshot { id, rows }]
             }
             Err(e) => vec![ServerMessage::Error {
                 id,
                 message: e.to_string(),
+                code: protein::error_code(&e),
             }],
         }
     }
@@ -127,11 +258,97 @@ impl Session {
                 facts: outcome.facts.len(),
                 warnings: outcome.warnings,
             },
-            Err(e) => ServerMessage::Error {
-                id,
-                message: e.to_string(),
-            },
+            Err(e) => {
+                let code = e.code().map(str::to_string);
+                ServerMessage::Error {
+                    id,
+                    message: e.to_string(),
+                    code,
+                }
+            }
         }
+    }
+
+    async fn authenticate_action_intent(
+        &mut self,
+        id: String,
+        proof: ActionIntentSessionProof,
+    ) -> ServerMessage {
+        if self.subject.is_none() {
+            return ServerMessage::Error {
+                id,
+                message: "trusted local sessions do not register remote Action keys".into(),
+                code: Some("action_intent_not_required".into()),
+            };
+        }
+        let Some(session) = self.action_intent.as_mut() else {
+            return self.action_intent_unavailable(id);
+        };
+        let key_id = proof.key_id.clone();
+        match self
+            .engine
+            .authenticate_action_intent_session(session, proof)
+            .await
+        {
+            Ok(()) => ServerMessage::SessionAuthenticated {
+                id,
+                session_id: session.session_id().to_string(),
+                person: session.person_uid().to_string(),
+                key_id,
+            },
+            Err(error) => action_error(id, error),
+        }
+    }
+
+    async fn signed_act(&mut self, intent: SignedActionIntent) -> ServerMessage {
+        let id = intent.message_id.clone();
+        if self.subject.is_none() {
+            return ServerMessage::Error {
+                id,
+                message: "signed Action intents require an authenticated app user".into(),
+                code: Some("action_intent_subject_required".into()),
+            };
+        }
+        let Some(session) = self.action_intent.as_mut() else {
+            return self.action_intent_unavailable(id);
+        };
+        let verified = match self.engine.verify_action_intent(session, intent).await {
+            Ok(verified) => verified,
+            Err(error) => return action_error(id, error),
+        };
+        match self.engine.act_verified_intent(verified).await {
+            Ok(outcome) => ServerMessage::ActionOk {
+                id,
+                created: outcome.created,
+                facts: outcome.facts.len(),
+                warnings: outcome.warnings,
+            },
+            Err(error) => action_error(id, error),
+        }
+    }
+
+    fn action_intent_unavailable(&self, id: String) -> ServerMessage {
+        let (message, code) = self
+            .action_intent_initialization_error
+            .clone()
+            .unwrap_or_else(|| {
+                (
+                    "signed Action intent session was not initialized".into(),
+                    Some("action_intent_session_unavailable".into()),
+                )
+            });
+        ServerMessage::Error { id, message, code }
+    }
+
+    async fn available_signer_actor(&self) -> Option<String> {
+        if self.subject.is_some() {
+            return self
+                .action_intent
+                .as_ref()
+                .filter(|session| session.bound_key_id().is_some())
+                .map(|session| session.person_uid().to_string());
+        }
+        self.engine.signer_actor_uid().await
     }
 
     /// A fact was committed (off `fact_bus`): push an Update for every
@@ -140,11 +357,19 @@ impl Session {
     /// re-send, correct if not yet minimal.
     pub async fn on_fact(&self, fact: &Fact) -> Vec<ServerMessage> {
         let mut out = Vec::new();
+        let signer_actor = self.available_signer_actor().await;
         for (id, protein) in &self.subscriptions {
             if !protein::affects(protein, fact) {
                 continue;
             }
-            match protein::execute_for(&self.engine.store, protein, self.subject.as_deref()).await {
+            match protein::execute_for_with_signer(
+                &self.engine.store,
+                protein,
+                self.subject.as_deref(),
+                signer_actor.as_deref(),
+            )
+            .await
+            {
                 Ok(rows) => out.push(ServerMessage::Update {
                     id: id.clone(),
                     rows,
@@ -152,11 +377,21 @@ impl Session {
                 Err(e) => out.push(ServerMessage::Error {
                     id: id.clone(),
                     message: e.to_string(),
+                    code: protein::error_code(&e),
                 }),
             }
         }
         out
     }
+}
+
+fn engine_error(error: &EngineError) -> (String, Option<String>) {
+    (error.to_string(), error.code().map(str::to_string))
+}
+
+fn action_error(id: String, error: EngineError) -> ServerMessage {
+    let (message, code) = engine_error(&error);
+    ServerMessage::Error { id, message, code }
 }
 
 async fn load_saved(engine: &Engine, name: &str) -> Result<Protein, String> {

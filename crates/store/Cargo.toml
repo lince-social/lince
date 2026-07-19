@@ -11,5 +11,6 @@ description = "Lince storage: the only crate that speaks SQL. Schema, migrations
 nucleus = { workspace = true }
 sqlx = { workspace = true, features = ["runtime-tokio", "sqlite", "migrate", "chrono"] }
 chrono = { workspace = true }
+serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }

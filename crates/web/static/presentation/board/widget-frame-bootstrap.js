@@ -165,9 +165,13 @@ const PROTEIN_ACTION_RESULT = "lince:protein-action-result";
     if (event.data.type === WIDGET_ERROR) {
       emit("lince-bridge-error", event.data.payload || {});
       for (const pending of pendingActions.values()) {
-        pending.reject(
-          new Error(event.data.payload?.message || "Lince transport error."),
+        const error = new Error(
+          event.data.payload?.message || "Lince transport error.",
         );
+        if (event.data.payload?.code) {
+          error.code = event.data.payload.code;
+        }
+        pending.reject(error);
       }
       pendingActions.clear();
       return;
@@ -200,7 +204,11 @@ const PROTEIN_ACTION_RESULT = "lince:protein-action-result";
           facts: Number(payload.facts) || 0,
         });
       } else {
-        pending.reject(new Error(payload.message || "Action failed."));
+        const error = new Error(payload.message || "Action failed.");
+        if (payload.code) {
+          error.code = payload.code;
+        }
+        pending.reject(error);
       }
     }
   });

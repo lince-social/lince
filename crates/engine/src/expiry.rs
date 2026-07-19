@@ -36,9 +36,7 @@ impl Engine {
                                 kind: CauseKind::Action,
                                 uid: None,
                             },
-                            payload: Some(
-                                serde_json::json!({ "answer": "expired" }).to_string(),
-                            ),
+                            payload: Some(serde_json::json!({ "answer": "expired" }).to_string()),
                         },
                         now,
                     )
@@ -52,9 +50,7 @@ impl Engine {
     /// Sweep past-window promises. Returns the annotation facts committed.
     pub async fn expire_promises(&self, now: DateTime<Utc>) -> Result<Vec<Fact>, EngineError> {
         let mut out = Vec::new();
-        for promise in
-            store::misc::expired_promises(&self.store.pool, &now.to_rfc3339()).await?
-        {
+        for promise in store::misc::expired_promises(&self.store.pool, &now.to_rfc3339()).await? {
             let next = match promise.state {
                 PromiseState::Agreed | PromiseState::Active => PromiseState::Broken,
                 _ => PromiseState::Withdrawn,

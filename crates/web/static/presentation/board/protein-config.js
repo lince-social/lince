@@ -250,7 +250,17 @@ export function createProteinConfigPanel({ getCard, patchCardState, syncFrames }
       ensureSocket();
       const id = "pa-" + nextReq++;
       pending.set(id, resolve);
-      transport.send({ type: "act", id, action });
+      void transport.sendAction(id, action).catch((error) => {
+        const finish = pending.get(id);
+        if (!finish) return;
+        pending.delete(id);
+        finish({
+          type: "error",
+          id,
+          message: error?.message || "Session signing is unavailable.",
+          code: error?.code || "session_signing_unavailable",
+        });
+      });
       window.setTimeout(() => {
         if (pending.has(id)) { pending.delete(id); resolve({ type: "error", message: "timed out" }); }
       }, 15000);

@@ -7,7 +7,8 @@
       "Bash(git log *)",
       "Bash(git ls-tree *)",
       "Bash(env)",
-      "Bash(bash scripts/other/*)"
+      "Bash(bash scripts/other/*)",
+      "Bash(git mv *)"
     ]
   }
 }

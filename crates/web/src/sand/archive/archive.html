@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Archive</title>
+  <script src="/board/frame.js"></script>
+  <style>
+    :root { color-scheme: dark; --bg: #101318; --panel: #171c22; --line: #29313b; --text: #e6edf3; --muted: #8b949e; --good: #3fb950; }
+    * { box-sizing: border-box; }
+    body { margin: 0; height: 100vh; overflow: hidden; background: var(--bg); color: var(--text); font: 13px/1.45 system-ui, -apple-system, sans-serif; }
+    main { height: 100%; display: grid; grid-template-rows: auto 1fr auto auto; gap: 10px; padding: 12px; }
+    header { display: flex; align-items: center; gap: 8px; }
+    h1 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); flex: 1; }
+    .note { min-height: 0; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px; color: var(--muted); }
+    .note strong { color: var(--text); }
+    button, input { font: inherit; }
+    input { min-width: 0; width: 100%; border: 1px solid var(--line); border-radius: 7px; background: #0d1117; color: var(--text); padding: 7px 9px; }
+    button { border: 1px solid rgba(63,185,80,.35); border-radius: 7px; background: #1f2630; color: #d8f5e8; padding: 8px 10px; cursor: pointer; }
+    button:hover { background: #252d38; }
+    .status { color: var(--muted); font-size: 12px; min-height: 1.4em; }
+  </style>
+</head>
+<body>
+  <main data-lince-bridge-root>
+    <header>
+      <h1>Archive</h1>
+    </header>
+    <p class="note">
+      Exports <strong>this workspace</strong> as one static HTML file:
+      the sands as they look right now, the data they are showing, and
+      <strong>zero requests</strong> from the result (scripts stripped,
+      assets inlined, every card sandboxed). This card is left out of its
+      own export. <strong>The file shows exactly what you see</strong> —
+      treat it as public content.
+    </p>
+    <input id="filename" type="text" placeholder="Filename (optional, ex.: portfolio)" autocomplete="off" />
+    <div>
+      <button id="archive" type="button">Archive this workspace</button>
+      <p class="status" id="status"></p>
+    </div>
+  </main>
+  <script>
+    (() => {
+      const host = window.LinceWidgetHost;
+      const button = document.getElementById("archive");
+      const filename = document.getElementById("filename");
+      const status = document.getElementById("status");
+
+      button.addEventListener("click", () => {
+        if (!host || typeof host.archiveWorkspace !== "function") {
+          status.textContent = "Host bridge unavailable in this context.";
+          return;
+        }
+        host.archiveWorkspace({ filename: filename.value.trim() });
+        status.textContent = "Capture requested — check your downloads.";
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,567 @@
+<!doctype html>
+<!--
+  Communication sand (Stage 8b table-template pattern). Self-contained HTML that
+  talks to the board host over Protein reads + typed Actions. Covers:
+    S4 — scaffold: bridge init, contract/Protein subscription, host-state chrome
+         (chosen tag, selected conversation, view mode), empty list.
+    S5 — list view: conversations by tag, newest first, with participants,
+         last-message preview, unread dot; row click emits `recordClicked` AND
+         enters room mode.
+    S6 — room mode / call view shell (no media): room config controls, occupant
+         strip, open/join/leave/close via Actions, list-row Join buttons.
+    S9 — call-mode UX skeleton: list-view <-> call-view toggle that never leaves
+         the room, a persistent call bar, and idle auto-hide of controls.
+  Media (S7 audio, S8 video grid, S10 screenshare, S11 recording) plugs into the
+  clearly marked `media` seam near the bottom — this scaffold owns the model,
+  list, room state, and view switching, not the WebRTC edges.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Communication</title>
+    <style>
+      :root {
+        --bg: #0d1117; --panel: #161b22; --border: #30363d; --muted: #8b949e;
+        --text: #e6edf3; --accent: #7aa2f7; --accent-2: #1f4b8e; --ok: #3fb950;
+        --warn: #d29922; --danger: #f85149; --radius: 10px;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; }
+      body {
+        background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, sans-serif;
+        display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+      }
+      button { font: inherit; color: var(--text); background: #21262d; border: 1px solid var(--border);
+        border-radius: 8px; padding: 5px 10px; cursor: pointer; }
+      button:hover { border-color: var(--accent-2); }
+      button.primary { background: var(--accent-2); border-color: var(--accent-2); }
+      button.danger { background: transparent; border-color: var(--danger); color: var(--danger); }
+      select, input { font: inherit; color: var(--text); background: #0d1117; border: 1px solid var(--border);
+        border-radius: 8px; padding: 5px 8px; }
+      .row { display: flex; align-items: center; gap: 8px; }
+      .grow { flex: 1 1 auto; min-width: 0; }
+      .muted { color: var(--muted); }
+      .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .hidden { display: none !important; }
+
+      /* --- header / tag selector --- */
+      header { padding: 10px 12px; border-bottom: 1px solid var(--border); gap: 8px; }
+      header .title { font-weight: 600; }
+      #tag-input { width: 9rem; }
+
+      /* --- list view --- */
+      #list-view { flex: 1 1 auto; overflow-y: auto; }
+      .conv {
+        display: flex; flex-direction: column; gap: 4px; padding: 10px 12px;
+        border-bottom: 1px solid var(--border); cursor: pointer;
+      }
+      .conv:hover { background: #1c2128; }
+      .conv.selected { background: #1c2333; box-shadow: inset 3px 0 0 var(--accent); }
+      .conv .head { font-weight: 600; gap: 6px; }
+      .conv .parts { font-size: 12px; }
+      .conv .preview { font-size: 12.5px; color: var(--muted); }
+      .unread { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex: 0 0 auto; }
+      .badge { font-size: 11px; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--border); }
+      .badge.remote { color: var(--warn); border-color: var(--warn); }
+      .roomstrip {
+        margin-top: 4px; padding: 6px 8px; border: 1px solid var(--accent-2); border-radius: 8px;
+        background: #10203a; gap: 8px; font-size: 12px;
+      }
+      .roomstrip.live .dot { background: var(--ok); }
+      .roomstrip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+      .empty { padding: 2rem 1.2rem; color: var(--muted); text-align: center; }
+
+      /* --- room view (call view) --- */
+      #room-view { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+      #room-header { padding: 10px 12px; border-bottom: 1px solid var(--border); gap: 8px; }
+      #room-config { padding: 10px 12px; border-bottom: 1px solid var(--border);
+        display: grid; grid-template-columns: auto 1fr; gap: 8px 10px; align-items: center; }
+      #occupants { padding: 8px 12px; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--border); }
+      .occ { padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); font-size: 12px; }
+      .occ.me { border-color: var(--accent); color: var(--accent); }
+
+      /* --- media grid (S8 fills this; S6 shows placeholders) --- */
+      #media-grid {
+        flex: 1 1 auto; min-height: 0; display: grid; gap: 8px; padding: 10px;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); align-content: start;
+        overflow-y: auto;
+      }
+      .tile {
+        position: relative; aspect-ratio: 16/10; background: #0a0d12; border: 1px solid var(--border);
+        border-radius: var(--radius); display: flex; align-items: center; justify-content: center;
+        color: var(--muted); overflow: hidden;
+      }
+      .tile.speaking { border-color: var(--ok); box-shadow: 0 0 0 2px var(--ok) inset; }
+      .tile video { width: 100%; height: 100%; object-fit: cover; }
+      .tile .label { position: absolute; left: 6px; bottom: 6px; font-size: 12px;
+        background: rgba(0,0,0,.55); padding: 1px 6px; border-radius: 6px; color: var(--text); }
+
+      /* --- room controls: auto-hide on idle in call view --- */
+      #room-controls {
+        padding: 10px 12px; border-top: 1px solid var(--border); gap: 8px; flex-wrap: wrap;
+        transition: opacity .25s ease, transform .25s ease;
+      }
+      body.controls-hidden #room-controls,
+      body.controls-hidden #room-header,
+      body.controls-hidden #room-config,
+      body.controls-hidden #occupants { opacity: 0; pointer-events: none; }
+      /* stop-share stays reachable even when the rest is hidden (S10). */
+      body.controls-hidden #stop-share.active { opacity: 1; pointer-events: auto; }
+
+      /* --- persistent call bar (visible in list view during a live call) --- */
+      #call-bar {
+        display: none; align-items: center; gap: 10px; padding: 8px 12px;
+        border-top: 1px solid var(--accent-2); background: #10203a;
+      }
+      body.in-call.view-list #call-bar { display: flex; }
+      #call-bar .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+
+      /* toast/errors */
+      #err { color: var(--danger); padding: 6px 12px; font-size: 12.5px; }
+    </style>
+  </head>
+  <body class="view-list">
+    <!-- LIST VIEW ------------------------------------------------------- -->
+    <header class="row">
+      <span class="title grow">Communication</span>
+      <label class="muted">tag</label>
+      <input id="tag-input" list="tag-suggestions" value="communication" autocomplete="off" />
+      <datalist id="tag-suggestions"></datalist>
+      <button id="new-conv" class="primary" title="Start a new conversation">＋</button>
+    </header>
+    <div id="err" class="hidden"></div>
+    <div id="list-view"></div>
+
+    <!-- ROOM VIEW (call view) ------------------------------------------- -->
+    <div id="room-view" class="hidden">
+      <div id="room-header" class="row">
+        <button id="back" title="Back to list">←</button>
+        <span id="room-title" class="grow truncate">Conversation</span>
+        <span id="room-state" class="badge">idle</span>
+      </div>
+      <div id="room-config">
+        <label class="muted">media</label>
+        <select id="cfg-media">
+          <option value="audio">Audio</option>
+          <option value="audio+video">Audio + Video</option>
+        </select>
+        <label class="muted">provider</label>
+        <select id="cfg-provider">
+          <option value="native-webrtc">Native WebRTC</option>
+          <option value="livekit">LiveKit</option>
+          <option value="jitsi">Jitsi</option>
+          <option value="mediasoup">mediasoup</option>
+        </select>
+        <label class="muted">recording</label>
+        <select id="cfg-recording">
+          <option value="manual">Manual</option>
+          <option value="karma">Karma</option>
+          <option value="disabled">Disabled</option>
+        </select>
+        <label class="muted">controller</label>
+        <span id="cfg-controller" class="muted truncate">this sand</span>
+      </div>
+      <div id="occupants" class="row"></div>
+      <div id="media-grid"></div>
+      <div id="room-controls" class="row">
+        <button id="join-audio" class="primary">Join audio</button>
+        <button id="join-video" class="primary">Join video</button>
+        <button id="mute" class="hidden">Mute</button>
+        <button id="camera" class="hidden">Camera</button>
+        <button id="share" class="hidden">Share screen</button>
+        <button id="stop-share" class="danger hidden">Stop share</button>
+        <button id="record" class="hidden">Record</button>
+        <span class="grow"></span>
+        <button id="leave" class="danger hidden">Leave</button>
+        <button id="close-room" class="hidden">Close room</button>
+      </div>
+    </div>
+
+    <!-- PERSISTENT CALL BAR (list view during a live call) -------------- -->
+    <div id="call-bar">
+      <span class="dot"></span>
+      <span id="bar-title" class="grow truncate">In call</span>
+      <button id="bar-mute">Mute</button>
+      <button id="bar-jump" class="primary">Back to call</button>
+    </div>
+
+    <script>
+      "use strict";
+      const H = window.LinceWidgetHost;
+      const $ = (id) => document.getElementById(id);
+      const TAG_NS = "communication.v1";
+
+      // ---- host-state chrome (the only durable UI state; host = source of truth)
+      const state = { tag: "communication", selected: null, view: "list" };
+      function persist() {
+        if (typeof H.patchCardState === "function") {
+          H.patchCardState({ communication: { tag: state.tag, selected: state.selected, view: state.view } });
+        }
+      }
+      function adoptCardState(cs) {
+        const c = cs && cs.communication;
+        if (!c || typeof c !== "object") return;
+        if (typeof c.tag === "string" && c.tag) { state.tag = c.tag; $("tag-input").value = c.tag; }
+        state.selected = c.selected || null;
+        if (c.view === "room" || c.view === "list") state.view = c.view;
+      }
+
+      // ---- data: conversations for the current tag, kept live over Protein
+      let conversations = []; // [{uid, head, participants, preview, room, unread}]
+      let live = false;
+      let unsub = null;
+
+      function listSpec(tag) {
+        return {
+          source: "record",
+          filter: [{ linked_to: { kind: "tagged", to: tag } }],
+          include: {
+            links: { kinds: ["participant"], direction: "out" },
+            // threads come oldest-first and truncate at the limit, so we ask
+            // for a window and pick the newest by timestamp in lastMessage();
+            // a dedicated newest-message projection can replace this later.
+            threads: { messages_limit: 30 },
+            extension: { namespace: TAG_NS },
+          },
+        };
+      }
+
+      function newestActivity(row) {
+        // Newest message time, else the record's own — used to sort the list.
+        const threads = Array.isArray(row.threads) ? row.threads : [];
+        let best = row.created_at || "";
+        for (const t of threads) {
+          for (const m of (t.messages || [])) {
+            if (m.created_at && m.created_at > best) best = m.created_at;
+          }
+        }
+        return best;
+      }
+      function lastMessage(row) {
+        const threads = Array.isArray(row.threads) ? row.threads : [];
+        let best = null;
+        for (const t of threads) {
+          for (const m of (t.messages || [])) {
+            if (!best || (m.created_at || "") > (best.created_at || "")) best = m;
+          }
+        }
+        return best;
+      }
+
+      function onRows({ rows }) {
+        conversations = (rows || []).map((r) => {
+          const ext = r.extension && r.extension.fds ? r.extension.fds : (r.extension || {});
+          const room = (ext && ext.room) || { state: "idle", media: "audio", occupants: [] };
+          const parts = (r.links || [])
+            .filter((l) => l.kind === "participant")
+            .map((l) => ({ uid: l.to, name: l.to_head || l.to, remote: !!l.to_remote }));
+          return {
+            uid: r.uid,
+            head: r.head || "(untitled)",
+            participants: parts,
+            preview: lastMessage(r),
+            room,
+            activity: newestActivity(r),
+            unread: false, // SD-open: unread storage; wired later
+          };
+        });
+        conversations.sort((a, b) => (b.activity || "").localeCompare(a.activity || ""));
+        render();
+      }
+
+      function subscribe() {
+        if (typeof unsub === "function") unsub();
+        unsub = H.subscribeProtein("communication", listSpec(state.tag), onRows);
+      }
+
+      // ---- rendering -------------------------------------------------------
+      function partChip(p) {
+        const s = document.createElement("span");
+        s.className = "badge" + (p.remote ? " remote" : "");
+        s.textContent = p.name;
+        return s;
+      }
+
+      function render() {
+        document.body.classList.toggle("view-list", state.view === "list");
+        document.body.classList.toggle("view-room", state.view === "room");
+        $("room-view").classList.toggle("hidden", state.view !== "room");
+        $("list-view").classList.toggle("hidden", state.view === "room");
+        renderList();
+        if (state.view === "room") renderRoom();
+        renderCallBar();
+      }
+
+      function renderList() {
+        const host = $("list-view");
+        host.textContent = "";
+        if (!conversations.length) {
+          const e = document.createElement("div");
+          e.className = "empty";
+          e.textContent = live
+            ? `No conversations tagged @${state.tag} yet. Press ＋ to start one.`
+            : "Loading…";
+          host.appendChild(e);
+          return;
+        }
+        for (const c of conversations) {
+          const el = document.createElement("div");
+          el.className = "conv" + (c.uid === state.selected ? " selected" : "");
+          el.addEventListener("click", () => openConversation(c.uid));
+
+          const head = document.createElement("div");
+          head.className = "row head";
+          if (c.unread) { const u = document.createElement("span"); u.className = "unread"; head.appendChild(u); }
+          const title = document.createElement("span");
+          title.className = "grow truncate";
+          title.textContent = c.head;
+          head.appendChild(title);
+          el.appendChild(head);
+
+          if (c.participants.length) {
+            const parts = document.createElement("div");
+            parts.className = "row parts";
+            c.participants.slice(0, 4).forEach((p) => parts.appendChild(partChip(p)));
+            el.appendChild(parts);
+          }
+
+          if (c.preview) {
+            const pv = document.createElement("div");
+            pv.className = "preview truncate";
+            pv.textContent = c.preview.body || "";
+            el.appendChild(pv);
+          }
+
+          // Live-room strip with direct Join buttons (S6): join without leaving list.
+          if (c.room && c.room.state === "active") {
+            const strip = document.createElement("div");
+            strip.className = "row roomstrip live";
+            const dot = document.createElement("span"); dot.className = "dot"; strip.appendChild(dot);
+            const label = document.createElement("span");
+            label.className = "grow";
+            label.textContent = `${(c.room.occupants || []).length} in ${c.room.media} call`;
+            strip.appendChild(label);
+            const ja = document.createElement("button");
+            ja.textContent = "Join audio";
+            ja.addEventListener("click", (ev) => { ev.stopPropagation(); joinFromList(c.uid, "audio"); });
+            strip.appendChild(ja);
+            if (c.room.media === "audio+video") {
+              const jv = document.createElement("button");
+              jv.textContent = "Join video";
+              jv.addEventListener("click", (ev) => { ev.stopPropagation(); joinFromList(c.uid, "audio+video"); });
+              strip.appendChild(jv);
+            }
+            el.appendChild(strip);
+          }
+          host.appendChild(el);
+        }
+      }
+
+      function currentConversation() {
+        return conversations.find((c) => c.uid === state.selected) || null;
+      }
+
+      function renderRoom() {
+        const c = currentConversation();
+        $("room-title").textContent = c ? c.head : "Conversation";
+        const roomState = c && c.room ? c.room.state : "idle";
+        $("room-state").textContent = roomState;
+        if (c && c.room) $("cfg-media").value = c.room.media || "audio";
+        $("cfg-controller").textContent = "this sand (" + (H.instanceId || "preview") + ")";
+
+        // occupants strip
+        const occHost = $("occupants");
+        occHost.textContent = "";
+        const occupants = (c && c.room && c.room.occupants) || [];
+        for (const o of occupants) {
+          const s = document.createElement("span");
+          s.className = "occ" + (o === myId() ? " me" : "");
+          s.textContent = o;
+          occHost.appendChild(s);
+        }
+        if (!occupants.length) {
+          const s = document.createElement("span"); s.className = "muted"; s.textContent = "No one in the room";
+          occHost.appendChild(s);
+        }
+
+        renderGrid(occupants);
+
+        const joined = media.joined;
+        $("join-audio").classList.toggle("hidden", joined);
+        $("join-video").classList.toggle("hidden", joined);
+        $("mute").classList.toggle("hidden", !joined);
+        $("camera").classList.toggle("hidden", !joined || (c && c.room && c.room.media !== "audio+video"));
+        $("share").classList.toggle("hidden", !joined);
+        $("leave").classList.toggle("hidden", !joined);
+        $("record").classList.toggle("hidden", !joined);
+        $("close-room").classList.toggle("hidden", roomState !== "active");
+      }
+
+      function renderGrid(occupants) {
+        // S6 renders one placeholder tile per occupant; S8 replaces the tile
+        // body with real <video> for camera + a second tile for screenshare,
+        // "divided per participant" as the plan requires.
+        const grid = $("media-grid");
+        grid.textContent = "";
+        for (const o of occupants) {
+          const tile = document.createElement("div");
+          tile.className = "tile";
+          const label = document.createElement("span");
+          label.className = "label"; label.textContent = o;
+          const body = document.createElement("span");
+          body.textContent = media.joined ? "🔊 audio" : "○";
+          tile.appendChild(body); tile.appendChild(label);
+          grid.appendChild(tile);
+        }
+      }
+
+      function renderCallBar() {
+        document.body.classList.toggle("in-call", media.joined);
+        const c = conversations.find((x) => x.uid === media.roomConversation);
+        $("bar-title").textContent = c ? `In call · ${c.head}` : "In call";
+      }
+
+      // ---- navigation / view switching ------------------------------------
+      // Row click does BOTH: drive the grouped Record sand AND enter room mode.
+      function openConversation(uid) {
+        state.selected = uid;
+        H.emit("recordClicked", { record: { uid } }); // -> Record sand shows threads
+        setView("room");
+        // Bind this sand as the room controller for the conversation.
+        act({ action: "room-bind-controller", conversation: uid, controller_sand_uid: H.instanceId || "preview" });
+        persist();
+        render();
+      }
+      function setView(view) {
+        state.view = view;
+        persist();
+        if (view === "room") resetIdleTimer(); else clearIdleTimer();
+        render();
+      }
+
+      // ---- actions --------------------------------------------------------
+      function showErr(msg) {
+        const e = $("err");
+        if (!msg) { e.classList.add("hidden"); e.textContent = ""; return; }
+        e.classList.remove("hidden"); e.textContent = String(msg);
+      }
+      function act(action) {
+        showErr(null);
+        return Promise.resolve(H.act(action)).catch((err) => {
+          showErr(err && err.message ? err.message : err);
+          throw err;
+        });
+      }
+      function myId() { return (H.viewer && H.viewer.id) || "me"; }
+
+      async function newConversation() {
+        const head = prompt("New conversation title?");
+        if (!head) return;
+        // Participant/group picking is a fuller flow (S5); v0 creates an empty
+        // tagged conversation the current user can invite into.
+        const created = await act({ action: "conversation-create", head, tag: state.tag, participants: [], groups: [] });
+        const uid = created && created.created;
+        if (uid) openConversation(uid);
+      }
+
+      function joinFromList(uid, media_mode) {
+        // Join a call straight from a list row without leaving list view: the
+        // call bar appears and audio plays; video does not render here (S9).
+        state.selected = uid;
+        H.emit("recordClicked", { record: { uid } });
+        joinRoom(uid, media_mode).then(() => { renderCallBar(); render(); });
+      }
+
+      // ---- room state machine (client side mirrors server actions) --------
+      async function joinRoom(uid, media_mode) {
+        await act({ action: "room-join", conversation: uid, media: media_mode });
+        await media.start(uid, media_mode); // S7/S8 seam
+      }
+      async function leaveRoom() {
+        const uid = media.roomConversation || state.selected;
+        await media.stop();
+        if (uid) await act({ action: "room-leave", conversation: uid });
+        renderCallBar(); render();
+      }
+      async function closeRoom() {
+        const uid = state.selected;
+        await media.stop();
+        if (uid) await act({ action: "room-close", conversation: uid });
+        render();
+      }
+
+      // ---- MEDIA SEAM ------------------------------------------------------
+      // Everything WebRTC lives behind this object. S7 fills `start` with
+      // getUserMedia + RTCPeerConnection over the board WS signaling relay; S8
+      // adds camera tracks + grid tiles; S10 adds getDisplayMedia; S11 adds
+      // MediaRecorder. The room model, list, and UI above are provider-agnostic.
+      const media = {
+        joined: false,
+        roomConversation: null,
+        localStream: null,
+        async start(uid, media_mode) {
+          this.joined = true;
+          this.roomConversation = uid;
+          this.mode = media_mode;
+          // S7: this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: media_mode === "audio+video" });
+          // S7: open RTCPeerConnection(s); relay offer/answer/ICE via H.signal(...) over the board WS.
+          renderRoom(); renderCallBar();
+        },
+        async stop() {
+          if (this.localStream) { this.localStream.getTracks().forEach((t) => t.stop()); this.localStream = null; }
+          this.joined = false; this.roomConversation = null;
+          renderRoom(); renderCallBar();
+        },
+      };
+
+      // ---- idle auto-hide (S9): only in call mode + call view -------------
+      let idleTimer = null;
+      const IDLE_MS = 3500; // SD-open: configurability
+      function resetIdleTimer() {
+        clearIdleTimer();
+        document.body.classList.remove("controls-hidden");
+        if (state.view !== "room" || !media.joined) return;
+        idleTimer = setTimeout(() => document.body.classList.add("controls-hidden"), IDLE_MS);
+      }
+      function clearIdleTimer() {
+        if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+        document.body.classList.remove("controls-hidden");
+      }
+      ["mousemove", "keydown", "pointerdown", "touchstart"].forEach((ev) =>
+        window.addEventListener(ev, () => { if (state.view === "room" && media.joined) resetIdleTimer(); }, { passive: true })
+      );
+
+      // ---- wire controls ---------------------------------------------------
+      $("new-conv").addEventListener("click", () => newConversation().catch(() => {}));
+      $("tag-input").addEventListener("change", (e) => {
+        state.tag = (e.target.value || "communication").trim() || "communication";
+        persist(); subscribe();
+      });
+      $("back").addEventListener("click", () => setView("list"));
+      $("join-audio").addEventListener("click", () => joinRoom(state.selected, "audio").then(render));
+      $("join-video").addEventListener("click", () => joinRoom(state.selected, "audio+video").then(render));
+      $("leave").addEventListener("click", () => leaveRoom().catch(() => {}));
+      $("close-room").addEventListener("click", () => closeRoom().catch(() => {}));
+      $("cfg-media").addEventListener("change", () => resetIdleTimer());
+      $("record").addEventListener("click", () => {
+        const start = $("record").textContent === "Record";
+        $("record").textContent = start ? "Stop" : "Record";
+        act({ action: start ? "recording-start" : "recording-stop", conversation: state.selected });
+      });
+      $("bar-jump").addEventListener("click", () => setView("room"));
+      $("bar-mute").addEventListener("click", () => $("mute").click());
+
+      // ---- boot ------------------------------------------------------------
+      if (typeof H.onCardState === "function") {
+        H.onCardState((cs) => { adoptCardState(cs); if (state.selected && state.view === "room") render(); else render(); });
+      }
+      if (typeof H.onLive === "function") {
+        H.onLive((v) => { live = v; renderList(); });
+      }
+      adoptCardState(typeof H.cardState === "function" ? H.cardState() : null);
+      subscribe();
+      render();
+    </script>
+  </body>
+</html>

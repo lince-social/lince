@@ -6,6 +6,7 @@
 use chrono::{DateTime, Utc};
 use nucleus::{Cause, CauseKind, Fact, NewFact, PromiseState, RecordKind};
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 
 use crate::Engine;
 use crate::error::EngineError;
@@ -84,6 +85,46 @@ pub enum Action {
     Compensate {
         fact: String,
     },
+    /// Reverse only the private Record application of one immutable Transfer
+    /// settlement. Public fulfillment evidence is not withdrawn.
+    CompensateTransferOccurrenceSettlement {
+        settlement: String,
+        request_id: String,
+        /// Required only in trusted local mode.
+        #[serde(default)]
+        person: Option<String>,
+    },
+    /// Create an unsent hidden draft for one exact partial remainder.
+    CreateTransferRemainderDraft {
+        occurrence: String,
+        expected_revision: u64,
+        expected_remaining_quantity: f64,
+        request_id: String,
+        #[serde(default)]
+        person: Option<String>,
+    },
+    /// Propose an append-only reversing Transfer without rewriting fulfillment.
+    CreateReversingTransferDraft {
+        occurrence: String,
+        expected_revision: u64,
+        canonical_quantity: f64,
+        request_id: String,
+        #[serde(default)]
+        person: Option<String>,
+    },
+    /// Add a proposed successor promise in a new signed revision while keeping
+    /// the terminal predecessor and all its evidence unchanged.
+    ReopenTransferPromise {
+        transfer: String,
+        promise: String,
+        expected_revision: u64,
+        request_id: String,
+        #[serde(default)]
+        person: Option<String>,
+        window_end: Option<String>,
+        #[serde(default)]
+        open: bool,
+    },
     CreateConcept {
         name: String,
         #[serde(default)]
@@ -121,6 +162,23 @@ pub enum Action {
         #[serde(default)]
         parent: Option<String>,
     },
+    CreateTransferThread {
+        transfer: String,
+        head: String,
+        request_id: String,
+        #[serde(default)]
+        person: Option<String>,
+    },
+    CreateTransferMessage {
+        transfer: String,
+        thread: String,
+        body: String,
+        #[serde(default)]
+        parent: Option<String>,
+        request_id: String,
+        #[serde(default)]
+        person: Option<String>,
+    },
     CreatePromise {
         record: String,
         delta: f64,
@@ -135,8 +193,8 @@ pub enum Action {
         promise: String,
         to: PromiseState,
     },
-    /// Counteroffers are edits: changing a bundled promise's delta drops every
-    /// party's agreement back to 0 (blueprint VIII.1).
+    /// Edit a standalone promise. Bundled promises use complete signed
+    /// Transfer revisions so agreement invalidation remains atomic.
     EditPromiseDelta {
         promise: String,
         delta: f64,
@@ -165,6 +223,11 @@ pub enum Action {
     /// token is resolved and every term is validated before the store commits
     /// the transfer record, sidecar, parties, and promises together.
     CreateTransferDraft {
+        request_id: String,
+        /// Trusted local no-auth mode must choose its acting Person explicitly.
+        /// Authenticated sessions derive this from app_user -> Person instead.
+        #[serde(default)]
+        creator: Option<String>,
         slug: Option<String>,
         head: String,
         #[serde(default = "default_typed_agreement")]
@@ -182,9 +245,232 @@ pub enum Action {
         #[serde(default)]
         require_confirmation: bool,
         #[serde(default)]
-        parties: Vec<String>,
+        default_place: Option<TransferPlaceInput>,
+        #[serde(default)]
+        invitees: Vec<String>,
         #[serde(default)]
         promises: Vec<TransferPromiseInput>,
+        #[serde(default)]
+        dependencies: Vec<TransferDependencyInput>,
+    },
+    /// Replace the complete public terms of one promise under an optimistic
+    /// revision precondition. The store commits terms, invalidation, signed
+    /// snapshot and request idempotency as one transaction.
+    ReviseTransferPromise {
+        transfer: String,
+        promise: String,
+        expected_revision: u64,
+        request_id: String,
+        terms: TransferPromiseInput,
+    },
+    ReviseTransferDraft {
+        transfer: String,
+        expected_revision: u64,
+        request_id: String,
+        draft: TransferDraftRevisionInput,
+    },
+    AdoptTransferDraft {
+        transfer: String,
+        request_id: String,
+        draft: TransferDraftRevisionInput,
+    },
+    /// Address a Person without making them a party. The creator is derived
+    /// from the signed Transfer rather than accepted from the client.
+    AddressTransferInvitation {
+        transfer: String,
+        expected_revision: u64,
+        request_id: String,
+        person: String,
+        #[serde(default)]
+        expires_at: Option<String>,
+    },
+    AcceptTransferInvitation {
+        invitation: String,
+        expected_revision: u64,
+        request_id: String,
+        #[serde(default)]
+        transfer: Option<String>,
+        #[serde(default)]
+        person: Option<String>,
+    },
+    /// Rejection is lifecycle evidence and deliberately does not revise the
+    /// proposed terms.
+    RejectTransferInvitation {
+        invitation: String,
+        request_id: String,
+        #[serde(default)]
+        transfer: Option<String>,
+        #[serde(default)]
+        person: Option<String>,
+    },
+    WithdrawTransferInvitation {
+        invitation: String,
+        expected_revision: u64,
+        request_id: String,
+    },
+    ReopenTransferInvitation {
+        invitation: String,
+        expected_revision: u64,
+        request_id: String,
+        #[serde(default)]
+        expires_at: Option<String>,
+    },
+    /// Replace the one canonical proposal. Counteroffers never create a
+    /// competing revision branch.
+    CounterofferTransfer {
+        transfer: String,
+        expected_revision: u64,
+        request_id: String,
+        /// Required in trusted local mode; authenticated mode derives it.
+        #[serde(default)]
+        person: Option<String>,
+        draft: TransferDraftRevisionInput,
+    },
+    /// Refine and claim one visible OPEN promise. `duplicate` leaves the
+    /// source template OPEN; `consume` assigns/replaces it.
+    ClaimOpenTransferPromise {
+        transfer: String,
+        promise: String,
+        expected_revision: u64,
+        request_id: String,
+        /// Required in trusted local mode; authenticated mode derives it.
+        #[serde(default)]
+        person: Option<String>,
+        terms: TransferPromiseInput,
+    },
+    /// Move only the acting Person's agreement by one adjacent milestone for
+    /// one exact signed Transfer revision. Every transition, including a
+    /// retraction, is retained as immutable signed evidence.
+    SetTransferAgreementLevel {
+        transfer: String,
+        expected_revision: u64,
+        request_id: String,
+        /// Required in trusted local mode; authenticated mode derives it.
+        #[serde(default)]
+        person: Option<String>,
+        level: u8,
+    },
+    /// Materialize immutable directed occurrences for every policy-ready
+    /// promise owned by one Person on the exact current signed revision.
+    ActivateTransferOccurrence {
+        transfer: String,
+        promise: String,
+        expected_revision: u64,
+        request_id: String,
+        /// Required only in trusted local mode. Authenticated sessions derive
+        /// this from their app-user binding and may not override it.
+        #[serde(default)]
+        person: Option<String>,
+    },
+    /// Assert or correct one role-specific real-world fulfillment claim.
+    /// Delivery belongs to the occurrence giver; receipt to its receiver.
+    SetTransferOccurrenceClaim {
+        occurrence: String,
+        request_id: String,
+        /// Required only in trusted local mode.
+        #[serde(default)]
+        person: Option<String>,
+        role: TransferOccurrenceClaimRole,
+        claimed: bool,
+    },
+    /// Assert only the authenticated Person's currently missing role across an
+    /// exact, acknowledged preview. The store rejects the whole batch if any
+    /// revision or claim-state token changed.
+    CompleteTransferOccurrenceClaimsBulk {
+        request_id: String,
+        #[serde(default)]
+        person: Option<String>,
+        review_token: String,
+        items: Vec<TransferOccurrenceBulkClaimInput>,
+    },
+    /// Assert or retract this participant's occurrence dispute. Current
+    /// disputed state remains true while either participant's latest event is
+    /// asserted.
+    SetTransferOccurrenceDispute {
+        occurrence: String,
+        request_id: String,
+        /// Required only in trusted local mode.
+        #[serde(default)]
+        person: Option<String>,
+        disputed: bool,
+    },
+    /// Persist the receiver's private deterministic local-application rule.
+    /// This is signed identity evidence, but it never changes public terms or
+    /// invalidates agreement. The only occurrence input is `incoming()`.
+    SetTransferOccurrenceApplicationFormula {
+        occurrence: String,
+        request_id: String,
+        /// Required only in trusted local mode.
+        #[serde(default)]
+        person: Option<String>,
+        formula: String,
+    },
+    /// Settle one reviewed, positive fulfillment slice. All `expected_*`
+    /// fields are compare-and-set inputs from the private Protein projection;
+    /// the engine independently recomputes the local Record application.
+    SettleTransferOccurrence {
+        occurrence: String,
+        request_id: String,
+        /// Required only in trusted local mode.
+        #[serde(default)]
+        person: Option<String>,
+        canonical_quantity: f64,
+        expected_remaining_quantity: f64,
+        expected_local_delta: f64,
+        expected_application_formula_hash: String,
+        expected_application_formula_version: u64,
+        expected_remainder_policy: nucleus::transfer::TransferRemainderPolicy,
+    },
+    /// Create an explicit recipient policy. Hosted is the conservative
+    /// default; replicated must be selected explicitly by the signer.
+    ConfigureTransferDelivery {
+        transfer: String,
+        recipient_person: String,
+        recipient_organ: String,
+        #[serde(default)]
+        person: Option<String>,
+        request_id: String,
+        #[serde(default = "default_transfer_delivery_mode")]
+        mode: nucleus::transfer_delivery::TransferDeliveryMode,
+    },
+    SetTransferDeliveryMode {
+        transfer: String,
+        delivery: String,
+        expected_revision: u64,
+        #[serde(default)]
+        person: Option<String>,
+        request_id: String,
+        mode: nucleus::transfer_delivery::TransferDeliveryMode,
+    },
+    EnqueueTransferDelivery {
+        transfer: String,
+        delivery: String,
+        #[serde(default)]
+        person: Option<String>,
+        request_id: String,
+    },
+    RetryTransferDelivery {
+        transfer: String,
+        delivery: String,
+        #[serde(default)]
+        person: Option<String>,
+        request_id: String,
+    },
+    RevokeTransferDelivery {
+        transfer: String,
+        delivery: String,
+        expected_revision: u64,
+        #[serde(default)]
+        person: Option<String>,
+        request_id: String,
+    },
+    /// Queue a fresh authoritative snapshot after explicit conflict review.
+    RefreshTransferDelivery {
+        transfer: String,
+        delivery: String,
+        #[serde(default)]
+        person: Option<String>,
+        request_id: String,
     },
     /// Record a delivery/receipt confirmation as an annotation fact (VIII.3).
     ConfirmTransfer {
@@ -365,6 +651,10 @@ impl TransferSatiation {
     }
 }
 
+fn default_transfer_delivery_mode() -> nucleus::transfer_delivery::TransferDeliveryMode {
+    nucleus::transfer_delivery::TransferDeliveryMode::Hosted
+}
+
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TransferVisibility {
@@ -384,10 +674,11 @@ impl TransferVisibility {
     }
 }
 
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TransferReservePoint {
     #[default]
+    Inherit,
     None,
     Proposed,
     Agreed,
@@ -397,25 +688,137 @@ pub enum TransferReservePoint {
 impl TransferReservePoint {
     fn as_str(self) -> &'static str {
         match self {
+            Self::Inherit => "inherit",
             Self::None => "none",
             Self::Proposed => "proposed",
             Self::Agreed => "agreed",
             Self::Active => "active",
         }
     }
+
+    fn resolve(self, cell_default: Self) -> Self {
+        if self == Self::Inherit {
+            cell_default
+        } else {
+            self
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransferPromiseInput {
+    #[serde(default)]
+    pub uid: Option<String>,
     pub record: String,
-    pub party: String,
+    /// `None` is an OPEN Person slot.
+    #[serde(default)]
+    pub party: Option<String>,
+    /// Publish the acting Person's offer/request without naming a counterparty.
+    /// Ownership remains explicit; only the matching counterparty is open.
+    #[serde(default)]
+    pub open: bool,
     pub delta: f64,
+    /// Explicit canonical unit; `None` means intentionally unitless.
+    #[serde(default)]
+    pub unit: Option<String>,
+    #[serde(default)]
+    pub window_start: Option<String>,
     #[serde(default)]
     pub window_end: Option<String>,
+    #[serde(default)]
+    pub place: Option<TransferPlaceInput>,
     #[serde(default)]
     pub condition: Option<String>,
     #[serde(default)]
     pub reserve_from: Option<TransferReservePoint>,
+    #[serde(default)]
+    pub reuse_policy: nucleus::transfer::OpenPromiseReusePolicy,
+    #[serde(default)]
+    pub withdrawn: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TransferDraftRevisionInput {
+    /// Immutable creator Person, repeated in the complete reviewed snapshot.
+    pub creator: String,
+    pub slug: Option<String>,
+    pub head: String,
+    #[serde(default = "default_typed_agreement")]
+    pub agreement: nucleus::transfer::AgreementType,
+    pub agreement_pct: Option<u8>,
+    #[serde(default)]
+    pub satiation: TransferSatiation,
+    pub parent: Option<String>,
+    pub source: Option<String>,
+    #[serde(default)]
+    pub visibility: TransferVisibility,
+    pub max_proximity: Option<u32>,
+    #[serde(default)]
+    pub reserve_default: TransferReservePoint,
+    #[serde(default)]
+    pub require_confirmation: bool,
+    #[serde(default)]
+    pub default_place: Option<TransferPlaceInput>,
+    #[serde(default)]
+    pub invitees: Vec<String>,
+    #[serde(default)]
+    pub promises: Vec<TransferPromiseInput>,
+    #[serde(default)]
+    pub dependencies: Vec<TransferDependencyInput>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TransferDependencyInput {
+    #[serde(default)]
+    pub uid: Option<String>,
+    pub scope: TransferDependencyScopeInput,
+    #[serde(default)]
+    pub promise: Option<String>,
+    pub upstream_kind: TransferDependencyUpstreamKindInput,
+    pub upstream: String,
+    #[serde(default = "default_dependency_required_state")]
+    pub required_state: String,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TransferDependencyScopeInput {
+    Transfer,
+    Promise,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TransferDependencyUpstreamKindInput {
+    Transfer,
+    Promise,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TransferOccurrenceClaimRole {
+    Delivery,
+    Receipt,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TransferOccurrenceBulkClaimInput {
+    pub occurrence: String,
+    pub transfer: String,
+    pub expected_revision: u64,
+    pub role: TransferOccurrenceClaimRole,
+    pub expected_delivery_claimed: bool,
+    pub expected_receipt_claimed: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TransferPlaceInput {
+    #[serde(default)]
+    pub lat: Option<f64>,
+    #[serde(default)]
+    pub lon: Option<f64>,
+    #[serde(default)]
+    pub address: Option<String>,
 }
 
 /// One consequence in the rule-CRUD wire form.
@@ -484,6 +887,259 @@ fn default_typed_agreement() -> nucleus::transfer::AgreementType {
     nucleus::transfer::AgreementType::Individual
 }
 
+fn default_dependency_required_state() -> String {
+    "kept".into()
+}
+
+/// Keeps legacy Transfer verbs deserializable while the sequential workflow
+/// replaces their non-revisioned persistence paths phase by phase.
+fn transfer_phase_locked() -> bool {
+    true
+}
+
+struct TransferApplicationFormulaResolver {
+    incoming: f64,
+}
+
+impl nucleus::expr::Resolver for TransferApplicationFormulaResolver {
+    fn call(
+        &mut self,
+        name: &str,
+        args: &[nucleus::expr::Value],
+    ) -> Result<nucleus::expr::Value, nucleus::error::NucleusError> {
+        if name == "incoming" && args.is_empty() {
+            return Ok(nucleus::expr::Value::Num(self.incoming));
+        }
+        Err(nucleus::error::NucleusError::Eval(format!(
+            "application formula supports only incoming(), not {name}()"
+        )))
+    }
+}
+
+fn validate_transfer_application_formula(formula: &str) -> Result<String, EngineError> {
+    let formula = formula.trim();
+    if formula.is_empty() || formula.chars().count() > 2_000 {
+        return Err(EngineError::Consequence(
+            "application formula must contain 1 to 2000 characters".into(),
+        ));
+    }
+    let expr = nucleus::expr::Expr::parse(formula).map_err(|error| {
+        EngineError::Consequence(format!("invalid application formula: {error}"))
+    })?;
+    fn validate_node(expr: &nucleus::expr::Expr) -> Result<(), EngineError> {
+        use nucleus::expr::{BinOp, Expr, UnOp};
+        match expr {
+            Expr::Num(value) if value.is_finite() => Ok(()),
+            Expr::Fn(name, args) if name == "incoming" && args.is_empty() => Ok(()),
+            Expr::Unary(UnOp::Neg, value) => validate_node(value),
+            Expr::Bin(
+                BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Div | BinOp::Rem,
+                left,
+                right,
+            ) => {
+                validate_node(left)?;
+                validate_node(right)
+            }
+            _ => Err(EngineError::Consequence(
+                "application formula permits only finite numbers, incoming(), and arithmetic"
+                    .into(),
+            )),
+        }
+    }
+    validate_node(&expr)?;
+    for incoming in [-1.0, 0.0, 1.0] {
+        let value = expr
+            .eval(&mut TransferApplicationFormulaResolver { incoming })
+            .map_err(|error| {
+                EngineError::Consequence(format!("invalid application formula: {error}"))
+            })?;
+        if !value.is_finite() {
+            return Err(EngineError::Consequence(
+                "application formula must produce a finite number".into(),
+            ));
+        }
+    }
+    Ok(formula.to_string())
+}
+
+fn evaluate_transfer_application_formula(formula: &str, incoming: f64) -> Result<f64, EngineError> {
+    let expr = nucleus::expr::Expr::parse(formula).map_err(|error| {
+        EngineError::Consequence(format!("invalid application formula: {error}"))
+    })?;
+    let value = expr
+        .eval(&mut TransferApplicationFormulaResolver { incoming })
+        .map_err(|error| {
+            EngineError::Consequence(format!("invalid application formula: {error}"))
+        })?;
+    if !value.is_finite() {
+        return Err(EngineError::Consequence(
+            "application formula must produce a finite local delta for this occurrence".into(),
+        ));
+    }
+    Ok(value)
+}
+
+fn normalize_transfer_place(
+    place: Option<TransferPlaceInput>,
+) -> Result<Option<nucleus::transfer::TransferLocationSnapshot>, EngineError> {
+    let Some(place) = place else {
+        return Ok(None);
+    };
+    let address = place
+        .address
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty());
+    match (place.lat, place.lon) {
+        (Some(lat), Some(lon)) => {
+            if !lat.is_finite()
+                || !lon.is_finite()
+                || !(-90.0..=90.0).contains(&lat)
+                || !(-180.0..=180.0).contains(&lon)
+            {
+                return Err(EngineError::Consequence(
+                    "transfer location coordinates are outside valid latitude/longitude ranges"
+                        .into(),
+                ));
+            }
+            Ok(Some(nucleus::transfer::TransferLocationSnapshot {
+                lat: Some(lat),
+                lon: Some(lon),
+                address,
+            }))
+        }
+        (None, None) if address.is_some() => {
+            Ok(Some(nucleus::transfer::TransferLocationSnapshot {
+                lat: None,
+                lon: None,
+                address,
+            }))
+        }
+        (None, None) => Err(EngineError::Consequence(
+            "transfer location requires an address or coordinates".into(),
+        )),
+        _ => Err(EngineError::Consequence(
+            "transfer location latitude and longitude must be provided together".into(),
+        )),
+    }
+}
+
+fn normalize_transfer_window(
+    window_start: Option<String>,
+    window_end: Option<String>,
+    now: DateTime<Utc>,
+    preserved_window_end: Option<&str>,
+) -> Result<(Option<String>, Option<String>), EngineError> {
+    let normalize = |value: Option<String>| {
+        value
+            .map(|item| item.trim().to_string())
+            .filter(|item| !item.is_empty())
+    };
+    let window_start = normalize(window_start);
+    let window_end = normalize(window_end);
+    let start = window_start
+        .as_deref()
+        .map(DateTime::parse_from_rfc3339)
+        .transpose()
+        .map_err(|_| EngineError::Consequence("promise window_start must be RFC3339".into()))?;
+    let end = window_end
+        .as_deref()
+        .map(DateTime::parse_from_rfc3339)
+        .transpose()
+        .map_err(|_| EngineError::Consequence("promise window_end must be RFC3339".into()))?;
+    let preserves_existing_end = end.is_some_and(|submitted| {
+        preserved_window_end
+            .and_then(|value| DateTime::parse_from_rfc3339(value).ok())
+            .is_some_and(|existing| existing == submitted)
+    });
+    if end.is_some_and(|value| value.with_timezone(&Utc) <= now) && !preserves_existing_end {
+        return Err(EngineError::Consequence(
+            "promise window must end in the future".into(),
+        ));
+    }
+    if start.zip(end).is_some_and(|(start, end)| start >= end) {
+        return Err(EngineError::Consequence(
+            "promise window_start must be before window_end".into(),
+        ));
+    }
+    Ok((window_start, window_end))
+}
+
+fn normalize_transfer_invitation_expiry(
+    expires_at: Option<String>,
+    now: DateTime<Utc>,
+) -> Result<Option<DateTime<Utc>>, EngineError> {
+    let Some(value) = expires_at
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+    else {
+        return Ok(None);
+    };
+    let parsed = DateTime::parse_from_rfc3339(&value)
+        .map_err(|_| {
+            EngineError::Consequence(
+                "transfer invitation expires_at must be an RFC3339 date and time".into(),
+            )
+        })?
+        .with_timezone(&Utc);
+    if parsed <= now {
+        return Err(EngineError::Consequence(
+            "transfer invitation expiry must be in the future".into(),
+        ));
+    }
+    Ok(Some(parsed))
+}
+
+fn transfer_request_id_conflict() -> EngineError {
+    EngineError::Conflict {
+        code: "transfer_request_id_conflict",
+        message: "transfer request id belongs to another action or target".into(),
+    }
+}
+
+fn transfer_settlement_conflict(code: &'static str, message: impl Into<String>) -> EngineError {
+    EngineError::Conflict {
+        code,
+        message: message.into(),
+    }
+}
+
+fn transfer_settlement_values_match(left: f64, right: f64) -> bool {
+    let scale = left.abs().max(right.abs()).max(1.0);
+    (left - right).abs() <= scale * 1e-9
+}
+
+async fn reject_existing_transfer_revision_request(
+    pool: &store::sqlx::SqlitePool,
+    request_id: &str,
+) -> Result<(), EngineError> {
+    if store::transfers::revision_for_request(pool, request_id)
+        .await?
+        .is_some()
+        || store::transfers::phase6_bulk_request_for_request(pool, request_id)
+            .await?
+            .is_some()
+    {
+        return Err(transfer_request_id_conflict());
+    }
+    Ok(())
+}
+
+async fn transfer_invitation_replay(
+    pool: &store::sqlx::SqlitePool,
+    request_id: &str,
+    invitation_uid: &str,
+    expected_kind: &str,
+) -> Result<Option<String>, EngineError> {
+    if let Some(event) = store::transfers::invitation_event_for_request(pool, request_id).await? {
+        if event.invitation_uid != invitation_uid || event.kind != expected_kind {
+            return Err(transfer_request_id_conflict());
+        }
+        return Ok(Some(event.invitation_uid));
+    }
+    reject_existing_transfer_revision_request(pool, request_id).await?;
+    Ok(None)
+}
+
 #[derive(Debug, Default)]
 pub struct ActionOutcome {
     /// Facts committed by this action (including any Karma cascade).
@@ -493,6 +1149,11 @@ pub struct ActionOutcome {
     /// Non-fatal advisories (blueprint IV.2: cycle warnings on save). The
     /// action succeeded; these are for the surface to show.
     pub warnings: Vec<String>,
+}
+
+pub(crate) struct VerifiedActionAuthorship {
+    pub person_uid: String,
+    pub intent_uid: String,
 }
 
 impl Engine {
@@ -506,6 +1167,39 @@ impl Engine {
         self.act_at(action, actor, Utc::now()).await
     }
 
+    /// Close due invitations as signed lifecycle evidence. Rejection and
+    /// expiry intentionally leave the canonical terms revision unchanged.
+    pub async fn expire_due_transfer_invitations(
+        &self,
+        now: DateTime<Utc>,
+    ) -> Result<Vec<Fact>, EngineError> {
+        let due = store::transfers::due_transfer_invitations(&self.store.pool, now).await?;
+        let signer = self.signer.lock().await.clone();
+        let mut facts = Vec::new();
+        for invitation in due {
+            let commit = store::transfers::expire_transfer_invitation(
+                &self.store.pool,
+                store::transfers::InvitationTransitionInput {
+                    invitation_uid: invitation.uid.clone(),
+                    expected_revision: 0,
+                    idempotency_key: format!(
+                        "automatic-transfer-invitation-expiry:{}:{}",
+                        invitation.uid, invitation.attempt
+                    ),
+                    actor_person_uid: None,
+                    expires_at: None,
+                },
+                now,
+                |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+            )
+            .await?;
+            let mut outcome = ActionOutcome::default();
+            self.apply_transfer_invitation_commit(commit, 0, &mut outcome)?;
+            facts.extend(outcome.facts);
+        }
+        Ok(facts)
+    }
+
     /// `act` with an explicit clock — the DST-drivable variant (Part 0): same
     /// action, virtual `now`.
     pub async fn act_at(
@@ -514,6 +1208,20 @@ impl Engine {
         actor: Option<String>,
         now: DateTime<Utc>,
     ) -> Result<ActionOutcome, EngineError> {
+        self.act_at_with_authorship(action, actor, now, None).await
+    }
+
+    pub(crate) async fn act_at_with_authorship(
+        &self,
+        action: Action,
+        actor: Option<String>,
+        now: DateTime<Utc>,
+        verified_authorship: Option<VerifiedActionAuthorship>,
+    ) -> Result<ActionOutcome, EngineError> {
+        for transfer_uid in self.canonical_transfer_action_targets(&action).await? {
+            self.require_transfer_origin_authority(&transfer_uid)
+                .await?;
+        }
         let mut outcome = ActionOutcome::default();
         match action {
             Action::CreateRecord {
@@ -552,6 +1260,7 @@ impl Engine {
             }
             Action::SetQuantity { target, value } => {
                 let uid = self.resolve(&target).await?;
+                self.reject_direct_transfer_record_mutation(&uid).await?;
                 let current = store::records::quantity(&self.store.pool, &uid)
                     .await?
                     .unwrap_or(0.0);
@@ -569,6 +1278,7 @@ impl Engine {
             }
             Action::AddQuantity { target, delta } => {
                 let uid = self.resolve(&target).await?;
+                self.reject_direct_transfer_record_mutation(&uid).await?;
                 if delta != 0.0 {
                     outcome.facts = self
                         .append(
@@ -589,6 +1299,7 @@ impl Engine {
             }
             Action::DeleteRecord { target } => {
                 let uid = self.resolve(&target).await?;
+                self.reject_direct_transfer_record_mutation(&uid).await?;
                 self.check_delete_permission(&uid, actor.as_deref()).await?;
                 let old_slug = store::records::get(&self.store.pool, &uid)
                     .await?
@@ -607,6 +1318,7 @@ impl Engine {
             }
             Action::EditRecordText { target, head, body } => {
                 let uid = self.resolve(&target).await?;
+                self.reject_direct_transfer_record_mutation(&uid).await?;
                 store::records::set_text(&self.store.pool, &uid, head.as_deref(), body.as_deref())
                     .await?;
                 outcome.facts = self
@@ -620,6 +1332,7 @@ impl Engine {
             }
             Action::SetSlug { target, slug } => {
                 let uid = self.resolve(&target).await?;
+                self.reject_direct_transfer_record_mutation(&uid).await?;
                 let slug = slug.filter(|s| !s.is_empty());
                 store::records::set_slug(&self.store.pool, &uid, slug.as_deref()).await?;
                 outcome.facts = self
@@ -667,6 +1380,25 @@ impl Engine {
                 let original = store::facts::get(&self.store.pool, &fact)
                     .await?
                     .ok_or_else(|| EngineError::UnknownRecord(fact.clone()))?;
+                if store::transfers::occurrence_settlement_for_application_fact(
+                    &self.store.pool,
+                    &original.uid,
+                )
+                .await?
+                .is_some()
+                    || store::transfers::occurrence_settlement_compensation_for_fact(
+                        &self.store.pool,
+                        &original.uid,
+                    )
+                    .await?
+                    .is_some()
+                {
+                    return Err(EngineError::Conflict {
+                        code: "typed_transfer_settlement_compensation_required",
+                        message: "Transfer settlement applications and their corrections cannot be changed through generic compensation"
+                            .into(),
+                    });
+                }
                 // Zero-delta facts (metadata/annotation) carry no quantity to
                 // reverse — undoing them is a no-op, not an error.
                 if original.delta != 0.0 {
@@ -812,6 +1544,13 @@ impl Engine {
             }
             Action::CreateThread { target, head } => {
                 let target_uid = self.resolve(&target).await?;
+                if store::transfers::get(&self.store.pool, &target_uid)
+                    .await?
+                    .is_some()
+                {
+                    self.require_transfer_thread_writer(&target_uid, actor.as_deref(), now)
+                        .await?;
+                }
                 let title = head.trim();
                 if title.is_empty() {
                     return Err(EngineError::Consequence(
@@ -866,6 +1605,10 @@ impl Engine {
                         "`{thread}` is a {} record, not a thread",
                         thread_row.kind
                     )));
+                }
+                if let Some(transfer_uid) = self.transfer_for_thread(&thread_uid).await? {
+                    self.require_transfer_thread_writer(&transfer_uid, actor.as_deref(), now)
+                        .await?;
                 }
                 let body = body.trim();
                 if body.is_empty() {
@@ -950,6 +1693,17 @@ impl Engine {
                 } else {
                     PromiseState::Proposed
                 };
+                let party = if open {
+                    Some(
+                        self.transfer_action_person(actor.as_deref(), party.as_deref(), None)
+                            .await?,
+                    )
+                } else {
+                    match party {
+                        Some(token) => Some(self.resolve(token.trim()).await?),
+                        None => None,
+                    }
+                };
                 outcome.created = Some(
                     store::misc::insert_promise(
                         &self.store.pool,
@@ -969,6 +1723,14 @@ impl Engine {
                 let row = store::misc::get_promise(&self.store.pool, &promise)
                     .await?
                     .ok_or_else(|| EngineError::UnknownRecord(promise.clone()))?;
+                if row.transfer_uid.is_some() {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_phase_3_not_available",
+                        message:
+                            "bundled promise state follows the revision-bound Transfer workflow"
+                                .into(),
+                    });
+                }
                 let next = PromiseState::transition(row.state, to)?;
                 store::misc::set_promise_state(&self.store.pool, &promise, next).await?;
                 // zero-delta annotation fact on the target record: promise
@@ -1007,24 +1769,12 @@ impl Engine {
                 if let Some(transfer_uid) = row.transfer_uid.as_deref() {
                     self.require_transfer_editor(transfer_uid, actor.as_deref())
                         .await?;
+                    return Err(EngineError::Conflict {
+                        code: "transfer_revision_required",
+                        message: "bundled promises must use revise-transfer-promise with expected_revision and request_id".into(),
+                    });
                 }
                 store::misc::set_promise_delta(&self.store.pool, &promise, delta).await?;
-                if let Some(transfer_uid) = row.transfer_uid {
-                    store::transfers::invalidate_agreements(&self.store.pool, &transfer_uid)
-                        .await?;
-                    outcome.facts = self
-                        .annotate(
-                            transfer_uid,
-                            actor,
-                            serde_json::json!({
-                                "promise": promise,
-                                "action": "edit-promise-delta",
-                                "delta": delta,
-                            }),
-                            now,
-                        )
-                        .await?;
-                }
             }
             Action::CreateTransfer {
                 slug,
@@ -1036,6 +1786,12 @@ impl Engine {
                 reserve_default,
                 require_confirmation,
             } => {
+                if transfer_phase_locked() {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_draft_action_required",
+                        message: "use create-transfer-draft so the initial terms are atomic and revisioned".into(),
+                    });
+                }
                 if head.trim().is_empty() || head.chars().count() > 200 {
                     return Err(EngineError::Consequence(
                         "transfer title must contain 1 to 200 characters".into(),
@@ -1079,8 +1835,7 @@ impl Engine {
                     !matches!(value, "none" | "proposed" | "agreed" | "active")
                 }) {
                     return Err(EngineError::Consequence(
-                        "reserve_default must be none, proposed, agreed, active, or omitted"
-                            .into(),
+                        "reserve_default must be none, proposed, agreed, active, or omitted".into(),
                     ));
                 }
                 if let Some(token) = source.as_deref() {
@@ -1089,40 +1844,31 @@ impl Engine {
                 let creator_person = self.require_transfer_creator(actor.as_deref()).await?;
                 let visibility_actor = actor.clone();
                 let transfer = store::transfers::create(
-                        &self.store.pool,
-                        store::transfers::NewTransfer {
-                            slug: slug.as_deref(),
-                            head: &head,
-                            agreement_type: &agreement,
-                            agreement_pct,
-                            satiation: satiation.as_deref(),
-                            source_uid: source.as_deref(),
-                            reserve_default: reserve_default.as_deref(),
-                            require_confirmation,
-                        },
-                    )
-                    .await?;
+                    &self.store.pool,
+                    store::transfers::NewTransfer {
+                        slug: slug.as_deref(),
+                        head: &head,
+                        agreement_type: &agreement,
+                        agreement_pct,
+                        satiation: satiation.as_deref(),
+                        source_uid: source.as_deref(),
+                        reserve_default: reserve_default.as_deref(),
+                        require_confirmation,
+                    },
+                )
+                .await?;
                 if let Some(person) = creator_person {
                     store::transfers::add_party(&self.store.pool, &transfer, &person).await?;
                 }
                 if let Some(subject) = visibility_actor.as_deref() {
-                    store::visibility::grant(
-                        &self.store.pool,
-                        "actor",
-                        Some(subject),
-                        &transfer,
-                    )
-                    .await?;
+                    store::visibility::grant(&self.store.pool, "actor", Some(subject), &transfer)
+                        .await?;
                 }
                 outcome.facts = self
                     .append(
                         NewFact {
                             actor_uid: actor,
-                            ..NewFact::quantity(
-                                transfer.clone(),
-                                1.0,
-                                Cause::user_edit(),
-                            )
+                            ..NewFact::quantity(transfer.clone(), 1.0, Cause::user_edit())
                         },
                         now,
                     )
@@ -1130,6 +1876,8 @@ impl Engine {
                 outcome.created = Some(transfer);
             }
             Action::CreateTransferDraft {
+                request_id,
+                creator,
                 slug,
                 head,
                 agreement,
@@ -1141,11 +1889,67 @@ impl Engine {
                 max_proximity,
                 reserve_default,
                 require_confirmation,
-                parties,
+                default_place,
+                invitees,
                 promises,
+                dependencies,
             } => {
-                let creator_person = self.require_transfer_creator(actor.as_deref()).await?;
+                let mapped_creator = self.require_transfer_creator(actor.as_deref()).await?;
                 let visibility_actor = actor.clone();
+                let request_id = request_id.trim().to_string();
+                if request_id.is_empty() || request_id.chars().count() > 200 {
+                    return Err(EngineError::Consequence(
+                        "transfer request_id must contain 1 to 200 characters".into(),
+                    ));
+                }
+                let creator_person = match (mapped_creator, creator) {
+                    (Some(mapped), Some(token)) => {
+                        let requested = self.resolve(token.trim()).await?;
+                        if requested != mapped {
+                            return Err(EngineError::Forbidden(
+                                "an authenticated transfer creator is derived from the session"
+                                    .into(),
+                            ));
+                        }
+                        mapped
+                    }
+                    (Some(mapped), None) => mapped,
+                    (None, Some(token)) => {
+                        let requested = self.resolve(token.trim()).await?;
+                        let row = store::records::get(&self.store.pool, &requested)
+                            .await?
+                            .ok_or_else(|| EngineError::UnknownRecord(requested.clone()))?;
+                        if row.kind != RecordKind::Person.as_str() {
+                            return Err(EngineError::Consequence(
+                                "the local transfer creator must be a Person record".into(),
+                            ));
+                        }
+                        requested
+                    }
+                    (None, None) => {
+                        return Err(EngineError::Consequence(
+                            "trusted local mode requires an explicit creator Person".into(),
+                        ));
+                    }
+                };
+                if let Some((replayed_transfer, _, replayed_action)) =
+                    store::transfers::revision_for_request(&self.store.pool, &request_id).await?
+                {
+                    let replayed_creator =
+                        store::transfers::creator_party_actor(&self.store.pool, &replayed_transfer)
+                            .await?;
+                    if replayed_action != "create-transfer-draft"
+                        || replayed_creator.as_deref() != Some(creator_person.as_str())
+                    {
+                        return Err(EngineError::Conflict {
+                            code: "transfer_request_id_conflict",
+                            message: "transfer request id belongs to another creator or transfer"
+                                .into(),
+                        });
+                    }
+                    outcome.created = Some(replayed_transfer);
+                    return Ok(outcome);
+                }
                 let head = head.trim().to_string();
                 if head.is_empty() || head.chars().count() > 200 {
                     return Err(EngineError::Consequence(
@@ -1194,9 +1998,9 @@ impl Engine {
                     }
                     _ => {}
                 }
-                if (parties.is_empty() && creator_person.is_none()) || parties.len() > 64 {
+                if invitees.len() > 63 {
                     return Err(EngineError::Consequence(
-                        "a transfer draft requires 1 to 64 parties".into(),
+                        "a transfer draft supports at most 63 invited people".into(),
                     ));
                 }
                 if promises.is_empty() || promises.len() > 256 {
@@ -1204,6 +2008,8 @@ impl Engine {
                         "a transfer draft requires 1 to 256 promises".into(),
                     ));
                 }
+                let cell_reserve_default = self.transfer_reservation_cell_default().await?;
+                let effective_reserve_default = reserve_default.resolve(cell_reserve_default);
 
                 let parent_uid = match parent.as_deref().map(str::trim).filter(|v| !v.is_empty()) {
                     Some(token) => {
@@ -1224,43 +2030,32 @@ impl Engine {
                     Some(token) => Some(self.resolve(token).await?),
                     None => None,
                 };
-                if matches!(satiation, TransferSatiation::FirstCompletes)
-                    && source_uid.is_none()
-                {
+                if matches!(satiation, TransferSatiation::FirstCompletes) && source_uid.is_none() {
                     return Err(EngineError::Consequence(
                         "first_completes requires a source record shared with its siblings".into(),
                     ));
                 }
 
-                let mut people = Vec::with_capacity(parties.len());
                 let mut seen_people = std::collections::HashSet::new();
-                for token in parties {
+                seen_people.insert(creator_person.clone());
+                let mut invited_people = Vec::with_capacity(invitees.len());
+                for token in invitees {
                     let person_uid = self.resolve(token.trim()).await?;
                     let row = store::records::get(&self.store.pool, &person_uid)
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(person_uid.clone()))?;
                     if row.kind != RecordKind::Person.as_str() {
                         return Err(EngineError::Consequence(format!(
-                            "transfer party `{}` is not a Person record",
+                            "transfer invitee `{}` is not a Person record",
                             row.slug.as_deref().unwrap_or(&person_uid)
                         )));
                     }
                     if !seen_people.insert(person_uid.clone()) {
                         return Err(EngineError::Consequence(
-                            "the same Person cannot be added twice".into(),
+                            "the creator or an invitee cannot appear twice".into(),
                         ));
                     }
-                    people.push(person_uid);
-                }
-                if let Some(person_uid) = creator_person {
-                    if seen_people.insert(person_uid.clone()) {
-                        people.insert(0, person_uid);
-                    }
-                }
-                if people.len() > 64 {
-                    return Err(EngineError::Consequence(
-                        "a transfer draft supports at most 64 parties".into(),
-                    ));
+                    invited_people.push(person_uid);
                 }
 
                 let mut draft_promises = Vec::with_capacity(promises.len());
@@ -1270,72 +2065,118 @@ impl Engine {
                             "every promise delta must be finite and non-zero".into(),
                         ));
                     }
-                    let record_uid = self.resolve(input.record.trim()).await?;
-                    let person_uid = self.resolve(input.party.trim()).await?;
-                    if !seen_people.contains(&person_uid) {
+                    if input.withdrawn {
                         return Err(EngineError::Consequence(
-                            "every promise party must be included in the reviewed party list"
-                                .into(),
+                            "new transfer promises cannot be withdrawn".into(),
                         ));
                     }
-                    let window_end = input
-                        .window_end
-                        .map(|value| value.trim().to_string())
-                        .filter(|value| !value.is_empty());
-                    if let Some(value) = window_end.as_deref() {
-                        let parsed = DateTime::parse_from_rfc3339(value).map_err(|_| {
-                            EngineError::Consequence(format!(
-                                "promise window `{value}` must be an RFC3339 date and time"
-                            ))
+                    if let Some(uid) = input.uid.as_deref()
+                        && store::misc::get_promise(&self.store.pool, uid)
+                            .await?
+                            .is_some()
+                    {
+                        return Err(EngineError::Conflict {
+                            code: "transfer_promise_uid_conflict",
+                            message: "a new Transfer promise uid is already in use".into(),
+                        });
+                    }
+                    let record_uid = self.resolve(input.record.trim()).await?;
+                    let concept_uid = store::records::get(&self.store.pool, &record_uid)
+                        .await?
+                        .ok_or_else(|| EngineError::UnknownRecord(record_uid.clone()))?
+                        .concept_uid;
+                    let person_uid = if input.open {
+                        if let Some(token) = input.party.as_deref() {
+                            let submitted = self.resolve(token.trim()).await?;
+                            if submitted != creator_person {
+                                return Err(EngineError::Consequence(
+                                    "an OPEN promise is owned by the creating Person; its counterparty remains unnamed"
+                                        .into(),
+                                ));
+                            }
+                        }
+                        Some(creator_person.clone())
+                    } else {
+                        let token = input.party.as_deref().ok_or_else(|| {
+                            EngineError::Consequence(
+                                "a non-OPEN promise requires a reviewed Person".into(),
+                            )
                         })?;
-                        if parsed.with_timezone(&Utc) <= now {
+                        let person_uid = self.resolve(token.trim()).await?;
+                        if !seen_people.contains(&person_uid) {
                             return Err(EngineError::Consequence(
-                                "promise window must end in the future".into(),
+                                "every promise Person must be the creator or a reviewed invitee"
+                                    .into(),
                             ));
                         }
+                        Some(person_uid)
+                    };
+                    if !input.open
+                        && input.reuse_policy == nucleus::transfer::OpenPromiseReusePolicy::Consume
+                    {
+                        return Err(EngineError::Consequence(
+                            "reuse_policy applies only to an OPEN promise".into(),
+                        ));
                     }
+                    let unit_uid = self.resolve_concept_opt(input.unit).await?;
+                    let (window_start, window_end) =
+                        normalize_transfer_window(input.window_start, input.window_end, now, None)?;
+                    let location = normalize_transfer_place(input.place)?;
                     let condition = input
                         .condition
                         .map(|value| value.trim().to_string())
                         .filter(|value| !value.is_empty());
                     if let Some(value) = condition.as_deref() {
                         nucleus::expr::Expr::parse(value).map_err(|error| {
-                            EngineError::Consequence(format!(
-                                "invalid promise condition: {error}"
-                            ))
+                            EngineError::Consequence(format!("invalid promise condition: {error}"))
                         })?;
                     }
                     draft_promises.push(store::transfers::DraftPromise {
-                        record_uid,
+                        uid: Some(input.uid.unwrap_or_else(|| nucleus::new_uid("p"))),
+                        record_uid: Some(record_uid),
+                        concept_uid,
+                        unit_uid,
                         person_uid,
+                        open: input.open,
                         delta: input.delta,
+                        window_start,
                         window_end,
+                        location,
                         condition,
                         reserve_from: input
                             .reserve_from
-                            .unwrap_or(reserve_default)
+                            .unwrap_or(effective_reserve_default)
+                            .resolve(effective_reserve_default)
                             .as_str()
                             .into(),
+                        open_reuse_policy: input.reuse_policy,
                     });
                 }
+                let promise_uids = draft_promises
+                    .iter()
+                    .filter_map(|promise| promise.uid.clone())
+                    .collect::<HashSet<_>>();
+                let dependencies = self
+                    .resolve_transfer_dependencies(None, dependencies, &promise_uids)
+                    .await?;
                 if matches!(agreement, nucleus::transfer::AgreementType::Dependency)
-                    && !draft_promises.iter().any(|promise| promise.condition.is_some())
+                    && dependencies.is_empty()
                 {
                     return Err(EngineError::Consequence(
-                        "dependency agreement requires at least one promise condition".into(),
+                        "dependency agreement requires at least one structured dependency".into(),
                     ));
                 }
 
                 let organ_uid = store::organs::local(&self.store.pool)
                     .await?
                     .map(|organ| organ.uid);
-                let signer = self.signer.lock().await.clone();
-                let fact_actor = actor
-                    .clone()
-                    .or_else(|| signer.as_ref().map(|value| value.actor_uid.clone()));
+                let signer = self
+                    .transfer_person_signer(&creator_person, verified_authorship.as_ref())
+                    .await?;
                 let created = store::transfers::create_draft(
                     &self.store.pool,
                     store::transfers::NewTransferDraft {
+                        idempotency_key: request_id,
                         slug,
                         head,
                         agreement_type: agreement.as_str().into(),
@@ -1345,25 +2186,2009 @@ impl Engine {
                         source_uid,
                         visibility: visibility.as_str().into(),
                         max_proximity: max_proximity.map(i64::from),
-                        reserve_default: reserve_default.as_str().into(),
+                        reserve_default: effective_reserve_default.as_str().into(),
                         require_confirmation,
-                        people,
+                        default_place: normalize_transfer_place(default_place)?,
+                        creator_person: creator_person.clone(),
+                        invitees: invited_people,
                         promises: draft_promises,
+                        dependencies,
                         organ_uid,
+                        evidence_action: "create-transfer-draft".into(),
+                        correction: None,
+                        authorization_intent_uid: verified_authorship
+                            .as_ref()
+                            .map(|value| value.intent_uid.clone()),
                     },
                     now,
-                    fact_actor,
+                    Some(creator_person),
                     visibility_actor,
                     |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
                 )
                 .await?;
-                outcome.facts = self.observe_committed_fact(created.fact, now).await?;
+                if !created.replayed {
+                    outcome.facts = self.publish_committed_fact(created.fact);
+                    for fact in created.invitation_event_facts {
+                        outcome.facts.extend(self.publish_committed_fact(fact));
+                    }
+                }
                 outcome.created = Some(created.transfer_uid);
+            }
+            Action::ReviseTransferPromise {
+                transfer,
+                promise,
+                expected_revision,
+                request_id,
+                terms,
+            } => {
+                if transfer_phase_locked() {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_draft_action_required",
+                        message:
+                            "use revise-transfer-draft so every public term is reviewed together"
+                                .into(),
+                    });
+                }
+                if !terms.delta.is_finite() || terms.delta == 0.0 {
+                    return Err(EngineError::Consequence(
+                        "promise delta must be finite and non-zero".into(),
+                    ));
+                }
+                let transfer = self.resolve(&transfer).await?;
+                self.require_transfer_editor(&transfer, actor.as_deref())
+                    .await?;
+                let promise = promise.trim().to_string();
+                let source = store::misc::get_promise(&self.store.pool, &promise)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(promise.clone()))?;
+                if source.transfer_uid.as_deref() != Some(transfer.as_str()) {
+                    return Err(EngineError::Consequence(
+                        "promise does not belong to the selected Transfer".into(),
+                    ));
+                }
+                let record_uid = self.resolve(terms.record.trim()).await?;
+                let person_token = terms.party.as_deref().ok_or_else(|| {
+                    EngineError::Consequence(
+                        "a single-promise edit cannot turn a promise OPEN; use revise-transfer-draft"
+                            .into(),
+                    )
+                })?;
+                let person_uid = self.resolve(person_token.trim()).await?;
+                let person = store::records::get(&self.store.pool, &person_uid)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(person_uid.clone()))?;
+                if person.kind != RecordKind::Person.as_str() {
+                    return Err(EngineError::Consequence(
+                        "promise Person must be a Person record".into(),
+                    ));
+                }
+                let is_known =
+                    store::transfers::party_for_actor(&self.store.pool, &transfer, &person_uid)
+                        .await?
+                        .is_some()
+                        || store::transfers::invitations_for_transfer(&self.store.pool, &transfer)
+                            .await?
+                            .iter()
+                            .any(|invitation| invitation.addressed_person_uid == person_uid);
+                if !is_known {
+                    return Err(EngineError::Consequence(
+                        "promise Person must be a participant or addressed invitee".into(),
+                    ));
+                }
+                let window_end = terms
+                    .window_end
+                    .map(|value| value.trim().to_string())
+                    .filter(|value| !value.is_empty());
+                if let Some(value) = window_end.as_deref() {
+                    let parsed = DateTime::parse_from_rfc3339(value).map_err(|_| {
+                        EngineError::Consequence(format!(
+                            "promise window `{value}` must be an RFC3339 date and time"
+                        ))
+                    })?;
+                    if parsed.with_timezone(&Utc) <= now {
+                        return Err(EngineError::Consequence(
+                            "promise window must end in the future".into(),
+                        ));
+                    }
+                }
+                let condition = terms
+                    .condition
+                    .map(|value| value.trim().to_string())
+                    .filter(|value| !value.is_empty());
+                if let Some(value) = condition.as_deref() {
+                    nucleus::expr::Expr::parse(value).map_err(|error| {
+                        EngineError::Consequence(format!("invalid promise condition: {error}"))
+                    })?;
+                }
+                let request_id = request_id.trim().to_string();
+                let signer = self.signer.lock().await.clone();
+                let fact_actor = actor
+                    .clone()
+                    .or_else(|| signer.as_ref().map(|value| value.actor_uid.clone()));
+                match store::transfers::revise_promise(
+                    &self.store.pool,
+                    store::transfers::PromiseRevisionInput {
+                        transfer_uid: transfer,
+                        promise_uid: promise,
+                        expected_revision,
+                        idempotency_key: request_id,
+                        record_uid,
+                        person_uid,
+                        delta: terms.delta,
+                        window_end,
+                        condition,
+                        reserve_from: terms
+                            .reserve_from
+                            .map(|value| value.as_str().to_string())
+                            .unwrap_or(source.reserve_from),
+                    },
+                    now,
+                    fact_actor,
+                    |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+                )
+                .await?
+                {
+                    store::transfers::RevisionCommit::Committed { fact, .. } => {
+                        outcome.facts = self.observe_committed_fact(fact, now).await?;
+                    }
+                    store::transfers::RevisionCommit::Replayed { .. } => {}
+                    store::transfers::RevisionCommit::Stale { current_revision } => {
+                        return Err(EngineError::Conflict {
+                            code: "transfer_revision_stale",
+                            message: format!(
+                                "expected transfer revision {expected_revision}, current revision is {current_revision}"
+                            ),
+                        });
+                    }
+                }
+            }
+            Action::ReviseTransferDraft {
+                transfer,
+                expected_revision,
+                request_id,
+                draft,
+            } => {
+                let transfer = self.resolve(&transfer).await?;
+                self.require_transfer_draft_creator(&transfer, actor.as_deref())
+                    .await?;
+                if let Some((replayed_transfer, _, replayed_action)) =
+                    store::transfers::revision_for_request(&self.store.pool, request_id.trim())
+                        .await?
+                {
+                    if replayed_transfer != transfer || replayed_action != "revise-transfer-draft" {
+                        return Err(EngineError::Conflict {
+                            code: "transfer_request_id_conflict",
+                            message: "transfer request id belongs to another transfer".into(),
+                        });
+                    }
+                    outcome.created = Some(transfer);
+                    return Ok(outcome);
+                }
+                let current = store::transfers::get(&self.store.pool, &transfer)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(transfer.clone()))?;
+                if current.revision == 0 {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_legacy_adoption_required",
+                        message: "legacy revision-0 terms require explicit review and adoption"
+                            .into(),
+                    });
+                }
+                let creator_person = self
+                    .resolve_transfer_draft_creator_person(
+                        &transfer,
+                        &draft.creator,
+                        expected_revision,
+                        actor.as_deref(),
+                    )
+                    .await?;
+                let mut input = self
+                    .resolve_whole_transfer_draft(
+                        transfer.clone(),
+                        expected_revision,
+                        request_id,
+                        draft,
+                        creator_person.clone(),
+                        creator_person.clone(),
+                        now,
+                        false,
+                    )
+                    .await?;
+                input.authorization_intent_uid = verified_authorship
+                    .as_ref()
+                    .map(|value| value.intent_uid.clone());
+                let signer = self
+                    .transfer_person_signer(&creator_person, verified_authorship.as_ref())
+                    .await?;
+                let commit = store::transfers::revise_whole_draft(
+                    &self.store.pool,
+                    input,
+                    now,
+                    Some(creator_person),
+                    |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+                )
+                .await?;
+                self.apply_transfer_revision_commit(
+                    commit,
+                    expected_revision,
+                    &transfer,
+                    &mut outcome,
+                )
+                .await?;
+            }
+            Action::AdoptTransferDraft {
+                transfer,
+                request_id,
+                draft,
+            } => {
+                let transfer = self.resolve(&transfer).await?;
+                self.require_transfer_draft_creator(&transfer, actor.as_deref())
+                    .await?;
+                if let Some((replayed_transfer, _, replayed_action)) =
+                    store::transfers::revision_for_request(&self.store.pool, request_id.trim())
+                        .await?
+                {
+                    if replayed_transfer != transfer
+                        || replayed_action != "adopt-legacy-transfer-draft"
+                    {
+                        return Err(EngineError::Conflict {
+                            code: "transfer_request_id_conflict",
+                            message: "transfer request id belongs to another transfer".into(),
+                        });
+                    }
+                    outcome.created = Some(transfer);
+                    return Ok(outcome);
+                }
+                let current = store::transfers::get(&self.store.pool, &transfer)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(transfer.clone()))?;
+                if current.revision != 0 {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_already_revisioned",
+                        message: format!(
+                            "transfer is already sealed at revision {}",
+                            current.revision
+                        ),
+                    });
+                }
+                let creator_person = self
+                    .resolve_transfer_draft_creator_person(
+                        &transfer,
+                        &draft.creator,
+                        0,
+                        actor.as_deref(),
+                    )
+                    .await?;
+                let mut input = self
+                    .resolve_whole_transfer_draft(
+                        transfer.clone(),
+                        0,
+                        request_id,
+                        draft,
+                        creator_person.clone(),
+                        creator_person.clone(),
+                        now,
+                        false,
+                    )
+                    .await?;
+                input.authorization_intent_uid = verified_authorship
+                    .as_ref()
+                    .map(|value| value.intent_uid.clone());
+                let signer = self
+                    .transfer_person_signer(&creator_person, verified_authorship.as_ref())
+                    .await?;
+                let commit = store::transfers::adopt_legacy_draft(
+                    &self.store.pool,
+                    input,
+                    now,
+                    Some(creator_person),
+                    |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+                )
+                .await?;
+                self.apply_transfer_revision_commit(commit, 0, &transfer, &mut outcome)
+                    .await?;
+            }
+            Action::AddressTransferInvitation {
+                transfer,
+                expected_revision,
+                request_id,
+                person,
+                expires_at,
+            } => {
+                let transfer = self.resolve(&transfer).await?;
+                self.require_permission(actor.as_deref(), "transfer:update")
+                    .await?;
+                let creator = self.transfer_creator_person(&transfer).await?;
+                let acting = self
+                    .transfer_action_person(actor.as_deref(), None, Some(&creator))
+                    .await?;
+                if acting != creator {
+                    return Err(EngineError::Forbidden(
+                        "only the transfer creator may address an invitation".into(),
+                    ));
+                }
+                let addressed = self.resolve(person.trim()).await?;
+                if let Some(event) = store::transfers::invitation_event_for_request(
+                    &self.store.pool,
+                    request_id.trim(),
+                )
+                .await?
+                {
+                    let replayed =
+                        store::transfers::invitation(&self.store.pool, &event.invitation_uid)
+                            .await?
+                            .ok_or_else(|| {
+                                EngineError::Consequence("unknown transfer invitation".into())
+                            })?;
+                    if event.kind != "addressed"
+                        || event.transfer_uid != transfer
+                        || replayed.addressed_person_uid != addressed
+                    {
+                        return Err(transfer_request_id_conflict());
+                    }
+                    outcome.created = Some(event.invitation_uid);
+                    return Ok(outcome);
+                }
+                reject_existing_transfer_revision_request(&self.store.pool, request_id.trim())
+                    .await?;
+                let addressed_record = store::records::get(&self.store.pool, &addressed)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(addressed.clone()))?;
+                if addressed_record.kind != RecordKind::Person.as_str() {
+                    return Err(EngineError::Consequence(
+                        "transfer invitation addressee must be a Person record".into(),
+                    ));
+                }
+                let signer = self
+                    .transfer_person_signer(&acting, verified_authorship.as_ref())
+                    .await?;
+                let commit = store::transfers::address_transfer_invitation(
+                    &self.store.pool,
+                    store::transfers::AddressTransferInvitationInput {
+                        transfer_uid: transfer.clone(),
+                        expected_revision,
+                        idempotency_key: request_id.trim().to_string(),
+                        addressed_person_uid: addressed,
+                        invited_by_person_uid: acting,
+                        expires_at: normalize_transfer_invitation_expiry(expires_at, now)?,
+                    },
+                    now,
+                    |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+                )
+                .await?;
+                self.apply_transfer_invitation_commit(commit, expected_revision, &mut outcome)?;
+            }
+            Action::AcceptTransferInvitation {
+                invitation,
+                expected_revision,
+                request_id,
+                transfer,
+                person,
+            } => {
+                let invitation_row = store::transfers::invitation(&self.store.pool, &invitation)
+                    .await?
+                    .ok_or_else(|| {
+                        EngineError::Consequence("unknown transfer invitation".into())
+                    })?;
+                self.require_permission(actor.as_deref(), "transfer:update")
+                    .await?;
+                if let Some(transfer) = transfer.as_deref() {
+                    let transfer = self.resolve(transfer).await?;
+                    if transfer != invitation_row.transfer_uid {
+                        return Err(transfer_request_id_conflict());
+                    }
+                }
+                let acting = self
+                    .transfer_action_person(
+                        actor.as_deref(),
+                        person.as_deref(),
+                        Some(&invitation_row.addressed_person_uid),
+                    )
+                    .await?;
+                if acting != invitation_row.addressed_person_uid {
+                    return Err(EngineError::Forbidden(
+                        "only the addressed Person may accept an invitation".into(),
+                    ));
+                }
+                if let Some(created) = transfer_invitation_replay(
+                    &self.store.pool,
+                    request_id.trim(),
+                    &invitation,
+                    "accepted",
+                )
+                .await?
+                {
+                    outcome.created = Some(created);
+                    return Ok(outcome);
+                }
+                let signer = self
+                    .transfer_person_signer(&acting, verified_authorship.as_ref())
+                    .await?;
+                let commit = store::transfers::accept_transfer_invitation(
+                    &self.store.pool,
+                    store::transfers::InvitationTransitionInput {
+                        invitation_uid: invitation,
+                        expected_revision,
+                        idempotency_key: request_id.trim().to_string(),
+                        actor_person_uid: Some(acting),
+                        expires_at: None,
+                    },
+                    now,
+                    |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+                )
+                .await?;
+                self.apply_transfer_invitation_commit(commit, expected_revision, &mut outcome)?;
+            }
+            Action::RejectTransferInvitation {
+                invitation,
+                request_id,
+                transfer,
+                person,
+            } => {
+                let invitation_row = store::transfers::invitation(&self.store.pool, &invitation)
+                    .await?
+                    .ok_or_else(|| {
+                        EngineError::Consequence("unknown transfer invitation".into())
+                    })?;
+                self.require_permission(actor.as_deref(), "transfer:update")
+                    .await?;
+                if let Some(transfer) = transfer.as_deref() {
+                    let transfer = self.resolve(transfer).await?;
+                    if transfer != invitation_row.transfer_uid {
+                        return Err(transfer_request_id_conflict());
+                    }
+                }
+                let acting = self
+                    .transfer_action_person(
+                        actor.as_deref(),
+                        person.as_deref(),
+                        Some(&invitation_row.addressed_person_uid),
+                    )
+                    .await?;
+                if acting != invitation_row.addressed_person_uid {
+                    return Err(EngineError::Forbidden(
+                        "only the addressed Person may reject an invitation".into(),
+                    ));
+                }
+                if let Some(created) = transfer_invitation_replay(
+                    &self.store.pool,
+                    request_id.trim(),
+                    &invitation,
+                    "rejected",
+                )
+                .await?
+                {
+                    outcome.created = Some(created);
+                    return Ok(outcome);
+                }
+                let signer = self
+                    .transfer_person_signer(&acting, verified_authorship.as_ref())
+                    .await?;
+                let commit = store::transfers::reject_transfer_invitation(
+                    &self.store.pool,
+                    store::transfers::InvitationTransitionInput {
+                        invitation_uid: invitation,
+                        expected_revision: 0,
+                        idempotency_key: request_id.trim().to_string(),
+                        actor_person_uid: Some(acting),
+                        expires_at: None,
+                    },
+                    now,
+                    |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+                )
+                .await?;
+                self.apply_transfer_invitation_commit(commit, 0, &mut outcome)?;
+            }
+            Action::WithdrawTransferInvitation {
+                invitation,
+                expected_revision,
+                request_id,
+            } => {
+                let invitation_row = store::transfers::invitation(&self.store.pool, &invitation)
+                    .await?
+                    .ok_or_else(|| {
+                        EngineError::Consequence("unknown transfer invitation".into())
+                    })?;
+                self.require_permission(actor.as_deref(), "transfer:update")
+                    .await?;
+                let creator = self
+                    .transfer_creator_person(&invitation_row.transfer_uid)
+                    .await?;
+                let acting = self
+                    .transfer_action_person(actor.as_deref(), None, Some(&creator))
+                    .await?;
+                if acting != creator {
+                    return Err(EngineError::Forbidden(
+                        "only the transfer creator may change an invitation".into(),
+                    ));
+                }
+                if let Some(created) = transfer_invitation_replay(
+                    &self.store.pool,
+                    request_id.trim(),
+                    &invitation,
+                    "withdrawn",
+                )
+                .await?
+                {
+                    outcome.created = Some(created);
+                    return Ok(outcome);
+                }
+                let signer = self
+                    .transfer_person_signer(&acting, verified_authorship.as_ref())
+                    .await?;
+                let input = store::transfers::InvitationTransitionInput {
+                    invitation_uid: invitation,
+                    expected_revision,
+                    idempotency_key: request_id.trim().to_string(),
+                    actor_person_uid: Some(acting),
+                    expires_at: None,
+                };
+                let commit = store::transfers::withdraw_transfer_invitation(
+                    &self.store.pool,
+                    input,
+                    now,
+                    |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+                )
+                .await?;
+                self.apply_transfer_invitation_commit(commit, expected_revision, &mut outcome)?;
+            }
+            Action::ReopenTransferInvitation {
+                invitation,
+                expected_revision,
+                request_id,
+                expires_at,
+            } => {
+                let invitation_row = store::transfers::invitation(&self.store.pool, &invitation)
+                    .await?
+                    .ok_or_else(|| {
+                        EngineError::Consequence("unknown transfer invitation".into())
+                    })?;
+                self.require_permission(actor.as_deref(), "transfer:update")
+                    .await?;
+                let creator = self
+                    .transfer_creator_person(&invitation_row.transfer_uid)
+                    .await?;
+                let acting = self
+                    .transfer_action_person(actor.as_deref(), None, Some(&creator))
+                    .await?;
+                if acting != creator {
+                    return Err(EngineError::Forbidden(
+                        "only the transfer creator may reopen an invitation".into(),
+                    ));
+                }
+                if let Some(created) = transfer_invitation_replay(
+                    &self.store.pool,
+                    request_id.trim(),
+                    &invitation,
+                    "reopened",
+                )
+                .await?
+                {
+                    outcome.created = Some(created);
+                    return Ok(outcome);
+                }
+                let signer = self
+                    .transfer_person_signer(&acting, verified_authorship.as_ref())
+                    .await?;
+                let commit = store::transfers::reopen_transfer_invitation(
+                    &self.store.pool,
+                    store::transfers::InvitationTransitionInput {
+                        invitation_uid: invitation,
+                        expected_revision,
+                        idempotency_key: request_id.trim().to_string(),
+                        actor_person_uid: Some(acting),
+                        expires_at: normalize_transfer_invitation_expiry(expires_at, now)?,
+                    },
+                    now,
+                    |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+                )
+                .await?;
+                self.apply_transfer_invitation_commit(commit, expected_revision, &mut outcome)?;
+            }
+            Action::CounterofferTransfer {
+                transfer,
+                expected_revision,
+                request_id,
+                person,
+                draft,
+            } => {
+                let transfer = self.resolve(&transfer).await?;
+                let acting = self
+                    .transfer_action_person(actor.as_deref(), person.as_deref(), None)
+                    .await?;
+                if store::transfers::phase4_request_for_request(&self.store.pool, &request_id)
+                    .await?
+                    .is_some()
+                {
+                    return Err(transfer_request_id_conflict());
+                }
+                self.require_permission(actor.as_deref(), "transfer:update")
+                    .await?;
+                let request_id = request_id.trim().to_string();
+                if request_id.is_empty() || request_id.chars().count() > 200 {
+                    return Err(EngineError::Consequence(
+                        "transfer request_id must contain 1 to 200 characters".into(),
+                    ));
+                }
+                if store::transfers::party_for_actor(&self.store.pool, &transfer, &acting)
+                    .await?
+                    .is_none()
+                {
+                    return Err(EngineError::Forbidden(
+                        "a counteroffer requires an accepted transfer participant".into(),
+                    ));
+                }
+                if let Some((replayed_transfer, _, replayed_action)) =
+                    store::transfers::revision_for_request(&self.store.pool, request_id.trim())
+                        .await?
+                {
+                    if replayed_transfer != transfer
+                        || replayed_action != "counteroffer-transfer-draft"
+                    {
+                        return Err(transfer_request_id_conflict());
+                    }
+                    outcome.created = Some(transfer);
+                    return Ok(outcome);
+                }
+                if store::transfers::invitation_event_for_request(
+                    &self.store.pool,
+                    request_id.trim(),
+                )
+                .await?
+                .is_some()
+                {
+                    return Err(transfer_request_id_conflict());
+                }
+                let creator = self.transfer_creator_person(&transfer).await?;
+                let submitted_creator = self.resolve(draft.creator.trim()).await?;
+                if submitted_creator != creator {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_creator_immutable",
+                        message: "transfer creator Person cannot change in a counteroffer".into(),
+                    });
+                }
+                let mut input = self
+                    .resolve_whole_transfer_draft(
+                        transfer.clone(),
+                        expected_revision,
+                        request_id,
+                        draft,
+                        creator,
+                        acting.clone(),
+                        now,
+                        true,
+                    )
+                    .await?;
+                input.authorization_intent_uid = verified_authorship
+                    .as_ref()
+                    .map(|value| value.intent_uid.clone());
+                let signer = self
+                    .transfer_person_signer(&acting, verified_authorship.as_ref())
+                    .await?;
+                let commit = store::transfers::counteroffer_whole_draft(
+                    &self.store.pool,
+                    input,
+                    now,
+                    Some(acting),
+                    |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+                )
+                .await?;
+                self.apply_transfer_revision_commit(
+                    commit,
+                    expected_revision,
+                    &transfer,
+                    &mut outcome,
+                )
+                .await?;
+            }
+            Action::ClaimOpenTransferPromise {
+                transfer,
+                promise,
+                expected_revision,
+                request_id,
+                person,
+                terms,
+            } => {
+                let transfer = self.resolve(&transfer).await?;
+                self.require_permission(actor.as_deref(), "transfer:update")
+                    .await?;
+                let claimant = self
+                    .transfer_action_person(actor.as_deref(), person.as_deref(), None)
+                    .await?;
+                let replaying = if let Some((replayed_transfer, _, replayed_action)) =
+                    store::transfers::revision_for_request(&self.store.pool, request_id.trim())
+                        .await?
+                {
+                    if replayed_transfer != transfer
+                        || replayed_action != "claim-open-transfer-promise"
+                    {
+                        return Err(transfer_request_id_conflict());
+                    }
+                    let Some((target_transfer, target_source, target_claimant, _)) =
+                        store::transfers::open_claim_target_for_request(
+                            &self.store.pool,
+                            request_id.trim(),
+                        )
+                        .await?
+                    else {
+                        return Err(transfer_request_id_conflict());
+                    };
+                    if target_transfer != transfer
+                        || target_source != promise
+                        || target_claimant != claimant
+                    {
+                        return Err(transfer_request_id_conflict());
+                    }
+                    true
+                } else {
+                    false
+                };
+                if !replaying
+                    && store::transfers::invitation_event_for_request(
+                        &self.store.pool,
+                        request_id.trim(),
+                    )
+                    .await?
+                    .is_some()
+                {
+                    return Err(transfer_request_id_conflict());
+                }
+                let transfer_row = store::transfers::get(&self.store.pool, &transfer)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(transfer.clone()))?;
+                let source = store::misc::get_promise(&self.store.pool, &promise)
+                    .await?
+                    .filter(|source| source.transfer_uid.as_deref() == Some(transfer.as_str()))
+                    .ok_or_else(|| {
+                        EngineError::Consequence("unknown OPEN transfer promise".into())
+                    })?;
+                if !replaying && (source.state != PromiseState::Open || source.party_uid.is_none())
+                {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_promise_not_open",
+                        message: "only a current OPEN promise may be claimed".into(),
+                    });
+                }
+                if !replaying && source.party_uid.as_deref() == Some(claimant.as_str()) {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_open_self_claim_forbidden",
+                        message: "an OPEN proposer cannot claim their own proposal".into(),
+                    });
+                }
+                let invitations =
+                    store::transfers::invitations_for_transfer(&self.store.pool, &transfer).await?;
+                if !replaying
+                    && invitations.iter().any(|invitation| {
+                        invitation.addressed_person_uid == claimant
+                            && invitation.status
+                                == store::transfers::TransferInvitationStatus::Pending
+                    })
+                {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_invitation_acceptance_required",
+                        message: "an addressed Person must accept the invitation before claiming an OPEN promise"
+                            .into(),
+                    });
+                }
+                let participant =
+                    store::transfers::party_for_actor(&self.store.pool, &transfer, &claimant)
+                        .await?
+                        .is_some();
+                if !replaying && !participant && transfer_row.visibility != "public" {
+                    return Err(EngineError::Forbidden(
+                        "a non-participant may claim only a public OPEN promise".into(),
+                    ));
+                }
+                if terms.withdrawn {
+                    return Err(EngineError::Consequence(
+                        "an OPEN claim cannot withdraw its refined promise".into(),
+                    ));
+                }
+                if terms.open {
+                    return Err(EngineError::Consequence(
+                        "an OPEN claim must create a concrete claimant promise".into(),
+                    ));
+                }
+                if terms.reuse_policy != source.open_reuse_policy {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_open_reuse_policy_mismatch",
+                        message: "the claim must use the OPEN proposal's signed reuse policy"
+                            .into(),
+                    });
+                }
+                if terms
+                    .party
+                    .as_deref()
+                    .is_some_and(|token| token.trim() != claimant)
+                {
+                    let party = self.resolve(terms.party.as_deref().unwrap().trim()).await?;
+                    if party != claimant {
+                        return Err(EngineError::Consequence(
+                            "a claimed promise belongs to the claiming Person".into(),
+                        ));
+                    }
+                }
+                if !terms.delta.is_finite() || terms.delta == 0.0 {
+                    return Err(EngineError::Consequence(
+                        "claimed promise delta must be finite and non-zero".into(),
+                    ));
+                }
+                if source.delta.signum() == terms.delta.signum() {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_open_claim_direction_mismatch",
+                        message: "claimant quantity must have the opposite direction from the OPEN proposal"
+                            .into(),
+                    });
+                }
+                let resolved_record_uid = self.resolve(terms.record.trim()).await?;
+                let concept_uid = store::records::get(&self.store.pool, &resolved_record_uid)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(resolved_record_uid.clone()))?
+                    .concept_uid;
+                let record_uid = Some(resolved_record_uid);
+                let unit_uid = self.resolve_concept_opt(terms.unit).await?;
+                let replay_window_end = terms.window_end.clone();
+                let (window_start, window_end) = normalize_transfer_window(
+                    terms.window_start,
+                    terms.window_end,
+                    now,
+                    if replaying {
+                        replay_window_end.as_deref()
+                    } else {
+                        source.window_end.as_deref()
+                    },
+                )?;
+                let condition = terms
+                    .condition
+                    .map(|value| value.trim().to_string())
+                    .filter(|value| !value.is_empty());
+                if let Some(value) = condition.as_deref() {
+                    nucleus::expr::Expr::parse(value).map_err(|error| {
+                        EngineError::Consequence(format!("invalid promise condition: {error}"))
+                    })?;
+                }
+                let signer = if replaying {
+                    None
+                } else {
+                    self.transfer_person_signer(&claimant, verified_authorship.as_ref())
+                        .await?
+                };
+                let commit = store::transfers::claim_open_promise(
+                    &self.store.pool,
+                    store::transfers::OpenPromiseClaimInput {
+                        transfer_uid: transfer,
+                        source_promise_uid: promise,
+                        expected_revision,
+                        idempotency_key: request_id.trim().to_string(),
+                        claimant_person_uid: claimant,
+                        record_uid,
+                        concept_uid,
+                        unit_uid,
+                        delta: terms.delta,
+                        window_start,
+                        window_end,
+                        location: normalize_transfer_place(terms.place)?,
+                        condition,
+                        reserve_from: terms
+                            .reserve_from
+                            .map(|value| value.as_str().to_string())
+                            .unwrap_or(source.reserve_from),
+                        authorization_intent_uid: verified_authorship
+                            .as_ref()
+                            .map(|value| value.intent_uid.clone()),
+                    },
+                    now,
+                    |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+                )
+                .await?;
+                self.apply_open_promise_claim_commit(commit, expected_revision, &mut outcome)?;
+            }
+            Action::SetTransferAgreementLevel {
+                transfer,
+                expected_revision,
+                request_id,
+                person,
+                level,
+            } => {
+                if level > 2 {
+                    return Err(EngineError::Consequence(
+                        "agreement level must be 0, 1, or 2".into(),
+                    ));
+                }
+                let transfer = self.resolve(&transfer).await?;
+                self.require_permission(actor.as_deref(), "transfer:update")
+                    .await?;
+                let acting = self
+                    .transfer_action_person(actor.as_deref(), person.as_deref(), None)
+                    .await?;
+                if let Some(event) =
+                    store::transfers::agreement_event_for_request(&self.store.pool, &request_id)
+                        .await?
+                {
+                    if event.transfer_uid != transfer
+                        || event.revision != expected_revision
+                        || event.person_uid != acting
+                        || event.to_level != level
+                    {
+                        return Err(transfer_request_id_conflict());
+                    }
+                    outcome.created = Some(event.uid);
+                    return Ok(outcome);
+                }
+                if store::transfers::party_for_actor(&self.store.pool, &transfer, &acting)
+                    .await?
+                    .is_none()
+                {
+                    return Err(EngineError::Forbidden(
+                        "agreement may be authored only by an accepted Transfer participant".into(),
+                    ));
+                }
+                if store::transfers::revision_for_request(&self.store.pool, &request_id)
+                    .await?
+                    .is_some()
+                    || store::transfers::invitation_event_for_request(&self.store.pool, &request_id)
+                        .await?
+                        .is_some()
+                {
+                    return Err(transfer_request_id_conflict());
+                }
+                self.require_verified_transfer_revision(&transfer, expected_revision)
+                    .await?;
+                let signer = self
+                    .transfer_person_signer(&acting, verified_authorship.as_ref())
+                    .await?;
+                let commit = store::transfers::transition_agreement(
+                    &self.store.pool,
+                    store::transfers::AgreementTransitionInput {
+                        transfer_uid: transfer.clone(),
+                        expected_revision,
+                        idempotency_key: request_id,
+                        person_uid: acting,
+                        to_level: level,
+                        authorization_intent_uid: verified_authorship
+                            .as_ref()
+                            .map(|value| value.intent_uid.clone()),
+                    },
+                    now,
+                    |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+                )
+                .await?;
+                match commit {
+                    store::transfers::AgreementTransitionCommit::Committed(committed) => {
+                        outcome.facts = self.publish_committed_fact(committed.fact);
+                        outcome.created = Some(committed.event.uid);
+                    }
+                    store::transfers::AgreementTransitionCommit::Replayed(replayed) => {
+                        outcome.created = Some(replayed.event.uid);
+                    }
+                    store::transfers::AgreementTransitionCommit::Stale {
+                        current_revision, ..
+                    } => {
+                        return Err(EngineError::Conflict {
+                            code: "transfer_revision_stale",
+                            message: format!(
+                                "expected transfer revision {expected_revision}, current revision is {current_revision}"
+                            ),
+                        });
+                    }
+                }
+            }
+            Action::ActivateTransferOccurrence {
+                transfer,
+                promise,
+                expected_revision,
+                request_id,
+                person,
+            } => {
+                let transfer = self.resolve(&transfer).await?;
+                self.require_permission(actor.as_deref(), "transfer:update")
+                    .await?;
+                let acting = self
+                    .transfer_action_person(actor.as_deref(), person.as_deref(), None)
+                    .await?;
+                let promise = promise.trim().to_string();
+                if let Some(replayed) = store::transfers::occurrences_for_activation_request(
+                    &self.store.pool,
+                    &request_id,
+                )
+                .await?
+                {
+                    if replayed.transfer_uid != transfer
+                        || replayed.revision != expected_revision
+                        || replayed.actor_person_uid != acting
+                        || replayed.occurrences.len() != 1
+                        || replayed.occurrences[0].promise_uid != promise
+                    {
+                        return Err(transfer_request_id_conflict());
+                    }
+                    outcome.created = Some(replayed.occurrences[0].uid.clone());
+                    return Ok(outcome);
+                }
+                if store::transfers::phase4_request_for_request(&self.store.pool, &request_id)
+                    .await?
+                    .is_some()
+                {
+                    return Err(transfer_request_id_conflict());
+                }
+                if store::transfers::source_group_state_for_transfer(&self.store.pool, &transfer)
+                    .await?
+                    .is_some_and(|state| state.satiated)
+                {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_satiated",
+                        message:
+                            "another Transfer already completed this first-completes source group"
+                                .into(),
+                    });
+                }
+                if store::transfers::party_for_actor(&self.store.pool, &transfer, &acting)
+                    .await?
+                    .is_none()
+                {
+                    return Err(EngineError::Forbidden(
+                        "occurrence activation requires an accepted Transfer participant".into(),
+                    ));
+                }
+                self.require_verified_transfer_revision(&transfer, expected_revision)
+                    .await?;
+                let ready =
+                    protein::transfer_ready_promises_for_person(&self.store, &transfer, &acting)
+                        .await?;
+                if !ready.contains(&promise) {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_promise_not_ready",
+                        message: "the selected promise is not policy-ready for the acting Person"
+                            .into(),
+                    });
+                }
+                let readiness =
+                    store::transfers::agreement_readiness_input(&self.store.pool, &transfer)
+                        .await?;
+                if readiness.revision != expected_revision {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_revision_stale",
+                        message: format!(
+                            "expected transfer revision {expected_revision}, current revision is {}",
+                            readiness.revision
+                        ),
+                    });
+                }
+                let (opposite_promise_uid, giver_person_uid, receiver_person_uid) =
+                    protein::transfer_occurrence_roles(&readiness, &promise).map_err(|code| {
+                        EngineError::Conflict {
+                            code,
+                            message: "the selected promise does not have one unambiguous directed counterparty"
+                                .into(),
+                        }
+                    })?;
+                let signer = self
+                    .transfer_person_signer(&acting, verified_authorship.as_ref())
+                    .await?;
+                let commit = store::transfers::activate_occurrences(
+                    &self.store.pool,
+                    store::transfers::ActivateOccurrencesInput {
+                        transfer_uid: transfer,
+                        expected_revision,
+                        idempotency_key: request_id,
+                        actor_person_uid: acting,
+                        occurrences: vec![store::transfers::OccurrenceActivationInput {
+                            promise_uid: promise,
+                            opposite_promise_uid,
+                            giver_person_uid,
+                            receiver_person_uid,
+                        }],
+                        authorization_intent_uid: verified_authorship
+                            .as_ref()
+                            .map(|value| value.intent_uid.clone()),
+                    },
+                    now,
+                    |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+                )
+                .await?;
+                match commit {
+                    store::transfers::OccurrenceActivationCommit::Committed(committed) => {
+                        outcome.created = committed
+                            .occurrences
+                            .first()
+                            .map(|occurrence| occurrence.uid.clone());
+                        outcome.facts = self.publish_committed_fact(committed.fact);
+                    }
+                    store::transfers::OccurrenceActivationCommit::Replayed(replayed) => {
+                        outcome.created = replayed
+                            .occurrences
+                            .first()
+                            .map(|occurrence| occurrence.uid.clone());
+                    }
+                    store::transfers::OccurrenceActivationCommit::Stale {
+                        current_revision,
+                        ..
+                    } => {
+                        return Err(EngineError::Conflict {
+                            code: "transfer_revision_stale",
+                            message: format!(
+                                "expected transfer revision {expected_revision}, current revision is {current_revision}"
+                            ),
+                        });
+                    }
+                    store::transfers::OccurrenceActivationCommit::Satiated {
+                        winner_transfer_uid,
+                    } => {
+                        return Err(EngineError::Conflict {
+                            code: "transfer_satiated",
+                            message: format!(
+                                "Transfer cannot activate because `{winner_transfer_uid}` completed its first-completes source group"
+                            ),
+                        });
+                    }
+                }
+            }
+            Action::SetTransferOccurrenceClaim {
+                occurrence,
+                request_id,
+                person,
+                role,
+                claimed,
+            } => {
+                let acting = self
+                    .transfer_action_person(actor.as_deref(), person.as_deref(), None)
+                    .await?;
+                self.require_permission(actor.as_deref(), "transfer:update")
+                    .await?;
+                let role = match role {
+                    TransferOccurrenceClaimRole::Delivery => {
+                        nucleus::transfer::OccurrenceClaimRole::Delivery
+                    }
+                    TransferOccurrenceClaimRole::Receipt => {
+                        nucleus::transfer::OccurrenceClaimRole::Receipt
+                    }
+                };
+                if let Some(replayed) =
+                    store::transfers::occurrence_claim_for_request(&self.store.pool, &request_id)
+                        .await?
+                {
+                    if replayed.event.occurrence_uid != occurrence
+                        || replayed.event.actor_person_uid != acting
+                        || replayed.event.role != role
+                        || replayed.event.asserted != claimed
+                    {
+                        return Err(transfer_request_id_conflict());
+                    }
+                    outcome.created = Some(replayed.event.uid);
+                    return Ok(outcome);
+                }
+                if store::transfers::phase4_request_for_request(&self.store.pool, &request_id)
+                    .await?
+                    .is_some()
+                {
+                    return Err(transfer_request_id_conflict());
+                }
+                let signer = self
+                    .transfer_person_signer(&acting, verified_authorship.as_ref())
+                    .await?;
+                let commit = store::transfers::set_occurrence_claim(
+                    &self.store.pool,
+                    store::transfers::OccurrenceClaimInput {
+                        occurrence_uid: occurrence,
+                        idempotency_key: request_id,
+                        actor_person_uid: acting,
+                        role,
+                        asserted: claimed,
+                        authorization_intent_uid: verified_authorship
+                            .as_ref()
+                            .map(|value| value.intent_uid.clone()),
+                    },
+                    now,
+                    |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+                )
+                .await?;
+                match commit {
+                    store::transfers::OccurrenceClaimCommit::Committed(committed) => {
+                        outcome.created = Some(committed.event.uid);
+                        outcome.facts = self.publish_committed_fact(committed.fact);
+                    }
+                    store::transfers::OccurrenceClaimCommit::Replayed(replayed) => {
+                        outcome.created = Some(replayed.event.uid);
+                    }
+                }
+            }
+            Action::CompleteTransferOccurrenceClaimsBulk {
+                request_id,
+                person,
+                review_token,
+                items,
+            } => {
+                let acting = self
+                    .transfer_action_person(actor.as_deref(), person.as_deref(), None)
+                    .await?;
+                self.require_permission(actor.as_deref(), "transfer:update")
+                    .await?;
+                let items = items
+                    .into_iter()
+                    .map(|item| store::transfers::ReviewedBulkOccurrenceClaim {
+                        occurrence_uid: item.occurrence,
+                        transfer_uid: item.transfer,
+                        expected_revision: item.expected_revision,
+                        role: match item.role {
+                            TransferOccurrenceClaimRole::Delivery => {
+                                nucleus::transfer::OccurrenceClaimRole::Delivery
+                            }
+                            TransferOccurrenceClaimRole::Receipt => {
+                                nucleus::transfer::OccurrenceClaimRole::Receipt
+                            }
+                        },
+                        expected_delivery_claimed: item.expected_delivery_claimed,
+                        expected_receipt_claimed: item.expected_receipt_claimed,
+                    })
+                    .collect();
+                let signer = self
+                    .transfer_person_signer(&acting, verified_authorship.as_ref())
+                    .await?;
+                let commit = store::transfers::complete_occurrence_claims_bulk(
+                    &self.store.pool,
+                    store::transfers::BulkOccurrenceClaimInput {
+                        idempotency_key: request_id,
+                        actor_person_uid: acting,
+                        review_token,
+                        items,
+                        authorization_intent_uid: verified_authorship
+                            .as_ref()
+                            .map(|value| value.intent_uid.clone()),
+                    },
+                    now,
+                    |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+                )
+                .await?;
+                match commit {
+                    store::transfers::BulkOccurrenceClaimCommit::Committed(committed) => {
+                        outcome.created = Some(committed.uid);
+                        for fact in committed.facts {
+                            outcome.facts.extend(self.publish_committed_fact(fact));
+                        }
+                    }
+                    store::transfers::BulkOccurrenceClaimCommit::Replayed(replayed) => {
+                        outcome.created = Some(replayed.uid);
+                    }
+                    store::transfers::BulkOccurrenceClaimCommit::Rejected(failures) => {
+                        let message = failures
+                            .into_iter()
+                            .map(|failure| {
+                                format!(
+                                    "{} [{}]: {}",
+                                    failure.occurrence_uid, failure.code, failure.message
+                                )
+                            })
+                            .collect::<Vec<_>>()
+                            .join("; ");
+                        return Err(EngineError::Conflict {
+                            code: "transfer_bulk_preflight_failed",
+                            message,
+                        });
+                    }
+                }
+            }
+            Action::SetTransferOccurrenceDispute {
+                occurrence,
+                request_id,
+                person,
+                disputed,
+            } => {
+                let acting = self
+                    .transfer_action_person(actor.as_deref(), person.as_deref(), None)
+                    .await?;
+                self.require_permission(actor.as_deref(), "transfer:update")
+                    .await?;
+                if let Some(replayed) =
+                    store::transfers::occurrence_dispute_for_request(&self.store.pool, &request_id)
+                        .await?
+                {
+                    if replayed.event.occurrence_uid != occurrence
+                        || replayed.event.actor_person_uid != acting
+                        || replayed.event.disputed != disputed
+                    {
+                        return Err(transfer_request_id_conflict());
+                    }
+                    outcome.created = Some(replayed.event.uid);
+                    return Ok(outcome);
+                }
+                if store::transfers::phase5_correction_request_for_request(
+                    &self.store.pool,
+                    &request_id,
+                )
+                .await?
+                .is_some()
+                {
+                    return Err(transfer_request_id_conflict());
+                }
+                let occurrence_row = store::transfers::occurrence(&self.store.pool, &occurrence)
+                    .await?
+                    .ok_or_else(|| EngineError::Conflict {
+                        code: "transfer_occurrence_missing",
+                        message: "the occurrence does not exist".into(),
+                    })?;
+                if occurrence_row.giver_person_uid != acting
+                    && occurrence_row.receiver_person_uid != acting
+                {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_occurrence_dispute_not_participant",
+                        message: "only the occurrence giver or receiver may assert a dispute"
+                            .into(),
+                    });
+                }
+                let signer = self
+                    .transfer_person_signer(&acting, verified_authorship.as_ref())
+                    .await?;
+                let commit = store::transfers::set_occurrence_dispute(
+                    &self.store.pool,
+                    store::transfers::OccurrenceDisputeInput {
+                        occurrence_uid: occurrence,
+                        idempotency_key: request_id,
+                        actor_person_uid: acting,
+                        disputed,
+                        authorization_intent_uid: verified_authorship
+                            .as_ref()
+                            .map(|value| value.intent_uid.clone()),
+                    },
+                    now,
+                    |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+                )
+                .await?;
+                match commit {
+                    store::transfers::OccurrenceDisputeCommit::Committed(committed) => {
+                        outcome.created = Some(committed.event.uid);
+                        outcome.facts = self.publish_committed_fact(committed.fact);
+                    }
+                    store::transfers::OccurrenceDisputeCommit::Replayed(replayed) => {
+                        outcome.created = Some(replayed.event.uid);
+                    }
+                }
+            }
+            Action::SetTransferOccurrenceApplicationFormula {
+                occurrence,
+                request_id,
+                person,
+                formula,
+            } => {
+                let acting = self
+                    .transfer_action_person(actor.as_deref(), person.as_deref(), None)
+                    .await?;
+                self.require_permission(actor.as_deref(), "transfer:update")
+                    .await?;
+                let formula = validate_transfer_application_formula(&formula)?;
+                if let Some(replayed) =
+                    store::transfers::occurrence_application_formula_for_request(
+                        &self.store.pool,
+                        &request_id,
+                    )
+                    .await?
+                {
+                    let formula_hash =
+                        nucleus::transfer::occurrence_application_formula_hash(&formula);
+                    if replayed.event.occurrence_uid != occurrence
+                        || replayed.event.receiver_person_uid != acting
+                        || replayed.event.formula_hash != formula_hash
+                    {
+                        return Err(transfer_request_id_conflict());
+                    }
+                    outcome.created = Some(replayed.event.uid);
+                    return Ok(outcome);
+                }
+                if store::transfers::phase4_request_for_request(&self.store.pool, &request_id)
+                    .await?
+                    .is_some()
+                {
+                    return Err(transfer_request_id_conflict());
+                }
+                let occurrence_row = store::transfers::occurrence(&self.store.pool, &occurrence)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(occurrence.clone()))?;
+                if occurrence_row.receiver_person_uid != acting {
+                    return Err(EngineError::Forbidden(
+                        "only the occurrence receiver may set its private application formula"
+                            .into(),
+                    ));
+                }
+                evaluate_transfer_application_formula(&formula, occurrence_row.quantity)?;
+                let signer = self
+                    .transfer_person_signer(&acting, verified_authorship.as_ref())
+                    .await?;
+                let commit = store::transfers::set_occurrence_application_formula(
+                    &self.store.pool,
+                    store::transfers::OccurrenceApplicationFormulaInput {
+                        occurrence_uid: occurrence,
+                        idempotency_key: request_id,
+                        actor_person_uid: acting,
+                        formula,
+                        authorization_intent_uid: verified_authorship
+                            .as_ref()
+                            .map(|value| value.intent_uid.clone()),
+                    },
+                    now,
+                    |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+                )
+                .await?;
+                match commit {
+                    store::transfers::OccurrenceApplicationFormulaCommit::Committed(committed) => {
+                        outcome.created = Some(committed.event.uid);
+                        outcome.facts = self.publish_committed_fact(committed.fact);
+                    }
+                    store::transfers::OccurrenceApplicationFormulaCommit::Replayed(replayed) => {
+                        outcome.created = Some(replayed.event.uid);
+                    }
+                }
+            }
+            Action::SettleTransferOccurrence {
+                occurrence,
+                request_id,
+                person,
+                canonical_quantity,
+                expected_remaining_quantity,
+                expected_local_delta,
+                expected_application_formula_hash,
+                expected_application_formula_version,
+                expected_remainder_policy,
+            } => {
+                let acting = self
+                    .transfer_action_person(actor.as_deref(), person.as_deref(), None)
+                    .await?;
+                self.require_permission(actor.as_deref(), "transfer:update")
+                    .await?;
+                if !canonical_quantity.is_finite() || canonical_quantity <= 0.0 {
+                    return Err(transfer_settlement_conflict(
+                        "transfer_settlement_quantity_invalid",
+                        "settlement quantity must be finite and positive",
+                    ));
+                }
+                if !expected_remaining_quantity.is_finite() || !expected_local_delta.is_finite() {
+                    return Err(transfer_settlement_conflict(
+                        "transfer_settlement_preview_invalid",
+                        "settlement preview quantities must be finite",
+                    ));
+                }
+
+                if let Some(replayed) = store::transfers::occurrence_settlement_for_request(
+                    &self.store.pool,
+                    &request_id,
+                )
+                .await?
+                {
+                    let slice = &replayed.slice;
+                    let replay_remaining_before = slice.remaining_after + slice.canonical_quantity;
+                    if slice.occurrence_uid != occurrence
+                        || slice.owner_person_uid != acting
+                        || !transfer_settlement_values_match(
+                            slice.canonical_quantity,
+                            canonical_quantity,
+                        )
+                        || !transfer_settlement_values_match(
+                            replay_remaining_before,
+                            expected_remaining_quantity,
+                        )
+                        || !transfer_settlement_values_match(
+                            slice.local_delta,
+                            expected_local_delta,
+                        )
+                        || slice.application_formula_hash != expected_application_formula_hash
+                        || slice.application_formula_version != expected_application_formula_version
+                        || slice.remainder_policy != expected_remainder_policy
+                    {
+                        return Err(transfer_request_id_conflict());
+                    }
+                    outcome.created = Some(slice.uid.clone());
+                    return Ok(outcome);
+                }
+                if store::transfers::phase5_request_for_request(&self.store.pool, &request_id)
+                    .await?
+                    .is_some()
+                    || store::transfers::phase4_request_for_request(&self.store.pool, &request_id)
+                        .await?
+                        .is_some()
+                {
+                    return Err(transfer_request_id_conflict());
+                }
+
+                let occurrence_row = store::transfers::occurrence(&self.store.pool, &occurrence)
+                    .await?
+                    .ok_or_else(|| {
+                        transfer_settlement_conflict(
+                            "transfer_settlement_occurrence_missing",
+                            "the settlement occurrence no longer exists",
+                        )
+                    })?;
+                let source =
+                    store::misc::get_promise(&self.store.pool, &occurrence_row.promise_uid)
+                        .await?
+                        .ok_or_else(|| {
+                            transfer_settlement_conflict(
+                                "transfer_settlement_source_missing",
+                                "the occurrence source promise no longer exists",
+                            )
+                        })?;
+                let Some(local_record_uid) = source.record_uid.as_deref() else {
+                    return Err(transfer_settlement_conflict(
+                        "transfer_settlement_concrete_record_required",
+                        "a concept-only promise must be refined to a concrete Record before settlement",
+                    ));
+                };
+                if occurrence_row.record_uid.as_deref() != Some(local_record_uid) {
+                    return Err(transfer_settlement_conflict(
+                        "transfer_settlement_source_mismatch",
+                        "the occurrence no longer matches its signed source promise",
+                    ));
+                }
+                let local_record = store::records::get(&self.store.pool, local_record_uid)
+                    .await?
+                    .ok_or_else(|| {
+                        transfer_settlement_conflict(
+                            "transfer_settlement_local_record_missing",
+                            "the source promise's local Record is unavailable",
+                        )
+                    })?;
+                let local_organ_uid = store::organs::local(&self.store.pool)
+                    .await?
+                    .map(|organ| organ.uid);
+                if local_record
+                    .organ_uid
+                    .as_deref()
+                    .is_some_and(|origin| Some(origin) != local_organ_uid.as_deref())
+                {
+                    return Err(transfer_settlement_conflict(
+                        "transfer_settlement_foreign_record",
+                        "settlement cannot alter a Record originating in another Cell",
+                    ));
+                }
+                if source.party_uid.as_deref() != Some(acting.as_str()) {
+                    return Err(transfer_settlement_conflict(
+                        "transfer_settlement_not_source_owner",
+                        "only the concrete source-promise owner may apply this occurrence",
+                    ));
+                }
+                if source.delta == 0.0 || !source.delta.is_finite() {
+                    return Err(transfer_settlement_conflict(
+                        "transfer_settlement_direction_invalid",
+                        "the source promise must have a finite non-zero direction",
+                    ));
+                }
+                if source.state != PromiseState::Active {
+                    return Err(transfer_settlement_conflict(
+                        "transfer_settlement_not_active",
+                        "only an active occurrence may be settled",
+                    ));
+                }
+                if !occurrence_row.delivery_claimed || !occurrence_row.receipt_claimed {
+                    return Err(transfer_settlement_conflict(
+                        "transfer_settlement_confirmation_required",
+                        "both delivery and receipt must currently be confirmed",
+                    ));
+                }
+                if occurrence_row.disputed {
+                    return Err(transfer_settlement_conflict(
+                        "transfer_settlement_disputed",
+                        "a disputed occurrence cannot be settled",
+                    ));
+                }
+
+                let progress =
+                    store::transfers::occurrence_settlement_progress(&self.store.pool, &occurrence)
+                        .await?
+                        .ok_or_else(|| {
+                            transfer_settlement_conflict(
+                                "transfer_settlement_occurrence_missing",
+                                "the settlement occurrence no longer exists",
+                            )
+                        })?;
+                if !transfer_settlement_values_match(
+                    progress.remaining_quantity,
+                    expected_remaining_quantity,
+                ) {
+                    return Err(transfer_settlement_conflict(
+                        "transfer_settlement_remaining_stale",
+                        format!(
+                            "reviewed remaining quantity was {expected_remaining_quantity}, current remaining quantity is {}",
+                            progress.remaining_quantity
+                        ),
+                    ));
+                }
+                if canonical_quantity > progress.remaining_quantity {
+                    return Err(transfer_settlement_conflict(
+                        "transfer_settlement_quantity_exceeds_remaining",
+                        "settlement quantity exceeds the occurrence's remaining quantity",
+                    ));
+                }
+
+                let (application_formula, application_formula_version) = if source.delta < 0.0 {
+                    if occurrence_row.giver_person_uid != acting {
+                        return Err(transfer_settlement_conflict(
+                            "transfer_settlement_direction_mismatch",
+                            "the giving source promise does not match the occurrence giver",
+                        ));
+                    }
+                    ("-incoming()".to_string(), 0)
+                } else {
+                    if occurrence_row.receiver_person_uid != acting {
+                        return Err(transfer_settlement_conflict(
+                            "transfer_settlement_direction_mismatch",
+                            "the receiving source promise does not match the occurrence receiver",
+                        ));
+                    }
+                    match store::transfers::occurrence_application_policy(
+                        &self.store.pool,
+                        &occurrence,
+                        &acting,
+                    )
+                    .await?
+                    {
+                        Some(policy) => (policy.formula, policy.version),
+                        None => {
+                            let configured =
+                                store::config::transfer_application_formula(&self.store.pool)
+                                    .await?;
+                            let inherited = validate_transfer_application_formula(&configured)
+                                .unwrap_or_else(|_| "incoming()".into());
+                            (inherited, 0)
+                        }
+                    }
+                };
+                let application_formula =
+                    validate_transfer_application_formula(&application_formula).map_err(|_| {
+                        transfer_settlement_conflict(
+                            "transfer_settlement_formula_invalid",
+                            "the effective private application formula is invalid",
+                        )
+                    })?;
+                let application_formula_hash =
+                    nucleus::transfer::occurrence_application_formula_hash(&application_formula);
+                if application_formula_hash != expected_application_formula_hash
+                    || application_formula_version != expected_application_formula_version
+                {
+                    return Err(transfer_settlement_conflict(
+                        "transfer_settlement_formula_stale",
+                        "the private application formula changed after settlement review",
+                    ));
+                }
+                let remainder_policy = store::transfers::effective_occurrence_remainder_policy(
+                    &self.store.pool,
+                    &occurrence,
+                    &acting,
+                )
+                .await?;
+                if remainder_policy != expected_remainder_policy {
+                    return Err(transfer_settlement_conflict(
+                        "transfer_settlement_remainder_policy_stale",
+                        "the remainder policy changed after settlement review",
+                    ));
+                }
+
+                let canonical_cumulative_after = progress.settled_quantity + canonical_quantity;
+                let local_cumulative_before = progress
+                    .slices
+                    .iter()
+                    .map(|slice| slice.local_delta)
+                    .sum::<f64>();
+                let local_cumulative_after = if source.delta < 0.0 {
+                    -canonical_cumulative_after
+                } else {
+                    evaluate_transfer_application_formula(
+                        &application_formula,
+                        canonical_cumulative_after,
+                    )
+                    .map_err(|_| {
+                        transfer_settlement_conflict(
+                            "transfer_settlement_formula_evaluation_failed",
+                            "the private application formula cannot evaluate this cumulative quantity",
+                        )
+                    })?
+                };
+                let local_delta = local_cumulative_after - local_cumulative_before;
+                if !local_delta.is_finite()
+                    || !transfer_settlement_values_match(local_delta, expected_local_delta)
+                {
+                    return Err(transfer_settlement_conflict(
+                        "transfer_settlement_preview_stale",
+                        format!(
+                            "reviewed local delta was {expected_local_delta}, current local delta is {local_delta}"
+                        ),
+                    ));
+                }
+
+                let signer = self
+                    .transfer_person_signer(&acting, verified_authorship.as_ref())
+                    .await?;
+                let commit = store::transfers::settle_occurrence(
+                    &self.store.pool,
+                    store::transfers::OccurrenceSettlementInput {
+                        occurrence_uid: occurrence,
+                        idempotency_key: request_id,
+                        actor_person_uid: acting,
+                        canonical_quantity,
+                        local_record_uid: local_record_uid.to_string(),
+                        local_delta,
+                        local_cumulative_after,
+                        application_formula,
+                        application_formula_version,
+                        remainder_policy,
+                        authorization_intent_uid: verified_authorship
+                            .as_ref()
+                            .map(|value| value.intent_uid.clone()),
+                    },
+                    now,
+                    |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+                )
+                .await?;
+                match commit {
+                    store::transfers::OccurrenceSettlementCommit::Committed(committed) => {
+                        outcome.created = Some(committed.slice.uid);
+                        outcome.facts = self.publish_committed_fact(committed.evidence_fact);
+                        outcome
+                            .facts
+                            .extend(self.publish_committed_fact(committed.application_fact));
+                        for fact in committed.satiation_facts {
+                            outcome.facts.extend(self.publish_committed_fact(fact));
+                        }
+                    }
+                    store::transfers::OccurrenceSettlementCommit::Replayed(replayed) => {
+                        outcome.created = Some(replayed.slice.uid);
+                    }
+                }
+            }
+            Action::ConfigureTransferDelivery {
+                transfer,
+                recipient_person,
+                recipient_organ,
+                person,
+                request_id,
+                mode,
+            } => {
+                let transfer = self.resolve(&transfer).await?;
+                self.require_transfer_editor(&transfer, actor.as_deref())
+                    .await?;
+                let recipient_person = self.resolve(&recipient_person).await?;
+                let recipient_organ = self.resolve(&recipient_organ).await?;
+                let derived = self.transfer_creator_person(&transfer).await?;
+                let acting = self
+                    .transfer_action_person(actor.as_deref(), person.as_deref(), Some(&derived))
+                    .await?;
+                let (fact_uid, facts) = self
+                    .append_transfer_delivery_evidence(
+                        &transfer,
+                        &acting,
+                        &request_id,
+                        "configure",
+                        serde_json::json!({
+                            "action": "configure-transfer-delivery",
+                            "request_id": request_id,
+                            "recipient_person": recipient_person,
+                            "recipient_organ": recipient_organ,
+                            "mode": mode.as_str(),
+                        }),
+                        now,
+                        verified_authorship.as_ref(),
+                    )
+                    .await?;
+                let policy = self
+                    .create_transfer_delivery_policy(
+                        &transfer,
+                        &recipient_person,
+                        &recipient_organ,
+                        &acting,
+                        &fact_uid,
+                        &request_id,
+                        mode,
+                        now,
+                    )
+                    .await?;
+                outcome.created = Some(policy.uid);
+                outcome.facts = facts;
+            }
+            Action::SetTransferDeliveryMode {
+                transfer,
+                delivery,
+                expected_revision,
+                person,
+                request_id,
+                mode,
+            } => {
+                let transfer = self.resolve(&transfer).await?;
+                self.require_transfer_editor(&transfer, actor.as_deref())
+                    .await?;
+                let derived = self.transfer_creator_person(&transfer).await?;
+                let acting = self
+                    .transfer_action_person(actor.as_deref(), person.as_deref(), Some(&derived))
+                    .await?;
+                let (fact_uid, facts) = self
+                    .append_transfer_delivery_evidence(
+                        &transfer,
+                        &acting,
+                        &request_id,
+                        "set-mode",
+                        serde_json::json!({
+                            "action": "set-transfer-delivery-mode",
+                            "request_id": request_id,
+                            "delivery": delivery,
+                            "expected_revision": expected_revision,
+                            "mode": mode.as_str(),
+                        }),
+                        now,
+                        verified_authorship.as_ref(),
+                    )
+                    .await?;
+                self.change_transfer_delivery_mode(
+                    &transfer,
+                    &delivery,
+                    expected_revision,
+                    &acting,
+                    &fact_uid,
+                    &request_id,
+                    mode,
+                    now,
+                )
+                .await?;
+                outcome.created = Some(delivery);
+                outcome.facts = facts;
+            }
+            Action::RevokeTransferDelivery {
+                transfer,
+                delivery,
+                expected_revision,
+                person,
+                request_id,
+            } => {
+                let transfer = self.resolve(&transfer).await?;
+                self.require_transfer_editor(&transfer, actor.as_deref())
+                    .await?;
+                let derived = self.transfer_creator_person(&transfer).await?;
+                let acting = self
+                    .transfer_action_person(actor.as_deref(), person.as_deref(), Some(&derived))
+                    .await?;
+                let (fact_uid, facts) = self
+                    .append_transfer_delivery_evidence(
+                        &transfer,
+                        &acting,
+                        &request_id,
+                        "revoke",
+                        serde_json::json!({
+                            "action": "revoke-transfer-delivery",
+                            "request_id": request_id,
+                            "delivery": delivery,
+                            "expected_revision": expected_revision,
+                            "retains_received_evidence": true,
+                        }),
+                        now,
+                        verified_authorship.as_ref(),
+                    )
+                    .await?;
+                self.revoke_transfer_delivery_policy(
+                    &transfer,
+                    &delivery,
+                    expected_revision,
+                    &acting,
+                    &fact_uid,
+                    &request_id,
+                    now,
+                )
+                .await?;
+                outcome.created = Some(delivery);
+                outcome.facts = facts;
+            }
+            Action::EnqueueTransferDelivery {
+                transfer,
+                delivery,
+                person,
+                request_id,
+            } => {
+                let operation = "enqueue";
+                let transfer = self.resolve(&transfer).await?;
+                self.require_transfer_editor(&transfer, actor.as_deref())
+                    .await?;
+                let derived = self.transfer_creator_person(&transfer).await?;
+                let acting = self
+                    .transfer_action_person(actor.as_deref(), person.as_deref(), Some(&derived))
+                    .await?;
+                let (_, facts) = self
+                    .append_transfer_delivery_evidence(
+                        &transfer,
+                        &acting,
+                        &request_id,
+                        operation,
+                        serde_json::json!({
+                            "action": format!("{operation}-transfer-delivery"),
+                            "request_id": request_id,
+                            "delivery": delivery,
+                        }),
+                        now,
+                        verified_authorship.as_ref(),
+                    )
+                    .await?;
+                outcome.created = Some(
+                    self.enqueue_transfer_delivery(&transfer, &delivery, &request_id, now)
+                        .await?,
+                );
+                outcome.facts = facts;
+            }
+            Action::RetryTransferDelivery {
+                transfer,
+                delivery,
+                person,
+                request_id,
+            } => {
+                let transfer = self.resolve(&transfer).await?;
+                self.require_transfer_editor(&transfer, actor.as_deref())
+                    .await?;
+                let derived = self.transfer_creator_person(&transfer).await?;
+                let acting = self
+                    .transfer_action_person(actor.as_deref(), person.as_deref(), Some(&derived))
+                    .await?;
+                let (_, facts) = self
+                    .append_transfer_delivery_evidence(
+                        &transfer,
+                        &acting,
+                        &request_id,
+                        "retry",
+                        serde_json::json!({
+                            "action": "retry-transfer-delivery",
+                            "request_id": request_id,
+                            "delivery": delivery,
+                        }),
+                        now,
+                        verified_authorship.as_ref(),
+                    )
+                    .await?;
+                outcome.created = Some(
+                    self.retry_transfer_delivery(&transfer, &delivery, &request_id, now)
+                        .await?,
+                );
+                outcome.facts = facts;
+            }
+            Action::RefreshTransferDelivery {
+                transfer,
+                delivery,
+                person,
+                request_id,
+            } => {
+                let local = store::organs::local(&self.store.pool)
+                    .await?
+                    .ok_or_else(|| EngineError::Consequence("no local Organ".into()))?;
+                let reference = store::sqlx::query_as::<_, (String, String, String, String)>(
+                    "SELECT transfer_uid, recipient_organ_uid, recipient_person_uid, state FROM transfer_remote_reference WHERE uid = ?",
+                )
+                .bind(&delivery)
+                .fetch_optional(&self.store.pool)
+                .await?
+                .ok_or_else(|| EngineError::UnknownRecord(delivery.clone()))?;
+                let acting = self
+                    .transfer_action_person(actor.as_deref(), person.as_deref(), Some(&reference.2))
+                    .await?;
+                if reference.0 != transfer
+                    || reference.1 != local.uid
+                    || reference.2 != acting
+                    || reference.3 != "active"
+                {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_delivery_refresh_forbidden",
+                        message: "only an active local hosted/replica reference may be refreshed"
+                            .into(),
+                    });
+                }
+                outcome.created = Some(
+                    store::transfer_delivery::enqueue_pull(
+                        &self.store.pool,
+                        &delivery,
+                        &request_id,
+                        now,
+                    )
+                    .await?
+                    .uid,
+                );
             }
             Action::ConfirmTransfer {
                 transfer,
                 confirmation,
             } => {
+                if transfer_phase_locked() {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_phase_4_not_available",
+                        message: "occurrence-specific confirmation is not available yet".into(),
+                    });
+                }
                 if !matches!(confirmation.as_str(), "delivery" | "receipt") {
                     return Err(EngineError::Consequence(format!(
                         "confirmation must be `delivery` or `receipt`, not `{confirmation}`"
@@ -1393,6 +4218,14 @@ impl Engine {
                 transfer,
                 actor: person,
             } => {
+                if transfer_phase_locked() {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_invitation_required",
+                        message:
+                            "a Person becomes a transfer party only by accepting an invitation"
+                                .into(),
+                    });
+                }
                 let transfer = self.resolve(&transfer).await?;
                 self.require_transfer_editor(&transfer, actor.as_deref())
                     .await?;
@@ -1429,6 +4262,13 @@ impl Engine {
                 window_end,
                 condition,
             } => {
+                if transfer_phase_locked() {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_phase_1_not_available",
+                        message: "adding a promise requires the revision-safe draft edit workflow"
+                            .into(),
+                    });
+                }
                 if !delta.is_finite() || delta == 0.0 {
                     return Err(EngineError::Consequence(
                         "promise delta must be finite and non-zero".into(),
@@ -1467,25 +4307,23 @@ impl Engine {
                     .filter(|value| !value.is_empty());
                 if let Some(value) = condition.as_deref() {
                     nucleus::expr::Expr::parse(value).map_err(|error| {
-                        EngineError::Consequence(format!(
-                            "invalid promise condition: {error}"
-                        ))
+                        EngineError::Consequence(format!("invalid promise condition: {error}"))
                     })?;
                 }
                 let promise = store::misc::insert_promise(
-                        &self.store.pool,
-                        store::misc::NewPromise {
-                            record_uid: Some(record.clone()),
-                            delta,
-                            window_end,
-                            party_uid: Some(party.clone()),
-                            state: Some(PromiseState::Proposed),
-                            condition,
-                            transfer_uid: Some(transfer.clone()),
-                            ..Default::default()
-                        },
-                    )
-                    .await?;
+                    &self.store.pool,
+                    store::misc::NewPromise {
+                        record_uid: Some(record.clone()),
+                        delta,
+                        window_end,
+                        party_uid: Some(party.clone()),
+                        state: Some(PromiseState::Proposed),
+                        condition,
+                        transfer_uid: Some(transfer.clone()),
+                        ..Default::default()
+                    },
+                )
+                .await?;
                 outcome.facts = self
                     .annotate_many(
                         vec![transfer, record],
@@ -1501,61 +4339,21 @@ impl Engine {
                     .await?;
                 outcome.created = Some(promise);
             }
-            Action::AgreeTransfer {
-                transfer,
-                party,
-                level,
-            } => {
-                if !(0..=2).contains(&level) {
-                    return Err(EngineError::Consequence(format!(
-                        "bad agreement level {level}"
-                    )));
-                }
-                let transfer = self.resolve(&transfer).await?;
-                self.require_transfer_party(&transfer, &party, actor.as_deref())
-                    .await?;
-                let party_actor = store::transfers::party_actor(
-                    &self.store.pool,
-                    &transfer,
-                    &party,
-                )
-                .await?
-                .ok_or_else(|| {
-                    EngineError::Consequence(
-                        "agreement party does not belong to this transfer".into(),
-                    )
-                })?;
-                store::transfers::set_agreement(&self.store.pool, &transfer, &party, level).await?;
-                // level 2 commits the party: its proposed promises become agreed
-                if level == 2 {
-                    for p in store::transfers::promises_of(&self.store.pool, &transfer).await? {
-                        if p.state == PromiseState::Proposed
-                            && p.party_uid.as_deref() == Some(party_actor.as_str())
-                        {
-                            store::misc::set_promise_state(
-                                &self.store.pool,
-                                &p.uid,
-                                PromiseState::Agreed,
-                            )
-                            .await?;
-                        }
-                    }
-                }
-                outcome.facts = self
-                    .annotate(
-                        transfer,
-                        actor,
-                        serde_json::json!({
-                            "action": "agree-transfer",
-                            "party": party,
-                            "person": party_actor,
-                            "level": level,
-                        }),
-                        now,
-                    )
-                    .await?;
+            Action::AgreeTransfer { .. } => {
+                return Err(EngineError::Conflict {
+                    code: "signed_transfer_agreement_action_required",
+                    message: "use set-transfer-agreement-level with expected_revision, request_id, and the acting Person"
+                        .into(),
+                });
             }
             Action::ActivateTransfer { transfer } => {
+                if transfer_phase_locked() {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_phase_4_not_available",
+                        message: "transfer activation is not available before occurrence modeling"
+                            .into(),
+                    });
+                }
                 let transfer = self.resolve(&transfer).await?;
                 self.require_transfer_editor(&transfer, actor.as_deref())
                     .await?;
@@ -1576,6 +4374,14 @@ impl Engine {
                 transfer,
                 actor: person,
             } => {
+                if transfer_phase_locked() {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_phase_5_not_available",
+                        message:
+                            "transfer settlement is not available before occurrence confirmation"
+                                .into(),
+                    });
+                }
                 let transfer = self.resolve(&transfer).await?;
                 let person = self.resolve(&person).await?;
                 self.require_transfer_person(&transfer, &person, actor.as_deref())
@@ -1703,9 +4509,8 @@ impl Engine {
                         .await?;
                 }
                 if let Some(action_json) = chosen_action {
-                    let action: Action = serde_json::from_value(action_json).map_err(|e| {
-                        EngineError::Consequence(format!("bad option action: {e}"))
-                    })?;
+                    let action: Action = serde_json::from_value(action_json)
+                        .map_err(|e| EngineError::Consequence(format!("bad option action: {e}")))?;
                     let inner = Box::pin(self.act_at(action, actor, now)).await?;
                     outcome.facts.extend(inner.facts);
                     outcome.warnings.extend(inner.warnings);
@@ -1859,6 +4664,636 @@ impl Engine {
                     .await?;
                 }
             }
+            correction_action @ (Action::CreateTransferRemainderDraft { .. }
+            | Action::CreateReversingTransferDraft { .. }) => {
+                let (
+                    occurrence,
+                    expected_revision,
+                    expected_remaining_quantity,
+                    request_id,
+                    person,
+                    reversing,
+                ) = match correction_action {
+                    Action::CreateTransferRemainderDraft {
+                        occurrence,
+                        expected_revision,
+                        expected_remaining_quantity,
+                        request_id,
+                        person,
+                    } => (
+                        occurrence,
+                        expected_revision,
+                        expected_remaining_quantity,
+                        request_id,
+                        person,
+                        false,
+                    ),
+                    Action::CreateReversingTransferDraft {
+                        occurrence,
+                        expected_revision,
+                        canonical_quantity,
+                        request_id,
+                        person,
+                    } => (
+                        occurrence,
+                        expected_revision,
+                        canonical_quantity,
+                        request_id,
+                        person,
+                        true,
+                    ),
+                    _ => unreachable!("matched Transfer correction draft action"),
+                };
+                let kind = if reversing { "reversal" } else { "remainder" };
+                let acting = self
+                    .transfer_action_person(actor.as_deref(), person.as_deref(), None)
+                    .await?;
+                self.require_permission(actor.as_deref(), "transfer:update")
+                    .await?;
+                if let Some(existing) =
+                    store::transfers::correction_link_for_request(&self.store.pool, &request_id)
+                        .await?
+                {
+                    if existing.kind != kind
+                        || existing.source_occurrence_uid != occurrence
+                        || existing.source_revision != expected_revision
+                        || existing.actor_person_uid != acting
+                        || !transfer_settlement_values_match(
+                            existing.canonical_quantity,
+                            expected_remaining_quantity,
+                        )
+                    {
+                        return Err(transfer_request_id_conflict());
+                    }
+                    outcome.created = Some(existing.created_transfer_uid);
+                    return Ok(outcome);
+                }
+                let occurrence_row = store::transfers::occurrence(&self.store.pool, &occurrence)
+                    .await?
+                    .ok_or_else(|| EngineError::Conflict {
+                        code: "transfer_occurrence_missing",
+                        message: "correction occurrence no longer exists".into(),
+                    })?;
+                let source_transfer =
+                    store::transfers::get(&self.store.pool, &occurrence_row.transfer_uid)
+                        .await?
+                        .ok_or_else(|| {
+                            EngineError::UnknownRecord(occurrence_row.transfer_uid.clone())
+                        })?;
+                if source_transfer.revision as u64 != expected_revision {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_revision_stale",
+                        message: format!(
+                            "expected transfer revision {expected_revision}, current revision is {}",
+                            source_transfer.revision
+                        ),
+                    });
+                }
+                let source_record =
+                    store::records::get(&self.store.pool, &source_transfer.record_uid)
+                        .await?
+                        .ok_or_else(|| {
+                            EngineError::UnknownRecord(source_transfer.record_uid.clone())
+                        })?;
+                let source_promise =
+                    store::transfers::promises_of(&self.store.pool, &occurrence_row.transfer_uid)
+                        .await?
+                        .into_iter()
+                        .find(|promise| promise.uid == occurrence_row.promise_uid)
+                        .ok_or_else(|| EngineError::Conflict {
+                            code: "transfer_promise_missing",
+                            message: "correction source promise no longer exists".into(),
+                        })?;
+                if !reversing && source_promise.party_uid.as_deref() != Some(acting.as_str()) {
+                    return Err(EngineError::Forbidden(
+                        "only the source-promise owner may create its correction draft".into(),
+                    ));
+                }
+                let progress =
+                    store::transfers::occurrence_settlement_progress(&self.store.pool, &occurrence)
+                        .await?
+                        .ok_or_else(|| EngineError::Conflict {
+                            code: "transfer_occurrence_missing",
+                            message: "correction occurrence no longer exists".into(),
+                        })?;
+                let quantity = if reversing {
+                    if self
+                        .transfer_creator_person(&occurrence_row.transfer_uid)
+                        .await?
+                        != acting
+                    {
+                        return Err(EngineError::Forbidden(
+                            "only the original Transfer creator may propose a reversal".into(),
+                        ));
+                    }
+                    if !expected_remaining_quantity.is_finite()
+                        || expected_remaining_quantity <= 0.0
+                        || !transfer_settlement_values_match(
+                            expected_remaining_quantity,
+                            occurrence_row.quantity,
+                        )
+                    {
+                        return Err(EngineError::Conflict {
+                            code: "transfer_reversal_quantity_stale",
+                            message: "reversal must use the exact canonical occurrence quantity"
+                                .into(),
+                        });
+                    }
+                    expected_remaining_quantity
+                } else {
+                    if store::transfers::effective_occurrence_remainder_policy(
+                        &self.store.pool,
+                        &occurrence,
+                        &acting,
+                    )
+                    .await?
+                        != nucleus::transfer::TransferRemainderPolicy::LocalDraft
+                    {
+                        return Err(EngineError::Conflict {
+                            code: "transfer_remainder_policy_changed",
+                            message: "occurrence remainder policy is not local_draft".into(),
+                        });
+                    }
+                    if progress.settled_quantity <= 0.0
+                        || progress.remaining_quantity <= 0.0
+                        || !transfer_settlement_values_match(
+                            expected_remaining_quantity,
+                            progress.remaining_quantity,
+                        )
+                    {
+                        return Err(EngineError::Conflict {
+                            code: "transfer_remainder_stale",
+                            message: "reviewed remainder is no longer the exact partial remainder"
+                                .into(),
+                        });
+                    }
+                    progress.remaining_quantity
+                };
+                let delta = if reversing {
+                    if occurrence_row.giver_person_uid == acting {
+                        quantity
+                    } else if occurrence_row.receiver_person_uid == acting {
+                        -quantity
+                    } else {
+                        return Err(EngineError::Forbidden(
+                            "reversal creator must be an occurrence participant".into(),
+                        ));
+                    }
+                } else {
+                    source_promise.delta.signum() * quantity
+                };
+                let (correction_record_uid, correction_concept_uid) = if !reversing
+                    || source_promise.party_uid.as_deref() == Some(acting.as_str())
+                {
+                    (
+                        occurrence_row.record_uid.clone(),
+                        occurrence_row.concept_uid.clone(),
+                    )
+                } else if occurrence_row.concept_uid.is_some() {
+                    (None, occurrence_row.concept_uid.clone())
+                } else {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_reversal_private_record_without_concept",
+                        message: "reversal needs a canonical concept when the source Record belongs to another participant"
+                            .into(),
+                    });
+                };
+                let organ_uid = store::organs::local(&self.store.pool)
+                    .await?
+                    .map(|organ| organ.uid);
+                let signer = self
+                    .transfer_person_signer(&acting, verified_authorship.as_ref())
+                    .await?;
+                let created = store::transfers::create_draft(
+                    &self.store.pool,
+                    store::transfers::NewTransferDraft {
+                        idempotency_key: request_id,
+                        slug: None,
+                        head: format!(
+                            "{}: {}",
+                            if reversing { "Reversal" } else { "Remainder" },
+                            source_record.head
+                        ),
+                        agreement_type: nucleus::transfer::AgreementType::Full.as_str().into(),
+                        agreement_pct: None,
+                        satiation: None,
+                        parent_uid: None,
+                        source_uid: None,
+                        visibility: "hidden".into(),
+                        max_proximity: None,
+                        reserve_default: "none".into(),
+                        require_confirmation: source_transfer.require_confirmation,
+                        default_place: occurrence_row.location.clone(),
+                        creator_person: acting.clone(),
+                        invitees: Vec::new(),
+                        promises: vec![store::transfers::DraftPromise {
+                            uid: None,
+                            record_uid: correction_record_uid,
+                            concept_uid: correction_concept_uid,
+                            unit_uid: occurrence_row.unit_uid.clone(),
+                            person_uid: Some(acting.clone()),
+                            open: false,
+                            delta,
+                            window_start: None,
+                            window_end: None,
+                            location: occurrence_row.location.clone(),
+                            condition: None,
+                            reserve_from: "none".into(),
+                            open_reuse_policy: nucleus::transfer::OpenPromiseReusePolicy::Duplicate,
+                        }],
+                        dependencies: Vec::new(),
+                        organ_uid,
+                        evidence_action: format!("create-transfer-{kind}-draft"),
+                        correction: Some(store::transfers::NewTransferCorrectionLink {
+                            kind: kind.into(),
+                            source_transfer_uid: occurrence_row.transfer_uid,
+                            source_occurrence_uid: occurrence,
+                            source_revision: expected_revision,
+                            canonical_quantity: quantity,
+                        }),
+                        authorization_intent_uid: verified_authorship
+                            .as_ref()
+                            .map(|value| value.intent_uid.clone()),
+                    },
+                    now,
+                    Some(acting),
+                    actor.clone(),
+                    |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+                )
+                .await?;
+                outcome.created = Some(created.transfer_uid);
+                if !created.replayed {
+                    outcome.facts = self.publish_committed_fact(created.fact);
+                    for fact in created.invitation_event_facts {
+                        outcome.facts.extend(self.publish_committed_fact(fact));
+                    }
+                }
+            }
+            Action::ReopenTransferPromise {
+                transfer,
+                promise,
+                expected_revision,
+                request_id,
+                person,
+                window_end,
+                open,
+            } => {
+                let transfer = self.resolve(&transfer).await?;
+                let acting = self
+                    .transfer_action_person(actor.as_deref(), person.as_deref(), None)
+                    .await?;
+                self.require_permission(actor.as_deref(), "transfer:update")
+                    .await?;
+                if let Some(existing) =
+                    store::transfers::promise_successor_for_request(&self.store.pool, &request_id)
+                        .await?
+                {
+                    let requested_window_end = window_end
+                        .as_deref()
+                        .map(str::trim)
+                        .filter(|value| !value.is_empty())
+                        .map(|value| DateTime::parse_from_rfc3339(value).map(|_| value.to_string()))
+                        .transpose()
+                        .map_err(|_| EngineError::Conflict {
+                            code: "transfer_window_invalid",
+                            message: "reopened promise window end is not RFC 3339".into(),
+                        })?;
+                    let existing_successor =
+                        store::transfers::promises_of(&self.store.pool, &transfer)
+                            .await?
+                            .into_iter()
+                            .find(|candidate| candidate.uid == existing.successor_promise_uid)
+                            .ok_or_else(|| EngineError::Conflict {
+                                code: "transfer_promise_successor_missing",
+                                message: "reopened promise successor no longer exists".into(),
+                            })?;
+                    if existing.transfer_uid != transfer
+                        || existing.predecessor_promise_uid != promise
+                        || existing.actor_person_uid != acting
+                        || existing.revision != expected_revision.saturating_add(1)
+                        || (existing_successor.state == PromiseState::Open) != open
+                        || existing_successor.window_end != requested_window_end
+                    {
+                        return Err(transfer_request_id_conflict());
+                    }
+                    outcome.created = Some(existing.successor_promise_uid);
+                    return Ok(outcome);
+                }
+                let transfer_row = store::transfers::get(&self.store.pool, &transfer)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(transfer.clone()))?;
+                if transfer_row.revision as u64 != expected_revision {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_revision_stale",
+                        message: format!(
+                            "expected transfer revision {expected_revision}, current revision is {}",
+                            transfer_row.revision
+                        ),
+                    });
+                }
+                let transfer_record = store::records::get(&self.store.pool, &transfer)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(transfer.clone()))?;
+                let current_promises =
+                    store::transfers::promises_of(&self.store.pool, &transfer).await?;
+                let predecessor = current_promises
+                    .iter()
+                    .find(|candidate| candidate.uid == promise)
+                    .ok_or_else(|| EngineError::Conflict {
+                        code: "transfer_promise_missing",
+                        message: "predecessor promise no longer exists".into(),
+                    })?;
+                let predecessor_expired =
+                    matches!(
+                        predecessor.state,
+                        PromiseState::Proposed | PromiseState::Agreed
+                    ) && predecessor.window_end.as_deref().is_some_and(|window_end| {
+                        DateTime::parse_from_rfc3339(window_end)
+                            .is_ok_and(|window_end| window_end.with_timezone(&Utc) <= now)
+                    });
+                if !matches!(
+                    predecessor.state,
+                    PromiseState::Broken | PromiseState::Withdrawn
+                ) && !predecessor_expired
+                {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_promise_not_reopenable",
+                        message:
+                            "only a broken, withdrawn, or expired proposed promise may be reopened"
+                                .into(),
+                    });
+                }
+                if predecessor.party_uid.as_deref() != Some(acting.as_str())
+                    || store::transfers::party_for_actor(&self.store.pool, &transfer, &acting)
+                        .await?
+                        .is_none()
+                {
+                    return Err(EngineError::Forbidden(
+                        "only the predecessor promise owner may reopen it".into(),
+                    ));
+                }
+                let remaining =
+                    match store::transfers::occurrence_for_promise(&self.store.pool, &promise)
+                        .await?
+                    {
+                        Some(occurrence) => store::transfers::occurrence_settlement_progress(
+                            &self.store.pool,
+                            &occurrence.uid,
+                        )
+                        .await?
+                        .map(|progress| progress.remaining_quantity)
+                        .unwrap_or(occurrence.quantity),
+                        None => predecessor.delta.abs(),
+                    };
+                if !remaining.is_finite() || remaining <= 0.0 {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_promise_fully_settled",
+                        message: "a fully settled promise has no remainder to reopen".into(),
+                    });
+                }
+                let (_, successor_window_end) =
+                    normalize_transfer_window(None, window_end, now, None)?;
+                let current_fact =
+                    store::transfers::revision_fact(&self.store.pool, &transfer, expected_revision)
+                        .await?
+                        .ok_or_else(|| EngineError::Conflict {
+                            code: "transfer_revision_evidence_missing",
+                            message: "current signed Transfer revision is unavailable".into(),
+                        })?;
+                let current_evidence: nucleus::transfer::TransferRevisionEvidence =
+                    serde_json::from_str(current_fact.payload.as_deref().unwrap_or("")).map_err(
+                        |_| EngineError::Conflict {
+                            code: "transfer_revision_evidence_invalid",
+                            message: "current signed Transfer revision evidence is invalid".into(),
+                        },
+                    )?;
+                let signed_by_uid = current_evidence
+                    .terms
+                    .promises
+                    .iter()
+                    .map(|promise| (promise.uid.as_str(), promise))
+                    .collect::<std::collections::HashMap<_, _>>();
+                let mut promises = current_promises
+                    .iter()
+                    .filter(|promise| {
+                        promise.uid != predecessor.uid
+                            && matches!(
+                                promise.state,
+                                PromiseState::Open | PromiseState::Proposed | PromiseState::Agreed
+                            )
+                    })
+                    .map(|promise| {
+                        let signed = signed_by_uid.get(promise.uid.as_str()).copied();
+                        store::transfers::DraftPromiseRevisionInput {
+                            uid: Some(promise.uid.clone()),
+                            source_promise_uid: signed
+                                .and_then(|promise| promise.source_promise_uid.clone()),
+                            record_uid: promise.record_uid.clone(),
+                            concept_uid: promise.concept_uid.clone(),
+                            unit_uid: promise.unit_uid.clone(),
+                            person_uid: promise.party_uid.clone(),
+                            open: promise.state == PromiseState::Open,
+                            delta: promise.delta,
+                            window_start: promise.window_start.clone(),
+                            window_end: promise.window_end.clone(),
+                            location: promise.location.clone(),
+                            condition: promise.condition.clone(),
+                            reserve_from: promise.reserve_from.clone(),
+                            open_reuse_policy: promise.open_reuse_policy,
+                        }
+                    })
+                    .collect::<Vec<_>>();
+                let successor_uid = nucleus::new_uid("p");
+                promises.push(store::transfers::DraftPromiseRevisionInput {
+                    uid: Some(successor_uid.clone()),
+                    source_promise_uid: Some(promise.clone()),
+                    record_uid: predecessor.record_uid.clone(),
+                    concept_uid: predecessor.concept_uid.clone(),
+                    unit_uid: predecessor.unit_uid.clone(),
+                    person_uid: Some(acting.clone()),
+                    open,
+                    delta: predecessor.delta.signum() * remaining,
+                    window_start: None,
+                    window_end: successor_window_end,
+                    location: predecessor.location.clone(),
+                    condition: predecessor.condition.clone(),
+                    reserve_from: predecessor.reserve_from.clone(),
+                    open_reuse_policy: predecessor.open_reuse_policy,
+                });
+                let dependencies = store::transfers::dependencies_of(&self.store.pool, &transfer)
+                    .await?
+                    .into_iter()
+                    .map(|dependency| store::transfers::TransferDependencyInput {
+                        uid: Some(dependency.uid),
+                        scope: dependency.scope,
+                        promise_uid: dependency.promise_uid.map(|scoped| {
+                            if scoped == promise {
+                                successor_uid.clone()
+                            } else {
+                                scoped
+                            }
+                        }),
+                        upstream_kind: dependency.upstream_kind,
+                        upstream_uid: dependency.upstream_uid,
+                        required_state: dependency.required_state,
+                    })
+                    .collect();
+                let retained_invitation_uids =
+                    store::transfers::invitations_for_transfer(&self.store.pool, &transfer)
+                        .await?
+                        .into_iter()
+                        .filter(|invitation| {
+                            invitation.status == store::transfers::TransferInvitationStatus::Pending
+                        })
+                        .map(|invitation| invitation.uid)
+                        .collect();
+                let signer = self
+                    .transfer_person_signer(&acting, verified_authorship.as_ref())
+                    .await?;
+                let commit = store::transfers::reopen_promise_revision(
+                    &self.store.pool,
+                    store::transfers::WholeDraftRevisionInput {
+                        transfer_uid: transfer.clone(),
+                        expected_revision,
+                        idempotency_key: request_id,
+                        creator_person_uid: acting.clone(),
+                        proposal_author_person_uid: acting.clone(),
+                        terms: store::transfers::TransferDraftTermsInput {
+                            slug: transfer_record.slug,
+                            head: transfer_record.head,
+                            agreement_type: transfer_row.agreement_type,
+                            agreement_pct: transfer_row.agreement_pct,
+                            settlement: transfer_row.settlement,
+                            visibility: transfer_row.visibility,
+                            max_proximity: transfer_row.max_proximity,
+                            satiation: transfer_row.satiation,
+                            parent_uid: transfer_row.parent_uid,
+                            source_uid: transfer_row.source_uid,
+                            reserve_default: transfer_row
+                                .reserve_default
+                                .unwrap_or_else(|| "none".into()),
+                            require_confirmation: transfer_row.require_confirmation,
+                            default_place: transfer_row.default_place,
+                        },
+                        retained_invitation_uids,
+                        promises,
+                        dependencies,
+                        successor: Some(store::transfers::PromiseSuccessorInput {
+                            predecessor_promise_uid: promise,
+                            successor_promise_uid: successor_uid.clone(),
+                        }),
+                        authorization_intent_uid: verified_authorship
+                            .as_ref()
+                            .map(|value| value.intent_uid.clone()),
+                    },
+                    now,
+                    Some(acting),
+                    |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+                )
+                .await?;
+                self.apply_transfer_revision_commit(
+                    commit,
+                    expected_revision,
+                    &transfer,
+                    &mut outcome,
+                )
+                .await?;
+                outcome.created = Some(successor_uid);
+            }
+            Action::CompensateTransferOccurrenceSettlement {
+                settlement,
+                request_id,
+                person,
+            } => {
+                let acting = self
+                    .transfer_action_person(actor.as_deref(), person.as_deref(), None)
+                    .await?;
+                self.require_permission(actor.as_deref(), "transfer:update")
+                    .await?;
+                if let Some(replayed) =
+                    store::transfers::occurrence_settlement_compensation_for_request(
+                        &self.store.pool,
+                        &request_id,
+                    )
+                    .await?
+                {
+                    if replayed.correction.settlement_uid != settlement
+                        || replayed.correction.owner_person_uid != acting
+                    {
+                        return Err(transfer_request_id_conflict());
+                    }
+                    outcome.created = Some(replayed.correction.uid);
+                    return Ok(outcome);
+                }
+                if store::transfers::phase5_correction_request_for_request(
+                    &self.store.pool,
+                    &request_id,
+                )
+                .await?
+                .is_some()
+                {
+                    return Err(transfer_request_id_conflict());
+                }
+                let slice =
+                    store::transfers::occurrence_settlement_slice(&self.store.pool, &settlement)
+                        .await?
+                        .ok_or_else(|| EngineError::Conflict {
+                            code: "transfer_settlement_missing",
+                            message: "the settlement slice does not exist".into(),
+                        })?;
+                if slice.owner_person_uid != acting {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_settlement_compensation_not_owner",
+                        message:
+                            "only the settlement owner may reverse its private Record application"
+                                .into(),
+                    });
+                }
+                if store::transfers::occurrence_settlement_compensation_for_settlement(
+                    &self.store.pool,
+                    &settlement,
+                )
+                .await?
+                .is_some()
+                {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_settlement_already_compensated",
+                        message:
+                            "this settlement's private Record application was already compensated"
+                                .into(),
+                    });
+                }
+                let signer = self
+                    .transfer_person_signer(&acting, verified_authorship.as_ref())
+                    .await?;
+                let commit = store::transfers::compensate_occurrence_settlement(
+                    &self.store.pool,
+                    store::transfers::OccurrenceSettlementCompensationInput {
+                        settlement_uid: settlement,
+                        idempotency_key: request_id,
+                        actor_person_uid: acting,
+                        authorization_intent_uid: verified_authorship
+                            .as_ref()
+                            .map(|value| value.intent_uid.clone()),
+                    },
+                    now,
+                    |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+                )
+                .await?;
+                match commit {
+                    store::transfers::OccurrenceSettlementCompensationCommit::Committed(
+                        committed,
+                    ) => {
+                        outcome.created = Some(committed.correction.uid);
+                        outcome.facts = self.publish_committed_fact(committed.fact);
+                    }
+                    store::transfers::OccurrenceSettlementCompensationCommit::Replayed(
+                        replayed,
+                    ) => {
+                        outcome.created = Some(replayed.correction.uid);
+                    }
+                }
+            }
             Action::DeclareEquivalence { a, b } => {
                 let a = store::concepts::resolve(&self.store.pool, &a)
                     .await?
@@ -1870,16 +5305,24 @@ impl Engine {
                     .await?;
             }
             Action::CreateRole { name } => {
-                self.require_permission(actor.as_deref(), "role:create").await?;
+                self.require_permission(actor.as_deref(), "role:create")
+                    .await?;
                 let role_id = store::auth::ensure_role(&self.store.pool, &name).await?;
                 outcome.created = Some(role_id.to_string());
             }
-            Action::CreateUser { username, name, password, role } => {
-                self.require_permission(actor.as_deref(), "user:create").await?;
+            Action::CreateUser {
+                username,
+                name,
+                password,
+                role,
+            } => {
+                self.require_permission(actor.as_deref(), "user:create")
+                    .await?;
                 let role_id = store::auth::role_by_name(&self.store.pool, &role)
                     .await?
                     .ok_or_else(|| EngineError::Consequence(format!("unknown role `{role}`")))?;
-                let password_hash = utils::auth::hash_password(&password).map_err(EngineError::Io)?;
+                let password_hash =
+                    utils::auth::hash_password(&password).map_err(EngineError::Io)?;
                 let user_id = store::auth::create_user(
                     &self.store.pool,
                     &name,
@@ -1891,7 +5334,8 @@ impl Engine {
                 outcome.created = Some(user_id.to_string());
             }
             Action::AssignRole { user, role } => {
-                self.require_permission(actor.as_deref(), "user:assign_role").await?;
+                self.require_permission(actor.as_deref(), "user:assign_role")
+                    .await?;
                 let user_id: i64 = user
                     .parse()
                     .map_err(|_| EngineError::Consequence(format!("bad user id `{user}`")))?;
@@ -1910,9 +5354,7 @@ impl Engine {
                     .await?
                     .is_none()
                 {
-                    return Err(EngineError::Consequence(format!(
-                        "unknown user `{user}`"
-                    )));
+                    return Err(EngineError::Consequence(format!("unknown user `{user}`")));
                 }
                 let person = self.resolve(&person).await?;
                 let record = store::records::get(&self.store.pool, &person)
@@ -1926,10 +5368,11 @@ impl Engine {
                 store::auth::set_user_person(&self.store.pool, user_id, &person).await?;
             }
             Action::GrantPermission { role, permission } => {
-                self.require_permission(actor.as_deref(), "permission:assign").await?;
-                let (subject, action_name) = permission
-                    .split_once(':')
-                    .ok_or_else(|| EngineError::Consequence(format!("bad permission `{permission}`")))?;
+                self.require_permission(actor.as_deref(), "permission:assign")
+                    .await?;
+                let (subject, action_name) = permission.split_once(':').ok_or_else(|| {
+                    EngineError::Consequence(format!("bad permission `{permission}`"))
+                })?;
                 let role_id = store::auth::role_by_name(&self.store.pool, &role)
                     .await?
                     .ok_or_else(|| EngineError::Consequence(format!("unknown role `{role}`")))?;
@@ -1938,10 +5381,11 @@ impl Engine {
                 store::auth::grant(&self.store.pool, role_id, permission_id).await?;
             }
             Action::RevokePermission { role, permission } => {
-                self.require_permission(actor.as_deref(), "permission:assign").await?;
-                let (subject, action_name) = permission
-                    .split_once(':')
-                    .ok_or_else(|| EngineError::Consequence(format!("bad permission `{permission}`")))?;
+                self.require_permission(actor.as_deref(), "permission:assign")
+                    .await?;
+                let (subject, action_name) = permission.split_once(':').ok_or_else(|| {
+                    EngineError::Consequence(format!("bad permission `{permission}`"))
+                })?;
                 let role_id = store::auth::role_by_name(&self.store.pool, &role)
                     .await?
                     .ok_or_else(|| EngineError::Consequence(format!("unknown role `{role}`")))?;
@@ -1991,7 +5435,9 @@ impl Engine {
         if user.permissions.iter().any(|p| p == permission) {
             return Ok(());
         }
-        Err(EngineError::Forbidden(format!("missing {permission} permission")))
+        Err(EngineError::Forbidden(format!(
+            "missing {permission} permission"
+        )))
     }
 
     /// Resolve the authenticated app user to the Person they are allowed to
@@ -2007,10 +5453,101 @@ impl Engine {
             .await?
             .map(Some)
             .ok_or_else(|| {
-                EngineError::Forbidden(
-                    "authenticated user has no assigned person identity".into(),
-                )
+                EngineError::Forbidden("authenticated user has no assigned person identity".into())
             })
+    }
+
+    pub(crate) async fn canonical_transfer_action_targets(
+        &self,
+        action: &Action,
+    ) -> Result<Vec<String>, EngineError> {
+        let mut targets = Vec::new();
+        let direct = match action {
+            Action::ReopenTransferPromise { transfer, .. }
+            | Action::ReviseTransferPromise { transfer, .. }
+            | Action::ReviseTransferDraft { transfer, .. }
+            | Action::AdoptTransferDraft { transfer, .. }
+            | Action::AddressTransferInvitation { transfer, .. }
+            | Action::CounterofferTransfer { transfer, .. }
+            | Action::ClaimOpenTransferPromise { transfer, .. }
+            | Action::SetTransferAgreementLevel { transfer, .. }
+            | Action::ActivateTransferOccurrence { transfer, .. }
+            | Action::ConfigureTransferDelivery { transfer, .. }
+            | Action::SetTransferDeliveryMode { transfer, .. }
+            | Action::EnqueueTransferDelivery { transfer, .. }
+            | Action::RetryTransferDelivery { transfer, .. }
+            | Action::RevokeTransferDelivery { transfer, .. }
+            | Action::ConfirmTransfer { transfer, .. }
+            | Action::AddParty { transfer, .. }
+            | Action::AddPromiseToTransfer { transfer, .. }
+            | Action::AgreeTransfer { transfer, .. }
+            | Action::ActivateTransfer { transfer }
+            | Action::SettleTransfer { transfer, .. } => Some(transfer.as_str()),
+            _ => None,
+        };
+        if let Some(transfer) = direct {
+            targets.push(self.resolve(transfer).await?);
+        }
+        let invitation = match action {
+            Action::AcceptTransferInvitation { invitation, .. }
+            | Action::RejectTransferInvitation { invitation, .. }
+            | Action::WithdrawTransferInvitation { invitation, .. }
+            | Action::ReopenTransferInvitation { invitation, .. } => Some(invitation.as_str()),
+            _ => None,
+        };
+        if let Some(invitation) = invitation {
+            let row = store::transfers::invitation(&self.store.pool, invitation)
+                .await?
+                .ok_or_else(|| EngineError::UnknownRecord(invitation.into()))?;
+            targets.push(row.transfer_uid);
+        }
+        let occurrence = match action {
+            Action::CreateTransferRemainderDraft { occurrence, .. }
+            | Action::CreateReversingTransferDraft { occurrence, .. }
+            | Action::SetTransferOccurrenceClaim { occurrence, .. }
+            | Action::SetTransferOccurrenceDispute { occurrence, .. }
+            | Action::SetTransferOccurrenceApplicationFormula { occurrence, .. }
+            | Action::SettleTransferOccurrence { occurrence, .. } => Some(occurrence.as_str()),
+            _ => None,
+        };
+        if let Some(occurrence) = occurrence {
+            let row = store::transfers::occurrence(&self.store.pool, occurrence)
+                .await?
+                .ok_or_else(|| EngineError::UnknownRecord(occurrence.into()))?;
+            targets.push(row.transfer_uid);
+        }
+        if let Action::CompleteTransferOccurrenceClaimsBulk { items, .. } = action {
+            for item in items {
+                let row = store::transfers::occurrence(&self.store.pool, &item.occurrence)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(item.occurrence.clone()))?;
+                targets.push(row.transfer_uid);
+            }
+        }
+        if let Action::CompensateTransferOccurrenceSettlement { settlement, .. } = action {
+            let row = store::transfers::occurrence_settlement_slice(&self.store.pool, settlement)
+                .await?
+                .ok_or_else(|| EngineError::UnknownRecord(settlement.clone()))?;
+            targets.push(row.transfer_uid);
+        }
+        if let Action::CreateThread { target, .. } = action {
+            let target = self.resolve(target).await?;
+            if store::transfers::get(&self.store.pool, &target)
+                .await?
+                .is_some()
+            {
+                targets.push(target);
+            }
+        }
+        if let Action::CreateMessage { thread, .. } = action {
+            let thread = self.resolve(thread).await?;
+            if let Some(transfer) = self.transfer_for_thread(&thread).await? {
+                targets.push(transfer);
+            }
+        }
+        targets.sort();
+        targets.dedup();
+        Ok(targets)
     }
 
     /// Creation needs both the role grant and a social identity. The returned
@@ -2023,6 +5560,990 @@ impl Engine {
         self.actor_person(actor).await
     }
 
+    async fn require_transfer_draft_creator(
+        &self,
+        transfer_uid: &str,
+        actor: Option<&str>,
+    ) -> Result<(), EngineError> {
+        self.require_transfer_origin_authority(transfer_uid).await?;
+        let Some(actor) = actor else {
+            return Ok(());
+        };
+        self.require_permission(Some(actor), "transfer:update")
+            .await?;
+        if store::facts::creator_uid(&self.store.pool, transfer_uid)
+            .await?
+            .as_deref()
+            == Some(actor)
+        {
+            return Ok(());
+        }
+        Err(EngineError::Forbidden(
+            "Phase 1 draft revision requires the transfer creator".into(),
+        ))
+    }
+
+    async fn transfer_creator_person(&self, transfer_uid: &str) -> Result<String, EngineError> {
+        store::transfers::creator_party_actor(&self.store.pool, transfer_uid)
+            .await?
+            .ok_or_else(|| EngineError::Conflict {
+                code: "transfer_creator_evidence_missing",
+                message: "revisioned transfer has no signed creator Person marker".into(),
+            })
+    }
+
+    /// Authenticated actions derive their Person from the user binding. Local
+    /// no-auth actions may name one explicitly; a lifecycle action can instead
+    /// provide an unambiguous Person derived from its signed target.
+    async fn transfer_action_person(
+        &self,
+        actor: Option<&str>,
+        explicit: Option<&str>,
+        derived_local: Option<&str>,
+    ) -> Result<String, EngineError> {
+        if let Some(mapped) = self.actor_person(actor).await? {
+            if let Some(token) = explicit.map(str::trim).filter(|value| !value.is_empty()) {
+                let submitted = self.resolve(token).await?;
+                if submitted != mapped {
+                    return Err(EngineError::Forbidden(
+                        "authenticated transfer identity is derived from the session".into(),
+                    ));
+                }
+            }
+            return Ok(mapped);
+        }
+        let token = explicit
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .or(derived_local)
+            .ok_or_else(|| {
+                EngineError::Forbidden(
+                    "trusted local transfer action requires an acting Person".into(),
+                )
+            })?;
+        let person_uid = self.resolve(token).await?;
+        let record = store::records::get(&self.store.pool, &person_uid)
+            .await?
+            .ok_or_else(|| EngineError::UnknownRecord(person_uid.clone()))?;
+        if record.kind != RecordKind::Person.as_str() {
+            return Err(EngineError::Consequence(
+                "transfer actor must be a Person record".into(),
+            ));
+        }
+        Ok(person_uid)
+    }
+
+    async fn transfer_for_thread(&self, thread_uid: &str) -> Result<Option<String>, EngineError> {
+        let Some(thread_of) = store::concepts::resolve(&self.store.pool, "thread-of").await? else {
+            return Ok(None);
+        };
+        let mut transfers = Vec::new();
+        for target in store::links::records_from(&self.store.pool, thread_uid, &thread_of).await? {
+            if store::transfers::get(&self.store.pool, &target.uid)
+                .await?
+                .is_some()
+            {
+                transfers.push(target.uid);
+            }
+        }
+        match transfers.as_slice() {
+            [] => Ok(None),
+            [transfer] => Ok(Some(transfer.clone())),
+            _ => Err(EngineError::Conflict {
+                code: "transfer_thread_target_ambiguous",
+                message: "a negotiation thread must belong to exactly one Transfer".into(),
+            }),
+        }
+    }
+
+    async fn require_verified_transfer_revision(
+        &self,
+        transfer_uid: &str,
+        revision: u64,
+    ) -> Result<(), EngineError> {
+        self.require_transfer_origin_authority(transfer_uid).await?;
+        let fact = store::transfers::revision_fact(&self.store.pool, transfer_uid, revision)
+            .await?
+            .ok_or_else(|| EngineError::Conflict {
+                code: "transfer_revision_evidence_missing",
+                message: "agreement requires an existing signed Transfer revision".into(),
+            })?;
+        if !crate::trust::verify_fact(&self.store, &fact).await? {
+            return Err(EngineError::Conflict {
+                code: "transfer_revision_signature_invalid",
+                message:
+                    "agreement requires a Transfer revision signed by its published author key"
+                        .into(),
+            });
+        }
+        Ok(())
+    }
+
+    async fn transfer_person_signer(
+        &self,
+        person_uid: &str,
+        verified_authorship: Option<&VerifiedActionAuthorship>,
+    ) -> Result<Option<crate::trust::Signer>, EngineError> {
+        let signer = self.signer.lock().await.clone();
+        if let Some(signer) = signer.as_ref() {
+            if signer.actor_uid == person_uid {
+                return Ok(Some(signer.clone()));
+            }
+            if verified_authorship.map(|authorship| authorship.person_uid.as_str())
+                != Some(person_uid)
+            {
+                return Err(EngineError::Conflict {
+                    code: "signer_identity_mismatch",
+                    message: "the installed signing key does not belong to the acting Person"
+                        .into(),
+                });
+            }
+        }
+        if verified_authorship.is_some_and(|authorship| authorship.person_uid == person_uid) {
+            return Ok(None);
+        }
+        if signer.is_some() {
+            return Err(EngineError::Conflict {
+                code: "signer_identity_mismatch",
+                message: "the installed signing key does not belong to the acting Person".into(),
+            });
+        }
+        Err(EngineError::Conflict {
+            code: "missing_person_signer",
+            message: "this Transfer action requires the acting Person's signing key or verified signed Action intent"
+                .into(),
+        })
+    }
+
+    async fn transfer_reservation_cell_default(&self) -> Result<TransferReservePoint, EngineError> {
+        let value = store::sqlx::query_scalar::<_, String>(
+            "SELECT transfer_reservation_default FROM configuration WHERE id = 1",
+        )
+        .fetch_optional(&self.store.pool)
+        .await?
+        .unwrap_or_else(|| "none".into());
+        match value.as_str() {
+            "none" => Ok(TransferReservePoint::None),
+            "proposed" => Ok(TransferReservePoint::Proposed),
+            "agreed" => Ok(TransferReservePoint::Agreed),
+            "active" => Ok(TransferReservePoint::Active),
+            _ => Err(EngineError::Conflict {
+                code: "transfer_reservation_default_invalid",
+                message: "Cell transfer reservation default is invalid".into(),
+            }),
+        }
+    }
+
+    async fn require_transfer_thread_writer(
+        &self,
+        transfer_uid: &str,
+        actor: Option<&str>,
+        now: DateTime<Utc>,
+    ) -> Result<(), EngineError> {
+        self.require_transfer_origin_authority(transfer_uid).await?;
+        let Some(person) = self.actor_person(actor).await? else {
+            return Ok(());
+        };
+        let creator = self.transfer_creator_person(transfer_uid).await?;
+        let participant =
+            store::transfers::party_for_actor(&self.store.pool, transfer_uid, &person)
+                .await?
+                .is_some();
+        let pending_addressee =
+            store::transfers::invitations_for_transfer(&self.store.pool, transfer_uid)
+                .await?
+                .into_iter()
+                .any(|invitation| {
+                    invitation.addressed_person_uid == person
+                        && invitation.status == store::transfers::TransferInvitationStatus::Pending
+                        && !invitation.expires_at.as_deref().is_some_and(|value| {
+                            DateTime::parse_from_rfc3339(value)
+                                .is_ok_and(|expiry| expiry.with_timezone(&Utc) <= now)
+                        })
+                });
+        if person == creator || participant || pending_addressee {
+            return Ok(());
+        }
+        Err(EngineError::Forbidden(
+            "Transfer negotiation writes require the creator, an accepted participant, or a pending addressee"
+                .into(),
+        ))
+    }
+
+    async fn resolve_transfer_dependencies(
+        &self,
+        transfer_uid: Option<&str>,
+        inputs: Vec<TransferDependencyInput>,
+        promise_uids: &HashSet<String>,
+    ) -> Result<Vec<store::transfers::TransferDependencyInput>, EngineError> {
+        let mut dependency_uids = HashSet::new();
+        let mut resolved = Vec::with_capacity(inputs.len());
+        for input in inputs {
+            if let Some(uid) = input.uid.as_deref()
+                && !dependency_uids.insert(uid.to_string())
+            {
+                return Err(EngineError::Consequence(
+                    "a Transfer draft cannot repeat a dependency uid".into(),
+                ));
+            }
+            let promise_uid = match input.scope {
+                TransferDependencyScopeInput::Transfer => {
+                    if input.promise.is_some() {
+                        return Err(EngineError::Consequence(
+                            "a Transfer-scoped dependency cannot name a promise".into(),
+                        ));
+                    }
+                    None
+                }
+                TransferDependencyScopeInput::Promise => {
+                    let promise = input
+                        .promise
+                        .map(|value| value.trim().to_string())
+                        .filter(|value| !value.is_empty())
+                        .ok_or_else(|| {
+                            EngineError::Consequence(
+                                "a promise-scoped dependency must name its local promise".into(),
+                            )
+                        })?;
+                    if !promise_uids.contains(&promise) {
+                        return Err(EngineError::Consequence(
+                            "a promise-scoped dependency must target a retained promise uid; new dependent promises need an explicit stable uid"
+                                .into(),
+                        ));
+                    }
+                    Some(promise)
+                }
+            };
+            let upstream_token = input.upstream.trim();
+            if upstream_token.is_empty() {
+                return Err(EngineError::Consequence(
+                    "a Transfer dependency must name an upstream target".into(),
+                ));
+            }
+            let (upstream_kind, upstream_uid, upstream_transfer) = match input.upstream_kind {
+                TransferDependencyUpstreamKindInput::Transfer => {
+                    let uid = self.resolve(upstream_token).await?;
+                    if store::transfers::get(&self.store.pool, &uid)
+                        .await?
+                        .is_none()
+                    {
+                        return Err(EngineError::Consequence(
+                            "a Transfer dependency upstream must be a Transfer record".into(),
+                        ));
+                    }
+                    (
+                        nucleus::transfer::TransferDependencyUpstreamKind::Transfer,
+                        uid.clone(),
+                        Some(uid),
+                    )
+                }
+                TransferDependencyUpstreamKindInput::Promise => {
+                    if promise_uids.contains(upstream_token) {
+                        (
+                            nucleus::transfer::TransferDependencyUpstreamKind::Promise,
+                            upstream_token.to_string(),
+                            transfer_uid.map(str::to_string),
+                        )
+                    } else {
+                        let promise = store::misc::get_promise(&self.store.pool, upstream_token)
+                            .await?
+                            .ok_or_else(|| {
+                                EngineError::UnknownRecord(upstream_token.to_string())
+                            })?;
+                        (
+                            nucleus::transfer::TransferDependencyUpstreamKind::Promise,
+                            promise.uid,
+                            promise.transfer_uid,
+                        )
+                    }
+                }
+            };
+            if promise_uid.as_deref() == Some(upstream_uid.as_str()) {
+                return Err(EngineError::Consequence(
+                    "a promise cannot depend on itself".into(),
+                ));
+            }
+            if transfer_uid.is_some_and(|transfer| upstream_uid == transfer) {
+                return Err(EngineError::Consequence(
+                    "a Transfer cannot depend on itself".into(),
+                ));
+            }
+            if let (Some(transfer_uid), Some(upstream_transfer)) =
+                (transfer_uid, upstream_transfer.as_deref())
+                && upstream_transfer != transfer_uid
+                && self
+                    .transfer_dependency_reaches(upstream_transfer, transfer_uid)
+                    .await?
+            {
+                return Err(EngineError::Conflict {
+                    code: "transfer_dependency_cycle",
+                    message: "the dependency would create a Transfer cycle".into(),
+                });
+            }
+            let required_state = input.required_state.trim().to_ascii_lowercase();
+            if !matches!(
+                required_state.as_str(),
+                "open" | "proposed" | "agreed" | "active" | "kept" | "broken" | "withdrawn"
+            ) {
+                return Err(EngineError::Consequence(
+                    "dependency required_state must be a promise state".into(),
+                ));
+            }
+            resolved.push(store::transfers::TransferDependencyInput {
+                uid: input.uid,
+                scope: match input.scope {
+                    TransferDependencyScopeInput::Transfer => {
+                        nucleus::transfer::TransferDependencyScope::Transfer
+                    }
+                    TransferDependencyScopeInput::Promise => {
+                        nucleus::transfer::TransferDependencyScope::Promise
+                    }
+                },
+                promise_uid,
+                upstream_kind,
+                upstream_uid,
+                required_state,
+            });
+        }
+        let mut local_edges: std::collections::HashMap<&str, Vec<&str>> = Default::default();
+        for dependency in &resolved {
+            if dependency.upstream_kind
+                != nucleus::transfer::TransferDependencyUpstreamKind::Promise
+                || !promise_uids.contains(&dependency.upstream_uid)
+            {
+                continue;
+            }
+            let Some(target) = dependency.promise_uid.as_deref() else {
+                return Err(EngineError::Conflict {
+                    code: "transfer_dependency_cycle",
+                    message: "a Transfer-wide dependency cannot point at one of its own promises"
+                        .into(),
+                });
+            };
+            local_edges
+                .entry(target)
+                .or_default()
+                .push(&dependency.upstream_uid);
+        }
+        for start in local_edges.keys() {
+            let mut pending = local_edges.get(start).cloned().unwrap_or_default();
+            let mut seen = HashSet::new();
+            while let Some(next) = pending.pop() {
+                if next == *start {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_dependency_cycle",
+                        message: "the dependency would create a promise cycle".into(),
+                    });
+                }
+                if seen.insert(next)
+                    && let Some(further) = local_edges.get(next)
+                {
+                    pending.extend(further.iter().copied());
+                }
+            }
+        }
+        Ok(resolved)
+    }
+
+    async fn transfer_dependency_reaches(
+        &self,
+        start_transfer_uid: &str,
+        target_transfer_uid: &str,
+    ) -> Result<bool, EngineError> {
+        let mut pending = vec![start_transfer_uid.to_string()];
+        let mut seen = HashSet::new();
+        while let Some(transfer_uid) = pending.pop() {
+            if transfer_uid == target_transfer_uid {
+                return Ok(true);
+            }
+            if !seen.insert(transfer_uid.clone()) {
+                continue;
+            }
+            let Some(transfer) = store::transfers::get(&self.store.pool, &transfer_uid).await?
+            else {
+                continue;
+            };
+            if transfer.revision <= 0 {
+                continue;
+            }
+            let Some(fact) = store::transfers::revision_fact(
+                &self.store.pool,
+                &transfer_uid,
+                transfer.revision as u64,
+            )
+            .await?
+            else {
+                continue;
+            };
+            let Some(payload) = fact.payload.as_deref() else {
+                continue;
+            };
+            let Ok(evidence) =
+                serde_json::from_str::<nucleus::transfer::TransferRevisionEvidence>(payload)
+            else {
+                continue;
+            };
+            for dependency in evidence.terms.dependencies {
+                match dependency.upstream_kind {
+                    nucleus::transfer::TransferDependencyUpstreamKind::Transfer => {
+                        pending.push(dependency.upstream_uid);
+                    }
+                    nucleus::transfer::TransferDependencyUpstreamKind::Promise => {
+                        if let Some(promise) =
+                            store::misc::get_promise(&self.store.pool, &dependency.upstream_uid)
+                                .await?
+                            && let Some(owner) = promise.transfer_uid
+                        {
+                            pending.push(owner);
+                        }
+                    }
+                }
+            }
+        }
+        Ok(false)
+    }
+
+    async fn resolve_whole_transfer_draft(
+        &self,
+        transfer_uid: String,
+        expected_revision: u64,
+        request_id: String,
+        draft: TransferDraftRevisionInput,
+        creator_person_uid: String,
+        proposal_author_person_uid: String,
+        now: DateTime<Utc>,
+        preserve_invitation_lifecycle: bool,
+    ) -> Result<store::transfers::WholeDraftRevisionInput, EngineError> {
+        let dependency_inputs = draft.dependencies;
+        let request_id = request_id.trim().to_string();
+        if request_id.is_empty() || request_id.chars().count() > 200 {
+            return Err(EngineError::Consequence(
+                "transfer request_id must contain 1 to 200 characters".into(),
+            ));
+        }
+        let head = draft.head.trim().to_string();
+        if head.is_empty() || head.chars().count() > 200 {
+            return Err(EngineError::Consequence(
+                "transfer title must contain 1 to 200 characters".into(),
+            ));
+        }
+        let slug = draft
+            .slug
+            .map(|value| value.trim().to_string())
+            .filter(|value| !value.is_empty());
+        if let Some(value) = slug.as_deref()
+            && !nucleus::valid_slug(value)
+        {
+            return Err(EngineError::Consequence(format!(
+                "invalid transfer slug `{value}`"
+            )));
+        }
+        match draft.agreement {
+            nucleus::transfer::AgreementType::Percentage => {
+                if !draft
+                    .agreement_pct
+                    .is_some_and(|percentage| (1..=100).contains(&percentage))
+                {
+                    return Err(EngineError::Consequence(
+                        "percentage agreement requires a threshold from 1 to 100".into(),
+                    ));
+                }
+            }
+            _ if draft.agreement_pct.is_some() => {
+                return Err(EngineError::Consequence(
+                    "agreement_pct is valid only for percentage agreement".into(),
+                ));
+            }
+            _ => {}
+        }
+        match draft.visibility {
+            TransferVisibility::Proximity => {
+                if !draft.max_proximity.is_some_and(|value| value > 0) {
+                    return Err(EngineError::Consequence(
+                        "proximity visibility requires max_proximity greater than zero".into(),
+                    ));
+                }
+            }
+            _ if draft.max_proximity.is_some() => {
+                return Err(EngineError::Consequence(
+                    "max_proximity is valid only for proximity visibility".into(),
+                ));
+            }
+            _ => {}
+        }
+        let parent_uid = match draft
+            .parent
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+        {
+            Some(token) => {
+                let uid = self.resolve(token).await?;
+                if uid == transfer_uid {
+                    return Err(EngineError::Consequence(
+                        "a transfer cannot be its own parent".into(),
+                    ));
+                }
+                let record = store::records::get(&self.store.pool, &uid)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(uid.clone()))?;
+                if record.kind != RecordKind::Transfer.as_str() {
+                    return Err(EngineError::Consequence(
+                        "a transfer parent must be another transfer".into(),
+                    ));
+                }
+                Some(uid)
+            }
+            None => None,
+        };
+        let source_uid = match draft
+            .source
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+        {
+            Some(token) => Some(self.resolve(token).await?),
+            None => None,
+        };
+        if matches!(draft.satiation, TransferSatiation::FirstCompletes) && source_uid.is_none() {
+            return Err(EngineError::Consequence(
+                "first_completes requires a shared source record".into(),
+            ));
+        }
+
+        let invitations =
+            store::transfers::invitations_for_transfer(&self.store.pool, &transfer_uid).await?;
+        let mut retained_invitation_uids = Vec::with_capacity(draft.invitees.len());
+        let mut retained_people = std::collections::HashSet::new();
+        for token in draft.invitees {
+            let token = token.trim();
+            let invitation = invitations.iter().find(|invitation| {
+                invitation.status == store::transfers::TransferInvitationStatus::Pending
+                    && (invitation.uid == token || invitation.addressed_person_uid == token)
+            });
+            let Some(invitation) = invitation else {
+                return Err(EngineError::Conflict {
+                    code: "transfer_phase_2_invitation_required",
+                    message: "Phase 1 may retain or withdraw existing invitations but cannot address a new Person"
+                        .into(),
+                });
+            };
+            if !retained_people.insert(invitation.addressed_person_uid.clone()) {
+                return Err(EngineError::Consequence(
+                    "the same pending invitee cannot appear twice".into(),
+                ));
+            }
+            retained_invitation_uids.push(invitation.uid.clone());
+        }
+        if preserve_invitation_lifecycle {
+            let pending_uids = invitations
+                .iter()
+                .filter(|invitation| {
+                    invitation.status == store::transfers::TransferInvitationStatus::Pending
+                })
+                .map(|invitation| invitation.uid.as_str())
+                .collect::<std::collections::HashSet<_>>();
+            let submitted_uids = retained_invitation_uids
+                .iter()
+                .map(String::as_str)
+                .collect::<std::collections::HashSet<_>>();
+            if submitted_uids != pending_uids {
+                return Err(EngineError::Conflict {
+                    code: "transfer_counteroffer_invitation_lifecycle_immutable",
+                    message: "a counteroffer cannot address, withdraw, or reopen invitations"
+                        .into(),
+                });
+            }
+        }
+
+        let transfer = store::transfers::get(&self.store.pool, &transfer_uid)
+            .await?
+            .ok_or_else(|| EngineError::UnknownRecord(transfer_uid.clone()))?;
+        let effective_reserve_default = draft
+            .reserve_default
+            .resolve(self.transfer_reservation_cell_default().await?);
+        let existing_promises =
+            store::transfers::promises_of(&self.store.pool, &transfer_uid).await?;
+        let mut promises = Vec::with_capacity(draft.promises.len());
+        for input in draft.promises {
+            if input.withdrawn {
+                if input.uid.is_none() {
+                    return Err(EngineError::Consequence(
+                        "a new promise cannot already be withdrawn".into(),
+                    ));
+                }
+                continue;
+            }
+            if !input.delta.is_finite() || input.delta == 0.0 {
+                return Err(EngineError::Consequence(
+                    "every promise delta must be finite and non-zero".into(),
+                ));
+            }
+            let resolved_record_uid = self.resolve(input.record.trim()).await?;
+            let concept_uid = store::records::get(&self.store.pool, &resolved_record_uid)
+                .await?
+                .ok_or_else(|| EngineError::UnknownRecord(resolved_record_uid.clone()))?
+                .concept_uid;
+            let record_uid = Some(resolved_record_uid);
+            let existing_promise = input
+                .uid
+                .as_deref()
+                .and_then(|uid| existing_promises.iter().find(|promise| promise.uid == uid));
+            if existing_promise.is_some_and(|promise| promise.state == PromiseState::Open)
+                && !input.open
+            {
+                return Err(EngineError::Conflict {
+                    code: "transfer_open_claim_action_required",
+                    message:
+                        "an OPEN proposal can become concrete only through a signed OPEN claim"
+                            .into(),
+                });
+            }
+            let person_uid = if input.open {
+                let proposer = existing_promise
+                    .filter(|promise| promise.state == PromiseState::Open)
+                    .and_then(|promise| promise.party_uid.clone())
+                    .unwrap_or_else(|| proposal_author_person_uid.clone());
+                if let Some(token) = input.party.as_deref() {
+                    let submitted = self.resolve(token.trim()).await?;
+                    if submitted != proposer {
+                        return Err(EngineError::Conflict {
+                            code: "transfer_open_proposer_immutable",
+                            message: "a retained OPEN proposal keeps its original proposer Person"
+                                .into(),
+                        });
+                    }
+                }
+                Some(proposer)
+            } else {
+                let token = input.party.as_deref().ok_or_else(|| {
+                    EngineError::Consequence("a non-OPEN promise requires a reviewed Person".into())
+                })?;
+                let person_uid = self.resolve(token.trim()).await?;
+                let record = store::records::get(&self.store.pool, &person_uid)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(person_uid.clone()))?;
+                if record.kind != RecordKind::Person.as_str() {
+                    return Err(EngineError::Consequence(
+                        "promise Person must be a Person record".into(),
+                    ));
+                }
+                let is_participant =
+                    store::transfers::party_for_actor(&self.store.pool, &transfer_uid, &person_uid)
+                        .await?
+                        .is_some();
+                let is_pending = invitations.iter().any(|invitation| {
+                    invitation.status == store::transfers::TransferInvitationStatus::Pending
+                        && retained_invitation_uids.contains(&invitation.uid)
+                        && invitation.addressed_person_uid == person_uid
+                });
+                if !is_participant && !is_pending {
+                    return Err(EngineError::Consequence(
+                        "promise Person must be a participant or retained pending invitee".into(),
+                    ));
+                }
+                Some(person_uid)
+            };
+            if !input.open
+                && input.reuse_policy == nucleus::transfer::OpenPromiseReusePolicy::Consume
+            {
+                return Err(EngineError::Consequence(
+                    "reuse_policy applies only to an OPEN promise".into(),
+                ));
+            }
+            let unit_uid = self.resolve_concept_opt(input.unit).await?;
+            let preserved_window_end = input.uid.as_deref().and_then(|uid| {
+                existing_promises
+                    .iter()
+                    .find(|promise| promise.uid == uid)
+                    .and_then(|promise| promise.window_end.as_deref())
+            });
+            let (window_start, window_end) = normalize_transfer_window(
+                input.window_start,
+                input.window_end,
+                now,
+                preserved_window_end,
+            )?;
+            let condition = input
+                .condition
+                .map(|value| value.trim().to_string())
+                .filter(|value| !value.is_empty());
+            if let Some(value) = condition.as_deref() {
+                nucleus::expr::Expr::parse(value).map_err(|error| {
+                    EngineError::Consequence(format!("invalid promise condition: {error}"))
+                })?;
+            }
+            promises.push(store::transfers::DraftPromiseRevisionInput {
+                uid: Some(input.uid.unwrap_or_else(|| nucleus::new_uid("p"))),
+                source_promise_uid: None,
+                record_uid,
+                concept_uid,
+                unit_uid,
+                person_uid,
+                open: input.open,
+                delta: input.delta,
+                window_start,
+                window_end,
+                location: normalize_transfer_place(input.place)?,
+                condition,
+                reserve_from: input
+                    .reserve_from
+                    .unwrap_or(effective_reserve_default)
+                    .resolve(effective_reserve_default)
+                    .as_str()
+                    .into(),
+                open_reuse_policy: input.reuse_policy,
+            });
+        }
+        if promises.is_empty() && !retained_invitation_uids.is_empty() {
+            return Err(EngineError::Consequence(
+                "complete draft withdrawal requires withdrawing every pending invitation".into(),
+            ));
+        }
+        let promise_uids = promises
+            .iter()
+            .filter_map(|promise| promise.uid.clone())
+            .collect::<HashSet<_>>();
+        let dependencies = self
+            .resolve_transfer_dependencies(Some(&transfer_uid), dependency_inputs, &promise_uids)
+            .await?;
+        if !promises.is_empty()
+            && matches!(
+                draft.agreement,
+                nucleus::transfer::AgreementType::Dependency
+            )
+            && dependencies.is_empty()
+        {
+            return Err(EngineError::Consequence(
+                "dependency agreement requires at least one structured dependency".into(),
+            ));
+        }
+        Ok(store::transfers::WholeDraftRevisionInput {
+            transfer_uid,
+            expected_revision,
+            idempotency_key: request_id,
+            creator_person_uid,
+            proposal_author_person_uid,
+            terms: store::transfers::TransferDraftTermsInput {
+                slug,
+                head,
+                agreement_type: draft.agreement.as_str().into(),
+                agreement_pct: draft.agreement_pct.map(i64::from),
+                settlement: transfer.settlement,
+                visibility: draft.visibility.as_str().into(),
+                max_proximity: draft.max_proximity.map(i64::from),
+                satiation: draft.satiation.as_option(),
+                parent_uid,
+                source_uid,
+                reserve_default: effective_reserve_default.as_str().into(),
+                require_confirmation: draft.require_confirmation,
+                default_place: normalize_transfer_place(draft.default_place)?,
+            },
+            retained_invitation_uids,
+            promises,
+            dependencies,
+            successor: None,
+            authorization_intent_uid: None,
+        })
+    }
+
+    async fn resolve_transfer_draft_creator_person(
+        &self,
+        transfer_uid: &str,
+        token: &str,
+        expected_revision: u64,
+        actor: Option<&str>,
+    ) -> Result<String, EngineError> {
+        let token = token.trim();
+        if token.is_empty() {
+            return Err(EngineError::Consequence(
+                "the complete transfer draft must identify its creator Person".into(),
+            ));
+        }
+        let person_uid = self.resolve(token).await?;
+        let record = store::records::get(&self.store.pool, &person_uid)
+            .await?
+            .ok_or_else(|| EngineError::UnknownRecord(person_uid.clone()))?;
+        if record.kind != RecordKind::Person.as_str() {
+            return Err(EngineError::Consequence(
+                "transfer creator must be a Person record".into(),
+            ));
+        }
+        if store::transfers::party_for_actor(&self.store.pool, transfer_uid, &person_uid)
+            .await?
+            .is_none()
+        {
+            return Err(EngineError::Consequence(
+                "transfer creator must already be a transfer party".into(),
+            ));
+        }
+        if let Some(mapped) = self.actor_person(actor).await?
+            && mapped != person_uid
+        {
+            return Err(EngineError::Forbidden(
+                "authenticated creator identity is derived from the session".into(),
+            ));
+        }
+        if expected_revision > 0 {
+            let existing = store::transfers::creator_party_actor(&self.store.pool, transfer_uid)
+                .await?
+                .ok_or_else(|| EngineError::Conflict {
+                    code: "transfer_creator_evidence_missing",
+                    message: "revisioned transfer has no signed creator Person marker".into(),
+                })?;
+            if existing != person_uid {
+                return Err(EngineError::Conflict {
+                    code: "transfer_creator_immutable",
+                    message: "transfer creator Person cannot change in a revision".into(),
+                });
+            }
+        }
+        Ok(person_uid)
+    }
+
+    async fn apply_transfer_revision_commit(
+        &self,
+        commit: store::transfers::RevisionCommit,
+        expected_revision: u64,
+        transfer_uid: &str,
+        outcome: &mut ActionOutcome,
+    ) -> Result<(), EngineError> {
+        match commit {
+            store::transfers::RevisionCommit::Committed { fact, .. } => {
+                outcome.facts = self.publish_committed_fact(fact);
+            }
+            store::transfers::RevisionCommit::Replayed { .. } => {}
+            store::transfers::RevisionCommit::Stale { current_revision } => {
+                return Err(EngineError::Conflict {
+                    code: "transfer_revision_stale",
+                    message: format!(
+                        "expected transfer revision {expected_revision}, current revision is {current_revision}"
+                    ),
+                });
+            }
+        }
+        outcome.created = Some(transfer_uid.to_string());
+        Ok(())
+    }
+
+    fn apply_transfer_invitation_commit(
+        &self,
+        commit: store::transfers::InvitationCommit,
+        expected_revision: u64,
+        outcome: &mut ActionOutcome,
+    ) -> Result<(), EngineError> {
+        match commit {
+            store::transfers::InvitationCommit::Committed(committed) => {
+                if let Some(fact) = committed.revision_fact {
+                    outcome.facts.extend(self.publish_committed_fact(fact));
+                }
+                outcome
+                    .facts
+                    .extend(self.publish_committed_fact(committed.event_fact));
+                outcome.created = Some(committed.invitation.uid);
+            }
+            store::transfers::InvitationCommit::Replayed(replayed) => {
+                outcome.created = Some(replayed.invitation.uid);
+            }
+            store::transfers::InvitationCommit::Stale {
+                current_revision, ..
+            } => {
+                return Err(EngineError::Conflict {
+                    code: "transfer_revision_stale",
+                    message: format!(
+                        "expected transfer revision {expected_revision}, current revision is {current_revision}"
+                    ),
+                });
+            }
+        }
+        Ok(())
+    }
+
+    fn apply_open_promise_claim_commit(
+        &self,
+        commit: store::transfers::OpenPromiseClaimCommit,
+        expected_revision: u64,
+        outcome: &mut ActionOutcome,
+    ) -> Result<(), EngineError> {
+        match commit {
+            store::transfers::OpenPromiseClaimCommit::Committed(committed) => {
+                outcome.facts = self.publish_committed_fact(committed.fact);
+                outcome.created = Some(committed.promise_uid);
+            }
+            store::transfers::OpenPromiseClaimCommit::Replayed(replayed) => {
+                outcome.created = Some(replayed.promise_uid);
+            }
+            store::transfers::OpenPromiseClaimCommit::Stale {
+                current_revision, ..
+            } => {
+                return Err(EngineError::Conflict {
+                    code: "transfer_revision_stale",
+                    message: format!(
+                        "expected transfer revision {expected_revision}, current revision is {current_revision}"
+                    ),
+                });
+            }
+        }
+        Ok(())
+    }
+
+    async fn reject_direct_transfer_record_mutation(
+        &self,
+        record_uid: &str,
+    ) -> Result<(), EngineError> {
+        if store::transfers::get(&self.store.pool, record_uid)
+            .await?
+            .is_some()
+        {
+            return Err(EngineError::Conflict {
+                code: "transfer_revision_required",
+                message: "Transfer records may only change through revision-safe Transfer Actions"
+                    .into(),
+            });
+        }
+        Ok(())
+    }
+
+    async fn append_transfer_delivery_evidence(
+        &self,
+        transfer_uid: &str,
+        actor_person_uid: &str,
+        request_id: &str,
+        operation: &str,
+        payload: serde_json::Value,
+        now: DateTime<Utc>,
+        verified_authorship: Option<&VerifiedActionAuthorship>,
+    ) -> Result<(String, Vec<Fact>), EngineError> {
+        let signer = self
+            .transfer_person_signer(actor_person_uid, verified_authorship)
+            .await?;
+        let fact_uid = format!("tdf:{operation}:{request_id}");
+        let new = NewFact {
+            uid: Some(fact_uid.clone()),
+            record_uid: transfer_uid.to_string(),
+            delta: 0.0,
+            at: None,
+            actor_uid: Some(actor_person_uid.to_string()),
+            cause: Cause::user_edit(),
+            payload: Some(payload.to_string()),
+        };
+        let Some(fact) = crate::append::append_one(&self.store, new, now, signer.as_ref()).await?
+        else {
+            let existing = store::facts::get(&self.store.pool, &fact_uid)
+                .await?
+                .ok_or_else(|| EngineError::UnknownRecord(fact_uid.clone()))?;
+            if existing.record_uid != transfer_uid
+                || existing.actor_uid.as_deref() != Some(actor_person_uid)
+                || existing.payload.as_deref() != Some(payload.to_string().as_str())
+            {
+                return Err(transfer_request_id_conflict());
+            }
+            return Ok((fact_uid, Vec::new()));
+        };
+        let facts = self.observe_committed_fact(fact, now).await?;
+        Ok((fact_uid, facts))
+    }
+
     /// Terms may be edited by the authenticated creator or by a represented
     /// participant (counteroffers). Permission remains an independent gate.
     async fn require_transfer_editor(
@@ -2030,11 +6551,16 @@ impl Engine {
         transfer_uid: &str,
         actor: Option<&str>,
     ) -> Result<(), EngineError> {
+        self.require_transfer_origin_authority(transfer_uid).await?;
         let Some(actor) = actor else {
             return Ok(());
         };
-        self.require_permission(Some(actor), "transfer:update").await?;
-        let person = self.actor_person(Some(actor)).await?.expect("authenticated actor");
+        self.require_permission(Some(actor), "transfer:update")
+            .await?;
+        let person = self
+            .actor_person(Some(actor))
+            .await?
+            .expect("authenticated actor");
         if store::facts::creator_uid(&self.store.pool, transfer_uid)
             .await?
             .as_deref()
@@ -2058,11 +6584,16 @@ impl Engine {
         transfer_uid: &str,
         actor: Option<&str>,
     ) -> Result<(), EngineError> {
+        self.require_transfer_origin_authority(transfer_uid).await?;
         let Some(actor) = actor else {
             return Ok(());
         };
-        self.require_permission(Some(actor), "transfer:update").await?;
-        let person = self.actor_person(Some(actor)).await?.expect("authenticated actor");
+        self.require_permission(Some(actor), "transfer:update")
+            .await?;
+        let person = self
+            .actor_person(Some(actor))
+            .await?
+            .expect("authenticated actor");
         if store::transfers::party_for_actor(&self.store.pool, transfer_uid, &person)
             .await?
             .is_some()
@@ -2074,31 +6605,6 @@ impl Engine {
         ))
     }
 
-    /// Agreement is always authored for the authenticated user's own party.
-    async fn require_transfer_party(
-        &self,
-        transfer_uid: &str,
-        party_uid: &str,
-        actor: Option<&str>,
-    ) -> Result<(), EngineError> {
-        let Some(actor) = actor else {
-            return Ok(());
-        };
-        self.require_permission(Some(actor), "transfer:update").await?;
-        let expected = self.actor_person(Some(actor)).await?.expect("authenticated actor");
-        let actual = store::transfers::party_actor(&self.store.pool, transfer_uid, party_uid)
-            .await?
-            .ok_or_else(|| {
-                EngineError::Forbidden("agreement party is not in this transfer".into())
-            })?;
-        if actual == expected {
-            return Ok(());
-        }
-        Err(EngineError::Forbidden(
-            "cannot author another participant's agreement".into(),
-        ))
-    }
-
     /// Legacy settlement still carries a Person field on the wire. In an
     /// authenticated session it must match the server-side identity exactly.
     async fn require_transfer_person(
@@ -2107,11 +6613,16 @@ impl Engine {
         person_uid: &str,
         actor: Option<&str>,
     ) -> Result<(), EngineError> {
+        self.require_transfer_origin_authority(transfer_uid).await?;
         let Some(actor) = actor else {
             return Ok(());
         };
-        self.require_permission(Some(actor), "transfer:update").await?;
-        let expected = self.actor_person(Some(actor)).await?.expect("authenticated actor");
+        self.require_permission(Some(actor), "transfer:update")
+            .await?;
+        let expected = self
+            .actor_person(Some(actor))
+            .await?
+            .expect("authenticated actor");
         if expected == person_uid
             && store::transfers::party_for_actor(&self.store.pool, transfer_uid, person_uid)
                 .await?
@@ -2217,8 +6728,14 @@ impl Engine {
 /// Parse rule-CRUD consequence wire rows into typed specs.
 fn parse_consequences(
     inputs: Vec<ConsequenceInput>,
-) -> Result<Vec<(nucleus::ConsequenceKind, Option<String>, Option<serde_json::Value>)>, EngineError>
-{
+) -> Result<
+    Vec<(
+        nucleus::ConsequenceKind,
+        Option<String>,
+        Option<serde_json::Value>,
+    )>,
+    EngineError,
+> {
     inputs
         .into_iter()
         .map(|c| {

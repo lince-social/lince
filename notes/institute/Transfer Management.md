@@ -1,1 +1,0 @@
-Make a component just for transfers, but also have a: Underlying Transfer: If i can see two components, one of my data as a possible Contribution and another one of person X that is a Need, I want to be able to type, or drag an arrow from my component to the one that shows their data, and create a Transfer with that.

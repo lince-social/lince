@@ -13,6 +13,7 @@ pub mod action_intent;
 pub mod actions;
 pub mod append;
 pub mod checkpoint;
+#[allow(dead_code)]
 pub mod communication;
 pub mod effects;
 pub mod error;

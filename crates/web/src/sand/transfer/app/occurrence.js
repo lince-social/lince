@@ -327,6 +327,9 @@ function settlementCompensationBlock(slice, person, options) {
 }
 
 function settlementReviewBlock(transfer, occurrence, person, options) {
+  if (occurrence.remote_settlement_preview) {
+    return remoteSettlementReviewBlock(transfer, occurrence, options);
+  }
   const staticPreview = occurrence.settlement_preview;
   const editor = settlementPreviewEditor(occurrence, staticPreview);
   const preview = editor.dirty ? editor.preview : staticPreview;
@@ -428,6 +431,51 @@ function settlementReviewBlock(transfer, occurrence, person, options) {
   if (!previewReady) blockers.push("settlement preview is incomplete");
   if (blockers.length) block.append(el("div", "settlementBlockers", blockers.map(blockerLabel).join(" · ")));
   bindSettlementQuantityInput(quantityInput, previewState, occurrence, staticPreview, editor, options);
+  return block;
+}
+
+function remoteSettlementReviewBlock(transfer, occurrence, options) {
+  const preview = occurrence.remote_settlement_preview;
+  const block = el("section", "settlementReview");
+  const heading = el("div", "settlementReviewHeading");
+  heading.append(el("strong", "", "Cross-Cell settlement proposal"), el("span", "", "Private application stays on this Cell"));
+  block.append(heading);
+  const quantity = el("input", "");
+  quantity.type = "number";
+  quantity.min = "0";
+  quantity.max = String(preview.expected_remaining_quantity);
+  quantity.step = "any";
+  quantity.value = String(preview.canonical_quantity);
+  const field = el("label", "settlementQuantityField");
+  field.append(el("span", "", "Canonical settlement slice"), quantity);
+  block.append(field);
+  if (preview.capabilities?.begin === true) {
+    const key = `occurrence:${occurrence.uid}:remote-settlement`;
+    const state = options.actionState?.(key);
+    const controls = el("div", "settlementReviewControls");
+    const acknowledgement = el("label", "settlementAcknowledgement");
+    const checkbox = el("input", "");
+    checkbox.type = "checkbox";
+    acknowledgement.append(checkbox, el("span", "", "Propose this exact public slice for private application"));
+    const submit = actionButton("Propose settlement slice", key, options, true);
+    submit.disabled = true;
+    checkbox.addEventListener("change", () => {
+      submit.disabled = !checkbox.checked || options.mutationsEnabled === false || Boolean(state?.busy || state?.waiting);
+    });
+    submit.addEventListener("click", () => {
+      const canonical = Number(quantity.value);
+      if (!checkbox.checked || submit.disabled || !Number.isFinite(canonical) || canonical <= 0) return;
+      const action = JSON.parse(JSON.stringify(preview.action_payload));
+      action.canonical_quantity = canonical;
+      action.request_id = requestId("remote-settlement");
+      options.onAction?.(key, action);
+    });
+    controls.append(acknowledgement, submit);
+    block.append(controls);
+    appendActionError(block, key, options);
+  }
+  const blockers = blockerValues(preview.blocking_reasons?.begin);
+  if (blockers.length) block.append(el("div", "settlementBlockers", blockers.map(blockerLabel).join(" · ")));
   return block;
 }
 

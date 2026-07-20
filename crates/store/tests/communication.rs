@@ -195,15 +195,28 @@ async fn deactivated_conversation_drops_out_of_the_list() {
 #[tokio::test]
 async fn extension_roundtrips_with_defaults() {
     let store = Store::open_memory().await.unwrap();
-    let conv = conversation(&store, "Ext", &tag_record(&store, "communication").await, &[]).await;
+    let conv = conversation(
+        &store,
+        "Ext",
+        &tag_record(&store, "communication").await,
+        &[],
+    )
+    .await;
 
     // No extension yet.
-    assert!(communication::get_ext(&store.pool, &conv).await.unwrap().is_none());
+    assert!(
+        communication::get_ext(&store.pool, &conv)
+            .await
+            .unwrap()
+            .is_none()
+    );
 
     let mut ext = communication::CommunicationExt::default();
     ext.room_id = "room-42".to_string();
     ext.recording_policy = "disabled".to_string();
-    communication::set_ext(&store.pool, &conv, &ext).await.unwrap();
+    communication::set_ext(&store.pool, &conv, &ext)
+        .await
+        .unwrap();
 
     let loaded = communication::get_ext(&store.pool, &conv)
         .await
@@ -217,7 +230,13 @@ async fn extension_roundtrips_with_defaults() {
 #[tokio::test]
 async fn session_open_flips_room_active_and_writes_sidecar_and_link() {
     let store = Store::open_memory().await.unwrap();
-    let conv = conversation(&store, "Call", &tag_record(&store, "communication").await, &[]).await;
+    let conv = conversation(
+        &store,
+        "Call",
+        &tag_record(&store, "communication").await,
+        &[],
+    )
+    .await;
 
     let session = communication::open_session(&store.pool, &conv, "audio+video")
         .await
@@ -232,7 +251,10 @@ async fn session_open_flips_room_active_and_writes_sidecar_and_link() {
         .expect("ext written on open");
     assert_eq!(ext.room.state, "active");
     assert_eq!(ext.room.media, "audio+video");
-    assert_eq!(ext.room.session_record_id.as_deref(), Some(session.uid.as_str()));
+    assert_eq!(
+        ext.room.session_record_id.as_deref(),
+        Some(session.uid.as_str())
+    );
 
     // Session sidecar is present and open (no ended_at yet).
     let sidecar = communication::get_session(&store.pool, &session.uid)
@@ -244,7 +266,9 @@ async fn session_open_flips_room_active_and_writes_sidecar_and_link() {
     assert_eq!(sidecar.recording.state, "idle");
 
     // Session is linked call-session-of -> conversation.
-    let sessions = communication::sessions_of(&store.pool, &conv).await.unwrap();
+    let sessions = communication::sessions_of(&store.pool, &conv)
+        .await
+        .unwrap();
     assert_eq!(sessions.len(), 1);
     assert_eq!(sessions[0].uid, session.uid);
 }
@@ -252,7 +276,13 @@ async fn session_open_flips_room_active_and_writes_sidecar_and_link() {
 #[tokio::test]
 async fn session_close_stamps_end_and_flips_room_idle() {
     let store = Store::open_memory().await.unwrap();
-    let conv = conversation(&store, "Call", &tag_record(&store, "communication").await, &[]).await;
+    let conv = conversation(
+        &store,
+        "Call",
+        &tag_record(&store, "communication").await,
+        &[],
+    )
+    .await;
     let session = communication::open_session(&store.pool, &conv, "audio")
         .await
         .unwrap();
@@ -261,7 +291,10 @@ async fn session_close_stamps_end_and_flips_room_idle() {
         .await
         .unwrap();
 
-    let ext = communication::get_ext(&store.pool, &conv).await.unwrap().unwrap();
+    let ext = communication::get_ext(&store.pool, &conv)
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(ext.room.state, "idle");
     assert!(ext.room.session_record_id.is_none());
     assert!(ext.room.occupants.is_empty());

@@ -423,7 +423,7 @@
       }
 
       // ---- navigation / view switching ------------------------------------
-      // Row click does BOTH: drive the grouped Record sand AND enter room mode.
+      // Row click does BOTH: drive the pinned Record sand AND enter room mode.
       function openConversation(uid) {
         state.selected = uid;
         H.emit("recordClicked", { record: { uid } }); // -> Record sand shows threads

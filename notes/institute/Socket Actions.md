@@ -1,3 +1,0 @@
-There should be a two way socket with the web and the backend for notification and decision. The user may be notified of something related to transfers or karma and might need Lince's permission to execute some action, aprove something. Or they might want to just be notified. 
-
-This same socket can be used for a local llm to chat, there might be a notification channel, a decision channel for cards of karma and transfer and a ai chat channel

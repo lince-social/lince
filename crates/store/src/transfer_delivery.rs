@@ -4,11 +4,11 @@
 //! separate. Replica payloads never enter the canonical Transfer tables.
 
 use chrono::{DateTime, Duration, Utc};
-use nucleus::{Cause, Fact, NewFact};
 use nucleus::transfer_delivery::{
     SignedOrganRequestV1, TransferApplicationAttestationV1, TransferApplicationHandoffState,
     TransferDeliveryMode, TransferEnvelopeV1, TransferRemoteCommandV1,
 };
+use nucleus::{Cause, Fact, NewFact};
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 
 use crate::StoreError;
@@ -826,11 +826,13 @@ pub async fn remote_reference_by_uid(
     pool: &SqlitePool,
     reference_uid: &str,
 ) -> Result<Option<RemoteReferenceRow>, StoreError> {
-    Ok(sqlx::query("SELECT * FROM transfer_remote_reference WHERE uid = ?")
-        .bind(reference_uid)
-        .fetch_optional(pool)
-        .await?
-        .map(map_reference))
+    Ok(
+        sqlx::query("SELECT * FROM transfer_remote_reference WHERE uid = ?")
+            .bind(reference_uid)
+            .fetch_optional(pool)
+            .await?
+            .map(map_reference),
+    )
 }
 
 #[derive(Debug, Clone)]
@@ -1827,6 +1829,19 @@ fn map_handoff(row: sqlx::sqlite::SqliteRow) -> ApplicationHandoffRow {
     }
 }
 
+pub async fn application_handoff(
+    pool: &SqlitePool,
+    uid: &str,
+) -> Result<Option<ApplicationHandoffRow>, StoreError> {
+    Ok(
+        sqlx::query("SELECT * FROM transfer_application_handoff WHERE uid = ?")
+            .bind(uid)
+            .fetch_optional(pool)
+            .await?
+            .map(map_handoff),
+    )
+}
+
 pub struct NewApplicationHandoff<'a> {
     pub origin_organ_uid: &'a str,
     pub participant_organ_uid: &'a str,
@@ -2093,11 +2108,13 @@ pub struct RemoteApplicationHandoffRow {
     pub canonical_cumulative_before: f64,
     pub canonical_cumulative_after: f64,
     pub canonical_remaining_after: f64,
+    pub application_direction: i8,
     pub canonical_slice_hash: String,
     pub envelope_uid: String,
     pub envelope_payload_hash: String,
     pub origin_created_at: String,
     pub state: String,
+    pub origin_state: String,
     pub local_application_uid: Option<String>,
 }
 
@@ -2118,11 +2135,13 @@ fn map_remote_application_handoff(row: sqlx::sqlite::SqliteRow) -> RemoteApplica
         canonical_cumulative_before: row.get("canonical_cumulative_before"),
         canonical_cumulative_after: row.get("canonical_cumulative_after"),
         canonical_remaining_after: row.get("canonical_remaining_after"),
+        application_direction: row.get::<i64, _>("application_direction") as i8,
         canonical_slice_hash: row.get("canonical_slice_hash"),
         envelope_uid: row.get("envelope_uid"),
         envelope_payload_hash: row.get("envelope_payload_hash"),
         origin_created_at: row.get("origin_created_at"),
         state: row.get("state"),
+        origin_state: row.get("origin_state"),
         local_application_uid: row.get("local_application_uid"),
     }
 }
@@ -2143,6 +2162,7 @@ pub struct NewRemoteApplicationHandoff<'a> {
     pub canonical_cumulative_before: f64,
     pub canonical_cumulative_after: f64,
     pub canonical_remaining_after: f64,
+    pub application_direction: i8,
     pub canonical_slice_hash: &'a str,
     pub envelope_uid: &'a str,
     pub envelope_payload_hash: &'a str,
@@ -2153,13 +2173,13 @@ pub async fn remote_application_handoff(
     pool: &SqlitePool,
     uid: &str,
 ) -> Result<Option<RemoteApplicationHandoffRow>, StoreError> {
-    Ok(sqlx::query(
-        "SELECT * FROM transfer_remote_application_handoff WHERE uid = ?",
+    Ok(
+        sqlx::query("SELECT * FROM transfer_remote_application_handoff WHERE uid = ?")
+            .bind(uid)
+            .fetch_optional(pool)
+            .await?
+            .map(map_remote_application_handoff),
     )
-    .bind(uid)
-    .fetch_optional(pool)
-    .await?
-    .map(map_remote_application_handoff))
 }
 
 /// Retain an origin-authenticated public proposal beside the isolated remote
@@ -2196,12 +2216,16 @@ pub async fn accept_remote_application_handoff(
         || input.canonical_cumulative_after <= input.canonical_cumulative_before
         || !input.canonical_remaining_after.is_finite()
         || input.canonical_remaining_after < 0.0
-        || (input.canonical_cumulative_after - input.canonical_cumulative_before
+        || !matches!(input.application_direction, -1 | 1)
+        || (input.canonical_cumulative_after
+            - input.canonical_cumulative_before
             - input.canonical_quantity)
             .abs()
             > 1e-9
     {
-        return Err(protocol("remote application handoff quantities are invalid"));
+        return Err(protocol(
+            "remote application handoff quantities are invalid",
+        ));
     }
     let reference = remote_reference_by_uid(pool, input.reference_uid)
         .await?
@@ -2233,6 +2257,7 @@ pub async fn accept_remote_application_handoff(
             && existing.canonical_cumulative_before == input.canonical_cumulative_before
             && existing.canonical_cumulative_after == input.canonical_cumulative_after
             && existing.canonical_remaining_after == input.canonical_remaining_after
+            && existing.application_direction == input.application_direction
             && existing.canonical_slice_hash == input.canonical_slice_hash
             && existing.envelope_uid == input.envelope_uid
             && existing.envelope_payload_hash == input.envelope_payload_hash
@@ -2251,9 +2276,9 @@ pub async fn accept_remote_application_handoff(
           participant_person_uid, transfer_uid, occurrence_uid, source_promise_uid,
           settlement_slice_uid, origin_revision, canonical_quantity,
           canonical_unit_uid, canonical_cumulative_before, canonical_cumulative_after,
-          canonical_remaining_after, canonical_slice_hash, envelope_uid,
+          canonical_remaining_after, application_direction, canonical_slice_hash, envelope_uid,
           envelope_payload_hash, origin_created_at, received_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind(input.uid)
     .bind(input.reference_uid)
@@ -2270,6 +2295,7 @@ pub async fn accept_remote_application_handoff(
     .bind(input.canonical_cumulative_before)
     .bind(input.canonical_cumulative_after)
     .bind(input.canonical_remaining_after)
+    .bind(input.application_direction as i64)
     .bind(input.canonical_slice_hash)
     .bind(input.envelope_uid)
     .bind(input.envelope_payload_hash)
@@ -2355,11 +2381,12 @@ where
     if !input.local_delta.is_finite()
         || !input.local_cumulative_before.is_finite()
         || !input.local_cumulative_after.is_finite()
-        || (input.local_cumulative_before + input.local_delta - input.local_cumulative_after)
-            .abs()
+        || (input.local_cumulative_before + input.local_delta - input.local_cumulative_after).abs()
             > 1e-9
     {
-        return Err(protocol("local Transfer application quantities are invalid"));
+        return Err(protocol(
+            "local Transfer application quantities are invalid",
+        ));
     }
     if let Some(row) = sqlx::query("SELECT * FROM transfer_local_application WHERE request_id = ?")
         .bind(&input.request_id)
@@ -2401,7 +2428,9 @@ where
     if handoff.get::<String, _>("state") != "pending"
         || handoff.get::<String, _>("participant_person_uid") != input.participant_person_uid
     {
-        return Err(protocol("remote Transfer application handoff is not pending for this Person"));
+        return Err(protocol(
+            "remote Transfer application handoff is not pending for this Person",
+        ));
     }
     let record = sqlx::query(
         "SELECT record.organ_uid, record.deleted_at, record.quantity, local_organ.uid AS local_organ_uid
@@ -2504,7 +2533,9 @@ where
     .execute(&mut *tx)
     .await?;
     if changed.rows_affected() != 1 {
-        return Err(protocol("remote Transfer application handoff state is stale"));
+        return Err(protocol(
+            "remote Transfer application handoff state is stale",
+        ));
     }
     tx.commit().await?;
     let application = sqlx::query("SELECT * FROM transfer_local_application WHERE uid = ?")
@@ -2517,4 +2548,206 @@ where
         fact,
         replayed: false,
     })
+}
+
+#[derive(Debug, Clone)]
+pub struct ApplicationHandoffDetailRow {
+    pub handoff_uid: String,
+    pub source_promise_uid: String,
+    pub canonical_quantity: f64,
+    pub canonical_unit_uid: Option<String>,
+    pub canonical_cumulative_before: f64,
+    pub canonical_cumulative_after: f64,
+    pub canonical_remaining_after: f64,
+    pub application_direction: i8,
+    pub origin_evidence_fact_uid: Option<String>,
+    pub origin_acceptance_fact_uid: Option<String>,
+    pub created_at: String,
+}
+
+fn map_handoff_detail(row: sqlx::sqlite::SqliteRow) -> ApplicationHandoffDetailRow {
+    ApplicationHandoffDetailRow {
+        handoff_uid: row.get("handoff_uid"),
+        source_promise_uid: row.get("source_promise_uid"),
+        canonical_quantity: row.get("canonical_quantity"),
+        canonical_unit_uid: row.get("canonical_unit_uid"),
+        canonical_cumulative_before: row.get("canonical_cumulative_before"),
+        canonical_cumulative_after: row.get("canonical_cumulative_after"),
+        canonical_remaining_after: row.get("canonical_remaining_after"),
+        application_direction: row.get::<i64, _>("application_direction") as i8,
+        origin_evidence_fact_uid: row.get("origin_evidence_fact_uid"),
+        origin_acceptance_fact_uid: row.get("origin_acceptance_fact_uid"),
+        created_at: row.get("created_at"),
+    }
+}
+
+pub async fn application_handoff_detail(
+    pool: &SqlitePool,
+    handoff_uid: &str,
+) -> Result<Option<ApplicationHandoffDetailRow>, StoreError> {
+    Ok(
+        sqlx::query("SELECT * FROM transfer_application_handoff_detail WHERE handoff_uid = ?")
+            .bind(handoff_uid)
+            .fetch_optional(pool)
+            .await?
+            .map(map_handoff_detail),
+    )
+}
+
+pub async fn store_application_handoff_detail(
+    pool: &SqlitePool,
+    handoff_uid: &str,
+    source_promise_uid: &str,
+    canonical_quantity: f64,
+    canonical_unit_uid: Option<&str>,
+    canonical_cumulative_before: f64,
+    canonical_cumulative_after: f64,
+    canonical_remaining_after: f64,
+    application_direction: i8,
+    origin_evidence_fact_uid: Option<&str>,
+    now: DateTime<Utc>,
+) -> Result<ApplicationHandoffDetailRow, StoreError> {
+    sqlx::query(
+        "INSERT INTO transfer_application_handoff_detail
+         (handoff_uid, source_promise_uid, canonical_quantity, canonical_unit_uid,
+          canonical_cumulative_before, canonical_cumulative_after,
+          canonical_remaining_after, application_direction,
+          origin_evidence_fact_uid, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(handoff_uid) DO NOTHING",
+    )
+    .bind(handoff_uid)
+    .bind(source_promise_uid)
+    .bind(canonical_quantity)
+    .bind(canonical_unit_uid)
+    .bind(canonical_cumulative_before)
+    .bind(canonical_cumulative_after)
+    .bind(canonical_remaining_after)
+    .bind(application_direction as i64)
+    .bind(origin_evidence_fact_uid)
+    .bind(now.to_rfc3339())
+    .execute(pool)
+    .await?;
+    application_handoff_detail(pool, handoff_uid)
+        .await?
+        .ok_or(sqlx::Error::RowNotFound)
+}
+
+#[derive(Debug, Clone)]
+pub struct AttestationOutboxRow {
+    pub attestation_uid: String,
+    pub handoff_uid: String,
+    pub reference_uid: String,
+    pub origin_organ_uid: String,
+    pub payload: String,
+}
+
+pub async fn enqueue_application_attestation(
+    pool: &SqlitePool,
+    handoff_uid: &str,
+    reference_uid: &str,
+    origin_organ_uid: &str,
+    attestation: &TransferApplicationAttestationV1,
+    now: DateTime<Utc>,
+) -> Result<String, StoreError> {
+    let payload =
+        serde_json::to_string(attestation).map_err(|error| protocol(error.to_string()))?;
+    sqlx::query(
+        "INSERT INTO transfer_application_attestation_outbox
+         (attestation_uid, handoff_uid, reference_uid, origin_organ_uid, payload,
+          next_attempt_at, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(attestation_uid) DO NOTHING",
+    )
+    .bind(&attestation.attestation_uid)
+    .bind(handoff_uid)
+    .bind(reference_uid)
+    .bind(origin_organ_uid)
+    .bind(payload)
+    .bind(now.to_rfc3339())
+    .bind(now.to_rfc3339())
+    .execute(pool)
+    .await?;
+    Ok(attestation.attestation_uid.clone())
+}
+
+pub async fn application_attestations_due(
+    pool: &SqlitePool,
+    now: DateTime<Utc>,
+    limit: u32,
+) -> Result<Vec<AttestationOutboxRow>, StoreError> {
+    Ok(sqlx::query(
+        "SELECT attestation_uid, handoff_uid, reference_uid, origin_organ_uid, payload
+         FROM transfer_application_attestation_outbox
+         WHERE status IN ('queued', 'failed') AND next_attempt_at <= ?
+         ORDER BY created_at, attestation_uid LIMIT ?",
+    )
+    .bind(now.to_rfc3339())
+    .bind(i64::from(limit.max(1)))
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .map(|row| AttestationOutboxRow {
+        attestation_uid: row.get("attestation_uid"),
+        handoff_uid: row.get("handoff_uid"),
+        reference_uid: row.get("reference_uid"),
+        origin_organ_uid: row.get("origin_organ_uid"),
+        payload: row.get("payload"),
+    })
+    .collect())
+}
+
+pub async fn application_attestation_mark_sent(
+    pool: &SqlitePool,
+    uid: &str,
+    now: DateTime<Utc>,
+) -> Result<(), StoreError> {
+    sqlx::query(
+        "UPDATE transfer_application_attestation_outbox
+         SET status = 'sent', attempts = attempts + 1, last_attempt_at = ?, sent_at = ?, last_error = NULL
+         WHERE attestation_uid = ? AND status IN ('queued', 'failed')",
+    )
+    .bind(now.to_rfc3339())
+    .bind(now.to_rfc3339())
+    .bind(uid)
+    .execute(pool)
+    .await?;
+    sqlx::query(
+        "UPDATE transfer_remote_application_handoff SET origin_state = 'accepted', updated_at = ?
+         WHERE uid = (SELECT handoff_uid FROM transfer_application_attestation_outbox
+                      WHERE attestation_uid = ?)",
+    )
+    .bind(now.to_rfc3339())
+    .bind(uid)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+pub async fn application_attestation_mark_failed(
+    pool: &SqlitePool,
+    uid: &str,
+    now: DateTime<Utc>,
+    error: &str,
+) -> Result<(), StoreError> {
+    let attempts: i64 = sqlx::query_scalar(
+        "SELECT attempts FROM transfer_application_attestation_outbox WHERE attestation_uid = ?",
+    )
+    .bind(uid)
+    .fetch_one(pool)
+    .await?;
+    let delay = 5_i64.saturating_mul(1_i64 << u32::try_from(attempts).unwrap_or(20).min(10));
+    sqlx::query(
+        "UPDATE transfer_application_attestation_outbox
+         SET status = 'failed', attempts = attempts + 1, last_attempt_at = ?,
+             next_attempt_at = ?, last_error = ?
+         WHERE attestation_uid = ? AND status IN ('queued', 'failed')",
+    )
+    .bind(now.to_rfc3339())
+    .bind((now + Duration::seconds(delay.min(3600))).to_rfc3339())
+    .bind(error)
+    .bind(uid)
+    .execute(pool)
+    .await?;
+    Ok(())
 }

@@ -34,7 +34,7 @@ freedoom, document viewer).
   every relevant commit; invalidation is coarse-by-source — render
   idempotently, a sand may get refreshes it doesn't strictly need.
 - [x] Action responses carry `created`, `facts` (what the Ledger committed,
-  including any Karma cascade), and `warnings` (non-fatal advisories) — show
+  including any Intelligence cascade), and `warnings` (non-fatal advisories) — show
   warnings, never treat them as errors.
 - [x] Ephemeral-lane and host-capability traffic (cursors, clicks, presence,
   PTY bytes) is never persisted; terminal PTYs are scoped to one connection
@@ -113,37 +113,352 @@ freedoom, document viewer).
   `reserve_default`, else `active`; `include: { availability: true }`
   returns `available` and `planned`.
 
-## [x] Karma — automation
+## [ ] Intelligence — Lince's autonomic nervous system
 
-- [x] A rule is a record (condition/gate/carry/debounce sidecar) plus
-  consequences, with full math conditions over live tokens: `@x`,
+Intelligence is the home of every continuing Lince behavior that a human or
+Fiote does not perform one step at a time: sensing, schedules, derived values,
+rules, workflows, recommendations, projections, attention, and bounded effects.
+It is not a third actor and it does not own hidden authority. A human or Fiote
+may create and manage its definitions, but the engine evaluates them under the
+same visibility, permission, agreement, budget, and Ledger rules as every other
+Action.
+H: It can be useful to think that a good Lince is one with intelligence, rules, automations, to minimize the management of Life, to not need an llm behind recommendations and actions (if the user set it that way), possibly using them, but possibly only having preset rules made by agents and humans, and statistics and machine learning so Lince systems can slowly adjust and learn patterns from personal habits to interactions with other people. Leaving humans and agents to be creative and find the optimizations. I like operations research and the idea that the actors of Lince will want to use it to min-max (from simplex algorithms to more advanced stuff) their days, jobs and other things. I want Lince to have built in ways for actors (humans and agents) to access those optimizations, analysis inside Lince.
+
+  1. Recurrence likelihood: Track how likely the local Person is to repeat an action,
+     independently from trust in another Person. It may consider locally visible concepts,
+     people, quantities, times, places, and preset context.
+  2. Growth and decay formula: Repetition increases likelihood with diminishing returns, while
+     time without repetition reduces it. Prior probability, growth, half-life, and thresholds
+     are typed database policies.
+  3. Trusted learning evidence: Learn only from actions authored by a Person or outcomes
+     mutually confirmed by the involved People. Recommendations and automatically created
+     drafts never train the model themselves.
+  4. Suggestions and automatic drafts: Crossing the lower threshold creates one deduplicated
+     recommendation with a visible explanation. Crossing a higher opt-in threshold may create a
+     local unsigned draft, never send or agree to it.
+  5. Karma-rule candidates: Repeated patterns may generate disabled automation candidates for
+     explicit review. Candidates cannot impersonate another Person or automatically agree,
+     confirm, or settle on their behalf.
+  6. Explicit Karma actions: User-authored rules may perform simple local Transfer actions
+     within approved recipients, visibility, budget, and evidence limits. Every execution
+     remains idempotent, attributable, and visible.
+  7. Persistent policy: Store thresholds, decay, scope, budgets, recipients, quiet times, and
+     disabled patterns in typed database configuration. None of these decisions live only in
+     frontend state.
+  8. Recommendation safety proof: Verify recurrence growth, diminishing returns, time decay,
+     deduplication, opt-out, privacy boundaries, and lack of self-training. Also prove that no
+     recommendation or automation creates an unauthorized social commitment.
+
+Legacy Karma is therefore not the whole feature. It is the deterministic
+guarded-rule runtime inside Intelligence. Senses recognizes situations;
+Imagination explores possible futures; recommendations propose; Attention
+decides when a human choice is irreducible; workflows coordinate durable steps;
+effects act. Together (maybe they need more features) they form one inspectable loop:
+
+`Signals/Facts → Context → Senses/Rules/Projection → Candidates → Policy →`
+`Decision or Effect → typed Action → Facts`
+
+### Retired Karma vocabulary mapping
+
+| Diary concept | Intelligence home | Refinement |
+| --- | --- | --- |
+| Karma | Program or deterministic rule node | The enabled behavior is a graph under policy, not a special table or opaque script. |
+| Condition | Protein context + computation nodes | Inputs are named, typed, reusable, visibility-scoped, and traceable. |
+| Operator | Gate | Boolean, comparison, threshold, and carry behavior are explicit instead of encoded by `=`/`=*`. |
+| Consequence | Candidate outcome → policy → effect | Evaluation never smuggles authority into execution. |
+| Delivery | Intelligence run and bounded agenda | Reactive evaluation, clock occurrences, cascades, and retries have identities and proofs. |
+| Frequency | Schedule trigger | Timezone, calendar alignment, and missed-occurrence behavior are deliberate policy. |
+| Command/query | Signal when reading; typed effect when acting | Inputs and side effects no longer hide inside arithmetic expressions. |
+| Karma category | Program tag, owner, and execution scope | Selection and bulk pause/run are ordinary graph metadata. |
+| Calendar/Graph/Karma Orchestra | Imagination + Orchestra | One model powers authoring, dependency views, run inspection, and branching futures. |
+| Ask/Agent/Tinkerer | `suggest → draft → ask → act-within-budget` | Autonomy is an engine-enforced per-program policy, not an AI personality mode. |
+
+### The Intelligence contract
+
+- [ ] Intelligence reads Cell state through the same record/Ledger semantics
+  that Protein exposes and changes state only through typed Actions. An
+  automatic path is never a privileged write path.
+- [x] Existing rules, signals, frequencies, match rules, and decisions are
+  records; quantity is their activation knob and their changes remain visible
+  in the Ledger.
+- [ ] Make an **Intelligence program** the ergonomic unit a person manages: a
+  named, versioned record whose linked graph declares triggers, Protein context,
+  computations, policy, and outcomes. Rules, senses, schedules, recommendations,
+  and workflows are program node kinds rather than separate automation silos.
+- [ ] Every program declares an owner, purpose, data scope, authority ceiling,
+  budgets, schedule/event triggers, failure policy, and enabled revision. No
+  defaults may silently widen visibility or authority.
+- [ ] Give each evaluation a durable `intelligence_run` identity with program
+  revision, triggering Fact/timer, input cursor, clock/seed, node trace,
+  candidates, policy decisions, Actions/effects, cost, and final status. “Why
+  did this happen?” and “what will retry?” must be ordinary reads, not logs an
+  operator has to find on disk.
+- [ ] Derive every effect idempotency key from the program revision, triggering
+  occurrence, and effect node. Retries may finish an intended action but never
+  repeat it; changed definitions produce a new revision and new proof boundary.
+- [ ] Separate evaluation from effects. A run first computes a stable proposal;
+  policy then permits, stages, asks, or rejects it; effect workers execute
+  durable intents with leases, retry/backoff, timeout, and dead-letter state.
+  Partial external failure never rolls back or hides committed Ledger Facts.
+- [ ] Define deterministic agenda semantics for simultaneous rules: dependency
+  order, explicit priority only where necessary, stable tie-breaking, atomic
+  Action boundaries, and a recorded explanation of conflicts. Programs may run
+  to a bounded fixpoint; they may not depend on thread timing.
+
+### Perception — signals, schedules, and context
+
+- [x] `create-signal` represents command/http/sensor/query sources on a
+  schedule. Samples land as Facts and cascade like any other change.
+- [x] `create-frequency` supports day-of-week and catch-up behavior. Frequencies
+  are reusable clocks, not record timestamp columns.
+- [ ] Make every capture and integration source visible as an off-switchable
+  signal record with freshness, last success/error, consent/visibility scope,
+  sampling cost, and retention. Phone, scale, camera, microphone, filesystem,
+  HTTP, query, model, and command inputs all obey this contract.
+- [ ] AI enters only through a visible model Signal or through Fiote, never as
+  a hidden reader or privileged writer.
+- [ ] Replace ambiguous frequency catch-up with an explicit missed-occurrence
+  policy: `skip`, `coalesce` (one run carrying the missed count), or bounded
+  `replay`; expose start/end, timezone, weekdays, calendar interval, jitter, and
+  whether calendar alignment happens before or after interval addition.
+- [ ] Context is always a saved or inline Protein plus named derived values, not
+  an ambient database capability. The run records the exact visible input set
+  and freshness used, so a recommendation can explain missing or stale data.
+- [ ] A **Sense** is a pure, named recognizer over current Facts, Signals,
+  discovery data, and projected crossings. It emits evidence-backed candidates;
+  it cannot write state or contact another Cell by itself.
+
+### Deliberation — rules, derived values, and workflows
+
+- [x] A deterministic rule (the subsystem historically called Karma) is a
+  record with condition/gate/carry/debounce sidecar and consequences.
+  Conditions support full math over live tokens: `@x`,
   `quantity()`, `sum[_pos/_neg](x, window)`, `freq()`, `signal()`, `value()`,
   `promise_state()`, `confidence()`, `projected()`, `hours_since_fact()`,
-  `distance()`, `demand()` (`route_eta` parses and errors cleanly pending
+  `distance()`, and `demand()` (`route_eta` parses and errors cleanly pending
   OSM data).
-- [x] Consequences: `set_quantity`, `add_quantity`, `emit_promise`,
+- [x] Delivery is reactive: only rules reading changed records re-evaluate;
+  cascades stop at 256 evaluations so a runaway loop survives for inspection.
+  `debounce` temporarily holds a fired rule (currently in memory and reset on
+  reload). A rule without consequences is a named derived value read through
+  `value(@rules.x)`.
+- [x] `create-rule`/`update-rule` reload the registry and return Proof-loop
+  warnings in `outcome.warnings`; saving succeeds and the interface must show
+  the warning.
+- [ ] Persist debounce/cooldown and last-consumed occurrence so restarts cannot
+  double-fire or accidentally re-arm one-shot behavior.
+- [ ] Make conditions and derived values reusable graph nodes. Composition uses
+  typed references and explicit Boolean/math gates, allowing arbitrary chains
+  without returning to opaque `rq1`/`kd2` token strings.
+- [ ] Add durable workflow nodes for multi-step orchestration: state machine,
+  sequence/parallel, wait-until, branch, approval, retry, compensation, and
+  child-program invocation. Workflows coordinate typed Actions; they do not
+  create a second implementation of domain behavior.
+- [ ] Give a workflow an explicit concurrency policy (`queue`, `drop`,
+  `coalesce`, or bounded parallel), correlation key, timeout, and cancellation
+  semantics. Long-running work resumes from its durable node state after boot.
+- [ ] Add Proof analysis for dependency cycles, contradictory writers,
+  unreachable nodes, unsafe external effects, authority escalation, dead ends,
+  non-convergence, and likely divergence. The runtime cascade cap remains the
+  final guard, not the design tool.
+
+### Recommendations and learning
+
+- [x] A match rule is a record (`create-match-rule { watch_concept,
+  max_proximity, min_confidence, auto }`) and activates/deactivates like any
+  rule. `max_proximity` is a hard ceiling; matching never auto-expands.
+- [x] Each heartbeat, `senses_pass` joins local OPEN promises with the discovery
+  cache using sign-opposite deltas, Lingua-aligned concepts, overlapping windows,
+  and a confidence floor, then places ranked drafts in the Decision Queue.
+- [x] Deterministic `confidence(@p)` is the counterparty's Laplace-smoothed
+  kept-promise ratio; `demand(@concept)` is the current hour's share of trailing
+  30-day activity for that concept. Neither is a global reputation score.
+- [ ] Refine counterparty confidence with window tightness and dispute evidence
+  while keeping the raw, explainable ingredients visible.
+- [ ] Define local `recurrence_likelihood` separately from counterparty
+  confidence, keyed only by locally visible action/preset, concepts, people,
+  quantity/time/place, and deliberately selected context.
+- [ ] Use deterministic diminishing-return evidence with configurable prior,
+  growth, time-decay/half-life, suggestion threshold, and a higher,
+  disabled-by-default auto-draft threshold.
+- [ ] Learn only from human-authored or mutually confirmed outcome Facts.
+  Recommendations, dismissed candidates, generated drafts, Fiote output, and
+  automated Actions never become positive training evidence merely because the
+  system produced them.
+- [ ] Emit one deduplicated recommendation with evidence, confidence, expected
+  benefit/cost, uncertainty, alternatives, authority required, and a preview of
+  affected records. The person can accept once, edit, snooze, mute the pattern,
+  or turn it into a disabled program candidate.
+- [ ] Recommendation policies support balancing activities across a week,
+  detecting useful habits/purchases, matching Needs and Contributions, and
+  proposing workflow simplifications without inventing a universal objective
+  for “optimization.” The objective and protected constraints belong to the
+  person.
+- [ ] A model or Fiote may author the same inert candidate format, but cannot
+  bypass evidence display, visibility, review, budgets, or the program's
+  authority ceiling. “Suggested by a model” is provenance, not permission.
+- [ ] Prove recurrence saturation/decay, deduplication, negative feedback,
+  opt-out, no self-training, no private leak, and no automatic social
+  commitment.
+
+### Attention and whispers — the interruption contract
+
+- [x] `source: decision, live: true` is the Decision Queue and `decide` is the
+  answer. Deterministic feeders cover broken promises (`expiry`), rule `ask`
+  consequences (`ask`), Senses matches (`draft`), and projected crossings
+  (`crossing`, a one-week horizon, deduped per record).
+- [x] `decide { decision, answer }` closes a decision through the Ledger. When
+  the chosen option carries an Action, deciding executes it for one-tap flows
+  such as “yes → set quantity.”
+- [x] Decisions with `expires_at` auto-close as `expired`; each sweep deduplicates
+  by `(subject, kind)`, so one unresolved situation asks once.
+- [x] The daily notification budget (`configuration.attention_budget_per_day`,
+  default 12) is hard. Excess notification effects finish as `parked:digest`;
+  they are deferred, not lost.
+- [ ] A **decision** is durable work requiring a choice; a **whisper** is its
+  calm, context-aware delivery. Whispers never become a second queue and never
+  execute Actions: they link to a decision, recommendation, run, or changed
+  fact and disappear without losing the underlying item.
+- [ ] Rank attention by explicit user priority, urgency/window, confidence,
+  reversibility, cost of delay, and interruption cost. Low-value items collect
+  into summaries; urgency does not manufacture authority.
+- [ ] Route through device records to inbox, digest, desktop toast, mobile push,
+  sound, or text; support per-program/per-source channel controls, quiet hours,
+  location/context eligibility, accessible presentation, and “show why now.”
+- [ ] Feedback is a first-class result (`accepted`, `edited`, `dismissed`,
+  `snoozed`, `muted`, `wrong-context`) used to tune local delivery and pattern
+  policy without rewriting historical evidence.
+
+### Effects, authority, and social safety
+
+- [x] Rule consequences include `set_quantity`, `add_quantity`, `emit_promise`,
   `run_command`, `run_query`, `run_action`, `set_visibility`,
-  `activate`/`deactivate` (works on rules too — quiet hours is just a rule
-  turning another rule off), `ask`, `notify` (budgeted). The legacy
-  `advance_transfer` consequence is recognized but cannot activate promises
-  until Phase 4 provides occurrence-aware activation.
-- [x] `create-rule`/`update-rule` reload the registry and return Proof
-  warnings in `outcome.warnings` when a save closes a loop — save still
-  succeeds, show the warning.
-- [x] `create-signal` (command/http/sensor/query source on a schedule,
-  samples land as facts and cascade like any change), `create-frequency`
-  (day-of-week and catch-up supported).
-- [x] Delivery is reactive (only rules reading a changed record
-  re-evaluate; cascades cap at 256 per delivery, a runaway loop survives);
-  `debounce` holds a rule for a period after it fires (in-memory, resets on
-  reload); a rule with zero consequences is a named derived value, read via
-  `value(@rules.x)`; effects run outside evaluation from a durable queue and
-  log a zero-delta provenance fact.
-- [ ] Karma divergence heuristic — a static Proof-loop refinement; the
-  256-per-delivery cascade cap is today's runtime guard.
-- Learned recurrence and Transfer-aware automation are centralized in Transfer
-  Phase T5: manual Transfer semantics ship first, then Karma reuses their typed
-  Actions without bypassing social authority.
+  `activate`/`deactivate` (including another rule), `ask`, and budgeted `notify`.
+  Effects run outside evaluation from a durable queue and append zero-delta
+  provenance Facts.
+- [x] Transfer automation fails closed against the old activation path; current
+  manual revision, agreement, occurrence, confirmation, and settlement gates
+  remain authoritative.
+- [ ] Classify every outcome before it can run: pure derivation, reversible
+  local Action, external effect, social draft, or social commitment. Policy may
+  grant lower classes independently; crossing a class always requires explicit
+  authority.
+- [ ] Simple Transfer Actions may be automated only inside approved visibility,
+  recipient, value, rate, idempotency, agreement, occurrence, and evidence
+  gates. No program, recommender, model, or Fiote may agree, confirm, claim,
+  settle, publish to a new audience, or speak as another Person.
+- [ ] UI/device effects use durable typed action intents with target, nonce,
+  claim lease, and completed/failed evidence. A rule can request that a bound
+  call controller open or close a room; it cannot send a vague command or drive
+  an arbitrary sand directly.
+- [ ] Commands and HTTP effects declare executable/host, arguments/schema,
+  secrets, working scope, timeout, network/filesystem capability, and output
+  capture. Interfaces expose live execution and failure like a workflow run;
+  simulation never performs the real external effect.
+- [ ] Persist scopes, budgets, recipients, quiet time, thresholds, decay,
+  forbidden Action kinds, and pattern overrides as typed policy. Enforcement is
+  in the engine, never only in Orchestra or an agent prompt.
+
+### Imagination, simulation, and proof before action
+
+- [x] `Engine::project(now, until)` folds promises and rules on a virtual clock
+  with Signals frozen. `Engine::snapshot(now)` creates mutable input for
+  toggle/clear/re-fold/diff, so branching futures already exist as an internal
+  engine call.
+- [ ] Expose project/snapshot through a typed transport verb so a sand can scrub
+  and branch a future: change starting quantities, toggle a program, clear a
+  promise, alter time, re-fold, and compare timelines without touching the real
+  Ledger.
+- [ ] Simulation operates on an isolated snapshot with a virtual clock and
+  mocked signals/effects. Its seed, inputs, event script, stopping/bookmark
+  conditions, and engine version make every run replayable; “apply” means
+  separately reviewing ordinary typed Actions, never committing a simulated
+  state wholesale.
+- [ ] Let people define invariants and questions: can this state be reached,
+  do these programs conflict, will a quantity cross a boundary, does the graph
+  settle, can an effect repeat, and what changes if this promise disappears?
+  Proof results link to the exact program revisions and counterexample trace.
+- [ ] Add deterministic generated scenarios and fault injection for time jumps,
+  restart, delayed/failed effects, duplicate Facts, reordered sync, and missing
+  Signals. This is both product Imagination and a test architecture for the
+  autonomous runtime.
+- [ ] Build calendar/time-budget and graph/state-space projections from the same
+  simulator: time on one axis, quantities/ranges on another, rule-active regions,
+  consequence arrows, dependency/supply-chain paths, uncertainty bands, and
+  real-vs-projected values.
+
+### Orchestra — one control room, not a programming language exam
+
+- [ ] Build Intelligence Orchestra on the shared canvas: overview all programs,
+  filter/group by type, owner, scope, state, or tag, and zoom from the whole
+  dependency graph into one node's configuration and run history.
+- [ ] The primary authoring path is names, concepts, selectors, typed ports,
+  forms, and connections. Raw condition syntax remains an inspectable expert
+  escape hatch, never required for ordinary habits, schedules, recommendations,
+  or workflows.
+- [ ] Render conditions/senses as inputs inside a program boundary and outcomes
+  outside it, with directional connections, freely rearrangeable circle/line/
+  graph layouts, reusable subgraphs, and supply-chain links across permitted
+  Organs. Preserve licenses/notices for any vendored graph/physics library.
+- [ ] Dry-run one node or whole program against current or simulated input,
+  animate the evaluated path, show each substituted value/gate/carry, preview
+  writes and external effects, and allow breakpoints before an effect.
+- [ ] Surface loop/conflict/authority Proof on edit and save; compare revisions,
+  publish/rollback by selecting the active revision, pause immediately, inspect
+  queued/running/dead effects, retry safely, and compensate reversible Actions.
+- [ ] Provide installable templates as ordinary disabled program graphs: habit,
+  recurring task, inventory threshold, birthday reminder, recurring Transfer
+  draft, call intent, monthly recap, and command flow. Installation grants no
+  data scope or authority until the person reviews them.
+
+
+### Intelligence acceptance workflows
+
+- [ ] Todo/knowledge base: a habit re-arms daily and completing it posts a
+  causal Fact.
+- [ ] Recurring tasks: a monthly schedule fires exactly once under normal time
+  and obeys its chosen catch-up policy after downtime.
+- [ ] n8n-style command flow: a signal → rule/workflow → leased effect graph is
+  built visually, dry-run, executed, inspected, and safely retried.
+- [ ] CRM/people: a birthday whisper arrives at the chosen moment and an
+  interaction report is one aggregate Protein.
+- [ ] Personal finance: “rent leaves you short on the 5th unless X settles” is
+  explained from the projection and opens the relevant evidence.
+- [ ] Calendar/time budgeting: the projected week renders and moving a promise
+  recomputes it without storing a duplicate calendar truth.
+- [ ] Health/IoT: a scale posts weight Facts, a streak program reacts, and the
+  source off-switch stops new sampling and effects.
+- [ ] Transfer recurrence: repeated, confirmed behavior produces one explained
+  recommendation, then an editable disabled rule or local draft—never an
+  agreement or settlement.
+- [ ] Neighborhood matching: a scoped match rule and visibility grant produce a
+  draft in Attention after polling, without widening proximity.
+- [ ] Chat/calls: “when Transfer Y reaches agreed, ask controller X to open the
+  room” uses a typed, single-claim action intent.
+- [ ] Games/THE Game: records provide state and an Intelligence program provides
+  the inspectable rulebook without a special game automation core.
+- [ ] Garden/farm and inventory/production: watering and threshold programs
+  derive work/Needs, projections distinguish actual/available/planned, and
+  settlement remains the only quantity truth.
+- [ ] Monthly recap: a program selects the month's Facts, drafts the recap, and
+  links its evidence without training on its own output.
+
+### Fiote manages Intelligence; it does not become the engine
+For now dont plan anything around Fiote, we don't know how its going to exactly access what features and how, pretend it doesnt exist.
+
+- [ ] Fiote follows the shared autonomy ladder
+  `observe → suggest → draft → ask → act-within-budget`. It reads only
+  Protein-visible data granted to `@fiote`,
+  writes only typed Actions, and receives no ambient database, command, secret,
+  or network access.
+- [ ] Fiote may explain runs, diagnose a failed workflow, construct or edit an
+  inactive program, simulate it, and present the diff. Activation and authority
+  escalation remain explicit human decisions unless an existing policy already
+  grants that exact bounded change.
+- [ ] Fiote Actions carry `cause=fiote`, the user's signature plus a visible
+  delegation marker, program/conversation provenance, and engine-enforced daily,
+  value, recipient, and Action-kind budgets. Compensation remains available for
+  reversible changes.
 
 ## [x] Protein — the read contract
 
@@ -177,975 +492,6 @@ freedoom, document viewer).
   counterparty without either side trusting the computing Cell (leans on
   Trust below). Opt-in only, between mutually-confiding organs — never a
   global or public score.
-
-## [ ] Transfers — manual-first product, then Karma + recommendations
-
-**Scope and architecture:** this is the one tracker for Transfer engine gaps,
-network delivery, the Transfer sand, integrations, and acceptance. A Transfer
-is a bundle of promises whose status is derived; the sand does not maintain a
-second transfer model. It reads `source: "transfer"` plus narrowly scoped
-record/promise/fact/thread Proteins and writes typed Actions over the shared
-WebSocket. Board layout, selected transfer, filters, and panel state are host
-state. Durable title, parties, promises, agreement, visibility, confirmations,
-messages, settlement evidence, and behavior policies are Cell data. Cell-wide
-defaults use the typed singleton `configuration` row; a transfer/tree override
-uses typed transfer sidecar state, with precedence `transfer > Cell default >
-code default`. Policies are read/written through Protein/Actions and never live
-only in JavaScript or board state. The old Transfer sand is only a behavior
-inventory: none of its HTTP endpoints, private DTOs, duplicated messages, event
-log, visibility engine, or client-side projections return.
-
-Phases 0-9 deliberately ship the complete human-driven workflow first.
-Transfer-aware Karma and learned recommendations are not removed: they are the
-Phase 10 integration after the manual semantics and evidence are trustworthy.
-An explicit user-authored rule may eventually automate permitted local Actions,
-but no rule or recommendation can forge another person's agreement or claim
-that a real-world event happened. External payment execution, carrier APIs,
-legal-contract machinery, and Fiote are out; payment/contracts may travel as
-links or messages. Promise time windows and calendar constraints are core even
-though external calendar-provider integration is not.
-
-### Authoritative implementation sequence
-
-This sequence replaces the earlier T0-T5 grouping. Phases are dependency gates,
-not parallel workstreams: do not expose a control from a later phase merely
-because an older Action happens to exist. Each phase updates Action, storage,
-Protein, live invalidation, sand behavior, and focused proof together. The next
-phase starts only after the prior exit gate is true.
-
-The existing implementation is useful groundwork, not proof that later
-semantics are complete. In particular, the legacy aggregate confirmation and
-settlement behavior must not be treated as the final occurrence model.
-
-#### Phase 0 — semantic and authority foundation (complete)
-
-**Prerequisite:** the Standing Transfer decisions below are frozen.
-
-Implement this phase in the order shown: identity and authority, revision and
-replay kernel, truthful participant/invitation storage, then boundary lockdown
-and projection. A checked later item does not waive an unchecked earlier item.
-
-- [x] Represent social actors as Person records and bind authenticated
-  `app_user` identities to Persons explicitly. Never infer the binding from
-  usernames, names, or slugs.
-- [x] Require `transfer:create`/`transfer:update` plus creator/participant
-  relationship, derive the viewer from the WebSocket subject, and preserve
-  trusted local no-auth mode explicitly.
-- [x] Provide typed, validated, atomic whole-draft creation with one signed Fact
-  and no partial party/promise rows.
-- [x] Add a persistent monotonically increasing Transfer revision. Every
-  public-result mutation carries `expected_revision`; stale writes fail with
-  the current revision before changing any row.
-- [x] Add an idempotency key to every enabled multi-row Transfer mutation so
-  retrying a committed request returns the original result without another
-  revision or Fact.
-- [x] Commit promise term mutation, revision increment, agreement invalidation,
-  immutable revision snapshot, signed annotation Fact, and live
-  invalidation in one transaction.
-- [x] Model addressed people separately as invitations with
-  `pending|accepted|rejected|withdrawn|expired`. Only the creator and accepted
-  invitees are `transfer_party` participants; selecting a Person during
-  creation must not bind them.
-- [x] Keep invitation response mutations closed until the authenticated Actions
-  in Phase 2 exist. The persistence API never accepts an acting identity; that
-  authority must be derived by the engine, and creation can only address a
-  pending invitation.
-- [x] Bind agreement rows and promise term rows to the revision they authorize.
-  A later revision cannot inherit an earlier signature accidentally.
-- [x] Type every currently enabled Transfer value at the Action boundary:
-  agreement/percentage, visibility/proximity, satiation, reservation point,
-  finite non-zero delta, future window, parsed condition, and hierarchy
-  references. Unavailable invitation/agreement/execution mutations fail with a
-  stable phase code instead of reaching legacy stringly persistence.
-- [x] Gate Protein capabilities conservatively: creation may be enabled now;
-  edit/invite/review/commit/activate/confirm/settle remain false until their
-  phase exit gate is satisfied.
-
-**Exit gate:** an authenticated client cannot name another acting Person
-(trusted local no-auth mode explicitly selects its Person); addressed people
-are not participants before acceptance; stale/replayed/invalid mutations land
-no partial rows; Protein exposes revision, viewer identity, capability, and
-stable blocking reasons.
-
-#### Phase 1 — truthful draft round-trip (complete)
-
-**Prerequisite:** Phase 0 exit gate.
-
-- [x] Use one revision-safe `revise-transfer-draft` Action, not independent
-  field Actions, to edit title/slug, agreement settings,
-  reservation/confirmation policy, visibility/proximity, parent/source, and the
-  complete promise surface: Record, Person/OPEN slot, canonical delta/unit,
-  window, condition, reservation point, location, and OPEN reuse policy. It
-  carries the complete reviewed draft, `expected_revision`, and `request_id`.
-- [x] Treat initial creation as immediate addressing: revision 1 creates pending
-  invitations and makes the addressed proposal visible. There is no separate
-  unsent frontend-only social draft.
-- [x] Add revision-safe remove/withdraw operations for invitations and
-  uncommitted promises. Preserve revision history and Facts; do not hard-delete
-  evidence.
-- [x] Make every time/window change invalidate revision-bound agreement levels.
-  Invitation withdrawal also advances revision. Phase 2 acceptance must do the
-  same; rejection and expiry remain signed lifecycle evidence without changing
-  terms revision.
-- [x] Require explicit review-and-adopt to turn a legacy revision-0 Transfer
-  into revision 1. Never silently seal old partial terms on first edit.
-- [x] Complete Transfer Protein predicates for revision, status, viewer role,
-  invitation state, Person, Record/concept/unit, and window. Unsupported
-  predicates return a typed error instead of matching everything.
-- [x] Add deterministic server ordering for inbox/list queries and make every
-  draft-side mutation publish live invalidation.
-- [x] Project current terms, prior revision summary, signed change Fact,
-  capabilities, blockers, hierarchy labels, and source Record labels.
-- [x] Update the creation/edit sand to round-trip the server model without
-  storing durable terms or arithmetic in browser/board state.
-- [x] Add blank, Record-prefilled, multi-Record, and OPEN-promise draft entry
-  points using the same Action contract.
-- [x] Snapshot an explicit canonical unit on every promise instead of deriving
-  signed meaning from the Record's mutable current unit.
-- [x] Add an optional Transfer default location plus per-promise overrides;
-  time windows and locations remain core and do not wait for providers.
-- [x] Model an OPEN promise as a signed reusable template owned by its proposer
-  with an unfilled counterparty, Record,
-  delta/direction, unit, window, location, and `duplicate|consume` policy
-  (`duplicate` default). Phase 2 claiming may copy or consume it and the other
-  Person may change any copied term, but that refinement is a newly signed
-  counteroffer linked to the source template.
-
-Phase 1 implementation boundaries:
-
-- `create-transfer-draft`, `revise-transfer-draft`, and
-  `adopt-transfer-draft` share the same complete draft terms. Revision and
-  adoption carry `expected_revision`/`request_id` as appropriate; omission of
-  pending invitations or editable promises signs withdrawal rather than
-  deleting rows. An empty reviewed promise set is the complete-draft withdraw
-  operation and is never accepted for initial creation.
-- The creator is an immutable Person marked as `kind=creator` in the signed
-  party snapshot. Legacy adoption explicitly chooses and seals that marker;
-  authenticated sessions must match their server-derived Person.
-- The sand accepts `transferCreate` with `record` or `records` and optional
-  `open=true`; blank, one-Record, multi-Record, and OPEN-prefilled paths all
-  end in the same draft Action. Units come from the Concept Protein and the
-  selected concept UID is copied into the signed promise snapshot.
-- A stale editor may load the newer signed revision or explicitly replace its
-  editable public terms. The UI never calls a complete-snapshot replacement a
-  merge, and blocks replacement when a retained local promise is no longer
-  draft-editable. Unchanged expired deadlines may round-trip; a changed or new
-  deadline must be in the future.
-- Transfer creation/revision Facts invalidate Protein subscriptions directly
-  but deliberately do not enter the generic Karma cascade. Transfer-aware
-  recurrence, recommendations, and automation remain Phase 10 work.
-- Phase 1 edit/adopt capability is false once any promise has left the
-  OPEN/proposed/agreed/withdrawn draft surface. Unsupported Transfer Protein
-  predicates and ordering return stable `protein_*` wire error codes.
-
-**Exit gate:** a creator can create, reload, edit, and withdraw a complete draft
-through Actions/Protein; a second open sand converges; stale and replayed writes
-behave deterministically.
-
-#### Phase 2 — invitation and counteroffer (implemented; verification pending)
-
-**Prerequisite:** Phase 1 exit gate.
-
-Implementation order and contracts:
-
-1. **Invitation lifecycle.** Add revision-safe address, accept, creator-withdraw,
-   and reopen Actions. Reopen preserves the invitation UID, increments an
-   attempt number, and appends a signed lifecycle event. Acceptance creates the
-   addressed Person's level-0 participant row in the same transaction and
-   advances the canonical terms revision. Rejection and automatic expiry append
-   signed lifecycle events but do not change the terms revision or create a
-   party. Every mutation is request-idempotent and actor-authorized.
-2. **Canonical counteroffers.** An accepted participant may submit the same
-   complete draft contract as the creator. The signed counteroffer immediately
-   becomes the one current proposed revision; there are no branches. It carries
-   `expected_revision`, exposes the signed changed-field diff, retains the
-   immutable creator, cannot alter invitation lifecycle, and resets all
-   revision-bound agreement levels.
-3. **OPEN claim.** An OPEN template always names its proposer; only its
-   counterparty is unfilled. Claiming it atomically creates the claimant's
-   level-0 participant row and a concrete two-Person counteroffer with one
-   promise per Person. A `duplicate` claim keeps the signed source template and
-   creates a linked concrete pair; a `consume` claim closes the template and
-   materializes the pair. The claimant may refine the copied public terms, but
-   cannot silently reverse who proposed to give/receive: the two resulting
-   deltas remain opposite and both People must sign the new agreement levels.
-   Unknown non-contact People may enter only through a directly addressed
-   invitation or a public OPEN promise.
-4. **Negotiation surface.** Project invitation attempts/events, counteroffer
-   evidence, OPEN-claim capability, and generic threads attached to the
-   Transfer Record. The Transfer sand exposes inbox decisions, counteroffer
-   editing, OPEN claim/refinement, and generic thread/message Actions; it does
-   not introduce Transfer-private chat storage. Dirty local edits remain local
-   when a live revision arrives until the Person explicitly reviews or replaces
-   the newer complete revision.
-
-- [x] Address Person invitations with expiry and explicit visibility; accept
-  first, reject, withdraw, or reopen them.
-- [x] Claim a proposer-owned OPEN slot into a concrete opposite-promise pair.
-- [x] On acceptance, create the participant row and revision-bound party
-  evidence atomically. Rejection/expiry never binds the Person.
-- [x] Add full counteroffers with `expected_revision`, signed changed-term
-  diff, deterministic agreement invalidation, and visible stale-write recovery.
-- [x] Preserve OPEN proposer direction and materialize both proposer and
-  claimant promises when the claimant signs refined terms.
-- [x] Preserve dirty local edits when a live revision arrives; show the
-  intervening signed diff and require explicit reapply/edit.
-- [x] Support unknown non-contact identities only when directly addressed or
-  through a public OPEN proposal; they gain no ambient sync or contact entry.
-- [x] Add generic negotiation threads/messages without a Transfer-private chat
-  model.
-
-Implemented architecture:
-
-- Migration `0015_transfer_negotiation.sql` keeps one invitation UID across
-  numbered attempts, stores append-only signed lifecycle-event references, and
-  links duplicated promises to their OPEN source. Automatic expiry has no
-  fabricated Person actor.
-- Migration `0021_open_proposal_ownership.sql` makes OPEN ownership explicit:
-  the signer is the proposer and only the counterparty is unfilled. Legacy
-  ownerless OPEN rows are backfilled only when one creator is unambiguous;
-  otherwise migration aborts instead of guessing an identity. Immutable claim
-  pairs retain source, proposer, claimant, concrete promises, reuse policy,
-  signed revision, request id, and time.
-- Typed Actions enforce creator/addressee/participant authority, request replay
-  before mutable-state validation, revision compare-and-swap, accept-first for
-  addressed claimants, and public visibility for unknown OPEN claimants.
-  Revision and lifecycle Facts are published without Karma; heartbeat closes
-  due invitations.
-- Protein projects current lifecycle state separately from historical signed
-  revision terms, groups events by attempt, exposes source provenance and
-  negotiation threads, and supplies authority-aware capabilities and blockers.
-- The Transfer sand keeps the list as the big-picture surface and the selected
-  Transfer as the high-control surface. It provides lifecycle decisions,
-  complete canonical counteroffers, refine-and-sign OPEN claims, and generic
-  thread/message controls. Dirty edits survive live updates until explicit
-  review or replacement.
-
-**Exit gate:** two identities can invite, accept, reject, counteroffer, hit a
-stale precondition, recover, and converge on one visible revision.
-
-#### Phase 3 — signed agreement and commitment (implemented; verification pending)
-
-**Prerequisite:** Phase 2 exit gate.
-
-Implementation order and contracts:
-
-1. **Signed level transitions.** Replace the locked legacy mutation with a
-   request-idempotent, revision-CAS Action authored by exactly one participant
-   Person. Level `0` is no agreement, level `1` is **Checked · ready to
-   agree**, and level `2` is **Agreed**. Ascending and descending transitions
-   append immutable Facts; the mutable agreement row is only the current cache.
-   A Person may move only their own level, one adjacent milestone at a time.
-2. **Revision and promise sensitivity.** Every transition names the exact
-   signed terms revision. Public-result revision changes reset the current
-   cache to level 0 while prior evidence remains auditable. Reaching level 2
-   advances only that Person's proposed promises; moving backward returns only
-   that Person's still-unactivated agreed promises to proposed.
-3. **Policy readiness.** Derive blockers and later-stage readiness per promise,
-   Person, and Transfer. `individual` matches the relevant give/receive path;
-   `full` requires every signed party; `percentage` atomically freezes the
-   first committed quorum coalition for that revision; excluded parties cannot
-   activate or settle. No signature counts for another Person.
-4. **Structured dependencies.** Store dependency terms in the signed Transfer
-   revision rather than frontend state. A promise-scoped dependency blocks only
-   that promise; a Transfer-scoped dependency blocks every promise in the
-   Transfer. Each explicitly names an upstream promise or Transfer and required
-   state, defaulting to `kept`.
-5. **Surfaces and negotiation authority.** Protein projects signed level
-   history, frozen coalition, readiness, and exact blockers. The sand offers
-   only server-authorized forward/back controls and waits for live projection.
-   Generic negotiation threads remain readable under Transfer visibility, but
-   writing is restricted to creator, accepted parties, and pending addressees.
-
-- [ ] Verify level 1 review and level 2 commitment signatures for one Person and
-  one exact revision; sidecar state is a cache of immutable evidence.
-- [ ] Verify matched relevant levels are required before later stages unlock.
-- [ ] Verify `individual`, `full`, frozen `percentage` coalition, and
-  named `dependency` gates without one Person's signature standing for
-  another.
-- [ ] Verify only the agreeing Person's promises advance and expose who blocks each
-  agreement path.
-- [ ] Verify affected agreements invalidate atomically for every public-result edit;
-  private formula/notes/display changes do not invalidate public agreement.
-- [ ] Verify review/commit controls come only from server capabilities and wait for live
-  Protein before showing success.
-
-Implemented architecture:
-
-- Migration `0016_transfer_agreement.sql` adds append-only agreement events,
-  revision-frozen percentage coalitions, shared Transfer request-id collision
-  guards, and structured revision-owned dependencies. Pre-Phase-3 unsigned
-  agreement caches are reset instead of being treated as evidence.
-- `set-transfer-agreement-level` derives the acting Person, accepts only
-  adjacent transitions, verifies the exact revision Fact, requires that
-  Person's installed signer, and commits the Fact, event, cache, owned promise
-  state, and first percentage quorum atomically. Backward transitions retain
-  history and revert only unactivated `agreed` promises.
-- Agreement readiness is server-derived for each promise, Person, and Transfer.
-  OPEN reusable templates are not executable commitment paths; claimed copies
-  are. Transfer dependencies apply to all executable promises, while
-  promise-scoped dependencies apply only to their named promise.
-- Protein exposes immutable transition history, coalition membership,
-  dependency state, exact blockers, and capability-gated forward/backward
-  controls. Negotiation writes are limited to the creator, accepted parties,
-  and non-expired pending addressees.
-
-**Exit gate:** every agreement-policy matrix derives readiness from signed
-revision-bound evidence, and no signature authorizes another Person or revision.
-
-#### Phase 4 — availability, activation, and occurrence evidence (implemented; verification pending)
-
-**Prerequisite:** Phase 3 exit gate.
-
-Implementation order and contracts:
-
-1. **Non-forgeable Person authorship.** Bind the active signing identity to the
-   authenticated session and its mapped Person. Trusted local mode must
-   explicitly select an available unlocked Person identity. A Cell/Organ key,
-   app-user identifier, owner role, bulk command, or frontend-supplied Person
-   UID cannot sign for that Person. Signer availability is explicit and
-   fail-closed: Lince does not silently create a custodial Person key. Before
-   settlement, authenticated WebSocket sessions use a server challenge and a
-   client/OS-keystore-held Person key to sign the canonical Action intent,
-   message/request id, and connection nonce. The server verifies the exact
-   authenticated Person/key and rejects cross-session replay before executing
-   the Action. Trusted local mode retains its explicit unlocked process signer.
-2. **Directed occurrences and exchange paths.** Activating one executable
-   promise creates one immutable directed occurrence with canonical subject,
-   unit, quantity, giver, receiver, revision, window, and location. Exact
-   opposite give/receive promises share an exchange-path UID; donations and
-   unbalanced promises remain valid one-sided paths.
-3. **Availability and private application policy.** Derive `actual`,
-   `available`, `reserved`, `planned`, and `surplus` in the engine using
-   compatible-unit conversion only. Persist reservation precedence and the
-   receiving Person's private `application_formula` in Cell data; neither is
-   frontend state and neither changes the signed public occurrence. The shared
-   expression grammar exposes canonical incoming quantity as `incoming()`, so
-   an override may be `incoming() * 2 + 1` without arbitrary JavaScript.
-4. **Participant-scoped activation.** Activate only the acting Person's
-   policy-ready promises for the exact current signed revision, one explicitly
-   selected promise per idempotent Action. Bulk activation remains Phase 6
-   labor-saving work. Agreement retraction remains signed evidence: it never
-   rewrites an active/terminal occurrence, marks existing work disputed, and
-   blocks only future activation.
-5. **Role-specific conclusion evidence.** The occurrence giver may assert or
-   correct delivery and the receiver may assert or correct receipt. Both are
-   signed, request-idempotent Facts attached to that occurrence; mutual current
-   claims derive **Confirmed conclusion**. Network delivery acknowledgement is
-   a different transport concern.
-
-- [x] Model each canonical give/receive occurrence explicitly before adding
-  confirmation controls.
-- [x] Project engine-derived `actual`, `available`, `reserved`, `planned`,
-  and `surplus`, with compatible-unit conversion and explicit unknown units.
-- [x] Implement reservation policy precedence
-  `transfer > Cell default > code default`; incoming promises affect planned,
-  not available, before settlement.
-- [x] Add private deterministic `application_formula` using the shared pure
-  expression grammar. Public canonical occurrence and private Record delta stay
-  distinct.
-- [x] Activate only policy-ready promises for the authenticated participant and
-  exact revision.
-- [x] Add giver and receiver claims for each occurrence. Delivery and receipt
-  are role-specific, idempotent, actor-attributed, signed, and correctable.
-- [x] Keep network delivery acknowledgement distinct from real-world
-  fulfillment confirmation.
-
-Implemented architecture:
-
-- Migration `0017_transfer_occurrence.sql` adds immutable directed
-  occurrences, revision-bound exchange paths, append-only activation and
-  role-claim events, private receiver application policies, formula-hash audit
-  events, a shared Phase-4 request-id namespace, and typed Cell reservation and
-  application-formula defaults. Public occurrence evidence contains canonical
-  terms and formula hashes, never the private formula text or local inventory
-  values.
-- `activate-transfer-occurrence` is singular and revision-CAS: it derives the
-  authenticated Person, requires that exact Person's available signer, accepts
-  only their current policy-ready `agreed` promise, resolves one unambiguous
-  counterparty, and commits the signed Fact, occurrence, exchange path, and
-  promise `active` cache atomically. Exact retries return the original
-  occurrence; request-id reuse with changed intent fails.
-- `set-transfer-occurrence-claim` appends signed giver-delivery or
-  receiver-receipt assertions and retractions. Current booleans are projections
-  of that history; mutual current claims derive **Confirmed conclusion**.
-  Agreement retraction blocks later activation and annotates already-created
-  occurrences as disputed without changing their evidence or active state.
-- `set-transfer-occurrence-application-formula` stores receiver-only formula
-  text locally and signs only its hash/version. Its validated numeric grammar
-  permits finite constants, arithmetic, and zero-argument `incoming()` and is
-  checked against the occurrence's canonical quantity; the sand never
-  evaluates it. Resolution is occurrence override > Cell default > code
-  `incoming()`. Protein exposes the text and derived local delta only to the
-  receiving Person or trusted local session.
-- Protein derives actual/available/reserved/planned/surplus with Lingua unit
-  conversion and explicit unknown-unit buckets. Transport supplies the exact
-  currently available session/process signer actor to Protein, so a public
-  verification key alone never enables a signing control. Authenticated
-  social writes use signed Action intents; trusted local mode uses the
-  explicitly installed process signer. The Transfer sand exposes
-  server-authorized activation per promise, exchange-path occurrence detail,
-  role-specific claims/corrections and history, disputes, private formulas,
-  and live-update waiting without maintaining durable workflow state.
-
-**Exit gate:** activation and confirmation cannot speak for another Person;
-availability and private deltas come only from the engine; every occurrence is
-independently auditable.
-
-#### Phase 5 — partial settlement and correction
-
-**Prerequisite:** Phase 4 exit gate.
-
-Implementation order and contracts:
-
-1. **Session-authored intent evidence.** Authenticated sockets first prove a
-   client/OS-keystore Person key against the server challenge and their mapped
-   Person. Every Action is signed over the exact action bytes, connection
-   challenge, message id, and monotonic sequence. The verified intent is stored
-   separately from the Ledger Fact signature and linked to resulting Facts; an
-   Action signature is never mislabeled as a signature over a server-created
-   Fact hash. Raw authenticated `act` messages fail closed. Trusted local mode
-   retains its explicit process signer.
-2. **Settlement eligibility and preview.** Settlement selects one occurrence,
-   requires current mutual delivery/receipt claims, rejects disputed evidence,
-   derives the authenticated Person from the session, and allows only the
-   owner of that occurrence's source promise to change their own Record. The
-   preview freezes canonical quantity, remaining quantity, owned target Record,
-   effective formula/hash/version, and resulting local delta. A proposer-owned
-   OPEN template without a concrete signed counterparty pair is never
-   settleable.
-3. **Append-only fulfillment slices.** Each idempotent settlement appends one
-   immutable slice containing canonical quantity and private local delta. The
-   sum of canonical slices derives remaining progress; a full sum moves only
-   that promise to `kept`, while a smaller positive sum leaves it `active` and
-   derives `partially_settled`. No slice may exceed the remaining amount.
-4. **Correction and remainder policy.** Private quantity mistakes use the
-   existing compensation Fact path with ownership/intent checks. Social
-   corrections annotate the occurrence or create a linked reversing Transfer;
-   they never rewrite settlement slices. Default remainder policy leaves the
-   remainder visible. Opt-in may create an unsent local draft using the exact
-   remainder, but cannot address, agree, activate, confirm, or settle it.
-5. **Projection and irreversible review.** Protein derives occurrence,
-   exchange-path, promise, and Transfer progress plus explicit partial,
-   disputed, settled, and compensated states. The sand shows the exact preview
-   and requires an explicit settle command, then waits for the pushed Protein
-   snapshot. Network receipt remains unrelated.
-
-Implemented Phase 5 contracts (verification still pending):
-
-- Authenticated WebSocket clients register a client-held, non-exportable
-  Ed25519 Person key against a server challenge. `signed_act` covers the exact
-  Action JSON bytes, session/challenge, message id, and monotonic sequence.
-  Verified Action-intent evidence lives in `signed_action_intent` and
-  `fact_action_intent`; it is never copied into `fact.signature`.
-- `settle-transfer-occurrence` accepts exactly one positive canonical slice and
-  compare-and-set values from the private server preview: remaining quantity,
-  local delta, application formula hash/version, and remainder policy. The
-  engine re-derives all of them and permits only the concrete source-promise
-  owner with current mutual confirmation and no dispute.
-- `transfer_occurrence_settlement_slice` stores immutable public canonical
-  progress alongside the private local application. One zero-delta Transfer
-  Fact records shareable evidence and one owned-Record Fact applies the private
-  delta atomically. A verified Action intent may authorize both Facts without
-  fabricating either Fact-hash signature.
-- Giver-owned promises apply cumulative `-incoming()`. Receiver-owned promises
-  apply the private occurrence override or Cell formula, defaulting to
-  `incoming()`. Each slice delta is the new cumulative formula result minus the
-  sum already applied, so nonlinear formulas are independent of how work is
-  partitioned.
-- Transfer Protein projects public slice history and canonical progress to
-  authorized viewers, but exposes local Record ids, formula text, application
-  Facts, and local deltas only inside the source owner's Cell. A focused
-  `transfer_settlement_preview` Protein recomputes arbitrary partial amounts on
-  the server; the sand never evaluates private formulas in JavaScript.
-- Remainder policy is persisted in the database (`visible` by default,
-  `local_draft` opt-in). Settlement freezes the effective policy. The opt-in
-  does not itself send or advance a remainder draft.
-- Settlement application mistakes use
-  `compensate-transfer-occurrence-settlement`, never generic compensation.
-  Only the original slice owner can append the inverse private Record Fact,
-  and each slice can be compensated once. Public fulfillment evidence remains
-  intact.
-- Giver and receiver may independently assert or retract a dispute through
-  signed append-only events. Their latest assertions are combined with a
-  separate system-dispute bit used for agreement/revision invalidation, so a
-  participant cannot clear a system safety hold or impersonate its author.
-- The remaining correction commands are explicit, signed, idempotent writes
-  with an exact revision/state precondition. `create-transfer-remainder-draft`
-  may be used only by the source-promise owner after a partial settlement with
-  the persisted `local_draft` policy; it copies only the exact remaining
-  canonical promise into a hidden, creator-only draft and never addresses,
-  agrees, activates, confirms, or settles it. Its source occurrence and slice
-  remain immutable lineage.
-- `create-reversing-transfer-draft` is creator-authorized correction evidence.
-  It creates a hidden linked Transfer whose promise reverses the selected
-  occurrence's full canonical quantity, while retaining both Transfers and
-  their revision Facts.
-  The new Transfer begins as an unsigned-workflow draft: no counterparty is
-  invited or agreed and no real-world occurrence is inferred.
-- `reopen-transfer-promise` never mutates a closed promise back into service.
-  The promise owner creates a successor promise in a new signed Transfer
-  revision, linked to the predecessor and initialized as proposed (or OPEN
-  only when the same proposer explicitly requests it). All agreement levels
-  reset for the new revision and previous completion/broken evidence remains
-  attached to the predecessor.
-
-- [x] Settle only the authenticated Person's authorized local Records and only
-  mutually confirmed occurrences; retry is a no-op.
-- [x] Represent partial/multi-party progress normally without rolling back
-  completed Facts.
-- [x] Persist partial-remainder policy with `visible` as the default.
-- [x] Let `local_draft` create an unsent local remainder draft; it must never
-  address, agree, activate, confirm, or settle that draft automatically.
-- [x] Add explicit withdrawn, cancelled/rejected, expired, broken, partially
-  settled, disputed, compensated/reversed, and settled derived states.
-- [x] Add owner-authorized private settlement compensation and signed
-  participant dispute/retraction history without rewriting fulfillment.
-- [x] Complete the remaining correction paths: broken remainder, linked
-  reversing Transfer, and `reopen-promise` successor revision.
-- [x] Add exact irreversible-step review showing canonical occurrences,
-  confirmations, formulas, and local deltas before settlement.
-
-**Exit gate:** partial work, replay, correction, and disputes remain append-only,
-per-Person, idempotent, and visible without rewriting original evidence.
-
-#### Phase 6 — hierarchy and bulk manual work
-
-**Prerequisite:** Phase 5 exit gate.
-
-Implementation order and contracts:
-
-1. **Signed topology.** `parent_uid` is the single containment edge used for
-   tree navigation and roll-up. Dependencies are separate directed execution
-   gates between a downstream Transfer or promise and an upstream Transfer or
-   promise. Both forms are part of the reviewed revision. Creation and every
-   revision resolve all references and reject missing nodes, self-edges, parent
-   cycles, and dependency cycles before any revision rows are committed.
-2. **Derived readiness and roll-up.** Child status, policy, revision, evidence,
-   and authority remain independent. A parent reports deterministic descendant
-   counts, blockers, and remaining canonical quantities grouped by
-   `(concept, unit)`; incompatible or unknown units are never summed. Parent
-   readiness is a projection and never advances a child's agreement or work.
-   Dependency order is stable by topology and UID, and a blocked node identifies
-   the exact unsatisfied edge and upstream state.
-3. **Reviewed source-group satiation.** `first_completes` applies only among
-   Transfers that signed the same non-null source group and the same policy.
-   The first fully settled sibling produces append-only winner/loser evidence
-   and blocks future activation for losing siblings. It does not erase terms,
-   retract another Person's agreement, or undo occurrences/work that already
-   happened; already-started conflicts remain visible for manual correction.
-4. **Atomic one-Person bulk confirmation.** A focused Protein preview expands
-   an explicit tree/branch selection to the acting Person's currently missing
-   role claim for each occurrence: delivery when they are giver, receipt when
-   they are receiver. It never activates promises, settles Records, changes
-   terms, or confirms the counterparty's role. The reviewed command carries
-   the exact transfer revisions and occurrence claim-state tokens plus one
-   request id. The store rechecks the whole selection in one transaction; any
-   stale, missing, disputed, satiated, already-completed, or unauthorized item
-   aborts the entire batch and returns item-specific blockers. A successful
-   command emits one individually attributable claim event and Fact per item,
-   all linked to the one signed Action intent. Exact replay is a no-op.
-5. **Big-picture controls.** The sand renders the hierarchy before mutation,
-   supports whole-tree, branch, and individual occurrence selection, and shows
-   readiness, dependencies, grouped remainder, and the exact bulk preview.
-   Submission requires explicit review acknowledgement and waits for the pushed
-   Protein snapshot. Narrow layouts keep the tree visible and open one branch's
-   details in a dismissible inspection surface.
-
-- [x] Implement parent/child roll-up while each child retains its revision,
-  policy, status, and evidence.
-- [x] Add explicit Transfer/promise order and dependency DAGs, distinct from
-  condition expressions; reject cycles.
-- [x] Implement sibling `first_completes` satiation against the reviewed
-  source group.
-- [x] Add reviewed atomic bulk completion for one Person. It emits individually
-  attributable role-claim evidence, never confirms for counterparties, and
-  rejects the complete selection when any reviewed item changed.
-- [x] Add tree selection, blocker/readiness projection, per-branch remainder,
-  and narrow/mobile inspection controls.
-
-Implemented Phase 6 architecture (workspace check complete):
-
-- Migration `0022_transfer_hierarchy_bulk.sql` persists immutable source-group
-  results/losers and reviewed bulk request/item lineage, protects the global
-  Transfer request-id namespace in both directions, and adds database-level
-  self-parent guards. Store transactions additionally validate the complete
-  parent chain and global typed Transfer/promise dependency DAG.
-- `complete-transfer-occurrence-claims-bulk` derives the acting Person from the
-  authenticated session, verifies the canonical review token, preflights every
-  `(occurrence, role)` pair, and commits all individual claim Facts/events or
-  none. Local self-transfers may review both roles; no action may author a
-  counterparty's role. Losing or late `first_completes` siblings are blocked at
-  both engine and store activation boundaries.
-- Transfer Protein attaches visible-only hierarchy paths, direct children,
-  descendant status/readiness, explicit dependency order and blockers,
-  authoritative source-group evidence, and remainder groups keyed by canonical
-  concept/unit. `transfer_bulk_completion_preview` emits the exact action items
-  and token accepted by the engine without exposing hidden branches.
-- Sand modules `app/hierarchy.js` and `app/bulk.js` provide list/tree views,
-  root and branch inspection, responsive remainder/blocker detail, per-Person
-  selection, explicit irreversible-step acknowledgement, and pushed-Protein
-  result tracking. No durable Transfer term or arithmetic is held in browser
-  state.
-
-**Exit gate:** a coordinated tree executes in deterministic order; bulk labor
-saves clicks without weakening individual evidence or authority.
-
-#### Phase 7 — complete local Transfer sand
-
-**Prerequisite:** Phases 1-6 backend controls exist. UI is added incrementally
-with each phase, but this is the complete local product gate.
-
-Implementation order and contracts:
-
-1. **Composable inbox facets.** A Transfer has one server-derived
-   `primary_status` for sorting and labeling, but inbox membership is a set of
-   independent server-derived flags. `mine` is an ownership scope; it may be
-   combined with exactly one or several workflow facets. `awaiting_me`,
-   `awaiting_others`, `active`, `completed`, `cancelled_or_broken`, and
-   `discoverable_open` may overlap when the underlying evidence makes that
-   truthful. Counts use the complete visible result, not the current search.
-   Trusted local mode derives `mine` from the explicitly selected/installed
-   Person signer; authenticated mode derives it from the session Person.
-2. **Primary status and attention.** Precedence is deterministic and favors
-   actionable exceptions: system dispute, participant dispute, broken/expired,
-   cancelled/rejected/withdrawn, and partially settled. Satiated and fully
-   completed results resolve before pending-work labels; otherwise the order is
-   awaiting me, active, awaiting others, agreed, proposed, OPEN, inactive, and
-   draft.
-   Facets remain visible beside this label so one status never hides another
-   person's pending work. The browser never reconstructs these memberships
-   from button availability.
-3. **Capability-complete detail.** Creation, revision, invitation,
-   counteroffer, agreement movement, activation, role confirmation, private
-   formula, settlement, dispute, compensation, and the available correction
-   paths render only from server capabilities and blockers. Every mutation
-   enters `signing`, then `awaiting_snapshot`; success is shown only after a
-   newer matching Protein projection is observed. Stale or forbidden results
-   keep the reviewed input visible and offer reload/review rather than retrying
-   changed terms blindly.
-4. **One evidence timeline and proof model.** Protein emits a compact,
-   deterministic timeline ordered by `(occurred_at, uid)` across revisions,
-   invitations, party/agreement changes, promise activation, role claims,
-   settlements, expiry, disputes, compensation, source-group results, and
-   corrections. Each item names its Record/Transfer target, Person author when
-   present, Fact, request id, revision, proof state, and relevant linked ids.
-   Proof state distinguishes a direct Fact signature, a verified signed Action
-   intent authorizing the Fact, unsigned system/local evidence, and missing or
-   invalid proof; the UI must not label all Facts as signed.
-5. **Exact local disclosure.** The detail projection includes authorized
-   visibility recipients and an exact field-level disclosure preview. Public
-   canonical terms/evidence, participant-only negotiation, and Cell-private
-   Record quantities/formulas are separate groups. A hidden recipient or
-   private formula is never revealed merely to explain that something was
-   redacted. Threads remain the generic attachment/conversation surface.
-6. **Resilient interaction states.** The last pushed snapshot remains readable
-   while offline, but all mutations and live previews are disabled. Loading,
-   empty, filtered-empty, reconnecting, stale, forbidden, validation, partial
-   projection/import, warning, retry, and awaiting-snapshot states have
-   distinct messages. Keyboard focus returns predictably between inbox,
-   detail, drawers, and composer; narrow screens show one surface at a time
-   without hiding blocker or proof information.
-
-- [x] Provide inbox partitions: mine, invited/awaiting me, awaiting others,
-  active, completed, cancelled/broken, and discoverable OPEN proposals.
-- [x] Complete create/edit/invite/counteroffer/agreement/activation/
-  confirmation/settlement/correction controls from server capabilities.
-- [x] Show one compact timeline across revisions, parties, promises,
-  confirmations, settlements, expiry, correction, and exceptional states.
-- [x] Show per-Record quantities/formulas, per-concept balance, source Facts,
-  proof/signature state, hierarchy, and shared Record navigation.
-- [x] Complete generic threads, history/proof drawer, visibility recipients,
-  and exact disclosure preview.
-- [x] Cover loading, empty, offline/reconnecting, stale, forbidden, validation,
-  partial import, warning, retry, keyboard, and responsive states.
-- [x] Never claim mutation success before the pushed Protein snapshot.
-
-Implemented Phase 7 architecture (workspace check complete):
-
-- Transfer Protein owns `primary_status`, composable `inbox_facets`, capability
-  and blocker maps, exact action payloads, deterministic timeline entries,
-  cryptographically distinguished proof states, visibility recipients, and
-  disclosure groups. Public viewers receive redacted correction lineage and do
-  not receive participant-only correction or successor proof events.
-- Migration `0023_transfer_correction_lineage.sql` stores correction and promise
-  successor lineage without overloading hierarchy or `first_completes` source
-  groups. Remainder, reversal, and reopen commands use exact revision/state
-  preconditions, a shared request-id namespace, signed evidence, and exact
-  replay checks.
-- The sand separates overview/list/tree work from detailed inspection. Focused
-  inspection modules render the timeline, proof drawer, accounting/navigation,
-  disclosure/threads, and reviewed correction controls. Mutation controls are
-  disabled while stale or offline and remain pending until matching pushed
-  evidence appears.
-- `nix develop -c cargo check --workspace --all-targets` completes with warnings
-  treated as errors. Tests were intentionally not run for this phase.
-
-**Exit gate:** the complete local manual workflow is usable without legacy
-Transfer endpoints/models, client authority, or client-maintained arithmetic.
-
-#### Phase 8 — Cell-to-Cell social delivery
-
-**Prerequisite:** the complete local evidence model through Phase 7. This uses
-the existing Organ transport; it is not third-party integration.
-
-Implementation order and contracts:
-
-1. **Origin authority and delivery policy.** The Cell whose Organ UID is the
-   Transfer Record's origin remains the only authority that may order canonical
-   Transfer revisions or execute Transfer Actions. A recipient Cell never
-   promotes a replica into local Transfer sidecars. Each explicit
-   `(Transfer, recipient Person, recipient Organ)` delivery stores a revisioned
-   `hosted` or `replicated` policy; unknown/reference-only recipients default to
-   `hosted`, and replication requires an explicit signed choice.
-2. **Recipient-specific envelopes.** Generic Sync `Package` is not used for
-   Transfer delivery because it omits Transfer sidecars, links, and signed
-   Action-intent proof. A versioned Transfer envelope binds the origin Organ,
-   Transfer UID/revision, monotonic origin cursor, recipient, mode, disclosure
-   manifest, recipient-redacted projection/events, included Facts, verified
-   Action-intent evidence, actor keys, payload hash, and envelope UID. The
-   receiver rejects wrong authority, wrong recipient, invalid proof, cursor
-   conflicts, and changed replays.
-3. **Hosted and replicated reads.** Hosted delivery persists a reference and
-   freshness only; reads and signed mutations are served by the origin Cell.
-   Replicated delivery additionally persists the verified redacted envelope in
-   an isolated replica read model. Both modes still submit signed Actions to
-   the origin; replica rows are never executable local commitments. Private
-   formulas, notes, private Record quantities, unrelated parties/Records, and
-   redacted proof fields never enter either payload.
-4. **Durable push, pull, and conflict handling.** Transfer delivery has its own
-   immutable, deduplicated outbox with attempts, exponential retry time, last
-   error, and sent cursor. Push is checked against current delivery policy and
-   visibility again at send time. Periodic/manual pull uses the recipient's
-   last accepted cursor. A stale submitted Action is retained as a rejected
-   local attempt with the authoritative revision and explicit refresh/review;
-   it is never silently rebased or branched.
-5. **Origin settlement and private local application.** A cross-Cell
-   settlement cannot pretend to be one database transaction. The participant
-   Cell applies only that Person's private Record delta and emits a signed
-   application attestation bound to the occurrence, canonical slice, formula
-   hash/version, and origin revision. The origin Cell verifies that attestation
-   before appending public canonical settlement evidence. Pending, accepted,
-   rejected, and compensated handoff states remain visible; neither Cell
-   receives the private formula, private quantity, or unrelated Record data.
-6. **Receipt versus fulfillment.** Receiving and seeing an envelope append
-   Organ-authored package receipt evidence with envelope/cursor identity. These
-   events have distinct names and storage from giver delivery and receiver
-   receipt claims about real-world fulfillment. A package receipt cannot
-   confirm an occurrence or settle a Record.
-7. **Revocation without erasure.** Revocation is append-only origin evidence.
-   It cancels queued future envelopes, blocks later push/pull and hosted reads,
-   and remains visible to both sides. A recipient keeps already received signed
-   evidence and its replica history; Lince never claims that disclosed bytes
-   were erased.
-8. **Sand surface.** Protein projects origin/replica authority, persistent
-   mode, exact recipients/disclosure, queue state, attempts/errors, freshness,
-   receipts, conflicts, revocation, and server capabilities/blockers. The sand
-   offers reviewed mode selection, enqueue/retry/revoke/manual refresh, replica
-   history, and conflict recovery while keeping package receipt visually and
-   semantically separate from fulfillment.
-
-- [ ] Add persistent `hosted` and `replicated` delivery modes, explicit
-  recipients, visibility redaction, durable outbox retry, pull, freshness, and
-  manual refresh.
-- [ ] Deliver invitations/proposals, acceptance, counteroffers, threads, and
-  signed evidence with replay/idempotency/conflict handling.
-- [ ] Preserve origin signatures and field-level visibility; private formulas,
-  notes, hidden Records, unrelated parties, and proof fields never leak.
-- [ ] Keep package receipt/seen evidence separate from fulfillment evidence.
-- [ ] Unknown contacts default to hosted/reference-only; replication is an
-  explicit choice.
-
-**Exit gate:** two Cells complete manual donation and sale with retry and no
-duplicate effects, forged evidence, or hidden-field leakage.
-
-#### Phase 9 — presets and manual release proof
-
-**Prerequisite:** Phase 8 exit gate.
-
-- [ ] Implement presets over the same schema in order: donation, sale,
-  assignment, service/information, dependency tree, then manual ride/delivery.
-- [ ] Prove focused engine/Protein/browser behavior at every earlier phase gate,
-  not only at the end.
-- [ ] Prove two-Cell donation and sale, then assignment/group coordination,
-  information/service, dependency, satiation, correction, and partial work.
-- [ ] Keep external payments, carrier APIs, legal machinery, external calendar
-  providers, calls, OSM routing, and Fiote out. Documents/receipts may be linked
-  through Records/messages; time constraints are already core.
-
-**Exit gate:** warning-clean checks and focused/manual acceptance pass for every
-gate, with licenses/notices preserved and no legacy Transfer model restored.
-
-#### Phase 10 — Karma and recurrence recommendations (last)
-
-**Prerequisite:** the entire manual evidence model and two-Cell proof.
-
-- [ ] Define local `recurrence_likelihood` separately from counterparty
-  confidence, keyed only by locally visible action/preset, concepts, people,
-  quantity/time/place, and selected context.
-- [ ] Implement deterministic diminishing-return evidence with time decay,
-  configurable prior/growth/half-life, suggestion threshold, and higher
-  disabled-by-default auto-draft threshold.
-- [ ] Learn only from human-authored or mutually confirmed outcome Facts;
-  recommendations and generated drafts do not train themselves.
-- [ ] Create deduplicated explanations/recommendations at the suggestion
-  threshold and local drafts only at an explicit opt-in threshold.
-- [ ] Generate disabled Karma-rule candidates for review; no learned or explicit
-  rule may agree, confirm, or settle for another Person.
-- [ ] Make simple Transfer Actions available to explicit Karma only within
-  approved visibility, recipient, budget, idempotency, agreement, and evidence
-  gates.
-- [ ] Persist thresholds, decay, scope, budgets, recipients, quiet time, and
-  pattern disable/override in typed database policy.
-- [ ] Prove recurrence, saturation/decay, deduplication, opt-out, no
-  self-training, no private leak, and no automatic social commitment.
-
-### Existing implementation evidence (not phase gates)
-
-- The live Transfer sand provides portfolio/detail inspection, local
-  search/filter/sort, a five-step blank creation composer, and Record navigation.
-- `source: "transfer"` exposes revision, accepted parties, pending/terminal
-  invitations, promises, balance/confirmation data, viewer context,
-  capabilities, and blocker codes, but predicates, ordering, revision history,
-  occurrence evidence, and the full exceptional vocabulary remain incomplete.
-- `create-transfer-draft` validates and atomically commits the current draft,
-  one creator participant, pending invitees, promises, visibility, request-key
-  replay protection, and the signed canonical revision-1 Fact.
-- Authenticated users map explicitly to Person records and the Permissions sand
-  manages that mapping.
-- Current creation inserts exactly one explicit/derived creator participant and
-  stores every other selected Person as a pending invitation in revision 1.
-- Legacy add/edit/agree/activate/confirm/settle Actions are compatibility
-  groundwork, not authorization to expose later-phase controls.
-### Standing Transfer decisions (2026-07-18)
-
-- Parties are Person records. Organs are identity transport, visibility, trust,
-  and sync boundaries, never social parties. Another Person becomes a party
-  only after accepting an invitation or claiming an OPEN promise.
-- Each Cell settles only Records it owns. Public/shared evidence says which
-  giver provided what canonical amount to which receiver; the receiving Cell's
-  private `application_formula` decides its local Record delta. The default UI
-  is “you give” = negative local delta and “you receive” = positive local delta.
-- Agreement is mutual, revision-bound, and presented as human milestones:
-  level 1 is **Checked · ready to agree**, level 2 is **Agreed**, and later
-  dual-sided fulfillment evidence is **Confirmed conclusion**. The final label
-  is derived occurrence evidence, not an agreement level a person can assert
-  for someone else. Every agreement policy requires the relevant parties to
-  match levels before its next stage unlocks.
-- `individual` unlocks each mutually matched give/receive path independently;
-  `full` requires every party in the revision to match; `percentage` freezes
-  and unlocks only its signed quorum coalition; `dependency` adds named
-  upstream promise/Transfer state gates. No policy makes one person's signature
-  stand in for another's.
-- Under percentage agreement, reaching quorum freezes a committed coalition
-  for that revision. Non-signers and their promises are excluded and cannot be
-  activated or settled; changing percentage/coalition is a terms edit that
-  invalidates affected signatures. Dependency gates may target a promise or a
-  Transfer and explicitly name the required upstream state, defaulting to
-  `kept` when unspecified.
-- Public-result edits invalidate agreement: people, canonical quantities/units,
-  dates/windows (including time-only changes), locations, confirmation
-  requirements, dependencies/order, and
-  any term affecting what someone gives or receives. Private application
-  formulas, private notes, and local display choices do not. Visibility changes
-  cannot retroactively retract data already delivered.
-- Stale term writes are rejected, even when apparently non-conflicting. The UI
-  preserves the draft and shows the intervening signed diff with one-click
-  reapply/edit; the user must review and submit a new revision. Messages and
-  unrelated private state may continue concurrently.
-- Creating a Transfer immediately addresses and reveals revision 1 to its
-  pending invitees. Invitation acceptance and creator withdrawal alter the
-  signed terms revision; rejection and expiry are signed lifecycle evidence
-  but do not churn the terms revision.
-- Every promise snapshots its canonical unit. A Transfer may provide a default
-  location and each promise may override it. Neither signed unit nor location
-  is reinterpreted when its referenced Record later changes.
-- An OPEN promise is a signed suggestion/template owned by the proposing
-  Person, with only the counterparty left open, and reuse policy
-  `duplicate|consume`, defaulting to `duplicate`. A claimant may refine every
-  copied term, but the result is a new signed two-Person counteroffer retaining
-  source lineage; consuming prevents later claims while duplicating leaves the
-  source OPEN. The proposal may say either “I offer to give this” or “I ask to
-  receive this” without naming a counterparty. Claiming creates opposite
-  concrete promises for proposer and claimant; agreement levels then require
-  both People to accept the refined terms. The OPEN template itself remains
-  non-executable discovery data. Settlement applies each Person's own signed
-  promise Record; it does
-  not invent a separate private target Record for the counterparty-free
-  template.
-- Every give/receive occurrence is independently claimable and confirmable by
-  its giver and receiver. Activation, retraction, delivery, receipt, and
-  correction evidence is signed by exactly that Person's available identity;
-  mutual current evidence confirms occurrence. Bulk completion is only an
-  explicit labor-saving action for one Person and emits separate evidence for
-  that Person across the reviewed tree selection. It cannot sign for another
-  party.
-- Partial fulfillment is normal progress and never rolls back completed facts.
-  The remainder stays visible; policy may create a local draft remainder
-  Transfer, never silently send or agree it. An accidental private mutation is
-  corrected by compensation; a social correction uses a linked reversing
-  Transfer. Disputes annotate evidence rather than rewriting it.
-- Expiry means a promise passed its end window: open/proposed becomes withdrawn,
-  agreed/active becomes broken. “Reopen” keeps the Transfer identity but creates
-  a linked successor promise revision, preserving the terminal promise and all
-  signatures.
-- Reservation defaults to `none`; incoming promises affect `planned`, never
-  `available`, until locally settled. Different concepts may be exchanged;
-  balance stays advisory per concept/dimension, Lingua converts only compatible
-  units, and incomparable buckets never silently combine.
-- User-facing exceptional states are derived and distinct: cancelled/rejected
-  before activation, expired/withdrawn, broken, partially settled, disputed,
-  settled, and compensated/reversed. Only immutable occurrences are terminal;
-  the enclosing Transfer may continue through successor/remainder promises.
-- Visibility defaults hidden. A user explicitly addresses Persons/Organs,
-  expands by proximity, or makes an OPEN promise public. Unknown non-contact
-  people may negotiate when directly addressed or through public discovery;
-  they are not forced into contacts, receive no ambient sync, and remain
-  blockable.
-- Social delivery is selectable and persistent: hosted mode uses an
-  authoritative remote view; replicated mode imports signed events/data into
-  the Cell. Push while connected plus durable outbox retry and periodic pull is
-  the normal cadence, with manual refresh/retry and visible freshness. Unknown
-  contacts default to hosted/reference-only.
-- Transfer hierarchy is required: parent/child trees group Transfers that must
-  happen together, with derived roll-up, retained child evidence/policies, and
-  executable dependency/order DAGs. Cycles are rejected rather than warned.
-- The Transfer sand opens on the inbox/list and big-picture tree status;
-  creation retains a compact list summary and gives high control. Preset build
-  order is donation, sale, assignment, then broader workflows.
-- Threads/messages are the integration point for external payment receipts,
-  contract documents, and other linked records; Lince does not execute payments
-  or provide legal-contract machinery. Promise time constraints are core.
-  Carrier APIs are deferred external delivery integrations; manual delivery and
-  ride Transfers are not deferred.
-- Shared threads are visible to participating parties by default; private
-  threads use explicit visibility. Sent messages are immutable social evidence;
-  correction is a reply, while permission-gated deletion leaves Ledger
-  evidence/tombstone. A never-shared draft may be hard-deleted; after invitation
-  or publication it is cancelled/tombstoned instead.
-
-## [x] Attention — the Decision Queue ("what should I do next")
-
-- [x] `source: decision, live: true` is the queue; `decide` is the answer.
-  Four deterministic feeders run inside the heartbeat, no UI required:
-  broken promises (`kind: "expiry"`), Karma `ask` consequences (`"ask"`),
-  Senses matches (`"draft"`), projected crossings (`"crossing"`, a week
-  horizon, per-record deduped).
-- [x] `decide { decision, answer }` closes it through the Ledger; if the
-  chosen option carries an `action` field, deciding EXECUTES it — one-tap
-  flows like "yes → set-quantity".
-- [x] Decisions with `expires_at` auto-close as `"expired"`; every sweep
-  dedups by `(subject, kind)` — one situation asks exactly once while its
-  decision stays open.
-- [x] Notify budget (`configuration.attention_budget_per_day`, default 12)
-  is hard — over-budget notify effects complete as `parked:digest` instead
-  of interrupting; nothing is lost.
-- [ ] Notify platform channels: device records (`kind='device'`) routing to
-  desktop toast / mobile push / sound / text digest, per-source on/off and
-  quiet hours, plus a digest sand reading the parked rows.
-- [ ] Inward capture sources: every capture source (phone, scale, camera,
-  mic) as a visible, off-switchable signal-record; AI only ever as a Signal
-  implementation, never hidden.
 
 ## [ ] Sync, Organs, and CRDT — multi-Cell communication, two scales of one idea
 
@@ -1220,37 +566,6 @@ granularities and two sets of metadata.
   cursors riding the existing ephemeral lanes. Unblocks live multi-Cell
   editing in Record.
 
-## [ ] Senses + Imagination — the recommendation engine
-
-- [x] A match rule is a record (`create-match-rule { watch_concept,
-  max_proximity, min_confidence, auto }`), activates/deactivates like any
-  rule; `max_proximity` is a hard ceiling — matching never auto-expands.
-- [x] Each heartbeat, `senses_pass` joins your OPEN promises against the
-  discovery cache (sign-opposite deltas, Lingua-aligned concepts, window
-  overlap, confidence floor) into ranked drafts straight into the Decision
-  Queue.
-- [x] `Engine::project(now, until)` folds promises + rules forward on a
-  virtual clock (signals frozen); `Engine::snapshot(now)` hands the mutable
-  input to toggle/clear/re-fold/diff — the scrubbable, branching future is
-  an engine call today; no sand renders it yet (see the Timeline transport
-  verb below).
-- [x] Deterministic numbers, no ML: `confidence(@p)` = the party's
-  Laplace-smoothed kept-ratio; `demand(@concept)` = the current hour's share
-  of trailing-30d activity on that concept.
-- Senses proposal delivery is tracked with the complete OPEN-promise flow in
-  Transfer Phase T1.
-- The generic recurrence-likelihood/recommendation engine and its first
-  Transfer/Karma consumer are tracked together in Transfer Phase T5; it remains
-  distinct from counterparty kept-promise `confidence`.
-- [ ] Confidence refinements: a window-tightness factor and a dispute
-  penalty on top of the Laplace kept-ratio.
-- [ ] **Timeline transport verb**: `Engine::project`/`Engine::snapshot`
-  already exist and work, but only from inside the engine — there is no
-  WebSocket verb exposing them, so no sand can call them. The one genuinely
-  new endpoint a Timeline sand needs: expose `project`/`snapshot` over the
-  transport so a sand can render the projected future and let a user branch
-  it (toggle a rule, clear a promise, re-fold, diff two timelines) live.
-
 ## [x] Trust
 
 - [x] Every locally-authored fact is signed on the write path; imported
@@ -1281,10 +596,22 @@ granularities and two sets of metadata.
 - [x] Groups nest: `BoardCard.group_ids` (outer → inner) is authoritative;
   disbanding an outer group preserves inner ones; adding a catalog group
   re-homes to a fresh inner id each time, so repeated adds are independent.
-- [x] Events are scoped to a grouped sand's innermost group (a kanban's
-  `recordClicked` drives only its own Record, not another group's);
-  ungrouped sources broadcast board-wide; cross-session mirroring rides lane
-  rooms, never persisted.
+- [x] Events are scoped to a grouped sand's innermost group; ungrouped
+  sources broadcast board-wide; cross-session mirroring rides lane rooms,
+  never persisted.
+- [x] (2026-07-19) Kanban, Relations, and Communication no longer ship as a
+  GROUP bundled with their own Record sand — every board already has exactly
+  one pinned Record (`shell-record`, bottom-right corner, icon by default),
+  so bundling a second one per sand was redundant and, worse, its group
+  scoping meant a grouped kanban's `recordClicked` never reached the pinned
+  one. These three now ship as plain single `.html` packages (ungrouped),
+  so their board-wide `recordClicked`/`recordCreate` reaches the pinned
+  Record directly. The generic group-archive machinery (`.lince` workspace
+  archives, `is_group` catalog entries, drag-drop import) stays for
+  user-authored/imported groups — only the three OFFICIAL auto-grouped
+  catalog entries were removed. Kanban's default add-to-board size also grew
+  (`initial_width`/`initial_height` 6×6, up from 7×5 pre-clamp) since it's no
+  longer sharing space with a bundled Record card.
 - [x] Per-card host state flows both ways (`H.getCardState()`/
   `H.onCardState`/`H.patchCardState`) — any sand persists UI prefs without
   touching the Ledger; board chrome itself (pan/zoom/workspaces/position/
@@ -1422,22 +749,13 @@ granularities and two sets of metadata.
   separate socket.
 - [ ] **Home manager / dashboard** — aggregate Proteins + Action writes, no
   new backend needed.
-- [ ] **Karma Orchestra v2** — rule CRUD (`create-rule`/`update-rule`) with
-  live Proof-loop warnings surfaced on save, derived values readable via
-  `value()`, signal/frequency creation, a DepGraph render off the rule
-  records.
 - [ ] **Finance / statistics dashboard** — `source: fact` aggregates (`sum`
   by `cause_kind`/`day`, `concept_in: "money"`), drill-down via `record_eq`.
 - [ ] **Pantry / inventory dashboard** — `availability` + `projection`
   includes render "8 now, 5 available, 2 by Friday" with no math in the
   sand; crossing decisions already surface "you run out Thursday."
-- [ ] **Timeline sand** — renders `Engine::project` output as scrubbable,
-  branching points; blocked on the Timeline transport verb above.
 - [ ] **Organ contacts manager** — list contacts with trust/proximity/sync
   policy, introduce via URL, block button, quarantine viewer.
-- [ ] **Neighborhood matching settings** — `create-match-rule` + visibility
-  grants ("publish this Need to @neighborhood"); results land in the Inbox
-  as drafts once the polling scheduler is wired.
 - [ ] **Todo polish**: create-task UI/Action, richer history backed by
   compensation/facts, live-update proof beyond the stubbed bridge, plus the
   old table sand's deferred keyboard-grid navigation, helix mode, and
@@ -1446,29 +764,17 @@ granularities and two sets of metadata.
   (snapshot + Action round-trip + live update); two stale scripts
   (`board-selftest.sh`, `table-sand-selftest.sh`) still reference deleted
   crates/files and need rewriting on the current architecture.
-- [ ] Broader browser selftests: pan, zoom, grouping, resize, pin,
-  workspaces, import, publish, sand-to-sand events.
-- [ ] Frontend polish/redesign, after the data plane settles.
 
 ## [ ] Future Instincts and product surfaces
 
 - [ ] OSM place data: a local offline extract, local geocoding, `route_eta`,
   polygon `within`, a `route(a,b)` include (`distance`/`near` already
   live).
-- [ ] Duration/calendar math Instinct (Frequency is the proto-Instinct);
-  currency conversion over a Lingua `@money` dimension.
+- [ ] Currency conversion over a Lingua `@money` dimension.
 - [ ] Storage-engine independence (AniccaDB): swapping out `store` must not
   change one character of the Protein/Action contract.
 - [ ] New product surfaces beyond the Transfer workstream: route/ride
   planning, calls, calendar/time budgeting, finance projections, social feed.
-- [ ] **Fiote** (deferred by decision) — the optional operator, autonomy
-  ladder `observe → suggest → draft → act-within-budget`; reads only
-  through Protein against `@fiote`-visible data, writes only through
-  Actions with `cause=fiote` signed under the user's key with an agent
-  marker (delegation visible, inspectable, reversible via compensation);
-  budgets (max actions/day, max promise value, forbidden Action kinds —
-  e.g. never `settle-transfer`) enforced by the engine, not the prompt.
-
 ## [ ] Parked (needs the user)
 
 - [ ] Worklogs as time-concept delta facts on the Ledger instead of the
@@ -1483,46 +789,20 @@ granularities and two sets of metadata.
 Proof goal: each workflow runs end-to-end on the new core through a real
 sand, checked off here when proven.
 
-- [x] Focus queue
-- [x] Personal finance's projected-crossing engine (the sand itself isn't
-  built yet)
 - [ ] Relation trail mode, re-proven on a live server (proven on the old
   core pre-purge; the driven stub selftest already covers the behavior,
   this is the real-socket run)
-- [ ] Todo/knowledge base (habit re-arms daily; done posts a fact with
-  cause)
-- [ ] Recurring tasks (monthly rule fires exactly once; catch-up works)
 - Transfer workflows (DONATION, SALE, assignment/group coordination,
   dependency chains, and later RIDE/DELIVERY) are centralized in Transfer
   Phase T4 so their implementation and proof cannot drift apart.
-- [ ] Chat & calls ("call the parties when the Transfer reaches agreed" as
-  a rule; AV embedded)
 - [ ] Real-time collab docs (two Cells, one body, cursors on lanes, Ledger
   shows only text_edit annotations)
 - [ ] Social network (federated feed from two organs, visibility respected
   — zero new core)
-- [ ] n8n-style command flows (signal→rule→effect chain built visually in
-  Orchestra, and runs)
-- [ ] CRM/people (birthday whisper fires; interaction report = one
-  aggregate Protein)
-- [ ] Personal finance sand ("rent leaves you short on the 5th unless X
-  settles" rendered from the crossing engine)
-- [ ] Inventory & production (`derive_needs(@cake, 20)` shopping list; the
-  PRODUCTION chain relays settlement)
 - [ ] World statistics (need-mountains aggregate from N organs, nothing
   hidden leaks)
 - [ ] AI conversation sand (zero core changes)
-- [ ] Calendar & time budgeting (projected week renders; moving a promise
-  recomputes)
-- [ ] Health & IoT (scale posts weight facts; streak rule; off-switch stops
-  it)
-- [ ] Games (chess on fds state; embedded engines; THE Game reads records
-  with Karma as rulebook)
 - [ ] Education (imported Relation trail shows per-student progression)
-- [ ] Garden & farm (plant records + watering rules; scales into
-  production)
-- [ ] Monthly recaps ("this month in this Cell" generates itself from a
-  rule)
 
 ---
 
@@ -1547,8 +827,8 @@ sand, checked off here when proven.
   fact, promise, link, concept, transfer); slugs are `dot.case`; timestamps
   RFC3339; durations `90s`/`2h`/`30d`; `@slug` in conditions is sugar for
   `quantity(@slug)`.
-- [x] Time is deliberately NOT a record column: record timing = Karma +
-  Frequency; declarative time (what strangers match on) lives on promise
+- [x] Time is deliberately NOT a record column: automated timing = Intelligence
+  schedules/Frequencies; declarative time (what strangers match on) lives on promise
   windows.
 - [x] Board chrome is frontend state; sand data is Protein/Actions.
 
@@ -1559,12 +839,11 @@ sand, checked off here when proven.
 > **Everything is a Record. Every change is a Fact. Every intended change is a Promise.**
 
 **The pillar map:** Record (state) · Memory/Ledger (facts) · Lingua (shared
-concepts; Instinct tier = concepts with engine functions) · Karma (Signals →
-Rules → Effects) · Transfer (promise bundles under agreement + visibility) ·
-Senses (matching open promises, proximity-scoped) · Trust (verifiable signed
-deltas) · Imagination (state(t) projection + confidence) · Protein
-(declarative reads) & Actions (typed writes) · Attention (the Decision
-Queue) · Fiote (optional agent operating the same knobs).
+concepts; Instinct tier = concepts with engine functions) · Intelligence
+(Signals → Context → Senses/Rules/Imagination → Recommendation/Attention →
+Policy → Effects) · Transfer (promise bundles under agreement + visibility) ·
+Trust (verifiable signed deltas) · Protein (declarative reads) & Actions (typed
+writes) · Fiote (optional agent managing the same Intelligence knobs).
 
 **The placement rule (the Window):** the core owns what must be computed,
 verified, or agreed across Organs; interfaces own what is seen; embed
@@ -1574,7 +853,7 @@ Embedded foreign app.
 
 **Non-negotiables:** quantity stays central (negative = Need, positive =
 Contribution, zero = peace); quantity-as-activation on everything; full math
-in Karma conditions (tokens substituted, then evaluated); compatibility
+in Intelligence rule conditions (tokens substituted, then evaluated); compatibility
 fully ignored — greenfield build, old data ported by hand; local-first; no
 global reputation score, ever.
 

@@ -1,7 +1,0 @@
-The kanban and the relation graph can become one component with a 3 dimentional configuration.
-
-On the x axis is the 'Personal' information about a Record, the kanban lives in the 100% pole and the graph is usually on the other.
-Y axis is linking. How much the relationship between Records affects the visualization. In a graph it is 100%, in kanban it is mostly a text line above the title to signal the parent.
-The Z axis can be spatial configuration, in kanban the status of the properties determines where it is 100%, in the graph you can pull stuff around and rearrange the nodes spatially and they maintain the thing that they care about (relationships, links).
-
-The supercomponent could transit between those spectrums in it's configuration, making nodes cluster together based on status more or less, gravitating towards a point that is the center of 'Work in Progress'. It could also strenghten the position of the Records by their relationships, pulling each other based on them, grouping based on them. It could show more or less information. Therefore a supercomponent that is a kanban+graph can be either of those things, a combination in between or something else entirely. That supercomponent can also be made in 2.0 to integrate gantt too, if you can picture it.

@@ -1,1 +1,0 @@
-Shows Records changing with Karma. If they have a time cost, it occupies time from the calendar. Built with Deterministic Simulation Testing.

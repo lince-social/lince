@@ -1,2 +1,0 @@
-- [ ] Actions runner for macos arm, windows x86 and linux x86.
-- [ ] Installer to ask for continuous updates and to ask if you want Lince to start when the computer turns on.

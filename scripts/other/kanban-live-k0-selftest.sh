@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 # K0 — the LIVE end-to-end: the real `lince` cell server, the real board page
-# ("/" with main.js + unified bridge + one real WebSocket), the real emitted
-# kanban group (board + Record from `kanban.lince`), driven in headless
-# chromium on the REAL clock (no virtual time, no stubs anywhere):
-#   boot -> seed the board state with the kanban group (the same cards the
-#   catalog add uses; seeded via curl+jq) -> both sands come up LIVE (green dot
-#   = the transport socket actually connected) -> "New task" opens
-#   Record's creation mode (group-scoped recordCreate) -> fill head ->
-#   Create -> Record focuses the REAL created record AND the kanban board
-#   grows the new card via the live Protein update. This is the seam every
-#   other selftest stubs.
+# ("/" with main.js + unified bridge + one real WebSocket), a standalone
+# kanban card (ungrouped, since 2026-07-19 kanban no longer ships bundled
+# with its own Record — it drives the board's single pinned Record sand),
+# driven in headless chromium on the REAL clock (no virtual time, no stubs
+# anywhere):
+#   boot -> seed the board state with a standalone kanban card (fetched via
+#   the single-sand catalog route + curl+jq) -> both sands come up LIVE
+#   (green dot = the transport socket actually connected) -> "New task"
+#   opens the pinned Record's creation mode (board-wide recordCreate) ->
+#   fill head -> Create -> Record focuses the REAL created record AND the
+#   kanban board grows the new card via the live Protein update. This is the
+#   seam every other selftest stubs.
 #
 # Requires: chromium + jq on PATH, target/debug/lince (cargo build -p lince).
 # Usage: scripts/other/kanban-live-k0-selftest.sh
@@ -46,25 +48,33 @@ for _ in $(seq 1 60); do
 done
 [ -n "$up" ] || { echo "server did not come up"; cat "$WORK/server.log"; exit 1; }
 
-# Seed the board with the kanban GROUP — the exact member cards the catalog
-# add-as-group flow drops (same endpoint), positioned side by side in view.
+# Seed the board with a standalone kanban card — fetched via the same
+# single-sand preview route the catalog "add" flow uses, then dropped onto
+# the board ungrouped (no bundled Record; the auto-seeded pinned "shell-record"
+# card is the one that will catch its recordClicked/recordCreate events).
 # A kanban card ships with an EMPTY widgetState (no default Protein,
 # 2026-07-18 — the user must configure one via the Data panel), so this test
 # patches one in here, the same way a real user's Data panel edit would, to
 # exercise the real subscribe/render path instead of the new empty prompt.
-curl -sf "$BASE/host/packages/local/group/kanban.lince" > "$WORK/group.json"
+curl -sf "$BASE/host/packages/local/kanban" > "$WORK/kanban-preview.json"
 curl -sf "$BASE/host/board/state" > "$WORK/state.json"
 jq -s '
   {source: "record", where: [{kind_eq: "plain"}], order: [{asc: "quantity"}, {asc: "created_at"}],
    include: {links: {kinds: ["assigned-to", "part-of"], direction: "out"}}} as $protein
-  | (.[0].cards | map(
-    if .id == "card-kanban" then . + {x: 4400, y: 4400, width: 760, height: 560, widgetState: {protein: $protein}}
-    elif .id == "card-kanban-record" then . + {x: 5180, y: 4400, width: 380, height: 560}
-    else . end)) as $group
+  | .[0] as $preview
   | .[1]
-  | .workspaces[0].cards += $group
+  | .workspaces[0].cards += [{
+      id: "card-kanban", kind: "package", title: $preview.title,
+      description: $preview.description, text: "", html: $preview.html,
+      author: $preview.author, permissions: $preview.permissions,
+      packageName: $preview.filename, requiresServer: $preview.requires_server,
+      serverId: "", streamsEnabled: true, widgetState: {protein: $protein},
+      x: 4400, y: 4400, width: 900, height: 700,
+      pinned: false, system: false, zIndex: 1,
+      groupId: null, groupIds: [], abiListen: []
+    }]
   | .workspaces[0].camera = {x: -4300, y: -4300, scale: 1.0}
-' "$WORK/group.json" "$WORK/state.json" > "$WORK/next-state.json"
+' "$WORK/kanban-preview.json" "$WORK/state.json" > "$WORK/next-state.json"
 PUT_CODE="$(curl -s -o /dev/null -w "%{http_code}" -X PUT \
   -H "content-type: application/json" --data-binary @"$WORK/next-state.json" \
   "$BASE/host/board/state")"
@@ -110,7 +120,7 @@ cat > "$HARNESS" <<'HTML'
     });
     results.kanban_rendered = !!kb; mark();
     const ri = await poll(() => {
-      const d = sandDoc("card-kanban-record");
+      const d = sandDoc("shell-record");
       return d && d.getElementById("create") ? d : null;
     });
     results.recinfo_loaded = !!ri; mark();

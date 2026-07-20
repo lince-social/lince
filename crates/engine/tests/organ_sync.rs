@@ -39,6 +39,22 @@ async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
     .await
 }
 
+async fn person(e: &Engine, slug: &str) -> String {
+    store::records::create(
+        &e.store.pool,
+        NewRecord {
+            slug: Some(slug),
+            kind: RecordKind::Person,
+            head: slug,
+            body: "",
+            quantity: 1.0,
+        },
+    )
+    .await
+    .expect("person")
+    .uid
+}
+
 trait PipeBump {
     async fn pipe_bump(self, e: &Engine, quantity: f64) -> String;
 }
@@ -53,7 +69,9 @@ impl PipeBump for String {
 
 /// The in-memory wire: what the HTTP boundary does in production.
 async fn wire_sync(from: &Engine, to: &Engine, to_organ_in_from: &str) -> usize {
-    from.enqueue_sync_to(to_organ_in_from).await.expect("enqueue");
+    from.enqueue_sync_to(to_organ_in_from)
+        .await
+        .expect("enqueue");
     from.drain_outbox(|_contact, package| async move {
         to.import_package(&package)
             .await
@@ -97,11 +115,15 @@ async fn donation_flows_between_two_cells_and_feeds_the_decision_queue() {
     let imported = store::records::get(&b.store.pool, &apples).await.unwrap();
     assert!(imported.is_some(), "identity replicates by uid");
     assert_eq!(
-        store::records::quantity(&b.store.pool, &apples).await.unwrap(),
+        store::records::quantity(&b.store.pool, &apples)
+            .await
+            .unwrap(),
         Some(10.0)
     );
     assert_eq!(
-        store::organs::quarantine_count(&b.store.pool).await.unwrap(),
+        store::organs::quarantine_count(&b.store.pool)
+            .await
+            .unwrap(),
         0,
         "adopted keys verify the origin signatures"
     );
@@ -109,16 +131,20 @@ async fn donation_flows_between_two_cells_and_feeds_the_decision_queue() {
     // idempotent: re-sending changes nothing
     assert_eq!(wire_sync(&a, &b, &b_organ).await, 1);
     assert_eq!(
-        store::records::quantity(&b.store.pool, &apples).await.unwrap(),
+        store::records::quantity(&b.store.pool, &apples)
+            .await
+            .unwrap(),
         Some(10.0)
     );
 
     // ---- the discovery loop: A's open offer meets B's Need as a decision
+    let ana = person(&a, "ana").await;
     store::misc::insert_promise(
         &a.store.pool,
         store::misc::NewPromise {
             record_uid: Some(apples.clone()),
             delta: 5.0, // an open Contribution
+            party_uid: Some(ana),
             state: Some(PromiseState::Open),
             ..Default::default()
         },
@@ -141,6 +167,7 @@ async fn donation_flows_between_two_cells_and_feeds_the_decision_queue() {
     .await
     .unwrap();
     let my_apples = plain(&b, "my.apples", -3.0).await;
+    let bia = person(&b, "bia").await;
     store::records::set_concept(&b.store.pool, &my_apples, Some(&apple))
         .await
         .unwrap();
@@ -149,6 +176,7 @@ async fn donation_flows_between_two_cells_and_feeds_the_decision_queue() {
         store::misc::NewPromise {
             record_uid: Some(my_apples),
             delta: -3.0,
+            party_uid: Some(bia),
             state: Some(PromiseState::Open),
             ..Default::default()
         },
@@ -206,12 +234,16 @@ async fn tampered_facts_are_quarantined_on_import() {
     let applied = b.import_package(&package).await.unwrap();
     assert!(applied.is_empty(), "the tampered fact never lands");
     assert_eq!(
-        store::organs::quarantine_count(&b.store.pool).await.unwrap(),
+        store::organs::quarantine_count(&b.store.pool)
+            .await
+            .unwrap(),
         1,
         "…and is remembered in the quarantine list"
     );
     assert_eq!(
-        store::records::quantity(&b.store.pool, &apples).await.unwrap(),
+        store::records::quantity(&b.store.pool, &apples)
+            .await
+            .unwrap(),
         Some(0.0)
     );
 }

@@ -327,6 +327,7 @@ async fn set_extension_writes_readable_sidecar() {
 async fn record_threads_and_messages_are_records_plus_links() {
     let e = engine().await;
     let subject = plain(&e, "abstract-idea").await;
+    let receipt = plain(&e, "receipt.july").await;
 
     let thread = e
         .act(
@@ -346,6 +347,7 @@ async fn record_threads_and_messages_are_records_plus_links() {
                 thread: thread.clone(),
                 body: "First message".into(),
                 parent: None,
+                references: vec![receipt.clone()],
             },
             None,
         )
@@ -359,6 +361,7 @@ async fn record_threads_and_messages_are_records_plus_links() {
                 thread: thread.clone(),
                 body: "Reply message".into(),
                 parent: Some(first.clone()),
+                references: vec![],
             },
             None,
         )
@@ -384,6 +387,7 @@ async fn record_threads_and_messages_are_records_plus_links() {
                 thread: other_thread,
                 body: "Cross-thread reply".into(),
                 parent: Some(first.clone()),
+                references: vec![],
             },
             None,
         )
@@ -426,6 +430,33 @@ async fn record_threads_and_messages_are_records_plus_links() {
             .await
             .unwrap()
             .is_some()
+    );
+    let references = store::concepts::resolve(&e.store.pool, "references")
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        store::links::records_from(&e.store.pool, &first, &references)
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|record| record.uid)
+            .collect::<Vec<_>>(),
+        vec![receipt.clone()]
+    );
+    assert!(
+        e.act(
+            Action::CreateMessage {
+                thread,
+                body: String::new(),
+                parent: None,
+                references: vec![receipt.clone(), receipt],
+            },
+            None,
+        )
+        .await
+        .is_err(),
+        "all references are validated and deduplicated before message creation"
     );
 }
 
@@ -531,14 +562,25 @@ async fn relink_order_rewrites_adjacent_order_links() {
 async fn delete_record_is_distinct_from_deactivate() {
     let e = engine().await;
     let uid = plain(&e, "doomed").await;
-    e.act(Action::SetQuantity { target: uid.clone(), value: 3.0 }, None)
-        .await
-        .expect("give it a quantity");
+    e.act(
+        Action::SetQuantity {
+            target: uid.clone(),
+            value: 3.0,
+        },
+        None,
+    )
+    .await
+    .expect("give it a quantity");
 
     // Deactivate ONLY zeroes the quantity — the record stays readable.
-    e.act(Action::Deactivate { target: uid.clone() }, None)
-        .await
-        .expect("deactivate");
+    e.act(
+        Action::Deactivate {
+            target: uid.clone(),
+        },
+        None,
+    )
+    .await
+    .expect("deactivate");
     let row = store::records::get(&e.store.pool, &uid)
         .await
         .unwrap()
@@ -549,17 +591,28 @@ async fn delete_record_is_distinct_from_deactivate() {
     // HARD delete tombstones it: gone from get/resolve/list, slug freed,
     // Ledger facts untouched (the deletion annotation is the last one).
     let out = e
-        .act(Action::DeleteRecord { target: "doomed".into() }, None)
+        .act(
+            Action::DeleteRecord {
+                target: "doomed".into(),
+            },
+            None,
+        )
         .await
         .expect("delete");
     assert_eq!(out.facts.len(), 1);
     assert_eq!(out.facts[0].delta, 0.0);
     assert!(
-        store::records::get(&e.store.pool, &uid).await.unwrap().is_none(),
+        store::records::get(&e.store.pool, &uid)
+            .await
+            .unwrap()
+            .is_none(),
         "deleted record must not be readable"
     );
     assert!(
-        store::records::resolve(&e.store.pool, "doomed").await.unwrap().is_none(),
+        store::records::resolve(&e.store.pool, "doomed")
+            .await
+            .unwrap()
+            .is_none(),
         "deleted record must not resolve by slug"
     );
     assert!(
@@ -570,7 +623,9 @@ async fn delete_record_is_distinct_from_deactivate() {
             .any(|r| r.uid == uid),
         "deleted record must not appear in the record base set"
     );
-    let facts = store::facts::for_record(&e.store.pool, &uid, 50).await.unwrap();
+    let facts = store::facts::for_record(&e.store.pool, &uid, 50)
+        .await
+        .unwrap();
     assert!(
         facts.len() >= 3,
         "creation-era + deactivate + deletion facts stay in the Ledger"
@@ -595,17 +650,27 @@ async fn delete_record_is_distinct_from_deactivate() {
 }
 
 async fn user_with(e: &Engine, name: &str, username: &str, perms: &[&str]) -> i64 {
-    let role_id = store::auth::ensure_role(&e.store.pool, username).await.unwrap();
+    let role_id = store::auth::ensure_role(&e.store.pool, username)
+        .await
+        .unwrap();
     for perm in perms {
         let (subject, action) = perm.split_once(':').unwrap();
         let perm_id = store::auth::ensure_permission(&e.store.pool, subject, action)
             .await
             .unwrap();
-        store::auth::grant(&e.store.pool, role_id, perm_id).await.unwrap();
+        store::auth::grant(&e.store.pool, role_id, perm_id)
+            .await
+            .unwrap();
     }
-    store::auth::create_user(&e.store.pool, name, username, "hash-not-checked-here", role_id)
-        .await
-        .unwrap()
+    store::auth::create_user(
+        &e.store.pool,
+        name,
+        username,
+        "hash-not-checked-here",
+        role_id,
+    )
+    .await
+    .unwrap()
 }
 
 #[tokio::test]
@@ -615,12 +680,20 @@ async fn delete_record_without_permission_is_forbidden() {
     let bystander = user_with(&e, "Bystander", "bystander", &[]).await;
 
     let err = e
-        .act(Action::DeleteRecord { target: uid.clone() }, Some(bystander.to_string()))
+        .act(
+            Action::DeleteRecord {
+                target: uid.clone(),
+            },
+            Some(bystander.to_string()),
+        )
         .await
         .expect_err("no record:delete or record:delete_own grant");
     assert!(err.to_string().contains("forbidden"));
     assert!(
-        store::records::get(&e.store.pool, &uid).await.unwrap().is_some(),
+        store::records::get(&e.store.pool, &uid)
+            .await
+            .unwrap()
+            .is_some(),
         "record must survive a denied delete"
     );
 }
@@ -633,7 +706,10 @@ async fn delete_own_permission_allows_only_the_creator() {
 
     let mine = plain(&e, "mine").await;
     e.act(
-        Action::SetQuantity { target: mine.clone(), value: 1.0 },
+        Action::SetQuantity {
+            target: mine.clone(),
+            value: 1.0,
+        },
         Some(owner.to_string()),
     )
     .await
@@ -641,16 +717,31 @@ async fn delete_own_permission_allows_only_the_creator() {
 
     // A stranger holding only delete_own cannot delete someone else's record.
     let err = e
-        .act(Action::DeleteRecord { target: mine.clone() }, Some(stranger.to_string()))
+        .act(
+            Action::DeleteRecord {
+                target: mine.clone(),
+            },
+            Some(stranger.to_string()),
+        )
         .await
         .expect_err("delete_own does not cover records the actor didn't create");
     assert!(err.to_string().contains("forbidden"));
 
     // The creator can delete it.
-    e.act(Action::DeleteRecord { target: mine.clone() }, Some(owner.to_string()))
-        .await
-        .expect("delete_own covers the actor's own record");
-    assert!(store::records::get(&e.store.pool, &mine).await.unwrap().is_none());
+    e.act(
+        Action::DeleteRecord {
+            target: mine.clone(),
+        },
+        Some(owner.to_string()),
+    )
+    .await
+    .expect("delete_own covers the actor's own record");
+    assert!(
+        store::records::get(&e.store.pool, &mine)
+            .await
+            .unwrap()
+            .is_none()
+    );
 }
 
 #[tokio::test]
@@ -661,24 +752,47 @@ async fn delete_permission_allows_deleting_any_record() {
 
     let theirs = plain(&e, "theirs").await;
     e.act(
-        Action::SetQuantity { target: theirs.clone(), value: 1.0 },
+        Action::SetQuantity {
+            target: theirs.clone(),
+            value: 1.0,
+        },
         Some(owner.to_string()),
     )
     .await
     .expect("owner's first fact establishes creator_uid");
 
-    e.act(Action::DeleteRecord { target: theirs.clone() }, Some(admin.to_string()))
-        .await
-        .expect("record:delete covers any record regardless of creator");
-    assert!(store::records::get(&e.store.pool, &theirs).await.unwrap().is_none());
+    e.act(
+        Action::DeleteRecord {
+            target: theirs.clone(),
+        },
+        Some(admin.to_string()),
+    )
+    .await
+    .expect("record:delete covers any record regardless of creator");
+    assert!(
+        store::records::get(&e.store.pool, &theirs)
+            .await
+            .unwrap()
+            .is_none()
+    );
 }
 
 #[tokio::test]
 async fn delete_record_with_no_actor_is_unrestricted() {
     let e = engine().await;
     let uid = plain(&e, "local-mode").await;
-    e.act(Action::DeleteRecord { target: uid.clone() }, None)
-        .await
-        .expect("local-no-auth mode (actor = None) is unrestricted");
-    assert!(store::records::get(&e.store.pool, &uid).await.unwrap().is_none());
+    e.act(
+        Action::DeleteRecord {
+            target: uid.clone(),
+        },
+        None,
+    )
+    .await
+    .expect("local-no-auth mode (actor = None) is unrestricted");
+    assert!(
+        store::records::get(&e.store.pool, &uid)
+            .await
+            .unwrap()
+            .is_none()
+    );
 }

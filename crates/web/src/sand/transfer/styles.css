@@ -86,6 +86,8 @@ h3 { font-size: 12px; text-transform: uppercase; color: #a9b1bc; }
   min-width: 0;
 }
 .toolbarTools > .primaryButton { flex: 0 0 auto; }
+.presetPicker { flex: 0 0 auto; }
+.presetPicker select { min-width: 132px; }
 .creationBlocker {
   max-width: 210px;
   overflow: hidden;
@@ -877,6 +879,7 @@ button[aria-pressed="true"] .filterCount { color: #cdd4dc; }
   overflow: auto;
 }
 .formHeading { display: grid; gap: 5px; margin-bottom: 18px; }
+.creatorForm > .formHeading:not(:first-child) { margin-top: 28px; padding-top: 20px; border-top: 1px solid #303740; }
 .formHeading h3 { color: #e1e6eb; font-size: 14px; text-transform: none; }
 .formHeading p,
 .formNote { margin: 0; color: #87929f; font-size: 12px; line-height: 1.5; }
@@ -1041,8 +1044,14 @@ button[aria-pressed="true"] .filterCount { color: #cdd4dc; }
 .threadBlock h4 { margin: 0; color: #d9dee4; font-size: 13px; }
 .messageRow { padding: 9px 10px; border-left: 2px solid #3a4652; background: #12171c; }
 .messageRow p { margin: 4px 0 0; color: #cbd1d8; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
-.messageForm { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; }
+.messageReferences { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.messageReferences .referenceButton { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.disclosedReference { display: grid; gap: 3px; min-width: min(220px, 100%); padding: 7px 8px; border-left: 2px solid #4f6777; background: #171d22; }
+.disclosedReference strong { color: #d2d8df; font-size: 10px; overflow-wrap: anywhere; }
+.messageRow .disclosedReference p { margin: 0; color: #929daa; font-size: 9px; }
+.messageForm { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, .45fr) auto; gap: 8px; align-items: end; }
 .messageForm textarea { resize: vertical; min-height: 68px; max-height: 180px; padding: 8px 9px; }
+.messageReferenceSelect { min-height: 68px; padding: 5px; }
 .newThreadForm { grid-template-columns: minmax(0, 1fr) auto; }
 .promiseComposer {
   position: relative;
@@ -1129,6 +1138,8 @@ button[aria-pressed="true"] .filterCount { color: #cdd4dc; }
   .evidenceRow { grid-template-columns: 1fr auto; }
   .evidenceRow time { grid-column: 1 / -1; }
   .toolbarTools > .primaryButton { order: 3; width: 100%; }
+  .presetPicker { order: 4; width: 100%; }
+  .presetPicker select { width: 100%; }
   .creationBlocker { max-width: 50%; }
   .creatorForm { padding: 16px 12px; }
   .formGrid,

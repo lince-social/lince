@@ -383,9 +383,9 @@ pub async fn execute_for_with_signer(
 }
 
 /// Build the recipient-specific hosted/replica payload at the same visibility
-/// boundary as normal Transfer reads. Mutation capabilities and raw proof
-/// signatures are intentionally absent; the envelope adds transport controls
-/// after this projection has been signed by the origin Organ.
+/// boundary as normal Transfer reads. Recipient-specific capabilities and
+/// action templates remain so signed commands can be sent back to the origin;
+/// raw proof signatures are intentionally absent.
 pub async fn transfer_delivery_projection(
     store: &Store,
     transfer_uid: &str,
@@ -418,7 +418,7 @@ pub async fn transfer_delivery_projection(
         &protein,
         Some(&visible),
         Some(recipient_organ_uid),
-        None,
+        Some(recipient_person_uid),
         Some(TransferViewer::delivery(
             recipient_organ_uid,
             recipient_person_uid,
@@ -434,6 +434,57 @@ pub async fn transfer_delivery_projection(
                 "recipient cannot view this Transfer",
             )
         })?;
+    let projected_revision = row
+        .get("revision")
+        .and_then(Value::as_u64)
+        .unwrap_or_default();
+    if let Some(occurrences) = row.get_mut("occurrences").and_then(Value::as_array_mut) {
+        for occurrence in occurrences {
+            let Some(occurrence_uid) = occurrence
+                .get("uid")
+                .and_then(Value::as_str)
+                .map(str::to_string)
+            else {
+                continue;
+            };
+            let source_owner: Option<(String,)> = store::sqlx::query_as(
+                "SELECT p.party_uid FROM transfer_occurrence o
+                 JOIN promise p ON p.uid = o.promise_uid WHERE o.uid = ?",
+            )
+            .bind(&occurrence_uid)
+            .fetch_optional(&store.pool)
+            .await?;
+            if source_owner.as_ref().map(|row| row.0.as_str()) != Some(recipient_person_uid) {
+                continue;
+            }
+            let remaining = occurrence
+                .pointer("/settlement_progress/remaining_quantity")
+                .and_then(Value::as_f64)
+                .unwrap_or_default();
+            let ready = remaining > 0.0
+                && occurrence.get("delivery_claimed").and_then(Value::as_bool) == Some(true)
+                && occurrence.get("receipt_claimed").and_then(Value::as_bool) == Some(true)
+                && occurrence.get("disputed").and_then(Value::as_bool) != Some(true);
+            if let Some(object) = occurrence.as_object_mut() {
+                object.insert("remote_settlement_preview".into(), json!({
+                    "canonical_quantity": remaining,
+                    "expected_remaining_quantity": remaining,
+                    "capabilities": { "begin": ready },
+                    "blocking_reasons": { "begin": if ready { Vec::<&str>::new() } else { vec!["occurrence_not_ready"] } },
+                    "action_payload": {
+                        "action": "begin-remote-transfer-settlement",
+                        "transfer": transfer_uid,
+                        "occurrence": occurrence_uid,
+                        "expected_revision": projected_revision,
+                        "expected_remaining_quantity": remaining,
+                        "canonical_quantity": remaining,
+                        "request_id": Value::Null,
+                        "person": recipient_person_uid,
+                    }
+                }));
+            }
+        }
+    }
     strip_delivery_mutation_and_proof(&mut row);
     if let Some(object) = row.as_object_mut() {
         object.insert("delivery_read_only".into(), Value::Bool(true));
@@ -444,9 +495,6 @@ pub async fn transfer_delivery_projection(
 fn strip_delivery_mutation_and_proof(value: &mut Value) {
     match value {
         Value::Object(object) => {
-            object.remove("capabilities");
-            object.remove("blocking_reasons");
-            object.remove("action_payloads");
             object.remove("proof");
             object.remove("fact_signature");
             object.remove("action_intent");
@@ -952,6 +1000,7 @@ async fn threads_for_record(
         return Ok(vec![]);
     };
     let reply_to = store::concepts::resolve(&store.pool, "reply-to").await?;
+    let references = store::concepts::resolve(&store.pool, "references").await?;
     let threads = store::links::records_to(&store.pool, &thread_of, record_uid).await?;
     let mut out = Vec::new();
     for thread in threads {
@@ -971,6 +1020,24 @@ async fn threads_for_record(
                     .map(|r| r.uid),
                 None => None,
             };
+            let record_references = match &references {
+                Some(references) => {
+                    store::links::records_from(&store.pool, &message.uid, references)
+                        .await?
+                        .into_iter()
+                        .map(|record| {
+                            json!({
+                                "uid": record.uid,
+                                "slug": record.slug,
+                                "kind": record.kind,
+                                "head": record.head,
+                                "body": record.body,
+                            })
+                        })
+                        .collect::<Vec<_>>()
+                }
+                None => Vec::new(),
+            };
             let created_at = store::records::created_at(&store.pool, &message.uid).await?;
             let (created_by, sender) = creator_info(store, &message.uid).await?;
             messages.push(json!({
@@ -982,6 +1049,7 @@ async fn threads_for_record(
                 "created_at": created_at,
                 "created_by": created_by,
                 "sender": sender,
+                "references": record_references,
             }));
             if messages.len() >= messages_limit {
                 break;
@@ -3735,6 +3803,45 @@ async fn origin_social_delivery_projection(
             })
         })
         .collect::<Vec<_>>();
+    let settlement_handoffs = store::sqlx::query_as::<
+        _,
+        (
+            String,
+            String,
+            String,
+            String,
+            f64,
+            Option<String>,
+            String,
+            Option<String>,
+            String,
+        ),
+    >(
+        "SELECT h.uid, h.participant_person_uid, h.participant_organ_uid,
+                h.occurrence_uid, d.canonical_quantity, d.canonical_unit_uid,
+                h.state, h.attestation_uid, h.created_at
+         FROM transfer_application_handoff h
+         JOIN transfer_application_handoff_detail d ON d.handoff_uid = h.uid
+         WHERE h.transfer_uid = ? ORDER BY h.created_at, h.uid",
+    )
+    .bind(transfer_uid)
+    .fetch_all(&store.pool)
+    .await?
+    .into_iter()
+    .map(|row| {
+        json!({
+            "uid": row.0,
+            "person": row.1,
+            "organ": row.2,
+            "occurrence": row.3,
+            "canonical_quantity": row.4,
+            "canonical_unit": row.5,
+            "state": row.6,
+            "attestation": row.7,
+            "at": row.8,
+        })
+    })
+    .collect::<Vec<_>>();
     Ok(json!({
         "authority": {
             "role": "origin",
@@ -3746,6 +3853,7 @@ async fn origin_social_delivery_projection(
         "recipients": recipients,
         "eligible_recipients": eligible_recipients,
         "package_receipts": receipt_values,
+        "application_handoffs": settlement_handoffs,
         "capabilities": { "configure_recipient": can_admin_delivery },
         "blocking_reasons": { "configure_recipient": if can_admin_delivery { Vec::<&str>::new() } else { vec!["delivery_admin_identity_required"] } },
         "action_payloads": if can_admin_delivery { json!({
@@ -4488,7 +4596,7 @@ async fn execute_transfers(
             });
         if status == "agreed" && !agreement_readiness.ready {
             status = "proposed";
-        } else if agreement_readiness.ready && all_agreed {
+        } else if status == "proposed" && agreement_readiness.ready && all_agreed {
             status = "agreed";
         }
         if occurrences
@@ -6481,7 +6589,14 @@ async fn execute_transfers(
             value,
         });
     }
-    append_remote_transfer_delivery_rows(store, protein, &viewer, &mut transfer_rows).await?;
+    append_remote_transfer_delivery_rows(
+        store,
+        protein,
+        &viewer,
+        installed_signer_actor,
+        &mut transfer_rows,
+    )
+    .await?;
     order_transfers(&mut transfer_rows, &protein.order);
     if let Some(limit) = protein.limit {
         transfer_rows.truncate(limit);
@@ -6495,6 +6610,7 @@ async fn append_remote_transfer_delivery_rows(
     store: &Store,
     protein: &Protein,
     viewer: &TransferViewer,
+    installed_signer_actor: Option<&str>,
     rows: &mut Vec<TransferOutput>,
 ) -> Result<(), ProteinError> {
     let Some(local_organ) = store::organs::local(&store.pool).await? else {
@@ -6579,7 +6695,157 @@ async fn append_remote_transfer_delivery_rows(
             })
         })
         .collect::<Vec<_>>();
+        let commands = store::sqlx::query_as::<
+            _,
+            (
+                String,
+                String,
+                String,
+                Option<String>,
+                Option<String>,
+                String,
+            ),
+        >(
+            "SELECT command_uid, request_id, status, last_error_code, last_error, created_at
+             FROM transfer_remote_command
+             WHERE direction = 'outgoing' AND origin_organ_uid = ? AND transfer_uid = ?
+               AND actor_person_uid = ? ORDER BY created_at, command_uid",
+        )
+        .bind(&reference.1)
+        .bind(&reference.2)
+        .bind(&reference.3)
+        .fetch_all(&store.pool)
+        .await?
+        .into_iter()
+        .map(|entry| {
+            json!({
+                "uid": entry.0,
+                "request_id": entry.1,
+                "status": entry.2,
+                "code": entry.3,
+                "message": entry.4,
+                "at": entry.5,
+            })
+        })
+        .collect::<Vec<_>>();
+        let conflicts = store::sqlx::query_as::<
+            _,
+            (
+                String,
+                Option<String>,
+                Option<i64>,
+                i64,
+                String,
+                String,
+                String,
+            ),
+        >(
+            "SELECT uid, request_id, submitted_revision, authoritative_revision,
+                    code, reviewed_payload, created_at
+             FROM transfer_remote_conflict
+             WHERE origin_organ_uid = ? AND transfer_uid = ? AND recipient_person_uid = ?
+             ORDER BY created_at, uid",
+        )
+        .bind(&reference.1)
+        .bind(&reference.2)
+        .bind(&reference.3)
+        .fetch_all(&store.pool)
+        .await?
+        .into_iter()
+        .map(|entry| {
+            json!({
+                "uid": entry.0,
+                "request_id": entry.1,
+                "submitted_revision": entry.2,
+                "authoritative_revision": entry.3,
+                "code": entry.4,
+                "retained_input": serde_json::from_str::<Value>(&entry.5).unwrap_or(Value::Null),
+                "at": entry.6,
+                "capabilities": { "refresh": reference.6 == "active" },
+                "action_payloads": {
+                    "refresh": {
+                        "action": "refresh-transfer-delivery",
+                        "transfer": reference.2,
+                        "delivery": reference.0,
+                        "person": reference.3,
+                        "request_id": Value::Null,
+                    }
+                }
+            })
+        })
+        .collect::<Vec<_>>();
+        let configured_formula = store::config::transfer_application_formula(&store.pool).await?;
+        let local_records = store::sqlx::query_as::<_, (String, String, f64)>(
+            "SELECT uid, head, quantity FROM record
+             WHERE organ_uid = ? AND deleted_at IS NULL
+               AND kind NOT IN ('transfer', 'person', 'organ', 'thread', 'message')
+             ORDER BY head, uid",
+        )
+        .bind(&local_organ.uid)
+        .fetch_all(&store.pool)
+        .await?
+        .into_iter()
+        .map(|record| json!({ "uid": record.0, "head": record.1, "quantity": record.2 }))
+        .collect::<Vec<_>>();
+        let application_handoffs = store::sqlx::query_as::<_, (
+            String, String, f64, Option<String>, f64, f64, f64, i64, String, String, Option<String>,
+            String,
+        )>(
+            "SELECT uid, occurrence_uid, canonical_quantity, canonical_unit_uid,
+                    canonical_cumulative_before, canonical_cumulative_after,
+                    canonical_remaining_after, application_direction,
+                    canonical_slice_hash, state, local_application_uid, origin_state
+             FROM transfer_remote_application_handoff
+             WHERE reference_uid = ? ORDER BY origin_created_at, uid",
+        )
+        .bind(&reference.0)
+        .fetch_all(&store.pool)
+        .await?
+        .into_iter()
+        .map(|handoff| {
+            let formula = if handoff.7 < 0 { "-incoming()" } else { configured_formula.as_str() };
+            let formula_hash = nucleus::transfer::occurrence_application_formula_hash(formula);
+            let can_apply = handoff.9 == "pending"
+                && installed_signer_actor == Some(reference.3.as_str());
+            json!({
+                "uid": handoff.0,
+                "occurrence": handoff.1,
+                "canonical_quantity": handoff.2,
+                "canonical_unit": handoff.3,
+                "canonical_cumulative_before": handoff.4,
+                "canonical_cumulative_after": handoff.5,
+                "canonical_remaining_after": handoff.6,
+                "canonical_slice_hash": handoff.8,
+                "state": if handoff.11 == "accepted" { handoff.11.as_str() } else { handoff.9.as_str() },
+                "local_state": handoff.9,
+                "origin_state": handoff.11,
+                "local_application": handoff.10,
+                "local_record_options": local_records,
+                "private_preview": {
+                    "formula_hash": formula_hash,
+                    "formula_version": 0,
+                },
+                "capabilities": { "apply": can_apply },
+                "blocking_reasons": {
+                    "apply": if can_apply { Vec::<&str>::new() } else if handoff.9 != "pending" { vec!["application_already_applied"] } else { vec!["missing_person_signer"] },
+                },
+                "action_payloads": {
+                    "apply": {
+                        "action": "apply-remote-transfer-application",
+                        "transfer": reference.2,
+                        "handoff": handoff.0,
+                        "local_record": Value::Null,
+                        "expected_formula_hash": formula_hash,
+                        "expected_formula_version": 0,
+                        "request_id": Value::Null,
+                        "person": reference.3,
+                    }
+                }
+            })
+        })
+        .collect::<Vec<_>>();
         if let Some(object) = value.as_object_mut() {
+            object.insert("application_handoffs".into(), json!(application_handoffs));
             object.insert("delivery_read_only".into(), Value::Bool(true));
             object.insert("social_delivery".into(), json!({
                 "authority": {
@@ -6590,6 +6856,7 @@ async fn append_remote_transfer_delivery_rows(
                 },
                 "local_view": {
                     "uid": reference.0,
+                    "person": reference.3,
                     "mode": reference.5,
                     "state": reference.6,
                     "freshness": {
@@ -6605,6 +6872,9 @@ async fn append_remote_transfer_delivery_rows(
                 "state": reference.6,
                 "revision": reference.7,
                 "replica_history": history,
+                "outgoing_commands": commands,
+                "conflicts": conflicts,
+                "application_handoffs": application_handoffs,
                 "capabilities": { "refresh": reference.6 == "active" },
                 "blocking_reasons": {
                     "refresh": if reference.6 == "active" { Vec::<&str>::new() } else { vec!["delivery_revoked"] },

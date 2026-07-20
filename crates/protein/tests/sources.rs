@@ -3,7 +3,12 @@
 
 use chrono::{DateTime, Utc};
 use engine::Engine;
-use engine::actions::Action;
+use engine::actions::{
+    Action, TransferOccurrenceClaimRole, TransferPromiseInput, TransferReservePoint,
+    TransferSatiation, TransferVisibility,
+};
+use engine::trust::Signer;
+use nucleus::transfer::{AgreementType, OpenPromiseReusePolicy, TransferRemainderPolicy};
 use nucleus::{Cause, NewFact, PromiseState, RecordKind};
 use protein::{
     Aggregate, AggregateOp, ExtensionInclude, GroupBy, Include, LinksInclude, Order, Predicate,
@@ -12,7 +17,11 @@ use protein::{
 use store::records::NewRecord;
 
 async fn engine() -> Engine {
-    Engine::open_memory().await.expect("engine opens")
+    let engine = Engine::open_memory().await.expect("engine opens");
+    store::organs::ensure_local(&engine.store.pool, "http://protein-sources.test")
+        .await
+        .expect("local Organ");
+    engine
 }
 
 async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
@@ -86,9 +95,30 @@ async fn fact_source_filters_and_aggregates_the_ledger() {
         .await
         .unwrap();
 
-    bump(&e, &apples, 10.0, Cause::user_edit(), at("2026-07-01T08:00:00Z")).await;
-    bump(&e, &apples, -3.0, Cause::settlement("t_X"), at("2026-07-02T08:00:00Z")).await;
-    bump(&e, &hammer, 1.0, Cause::user_edit(), at("2026-07-02T09:00:00Z")).await;
+    bump(
+        &e,
+        &apples,
+        10.0,
+        Cause::user_edit(),
+        at("2026-07-01T08:00:00Z"),
+    )
+    .await;
+    bump(
+        &e,
+        &apples,
+        -3.0,
+        Cause::settlement("t_X"),
+        at("2026-07-02T08:00:00Z"),
+    )
+    .await;
+    bump(
+        &e,
+        &hammer,
+        1.0,
+        Cause::user_edit(),
+        at("2026-07-02T09:00:00Z"),
+    )
+    .await;
 
     // W-provenance: the facts of one record
     let mut q = protein(Source::Fact);
@@ -129,8 +159,14 @@ async fn fact_source_filters_and_aggregates_the_ledger() {
         by: GroupBy::Day,
     });
     let rows = protein::execute(&e.store, &q).await.unwrap();
-    assert!(rows.iter().any(|r| r["group"] == "2026-07-01" && r["value"] == 10.0));
-    assert!(rows.iter().any(|r| r["group"] == "2026-07-02" && r["value"] == -2.0));
+    assert!(
+        rows.iter()
+            .any(|r| r["group"] == "2026-07-01" && r["value"] == 10.0)
+    );
+    assert!(
+        rows.iter()
+            .any(|r| r["group"] == "2026-07-02" && r["value"] == -2.0)
+    );
 }
 
 #[tokio::test]
@@ -169,116 +205,264 @@ async fn concept_source_reads_the_lingua_dag() {
     assert!(!names.contains(&"tool".to_string()));
 }
 
-#[tokio::test]
-async fn transfer_source_derives_the_status_ladder() {
-    let e = engine().await;
-    plain(&e, "ana.apples", 10.0).await;
-    person(&e, "maria").await;
+#[test]
+fn transfer_source_derives_the_occurrence_status_ladder() {
+    std::thread::Builder::new()
+        .name("protein-transfer-status".into())
+        .stack_size(16 * 1024 * 1024)
+        .spawn(|| {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap()
+                .block_on(async {
+                    let e = engine().await;
+                    let apples = plain(&e, "status.apples", 10.0).await;
+                    let ana = person(&e, "status.ana").await;
+                    let bia = person(&e, "status.bia").await;
+                    let ana_signer = Signer::generate(&ana, "test:status:ana");
+                    let bia_signer = Signer::generate(&bia, "test:status:bia");
 
-    let transfer = e
-        .act(
-            Action::CreateTransfer {
-                slug: Some("xfer.apples".into()),
-                head: "Apples".into(),
-                agreement: "full".into(),
-                agreement_pct: None,
-                satiation: None,
-                source: None,
-                reserve_default: None,
-                require_confirmation: false,
-            },
-            None,
-        )
+                    let promise = |uid: &str, person: &str, delta: f64| TransferPromiseInput {
+                        uid: Some(uid.into()),
+                        record: apples.clone(),
+                        party: Some(person.into()),
+                        open: false,
+                        delta,
+                        unit: None,
+                        window_start: None,
+                        window_end: None,
+                        place: None,
+                        condition: None,
+                        reserve_from: Some(TransferReservePoint::Active),
+                        reuse_policy: OpenPromiseReusePolicy::Duplicate,
+                        withdrawn: false,
+                    };
+                    e.set_signer(ana_signer.clone()).await.unwrap();
+                    let transfer = e
+                        .act(
+                            Action::CreateTransferDraft {
+                                request_id: "status:create".into(),
+                                creator: Some(ana.clone()),
+                                slug: Some("status.transfer".into()),
+                                head: "Status".into(),
+                                agreement: AgreementType::Full,
+                                agreement_pct: None,
+                                satiation: TransferSatiation::None,
+                                parent: None,
+                                source: None,
+                                visibility: TransferVisibility::Hidden,
+                                max_proximity: None,
+                                reserve_default: TransferReservePoint::Active,
+                                require_confirmation: true,
+                                default_place: None,
+                                invitees: vec![bia.clone()],
+                                promises: vec![
+                                    promise("status-give", &ana, -5.0),
+                                    promise("status-receive", &bia, 5.0),
+                                ],
+                                dependencies: Vec::new(),
+                            },
+                            None,
+                        )
+                        .await
+                        .unwrap()
+                        .created
+                        .unwrap();
+                    let invitation =
+                        store::transfers::invitations_for_transfer(&e.store.pool, &transfer)
+                            .await
+                            .unwrap()
+                            .into_iter()
+                            .find(|invitation| invitation.addressed_person_uid == bia)
+                            .unwrap();
+                    let revision = store::transfers::get(&e.store.pool, &transfer)
+                        .await
+                        .unwrap()
+                        .unwrap()
+                        .revision as u64;
+                    e.set_signer(bia_signer.clone()).await.unwrap();
+                    e.act(
+                        Action::AcceptTransferInvitation {
+                            invitation: invitation.uid,
+                            expected_revision: revision,
+                            request_id: "status:accept".into(),
+                            transfer: Some(transfer.clone()),
+                            person: Some(bia.clone()),
+                        },
+                        None,
+                    )
+                    .await
+                    .unwrap();
+                    let revision = store::transfers::get(&e.store.pool, &transfer)
+                        .await
+                        .unwrap()
+                        .unwrap()
+                        .revision as u64;
+                    assert_eq!(transfer_status(&e, &transfer).await, "proposed");
+
+                    for (person, signer, prefix) in [
+                        (&ana, &ana_signer, "status:ana"),
+                        (&bia, &bia_signer, "status:bia"),
+                    ] {
+                        for (level, suffix) in [(1, "checked"), (2, "agreed")] {
+                            e.set_signer(signer.clone()).await.unwrap();
+                            e.act(
+                                Action::SetTransferAgreementLevel {
+                                    transfer: transfer.clone(),
+                                    expected_revision: revision,
+                                    request_id: format!("{prefix}:{suffix}"),
+                                    person: Some(person.clone()),
+                                    level,
+                                },
+                                None,
+                            )
+                            .await
+                            .unwrap();
+                        }
+                    }
+                    assert_eq!(transfer_status(&e, &transfer).await, "agreed");
+
+                    let mut occurrences = Vec::new();
+                    for (person, signer, promise_uid, request_id) in [
+                        (&ana, &ana_signer, "status-give", "status:activate:give"),
+                        (
+                            &bia,
+                            &bia_signer,
+                            "status-receive",
+                            "status:activate:receive",
+                        ),
+                    ] {
+                        e.set_signer(signer.clone()).await.unwrap();
+                        let occurrence = e
+                            .act(
+                                Action::ActivateTransferOccurrence {
+                                    transfer: transfer.clone(),
+                                    promise: promise_uid.into(),
+                                    expected_revision: revision,
+                                    request_id: request_id.into(),
+                                    person: Some(person.clone()),
+                                },
+                                None,
+                            )
+                            .await
+                            .unwrap()
+                            .created
+                            .unwrap();
+                        occurrences.push((person.clone(), occurrence));
+                    }
+                    assert_eq!(transfer_status(&e, &transfer).await, "in_transfer");
+
+                    for (index, (owner, occurrence)) in occurrences.iter().enumerate() {
+                        for (person, signer, role, suffix) in [
+                            (
+                                &ana,
+                                &ana_signer,
+                                TransferOccurrenceClaimRole::Delivery,
+                                "delivery",
+                            ),
+                            (
+                                &bia,
+                                &bia_signer,
+                                TransferOccurrenceClaimRole::Receipt,
+                                "receipt",
+                            ),
+                        ] {
+                            e.set_signer(signer.clone()).await.unwrap();
+                            e.act(
+                                Action::SetTransferOccurrenceClaim {
+                                    occurrence: occurrence.clone(),
+                                    request_id: format!("status:{index}:{suffix}"),
+                                    person: Some(person.clone()),
+                                    role,
+                                    claimed: true,
+                                },
+                                None,
+                            )
+                            .await
+                            .unwrap();
+                        }
+                        let signer = if owner == &ana {
+                            &ana_signer
+                        } else {
+                            &bia_signer
+                        };
+                        e.set_signer(signer.clone()).await.unwrap();
+                        let preview = settlement_preview(&e, occurrence, owner, 5.0).await;
+                        e.act(
+                            Action::SettleTransferOccurrence {
+                                occurrence: occurrence.clone(),
+                                request_id: format!("status:settle:{index}"),
+                                person: Some(owner.clone()),
+                                canonical_quantity: 5.0,
+                                expected_remaining_quantity: preview["expected_remaining_quantity"]
+                                    .as_f64()
+                                    .unwrap(),
+                                expected_local_delta: preview["expected_local_delta"]
+                                    .as_f64()
+                                    .unwrap(),
+                                expected_application_formula_hash:
+                                    preview["expected_application_formula_hash"]
+                                        .as_str()
+                                        .unwrap()
+                                        .into(),
+                                expected_application_formula_version:
+                                    preview["expected_application_formula_version"]
+                                        .as_u64()
+                                        .unwrap(),
+                                expected_remainder_policy: TransferRemainderPolicy::Visible,
+                            },
+                            None,
+                        )
+                        .await
+                        .unwrap();
+                        assert_eq!(
+                            transfer_status(&e, &transfer).await,
+                            if index == 0 {
+                                "partially_settled"
+                            } else {
+                                "settled"
+                            }
+                        );
+                    }
+                });
+        })
+        .unwrap()
+        .join()
+        .unwrap();
+}
+
+async fn transfer_status(engine: &Engine, transfer: &str) -> String {
+    let mut query = protein(Source::Transfer);
+    query.filter = vec![Predicate::UidEq(transfer.into())];
+    protein::execute(&engine.store, &query)
         .await
         .unwrap()
-        .created
-        .unwrap();
+        .into_iter()
+        .find(|row| row["uid"] == transfer)
+        .unwrap()["status"]
+        .as_str()
+        .unwrap()
+        .into()
+}
 
-    let status = |e: &Engine| {
-        let store = e.store.clone();
-        async move {
-            let rows = protein::execute(&store, &protein(Source::Transfer))
-                .await
-                .unwrap();
-            rows[0]["status"].as_str().unwrap().to_string()
-        }
-    };
-    assert_eq!(status(&e).await, "draft", "a bundle with no promises");
-
-    let party = e
-        .act(
-            Action::AddParty {
-                transfer: transfer.clone(),
-                actor: "maria".into(),
-            },
-            None,
-        )
+async fn settlement_preview(
+    engine: &Engine,
+    occurrence: &str,
+    person: &str,
+    quantity: f64,
+) -> serde_json::Value {
+    let mut query = protein(Source::TransferSettlementPreview);
+    query.filter = vec![
+        Predicate::UidEq(occurrence.into()),
+        Predicate::QuantityEq(quantity),
+    ];
+    protein::execute_for_with_signer(&engine.store, &query, None, Some(person))
         .await
         .unwrap()
-        .created
-        .unwrap();
-    let promise = e
-        .act(
-            Action::AddPromiseToTransfer {
-                transfer: transfer.clone(),
-                record: "ana.apples".into(),
-                delta: -5.0,
-                party: "maria".into(),
-                window_end: None,
-                condition: None,
-            },
-            None,
-        )
-        .await
+        .into_iter()
+        .next()
         .unwrap()
-        .created
-        .unwrap();
-    assert_eq!(status(&e).await, "proposed");
-
-    // agreeing at level 2 also moves the party's bundled promises to agreed
-    e.act(
-        Action::AgreeTransfer {
-            transfer: transfer.clone(),
-            party: party.clone(),
-            level: 2,
-        },
-        None,
-    )
-    .await
-    .unwrap();
-    let _ = &promise;
-    assert_eq!(status(&e).await, "agreed", "policy satisfied, all agreed");
-
-    e.act(
-        Action::ActivateTransfer {
-            transfer: transfer.clone(),
-        },
-        None,
-    )
-    .await
-    .unwrap();
-    assert_eq!(status(&e).await, "in_transfer");
-
-    e.act(
-        Action::SettleTransfer {
-            transfer: transfer.clone(),
-            actor: "maria".into(),
-        },
-        None,
-    )
-    .await
-    .unwrap();
-    assert_eq!(status(&e).await, "settled");
-
-    e.act(
-        Action::Deactivate {
-            target: transfer.clone(),
-        },
-        None,
-    )
-    .await
-    .unwrap();
-    assert_eq!(status(&e).await, "inactive");
 }
 
 #[tokio::test]

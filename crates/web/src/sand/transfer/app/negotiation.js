@@ -153,7 +153,26 @@ function threadBlock(row, thread, options) {
     const item = el("article", "messageRow");
     const meta = [message.sender, message.created_at ? formatDate(message.created_at) : ""].filter(Boolean).join(" · ");
     if (meta) item.append(el("div", "messageMeta", meta));
-    item.append(el("p", "", message.body || ""));
+    if (message.body) item.append(el("p", "", message.body));
+    const references = Array.isArray(message.references) ? message.references : [];
+    if (references.length) {
+      const list = el("div", "messageReferences");
+      for (const reference of references) {
+        const local = (options.records || []).some((record) => record.uid === reference.uid);
+        if (local) {
+          const control = button(reference.head || reference.slug || "Record", "referenceButton", "button");
+          control.title = reference.slug || reference.uid || "Referenced Record";
+          control.addEventListener("click", () => options.onOpenRecord?.(reference.uid));
+          list.append(control);
+        } else {
+          const disclosed = el("article", "disclosedReference");
+          disclosed.append(el("strong", "", reference.head || reference.slug || "Record"));
+          if (reference.body) disclosed.append(el("p", "", reference.body));
+          list.append(disclosed);
+        }
+      }
+      item.append(list);
+    }
     messages.append(item);
   }
   if (!messages.childElementCount) messages.append(emptyInline("No messages"));
@@ -164,18 +183,45 @@ function threadBlock(row, thread, options) {
 
 function messageForm(row, thread, options) {
   const form = el("form", "messageForm");
+  const remote = row.social_delivery?.authority?.canonical_writes === "remote";
   const body = el("textarea", "");
   body.rows = 3;
   body.placeholder = `Message ${thread.head || "thread"}`;
+  const references = el("select", "messageReferenceSelect");
+  references.multiple = true;
+  references.size = 3;
+  for (const record of remote ? [] : options.records || []) {
+    const option = el("option", "", record.head || record.slug || record.uid || "Record");
+    option.value = record.uid;
+    references.append(option);
+  }
   const submit = button("Send", "primaryButton");
   const key = `transfer:${row.uid}:thread:${thread.uid}:message`;
   syncButton(submit, actionState(options, key), "Send", options);
-  form.append(body, submit);
+  form.append(body);
+  if (references.options.length) form.append(label("Documents / receipts", references));
+  form.append(submit);
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     const text = body.value.trim();
-    if (!text || submit.disabled) return;
-    options.onAction?.(key, { action: "create-message", thread: thread.uid, body: text, parent: null });
+    const selectedReferences = [...references.selectedOptions].map((option) => option.value);
+    if ((!text && !selectedReferences.length) || submit.disabled) return;
+    options.onAction?.(key, remote ? {
+      action: "create-transfer-message",
+      transfer: row.uid,
+      thread: thread.uid,
+      body: text,
+      parent: null,
+      references: selectedReferences,
+      person: row.viewer?.person ?? row.social_delivery?.local_view?.person,
+      request_id: requestId("message"),
+    } : {
+      action: "create-message",
+      thread: thread.uid,
+      body: text,
+      parent: null,
+      references: selectedReferences,
+    });
   });
   const error = actionState(options, key)?.error;
   if (error) form.append(alert(error));
@@ -195,7 +241,14 @@ function newThreadForm(row, options) {
     event.preventDefault();
     const title = head.value.trim();
     if (!title || submit.disabled) return;
-    options.onAction?.(key, { action: "create-thread", target: row.uid, head: title });
+    const remote = row.social_delivery?.authority?.canonical_writes === "remote";
+    options.onAction?.(key, remote ? {
+      action: "create-transfer-thread",
+      transfer: row.uid,
+      head: title,
+      person: row.viewer?.person ?? row.social_delivery?.local_view?.person,
+      request_id: requestId("thread"),
+    } : { action: "create-thread", target: row.uid, head: title });
   });
   const error = actionState(options, key)?.error;
   if (error) form.append(alert(error));

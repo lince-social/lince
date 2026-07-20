@@ -1,7 +1,10 @@
 use {
     crate::domain::{
-        board::BoardWorkspace,
-        lince_package::{LincePackage, build_lince_archive, parse_lince_package},
+        board::{BoardCard, BoardWorkspace},
+        lince_package::{
+            LEGACY_PACKAGE_ARCHIVE_EXTENSION, LincePackage, PACKAGE_EXTENSION, build_lince_archive,
+            parse_lince_package, parse_manifest_from_html, slugify,
+        },
     },
     serde::{Deserialize, Serialize},
     std::{
@@ -135,6 +138,81 @@ pub fn parse_workspace_archive(
     })
 }
 
+pub fn reconstruct_package_from_card(card: &BoardCard) -> Result<LincePackage, String> {
+    let title = fallback_string(&card.title, "Widget importado");
+    let filename = if card.package_name.trim().is_empty() {
+        format!("{}{}", slugify(&title), PACKAGE_EXTENSION)
+    } else {
+        let package_name = card.package_name.trim();
+        if package_name.contains('.') {
+            package_name.to_string()
+        } else {
+            format!("{}{}", slugify(package_name), PACKAGE_EXTENSION)
+        }
+    };
+    let html = if card.html.trim().is_empty() {
+        "<!doctype html><html lang=\"pt-BR\"><body></body></html>".to_string()
+    } else {
+        card.html.clone()
+    };
+    let manifest = parse_manifest_from_html(&html).unwrap_or_else(|_| {
+        crate::domain::lince_package::PackageManifest {
+            icon: "[ ]".into(),
+            title: title.clone(),
+            author: fallback_string(&card.author, "Workspace importado"),
+            version: "0.1.0".into(),
+            description: fallback_string(
+                &card.description,
+                "Widget reconstruido a partir de um card exportado do workspace.",
+            ),
+            details:
+                "Widget reconstruido automaticamente a partir do estado exportado de um workspace."
+                    .into(),
+            initial_width: package_width_hint(card),
+            initial_height: package_height_hint(card),
+            requires_server: card.requires_server,
+            permissions: card.permissions.clone(),
+        }
+    });
+    let manifest = crate::domain::lince_package::PackageManifest {
+        title,
+        author: fallback_string(&card.author, &manifest.author),
+        description: fallback_string(&card.description, &manifest.description),
+        initial_width: package_width_hint(card),
+        initial_height: package_height_hint(card),
+        requires_server: card.requires_server || manifest.requires_server,
+        permissions: if card.permissions.is_empty() {
+            manifest.permissions.clone()
+        } else {
+            card.permissions.clone()
+        },
+        ..manifest
+    };
+
+    if filename
+        .to_ascii_lowercase()
+        .ends_with(LEGACY_PACKAGE_ARCHIVE_EXTENSION)
+    {
+        LincePackage::new_archive(
+            Some(filename),
+            manifest,
+            html,
+            "index.html",
+            Default::default(),
+        )
+    } else {
+        LincePackage::new(Some(filename), manifest, html)
+    }
+}
+
+fn package_width_hint(card: &BoardCard) -> u8 {
+    ((card.width / 180.0).round() as i64).clamp(1, 6) as u8
+}
+
+fn package_height_hint(card: &BoardCard) -> u8 {
+    ((card.height / 160.0).round() as i64).clamp(1, 6) as u8
+}
+
 fn is_workspace_archive_filename(filename: &str) -> bool {
     let lowercase = filename.trim().to_ascii_lowercase();
     lowercase.ends_with(WORKSPACE_ARCHIVE_EXTENSION)
@@ -158,6 +236,15 @@ fn unique_packages(packages: &[LincePackage]) -> Vec<LincePackage> {
     }
 
     unique
+}
+
+fn fallback_string(value: &str, fallback: &str) -> String {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        fallback.to_string()
+    } else {
+        trimmed.to_string()
+    }
 }
 
 fn read_archive_entry_bytes(

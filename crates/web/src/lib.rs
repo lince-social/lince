@@ -60,6 +60,7 @@ pub async fn serve_cell_api_only(
 ) -> Result<(), IoError> {
     use axum::{
         Json,
+        body::Body,
         extract::{Multipart, Path, State, WebSocketUpgrade, ws::WebSocket},
         http::{HeaderMap, HeaderName, HeaderValue, StatusCode, header},
         response::{Html, IntoResponse, Response},
@@ -146,7 +147,10 @@ pub async fn serve_cell_api_only(
     /// not the visitor is logged in (there is no separate login page to fall
     /// back to). Missing/invalid/stale tokens and no-auth-required Cells all
     /// resolve to `None` (no viewer identity to show), never a hard failure.
-    async fn viewer_from_headers(state: &CellApiState, headers: &HeaderMap) -> Option<ViewerBootstrap> {
+    async fn viewer_from_headers(
+        state: &CellApiState,
+        headers: &HeaderMap,
+    ) -> Option<ViewerBootstrap> {
         if !state.local_auth_required {
             return None;
         }
@@ -240,9 +244,7 @@ pub async fn serve_cell_api_only(
             CELL_JWT_TTL,
         )
         .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
-        let cookie = format!(
-            "{CELL_AUTH_COOKIE}={token}; Path=/; HttpOnly; SameSite=Lax"
-        );
+        let cookie = format!("{CELL_AUTH_COOKIE}={token}; Path=/; HttpOnly; SameSite=Lax");
         let mut response = Json(LoginResponse {
             token: token.clone(),
             token_type: "Bearer",
@@ -276,6 +278,56 @@ pub async fn serve_cell_api_only(
             .await
             .map(Json)
             .map_err(|error| (axum::http::StatusCode::BAD_REQUEST, error))
+    }
+
+    async fn export_workspace(
+        State(state): State<CellApiState>,
+        headers: HeaderMap,
+        Path(workspace_id): Path<String>,
+    ) -> Result<Response, (StatusCode, String)> {
+        authenticate_headers(&state, &headers).await?;
+        let board_state = state.board_state.snapshot().await;
+        let workspace = board_state
+            .workspaces
+            .iter()
+            .find(|workspace| workspace.id == workspace_id)
+            .cloned()
+            .ok_or_else(|| (StatusCode::NOT_FOUND, "Workspace nao encontrada.".into()))?;
+        let mut packages = Vec::new();
+        let mut seen = std::collections::BTreeSet::new();
+        for card in workspace.cards.iter().filter(|card| card.kind == "package") {
+            let package = if card.package_name.trim().is_empty() {
+                crate::domain::workspace_archive::reconstruct_package_from_card(card)
+            } else {
+                state
+                    .packages
+                    .load_by_filename(card.package_name.trim())
+                    .or_else(|_| {
+                        crate::domain::workspace_archive::reconstruct_package_from_card(card)
+                    })
+            }
+            .map_err(|message| (StatusCode::BAD_GATEWAY, message))?;
+            if seen.insert(package.archive_filename()) {
+                packages.push(package);
+            }
+        }
+        let archive =
+            crate::domain::workspace_archive::build_workspace_archive(&workspace, &packages)
+                .map_err(|message| (StatusCode::BAD_GATEWAY, message))?;
+        let filename = format!(
+            "{}.workspace.sand",
+            crate::domain::lince_package::slugify(&workspace.name)
+        );
+
+        Response::builder()
+            .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE, "application/zip")
+            .header(
+                header::CONTENT_DISPOSITION,
+                format!("attachment; filename=\"{filename}\""),
+            )
+            .body(Body::from(archive))
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))
     }
 
     async fn list_empty_authed(
@@ -330,7 +382,12 @@ pub async fn serve_cell_api_only(
         let safe = std::path::Path::new(&filename)
             .file_name()
             .and_then(|value| value.to_str())
-            .ok_or_else(|| (StatusCode::BAD_REQUEST, "Nome de grupo invalido.".to_string()))?;
+            .ok_or_else(|| {
+                (
+                    StatusCode::BAD_REQUEST,
+                    "Nome de grupo invalido.".to_string(),
+                )
+            })?;
         let path = crate::infrastructure::paths::sand_dir().join(safe);
         let bytes = tokio::fs::read(&path)
             .await
@@ -400,13 +457,17 @@ pub async fn serve_cell_api_only(
         Path((filename, asset_path)): Path<(String, String)>,
     ) -> Result<impl IntoResponse, (StatusCode, String)> {
         authenticate_headers(&state, &headers).await?;
-        let packages = crate::sand::official_packages().map_err(|message| {
-            (StatusCode::INTERNAL_SERVER_ERROR, message)
-        })?;
+        let packages = crate::sand::official_packages()
+            .map_err(|message| (StatusCode::INTERNAL_SERVER_ERROR, message))?;
         let package = packages
             .into_iter()
             .find(|package| package.archive_filename() == filename)
-            .ok_or_else(|| (StatusCode::NOT_FOUND, "Esse widget oficial nao existe.".into()))?;
+            .ok_or_else(|| {
+                (
+                    StatusCode::NOT_FOUND,
+                    "Esse widget oficial nao existe.".into(),
+                )
+            })?;
         let content_root_url = format!(
             "/host/packages/local/by-filename/{}/content",
             urlencoding::encode(&filename)
@@ -494,7 +555,10 @@ pub async fn serve_cell_api_only(
     ) -> Result<impl IntoResponse, (StatusCode, String)> {
         authenticate_headers(&state, &headers).await?;
         if !media_assets::valid_media_filename(&name) {
-            return Err((StatusCode::BAD_REQUEST, "invalid media filename".to_string()));
+            return Err((
+                StatusCode::BAD_REQUEST,
+                "invalid media filename".to_string(),
+            ));
         }
         let path = crate::infrastructure::paths::media_dir().join(&name);
         let bytes = tokio::fs::read(&path)
@@ -658,15 +722,28 @@ pub async fn serve_cell_api_only(
         .route("/board/frame.js", get(static_assets::frame_js))
         .route("/board/editor.js", get(static_assets::editor_js))
         .route("/board/vendor/d3.v7.min.js", get(static_assets::d3_js))
-        .route("/board/vendor/d3.LICENSE.txt", get(static_assets::d3_license))
+        .route(
+            "/board/vendor/d3.LICENSE.txt",
+            get(static_assets::d3_license),
+        )
         .route("/api/auth/login", post(login))
         .route("/auth/login", post(login))
         .route("/host/auth/login", post(login))
         .route("/organ", get(list_organs))
-        .route("/host/board/state", get(get_board_state).put(put_board_state))
+        .route(
+            "/host/board/state",
+            get(get_board_state).put(put_board_state),
+        )
+        .route(
+            "/host/board/workspaces/{workspace_id}/export",
+            get(export_workspace),
+        )
         .route("/host/notifications", get(list_empty_authed))
         .route("/host/packages/local", get(list_local_packages))
-        .route("/host/packages/local/group/{filename}", get(get_local_group))
+        .route(
+            "/host/packages/local/group/{filename}",
+            get(get_local_group),
+        )
         .route("/host/packages/local/{package_id}", get(get_local_package))
         .route(
             "/host/packages/local/by-filename/{filename}/content/{*asset_path}",

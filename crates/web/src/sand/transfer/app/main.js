@@ -31,6 +31,7 @@ const elements = {
   viewModes: byId("view-modes"),
   workspace: byId("workspace"),
   create: byId("create-transfer"),
+  preset: byId("workflow-preset"),
   createBlocker: byId("create-blocker"),
   creator: byId("creator"),
 };
@@ -79,6 +80,11 @@ const composer = createTransferComposer(elements.creator, {
 });
 
 elements.create.addEventListener("click", () => openCreator());
+elements.preset.addEventListener("change", () => {
+  const preset = elements.preset.value;
+  elements.preset.value = "";
+  if (preset) openCreator({ preset });
+});
 elements.emptyCreate.addEventListener("click", () => openCreator());
 elements.emptyClear.addEventListener("click", clearInboxFilters);
 elements.retry.addEventListener("click", subscribeTransfers);
@@ -297,6 +303,7 @@ function render() {
     actionState: (key) => actionStates.get(key) || null,
     onSettlementPreviewChange: render,
     people: personOptions(),
+    records: referenceRecordOptions(),
     viewer: context?.viewer,
     mutationsEnabled,
     hierarchyRows: rows,
@@ -346,6 +353,10 @@ function syncComposerOptions() {
 
 function personOptions() {
   return records.filter((record) => record?.kind === "person");
+}
+
+function referenceRecordOptions() {
+  return records.filter((record) => record?.kind === "plain");
 }
 
 async function performLiveAction(key, row, action, scopeRows = null) {
@@ -409,11 +420,11 @@ function actionProjectionObserved(state) {
 }
 
 function actionTargetFingerprint(row, action) {
-  if (action?.action === "create-message") {
+  if (action?.action === "create-message" || action?.action === "create-transfer-message") {
     const thread = row?.threads?.find((candidate) => candidate.uid === action.thread);
     return JSON.stringify((thread?.messages || []).map((message) => message.uid));
   }
-  if (action?.action === "create-thread") {
+  if (action?.action === "create-thread" || action?.action === "create-transfer-thread") {
     return JSON.stringify((row?.threads || []).map((thread) => thread.uid));
   }
   return null;
@@ -438,6 +449,8 @@ function syncCreateCapability() {
     button.disabled = !enabled;
     button.title = enabled ? "Create transfer" : blocker;
   }
+  elements.preset.disabled = !enabled;
+  elements.preset.title = enabled ? "Start from workflow preset" : blocker;
 }
 
 function canCreate() {

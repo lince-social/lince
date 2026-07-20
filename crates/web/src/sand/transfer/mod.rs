@@ -14,6 +14,7 @@ const APP_MODEL_JS: &str = include_str!("app/model.js");
 const APP_RENDER_JS: &str = include_str!("app/render.js");
 const APP_CREATE_JS: &str = include_str!("app/create.js");
 const APP_CREATE_MODEL_JS: &str = include_str!("app/create-model.js");
+const APP_PRESETS_JS: &str = include_str!("app/presets.js");
 const APP_AGREEMENT_JS: &str = include_str!("app/agreement.js");
 const APP_NEGOTIATION_JS: &str = include_str!("app/negotiation.js");
 const APP_OCCURRENCE_JS: &str = include_str!("app/occurrence.js");
@@ -37,7 +38,7 @@ pub(crate) fn package() -> LincePackage {
         icon: "⇄".into(),
         title: "Transfers".into(),
         author: "Lince Labs".into(),
-        version: "0.2.0".into(),
+        version: "0.3.0".into(),
         description: "Create and inspect transfer commitments from the whole portfolio down to one promise."
             .into(),
         details: "A live Transfer surface. The overview preserves agreement, hierarchy, party, promise, balance, and confirmation context; a guided composer reviews public terms and local quantity effects before committing typed Actions.".into(),
@@ -61,6 +62,7 @@ pub(crate) fn package() -> LincePackage {
         "app/create-model.js".into(),
         APP_CREATE_MODEL_JS.as_bytes().to_vec(),
     );
+    assets.insert("app/presets.js".into(), APP_PRESETS_JS.as_bytes().to_vec());
     assets.insert(
         "app/agreement.js".into(),
         APP_AGREEMENT_JS.as_bytes().to_vec(),
@@ -78,7 +80,10 @@ pub(crate) fn package() -> LincePackage {
         APP_HIERARCHY_JS.as_bytes().to_vec(),
     );
     assets.insert("app/bulk.js".into(), APP_BULK_JS.as_bytes().to_vec());
-    assets.insert("app/delivery.js".into(), APP_DELIVERY_JS.as_bytes().to_vec());
+    assets.insert(
+        "app/delivery.js".into(),
+        APP_DELIVERY_JS.as_bytes().to_vec(),
+    );
     assets.insert(
         "app/delivery/model.js".into(),
         APP_DELIVERY_MODEL_JS.as_bytes().to_vec(),
@@ -170,6 +175,7 @@ mod tests {
         assert!(assets.contains(&"app/render.js"));
         assert!(assets.contains(&"app/create.js"));
         assert!(assets.contains(&"app/create-model.js"));
+        assert!(assets.contains(&"app/presets.js"));
         assert!(assets.contains(&"app/agreement.js"));
         assert!(assets.contains(&"app/negotiation.js"));
         assert!(assets.contains(&"app/occurrence.js"));

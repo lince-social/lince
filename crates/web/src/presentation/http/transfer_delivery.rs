@@ -10,7 +10,8 @@ use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use chrono::{DateTime, Utc};
 use nucleus::transfer_delivery::{
     SignedOrganRequestV1, TransferApplicationAttestationV1, TransferDeliveryMode,
-    TransferDeliveryPolicyEventV1, TransferEnvelopeV1, TransferRemoteCommandV1,
+    TransferDeliveryPolicyEventV1, TransferEnvelopeV1, TransferPackageReceiptV1,
+    TransferRemoteCommandV1,
 };
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::json;
@@ -25,6 +26,7 @@ const COMMAND_PATH: &str = "/organ/transfers/commands";
 const COMMAND_RESULT_PATH: &str = "/organ/transfers/command-results";
 const POLICY_PATH: &str = "/organ/transfers/policy-events";
 const ATTESTATION_PATH: &str = "/organ/transfers/application-attestations";
+const ATTESTATION_RESULT_PATH: &str = "/organ/transfers/application-attestation-results";
 
 type HttpError = (StatusCode, String);
 
@@ -39,17 +41,6 @@ pub(crate) struct PullRequest {
     transfer_uid: String,
     recipient_person_uid: String,
     after_cursor: u64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct PackageReceipt {
-    request_id: String,
-    envelope_uid: String,
-    transfer_uid: String,
-    recipient_person_uid: String,
-    cursor: u64,
-    kind: String,
-    created_at: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -91,6 +82,13 @@ pub(crate) struct ApplicationAttestationRequest {
     attestation: TransferApplicationAttestationV1,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct ApplicationAttestationResult {
+    handoff_uid: String,
+    attestation_uid: String,
+    state: String,
+}
+
 pub(crate) async fn receive_envelope(
     State(state): State<CellApiState>,
     Json(wire): Json<Authenticated<DeliveryPush>>,
@@ -111,19 +109,27 @@ pub(crate) async fn receive_envelope(
     accept_policy_event(&state, &wire.body.policy, now).await?;
     accept_envelope(&state, &wire.body.envelope, now).await?;
 
-    let receipt = PackageReceipt {
-        request_id: format!(
-            "transfer-package-received:{}:{}",
-            wire.body.envelope.recipient_organ_uid, wire.body.envelope.envelope_uid
-        ),
-        envelope_uid: wire.body.envelope.envelope_uid.clone(),
-        transfer_uid: wire.body.envelope.transfer_uid.clone(),
-        recipient_person_uid: wire.body.envelope.recipient_person_uid.clone(),
-        cursor: wire.body.envelope.cursor,
-        kind: "received".into(),
-        // Stable across an exact envelope retry, so the signed receipt proof is stable too.
-        created_at: wire.body.envelope.created_at.clone(),
-    };
+    let receipt = state
+        .engine
+        .sign_transfer_package_receipt(TransferPackageReceiptV1 {
+            version: nucleus::transfer_delivery::TRANSFER_ENVELOPE_VERSION,
+            request_id: format!(
+                "transfer-package-received:{}:{}",
+                wire.body.envelope.recipient_organ_uid, wire.body.envelope.envelope_uid
+            ),
+            envelope_uid: wire.body.envelope.envelope_uid.clone(),
+            transfer_uid: wire.body.envelope.transfer_uid.clone(),
+            origin_organ_uid: wire.body.envelope.origin_organ_uid.clone(),
+            recipient_person_uid: wire.body.envelope.recipient_person_uid.clone(),
+            recipient_organ_uid: wire.body.envelope.recipient_organ_uid.clone(),
+            cursor: wire.body.envelope.cursor,
+            kind: "received".into(),
+            created_at: wire.body.envelope.created_at.clone(),
+            key_id: String::new(),
+            signature: String::new(),
+        })
+        .await
+        .map_err(engine_error)?;
     signed_response(
         &state,
         RECEIPT_PATH,
@@ -277,21 +283,37 @@ pub(crate) async fn receive_application_attestation(
         )
         .await
         .map_err(engine_error)?;
-    Ok(Json(json!({
-        "handoff_uid": handoff.uid,
-        "state": handoff.state.as_str(),
-        "attestation_uid": handoff.attestation_uid,
-    })))
+    signed_response(
+        &state,
+        ATTESTATION_RESULT_PATH,
+        &wire.auth.sender_organ_uid,
+        ApplicationAttestationResult {
+            handoff_uid: handoff.uid,
+            state: handoff.state.as_str().into(),
+            attestation_uid: handoff.attestation_uid.unwrap_or_default(),
+        },
+        now,
+    )
+    .await
 }
 
 pub(crate) async fn receive_receipt(
     State(state): State<CellApiState>,
-    Json(wire): Json<Authenticated<PackageReceipt>>,
+    Json(wire): Json<Authenticated<TransferPackageReceiptV1>>,
 ) -> Result<impl IntoResponse, HttpError> {
     let now = Utc::now();
     verify_wire(&state, &wire, RECEIPT_PATH, now).await?;
-    if wire.body.kind != "received" && wire.body.kind != "seen" {
-        return Err(bad_request("Unknown package receipt kind"));
+    state
+        .engine
+        .verify_transfer_package_receipt(&wire.body)
+        .await
+        .map_err(engine_error)?;
+    if wire.auth.sender_organ_uid != wire.body.recipient_organ_uid
+        || wire.auth.recipient_organ_uid != wire.body.origin_organ_uid
+    {
+        return Err(forbidden(
+            "Organ request and package receipt identities differ",
+        ));
     }
     let delivery_uid: Option<String> = store::sqlx::query_scalar(
         "SELECT uid FROM transfer_delivery_policy
@@ -306,6 +328,23 @@ pub(crate) async fn receive_receipt(
     .await
     .map_err(internal)?;
     let delivery_uid = delivery_uid.ok_or_else(|| forbidden("Receipt has no delivery policy"))?;
+    let envelope_matches: bool = store::sqlx::query_scalar(
+        "SELECT EXISTS(
+             SELECT 1 FROM transfer_delivery_outbox
+             WHERE delivery_uid = ? AND envelope_uid = ? AND cursor = ?
+         )",
+    )
+    .bind(&delivery_uid)
+    .bind(&wire.body.envelope_uid)
+    .bind(wire.body.cursor as i64)
+    .fetch_one(&state.store.pool)
+    .await
+    .map_err(internal)?;
+    if !envelope_matches {
+        return Err(forbidden(
+            "Package receipt does not identify an envelope sent under this policy",
+        ));
+    }
     let signed_payload = serde_json::to_value(&wire.body).map_err(internal)?;
     let uid = store::transfer_delivery::record_package_receipt(
         &state.store.pool,
@@ -316,8 +355,8 @@ pub(crate) async fn receive_receipt(
             kind: &wire.body.kind,
             actor_organ_uid: &wire.auth.sender_organ_uid,
             payload_hash: &wire.auth.body_hash,
-            key_id: &wire.auth.key_id,
-            signature: &wire.auth.signature,
+            key_id: &wire.body.key_id,
+            signature: &wire.body.signature,
             signed_payload: &signed_payload,
             local_fact_uid: None,
             request_id: &wire.body.request_id,
@@ -403,6 +442,9 @@ pub(crate) fn spawn_worker(state: CellApiState) {
             }
             if let Err(error) = drain_pulls(&state, &client).await {
                 tracing::warn!(%error, "Transfer pull drain failed");
+            }
+            if let Err(error) = drain_application_attestations(&state, &client).await {
+                tracing::warn!(%error, "Transfer application attestation drain failed");
             }
         }
     });
@@ -522,14 +564,22 @@ async fn push_envelope(
     if !response.status().is_success() {
         return Err(format!("recipient returned HTTP {}", response.status()));
     }
-    let receipt: Authenticated<PackageReceipt> = response
+    let receipt: Authenticated<TransferPackageReceiptV1> = response
         .json()
         .await
         .map_err(|error| format!("invalid recipient receipt: {error}"))?;
     verify_wire(state, &receipt, RECEIPT_PATH, Utc::now())
         .await
         .map_err(|(_, error)| error)?;
+    state
+        .engine
+        .verify_transfer_package_receipt(&receipt.body)
+        .await
+        .map_err(|error| error.to_string())?;
     if receipt.auth.sender_organ_uid != policy.recipient_organ_uid
+        || receipt.auth.recipient_organ_uid != policy.origin_organ_uid
+        || receipt.body.recipient_organ_uid != policy.recipient_organ_uid
+        || receipt.body.origin_organ_uid != policy.origin_organ_uid
         || receipt.body.envelope_uid != row.envelope_uid
         || receipt.body.cursor != row.cursor
         || receipt.body.kind != "received"
@@ -546,8 +596,8 @@ async fn push_envelope(
             kind: &receipt.body.kind,
             actor_organ_uid: &receipt.auth.sender_organ_uid,
             payload_hash: &receipt.auth.body_hash,
-            key_id: &receipt.auth.key_id,
-            signature: &receipt.auth.signature,
+            key_id: &receipt.body.key_id,
+            signature: &receipt.body.signature,
             signed_payload: &signed_payload,
             local_fact_uid: None,
             request_id: &receipt.body.request_id,
@@ -632,6 +682,96 @@ async fn drain_commands(state: &CellApiState, client: &reqwest::Client) -> Resul
                 .map_err(|store_error| store_error.to_string())?;
             }
         }
+    }
+    Ok(())
+}
+
+async fn drain_application_attestations(
+    state: &CellApiState,
+    client: &reqwest::Client,
+) -> Result<(), String> {
+    for row in
+        store::transfer_delivery::application_attestations_due(&state.store.pool, Utc::now(), 16)
+            .await
+            .map_err(|error| error.to_string())?
+    {
+        let result = push_application_attestation(state, client, &row).await;
+        match result {
+            Ok(()) => store::transfer_delivery::application_attestation_mark_sent(
+                &state.store.pool,
+                &row.attestation_uid,
+                Utc::now(),
+            )
+            .await
+            .map_err(|error| error.to_string())?,
+            Err(error) => store::transfer_delivery::application_attestation_mark_failed(
+                &state.store.pool,
+                &row.attestation_uid,
+                Utc::now(),
+                &error,
+            )
+            .await
+            .map_err(|store_error| store_error.to_string())?,
+        }
+    }
+    Ok(())
+}
+
+async fn push_application_attestation(
+    state: &CellApiState,
+    client: &reqwest::Client,
+    row: &store::transfer_delivery::AttestationOutboxRow,
+) -> Result<(), String> {
+    let contact = store::organs::contact(&state.store.pool, &row.origin_organ_uid)
+        .await
+        .map_err(|error| error.to_string())?
+        .ok_or_else(|| "origin Organ is not introduced".to_string())?;
+    if contact.trust == "blocked" || !contact.sync_out {
+        return Err("origin Organ is blocked or outgoing delivery is disabled".into());
+    }
+    let attestation: TransferApplicationAttestationV1 = serde_json::from_str(&row.payload)
+        .map_err(|error| format!("invalid queued application attestation: {error}"))?;
+    let body = ApplicationAttestationRequest {
+        handoff_uid: row.handoff_uid.clone(),
+        request_id: format!("accept-transfer-application:{}", row.attestation_uid),
+        attestation,
+    };
+    let auth = state
+        .engine
+        .sign_organ_request(
+            "POST",
+            ATTESTATION_PATH,
+            &body_bytes(&body).map_err(|error| error.to_string())?,
+            &row.origin_organ_uid,
+            Utc::now(),
+        )
+        .await
+        .map_err(|error| error.to_string())?;
+    let response = client
+        .post(format!(
+            "{}{ATTESTATION_PATH}",
+            contact.base_url.trim_end_matches('/')
+        ))
+        .json(&Authenticated { auth, body })
+        .send()
+        .await
+        .map_err(|error| error.to_string())?;
+    if !response.status().is_success() {
+        return Err(format!("origin returned HTTP {}", response.status()));
+    }
+    let wire: Authenticated<ApplicationAttestationResult> = response
+        .json()
+        .await
+        .map_err(|error| format!("invalid application attestation result: {error}"))?;
+    verify_wire(state, &wire, ATTESTATION_RESULT_PATH, Utc::now())
+        .await
+        .map_err(|(_, error)| error)?;
+    if wire.auth.sender_organ_uid != row.origin_organ_uid
+        || wire.body.handoff_uid != row.handoff_uid
+        || wire.body.attestation_uid != row.attestation_uid
+        || wire.body.state != "accepted"
+    {
+        return Err("application attestation result identity mismatch".into());
     }
     Ok(())
 }
@@ -755,18 +895,27 @@ async fn send_received_receipt(
     origin_base_url: &str,
     envelope: &TransferEnvelopeV1,
 ) -> Result<(), String> {
-    let receipt = PackageReceipt {
-        request_id: format!(
-            "transfer-package-received:{}:{}",
-            envelope.recipient_organ_uid, envelope.envelope_uid
-        ),
-        envelope_uid: envelope.envelope_uid.clone(),
-        transfer_uid: envelope.transfer_uid.clone(),
-        recipient_person_uid: envelope.recipient_person_uid.clone(),
-        cursor: envelope.cursor,
-        kind: "received".into(),
-        created_at: envelope.created_at.clone(),
-    };
+    let receipt = state
+        .engine
+        .sign_transfer_package_receipt(TransferPackageReceiptV1 {
+            version: nucleus::transfer_delivery::TRANSFER_ENVELOPE_VERSION,
+            request_id: format!(
+                "transfer-package-received:{}:{}",
+                envelope.recipient_organ_uid, envelope.envelope_uid
+            ),
+            envelope_uid: envelope.envelope_uid.clone(),
+            transfer_uid: envelope.transfer_uid.clone(),
+            origin_organ_uid: envelope.origin_organ_uid.clone(),
+            recipient_person_uid: envelope.recipient_person_uid.clone(),
+            recipient_organ_uid: envelope.recipient_organ_uid.clone(),
+            cursor: envelope.cursor,
+            kind: "received".into(),
+            created_at: envelope.created_at.clone(),
+            key_id: String::new(),
+            signature: String::new(),
+        })
+        .await
+        .map_err(|error| error.to_string())?;
     let auth = state
         .engine
         .sign_organ_request(
@@ -910,6 +1059,58 @@ async fn accept_envelope(
             .await
             .map_err(internal)?;
         }
+    }
+    for value in envelope
+        .projection
+        .get("application_handoffs")
+        .and_then(serde_json::Value::as_array)
+        .into_iter()
+        .flatten()
+    {
+        let handoff: nucleus::transfer_delivery::TransferApplicationHandoffV1 =
+            serde_json::from_value(value.clone()).map_err(internal)?;
+        state
+            .engine
+            .verify_transfer_application_handoff(&handoff)
+            .await
+            .map_err(engine_error)?;
+        if handoff.origin_organ_uid != envelope.origin_organ_uid
+            || handoff.participant_organ_uid != envelope.recipient_organ_uid
+            || handoff.participant_person_uid != envelope.recipient_person_uid
+            || handoff.transfer_uid != envelope.transfer_uid
+        {
+            return Err(forbidden(
+                "Application handoff and Transfer envelope identities differ",
+            ));
+        }
+        store::transfer_delivery::accept_remote_application_handoff(
+            &state.store.pool,
+            store::transfer_delivery::NewRemoteApplicationHandoff {
+                uid: &handoff.handoff_uid,
+                reference_uid: &reference.uid,
+                origin_organ_uid: &handoff.origin_organ_uid,
+                participant_organ_uid: &handoff.participant_organ_uid,
+                participant_person_uid: &handoff.participant_person_uid,
+                transfer_uid: &handoff.transfer_uid,
+                occurrence_uid: &handoff.occurrence_uid,
+                source_promise_uid: &handoff.source_promise_uid,
+                settlement_slice_uid: &handoff.settlement_slice_uid,
+                origin_revision: handoff.origin_revision,
+                canonical_quantity: handoff.canonical_quantity,
+                canonical_unit_uid: handoff.canonical_unit_uid.as_deref(),
+                canonical_cumulative_before: handoff.canonical_cumulative_before,
+                canonical_cumulative_after: handoff.canonical_cumulative_after,
+                canonical_remaining_after: handoff.canonical_remaining_after,
+                application_direction: handoff.application_direction,
+                canonical_slice_hash: &handoff.canonical_slice_hash,
+                envelope_uid: &envelope.envelope_uid,
+                envelope_payload_hash: &envelope.payload_hash,
+                origin_created_at: &handoff.created_at,
+            },
+            now,
+        )
+        .await
+        .map_err(internal)?;
     }
     Ok(())
 }
@@ -1057,10 +1258,6 @@ async fn signed_response<T: Serialize + DeserializeOwned>(
 
 fn body_bytes(value: &impl Serialize) -> Result<Vec<u8>, serde_json::Error> {
     serde_json::to_vec(value)
-}
-
-fn bad_request(message: impl Into<String>) -> HttpError {
-    (StatusCode::BAD_REQUEST, message.into())
 }
 
 fn forbidden(message: impl Into<String>) -> HttpError {

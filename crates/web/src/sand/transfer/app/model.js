@@ -563,6 +563,11 @@ function normalizeThread(thread) {
       ...message,
       uid: String(message?.uid || ""),
       body: String(message?.body || ""),
+      references: Array.isArray(message?.references) ? message.references.map((reference) => ({
+        ...reference,
+        uid: String(reference?.uid || ""),
+        head: String(reference?.head || reference?.slug || reference?.uid || "Record"),
+      })) : [],
     })) : [],
   };
 }

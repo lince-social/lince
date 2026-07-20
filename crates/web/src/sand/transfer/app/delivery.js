@@ -24,11 +24,47 @@ export function renderSocialDelivery(row, options) {
   if (refresh) section.append(refresh);
   section.append(
     renderDeliveryRecipients(row, delivery, options),
+    renderApplicationHandoffs(row, delivery, options),
     renderPackageReceipts(delivery),
     renderDeliveryConflicts(row, delivery, options),
   );
   const history = replicaHistory(delivery);
   if (history) section.append(history);
+  return section;
+}
+
+function renderApplicationHandoffs(transfer, delivery, options) {
+  const handoffs = Array.isArray(delivery.application_handoffs) ? delivery.application_handoffs : [];
+  const section = el("section", "deliveryEvidenceGroup");
+  const heading = el("header", "deliveryGroupHeading");
+  heading.append(el("strong", "", "Settlement applications"), el("span", "", `${handoffs.length} handoff${handoffs.length === 1 ? "" : "s"}`));
+  section.append(heading);
+  if (!handoffs.length) {
+    section.append(el("p", "emptyState", "No cross-Cell settlement applications"));
+    return section;
+  }
+  for (const handoff of handoffs) {
+    const row = el("article", "deliveryConflict");
+    row.append(el("strong", "", `Slice ${handoff.canonical_quantity ?? "?"}`), status(handoff.state || "pending"));
+    const optionsList = Array.isArray(handoff.local_record_options) ? handoff.local_record_options : [];
+    if (capability(handoff, "apply")) {
+      const select = el("select", "");
+      select.append(new Option("Select private local Record", ""));
+      for (const record of optionsList) select.append(new Option(`${record.head || compactId(record.uid)} (${record.quantity})`, record.uid));
+      const key = `delivery:${transfer.uid}:handoff:${handoff.uid}:apply`;
+      const button = el("button", "primaryButton", "Apply privately");
+      button.type = "button";
+      button.disabled = options.mutationsEnabled === false;
+      button.addEventListener("click", () => {
+        const action = withActionInput(projectedAction(handoff, "apply"), { local_record: select.value });
+        if (action && select.value) options.onAction?.(key, action);
+      });
+      row.append(select, button);
+      const error = options.actionState?.(key)?.error;
+      if (error) row.append(el("div", "inlineAlert", error));
+    }
+    section.append(row);
+  }
   return section;
 }
 

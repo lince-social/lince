@@ -399,6 +399,10 @@ where
     let request_key = input.idempotency_key.trim();
     let expected_revision = i64::try_from(input.expected_revision)
         .map_err(|_| sqlx::Error::Protocol("transfer revision exceeds SQLite range".into()))?;
+    validate_revision_request(&input)?;
+    // These collision checks use the pool, so complete them before holding the
+    // single connection used by in-memory Stores.
+    ensure_request_not_used_by_invitation_event(pool, request_key).await?;
     let mut tx = pool.begin().await?;
 
     if let Some(row) = sqlx::query(
@@ -417,6 +421,7 @@ where
         }
         let revision = row.get::<i64, _>("revision") as u64;
         let fact_uid: String = row.get("fact_uid");
+        tx.rollback().await?;
         let correction = correction_link_for_request(pool, request_key).await?;
         let successor = promise_successor_for_request(pool, request_key).await?;
         let open_claim = open_claim_pair_for_request(pool, request_key).await?;
@@ -434,7 +439,6 @@ where
                 ));
             }
         }
-        tx.rollback().await?;
         let fact = crate::facts::get(pool, &fact_uid)
             .await?
             .ok_or(sqlx::Error::RowNotFound)?;
@@ -445,9 +449,6 @@ where
         }
         return Ok(RevisionCommit::Replayed { revision, fact });
     }
-
-    ensure_request_not_used_by_invitation_event(pool, request_key).await?;
-    validate_revision_request(&input)?;
 
     if let Some(successor) = &input.successor {
         let predecessor = sqlx::query(
@@ -1866,6 +1867,9 @@ where
             "transfer draft request key must contain 1 to 200 characters".into(),
         ));
     }
+    // This guard uses the pool, so run it before holding the single connection
+    // used by in-memory Stores.
+    ensure_request_not_used_by_invitation_event(pool, request_key).await?;
     let now_string = now.to_rfc3339();
     let mut tx = pool.begin().await?;
     if let Some(row) = sqlx::query(
@@ -1879,6 +1883,24 @@ where
         let transfer_uid: String = row.get("transfer_uid");
         let revision = row.get::<i64, _>("revision") as u64;
         let fact_uid: String = row.get("fact_uid");
+        let party_uids = sqlx::query_scalar(
+            "SELECT uid FROM transfer_party WHERE transfer_uid = ? ORDER BY uid",
+        )
+        .bind(&transfer_uid)
+        .fetch_all(&mut *tx)
+        .await?;
+        let invitation_uids = sqlx::query_scalar(
+            "SELECT uid FROM transfer_invitation WHERE transfer_uid = ? ORDER BY uid",
+        )
+        .bind(&transfer_uid)
+        .fetch_all(&mut *tx)
+        .await?;
+        let promise_uids =
+            sqlx::query_scalar("SELECT uid FROM promise WHERE transfer_uid = ? ORDER BY uid")
+                .bind(&transfer_uid)
+                .fetch_all(&mut *tx)
+                .await?;
+        tx.rollback().await?;
         let correction = correction_link_for_request(pool, request_key).await?;
         let successor = promise_successor_for_request(pool, request_key).await?;
         let open_claim = open_claim_pair_for_request(pool, request_key).await?;
@@ -1901,24 +1923,6 @@ where
                 ));
             }
         }
-        let party_uids = sqlx::query_scalar(
-            "SELECT uid FROM transfer_party WHERE transfer_uid = ? ORDER BY uid",
-        )
-        .bind(&transfer_uid)
-        .fetch_all(&mut *tx)
-        .await?;
-        let invitation_uids = sqlx::query_scalar(
-            "SELECT uid FROM transfer_invitation WHERE transfer_uid = ? ORDER BY uid",
-        )
-        .bind(&transfer_uid)
-        .fetch_all(&mut *tx)
-        .await?;
-        let promise_uids =
-            sqlx::query_scalar("SELECT uid FROM promise WHERE transfer_uid = ? ORDER BY uid")
-                .bind(&transfer_uid)
-                .fetch_all(&mut *tx)
-                .await?;
-        tx.rollback().await?;
         let fact = crate::facts::get(pool, &fact_uid)
             .await?
             .ok_or(sqlx::Error::RowNotFound)?;
@@ -1955,7 +1959,6 @@ where
             invitation_event_facts,
         });
     }
-    ensure_request_not_used_by_invitation_event(pool, request_key).await?;
     if let Some(slug) = draft.slug.as_deref()
         && !nucleus::valid_slug(slug)
     {
@@ -6749,7 +6752,17 @@ pub async fn occurrence_settlement_progress(
         return Ok(None);
     };
     let slices = occurrence_settlement_slices(pool, occurrence_uid).await?;
-    let settled_quantity = slices.last().map_or(0.0, |slice| slice.cumulative_after);
+    let local_settled = slices.last().map_or(0.0, |slice| slice.cumulative_after);
+    let remote_settled: f64 = sqlx::query_scalar(
+        "SELECT COALESCE(SUM(d.canonical_quantity), 0.0)
+         FROM transfer_application_handoff h
+         JOIN transfer_application_handoff_detail d ON d.handoff_uid = h.uid
+         WHERE h.occurrence_uid = ? AND h.state = 'accepted'",
+    )
+    .bind(occurrence_uid)
+    .fetch_one(pool)
+    .await?;
+    let settled_quantity = local_settled + remote_settled;
     let remaining_quantity = (canonical_quantity - settled_quantity).max(0.0);
     Ok(Some(OccurrenceSettlementProgress {
         occurrence_uid: occurrence_uid.into(),

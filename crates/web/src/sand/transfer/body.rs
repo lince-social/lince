@@ -11,6 +11,21 @@ pub(super) fn body() -> Markup {
                 div class="toolbarTools" {
                     span id="create-blocker" class="creationBlocker" role="status" hidden {}
                     button id="create-transfer" class="primaryButton" type="button" { "+ New transfer" }
+                    label class="presetPicker" {
+                        span class="visuallyHidden" { "Start from workflow preset" }
+                        select id="workflow-preset" aria-label="Start from workflow preset" {
+                            option value="" { "Use preset..." }
+                            option value="donation" { "Donation" }
+                            option value="sale" { "Sale" }
+                            option value="assignment" { "Assignment" }
+                            option value="group" { "Group coordination" }
+                            option value="service" { "Service" }
+                            option value="information" { "Information" }
+                            option value="dependency" { "Dependency plan" }
+                            option value="ride" { "Ride" }
+                            option value="delivery" { "Delivery" }
+                        }
+                    }
                     label class="search" {
                         span class="visuallyHidden" { "Search transfers" }
                         span aria-hidden="true" { "⌕" }

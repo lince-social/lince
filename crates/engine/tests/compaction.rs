@@ -138,12 +138,11 @@ async fn compaction_folds_history_into_the_checkpoint_and_anchors_the_archive() 
         .iter()
         .find(|f| f.cause.kind == CauseKind::Checkpoint)
         .unwrap();
-    let level: f64 = serde_json::from_str::<serde_json::Value>(
-        checkpoint.payload.as_deref().unwrap(),
-    )
-    .unwrap()["level"]
-        .as_f64()
-        .unwrap();
+    let level: f64 =
+        serde_json::from_str::<serde_json::Value>(checkpoint.payload.as_deref().unwrap()).unwrap()
+            ["level"]
+            .as_f64()
+            .unwrap();
     let remaining: f64 = hot
         .iter()
         .filter(|f| f.cause.kind != CauseKind::Checkpoint)

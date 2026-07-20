@@ -1,8 +1,6 @@
 mod bootstrap_config;
 mod runtime;
 
-#[cfg(any(target_os = "macos", windows))]
-use tauri_plugin_autostart::ManagerExt;
 use std::{env, io::Error};
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder, image::Image};
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -11,6 +9,8 @@ use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
 };
+#[cfg(any(target_os = "macos", windows))]
+use tauri_plugin_autostart::ManagerExt;
 use utils::desktop_setup::{DesktopInstallSetup, detected_language_default, write_staged_setup};
 
 const MAIN_WINDOW_LABEL: &str = "main";
@@ -42,6 +42,20 @@ pub fn run() {
         }
         return;
     }
+
+    // Same stack-size fix as `lince/src/main.rs`: tauri lazily builds its own
+    // default tokio runtime (2 MiB worker stacks) the first time
+    // `tauri::async_runtime::spawn` runs, which is too small for
+    // `engine::actions::act_at_with_authorship`'s generated state machine —
+    // inject a runtime with generous stacks before anything spawns on it.
+    // Kept alive for the process lifetime: `run()` doesn't return until the
+    // app quits, and dropping the `Runtime` would shut its threads down.
+    let _tokio_runtime = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .thread_stack_size(32 * 1024 * 1024)
+        .build()
+        .expect("failed to build the tokio runtime");
+    tauri::async_runtime::set(_tokio_runtime.handle().clone());
 
     let builder = tauri::Builder::default();
     #[cfg(not(any(target_os = "android", target_os = "ios")))]

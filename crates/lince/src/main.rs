@@ -8,8 +8,24 @@ use utils::desktop_setup::{read_staged_setup, remove_staged_setup};
 use utils::logging::set_quiet;
 use web::serve_cell_api_only;
 
-#[tokio::main]
-async fn main() -> Result<(), Error> {
+fn main() -> Result<(), Error> {
+    // `engine::actions::act_at_with_authorship` is one giant async fn covering
+    // every `Action` variant (78 arms as of 2026-07-19, still growing with the
+    // transfer/negotiation work) — its generated state machine outgrows
+    // tokio's default 2 MiB worker-thread stack in debug builds, so ANY Action
+    // (not just kanban's) can stack-overflow and abort the whole process a few
+    // seconds after boot. Bypass the `#[tokio::main]` macro to size the
+    // runtime's worker threads generously instead (verified: 2 MiB reliably
+    // crashes on a single `act()` call, 32 MiB does not).
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .thread_stack_size(32 * 1024 * 1024)
+        .build()
+        .expect("failed to build the tokio runtime")
+        .block_on(async_main())
+}
+
+async fn async_main() -> Result<(), Error> {
     let args = env::args().collect::<Vec<String>>();
     if args.iter().any(|arg| arg == "--help" || arg == "-h") {
         print_help();

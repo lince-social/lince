@@ -19,8 +19,13 @@
        recordClicked drives it. */
     :root { color-scheme: dark; }
     * { box-sizing: border-box; }
-    body { margin: 0; font: 13px/1.45 system-ui, -apple-system, sans-serif;
+    body { margin: 0; height: 100vh; overflow: hidden;
+           font: 13px/1.45 system-ui, -apple-system, sans-serif;
            background: #0d1117; color: #c9d1d9; padding: .75rem; }
+    /* Icon mode is pinned to a RECORD_ICON_SIZE (56px) frame in main.js — the
+       usual .75rem padding alone overflows that box, which is what forced a
+       scrollbar in a view that's supposed to be just a glyph. */
+    body.collapsed { padding: 0; }
     .head { display: flex; align-items: center; gap: .5rem; margin-bottom: .6rem; }
     .head h1 { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em;
                color: #6e7681; margin: 0; flex: 1; }
@@ -446,6 +451,20 @@
       // box has its own local Escape. Only collapse when not mid-typing.
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       if (creating || row) goIdle();
+    });
+
+    // WebKitGTK (Tauri on Linux) known compositor bug: this sand's outer
+    // iframe is resized by the parent board (icon -> full panel, see main.js
+    // `syncCardNode`'s RECORD_ICON_SIZE handling) at the same moment the
+    // fields are populated. WebKitGTK sometimes leaves the resized iframe's
+    // paint stale — most of the panel invisible until an unrelated repaint
+    // (window focus change, another card interaction) — while Chromium (the
+    // browser + `frame.js`'s own preview) always repaints promptly. A forced
+    // reflow on the resize this sand's own window receives is a no-op
+    // everywhere else and costs nothing.
+    window.addEventListener("resize", () => {
+      void document.body.offsetHeight;
+      requestAnimationFrame(() => { void document.body.offsetHeight; });
     });
 
     // ---- focused render --------------------------------------------------------

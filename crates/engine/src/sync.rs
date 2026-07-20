@@ -408,8 +408,9 @@ impl Engine {
     }
 
     /// The open promises `subject` may see — what peers pull into their
-    /// discovery caches. Only OPEN, unfilled-party promises travel, and only
-    /// through the visibility gate (their target record must be visible).
+    /// discovery caches. Only proposer-owned OPEN promises travel, and only
+    /// through the visibility gate (their target record must be visible). The
+    /// unfilled role is the counterparty; `party_uid` is the proposer.
     pub async fn open_promise_export(
         &self,
         subject: &str,
@@ -417,7 +418,7 @@ impl Engine {
         let visible = store::visibility::visible_targets(&self.store.pool, subject).await?;
         let mut out = Vec::new();
         for p in store::misc::list_promises(&self.store.pool).await? {
-            if p.state != nucleus::PromiseState::Open || p.party_uid.is_some() {
+            if p.state != nucleus::PromiseState::Open || p.party_uid.is_none() {
                 continue;
             }
             let Some(record_uid) = &p.record_uid else {

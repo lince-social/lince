@@ -62,6 +62,10 @@ async fn aggregate_sums_by_group() {
 async fn availability_reflects_active_outgoing_promises() {
     let e = engine().await;
     let apples = make(&e, "apples.stock", RecordKind::Plain, 10.0).await;
+    make(&e, "someone", RecordKind::Person, 1.0).await;
+    store::config::set_transfer_reservation_default(&e.store.pool, "active")
+        .await
+        .unwrap();
     // an active outgoing promise reserves 3
     let promise = e
         .act(
@@ -279,8 +283,16 @@ async fn links_include_is_explicit_and_supports_multiple_kinds() {
     let rows = protein::execute(&e.store, &both).await.unwrap();
     let links = rows[0]["links"].as_array().unwrap();
     assert_eq!(links.len(), 2);
-    assert!(links.iter().any(|link| link["kind"] == "before" && link["direction"] == "out"));
-    assert!(links.iter().any(|link| link["kind"] == "contributes" && link["direction"] == "in"));
+    assert!(
+        links
+            .iter()
+            .any(|link| link["kind"] == "before" && link["direction"] == "out")
+    );
+    assert!(
+        links
+            .iter()
+            .any(|link| link["kind"] == "contributes" && link["direction"] == "in")
+    );
 
     let mut outgoing = both;
     outgoing.include.links.as_mut().unwrap().direction = LinkDirection::Out;
@@ -326,7 +338,10 @@ async fn linked_to_filters_by_tag_cluster_with_include_and_exclude() {
     // them; `any`/`not`/`all` compose "Tasks OR ProjectA but NOT ProjectB".
     let e = engine().await;
     e.act(
-        Action::CreateConcept { name: "tag".into(), parents: vec![] },
+        Action::CreateConcept {
+            name: "tag".into(),
+            parents: vec![],
+        },
         None,
     )
     .await
@@ -346,7 +361,12 @@ async fn linked_to_filters_by_tag_cluster_with_include_and_exclude() {
         let to = to.to_string();
         async move {
             e.act(
-                Action::AddLink { from, kind: "tag".into(), to, quantity: None },
+                Action::AddLink {
+                    from,
+                    kind: "tag".into(),
+                    to,
+                    quantity: None,
+                },
                 None,
             )
             .await
@@ -362,8 +382,14 @@ async fn linked_to_filters_by_tag_cluster_with_include_and_exclude() {
     // (Tasks OR ProjectA) AND NOT ProjectB.
     let filter = vec![Predicate::All(vec![
         Predicate::Any(vec![
-            Predicate::LinkedTo { kind: "tag".into(), to: "tasks".into() },
-            Predicate::LinkedTo { kind: "tag".into(), to: "project-a".into() },
+            Predicate::LinkedTo {
+                kind: "tag".into(),
+                to: "tasks".into(),
+            },
+            Predicate::LinkedTo {
+                kind: "tag".into(),
+                to: "project-a".into(),
+            },
         ]),
         Predicate::Not(Box::new(Predicate::LinkedTo {
             kind: "tag".into(),
@@ -374,9 +400,15 @@ async fn linked_to_filters_by_tag_cluster_with_include_and_exclude() {
         .await
         .unwrap();
     let uids: Vec<&str> = rows.iter().map(|r| r["uid"].as_str().unwrap()).collect();
-    assert!(uids.contains(&t1.as_str()), "t1 (Tasks+ProjectA, no ProjectB) should match");
+    assert!(
+        uids.contains(&t1.as_str()),
+        "t1 (Tasks+ProjectA, no ProjectB) should match"
+    );
     assert!(uids.contains(&t3.as_str()), "t3 (Tasks) should match");
-    assert!(!uids.contains(&t2.as_str()), "t2 (has ProjectB) should be excluded");
+    assert!(
+        !uids.contains(&t2.as_str()),
+        "t2 (has ProjectB) should be excluded"
+    );
     // Cluster records themselves carry no tag link → excluded.
     assert_eq!(uids.len(), 2, "only t1 and t3 match: {uids:?}");
 }
@@ -385,6 +417,7 @@ async fn linked_to_filters_by_tag_cluster_with_include_and_exclude() {
 async fn threads_include_returns_nested_record_messages() {
     let e = engine().await;
     let subject = make(&e, "abstract-idea", RecordKind::Plain, 0.0).await;
+    let receipt = make(&e, "receipt.july", RecordKind::Plain, 1.0).await;
     let thread = e
         .act(
             Action::CreateThread {
@@ -403,6 +436,7 @@ async fn threads_include_returns_nested_record_messages() {
                 thread: thread.clone(),
                 body: "First message".into(),
                 parent: None,
+                references: vec![receipt.clone()],
             },
             None,
         )
@@ -416,6 +450,7 @@ async fn threads_include_returns_nested_record_messages() {
                 thread,
                 body: "Reply message".into(),
                 parent: Some(first.clone()),
+                references: vec![],
             },
             None,
         )
@@ -442,6 +477,8 @@ async fn threads_include_returns_nested_record_messages() {
     let messages = threads[0]["messages"].as_array().unwrap();
     assert_eq!(messages.len(), 2);
     assert_eq!(messages[0]["body"], "First message");
+    assert_eq!(messages[0]["references"][0]["uid"], receipt);
+    assert_eq!(messages[0]["references"][0]["head"], "receipt.july");
     assert_eq!(messages[1]["body"], "Reply message");
     assert_eq!(
         messages[1]["parent_message_uid"].as_str(),
@@ -464,7 +501,9 @@ async fn threads_include_returns_nested_record_messages() {
 #[tokio::test]
 async fn threads_include_resolves_sender_name_from_the_actor() {
     let e = engine().await;
-    let role_id = store::auth::ensure_role(&e.store.pool, "lince").await.unwrap();
+    let role_id = store::auth::ensure_role(&e.store.pool, "lince")
+        .await
+        .unwrap();
     let user_id = store::auth::create_user(
         &e.store.pool,
         "Ana Diaz",
@@ -493,6 +532,7 @@ async fn threads_include_resolves_sender_name_from_the_actor() {
             thread,
             body: "hi from ana".into(),
             parent: None,
+            references: vec![],
         },
         Some(user_id.to_string()),
     )
@@ -513,10 +553,16 @@ async fn threads_include_resolves_sender_name_from_the_actor() {
     let rows = protein::execute(&e.store, &p).await.unwrap();
     let threads = rows[0]["threads"].as_array().unwrap();
     assert_eq!(threads[0]["sender"].as_str(), Some("Ana Diaz"));
-    assert_eq!(threads[0]["created_by"].as_str(), Some(user_id.to_string()).as_deref());
+    assert_eq!(
+        threads[0]["created_by"].as_str(),
+        Some(user_id.to_string()).as_deref()
+    );
     let messages = threads[0]["messages"].as_array().unwrap();
     assert_eq!(messages[0]["sender"].as_str(), Some("Ana Diaz"));
-    assert_eq!(messages[0]["created_by"].as_str(), Some(user_id.to_string()).as_deref());
+    assert_eq!(
+        messages[0]["created_by"].as_str(),
+        Some(user_id.to_string()).as_deref()
+    );
 }
 
 #[tokio::test]
@@ -643,9 +689,14 @@ async fn near_predicate_uses_the_place_instinct() {
 #[tokio::test]
 async fn auth_source_lists_roles_users_and_the_permission_catalog() {
     let e = engine().await;
-    e.act(Action::CreateRole { name: "support".into() }, None)
-        .await
-        .unwrap();
+    e.act(
+        Action::CreateRole {
+            name: "support".into(),
+        },
+        None,
+    )
+    .await
+    .unwrap();
     e.act(
         Action::GrantPermission {
             role: "support".into(),
@@ -667,7 +718,9 @@ async fn auth_source_lists_roles_users_and_the_permission_catalog() {
     .await
     .unwrap();
 
-    let rows = protein::execute(&e.store, &base(Source::Auth, vec![])).await.unwrap();
+    let rows = protein::execute(&e.store, &base(Source::Auth, vec![]))
+        .await
+        .unwrap();
     let role = rows
         .iter()
         .find(|r| r["kind"] == "role" && r["name"] == "support")
@@ -687,7 +740,11 @@ async fn auth_source_lists_roles_users_and_the_permission_catalog() {
     assert!(user.get("password_hash").is_none(), "never expose the hash");
     assert!(
         rows.iter().any(|r| r["kind"] == "permission_catalog"
-            && r["keys"].as_array().unwrap().iter().any(|k| k == "record:delete")),
+            && r["keys"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|k| k == "record:delete")),
         "the static permission catalog is listed for building a grant UI"
     );
 }
@@ -695,13 +752,22 @@ async fn auth_source_lists_roles_users_and_the_permission_catalog() {
 #[tokio::test]
 async fn auth_source_is_gated_by_read_permission_for_a_remote_subject() {
     let e = engine().await;
-    let bystander_role = store::auth::ensure_role(&e.store.pool, "bystander").await.unwrap();
-    let bystander = store::auth::create_user(&e.store.pool, "B", "bystander", "hash", bystander_role)
+    let bystander_role = store::auth::ensure_role(&e.store.pool, "bystander")
         .await
         .unwrap();
-    let reader_role = store::auth::ensure_role(&e.store.pool, "reader").await.unwrap();
-    let perm_id = store::auth::ensure_permission(&e.store.pool, "role", "read").await.unwrap();
-    store::auth::grant(&e.store.pool, reader_role, perm_id).await.unwrap();
+    let bystander =
+        store::auth::create_user(&e.store.pool, "B", "bystander", "hash", bystander_role)
+            .await
+            .unwrap();
+    let reader_role = store::auth::ensure_role(&e.store.pool, "reader")
+        .await
+        .unwrap();
+    let perm_id = store::auth::ensure_permission(&e.store.pool, "role", "read")
+        .await
+        .unwrap();
+    store::auth::grant(&e.store.pool, reader_role, perm_id)
+        .await
+        .unwrap();
     let reader = store::auth::create_user(&e.store.pool, "R", "reader", "hash", reader_role)
         .await
         .unwrap();
@@ -710,7 +776,10 @@ async fn auth_source_is_gated_by_read_permission_for_a_remote_subject() {
     let hidden = protein::execute_for(&e.store, &p, Some(&bystander.to_string()))
         .await
         .unwrap();
-    assert!(hidden.is_empty(), "no role/user/permission read grant -> nothing");
+    assert!(
+        hidden.is_empty(),
+        "no role/user/permission read grant -> nothing"
+    );
 
     let visible = protein::execute_for(&e.store, &p, Some(&reader.to_string()))
         .await
@@ -718,5 +787,8 @@ async fn auth_source_is_gated_by_read_permission_for_a_remote_subject() {
     assert!(!visible.is_empty(), "role:read grants the whole listing");
 
     let local = protein::execute_for(&e.store, &p, None).await.unwrap();
-    assert!(!local.is_empty(), "the local Cell (subject: None) always sees it");
+    assert!(
+        !local.is_empty(),
+        "the local Cell (subject: None) always sees it"
+    );
 }

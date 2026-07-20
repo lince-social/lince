@@ -1,1 +1,0 @@
-Being able to put the quantity of a frequency as a Consequence.

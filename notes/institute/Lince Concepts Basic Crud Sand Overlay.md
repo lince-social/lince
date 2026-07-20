@@ -1,5 +1,0 @@
-There should be a Sand that can be fed information from other Sands, like what records have been interacted in what way, then if we have a z-index based visualization of components we can create a rule in the base app that makes the Karma/Transaction Overlay always be on top of a certain other Sand.
-
-With something like that we dont need all Sand to implement a way to make simple Karma/Transaction CRUD. An overlay would take care of it. If two components have the overlay we may do Transfers using data from both base Sands underneath.
-
-What if this overlay extends to Views? Think about it. All components will make their filtering options? Duds thinks that normal Views like 'select * from record' can be edited in a base web overlay, not a sand specific one. If the Sands make their specific View they still may use the same filtering UI but then they are responsible for editing the SQL of the View that is going to enact that filter.

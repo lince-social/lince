@@ -13,8 +13,7 @@ pub(crate) fn manifest() -> PackageManifest {
         title: "Organ".into(),
         author: "Lince Labs".into(),
         version: "0.1.0".into(),
-        description: "Lists this Cell's organs and configures per-organ File Sync to disk."
-            .into(),
+        description: "Lists this Cell's organs and configures per-organ File Sync to disk.".into(),
         details: "Protein-first list of kind=organ records (the local Cell plus its \
             contacts); selecting one shows and edits its `lince.file_sync` extension \
             (enabled, disk path) via `set-extension`. File Sync mirrors every record \

@@ -161,13 +161,17 @@ pub enum Action {
         body: String,
         #[serde(default)]
         parent: Option<String>,
+        /// Existing Records deliberately disclosed by this message. These are
+        /// ordinary `message --references--> record` links, not uploaded files
+        /// or a Transfer-private attachment model.
+        #[serde(default)]
+        references: Vec<String>,
     },
     CreateTransferThread {
         transfer: String,
         head: String,
         request_id: String,
-        #[serde(default)]
-        person: Option<String>,
+        person: String,
     },
     CreateTransferMessage {
         transfer: String,
@@ -175,9 +179,10 @@ pub enum Action {
         body: String,
         #[serde(default)]
         parent: Option<String>,
-        request_id: String,
         #[serde(default)]
-        person: Option<String>,
+        references: Vec<String>,
+        request_id: String,
+        person: String,
     },
     CreatePromise {
         record: String,
@@ -471,6 +476,24 @@ pub enum Action {
         #[serde(default)]
         person: Option<String>,
         request_id: String,
+    },
+    BeginRemoteTransferSettlement {
+        transfer: String,
+        occurrence: String,
+        expected_revision: u64,
+        expected_remaining_quantity: f64,
+        canonical_quantity: f64,
+        request_id: String,
+        person: String,
+    },
+    ApplyRemoteTransferApplication {
+        transfer: String,
+        handoff: String,
+        local_record: String,
+        expected_formula_hash: String,
+        expected_formula_version: u64,
+        request_id: String,
+        person: String,
     },
     /// Record a delivery/receipt confirmation as an annotation fact (VIII.3).
     ConfirmTransfer {
@@ -1595,6 +1618,7 @@ impl Engine {
                 thread,
                 body,
                 parent,
+                references,
             } => {
                 let thread_uid = self.resolve(&thread).await?;
                 let thread_row = store::records::get(&self.store.pool, &thread_uid)
@@ -1610,13 +1634,22 @@ impl Engine {
                     self.require_transfer_thread_writer(&transfer_uid, actor.as_deref(), now)
                         .await?;
                 }
+                let references = self.resolve_message_references(references).await?;
                 let body = body.trim();
-                if body.is_empty() {
+                if body.is_empty() && references.is_empty() {
                     return Err(EngineError::Consequence(
-                        "message body cannot be empty".into(),
+                        "message body and Record references cannot both be empty".into(),
                     ));
                 }
-                let head = message_head(body);
+                let head = if body.is_empty() {
+                    format!(
+                        "Shared {} Record{}",
+                        references.len(),
+                        if references.len() == 1 { "" } else { "s" }
+                    )
+                } else {
+                    message_head(body)
+                };
                 let message = store::records::create(
                     &self.store.pool,
                     store::records::NewRecord {
@@ -1637,6 +1670,20 @@ impl Engine {
                     None,
                 )
                 .await?;
+                if !references.is_empty() {
+                    let references_kind =
+                        store::concepts::ensure(&self.store.pool, "references").await?;
+                    for reference in &references {
+                        store::links::add(
+                            &self.store.pool,
+                            &message.uid,
+                            &references_kind,
+                            reference,
+                            None,
+                        )
+                        .await?;
+                    }
+                }
                 if let Some(parent) = parent {
                     let parent_uid = self.resolve(&parent).await?;
                     let parent_row = store::records::get(&self.store.pool, &parent_uid)
@@ -1673,12 +1720,66 @@ impl Engine {
                     self.annotate(
                         thread_uid,
                         actor,
-                        serde_json::json!({ "message": { "created": message.uid } }),
+                        serde_json::json!({
+                            "message": {
+                                "created": message.uid,
+                                "references": references,
+                            }
+                        }),
                         now,
                     )
                     .await?,
                 );
                 outcome.created = Some(message.uid);
+            }
+            Action::CreateTransferThread {
+                transfer,
+                head,
+                request_id: _,
+                person: _,
+            } => {
+                outcome = Box::pin(self.act_at_with_authorship(
+                    Action::CreateThread {
+                        target: transfer,
+                        head,
+                    },
+                    actor,
+                    now,
+                    verified_authorship,
+                ))
+                .await?;
+            }
+            Action::CreateTransferMessage {
+                transfer,
+                thread,
+                body,
+                parent,
+                references,
+                request_id: _,
+                person: _,
+            } => {
+                let transfer_uid = self.resolve(&transfer).await?;
+                let thread_uid = self.resolve(&thread).await?;
+                if self.transfer_for_thread(&thread_uid).await?.as_deref()
+                    != Some(transfer_uid.as_str())
+                {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_thread_target_mismatch",
+                        message: "message thread belongs to another Transfer".into(),
+                    });
+                }
+                outcome = Box::pin(self.act_at_with_authorship(
+                    Action::CreateMessage {
+                        thread: thread_uid,
+                        body,
+                        parent,
+                        references,
+                    },
+                    actor,
+                    now,
+                    verified_authorship,
+                ))
+                .await?;
             }
             Action::CreatePromise {
                 record,
@@ -4179,6 +4280,158 @@ impl Engine {
                     .uid,
                 );
             }
+            Action::BeginRemoteTransferSettlement {
+                transfer,
+                occurrence,
+                expected_revision,
+                expected_remaining_quantity,
+                canonical_quantity,
+                request_id,
+                person,
+            } => {
+                let transfer = self.resolve(&transfer).await?;
+                let acting = self
+                    .transfer_action_person(actor.as_deref(), Some(&person), Some(&person))
+                    .await?;
+                let handoff = self
+                    .begin_remote_transfer_settlement(
+                        &transfer,
+                        &occurrence,
+                        &acting,
+                        expected_revision,
+                        expected_remaining_quantity,
+                        canonical_quantity,
+                        &request_id,
+                        now,
+                    )
+                    .await?;
+                outcome.created = Some(handoff.uid);
+            }
+            Action::ApplyRemoteTransferApplication {
+                transfer,
+                handoff,
+                local_record,
+                expected_formula_hash,
+                expected_formula_version,
+                request_id,
+                person,
+            } => {
+                let acting = self
+                    .transfer_action_person(actor.as_deref(), Some(&person), Some(&person))
+                    .await?;
+                let remote = store::transfer_delivery::remote_application_handoff(
+                    &self.store.pool,
+                    &handoff,
+                )
+                .await?
+                .ok_or_else(|| EngineError::UnknownRecord(handoff.clone()))?;
+                if remote.transfer_uid != transfer
+                    || remote.participant_person_uid != acting
+                    || remote.state != "pending"
+                {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_remote_application_not_pending",
+                        message: "application handoff is not pending for this Person".into(),
+                    });
+                }
+                let local_record = self.resolve(&local_record).await?;
+                let formula = if remote.application_direction < 0 {
+                    "-incoming()".to_string()
+                } else {
+                    validate_transfer_application_formula(
+                        &store::config::transfer_application_formula(&self.store.pool).await?,
+                    )?
+                };
+                let formula_version = 0_u64;
+                let formula_hash = nucleus::transfer::occurrence_application_formula_hash(&formula);
+                if formula_hash != expected_formula_hash
+                    || formula_version != expected_formula_version
+                {
+                    return Err(EngineError::Conflict {
+                        code: "transfer_remote_application_formula_stale",
+                        message: "private application formula changed after review".into(),
+                    });
+                }
+                let local_before: f64 = store::sqlx::query_scalar(
+                    "SELECT COALESCE(SUM(a.local_delta), 0.0)
+                     FROM transfer_local_application a
+                     JOIN transfer_remote_application_handoff h ON h.uid = a.handoff_uid
+                     WHERE h.occurrence_uid = ? AND h.participant_person_uid = ?",
+                )
+                .bind(&remote.occurrence_uid)
+                .bind(&acting)
+                .fetch_one(&self.store.pool)
+                .await?;
+                let local_after = evaluate_transfer_application_formula(
+                    &formula,
+                    remote.canonical_cumulative_after,
+                )?;
+                let local_delta = local_after - local_before;
+                let signer = self
+                    .transfer_person_signer(&acting, verified_authorship.as_ref())
+                    .await?
+                    .ok_or_else(|| EngineError::Conflict {
+                        code: "missing_person_signer",
+                        message:
+                            "application attestation requires the participant Person signing key"
+                                .into(),
+                    })?;
+                let commit = store::transfer_delivery::apply_remote_transfer_locally(
+                    &self.store.pool,
+                    store::transfer_delivery::NewLocalTransferApplication {
+                        handoff_uid: handoff.clone(),
+                        participant_person_uid: acting.clone(),
+                        local_record_uid: local_record,
+                        local_delta,
+                        local_cumulative_before: local_before,
+                        local_cumulative_after: local_after,
+                        application_formula: formula,
+                        application_formula_hash: formula_hash.clone(),
+                        application_formula_version: formula_version,
+                        authorization_intent_uid: verified_authorship
+                            .as_ref()
+                            .map(|value| value.intent_uid.clone()),
+                        request_id: request_id.clone(),
+                    },
+                    now,
+                    |hash| Some(signer.sign_hash(hash)),
+                )
+                .await?;
+                let mut attestation =
+                    nucleus::transfer_delivery::TransferApplicationAttestationV1 {
+                        version: nucleus::transfer_delivery::TRANSFER_ENVELOPE_VERSION,
+                        attestation_uid: format!("taa:{}", commit.application.uid),
+                        origin_organ_uid: remote.origin_organ_uid.clone(),
+                        participant_organ_uid: remote.participant_organ_uid.clone(),
+                        participant_person_uid: acting,
+                        transfer_uid: remote.transfer_uid,
+                        occurrence_uid: remote.occurrence_uid,
+                        settlement_slice_uid: remote.settlement_slice_uid,
+                        origin_revision: remote.origin_revision,
+                        canonical_slice_hash: remote.canonical_slice_hash,
+                        formula_commitment: formula_hash,
+                        formula_version: formula_version.to_string(),
+                        application_fact_uid: commit.fact.uid.clone(),
+                        applied_at: now.to_rfc3339(),
+                        key_id: signer.key_id.clone(),
+                        signature: String::new(),
+                    };
+                attestation.signature = signer.sign_bytes(&attestation.signing_bytes());
+                attestation
+                    .validate_shape()
+                    .map_err(EngineError::Consequence)?;
+                store::transfer_delivery::enqueue_application_attestation(
+                    &self.store.pool,
+                    &handoff,
+                    &remote.reference_uid,
+                    &remote.origin_organ_uid,
+                    &attestation,
+                    now,
+                )
+                .await?;
+                outcome.created = Some(commit.application.uid);
+                outcome.facts = self.publish_committed_fact(commit.fact);
+            }
             Action::ConfirmTransfer {
                 transfer,
                 confirmation,
@@ -5477,6 +5730,9 @@ impl Engine {
             | Action::EnqueueTransferDelivery { transfer, .. }
             | Action::RetryTransferDelivery { transfer, .. }
             | Action::RevokeTransferDelivery { transfer, .. }
+            | Action::CreateTransferThread { transfer, .. }
+            | Action::CreateTransferMessage { transfer, .. }
+            | Action::BeginRemoteTransferSettlement { transfer, .. }
             | Action::ConfirmTransfer { transfer, .. }
             | Action::AddParty { transfer, .. }
             | Action::AddPromiseToTransfer { transfer, .. }
@@ -5654,6 +5910,53 @@ impl Engine {
                 message: "a negotiation thread must belong to exactly one Transfer".into(),
             }),
         }
+    }
+
+    async fn resolve_message_references(
+        &self,
+        references: Vec<String>,
+    ) -> Result<Vec<String>, EngineError> {
+        const MAX_MESSAGE_REFERENCES: usize = 32;
+        if references.len() > MAX_MESSAGE_REFERENCES {
+            return Err(EngineError::Consequence(format!(
+                "a message may reference at most {MAX_MESSAGE_REFERENCES} Records"
+            )));
+        }
+        let mut resolved = Vec::with_capacity(references.len());
+        let mut seen = HashSet::with_capacity(references.len());
+        for reference in references {
+            let token = reference.trim();
+            if token.is_empty() {
+                return Err(EngineError::Consequence(
+                    "message Record references cannot be empty".into(),
+                ));
+            }
+            let uid = self.resolve(token).await?;
+            if !seen.insert(uid.clone()) {
+                return Err(EngineError::Consequence(
+                    "a message cannot reference the same Record twice".into(),
+                ));
+            }
+            let record = store::records::get(&self.store.pool, &uid)
+                .await?
+                .ok_or_else(|| EngineError::UnknownRecord(uid.clone()))?;
+            if matches!(
+                RecordKind::parse(&record.kind),
+                Some(
+                    RecordKind::Transfer
+                        | RecordKind::Thread
+                        | RecordKind::Message
+                        | RecordKind::CallSession
+                )
+            ) {
+                return Err(EngineError::Consequence(
+                    "messages may reference content Records, not Transfer communication structure"
+                        .into(),
+                ));
+            }
+            resolved.push(uid);
+        }
+        Ok(resolved)
     }
 
     async fn require_verified_transfer_revision(

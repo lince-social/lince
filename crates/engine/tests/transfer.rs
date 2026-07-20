@@ -1,289 +1,247 @@
 //! Transfer (blueprint VIII) + Trust (XI) + Imagination (XII) acceptance.
 
+pub mod support;
+
 use chrono::{DateTime, TimeDelta, Utc};
-use engine::Engine;
-use engine::actions::Action;
+use engine::actions::{
+    Action, TransferDraftRevisionInput, TransferOccurrenceClaimRole, TransferReservePoint,
+    TransferSatiation, TransferVisibility,
+};
 use engine::trust::{self, Signer};
-use nucleus::RecordKind;
-
-async fn engine() -> Engine {
-    Engine::open_memory().await.expect("engine")
-}
-
-async fn person(e: &Engine, slug: &str) -> String {
-    e.act(
-        Action::CreateRecord {
-            slug: Some(slug.into()),
-            kind: RecordKind::Person,
-            head: slug.into(),
-            body: String::new(),
-            quantity: 1.0,
-        },
-        None,
-    )
-    .await
-    .unwrap()
-    .created
-    .unwrap()
-}
-
-async fn plain(e: &Engine, slug: &str, q: f64) -> String {
-    e.act(
-        Action::CreateRecord {
-            slug: Some(slug.into()),
-            kind: RecordKind::Plain,
-            head: slug.into(),
-            body: String::new(),
-            quantity: q,
-        },
-        None,
-    )
-    .await
-    .unwrap()
-    .created
-    .unwrap()
-}
+use nucleus::PromiseState;
+use nucleus::transfer::AgreementType;
+use support::{DraftOptions, activate, agree, claim, create_transfer, person, plain, promise};
 
 fn at(s: &str) -> DateTime<Utc> {
     DateTime::parse_from_rfc3339(s).unwrap().with_timezone(&Utc)
 }
 
-#[tokio::test]
-async fn a_sale_settles_only_through_agreement() {
-    let e = engine().await;
-    let ana = person(&e, "ana").await;
-    let carlos = person(&e, "carlos").await;
-    let bike = plain(&e, "ana.bike", 1.0).await;
-    let ana_money = plain(&e, "ana.money", 0.0).await;
-
-    // SALE bundle: Ana gives the bike, receives 300
-    let transfer = e
-        .act(
-            Action::CreateTransfer {
-                slug: Some("xfer.bike-sale".into()),
-                head: "Bike sale".into(),
-                agreement: "full".into(),
-                agreement_pct: None,
-                satiation: None,
-                source: None,
-                reserve_default: None,
-                require_confirmation: false,
+#[test]
+fn a_sale_applies_only_reviewed_occurrences_owned_by_the_signer() {
+    support::run_async_test("transfer-sale", || async {
+        let engine = support::engine().await;
+        let ana = person(&engine, "sale.ana").await;
+        let carlos = person(&engine, "sale.carlos").await;
+        let bike = plain(&engine, "sale.ana.bike", 1.0).await;
+        let ana_money = plain(&engine, "sale.ana.money", 0.0).await;
+        let fixture = create_transfer(
+            &engine,
+            &ana,
+            std::slice::from_ref(&carlos),
+            vec![
+                promise("sale-bike-give", &bike, &ana, -1.0),
+                promise("sale-bike-receive", &bike, &carlos, 1.0),
+                promise("sale-money-give", &ana_money, &carlos, -300.0),
+                promise("sale-money-receive", &ana_money, &ana, 300.0),
+            ],
+            DraftOptions {
+                slug: "sale.bike",
+                agreement: AgreementType::Full,
+                reserve_default: TransferReservePoint::Active,
+                require_confirmation: true,
             },
-            None,
         )
-        .await
-        .unwrap()
-        .created
-        .unwrap();
-    let ana_party = e
-        .act(
-            Action::AddParty {
-                transfer: transfer.clone(),
-                actor: ana.clone(),
-            },
-            None,
+        .await;
+
+        engine.set_signer(ana.signer.clone()).await.unwrap();
+        assert!(
+            engine
+                .act(
+                    Action::ActivateTransferOccurrence {
+                        transfer: fixture.transfer.clone(),
+                        promise: "sale-bike-give".into(),
+                        expected_revision: fixture.revision,
+                        request_id: "sale:activate:early".into(),
+                        person: Some(ana.uid.clone()),
+                    },
+                    None,
+                )
+                .await
+                .is_err(),
+            "activation is refused before agreement"
+        );
+
+        agree(&engine, &fixture, &ana, "sale:ana").await;
+        agree(&engine, &fixture, &carlos, "sale:carlos").await;
+        let bike_occurrence = activate(
+            &engine,
+            &fixture,
+            &ana,
+            "sale-bike-give",
+            "sale:activate:bike",
         )
-        .await
-        .unwrap()
-        .created
-        .unwrap();
-    let _carlos_party = e
-        .act(
-            Action::AddParty {
-                transfer: transfer.clone(),
-                actor: carlos.clone(),
-            },
-            None,
+        .await;
+        let money_occurrence = activate(
+            &engine,
+            &fixture,
+            &ana,
+            "sale-money-receive",
+            "sale:activate:money",
         )
-        .await
-        .unwrap()
-        .created
-        .unwrap();
-    e.act(
-        Action::AddPromiseToTransfer {
-            transfer: transfer.clone(),
-            record: bike.clone(),
-            delta: -1.0,
-            party: ana.clone(),
-            window_end: None,
-            condition: None,
-        },
-        None,
-    )
-    .await
-    .unwrap();
-    e.act(
-        Action::AddPromiseToTransfer {
-            transfer: transfer.clone(),
-            record: ana_money.clone(),
-            delta: 300.0,
-            party: ana.clone(),
-            window_end: None,
-            condition: None,
-        },
-        None,
-    )
-    .await
-    .unwrap();
+        .await;
 
-    // settlement refused before agreement (full policy: nobody committed)
-    assert!(
-        e.settle_all_local(&transfer, &ana, Utc::now())
-            .await
-            .is_err()
-    );
-
-    // both parties reach level 2; Ana's promises become agreed
-    for party in [&ana_party] {
-        e.act(
-            Action::AgreeTransfer {
-                transfer: transfer.clone(),
-                party: party.clone(),
-                level: 2,
-            },
-            None,
+        claim(
+            &engine,
+            &bike_occurrence,
+            &ana,
+            TransferOccurrenceClaimRole::Delivery,
+            "sale:bike:delivery",
         )
-        .await
-        .unwrap();
-    }
-    // carlos party uid: fetch it
-    let carlos_party = store::transfers::party_levels(&e.store.pool, &transfer)
-        .await
-        .unwrap()
-        .into_iter()
-        .find(|(_, actor, _)| actor == &carlos)
-        .unwrap()
-        .0;
-    e.act(
-        Action::AgreeTransfer {
-            transfer: transfer.clone(),
-            party: carlos_party,
-            level: 2,
-        },
-        None,
-    )
-    .await
-    .unwrap();
+        .await;
+        claim(
+            &engine,
+            &bike_occurrence,
+            &carlos,
+            TransferOccurrenceClaimRole::Receipt,
+            "sale:bike:receipt",
+        )
+        .await;
+        claim(
+            &engine,
+            &money_occurrence,
+            &carlos,
+            TransferOccurrenceClaimRole::Delivery,
+            "sale:money:delivery",
+        )
+        .await;
+        claim(
+            &engine,
+            &money_occurrence,
+            &ana,
+            TransferOccurrenceClaimRole::Receipt,
+            "sale:money:receipt",
+        )
+        .await;
 
-    assert!(e.transfer_agreed(&transfer).await.unwrap());
-    e.act(
-        Action::ActivateTransfer {
-            transfer: transfer.clone(),
-        },
-        None,
-    )
-    .await
-    .unwrap();
+        let bike_preview = support::settlement_preview(&engine, &bike_occurrence, &ana, 1.0).await;
+        support::settle_from_preview(
+            &engine,
+            &bike_occurrence,
+            &ana,
+            "sale:settle:bike",
+            &bike_preview,
+        )
+        .await;
+        let money_preview =
+            support::settlement_preview(&engine, &money_occurrence, &ana, 300.0).await;
+        support::settle_from_preview(
+            &engine,
+            &money_occurrence,
+            &ana,
+            "sale:settle:money",
+            &money_preview,
+        )
+        .await;
 
-    // settle Ana's side: the bike leaves, money arrives — the ONLY record mutation
-    let facts = e
-        .settle_all_local(&transfer, &ana, Utc::now())
-        .await
-        .unwrap();
-    assert_eq!(facts.len(), 2);
-    assert_eq!(
-        store::records::quantity(&e.store.pool, &bike)
-            .await
-            .unwrap(),
-        Some(0.0)
-    );
-    assert_eq!(
-        store::records::quantity(&e.store.pool, &ana_money)
-            .await
-            .unwrap(),
-        Some(300.0)
-    );
-
-    // idempotent: promises are kept now, re-settling changes nothing
-    let again = e
-        .settle_all_local(&transfer, &ana, Utc::now())
-        .await
-        .unwrap();
-    assert!(again.is_empty());
+        assert_eq!(
+            store::records::quantity(&engine.store.pool, &bike)
+                .await
+                .unwrap(),
+            Some(0.0)
+        );
+        assert_eq!(
+            store::records::quantity(&engine.store.pool, &ana_money)
+                .await
+                .unwrap(),
+            Some(300.0)
+        );
+        assert_eq!(
+            store::misc::promise_state(&engine.store.pool, "sale-bike-give")
+                .await
+                .unwrap(),
+            Some(PromiseState::Kept)
+        );
+        assert_eq!(
+            store::misc::promise_state(&engine.store.pool, "sale-money-receive")
+                .await
+                .unwrap(),
+            Some(PromiseState::Kept)
+        );
+    });
 }
 
-#[tokio::test]
-async fn editing_a_bundled_promise_invalidates_agreement() {
-    let e = engine().await;
-    let ana = person(&e, "ana").await;
-    let apples = plain(&e, "ana.apples", 10.0).await;
-    let transfer = e
-        .act(
-            Action::CreateTransfer {
-                slug: Some("xfer.t".into()),
-                head: "T".into(),
-                agreement: "full".into(),
-                agreement_pct: None,
-                satiation: None,
-                source: None,
-                reserve_default: None,
-                require_confirmation: false,
+#[test]
+fn revising_a_signed_promise_invalidates_current_agreement() {
+    support::run_async_test("transfer-revision-invalidation", || async {
+        let engine = support::engine().await;
+        let ana = person(&engine, "revision.ana").await;
+        let bia = person(&engine, "revision.bia").await;
+        let apples = plain(&engine, "revision.apples", 10.0).await;
+        let fixture = create_transfer(
+            &engine,
+            &ana,
+            std::slice::from_ref(&bia),
+            vec![
+                promise("revision-give", &apples, &ana, -5.0),
+                promise("revision-receive", &apples, &bia, 5.0),
+            ],
+            DraftOptions {
+                slug: "revision.transfer",
+                agreement: AgreementType::Full,
+                reserve_default: TransferReservePoint::Active,
+                require_confirmation: true,
             },
-            None,
         )
-        .await
-        .unwrap()
-        .created
-        .unwrap();
-    let party = e
-        .act(
-            Action::AddParty {
-                transfer: transfer.clone(),
-                actor: ana.clone(),
-            },
-            None,
-        )
-        .await
-        .unwrap()
-        .created
-        .unwrap();
-    let promise = e
-        .act(
-            Action::AddPromiseToTransfer {
-                transfer: transfer.clone(),
-                record: apples,
-                delta: -5.0,
-                party: ana,
-                window_end: None,
-                condition: None,
-            },
-            None,
-        )
-        .await
-        .unwrap()
-        .created
-        .unwrap();
-    e.act(
-        Action::AgreeTransfer {
-            transfer: transfer.clone(),
-            party,
-            level: 2,
-        },
-        None,
-    )
-    .await
-    .unwrap();
-    assert!(e.transfer_agreed(&transfer).await.unwrap());
+        .await;
+        agree(&engine, &fixture, &ana, "revision:ana").await;
+        agree(&engine, &fixture, &bia, "revision:bia").await;
+        assert!(
+            protein::transfer_agreement_ready(&engine.store, &fixture.transfer)
+                .await
+                .unwrap()
+        );
 
-    // a counteroffer is an edit: agreement drops back to 0
-    e.act(
-        Action::EditPromiseDelta {
-            promise,
-            delta: -3.0,
-        },
-        None,
-    )
-    .await
-    .unwrap();
-    assert!(
-        !e.transfer_agreed(&transfer).await.unwrap(),
-        "edit invalidated agreement"
-    );
+        engine.set_signer(ana.signer.clone()).await.unwrap();
+        engine
+            .act(
+                Action::ReviseTransferDraft {
+                    transfer: fixture.transfer.clone(),
+                    expected_revision: fixture.revision,
+                    request_id: "revision:change-quantity".into(),
+                    draft: TransferDraftRevisionInput {
+                        creator: ana.uid.clone(),
+                        slug: Some("revision.transfer".into()),
+                        head: "revision.transfer".into(),
+                        agreement: AgreementType::Full,
+                        agreement_pct: None,
+                        satiation: TransferSatiation::None,
+                        parent: None,
+                        source: None,
+                        visibility: TransferVisibility::Hidden,
+                        max_proximity: None,
+                        reserve_default: TransferReservePoint::Active,
+                        require_confirmation: true,
+                        default_place: None,
+                        invitees: Vec::new(),
+                        promises: vec![
+                            promise("revision-give", &apples, &ana, -3.0),
+                            promise("revision-receive", &apples, &bia, 3.0),
+                        ],
+                        dependencies: Vec::new(),
+                    },
+                },
+                None,
+            )
+            .await
+            .expect("signed promise revision");
+        assert_eq!(
+            support::current_revision(&engine, &fixture.transfer).await,
+            fixture.revision + 1
+        );
+        assert!(
+            store::transfers::party_levels(&engine.store.pool, &fixture.transfer)
+                .await
+                .unwrap()
+                .iter()
+                .all(|(_, _, level)| *level == 0),
+            "a public quantity revision resets every agreement level"
+        );
+    });
 }
 
 #[tokio::test]
 async fn every_fact_is_signed_and_verifiable() {
-    let e = engine().await;
+    let e = support::engine().await;
     e.set_signer(Signer::generate("ana", "ed25519:ana:2026-07"))
         .await
         .unwrap();
@@ -318,7 +276,7 @@ async fn every_fact_is_signed_and_verifiable() {
 
 #[tokio::test]
 async fn imagination_projects_the_scrubbable_future() {
-    let e = engine().await;
+    let e = support::engine().await;
     let apples = plain(&e, "apples.stock", 8.0).await;
 
     // a daily rule eats one apple

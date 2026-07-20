@@ -2,8 +2,9 @@
 //! proximity, hard — automatic matching only inside Organs at or under a
 //! ceiling you set per rule; never auto-expands to unknown/public Organs.
 //!
-//! The matcher joins the Cell's OPEN promises (published Needs/Contributions,
-//! unfilled party slot) against a discovery cache of remote open promises. A
+//! The matcher joins the Cell's proposer-owned OPEN promises (published
+//! Needs/Contributions with an unfilled counterparty role) against a discovery
+//! cache of remote open promises. A
 //! match is a complementary pair (sign-opposite deltas) whose concepts align
 //! (same, equivalent, or via the Lingua parent DAG), whose units are
 //! compatible, whose windows overlap, and whose counterparty clears the rule's
@@ -169,8 +170,8 @@ impl Engine {
 
         let mut drafts = Vec::new();
         for local in store::misc::list_promises(&self.store.pool).await? {
-            if local.state != nucleus::PromiseState::Open || local.party_uid.is_some() {
-                continue; // only OPEN promises with an unfilled party slot
+            if local.state != nucleus::PromiseState::Open || local.party_uid.is_none() {
+                continue; // OPEN ownership is the proposer; the counterparty remains unfilled
             }
             let Some(local_record) = &local.record_uid else {
                 continue;

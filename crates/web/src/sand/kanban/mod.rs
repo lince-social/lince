@@ -17,8 +17,8 @@ pub(crate) fn manifest() -> PackageManifest {
         details:
             "Subscribes to a records Protein through the widget bridge, buckets records into columns, moves cards with typed Actions, and emits the recordClicked ABI event so a Record sand can show details."
                 .into(),
-        initial_width: 7,
-        initial_height: 5,
+        initial_width: 6,
+        initial_height: 6,
         requires_server: false,
         permissions: vec![
             "bridge_state".into(),

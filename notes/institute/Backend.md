@@ -1,1 +1,0 @@
-The backend is in Rust. We use SQLite for the database and SQLx for the database driver

@@ -12,9 +12,15 @@ import {
   toReviseTransferAction,
   validateDraftStep,
 } from "./create-model.js";
+import {
+  applyWorkflowPreset,
+  bindPresetParties,
+  validatePresetPeople,
+} from "./presets.js";
 
 const STEPS = ["Terms", "People", "Promises", "Sharing", "Review"];
 const CLAIM_STEPS = ["Claimant", "Refine promise", "Review"];
+const PRESET_STEPS = ["Set up", "Review"];
 
 export function createTransferComposer(root, { host, onCreated, onSubmitted, onClosed }) {
   let step = 0;
@@ -46,6 +52,7 @@ export function createTransferComposer(root, { host, onCreated, onSubmitted, onC
   let sourceReusePolicy = "duplicate";
   let sourceProposer = "";
   let sourceDirection = "";
+  let preset = null;
 
   function setOptions(next = {}) {
     viewer = normalizeViewer(next.viewer);
@@ -62,6 +69,7 @@ export function createTransferComposer(root, { host, onCreated, onSubmitted, onC
       draft.creator = viewer.person;
       draft.invitees = draft.invitees.filter((uid) => uid !== viewer.person);
     }
+    bindPresetParties(draft, preset);
     if (open) render();
   }
 
@@ -90,6 +98,7 @@ export function createTransferComposer(root, { host, onCreated, onSubmitted, onC
     sourceReusePolicy = "duplicate";
     sourceProposer = "";
     sourceDirection = "";
+    preset = null;
     editableInvitees = new Set();
     contextualPeople = [];
     contextualRecords = [];
@@ -103,6 +112,7 @@ export function createTransferComposer(root, { host, onCreated, onSubmitted, onC
 
   function showEdit(row) {
     if (!row?.uid) return;
+    preset = null;
     contextualPeople = projectedPeople(row);
     contextualRecords = projectedRecords(row);
     contextualUnits = projectedUnits(row);
@@ -163,6 +173,7 @@ export function createTransferComposer(root, { host, onCreated, onSubmitted, onC
   }
 
   function openProjectedDraft(row, nextMode) {
+    preset = null;
     contextualPeople = projectedPeople(row);
     contextualRecords = projectedRecords(row);
     contextualUnits = projectedUnits(row);
@@ -240,7 +251,7 @@ export function createTransferComposer(root, { host, onCreated, onSubmitted, onC
     const header = el("header", "creatorHeader");
     const identity = el("div", "creatorIdentity");
     identity.append(
-      el("div", "eyebrow", mode === "create" ? "Manual transfer" : `Revision ${expectedRevision}`),
+      el("div", "eyebrow", preset ? "Workflow preset" : mode === "create" ? "Manual transfer" : `Revision ${expectedRevision}`),
       el("h2", "", composerTitle()),
     );
     const dismiss = button("×", "iconButton", close);
@@ -249,6 +260,7 @@ export function createTransferComposer(root, { host, onCreated, onSubmitted, onC
     header.append(identity, dismiss);
 
     const progress = el("ol", "stepper");
+    progress.style.gridTemplateColumns = `repeat(${activeSteps().length}, minmax(76px, 1fr))`;
     for (const [index, label] of activeSteps().entries()) {
       const item = el("li", "stepItem", label);
       item.dataset.current = String(index === step);
@@ -293,7 +305,7 @@ export function createTransferComposer(root, { host, onCreated, onSubmitted, onC
 
   function renderTerms(form) {
     const description = mode === "create"
-      ? "Name the commitment and choose how agreement is reached."
+      ? preset?.description || "Name the commitment and choose how agreement is reached."
       : mode === "counteroffer"
         ? "Your signed complete terms become the one current proposal and reset revision-bound agreement."
         : "Every public-result change creates a signed revision and resets affected agreement levels.";
@@ -359,6 +371,7 @@ export function createTransferComposer(root, { host, onCreated, onSubmitted, onC
       const creatorSelect = optionSelect(people, draft.creator, "Select creator Person", (value) => {
         draft.creator = value;
         draft.invitees = draft.invitees.filter((uid) => uid !== value);
+        bindPresetParties(draft, preset);
         render();
       });
       form.append(field("Creator", creatorSelect, { required: true, hint: "Trusted local mode requires an explicit acting Person." }));
@@ -367,8 +380,16 @@ export function createTransferComposer(root, { host, onCreated, onSubmitted, onC
     const list = el("div", "composerList");
     for (const [index, uid] of draft.invitees.entries()) {
       const row = el("div", "composerRow partyComposerRow");
-      row.append(optionSelect(inviteeOptions(), uid, "Select invitee", (value) => { draft.invitees[index] = value; }));
-      row.append(removeButton(() => { draft.invitees.splice(index, 1); render(); }, mode === "create" ? "Remove invitee" : "Withdraw invitation"));
+      row.append(optionSelect(inviteeOptions(), uid, "Select invitee", (value) => {
+        draft.invitees[index] = value;
+        bindPresetParties(draft, preset);
+        render();
+      }));
+      row.append(removeButton(() => {
+        draft.invitees.splice(index, 1);
+        bindPresetParties(draft, preset);
+        render();
+      }, mode === "create" ? "Remove invitee" : "Withdraw invitation"));
       list.append(row);
     }
     if (!draft.invitees.length) list.append(emptyComposer("No pending invitees"));
@@ -377,6 +398,7 @@ export function createTransferComposer(root, { host, onCreated, onSubmitted, onC
     if (mode === "create") {
       const add = button("+ Add invitee", "secondaryButton", () => {
         draft.invitees.push(firstUnused(available, draft.invitees));
+        bindPresetParties(draft, preset);
         render();
       });
       add.disabled = !available.length || draft.invitees.length >= available.length;
@@ -396,7 +418,7 @@ export function createTransferComposer(root, { host, onCreated, onSubmitted, onC
     const list = el("div", "promiseComposerList");
     for (const [index, promise] of draft.promises.entries()) {
       const card = el("fieldset", "promiseComposer");
-      const legend = el("legend", "", mode === "claim" ? "Claimed terms" : `Promise ${index + 1}`);
+      const legend = el("legend", "", mode === "claim" ? "Claimed terms" : promise.presetLabel || `Promise ${index + 1}`);
       const remove = mode === "claim" ? null : removeButton(() => { removePromise(index); }, `${mode === "create" ? "Remove" : "Withdraw"} promise ${index + 1}`);
       remove?.classList.add("promiseRemove");
       const grid = el("div", "formGrid");
@@ -602,6 +624,9 @@ export function createTransferComposer(root, { host, onCreated, onSubmitted, onC
     }
     if (mode === "counteroffer" && !actingPerson) return "Select the accepted participant signing this counteroffer.";
     if (mode === "counteroffer" && !participantOptions().some((person) => person.uid === actingPerson)) return "Choose an accepted participant to sign this counteroffer.";
+    const presetPeopleError = validatePresetPeople(draft, preset);
+    if (presetPeopleError) return presetPeopleError;
+    bindPresetParties(draft, preset);
     for (let index = 0; index < STEPS.length - 1; index += 1) {
       const message = validateDraftStep(draft, index);
       if (message) return message;
@@ -610,6 +635,7 @@ export function createTransferComposer(root, { host, onCreated, onSubmitted, onC
   }
 
   function validateCurrentStep() {
+    if (mode === "create" && preset) return step === 0 ? validateAll() : "";
     if (mode !== "claim") return validateDraftStep(draft, step);
     if (step === 0) {
       if (!actingPerson) return "Select the Person signing this claim.";
@@ -696,6 +722,7 @@ export function createTransferComposer(root, { host, onCreated, onSubmitted, onC
 
   function promisePersonSelect(promise) {
     const node = optionSelect(selectedPeople(), promise.open ? "" : promise.party, "OPEN", (value) => {
+      delete promise.presetPartyRole;
       promise.open = !value;
       promise.party = value;
       if (value) {
@@ -768,10 +795,14 @@ export function createTransferComposer(root, { host, onCreated, onSubmitted, onC
     return mode === "claim" ? JSON.stringify([actingPerson, sourcePromiseUid, terms]) : JSON.stringify([actingPerson, terms]);
   }
 
-  function activeSteps() { return mode === "claim" ? CLAIM_STEPS : STEPS; }
+  function activeSteps() {
+    if (mode === "claim") return CLAIM_STEPS;
+    if (mode === "create" && preset) return PRESET_STEPS;
+    return STEPS;
+  }
 
   function composerTitle() {
-    if (mode === "create") return "New transfer";
+    if (mode === "create") return preset ? preset.label : "New transfer";
     if (mode === "adopt") return "Review legacy transfer";
     if (mode === "counteroffer") return "Counteroffer";
     if (mode === "claim") return "Claim OPEN promise";
@@ -783,6 +814,16 @@ export function createTransferComposer(root, { host, onCreated, onSubmitted, onC
       if (step === 0) renderPeople(form);
       if (step === 1) renderPromises(form);
       if (step === 2) renderReview(form);
+      return;
+    }
+    if (mode === "create" && preset) {
+      if (step === 0) {
+        renderTerms(form);
+        renderPeople(form);
+        renderPromises(form);
+        renderSharing(form);
+      }
+      if (step === 1) renderReview(form);
       return;
     }
     if (step === 0) renderTerms(form);
@@ -909,14 +950,43 @@ export function createTransferComposer(root, { host, onCreated, onSubmitted, onC
     const recordUids = [...new Set(supplied
       .map((value) => String(value && typeof value === "object" ? value.uid || "" : value || ""))
       .filter(Boolean))];
-    for (const recordUid of recordUids) {
-      const promise = emptyPromise(prefill.open ? "" : draft.creator);
-      promise.record = recordUid;
-      const record = records.find((candidate) => candidate.uid === recordUid);
-      if (record?.unit) promise.unit = record.unit;
-      draft.promises.push(promise);
+    const suppliedPeople = Array.isArray(prefill.invitees)
+      ? prefill.invitees
+      : prefill.invitee != null
+        ? [prefill.invitee]
+        : prefill.counterparty != null
+          ? [prefill.counterparty]
+          : [];
+    contextualPeople = normalizeOptions(suppliedPeople.filter((value) => value && typeof value === "object"));
+    people = normalizeOptions([...people, ...contextualPeople]);
+    if (viewer.local && prefill.creator != null) {
+      const suppliedCreator = String(typeof prefill.creator === "object" ? prefill.creator.uid || "" : prefill.creator || "");
+      if (suppliedCreator) draft.creator = suppliedCreator;
+    }
+    draft.invitees = [...new Set(suppliedPeople
+      .map((value) => String(value && typeof value === "object" ? value.uid || "" : value || ""))
+      .filter((uid) => uid && uid !== draft.creator))];
+    preset = applyWorkflowPreset(draft, prefill.preset, {
+      makePromise: emptyPromise,
+      makeDependency: emptyDependency,
+      recordUids,
+      records,
+    });
+    if (!preset) {
+      for (const recordUid of recordUids) {
+        const promise = emptyPromise(prefill.open ? "" : draft.creator);
+        promise.record = recordUid;
+        const record = records.find((candidate) => candidate.uid === recordUid);
+        if (record?.unit) promise.unit = record.unit;
+        draft.promises.push(promise);
+      }
+    }
+    const quantities = Array.isArray(prefill.quantities) ? prefill.quantities : [prefill.quantity];
+    for (const [index, quantity] of quantities.entries()) {
+      if (quantity != null && draft.promises[index]) draft.promises[index].quantity = Number(quantity);
     }
     if (typeof prefill.head === "string") draft.head = prefill.head;
+    bindPresetParties(draft, preset);
   }
 
   return {

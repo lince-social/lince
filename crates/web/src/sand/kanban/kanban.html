@@ -12,7 +12,7 @@
        collapse/resize, an edit sheet, optimistic drag moves — client-rendered
        on Protein/Actions. Filtering/sorting and the Protein choice are BASE UI
        (the card's Data panel), not sand chrome; creation happens in the
-       grouped Record sand (the `recordCreate` event), not a kanban sheet.
+       pinned Record sand (the `recordCreate` event), not a kanban sheet.
        K3 adds the column system: a Columns sheet (create/rename/delete/sort/
        hide, value or range or @concept buckets), presets as sand-config
        records, concept-name resolution, multi-select bulk move.
@@ -20,7 +20,7 @@
        2026-07-17): the kanban itself writes checkbox toggles, in-place body
        edits, column moves, AND bulk delete of selected cards (confirmed via
        an in-sand modal) — head/metadata/assignees edits are still
-       the grouped Record sand's job, so the old full edit sheet stays gone. */
+       the pinned Record sand's job, so the old full edit sheet stays gone. */
     :root { color-scheme: dark; --bg: #0e1116; --panel: #151a21; --panel2: #1b222b; --line: #2b3440; --text: #e6edf3; --muted: #8b949e; --accent: #7aa2f7; --good: #3fb950; --warn: #d29922; }
     * { box-sizing: border-box; }
     /* the sand's own boundary (2026-07-18): a 1px border so the whole widget
@@ -507,10 +507,10 @@
       return btn;
     }
 
-    // ---- creation: delegated to the grouped Record sand -----------------------
-    // "New task" does not open a kanban sheet; it asks the Record sand packaged
-    // in this group to enter CREATION MODE (same fields it shows on a get, but
-    // writable and empty). Group-scoped, like recordClicked.
+    // ---- creation: delegated to the pinned Record sand -------------------------
+    // "New task" does not open a kanban sheet; it asks the board's pinned
+    // Record sand to enter CREATION MODE (same fields it shows on a get, but
+    // writable and empty). Board-wide, like recordClicked.
     $("open-create").addEventListener("click", () => {
       const firstValueLane = lanes.find((l) => l.value !== undefined);
       H.emit("recordCreate", { record: { kind: "plain", quantity: firstValueLane ? firstValueLane.value : 0 } });
@@ -1045,7 +1045,7 @@
       el.addEventListener("dragstart", (event) => {
         event.dataTransfer.setData("text/lince-record", row.uid);
       });
-      // Click targets (2026-07-17): the TITLE opens Record (group-scoped
+      // Click targets (2026-07-17): the TITLE opens Record (board-wide
       // `recordClicked`); the BODY edits in place (cardBodyNode). Ctrl/Cmd-
       // click anywhere selects for bulk operations.
       el.addEventListener("click", (event) => {

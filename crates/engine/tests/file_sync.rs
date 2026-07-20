@@ -211,7 +211,11 @@ async fn same_head_records_get_disambiguated_filenames() {
         .unwrap()
         .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
         .collect();
-    assert_eq!(entries.len(), 2, "both records get their own file: {entries:?}");
+    assert_eq!(
+        entries.len(),
+        2,
+        "both records get their own file: {entries:?}"
+    );
     assert!(entries.contains(&format!("Untitled -- {a}.md")));
     assert!(entries.contains(&format!("Untitled -- {b}.md")));
 }

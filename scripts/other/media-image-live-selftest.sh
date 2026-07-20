@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
-# Media image, LIVE end-to-end (2026-07-17) — the real `lince` cell server,
-# the real board page, the real kanban+Record group, no stubs:
+# Media image, LIVE end-to-end (2026-07-17, updated 2026-07-19 for the
+# ungrouped kanban) — the real `lince` cell server, the real board page, a
+# standalone kanban card driving the board's pinned Record sand, no stubs:
 #   upload a real PNG through `POST /host/media` (curl, standing in for the
 #   editor.js file-picker upload — headless chromium cannot drive a native
 #   OS file chooser, so `body-editor-selftest.sh` covers the picker/placeholder
-#   half and this covers the render half) -> seed the kanban group -> "New
-#   task" -> fill a body with `![](<the uploaded /host/media path>)` -> Create
-#   for real -> the SAME shared editor.js renderer runs in both the kanban
-#   card and Record -> both actually load the image (`naturalWidth > 0`,
-#   not just an <img> tag existing — that was the older, weaker check).
+#   half and this covers the render half) -> seed a standalone kanban card ->
+#   "New task" -> fill a body with `![](<the uploaded /host/media path>)` ->
+#   Create for real -> the SAME shared editor.js renderer runs in both the
+#   kanban card and Record -> both actually load the image (`naturalWidth >
+#   0`, not just an <img> tag existing — that was the older, weaker check).
 #
 # Requires: chromium + jq on PATH, target/debug/lince (cargo build -p lince).
 # Usage: scripts/other/media-image-live-selftest.sh
@@ -56,23 +57,29 @@ case "$IMG_PATH" in
   *) echo "FAIL: setup upload did not return a /host/media path"; exit 1 ;;
 esac
 
-# Seed the board with the kanban GROUP (same fixture as kanban-live-k0-selftest.sh).
-# A kanban card ships with an EMPTY widgetState (no default Protein,
-# 2026-07-18 — the user must configure one via the Data panel), so this
-# patches one in, the same way a real Data panel edit would.
-curl -sf "$BASE/host/packages/local/group/kanban.lince" > "$WORK/group.json"
+# Seed the board with a standalone kanban card (same fixture as
+# kanban-live-k0-selftest.sh). A kanban card ships with an EMPTY widgetState
+# (no default Protein, 2026-07-18 — the user must configure one via the Data
+# panel), so this patches one in, the same way a real Data panel edit would.
+curl -sf "$BASE/host/packages/local/kanban" > "$WORK/kanban-preview.json"
 curl -sf "$BASE/host/board/state" > "$WORK/state.json"
 jq -s '
   {source: "record", where: [{kind_eq: "plain"}], order: [{asc: "quantity"}, {asc: "created_at"}],
    include: {links: {kinds: ["assigned-to", "part-of"], direction: "out"}}} as $protein
-  | (.[0].cards | map(
-    if .id == "card-kanban" then . + {x: 4400, y: 4400, width: 760, height: 560, widgetState: {protein: $protein}}
-    elif .id == "card-kanban-record" then . + {x: 5180, y: 4400, width: 380, height: 560}
-    else . end)) as $group
+  | .[0] as $preview
   | .[1]
-  | .workspaces[0].cards += $group
+  | .workspaces[0].cards += [{
+      id: "card-kanban", kind: "package", title: $preview.title,
+      description: $preview.description, text: "", html: $preview.html,
+      author: $preview.author, permissions: $preview.permissions,
+      packageName: $preview.filename, requiresServer: $preview.requires_server,
+      serverId: "", streamsEnabled: true, widgetState: {protein: $protein},
+      x: 4400, y: 4400, width: 900, height: 700,
+      pinned: false, system: false, zIndex: 1,
+      groupId: null, groupIds: [], abiListen: []
+    }]
   | .workspaces[0].camera = {x: -4300, y: -4300, scale: 1.0}
-' "$WORK/group.json" "$WORK/state.json" > "$WORK/next-state.json"
+' "$WORK/kanban-preview.json" "$WORK/state.json" > "$WORK/next-state.json"
 PUT_CODE="$(curl -s -o /dev/null -w "%{http_code}" -X PUT \
   -H "content-type: application/json" --data-binary @"$WORK/next-state.json" \
   "$BASE/host/board/state")"
@@ -106,7 +113,7 @@ cat > "$HARNESS" <<'HTML'
       return inner && inner.readyState !== "loading" ? inner : null;
     };
     const kb = await poll(() => { const d = sandDoc("card-kanban"); return d && d.querySelector(".col") ? d : null; });
-    const ri = await poll(() => { const d = sandDoc("card-kanban-record"); return d && d.getElementById("create") ? d : null; });
+    const ri = await poll(() => { const d = sandDoc("shell-record"); return d && d.getElementById("create") ? d : null; });
     if (!kb || !ri) throw new Error("sands did not render");
 
     kb.getElementById("open-create").click();

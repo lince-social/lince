@@ -76,11 +76,7 @@ async fn demand_token_samples_the_hourly_histogram() {
             condition: "demand(@food) * (@apples.stock >= 0)",
             gate: "always",
             carry: "value",
-            consequences: vec![(
-                ConsequenceKind::SetQuantity,
-                Some("@mirror".into()),
-                None,
-            )],
+            consequences: vec![(ConsequenceKind::SetQuantity, Some("@mirror".into()), None)],
         },
     )
     .await
@@ -161,10 +157,17 @@ async fn senses_heartbeat_arm_drafts_decisions_once() {
         .unwrap();
 
     let created = e.senses_pass().await.unwrap();
-    assert_eq!(created.len(), 1, "one draft: the far organ is ceilinged out");
+    assert_eq!(
+        created.len(),
+        1,
+        "one draft: the far organ is ceilinged out"
+    );
 
     let decisions = store::misc::open_decisions(&e.store.pool).await.unwrap();
-    let drafts: Vec<_> = decisions.iter().filter(|(_, kind, _)| kind == "draft").collect();
+    let drafts: Vec<_> = decisions
+        .iter()
+        .filter(|(_, kind, _)| kind == "draft")
+        .collect();
     assert_eq!(drafts.len(), 1);
     assert!(drafts[0].2.contains("organ.bakery"));
 
@@ -186,7 +189,9 @@ async fn senses_heartbeat_arm_drafts_decisions_once() {
     );
 
     // deactivating the match rule (a record like any other) stops the matcher
-    e.act(Action::Deactivate { target: rule }, None).await.unwrap();
+    e.act(Action::Deactivate { target: rule }, None)
+        .await
+        .unwrap();
     store::senses::upsert_remote_open(&e.store.pool, &remote("p_R2", Some(&food), 3.0, 1))
         .await
         .unwrap();

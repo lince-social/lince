@@ -87,8 +87,8 @@ pub(crate) async fn store_media_bytes(
 /// wayland dev headers at build time — the plain `lince` CLI must keep
 /// building with just cargo + rustc.
 #[cfg(feature = "native-picker")]
-pub(crate) async fn pick_and_store_image() -> Result<Option<String>, (axum::http::StatusCode, String)>
-{
+pub(crate) async fn pick_and_store_image()
+-> Result<Option<String>, (axum::http::StatusCode, String)> {
     let Some(handle) = rfd::AsyncFileDialog::new()
         .add_filter("Image", &["png", "jpg", "jpeg", "gif", "webp"])
         .pick_file()
@@ -119,9 +119,7 @@ pub(crate) fn valid_media_filename(name: &str) -> bool {
     };
     matches!(ext, "png" | "jpg" | "gif" | "webp")
         && stem.len() == 36
-        && stem
-            .chars()
-            .all(|c| c.is_ascii_hexdigit() || c == '-')
+        && stem.chars().all(|c| c.is_ascii_hexdigit() || c == '-')
 }
 
 #[cfg(test)]
@@ -141,7 +139,10 @@ mod tests {
     #[test]
     fn rejects_non_image_bytes_regardless_of_claimed_extension() {
         assert_eq!(sniff_image_ext(b"<svg xmlns=..."), None);
-        assert_eq!(sniff_image_ext(b"<html><script>evil()</script></html>"), None);
+        assert_eq!(
+            sniff_image_ext(b"<html><script>evil()</script></html>"),
+            None
+        );
         assert_eq!(sniff_image_ext(b""), None);
     }
 

@@ -51,9 +51,6 @@ impl PackageCatalogStore {
             format!("Nao consegui criar a pasta ~/.config/lince/web/sand: {error}")
         })?;
         sand::render_official_widgets(&dir)?;
-        // Sand-as-group archives (e.g. kanban = board + Record) are emitted
-        // alongside the single-sand packages (Stage 8b, Phase 3).
-        sand::render_official_groups(&dir)?;
 
         Ok(Self { dir: Arc::new(dir) })
     }
@@ -124,7 +121,6 @@ impl PackageCatalogStore {
         parse_lince_package(canonical_name, &bytes)
     }
 }
-
 
 pub fn summary_from_package(package: LincePackage) -> InstalledPackageSummary {
     let filename = package.archive_filename();
@@ -206,8 +202,14 @@ fn summary_from_group(filename: &str, bytes: &[u8]) -> Result<InstalledPackageSu
             .as_ref()
             .map(|manifest| manifest.details.clone())
             .unwrap_or_default(),
-        initial_width: manifest.as_ref().map(|manifest| manifest.initial_width).unwrap_or(6),
-        initial_height: manifest.as_ref().map(|manifest| manifest.initial_height).unwrap_or(5),
+        initial_width: manifest
+            .as_ref()
+            .map(|manifest| manifest.initial_width)
+            .unwrap_or(6),
+        initial_height: manifest
+            .as_ref()
+            .map(|manifest| manifest.initial_height)
+            .unwrap_or(5),
         requires_server: manifest
             .as_ref()
             .map(|manifest| manifest.requires_server)

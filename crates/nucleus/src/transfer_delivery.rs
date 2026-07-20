@@ -13,8 +13,10 @@ use crate::Fact;
 pub const TRANSFER_ENVELOPE_VERSION: u16 = 1;
 const ENVELOPE_DOMAIN: &str = "lince.transfer-envelope.v1";
 const APPLICATION_ATTESTATION_DOMAIN: &str = "lince.transfer-application-attestation.v1";
+const APPLICATION_HANDOFF_DOMAIN: &str = "lince.transfer-application-handoff.v1";
 const ORGAN_REQUEST_DOMAIN: &str = "lince.organ-transfer-request.v1";
 const DELIVERY_POLICY_EVENT_DOMAIN: &str = "lince.transfer-delivery-policy-event.v1";
+const PACKAGE_RECEIPT_DOMAIN: &str = "lince.transfer-package-receipt.v1";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -321,6 +323,103 @@ impl TransferApplicationHandoffState {
     }
 }
 
+/// Origin-authenticated public settlement proposal delivered to exactly one
+/// participant Cell. It cannot represent that Cell's private Record or formula.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TransferApplicationHandoffV1 {
+    pub version: u16,
+    pub handoff_uid: String,
+    pub origin_organ_uid: String,
+    pub participant_organ_uid: String,
+    pub participant_person_uid: String,
+    pub transfer_uid: String,
+    pub occurrence_uid: String,
+    pub source_promise_uid: String,
+    pub settlement_slice_uid: String,
+    pub origin_revision: u64,
+    pub canonical_quantity: f64,
+    pub canonical_unit_uid: Option<String>,
+    pub canonical_cumulative_before: f64,
+    pub canonical_cumulative_after: f64,
+    pub canonical_remaining_after: f64,
+    pub application_direction: i8,
+    pub canonical_slice_hash: String,
+    pub created_at: String,
+    pub key_id: String,
+    pub signature: String,
+}
+
+impl TransferApplicationHandoffV1 {
+    pub fn signing_bytes(&self) -> Vec<u8> {
+        format!(
+            "{APPLICATION_HANDOFF_DOMAIN}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}",
+            self.version,
+            self.handoff_uid,
+            self.origin_organ_uid,
+            self.participant_organ_uid,
+            self.participant_person_uid,
+            self.transfer_uid,
+            self.occurrence_uid,
+            self.source_promise_uid,
+            self.settlement_slice_uid,
+            self.origin_revision,
+            self.canonical_quantity,
+            self.canonical_unit_uid.as_deref().unwrap_or(""),
+            self.canonical_cumulative_before,
+            self.canonical_cumulative_after,
+            self.canonical_remaining_after,
+            self.application_direction,
+            self.canonical_slice_hash,
+            self.created_at,
+            self.key_id,
+        )
+        .into_bytes()
+    }
+
+    pub fn validate_shape(&self) -> Result<(), String> {
+        if self.version != TRANSFER_ENVELOPE_VERSION
+            || self.origin_revision == 0
+            || !self.canonical_quantity.is_finite()
+            || self.canonical_quantity <= 0.0
+            || !self.canonical_cumulative_before.is_finite()
+            || !self.canonical_cumulative_after.is_finite()
+            || !self.canonical_remaining_after.is_finite()
+            || self.canonical_cumulative_after <= self.canonical_cumulative_before
+            || (self.canonical_cumulative_after
+                - self.canonical_cumulative_before
+                - self.canonical_quantity)
+                .abs()
+                > 1e-9
+            || self.canonical_remaining_after < 0.0
+            || !matches!(self.application_direction, -1 | 1)
+        {
+            return Err("application handoff quantities or revision are invalid".into());
+        }
+        for (label, value) in [
+            ("handoff uid", self.handoff_uid.as_str()),
+            ("origin Organ uid", self.origin_organ_uid.as_str()),
+            ("participant Organ uid", self.participant_organ_uid.as_str()),
+            (
+                "participant Person uid",
+                self.participant_person_uid.as_str(),
+            ),
+            ("Transfer uid", self.transfer_uid.as_str()),
+            ("occurrence uid", self.occurrence_uid.as_str()),
+            ("source promise uid", self.source_promise_uid.as_str()),
+            ("settlement slice uid", self.settlement_slice_uid.as_str()),
+            ("canonical slice hash", self.canonical_slice_hash.as_str()),
+            ("created at", self.created_at.as_str()),
+            ("key id", self.key_id.as_str()),
+            ("signature", self.signature.as_str()),
+        ] {
+            if value.trim().is_empty() || value.len() > 1_024 {
+                return Err(format!("{label} has an invalid length"));
+            }
+        }
+        Ok(())
+    }
+}
+
 /// Public proof that one participant Cell processed one canonical settlement
 /// slice. The formula itself, the resulting local quantity, and the private
 /// Record uid are intentionally impossible to represent here.
@@ -387,6 +486,70 @@ impl TransferApplicationAttestationV1 {
             ("formula version", self.formula_version.as_str()),
             ("application Fact uid", self.application_fact_uid.as_str()),
             ("applied at", self.applied_at.as_str()),
+            ("key id", self.key_id.as_str()),
+            ("signature", self.signature.as_str()),
+        ] {
+            if value.trim().is_empty() || value.len() > 1_024 {
+                return Err(format!("{label} has an invalid length"));
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Stable evidence that a recipient Organ received or displayed one envelope.
+/// The signature is independent of the nonce-bearing HTTP request wrapper so
+/// an exact delivery retry produces the same durable receipt proof.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TransferPackageReceiptV1 {
+    pub version: u16,
+    pub request_id: String,
+    pub envelope_uid: String,
+    pub transfer_uid: String,
+    pub origin_organ_uid: String,
+    pub recipient_person_uid: String,
+    pub recipient_organ_uid: String,
+    pub cursor: u64,
+    pub kind: String,
+    pub created_at: String,
+    pub key_id: String,
+    pub signature: String,
+}
+
+impl TransferPackageReceiptV1 {
+    pub fn signing_bytes(&self) -> Vec<u8> {
+        format!(
+            "{PACKAGE_RECEIPT_DOMAIN}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}",
+            self.version,
+            self.request_id,
+            self.envelope_uid,
+            self.transfer_uid,
+            self.origin_organ_uid,
+            self.recipient_person_uid,
+            self.recipient_organ_uid,
+            self.cursor,
+            self.kind,
+            self.created_at,
+            self.key_id,
+        )
+        .into_bytes()
+    }
+
+    pub fn validate_shape(&self) -> Result<(), String> {
+        if self.version != TRANSFER_ENVELOPE_VERSION
+            || self.cursor == 0
+            || !matches!(self.kind.as_str(), "received" | "seen")
+        {
+            return Err("package receipt version, cursor, or kind is invalid".into());
+        }
+        for (label, value) in [
+            ("request id", self.request_id.as_str()),
+            ("envelope uid", self.envelope_uid.as_str()),
+            ("Transfer uid", self.transfer_uid.as_str()),
+            ("origin Organ uid", self.origin_organ_uid.as_str()),
+            ("recipient Person uid", self.recipient_person_uid.as_str()),
+            ("recipient Organ uid", self.recipient_organ_uid.as_str()),
+            ("created at", self.created_at.as_str()),
             ("key id", self.key_id.as_str()),
             ("signature", self.signature.as_str()),
         ] {

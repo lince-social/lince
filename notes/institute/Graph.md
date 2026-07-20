@@ -1,1 +1,0 @@
-Graph with different assumptions and starting points: Karma changes Records in different ways to see scenarios with quantities in Y axis and time in X axis, or other viewing configurations.

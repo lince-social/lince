@@ -142,7 +142,12 @@ async fn full_log(e: &Engine) -> Vec<nucleus::Fact> {
     let mut facts = Vec::with_capacity(rows.len());
     for row in rows {
         let uid: String = row.get("uid");
-        facts.push(store::facts::get(&e.store.pool, &uid).await.unwrap().unwrap());
+        facts.push(
+            store::facts::get(&e.store.pool, &uid)
+                .await
+                .unwrap()
+                .unwrap(),
+        );
     }
     facts
 }
@@ -239,14 +244,10 @@ async fn recorded_log_replays_deterministically_and_idempotently() {
         })
         .collect();
 
-    let applied = engine::append::append_all(
-        &b.store,
-        replay.clone(),
-        at("2026-07-08T00:00:00Z"),
-        None,
-    )
-    .await
-    .unwrap();
+    let applied =
+        engine::append::append_all(&b.store, replay.clone(), at("2026-07-08T00:00:00Z"), None)
+            .await
+            .unwrap();
     assert_eq!(applied.len(), recorded.len(), "every fact re-applies once");
     assert_eq!(
         quantities(&a).await,

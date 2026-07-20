@@ -3,13 +3,21 @@
 
 use chrono::{DateTime, Utc};
 use engine::Engine;
-use engine::actions::Action;
+use engine::actions::{
+    Action, TransferPromiseInput, TransferReservePoint, TransferSatiation, TransferVisibility,
+};
+use engine::trust::Signer;
+use nucleus::transfer::{AgreementType, OpenPromiseReusePolicy};
 use nucleus::{ConsequenceKind, PromiseState, RecordKind};
 use store::misc::NewPromise;
 use store::records::NewRecord;
 
 async fn engine() -> Engine {
-    Engine::open_memory().await.expect("engine opens")
+    let engine = Engine::open_memory().await.expect("engine opens");
+    store::organs::ensure_local(&engine.store.pool, "http://karma-effects.test")
+        .await
+        .expect("local Organ");
+    engine
 }
 
 async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
@@ -73,11 +81,7 @@ async fn debounce_holds_a_rule_between_firings() {
             condition: "@x",
             gate: "!=0",
             carry: "one",
-            consequences: vec![(
-                ConsequenceKind::AddQuantity,
-                Some("@alerts".into()),
-                None,
-            )],
+            consequences: vec![(ConsequenceKind::AddQuantity, Some("@alerts".into()), None)],
         },
     )
     .await
@@ -101,7 +105,11 @@ async fn debounce_holds_a_rule_between_firings() {
     )
     .await
     .unwrap();
-    assert_eq!(quantity(&e, "alerts").await, 1.0, "held inside the debounce");
+    assert_eq!(
+        quantity(&e, "alerts").await,
+        1.0,
+        "held inside the debounce"
+    );
 
     e.append(
         nucleus::NewFact::quantity(trigger, 1.0, nucleus::Cause::user_edit()),
@@ -149,11 +157,14 @@ async fn run_action_consequence_executes_through_act() {
     assert_eq!(quantity(&e, "counter").await, 5.0);
 
     // provenance: the effect logged a zero-delta fact on the rule record
-    let log = store::facts::for_record(&e.store.pool, &rule, 10).await.unwrap();
-    assert!(log.iter().any(|f| f
-        .payload
-        .as_deref()
-        .is_some_and(|p| p.contains("\"effect\":\"action\""))));
+    let log = store::facts::for_record(&e.store.pool, &rule, 10)
+        .await
+        .unwrap();
+    assert!(log.iter().any(|f| {
+        f.payload
+            .as_deref()
+            .is_some_and(|p| p.contains("\"effect\":\"action\""))
+    }));
 }
 
 #[tokio::test]
@@ -193,7 +204,11 @@ async fn run_query_consequence_executes_a_saved_protein() {
     let outcomes = e.run_due_effects().await.unwrap();
     assert_eq!(outcomes.len(), 1);
     assert!(outcomes[0].ok, "{}", outcomes[0].result);
-    assert!(outcomes[0].result.contains("rows"), "{}", outcomes[0].result);
+    assert!(
+        outcomes[0].result.contains("rows"),
+        "{}",
+        outcomes[0].result
+    );
 }
 
 #[tokio::test]
@@ -259,11 +274,7 @@ async fn quiet_hours_deactivates_a_noisy_rule() {
             condition: "@x",
             gate: "!=0",
             carry: "one",
-            consequences: vec![(
-                ConsequenceKind::AddQuantity,
-                Some("@alerts".into()),
-                None,
-            )],
+            consequences: vec![(ConsequenceKind::AddQuantity, Some("@alerts".into()), None)],
         },
     )
     .await
@@ -288,17 +299,25 @@ async fn quiet_hours_deactivates_a_noisy_rule() {
     e.reload_rules().await.unwrap();
 
     e.append_user(&x, 1.0).await.unwrap();
-    assert_eq!(quantity(&e, "alerts").await, 1.0, "noisy fires while active");
+    assert_eq!(
+        quantity(&e, "alerts").await,
+        1.0,
+        "noisy fires while active"
+    );
 
     e.append_user(&quiet, 1.0).await.unwrap();
-    assert_eq!(quantity(&e, "rules.noisy").await, 0.0, "quiet turned it off");
+    assert_eq!(
+        quantity(&e, "rules.noisy").await,
+        0.0,
+        "quiet turned it off"
+    );
 
     e.append_user(&x, 1.0).await.unwrap();
     assert_eq!(quantity(&e, "alerts").await, 1.0, "silenced");
 }
 
 #[tokio::test]
-async fn trust_ahead_advances_a_transfer_on_high_confidence() {
+async fn trust_ahead_does_not_bypass_occurrence_activation() {
     let e = engine().await;
     plain(&e, "ana.apples", 10.0).await;
     let maria = person(&e, "maria").await;
@@ -325,17 +344,43 @@ async fn trust_ahead_advances_a_transfer_on_high_confidence() {
     }
 
     // An agreed bundle with Maria (individual agreement: always satisfied).
+    e.set_signer(Signer::generate(&maria, "test:trust-ahead:maria"))
+        .await
+        .unwrap();
     let transfer = e
         .act(
-            Action::CreateTransfer {
+            Action::CreateTransferDraft {
+                request_id: "trust-ahead:create".into(),
+                creator: Some(maria.clone()),
                 slug: Some("xfer.apples".into()),
                 head: "Apples".into(),
-                agreement: "individual".into(),
+                agreement: AgreementType::Individual,
                 agreement_pct: None,
-                satiation: None,
+                satiation: TransferSatiation::None,
+                parent: None,
                 source: None,
-                reserve_default: None,
+                visibility: TransferVisibility::Hidden,
+                max_proximity: None,
+                reserve_default: TransferReservePoint::Active,
                 require_confirmation: false,
+                default_place: None,
+                invitees: Vec::new(),
+                promises: vec![TransferPromiseInput {
+                    uid: Some("trust-ahead-promise".into()),
+                    record: "ana.apples".into(),
+                    party: Some(maria.clone()),
+                    open: false,
+                    delta: -5.0,
+                    unit: None,
+                    window_start: None,
+                    window_end: None,
+                    place: None,
+                    condition: None,
+                    reserve_from: Some(TransferReservePoint::Active),
+                    reuse_policy: OpenPromiseReusePolicy::Duplicate,
+                    withdrawn: false,
+                }],
+                dependencies: Vec::new(),
             },
             None,
         )
@@ -343,31 +388,26 @@ async fn trust_ahead_advances_a_transfer_on_high_confidence() {
         .unwrap()
         .created
         .unwrap();
-    let promise = e
-        .act(
-            Action::AddPromiseToTransfer {
+    let promise = "trust-ahead-promise".to_string();
+    let revision = store::transfers::get(&e.store.pool, &transfer)
+        .await
+        .unwrap()
+        .unwrap()
+        .revision as u64;
+    for (level, suffix) in [(1, "checked"), (2, "agreed")] {
+        e.act(
+            Action::SetTransferAgreementLevel {
                 transfer: transfer.clone(),
-                record: "ana.apples".into(),
-                delta: -5.0,
-                party: "maria".into(),
-                window_end: None,
-                condition: None,
+                expected_revision: revision,
+                request_id: format!("trust-ahead:{suffix}"),
+                person: Some(maria.clone()),
+                level,
             },
             None,
         )
         .await
-        .unwrap()
-        .created
         .unwrap();
-    e.act(
-        Action::PromiseTransition {
-            promise: promise.clone(),
-            to: PromiseState::Agreed,
-        },
-        None,
-    )
-    .await
-    .unwrap();
+    }
 
     // Trust-ahead (blueprint VI.3 worked example): high confidence advances
     // the transfer within policy.
@@ -395,14 +435,18 @@ async fn trust_ahead_advances_a_transfer_on_high_confidence() {
         .unwrap()
         .unwrap()
         .uid;
-    e.append_user(&trigger, 1.0).await.unwrap();
+    let error = e
+        .append_user(&trigger, 1.0)
+        .await
+        .expect_err("Karma cannot perform participant-scoped occurrence activation");
+    assert!(error.to_string().contains("activation is unavailable"));
 
     assert_eq!(
         store::misc::promise_state(&e.store.pool, &promise)
             .await
             .unwrap()
             .unwrap(),
-        PromiseState::Active,
-        "the agreed promise moved to active on Maria's track record"
+        PromiseState::Agreed,
+        "high confidence cannot replace the Person's occurrence activation signature"
     );
 }

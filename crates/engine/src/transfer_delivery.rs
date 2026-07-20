@@ -11,14 +11,100 @@ use base64::engine::general_purpose::STANDARD as B64;
 use ed25519_dalek::{Signature, Verifier as _, VerifyingKey};
 use nucleus::transfer_delivery::{
     SignedOrganRequestV1, TRANSFER_ENVELOPE_VERSION, TransferApplicationAttestationV1,
-    TransferApplicationHandoffState, TransferDeliveryMode, TransferDeliveryPolicyEventV1,
-    TransferDisclosureEntry, TransferEnvelopeV1, TransferRemoteCommandV1,
+    TransferApplicationHandoffState, TransferApplicationHandoffV1, TransferDeliveryMode,
+    TransferDeliveryPolicyEventV1, TransferDisclosureEntry, TransferEnvelopeV1,
+    TransferPackageReceiptV1, TransferRemoteCommandV1,
 };
 use sha2::{Digest, Sha256};
 
 use crate::{Engine, EngineError};
 
 impl Engine {
+    pub async fn sign_transfer_application_handoff(
+        &self,
+        mut handoff: TransferApplicationHandoffV1,
+    ) -> Result<TransferApplicationHandoffV1, EngineError> {
+        let signer = self.organ_signer.lock().await.clone().ok_or_else(|| {
+            delivery_conflict(
+                "organ_signer_unavailable",
+                "local Organ signer is unavailable",
+            )
+        })?;
+        if handoff.origin_organ_uid != signer.actor_uid {
+            return Err(delivery_conflict(
+                "transfer_application_handoff_origin_mismatch",
+                "application handoff origin does not match the local Organ",
+            ));
+        }
+        handoff.version = TRANSFER_ENVELOPE_VERSION;
+        handoff.key_id = signer.key_id.clone();
+        handoff.signature.clear();
+        handoff.signature = signer.sign_bytes(&handoff.signing_bytes());
+        handoff.validate_shape().map_err(|message| {
+            delivery_conflict("transfer_application_handoff_invalid", message)
+        })?;
+        Ok(handoff)
+    }
+
+    pub async fn verify_transfer_application_handoff(
+        &self,
+        handoff: &TransferApplicationHandoffV1,
+    ) -> Result<(), EngineError> {
+        handoff.validate_shape().map_err(|message| {
+            delivery_conflict("transfer_application_handoff_invalid", message)
+        })?;
+        let key = identity_public_key(self, &handoff.origin_organ_uid, &handoff.key_id).await?;
+        verify_signature(&key, &handoff.signature, &handoff.signing_bytes()).map_err(|_| {
+            delivery_conflict(
+                "transfer_application_handoff_signature_invalid",
+                "application handoff origin signature is invalid",
+            )
+        })
+    }
+
+    pub async fn sign_transfer_package_receipt(
+        &self,
+        mut receipt: TransferPackageReceiptV1,
+    ) -> Result<TransferPackageReceiptV1, EngineError> {
+        let signer = self.organ_signer.lock().await.clone().ok_or_else(|| {
+            delivery_conflict(
+                "organ_signer_unavailable",
+                "local Organ signer is unavailable",
+            )
+        })?;
+        if receipt.recipient_organ_uid != signer.actor_uid {
+            return Err(delivery_conflict(
+                "transfer_package_receipt_signer_mismatch",
+                "package receipt recipient does not match the local Organ signer",
+            ));
+        }
+        receipt.version = TRANSFER_ENVELOPE_VERSION;
+        receipt.key_id = signer.key_id.clone();
+        receipt.signature.clear();
+        receipt.signature = signer.sign_bytes(&receipt.signing_bytes());
+        receipt
+            .validate_shape()
+            .map_err(|message| delivery_conflict("transfer_package_receipt_invalid", message))?;
+        Ok(receipt)
+    }
+
+    pub async fn verify_transfer_package_receipt(
+        &self,
+        receipt: &TransferPackageReceiptV1,
+    ) -> Result<(), EngineError> {
+        receipt
+            .validate_shape()
+            .map_err(|message| delivery_conflict("transfer_package_receipt_invalid", message))?;
+        let public_key =
+            identity_public_key(self, &receipt.recipient_organ_uid, &receipt.key_id).await?;
+        verify_signature(&public_key, &receipt.signature, &receipt.signing_bytes()).map_err(|_| {
+            delivery_conflict(
+                "transfer_package_receipt_signature_invalid",
+                "package receipt Organ signature is invalid",
+            )
+        })
+    }
+
     /// Reject canonical Transfer work anywhere except the Cell that created it.
     pub async fn require_transfer_origin_authority(
         &self,
@@ -389,7 +475,7 @@ impl Engine {
         .bind(delivery_uid)
         .fetch_one(&self.store.pool)
         .await? as u64;
-        let projection = protein::transfer_delivery_projection(
+        let mut projection = protein::transfer_delivery_projection(
             &self.store,
             transfer_uid,
             &policy.recipient_person_uid,
@@ -399,6 +485,78 @@ impl Engine {
         .map_err(|error| {
             delivery_conflict("transfer_delivery_projection_failed", error.to_string())
         })?;
+        let handoffs = store::sqlx::query_as::<
+            _,
+            (
+                String,
+                String,
+                String,
+                String,
+                String,
+                String,
+                i64,
+                String,
+                String,
+                f64,
+                Option<String>,
+                f64,
+                f64,
+                f64,
+                i64,
+                String,
+            ),
+        >(
+            "SELECT h.uid, h.origin_organ_uid, h.participant_organ_uid,
+                    h.participant_person_uid, h.occurrence_uid, d.source_promise_uid,
+                    h.origin_revision, h.settlement_slice_uid, h.canonical_slice_hash,
+                    d.canonical_quantity, d.canonical_unit_uid,
+                    d.canonical_cumulative_before, d.canonical_cumulative_after,
+                    d.canonical_remaining_after, d.application_direction, d.created_at
+             FROM transfer_application_handoff h
+             JOIN transfer_application_handoff_detail d ON d.handoff_uid = h.uid
+             WHERE h.transfer_uid = ? AND h.participant_person_uid = ?
+               AND h.participant_organ_uid = ? AND h.state = 'pending'
+             ORDER BY d.created_at, h.uid",
+        )
+        .bind(transfer_uid)
+        .bind(&policy.recipient_person_uid)
+        .bind(&policy.recipient_organ_uid)
+        .fetch_all(&self.store.pool)
+        .await?;
+        let mut signed_handoffs = Vec::with_capacity(handoffs.len());
+        for row in handoffs {
+            signed_handoffs.push(
+                self.sign_transfer_application_handoff(TransferApplicationHandoffV1 {
+                    version: TRANSFER_ENVELOPE_VERSION,
+                    handoff_uid: row.0,
+                    origin_organ_uid: row.1,
+                    participant_organ_uid: row.2,
+                    participant_person_uid: row.3,
+                    transfer_uid: transfer_uid.into(),
+                    occurrence_uid: row.4,
+                    source_promise_uid: row.5,
+                    settlement_slice_uid: row.7,
+                    origin_revision: row.6 as u64,
+                    canonical_quantity: row.9,
+                    canonical_unit_uid: row.10,
+                    canonical_cumulative_before: row.11,
+                    canonical_cumulative_after: row.12,
+                    canonical_remaining_after: row.13,
+                    application_direction: row.14 as i8,
+                    canonical_slice_hash: row.8,
+                    created_at: row.15,
+                    key_id: String::new(),
+                    signature: String::new(),
+                })
+                .await?,
+            );
+        }
+        if let Some(object) = projection.as_object_mut() {
+            object.insert(
+                "application_handoffs".into(),
+                serde_json::to_value(signed_handoffs).map_err(EngineError::Json)?,
+            );
+        }
         let disclosure = projection
             .as_object()
             .into_iter()
@@ -739,7 +897,9 @@ impl Engine {
                 let fact_uids = outcome
                     .facts
                     .iter()
-                    .filter(|fact| fact.actor_uid.as_deref() == Some(command.actor_person_uid.as_str()))
+                    .filter(|fact| {
+                        fact.actor_uid.as_deref() == Some(command.actor_person_uid.as_str())
+                    })
                     .map(|fact| fact.uid.clone())
                     .collect::<Vec<_>>();
                 store::action_intents::mark_committed(
@@ -817,9 +977,20 @@ impl Engine {
         command: &TransferRemoteCommandV1,
         now: chrono::DateTime<chrono::Utc>,
     ) -> Result<String, EngineError> {
-        if let Some(row) = store::sqlx::query_as::<_, (
-            String, String, i64, String, String, String, String, String, String,
-        )>(
+        if let Some(row) = store::sqlx::query_as::<
+            _,
+            (
+                String,
+                String,
+                i64,
+                String,
+                String,
+                String,
+                String,
+                String,
+                String,
+            ),
+        >(
             "SELECT uid, session_challenge, sequence, message_id, actor_person_uid,
                     key_id, action_base64, signature, status
              FROM signed_action_intent WHERE session_id = ? AND message_id = ?",
@@ -863,6 +1034,234 @@ impl Engine {
         .uid)
     }
 
+    #[allow(clippy::too_many_arguments)]
+    pub async fn begin_remote_transfer_settlement(
+        &self,
+        transfer_uid: &str,
+        occurrence_uid: &str,
+        actor_person_uid: &str,
+        expected_revision: u64,
+        expected_remaining: f64,
+        canonical_quantity: f64,
+        request_id: &str,
+        now: chrono::DateTime<chrono::Utc>,
+    ) -> Result<store::transfer_delivery::ApplicationHandoffRow, EngineError> {
+        let origin_organ_uid = self.require_transfer_origin_authority(transfer_uid).await?;
+        let revision: i64 =
+            store::sqlx::query_scalar("SELECT revision FROM transfer WHERE record_uid = ?")
+                .bind(transfer_uid)
+                .fetch_one(&self.store.pool)
+                .await?;
+        if revision as u64 != expected_revision {
+            return Err(delivery_conflict(
+                "transfer_revision_conflict",
+                "Transfer changed after settlement review",
+            ));
+        }
+        let replay_handoff = if let Some(uid) = store::sqlx::query_scalar::<_, String>(
+            "SELECT handoff_uid FROM transfer_application_handoff_event WHERE request_id = ?",
+        )
+        .bind(request_id)
+        .fetch_optional(&self.store.pool)
+        .await?
+        {
+            let handoff = store::transfer_delivery::application_handoff(&self.store.pool, &uid)
+                .await?
+                .ok_or_else(|| EngineError::UnknownRecord(uid))?;
+            if store::transfer_delivery::application_handoff_detail(&self.store.pool, &handoff.uid)
+                .await?
+                .is_some()
+            {
+                if let Some(delivery_uid) = store::sqlx::query_scalar::<_, String>(
+                    "SELECT uid FROM transfer_delivery_policy
+                     WHERE transfer_uid = ? AND recipient_person_uid = ?
+                       AND recipient_organ_uid = ? AND state = 'active'",
+                )
+                .bind(&handoff.transfer_uid)
+                .bind(&handoff.participant_person_uid)
+                .bind(&handoff.participant_organ_uid)
+                .fetch_optional(&self.store.pool)
+                .await?
+                {
+                    self.enqueue_transfer_delivery(
+                        &handoff.transfer_uid,
+                        &delivery_uid,
+                        &format!("remote-settlement-handoff:{}", handoff.uid),
+                        now,
+                    )
+                    .await?;
+                }
+                return Ok(handoff);
+            }
+            Some(handoff)
+        } else {
+            None
+        };
+        let occurrence = store::sqlx::query_as::<
+            _,
+            (
+                String,
+                String,
+                f64,
+                Option<String>,
+                String,
+                String,
+                i64,
+                i64,
+                i64,
+                String,
+                f64,
+                String,
+            ),
+        >(
+            "SELECT o.transfer_uid, o.promise_uid, o.quantity, o.unit_uid,
+                    o.giver_person_uid, o.receiver_person_uid, o.delivery_claimed,
+                    o.receipt_claimed, o.disputed, p.party_uid, p.delta, p.state
+             FROM transfer_occurrence o JOIN promise p ON p.uid = o.promise_uid
+             WHERE o.uid = ?",
+        )
+        .bind(occurrence_uid)
+        .fetch_optional(&self.store.pool)
+        .await?
+        .ok_or_else(|| EngineError::UnknownRecord(occurrence_uid.into()))?;
+        if occurrence.0 != transfer_uid
+            || occurrence.9 != actor_person_uid
+            || occurrence.11 != "active"
+            || occurrence.6 == 0
+            || occurrence.7 == 0
+            || occurrence.8 != 0
+            || !canonical_quantity.is_finite()
+            || canonical_quantity <= 0.0
+        {
+            return Err(delivery_conflict(
+                "transfer_remote_settlement_not_ready",
+                "remote settlement requires the active source owner, both confirmations, and no dispute",
+            ));
+        }
+        let participant_organ_uid: String = store::sqlx::query_scalar(
+            "SELECT organ_uid FROM record WHERE uid = ? AND kind = 'person'",
+        )
+        .bind(actor_person_uid)
+        .fetch_one(&self.store.pool)
+        .await?;
+        let delivery_uid: Option<String> = store::sqlx::query_scalar(
+            "SELECT uid FROM transfer_delivery_policy
+             WHERE transfer_uid = ? AND recipient_person_uid = ? AND recipient_organ_uid = ?
+               AND state = 'active'",
+        )
+        .bind(transfer_uid)
+        .bind(actor_person_uid)
+        .bind(&participant_organ_uid)
+        .fetch_optional(&self.store.pool)
+        .await?;
+        let delivery_uid = delivery_uid.ok_or_else(|| {
+            delivery_conflict(
+                "transfer_remote_settlement_delivery_missing",
+                "participant requires an active cross-Cell delivery policy",
+            )
+        })?;
+        if participant_organ_uid == origin_organ_uid {
+            return Err(delivery_conflict(
+                "transfer_remote_settlement_delivery_missing",
+                "participant requires an active cross-Cell delivery policy",
+            ));
+        }
+        let local_sum: f64 = store::sqlx::query_scalar(
+            "SELECT COALESCE(SUM(canonical_quantity), 0.0)
+             FROM transfer_occurrence_settlement_slice WHERE occurrence_uid = ?",
+        )
+        .bind(occurrence_uid)
+        .fetch_one(&self.store.pool)
+        .await?;
+        let remote_sum: f64 = store::sqlx::query_scalar(
+            "SELECT COALESCE(SUM(d.canonical_quantity), 0.0)
+             FROM transfer_application_handoff h
+             JOIN transfer_application_handoff_detail d ON d.handoff_uid = h.uid
+             WHERE h.occurrence_uid = ? AND h.state IN ('pending', 'accepted')",
+        )
+        .bind(occurrence_uid)
+        .fetch_one(&self.store.pool)
+        .await?;
+        let cumulative_before = local_sum + remote_sum;
+        let remaining_before = (occurrence.2 - cumulative_before).max(0.0);
+        if (remaining_before - expected_remaining).abs() > 1e-9
+            || canonical_quantity > remaining_before
+        {
+            return Err(delivery_conflict(
+                "transfer_settlement_remaining_stale",
+                "reviewed remaining quantity is stale",
+            ));
+        }
+        let cumulative_after = cumulative_before + canonical_quantity;
+        let remaining_after = occurrence.2 - cumulative_after;
+        let computed_slice_hash = hex_sha256(
+            &serde_json::to_vec(&serde_json::json!({
+                "transfer": transfer_uid,
+                "occurrence": occurrence_uid,
+                "promise": occurrence.1,
+                "participant": actor_person_uid,
+                "quantity": canonical_quantity,
+                "unit": occurrence.3,
+                "before": cumulative_before,
+                "after": cumulative_after,
+                "remaining": remaining_after,
+                "application_direction": if occurrence.10 < 0.0 { -1 } else { 1 },
+                "revision": expected_revision,
+            }))
+            .map_err(EngineError::Json)?,
+        );
+        let handoff = if let Some(handoff) = replay_handoff {
+            if handoff.canonical_slice_hash != computed_slice_hash {
+                return Err(delivery_conflict(
+                    "transfer_remote_settlement_replay_conflict",
+                    "settlement handoff request was replayed with changed canonical values",
+                ));
+            }
+            handoff
+        } else {
+            let settlement_slice_uid = nucleus::new_uid("trss");
+            store::transfer_delivery::create_application_handoff(
+                &self.store.pool,
+                store::transfer_delivery::NewApplicationHandoff {
+                    origin_organ_uid: &origin_organ_uid,
+                    participant_organ_uid: &participant_organ_uid,
+                    participant_person_uid: actor_person_uid,
+                    transfer_uid,
+                    occurrence_uid,
+                    settlement_slice_uid: &settlement_slice_uid,
+                    origin_revision: expected_revision,
+                    canonical_slice_hash: &computed_slice_hash,
+                    request_id,
+                    fact_uid: None,
+                },
+                now,
+            )
+            .await?
+        };
+        store::transfer_delivery::store_application_handoff_detail(
+            &self.store.pool,
+            &handoff.uid,
+            &occurrence.1,
+            canonical_quantity,
+            occurrence.3.as_deref(),
+            cumulative_before,
+            cumulative_after,
+            remaining_after,
+            if occurrence.10 < 0.0 { -1 } else { 1 },
+            None,
+            now,
+        )
+        .await?;
+        self.enqueue_transfer_delivery(
+            transfer_uid,
+            &delivery_uid,
+            &format!("remote-settlement-handoff:{}", handoff.uid),
+            now,
+        )
+        .await?;
+        Ok(handoff)
+    }
+
     pub async fn accept_transfer_application_attestation(
         &self,
         handoff_uid: &str,
@@ -885,11 +1284,12 @@ impl Engine {
                 i64,
                 String,
                 String,
+                Option<String>,
             ),
         >(
             "SELECT origin_organ_uid, participant_organ_uid, participant_person_uid,
                     transfer_uid, occurrence_uid, settlement_slice_uid, origin_revision,
-                    canonical_slice_hash, state
+                    canonical_slice_hash, state, attestation_uid
              FROM transfer_application_handoff WHERE uid = ?",
         )
         .bind(handoff_uid)
@@ -897,6 +1297,29 @@ impl Engine {
         .await?
         .ok_or_else(|| EngineError::UnknownRecord(handoff_uid.into()))?;
         let local = self.require_transfer_origin_authority(&handoff.3).await?;
+        if handoff.8 == "accepted" && handoff.9.as_deref() == Some(&attestation.attestation_uid) {
+            let stored: Option<String> = store::sqlx::query_scalar(
+                "SELECT payload FROM transfer_application_attestation WHERE uid = ?",
+            )
+            .bind(&attestation.attestation_uid)
+            .fetch_optional(&self.store.pool)
+            .await?;
+            if stored.as_deref()
+                != Some(
+                    serde_json::to_string(attestation)
+                        .map_err(EngineError::Json)?
+                        .as_str(),
+                )
+            {
+                return Err(delivery_conflict(
+                    "transfer_application_attestation_replay_conflict",
+                    "accepted attestation was replayed with changed signed contents",
+                ));
+            }
+            return store::transfer_delivery::application_handoff(&self.store.pool, handoff_uid)
+                .await?
+                .ok_or_else(|| EngineError::UnknownRecord(handoff_uid.into()));
+        }
         if handoff.8 != "pending"
             || handoff.0 != local
             || attestation.origin_organ_uid != handoff.0
@@ -958,20 +1381,102 @@ impl Engine {
         })?;
         store::transfer_delivery::store_application_attestation(&self.store.pool, attestation, now)
             .await?;
-        Ok(store::transfer_delivery::transition_application_handoff(
+        let organ_signer = self.organ_signer.lock().await.clone().ok_or_else(|| {
+            delivery_conflict(
+                "organ_signer_unavailable",
+                "local Organ signer is unavailable",
+            )
+        })?;
+        let canonical_fact = crate::append::append_one(
+            &self.store,
+            nucleus::NewFact {
+                uid: Some(format!("taf:{}", attestation.attestation_uid)),
+                record_uid: attestation.transfer_uid.clone(),
+                delta: 0.0,
+                at: None,
+                actor_uid: Some(attestation.origin_organ_uid.clone()),
+                cause: nucleus::Cause::settlement(attestation.settlement_slice_uid.clone()),
+                payload: Some(
+                    serde_json::json!({
+                        "action": "accept-remote-transfer-application",
+                        "handoff_uid": handoff_uid,
+                        "attestation_uid": attestation.attestation_uid,
+                        "participant_person_uid": attestation.participant_person_uid,
+                        "occurrence_uid": attestation.occurrence_uid,
+                        "settlement_slice_uid": attestation.settlement_slice_uid,
+                        "origin_revision": attestation.origin_revision,
+                        "canonical_slice_hash": attestation.canonical_slice_hash,
+                        "formula_commitment": attestation.formula_commitment,
+                        "formula_version": attestation.formula_version,
+                    })
+                    .to_string(),
+                ),
+            },
+            now,
+            Some(&organ_signer),
+        )
+        .await?;
+        let fact_uid = if let Some(fact) = canonical_fact {
+            let uid = fact.uid.clone();
+            let _ = self.observe_committed_fact(fact, now).await?;
+            uid
+        } else {
+            format!("taf:{}", attestation.attestation_uid)
+        };
+        store::sqlx::query(
+            "UPDATE transfer_application_handoff_detail
+             SET origin_acceptance_fact_uid = COALESCE(origin_acceptance_fact_uid, ?)
+             WHERE handoff_uid = ?",
+        )
+        .bind(&fact_uid)
+        .bind(handoff_uid)
+        .execute(&self.store.pool)
+        .await?;
+        let accepted = store::transfer_delivery::transition_application_handoff(
             &self.store.pool,
             store::transfer_delivery::ApplicationHandoffTransition {
                 handoff_uid,
                 expected_state: TransferApplicationHandoffState::Pending,
                 to_state: TransferApplicationHandoffState::Accepted,
                 attestation_uid: Some(&attestation.attestation_uid),
-                fact_uid: None,
+                fact_uid: Some(&fact_uid),
                 reason_code: None,
                 request_id,
             },
             now,
         )
-        .await?)
+        .await?;
+        if let Some(detail) =
+            store::transfer_delivery::application_handoff_detail(&self.store.pool, handoff_uid)
+                .await?
+            && detail.canonical_remaining_after == 0.0
+        {
+            store::sqlx::query("UPDATE promise SET state = 'kept', updated_at = ? WHERE uid = ?")
+                .bind(now.to_rfc3339())
+                .bind(detail.source_promise_uid)
+                .execute(&self.store.pool)
+                .await?;
+        }
+        if let Some(delivery_uid) = store::sqlx::query_scalar::<_, String>(
+            "SELECT uid FROM transfer_delivery_policy
+             WHERE transfer_uid = ? AND recipient_person_uid = ? AND recipient_organ_uid = ?
+               AND state = 'active'",
+        )
+        .bind(&accepted.transfer_uid)
+        .bind(&accepted.participant_person_uid)
+        .bind(&accepted.participant_organ_uid)
+        .fetch_optional(&self.store.pool)
+        .await?
+        {
+            self.enqueue_transfer_delivery(
+                &accepted.transfer_uid,
+                &delivery_uid,
+                &format!("remote-settlement-accepted:{}", accepted.uid),
+                now,
+            )
+            .await?;
+        }
+        Ok(accepted)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -1087,6 +1592,31 @@ pub(crate) fn remote_action_binding(
             request_id,
             person: Some(person),
             ..
+        }
+        | Action::CreateTransferThread {
+            request_id, person, ..
+        }
+        | Action::CreateTransferMessage {
+            request_id, person, ..
+        } => Some((person, request_id, None)),
+        Action::BeginRemoteTransferSettlement {
+            expected_revision,
+            request_id,
+            person,
+            ..
+        } => Some((person, request_id, Some(*expected_revision))),
+        Action::AcceptTransferInvitation {
+            expected_revision,
+            request_id,
+            person: Some(person),
+            transfer: Some(_),
+            ..
+        } => Some((person, request_id, Some(*expected_revision))),
+        Action::RejectTransferInvitation {
+            request_id,
+            person: Some(person),
+            transfer: Some(_),
+            ..
         } => Some((person, request_id, None)),
         Action::ReopenTransferPromise {
             expected_revision,
@@ -1144,8 +1674,7 @@ pub(crate) fn remote_action_binding(
             request_id,
             person: Some(person),
             ..
-        }
-        => Some((person, request_id, None)),
+        } => Some((person, request_id, None)),
         _ => None,
     }
 }
@@ -1162,7 +1691,18 @@ fn remote_action_transfer_token(action: &crate::actions::Action) -> Option<&str>
         | Action::SetTransferDeliveryMode { transfer, .. }
         | Action::EnqueueTransferDelivery { transfer, .. }
         | Action::RetryTransferDelivery { transfer, .. }
-        | Action::RevokeTransferDelivery { transfer, .. } => Some(transfer),
+        | Action::RevokeTransferDelivery { transfer, .. }
+        | Action::CreateTransferThread { transfer, .. }
+        | Action::CreateTransferMessage { transfer, .. } => Some(transfer),
+        Action::BeginRemoteTransferSettlement { transfer, .. } => Some(transfer),
+        Action::AcceptTransferInvitation {
+            transfer: Some(transfer),
+            ..
+        }
+        | Action::RejectTransferInvitation {
+            transfer: Some(transfer),
+            ..
+        } => Some(transfer),
         _ => None,
     }
 }

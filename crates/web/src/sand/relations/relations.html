@@ -14,7 +14,7 @@
     cardState.savedProtein/.protein, tolerant-ignore if a custom Protein
     lacks the links include), writes are typed Actions (add-link /
     remove-link). The old record/create sidepanels are GONE by decision:
-    left-click emits the group-scoped `recordClicked` for the grouped
+    left-click emits a board-wide `recordClicked` for the pinned
     Record, "New record" emits `recordCreate`. UI prefs (physics, kinds,
     direction, depth, panel width, trail mode prefs) are host state under
     cardState.relations via patchCardState (localStorage fallback outside a
@@ -1812,8 +1812,8 @@
       renderEdgeChip();
       renderTrailChip();
       requestDraw();
-      // The group-scoped event: the Record sand beside this one (same
-      // innermost group) focuses the record. This REPLACES the old sidepanel.
+      // The board-wide event: the pinned Record sand focuses the record.
+      // This REPLACES the old sidepanel.
       H.emit("recordClicked", {
         record: { uid: node.id, head: node.head, slug: node.slug, body: node.body, quantity: node.quantity },
       });
@@ -2105,7 +2105,7 @@
       document.getElementById("zoom-out").addEventListener("click", () => zoomAt(state.width / 2, state.height / 2, 1 / 1.18));
       document.getElementById("zoom-fit").addEventListener("click", fitViewportToNodes);
       document.getElementById("create-open").addEventListener("click", () => {
-        // Creation lives in the grouped Record sand (group-scoped event).
+        // Creation lives in the pinned Record sand (board-wide event).
         H.emit("recordCreate", { record: { kind: "plain", quantity: 0 } });
       });
       document.getElementById("panel-toggle").addEventListener("click", () => {

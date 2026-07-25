@@ -1,5 +1,0 @@
-The web interface is currently (and for many years probably) the main focus for a Lince implementation. It's the easies to build and the most beginner friendly, but it is constrained by HTML and party by browsers so it cant be maximally fast and feel amazing. It is good enough for now, to get Lince off the ground, to the moon. The next journey to the stars will probably need something else we don't even know of right now. A bridge to cross later.
-
-Components dont have borders visually when not in edit mode. 
-
-I can setup a system where components are stringed together like obsidian graph nodes and they pull each other in the 2d plane. So i can select a square and move the components inside but probably break the links with the ones outside it. If i create a link that is strong enough i want a mode where the hitbox of a component is as big as its content, so a kanban with columns of different sizes could fit things in between the columns since there is space.

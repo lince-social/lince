@@ -1,3 +1,0 @@
-- [ ] Sprints
-- [ ] Read Documents
-- [ ] See classes one is taking.

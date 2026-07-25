@@ -1,3 +1,5 @@
+https://alex-ii.github.io/notes/2018/04/29/distributed_systems_with_deterministic_simulation.html
+
 DST is amazing! The idea (I think) is to have three things:
         1. The Seed: the user's DNA (la ele).
         2. The Rules: What events should be bookmarked or stop the simulation?

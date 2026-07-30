@@ -90,7 +90,7 @@ async fn save_protein_creates_updates_deletes_and_reactivates() {
     assert_eq!(
         store::records::quantity(&e.store.pool, &created)
             .await
-            .unwrap(),
+            .unwrap().map(|q| q.to_f64()),
         Some(0.0)
     );
 
@@ -112,7 +112,7 @@ async fn save_protein_creates_updates_deletes_and_reactivates() {
     assert_eq!(
         store::records::quantity(&e.store.pool, &created)
             .await
-            .unwrap(),
+            .unwrap().map(|q| q.to_f64()),
         Some(1.0)
     );
 }

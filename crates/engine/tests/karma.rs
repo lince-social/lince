@@ -17,7 +17,7 @@ async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
             kind: RecordKind::Plain,
             head: slug,
             body: "",
-            quantity,
+            quantity: store::exact::from_f64(quantity),
         },
     )
     .await
@@ -39,7 +39,8 @@ async fn append_updates_cache_and_is_idempotent() {
     assert_eq!(
         store::records::quantity(&e.store.pool, &apples)
             .await
-            .unwrap(),
+            .unwrap()
+            .map(|q| q.to_f64()),
         Some(7.0)
     );
 
@@ -53,7 +54,8 @@ async fn append_updates_cache_and_is_idempotent() {
     assert_eq!(
         store::records::quantity(&e.store.pool, &apples)
             .await
-            .unwrap(),
+            .unwrap()
+            .map(|q| q.to_f64()),
         Some(7.0)
     );
 
@@ -113,7 +115,8 @@ async fn rule_fires_on_change_with_provenance() {
     assert_eq!(
         store::records::quantity(&e.store.pool, &alert)
             .await
-            .unwrap(),
+            .unwrap()
+            .map(|q| q.to_f64()),
         Some(0.0)
     );
 
@@ -122,7 +125,8 @@ async fn rule_fires_on_change_with_provenance() {
     assert_eq!(
         store::records::quantity(&e.store.pool, &alert)
             .await
-            .unwrap(),
+            .unwrap()
+            .map(|q| q.to_f64()),
         Some(1.0)
     );
     let rule_fact = facts
@@ -179,7 +183,7 @@ async fn derived_value_rules_are_spreadsheet_cells() {
         .uid;
     e.append_user(&x_uid, 1.0).await.unwrap(); // x: 4 -> 5
     assert_eq!(
-        store::records::quantity(&e.store.pool, &y).await.unwrap(),
+        store::records::quantity(&e.store.pool, &y).await.unwrap().map(|q| q.to_f64()),
         Some(11.0),
         "y = (5 * 2) + 1"
     );
@@ -226,7 +230,8 @@ async fn frequency_tick_drives_the_daily_habit() {
     assert_eq!(
         store::records::quantity(&e.store.pool, &exercise)
             .await
-            .unwrap(),
+            .unwrap()
+            .map(|q| q.to_f64()),
         Some(-1.0),
         "exercise became a Need"
     );
@@ -345,7 +350,7 @@ async fn proof_warns_on_loops_and_cascade_cap_survives_them() {
 
     // and the delivery cap keeps the engine alive through it
     let facts = e
-        .append(NewFact::quantity(&a, 1.0, Cause::user_edit()), Utc::now())
+        .append(NewFact::quantity_f64(&a, 1.0, Cause::user_edit()), Utc::now())
         .await
         .unwrap();
     assert!(!facts.is_empty());
@@ -383,6 +388,6 @@ async fn effects_run_outside_evaluation_with_provenance() {
         .unwrap();
     assert!(
         log.iter()
-            .any(|f| f.delta == 0.0 && f.cause.kind == CauseKind::Action)
+            .any(|f| f.delta == store::exact::from_f64(0.0) && f.cause.kind == CauseKind::Action)
     );
 }

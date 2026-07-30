@@ -345,7 +345,7 @@ pub(crate) fn tutorial_source() -> SandWidgetSource {
                 }
                 p {
                     strong { "Transfer" }
-                    " is how organs coordinate needs and contributions. It can represent a one-way donation, or a trade where one need is met by an item or service and another need is met by money. The same idea can cover a marketplace purchase, a shared project, or planning a party."
+                    " is how organs coordinate needs and contributions. It can represent a one-way donation, or a trade where one need is met by an item or service and another need is met in return. The same idea can cover a marketplace purchase, a shared project, or planning a party."
                 }
                 div class="tutorial__note" {
                     p {

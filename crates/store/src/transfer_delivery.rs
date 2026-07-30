@@ -2433,7 +2433,7 @@ where
         ));
     }
     let record = sqlx::query(
-        "SELECT record.organ_uid, record.deleted_at, record.quantity, local_organ.uid AS local_organ_uid
+        "SELECT record.organ_uid, record.deleted_at, local_organ.uid AS local_organ_uid
          FROM record LEFT JOIN organ local_organ ON local_organ.local = 1
          WHERE record.uid = ?",
     )
@@ -2472,7 +2472,7 @@ where
         NewFact {
             uid: None,
             record_uid: input.local_record_uid.clone(),
-            delta: input.local_delta,
+            delta: crate::exact::from_f64(input.local_delta),
             at: None,
             actor_uid: Some(input.participant_person_uid.clone()),
             cause: Cause::settlement(handoff.get::<String, _>("settlement_slice_uid")),
@@ -2494,7 +2494,7 @@ where
     crate::records::bump_quantity(
         &mut tx,
         &input.local_record_uid,
-        input.local_delta,
+        crate::exact::from_f64(input.local_delta),
         &now.to_rfc3339(),
     )
     .await?;

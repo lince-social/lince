@@ -243,7 +243,7 @@ async fn prefetch(
             "quantity" | "signal" => match &t.record_uid {
                 Some(uid) => store::records::quantity(&store.pool, uid)
                     .await?
-                    .unwrap_or(0.0),
+                    .map_or(0.0, |q| q.to_f64()),
                 None => return Err(EngineError::UnknownRecord(key.slug.clone())),
             },
             "freq" => t
@@ -265,12 +265,16 @@ async fn prefetch(
                 })?;
                 match key.func.as_str() {
                     "sum_pos" => {
-                        store::facts::sum_pos_window(&store.pool, uid, window, now).await?
+                        store::facts::sum_pos_window(&store.pool, uid, window, now)
+                            .await?
+                            .to_f64()
                     }
                     "sum_neg" => {
-                        store::facts::sum_neg_window(&store.pool, uid, window, now).await?
+                        store::facts::sum_neg_window(&store.pool, uid, window, now)
+                            .await?
+                            .to_f64()
                     }
-                    _ => store::facts::sum_window(&store.pool, uid, window, now).await?,
+                    _ => store::facts::sum_window(&store.pool, uid, window, now).await?.to_f64(),
                 }
             }
             "value" => {
@@ -427,8 +431,7 @@ pub async fn cascade(
             // delivery — not at the next registry reload.
             let live_active = store::records::quantity(&store.pool, &rule.def.uid)
                 .await?
-                .unwrap_or(0.0)
-                != 0.0;
+                .map_or(false, |q| !q.is_zero());
             if !live_active {
                 continue;
             }
@@ -489,15 +492,26 @@ async fn execute(
                 let target = resolve_target(store, c).await?;
                 let current = store::records::quantity(&store.pool, &target)
                     .await?
-                    .unwrap_or(0.0);
+                    .unwrap_or_else(store::exact::zero);
+                // `carried` still comes from the legacy f64 expression engine,
+                // so it converts at this boundary; the level it is measured
+                // against is already exact, so the difference is exact in the
+                // level. E0.2 removes the remaining float by making the
+                // expression engine itself exact.
                 let delta = match c.kind {
-                    ConsequenceKind::SetQuantity => carried - current,
-                    ConsequenceKind::AddQuantity => carried,
-                    ConsequenceKind::Activate => 1.0 - current,
-                    ConsequenceKind::Deactivate => 0.0 - current,
+                    ConsequenceKind::SetQuantity => {
+                        store::exact::difference(store::exact::from_f64(carried), current)?
+                    }
+                    ConsequenceKind::AddQuantity => store::exact::from_f64(carried),
+                    ConsequenceKind::Activate => {
+                        store::exact::difference(store::exact::one(), current)?
+                    }
+                    ConsequenceKind::Deactivate => {
+                        store::exact::difference(store::exact::zero(), current)?
+                    }
                     _ => unreachable!(),
                 };
-                if delta == 0.0 {
+                if delta.is_zero() {
                     continue; // no zero-facts from rules: keeps cascades quiet
                 }
                 if let Some(fact) = append_one(

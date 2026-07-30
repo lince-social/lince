@@ -17,7 +17,7 @@ async fn plain(e: &Engine, slug: &str) -> String {
             kind: RecordKind::Plain,
             head: slug,
             body: "",
-            quantity: 0.0,
+            quantity: store::exact::zero(),
         },
     )
     .await
@@ -34,6 +34,7 @@ async fn quantity(e: &Engine, slug: &str) -> f64 {
     store::records::quantity(&e.store.pool, &uid)
         .await
         .unwrap()
+        .map(|q| q.to_f64())
         .unwrap()
 }
 

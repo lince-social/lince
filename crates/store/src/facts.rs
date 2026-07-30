@@ -1,10 +1,36 @@
 //! Fact repository (blueprint Part II).
 
-use chrono::{DateTime, TimeDelta, Utc};
-use nucleus::{Cause, CauseKind, Fact};
+use chrono::{DateTime, SecondsFormat, TimeDelta, Utc};
+use nucleus::{Cause, CauseKind, DecimalValue, Fact};
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 
 use crate::StoreError;
+use crate::exact::{decimal_columns, read_decimal, zero};
+
+/// Render an instant for the `fact.at` column and for every comparison against
+/// it (blueprint E0).
+///
+/// `at` is TEXT compared lexically, which equals chronological order only when
+/// every value shares one format. Two things break that: a `+00:00` suffix
+/// sorting against a `Z` one, and variable-length fractional seconds. This is
+/// fixed-width UTC with `Z`, so the two orders coincide — and a wrong answer
+/// here would look exactly like a correct one, which is why it is centralised
+/// rather than spelled out at each call site.
+///
+/// Nanosecond precision is kept deliberately. The Fact's hash preimage is built
+/// from the parsed `DateTime`, so truncating here would change the instant a
+/// re-read Fact reconstructs and silently break `verify_chain_step`.
+pub fn instant(at: DateTime<Utc>) -> String {
+    at.to_rfc3339_opts(SecondsFormat::Nanos, true)
+}
+
+/// Re-render a caller-supplied timestamp into the stored format. A caller that
+/// passes `+00:00` would otherwise compare wrong against `Z`-suffixed rows.
+fn instant_str(value: &str) -> String {
+    DateTime::parse_from_rfc3339(value)
+        .map(|parsed| instant(parsed.with_timezone(&Utc)))
+        .unwrap_or_else(|_| value.to_string())
+}
 
 pub async fn exists(tx: &mut Transaction<'_, Sqlite>, uid: &str) -> Result<bool, StoreError> {
     Ok(sqlx::query("SELECT 1 FROM fact WHERE uid = ?")
@@ -26,15 +52,17 @@ pub async fn last_hash(tx: &mut Transaction<'_, Sqlite>) -> Result<String, Store
 }
 
 pub async fn insert(tx: &mut Transaction<'_, Sqlite>, f: &Fact) -> Result<(), StoreError> {
+    let (mantissa, scale) = decimal_columns(f.delta);
     sqlx::query(
-        "INSERT INTO fact (uid, record_uid, delta, at, actor_uid, cause_kind, cause_uid,
-                           payload, prev_hash, hash, signature)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO fact (uid, record_uid, delta_mantissa, delta_scale, at, actor_uid,
+                           cause_kind, cause_uid, payload, prev_hash, hash, signature)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind(&f.uid)
     .bind(&f.record_uid)
-    .bind(f.delta)
-    .bind(f.at.to_rfc3339())
+    .bind(mantissa)
+    .bind(scale)
+    .bind(instant(f.at))
     .bind(&f.actor_uid)
     .bind(f.cause.kind.as_str())
     .bind(&f.cause.uid)
@@ -47,13 +75,13 @@ pub async fn insert(tx: &mut Transaction<'_, Sqlite>, f: &Fact) -> Result<(), St
     Ok(())
 }
 
-fn map_fact(r: sqlx::sqlite::SqliteRow) -> Fact {
+fn map_fact(r: sqlx::sqlite::SqliteRow) -> Result<Fact, StoreError> {
     let at: String = r.get("at");
     let cause_kind: String = r.get("cause_kind");
-    Fact {
+    Ok(Fact {
         uid: r.get("uid"),
         record_uid: r.get("record_uid"),
-        delta: r.get("delta"),
+        delta: read_decimal(&r, "delta")?,
         at: DateTime::parse_from_rfc3339(&at)
             .map(|d| d.with_timezone(&Utc))
             .unwrap_or_else(|_| Utc::now()),
@@ -66,16 +94,33 @@ fn map_fact(r: sqlx::sqlite::SqliteRow) -> Fact {
         prev_hash: r.get("prev_hash"),
         hash: r.get("hash"),
         signature: r.get("signature"),
-    }
+    })
+}
+
+fn map_facts(rows: Vec<sqlx::sqlite::SqliteRow>) -> Result<Vec<Fact>, StoreError> {
+    rows.into_iter().map(map_fact).collect()
 }
 
 /// Fetch a single sealed fact by uid (the target of a compensation/undo).
 pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<Fact>, StoreError> {
-    Ok(sqlx::query("SELECT * FROM fact WHERE uid = ?")
+    sqlx::query("SELECT * FROM fact WHERE uid = ?")
         .bind(uid)
         .fetch_optional(pool)
         .await?
-        .map(map_fact))
+        .map(map_fact)
+        .transpose()
+}
+
+pub async fn get_in_transaction(
+    tx: &mut Transaction<'_, Sqlite>,
+    uid: &str,
+) -> Result<Option<Fact>, StoreError> {
+    sqlx::query("SELECT * FROM fact WHERE uid = ?")
+        .bind(uid)
+        .fetch_optional(&mut **tx)
+        .await?
+        .map(map_fact)
+        .transpose()
 }
 
 /// The actor_uid of a record's EARLIEST fact (rowid order — creation, not the
@@ -100,16 +145,77 @@ pub async fn for_record(
     record_uid: &str,
     limit: i64,
 ) -> Result<Vec<Fact>, StoreError> {
-    Ok(
+    map_facts(
         sqlx::query("SELECT * FROM fact WHERE record_uid = ? ORDER BY rowid DESC LIMIT ?")
             .bind(record_uid)
             .bind(limit)
             .fetch_all(pool)
-            .await?
-            .into_iter()
-            .map(map_fact)
-            .collect(),
+            .await?,
     )
+}
+
+/// Which deltas of a window a sum should keep. Sign is a Rust-side test now: a
+/// canonical mantissa is TEXT, so `delta > 0` is no longer a SQL predicate.
+/// The `(record_uid, at)` index still bounds the scan to the window itself.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum SignFilter {
+    All,
+    Positive,
+    Negative,
+}
+
+impl SignFilter {
+    fn keeps(self, value: DecimalValue) -> bool {
+        match self {
+            Self::All => true,
+            Self::Positive => value.is_positive(),
+            Self::Negative => value.is_negative(),
+        }
+    }
+}
+
+/// Fold the deltas of `[start, end)` exactly, in Rust, at the finest scale any
+/// of them declares.
+async fn fold_window(
+    pool: &SqlitePool,
+    record_uid: &str,
+    start: &str,
+    end: Option<&str>,
+    filter: SignFilter,
+) -> Result<DecimalValue, StoreError> {
+    let rows = match end {
+        Some(end) => {
+            sqlx::query(
+                "SELECT delta_mantissa, delta_scale FROM fact
+                  WHERE record_uid = ? AND at >= ? AND at < ?",
+            )
+            .bind(record_uid)
+            .bind(start)
+            .bind(end)
+            .fetch_all(pool)
+            .await?
+        }
+        None => {
+            sqlx::query(
+                "SELECT delta_mantissa, delta_scale FROM fact
+                  WHERE record_uid = ? AND at >= ?",
+            )
+            .bind(record_uid)
+            .bind(start)
+            .fetch_all(pool)
+            .await?
+        }
+    };
+    let mut total = zero();
+    for row in rows {
+        let delta = read_decimal(&row, "delta")?;
+        if filter.keeps(delta) {
+            total = total.aligned_add(delta).ok_or_else(|| {
+                StoreError::Decode("quantity sum overflows i128".to_string().into())
+            })?;
+        }
+    }
+    Ok(total)
 }
 
 /// `sum(@x, <window>)` (blueprint II.1): net delta over the trailing window.
@@ -118,16 +224,9 @@ pub async fn sum_window(
     record_uid: &str,
     window_secs: i64,
     now: DateTime<Utc>,
-) -> Result<f64, StoreError> {
-    let cutoff = (now - TimeDelta::seconds(window_secs)).to_rfc3339();
-    let row = sqlx::query(
-        "SELECT COALESCE(SUM(delta), 0.0) AS s FROM fact WHERE record_uid = ? AND at >= ?",
-    )
-    .bind(record_uid)
-    .bind(cutoff)
-    .fetch_one(pool)
-    .await?;
-    Ok(row.get::<f64, _>("s"))
+) -> Result<DecimalValue, StoreError> {
+    let cutoff = instant(now - TimeDelta::seconds(window_secs));
+    fold_window(pool, record_uid, &cutoff, None, SignFilter::All).await
 }
 
 /// `sum_pos(@x, <window>)`: only the inflows (positive deltas) of the window.
@@ -136,17 +235,9 @@ pub async fn sum_pos_window(
     record_uid: &str,
     window_secs: i64,
     now: DateTime<Utc>,
-) -> Result<f64, StoreError> {
-    let cutoff = (now - TimeDelta::seconds(window_secs)).to_rfc3339();
-    let row = sqlx::query(
-        "SELECT COALESCE(SUM(delta), 0.0) AS s FROM fact
-          WHERE record_uid = ? AND at >= ? AND delta > 0",
-    )
-    .bind(record_uid)
-    .bind(cutoff)
-    .fetch_one(pool)
-    .await?;
-    Ok(row.get::<f64, _>("s"))
+) -> Result<DecimalValue, StoreError> {
+    let cutoff = instant(now - TimeDelta::seconds(window_secs));
+    fold_window(pool, record_uid, &cutoff, None, SignFilter::Positive).await
 }
 
 /// `sum_neg(@x, <window>)`: only the outflows (negative deltas); the sum is
@@ -156,17 +247,9 @@ pub async fn sum_neg_window(
     record_uid: &str,
     window_secs: i64,
     now: DateTime<Utc>,
-) -> Result<f64, StoreError> {
-    let cutoff = (now - TimeDelta::seconds(window_secs)).to_rfc3339();
-    let row = sqlx::query(
-        "SELECT COALESCE(SUM(delta), 0.0) AS s FROM fact
-          WHERE record_uid = ? AND at >= ? AND delta < 0",
-    )
-    .bind(record_uid)
-    .bind(cutoff)
-    .fetch_one(pool)
-    .await?;
-    Ok(row.get::<f64, _>("s"))
+) -> Result<DecimalValue, StoreError> {
+    let cutoff = instant(now - TimeDelta::seconds(window_secs));
+    fold_window(pool, record_uid, &cutoff, None, SignFilter::Negative).await
 }
 
 /// End-lagged window: net delta over `[now - end_lag - window, now - end_lag)`.
@@ -177,20 +260,83 @@ pub async fn sum_window_lagged(
     window_secs: i64,
     end_lag_secs: i64,
     now: DateTime<Utc>,
-) -> Result<f64, StoreError> {
+) -> Result<DecimalValue, StoreError> {
     let end = now - TimeDelta::seconds(end_lag_secs);
-    let start = (end - TimeDelta::seconds(window_secs)).to_rfc3339();
-    let end = end.to_rfc3339();
-    let row = sqlx::query(
-        "SELECT COALESCE(SUM(delta), 0.0) AS s FROM fact
-          WHERE record_uid = ? AND at >= ? AND at < ?",
+    let start = instant(end - TimeDelta::seconds(window_secs));
+    let end = instant(end);
+    fold_window(pool, record_uid, &start, Some(&end), SignFilter::All).await
+}
+
+/// A Record's exact level, folded from its Fact chain (blueprint E0.1) rather
+/// than read from the `record.quantity` cache. This is what a Program reads:
+/// the cache is a cache, and a rule that decides something should decide it
+/// from the truth.
+///
+/// Anchored on the last checkpoint that carries a level. Retention genuinely
+/// deletes archived Facts, so folding whatever rows remain would silently
+/// under-report a compacted Record — the checkpoint already accounts for
+/// everything before it, and only the Facts after it still need adding.
+pub async fn level(pool: &SqlitePool, record_uid: &str) -> Result<DecimalValue, StoreError> {
+    let (base, after_rowid) = level_anchor(pool, record_uid).await?;
+    let rows = match after_rowid {
+        Some(rowid) => {
+            sqlx::query(
+                "SELECT delta_mantissa, delta_scale FROM fact
+                  WHERE record_uid = ? AND rowid > ?",
+            )
+            .bind(record_uid)
+            .bind(rowid)
+            .fetch_all(pool)
+            .await?
+        }
+        None => {
+            sqlx::query("SELECT delta_mantissa, delta_scale FROM fact WHERE record_uid = ?")
+                .bind(record_uid)
+                .fetch_all(pool)
+                .await?
+        }
+    };
+    let mut total = base;
+    for row in rows {
+        let delta = read_decimal(&row, "delta")?;
+        total = total.aligned_add(delta).ok_or_else(|| {
+            StoreError::Decode(format!("level of {record_uid} overflows i128").into())
+        })?;
+    }
+    Ok(total)
+}
+
+/// The most recent checkpoint that actually carries a level, and its rowid.
+/// Compaction's archive anchors are checkpoints too but carry `{archive, ...}`
+/// instead of a level, so they are skipped rather than read as zero.
+async fn level_anchor(
+    pool: &SqlitePool,
+    record_uid: &str,
+) -> Result<(DecimalValue, Option<i64>), StoreError> {
+    let rows = sqlx::query(
+        "SELECT rowid, payload FROM fact
+          WHERE record_uid = ? AND cause_kind = 'checkpoint'
+          ORDER BY rowid DESC LIMIT 32",
     )
     .bind(record_uid)
-    .bind(start)
-    .bind(end)
-    .fetch_one(pool)
+    .fetch_all(pool)
     .await?;
-    Ok(row.get::<f64, _>("s"))
+    for row in rows {
+        let Some(payload) = row.get::<Option<String>, _>("payload") else {
+            continue;
+        };
+        let Ok(json) = serde_json::from_str::<serde_json::Value>(&payload) else {
+            continue;
+        };
+        let Some(text) = json.get("level").and_then(serde_json::Value::as_str) else {
+            continue; // an archive anchor, not a level checkpoint
+        };
+        let level = DecimalValue::parse_inferred(text).map_err(|error| {
+            StoreError::Decode(format!("checkpoint level is not an exact decimal: {error}").into())
+        })?;
+        return Ok((level, Some(row.get::<i64, _>("rowid"))));
+    }
+    Ok((zero(), None))
 }
 
 /// Set (upsert) the retention horizon for a record kind (blueprint II.2).
@@ -227,7 +373,7 @@ pub async fn last_checkpoint(
     pool: &SqlitePool,
     record_uid: &str,
 ) -> Result<Option<(i64, Fact)>, StoreError> {
-    Ok(sqlx::query(
+    sqlx::query(
         "SELECT rowid, * FROM fact
           WHERE record_uid = ? AND cause_kind = 'checkpoint'
           ORDER BY rowid DESC LIMIT 1",
@@ -235,7 +381,8 @@ pub async fn last_checkpoint(
     .bind(record_uid)
     .fetch_optional(pool)
     .await?
-    .map(|r| (r.get::<i64, _>("rowid"), map_fact(r))))
+    .map(|r| Ok((r.get::<i64, _>("rowid"), map_fact(r)?)))
+    .transpose()
 }
 
 /// Facts of a record eligible for compaction: strictly before the checkpoint
@@ -246,19 +393,18 @@ pub async fn archivable_before(
     checkpoint_rowid: i64,
     cutoff: DateTime<Utc>,
 ) -> Result<Vec<Fact>, StoreError> {
-    Ok(sqlx::query(
-        "SELECT * FROM fact
-          WHERE record_uid = ? AND rowid < ? AND at < ?
-          ORDER BY rowid",
+    map_facts(
+        sqlx::query(
+            "SELECT * FROM fact
+              WHERE record_uid = ? AND rowid < ? AND at < ?
+              ORDER BY rowid",
+        )
+        .bind(record_uid)
+        .bind(checkpoint_rowid)
+        .bind(instant(cutoff))
+        .fetch_all(pool)
+        .await?,
     )
-    .bind(record_uid)
-    .bind(checkpoint_rowid)
-    .bind(cutoff.to_rfc3339())
-    .fetch_all(pool)
-    .await?
-    .into_iter()
-    .map(map_fact)
-    .collect())
 }
 
 /// Delete archived facts by uid, in one transaction. The quantity cache is
@@ -287,7 +433,7 @@ pub async fn list_since(
     let rows = match since_rfc3339 {
         Some(since) => {
             sqlx::query("SELECT * FROM fact WHERE at >= ? ORDER BY rowid LIMIT ?")
-                .bind(since)
+                .bind(instant_str(since))
                 .bind(limit)
                 .fetch_all(pool)
                 .await?
@@ -299,7 +445,7 @@ pub async fn list_since(
                 .await?
         }
     };
-    Ok(rows.into_iter().map(map_fact).collect())
+    map_facts(rows)
 }
 
 /// Hours since the most recent fact on a record; None when it has none.

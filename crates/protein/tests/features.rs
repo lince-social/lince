@@ -55,7 +55,9 @@ async fn aggregate_sums_by_group() {
     });
     let rows = protein::execute(&e.store, &p).await.unwrap();
     let plain = rows.iter().find(|r| r["group"] == "plain").unwrap();
-    assert_eq!(plain["value"], 2000.0);
+    // Exact text, not a float: a Record sum is a sum of levels and must survive
+    // the wire with the precision it was stored at.
+    assert_eq!(plain["value"], "2000");
 }
 
 #[tokio::test]
@@ -130,7 +132,7 @@ async fn organ_eq_and_organ_in_filter_by_record_origin() {
             kind: RecordKind::Plain,
             head: "orphan",
             body: "",
-            quantity: 0.0,
+            quantity: store::exact::zero(),
         },
     )
     .await

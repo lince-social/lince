@@ -8,10 +8,13 @@
 //!
 //! Sources: `record | promise | decision | fact | concept | transfer |
 //! transfer_settlement_preview | transfer_bulk_completion_preview`.
-//! Boolean predicate tree with Lingua-DAG `concept_in`; includes `facts`
-//! (provenance), `promises`, `links` (with tree `depth`), `threads`,
-//! `extension`, `availability`, and `projection` (promise fold); aggregation
-//! (`sum`/`count` by concept/kind/cause_kind/day — the finance workhorse);
+//! Boolean predicate tree with Lingua-DAG `concept_in` (what a Record IS) and
+//! `classified_in` (what a CHANGE was for); includes `facts` (provenance),
+//! `promises`, `links` (with tree `depth`), `threads`, `extension`,
+//! `availability`, and `projection` (promise fold); aggregation (`sum`/`count`
+//! by total/concept/classification/kind/cause_kind/day, exact and
+//! unit-separated — the statistics workhorse, and equally at home totalling
+//! spending, stock consumption, or hours);
 //! ordering `topo(kind)` + field asc/desc; limit. Rows come out as JSON — the
 //! wire shape sands consume. Live subscriptions ride the engine's `fact_bus`
 //! (see `affects`): snapshot, then re-execute on relevant commits.
@@ -85,12 +88,26 @@ pub enum AggregateOp {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum GroupBy {
+    /// No grouping: one bucket for everything the filter matched (still split
+    /// by unit). "What is my net this month" is a real question and expressing
+    /// it as a group-by over some arbitrary key and re-summing on the client
+    /// would put exact arithmetic back in JavaScript.
+    Total,
+    /// The Record's own concept — what the thing IS.
     Concept,
+    /// Fact source: the concept the CHANGE was classified with — what it was
+    /// FOR. `concept` groups a food purchase under the wallet it came from;
+    /// `classification` groups it under food. Both are needed, and conflating
+    /// them silently answers the wrong question.
+    Classification,
     Kind,
     /// Fact source: group by the fact's cause_kind (W-finance).
     CauseKind,
     /// Fact source: group by calendar day (`YYYY-MM-DD` of `at`).
     Day,
+    /// Group by calendar month (`YYYY-MM` of `at`). The natural bucket for a
+    /// timeline that spans a year, where a daily point is noise.
+    Month,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -125,6 +142,37 @@ pub enum Source {
     /// subject needs `role:read`, `user:read`, or `permission:read`; the
     /// local Cell (`subject: None`) always sees it, like every other source.
     Auth,
+    /// Durable Program/Frequency definitions, activation epochs, scheduler
+    /// cursors/batches, semantic occurrences, frozen Program epochs, and
+    /// deterministic runs. Remote subjects see no rows until fine-grained
+    /// Karma visibility grants exist.
+    Karma,
+    /// One classified quantity axis through time: what settled, where it stands
+    /// now, and what is declared ahead.
+    ///
+    /// This exists because those three are one question, not three panels. A
+    /// person asking "how is `@rent` going" wants the months behind, the
+    /// running position, and the months ahead on a single line — and stitching
+    /// that together on the client would require summing exact decimals in
+    /// JavaScript, which is where exactness goes to die.
+    ///
+    /// The future is *declared*, never invented: it is the dates recurring
+    /// rules produce plus promises already made. Nothing here forecasts, and
+    /// nothing here writes a Fact.
+    Timeline,
+    /// Authored changes with the handle needed to correct them.
+    ///
+    /// [`Source::Fact`] answers what the Ledger holds; this answers what a
+    /// person typed and may still fix. The difference that matters to a surface
+    /// is `uid` and `revision`: revising or voiding requires both, and a Fact
+    /// has neither because a Fact is not editable.
+    Entry,
+    /// Standing recurring declarations and the dates they produce.
+    ///
+    /// Rows are heterogeneous by `kind`: `"recurrence"` for a rule, and
+    /// `"occurrence"` for one derived date with what became of it. Occurrences
+    /// are derived on read, never stored.
+    Recurrence,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -188,6 +236,19 @@ pub enum Predicate {
     /// Fact source: `at` within the trailing window (`"30d"`, `"2h"`) or at or
     /// after an absolute RFC3339 instant.
     AtSince(String),
+    /// Fact source: the exclusive end of the window, same spellings as
+    /// `at_since`. Half-open `[since, before)` on purpose — adjacent periods
+    /// must tile without one change being counted in both.
+    AtBefore(String),
+    /// Fact source: the concept the CHANGE ITSELF was classified with,
+    /// DAG-expanded.
+    ///
+    /// Deliberately distinct from `concept_in`, which asks about the Record the
+    /// change happened to. The two answer different questions and a query needs
+    /// both: "what did I spend on food" selects Records by `@budget` and changes
+    /// by `@food`. Collapsing them into one predicate is how a query silently
+    /// answers something other than what was asked.
+    ClassifiedIn(String),
     /// Fact source: the fact's cause_kind equals this (`"settlement"`, ...).
     CauseKindEq(String),
     /// Fact source: the fact belongs to this record (slug or uid) —
@@ -345,6 +406,9 @@ pub async fn execute_for_with_signer(
             execute_decisions(store, protein).await?
         }
         Source::Fact => execute_facts(store, protein, visible).await?,
+        Source::Timeline => execute_timeline(store, protein, visible).await?,
+        Source::Entry => execute_entries(store, protein, visible).await?,
+        Source::Recurrence => execute_recurrence(store, protein, visible).await?,
         // Lingua is shared vocabulary by design (III): concepts travel freely.
         Source::Concept => execute_concepts(store, protein).await?,
         Source::Transfer => {
@@ -378,6 +442,12 @@ pub async fn execute_for_with_signer(
                 }
             }
             execute_auth(store).await?
+        }
+        Source::Karma => {
+            if visible.is_some() {
+                return Ok(vec![]);
+            }
+            execute_karma(store, protein).await?
         }
     })
 }
@@ -601,8 +671,619 @@ pub fn affects(protein: &Protein, _fact: &nucleus::Fact) -> bool {
             | Source::Transfer
             | Source::TransferSettlementPreview
             | Source::TransferBulkCompletionPreview
+            | Source::Karma
+            // A capture, a correction, and an applied occurrence all commit
+            // Facts, and all three of these read them. Leaving them out would
+            // leave a surface showing a total that stopped being true.
+            | Source::Timeline
+            | Source::Entry
+            | Source::Recurrence
     )
 }
+
+async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, ProteinError> {
+    if protein.aggregate.is_some() {
+        return Err(karma_query_error(
+            "protein_karma_aggregate_unsupported",
+            "Karma object unions cannot be aggregated",
+        ));
+    }
+    if protein.include.facts.is_some()
+        || protein.include.promises.is_some()
+        || protein.include.links.is_some()
+        || protein.include.threads.is_some()
+        || protein.include.availability
+        || protein.include.extension.is_some()
+        || protein.include.projection.is_some()
+    {
+        return Err(karma_query_error(
+            "protein_karma_include_unsupported",
+            "Karma rows are already complete typed projections",
+        ));
+    }
+
+    let mut rows = Vec::new();
+    for handle in store::karma::programs::list_handles(&store.pool).await? {
+        let can_activate = handle.active_revision_hash.as_ref() != Some(&handle.head_revision_hash);
+        let can_pause = handle.status == nucleus::karma::DefinitionStatus::Active;
+        rows.push(json!({
+            "object_kind": "program",
+            "uid": handle.record_uid,
+            "slug": handle.slug,
+            "handle_revision": handle.handle_revision,
+            "status": handle.status.as_str(),
+            "head_revision_hash": handle.head_revision_hash,
+            "active_revision_hash": handle.active_revision_hash,
+            "owner_person_uid": handle.owner_person_uid,
+            "created_at": handle.created_at,
+            "updated_at": handle.updated_at,
+            "capabilities": {
+                "revise": true,
+                "activate": can_activate,
+                "pause": can_pause,
+            },
+            "blocking_reasons": {
+                "revise": Vec::<&str>::new(),
+                "activate": if can_activate { Vec::<&str>::new() } else { vec!["head_already_active"] },
+                "pause": if can_pause { Vec::<&str>::new() } else { vec!["program_not_active"] },
+            },
+            "action_templates": {
+                "revise": {
+                    "action": "revise-karma-program",
+                    "request_id": Value::Null,
+                    "program_uid": handle.record_uid,
+                    "expected_handle_revision": handle.handle_revision,
+                    "program": Value::Null,
+                },
+                "activate": {
+                    "action": "activate-karma-program",
+                    "request_id": Value::Null,
+                    "program_uid": handle.record_uid,
+                    "expected_handle_revision": handle.handle_revision,
+                    "revision_hash": handle.head_revision_hash,
+                },
+                "pause": {
+                    "action": "pause-karma-program",
+                    "request_id": Value::Null,
+                    "program_uid": handle.record_uid,
+                    "expected_handle_revision": handle.handle_revision,
+                },
+            },
+        }));
+    }
+    for revision in store::karma::programs::list_revisions(&store.pool).await? {
+        rows.push(json!({
+            "object_kind": "program_revision",
+            "uid": revision.revision_hash,
+            "program_uid": revision.program_uid,
+            "revision_hash": revision.revision_hash,
+            "program": revision.program,
+            "canonical_dsl": revision.canonical_dsl,
+            "proof": revision.proof,
+            "created_at": revision.created_at,
+        }));
+    }
+    for handle in store::karma::frequencies::list_handles(&store.pool).await? {
+        let can_activate = handle.active_revision_hash.as_ref() != Some(&handle.head_revision_hash);
+        let can_pause = handle.status == nucleus::karma::DefinitionStatus::Active;
+        rows.push(json!({
+            "object_kind": "frequency",
+            "uid": handle.record_uid,
+            "slug": handle.slug,
+            "handle_revision": handle.handle_revision,
+            "status": handle.status.as_str(),
+            "head_revision_hash": handle.head_revision_hash,
+            "active_revision_hash": handle.active_revision_hash,
+            "active_activation_hash": handle.active_activation_hash,
+            "latest_activation_hash": handle.latest_activation_hash,
+            "owner_person_uid": handle.owner_person_uid,
+            "created_at": handle.created_at,
+            "updated_at": handle.updated_at,
+            "capabilities": {
+                "revise": true,
+                "activate": can_activate,
+                "pause": can_pause,
+                "set_parameters": can_pause,
+                "reset_parameters": can_pause,
+            },
+            "blocking_reasons": {
+                "revise": Vec::<&str>::new(),
+                "activate": if can_activate { Vec::<&str>::new() } else { vec!["head_already_active"] },
+                "pause": if can_pause { Vec::<&str>::new() } else { vec!["frequency_not_active"] },
+                "set_parameters": if can_pause { Vec::<&str>::new() } else { vec!["frequency_not_active"] },
+                "reset_parameters": if can_pause { Vec::<&str>::new() } else { vec!["frequency_not_active"] },
+            },
+            "requires_runtime_admission": true,
+            "action_templates": {
+                "revise": {
+                    "action": "revise-karma-frequency",
+                    "request_id": Value::Null,
+                    "frequency_uid": handle.record_uid,
+                    "expected_handle_revision": handle.handle_revision,
+                    "frequency": Value::Null,
+                },
+                "activate": {
+                    "action": "activate-karma-frequency",
+                    "request_id": Value::Null,
+                    "frequency_uid": handle.record_uid,
+                    "expected_handle_revision": handle.handle_revision,
+                    "revision_hash": handle.head_revision_hash,
+                    "parameter_overrides": {},
+                },
+                "pause": {
+                    "action": "pause-karma-frequency",
+                    "request_id": Value::Null,
+                    "frequency_uid": handle.record_uid,
+                    "expected_handle_revision": handle.handle_revision,
+                },
+            },
+        }));
+    }
+    for revision in store::karma::frequencies::list_revisions(&store.pool).await? {
+        rows.push(json!({
+            "object_kind": "frequency_revision",
+            "uid": revision.revision_hash,
+            "frequency_uid": revision.frequency_uid,
+            "revision_hash": revision.revision_hash,
+            "frequency": revision.frequency,
+            "canonical_dsl": revision.canonical_dsl,
+            "default_compiled": revision.default_compiled,
+            "created_at": revision.created_at,
+        }));
+    }
+    for activation in store::karma::frequencies::list_activations(&store.pool).await? {
+        rows.push(json!({
+            "object_kind": "frequency_activation",
+            "uid": activation.activation_hash,
+            "activation_hash": activation.activation_hash,
+            "frequency_uid": activation.epoch.frequency_uid(),
+            "epoch": activation.epoch,
+        }));
+    }
+    for cursor in store::karma::schedules::list_cursors(&store.pool).await? {
+        rows.push(json!({
+            "object_kind": "schedule_cursor",
+            "uid": cursor.activation_hash,
+            "activation_hash": cursor.activation_hash,
+            "frequency_uid": cursor.frequency_uid,
+            "cursor_revision": cursor.cursor_revision,
+            "lifecycle": cursor.lifecycle.as_str(),
+            "cursor": cursor.cursor,
+            "deadline": cursor.deadline,
+            "timer": cursor.timer,
+            "overload_policy": cursor.overload_policy,
+            "demand": cursor.demand,
+            "admitted_resolution_ms": cursor.admitted_resolution_ms.map(|value| value.get()),
+            "admission_degraded": cursor.admission_degraded,
+            "admitted_at": cursor.admitted_at,
+            "lease_fencing_token": cursor.lease_fencing_token,
+            "lease_owner": cursor.lease_owner,
+            "lease_expires_at": cursor.lease_expires_at,
+            "last_occurrence_sequence": cursor.last_occurrence_sequence,
+            "last_error": cursor.last_error_json
+                .map(|value| serde_json::from_str::<Value>(&value))
+                .transpose()
+                .map_err(|error| karma_query_error("protein_karma_stored_json_invalid", error))?,
+            "created_at": cursor.created_at,
+            "updated_at": cursor.updated_at,
+        }));
+    }
+    for occurrence in store::karma::schedules::list_occurrences(&store.pool).await? {
+        let sequence = occurrence.occurrence.sequence();
+        rows.push(json!({
+            "object_kind": "schedule_occurrence",
+            "uid": occurrence.occurrence_hash,
+            "occurrence_hash": occurrence.occurrence_hash,
+            "sequence": sequence,
+            "occurrence": occurrence.occurrence,
+            "created_at": occurrence.created_at,
+        }));
+    }
+    for expansion in store::karma::expansions::list_cursors(&store.pool).await? {
+        rows.push(json!({
+            "object_kind": "schedule_occurrence_expansion",
+            "uid": expansion.schedule_occurrence_hash,
+            "schedule_occurrence_hash": expansion.schedule_occurrence_hash,
+            "cadence": expansion.cadence.as_str(),
+            "emission": expansion.emission.as_str(),
+            "next_ordinal": expansion.next_ordinal,
+            "total_items": expansion.total_items,
+            "status": if expansion.completed { "completed" } else { "pending" },
+            "created_at": expansion.created_at,
+            "updated_at": expansion.updated_at,
+        }));
+    }
+    for occurrence in store::karma::occurrences::list(&store.pool).await? {
+        rows.push(json!({
+            "object_kind": "occurrence",
+            "uid": occurrence.occurrence_hash,
+            "occurrence_hash": occurrence.occurrence_hash,
+            "cell_sequence": occurrence.cell_sequence,
+            "source_kind": occurrence.source_kind,
+            "source_identity": occurrence.source_identity,
+            "logical_at": occurrence.logical_at,
+            "parent_occurrence_hash": occurrence.parent_occurrence_hash,
+            "envelope": occurrence.envelope,
+            "received_at": occurrence.received_at,
+        }));
+    }
+    for epoch in store::karma::runs::list_epochs(&store.pool).await? {
+        rows.push(json!({
+            "object_kind": "program_epoch",
+            "uid": epoch.epoch_hash,
+            "epoch_hash": epoch.epoch_hash,
+            "occurrence_hash": epoch.epoch.occurrence_hash,
+            "cell_sequence": epoch.epoch.cell_sequence,
+            "members": epoch.epoch.members,
+            "next_member_ordinal": epoch.next_member_ordinal,
+            "status": if epoch.completed { "completed" } else { "pending" },
+            "created_at": epoch.created_at,
+            "updated_at": epoch.updated_at,
+            "completed_at": epoch.completed_at,
+        }));
+    }
+    for run in store::karma::runs::list_runs(&store.pool).await? {
+        rows.push(json!({
+            "object_kind": "run",
+            "uid": run.run_hash,
+            "run_hash": run.run_hash,
+            "occurrence_hash": run.run.occurrence_hash,
+            "cell_sequence": run.run.cell_sequence,
+            "logical_at": run.run.logical_at,
+            "program_epoch_hash": run.run.program_epoch_hash,
+            "member_ordinal": run.run.member_ordinal,
+            "program_uid": run.run.program_uid,
+            "program_revision_hash": run.run.program_revision_hash,
+            "status": run.run.outcome.status_name(),
+            "fuel_used": run.run.outcome.fuel_used(),
+            "outcome": run.run.outcome,
+            "created_at": run.created_at,
+        }));
+    }
+    for state in store::karma::states::list_node_states(&store.pool).await? {
+        rows.push(json!({
+            "object_kind": "program_state",
+            "uid": state.current_event_hash,
+            "program_uid": state.program_uid,
+            "node_id": state.node_id,
+            "state_revision": state.state_revision,
+            "current_event_hash": state.current_event_hash,
+            "definition_revision_hash": state.definition_revision_hash,
+            "activation_handle_revision": state.activation_handle_revision,
+            "status": if state.state.is_some() { "value" } else { "reset" },
+            "state": state.state,
+            "updated_at": state.updated_at,
+        }));
+    }
+    for event in store::karma::states::list_events(&store.pool).await? {
+        rows.push(json!({
+            "object_kind": "program_state_event",
+            "uid": event.event_hash,
+            "event_hash": event.event_hash,
+            "program_uid": event.event.program_uid,
+            "node_id": event.event.node_id,
+            "state_revision": event.event.state_revision,
+            "previous_event_hash": event.event.previous_event_hash,
+            "source_run_hash": event.event.source_run_hash,
+            "definition_revision_hash": event.event.definition_revision_hash,
+            "activation_handle_revision": event.event.activation_handle_revision,
+            "reset_reason": event.event.reset_reason,
+            "status": if event.event.state.is_some() { "value" } else { "reset" },
+            "state": event.event.state,
+            "created_at": event.created_at,
+        }));
+    }
+    for candidate in store::karma::candidates::list(&store.pool).await? {
+        let state = store::karma::candidates::get_state(&store.pool, &candidate.candidate_hash)
+            .await?
+            .ok_or_else(|| {
+                karma_query_error(
+                    "protein_karma_candidate_state_missing",
+                    candidate.candidate_hash.as_str(),
+                )
+            })?;
+        rows.push(json!({
+            "object_kind": "candidate",
+            "uid": candidate.candidate_hash,
+            "candidate_hash": candidate.candidate_hash,
+            "source_run_hash": candidate.proposal.source_run_hash,
+            "occurrence_hash": candidate.proposal.occurrence_hash,
+            "program_uid": candidate.proposal.program_uid,
+            "program_revision_hash": candidate.proposal.program_revision_hash,
+            "node_id": candidate.proposal.node_id,
+            "output": candidate.proposal.output,
+            "route": candidate.proposal.route,
+            "template": candidate.proposal.template,
+            "fields": candidate.proposal.fields,
+            "status": match state.status {
+                nucleus::karma::CandidateStatus::Proposed => "proposed",
+                nucleus::karma::CandidateStatus::Accepted => "accepted",
+                nucleus::karma::CandidateStatus::Dismissed => "dismissed",
+                nucleus::karma::CandidateStatus::Snoozed => "snoozed",
+                _ => "unsupported",
+            },
+            "state_revision": state.state_revision,
+            "snoozed_until": state.snoozed_until,
+            "current_event_hash": state.current_event_hash,
+            "actor_person_uid": state.actor_person_uid,
+            "updated_at": state.updated_at,
+            "created_at": candidate.created_at,
+            "capabilities": {
+                "accept": true,
+                "dismiss": true,
+                "snooze": true,
+            },
+            "creates_intent": false,
+            // K5.1 made authority real, but accepting a proposal still translates
+            // into no work: the candidate-to-intent bridge does not exist yet.
+            "intent_blocking_reasons": ["karma_intent_not_implemented"],
+            "action_templates": {
+                "accept": {
+                    "action": "respond-karma-candidate",
+                    "request_id": Value::Null,
+                    "candidate_hash": candidate.candidate_hash,
+                    "expected_state_revision": state.state_revision,
+                    "response": { "action": "accept" },
+                },
+                "dismiss": {
+                    "action": "respond-karma-candidate",
+                    "request_id": Value::Null,
+                    "candidate_hash": candidate.candidate_hash,
+                    "expected_state_revision": state.state_revision,
+                    "response": { "action": "dismiss" },
+                },
+                "snooze": {
+                    "action": "respond-karma-candidate",
+                    "request_id": Value::Null,
+                    "candidate_hash": candidate.candidate_hash,
+                    "expected_state_revision": state.state_revision,
+                    "response": { "action": "snooze", "until": Value::Null },
+                },
+            },
+        }));
+    }
+    for handle in store::karma::grants::list_handles(&store.pool).await? {
+        let revoked = handle.status == nucleus::karma::GrantStatus::Revoked;
+        let head_is_active = handle.active_revision_hash.as_ref() == Some(&handle.head_revision_hash);
+        let can_activate = !revoked && !head_is_active;
+        let head = store::karma::grants::get_revision(&store.pool, &handle.record_uid, &handle.head_revision_hash)
+            .await?
+            .ok_or_else(|| {
+                karma_query_error(
+                    "protein_karma_grant_revision_missing",
+                    handle.head_revision_hash.as_str(),
+                )
+            })?;
+        rows.push(json!({
+            "object_kind": "grant",
+            "uid": handle.record_uid,
+            "slug": handle.slug,
+            "handle_revision": handle.handle_revision,
+            "status": handle.status.as_str(),
+            "head_revision_hash": handle.head_revision_hash,
+            "active_revision_hash": handle.active_revision_hash,
+            "principal_person_uid": handle.principal_person_uid,
+            "purpose": head.revision.spec.purpose,
+            "program_uid": head.revision.spec.program_uid,
+            "program_revision": head.revision.spec.program_revision,
+            "candidate_templates": head.revision.spec.candidate_templates,
+            "capabilities_granted": head.revision.spec.capabilities,
+            "targets": head.revision.spec.targets,
+            "valid_from": head.revision.spec.valid_from,
+            "expires_at": head.revision.spec.expires_at,
+            "budget": head.revision.spec.budget,
+            // Who vouched for the authority currently on offer, and with which key.
+            "signature_provenance": {
+                "signer_person_uid": head.signature.signer_person_uid,
+                "key_id": head.signature.key_id,
+                "revision_hash": head.revision_hash,
+            },
+            "created_at": handle.created_at,
+            "updated_at": handle.updated_at,
+            "capabilities": {
+                "narrow": !revoked,
+                "activate": can_activate,
+                "revoke": !revoked,
+            },
+            "blocking_reasons": {
+                "narrow": if revoked { vec!["grant_revoked"] } else { Vec::<&str>::new() },
+                "activate": if revoked {
+                    vec!["grant_revoked"]
+                } else if head_is_active {
+                    vec!["head_already_active"]
+                } else {
+                    Vec::<&str>::new()
+                },
+                "revoke": if revoked { vec!["grant_revoked"] } else { Vec::<&str>::new() },
+            },
+            // An active grant can now authorize a durable intent, but nothing
+            // executes one: there is still no worker, lease, or dispatch.
+            "authorizes_effects": false,
+            "effect_blocking_reasons": ["karma_execution_not_implemented"],
+            "action_templates": {
+                "narrow": {
+                    "action": "narrow-karma-grant",
+                    "request_id": Value::Null,
+                    "grant_uid": handle.record_uid,
+                    "expected_handle_revision": handle.handle_revision,
+                    "grant": head.revision.spec,
+                },
+                "activate": {
+                    "action": "activate-karma-grant",
+                    "request_id": Value::Null,
+                    "grant_uid": handle.record_uid,
+                    "expected_handle_revision": handle.handle_revision,
+                    "revision_hash": handle.head_revision_hash,
+                },
+                "revoke": {
+                    "action": "revoke-karma-grant",
+                    "request_id": Value::Null,
+                    "grant_uid": handle.record_uid,
+                    "expected_handle_revision": handle.handle_revision,
+                },
+            },
+        }));
+    }
+    for revision in store::karma::grants::list_revisions(&store.pool).await? {
+        rows.push(json!({
+            "object_kind": "grant_revision",
+            "uid": revision.revision_hash,
+            "grant_uid": revision.grant_uid,
+            "revision_hash": revision.revision_hash,
+            "principal_person_uid": revision.revision.principal_person_uid,
+            "grant": revision.revision.spec,
+            "signature_provenance": {
+                "signer_person_uid": revision.signature.signer_person_uid,
+                "key_id": revision.signature.key_id,
+                "signature": revision.signature.signature,
+            },
+            "created_at": revision.created_at,
+        }));
+    }
+
+    for intent in store::karma::intents::list(&store.pool).await? {
+        let state = store::karma::intents::get_state(&store.pool, &intent.intent_hash)
+            .await?
+            .ok_or_else(|| {
+                karma_query_error(
+                    "protein_karma_intent_state_missing",
+                    intent.intent_hash.as_str(),
+                )
+            })?;
+        rows.push(json!({
+            "object_kind": "intent",
+            "uid": intent.intent_hash,
+            "intent_hash": intent.intent_hash,
+            "candidate_hash": intent.candidate_hash,
+            "grant_uid": intent.grant_uid,
+            "grant_revision_hash": intent.grant_revision_hash,
+            "program_uid": intent.intent.program_uid,
+            "program_revision_hash": intent.intent.program_revision_hash,
+            "template": intent.intent.template,
+            "capability": intent.intent.capability,
+            "target": intent.intent.target,
+            "fields": intent.intent.fields,
+            "quantity": intent.intent.quantity,
+            "idempotency_key": intent.intent.idempotency_key,
+            "deadline": intent.intent.deadline,
+            "status": state.status.as_str(),
+            "state_revision": state.state_revision,
+            // The head of this intent's transition chain, so an audit can walk
+            // its whole lifecycle without trusting the projection.
+            "current_event_hash": state.current_event_hash,
+            "cancelled_reason": state.cancelled_reason,
+            "actor_person_uid": state.actor_person_uid,
+            // The whole reason this was permitted, auditable as one object.
+            "policy_proof": intent.intent.authorization,
+            "created_at": intent.created_at,
+            "updated_at": state.updated_at,
+            // K5.2 authorizes work and stops. No worker may claim this.
+            "executable": false,
+            "execution_blocking_reasons": ["karma_execution_not_implemented"],
+            "action_templates": {},
+        }));
+    }
+
+    let mut filtered = Vec::new();
+    for row in rows {
+        if karma_predicates_match(&row, &protein.filter)? {
+            filtered.push(row);
+        }
+    }
+    validate_karma_order(&protein.order)?;
+    for order in protein.order.iter().rev() {
+        let (field, descending) = match order {
+            Order::Asc(field) => (field, false),
+            Order::Desc(field) => (field, true),
+            Order::Topo(_) => unreachable!("validated Karma order rejects topo"),
+        };
+        filtered.sort_by(|left, right| {
+            let ordering = karma_sort_value(left, field).cmp(&karma_sort_value(right, field));
+            if descending {
+                ordering.reverse()
+            } else {
+                ordering
+            }
+        });
+    }
+    if let Some(limit) = protein.limit {
+        filtered.truncate(limit);
+    }
+    Ok(filtered)
+}
+
+fn karma_predicates_match(row: &Value, predicates: &[Predicate]) -> Result<bool, ProteinError> {
+    for predicate in predicates {
+        let matches = match predicate {
+            Predicate::All(children) => karma_predicates_match(row, children)?,
+            Predicate::Any(children) => {
+                let mut any = false;
+                for child in children {
+                    if karma_predicates_match(row, std::slice::from_ref(child))? {
+                        any = true;
+                        break;
+                    }
+                }
+                any
+            }
+            Predicate::Not(child) => !karma_predicates_match(row, std::slice::from_ref(child))?,
+            Predicate::KindEq(expected) => {
+                row.get("object_kind").and_then(Value::as_str) == Some(expected)
+            }
+            Predicate::UidEq(expected) => row.get("uid").and_then(Value::as_str) == Some(expected),
+            Predicate::SlugEq(expected) => {
+                row.get("slug").and_then(Value::as_str) == Some(expected)
+            }
+            Predicate::StatusIn(expected) => row
+                .get("status")
+                .and_then(Value::as_str)
+                .is_some_and(|status| expected.iter().any(|value| value == status)),
+            _ => {
+                return Err(karma_query_error(
+                    "protein_karma_unsupported_predicate",
+                    "predicate is not defined for Karma objects",
+                ));
+            }
+        };
+        if !matches {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
+fn validate_karma_order(order: &[Order]) -> Result<(), ProteinError> {
+    for value in order {
+        let field = match value {
+            Order::Asc(field) | Order::Desc(field) => field.as_str(),
+            Order::Topo(_) => {
+                return Err(karma_query_error(
+                    "protein_karma_unsupported_order",
+                    "topological ordering is not defined for Karma object rows",
+                ));
+            }
+        };
+        if !matches!(
+            field,
+            "object_kind" | "uid" | "slug" | "status" | "created_at" | "updated_at"
+        ) {
+            return Err(karma_query_error("protein_karma_unsupported_order", field));
+        }
+    }
+    Ok(())
+}
+
+fn karma_sort_value(row: &Value, field: &str) -> String {
+    row.get(field)
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .to_string()
+}
+
+fn karma_query_error(code: &str, message: impl std::fmt::Display) -> ProteinError {
+    store::sqlx::Error::Protocol(format!("{code}:{message}"))
+}
+
 
 // ------------------------------------------------------------------- records
 
@@ -655,7 +1336,7 @@ async fn execute_records(
             "kind": r.kind,
             "head": r.head,
             "body": r.body,
-            "quantity": r.quantity,
+            "quantity": r.quantity_f64(),
             "concept": r.concept_uid,
             "unit": r.unit_uid,
             "organ": r.organ_uid,
@@ -664,7 +1345,7 @@ async fn execute_records(
             store,
             &mut row,
             &r.uid,
-            r.quantity,
+            r.quantity_f64(),
             record_unit_uid.as_deref(),
             &protein.include,
         )
@@ -675,23 +1356,50 @@ async fn execute_records(
 }
 
 fn aggregate_records(rows: &[store::records::RecordRow], agg: &Aggregate) -> Vec<Value> {
-    let mut buckets: std::collections::BTreeMap<String, f64> = std::collections::BTreeMap::new();
+    // Summing Record quantities is summing LEVELS, not changes, so there is no
+    // gain/loss split here — a level has no direction. It is still exact, and
+    // still unit-separated for the same reason the Fact side is.
+    let mut buckets: std::collections::BTreeMap<(String, String), (nucleus::DecimalValue, i64)> =
+        std::collections::BTreeMap::new();
     for r in rows {
         let key = match agg.by {
-            GroupBy::Concept => r.concept_uid.clone().unwrap_or_else(|| "(none)".into()),
+            GroupBy::Concept => r.concept_uid.clone().unwrap_or_else(|| UNCLASSIFIED.into()),
             GroupBy::Kind => r.kind.clone(),
+            GroupBy::Total => TOTAL.into(),
             // fact-source group keys are meaningless on records
-            GroupBy::CauseKind | GroupBy::Day => "(n/a)".into(),
+            GroupBy::CauseKind | GroupBy::Day | GroupBy::Month | GroupBy::Classification => {
+                "(n/a)".into()
+            }
         };
-        let entry = buckets.entry(key).or_insert(0.0);
-        match agg.op {
-            AggregateOp::Sum => *entry += r.quantity,
-            AggregateOp::Count => *entry += 1.0,
-        }
+        let unit = r.unit_uid.clone().unwrap_or_default();
+        let entry = buckets
+            .entry((key, unit))
+            .or_insert_with(|| (store::exact::zero(), 0));
+        entry.0 = entry.0.aligned_add(r.quantity).unwrap_or(entry.0);
+        entry.1 += 1;
     }
     buckets
         .into_iter()
-        .map(|(group, value)| json!({ "group": group, "value": value }))
+        .map(|((group, unit), (total, count))| {
+            let unit = if unit.is_empty() {
+                Value::Null
+            } else {
+                Value::String(unit)
+            };
+            match agg.op {
+                AggregateOp::Sum => json!({
+                    "group": group,
+                    "unit_uid": unit,
+                    "value": total.to_string(),
+                    "count": count,
+                }),
+                AggregateOp::Count => json!({
+                    "group": group,
+                    "unit_uid": unit,
+                    "count": count,
+                }),
+            }
+        })
         .collect()
 }
 
@@ -708,7 +1416,7 @@ async fn order_records(
                 let desc = matches!(key, Order::Desc(_));
                 rows.sort_by(|a, b| {
                     let ord = match f.as_str() {
-                        "quantity" => a.quantity.total_cmp(&b.quantity),
+                        "quantity" => a.quantity_f64().total_cmp(&b.quantity_f64()),
                         "slug" => a.slug.cmp(&b.slug),
                         _ => std::cmp::Ordering::Equal, // created_at: list_all is already oldest-first
                     };
@@ -756,7 +1464,7 @@ async fn attach_includes(
             list.into_iter()
                 .map(|f| {
                     json!({
-                        "delta": f.delta,
+                        "delta": f.delta.to_f64(),
                         "at": f.at.to_rfc3339(),
                         "cause_kind": f.cause.kind.as_str(),
                         "cause": f.cause.uid,
@@ -1004,12 +1712,12 @@ async fn threads_for_record(
     let threads = store::links::records_to(&store.pool, &thread_of, record_uid).await?;
     let mut out = Vec::new();
     for thread in threads {
-        if thread.kind != "thread" || thread.quantity <= 0.0 {
+        if thread.kind != "thread" || !thread.quantity.is_positive() {
             continue;
         }
         let mut messages = Vec::new();
         for message in store::links::records_to(&store.pool, &message_in, &thread.uid).await? {
-            if message.kind != "message" || message.quantity <= 0.0 {
+            if message.kind != "message" || !message.quantity.is_positive() {
                 continue;
             }
             let parent_message_uid = match &reply_to {
@@ -1044,7 +1752,7 @@ async fn threads_for_record(
                 "uid": message.uid,
                 "head": message.head,
                 "body": message.body,
-                "quantity": message.quantity,
+                "quantity": message.quantity_f64(),
                 "parent_message_uid": parent_message_uid,
                 "created_at": created_at,
                 "created_by": created_by,
@@ -1061,7 +1769,7 @@ async fn threads_for_record(
             "uid": thread.uid,
             "head": thread.head,
             "body": thread.body,
-            "quantity": thread.quantity,
+            "quantity": thread.quantity_f64(),
             "created_at": thread_created_at,
             "created_by": thread_created_by,
             "sender": thread_sender,
@@ -1231,11 +1939,11 @@ impl PredicateCtx {
                     false
                 }
                 Predicate::Not(p) => !self.matches_one(store, r, p).await?,
-                Predicate::QuantityLt(n) => r.quantity < *n,
-                Predicate::QuantityLte(n) => r.quantity <= *n,
-                Predicate::QuantityGt(n) => r.quantity > *n,
-                Predicate::QuantityGte(n) => r.quantity >= *n,
-                Predicate::QuantityEq(n) => r.quantity == *n,
+                Predicate::QuantityLt(n) => r.quantity_f64() < *n,
+                Predicate::QuantityLte(n) => r.quantity_f64() <= *n,
+                Predicate::QuantityGt(n) => r.quantity_f64() > *n,
+                Predicate::QuantityGte(n) => r.quantity_f64() >= *n,
+                Predicate::QuantityEq(n) => r.quantity_f64() == *n,
                 Predicate::UidEq(uid) => r.uid == *uid,
                 Predicate::KindEq(k) => r.kind == *k,
                 Predicate::SlugEq(s) => r.slug.as_deref() == Some(s.as_str()),
@@ -1265,6 +1973,8 @@ impl PredicateCtx {
                 | Predicate::OccurrenceIn(_) => true,
                 // fact-source predicates: vacuous on records
                 Predicate::AtSince(_) | Predicate::CauseKindEq(_) | Predicate::RecordEq(_) => true,
+                // ledger-window predicates: vacuous on records
+                Predicate::AtBefore(_) | Predicate::ClassifiedIn(_) => true,
                 Predicate::Near { of, meters } => {
                     match (
                         self.anchors.get(of).and_then(|a| *a),
@@ -1389,25 +2099,137 @@ fn resolve_since(value: &str) -> Option<String> {
         .map(|_| value.to_string())
 }
 
+/// The bucket every change falls into when nothing classifies it. Named and
+/// always emitted rather than dropped: a bucket that disappears when empty is
+/// indistinguishable from one that was never computed, and "everything is
+/// accounted for" is exactly the claim a person needs before trusting a total.
+const UNCLASSIFIED: &str = "(unclassified)";
+
+/// The single bucket `group_by: total` puts everything in.
+const TOTAL: &str = "(total)";
+
+/// One aggregation bucket, summed exactly.
+///
+/// Gains, losses, and net come back together from a single pass, because
+/// direction is the sign of the delta and nothing else — a refund classified
+/// `@cost` correctly *reduces* the cost total, and a separate direction field
+/// would get that backwards. Reporting only the net would hide the difference
+/// between a quiet month and a busy one that happened to balance.
+struct DeltaBucket {
+    net: nucleus::DecimalValue,
+    gains: nucleus::DecimalValue,
+    losses: nucleus::DecimalValue,
+    count: i64,
+}
+
+impl Default for DeltaBucket {
+    fn default() -> Self {
+        Self {
+            net: store::exact::zero(),
+            gains: store::exact::zero(),
+            losses: store::exact::zero(),
+            count: 0,
+        }
+    }
+}
+
+impl DeltaBucket {
+    fn add(&mut self, delta: nucleus::DecimalValue) -> Result<(), ProteinError> {
+        let overflow = || {
+            store::sqlx::Error::Protocol(
+                "protein_fact_total_overflow:total exceeds the exact range".to_string(),
+            )
+        };
+        self.net = self.net.aligned_add(delta).ok_or_else(overflow)?;
+        if delta.is_positive() {
+            self.gains = self.gains.aligned_add(delta).ok_or_else(overflow)?;
+        } else if delta.is_negative() {
+            self.losses = self.losses.aligned_add(delta).ok_or_else(overflow)?;
+        }
+        self.count += 1;
+        Ok(())
+    }
+
+    fn row(&self, group: &str, unit: &str, op: AggregateOp) -> Value {
+        let unit = if unit.is_empty() {
+            Value::Null
+        } else {
+            Value::String(unit.to_string())
+        };
+        match op {
+            // Sums cross the wire as canonical decimal TEXT. A JSON number is
+            // an IEEE double, and letting one in here would undo the Ledger's
+            // exactness at the very last step — the hardest place to notice.
+            AggregateOp::Sum => json!({
+                "group": group,
+                "unit_uid": unit,
+                "net": self.net.to_string(),
+                "gains": self.gains.to_string(),
+                "losses": self.losses.to_string(),
+                "count": self.count,
+            }),
+            // A count has no net, gains, or losses. Emitting zeros for them
+            // would be stating something false rather than omitting it.
+            AggregateOp::Count => json!({
+                "group": group,
+                "unit_uid": unit,
+                "count": self.count,
+            }),
+        }
+    }
+}
+
+/// A concept and everything below it in the Lingua DAG. An unknown name yields
+/// an empty family, which matches nothing — the honest answer for a filter on a
+/// vocabulary word that does not exist.
+async fn concept_descendants(store: &Store, name: &str) -> Result<HashSet<String>, ProteinError> {
+    Ok(match store::concepts::resolve(&store.pool, name).await? {
+        Some(uid) => store::concepts::descendants_including(&store.pool, &uid)
+            .await?
+            .into_iter()
+            .collect(),
+        None => HashSet::new(),
+    })
+}
+
 async fn execute_facts(
     store: &Store,
     protein: &Protein,
     visible: Option<&HashSet<String>>,
 ) -> Result<Vec<Value>, ProteinError> {
-    // record metadata for concept filters and aggregation keys
-    let mut record_concept: HashMap<String, Option<String>> = HashMap::new();
+    // Record metadata for concept filters and aggregation keys. `concept_in`
+    // reads the union of a Record's identity concept and the ones it merely
+    // counts as, because a toothbrush that counts as `@health` must answer a
+    // `@health` query about its changes just as it does about itself.
+    let counts_as = store::ledger::all_record_concepts(&store.pool).await?;
+    let mut record_concepts: HashMap<String, Vec<String>> = HashMap::new();
+    let mut record_unit: HashMap<String, Option<String>> = HashMap::new();
     for r in store::records::list_all(&store.pool).await? {
-        record_concept.insert(r.uid, r.concept_uid);
+        record_unit.insert(r.uid.clone(), r.unit_uid.clone());
+        // Identity concept first, so `group_by: concept` keys on what the thing
+        // IS rather than on whichever tag happens to sort first.
+        let mut concepts: Vec<String> = r.concept_uid.clone().into_iter().collect();
+        if let Some(extra) = counts_as.get(&r.uid) {
+            for concept in extra {
+                if !concepts.contains(concept) {
+                    concepts.push(concept.clone());
+                }
+            }
+        }
+        record_concepts.insert(r.uid.clone(), concepts);
     }
 
     // walk the flat predicate list (fact predicates don't nest in v1)
     let mut since: Option<String> = None;
+    let mut before: Option<String> = None;
     let mut cause_kind: Option<&str> = None;
     let mut record: Option<String> = None;
     let mut concept_family: Option<HashSet<String>> = None;
+    let mut classification_family: Option<HashSet<String>> = None;
     for p in &protein.filter {
         match p {
             Predicate::AtSince(v) => since = resolve_since(v),
+            Predicate::AtBefore(v) => before = resolve_since(v),
             Predicate::CauseKindEq(k) => cause_kind = Some(k),
             Predicate::RecordEq(token) => {
                 record = store::records::resolve(&store.pool, token)
@@ -1418,17 +2240,31 @@ async fn execute_facts(
                 }
             }
             Predicate::ConceptIn(name) => {
-                concept_family = Some(match store::concepts::resolve(&store.pool, name).await? {
-                    Some(uid) => store::concepts::descendants_including(&store.pool, &uid)
-                        .await?
-                        .into_iter()
-                        .collect(),
-                    None => HashSet::new(),
-                });
+                concept_family = Some(concept_descendants(store, name).await?);
+            }
+            Predicate::ClassifiedIn(name) => {
+                classification_family = Some(concept_descendants(store, name).await?);
             }
             _ => {}
         }
     }
+    let before_instant = match &before {
+        Some(value) => Some(chrono::DateTime::parse_from_rfc3339(value).map_err(|_| {
+            store::sqlx::Error::Protocol(format!(
+                "protein_fact_instant_invalid:`{value}` is not an instant"
+            ))
+        })?),
+        None => None,
+    };
+
+    // Loaded once when the query cares about it, never per Fact.
+    let needs_classification = classification_family.is_some()
+        || matches!(&protein.aggregate, Some(a) if a.by == GroupBy::Classification);
+    let fact_classification = if needs_classification {
+        store::ledger::all_fact_concepts(&store.pool).await?
+    } else {
+        Default::default()
+    };
 
     const FACT_SCAN_CAP: i64 = 100_000;
     let mut facts = Vec::new();
@@ -1442,10 +2278,25 @@ async fn execute_facts(
         if record.as_ref().is_some_and(|r| &f.record_uid != r) {
             continue;
         }
+        // Half-open: a change exactly at `at_before` belongs to the next
+        // window, so adjacent periods tile without double-counting.
+        if before_instant.is_some_and(|end| f.at >= end) {
+            continue;
+        }
         if let Some(family) = &concept_family {
-            let matches = record_concept
+            let matches = record_concepts
                 .get(&f.record_uid)
-                .and_then(|c| c.as_ref())
+                .is_some_and(|concepts| concepts.iter().any(|c| family.contains(c)));
+            if !matches {
+                continue;
+            }
+        }
+        if let Some(family) = &classification_family {
+            // An unclassified change never matches a classification filter:
+            // "what did I spend on food" must not silently include the ones
+            // nobody said were food.
+            let matches = fact_classification
+                .get(&f.uid)
                 .is_some_and(|c| family.contains(c));
             if !matches {
                 continue;
@@ -1455,26 +2306,42 @@ async fn execute_facts(
     }
 
     if let Some(agg) = &protein.aggregate {
-        let mut buckets: std::collections::BTreeMap<String, f64> = Default::default();
+        // Buckets are keyed by (group, unit) rather than group alone. Two
+        // Records measured in different units share a concept all the time —
+        // flour in kilograms and milk in litres are both `@stock` — and adding
+        // them produces a number that means nothing. Separating is the true
+        // answer; refusing would make the query useless, and summing would make
+        // it wrong.
+        let mut buckets: std::collections::BTreeMap<(String, String), DeltaBucket> =
+            Default::default();
         for f in &facts {
             let key = match agg.by {
-                GroupBy::CauseKind => f.cause.kind.as_str().to_string(),
+                GroupBy::Total => TOTAL.to_string(),
+                GroupBy::CauseKind | GroupBy::Kind => f.cause.kind.as_str().to_string(),
                 GroupBy::Day => f.at.format("%Y-%m-%d").to_string(),
-                GroupBy::Concept => record_concept
+                GroupBy::Month => f.at.format("%Y-%m").to_string(),
+                // What the Record IS.
+                GroupBy::Concept => record_concepts
                     .get(&f.record_uid)
-                    .and_then(|c| c.clone())
-                    .unwrap_or_else(|| "(none)".into()),
-                GroupBy::Kind => f.cause.kind.as_str().to_string(),
+                    .and_then(|concepts| concepts.first().cloned())
+                    .unwrap_or_else(|| UNCLASSIFIED.into()),
+                // What the CHANGE was — a different question, and the one an
+                // expense breakdown or a usage report actually asks.
+                GroupBy::Classification => fact_classification
+                    .get(&f.uid)
+                    .cloned()
+                    .unwrap_or_else(|| UNCLASSIFIED.into()),
             };
-            let entry = buckets.entry(key).or_insert(0.0);
-            match agg.op {
-                AggregateOp::Sum => *entry += f.delta,
-                AggregateOp::Count => *entry += 1.0,
-            }
+            let unit = record_unit
+                .get(&f.record_uid)
+                .cloned()
+                .flatten()
+                .unwrap_or_default();
+            buckets.entry((key, unit)).or_default().add(f.delta)?;
         }
         return Ok(buckets
             .into_iter()
-            .map(|(group, value)| json!({ "group": group, "value": value }))
+            .map(|((group, unit), bucket)| bucket.row(&group, &unit, agg.op))
             .collect());
     }
 
@@ -1490,7 +2357,7 @@ async fn execute_facts(
             json!({
                 "uid": f.uid,
                 "record": f.record_uid,
-                "delta": f.delta,
+                "delta": f.delta.to_f64(),
                 "at": f.at.to_rfc3339(),
                 "cause_kind": f.cause.kind.as_str(),
                 "cause": f.cause.uid,
@@ -1499,6 +2366,564 @@ async fn execute_facts(
             })
         })
         .collect())
+}
+
+// ------------------------------------------------------- entries & recurrence
+
+/// Authored changes, with the classification each was given and the revision a
+/// correction has to quote.
+async fn execute_entries(
+    store: &Store,
+    protein: &Protein,
+    visible: Option<&HashSet<String>>,
+) -> Result<Vec<Value>, ProteinError> {
+    let mut record: Option<String> = None;
+    let mut classification_family: Option<HashSet<String>> = None;
+    for p in &protein.filter {
+        match p {
+            Predicate::RecordEq(token) => {
+                record = store::records::resolve(&store.pool, token)
+                    .await?
+                    .map(|r| r.uid);
+                if record.is_none() {
+                    return Ok(vec![]);
+                }
+            }
+            Predicate::ClassifiedIn(name) => {
+                classification_family = Some(concept_descendants(store, name).await?);
+            }
+            _ => {}
+        }
+    }
+
+    let fact_classification = store::ledger::all_fact_concepts(&store.pool).await?;
+    // Scan wide, then cut. Applying the caller's limit in SQL would take the
+    // newest N rows and filter *those*, so a rare category would look almost
+    // empty while plenty of matching changes existed just past the cut.
+    const ENTRY_SCAN_CAP: i64 = 100_000;
+    let limit = protein.limit.unwrap_or(500);
+    let mut out = Vec::new();
+    for entry in store::entries::list_all(&store.pool, ENTRY_SCAN_CAP).await? {
+        if out.len() >= limit {
+            break;
+        }
+        if visible.is_some_and(|v| !v.contains(&entry.record_uid)) {
+            continue;
+        }
+        if record.as_ref().is_some_and(|r| &entry.record_uid != r) {
+            continue;
+        }
+        let concept = entry
+            .fact_uid
+            .as_deref()
+            .and_then(|uid| fact_classification.get(uid))
+            .cloned();
+        if let Some(family) = &classification_family
+            && !concept.as_deref().is_some_and(|c| family.contains(c))
+        {
+            continue;
+        }
+        out.push(json!({
+            "kind": "entry",
+            "uid": entry.uid,
+            "record": entry.record_uid,
+            // Exact text, never a float: this is the number a person typed.
+            "amount": entry.amount.to_string(),
+            "note": entry.note,
+            "occurred_at": entry.occurred_at,
+            "state": entry.state,
+            // Both are required to revise or void; a stale one is refused.
+            "revision": entry.revision,
+            "fact": entry.fact_uid,
+            "concept": concept,
+            "void": entry.is_void(),
+        }));
+    }
+    Ok(out)
+}
+
+/// Standing rules and the dates they imply.
+async fn execute_recurrence(
+    store: &Store,
+    protein: &Protein,
+    visible: Option<&HashSet<String>>,
+) -> Result<Vec<Value>, ProteinError> {
+    use chrono::{DateTime, Duration, Utc};
+
+    let now = Utc::now();
+    let mut since: Option<String> = None;
+    let mut before: Option<String> = None;
+    let mut record: Option<String> = None;
+    for p in &protein.filter {
+        match p {
+            Predicate::AtSince(v) => since = resolve_since(v),
+            Predicate::AtBefore(v) => before = resolve_since(v),
+            Predicate::RecordEq(token) => {
+                record = store::records::resolve(&store.pool, token)
+                    .await?
+                    .map(|r| r.uid);
+                if record.is_none() {
+                    return Ok(vec![]);
+                }
+            }
+            _ => {}
+        }
+    }
+    let parse = |value: &str, fallback: DateTime<Utc>| {
+        DateTime::parse_from_rfc3339(value)
+            .map(|v| v.with_timezone(&Utc))
+            .unwrap_or(fallback)
+    };
+    // A default window that shows what was recently missed and what is coming.
+    let from = since
+        .as_deref()
+        .map(|v| parse(v, now - Duration::days(60)))
+        .unwrap_or(now - Duration::days(60));
+    let to = before
+        .as_deref()
+        .map(|v| parse(v, now + Duration::days(90)))
+        .unwrap_or(now + Duration::days(90));
+
+    let mut out = Vec::new();
+    for rule in store::recurrence::all(&store.pool).await? {
+        if visible.is_some_and(|v| !v.contains(&rule.record_uid)) {
+            continue;
+        }
+        if record.as_ref().is_some_and(|r| &rule.record_uid != r) {
+            continue;
+        }
+        let derived = store::recurrence::occurrences(&store.pool, &rule, from, to, now).await?;
+        out.push(json!({
+            "kind": "recurrence",
+            "uid": rule.uid,
+            "record": rule.record_uid,
+            "amount": rule.amount.to_string(),
+            // A rule stepping in milliseconds produces more dates than any
+            // window can hold. Saying so is the difference between a list a
+            // person can trust and a page that merely looks complete.
+            "truncated": derived.truncated,
+            "concept": rule.concept_uid,
+            "note": rule.note,
+            "cadence": rule.cadence,
+            "anchor_at": rule.anchor_at,
+            "state": rule.state,
+            "paused": rule.is_paused(),
+            // Quoted back on every edit, so a stale surface loses rather than
+            // silently overwriting someone else's change.
+            "revision": rule.revision,
+        }));
+        for occurrence in derived {
+            out.push(json!({
+                "kind": "occurrence",
+                "recurrence": rule.uid,
+                "record": rule.record_uid,
+                "due_at": occurrence.due_at.to_rfc3339(),
+                "state": occurrence.state.as_str(),
+                "amount": occurrence.amount.to_string(),
+                "entry": occurrence.entry_uid,
+                "concept": rule.concept_uid,
+                "note": rule.note,
+            }));
+        }
+    }
+    Ok(out)
+}
+
+// ------------------------------------------------------------------ timeline
+
+/// The bucket granularity a timeline reports in.
+fn timeline_bucket(at: chrono::DateTime<chrono::Utc>, by: GroupBy) -> String {
+    match by {
+        GroupBy::Day => at.format("%Y-%m-%d").to_string(),
+        _ => at.format("%Y-%m").to_string(),
+    }
+}
+
+/// One classified axis through time: settled past, position now, declared future.
+///
+/// Requires a `classified_in` predicate — a timeline is *of* something, and a
+/// timeline of everything is just the Ledger. `at_since`/`at_before` bound it;
+/// both default to a year around now.
+///
+/// Every number leaves here as exact decimal text, including the running
+/// cumulative, because the whole point of the source is that the client never
+/// does the arithmetic.
+///
+/// **On the future's exactness:** recurring amounts are exact, since a rule
+/// stores the same mantissa/scale pair the Ledger does. Promise deltas are
+/// `REAL` in schema 0001 and are converted on the way out; a promise-derived
+/// point is therefore only as exact as that column ever was. Points say which
+/// they came from so a reader is never guessing.
+async fn execute_timeline(
+    store: &Store,
+    protein: &Protein,
+    visible: Option<&HashSet<String>>,
+) -> Result<Vec<Value>, ProteinError> {
+    use chrono::{DateTime, Duration, Utc};
+
+    let now = Utc::now();
+    let mut concept_token: Option<&str> = None;
+    let mut since: Option<String> = None;
+    let mut before: Option<String> = None;
+    for p in &protein.filter {
+        match p {
+            Predicate::ClassifiedIn(name) => concept_token = Some(name),
+            Predicate::AtSince(v) => since = resolve_since(v),
+            Predicate::AtBefore(v) => before = resolve_since(v),
+            _ => {}
+        }
+    }
+    let Some(concept_token) = concept_token else {
+        return Err(store::sqlx::Error::Protocol(
+            "protein_timeline_concept_required:a timeline needs `classified_in`".to_string(),
+        )
+        .into());
+    };
+    let family = concept_descendants(store, concept_token).await?;
+    if family.is_empty() {
+        return Ok(vec![]); // unknown concept: nothing can match
+    }
+
+    let parse = |value: &str| -> Result<DateTime<Utc>, ProteinError> {
+        DateTime::parse_from_rfc3339(value)
+            .map(|v| v.with_timezone(&Utc))
+            .map_err(|_| {
+                store::sqlx::Error::Protocol(format!(
+                    "protein_timeline_instant_invalid:`{value}` is not an instant"
+                ))
+                .into()
+            })
+    };
+    let from = match since.as_deref() {
+        Some(value) => parse(value)?,
+        None => now - Duration::days(180),
+    };
+    let to = match before.as_deref() {
+        Some(value) => parse(value)?,
+        None => now + Duration::days(180),
+    };
+    let by = protein
+        .aggregate
+        .as_ref()
+        .map(|a| a.by)
+        .unwrap_or(GroupBy::Month);
+
+    // ---------------------------------------------------------------- actuals
+    let fact_classification = store::ledger::all_fact_concepts(&store.pool).await?;
+    let mut record_unit: HashMap<String, Option<String>> = HashMap::new();
+    for r in store::records::list_all(&store.pool).await? {
+        record_unit.insert(r.uid.clone(), r.unit_uid.clone());
+    }
+
+    const TIMELINE_SCAN_CAP: i64 = 100_000;
+    // `opening` is everything this concept did before the window. Without it a
+    // cumulative line would restart at zero at the window's edge and show a
+    // position the person has never been in.
+    // Both are per unit, for the same reason the buckets are: a concept can
+    // span kilograms and hours at once, and one scalar running total
+    // across both would add them. That is the number this whole module refuses
+    // to produce, and it would be the most prominent one on the screen.
+    let mut opening: std::collections::BTreeMap<String, nucleus::DecimalValue> = Default::default();
+    let mut settled_through: std::collections::BTreeMap<String, nucleus::DecimalValue> =
+        Default::default();
+    let mut actual: std::collections::BTreeMap<(String, String), DeltaBucket> = Default::default();
+    for f in store::facts::list_since(&store.pool, None, TIMELINE_SCAN_CAP).await? {
+        if visible.is_some_and(|v| !v.contains(&f.record_uid)) {
+            continue;
+        }
+        // An unclassified change is not this concept's business.
+        if !fact_classification
+            .get(&f.uid)
+            .is_some_and(|c| family.contains(c))
+        {
+            continue;
+        }
+        let unit = record_unit
+            .get(&f.record_uid)
+            .cloned()
+            .flatten()
+            .unwrap_or_default();
+        let accumulate = |totals: &mut std::collections::BTreeMap<
+            String,
+            nucleus::DecimalValue,
+        >|
+         -> Result<(), ProteinError> {
+            let slot = totals.entry(unit.clone()).or_insert_with(store::exact::zero);
+            *slot = slot.aligned_add(f.delta).ok_or_else(timeline_overflow)?;
+            Ok(())
+        };
+        if f.at < from {
+            accumulate(&mut opening)?;
+            accumulate(&mut settled_through)?;
+            continue;
+        }
+        if f.at >= to {
+            continue;
+        }
+        if f.at <= now {
+            accumulate(&mut settled_through)?;
+        }
+        actual
+            .entry((timeline_bucket(f.at, by), unit))
+            .or_default()
+            .add(f.delta)?;
+    }
+
+    // ---------------------------------------------------------------- declared
+    // Everything ahead is something somebody already stated: a rule's date or a
+    // promise. Nothing is extrapolated from the past.
+    let mut expected: std::collections::BTreeMap<(String, String), DeltaBucket> = Default::default();
+    let mut contributors: Vec<Value> = Vec::new();
+    let forward_from = if now > from { now } else { from };
+    let mut projection_truncated = false;
+
+    for rule in store::recurrence::all(&store.pool).await? {
+        if !rule
+            .concept_uid
+            .as_deref()
+            .is_some_and(|c| family.contains(c))
+        {
+            continue;
+        }
+        if visible.is_some_and(|v| !v.contains(&rule.record_uid)) {
+            continue;
+        }
+        let unit = record_unit
+            .get(&rule.record_uid)
+            .cloned()
+            .flatten()
+            .unwrap_or_default();
+        let derived =
+            store::recurrence::occurrences(&store.pool, &rule, forward_from, to, now).await?;
+        // A rule too fast to enumerate makes the declared half of the line a
+        // lower bound rather than the whole of what is coming.
+        projection_truncated |= derived.truncated;
+        for occurrence in derived {
+            // An applied date is already a Fact and was counted above; counting
+            // it here too would double every rule-driven month. A skipped date
+            // was declined and is not expected.
+            if !matches!(
+                occurrence.state,
+                store::recurrence::OccurrenceState::Planned
+                    | store::recurrence::OccurrenceState::Due
+            ) {
+                continue;
+            }
+            let bucket = timeline_bucket(occurrence.due_at, by);
+            expected
+                .entry((bucket.clone(), unit.clone()))
+                .or_default()
+                .add(occurrence.amount)?;
+            contributors.push(json!({
+                "kind": "timeline_source",
+                "bucket": bucket,
+                "origin": "recurrence",
+                "uid": rule.uid,
+                "record": rule.record_uid,
+                "amount": occurrence.amount.to_string(),
+                "at": occurrence.due_at.to_rfc3339(),
+                "state": occurrence.state.as_str(),
+                "note": rule.note,
+                "unit": unit,
+            }));
+        }
+    }
+
+    for promise in store::misc::list_promises(&store.pool).await? {
+        if !promise
+            .concept_uid
+            .as_deref()
+            .is_some_and(|c| family.contains(c))
+        {
+            continue;
+        }
+        if let Some(visible) = visible
+            && !promise
+                .record_uid
+                .as_deref()
+                .is_some_and(|uid| visible.contains(uid))
+        {
+            continue;
+        }
+        // Only what is still outstanding is ahead of you. A settled promise
+        // already produced its Fact and is in the actuals.
+        if !matches!(
+            promise.state,
+            nucleus::PromiseState::Open | nucleus::PromiseState::Proposed
+        ) {
+            continue;
+        }
+        let Some(window_end) = promise.window_end.as_deref() else {
+            continue; // a promise with no date cannot be placed on a timeline
+        };
+        let Ok(due) = DateTime::parse_from_rfc3339(window_end).map(|v| v.with_timezone(&Utc))
+        else {
+            continue;
+        };
+        if due < forward_from || due >= to {
+            continue;
+        }
+        let unit = promise
+            .record_uid
+            .as_deref()
+            .and_then(|uid| record_unit.get(uid).cloned().flatten())
+            .unwrap_or_default();
+        let amount = store::exact::from_f64(promise.delta);
+        let bucket = timeline_bucket(due, by);
+        expected
+            .entry((bucket.clone(), unit.clone()))
+            .or_default()
+            .add(amount)?;
+        contributors.push(json!({
+            "kind": "timeline_source",
+            "bucket": bucket,
+            "origin": "promise",
+            "uid": promise.uid,
+            "record": promise.record_uid,
+            "amount": amount.to_string(),
+            "at": due.to_rfc3339(),
+            "state": promise.state.as_str(),
+            "note": promise.condition,
+            "unit": unit,
+        }));
+    }
+
+    // ------------------------------------------------------------- assemble
+    // One ordered line per unit. Two units under one concept — flour in
+    // kilograms and milk in litres are both `@stock` — are two lines, never one
+    // sum, because adding them produces a number that means nothing.
+    let mut units: Vec<String> = actual
+        .keys()
+        .map(|(_, unit)| unit.clone())
+        .chain(expected.keys().map(|(_, unit)| unit.clone()))
+        .collect();
+    units.sort();
+    units.dedup();
+
+    let per_unit = |totals: &std::collections::BTreeMap<String, nucleus::DecimalValue>| {
+        let mut map = serde_json::Map::new();
+        for unit in &units {
+            let value = totals.get(unit).copied().unwrap_or_else(store::exact::zero);
+            map.insert(unit.clone(), Value::String(value.to_string()));
+        }
+        Value::Object(map)
+    };
+    // A single scalar is offered ONLY when there is one unit to be scalar about.
+    // With two, `current` is null and a reader must use `current_by_unit` — the
+    // alternative is a headline number that added kilograms to hours.
+    let single_unit = if units.len() <= 1 {
+        units.first().cloned().or_else(|| Some(String::new()))
+    } else {
+        None
+    };
+    let scalar = |totals: &std::collections::BTreeMap<String, nucleus::DecimalValue>| match &single_unit
+    {
+        Some(unit) => Value::String(
+            totals
+                .get(unit)
+                .copied()
+                .unwrap_or_else(store::exact::zero)
+                .to_string(),
+        ),
+        None => Value::Null,
+    };
+
+    let mut rows = vec![json!({
+        "kind": "timeline_context",
+        "concept": concept_token,
+        "from": from.to_rfc3339(),
+        "to": to.to_rfc3339(),
+        "now": now.to_rfc3339(),
+        "bucket": match by { GroupBy::Day => "day", _ => "month" },
+        // Where this concept stands right now, counting everything settled:
+        // the "current state" a timeline is read to find.
+        "current": scalar(&settled_through),
+        "opening": scalar(&opening),
+        "current_by_unit": per_unit(&settled_through),
+        "opening_by_unit": per_unit(&opening),
+        "units": units.clone(),
+        // The settled half is always complete — it is read from Facts. Only the
+        // declared half can run out of room, so this qualifies the future of
+        // the line and never its past.
+        "projection_truncated": projection_truncated,
+    })];
+
+    for unit in &units {
+        let mut buckets: Vec<String> = actual
+            .keys()
+            .filter(|(_, u)| u == unit)
+            .map(|(b, _)| b.clone())
+            .chain(
+                expected
+                    .keys()
+                    .filter(|(_, u)| u == unit)
+                    .map(|(b, _)| b.clone()),
+            )
+            .collect();
+        buckets.sort();
+        buckets.dedup();
+
+        // The line starts where the concept already stood *in this unit*, so
+        // the first point is a position rather than a fresh zero, and a second
+        // unit's history never seeds it.
+        let mut running = opening
+            .get(unit)
+            .copied()
+            .unwrap_or_else(store::exact::zero);
+        let present = timeline_bucket(now, by);
+        for bucket in buckets {
+            let settled = actual.get(&(bucket.clone(), unit.clone()));
+            let declared = expected.get(&(bucket.clone(), unit.clone()));
+            // A bucket can hold both: the month you are standing in has days
+            // that already happened and dates still to come.
+            if let Some(settled) = settled {
+                running = running
+                    .aligned_add(settled.net)
+                    .ok_or_else(timeline_overflow)?;
+            }
+            if let Some(declared) = declared {
+                running = running
+                    .aligned_add(declared.net)
+                    .ok_or_else(timeline_overflow)?;
+            }
+            let phase = if bucket.as_str() < present.as_str() {
+                "actual"
+            } else if bucket == present {
+                "present"
+            } else {
+                "expected"
+            };
+            rows.push(json!({
+                "kind": "timeline_point",
+                "bucket": bucket,
+                "unit": unit,
+                "phase": phase,
+                "actual_net": settled.map(|b| b.net.to_string()),
+                "actual_gains": settled.map(|b| b.gains.to_string()),
+                "actual_losses": settled.map(|b| b.losses.to_string()),
+                "actual_count": settled.map(|b| b.count).unwrap_or(0),
+                "expected_net": declared.map(|b| b.net.to_string()),
+                "expected_gains": declared.map(|b| b.gains.to_string()),
+                "expected_losses": declared.map(|b| b.losses.to_string()),
+                "expected_count": declared.map(|b| b.count).unwrap_or(0),
+                "cumulative": running.to_string(),
+            }));
+        }
+    }
+
+    contributors.sort_by(|a, b| {
+        a["at"]
+            .as_str()
+            .unwrap_or_default()
+            .cmp(b["at"].as_str().unwrap_or_default())
+    });
+    rows.extend(contributors);
+    Ok(rows)
+}
+
+fn timeline_overflow() -> ProteinError {
+    store::sqlx::Error::Protocol("protein_timeline_overflow:a total grew past its bounds".into())
+        .into()
 }
 
 // ------------------------------------------------------------------ concepts
@@ -2337,6 +3762,8 @@ fn transfer_predicate_name(predicate: &Predicate) -> &'static str {
         Predicate::LinkedTo { .. } => "linked_to",
         Predicate::StateIn(_) => "state_in",
         Predicate::AtSince(_) => "at_since",
+        Predicate::AtBefore(_) => "at_before",
+        Predicate::ClassifiedIn(_) => "classified_in",
         Predicate::CauseKindEq(_) => "cause_kind_eq",
         Predicate::Near { .. } => "near",
         Predicate::OrganEq(_) => "organ_eq",
@@ -4548,7 +5975,7 @@ async fn execute_transfers(
                 derive_record_availability(
                     store,
                     record_uid,
-                    record.quantity,
+                    record.quantity_f64(),
                     record.unit_uid.as_deref(),
                 )
                 .await?,
@@ -6775,8 +8202,8 @@ async fn append_remote_transfer_delivery_rows(
         })
         .collect::<Vec<_>>();
         let configured_formula = store::config::transfer_application_formula(&store.pool).await?;
-        let local_records = store::sqlx::query_as::<_, (String, String, f64)>(
-            "SELECT uid, head, quantity FROM record
+        let local_records = store::sqlx::query_as::<_, (String, String, String, i64)>(
+            "SELECT uid, head, quantity_mantissa, quantity_scale FROM record
              WHERE organ_uid = ? AND deleted_at IS NULL
                AND kind NOT IN ('transfer', 'person', 'organ', 'thread', 'message')
              ORDER BY head, uid",
@@ -6785,8 +8212,15 @@ async fn append_remote_transfer_delivery_rows(
         .fetch_all(&store.pool)
         .await?
         .into_iter()
-        .map(|record| json!({ "uid": record.0, "head": record.1, "quantity": record.2 }))
-        .collect::<Vec<_>>();
+        .map(|record| {
+            let quantity = store::exact::parse_decimal(&record.2, record.3)?;
+            Ok(json!({
+                "uid": record.0,
+                "head": record.1,
+                "quantity": quantity.to_f64(),
+            }))
+        })
+        .collect::<Result<Vec<_>, store::StoreError>>()?;
         let application_handoffs = store::sqlx::query_as::<_, (
             String, String, f64, Option<String>, f64, f64, f64, i64, String, String, Option<String>,
             String,

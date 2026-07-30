@@ -28,7 +28,7 @@ async fn plain(e: &Engine, slug: &str) -> String {
             kind: RecordKind::Plain,
             head: slug,
             body: "",
-            quantity: 0.0,
+            quantity: store::exact::zero(),
         },
     )
     .await
@@ -44,7 +44,7 @@ async fn person(e: &Engine, slug: &str) -> String {
             kind: RecordKind::Person,
             head: slug,
             body: "",
-            quantity: 1.0,
+            quantity: store::exact::one(),
         },
     )
     .await
@@ -146,11 +146,11 @@ async fn expiry_breaks_commitments_and_withdraws_lapsed_offers() {
     );
 
     // One zero-delta annotation fact per transition, quantity cache untouched.
-    assert_eq!(facts.iter().filter(|f| f.delta == 0.0).count(), 3);
+    assert_eq!(facts.iter().filter(|f| f.delta == store::exact::from_f64(0.0)).count(), 3);
     assert_eq!(
         store::records::quantity(&e.store.pool, &apples)
             .await
-            .unwrap(),
+            .unwrap().map(|q| q.to_f64()),
         Some(0.0)
     );
 

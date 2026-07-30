@@ -20,7 +20,7 @@ async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
             kind: RecordKind::Plain,
             head: slug,
             body: "",
-            quantity,
+            quantity: store::exact::from_f64(quantity),
         },
     )
     .await
@@ -61,7 +61,7 @@ async fn demand_token_samples_the_hourly_histogram() {
     // three facts at 08:xx, one at 20:xx -> demand at an 08:xx now is 0.75
     for (i, hour) in [(1, 8), (2, 8), (3, 8), (4, 20)] {
         e.append(
-            NewFact::quantity(apples.clone(), 1.0, Cause::user_edit()),
+            NewFact::quantity_f64(apples.clone(), 1.0, Cause::user_edit()),
             at(&format!("2026-07-0{i}T{hour:02}:15:00Z")),
         )
         .await
@@ -86,7 +86,7 @@ async fn demand_token_samples_the_hourly_histogram() {
     // trigger an evaluation at 08:30 — demand(@food) = 3/5 of facts so far...
     // careful: this append itself lands at 08:30 and counts (4 of 6 at 08).
     e.append(
-        NewFact::quantity(apples.clone(), 1.0, Cause::user_edit()),
+        NewFact::quantity_f64(apples.clone(), 1.0, Cause::user_edit()),
         at("2026-07-05T08:30:00Z"),
     )
     .await
@@ -99,7 +99,8 @@ async fn demand_token_samples_the_hourly_histogram() {
     let value = store::records::quantity(&e.store.pool, &mirror)
         .await
         .unwrap()
-        .unwrap();
+        .unwrap()
+        .to_f64();
     assert!(
         (value - 4.0 / 5.0).abs() < 1e-9,
         "4 of 5 facts in the 08 hour, got {value}"

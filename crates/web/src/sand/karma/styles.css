@@ -1,0 +1,634 @@
+:root {
+  color-scheme: dark;
+  --bg: #10151c;
+  --panel: #182029;
+  --panel-2: #1e2833;
+  --line: #2b3846;
+  --text: #eef3f8;
+  --muted: #93a2b2;
+  --accent: #8fe3aa;
+  --accent-dim: rgba(143, 227, 170, 0.16);
+  --loss: #f2857f;
+  --gain: #8fe3aa;
+  --expected: #7fb2e5;
+  --radius: 10px;
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.karmaApp {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ------------------------------------------------------------------ toolbar */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.eyebrow {
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.toolbar h1 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.liveDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #6b7c8c;
+  display: inline-block;
+}
+
+.liveDot[data-live="true"] {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+/* ------------------------------------------------------------------- panels */
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.panel h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.subHeading {
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.columns {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.notice {
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(242, 133, 127, 0.4);
+  background: rgba(242, 133, 127, 0.1);
+  color: #ffd9d6;
+  font-size: 0.85rem;
+}
+
+.notice[data-tone="ok"] {
+  border-color: rgba(143, 227, 170, 0.4);
+  background: var(--accent-dim);
+  color: #d8ffe6;
+}
+
+/* -------------------------------------------------------------------- forms */
+
+.lineForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: end;
+}
+
+.stackForm {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+}
+
+.fieldRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.fieldRow .field {
+  flex: 1 1 90px;
+}
+
+.field {
+  display: grid;
+  gap: 3px;
+  font-size: 0.74rem;
+  color: var(--muted);
+  min-width: 0;
+}
+
+.field > span {
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.inlineField {
+  min-width: 150px;
+}
+
+/* The eight step components. A grid rather than a row so the ladder from years
+   to milliseconds stays readable at any width instead of wrapping into an
+   order nobody can follow. */
+.stepGrid,
+.weekdayGrid {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px 10px;
+  margin: 0;
+  min-width: 0;
+}
+
+.stepGrid legend,
+.weekdayGrid legend {
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0 4px;
+}
+
+.stepGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.stepGrid legend {
+  grid-column: 1 / -1;
+}
+
+.stepUnit {
+  display: grid;
+  gap: 2px;
+  font-size: 0.68rem;
+  color: var(--muted);
+  min-width: 0;
+}
+
+.stepUnit > span {
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.stepUnit input {
+  width: 100%;
+  min-width: 0;
+}
+
+.weekdayGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.weekdayGrid legend {
+  width: 100%;
+}
+
+.weekdayChoice {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  padding: 3px 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.weekdayChoice:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.weekdayGrid .hint {
+  width: 100%;
+  margin: 2px 0 0;
+}
+
+@media (max-width: 520px) {
+  .stepGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.amountField {
+  flex: 0 0 120px;
+}
+
+.noteField {
+  flex: 1 1 160px;
+}
+
+.lineForm .field {
+  flex: 1 1 140px;
+}
+
+input,
+select {
+  font: inherit;
+  color: var(--text);
+  background: #121922;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 7px 9px;
+  min-width: 0;
+  width: 100%;
+}
+
+input:focus-visible,
+select:focus-visible,
+button:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 7px;
+  padding: 8px 13px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+.primaryButton {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #08150d;
+  font-weight: 600;
+}
+
+.ghostButton {
+  background: transparent;
+}
+
+.tinyButton {
+  padding: 4px 9px;
+  font-size: 0.76rem;
+}
+
+.formActions {
+  display: flex;
+  gap: 8px;
+}
+
+.hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-style: italic;
+}
+
+/* -------------------------------------------------------------------- lists */
+
+.entryList,
+.ruleList,
+.occurrenceList,
+.contributorList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 7px;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.entryList li,
+.ruleList li,
+.occurrenceList li,
+.contributorList li {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--panel-2);
+  display: grid;
+  gap: 5px;
+}
+
+.rowTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.amount[data-sign="negative"] {
+  color: var(--loss);
+}
+
+.amount[data-sign="positive"] {
+  color: var(--gain);
+}
+
+.rowMeta {
+  color: var(--muted);
+  font-size: 0.76rem;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tag {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 0.72rem;
+  color: var(--accent);
+}
+
+.tag[data-unclassified="true"] {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.rowActions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.voided {
+  opacity: 0.55;
+}
+
+.voided .amount {
+  text-decoration: line-through;
+}
+
+.state {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-radius: 999px;
+  padding: 1px 8px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.state[data-state="due"] {
+  color: #ffd08a;
+  border-color: rgba(255, 208, 138, 0.45);
+}
+
+.state[data-state="applied"] {
+  color: var(--gain);
+  border-color: rgba(143, 227, 170, 0.45);
+}
+
+.state[data-state="skipped"] {
+  text-decoration: line-through;
+}
+
+.editRow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: end;
+}
+
+.editRow .field {
+  flex: 1 1 100px;
+}
+
+/* -------------------------------------------------------------------- graph */
+
+.graphControls {
+  display: flex;
+  gap: 8px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.currentState {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+}
+
+.stateBlock {
+  display: grid;
+  gap: 2px;
+}
+
+.stateLabel {
+  color: var(--muted);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.stateValue {
+  font-size: 1.4rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.stateValueSmall {
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.graph {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.graph svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-width: 320px;
+}
+
+.gridLine {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.zeroLine {
+  stroke: #46586a;
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.nowLine {
+  stroke: var(--muted);
+  stroke-width: 1;
+  stroke-dasharray: 2 4;
+}
+
+.linePast {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.lineFuture {
+  fill: none;
+  stroke: var(--expected);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+}
+
+.point {
+  fill: var(--accent);
+}
+
+.point[data-phase="expected"] {
+  fill: var(--expected);
+}
+
+.axisText {
+  fill: var(--muted);
+  font-size: 10px;
+}
+
+.legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.legendKey {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legendSwatch {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.legendSwatch[data-kind="expected"] {
+  background: var(--expected);
+}
+
+/* -------------------------------------------------------------------- table */
+
+.tableDetails summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.tableScroll {
+  overflow-x: auto;
+  margin-top: 8px;
+}
+
+.dataTable {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.8rem;
+}
+
+.dataTable th,
+.dataTable td {
+  border-bottom: 1px solid var(--line);
+  padding: 5px 9px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.dataTable th:first-child,
+.dataTable td:first-child {
+  text-align: left;
+}
+
+.dataTable td {
+  font-variant-numeric: tabular-nums;
+}
+
+.dataTable tr[data-phase="expected"] td {
+  color: var(--expected);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 640px) {
+  .lineForm .field,
+  .amountField,
+  .noteField {
+    flex: 1 1 100%;
+  }
+}

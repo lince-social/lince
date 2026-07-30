@@ -126,7 +126,11 @@ WHEN NOT EXISTS (
       AND slice.local_record_uid = NEW.local_record_uid
       AND NEW.inverse_delta = -slice.local_delta
       AND correction.record_uid = NEW.local_record_uid
-      AND correction.delta = NEW.inverse_delta
+      -- Exact pair vs the transfer side's REAL: 10^scale is built as text so
+      -- this needs no math extension, and scale is capped at 18 by the kernel.
+      AND CAST(correction.delta_mantissa AS REAL)
+          / CAST(SUBSTR('1000000000000000000', 1, correction.delta_scale + 1) AS REAL)
+          = NEW.inverse_delta
       AND correction.actor_uid = NEW.owner_person_uid
       AND correction.cause_kind = 'compensation'
       AND correction.cause_uid = NEW.original_application_fact_uid
@@ -171,7 +175,7 @@ WHEN NOT EXISTS (
           occurrence.giver_person_uid, occurrence.receiver_person_uid
       )
       AND evidence.record_uid = NEW.transfer_uid
-      AND evidence.delta = 0.0
+      AND evidence.delta_mantissa = '0'
       AND evidence.actor_uid = NEW.actor_person_uid
 )
 BEGIN

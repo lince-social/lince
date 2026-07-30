@@ -1,0 +1,297 @@
+use maud::{Markup, html};
+
+pub(super) fn body() -> Markup {
+    html! {
+        main class="karmaApp" {
+            header class="toolbar" {
+                div class="titleBlock" {
+                    div class="eyebrow" { "Rules" }
+                    h1 { "Karma" }
+                }
+                div class="toolbarTools" {
+                    span id="live-dot" class="liveDot" data-live="false" role="status"
+                        aria-label="Connection status" title="Connection status" {}
+                }
+            }
+
+            p id="notice" class="notice" role="status" hidden {}
+
+            // ---------------------------------------------------------- capture
+            //
+            // One line. Pick what moved, by how much, and what it was for.
+            // There is deliberately no direction control — the sign of the
+            // amount carries it — and nothing asks which total to affect.
+            section class="panel capturePanel" aria-labelledby="capture-heading" {
+                h2 id="capture-heading" { "Capture" }
+                form id="capture-form" class="lineForm" {
+                    label class="field" {
+                        span { "Resource" }
+                        select id="capture-record" required {}
+                    }
+                    label class="field amountField" {
+                        span { "Amount" }
+                        input id="capture-amount" type="text" inputmode="decimal"
+                            placeholder="-10.50" autocomplete="off" required;
+                    }
+                    label class="field" {
+                        span { "For" }
+                        input id="capture-concept" type="text" list="concept-options"
+                            placeholder="@food" autocomplete="off";
+                    }
+                    label class="field" {
+                        span { "When" }
+                        input id="capture-at" type="date";
+                    }
+                    label class="field noteField" {
+                        span { "Note" }
+                        input id="capture-note" type="text" placeholder="ice cream" autocomplete="off";
+                    }
+                    button type="submit" class="primaryButton" { "Capture" }
+                }
+                p class="hint" {
+                    "A negative amount is a cost, a positive one a gain. A refund is the same "
+                    "category with a positive amount — there is no direction to choose."
+                }
+                datalist id="concept-options" {}
+            }
+
+            div class="columns" {
+                // ------------------------------------------------------ entries
+                section class="panel" aria-labelledby="entries-heading" {
+                    div class="panelHead" {
+                        h2 id="entries-heading" { "Changes" }
+                        label class="field inlineField" {
+                            span class="visuallyHidden" { "Filter changes by category" }
+                            input id="entries-filter" type="text" list="concept-options"
+                                placeholder="all categories" autocomplete="off";
+                        }
+                    }
+                    ul id="entry-list" class="entryList" {}
+                    p id="entries-empty" class="empty" hidden { "Nothing captured yet." }
+                }
+
+                // --------------------------------------------------- recurrence
+                section class="panel" aria-labelledby="recurrence-heading" {
+                    div class="panelHead" {
+                        h2 id="recurrence-heading" { "Recurring" }
+                        button id="toggle-recurrence-form" type="button" class="ghostButton" {
+                            "+ New rule"
+                        }
+                    }
+
+                    form id="recurrence-form" class="stackForm" hidden {
+                        label class="field" {
+                            span { "Resource" }
+                            select id="rule-record" required {}
+                        }
+                        label class="field" {
+                            span { "Amount" }
+                            input id="rule-amount" type="text" inputmode="decimal"
+                                placeholder="-1200" autocomplete="off" required;
+                        }
+                        label class="field" {
+                            span { "For" }
+                            input id="rule-concept" type="text" list="concept-options"
+                                placeholder="@rent" autocomplete="off";
+                        }
+                        label class="field" {
+                            span { "Preset" }
+                            select id="rule-preset" {
+                                option value="monthly" selected { "Monthly" }
+                                option value="weekly" { "Weekly" }
+                                option value="fortnightly" { "Fortnightly" }
+                                option value="daily" { "Daily" }
+                                option value="yearly" { "Yearly" }
+                                option value="custom" { "Custom…" }
+                            }
+                        }
+
+                        // The components are the rule. A preset only fills these
+                        // in, so there is exactly one description of a cadence
+                        // rather than a mode that disagrees with its fields.
+                        fieldset class="stepGrid" {
+                            legend { "Repeats every" }
+                            label class="stepUnit" {
+                                span { "Years" }
+                                input id="step-years" type="number" min="0" value="0"
+                                    aria-label="Years between occurrences";
+                            }
+                            label class="stepUnit" {
+                                span { "Months" }
+                                input id="step-months" type="number" min="0" value="1"
+                                    aria-label="Months between occurrences";
+                            }
+                            label class="stepUnit" {
+                                span { "Weeks" }
+                                input id="step-weeks" type="number" min="0" value="0"
+                                    aria-label="Weeks between occurrences";
+                            }
+                            label class="stepUnit" {
+                                span { "Days" }
+                                input id="step-days" type="number" min="0" value="0"
+                                    aria-label="Days between occurrences";
+                            }
+                            label class="stepUnit" {
+                                span { "Hours" }
+                                input id="step-hours" type="number" min="0" value="0"
+                                    aria-label="Hours between occurrences";
+                            }
+                            label class="stepUnit" {
+                                span { "Minutes" }
+                                input id="step-minutes" type="number" min="0" value="0"
+                                    aria-label="Minutes between occurrences";
+                            }
+                            label class="stepUnit" {
+                                span { "Seconds" }
+                                input id="step-seconds" type="number" min="0" value="0"
+                                    aria-label="Seconds between occurrences";
+                            }
+                            label class="stepUnit" {
+                                span { "Millis" }
+                                input id="step-milliseconds" type="number" min="0" value="0"
+                                    aria-label="Milliseconds between occurrences";
+                            }
+                        }
+
+                        // Applied after the step, never folded back into it, so
+                        // a monthly rule that lands on Friday is still monthly.
+                        fieldset class="weekdayGrid" {
+                            legend { "Then move forward to" }
+                            @for (value, label) in [
+                                ("monday", "Mon"), ("tuesday", "Tue"), ("wednesday", "Wed"),
+                                ("thursday", "Thu"), ("friday", "Fri"), ("saturday", "Sat"),
+                                ("sunday", "Sun"),
+                            ] {
+                                label class="weekdayChoice" {
+                                    input type="checkbox" name="land-on" value=(value);
+                                    span { (label) }
+                                }
+                            }
+                            p class="hint" {
+                                "Leave all clear to keep the date the step lands on."
+                            }
+                        }
+
+                        label class="field" id="rule-invalid-day-field" {
+                            span { "When a month is too short" }
+                            select id="rule-invalid-day" {
+                                option value="clamp" selected { "Use the last day of that month" }
+                                option value="skip" { "Skip that month" }
+                            }
+                        }
+
+                        label class="field" {
+                            span { "Starting" }
+                            input id="rule-anchor" type="datetime-local" step="0.001";
+                        }
+
+                        // Where the rule stops. "Once, on that day" is this
+                        // control set to one, not a different kind of rule —
+                        // which is why a promise and a standing order are the
+                        // same object all the way down.
+                        label class="field" id="rule-bound-field" {
+                            span { "Repeating" }
+                            select id="rule-bound" {
+                                option value="unbounded" selected { "Until I stop it" }
+                                option value="count" { "A set number of times" }
+                                option value="until" { "Until a date" }
+                            }
+                        }
+                        label class="field" id="rule-bound-count-field" hidden {
+                            span { "How many times" }
+                            input id="rule-bound-count" type="number" min="1" step="1" value="1";
+                        }
+                        label class="field" id="rule-bound-until-field" hidden {
+                            span { "Stopping before" }
+                            input id="rule-bound-until" type="datetime-local" step="0.001";
+                        }
+                        label class="field" {
+                            span { "Note" }
+                            input id="rule-note" type="text" placeholder="rent" autocomplete="off";
+                        }
+                        div class="formActions" {
+                            button type="submit" class="primaryButton" { "Declare rule" }
+                            button type="button" id="cancel-recurrence" class="ghostButton" { "Cancel" }
+                        }
+                        p class="hint" {
+                            "A rule declares what is expected. It writes nothing until a date is applied. "
+                            "The starting date sets the day of the month and the time of day every "
+                            "occurrence inherits."
+                        }
+                        p id="rule-preview" class="hint" aria-live="polite" {}
+                    }
+
+                    ul id="recurrence-list" class="ruleList" {}
+                    p id="recurrence-empty" class="empty" hidden { "No recurring rules yet." }
+
+                    h3 class="subHeading" { "Expected next" }
+                    ul id="occurrence-list" class="occurrenceList" {}
+                    p id="occurrence-empty" class="empty" hidden { "Nothing expected in this window." }
+                    p id="occurrence-more" class="hint" aria-live="polite" hidden {}
+                }
+            }
+
+            // --------------------------------------------------------- timeline
+            section class="panel graphPanel" aria-labelledby="graph-heading" {
+                div class="panelHead" {
+                    h2 id="graph-heading" { "Concept over time" }
+                    div class="graphControls" {
+                        label class="field inlineField" {
+                            span class="visuallyHidden" { "Concept to chart" }
+                            input id="graph-concept" type="text" list="concept-options"
+                                placeholder="@cost" autocomplete="off";
+                        }
+                        select id="graph-window" aria-label="Time window" {
+                            option value="6" selected { "±6 months" }
+                            option value="12" { "±12 months" }
+                            option value="24" { "±24 months" }
+                        }
+                    }
+                }
+
+                div class="currentState" {
+                    div class="stateBlock" {
+                        span class="stateLabel" { "Now" }
+                        strong id="state-current" class="stateValue" { "—" }
+                    }
+                    div class="stateBlock" {
+                        span class="stateLabel" { "Before window" }
+                        span id="state-opening" class="stateValueSmall" { "—" }
+                    }
+                    div class="stateBlock" {
+                        span class="stateLabel" { "Declared ahead" }
+                        span id="state-expected" class="stateValueSmall" { "—" }
+                    }
+                }
+
+                // The chart is decorative; the table beneath carries the same
+                // numbers and is what a screen reader and a keyboard use.
+                div id="timeline-graph" class="graph" role="img"
+                    aria-describedby="timeline-table-caption" {}
+
+                details class="tableDetails" open {
+                    summary id="timeline-table-caption" { "Points behind this chart" }
+                    div class="tableScroll" {
+                        table id="timeline-table" class="dataTable" {
+                            thead {
+                                tr {
+                                    th scope="col" { "Period" }
+                                    th scope="col" { "Settled" }
+                                    th scope="col" { "Declared" }
+                                    th scope="col" { "Running" }
+                                }
+                            }
+                            tbody {}
+                        }
+                    }
+                }
+
+                h3 class="subHeading" { "What the future is made of" }
+                ul id="contributor-list" class="contributorList" {}
+                p id="contributor-empty" class="empty" hidden {
+                    "Nothing is declared ahead for this concept."
+                }
+            }
+        }
+    }
+}

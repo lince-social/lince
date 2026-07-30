@@ -29,7 +29,7 @@ async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
             kind: RecordKind::Plain,
             head: slug,
             body: "",
-            quantity: 0.0,
+            quantity: store::exact::zero(),
         },
     )
     .await
@@ -47,7 +47,7 @@ async fn person(e: &Engine, slug: &str) -> String {
             kind: RecordKind::Person,
             head: slug,
             body: "",
-            quantity: 1.0,
+            quantity: store::exact::one(),
         },
     )
     .await
@@ -117,7 +117,7 @@ async fn donation_flows_between_two_cells_and_feeds_the_decision_queue() {
     assert_eq!(
         store::records::quantity(&b.store.pool, &apples)
             .await
-            .unwrap(),
+            .unwrap().map(|q| q.to_f64()),
         Some(10.0)
     );
     assert_eq!(
@@ -133,7 +133,7 @@ async fn donation_flows_between_two_cells_and_feeds_the_decision_queue() {
     assert_eq!(
         store::records::quantity(&b.store.pool, &apples)
             .await
-            .unwrap(),
+            .unwrap().map(|q| q.to_f64()),
         Some(10.0)
     );
 
@@ -229,7 +229,7 @@ async fn tampered_facts_are_quarantined_on_import() {
         .unwrap();
     let mut package: Package = a.export_package(&b_organ, &a_organ).await.unwrap();
     assert!(!package.facts.is_empty());
-    package.facts[0].delta = 500.0; // the tamper
+    package.facts[0].delta = store::exact::from_f64(500.0); // the tamper
 
     let applied = b.import_package(&package).await.unwrap();
     assert!(applied.is_empty(), "the tampered fact never lands");
@@ -243,7 +243,57 @@ async fn tampered_facts_are_quarantined_on_import() {
     assert_eq!(
         store::records::quantity(&b.store.pool, &apples)
             .await
-            .unwrap(),
+            .unwrap().map(|q| q.to_f64()),
         Some(0.0)
     );
+}
+
+/// E0.0: a Fact's declared precision must survive the sync wire, not just its
+/// value. `1.50` at scale 2 and `1.5` at scale 1 are the same number and
+/// different Facts, because the preimage carries the scale — so if any hop
+/// round-tripped the delta through `f64` the imported chain would fail
+/// verification and land in quarantine. Scale-0 test data (10, 3, 0) cannot
+/// catch that; a trailing zero can.
+#[tokio::test]
+async fn declared_precision_survives_the_sync_wire() {
+    let (a, a_organ) = cell("http://cell-precise-a").await;
+    let (b, b_organ) = cell("http://cell-precise-b").await;
+
+    let a_intro = a.introduction().await.unwrap();
+    let b_intro = b.introduction().await.unwrap();
+    b.adopt_introduction(&a_intro, 1).await.unwrap();
+    a.adopt_introduction(&b_intro, 1).await.unwrap();
+    store::organs::set_sync_policy(&a.store.pool, &b_organ, true, false)
+        .await
+        .unwrap();
+
+    let grams = plain(&a, "flour.grams", 0.0).await;
+    store::visibility::grant(&a.store.pool, "organ", Some(&b_organ), &grams)
+        .await
+        .unwrap();
+    let _ = a_organ;
+
+    // A delta whose canonical form keeps a trailing zero.
+    let precise = nucleus::DecimalValue::parse_canonical(2, "1.50").unwrap();
+    a.append(
+        nucleus::NewFact::quantity(grams.clone(), precise, nucleus::Cause::user_edit()),
+        chrono::Utc::now(),
+    )
+    .await
+    .expect("append exact fact");
+
+    assert_eq!(wire_sync(&a, &b, &b_organ).await, 1);
+
+    assert_eq!(
+        store::organs::quarantine_count(&b.store.pool).await.unwrap(),
+        0,
+        "an exact delta's scale survives the wire, so signatures still verify"
+    );
+
+    let landed = store::records::quantity(&b.store.pool, &grams)
+        .await
+        .unwrap()
+        .expect("record replicated");
+    assert_eq!(landed.canonical(), "1.50", "trailing zero is not dropped");
+    assert_eq!(landed.scale(), 2);
 }

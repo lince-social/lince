@@ -19,7 +19,7 @@ async fn plain(e: &Engine, slug: &str) -> String {
             kind: RecordKind::Plain,
             head: slug,
             body: "",
-            quantity: 0.0,
+            quantity: store::exact::zero(),
         },
     )
     .await
@@ -33,7 +33,7 @@ fn at(s: &str) -> DateTime<Utc> {
 
 async fn bump(e: &Engine, uid: &str, delta: f64, now: DateTime<Utc>) {
     e.append(
-        NewFact::quantity(uid.to_string(), delta, Cause::user_edit()),
+        NewFact::quantity_f64(uid.to_string(), delta, Cause::user_edit()),
         now,
     )
     .await
@@ -57,19 +57,19 @@ async fn sum_variants_split_inflow_outflow_and_lag() {
     assert_eq!(
         store::facts::sum_window(pool, &apples, 3 * day, now)
             .await
-            .unwrap(),
+            .unwrap().to_f64(),
         -2.0
     );
     assert_eq!(
         store::facts::sum_pos_window(pool, &apples, 3 * day, now)
             .await
-            .unwrap(),
+            .unwrap().to_f64(),
         2.0
     );
     assert_eq!(
         store::facts::sum_neg_window(pool, &apples, 3 * day, now)
             .await
-            .unwrap(),
+            .unwrap().to_f64(),
         -4.0
     );
 
@@ -77,7 +77,8 @@ async fn sum_variants_split_inflow_outflow_and_lag() {
     assert_eq!(
         store::facts::sum_window_lagged(pool, &apples, 5 * day, 3 * day, now)
             .await
-            .unwrap(),
+            .unwrap()
+            .to_f64(),
         10.0
     );
 }
@@ -121,7 +122,8 @@ async fn compaction_folds_history_into_the_checkpoint_and_anchors_the_archive() 
     assert_eq!(
         store::records::quantity(&e.store.pool, &apples)
             .await
-            .unwrap(),
+            .unwrap()
+            .map(|q| q.to_f64()),
         Some(6.0)
     );
 
@@ -131,22 +133,22 @@ async fn compaction_folds_history_into_the_checkpoint_and_anchors_the_archive() 
         .unwrap();
     assert_eq!(hot.len(), 2);
     assert!(hot.iter().any(|f| f.cause.kind == CauseKind::Checkpoint));
-    assert!(hot.iter().any(|f| f.delta == -2.0));
+    assert!(hot.iter().any(|f| f.delta == store::exact::from_f64(-2.0)));
 
     // Fold invariant: checkpoint level + remaining deltas == cache.
     let checkpoint = hot
         .iter()
         .find(|f| f.cause.kind == CauseKind::Checkpoint)
         .unwrap();
-    let level: f64 =
-        serde_json::from_str::<serde_json::Value>(checkpoint.payload.as_deref().unwrap()).unwrap()
-            ["level"]
-            .as_f64()
-            .unwrap();
+    // The checkpoint level is canonical decimal TEXT, not a JSON float: after
+    // compaction it IS the record's level, so it must not round.
+    let payload =
+        serde_json::from_str::<serde_json::Value>(checkpoint.payload.as_deref().unwrap()).unwrap();
+    let level: f64 = payload["level"].as_str().unwrap().parse().unwrap();
     let remaining: f64 = hot
         .iter()
         .filter(|f| f.cause.kind != CauseKind::Checkpoint)
-        .map(|f| f.delta)
+        .map(|f| f.delta.to_f64())
         .sum();
     assert_eq!(level + remaining, 6.0);
 

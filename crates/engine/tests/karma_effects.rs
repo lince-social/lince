@@ -28,7 +28,7 @@ async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
             kind: RecordKind::Plain,
             head: slug,
             body: "",
-            quantity,
+            quantity: store::exact::from_f64(quantity),
         },
     )
     .await
@@ -44,7 +44,7 @@ async fn person(e: &Engine, slug: &str) -> String {
             kind: RecordKind::Person,
             head: slug,
             body: "",
-            quantity: 1.0,
+            quantity: store::exact::one(),
         },
     )
     .await
@@ -66,6 +66,7 @@ async fn quantity(e: &Engine, slug: &str) -> f64 {
         .await
         .unwrap()
         .unwrap()
+        .to_f64()
 }
 
 #[tokio::test]
@@ -92,7 +93,7 @@ async fn debounce_holds_a_rule_between_firings() {
     e.reload_rules().await.unwrap();
 
     e.append(
-        nucleus::NewFact::quantity(trigger.clone(), 1.0, nucleus::Cause::user_edit()),
+        nucleus::NewFact::quantity_f64(trigger.clone(), 1.0, nucleus::Cause::user_edit()),
         at("2026-07-01T08:00:00Z"),
     )
     .await
@@ -100,7 +101,7 @@ async fn debounce_holds_a_rule_between_firings() {
     assert_eq!(quantity(&e, "alerts").await, 1.0, "first delivery fires");
 
     e.append(
-        nucleus::NewFact::quantity(trigger.clone(), 1.0, nucleus::Cause::user_edit()),
+        nucleus::NewFact::quantity_f64(trigger.clone(), 1.0, nucleus::Cause::user_edit()),
         at("2026-07-01T08:10:00Z"),
     )
     .await
@@ -112,7 +113,7 @@ async fn debounce_holds_a_rule_between_firings() {
     );
 
     e.append(
-        nucleus::NewFact::quantity(trigger, 1.0, nucleus::Cause::user_edit()),
+        nucleus::NewFact::quantity_f64(trigger, 1.0, nucleus::Cause::user_edit()),
         at("2026-07-01T09:30:00Z"),
     )
     .await
@@ -214,7 +215,7 @@ async fn run_query_consequence_executes_a_saved_protein() {
 #[tokio::test]
 async fn sum_pos_and_sum_neg_tokens_split_the_flows() {
     let e = engine().await;
-    let money = plain(&e, "money", 0.0).await;
+    let balance = plain(&e, "balance", 0.0).await;
     plain(&e, "inflow.mirror", 0.0).await;
     plain(&e, "outflow.mirror", 0.0).await;
     store::rules::create(
@@ -222,7 +223,7 @@ async fn sum_pos_and_sum_neg_tokens_split_the_flows() {
         store::rules::NewRule {
             slug: "rules.inflow",
             head: "Inflow",
-            condition: "sum_pos(@money, 30d)",
+            condition: "sum_pos(@balance, 30d)",
             gate: "!=0",
             carry: "value",
             consequences: vec![(
@@ -239,7 +240,7 @@ async fn sum_pos_and_sum_neg_tokens_split_the_flows() {
         store::rules::NewRule {
             slug: "rules.outflow",
             head: "Outflow",
-            condition: "sum_neg(@money, 30d)",
+            condition: "sum_neg(@balance, 30d)",
             gate: "!=0",
             carry: "value",
             consequences: vec![(
@@ -253,8 +254,8 @@ async fn sum_pos_and_sum_neg_tokens_split_the_flows() {
     .unwrap();
     e.reload_rules().await.unwrap();
 
-    e.append_user(&money, 10.0).await.unwrap();
-    e.append_user(&money, -4.0).await.unwrap();
+    e.append_user(&balance, 10.0).await.unwrap();
+    e.append_user(&balance, -4.0).await.unwrap();
 
     assert_eq!(quantity(&e, "inflow.mirror").await, 10.0);
     assert_eq!(quantity(&e, "outflow.mirror").await, -4.0);

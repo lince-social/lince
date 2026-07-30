@@ -300,7 +300,7 @@ pub async fn create_signal(pool: &SqlitePool, new: NewSignal<'_>) -> Result<Stri
             kind: RecordKind::Signal,
             head: new.head,
             body: "",
-            quantity: 0.0, // quantity holds the last sampled value
+            quantity: crate::exact::zero(), // quantity holds the last sampled value
         },
     )
     .await?;
@@ -327,22 +327,26 @@ pub struct SignalRow {
 }
 
 pub async fn list_signals(pool: &SqlitePool) -> Result<Vec<SignalRow>, StoreError> {
-    Ok(sqlx::query(
-        "SELECT s.record_uid, s.source_kind, s.source, s.schedule, s.last_sampled_at, r.quantity
+    sqlx::query(
+        "SELECT s.record_uid, s.source_kind, s.source, s.schedule, s.last_sampled_at, r.quantity_mantissa, r.quantity_scale
          FROM signal s JOIN record r ON r.uid = s.record_uid",
     )
     .fetch_all(pool)
     .await?
     .into_iter()
-    .map(|r| SignalRow {
-        record_uid: r.get("record_uid"),
-        source_kind: r.get("source_kind"),
-        source: r.get("source"),
-        schedule: r.get("schedule"),
-        last_sampled_at: r.get("last_sampled_at"),
-        current_value: r.get("quantity"),
+    .map(|r| {
+        Ok(SignalRow {
+            record_uid: r.get("record_uid"),
+            source_kind: r.get("source_kind"),
+            source: r.get("source"),
+            schedule: r.get("schedule"),
+            last_sampled_at: r.get("last_sampled_at"),
+            // A sampled sensor reading is a float at its origin; this is a
+            // display value, not a Ledger write.
+            current_value: crate::exact::read_decimal(&r, "quantity")?.to_f64(),
+        })
     })
-    .collect())
+    .collect()
 }
 
 pub async fn set_signal_sampled(
@@ -375,7 +379,7 @@ pub async fn create_decision(
             kind: RecordKind::Decision,
             head: question,
             body: "",
-            quantity: 1.0, // 1 = open; deciding sets it to 0 via a fact
+            quantity: crate::exact::one(), // 1 = open; deciding sets it to 0 via a fact
         },
     )
     .await?;
@@ -418,7 +422,7 @@ pub async fn expired_open_decisions(
     Ok(sqlx::query(
         "SELECT d.record_uid FROM decision d
          JOIN record r ON r.uid = d.record_uid
-         WHERE r.quantity != 0 AND d.expires_at IS NOT NULL AND d.expires_at < ?",
+         WHERE r.quantity_mantissa != '0' AND d.expires_at IS NOT NULL AND d.expires_at < ?",
     )
     .bind(now_rfc3339)
     .fetch_all(pool)
@@ -451,7 +455,7 @@ pub async fn open_decision_subjects(
 ) -> Result<std::collections::HashSet<(String, String)>, StoreError> {
     Ok(sqlx::query(
         "SELECT d.subject_uid, d.kind FROM decision d
-         JOIN record r ON r.uid = d.record_uid WHERE r.quantity != 0",
+         JOIN record r ON r.uid = d.record_uid WHERE r.quantity_mantissa != '0'",
     )
     .fetch_all(pool)
     .await?
@@ -465,7 +469,7 @@ pub async fn open_decisions(
 ) -> Result<Vec<(String, String, String)>, StoreError> {
     Ok(sqlx::query(
         "SELECT d.record_uid, d.kind, r.head FROM decision d
-         JOIN record r ON r.uid = d.record_uid WHERE r.quantity != 0",
+         JOIN record r ON r.uid = d.record_uid WHERE r.quantity_mantissa != '0'",
     )
     .fetch_all(pool)
     .await?
@@ -487,7 +491,7 @@ pub struct DecisionRow {
 
 pub async fn list_decisions(pool: &SqlitePool) -> Result<Vec<DecisionRow>, StoreError> {
     Ok(sqlx::query(
-        "SELECT d.record_uid, d.subject_uid, d.kind, d.options, d.answer, r.head, r.quantity
+        "SELECT d.record_uid, d.subject_uid, d.kind, d.options, d.answer, r.head, r.quantity_mantissa
          FROM decision d JOIN record r ON r.uid = d.record_uid ORDER BY r.created_at",
     )
     .fetch_all(pool)
@@ -501,7 +505,7 @@ pub async fn list_decisions(pool: &SqlitePool) -> Result<Vec<DecisionRow>, Store
             kind: r.get("kind"),
             question: r.get("head"),
             options: serde_json::from_str(&options).ok()?,
-            open: r.get::<f64, _>("quantity") != 0.0,
+            open: r.get::<String, _>("quantity_mantissa") != "0",
             answer: r.get("answer"),
         })
     })

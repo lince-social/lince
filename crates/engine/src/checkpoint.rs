@@ -35,6 +35,12 @@ pub struct CompactionReport {
 impl Engine {
     /// Write a `delta=0, payload={"level": q}` checkpoint fact for every record
     /// whose latest fact is not already a checkpoint. Returns the checkpoints.
+    ///
+    /// The level is written as canonical decimal TEXT with its scale, not as a
+    /// JSON number. After compaction this payload *is* the authoritative level
+    /// of the record — every Fact behind it is gone — so a JSON float here
+    /// would reintroduce the rounding the exact Ledger exists to remove, on a
+    /// path with no REAL column anywhere in it.
     pub async fn checkpoint_all(&self, now: DateTime<Utc>) -> Result<Vec<Fact>, EngineError> {
         let signer = self.signer.lock().await.clone();
         let mut out = Vec::new();
@@ -50,14 +56,20 @@ impl Engine {
                 NewFact {
                     uid: None,
                     record_uid: uid,
-                    delta: 0.0,
+                    delta: nucleus::fact::zero_delta(),
                     at: None,
                     actor_uid: None,
                     cause: Cause {
                         kind: CauseKind::Checkpoint,
                         uid: None,
                     },
-                    payload: Some(serde_json::json!({ "level": level }).to_string()),
+                    payload: Some(
+                        serde_json::json!({
+                            "level": level.canonical(),
+                            "level_scale": level.scale(),
+                        })
+                        .to_string(),
+                    ),
                 },
                 now,
                 signer.as_ref(),
@@ -145,7 +157,7 @@ impl Engine {
             NewFact {
                 uid: None,
                 record_uid: carrier,
-                delta: 0.0,
+                delta: nucleus::fact::zero_delta(),
                 at: None,
                 actor_uid: None,
                 cause: Cause {

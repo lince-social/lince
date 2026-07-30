@@ -2,8 +2,8 @@ mod archive;
 #[path = "communication/mod.rs"]
 mod communication;
 mod document_viewer;
-#[allow(dead_code)]
-mod finance;
+#[path = "karma/mod.rs"]
+mod karma;
 mod freedoom;
 #[path = "kanban/mod.rs"]
 mod kanban;
@@ -97,7 +97,7 @@ impl OfficialWidgetBuilder {
 // Only current frame.js sands are wired for construction, plus `shell` (the
 // board's own chrome). Legacy sources may remain under `sand/`, but stay
 // unwired until rebuilt on the current bridge and explicitly added here.
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 22] = [
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 23] = [
     OfficialWidgetBuilder::Html {
         feature_flag: shell::FEATURE_FLAG,
         source_builder: shell::logo_source,
@@ -177,6 +177,10 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 22] = [
     OfficialWidgetBuilder::Package {
         feature_flag: transfer::FEATURE_FLAG,
         package_builder: transfer::package,
+    },
+    OfficialWidgetBuilder::Package {
+        feature_flag: karma::FEATURE_FLAG,
+        package_builder: karma::package,
     },
     OfficialWidgetBuilder::Package {
         feature_flag: archive::FEATURE_FLAG,

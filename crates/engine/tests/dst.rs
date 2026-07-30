@@ -25,7 +25,7 @@ async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
             kind: RecordKind::Plain,
             head: slug,
             body: "",
-            quantity,
+            quantity: store::exact::from_f64(quantity),
         },
     )
     .await
@@ -104,7 +104,7 @@ async fn user_delta(e: &Engine, slug: &str, delta: f64, t: DateTime<Utc>) {
     e.append(
         NewFact {
             at: Some(t),
-            ..NewFact::quantity(&uid, delta, Cause::user_edit())
+            ..NewFact::quantity_f64(&uid, delta, Cause::user_edit())
         },
         t,
     )
@@ -161,7 +161,7 @@ async fn comparable_log(e: &Engine) -> Vec<LogEntry> {
         };
         out.push(LogEntry {
             record: slug_of(e, &f.record_uid).await,
-            delta: f.delta,
+            delta: f.delta.to_f64(),
             at: f.at.to_rfc3339(),
             cause_kind: f.cause.kind.as_str().to_string(),
             cause,
@@ -176,7 +176,7 @@ async fn quantities(e: &Engine) -> Vec<(String, f64)> {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| (r.slug.unwrap_or(r.uid), r.quantity))
+        .map(|r| (r.slug.clone().unwrap_or_else(|| r.uid.clone()), r.quantity_f64()))
         .collect();
     all.sort_by(|x, y| x.0.cmp(&y.0));
     all
@@ -216,14 +216,16 @@ async fn recorded_log_replays_deterministically_and_idempotently() {
     let b = Engine::open_memory().await.unwrap();
     for r in store::records::list_all(&a.store.pool).await.unwrap() {
         store::sqlx::query(
-            "INSERT INTO record (uid, slug, kind, head, body, quantity, created_at, updated_at)
-             VALUES (?, ?, ?, ?, '', ?, ?, ?)",
+            "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale,
+                                 created_at, updated_at)
+             VALUES (?, ?, ?, ?, '', ?, ?, ?, ?)",
         )
         .bind(&r.uid)
         .bind(&r.slug)
         .bind(&r.kind)
         .bind(&r.head)
-        .bind(initial_quantity(&r, &recorded))
+        .bind(initial_quantity(&r, &recorded).mantissa().to_string())
+        .bind(i64::from(initial_quantity(&r, &recorded).scale()))
         .bind(at("2026-07-05T00:00:00Z").to_rfc3339())
         .bind(at("2026-07-05T00:00:00Z").to_rfc3339())
         .execute(&b.store.pool)
@@ -264,11 +266,12 @@ async fn recorded_log_replays_deterministically_and_idempotently() {
 }
 
 /// Rewind a record's final cached quantity to its pre-log seed value.
-fn initial_quantity(r: &store::records::RecordRow, log: &[nucleus::Fact]) -> f64 {
-    let played: f64 = log
-        .iter()
-        .filter(|f| f.record_uid == r.uid)
-        .map(|f| f.delta)
-        .sum();
-    r.quantity - played
+fn initial_quantity(r: &store::records::RecordRow, log: &[nucleus::Fact]) -> nucleus::DecimalValue {
+    let played = store::exact::sum_exact(
+        log.iter()
+            .filter(|f| f.record_uid == r.uid)
+            .map(|f| f.delta),
+    )
+    .expect("exact fold");
+    store::exact::difference(r.quantity, played).expect("exact difference")
 }

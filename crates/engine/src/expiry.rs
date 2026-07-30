@@ -22,14 +22,14 @@ impl Engine {
             store::misc::answer_decision(&self.store.pool, &decision, "expired").await?;
             let current = store::records::quantity(&self.store.pool, &decision)
                 .await?
-                .unwrap_or(0.0);
-            if current != 0.0 {
+                .unwrap_or_else(store::exact::zero);
+            if !current.is_zero() {
                 out.extend(
                     self.append(
                         NewFact {
                             uid: None,
                             record_uid: decision,
-                            delta: -current,
+                            delta: store::exact::negate(current)?,
                             at: None,
                             actor_uid: None,
                             cause: Cause {
@@ -63,7 +63,7 @@ impl Engine {
                         NewFact {
                             uid: None,
                             record_uid,
-                            delta: 0.0,
+                            delta: nucleus::fact::zero_delta(),
                             at: None,
                             actor_uid: None,
                             cause: Cause {

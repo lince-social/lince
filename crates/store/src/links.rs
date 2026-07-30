@@ -143,19 +143,19 @@ pub async fn remove_kind_within_set(
     Ok(affected)
 }
 
-fn map_record_row(r: sqlx::sqlite::SqliteRow) -> RecordRow {
-    RecordRow {
+fn map_record_row(r: sqlx::sqlite::SqliteRow) -> Result<RecordRow, StoreError> {
+    Ok(RecordRow {
         uid: r.get("uid"),
         slug: r.get("slug"),
         kind: r.get("kind"),
         head: r.get("head"),
         body: r.get("body"),
-        quantity: r.get("quantity"),
+        quantity: crate::exact::read_decimal(&r, "quantity")?,
         concept_uid: r.get("concept_uid"),
         unit_uid: r.get("unit_uid"),
         place_uid: r.get("place_uid"),
         organ_uid: r.get("organ_uid"),
-    }
+    })
 }
 
 /// Records linked as `record --kind--> target`.
@@ -164,7 +164,7 @@ pub async fn records_to(
     kind_uid: &str,
     target_uid: &str,
 ) -> Result<Vec<RecordRow>, StoreError> {
-    Ok(sqlx::query(
+    sqlx::query(
         "SELECT r.*
            FROM link l
            JOIN record r ON r.uid = l.from_uid
@@ -177,7 +177,7 @@ pub async fn records_to(
     .await?
     .into_iter()
     .map(map_record_row)
-    .collect())
+    .collect()
 }
 
 /// Records linked as `source --kind--> record`.
@@ -186,7 +186,7 @@ pub async fn records_from(
     source_uid: &str,
     kind_uid: &str,
 ) -> Result<Vec<RecordRow>, StoreError> {
-    Ok(sqlx::query(
+    sqlx::query(
         "SELECT r.*
            FROM link l
            JOIN record r ON r.uid = l.to_uid
@@ -199,7 +199,7 @@ pub async fn records_from(
     .await?
     .into_iter()
     .map(map_record_row)
-    .collect())
+    .collect()
 }
 
 /// All edges of one kind, as the pure-graph shape `nucleus::graph` walks.

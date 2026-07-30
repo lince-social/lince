@@ -1,7 +1,0 @@
-reeding information can be thought of as following a Trail. Some things have been said, thought of, and you are getting updated on it, remembering it.
-
-Allowing people catch up to what Lince is, on the Website, or what we did This Month In Lince is the building of trails. Calling it like that keeps the Lince animal names going, and it's not too much of a mental stretch to call it that way (hopefully).
-
-Another kind of information trail is of DNA. In Lince DNA is the data of a particular use of the Lince tool, the database, the information saved itself. If we use the Lince tool to create trails we can help others understand some things faster than reinventing them.
-
-Examples of the trails we can create is for knowledge of certain areas, acting as education on how something works, or how to act to create something. The act of farming is benefitted from understanding biology, but studying general biology will not give you specialized understanding of how to handle tools, what to focus on automating or how to take care of crops. With a large volume of eyes and voices we can generate blueprints of knowledge, accompanied with tips for action/habits in the implementation of some areas. The whole of our wisdom throught generations can be saved in a way that gives us the what, and the how to do anything. A wikihow that integrates the steps into the daily routine of your life system, so you can start today, learning and experimenting what you want to explore in life.

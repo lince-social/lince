@@ -80,7 +80,7 @@ async fn a_signed_package_crosses_cells_and_stays_verifiable() {
     assert_eq!(
         store::records::quantity(&bruno.store.pool, &apples)
             .await
-            .unwrap(),
+            .unwrap().map(|q| q.to_f64()),
         Some(10.0)
     );
     // authorship survived replication: the facts still name Ana
@@ -96,7 +96,7 @@ async fn a_signed_package_crosses_cells_and_stays_verifiable() {
     assert_eq!(
         store::records::quantity(&bruno.store.pool, &apples)
             .await
-            .unwrap(),
+            .unwrap().map(|q| q.to_f64()),
         Some(10.0)
     );
 }
@@ -242,7 +242,7 @@ async fn file_sync_writes_and_reimports_records_selected_by_a_protein() {
         .await
         .unwrap()
         .expect("the selected record landed on Bruno's Cell");
-    assert_eq!(imported.quantity, 3.0);
+    assert_eq!(imported.quantity, store::exact::from_f64(3.0));
     assert_eq!(
         imported.organ_uid.as_deref(),
         Some(organ.as_str()),

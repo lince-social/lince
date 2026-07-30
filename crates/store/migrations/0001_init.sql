@@ -1,13 +1,22 @@
 -- Lince core schema (blueprint Parts I–V, VI, XIII, XV skeletons).
 -- Everything is a Record; sidecar tables key on record.uid by kind.
 
+-- Quantities are EXACT decimals, never REAL (blueprint E0.0). A quantity is the
+-- pair (mantissa, scale): mantissa is a base-10 integer as TEXT because it is an
+-- i128 and SQLite's INTEGER is 64-bit; scale is how many of its digits are
+-- fractional. `-10.00` is mantissa '-1000', scale 2. The mantissa is canonical
+-- (no leading zeros, no negative zero), so `mantissa != '0'` is an exact
+-- is-nonzero test and `mantissa LIKE '-%'` is an exact is-negative test.
+-- Never SUM() these in SQL: numeric affinity would turn them back into floats.
 CREATE TABLE record (
     uid         TEXT PRIMARY KEY,
     slug        TEXT UNIQUE,
     kind        TEXT NOT NULL DEFAULT 'plain',
     head        TEXT NOT NULL DEFAULT '',
     body        TEXT NOT NULL DEFAULT '',
-    quantity    REAL NOT NULL DEFAULT 0,        -- CACHE. Single writer: engine append().
+    -- CACHE of the fold over this record's fact chain. Single writer: engine append().
+    quantity_mantissa TEXT NOT NULL DEFAULT '0',
+    quantity_scale    INTEGER NOT NULL DEFAULT 0,
     concept_uid TEXT REFERENCES concept(uid),
     unit_uid    TEXT REFERENCES concept(uid),
     place_uid   TEXT REFERENCES place(uid),
@@ -20,7 +29,10 @@ CREATE INDEX idx_record_kind ON record(kind);
 CREATE TABLE fact (
     uid        TEXT PRIMARY KEY,
     record_uid TEXT NOT NULL REFERENCES record(uid),
-    delta      REAL NOT NULL,
+    -- The exact movement (see the note on `record`). Both halves are inside the
+    -- hash preimage, so an amount is covered by the signature.
+    delta_mantissa TEXT NOT NULL,
+    delta_scale    INTEGER NOT NULL,
     at         TEXT NOT NULL,
     actor_uid  TEXT,
     cause_kind TEXT NOT NULL,

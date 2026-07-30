@@ -126,7 +126,7 @@ fn role_specific_claims_gate_an_idempotent_settlement() {
         assert_eq!(
             store::records::quantity(&engine.store.pool, &apples)
                 .await
-                .unwrap(),
+                .unwrap().map(|q| q.to_f64()),
             Some(5.0)
         );
     });
@@ -246,7 +246,7 @@ fn partial_settlement_rejects_stale_review_and_compensates_only_private_applicat
         assert_eq!(
             store::records::quantity(&engine.store.pool, &apples)
                 .await
-                .unwrap(),
+                .unwrap().map(|q| q.to_f64()),
             Some(8.0)
         );
         let progress =
@@ -325,7 +325,7 @@ fn partial_settlement_rejects_stale_review_and_compensates_only_private_applicat
         assert_eq!(
             store::records::quantity(&engine.store.pool, &apples)
                 .await
-                .unwrap(),
+                .unwrap().map(|q| q.to_f64()),
             Some(10.0),
             "compensation reverses only the private Record application"
         );
@@ -372,7 +372,7 @@ fn partial_settlement_rejects_stale_review_and_compensates_only_private_applicat
         assert_eq!(
             store::records::quantity(&engine.store.pool, &apples)
                 .await
-                .unwrap(),
+                .unwrap().map(|q| q.to_f64()),
             Some(7.0),
             "the later slice applies only its own reviewed local delta"
         );
@@ -385,15 +385,15 @@ fn balance_is_advisory_and_conversation_uses_generic_threads() {
         let engine = support::engine().await;
         let ana = person(&engine, "chat.ana").await;
         let carlos = person(&engine, "chat.carlos").await;
-        let money = store::concepts::create(&engine.store.pool, "chat.money", &[])
+        let balance = store::concepts::create(&engine.store.pool, "chat.balance", &[])
             .await
             .unwrap();
-        let ana_money = plain(&engine, "chat.ana.money", 0.0).await;
-        let carlos_money = plain(&engine, "chat.carlos.money", 300.0).await;
-        store::records::set_concept(&engine.store.pool, &ana_money, Some(&money))
+        let ana_balance = plain(&engine, "chat.ana.balance", 0.0).await;
+        let carlos_balance = plain(&engine, "chat.carlos.balance", 300.0).await;
+        store::records::set_concept(&engine.store.pool, &ana_balance, Some(&balance))
             .await
             .unwrap();
-        store::records::set_concept(&engine.store.pool, &carlos_money, Some(&money))
+        store::records::set_concept(&engine.store.pool, &carlos_balance, Some(&balance))
             .await
             .unwrap();
         let fixture = create_transfer(
@@ -401,8 +401,8 @@ fn balance_is_advisory_and_conversation_uses_generic_threads() {
             &ana,
             std::slice::from_ref(&carlos),
             vec![
-                promise("chat-carlos-money", &carlos_money, &carlos, -300.0),
-                promise("chat-ana-money", &ana_money, &ana, 300.0),
+                promise("chat-carlos-balance", &carlos_balance, &carlos, -300.0),
+                promise("chat-ana-balance", &ana_balance, &ana, 300.0),
             ],
             DraftOptions {
                 slug: "chat.sale",
@@ -433,7 +433,7 @@ fn balance_is_advisory_and_conversation_uses_generic_threads() {
             .find(|row| row["uid"] == fixture.transfer)
             .expect("Transfer projection");
         assert_eq!(transfer["balanced"], true);
-        assert_eq!(transfer["balance"][&money], 0.0);
+        assert_eq!(transfer["balance"][&balance], 0.0);
 
         let thread = engine
             .act(

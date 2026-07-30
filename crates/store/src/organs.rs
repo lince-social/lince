@@ -47,15 +47,15 @@ pub async fn ensure_local(pool: &SqlitePool, base_url: &str) -> Result<OrganReco
         None => {
             let uid = nucleus::new_uid("r");
             sqlx::query(
-                "INSERT INTO record (uid, slug, kind, head, body, quantity, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale,
+                                     created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, '1', 0, ?, ?)",
             )
             .bind(&uid)
             .bind(LOCAL_ORGAN_SLUG)
             .bind(RecordKind::Organ.as_str())
             .bind("Local Lince")
             .bind(&base_url)
-            .bind(1.0_f64)
             .bind(&now)
             .bind(&now)
             .execute(pool)
@@ -151,15 +151,15 @@ pub async fn add_contact(
             None => false,
         };
         sqlx::query(
-            "INSERT INTO record (uid, slug, kind, head, body, quantity, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale,
+                                 created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, '1', 0, ?, ?)",
         )
         .bind(uid)
         .bind(if slug_taken { None } else { slug })
         .bind(RecordKind::Organ.as_str())
         .bind(head)
         .bind(&base_url)
-        .bind(1.0_f64)
         .bind(&now)
         .bind(&now)
         .execute(pool)

@@ -199,7 +199,7 @@ pub async fn ensure_tag_record(pool: &SqlitePool, slug: &str) -> Result<RecordRo
             kind: RecordKind::Plain,
             head: slug,
             body: "",
-            quantity: 1.0,
+            quantity: crate::exact::one(),
         },
     )
     .await
@@ -260,7 +260,7 @@ pub async fn conversations_by_tag(
 
     let mut out = Vec::new();
     for conv in links::records_to(pool, &tagged, tag_uid).await? {
-        if conv.quantity <= 0.0 {
+        if !conv.quantity.is_positive() {
             continue; // deactivated conversation drops out of the list
         }
         let participants = match &participant {
@@ -305,11 +305,11 @@ async fn newest_message(
     };
     let mut best: Option<(String, MessagePreview)> = None;
     for thread in links::records_to(pool, thread_of, conversation_uid).await? {
-        if thread.kind != RecordKind::Thread.as_str() || thread.quantity <= 0.0 {
+        if thread.kind != RecordKind::Thread.as_str() || !thread.quantity.is_positive() {
             continue;
         }
         for message in links::records_to(pool, message_in, &thread.uid).await? {
-            if message.kind != RecordKind::Message.as_str() || message.quantity <= 0.0 {
+            if message.kind != RecordKind::Message.as_str() || !message.quantity.is_positive() {
                 continue;
             }
             let Some(created) = records::created_at(pool, &message.uid).await? else {
@@ -350,7 +350,7 @@ pub async fn open_session(
             kind: RecordKind::CallSession,
             head: &head,
             body: "",
-            quantity: 1.0,
+            quantity: crate::exact::one(),
         },
     )
     .await?;

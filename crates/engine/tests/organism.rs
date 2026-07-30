@@ -18,7 +18,7 @@ async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
             kind: RecordKind::Plain,
             head: slug,
             body: "",
-            quantity,
+            quantity: store::exact::from_f64(quantity),
         },
     )
     .await
@@ -148,7 +148,7 @@ async fn signals_sample_the_world_and_cascade() {
     assert_eq!(
         store::records::quantity(&e.store.pool, &alert)
             .await
-            .unwrap(),
+            .unwrap().map(|q| q.to_f64()),
         Some(1.0)
     );
 
@@ -176,18 +176,20 @@ async fn checkpoints_anchor_without_cascading() {
 
     let checkpoints = e.checkpoint_all(Utc::now()).await.unwrap();
     assert_eq!(checkpoints.len(), 1);
-    assert_eq!(checkpoints[0].delta, 0.0);
+    assert_eq!(checkpoints[0].delta, store::exact::zero());
+    // The level is canonical decimal TEXT, not a JSON float: after compaction
+    // this payload IS the record's level (blueprint E0.0).
     assert!(
         checkpoints[0]
             .payload
             .as_deref()
             .unwrap()
-            .contains("\"level\":5")
+            .contains("\"level\":\"5\"")
     );
     assert_eq!(
         store::records::quantity(&e.store.pool, &apples)
             .await
-            .unwrap(),
+            .unwrap().map(|q| q.to_f64()),
         Some(5.0),
         "checkpoint changes nothing"
     );

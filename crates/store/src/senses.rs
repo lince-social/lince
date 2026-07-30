@@ -37,7 +37,7 @@ pub async fn create_sense_rule(
             kind: RecordKind::Rule,
             head: new.head,
             body: "",
-            quantity: 1.0, // active by default
+            quantity: crate::exact::one(), // active by default
         },
     )
     .await?;
@@ -58,9 +58,9 @@ pub async fn create_sense_rule(
 /// Every ACTIVE match rule (record quantity != 0).
 pub async fn active_sense_rules(pool: &SqlitePool) -> Result<Vec<SenseRuleRow>, StoreError> {
     Ok(sqlx::query(
-        "SELECT s.*, r.quantity FROM sense_rule s
+        "SELECT s.* FROM sense_rule s
            JOIN record r ON r.uid = s.record_uid
-          WHERE r.quantity != 0",
+          WHERE r.quantity_mantissa != '0'",
     )
     .fetch_all(pool)
     .await?

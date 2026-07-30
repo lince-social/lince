@@ -33,7 +33,7 @@ pub async fn create(pool: &SqlitePool, new: NewFrequency<'_>) -> Result<String, 
             kind: RecordKind::Signal, // frequencies are timer-signals
             head: new.head,
             body: "",
-            quantity: 1.0,
+            quantity: crate::exact::one(),
         },
     )
     .await?;
@@ -58,7 +58,7 @@ pub async fn due(pool: &SqlitePool, now: DateTime<Utc>) -> Result<Vec<FreqRow>, 
         "SELECT r.uid, r.slug, f.seconds, f.days, f.months, f.day_of_week, f.next_at,
                 f.finish_at, f.catch_up
          FROM frequency f JOIN record r ON r.uid = f.record_uid
-         WHERE f.next_at <= ? AND r.quantity != 0",
+         WHERE f.next_at <= ? AND r.quantity_mantissa != '0'",
     )
     .bind(now.to_rfc3339())
     .fetch_all(pool)
@@ -71,7 +71,7 @@ pub async fn all_enabled(pool: &SqlitePool) -> Result<Vec<FreqRow>, StoreError> 
     let rows = sqlx::query(
         "SELECT r.uid, r.slug, f.seconds, f.days, f.months, f.day_of_week, f.next_at,
                 f.finish_at, f.catch_up
-         FROM frequency f JOIN record r ON r.uid = f.record_uid WHERE r.quantity != 0",
+         FROM frequency f JOIN record r ON r.uid = f.record_uid WHERE r.quantity_mantissa != '0'",
     )
     .fetch_all(pool)
     .await?;

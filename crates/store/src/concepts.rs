@@ -243,10 +243,50 @@ pub async fn nearest_ancestor_in(
     Ok(None)
 }
 
-/// Unit conversion (blueprint III.1): declare `1 a = factor b`. One
-/// authoritative row per unordered pair — the inverse direction is derived at
-/// read time (`b -> a` is `1/factor`), so an existing reverse row is removed
-/// on upsert to keep the pair consistent. Factors must be finite and positive.
+/// Unit conversion (blueprint III.1/E0.1): declare `1 a = numerator/denominator
+/// b` exactly. One authoritative row per unordered pair — the inverse direction
+/// is derived at read time by swapping the two halves, so an existing reverse
+/// row is removed on upsert to keep the pair consistent.
+///
+/// Both halves must be positive: `kg -> g` is `1000/1`, and `g -> kg` is read
+/// as `1/1000` rather than stored. A ratio is kept unreduced-but-exact instead
+/// of pre-divided precisely so that `kg -> g` multiplies rather than rounds.
+pub async fn set_conversion_exact(
+    pool: &SqlitePool,
+    a_uid: &str,
+    b_uid: &str,
+    numerator: i128,
+    denominator: i128,
+) -> Result<(), StoreError> {
+    if numerator <= 0 || denominator <= 0 {
+        return Err(sqlx::Error::Protocol(format!(
+            "conversion ratio must be positive, got {numerator}/{denominator}"
+        )));
+    }
+    sqlx::query(
+        "INSERT INTO concept_conversion (a_uid, b_uid, numerator, denominator)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT(a_uid, b_uid) DO UPDATE
+           SET numerator = excluded.numerator, denominator = excluded.denominator",
+    )
+    .bind(a_uid)
+    .bind(b_uid)
+    .bind(numerator.to_string())
+    .bind(denominator.to_string())
+    .execute(pool)
+    .await?;
+    sqlx::query("DELETE FROM concept_conversion WHERE a_uid = ? AND b_uid = ?")
+        .bind(b_uid)
+        .bind(a_uid)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+/// Declare a conversion from an `f64` factor. The float is turned into an exact
+/// ratio at its own shortest decimal representation — `2.2` becomes `22/10`,
+/// not a binary approximation — so nothing downstream inherits float error.
+/// Prefer `set_conversion_exact` when the true ratio is known.
 pub async fn set_conversion(
     pool: &SqlitePool,
     a_uid: &str,
@@ -258,21 +298,11 @@ pub async fn set_conversion(
             "conversion factor must be finite and positive, got {factor}"
         )));
     }
-    sqlx::query(
-        "INSERT INTO concept_conversion (a_uid, b_uid, factor) VALUES (?, ?, ?)
-         ON CONFLICT(a_uid, b_uid) DO UPDATE SET factor = excluded.factor",
-    )
-    .bind(a_uid)
-    .bind(b_uid)
-    .bind(factor)
-    .execute(pool)
-    .await?;
-    sqlx::query("DELETE FROM concept_conversion WHERE a_uid = ? AND b_uid = ?")
-        .bind(b_uid)
-        .bind(a_uid)
-        .execute(pool)
-        .await?;
-    Ok(())
+    let exact = crate::exact::from_f64(factor);
+    let denominator = 10_i128
+        .checked_pow(u32::from(exact.scale()))
+        .ok_or_else(|| sqlx::Error::Protocol("conversion factor scale overflows".into()))?;
+    set_conversion_exact(pool, a_uid, b_uid, exact.mantissa(), denominator).await
 }
 
 /// Convert `quantity` from one unit concept to another. `None` unless a
@@ -289,28 +319,67 @@ pub async fn convert(
     if from_uid == to_uid {
         return Ok(Some(quantity));
     }
+    let Some((numerator, denominator)) = conversion_ratio(pool, from_uid, to_uid).await? else {
+        return Ok(None);
+    };
+    // The legacy float path derives from the same exact ratio the exact path
+    // uses, so the two can never disagree about what a conversion means.
+    #[allow(clippy::cast_precision_loss)]
+    Ok(Some(quantity * (numerator as f64) / (denominator as f64)))
+}
 
-    let direct = sqlx::query("SELECT factor FROM concept_conversion WHERE a_uid = ? AND b_uid = ?")
-        .bind(from_uid)
-        .bind(to_uid)
-        .fetch_optional(pool)
-        .await?
-        .map(|row| row.get::<f64, _>("factor"));
-    let factor = match direct {
-        Some(factor) => factor,
-        None => {
-            let inverse =
-                sqlx::query("SELECT factor FROM concept_conversion WHERE a_uid = ? AND b_uid = ?")
-                    .bind(to_uid)
-                    .bind(from_uid)
-                    .fetch_optional(pool)
-                    .await?
-                    .map(|row| row.get::<f64, _>("factor"));
-            match inverse {
-                Some(factor) => 1.0 / factor,
-                None => return Ok(None),
-            }
-        }
+/// Convert an exact amount between unit concepts, stating the scale and
+/// rounding of the result (blueprint E0.1).
+///
+/// Conversion is never implicit: it does not happen to make an expression
+/// type-check, and it does not pick a rounding rule for the caller. `kg -> g`
+/// comes back `exact: true`; a ratio that cannot terminate at the requested
+/// scale comes back `exact: false`, and the caller can see that it rounded
+/// rather than discovering it later in a total that does not balance.
+pub async fn convert_exact(
+    pool: &SqlitePool,
+    from_uid: &str,
+    to_uid: &str,
+    amount: nucleus::DecimalValue,
+    scale: u8,
+    rounding: nucleus::karma::Rounding,
+) -> Result<Option<nucleus::karma::RoundedDecimal>, StoreError> {
+    if from_uid == to_uid {
+        return Ok(amount
+            .rescale(scale)
+            .map(|value| nucleus::karma::RoundedDecimal { value, exact: true })
+            .or_else(|| amount.mul_ratio(1, 1, scale, rounding)));
+    }
+    let Some((numerator, denominator)) = conversion_ratio(pool, from_uid, to_uid).await? else {
+        return Ok(None);
+    };
+    amount
+        .mul_ratio(numerator, denominator, scale, rounding)
+        .map(Some)
+        .ok_or_else(|| {
+            sqlx::Error::Protocol(format!(
+                "converting {from_uid} -> {to_uid} overflows the exact range"
+            ))
+        })
+}
+
+/// The exact `from -> to` ratio, direct or derived by inverting the stored
+/// pair, gated on the two concepts sharing a dimension. `None` means "no
+/// declared conversion", which is a different answer from "converted to zero".
+async fn conversion_ratio(
+    pool: &SqlitePool,
+    from_uid: &str,
+    to_uid: &str,
+) -> Result<Option<(i128, i128)>, StoreError> {
+    let direct = read_ratio(pool, from_uid, to_uid).await?;
+    let ratio = match direct {
+        Some((numerator, denominator)) => (numerator, denominator),
+        // `a -> b` of n/d is exactly `b -> a` of d/n; inverting a rational is
+        // lossless, which is the point of not storing a float.
+        None => match read_ratio(pool, to_uid, from_uid).await? {
+            Some((numerator, denominator)) => (denominator, numerator),
+            None => return Ok(None),
+        },
     };
 
     let from_dimension: HashSet<String> = ancestors_including(pool, from_uid)
@@ -324,6 +393,30 @@ pub async fn convert(
     if !shares_dimension {
         return Ok(None);
     }
+    Ok(Some(ratio))
+}
 
-    Ok(Some(quantity * factor))
+async fn read_ratio(
+    pool: &SqlitePool,
+    a_uid: &str,
+    b_uid: &str,
+) -> Result<Option<(i128, i128)>, StoreError> {
+    let Some(row) = sqlx::query(
+        "SELECT numerator, denominator FROM concept_conversion WHERE a_uid = ? AND b_uid = ?",
+    )
+    .bind(a_uid)
+    .bind(b_uid)
+    .fetch_optional(pool)
+    .await?
+    else {
+        return Ok(None);
+    };
+    let numerator: String = row.get("numerator");
+    let denominator: String = row.get("denominator");
+    let parse = |value: &str| -> Result<i128, StoreError> {
+        value.parse::<i128>().map_err(|_| {
+            sqlx::Error::Protocol(format!("conversion ratio {value:?} is not an integer"))
+        })
+    };
+    Ok(Some((parse(&numerator)?, parse(&denominator)?)))
 }

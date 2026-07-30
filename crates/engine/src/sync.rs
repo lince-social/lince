@@ -502,8 +502,8 @@ async fn ensure_record(
         .or_else(|| Some(fallback_organ.to_string()));
     let now = Utc::now().to_rfc3339();
     store::sqlx::query(
-        "INSERT INTO record (uid, slug, kind, head, body, quantity, concept_uid, unit_uid, organ_uid, created_at, updated_at)
-         VALUES (?, ?, ?, ?, '', 0, ?, ?, ?, ?, ?)",
+        "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale, concept_uid, unit_uid, organ_uid, created_at, updated_at)
+         VALUES (?, ?, ?, ?, '', '0', 0, ?, ?, ?, ?, ?)",
     )
     .bind(&seed.uid)
     .bind(if slug_taken { None } else { seed.slug.clone() })

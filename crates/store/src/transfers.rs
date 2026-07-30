@@ -823,7 +823,7 @@ where
         NewFact {
             uid: None,
             record_uid: input.transfer_uid.clone(),
-            delta: 0.0,
+            delta: crate::exact::zero(),
             at: None,
             actor_uid: fact_actor,
             cause: Cause::user_edit(),
@@ -873,7 +873,7 @@ where
         .execute(&mut *tx)
         .await?;
     }
-    crate::records::bump_quantity(&mut tx, &input.transfer_uid, 0.0, &at).await?;
+    crate::records::bump_quantity(&mut tx, &input.transfer_uid, crate::exact::zero(), &at).await?;
     tx.commit().await?;
 
     Ok(RevisionCommit::Committed {
@@ -1993,8 +1993,8 @@ where
     validate_transfer_parent(&mut tx, &transfer_uid, draft.parent_uid.as_deref()).await?;
     sqlx::query(
         "INSERT INTO record
-            (uid, slug, kind, head, body, quantity, organ_uid, created_at, updated_at)
-         VALUES (?, ?, ?, ?, '', 0, ?, ?, ?)",
+            (uid, slug, kind, head, body, quantity_mantissa, quantity_scale, organ_uid, created_at, updated_at)
+         VALUES (?, ?, ?, ?, '', '0', 0, ?, ?, ?)",
     )
     .bind(&transfer_uid)
     .bind(&draft.slug)
@@ -2159,7 +2159,7 @@ where
         NewFact {
             uid: None,
             record_uid: transfer_uid.clone(),
-            delta: 1.0,
+            delta: crate::exact::one(),
             at: None,
             actor_uid: fact_actor,
             cause: Cause::user_edit(),
@@ -2242,7 +2242,7 @@ where
             .await?,
         );
     }
-    crate::records::bump_quantity(&mut tx, &transfer_uid, 1.0, &now_string).await?;
+    crate::records::bump_quantity(&mut tx, &transfer_uid, crate::exact::one(), &now_string).await?;
 
     tx.commit().await?;
     Ok(CreatedTransferDraft {
@@ -2400,7 +2400,7 @@ where
         NewFact {
             uid: None,
             record_uid: input.transfer_uid.clone(),
-            delta: 0.0,
+            delta: crate::exact::zero(),
             at: None,
             actor_uid: fact_actor,
             cause: Cause::user_edit(),
@@ -2423,7 +2423,7 @@ where
     .bind(&now_string)
     .execute(&mut *tx)
     .await?;
-    crate::records::bump_quantity(&mut tx, &input.transfer_uid, 0.0, &now_string).await?;
+    crate::records::bump_quantity(&mut tx, &input.transfer_uid, crate::exact::zero(), &now_string).await?;
     tx.commit().await?;
 
     Ok(RevisionCommit::Committed {
@@ -2593,7 +2593,7 @@ pub async fn create(pool: &SqlitePool, new: NewTransfer<'_>) -> Result<String, S
             body: "",
             // The engine appends the activation/creation fact after the
             // sidecar exists. Quantity remains a fact-derived cache.
-            quantity: 0.0,
+            quantity: crate::exact::zero(),
         },
     )
     .await?;
@@ -2625,7 +2625,7 @@ pub struct TransferListRow {
 /// Every transfer joined to its record, oldest first.
 pub async fn list_all(pool: &SqlitePool) -> Result<Vec<TransferListRow>, StoreError> {
     Ok(sqlx::query(
-        "SELECT t.*, r.slug, r.head, r.quantity FROM transfer t
+        "SELECT t.*, r.slug, r.head, r.quantity_mantissa, r.quantity_scale FROM transfer t
            JOIN record r ON r.uid = t.record_uid
           ORDER BY r.created_at",
     )
@@ -2645,7 +2645,7 @@ pub async fn list_all(pool: &SqlitePool) -> Result<Vec<TransferListRow>, StoreEr
             parent_uid: r.get("parent_uid"),
             source_uid: r.get("source_uid"),
             reserve_default: r.get("reserve_default"),
-            active: r.get::<f64, _>("quantity") != 0.0,
+            active: r.get::<String, _>("quantity_mantissa") != "0",
             require_confirmation: r.get::<i64, _>("require_confirmation") != 0,
             default_place: location_snapshot(
                 r.get("default_location_lat"),
@@ -2661,7 +2661,7 @@ pub async fn list_all(pool: &SqlitePool) -> Result<Vec<TransferListRow>, StoreEr
 
 pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<TransferRow>, StoreError> {
     Ok(sqlx::query(
-        "SELECT t.*, r.quantity FROM transfer t JOIN record r ON r.uid = t.record_uid
+        "SELECT t.*, r.quantity_mantissa, r.quantity_scale FROM transfer t JOIN record r ON r.uid = t.record_uid
          WHERE t.record_uid = ?",
     )
     .bind(uid)
@@ -2679,7 +2679,7 @@ pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<TransferRow>, St
         parent_uid: r.get("parent_uid"),
         source_uid: r.get("source_uid"),
         reserve_default: r.get("reserve_default"),
-        active: r.get::<f64, _>("quantity") != 0.0,
+        active: r.get::<String, _>("quantity_mantissa") != "0",
         require_confirmation: r.get::<i64, _>("require_confirmation") != 0,
         default_place: location_snapshot(
             r.get("default_location_lat"),
@@ -3139,7 +3139,7 @@ where
         NewFact {
             uid: None,
             record_uid: transfer_uid.into(),
-            delta: 0.0,
+            delta: crate::exact::zero(),
             at: None,
             actor_uid,
             cause: Cause::user_edit(),
@@ -3204,7 +3204,7 @@ where
         NewFact {
             uid: None,
             record_uid: event.transfer_uid.into(),
-            delta: 0.0,
+            delta: crate::exact::zero(),
             at: None,
             actor_uid: event.actor_uid.map(str::to_owned),
             cause: Cause::user_edit(),
@@ -3396,7 +3396,7 @@ where
         &sign,
     )
     .await?;
-    crate::records::bump_quantity(&mut tx, &input.transfer_uid, 0.0, &at).await?;
+    crate::records::bump_quantity(&mut tx, &input.transfer_uid, crate::exact::zero(), &at).await?;
     let invitation = map_invitation(
         sqlx::query("SELECT * FROM transfer_invitation WHERE uid = ?")
             .bind(&invitation_uid)
@@ -3528,7 +3528,7 @@ where
         &sign,
     )
     .await?;
-    crate::records::bump_quantity(&mut tx, &pending.transfer_uid, 0.0, &at).await?;
+    crate::records::bump_quantity(&mut tx, &pending.transfer_uid, crate::exact::zero(), &at).await?;
     let invitation = map_invitation(
         sqlx::query("SELECT * FROM transfer_invitation WHERE uid = ?")
             .bind(&pending.uid)
@@ -3636,7 +3636,7 @@ where
         &sign,
     )
     .await?;
-    crate::records::bump_quantity(&mut tx, &pending.transfer_uid, 0.0, &at).await?;
+    crate::records::bump_quantity(&mut tx, &pending.transfer_uid, crate::exact::zero(), &at).await?;
     let invitation = map_invitation(
         sqlx::query("SELECT * FROM transfer_invitation WHERE uid = ?")
             .bind(&pending.uid)
@@ -3770,7 +3770,7 @@ where
         &sign,
     )
     .await?;
-    crate::records::bump_quantity(&mut tx, &closed.transfer_uid, 0.0, &at).await?;
+    crate::records::bump_quantity(&mut tx, &closed.transfer_uid, crate::exact::zero(), &at).await?;
     let invitation = map_invitation(
         sqlx::query("SELECT * FROM transfer_invitation WHERE uid = ?")
             .bind(&closed.uid)
@@ -3872,7 +3872,7 @@ where
         &sign,
     )
     .await?;
-    crate::records::bump_quantity(&mut tx, &pending.transfer_uid, 0.0, &at).await?;
+    crate::records::bump_quantity(&mut tx, &pending.transfer_uid, crate::exact::zero(), &at).await?;
     let invitation = map_invitation(
         sqlx::query("SELECT * FROM transfer_invitation WHERE uid = ?")
             .bind(&pending.uid)
@@ -4328,7 +4328,7 @@ where
     .bind(&at)
     .execute(&mut *tx)
     .await?;
-    crate::records::bump_quantity(&mut tx, &input.transfer_uid, 0.0, &at).await?;
+    crate::records::bump_quantity(&mut tx, &input.transfer_uid, crate::exact::zero(), &at).await?;
     tx.commit().await?;
     Ok(OpenPromiseClaimCommit::Committed(OpenPromiseClaimOutcome {
         transfer_uid: input.transfer_uid,
@@ -4815,7 +4815,7 @@ where
         NewFact {
             uid: None,
             record_uid: input.transfer_uid.clone(),
-            delta: 0.0,
+            delta: crate::exact::zero(),
             at: None,
             actor_uid: Some(input.person_uid.clone()),
             cause: Cause::user_edit(),
@@ -4938,7 +4938,7 @@ where
             }
         }
     }
-    crate::records::bump_quantity(&mut tx, &input.transfer_uid, 0.0, &at).await?;
+    crate::records::bump_quantity(&mut tx, &input.transfer_uid, crate::exact::zero(), &at).await?;
     tx.commit().await?;
 
     let outcome = agreement_outcome_for_request(pool, request_id)
@@ -5754,7 +5754,7 @@ where
         NewFact {
             uid: None,
             record_uid: input.transfer_uid.clone(),
-            delta: 0.0,
+            delta: crate::exact::zero(),
             at: None,
             actor_uid: Some(input.actor_person_uid.clone()),
             cause: Cause::user_edit(),
@@ -5839,7 +5839,7 @@ where
         .execute(&mut *tx)
         .await?;
     }
-    crate::records::bump_quantity(&mut tx, &input.transfer_uid, 0.0, &at).await?;
+    crate::records::bump_quantity(&mut tx, &input.transfer_uid, crate::exact::zero(), &at).await?;
     tx.commit().await?;
     let outcome = activation_outcome_for_request(pool, request_id)
         .await?
@@ -5983,7 +5983,7 @@ where
         NewFact {
             uid: None,
             record_uid: transfer_uid.clone(),
-            delta: 0.0,
+            delta: crate::exact::zero(),
             at: None,
             actor_uid: Some(input.actor_person_uid.clone()),
             cause: Cause::user_edit(),
@@ -6041,7 +6041,7 @@ where
         .bind(&input.occurrence_uid)
         .execute(&mut *tx)
         .await?;
-    crate::records::bump_quantity(&mut tx, &transfer_uid, 0.0, &at).await?;
+    crate::records::bump_quantity(&mut tx, &transfer_uid, crate::exact::zero(), &at).await?;
     tx.commit().await?;
     let outcome = occurrence_claim_outcome_for_request(pool, request_id)
         .await?
@@ -6296,7 +6296,7 @@ where
             NewFact {
                 uid: None,
                 record_uid: item.transfer_uid.clone(),
-                delta: 0.0,
+                delta: crate::exact::zero(),
                 at: None,
                 actor_uid: Some(input.actor_person_uid.clone()),
                 cause: Cause::user_edit(),
@@ -6371,7 +6371,7 @@ where
         .bind(&fact.uid)
         .execute(&mut *tx)
         .await?;
-        crate::records::bump_quantity(&mut tx, &item.transfer_uid, 0.0, &at).await?;
+        crate::records::bump_quantity(&mut tx, &item.transfer_uid, crate::exact::zero(), &at).await?;
         previous_hash = fact.hash.clone();
         facts.push(fact);
     }
@@ -6559,7 +6559,7 @@ where
         NewFact {
             uid: None,
             record_uid: transfer_uid.clone(),
-            delta: 0.0,
+            delta: crate::exact::zero(),
             at: None,
             actor_uid: Some(input.actor_person_uid.clone()),
             cause: Cause::user_edit(),
@@ -6629,7 +6629,7 @@ where
     .bind(&at)
     .execute(&mut *tx)
     .await?;
-    crate::records::bump_quantity(&mut tx, &transfer_uid, 0.0, &at).await?;
+    crate::records::bump_quantity(&mut tx, &transfer_uid, crate::exact::zero(), &at).await?;
     tx.commit().await?;
     let outcome = occurrence_application_outcome_for_request(pool, request_id)
         .await?
@@ -6992,7 +6992,7 @@ where
         NewFact {
             uid: None,
             record_uid: transfer_uid.into(),
-            delta: 0.0,
+            delta: crate::exact::zero(),
             at: None,
             actor_uid: Some(actor_person_uid.into()),
             cause: Cause::settlement(settlement_uid),
@@ -7058,7 +7058,7 @@ where
             NewFact {
                 uid: None,
                 record_uid: losing_transfer_uid.clone(),
-                delta: 0.0,
+                delta: crate::exact::zero(),
                 at: None,
                 actor_uid: Some(actor_person_uid.into()),
                 cause: Cause::settlement(settlement_uid),
@@ -7295,7 +7295,7 @@ where
         NewFact {
             uid: None,
             record_uid: transfer_uid.clone(),
-            delta: 0.0,
+            delta: crate::exact::zero(),
             at: None,
             actor_uid: Some(input.actor_person_uid.clone()),
             cause: Cause::settlement(settlement_uid.clone()),
@@ -7334,7 +7334,7 @@ where
         NewFact {
             uid: None,
             record_uid: input.local_record_uid.clone(),
-            delta: input.local_delta,
+            delta: crate::exact::from_f64(input.local_delta),
             at: None,
             actor_uid: Some(input.actor_person_uid.clone()),
             cause: Cause::settlement(settlement_uid.clone()),
@@ -7419,8 +7419,8 @@ where
             .execute(&mut *tx)
             .await?;
     }
-    crate::records::bump_quantity(&mut tx, &input.local_record_uid, input.local_delta, &at).await?;
-    crate::records::bump_quantity(&mut tx, &transfer_uid, 0.0, &at).await?;
+    crate::records::bump_quantity(&mut tx, &input.local_record_uid, crate::exact::from_f64(input.local_delta), &at).await?;
+    crate::records::bump_quantity(&mut tx, &transfer_uid, crate::exact::zero(), &at).await?;
     tx.commit().await?;
 
     let outcome = occurrence_settlement_outcome_for_request(pool, request_id)
@@ -7603,7 +7603,7 @@ where
         NewFact {
             uid: None,
             record_uid: slice.local_record_uid.clone(),
-            delta: -slice.local_delta,
+            delta: crate::exact::from_f64(-slice.local_delta),
             at: None,
             actor_uid: Some(input.actor_person_uid.clone()),
             cause: Cause {
@@ -7659,7 +7659,7 @@ where
     .bind(&at)
     .execute(&mut *tx)
     .await?;
-    crate::records::bump_quantity(&mut tx, &slice.local_record_uid, -slice.local_delta, &at)
+    crate::records::bump_quantity(&mut tx, &slice.local_record_uid, crate::exact::from_f64(-slice.local_delta), &at)
         .await?;
     tx.commit().await?;
 
@@ -7791,7 +7791,7 @@ where
         NewFact {
             uid: None,
             record_uid: transfer_uid.clone(),
-            delta: 0.0,
+            delta: crate::exact::zero(),
             at: None,
             actor_uid: Some(input.actor_person_uid.clone()),
             cause: Cause::settlement(input.occurrence_uid.clone()),
@@ -7892,7 +7892,7 @@ where
         .execute(&mut *tx)
         .await?;
     }
-    crate::records::bump_quantity(&mut tx, &transfer_uid, 0.0, &at).await?;
+    crate::records::bump_quantity(&mut tx, &transfer_uid, crate::exact::zero(), &at).await?;
     tx.commit().await?;
 
     let outcome = occurrence_dispute_outcome_for_request(pool, request_id)

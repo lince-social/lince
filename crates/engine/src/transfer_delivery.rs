@@ -1392,7 +1392,7 @@ impl Engine {
             nucleus::NewFact {
                 uid: Some(format!("taf:{}", attestation.attestation_uid)),
                 record_uid: attestation.transfer_uid.clone(),
-                delta: 0.0,
+                delta: nucleus::fact::zero_delta(),
                 at: None,
                 actor_uid: Some(attestation.origin_organ_uid.clone()),
                 cause: nucleus::Cause::settlement(attestation.settlement_slice_uid.clone()),

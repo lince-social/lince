@@ -1,0 +1,8 @@
+- [x] Be able to setup a Web workspace and export it in a file.html as an archive of the state of a component at a time. It doesnt make any requests, has no access tokens.
+- [ ] Be able to export something that can still make some types of request, like the GET of proteins.
+- [ ] If we integrate with some payment system, we can even do some buy/sell process.
+- [ ] Make an online shop for the Lince Institute with JIT production, Needs are created/assigned when an order arrives.
+    - [ ] T-shirts
+    - [ ] Stickers
+    - [ ] 3D Keychain Accessory
+    - [ ] Hoodies

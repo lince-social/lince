@@ -18,6 +18,9 @@ pub enum RecordKind {
     Sand,
     Thread,
     Message,
+    Program,
+    Frequency,
+    Grant,
     /// One occupancy of a conversation's audio/video room (Communication
     /// sand). A child Record linked `call-session-of` → conversation; carries
     /// the `communication.session.v1` sidecar. See `notes/institute/Communication.md`.
@@ -39,6 +42,9 @@ impl RecordKind {
             Self::Sand => "sand",
             Self::Thread => "thread",
             Self::Message => "message",
+            Self::Program => "program",
+            Self::Frequency => "frequency",
+            Self::Grant => "grant",
             Self::CallSession => "call_session",
         }
     }
@@ -57,6 +63,9 @@ impl RecordKind {
             "sand" => Self::Sand,
             "thread" => Self::Thread,
             "message" => Self::Message,
+            "program" => Self::Program,
+            "frequency" => Self::Frequency,
+            "grant" => Self::Grant,
             "call_session" => Self::CallSession,
             _ => return None,
         })

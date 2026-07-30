@@ -20,7 +20,7 @@ async fn plain(e: &Engine, slug: &str) -> String {
             kind: RecordKind::Plain,
             head: slug,
             body: "",
-            quantity: 0.0,
+            quantity: store::exact::zero(),
         },
     )
     .await
@@ -53,7 +53,7 @@ async fn edit_record_text_sets_fields_and_annotates() {
     assert_eq!(row.body, "Long body");
     // exactly one annotation fact so subscriptions refresh, and it is zero-delta
     assert_eq!(out.facts.len(), 1);
-    assert_eq!(out.facts[0].delta, 0.0);
+    assert_eq!(out.facts[0].delta, store::exact::from_f64(0.0));
     assert_eq!(out.facts[0].record_uid, uid);
 }
 
@@ -240,7 +240,7 @@ async fn compensate_reverses_a_quantity_fact() {
         .await
         .unwrap();
     assert_eq!(
-        store::records::quantity(&e.store.pool, &uid).await.unwrap(),
+        store::records::quantity(&e.store.pool, &uid).await.unwrap().map(|q| q.to_f64()),
         Some(5.0)
     );
     let fact_uid = out.facts[0].uid.clone();
@@ -251,9 +251,9 @@ async fn compensate_reverses_a_quantity_fact() {
         .await
         .unwrap();
     assert_eq!(comp.facts.len(), 1);
-    assert_eq!(comp.facts[0].delta, -5.0);
+    assert_eq!(comp.facts[0].delta, store::exact::from_f64(-5.0));
     assert_eq!(
-        store::records::quantity(&e.store.pool, &uid).await.unwrap(),
+        store::records::quantity(&e.store.pool, &uid).await.unwrap().map(|q| q.to_f64()),
         Some(0.0)
     );
 }
@@ -275,7 +275,7 @@ async fn compensate_zero_delta_fact_is_a_noop() {
         )
         .await
         .unwrap();
-    assert_eq!(out.facts[0].delta, 0.0);
+    assert_eq!(out.facts[0].delta, store::exact::from_f64(0.0));
 
     // compensating it changes nothing (nothing to reverse) and errors on unknown
     let comp = e
@@ -488,7 +488,7 @@ async fn link_actions_annotate_affected_records() {
         .await
         .unwrap();
     assert_eq!(added.facts.len(), 2);
-    assert!(added.facts.iter().all(|fact| fact.delta == 0.0));
+    assert!(added.facts.iter().all(|fact| fact.delta == store::exact::from_f64(0.0)));
     assert!(added.facts.iter().any(|fact| fact.record_uid == a));
     assert!(added.facts.iter().any(|fact| fact.record_uid == b));
 
@@ -585,7 +585,7 @@ async fn delete_record_is_distinct_from_deactivate() {
         .await
         .unwrap()
         .expect("deactivated record still exists");
-    assert_eq!(row.quantity, 0.0);
+    assert_eq!(row.quantity, store::exact::from_f64(0.0));
     assert_eq!(row.slug.as_deref(), Some("doomed"));
 
     // HARD delete tombstones it: gone from get/resolve/list, slug freed,
@@ -600,7 +600,7 @@ async fn delete_record_is_distinct_from_deactivate() {
         .await
         .expect("delete");
     assert_eq!(out.facts.len(), 1);
-    assert_eq!(out.facts[0].delta, 0.0);
+    assert_eq!(out.facts[0].delta, store::exact::from_f64(0.0));
     assert!(
         store::records::get(&e.store.pool, &uid)
             .await

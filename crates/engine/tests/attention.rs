@@ -19,7 +19,7 @@ async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
             kind: RecordKind::Plain,
             head: slug,
             body: "",
-            quantity,
+            quantity: store::exact::from_f64(quantity),
         },
     )
     .await
@@ -101,7 +101,7 @@ async fn expired_decisions_close_through_the_ledger() {
     assert_eq!(
         store::records::quantity(&e.store.pool, &decision)
             .await
-            .unwrap(),
+            .unwrap().map(|q| q.to_f64()),
         Some(0.0),
         "expired decision closed"
     );
@@ -198,14 +198,14 @@ async fn deciding_executes_the_chosen_options_action() {
     assert_eq!(
         store::records::quantity(&e.store.pool, &counter)
             .await
-            .unwrap(),
+            .unwrap().map(|q| q.to_f64()),
         Some(7.0),
         "the chosen option's Action ran"
     );
     assert_eq!(
         store::records::quantity(&e.store.pool, &decision)
             .await
-            .unwrap(),
+            .unwrap().map(|q| q.to_f64()),
         Some(0.0),
         "and the decision closed"
     );

@@ -399,8 +399,9 @@ after the provider/scale decision.
 
 ## References
 
-- Local: `docs/Sand.md`
-- Canonical Intelligence architecture: `docs/new-version-capabilities-and-maneirisms.md`
+- Local: `docs/Sand: Index.md`
+- Canonical Karma architecture: `docs/Central: Karma.md`
+- Cross-cutting standing laws: `docs/Maneirisms.md`
 - Local: `crates/web/src/sand/record/record.html` (thread/message surface)
 - Local: `crates/store/src/action_intents.rs` (intent/lease machinery)
 - MDN: `RTCPeerConnection`, `MediaRecorder`, `getDisplayMedia`

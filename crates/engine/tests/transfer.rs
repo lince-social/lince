@@ -23,7 +23,7 @@ fn a_sale_applies_only_reviewed_occurrences_owned_by_the_signer() {
         let ana = person(&engine, "sale.ana").await;
         let carlos = person(&engine, "sale.carlos").await;
         let bike = plain(&engine, "sale.ana.bike", 1.0).await;
-        let ana_money = plain(&engine, "sale.ana.money", 0.0).await;
+        let ana_balance = plain(&engine, "sale.ana.balance", 0.0).await;
         let fixture = create_transfer(
             &engine,
             &ana,
@@ -31,8 +31,8 @@ fn a_sale_applies_only_reviewed_occurrences_owned_by_the_signer() {
             vec![
                 promise("sale-bike-give", &bike, &ana, -1.0),
                 promise("sale-bike-receive", &bike, &carlos, 1.0),
-                promise("sale-money-give", &ana_money, &carlos, -300.0),
-                promise("sale-money-receive", &ana_money, &ana, 300.0),
+                promise("sale-balance-give", &ana_balance, &carlos, -300.0),
+                promise("sale-balance-receive", &ana_balance, &ana, 300.0),
             ],
             DraftOptions {
                 slug: "sale.bike",
@@ -71,12 +71,12 @@ fn a_sale_applies_only_reviewed_occurrences_owned_by_the_signer() {
             "sale:activate:bike",
         )
         .await;
-        let money_occurrence = activate(
+        let balance_occurrence = activate(
             &engine,
             &fixture,
             &ana,
-            "sale-money-receive",
-            "sale:activate:money",
+            "sale-balance-receive",
+            "sale:activate:balance",
         )
         .await;
 
@@ -98,18 +98,18 @@ fn a_sale_applies_only_reviewed_occurrences_owned_by_the_signer() {
         .await;
         claim(
             &engine,
-            &money_occurrence,
+            &balance_occurrence,
             &carlos,
             TransferOccurrenceClaimRole::Delivery,
-            "sale:money:delivery",
+            "sale:balance:delivery",
         )
         .await;
         claim(
             &engine,
-            &money_occurrence,
+            &balance_occurrence,
             &ana,
             TransferOccurrenceClaimRole::Receipt,
-            "sale:money:receipt",
+            "sale:balance:receipt",
         )
         .await;
 
@@ -122,27 +122,27 @@ fn a_sale_applies_only_reviewed_occurrences_owned_by_the_signer() {
             &bike_preview,
         )
         .await;
-        let money_preview =
-            support::settlement_preview(&engine, &money_occurrence, &ana, 300.0).await;
+        let balance_preview =
+            support::settlement_preview(&engine, &balance_occurrence, &ana, 300.0).await;
         support::settle_from_preview(
             &engine,
-            &money_occurrence,
+            &balance_occurrence,
             &ana,
-            "sale:settle:money",
-            &money_preview,
+            "sale:settle:balance",
+            &balance_preview,
         )
         .await;
 
         assert_eq!(
             store::records::quantity(&engine.store.pool, &bike)
                 .await
-                .unwrap(),
+                .unwrap().map(|q| q.to_f64()),
             Some(0.0)
         );
         assert_eq!(
-            store::records::quantity(&engine.store.pool, &ana_money)
+            store::records::quantity(&engine.store.pool, &ana_balance)
                 .await
-                .unwrap(),
+                .unwrap().map(|q| q.to_f64()),
             Some(300.0)
         );
         assert_eq!(
@@ -152,7 +152,7 @@ fn a_sale_applies_only_reviewed_occurrences_owned_by_the_signer() {
             Some(PromiseState::Kept)
         );
         assert_eq!(
-            store::misc::promise_state(&engine.store.pool, "sale-money-receive")
+            store::misc::promise_state(&engine.store.pool, "sale-balance-receive")
                 .await
                 .unwrap(),
             Some(PromiseState::Kept)
@@ -260,7 +260,7 @@ async fn every_fact_is_signed_and_verifiable() {
     // the signature guards the hash -> author link.
     assert!(nucleus::fact::verify_chain_step(fact));
     let mut delta_tampered = fact.clone();
-    delta_tampered.delta = -999.0;
+    delta_tampered.delta = store::exact::from_f64(-999.0);
     assert!(
         !nucleus::fact::verify_chain_step(&delta_tampered),
         "chain catches delta tampering"

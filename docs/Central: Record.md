@@ -1,3 +1,34 @@
+## [x] Records and the Ledger — the ground truth
+
+- [x] Everything is a record (tasks, rules, signals, transfers, decisions,
+  organs, people, saved Proteins, threads, messages); every change is a
+  hash-chained fact, signed when a signer is set.
+- [x] Actions: `create-record`, `set-quantity`, `add-quantity`,
+  `edit-record-text`, `set-slug`, `set-concept`, `set-unit`, `set-place`,
+  `set-extension`, `activate`/`deactivate`, `delete-record`.
+- [x] Undo = `compensate { fact }` — appends the inverse delta with
+  `cause=compensation`; there is no destructive undo.
+- [x] Any sand adds `include: { facts: { limit: N } }` for a free "why did
+  this change" drawer (delta, at, cause_kind, cause, actor).
+- [x] Checkpoints snapshot levels; compaction folds pre-checkpoint history
+  into a cold, hash-anchored archive; retention horizon is per record-kind,
+  no policy = keep forever.
+- [x] `quantity` is a cache, the fact is truth — negative = Need, positive =
+  Contribution, zero = peace; activation of rules/transfers/signals/sands is
+  the same knob.
+- [x] Deactivate and delete are different: `deactivate` (quantity → 0) keeps
+  the record on every read surface (an honest zero-quantity column);
+  `delete-record` HARD-tombstones it off every read path (Proteins,
+  resolve, rule inputs, checkpoints) and frees its slug — the Ledger stays
+  untouched, facts and hash chain remain, with a final zero-delta
+  annotation recording the deletion.
+- [x] Metadata edits drop zero-delta annotation facts so live subscriptions
+  refresh.
+- [x] Re-appending a fact whose uid already exists is a silent no-op (replay
+  safety); slugs are optional `dot.case` local sugar, uids are identity —
+  Actions accept either.
+
+
 | Columns  | User Input | Actual Record | Data Type       |
 |----------|------------|----------------|-----------------|
 | Id       |            | 1              | Number (Int)    |

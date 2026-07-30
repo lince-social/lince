@@ -6,6 +6,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
+use crate::karma::DecimalValue;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum CauseKind {
@@ -93,7 +95,7 @@ impl Cause {
 pub struct NewFact {
     pub uid: Option<String>,
     pub record_uid: String,
-    pub delta: f64,
+    pub delta: DecimalValue,
     pub at: Option<DateTime<Utc>>,
     pub actor_uid: Option<String>,
     pub cause: Cause,
@@ -101,7 +103,9 @@ pub struct NewFact {
 }
 
 impl NewFact {
-    pub fn quantity(record_uid: impl Into<String>, delta: f64, cause: Cause) -> Self {
+    /// An exact movement. This is the constructor a Karma-computed amount uses:
+    /// the decimal it evaluated is the decimal that lands in the chain.
+    pub fn quantity(record_uid: impl Into<String>, delta: DecimalValue, cause: Cause) -> Self {
         Self {
             uid: None,
             record_uid: record_uid.into(),
@@ -112,13 +116,34 @@ impl NewFact {
             payload: None,
         }
     }
+
+    /// The legacy-producer door: a caller that still computes its delta in
+    /// `f64` (transfers, senses, the old rule fold) converts here, visibly.
+    /// Every use of this is a site E0.2/E0.3 still has to make exact — that is
+    /// why it is a separate name rather than a `From` impl.
+    pub fn quantity_f64(record_uid: impl Into<String>, delta: f64, cause: Cause) -> Self {
+        Self::quantity(record_uid, decimal_from_f64(delta), cause)
+    }
+}
+
+/// Convert a legacy `f64` amount for the Ledger. Non-finite input cannot be a
+/// quantity; it becomes zero rather than poisoning a chain, since the callers
+/// are infallible constructors.
+pub fn decimal_from_f64(value: f64) -> DecimalValue {
+    DecimalValue::from_f64_lossy(value)
+        .unwrap_or_else(|_| DecimalValue::from_mantissa(0, 0).expect("scale 0 is always valid"))
+}
+
+/// The zero movement — checkpoints and anchors carry no quantity.
+pub fn zero_delta() -> DecimalValue {
+    DecimalValue::from_mantissa(0, 0).expect("scale 0 is always valid")
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Fact {
     pub uid: String,
     pub record_uid: String,
-    pub delta: f64,
+    pub delta: DecimalValue,
     pub at: DateTime<Utc>,
     pub actor_uid: Option<String>,
     pub cause: Cause,
@@ -130,12 +155,20 @@ pub struct Fact {
 
 /// Canonical serialization hashed into the chain. Field order is normative;
 /// changing it breaks every existing chain.
+///
+/// The delta enters as `scale:canonical-text`, so the exact pair is covered by
+/// the Fact's hash and signature rather than annotated beside them. Carrying
+/// the scale distinguishes a declared `1.5` from a declared `1.50`; carrying
+/// the text rather than a float removes the old hazard where `0.1 + 0.2`
+/// hashed as `0.30000000000000004` and chain determinism depended on the
+/// float formatter.
 fn canonical(f: &Fact) -> String {
     format!(
-        "{}|{}|{}|{}|{}|{}|{}|{}",
+        "{}|{}|{}:{}|{}|{}|{}|{}|{}",
         f.uid,
         f.record_uid,
-        f.delta,
+        f.delta.scale(),
+        f.delta.canonical(),
         f.at.to_rfc3339(),
         f.actor_uid.as_deref().unwrap_or(""),
         f.cause.kind.as_str(),
@@ -198,13 +231,13 @@ mod tests {
     fn seal_chains_and_verifies() {
         let now = Utc::now();
         let f1 = seal(
-            NewFact::quantity("r_A", -1.0, Cause::user_edit()),
+            NewFact::quantity_f64("r_A", -1.0, Cause::user_edit()),
             "genesis",
             now,
         );
         assert!(verify_chain_step(&f1));
         let f2 = seal(
-            NewFact::quantity("r_A", 5.0, Cause::rule("r_RULE")),
+            NewFact::quantity_f64("r_A", 5.0, Cause::rule("r_RULE")),
             &f1.hash,
             now,
         );
@@ -212,8 +245,45 @@ mod tests {
         assert_eq!(f2.prev_hash, f1.hash);
 
         let mut tampered = f2.clone();
-        tampered.delta = 500.0;
+        tampered.delta = decimal_from_f64(500.0);
         assert!(!verify_chain_step(&tampered));
+    }
+
+    #[test]
+    fn declared_precision_is_part_of_the_chain() {
+        // `1.5` and `1.50` are the same number and different declarations; the
+        // hash preimage carries the scale, so they are different Facts.
+        let now = Utc::now();
+        let mk = |delta: DecimalValue| {
+            seal(
+                NewFact {
+                    uid: Some("f_FIXED".into()),
+                    record_uid: "r_A".into(),
+                    delta,
+                    at: Some(now),
+                    actor_uid: None,
+                    cause: Cause::user_edit(),
+                    payload: None,
+                },
+                "genesis",
+                now,
+            )
+        };
+        let coarse = mk(DecimalValue::parse_canonical(1, "1.5").unwrap());
+        let fine = mk(DecimalValue::parse_canonical(2, "1.50").unwrap());
+        assert_ne!(coarse.hash, fine.hash);
+        assert!(verify_chain_step(&coarse) && verify_chain_step(&fine));
+    }
+
+    #[test]
+    fn float_hazards_do_not_reach_the_chain() {
+        // The old preimage interpolated an f64, so this pair hashed as
+        // "0.30000000000000004" and chain bytes depended on the formatter.
+        let sum = decimal_from_f64(0.1)
+            .aligned_add(decimal_from_f64(0.2))
+            .expect("0.1 + 0.2 is exact at scale 1");
+        assert_eq!(sum.canonical(), "0.3");
+        assert_eq!(decimal_from_f64(0.1).canonical(), "0.1");
     }
 
     #[test]
@@ -226,7 +296,7 @@ mod tests {
                 NewFact {
                     uid: Some("f_FIXED".into()),
                     record_uid: "r_A".into(),
-                    delta: 2.5,
+                    delta: decimal_from_f64(2.5),
                     at: Some(now),
                     actor_uid: Some("r_ANA".into()),
                     cause: Cause::settlement("t_X"),

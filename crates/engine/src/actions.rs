@@ -4,9 +4,10 @@
 //! Sands and Fiote speak only these — Fiote has no privileged path.
 
 use chrono::{DateTime, Utc};
+use nucleus::karma::{CanonicalHash, FrequencyAst, FrequencyParameterValue, LocalId, ProgramAst};
 use nucleus::{Cause, CauseKind, Fact, NewFact, PromiseState, RecordKind};
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 
 use crate::Engine;
 use crate::error::EngineError;
@@ -31,6 +32,173 @@ pub enum Action {
     AddQuantity {
         target: String,
         delta: f64,
+    },
+    /// Capture a classified change in one step: "ice cream, `@cost`, -10".
+    /// The amount lands on the Record that actually moved, and what the change
+    /// *was* is asserted about the Fact.
+    ///
+    /// Deliberately one action, not two. A form that made you first pick which
+    /// total to affect would have reintroduced exactly the bookkeeping this
+    /// design removes — totals are a query over classified changes, never a
+    /// number a person maintains.
+    ///
+    /// `amount` is exact decimal text (`"-10"`, `"-10.50"`); its sign carries
+    /// direction, so a refund is the same `@cost` concept with a positive
+    /// amount and correctly *reduces* the total.
+    CaptureEntry {
+        /// The resource Record whose level moved — stock, hours, a balance.
+        target: String,
+        amount: String,
+        /// What the change was. Resolved through the concept DAG, so `@food`
+        /// answers a query for `@cost` when it sits under it.
+        concept: Option<String>,
+        #[serde(default)]
+        note: Option<String>,
+        /// Occurred-at, for backdating. Defaults to now.
+        #[serde(default)]
+        at: Option<String>,
+        /// Idempotency key. Supplying one makes a retry return the first
+        /// result instead of capturing the change twice — the difference
+        /// between a network hiccup and the quantity moving twice. Omitting it is
+        /// allowed for local one-shot callers and simply forgoes that
+        /// protection.
+        #[serde(default)]
+        request_id: Option<String>,
+    },
+    /// Correct a captured change: wrong amount, wrong date, wrong note.
+    ///
+    /// Nothing is rewritten. The old Fact is compensated and a replacement is
+    /// appended, so the chain keeps both and the correction is visible as a
+    /// pair rather than as history that quietly changed. An edit that touches
+    /// only the note moves no quantity and appends no Fact, but still earns a
+    /// revision and an audit row.
+    ///
+    /// To change what a change *was*, use `classify-fact` — the quantity did not
+    /// move, so there is nothing to compensate.
+    ReviseEntry {
+        entry: String,
+        expected_revision: i64,
+        request_id: String,
+        /// Exact decimal text, like `capture-entry`.
+        amount: String,
+        #[serde(default)]
+        note: Option<String>,
+        #[serde(default)]
+        at: Option<String>,
+    },
+    /// Undo a captured change entirely. The amount is returned by a
+    /// compensating Fact carrying the same classification, so the category it
+    /// was counted against is the category it is removed from. The event keeps
+    /// its row and its history: an append-only Ledger has no delete.
+    VoidEntry {
+        entry: String,
+        expected_revision: i64,
+        request_id: String,
+    },
+    /// Re-assert what an already-recorded change was. Appends an assertion
+    /// with an audit trail; it never touches the Fact, because the quantity did
+    /// not move — only our account of what it meant.
+    ClassifyFact {
+        fact: String,
+        concept: Option<String>,
+        #[serde(default)]
+        note: Option<String>,
+    },
+    /// Add one of the concepts a Record *counts as*, alongside the identity
+    /// concept it already carries. A toothbrush is a toothbrush, and also a
+    /// cost and a health item; this is how the second and third get said.
+    ///
+    /// Distinct from [`Action::ClassifyFact`] on purpose, and the distinction is
+    /// the one every aggregation rests on: a Record's concepts are a standing truth about
+    /// what the thing is, while a Fact's concept says what one change was.
+    /// Buying the toothbrush is a `-10` classified `@hygiene-purchase`; the
+    /// toothbrush being `@health` is separate and outlives the purchase.
+    ClassifyRecord {
+        target: String,
+        concept: String,
+    },
+    /// Withdraw one of those additional concepts. It cannot remove the Record's
+    /// identity concept — that is what the thing *is*, and Transfer matching and
+    /// sync resolve through it.
+    UnclassifyRecord {
+        target: String,
+        concept: String,
+    },
+    /// Declare that a change is expected to repeat: a rent, a salary, a weekly
+    /// count.
+    ///
+    /// This writes no Fact and moves nothing. It states what is expected, how
+    /// often, and what it counts as; the dates it implies are derived on read,
+    /// and each becomes real only when applied.
+    CreateRecurrence {
+        /// The resource Record whose level is expected to move.
+        target: String,
+        /// Exact decimal text, sign carrying direction — same as
+        /// [`Action::CaptureEntry`], so a recurring income and a recurring cost
+        /// are one shape.
+        amount: String,
+        concept: Option<String>,
+        #[serde(default)]
+        note: Option<String>,
+        cadence: nucleus::karma::Cadence,
+        /// Sets the rule's phase and time of day. Defaults to now.
+        #[serde(default)]
+        anchor_at: Option<String>,
+        #[serde(default)]
+        request_id: Option<String>,
+    },
+    /// Change what a rule expects from here on.
+    ///
+    /// Dates already applied are Facts and keep the amount they carried — this
+    /// is not a correction of history. To fix one that was applied wrongly,
+    /// revise its entry.
+    ReviseRecurrence {
+        recurrence: String,
+        expected_revision: i64,
+        request_id: String,
+        amount: String,
+        concept: Option<String>,
+        #[serde(default)]
+        note: Option<String>,
+        cadence: nucleus::karma::Cadence,
+        #[serde(default)]
+        anchor_at: Option<String>,
+    },
+    /// Stop or resume offering a rule's future dates. Disowns nothing already
+    /// applied.
+    SetRecurrencePaused {
+        recurrence: String,
+        expected_revision: i64,
+        request_id: String,
+        paused: bool,
+    },
+    /// Turn one expected date into a real change.
+    ///
+    /// This is an ordinary capture whose idempotency key names the rule and the
+    /// date, so applying the same date twice is refused by the same UNIQUE that
+    /// protects every other retry. `amount` overrides the rule's figure for
+    /// this date alone — the bill that came in higher than the standing rule.
+    ApplyRecurrenceOccurrence {
+        recurrence: String,
+        /// RFC3339, and it must be a date the rule actually produces.
+        due_at: String,
+        #[serde(default)]
+        amount: Option<String>,
+        #[serde(default)]
+        note: Option<String>,
+    },
+    /// Decline one expected date. Recorded, because "decided against" and
+    /// "nobody has looked yet" must not read the same.
+    SkipRecurrenceOccurrence {
+        recurrence: String,
+        due_at: String,
+        #[serde(default)]
+        note: Option<String>,
+    },
+    /// Take a skip back, so the date is offered again.
+    UnskipRecurrenceOccurrence {
+        recurrence: String,
+        due_at: String,
     },
     Activate {
         target: String,
@@ -543,6 +711,102 @@ pub enum Action {
         slug: String,
         head: String,
         ast: serde_json::Value,
+    },
+    CreateKarmaProgram {
+        request_id: String,
+        program: ProgramAst,
+        #[serde(default)]
+        owner_person_uid: Option<String>,
+    },
+    ReviseKarmaProgram {
+        request_id: String,
+        program_uid: String,
+        expected_handle_revision: u64,
+        program: ProgramAst,
+    },
+    ActivateKarmaProgram {
+        request_id: String,
+        program_uid: String,
+        expected_handle_revision: u64,
+        revision_hash: CanonicalHash,
+    },
+    PauseKarmaProgram {
+        request_id: String,
+        program_uid: String,
+        expected_handle_revision: u64,
+    },
+    RespondKarmaCandidate {
+        request_id: String,
+        candidate_hash: CanonicalHash,
+        expected_state_revision: u64,
+        response: nucleus::karma::CandidateReviewAction,
+        /// K5.2: naming one grant authorizes the accepted `act` proposal into a
+        /// durable intent in the same commit. Omitted, acceptance stays inert.
+        #[serde(default)]
+        authorizing_grant_uid: Option<String>,
+    },
+    /// K5.1 delegation grants. None of these carry a principal: the grant belongs
+    /// to the Person whose installed key signs it, so a payload cannot name a
+    /// different holder of the authority.
+    CreateKarmaGrant {
+        request_id: String,
+        slug: nucleus::karma::Slug,
+        grant: nucleus::karma::DelegationGrantSpec,
+    },
+    NarrowKarmaGrant {
+        request_id: String,
+        grant_uid: String,
+        expected_handle_revision: u64,
+        grant: nucleus::karma::DelegationGrantSpec,
+    },
+    ActivateKarmaGrant {
+        request_id: String,
+        grant_uid: String,
+        expected_handle_revision: u64,
+        revision_hash: CanonicalHash,
+    },
+    RevokeKarmaGrant {
+        request_id: String,
+        grant_uid: String,
+        expected_handle_revision: u64,
+    },
+    CreateKarmaFrequency {
+        request_id: String,
+        frequency: FrequencyAst,
+        #[serde(default)]
+        owner_person_uid: Option<String>,
+    },
+    ReviseKarmaFrequency {
+        request_id: String,
+        frequency_uid: String,
+        expected_handle_revision: u64,
+        frequency: FrequencyAst,
+    },
+    ActivateKarmaFrequency {
+        request_id: String,
+        frequency_uid: String,
+        expected_handle_revision: u64,
+        revision_hash: CanonicalHash,
+        #[serde(default)]
+        parameter_overrides: BTreeMap<LocalId, FrequencyParameterValue>,
+    },
+    SetKarmaFrequencyParameters {
+        request_id: String,
+        frequency_uid: String,
+        expected_handle_revision: u64,
+        expected_active_revision_hash: CanonicalHash,
+        parameter_overrides: BTreeMap<LocalId, FrequencyParameterValue>,
+    },
+    ResetKarmaFrequencyParameters {
+        request_id: String,
+        frequency_uid: String,
+        expected_handle_revision: u64,
+        expected_active_revision_hash: CanonicalHash,
+    },
+    PauseKarmaFrequency {
+        request_id: String,
+        frequency_uid: String,
+        expected_handle_revision: u64,
     },
     /// Karma CRUD (blueprint VII.2): rules are records; the registry reloads
     /// and Proof warnings come back on the outcome.
@@ -1112,6 +1376,28 @@ fn normalize_transfer_invitation_expiry(
     Ok(Some(parsed))
 }
 
+/// Exact from the keystroke: typed text becomes a decimal without ever being a
+/// float, so `-10.50` survives as `-10.50`.
+fn parse_exact_amount(amount: &str) -> Result<nucleus::DecimalValue, EngineError> {
+    nucleus::DecimalValue::parse_inferred(amount.trim()).map_err(|_| EngineError::Conflict {
+        code: "entry_amount_invalid",
+        message: format!("`{amount}` is not an exact decimal amount"),
+    })
+}
+
+fn parse_instant_field(text: &str) -> Result<DateTime<Utc>, EngineError> {
+    chrono::DateTime::parse_from_rfc3339(text)
+        .map(|value| value.with_timezone(&Utc))
+        .map_err(|_| EngineError::Conflict {
+            code: "entry_at_invalid",
+            message: format!("`{text}` is not an RFC3339 instant"),
+        })
+}
+
+fn parse_optional_instant(text: Option<&str>) -> Result<Option<DateTime<Utc>>, EngineError> {
+    text.map(parse_instant_field).transpose()
+}
+
 fn transfer_request_id_conflict() -> EngineError {
     EngineError::Conflict {
         code: "transfer_request_id_conflict",
@@ -1172,6 +1458,112 @@ pub struct ActionOutcome {
     /// Non-fatal advisories (blueprint IV.2: cycle warnings on save). The
     /// action succeeded; these are for the surface to show.
     pub warnings: Vec<String>,
+}
+
+fn apply_program_mutation(
+    commit: store::karma::programs::ProgramMutationCommit,
+    outcome: &mut ActionOutcome,
+) -> Result<(), EngineError> {
+    match commit {
+        store::karma::programs::ProgramMutationCommit::Committed { handle, fact } => {
+            outcome.created = Some(handle.record_uid);
+            outcome.facts.push(fact);
+            Ok(())
+        }
+        store::karma::programs::ProgramMutationCommit::Replayed { handle, .. } => {
+            outcome.created = Some(handle.record_uid);
+            Ok(())
+        }
+        store::karma::programs::ProgramMutationCommit::Stale {
+            current_handle_revision,
+        } => Err(stale_karma_handle(current_handle_revision)),
+    }
+}
+
+fn apply_frequency_mutation(
+    commit: store::karma::frequencies::FrequencyMutationCommit,
+    outcome: &mut ActionOutcome,
+) -> Result<(), EngineError> {
+    match commit {
+        store::karma::frequencies::FrequencyMutationCommit::Committed { handle, fact } => {
+            outcome.created = Some(handle.record_uid);
+            outcome.facts.push(fact);
+            Ok(())
+        }
+        store::karma::frequencies::FrequencyMutationCommit::Replayed { handle, .. } => {
+            outcome.created = Some(handle.record_uid);
+            Ok(())
+        }
+        store::karma::frequencies::FrequencyMutationCommit::Stale {
+            current_handle_revision,
+        } => Err(stale_karma_handle(current_handle_revision)),
+    }
+}
+
+fn apply_candidate_review(
+    commit: store::karma::candidates::CandidateReviewCommit,
+    outcome: &mut ActionOutcome,
+) -> Result<(), EngineError> {
+    match commit {
+        store::karma::candidates::CandidateReviewCommit::Committed {
+            state,
+            fact,
+            intent,
+            intent_fact,
+        } => {
+            // An authorized acceptance reports the intent it created, so the
+            // caller never has to guess whether authority was actually taken.
+            outcome.created = Some(
+                intent
+                    .map(|hash| hash.as_str().to_string())
+                    .unwrap_or_else(|| state.candidate_hash.as_str().to_string()),
+            );
+            outcome.facts.push(fact);
+            outcome.facts.extend(intent_fact);
+            Ok(())
+        }
+        store::karma::candidates::CandidateReviewCommit::Replayed { state, .. } => {
+            outcome.created = Some(state.candidate_hash.as_str().to_string());
+            Ok(())
+        }
+        store::karma::candidates::CandidateReviewCommit::Stale {
+            current_state_revision,
+        } => Err(EngineError::Conflict {
+            code: "karma_stale_candidate_revision",
+            message: format!(
+                "Karma candidate changed; current state revision is {current_state_revision}"
+            ),
+        }),
+    }
+}
+
+pub(crate) fn apply_grant_mutation(
+    commit: store::karma::grants::GrantMutationCommit,
+    outcome: &mut ActionOutcome,
+) -> Result<(), EngineError> {
+    match commit {
+        store::karma::grants::GrantMutationCommit::Committed { handle, fact } => {
+            outcome.created = Some(handle.record_uid);
+            outcome.facts.push(fact);
+            Ok(())
+        }
+        store::karma::grants::GrantMutationCommit::Replayed { handle, .. } => {
+            outcome.created = Some(handle.record_uid);
+            Ok(())
+        }
+        store::karma::grants::GrantMutationCommit::Stale {
+            current_handle_revision,
+        } => Err(stale_karma_handle(current_handle_revision)),
+    }
+}
+
+fn stale_karma_handle(current_handle_revision: u64) -> EngineError {
+    EngineError::Conflict {
+        code: "karma_stale_handle_revision",
+        message: format!(
+            "Karma object changed; current handle revision is {current_handle_revision}"
+        ),
+    }
 }
 
 pub(crate) struct VerifiedActionAuthorship {
@@ -1261,7 +1653,7 @@ impl Engine {
                         kind,
                         head: &head,
                         body: &body,
-                        quantity: 0.0, // level arrives via the one write path below
+                        quantity: store::exact::zero(), // level arrives via the one write path below
                     },
                 )
                 .await?;
@@ -1274,7 +1666,7 @@ impl Engine {
                     .append(
                         NewFact {
                             actor_uid: actor,
-                            ..NewFact::quantity(rec.uid.clone(), quantity, Cause::user_edit())
+                            ..NewFact::quantity_f64(rec.uid.clone(), quantity, Cause::user_edit())
                         },
                         now,
                     )
@@ -1286,14 +1678,626 @@ impl Engine {
                 self.reject_direct_transfer_record_mutation(&uid).await?;
                 let current = store::records::quantity(&self.store.pool, &uid)
                     .await?
-                    .unwrap_or(0.0);
-                if value != current {
+                    .unwrap_or_else(store::exact::zero);
+                let target_value = store::exact::from_f64(value);
+                if target_value != current {
                     outcome.facts = self
                         .append(
                             NewFact {
                                 actor_uid: actor,
-                                ..NewFact::quantity(uid, value - current, Cause::user_edit())
+                                ..NewFact::quantity(
+                                    uid,
+                                    store::exact::difference(target_value, current)?,
+                                    Cause::user_edit(),
+                                )
                             },
+                            now,
+                        )
+                        .await?;
+                }
+            }
+            Action::CaptureEntry {
+                target,
+                amount,
+                concept,
+                note,
+                at,
+                request_id,
+            } => {
+                // The replay guard runs BEFORE any Ledger work, and it has to.
+                // `append` commits its own transaction, so a replay detected
+                // later would already have moved the quantity a second time, and
+                // the error afterwards would not put it back.
+                let request_id = request_id
+                    .map(|id| id.trim().to_string())
+                    .filter(|id| !id.is_empty())
+                    .unwrap_or_else(|| nucleus::new_uid("req"));
+                if store::entries::replayed(&self.store.pool, &request_id)
+                    .await?
+                    .is_some()
+                {
+                    return Ok(outcome);
+                }
+                let uid = self.resolve(&target).await?;
+                self.reject_direct_transfer_record_mutation(&uid).await?;
+                // Exact from the keystroke: the typed text is parsed straight
+                // into a decimal, so "-10.50" never becomes a float on the way
+                // to a signed Fact.
+                let delta = nucleus::DecimalValue::parse_inferred(amount.trim()).map_err(|_| {
+                    EngineError::Conflict {
+                        code: "entry_amount_invalid",
+                        message: format!("`{amount}` is not an exact decimal amount"),
+                    }
+                })?;
+                let occurred_at = match at.as_deref() {
+                    Some(text) => Some(
+                        chrono::DateTime::parse_from_rfc3339(text)
+                            .map_err(|_| EngineError::Conflict {
+                                code: "entry_at_invalid",
+                                message: format!("`{text}` is not an RFC3339 instant"),
+                            })?
+                            .with_timezone(&Utc),
+                    ),
+                    None => None,
+                };
+                let concept_uid = self.resolve_concept_opt(concept).await?;
+                outcome.facts = self
+                    .append(
+                        NewFact {
+                            actor_uid: actor,
+                            at: occurred_at,
+                            ..NewFact::quantity(uid, delta, Cause::user_edit())
+                        },
+                        now,
+                    )
+                    .await?;
+                // Classification is an assertion ABOUT the Fact, so it happens
+                // after the Fact is sealed and never enters its preimage.
+                if let Some(fact) = outcome.facts.first() {
+                    store::ledger::classify_fact(
+                        &self.store.pool,
+                        &fact.uid,
+                        concept_uid.as_deref(),
+                        fact.actor_uid.as_deref(),
+                        note.as_deref(),
+                    )
+                    .await?;
+                    // The entry is what makes this change editable later. The
+                    // Fact and its classification cannot change; this can.
+                    let commit = store::entries::create(
+                        &self.store.pool,
+                        store::entries::NewEntry {
+                            record_uid: &fact.record_uid,
+                            amount: delta,
+                            note: note.as_deref(),
+                            occurred_at: fact.at,
+                            fact_uid: &fact.uid,
+                            request_id: &request_id,
+                            actor_uid: fact.actor_uid.as_deref(),
+                        },
+                        now,
+                    )
+                    .await?;
+                    // Handed back so a surface can revise or void this change
+                    // without having to search for the event it just made.
+                    outcome.created = Some(commit.entry().uid.clone());
+                }
+            }
+            Action::CreateRecurrence {
+                target,
+                amount,
+                concept,
+                note,
+                cadence,
+                anchor_at,
+                request_id,
+            } => {
+                let request_id = request_id
+                    .map(|id| id.trim().to_string())
+                    .filter(|id| !id.is_empty())
+                    .unwrap_or_else(|| nucleus::new_uid("req"));
+                let uid = self.resolve(&target).await?;
+                let declared = parse_exact_amount(&amount)?;
+                let concept_uid = self.resolve_concept_opt(concept).await?;
+                let anchor = parse_optional_instant(anchor_at.as_deref())?.unwrap_or(now);
+                let commit = store::recurrence::create(
+                    &self.store.pool,
+                    store::recurrence::NewRecurrence {
+                        record_uid: &uid,
+                        amount: declared,
+                        concept_uid: concept_uid.as_deref(),
+                        note: note.as_deref(),
+                        cadence,
+                        anchor_at: anchor,
+                        request_id: &request_id,
+                        actor_uid: actor.as_deref(),
+                    },
+                    now,
+                )
+                .await
+                .map_err(|error| EngineError::Conflict {
+                    code: "recurrence_invalid",
+                    message: error.to_string(),
+                })?;
+                outcome.created = Some(commit.rule().uid.clone());
+            }
+            Action::ReviseRecurrence {
+                recurrence,
+                expected_revision,
+                request_id,
+                amount,
+                concept,
+                note,
+                cadence,
+                anchor_at,
+            } => {
+                let current = store::recurrence::get(&self.store.pool, &recurrence)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(recurrence.clone()))?;
+                let declared = parse_exact_amount(&amount)?;
+                let concept_uid = self.resolve_concept_opt(concept).await?;
+                // Keeping the anchor by default matters: silently re-anchoring
+                // to "now" on an edit would shift every future date of a rule
+                // whose author only meant to change its amount.
+                let anchor = match parse_optional_instant(anchor_at.as_deref())? {
+                    Some(value) => value,
+                    None => parse_instant_field(&current.anchor_at)?,
+                };
+                store::recurrence::revise(
+                    &self.store.pool,
+                    store::recurrence::ReviseRecurrence {
+                        recurrence_uid: &recurrence,
+                        expected_revision,
+                        amount: declared,
+                        concept_uid: concept_uid.as_deref(),
+                        note: note.as_deref(),
+                        cadence,
+                        anchor_at: anchor,
+                        request_id: &request_id,
+                        actor_uid: actor.as_deref(),
+                    },
+                    now,
+                )
+                .await
+                .map_err(|error| EngineError::Conflict {
+                    code: "recurrence_revision_stale",
+                    message: error.to_string(),
+                })?;
+            }
+            Action::SetRecurrencePaused {
+                recurrence,
+                expected_revision,
+                request_id,
+                paused,
+            } => {
+                store::recurrence::set_state(
+                    &self.store.pool,
+                    &recurrence,
+                    expected_revision,
+                    paused,
+                    &request_id,
+                    actor.as_deref(),
+                    now,
+                )
+                .await
+                .map_err(|error| EngineError::Conflict {
+                    code: "recurrence_revision_stale",
+                    message: error.to_string(),
+                })?;
+            }
+            Action::ApplyRecurrenceOccurrence {
+                recurrence,
+                due_at,
+                amount,
+                note,
+            } => {
+                let rule = store::recurrence::get(&self.store.pool, &recurrence)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(recurrence.clone()))?;
+                let due = parse_instant_field(&due_at)?;
+                // A date the rule does not produce is not an occurrence of it.
+                // Without this check, "apply" degenerates into a capture that
+                // merely claims a rule's name, and the derived timeline would
+                // show an applied date that no cadence explains.
+                let produced = rule
+                    .cadence
+                    .between(
+                        parse_instant_field(&rule.anchor_at)?,
+                        due,
+                        due + chrono::Duration::nanoseconds(1),
+                    )
+                    .map_err(|error| EngineError::Conflict {
+                        code: "recurrence_cadence_invalid",
+                        message: error.to_string(),
+                    })?;
+                // A one-instant window is still correct with a landing rule in
+                // play: the derivation widens its own scan and filters on the
+                // landed instant, so a date that landed here is found here.
+                if !produced.dates.contains(&due) {
+                    return Err(EngineError::Conflict {
+                        code: "recurrence_occurrence_unknown",
+                        message: format!("`{due_at}` is not a date this rule produces"),
+                    });
+                }
+                let declared = match amount.as_deref() {
+                    Some(text) => text.trim().to_string(),
+                    None => rule.amount.to_string(),
+                };
+                // Applying is an ordinary capture. Reusing the same path is
+                // what keeps a rule-applied change indistinguishable from a
+                // hand-typed one in the Ledger afterwards — nothing downstream
+                // needs to know a rule was involved to read a balance.
+                let capture = Action::CaptureEntry {
+                    target: rule.record_uid.clone(),
+                    amount: declared,
+                    concept: rule.concept_uid.clone(),
+                    note: note.or_else(|| rule.note.clone()),
+                    at: Some(due.to_rfc3339()),
+                    request_id: Some(store::recurrence::occurrence_request_id(
+                        &rule.uid, due,
+                    )),
+                };
+                // Deliberately `None`: any signed authorship on this action
+                // attested *applying an occurrence*, not capturing an entry.
+                // Forwarding it would let one signature stand for an action
+                // shape its signer never saw. The outer action has already
+                // cleared its own authority, and the capture is its
+                // consequence rather than a second attested request.
+                let applied =
+                    Box::pin(self.act_at_with_authorship(capture, actor.clone(), now, None))
+                        .await?;
+                outcome.facts = applied.facts;
+                outcome.created = applied.created;
+            }
+            Action::SkipRecurrenceOccurrence {
+                recurrence,
+                due_at,
+                note,
+            } => {
+                let due = parse_instant_field(&due_at)?;
+                store::recurrence::skip(
+                    &self.store.pool,
+                    &recurrence,
+                    due,
+                    note.as_deref(),
+                    actor.as_deref(),
+                    now,
+                )
+                .await?;
+            }
+            Action::UnskipRecurrenceOccurrence { recurrence, due_at } => {
+                let due = parse_instant_field(&due_at)?;
+                store::recurrence::unskip(&self.store.pool, &recurrence, due).await?;
+            }
+            Action::ReviseEntry {
+                entry,
+                expected_revision,
+                request_id,
+                amount,
+                note,
+                at,
+            } => {
+                // Replay guard first, for the same reason as capture: a retry
+                // that got as far as appending would compensate twice.
+                if store::entries::replayed(&self.store.pool, &request_id)
+                    .await?
+                    .is_some()
+                {
+                    return Ok(outcome);
+                }
+                let current = store::entries::get(&self.store.pool, &entry)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(entry.clone()))?;
+                if current.is_void() {
+                    return Err(EngineError::Conflict {
+                        code: "entry_void",
+                        message: "a voided entry cannot be revised".to_string(),
+                    });
+                }
+                if current.revision != expected_revision {
+                    return Err(EngineError::Conflict {
+                        code: "entry_revision_stale",
+                        message: "this entry was changed by someone else".to_string(),
+                    });
+                }
+                let delta = nucleus::DecimalValue::parse_inferred(amount.trim()).map_err(|_| {
+                    EngineError::Conflict {
+                        code: "entry_amount_invalid",
+                        message: format!("`{amount}` is not an exact decimal amount"),
+                    }
+                })?;
+                let occurred_at = match at.as_deref() {
+                    Some(text) => chrono::DateTime::parse_from_rfc3339(text)
+                        .map_err(|_| EngineError::Conflict {
+                            code: "entry_at_invalid",
+                            message: format!("`{text}` is not an RFC3339 instant"),
+                        })?
+                        .with_timezone(&Utc),
+                    None => chrono::DateTime::parse_from_rfc3339(&current.occurred_at)
+                        .map_err(|_| EngineError::Conflict {
+                            code: "entry_at_invalid",
+                            message: "stored entry instant is unreadable".to_string(),
+                        })?
+                        .with_timezone(&Utc),
+                };
+
+                // The quantity only moves if the amount or the instant
+                // changed. A
+                // note-only edit is bookkeeping about a change, not a change,
+                // and appending a compensating pair for it would put two
+                // meaningless entries in the chain.
+                //
+                // The amount is compared numerically, not representationally:
+                // `DecimalValue` equality includes the scale, so re-typing
+                // `-15` as `-15.00` would otherwise read as a change.
+                let amount_changed = delta
+                    .aligned_sub(current.amount)
+                    .is_none_or(|difference| !difference.is_zero());
+                let moved =
+                    amount_changed || store::facts::instant(occurred_at) != current.occurred_at;
+                let (compensated, replacement) = if moved {
+                    let old_fact_uid = current.fact_uid.clone().ok_or_else(|| {
+                        EngineError::Conflict {
+                            code: "entry_fact_missing",
+                            message: "this entry has no Fact to correct".to_string(),
+                        }
+                    })?;
+                    let old_fact = store::facts::get(&self.store.pool, &old_fact_uid)
+                        .await?
+                        .ok_or_else(|| EngineError::UnknownRecord(old_fact_uid.clone()))?;
+                    // Carry the classification onto both new Facts. Without
+                    // this, correcting an amount would silently drop the
+                    // change out of the category it belonged to.
+                    let concept_uid =
+                        store::ledger::fact_concept(&self.store.pool, &old_fact_uid).await?;
+
+                    let mut appended = self
+                        .append(
+                            NewFact {
+                                uid: None,
+                                record_uid: old_fact.record_uid.clone(),
+                                delta: store::exact::negate(old_fact.delta)?,
+                                at: Some(old_fact.at),
+                                actor_uid: actor.clone(),
+                                cause: Cause {
+                                    kind: CauseKind::Compensation,
+                                    uid: Some(old_fact_uid.clone()),
+                                },
+                                payload: None,
+                            },
+                            now,
+                        )
+                        .await?;
+                    let compensation_uid = appended.first().map(|f| f.uid.clone());
+                    let replacement_facts = self
+                        .append(
+                            NewFact {
+                                actor_uid: actor.clone(),
+                                at: Some(occurred_at),
+                                ..NewFact::quantity(
+                                    old_fact.record_uid.clone(),
+                                    delta,
+                                    Cause::user_edit(),
+                                )
+                            },
+                            now,
+                        )
+                        .await?;
+                    let replacement_uid = replacement_facts.first().map(|f| f.uid.clone());
+                    for uid in [&compensation_uid, &replacement_uid].into_iter().flatten() {
+                        store::ledger::classify_fact(
+                            &self.store.pool,
+                            uid,
+                            concept_uid.as_deref(),
+                            actor.as_deref(),
+                            None,
+                        )
+                        .await?;
+                    }
+                    appended.extend(replacement_facts);
+                    outcome.facts = appended;
+                    (compensation_uid, replacement_uid)
+                } else {
+                    (None, None)
+                };
+
+                store::entries::revise(
+                    &self.store.pool,
+                    store::entries::ReviseEntry {
+                        entry_uid: &entry,
+                        expected_revision,
+                        amount: delta,
+                        note: note.as_deref(),
+                        occurred_at,
+                        compensated_fact_uid: compensated.as_deref(),
+                        replacement_fact_uid: replacement.as_deref(),
+                        request_id: &request_id,
+                        actor_uid: actor.as_deref(),
+                    },
+                    now,
+                )
+                .await?;
+            }
+            Action::VoidEntry {
+                entry,
+                expected_revision,
+                request_id,
+            } => {
+                if store::entries::replayed(&self.store.pool, &request_id)
+                    .await?
+                    .is_some()
+                {
+                    return Ok(outcome);
+                }
+                let current = store::entries::get(&self.store.pool, &entry)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(entry.clone()))?;
+                if current.is_void() {
+                    return Err(EngineError::Conflict {
+                        code: "entry_already_void",
+                        message: "this entry is already void".to_string(),
+                    });
+                }
+                if current.revision != expected_revision {
+                    return Err(EngineError::Conflict {
+                        code: "entry_revision_stale",
+                        message: "this entry was changed by someone else".to_string(),
+                    });
+                }
+
+                let mut compensation_uid = None;
+                if let Some(old_fact_uid) = current.fact_uid.clone() {
+                    let old_fact = store::facts::get(&self.store.pool, &old_fact_uid)
+                        .await?
+                        .ok_or_else(|| EngineError::UnknownRecord(old_fact_uid.clone()))?;
+                    if !old_fact.delta.is_zero() {
+                        // The compensation carries the same classification, so
+                        // undoing a food expense removes it from food rather
+                        // than leaving food overstated and an unclassified
+                        // credit floating beside it.
+                        let concept_uid =
+                            store::ledger::fact_concept(&self.store.pool, &old_fact_uid).await?;
+                        outcome.facts = self
+                            .append(
+                                NewFact {
+                                    uid: None,
+                                    record_uid: old_fact.record_uid.clone(),
+                                    delta: store::exact::negate(old_fact.delta)?,
+                                    // The original instant, not now — the same
+                                    // rule revising uses. Voiding says the
+                                    // change never happened, so it is retracted
+                                    // from the period that claimed it and that
+                                    // period nets to zero.
+                                    //
+                                    // This is NOT how a reversal is recorded. A
+                                    // purchase that really happened and was
+                                    // later refunded is a new capture today
+                                    // with the opposite sign; that keeps both
+                                    // periods honest. Voiding is for "this was
+                                    // never true", and the difference matters
+                                    // to anyone reading last month's totals.
+                                    at: Some(old_fact.at),
+                                    actor_uid: actor.clone(),
+                                    cause: Cause {
+                                        kind: CauseKind::Compensation,
+                                        uid: Some(old_fact_uid.clone()),
+                                    },
+                                    payload: None,
+                                },
+                                now,
+                            )
+                            .await?;
+                        if let Some(fact) = outcome.facts.first() {
+                            compensation_uid = Some(fact.uid.clone());
+                            store::ledger::classify_fact(
+                                &self.store.pool,
+                                &fact.uid,
+                                concept_uid.as_deref(),
+                                actor.as_deref(),
+                                None,
+                            )
+                            .await?;
+                        }
+                    }
+                }
+
+                store::entries::void(
+                    &self.store.pool,
+                    store::entries::VoidEntry {
+                        entry_uid: &entry,
+                        expected_revision,
+                        compensated_fact_uid: compensation_uid.as_deref(),
+                        request_id: &request_id,
+                        actor_uid: actor.as_deref(),
+                    },
+                    now,
+                )
+                .await?;
+            }
+            Action::ClassifyFact {
+                fact,
+                concept,
+                note,
+            } => {
+                if store::facts::get(&self.store.pool, &fact).await?.is_none() {
+                    return Err(EngineError::UnknownRecord(fact));
+                }
+                let concept_uid = self.resolve_concept_opt(concept).await?;
+                store::ledger::classify_fact(
+                    &self.store.pool,
+                    &fact,
+                    concept_uid.as_deref(),
+                    actor.as_deref(),
+                    note.as_deref(),
+                )
+                .await?;
+            }
+            Action::ClassifyRecord { target, concept } => {
+                let uid = self.resolve(&target).await?;
+                let concept_uid = self
+                    .resolve_concept_opt(Some(concept))
+                    .await?
+                    .ok_or_else(|| EngineError::Conflict {
+                        code: "record_concept_required",
+                        message: "classifying a Record needs a concept".to_string(),
+                    })?;
+                // Symmetric with `UnclassifyRecord`: the identity concept is
+                // already carried in its own column, so adding it here would
+                // store a shadow row that unclassifying could then "remove",
+                // reading as though the Record's identity had changed when
+                // nothing did.
+                if self.record_identity_concept(&uid).await? == Some(concept_uid.clone()) {
+                    return Err(EngineError::Conflict {
+                        code: "record_identity_concept_already_carried",
+                        message: "that is already the Record's identity concept".to_string(),
+                    });
+                }
+                store::ledger::add_record_concept(
+                    &self.store.pool,
+                    &uid,
+                    &concept_uid,
+                    actor.as_deref(),
+                )
+                .await?;
+                // A zero-delta Fact so the change is Ledger-visible provenance
+                // and live subscriptions refresh — the same shape every other
+                // metadata edit uses.
+                outcome.facts = self
+                    .annotate(
+                        uid,
+                        actor,
+                        serde_json::json!({ "record_concept": { "added": concept_uid } }),
+                        now,
+                    )
+                    .await?;
+            }
+            Action::UnclassifyRecord { target, concept } => {
+                let uid = self.resolve(&target).await?;
+                let concept_uid = self
+                    .resolve_concept_opt(Some(concept))
+                    .await?
+                    .ok_or_else(|| EngineError::Conflict {
+                        code: "record_concept_required",
+                        message: "unclassifying a Record needs a concept".to_string(),
+                    })?;
+                // The identity concept is what the thing IS, and Transfer
+                // matching and sync resolve through it. Removing it here would
+                // look like a tag edit and behave like a deletion.
+                if self.record_identity_concept(&uid).await? == Some(concept_uid.clone()) {
+                    return Err(EngineError::Conflict {
+                        code: "record_identity_concept_immutable",
+                        message: "that is the Record's identity concept; change it with set-concept"
+                            .to_string(),
+                    });
+                }
+                if store::ledger::remove_record_concept(&self.store.pool, &uid, &concept_uid)
+                    .await?
+                {
+                    outcome.facts = self
+                        .annotate(
+                            uid,
+                            actor,
+                            serde_json::json!({ "record_concept": { "removed": concept_uid } }),
                             now,
                         )
                         .await?;
@@ -1307,7 +2311,7 @@ impl Engine {
                         .append(
                             NewFact {
                                 actor_uid: actor,
-                                ..NewFact::quantity(uid, delta, Cause::user_edit())
+                                ..NewFact::quantity_f64(uid, delta, Cause::user_edit())
                             },
                             now,
                         )
@@ -1422,15 +2426,30 @@ impl Engine {
                             .into(),
                     });
                 }
+                // Same reasoning for a Fact that belongs to an Entry:
+                // generic compensation would return the quantity while leaving the
+                // event reading `applied`, so the Ledger and the thing that
+                // describes it would disagree with no way to tell which is
+                // right. `void-entry` does both halves.
+                if store::entries::for_fact(&self.store.pool, &original.uid)
+                    .await?
+                    .is_some()
+                {
+                    return Err(EngineError::Conflict {
+                        code: "entry_void_required",
+                        message: "this Fact belongs to an Entry; use void-entry"
+                            .into(),
+                    });
+                }
                 // Zero-delta facts (metadata/annotation) carry no quantity to
                 // reverse — undoing them is a no-op, not an error.
-                if original.delta != 0.0 {
+                if !original.delta.is_zero() {
                     outcome.facts = self
                         .append(
                             NewFact {
                                 uid: None,
                                 record_uid: original.record_uid,
-                                delta: -original.delta,
+                                delta: store::exact::negate(original.delta)?,
                                 at: None,
                                 actor_uid: actor,
                                 cause: Cause {
@@ -1587,7 +2606,7 @@ impl Engine {
                         kind: RecordKind::Thread,
                         head: title,
                         body: "",
-                        quantity: 0.0,
+                        quantity: store::exact::zero(),
                     },
                 )
                 .await?;
@@ -1598,7 +2617,7 @@ impl Engine {
                     .append(
                         NewFact {
                             actor_uid: actor.clone(),
-                            ..NewFact::quantity(thread.uid.clone(), 1.0, Cause::user_edit())
+                            ..NewFact::quantity(thread.uid.clone(), store::exact::one(), Cause::user_edit())
                         },
                         now,
                     )
@@ -1657,7 +2676,7 @@ impl Engine {
                         kind: RecordKind::Message,
                         head: &head,
                         body,
-                        quantity: 0.0,
+                        quantity: store::exact::zero(),
                     },
                 )
                 .await?;
@@ -1711,7 +2730,7 @@ impl Engine {
                     .append(
                         NewFact {
                             actor_uid: actor.clone(),
-                            ..NewFact::quantity(message.uid.clone(), 1.0, Cause::user_edit())
+                            ..NewFact::quantity(message.uid.clone(), store::exact::one(), Cause::user_edit())
                         },
                         now,
                     )
@@ -1842,7 +2861,7 @@ impl Engine {
                             NewFact {
                                 uid: None,
                                 record_uid,
-                                delta: 0.0,
+                                delta: nucleus::fact::zero_delta(),
                                 at: None,
                                 actor_uid: actor,
                                 cause: Cause { kind: CauseKind::Action, uid: Some(promise) },
@@ -1969,7 +2988,7 @@ impl Engine {
                     .append(
                         NewFact {
                             actor_uid: actor,
-                            ..NewFact::quantity(transfer.clone(), 1.0, Cause::user_edit())
+                            ..NewFact::quantity(transfer.clone(), store::exact::one(), Cause::user_edit())
                         },
                         now,
                     )
@@ -4455,7 +5474,7 @@ impl Engine {
                         NewFact {
                             uid: None,
                             record_uid: transfer.clone(),
-                            delta: 0.0,
+                            delta: nucleus::fact::zero_delta(),
                             at: None,
                             actor_uid: actor,
                             cause: Cause::settlement(transfer),
@@ -4692,7 +5711,7 @@ impl Engine {
                             Some(&body),
                         )
                         .await?;
-                        if existing.quantity == 0.0 {
+                        if existing.quantity.is_zero() {
                             Box::pin(self.act(
                                 Action::SetQuantity {
                                     target: existing.uid.clone(),
@@ -4712,7 +5731,7 @@ impl Engine {
                                 kind: RecordKind::Protein,
                                 head: &head,
                                 body: &body,
-                                quantity: 1.0,
+                                quantity: store::exact::one(),
                             },
                         )
                         .await?
@@ -4722,6 +5741,245 @@ impl Engine {
                 store::records::set_extension(&self.store.pool, &uid, "lince.protein", &ast)
                     .await?;
                 outcome.created = Some(uid);
+            }
+            Action::CreateKarmaProgram {
+                request_id,
+                program,
+                owner_person_uid,
+            } => {
+                let commit = self
+                    .create_karma_program(
+                        store::karma::programs::CreateProgramInput {
+                            request_id,
+                            program,
+                            owner_person_uid,
+                            actor_person_uid: actor,
+                        },
+                        now,
+                    )
+                    .await?;
+                apply_program_mutation(commit, &mut outcome)?;
+            }
+            Action::ReviseKarmaProgram {
+                request_id,
+                program_uid,
+                expected_handle_revision,
+                program,
+            } => {
+                let commit = self
+                    .revise_karma_program(
+                        store::karma::programs::ReviseProgramInput {
+                            request_id,
+                            program_uid,
+                            expected_handle_revision,
+                            program,
+                            actor_person_uid: actor,
+                        },
+                        now,
+                    )
+                    .await?;
+                apply_program_mutation(commit, &mut outcome)?;
+            }
+            Action::ActivateKarmaProgram {
+                request_id,
+                program_uid,
+                expected_handle_revision,
+                revision_hash,
+            } => {
+                let commit = self
+                    .activate_karma_program(
+                        store::karma::programs::ActivateProgramInput {
+                            request_id,
+                            program_uid,
+                            expected_handle_revision,
+                            revision_hash,
+                            actor_person_uid: actor,
+                        },
+                        now,
+                    )
+                    .await?;
+                apply_program_mutation(commit, &mut outcome)?;
+            }
+            Action::PauseKarmaProgram {
+                request_id,
+                program_uid,
+                expected_handle_revision,
+            } => {
+                let commit = self
+                    .pause_karma_program(
+                        store::karma::programs::PauseProgramInput {
+                            request_id,
+                            program_uid,
+                            expected_handle_revision,
+                            actor_person_uid: actor,
+                        },
+                        now,
+                    )
+                    .await?;
+                apply_program_mutation(commit, &mut outcome)?;
+            }
+            Action::RespondKarmaCandidate {
+                request_id,
+                candidate_hash,
+                expected_state_revision,
+                response,
+                authorizing_grant_uid,
+            } => {
+                let commit = self
+                    .respond_karma_candidate(
+                        store::karma::candidates::RespondCandidateInput {
+                            request_id,
+                            candidate_hash,
+                            expected_state_revision,
+                            response,
+                            actor_person_uid: actor,
+                            authorizing_grant_uid,
+                        },
+                        now,
+                    )
+                    .await?;
+                apply_candidate_review(commit, &mut outcome)?;
+            }
+            // One boxed future for the whole grant family: `act_at`'s state machine
+            // is already near the debug-build stack limit, and inlining four more
+            // arms overflows it.
+            grant_action @ (Action::CreateKarmaGrant { .. }
+            | Action::NarrowKarmaGrant { .. }
+            | Action::ActivateKarmaGrant { .. }
+            | Action::RevokeKarmaGrant { .. }) => {
+                Box::pin(self.apply_karma_grant_action(
+                    grant_action,
+                    actor.as_deref(),
+                    now,
+                    &mut outcome,
+                ))
+                .await?;
+            }
+            Action::CreateKarmaFrequency {
+                request_id,
+                frequency,
+                owner_person_uid,
+            } => {
+                let commit = self
+                    .create_karma_frequency(
+                        store::karma::frequencies::CreateFrequencyInput {
+                            request_id,
+                            frequency,
+                            owner_person_uid,
+                            actor_person_uid: actor,
+                        },
+                        now,
+                    )
+                    .await?;
+                apply_frequency_mutation(commit, &mut outcome)?;
+            }
+            Action::ReviseKarmaFrequency {
+                request_id,
+                frequency_uid,
+                expected_handle_revision,
+                frequency,
+            } => {
+                let commit = self
+                    .revise_karma_frequency(
+                        store::karma::frequencies::ReviseFrequencyInput {
+                            request_id,
+                            frequency_uid,
+                            expected_handle_revision,
+                            frequency,
+                            actor_person_uid: actor,
+                        },
+                        now,
+                    )
+                    .await?;
+                apply_frequency_mutation(commit, &mut outcome)?;
+            }
+            Action::ActivateKarmaFrequency {
+                request_id,
+                frequency_uid,
+                expected_handle_revision,
+                revision_hash,
+                parameter_overrides,
+            } => {
+                let runtime = self.configured_karma_runtime()?;
+                let commit = self
+                    .activate_karma_frequency(
+                        store::karma::frequencies::ActivateFrequencyInput {
+                            request_id,
+                            frequency_uid,
+                            expected_handle_revision,
+                            revision_hash,
+                            parameter_overrides,
+                            actor_person_uid: actor,
+                        },
+                        &runtime,
+                        now,
+                    )
+                    .await?;
+                apply_frequency_mutation(commit, &mut outcome)?;
+            }
+            Action::SetKarmaFrequencyParameters {
+                request_id,
+                frequency_uid,
+                expected_handle_revision,
+                expected_active_revision_hash,
+                parameter_overrides,
+            } => {
+                let runtime = self.configured_karma_runtime()?;
+                let commit = self
+                    .set_karma_frequency_parameters(
+                        store::karma::frequencies::SetFrequencyParametersInput {
+                            request_id,
+                            frequency_uid,
+                            expected_handle_revision,
+                            expected_active_revision_hash,
+                            parameter_overrides,
+                            actor_person_uid: actor,
+                        },
+                        &runtime,
+                        now,
+                    )
+                    .await?;
+                apply_frequency_mutation(commit, &mut outcome)?;
+            }
+            Action::ResetKarmaFrequencyParameters {
+                request_id,
+                frequency_uid,
+                expected_handle_revision,
+                expected_active_revision_hash,
+            } => {
+                let runtime = self.configured_karma_runtime()?;
+                let commit = self
+                    .reset_karma_frequency_parameters(
+                        store::karma::frequencies::ResetFrequencyParametersInput {
+                            request_id,
+                            frequency_uid,
+                            expected_handle_revision,
+                            expected_active_revision_hash,
+                            actor_person_uid: actor,
+                        },
+                        &runtime,
+                        now,
+                    )
+                    .await?;
+                apply_frequency_mutation(commit, &mut outcome)?;
+            }
+            Action::PauseKarmaFrequency {
+                request_id,
+                frequency_uid,
+                expected_handle_revision,
+            } => {
+                let commit = self
+                    .pause_karma_frequency(
+                        store::karma::frequencies::PauseFrequencyInput {
+                            request_id,
+                            frequency_uid,
+                            expected_handle_revision,
+                            actor_person_uid: actor,
+                        },
+                        now,
+                    )
+                    .await?;
+                apply_frequency_mutation(commit, &mut outcome)?;
             }
             Action::Decide { decision, answer } => {
                 store::misc::answer_decision(&self.store.pool, &decision, &answer).await?;
@@ -4741,14 +5999,14 @@ impl Engine {
                 // react to answered decisions like anything else (XIII.1)
                 let current = store::records::quantity(&self.store.pool, &decision)
                     .await?
-                    .unwrap_or(0.0);
-                if current != 0.0 {
+                    .unwrap_or_else(store::exact::zero);
+                if !current.is_zero() {
                     outcome.facts = self
                         .append(
                             NewFact {
                                 uid: None,
                                 record_uid: decision,
-                                delta: -current,
+                                delta: store::exact::negate(current)?,
                                 at: None,
                                 actor_uid: actor.clone(),
                                 cause: Cause {
@@ -5676,7 +6934,7 @@ impl Engine {
     /// every other action's local-mode convention. A `Some` actor must hold
     /// `permission` (a `"subject:action"` key from `utils::auth::ALL_
     /// PERMISSIONS`) on their role.
-    async fn require_permission(
+    pub(crate) async fn require_permission(
         &self,
         actor: Option<&str>,
         permission: &str,
@@ -5697,7 +6955,10 @@ impl Engine {
     /// represent. Local no-auth mode stays trusted and returns `None`; an
     /// authenticated session without an explicit binding is blocked instead
     /// of accepting a Person uid supplied by the client.
-    async fn actor_person(&self, actor: Option<&str>) -> Result<Option<String>, EngineError> {
+    pub(crate) async fn actor_person(
+        &self,
+        actor: Option<&str>,
+    ) -> Result<Option<String>, EngineError> {
         let Some(actor) = actor else {
             return Ok(None);
         };
@@ -6824,7 +8085,7 @@ impl Engine {
         let new = NewFact {
             uid: Some(fact_uid.clone()),
             record_uid: transfer_uid.to_string(),
-            delta: 0.0,
+            delta: nucleus::fact::zero_delta(),
             at: None,
             actor_uid: Some(actor_person_uid.to_string()),
             cause: Cause::user_edit(),
@@ -6966,6 +8227,16 @@ impl Engine {
 
     /// Resolve an optional concept token (name or uid) to a uid. `None` and the
     /// empty string both mean "clear" and resolve to `None`.
+    /// The concept a Record *is*, as opposed to the ones it counts as. Kept in
+    /// `record.concept_uid` rather than the join table because Transfer
+    /// matching and sync resolve through it.
+    async fn record_identity_concept(&self, uid: &str) -> Result<Option<String>, EngineError> {
+        Ok(store::records::get(&self.store.pool, uid)
+            .await?
+            .ok_or_else(|| EngineError::UnknownRecord(uid.to_string()))?
+            .concept_uid)
+    }
+
     async fn resolve_concept_opt(
         &self,
         token: Option<String>,
@@ -6995,7 +8266,7 @@ impl Engine {
             NewFact {
                 uid: None,
                 record_uid,
-                delta: 0.0,
+                delta: nucleus::fact::zero_delta(),
                 at: None,
                 actor_uid: actor,
                 cause: Cause::user_edit(),

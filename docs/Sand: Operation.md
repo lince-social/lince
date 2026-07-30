@@ -1,4 +1,4 @@
-*Operations* \
+In earlier versions of lince with cli and print the interactions where done mainly with operations. This document describes that history, it is to be read as history:
 
 There is a keyboard way of navigating through Lince, changing records and running commands. That is done through the Operations.
 When one types anything in the frontend, an input will appear.

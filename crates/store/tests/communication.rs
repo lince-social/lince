@@ -25,7 +25,7 @@ async fn conversation(store: &Store, head: &str, tag_uid: &str, participants: &[
             kind: RecordKind::Plain,
             head,
             body: "",
-            quantity: 1.0,
+            quantity: store::exact::one(),
         },
     )
     .await
@@ -41,7 +41,7 @@ async fn conversation(store: &Store, head: &str, tag_uid: &str, participants: &[
                 kind: RecordKind::Person,
                 head: person,
                 body: "",
-                quantity: 1.0,
+                quantity: store::exact::one(),
             },
         )
         .await
@@ -71,7 +71,7 @@ async fn post_message(store: &Store, conversation_uid: &str, body: &str) -> Stri
             kind: RecordKind::Thread,
             head: "General",
             body: "",
-            quantity: 1.0,
+            quantity: store::exact::one(),
         },
     )
     .await
@@ -87,7 +87,7 @@ async fn post_message(store: &Store, conversation_uid: &str, body: &str) -> Stri
             kind: RecordKind::Message,
             head: "",
             body,
-            quantity: 1.0,
+            quantity: store::exact::one(),
         },
     )
     .await
@@ -148,7 +148,7 @@ async fn untagged_and_other_tag_conversations_are_excluded() {
             kind: RecordKind::Plain,
             head: "Loose",
             body: "",
-            quantity: 1.0,
+            quantity: store::exact::one(),
         },
     )
     .await
@@ -177,7 +177,7 @@ async fn deactivated_conversation_drops_out_of_the_list() {
 
     // Deactivate (quantity -> 0) the way the engine would; the store read
     // path filters it out of the list.
-    sqlx::query("UPDATE record SET quantity = 0 WHERE uid = ?")
+    sqlx::query("UPDATE record SET quantity_mantissa = '0', quantity_scale = 0 WHERE uid = ?")
         .bind(&conv.as_str())
         .execute(&store.pool)
         .await

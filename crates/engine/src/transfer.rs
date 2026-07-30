@@ -106,7 +106,7 @@ async fn eval_promise_condition(engine: &Engine, expr: &Expr) -> Result<f64, Eng
                 .map(PromiseState::ordinal)
                 .unwrap_or(0.0),
             "quantity" => match store::records::resolve(&engine.store.pool, &token.slug).await? {
-                Some(r) => r.quantity,
+                Some(r) => r.quantity_f64(),
                 None => 0.0,
             },
             _ => 0.0,

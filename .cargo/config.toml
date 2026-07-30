@@ -2,3 +2,10 @@
 rustflags = [
     "-C", "target-cpu=native"
 ]
+
+[env]
+# The Action dispatcher is one very large async state machine, and unoptimized
+# debug builds keep every arm's locals live on the stack. A default 2 MiB test
+# thread overflows inside the Karma action paths; release builds never come
+# close. Raising the floor keeps `cargo test` runnable without per-test threads.
+RUST_MIN_STACK = "8388608"

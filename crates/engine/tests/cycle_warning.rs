@@ -19,7 +19,7 @@ async fn plain(e: &Engine, slug: &str) -> String {
             kind: RecordKind::Plain,
             head: slug,
             body: "",
-            quantity: -1.0,
+            quantity: store::exact::from_f64(-1.0),
         },
     )
     .await

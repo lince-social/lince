@@ -45,7 +45,7 @@ impl Engine {
             }
             let facts = self
                 .append(
-                    NewFact::quantity(
+                    NewFact::quantity_f64(
                         signal.record_uid.clone(),
                         delta,
                         Cause::signal(signal.record_uid.clone()),

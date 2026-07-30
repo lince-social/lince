@@ -22,7 +22,7 @@ pub async fn build_snapshot(
     let mut quantities = std::collections::HashMap::new();
     let mut slugs = std::collections::HashMap::new();
     for r in store::records::list_all(&store.pool).await? {
-        quantities.insert(r.uid.clone(), r.quantity);
+        quantities.insert(r.uid.clone(), r.quantity_f64());
         if let Some(slug) = r.slug {
             slugs.insert(slug, r.uid);
         }
@@ -173,7 +173,7 @@ impl Engine {
         let asked = store::misc::open_decision_subjects(&self.store.pool).await?;
         let mut created = Vec::new();
         for record in store::records::list_all(&self.store.pool).await? {
-            if record.kind != "plain" || record.quantity < 0.0 {
+            if record.kind != "plain" || record.quantity.is_negative() {
                 continue;
             }
             let Some(crossing) = timeline.crossing_below(&record.uid, 0.0) else {

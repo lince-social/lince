@@ -32,7 +32,7 @@ async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
             kind: RecordKind::Plain,
             head: slug,
             body: "",
-            quantity,
+            quantity: store::exact::from_f64(quantity),
         },
     )
     .await
@@ -48,7 +48,7 @@ async fn person(e: &Engine, slug: &str) -> String {
             kind: RecordKind::Person,
             head: slug,
             body: "",
-            quantity: 1.0,
+            quantity: store::exact::one(),
         },
     )
     .await
@@ -75,7 +75,7 @@ async fn bump(e: &Engine, uid: &str, delta: f64, cause: Cause, now: DateTime<Utc
     e.append(
         NewFact {
             actor_uid: None,
-            ..NewFact::quantity(uid.to_string(), delta, cause)
+            ..NewFact::quantity_f64(uid.to_string(), delta, cause)
         },
         now,
     )
@@ -144,13 +144,14 @@ async fn fact_source_filters_and_aggregates_the_ledger() {
         by: GroupBy::CauseKind,
     });
     let rows = protein::execute(&e.store, &q).await.unwrap();
+    // Sums cross the wire as canonical decimal text, not IEEE doubles.
     let get = |group: &str| {
         rows.iter()
             .find(|r| r["group"] == group)
-            .map(|r| r["value"].as_f64().unwrap())
+            .map(|r| r["net"].as_str().unwrap().to_string())
     };
-    assert_eq!(get("user_edit"), Some(11.0));
-    assert_eq!(get("settlement"), Some(-3.0));
+    assert_eq!(get("user_edit").as_deref(), Some("11"));
+    assert_eq!(get("settlement").as_deref(), Some("-3"));
 
     // ... and by calendar day
     let mut q = protein(Source::Fact);
@@ -161,11 +162,11 @@ async fn fact_source_filters_and_aggregates_the_ledger() {
     let rows = protein::execute(&e.store, &q).await.unwrap();
     assert!(
         rows.iter()
-            .any(|r| r["group"] == "2026-07-01" && r["value"] == 10.0)
+            .any(|r| r["group"] == "2026-07-01" && r["net"] == "10")
     );
     assert!(
         rows.iter()
-            .any(|r| r["group"] == "2026-07-02" && r["value"] == -2.0)
+            .any(|r| r["group"] == "2026-07-02" && r["net"] == "-2")
     );
 }
 

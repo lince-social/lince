@@ -37,7 +37,7 @@ pub async fn create(pool: &SqlitePool, new: NewRule<'_>) -> Result<String, Store
             kind: RecordKind::Rule,
             head: new.head,
             body: "",
-            quantity: 1.0, // active by default: quantity is the universal enable
+            quantity: crate::exact::one(), // active by default: quantity is the universal enable
         },
     )
     .await?;
@@ -139,7 +139,7 @@ pub async fn set_debounce(
 
 pub async fn load_all(pool: &SqlitePool) -> Result<Vec<RuleRow>, StoreError> {
     let rows = sqlx::query(
-        "SELECT r.uid, r.slug, r.quantity, ru.condition, ru.gate, ru.carry, ru.debounce
+        "SELECT r.uid, r.slug, r.quantity_mantissa, ru.condition, ru.gate, ru.carry, ru.debounce
          FROM rule ru JOIN record r ON r.uid = ru.record_uid",
     )
     .fetch_all(pool)
@@ -171,7 +171,7 @@ pub async fn load_all(pool: &SqlitePool) -> Result<Vec<RuleRow>, StoreError> {
         out.push(RuleRow {
             record_uid,
             slug: row.get("slug"),
-            active: row.get::<f64, _>("quantity") != 0.0,
+            active: row.get::<String, _>("quantity_mantissa") != "0",
             condition: row.get("condition"),
             gate: row.get("gate"),
             carry: row.get("carry"),

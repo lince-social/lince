@@ -84,7 +84,7 @@ impl Engine {
                     NewFact {
                         uid: None,
                         record_uid: origin.clone(),
-                        delta: 0.0,
+                        delta: nucleus::fact::zero_delta(),
                         at: None,
                         actor_uid: None,
                         cause: Cause {

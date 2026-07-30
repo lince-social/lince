@@ -21,6 +21,10 @@ pub mod expiry;
 pub mod file_sync;
 pub mod imagination;
 pub mod karma;
+pub mod karma_control;
+pub mod karma_grants;
+pub mod karma_runtime;
+pub mod karma_timezone;
 pub mod senses;
 pub mod signals;
 pub mod sync;
@@ -30,8 +34,9 @@ pub mod trust;
 
 use chrono::{DateTime, Utc};
 use nucleus::{Cause, Fact, NewFact};
+use std::sync::RwLock;
 use store::Store;
-use tokio::sync::{Mutex, broadcast};
+use tokio::sync::{Mutex, broadcast, watch};
 
 pub use error::EngineError;
 pub use karma::ProofWarning;
@@ -42,17 +47,22 @@ pub struct Engine {
     bus: broadcast::Sender<Fact>,
     pub(crate) signer: Mutex<Option<trust::Signer>>,
     pub(crate) organ_signer: Mutex<Option<trust::Signer>>,
+    karma_deadline_changed: watch::Sender<u64>,
+    karma_runtime_config: RwLock<Option<karma_runtime::KarmaDeadlineDirectorConfig>>,
 }
 
 impl Engine {
     pub async fn new(store: Store) -> Result<Engine, EngineError> {
         let (bus, _) = broadcast::channel(1024);
+        let (karma_deadline_changed, _) = watch::channel(0);
         let engine = Engine {
             store,
             registry: Mutex::new(karma::Registry::default()),
             bus,
             signer: Mutex::new(None),
             organ_signer: Mutex::new(None),
+            karma_deadline_changed,
+            karma_runtime_config: RwLock::new(None),
         };
         engine.reload_rules().await?;
         Ok(engine)
@@ -70,6 +80,49 @@ impl Engine {
     /// Subscribe to committed facts (blueprint 0.2 `fact_bus`).
     pub fn subscribe(&self) -> broadcast::Receiver<Fact> {
         self.bus.subscribe()
+    }
+
+    /// Wake the tickless Karma deadline runner after a committed activation,
+    /// pause, parameter epoch, resource grant, or host timer capability change.
+    pub fn notify_karma_deadline_change(&self) {
+        self.karma_deadline_changed
+            .send_modify(|revision| *revision = revision.wrapping_add(1));
+    }
+
+    /// Install the immutable admission/provider snapshot used by typed Karma
+    /// Frequency Actions. Starting the director and installing its control
+    /// snapshot are explicit so boot code can finish dependency injection
+    /// before either mutations or timers are accepted.
+    pub fn install_karma_runtime_config(
+        &self,
+        config: karma_runtime::KarmaDeadlineDirectorConfig,
+    ) -> Result<(), EngineError> {
+        *self
+            .karma_runtime_config
+            .write()
+            .map_err(|_| EngineError::Conflict {
+                code: "karma_runtime_config_poisoned",
+                message: "Karma runtime configuration lock is poisoned".to_string(),
+            })? = Some(config);
+        self.notify_karma_deadline_change();
+        Ok(())
+    }
+
+    pub(crate) fn configured_karma_runtime(
+        &self,
+    ) -> Result<karma_runtime::KarmaDeadlineDirectorConfig, EngineError> {
+        self.karma_runtime_config
+            .read()
+            .map_err(|_| EngineError::Conflict {
+                code: "karma_runtime_config_poisoned",
+                message: "Karma runtime configuration lock is poisoned".to_string(),
+            })?
+            .clone()
+            .ok_or_else(|| EngineError::Conflict {
+                code: "karma_runtime_unconfigured",
+                message: "Karma Frequency activation requires an installed runtime configuration"
+                    .to_string(),
+            })
     }
 
     /// Rebuild the rule registry and dependency graph. Returns Proof warnings.
@@ -134,7 +187,7 @@ impl Engine {
         delta: f64,
     ) -> Result<Vec<Fact>, EngineError> {
         self.append(
-            NewFact::quantity(record_uid, delta, Cause::user_edit()),
+            NewFact::quantity_f64(record_uid, delta, Cause::user_edit()),
             Utc::now(),
         )
         .await

@@ -64,7 +64,7 @@ impl Engine {
                 kind: RecordKind::Plain,
                 head,
                 body: "",
-                quantity: 0.0,
+                quantity: store::exact::zero(),
             },
         )
         .await?;
@@ -109,7 +109,7 @@ impl Engine {
             .append(
                 NewFact {
                     actor_uid: actor.clone(),
-                    ..NewFact::quantity(conversation.uid.clone(), 1.0, Cause::user_edit())
+                    ..NewFact::quantity(conversation.uid.clone(), store::exact::one(), Cause::user_edit())
                 },
                 now,
             )
@@ -441,7 +441,7 @@ impl Engine {
             NewFact {
                 uid: None,
                 record_uid,
-                delta: 0.0,
+                delta: nucleus::fact::zero_delta(),
                 at: None,
                 actor_uid: actor,
                 cause: Cause::user_edit(),

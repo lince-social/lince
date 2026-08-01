@@ -39,6 +39,15 @@ use {
 
 const DEFAULT_WEB_LISTEN_ADDR: &str = "127.0.0.1:6174";
 
+/// How often the organism takes a beat.
+///
+/// This is the delivery resolution for every declared schedule: a cadence can
+/// be written in milliseconds, but a polled heartbeat cannot deliver one on
+/// time. Sixty seconds is right for habits and bills, which is what rules are
+/// for today; finer delivery is the tickless deadline fabric, not a smaller
+/// number here.
+const HEARTBEAT_PERIOD_SECS: u64 = 60;
+
 #[derive(Clone)]
 struct CellApiState {
     board_state: BoardStateStore,
@@ -704,6 +713,17 @@ pub async fn serve_cell_api_only(
     engine::file_sync::spawn_configured_watchers(engine.clone())
         .await
         .map_err(IoError::other)?;
+    // The organism's heartbeat. Without this the Cell has a pulse it never
+    // takes: promises never expire on their own, timers never fire, and a rule
+    // declaring "every week, set this back to -1" waits for someone to press
+    // apply — which is the person doing the scheduling the rule was written to
+    // take over.
+    //
+    // Started after the signer, so the first beat can attest what it commits.
+    // The period is the delivery resolution: a cadence may be declared in
+    // milliseconds, but nothing polled arrives finer than this. Sub-second
+    // delivery needs the deadline fabric, not a smaller number here.
+    let _heartbeat = engine.clone().run(HEARTBEAT_PERIOD_SECS);
     let state = CellApiState {
         board_state: BoardStateStore::new().map_err(IoError::other)?,
         engine,
@@ -721,6 +741,8 @@ pub async fn serve_cell_api_only(
         .route("/favicon.ico", get(static_assets::favicon))
         .route("/board/frame.js", get(static_assets::frame_js))
         .route("/board/editor.js", get(static_assets::editor_js))
+        .route("/board/lynx-ui.css", get(static_assets::lynx_ui_css))
+        .route("/board/lynx-ui.js", get(static_assets::lynx_ui_js))
         .route("/board/vendor/d3.v7.min.js", get(static_assets::d3_js))
         .route(
             "/board/vendor/d3.LICENSE.txt",

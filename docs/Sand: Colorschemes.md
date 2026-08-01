@@ -1,4 +1,0 @@
-Make figma design use variables, in the figma they will set a colorschme to watch things that will use those variable names with different values for the colors in each colorscheme. In compilation, have one struct with different values for each colorscheme, make figma export those variables to use in the application.
-        Whenever a color is set, it will use the name of the variables from the design. We must in a very efficient way access those variables in the active colorscheme. That might be done every render, if we have access to that in global memory data it's better than accessing a json.
-
-        That should also be done with scaling properties, so padding_s is maybe 2px or rem. The design will use the padding_s and the code will mimic it.

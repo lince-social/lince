@@ -120,21 +120,13 @@ CREATE TABLE record_extension (
 );
 
 -- Karma sidecars (Part VI)
-CREATE TABLE rule (
-    record_uid TEXT PRIMARY KEY REFERENCES record(uid),
-    condition  TEXT NOT NULL,
-    gate       TEXT NOT NULL DEFAULT '!=0',
-    carry      TEXT NOT NULL DEFAULT 'value',
-    debounce   TEXT
-);
-CREATE TABLE rule_consequence (
-    uid      TEXT PRIMARY KEY,
-    rule_uid TEXT NOT NULL REFERENCES rule(record_uid),
-    position INTEGER NOT NULL DEFAULT 0,
-    kind     TEXT NOT NULL,
-    target   TEXT,
-    params   TEXT CHECK (params IS NULL OR json_valid(params))
-);
+--
+-- There is no `rule` table here. A rule is a `recurrence` row (migration
+-- 0038): one object carrying when it repeats, what it reads, and what it does.
+-- The split used to be real — a `rule` fired on a change and a `frequency`
+-- fired on a clock — and it was the reason `freq(@a-rule)` could not resolve:
+-- one lived in a table the other never read. Merging them is what let a
+-- schedule become a term in a condition rather than a second kind of trigger.
 CREATE TABLE signal (
     record_uid  TEXT PRIMARY KEY REFERENCES record(uid),
     source_kind TEXT NOT NULL,
@@ -142,16 +134,6 @@ CREATE TABLE signal (
     schedule    TEXT NOT NULL,
     parse       TEXT NOT NULL DEFAULT 'number',
     last_sampled_at TEXT
-);
-CREATE TABLE frequency (
-    record_uid  TEXT PRIMARY KEY REFERENCES record(uid),
-    seconds     INTEGER NOT NULL DEFAULT 0,
-    days        INTEGER NOT NULL DEFAULT 0,
-    months      INTEGER NOT NULL DEFAULT 0,
-    day_of_week INTEGER,
-    next_at     TEXT NOT NULL,
-    finish_at   TEXT,
-    catch_up    INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE effect_queue (
     uid        TEXT PRIMARY KEY,

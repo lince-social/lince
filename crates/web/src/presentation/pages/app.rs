@@ -4,7 +4,7 @@ use {
 };
 
 use super::shared::{
-    app_shell_signals, asset_version_token, board_style, chevron_down_icon, eye_icon, pencil_icon,
+    app_shell_signals, asset_version_token, board_style, chevron_down_icon, eye_icon,
     render_card, render_lince_logo, render_topbar_brand, safe_json_for_html, server_status_icon,
     sparkles_icon,
 };
@@ -38,6 +38,7 @@ fn render_app_head(asset_version: u64) -> Markup {
             title { "Lince" }
             link rel="icon" href="/favicon.ico";
             link rel="shortcut icon" href="/favicon.ico";
+            link rel="stylesheet" href=(format!("/board/lynx-ui.css?v={asset_version}"));
             link rel="stylesheet" href=(format!("/static/styles.css?v={asset_version}"));
             script {
                 (PreEscaped(
@@ -173,15 +174,6 @@ fn render_topbar_actions() -> Markup {
                 span class="notification-button__mark" aria-hidden="true" { "!" }
                 span id="notifications-count" class="notification-button__count" hidden="" { "0" }
             }
-            button
-                id="edit-toggle"
-                class="icon-button"
-                type="button"
-                aria-label="Alternar modo de edicao"
-                aria-pressed="false"
-            {
-                (pencil_icon())
-            }
             a
                 class="icon-button icon-button--ai"
                 href="/ai"
@@ -270,6 +262,7 @@ fn render_board_canvas(bootstrap: &AppBootstrap) -> Markup {
                 (render_cards_layer(bootstrap))
             }
             (render_pinned_layer(bootstrap))
+            (render_board_base_controls())
             (render_drop_zone_overlay())
         }
     }
@@ -305,12 +298,41 @@ fn render_board_floating_controls() -> Markup {
             }
             (render_density_tag())
         }
+    }
+}
+
+fn render_board_base_controls() -> Markup {
+    html! {
+        div class="board-base-tools lynx-ui panzoom-exclude" {
+            div class="board-base-tools__row" {
+                (render_board_zoom_controls())
+                button
+                    id="edit-toggle"
+                    class="board-base-tools__button"
+                    type="button"
+                    data-lynx-tooltip="Alternar modo de edicao"
+                    aria-label="Alternar modo de edicao"
+                    aria-pressed="false"
+                {
+                    svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" {
+                        path d="m14.7 4.1 5.2 5.2M3.8 20.2l3.5-.8L19.9 6.8a1.85 1.85 0 0 0-2.6-2.6L4.7 16.7l-.9 3.5Z" {}
+                        path d="m12.8 5.3 5.9 5.9" {}
+                    }
+                }
+            }
+            span class="board-base-tools__corner" aria-hidden="true" {}
+        }
+    }
+}
+
+fn render_board_zoom_controls() -> Markup {
+    html! {
         div id="board-zoom-controls" class="board-zoom-controls panzoom-exclude" aria-label="Controles de zoom do canvas" {
-            button id="board-zoom-out" class="board-zoom-button" type="button" aria-label="Diminuir zoom" { "−" }
-            button id="board-zoom-indicator" class="board-zoom-indicator" type="button" aria-label="Voltar zoom para 100%" { "100%" }
-            button id="board-zoom-in" class="board-zoom-button" type="button" aria-label="Aumentar zoom" { "+" }
-            button id="board-recenter" class="board-zoom-button board-zoom-button--wide" type="button" aria-label="Recentralizar canvas" { "⌖" }
-            button id="board-reorganize" class="board-zoom-button board-zoom-button--wide" type="button" aria-label="Reorganizar componentes no centro" { "◎" }
+            button id="board-zoom-out" class="board-zoom-button" type="button" aria-label="Diminuir zoom" data-lynx-tooltip="Diminuir zoom" { "−" }
+            button id="board-zoom-indicator" class="board-zoom-indicator" type="button" aria-label="Voltar zoom para 100%" data-lynx-tooltip="Voltar zoom para 100%" { "100%" }
+            button id="board-zoom-in" class="board-zoom-button" type="button" aria-label="Aumentar zoom" data-lynx-tooltip="Aumentar zoom" { "+" }
+            button id="board-recenter" class="board-zoom-button board-zoom-button--wide" type="button" aria-label="Recentralizar canvas" data-lynx-tooltip="Recentralizar canvas" { "⌖" }
+            button id="board-reorganize" class="board-zoom-button board-zoom-button--wide" type="button" aria-label="Reorganizar componentes no centro" data-lynx-tooltip="Reorganizar componentes" { "◎" }
         }
     }
 }
@@ -577,45 +599,37 @@ fn render_import_modal_preview_pane() -> Markup {
 fn render_local_packages_modal_backdrop() -> Markup {
     html! {
         div id="local-packages-modal-backdrop" class="import-modal-backdrop" hidden="" {
-            section class="import-modal import-modal--catalog" role="dialog" aria-modal="true" aria-labelledby="local-packages-modal-title" {
-                header class="import-modal__header" {
-                    div class="import-modal__lockup" {
-                        div class="import-modal__eyebrow" { "Local catalog" }
-                        h2 id="local-packages-modal-title" class="import-modal__title" { "Catalogo de widgets" }
-                        p class="import-modal__description" {
-                            "Escolha um widget oficial ou um widget salvo em ~/.config/lince/web/sand para criar outra copia no workspace atual."
+            section class="import-modal import-modal--catalog sand-store lynx-ui" role="dialog" aria-modal="true" aria-labelledby="local-packages-modal-title" {
+                header class="sand-store__header" {
+                    div class="sand-store__title" {
+                        div class="import-modal__eyebrow" { "Sand store" }
+                        h2 id="local-packages-modal-title" class="import-modal__title" { "Sands" }
+                    }
+                    (render_modal_close_button("local-packages-close-button", "Fechar Sand store"))
+                }
+                div class="sand-store__controls" {
+                    div class="sand-store__summary" {
+                        span class="import-modal__details-label" { "Catalogo" }
+                        p id="local-packages-summary" class="import-modal__details-copy" { "Carregando o catalogo de sands..." }
+                    }
+                    label class="sand-store__search" for="local-packages-search" {
+                        span class="lynx-visually-hidden" { "Buscar" }
+                        input id="local-packages-search" class="lynx-input" type="search" autocomplete="off" spellcheck="false" placeholder="Nome, arquivo, autor ou permissao";
+                    }
+                    div class="catalog-origin-toggle-group" aria-label="Filtrar origem dos sand" {
+                        button id="package-origin-local-toggle" class="lynx-button catalog-origin-toggle is-active" type="button" aria-pressed="true" {
+                            span class="catalog-origin-toggle__mark" { "◎" }
+                            span { "Local" }
+                        }
+                        button id="package-origin-dna-toggle" class="lynx-button catalog-origin-toggle is-active" type="button" aria-pressed="true" {
+                            span class="catalog-origin-toggle__mark" { "◌" }
+                            span { "DNA" }
                         }
                     }
-                    (render_modal_close_button("local-packages-close-button", "Fechar catalogo local"))
                 }
-                (render_catalog_toolbar(
-                    "local-packages-summary",
-                    "Catalogo",
-                    "Carregando o catalogo de widgets...",
-                    "local-packages-search",
-                    "Nome, arquivo, autor ou permissao",
-                ))
-                div class="catalog-origin-toggle-group" aria-label="Filtrar origem dos sand" {
-                    button
-                        id="package-origin-local-toggle"
-                        class="catalog-origin-toggle is-active"
-                        type="button"
-                        aria-pressed="true"
-                    {
-                        span class="catalog-origin-toggle__mark" { "◎" }
-                        span { "Local" }
-                    }
-                    button
-                        id="package-origin-dna-toggle"
-                        class="catalog-origin-toggle is-active"
-                        type="button"
-                        aria-pressed="true"
-                    {
-                        span class="catalog-origin-toggle__mark" { "◌" }
-                        span { "DNA" }
-                    }
+                div class="sand-store__results" {
+                    div id="local-package-list" class="local-package-list" {}
                 }
-                div id="local-package-list" class="local-package-list" {}
             }
         }
     }
@@ -951,6 +965,19 @@ fn render_widget_config_form() -> Markup {
                     div id="widget-config-protein-list" class="protein-list" aria-live="polite" {}
                     div id="widget-config-protein-builder" class="protein-builder" {}
                     p id="widget-config-protein-help" class="startup-error-message" hidden="" {}
+                }
+                section id="widget-config-sand-field" class="widget-config-section" hidden="" {
+                    div class="widget-config-section__head" {
+                        div class="import-modal__details-label" { "Sand" }
+                        p class="import-modal__details-copy" { "Configuracao especifica deste sand." }
+                    }
+                    label class="startup-field startup-field--checkbox" for="widget-config-record-idle-visible" {
+                        input id="widget-config-record-idle-visible" class="startup-field__checkbox" type="checkbox" checked="";
+                        span class="startup-field__checkbox-copy" {
+                            strong { "Mostrar quando fechado" }
+                            small { "Desative para esconder o Record em modo normal depois de fecha-lo. Ele continua visivel no modo de edicao." }
+                        }
+                    }
                 }
                 section class="widget-config-section" {
                     div class="widget-config-section__head" {

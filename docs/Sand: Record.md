@@ -7,3 +7,25 @@ The list, with the characters and their blocks goes as following:
 - [ ] '- [ ]': Checkbox
 
 - [ ] Being able to reference other Tasks inside comments.
+
+- [x] **Record** (formerly "record_info" — the sole markdown editor,
+  viewer, and creator for a record, and the home for every other
+  per-record concern) — the get view IS the edit view (head/slug/quantity/
+  body writable, Save writes only what changed, a dirty form is never
+  clobbered by live updates); Zero (`deactivate`) and Delete
+  (`delete-record`, permission-gated) are separate buttons; creation mode
+  shows the same fields empty, Create + focuses the new record; carries the
+  shared slash-block editor (headings/images/checkboxes/`@slug`, the same
+  palette everywhere in a body); collapsible sections for **Work**
+  (start/due dates, estimate, worklogs with play/pause, on the `work`
+  record extension, offline-queued writes), **Assignees** (`assigned-to`
+  links), **Links** (every hop-1 link either direction, kind+target inputs,
+  both autocompleted — a document/URL just lives as a link or inline media
+  in the body, no separate resource/attachment concept), and **Threads**
+  (a real multi-thread system — a tab per thread, search
+  filters which tabs list without hiding messages, each message shows
+  timestamp + sender, `@slug` in a post becomes a real link, delete
+  controls per permission). Reusable — any sand drives it via a scoped
+  `recordClicked`/`recordCreate`; no sand keeps a private record sidepanel.
+  Full real-time collaborative editing is blocked on the CRDT text relay in
+  `docs/Central: Sync and Organs.md`.

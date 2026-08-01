@@ -2,6 +2,18 @@
 
 :root {
     color-scheme: dark;
+    /* Lynx default colorscheme. A selected colorscheme overrides these
+       semantic tokens without requiring the base canvas to know its colors. */
+    --canvas: #121214;
+    --primary-background: var(--canvas);
+    --secondary-background: #141416;
+    --raised-background: var(--primary-background);
+    --primary-ink: #f8fafc;
+    --secondary-ink: color-mix(in srgb, #f8fafc 62%, #121214);
+    --gray: #a7b4c2;
+    --accent: #6366f1;
+    --focus: #6366f1;
+    --space-4: 8px;
     --bg: #060708;
     --bg-elevated: rgba(11, 13, 17, 0.94);
     --panel: rgba(18, 20, 24, 0.9);
@@ -1361,7 +1373,7 @@ body.auth-pending .startup-auth-card {
     min-height: 100%;
     height: 100%;
     overflow: hidden;
-    background: #07080a;
+    background: var(--canvas, var(--primary-background));
     touch-action: none;
 }
 
@@ -1372,7 +1384,7 @@ body.auth-pending .startup-auth-card {
     width: var(--board-world-width);
     height: var(--board-world-height);
     overflow: visible;
-    background: #171a20;
+    background: var(--primary-background, var(--canvas));
     box-shadow:
         inset 0 0 0 1px rgba(255, 255, 255, 0.045),
         0 0 0 1px rgba(0, 0, 0, 0.45);
@@ -1470,6 +1482,103 @@ body.auth-pending .startup-auth-card {
 
 .pinned-layer .board-card {
     pointer-events: auto;
+}
+
+.board-base-tools {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    z-index: 12;
+    width: 22px;
+    height: 22px;
+}
+
+.board-base-tools__corner {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 18px;
+    height: 18px;
+    background: var(--gray);
+    clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.board-base-tools__row {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    display: none;
+    align-items: center;
+    gap: 2px;
+    padding: 2px;
+    background: var(--raised-background, var(--primary-background));
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.28);
+}
+
+.board-base-tools:hover,
+.board-base-tools:focus-within {
+    width: auto;
+    height: auto;
+}
+
+.board-base-tools:hover .board-base-tools__corner,
+.board-base-tools:focus-within .board-base-tools__corner {
+    display: none;
+}
+
+.board-base-tools:hover .board-base-tools__row,
+.board-base-tools:focus-within .board-base-tools__row {
+    display: flex;
+}
+
+.board-base-tools__button,
+.board-base-tools .board-zoom-button,
+.board-base-tools .board-zoom-indicator {
+    display: grid;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 2px;
+    background: transparent;
+    color: var(--text-muted);
+}
+
+.board-base-tools__button:hover,
+.board-base-tools .board-zoom-button:hover,
+.board-base-tools .board-zoom-indicator:hover {
+    background: var(--surface-hover, #20242b);
+    color: var(--text-strong);
+}
+
+.board-base-tools__button.is-active {
+    color: var(--accent, #6366f1);
+}
+
+.board-base-tools__button svg {
+    width: 16px;
+    height: 16px;
+}
+
+.board-base-tools [data-lynx-tooltip]::after {
+    font-family: var(--font-body, "Lato", ui-sans-serif, system-ui, sans-serif);
+    font-size: 12px;
+    line-height: 1.3;
+}
+
+.board-base-tools .board-zoom-controls {
+    position: static;
+    display: flex;
+    width: auto;
+    height: auto;
+    gap: 2px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
 }
 
 .board-grid,
@@ -1683,7 +1792,22 @@ body.auth-pending .startup-auth-card {
 
 .board-shell.is-editing
     .board-card--pinned.board-card--system.board-card--shell-popover-open::before {
-    background: rgba(0, 0, 0, 0.46);
+    background: transparent;
+}
+
+/* Editing is an active workspace state: keep the base control rail open so
+   its tools do not disappear while the user is arranging sands. */
+.board-shell.is-editing .board-base-tools {
+    width: auto;
+    height: auto;
+}
+
+.board-shell.is-editing .board-base-tools__corner {
+    display: none;
+}
+
+.board-shell.is-editing .board-base-tools__row {
+    display: flex;
 }
 
 .board-card--pinned.board-card--system {
@@ -1694,6 +1818,15 @@ body.auth-pending .startup-auth-card {
 
 .board-card--pinned.board-card--system.board-card--shell-popover-open {
     overflow: visible;
+}
+
+/* The base Edit panel already draws its own LynxUI surface. Do not add the
+   board edit-mode outline around it. */
+.board-shell.is-editing
+    .board-card--pinned.board-card--system.board-card--shell-popover-open {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
 }
 
 .board-card--pinned.board-card--system.board-card--shell-popover-open
@@ -2737,6 +2870,81 @@ body.auth-pending .startup-auth-card {
 .local-package-empty strong {
     color: var(--text-strong);
     font-size: 1rem;
+}
+
+/* Sand store: only the results pane scrolls. Its header and search never
+   leave a transparent strip at the top of the component. */
+.sand-store.import-modal--catalog {
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    gap: 0;
+    width: min(100%, 1080px);
+    height: min(82vh, 760px);
+    max-height: none;
+    padding: 0;
+    overflow: hidden;
+    border: var(--hairline, .5px) solid var(--gray);
+    border-radius: 2px;
+    background: var(--primary-background);
+    color: var(--primary-ink);
+    box-shadow: var(--lynx-shadow-x, 2px) var(--lynx-shadow-y, 2px) var(--lynx-shadow-blur, 6px) var(--lynx-shadow-color, rgb(0 0 0 / 16%));
+}
+
+.sand-store__header,
+.sand-store__controls {
+    position: relative;
+    z-index: 1;
+    background: var(--primary-background);
+}
+
+.sand-store__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2, 4px);
+    padding: var(--space-2, 4px) var(--space-3, 6px);
+    box-shadow: 0 1px 0 var(--secondary-background);
+}
+
+.sand-store__title { display: grid; gap: 0; }
+.sand-store__title .import-modal__title { margin: 0; color: var(--primary-ink); font: 600 1rem/1.2 var(--font-title, var(--font-body)); }
+
+.sand-store__controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 340px) auto;
+    align-items: center;
+    gap: var(--space-2, 4px);
+    padding: var(--space-2, 4px) var(--space-3, 6px);
+    box-shadow: 0 1px 0 var(--secondary-background);
+}
+
+.sand-store__summary { min-width: 0; }
+.sand-store__summary .import-modal__details-copy { margin: 0; color: var(--secondary-ink); font-size: .82rem; }
+.sand-store__search { min-width: 0; }
+.sand-store__search .lynx-input { height: var(--control-height, 25px); }
+
+.sand-store .catalog-origin-toggle-group { margin: 0; gap: 0; flex-wrap: nowrap; }
+.sand-store .catalog-origin-toggle { min-height: var(--control-height, 25px); padding: 0 var(--space-2, 4px); border-color: transparent; background: transparent; color: var(--secondary-ink); }
+.sand-store .catalog-origin-toggle:hover,
+.sand-store .catalog-origin-toggle.is-active { border-color: var(--gray); background: var(--secondary-background); color: var(--primary-ink); }
+
+.sand-store__results { min-height: 0; overflow: auto; padding: var(--space-3, 6px); background: var(--primary-background); }
+.sand-store .local-package-list { gap: var(--space-4, 8px); min-height: 0; }
+.sand-store .local-package-card { min-height: 88px; gap: var(--space-2, 4px); padding: var(--space-2, 4px); border: 0; border-radius: 2px; background: var(--raised-background); color: var(--primary-ink); box-shadow: none; }
+.sand-store .local-package-card:hover,
+.sand-store .local-package-card.is-selected { background: var(--secondary-background); box-shadow: none; transform: none; }
+.sand-store .local-package-card__icon { width: 32px; height: 32px; border-radius: 2px; background: var(--primary-background); color: var(--primary-ink); font-size: 1rem; }
+.sand-store .local-package-card__body { gap: var(--space-1, 2px); }
+.sand-store .local-package-card__title { color: var(--primary-ink); }
+.sand-store .local-package-card__description { color: var(--secondary-ink); }
+.sand-store .local-package-card__meta,
+.sand-store .local-package-card__size { color: var(--secondary-ink); }
+.sand-store .local-package-card__pill { min-height: 18px; padding: 0 var(--space-1, 2px); border-color: var(--gray); border-radius: 2px; background: transparent; color: var(--secondary-ink); }
+
+@media (max-width: 700px) {
+    .sand-store.import-modal--catalog { width: 100%; height: 100%; }
+    .sand-store__controls { grid-template-columns: 1fr; align-items: stretch; }
+    .sand-store .catalog-origin-toggle-group { justify-content: flex-start; }
 }
 
 .widget-config-view-list {

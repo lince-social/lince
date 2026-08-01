@@ -1,3963 +1,3774 @@
- Everything runs on `nucleus → store → engine → protein → transport`.
+# Karma
 
-**Working conventions** (standing rules, not checkable work): work on `dev`,
-no worktrees; `cargo check`, never a full build; narrowest per-crate tests;
-never alter past migrations (new ones are fine); sands read Protein and write
-Actions only; board chrome stays host state, never a Ledger fact; keep
-vendored license/credit files when touching embed-honest sands (terminal,
-freedoom, document viewer).
+Karma is the part of Lince that watches Records, does math on them, and changes
+them on a schedule or when something happens — with a person's permission and a
+readable trail. Records model the world, Transfer coordinates change between
+people, **Karma turns evidence into action.**
+
+It is useful without an LLM. People install preset programs, author exact rules
+visually, use transparent statistics and deterministic algorithms, and run
+planning over their own goals. A model may be attached as an explicit Signal or
+author an inert candidate; **model access is optional and grants no special
+authority.** The engine is typed deterministic machinery, not a personality.
+
+"Always on" means a supervised runtime starts with the Cell and keeps draining
+durable work. It does **not** mean always interrupting, always connected, or
+always authorized to act. A person can pause one program, one capability family,
+all external effects, or the whole engine without losing evidence or queued work.
+
+## How to read this file
+
+Everything is a task. **Blocks are in build order** — finish one before starting
+the next, and each is meant to be built once and never reopened. A `(K5.2)` tag
+maps a task to the old phase label so commit history stays findable. `[x]` is
+built and tested; `[ ]` is not. Where something is half-built, it is split into
+a `[x]` for the part that works and a `[ ]` naming exactly what is missing —
+never one ambiguous box.
+
+Everything runs on `nucleus → store → engine → protein → transport`.
+
+**Standing rules, not checkable work:** work on `dev`, no worktrees;
+`cargo check`, never a full build; narrowest per-crate tests; never alter a past
+migration once it ships; sands read Protein and write Actions only; board chrome
+stays host state, never a Ledger fact; keep vendored license/credit files when
+touching embed-honest sands.
+
+**Time appears in two blocks and that is deliberate.** Block 1 is time as a
+*declaration* — one `Cadence` covering appointments, recurrence, bounds and
+weekday landing. Block 11 is time as *execution* — timezones at fire time, the
+deadline fabric, missed-wake policy. It is one primitive authored once; the
+split exists because a declaration needs no permission and firing needs a grant,
+a worker and a run identity, which are blocks 6 and 7.
 
 ---
 
-## [ ] Karma — Lince's autonomic nervous system
-
-Karma is the third primary pillar of Lince. **Records model the world;
-Transfer coordinates intended change between people; Karma continuously
-turns evidence into understanding, proposals, decisions, and permitted action.**
-The Ledger, Lingua, Protein, Trust, and Actions are the common substrate through
-which the three pillars remain one system.
-
-**Naming decision.** Karma is the permanent public and code name for this
-pillar. “Intelligence” was a temporary planning name and is not retained as an
-alias, namespace, capability prefix, Protein source, database prefix, or sand.
-The earlier condition → consequence feature becomes a legacy importer into the
-new `karma` typed graph; it is not a second engine. “Orchestra” is likewise not
-a product name: orchestration is one lens inside the Karma sand.
-
-The three-pillar boundary should remain. Perception, Learning, Imagination,
-Attention, Optimization, and Effects are facets of Karma because they
-must share one causality, policy, and replay model. Memory/Ledger, Lingua, Trust/
-Governance, and the Protein/Action control plane are equally fundamental
-cross-cutting infrastructure, but promoting each to a competing behavioral
-engine would recreate silos. If a future fourth pillar is ever needed, the test
-is whether it owns an independent kind of truth—not whether it deserves a
-screen or has many features.
-
-It is Lince's always-on autonomic engine: sensing, schedules, derived values,
-rules, workflows, pattern learning, forecasts, optimization, recommendations,
-attention, simulation, and bounded effects. “Always on” means that a supervised
-runtime starts with the Cell and keeps draining durable work. It does **not**
-mean always interrupting, always connected, or always authorized to act. A
-person can pause one program, one capability family, all external effects, or
-the entire engine without losing evidence or queued work.
-
-Karma is deliberately useful without an LLM. People and software agents
-can install preset programs, visually author exact rules, use transparent
-statistics and deterministic machine-learning algorithms, and run operations
-research over their own goals. A model may be attached as an explicit Signal or
-author an inert candidate, but model access is optional and grants no special
-authority. The engine is the typed deterministic machinery, not a personality.
-
-### Architectural corrections and boundaries
-
-- **Karma's condition → consequence pair is too small as the destination
-  abstraction.** It conflates recognition, inference, authority, and execution.
-  Karma remains useful shipped machinery, but the destination is a versioned
-  typed program graph with separate pure computation, candidate, policy, and
-  effect stages.
-- **A likelihood is not permission.** “Ana will probably buy apples this week,”
-  “the estimate is well supported,” “buying is beneficial,” and “Lince may
-  create or send a Transfer” are four different claims. Pattern probability,
-  epistemic confidence, objective value, and authority are stored and evaluated
-  separately.
-- **A threshold is a routing policy, not truth.** Crossing it may surface,
-  draft, ask, or act only according to an explicit policy with hysteresis,
-  budgets, and authority. It never silently converts correlation into a fact.
-- **Automatic promotion is allowed, but never magical.** A person may grant a
-  narrow policy that turns a learned pattern into an active rule or draft. The
-  generated revision must come from a reviewable template, pass Proof, run in
-  shadow first if required, stay editable, and remain inside the grant that
-  authorized promotion.
-- **Rules are never set in stone.** A person or authorized agent can edit,
-  pause, supersede, fork, or retire any program. Published revisions and past
-  runs are immutable evidence; immutability protects history, not the current
-  behavior. Editing creates a new revision and atomically changes which
-  revision is active.
-- **Optimization has no secret universal objective.** Scheduling, simplex/MILP,
-  constraint solving, matching, routing, and other planners operate on explicit
-  person-owned objectives and protected constraints. They return alternatives,
-  sensitivity, infeasibility, and uncertainty—not a mysterious “best life.”
-- **The deterministic boundary must be honest.** The external world is not
-  reproducible: a sensor can drift, a person can change their mind, and an HTTP
-  server can answer differently. Lince makes the *decision kernel*
-  deterministic by first capturing those boundary results as ordered evidence.
-  Replaying the same captured inputs must reproduce the same internal outputs;
-  replay never secretly calls the outside world again.
-- **Autonomy is actor-neutral and non-transitive.** Humans, local tools, and
-  software agents use the same typed control Actions. A program has no identity
-  or authority of its own; it acts as a named principal through a revocable
-  delegation. A program may not enlarge its own delegation or pass it onward.
-
-The complete loop is:
-
-`Observation → Fact/evidence → context/features → recognition/model/rule →`
-`forecast/optimizer → candidate → policy/authority → decision or intent →`
-`typed Action/effect → receipt/Fact`
-
-Imagination branches from the evidence/context boundary and runs the same
-kernel against a snapshot. Attention is a delivery layer over durable
-candidates and decisions, not a second truth store.
-
-### Authoritative implementation sequence
-
-**Phase labels are stable identities, not an order.** The build order is the
-list below; `K6` means what `K6` has always meant regardless of when it runs.
-An implementation must satisfy each phase's exit gate before exposing the next
-phase *in build order* in the Karma sand. Later sections specify the destination
-interfaces and behaviors. The UI/DSL examples appear early to freeze the
-contract; they do not authorize implementing the frontend before the kernel,
-persistence, and authority gates exist.
-
-#### Build order — the vertical sand first
-
-> The `E*` gates referenced below are specified in **`docs/Sand: Karma.md`**,
-> extracted 2026-07-26. Only the sequencing decision lives here, because
-> sequencing is a Karma concern; what the gates contain is a sand's concern.
-> E0.0–E0.4 are the exception worth naming: they are general engine-loop work
-> (exact deltas in the Ledger, the read side, arithmetic, writing back onto a
-> Record, folding forward on a virtual clock) that the sand merely forced first.
-
-Reordered 2026-07-25. The original order finished the entire backend safety
-boundary before any product existed, which meant perception, learning, social
-autonomy, workflows, and simulation testing all had to land before a single
-person could use anything. The sand needs none of them: the doc's own reason for
-choosing this sand as the integration proof is that it exercises exact values,
-Records and Facts, units, Frequencies, occurrences, corrections, authority, and
-explanations **without requiring an external effect**. So The sand moves up, and
-everything perception-and-inference-shaped moves after it.
-
-1. **K0 – K4** — done. Vocabulary, pure kernel, durable model, tickless
-   scheduling, evaluator, inert candidates, candidate review.
-2. **K5.1 – K5.2** — done. Signed delegation grants, budgets, durable inert
-   intents.
-3. **K11/E0.0 – E0.4 — the engine loop, closed, proven, and foldable.** E0.0
-   makes the Ledger carry exact deltas; E0.1 opens the read side so a rule can
-   pull a Record's quantity, its unit, and its other numeric values into
-   evaluation; E0.2 gives arithmetic the multiplication and division a real rule
-   needs; E0.3 lets an authorized intent change a Record's quantity or
-   unit-valued field and compensate it; E0.4 runs that same loop on a virtual
-   clock so a year or five years of it can be seen without waiting. Together
-   these are the read → compute → write → fold loop the whole pillar exists to
-   serve, and they land before any product is built on them.
-4. **K11/E0 – E2** — the sand vertical on that loop. E0 adds gain/loss
-   events; E1 adds recurring plans, occurrences, and projection over the
-   existing Frequencies; E2 ships the sand. This reaches the original K11 exit
-   gate.
-5. **K5.3 remainder** — the rest of execution: everything outside the
-   reversible-local-data family, whose worker, lease, receipt, and emergency-stop
-   machinery E0.3 already built and proved.
-6. **K11/E3** — Fiote capture ergonomics for Economy.
-7. **K12** — the Karma sand and its Flow Plane.
-8. **K6** — Signals and integration adapters.
-9. **K7** — learning, recommendations, and Attention.
-10. **K8** — scoped Trust and Transfer autonomy.
-11. **K9** — durable workflows, projections, and optimization.
-12. **K10** — replay, shadowing, and Deterministic Simulation Testing.
-
-**Why the engine loop comes before the product.** An earlier draft of this order
-put execution after the Karma sand, on the reasoning that E1's `apply` route
-is already gated by the K5.1/K5.2 grant boundary and that a person could resolve
-due occurrences by hand until a worker existed. That is true but it is not the
-point: it would have shipped a product on top of an engine whose central claim —
-math rules that change Records over time — had never once been executed
-end to end. E0.0–E0.3 close that loop first. The sand then becomes what it was
-always meant to be, the *integration proof* of a working engine rather than the
-thing that discovers the engine is not finished.
-
-The restriction that makes this safe is capability family, not phase order.
-E0.3 executes `LocalReversibleData` and nothing else: local, auditable on the
-Record's own Fact chain, and reversible by an opposite exact delta. Every
-external, social, or irreversible effect stays behind the same closed door it is
-behind today.
-
-**The cost of this reorder, stated plainly.** K10 moves to the end, so Economy
-ships before deterministic simulation testing exists — and K10's exit gate is
-what proves the determinism every earlier phase promised. Replay capsules,
-frozen epochs, injected clocks, and the ordering proofs are all built and
-tested, so the property is designed in and covered per-phase; what is missing
-until K10 is the adversarial machinery that tries to *break* it. Accepted
-deliberately: a product that exists is worth more than a proof about a product
-that does not.
-
-#### K0 — freeze vocabulary, invariants, and failure codes
-
-Start by turning this document's types, states, Actions, Protein discriminators,
-capability names, and error classes into Rust enums/newtypes with canonical
-Serde behavior. This phase changes no runtime behavior. It prevents each later
-module from inventing its own spelling for probability, time, occurrence,
-candidate, authority denial, or uncertain effect.
-
-**Exit gate:** golden serialization tests cover every public type; invalid
-probability/decimal/time/unit/state/capability values fail at the boundary; and
-the same fixture canonicalizes to the same bytes/hash on every supported
-platform.
-
-The K0 Rust boundary lives under `nucleus::karma`; later crates import
-these definitions instead of restating strings. Keep focused modules for
-`canonical`, `exact`, `time`, `reference`, `state`, `capability`, and `failure`.
-This directory remains free of SQL, async runtimes, wall clocks, random uid
-generation, platform locale, and unordered public collections. K0 freezes the
-following wire decisions before any durable table is created:
-
-- `FixedDecimal<S>` stores an `i128` mantissa at a compile-time scale, rejects
-  precision loss and overflow, and serializes as a canonical decimal string
-  with exactly `S` fractional digits. Negative zero is impossible. Arithmetic
-  is checked; rounding is never implicit.
-- `Probability` and `Confidence` are distinct parts-per-billion newtypes over
-  `0..=1_000_000_000`. Their canonical JSON is a quoted decimal with exactly
-  nine fractional digits. The later DSL may accept `0.72p` and `0.65c`, but
-  parsing normalizes them before they enter an AST or hash.
-- `DurationMs` is a signed integer millisecond count. `TimestampMs` stores a
-  signed UTC millisecond and serializes only as normalized UTC RFC3339 with
-  exactly three fractional digits and `Z`; an offset, omitted fraction, or
-  finer fraction is not canonical input. Civil/calendar time is a separate K1
-  type and never silently converts to elapsed duration.
-- Enum values and Action tags use kebab-case; struct fields use snake_case.
-  Public maps and sets use `BTreeMap`/`BTreeSet` or explicitly sort before they
-  cross the boundary. Typed references preserve both kind and resolved uid;
-  an optional display slug is metadata and never changes identity.
-- Canonical JSON sorts every object key lexicographically, preserves array
-  order, emits no whitespace, and rejects floating-point JSON numbers. Hashes
-  are SHA-256 over a versioned, domain-separated prefix plus those bytes and
-  are rendered `sha256:` followed by lowercase hexadecimal. Callers use a
-  purpose-specific domain such as `karma.program-revision.v1`; hashes
-  from different semantic object families cannot alias by accident.
-- Boundary failures carry a stable machine `FailureCode`, a safe message, and
-  an exact field path. Retry/operational classification remains typed; callers
-  must not match human-readable text. New codes may be added, but an existing
-  code cannot be repurposed.
-
-The initial golden fixtures cover all K0 public enums and atoms as one object,
-including a deliberately reverse-inserted map. Subsequent phases must extend
-that fixture in the same change that adds a public type; an untested wire type
-is an incomplete phase change.
-
-**Implemented K0 foundation:** `nucleus::karma` now owns these focused
-modules and their public re-exports. Its integration fixture covers every K0
-enum variant plus exact values, typed references, capabilities, failure/path,
-timestamp/duration, canonical hash, and reverse-inserted collections. Boundary
-rejection tests and the fixed golden hash form the phase gate. This completion
-does not freeze the vocabulary forever: when K1 or a later phase introduces a
-new public wire type or enum value, that same change must extend and
-deliberately re-freeze the K0 fixture.
-
-#### K1 — pure Karma kernel and compiler
-
-Implement the I/O-free core in `nucleus`: exact values, typed references,
-Program AST, DSL parser/formatter, dependency graph, schedule math, gate/state
-transitions, objective/model interfaces, Proof, replay types, and the sand
-signed-gain/loss/projection primitives specified in K11. Pure code
-receives a frozen context and returns a trace plus candidates; it cannot access
-SQLite, Tokio time, processes, network, devices, secrets, or global randomness.
-
-**Exit gate:** DSL ↔ AST ↔ formatted DSL round-trips; type/unit/taint checking,
-cycle detection, schedule/rephase math, deterministic ordering, and bounded
-evaluation pass pure unit/property tests without opening a Store.
-
-The first K1 slice extends `nucleus::karma` with `value`, `ast`, and
-`proof`; it does not reuse the legacy `Expr`/`RuleDef` representation as the
-new kernel. Those older types use `f64`, numeric Boolean truthiness, second
-durations, implicit reads, and cycle-tolerant ordering, so they remain only an
-eventual import source. The new slice uses these contracts:
-
-- `ProgramAst` is the canonical, version-tagged revision payload. It contains
-  purpose, parameters, stable node/output maps, and declared program outputs.
-  Owner, live quantity, active revision, grants, and runtime state belong to
-  the mutable Program handle or run epoch and therefore do not contaminate the
-  immutable semantic hash.
-- Node and parameter collections are keyed by `LocalId` in `BTreeMap`s. A node
-  has explicit input bindings, output `PortContract`s, and a closed
-  `NodeOperation` enum. Expressions can reference only names in that node's
-  input-binding map; they cannot perform ambient Record, Protein, clock,
-  randomness, secret, or network reads.
-- The initial operation set is deliberately executable as pure semantics:
-  trigger declarations, typed inputs, exact derivations, and an explicit delay
-  state boundary. Later operation variants extend this same enum for gates,
-  models, candidates, workflows, and intents; they do not introduce a generic
-  JSON “operation config” escape hatch.
-- `ValueType` and `LiteralValue` are closed, recursively typed enums. Decimal and
-  quantity literals retain exact scale, and unit identity is explicit. There is
-  deliberately no money type: a currency is a unit like any other, so
-  `Quantity { amount, unit }` already says "ten of that thing", and converting
-  between two units is a rule someone writes rather than a kernel feature. `datum<T>`, `estimate<T>`, collections, and references remain
-  distinct types. Expression checking initially permits only operations whose
-  result can be proven exactly; unsupported coercion is a Proof error rather
-  than a runtime guess.
-- A `PortContract` carries value type, sensitivity/taint class, and optional
-  freshness. Source and destination value types must match exactly in this
-  slice. Pure derivations cannot declare an output less sensitive than any
-  consumed input. Declassification will be its own capability-checked node,
-  not a flag on a wire.
-- `Proof` is a deterministic value containing the revision hash, accepted/
-  rejected status, stable topological order, and sorted typed issues with JSON
-  pointer paths and related node ids. Missing nodes/ports, undeclared expression
-  inputs, output/type mismatches, invalid references/contracts, and
-  combinational cycles reject the revision. A cycle is legal only when cutting
-  incoming update edges at an explicit delay/state boundary makes the graph
-  acyclic; the delay contract records initialization, reset, late-event,
-  migration, persistence, and simulation-clone behavior.
-
-Text parsing is intentionally a later K1 compiler slice, after the graph,
-schedule, and evaluator semantics it must project. First proving the JSON AST
-prevents a convenient parser from becoming the accidental semantic model; the
-DSL parser and formatter must later round-trip through these same types.
-
-**Implemented K1 graph foundation:** `value`, `ast`, and `proof` now implement
-the exact types, initial closed operation set, stable maps, state-boundary
-contract, canonical revision hash, deterministic type/taint/reference checks,
-and topological Proof described above. Golden fixtures cover every new public
-enum variant. Tests prove ordinary cycles fail while feedback through an
-explicit delay succeeds. This is the graph foundation, not the full K1 exit
-gate: textual parsing/formatting, broader node families, replay capsules, and
-Ledger primitives remain later slices. Schedule/calendar math and the initial
-evaluator are implemented in the following slices.
-
-The first evaluator slice uses that graph without introducing ambient state.
-`FrozenEvaluationContext` supplies exact boundary values by input/trigger node,
-typed parameter overrides, and epoch-start delay state. `EvaluationLimits`
-supplies deterministic fuel; one node visit and each visited expression consume
-defined work units, so host speed and thread scheduling cannot change whether a
-run exhausts its budget. The result contains the revision hash, declared
-program outputs, stable node trace, fuel used, and proposed delay-state updates.
-
-Delay evaluation is two-phase. During graph order every delay outputs its
-epoch-start value (or declared initial value). After all combinational nodes
-finish, the evaluator resolves each delay's update binding and stages the value
-for the next epoch; it does not mutate the current context. This gives feedback
-graphs synchronous read-old/write-next semantics independent of map or node
-order. The evaluator never performs an Action, Store read, clock read, random
-draw, candidate route, or external effect. A rejected Proof, missing frozen
-input, runtime type mismatch, exact arithmetic overflow/divide-by-zero, invalid
-state, or fuel exhaustion returns a typed deterministic error with node/path.
-
-**Implemented K1 evaluator foundation:** `evaluate` now executes the initial
-pure operation set from a frozen context with read-old/write-next delay state,
-checked exact arithmetic, semantic reference identity, lazy typed branches,
-stable trace order, and fuel/depth limits. Golden tests fix both successful
-result bytes and evaluator vocabulary; failure tests cover missing/wrong inputs,
-overflow, divide-by-zero, fuel/depth exhaustion, and successive feedback
-epochs. This still produces no candidates, intents, Actions, Facts, or Store
-writes; those require later node families and the K2/K5 authority boundaries.
-
-**Implemented K1 calendar foundation:** `calendar` now owns canonical
-`CivilDateTime`/`CivilTime`, validated timezone and tzdb revision atoms,
-daily/weekly/monthly rules, invalid-month/gap/fold policy, typed boundary and
-discontinuity results, and the pure `TimeZoneProvider` boundary. Resolution
-checks provider identity and validates a previous boundary against the cadence
-and provider before advancing. Fake-provider tests freeze gap skip/shift/pause,
-fold-both order, weekly anchor arithmetic, monthly skip/clamp/pause, malformed
-provider rejection, and the complete calendar wire hash. No host timezone,
-clock, tzdb package, timer, or I/O is consulted.
-
-**Implemented K1.4 Program DSL:** `nucleus::karma::dsl` now formats and parses
-every current `ProgramAst`, type, literal, source, expression, state contract,
-capability, and resolved reference. Canonical text sorts maps/sets and lexical
-capability names, uses JSON string escaping, removes comments/whitespace, and
-round-trips to the identical AST and Proof. Stable typed errors include exact
-byte/line/column; source, token, string, and nesting limits are enforced before
-storage. Comprehensive and exact-text tests cover all current variants,
-reordering/comments/Unicode strings, duplicates, missing/unknown/trailing
-syntax, noncanonical exact atoms, and every resource limit. DSL error vocabulary
-is included in the K1 golden hash.
-
-**Implemented K1.5 Frequency compiler/DSL:** `nucleus::karma::frequency` now
-owns the separately versioned Frequency AST, duration/positive-integer
-parameter definitions and bindings, effective-parameter compilation, typed
-compile failures, and elapsed/calendar compiled union. `karma::dsl` formats and
-parses its strict text. Compilation proves parameter domains keep interval and
-timer fields valid, rejects unknown/type/range overrides, hashes revision and
-effective values separately, and returns the existing concrete schedule types.
-All calendar schedules now carry rephase policy. Exact-text, comments/order,
-all-calendar-rule, override, cross-cadence, parameter-domain, compilation, and
-complete wire-golden tests cover the boundary.
-
-**Implemented K1.6 gate:** pure threshold/hysteresis, debounce, cooldown,
-rate-limit, and candidate-route node families now have canonical AST/DSL forms,
-Proof rules, frozen logical-time evaluation, separately typed staged control
-state, exact boundary behavior, late-event failures, and sequence tests. The
-evaluator still has no clock, timer, authority, or effect access. K1.7 pure
-replay capsules and K1.8 exact primitives finish the remaining K1
-slices before K2 persistence.
-
-#### K2 — durable model, Actions, and Protein
-
-Add new migrations and schema-owned Rust sidecars for Program/revision,
-parameter, Frequency/schedule, occurrence, run/trace, evidence/model checkpoint,
-candidate/decision, grant/trust scope, workflow, intent/attempt/receipt, and
-engine mode. Do not alter a past migration. Every mutable handle uses an
-expected revision; immutable revisions/checkpoints use content hashes; every
-semantic mutation appends or links the corresponding Fact in the same
-transaction.
-
-Implement the concrete Actions and `source:"karma"` Protein union next,
-including capability booleans and stable blocking reasons. At this phase a user
-can author, validate, store, diff, inspect, and activate definitions, but active
-Programs still do not automatically run.
-
-**Exit gate:** create/revise/fork/activate/pause/parameter/grant round-trips are
-atomic, stale/replayed requests are deterministic, live invalidation works, and
-Protein can reconstruct every stored object and causal link without reading
-filesystem logs.
-
-#### K3 — tickless shrink-to-fit deadlines and the occurrence sequencer
-
-Replace the single coarse heartbeat as the owner of timed causality with the
-deadline fabric specified below. One sequencer persists and orders Fact, timer,
-Signal, sync, workflow, retry, and manual occurrences. It freezes an evaluation
-epoch and enforces reaction-before-learning. This phase runs a minimal no-effect
-Program to prove timing/order before adding broad Actions.
-
-**Exit gate:** a Cell with `3ms`, `5h`, and monthly Frequencies arms each from
-its own next deadline: the `3ms` path never scans/re-arms the `5h` or monthly
-definitions, and the sparse deadlines still fire while the dense stream is
-active. Adding/removing dense demand creates/retires only its runtime lane;
-restart/catch-up, same-millisecond cursor order, generation invalidation, and
-schedule batching replay exactly under DST.
-
-#### K4 — evaluator, rules, derived values, and meta-control
-
-Compile active revisions into an indexed dependency registry, evaluate impacted
-Programs under the frozen epoch, persist traces/candidates, and follow local
-reaction closure within fuel/fan-out limits. Implement pure/derived nodes,
-stateful gates, reusable Senses, and narrow `tune/revise/activate/pause/resume`
-meta-control. Definition/parameter changes always become later occurrences.
-
-**Exit gate:** preset rules and reusable derived values work end-to-end;
-conflicts/cycles/fuel failures are inspectable; and the 1d → 3d Frequency
-example proves that a meta-rule cannot mutate its current run or bypass its
-manage grant.
-
-#### K5 — authority, budgets, intents, and effect workers
-
-**K5.1 and K5.2 are done. K5.3 is split:** its worker, lease, attempt, receipt,
-retry, compensation, and emergency-stop machinery is built in E0.3 restricted to
-the reversible-local-data family, because the engine's read → compute → write
-loop must close before a product is built on it. What remains under this label
-is every capability family outside that one — decision and notification
-plumbing, registered UI and controllers, commands, HTTP, devices, and social
-effects — which runs after the sand vertical. The exit gate below applies in
-full to E0.3 for its family, and again here for the rest.
-
-Implement the policy intersection and atomic budget reservation before enabling
-any automatic mutation. Start with reversible local Actions, then basic
-decision/notification intent plumbing, then registered UI/controllers,
-commands/HTTP/devices, and finally social effects. K7 adds the Attention policy
-and recommendation lifecycle on top of that plumbing. Intents are durable;
-workers lease them; retries depend on typed idempotency; uncertain external
-outcomes require reconciliation rather than being guessed successful.
-
-**Exit gate:** deny-by-default holds at both evaluator and domain Action
-boundaries; revocation races and concurrent budgets are safe; restart never
-duplicates an idempotent intent; and emergency/stage-effects modes prevent all
-still-preventable dispatch.
-
-#### K6 — Signals and integration adapters
-
-**Runs after the sand vertical, K5.3, and K12.** The sand needs no external
-observation, so nothing here blocks the first product.
-
-Implement polling, push, streaming, command/query, model, and microcontroller
-adapters behind one observation envelope and scheduler. Preserve raw capture,
-then normalize/calibrate in pure nodes. Secrets remain opaque handles; adapter
-health, lateness, quarantine, cost, and source consent are Protein-visible.
-
-**Exit gate:** HTTP plus one buffered microcontroller source survive duplicate,
-late, malformed, stale, disconnect, reboot, and secret-redaction tests; turning
-off a Signal stops acquisition/use without deleting history.
-
-#### K7 — learning, recommendations, and Attention
-
-**Runs after K6.** Deliberately late: the reaction-before-learning law means
-inference may never precede a working deterministic path, and The sand provides
-the first real evidence for anything to learn from.
-
-Implement eligible-evidence admission, deterministic decayed recurrence/cadence
-as the first model, checkpoint rebuild, probability/confidence separation,
-drift, threshold/hysteresis, candidate lifecycle, feedback, decisions, whispers,
-and digest budgets. Learning runs after reaction work and cannot train on its
-own generated output without later independent evidence.
-
-**Exit gate:** the apple example moves from cold evidence to one explained
-suggestion/draft with no self-training, no duplicate recommendation, correct
-decay/rebuild, and no authority derived from probability.
-
-#### K8 — scoped Trust and Transfer autonomy
-
-**Runs after K7.** The sand is local by construction, so no automation touches
-another person until this phase.
-
-Add the concept/person/Organ/proximity-scoped automation Trust policy specified
-below, then connect candidates to the existing revision-safe Transfer Actions
-one stage at a time: local draft, publish/propose, negotiate, own agreement,
-activation, own occurrence/confirmation, and local settlement. Probability,
-counterparty evidence, visibility, trust scope, principal grant, budget, and
-Transfer domain readiness are independent gates.
-
-**Exit gate:** exact allow/deny precedence and list/proximity Boolean selectors
-work for relayed and origin Organs; a high-probability apple recommendation
-cannot automate an untrusted Organ; and every Transfer stage is proven both
-denied-by-default and permitted within an exact expiring scope.
-
-#### K9 — durable workflows, projections, and optimization
-
-**Runs after K8.** The sand's schedules is a plan plus occurrences, not a
-multi-step workflow, so it needs nothing here.
-
-Build workflow instances over the already-proven occurrence/intent machinery,
-then expose Imagination projections and deterministic solver adapters. A
-workflow coordinates existing typed Actions and compensation; a solver creates
-ranked plans with explicit objectives/constraints and never receives an effect
-channel.
-
-**Exit gate:** waits/retries/cancellation/compensation survive reboot; the weekly
-scheduler explains alternatives/infeasibility; and applying a plan invokes only
-separately approved current Actions.
-
-#### K10 — replay, shadowing, and Deterministic Simulation Testing
-
-**Runs last, and this is the acknowledged cost of the sand-first order.**
-Determinism is designed in and covered phase by phase — replay capsules, frozen
-epochs, injected clocks, restart and ordering proofs all exist — but the
-adversarial machinery that tries to break it does not arrive until here.
-
-Make production depend on injected clock/entropy/I/O ports, build multi-Cell
-simulation, fault generation, reference models, invariant checking, trace
-shrinking, replay-capsule export, and old/new revision differential runs. Use
-the same evaluator/scheduler/policy code as production; do not maintain a toy
-simulation implementation.
-
-**Exit gate:** seeded failures replay and shrink; sampled production capsules
-hash-match; multi-Cell convergence and revocation/dispatch crash boundaries are
-covered; and unsupported/timeout Proof results remain `unknown`, never green.
-
-#### K11 — first vertical sand
-
-**This phase is "prove the loop with a real surface", not "build Economy".** It
-was previously titled *first vertical workflow: Economy*, which made a sand into
-a numbered phase of the core and is precisely backwards. A sand is a bundle of
-HTML and JavaScript that reads through Protein and writes through Actions. It is
-never a layer, never a phase, and never a thing the backend has heard of.
-
-The sand that fills this slot is the **Karma sand**, specified in
-`docs/Sand: Karma.md`: full CRUD over the rules that change Records, plus the
-record graph through past, present and declared future. Any sand could have
-filled the slot; what K11 actually proves is that the finished loop is usable
-from a browser by a person.
-
-**Economy is not a sand and never was one.** It is what the Karma sand looks like
-when the rules in it are about a balance, exactly as a pantry is what it looks
-like when they are about flour — a preset and a set of Records, shipped as data
-in someone's own Cell. The surface was briefly called the Karma sand; that name
-is retired, and with it the last suggestion that a domain gets its own slot.
-
-What remains true here: K11 runs immediately after K5.2, it depends on the exact
-kernel (K1), the durable model and Actions (K2), the occurrence and Frequency
-machinery (K2–K3), the evaluator (K4) and the grant boundary (K5.1–K5.2), and it
-depends on no Signal, model, Trust scope, workflow engine, or simulation
-harness.
-
-**Enforced, not just asserted.** `crates/web/tests/sand_boundary.rs` fails if
-`economy`, `money`, `currency` or `finance` appears as a module, type, table,
-column or literal in `nucleus`, `store`, `engine`, `protein`, `transport` or
-`lince`. Comments explaining why a domain name was rejected are exempt, because
-those are worth keeping. The list is deliberately more than one word: the
-pressure that produced `store::economy` is the same pressure that produced a
-`Money` type in the kernel beside an identically shaped `Quantity`.
-
-The repeating-date primitive it needed is `nucleus::karma::Cadence` — a compound
-step of years/months/weeks/days/hours/minutes/seconds/milliseconds applied
-largest-first, an optional roll-forward onto a chosen weekday, and a bound. It is
-domain-neutral and it is now the *only* schedule type; see
-[One schedule, two resolutions of it](#one-schedule-two-resolutions-of-it).
-
-#### K12 — the Karma sand's Flow Plane
-
-K12 was previously "the second vertical workflow: build the Karma sand", written
-when the first slot was held by something called Economy. With Economy demoted to
-a preset, K11 and K12 are one surface at two depths and K12 is no longer a
-separate sand — it is the **Flow Plane**, the Karma sand's map view, built after
-the rule-CRUD surface of K11 is proven.
-
-The Flow Plane is a two-dimensional,
-zoomable map of everything a Cell can observe and everything Karma could cause.
-Library, Builder, Why, Learn, Imagine, Authority, Queue, and Health are lenses
-over this same plane and the same Protein/Action contracts, not separate tools
-with private state. Build accessible forms first and make graph/DSL lossless
-alternate views of one canonical AST.
-
-The plane must enumerate all declared and currently reachable source ports,
-including Records/Facts, saved and inline Protein, parameters, Frequencies,
-manual occurrences, sync arrivals, decisions, workflow wakes, model/forecast
-outputs, Signals, APIs, files, processes, devices, and microcontrollers. A
-source that is configured but unavailable remains visible with freshness,
-visibility, capability, connector-health, and last-evidence state; absence must
-not make a dependency disappear from the operator's mental model.
-
-The plane must also enumerate every possible outcome path before it happens:
-derived values, emitted Facts, recommendations, drafts, decisions, workflow
-transitions, meta-control, and typed effect/Transfer Actions. Inactive, denied,
-staged, budget-exhausted, missing-secret, untrusted-Organ, or otherwise blocked
-paths remain drawn and name the exact gate. This is how a person can audit “all
-possible effects” without granting those effects or waiting for a live run.
-
-The canonical default layout uses time from left to right and stable causal/
-resource lanes from top to bottom. A source observation, schedule boundary, or
-state transition is a point; a freshness window, threshold band, hysteresis
-band, allowed value range, schedule tolerance, wait, or Trust validity is a
-range. Crossing/entering/leaving a range visibly routes a token to the next
-typed node, where Records, candidates, commands, or Actions can enter a new
-state. Other layouts may be offered, but layout is presentation metadata and
-never changes graph semantics or a revision hash.
-
-The Flow Plane has five composable views. **Definition** shows the complete
-static graph and dormant branches. **Live** overlays latest values, occurrence
-order, evaluated edges, queue state, and receipts. **Why** walks either
-direction through exact evidence and authority provenance. **Imagine** runs
-the production kernel on a frozen/branched world and visually separates
-projected changes from Facts. **Authority** overlays taint, recipient, grant,
-Trust scope, budget, expiry, and the first gate that would require escalation.
-No overlay calculates policy or schedule truth in JavaScript.
-
-Editing a node, edge, point, or range produces a typed graph-revision draft,
-runs validation and Proof, and then invokes the ordinary revise Action with an
-expected revision and idempotency key. Dragging nodes only writes personal
-layout state. A breakpoint, run-once, simulation, activation, pause, candidate
-response, grant change, retry, or compensation likewise invokes its typed
-Action; the canvas never writes Store rows or dispatches an effect directly.
-
-Large graphs use server-projected dependency slices, stable node/edge ids,
-viewport virtualization, semantic zoom, and incremental live overlays. The
-client may cache geometry but must retain causal data only to its Protein cursor
-boundary. Split the sand into focused Rust `body/style/script` modules and
-focused JS modules for bridge, plane, layout, inspectors, each lens, and
-accessibility; do not create one monolithic Karma HTML/script.
-
-**Exit gate:** through the real socket, the Karma sand renders every source and
-potential effect for the acceptance fixture; a person authors the old
-condition → consequence example as points/ranges, sees a live transition create
-only its permitted candidate, replays it in Imagine, inspects its full Why and
-Authority paths, and revises/pauses it without direct database access. Blocked
-and dormant paths remain inspectable. Keyboard/screen-reader navigation, live
-updates, stale edits, permissions, emergency controls, restart recovery, and a
-large virtualized fixture pass. Only then follow with the remaining vertical
-workflows.
-
-### The engine loop and its primitives
-
-**Returned here 2026-07-26.** These slices were written inside the sand
-chapter and briefly moved out with it. That was a filing error in both
-directions: they describe the Ledger, the engine's read and write halves, exact
-arithmetic, virtual-clock projection, classification, and the recurrence
-primitive — none of which is Economy. Economy was only the first caller.
-
-They keep their original `E*` numbering because the gates, exit conditions and
-implementation-status notes are cited by that name throughout this document and
-in commit history. Read the numbering as historical, not as a claim that a sand
-owns them. Where the prose says "gain/loss", the primitive underneath is a
-signed exact delta; where it says "resource", the primitive is a Record.
-
-The domain reading of these — what a person sees, and how the surface is
-built — is in `docs/Sand: Karma.md`.
-
-##### E0.0 — exact deltas in the Ledger
-
-Found while auditing the engine on 2026-07-25, and a hard prerequisite for
-every exactness claim E0 makes. The Karma kernel is exact end to end: no `f64`
-appears anywhere in `evaluate.rs` or `value.rs`, and amounts are carried as
-mantissa-and-scale decimals. The Ledger it must write into is not — `fact.delta`
-and `record.quantity` are both `REAL`. A rule that computes an exact `1.15kg`
-today would land as a float in the only place the result is durable, and E0's
-"all sums are exact" exit condition cannot be met on that representation.
-
-**Decided 2026-07-25: the Ledger is rebuilt exact, not patched exact.** The
-earlier draft of this slice stacked nullable exact columns beside `fact.delta`,
-defined an *exact-clean* rule for chains that mixed the two, and required a
-signed reconciliation Fact per existing Record to migrate. All of that existed
-only to protect databases that will be deleted. The licence to edit unreleased
-migrations in place is hereby extended past the Karma migrations to the whole
-schema: `fact` and `record` are rebuilt in `0001` itself, and the exact-clean
-rule, the mixed-chain refusal, and the reconciliation Fact are **deleted from
-this plan** rather than implemented. There is no legacy representation to
-tolerate, so no code should be written to tolerate one.
-
-- [x] `fact.delta` becomes an exact signed decimal — mantissa and scale — and the
-  `REAL` column is removed, not kept beside it. Two representations of one
-  quantity is precisely the ambiguity this rebuild exists to avoid. The exact
-  pair is inside the hash preimage, so an amount is covered by the Fact's
-  signature rather than annotated next to it.
-- [x] **Exact decimals are strictly finer than the floats they replace, which is
-  the whole point.** `0.1` is exactly `0.1` — a value `f64` cannot represent at
-  all — and scale runs to 18 places, so any fractional precision a float could
-  express is expressible here and reproducible. Nothing about quantities becomes
-  coarser or integer-only; adding a third of a kilo, a price of `19.99`, or a
-  rate of `0.0725` all stay exact, and stay exact after a thousand additions,
-  which floats do not.
-- [x] `record.quantity` stays a cache, as its own comment already says, and is
-  rebuilt to carry the exact pair too so a cached level never disagrees with its
-  chain by a rounding step. Quantity truth remains the sum over the Fact chain.
-- [x] Sum exact deltas in Rust as `i128` at a common scale, never in SQL, for
-  the same reason budget quantities are summed that way: SQLite numeric affinity
-  does not preserve exact decimals.
-- [x] Rebuilding `0001` breaks every existing local database, deliberately. Say
-  so in the implementation note: a stale `.db` must be deleted, not migrated.
-  This licence ends the moment any migration reaches a real deployment.
-- [x] Prove it: a gain and a loss whose float representation would drift
-  (`0.1 + 0.2`) sum exactly; a thousand additions of `0.01` reach exactly `10`;
-  and no `REAL` quantity column survives anywhere on the Fact/Record path.
-
-**E0.0 exit:** an exact amount survives the round trip from kernel decimal to
-Fact to aggregate without ever becoming a float, and there is no second
-representation for it to become.
-
-**Landed 2026-07-25.** `crates/store/tests/exact_ledger.rs` holds the six
-proofs, including a `pragma_table_info` assertion so "no REAL survives" is
-checked against the live schema rather than by reading the migration. What the
-implementation settled beyond the plan text:
-
-- **The kernel's decimal *is* the Ledger's decimal.** `nucleus::DecimalValue`
+## Decided 2026-07-30 — one schedule, one rule, no legacy
+
+Three names for one idea and two rule engines is the last big incoherence, and
+it is the reason a cadence authored in the sand is invisible to a rule. The
+local database was deleted deliberately to make this free: **there is nothing to
+migrate, so build the right shape rather than a compatible one.**
+
+### One word for repeating time: Cadence
+
+Today there are five spellings. `Cadence` (step + `land_on` + `invalid_day` +
+`bound`), `ElapsedSchedule` (a millisecond lattice), `CalendarSchedule` (a
+Cadence plus zone and policy), `karma_frequency` (the Program engine's handle),
+and the legacy `store::freqs` that `freq()` actually reads.
+
+**Verified 2026-07-31, before deleting anything.** The three-stores claim was
+read off tests and never confirmed end to end. It holds, and is sharper than
+stated: `freq(@x)` resolves *only* from `injected.freq`, which `tick()` fills
+from one table. So the three were genuinely disjoint — not partly joined — and
+a rule could never see a cadence the sand wrote. Also settled: `ElapsedSchedule`
+anchors on a `TimestampMs`, every test anchor is a plain UTC instant, and
+`boundary_strictly_after` is pure millisecond division. **Nothing in the elapsed
+case needs instant-ness that a UTC-interpreted civil anchor cannot express**, so
+the merge below is real rather than a shape that only looks mergeable.
+
+- [x] **`Cadence` is the only schedule shape the timer wheel speaks.** The
+  legacy `FrequencySpec` — `seconds` + `days` + `months` + `day_of_week` +
+  `finish_at` — is deleted, and `nucleus::Frequency` is a `Cadence` plus the
+  three things a Cadence deliberately does not carry: the `anchor_at` that
+  phases it, the durable `fired_through` cursor, and `catch_up`.
+  - **`freq(@x)` now reads a Cadence**, so compound steps, weekday landing and
+    bounds are reachable from a rule for the first time. `-1 * freq(@daily-7am)`
+    still fires — the same test proves both.
+  - **The cursor is durable, and its lower edge is inclusive.** `fired_through`
+    is where the unfired window *starts*, so a boundary landing exactly on it is
+    still owed; firing sets it one millisecond past what it delivered. A process
+    restarting mid-window neither re-fires what it delivered nor swallows what
+    it owed. Reading the edge as exclusive is the one way to get this wrong —
+    it adds a second millisecond and skips a date.
+  - **`finish_at` was a column beside the schedule; the bound is now inside it.**
+    "Stops after N" and "stops on a date" are one field, so they cannot disagree.
+  - **Behaviour deliberately dropped: `day_of_week` filtered occurrences away.**
+    A Monday-only daily rule counted zero on a Tuesday. `land_on` *rolls forward*
+    instead, which is what a person means by "then move it to a Monday". Nothing
+    depended on the filter.
+  - **Due-ness left SQL.** `next_at <= ?` became "read every enabled timer and
+    ask its Cadence", because a pre-filter would be cadence arithmetic written a
+    second time in a second language, free to disagree with the first.
+- [ ] **Still two runtimes underneath: `ElapsedSchedule` and `CalendarSchedule`.**
+  `CalendarSchedule` is *already* `Cadence` + timezone + policies — the target
+  shape with the zone made mandatory. Merging them is therefore the same job as
+  the durable-handle merge below, not a warm-up for it: `resolve_calendar_cursor`
+  needs a no-zone path that skips gap/fold and does the millisecond lattice, and
+  the anchor becomes a civil reading interpreted as UTC when the zone is absent.
+  This is kernel code carrying canonical hashes, so it moves golden values.
+- [ ] **`Frequency` is the only durable schedule handle** — a `Cadence`, an
+  optional timezone with pinned tzdb, and execution policy (timer, missed,
+  inactive-gap, rephase, overload). **A schedule with no zone is not a different
+  type; it is a Frequency whose zone is absent.** `store::freqs` speaks Cadence
+  now, but it is still a different table from `karma_frequency`; one of the two
+  has to go.
+- [ ] **Delete the words that were never separate concepts.** In prose and in
+  code, "frequency", "cadence", "schedule" and "recurrence" mean one thing. Pick
+  `Cadence` for the shape and `Frequency` for the handle, and use nothing else.
+
+### One rule object
+
+`recurrence` (the sand's rules: a Cadence plus an amount and a target) and
+`RuleDef` (the legacy engine: condition, gate, carry, consequences) are two
+halves of the same object that never met.
+
+- [x] **A rule is: when, if, then.** *When* is its Cadence. *If* is a condition
+  over Record readings, with a gate and a carry — `condition_src`, `gate` and
+  `carry` on the rule, all NULL together for an unconditional one. *Then* is its
+  consequences. A rule with no condition is a pure schedule, which is what every
+  rule was before this.
+  - **The condition is asked at fire time**, against the world as it stands, so
+    "every day, but only when stock is low" means what it says.
+  - **A blocked gate is neither an error nor a skip.** The rule looked and
+    decided not to act, so the date stays unapplied and is asked again next
+    beat — the answer can change without the rule changing. A skip, by
+    contrast, is a person's decision and is remembered.
+  - **The carry is what the consequence receives.** This is the piece the new
+    graph had no equivalent of, and it is what makes `-1 * freq(@daily) →
+    set_quantity` expressible: fire *because* stock is 8, write -1 anyway.
+  - Refused at write time, not at 3am inside a heartbeat: an unreadable
+    condition never stores, and a gate with no condition is rejected rather
+    than dropped — dropping it turns a rule that fires *sometimes* into one
+    that fires *always*.
+- [x] **A fact trigger exists, and it is not a second kind of *when*.** A rule
+  is evaluated when a Record it reads changes, and its cadence bounds how often
+  that may act. So "purely reactive" is a rule whose cadence is fine-grained,
+  not a rule with a different trigger — one shape, two ways of being woken.
+- [ ] **Delete `recurrence` as a separate table** and express the sand's
+  recurring rules as this one object. The apply/skip inbox stays — it is what a
+  rule does when nothing is authorized to act for you.
+- [x] **Full CRUD: a rule can be deleted.** Pausing was the only way to stop
+  one, so a finished rule sat in the list forever wearing a badge; retiring it
+  as a third state has the same problem one word along. `DeleteRecurrence`
+  removes the rule, its revision log and its skips. **It does not touch the
+  Ledger** — dates it already applied are ordinary entries, because the rule
+  proposed those changes and never owned them. What a delete removes is the
+  rule's future, which is all a rule ever holds.
+
+### Delete the legacy engine, port its capability
+
+- [x] **Arithmetic and the readings a rule actually needs are ported** onto
+  exact decimals: `quantity()` (and the bare `@slug` sugar for it), `signal()`,
+  `sum()` / `sum_pos()` / `sum_neg()` over a window, the full arithmetic,
+  comparisons and short-circuiting booleans. A window is *required* where it is
+  meaningless without one, and an unknown reading is refused rather than
+  defaulted to zero — a zero would let a typo read as "the stock is empty" and
+  fire a rule for the most alarming possible reason.
+- [x] **The rest of the vocabulary is ported.** `freq()`, `value()`,
+  `promise_state()`, `hours_since_fact()`, `confidence()`, `demand()`,
+  `projected()` and `distance()` all answer in `read_for_condition`. Only
+  `route_eta()` is still missing, and it is waiting on local map data rather
+  than on this work.
+  - **`freq(@x)` is the merge, made visible.** It counts the boundaries the
+    rule on `@x` produced in the stretch this evaluation speaks for. So a
+    schedule is a *term in the arithmetic* rather than a second kind of
+    trigger: `-1 * freq(@payday)` is worth zero on six days and -1 on the
+    seventh, and the ordinary `!=0` gate turns a rule that is looked at daily
+    into one that acts weekly.
+  - **The stretch is derived, never stored.** One evaluation reads back to the
+    rule's own previous instant (`Cadence::preceding`), so consecutive
+    evaluations tile the timeline exactly — nothing counted twice, nothing
+    skipped, and a Cell that slept counts every rhythm it missed once each.
+    There is no cursor to advance, so no ordering hazard between the reactive
+    path, the heartbeat and the projection.
+  - **A measurement stays a measurement.** `distance()`, `confidence()`,
+    `demand()` and `hours_since_fact()` are approximate at the source and cross
+    into exact decimals through one named bridge; nothing the Ledger owns does.
+- [x] **Gate and carry are ported, on exact decimals.** `nucleus::karma::
+  condition` — gate `!=0` / `always` / `<n` / `<=n` / `>n` / `>=n` / `==n`, carry
+  `value` / `one` / `const:N`, and an evaluator over the *same* parsed
+  expression tree the legacy engine uses, walked with `DecimalValue` instead of
+  `f64`.
+  - **The parser now keeps a literal as its source text** rather than an `f64`,
+    which is what makes exactness reachable at all: `0.1 + 0.2` is `0.3`, not
+    `0.30000000000000004`. A rule that runs daily accumulated that error forever.
+  - **One grammar, two evaluators.** The legacy `f64` path and the exact path
+    read the same tree, so the port could not drift into a second dialect.
+  - **Division is the one inexact operation** and says so: rounded half away
+    from zero at a defined scale, once, rather than drifting. Division by zero
+    is refused rather than infinite.
+- [x] **The consequences are ported.** `emit-promise`, `ask`, `notify`,
+  `run-command`, `run-query`, `run-action`, `set-visibility` and
+  `advance-transfer` joined the six that already existed, on the one rule
+  object. `activate`/`deactivate` are not variants: quantity is the universal
+  enable, so they are `set-quantity 1` and `set-quantity 0` and always were.
+  - **Everything outward is committed, not run.** Each lands as an obligation,
+    a question or a queued effect, and a separate worker carries it out. A rule
+    that shelled out mid-evaluation could change the world and then have its
+    own transaction rolled back, and would leave nowhere to check a grant —
+    by then it has already happened.
+  - **`advance-transfer` died on purpose**, as the note here said it must.
+    Transfer automation is meant to fail closed and Transfer/Karma is parked;
+    porting it would have shipped parked behaviour behind a green test.
+  - **Carry reaches every consequence that takes a figure.** `set-quantity` and
+    `add-quantity` hold `Option<DecimalValue>`: a written number wins, and
+    `None` means "the number the condition worked out". That is what finally
+    makes `-1 * freq(@payday) → set-quantity` sayable end to end — the sentence
+    this pillar was measured against. A rule whose condition is only a gate
+    keeps its literal, so "when stock is low, set it to 10" still sets 10
+    rather than being handed the stock level.
+  - **The marker entry no longer takes the carry unless the rule captures.**
+    Applying a date always writes one entry to mark it done; letting a carry
+    into that entry for an `add-quantity` rule moved the figure twice, once
+    through the marker and once through the consequence.
+- [x] **The consequences that never existed: concepts.** `nucleus::karma::
+  Consequences` is an ordered non-empty list of `capture-entry`, `set-quantity`,
+  `add-quantity`, `set-concept`, `add-concept`, `remove-concept`, each
+  dispatching to the typed Action that already existed. A rule stores it as
+  `consequences_json`, replacing the single `amount` + `concept_uid` pair that
+  was the first caller's shape leaking into the model. Removing a Record's
+  identity concept stays refused. A rule can now move a card between kanban
+  columns, since columns bucket by value, range or concept.
+  - **A list, not one**, because `@wip → @done` is one intention and must be one
+    rule, or a reader has to know two rules are secretly joined.
+  - **`SetQuantity` is not a delta.** Assigning `-1` is not a movement of `-1`,
+    so it is excluded from `declared_delta()` and never folded into a timeline;
+    a projection can only sum what is summable.
+  - **The idempotency guard moved to the front of apply.** The entry carrying
+    the occurrence's request id was enough while a rule could only capture — the
+    UNIQUE index refused the second one. It is not enough once a rule can add a
+    quantity or toggle a concept, because those run *before* the capture is
+    refused. Caught by a test that doubled a `+5` to `+10`.
+  - **Every apply writes exactly one entry, even at zero.** That entry is the
+    only record the date ran. Without it a concept-only rule leaves no trace,
+    reads as due forever, and re-applies on every press.
+  - **The marker entry carries an amount only for `capture-entry`** — using the
+    declared delta would move an `add-quantity` rule's amount twice, once
+    through the marker and once through its own consequence.
+- [x] **Author the non-capture consequences in the sand.** The rule form has a
+  *Then* block in two independent halves — a number and a concept — because the
+  useful rules are pairs, and splitting "add 1 and mark it @done" across two
+  rules hides that they are joined.
+  - The number half offers capture / add / **set** / nothing. *Nothing* is what
+    makes a pure reclassification sayable; without it, moving a card would have
+    to invent an amount.
+  - The concept half offers add / remove / **move** / replace-all. *Move* emits
+    the remove-then-add pair in one rule, which is what makes a column change a
+    move rather than a moment in both columns at once.
+  - **Rows without a figure lead with what the rule does.** A `0` there would
+    be a claim that the rule moves nothing, rather than the absence of a number.
+    The same applies to a due date: no amount means no override box, since the
+    apply path would have nowhere to put the number.
+  - A delete control per rule, saying on the button what a delete keeps.
+- [x] **A declined date is visible and reversible.** `UnskipRecurrenceOccurrence`
+  was a third Action the sand never called, and skipped dates were filtered out
+  of the list entirely — so a mis-click could not be undone, and the record of
+  the decision was invisible, which undoes the reason skipping exists at all
+  ("decided against" and "nobody has looked yet" must not read the same).
+  Skipped dates now list, muted, offering *Undo skip* alone: leaving *Apply*
+  beside one would let a skip be overridden without ever being withdrawn.
+  - **Skip became the primary control** the moment the heartbeat started
+    applying due dates on its own. Declining ahead of the beat is how a person
+    says "not this one"; *Apply* now means "run it early".
+- [x] **The sand can revise a rule, so CRUD is finally all four letters.**
+  `ReviseRecurrence` existed as an Action that nothing called: create, read and
+  delete were reachable, and the only way to fix a wrong amount was to delete
+  the rule — losing its identity and its explanation of the entries it had
+  already produced.
+  - **The same form does both jobs**, prefilled and relabelled. A separate edit
+    surface is how a rule ends up with a shape only one of the two can express.
+  - **The revision is quoted back** (`expected_revision`), so a form left open
+    while the rule changed underneath is refused rather than winning by being
+    slower.
+  - **The Record select is disabled while editing.** A revision carries no
+    target, so a rule cannot move to another Record; leaving the control live
+    would be an offer the Action cannot honour.
+  - **A stored consequence names its concept by uid**, because the Action
+    resolved it on save. The form speaks it back as the name its author typed —
+    prefilling the uid would show an identifier where someone wrote "rent".
+- [x] **The JS that builds and re-reads a consequence list is tested for real.**
+  `crates/web/tests/karma_sand_js.mjs` runs in Node against the actual module —
+  authoring each consequence shape, refusing the empty and half-named ones, and
+  the round trip that breaks silently: open an untouched rule, save, get the
+  same rule. The sharp case is the column move, which must read back as one
+  *move* rather than two unrelated concept consequences, and the concept uid a
+  stored rule carries must be spoken back as the name its author typed.
+  - A Rust test (`karma_sand_js.rs`) runs it so it rides the normal suite, and
+    **skips loudly** when no `node` is on PATH — a missing engine is a property
+    of the machine, not of the code, but a green run must never be mistaken for
+    a checked one.
+  - Verified in both directions: the harness was made to fail on purpose and
+    the Rust wrapper reported it. A test that cannot fail proves nothing.
+- [x] **The delivery behavior is ported, and debounce turned out to be the
+  cadence.** A change to a Record makes every rule reading it *look*; the
+  rule's own cadence still decides whether it may *act*. Both paths therefore
+  apply the same occurrence — the latest date the rule produced — through the
+  same Action with the same idempotency key.
+  - That single decision buys three things at once. A reactive firing and a
+    scheduled one cannot double-apply each other. A rule acts at most once per
+    period, which *is* the debounce, now declared in the same place as
+    everything else about the rule and durable because it is derived from the
+    Ledger rather than held in memory.
+  - **A blocked gate does not spend the date**, so a rule fires the instant the
+    world makes its condition true rather than waiting for the next beat.
+  - **A rule's own firing must not re-enter the reactive path.** The marker
+    entry is not committed yet, so a reaction there would find the date unspent
+    and apply it twice; chains are followed afterwards, from outside, where
+    idempotency holds. Bounded at 256 evaluations per change.
+  - **The guard belongs on the apply, not on any one caller.** It was first put
+    on the heartbeat, which left a date applied *by hand* from the inbox moving
+    the Record twice — the path a person actually watches was the broken one.
+- [ ] **Reaction re-reads every rule on every committed Fact.** `react_to` loads
+  all rules and resolves each condition's tokens per change, on the write path.
+  Fine at ten rules; a sync batch against fifty will feel it. An index rebuilt
+  on rule CRUD is the fix, and it is a cache — so it is worth doing only once
+  the shape has stopped moving.
+- [x] **`nucleus::rule`, `store::rules`, `store::freqs`, `engine::karma`,
+  `nucleus::frequency` and the `rule` / `rule_consequence` / `frequency` tables
+  are deleted.** No import path, no adapter, no compatibility shim. ~2,900 lines
+  gone, and `parse_duration` — the one thing in there that was neither a rule
+  nor a schedule — moved next to the lexer that produces the token.
+
+### Non-negotiable: a rule fires itself
+
+**This is the point of the whole pillar.** A rule that waits for a click every
+week is a to-do list with extra steps — the person is still the scheduler, which
+is the job they asked the software to take. The canonical case, and the one to
+build against:
+
+> A habit Record sits at `-1` (a Need). I tick it and it goes to `0` (done).
+> **Every week it returns to `-1` by itself.** I never touch the schedule again.
+
+Manual apply was framed here as "what makes this shippable". That framing was
+wrong and is retired: manual apply is the **fallback for what a person must
+approve**, not the destination. Anything a person already authorized by
+declaring the rule must happen without them.
+
+- [x] **The heartbeat is started.** `Engine::run(period_secs)` existed — a
+  daemon that ticks and drives the wheel — with **no caller anywhere in the
+  codebase**: the web server built the Engine and never started the loop, so the
+  Cell had a pulse it never took. Started after the organ signer, so the first
+  beat can attest what it commits. Period is 60s.
+- [x] **Due occurrences apply themselves.** `fire_due_rules` drains every date
+  that fell due and applies it through the **same Action** a person presses, so
+  an automatic change is auditable by identical means to a manual one and never
+  gets a private write path. Runs after the timer wheel on each beat, so a rule
+  reading a Record a Frequency just moved sees the new value this beat.
+  - **No actor is recorded, deliberately.** Nobody pressed it. Naming a person
+    would be a false attribution in the Ledger; the rule's declaration is the
+    authority, and that is a different claim.
+  - **A paused rule fires nothing**, including dates that already fell due.
+    Pausing means "stop acting for me", and a pause that only hid the future
+    while the wheel kept firing is the most surprising reading of the word.
+  - **A refused consequence does not stop the wheel** for every other rule — a
+    rule whose concept or Record vanished stays due and says so on the surface.
+  - **The idempotency guard already makes this safe.** Apply is keyed on
+    `<recurrence_uid>:<due_at>` and refuses a repeat before running any
+    consequence. So the wheel and a person can both press the same date and the
+    second one does nothing. This was built for retries; it is what lets
+    automatic and manual firing coexist without a lease.
+- [x] **Declaring the rule is the authorization**, for consequences that touch
+  only the author's own Records — quantity and concept changes. Requiring a
+  second consent every week means the declaration meant nothing. **This does not
+  extend to effects that leave the Cell**: notify, run_command, transfer and
+  anything reaching another Organ still need a grant, and still fail closed.
+  That boundary is what makes automatic firing shippable ahead of the full
+  authority machinery, rather than blocked behind it.
+- [x] **A Cell asleep for three weeks wakes owing three Mondays, and owes them.**
+  Apply every missed date rather than collapsing to the latest. Three missed
+  rents *are* three rents, and a habit re-armed three times ends at the same
+  `-1` it would have reached once — so applying each is right in the
+  accumulating case and harmless in the state-assertion case, while collapsing
+  is wrong in the first. Each date also needs its own marker entry or it stays
+  due forever and re-fires on every tick, which is the failure collapsing
+  quietly creates.
+  - **Bound the burst instead.** The danger is not a missed month, it is a
+    millisecond rule asleep for a day — tens of millions of occurrences. Cap
+    what one tick applies per rule and carry the rest to the next tick, so a
+    fast rule cannot starve the heartbeat or the Ledger.
+- [x] **Say plainly that delivery resolution is the tick period.** A cadence can
+  be declared in milliseconds; a polling heartbeat cannot deliver one on time.
+  Weekly habits do not care and work today; sub-second delivery is the
+  **tickless deadline fabric** in block 11, and until it exists the honest
+  statement is "declared in ms, delivered on the tick". Do not let a 3ms
+  *declaration* imply a 3ms *delivery*.
+- [ ] **Then: one rule object** (below), so a rule authored in the sand is
+  visible to the wheel rather than living in a table only the inbox reads. The
+  steps above make sand rules fire; this makes them first-class to everything
+  else — `freq()`, conditions, and rules that reference each other.
+
+---
+
+## 0. Exact numbers and frozen vocabulary
+
+Why first: every later block stores, hashes, or signs a number. If the number
+representation changes afterwards, every hash and every test fixture is invalid.
+
+- [x] **One decimal type, no floats on any durable path (K0).**
+  `FixedDecimal<S>` = `i128` mantissa + compile-time scale, max scale 18.
+  Checked arithmetic, no implicit rounding, negative zero impossible.
+  Serializes as a decimal string with exactly `S` fractional digits.
+- [x] **Probability and confidence are different types (K0).** Both
+  parts-per-billion over `0..=1_000_000_000`, nine fractional digits on the
+  wire. Neither converts to `bool`. `0.72p` / `0.65c` are DSL sugar normalized
+  before hashing. They answer different questions — how likely vs how
+  well-supported — and a gate must compare both deliberately.
+- [x] **Time atoms (K0).** `DurationMs` = signed integer milliseconds.
+  `TimestampMs` = signed UTC millisecond, serialized only as RFC3339 with
+  exactly three fractional digits and `Z`. Civil time is a separate type and
+  never silently becomes an elapsed duration.
+- [x] **No money type.** A currency is a Unit Record, so `12.50 @brl` and
+  `2.5kg` are the same shape. Converting between units is a rule, not a kernel
+  feature. Deleting `Money` is what made `Quantity ÷ Quantity` expressible.
+- [x] **Canonical bytes (K0).** JSON sorts object keys, preserves array order,
+  no whitespace, rejects float numbers. Hash = SHA-256 over a domain-separated
+  prefix (`karma.program-revision.v1`) so two object families can't alias.
+  Enums/Actions kebab-case, fields snake_case, maps are `BTreeMap`.
+- [x] **Failures are typed (K0).** Stable machine `FailureCode` + safe message +
+  field path. Callers never match on text. Codes may be added, never repurposed.
+- [x] **`nucleus::karma` has no I/O.** No SQL, async runtime, wall clock, random
+  uid, platform locale, or unordered public collection.
+- [ ] **Every new public wire type extends the golden fixture in the same
+  change.** An untested wire type is an incomplete change.
+
+### The Ledger carries exact deltas (E0.0)
+
+Why: the kernel is exact but `fact.delta` and `record.quantity` were `REAL`, so
+an exact `1.15kg` became a float in the only place it was durable.
+
+- [x] **`fact.delta` and `record.quantity` are exact pairs, `REAL` removed** —
+  rebuilt in migration `0001`, not stacked beside the old column. Two
+  representations of one quantity is the ambiguity being deleted. A stale local
+  `.db` must be deleted, not migrated; this licence ends at first deployment.
+- [x] **The kernel's decimal *is* the Ledger's decimal.** `nucleus::DecimalValue`
   is re-exported at the crate root and used by `Fact`/`NewFact` directly, so
   there is no conversion between an evaluation type and a storage type — which
-  is what makes "survives the round trip" true by construction instead of by
-  care.
-- **Storage is `(mantissa TEXT, scale INTEGER)`.** The mantissa is TEXT because
-  it is an `i128` and SQLite's INTEGER is 64-bit, which truncates at scale 18
-  above ±9.22 units. A canonical mantissa has no leading zeros and no negative
-  zero, so `mantissa != '0'` is an exact is-nonzero test and `mantissa LIKE '-%'`
-  an exact is-negative test — the activation and debt predicates survive as
-  string tests. `SUM()`/`delta > 0` in SQL do not survive: the window folds
-  fetch and fold in Rust, bounded by the existing `(record_uid, at)` index.
-- **Scale never needs to grow past 18.** Alignment takes `max(scale)`, not their
-  sum, and every `DecimalValue` is `<= 18` by construction, so the anticipated
-  "cache eventually needs scale 19" case cannot arise and needs no refusal rule.
-  The cache absorbs the finest scale its facts declare.
-- **The checkpoint payload was an exactness hole with no REAL column in it.**
+  is what makes "survives the round trip" true by construction rather than by
+  care. `parse_inferred` and `aligned_add` are its parsing and addition entry
+  points; `MAX_DECIMAL_SCALE` is 18.
+- [x] **Stored as `(mantissa TEXT, scale INTEGER)`.** TEXT because the mantissa
+  is `i128` and SQLite INTEGER is 64-bit, which truncates above ±9.22 at scale
+  18. Canonical mantissa has no leading zeros and no negative zero, so
+  `mantissa != '0'` is an exact is-nonzero test and `LIKE '-%'` an exact
+  is-negative test.
+- [x] **Sum in Rust as `i128` at a common scale, never in SQL** — SQLite numeric
+  affinity does not preserve exact decimals. Alignment takes `max(scale)`, not
+  the sum, so scale never needs to exceed 18.
+- [x] **The exact pair is inside the hash preimage** (`scale:canonical-text`),
+  so an amount is covered by the Fact's signature. Consequence: a declared `1.5`
+  and a declared `1.50` are different Facts — precision is signed, not
+  annotated. This also fixed a chain-determinism bug where the preimage
+  interpolated an `f64` and `0.1 + 0.2` hashed as `0.30000000000000004`.
+- [x] **Checkpoint payloads carry canonical decimal text plus scale.**
   `{"level": q}` was a JSON float, and after compaction that payload *is* the
-  record's level. It now carries canonical decimal text plus its scale.
-- **A latent chain-determinism bug is fixed on the way.** The hash preimage
-  interpolated an `f64` via `Display`, so `0.1 + 0.2` hashed as
-  `0.30000000000000004` and chain bytes depended on the float formatter. The
-  preimage is now `scale:canonical-text`, which also makes a declared `1.5` and
-  a declared `1.50` different Facts — precision is signed, not annotated.
-- **The lossy inbound door is one named function, not a `From` impl.**
-  `NewFact::quantity_f64` / `exact::from_f64` mark every producer that still
-  computes in floats (transfers, senses, the legacy rule fold). They are
-  greppable, and that grep is E0.2/E0.3's worklist. `to_f64()` stays freely
-  available outbound for display and the legacy projection: the exit condition
-  is about the durable path, not about rendering.
-- **Non-goals, decided rather than overlooked:** `promise.delta`,
-  `link.quantity`, and `transfer_occurrence.quantity` stay `REAL`. E0.0 names
-  only `fact.delta` and `record.quantity`; promises are E1's problem. Protein
-  still emits quantities as JSON numbers so the sands keep working — E0.1 owns
-  the exact read side.
-- **Declared precision survives the sync wire, and that is now tested.**
-  `Package.facts` is `Vec<Fact>`, so a delta crosses between Cells exact. It
-  matters: a `1.50` that round-tripped through `f64` would come back as scale 1,
-  hash as `1:1.5` instead of `2:1.50`, fail `verify_chain_step`, and be
-  quarantined. The existing sync tests all use scale-0 values (`10`, `3`, `0`)
-  and could not catch that, so `declared_precision_survives_the_sync_wire`
-  syncs a trailing-zero decimal and asserts an empty quarantine.
-- **`bump_quantity` is a read-modify-write, and it is safe for a sharper reason
-  than "it runs in a transaction":** `facts::insert` runs first in that same
-  transaction, so the write lock is already held before the SELECT. Under a
-  DEFERRED begin, "inside a transaction" alone would not be enough.
-- **Two SQL triggers referenced `fact.delta` and had to move with it**
-  (`0020_transfer_settlement_corrections.sql`). The zero-evidence check became
-  `delta_mantissa = '0'`; the compensation-matching check compares the exact
-  pair against the transfer side's REAL by building `10^scale` as text, so it
+  record's level.
+- [x] **One named lossy inbound door**, `NewFact::quantity_f64` /
+  `exact::from_f64`, marking every producer still computing in floats. Greppable
+  on purpose. `to_f64()` stays free for display.
+- [x] **Declared precision survives sync.** `Package.facts` is `Vec<Fact>`, so a
+  delta crosses between Cells exact. A `1.50` round-tripped through `f64` would
+  return as scale 1, hash `1:1.5` instead of `2:1.50`, fail `verify_chain_step`
+  and be quarantined. The existing sync tests all used scale-0 values and could
+  not catch that, so `declared_precision_survives_the_sync_wire` syncs a
+  trailing-zero decimal and asserts an empty quarantine.
+- [x] **Proven against the live schema, not the migration text.**
+  `crates/store/tests/exact_ledger.rs` holds the six proofs including a
+  `pragma_table_info` assertion for "no `REAL` survives".
+- [x] **Two SQL triggers referenced `fact.delta` and moved with it**
+  (`0020_transfer_settlement_corrections.sql`): the zero-evidence check became
+  `delta_mantissa = '0'`, and the compensation-matching check compares the exact
+  pair against the transfer side's `REAL` by building `10^scale` as text, so it
   needs no SQLite math extension.
+- [x] **`bump_quantity` is safe because `facts::insert` runs first in the same
+  transaction**, so the write lock is held before the SELECT. Under a DEFERRED
+  begin, "inside a transaction" alone would not be enough.
+- [ ] **Not done, deliberately:** `promise.delta`, `link.quantity`,
+  `transfer_occurrence.quantity` stay `REAL`. Protein still emits quantities as
+  JSON numbers so sands keep working.
 
-**History is not a second object.** Compaction today writes pre-checkpoint Facts
-to a cold JSONL file, deletes them from `fact`, and anchors the file by hash. The
-history therefore survives but stops being *readable* — and the instinct to fix
-that by versioning the Record, or copying it per concept, would create a second
-thing that can disagree with the chain. It is not needed: **a Fact already is the
-history.** What compaction actually removes is queryability, and that is what
-this slice restores.
+### History stays queryable after compaction (E0.0)
 
-- [ ] **Separate two properties the retention horizon currently conflates:**
-  whether a Fact is still needed to compute the level, and whether a human can
-  still read it. After a checkpoint the first is already false — the checkpoint
-  carries those deltas — but today that also forces the second to be false,
-  because compaction deletes. Split them: archived Facts move to a `fact_archive`
-  table with identical columns rather than leaving the database. Level and sum
-  queries never read it, because the checkpoint already accounts for it, so
-  archived history is *unfolded by construction and not by a flag*. History
-  queries union it when the window reaches back past the checkpoint. **Decided
-  2026-07-25: the same database file, storage cost accepted.** Compaction then
-  buys a smaller hot table and faster indexes rather than a smaller file — one
-  file stays one backup, and history reads stay ordinary transactional queries
-  instead of filesystem access.
-- [ ] **The checkpoint is the past/present boundary, and nothing else needs to
-  mark it.** Everything before a Record's last checkpoint is settled history:
-  already folded, never re-summed, immutable. Everything after is live. This is
-  structural and self-maintaining — no `is_history` column to set, no mode for a
-  person to remember, and no way for the two to disagree.
-- [ ] **Archive the classification with the Facts.** A `-10` whose concept
-  sidecar was left behind is an unreadable number; history that cannot say *what*
-  a movement was is not history. The same applies to the unit in force at the
-  time, which the checkpoint records, so a later change to `record.unit_uid` does
-  not silently reinterpret old amounts. Keep `prev_hash`/`hash`/`signature` intact
-  so archived history stays verifiable rather than merely asserted.
-- [ ] **Checkpoint on a cadence, not once.** A single checkpoint collapses
-  everything before it to one level, so past *levels* become unanswerable at any
-  finer grain. Writing one per period preserves the level series across
-  compaction at that granularity, which is what E0's level-series query falls
-  back to once a Record has been compacted.
-- [ ] **Retention policy follows concepts, not `record.kind`.** The current table
-  is keyed on kind, which cannot express "keep my grocery history for two years."
-  Key it on concept with DAG inheritance — a policy on `@food` governs
-  `@ice-cream` unless overridden — plus an explicit never-archive setting.
-  Nearest-ancestor resolution already exists in `concepts::nearest_ancestor_in`.
-- [ ] **Compaction must not silently change what rules compute.** A program
-  reading `sum(@x, 90 days)` reads the `fact` table; archiving 90-day-old Facts
-  changes its answer with no error and no trace. The effective horizon for a
-  Record is therefore the configured horizon *or the longest lookback window any
-  active program uses against it, whichever is longer*, and compaction refuses
-  rather than truncating a window a live rule depends on.
+Why: compaction deletes pre-checkpoint Facts and anchors them in a cold file, so
+history survives but stops being readable. A Fact already *is* the history —
+don't version the Record or copy it per concept.
 
-##### E0.1 — the read side: record values, units, and conversion
+- [ ] **Archive instead of delete.** Pre-checkpoint Facts move to `fact_archive`
+  (identical columns, same database file). Level and sum queries never read it
+  because the checkpoint already accounts for those deltas — unfolded by
+  construction, not by a flag. History queries union it when the window reaches
+  past the checkpoint.
+- [ ] **The checkpoint is the past/present boundary.** No `is_history` column,
+  no mode to remember, no way for two markers to disagree.
+- [ ] **Archive the classification and the unit in force with the Facts.** A
+  `-10` whose concept was left behind is an unreadable number. Keep
+  `prev_hash`/`hash`/`signature` so archived history stays verifiable.
+- [ ] **Checkpoint on a cadence, not once** — one checkpoint collapses everything
+  before it to a single level, making past levels unanswerable at finer grain.
+- [ ] **Retention keyed on concept with DAG inheritance**, not `record.kind`,
+  plus an explicit never-archive setting. A policy on `@food` governs
+  `@ice-cream` unless overridden. Today's kind-keyed table cannot express "keep
+  my grocery history for two years".
+- [ ] **Compaction refuses rather than truncating a window a live rule reads.**
+  Effective horizon = configured horizon or the longest lookback any active
+  program uses against that Record, whichever is longer. Otherwise archiving
+  90-day-old Facts silently changes what `sum(@x, 90 days)` returns.
 
-Found in the 2026-07-25 audit. The engine's read side is declared but not
-implemented, so today a Program can only compute over its parameters and its own
-durable state, triggered by a Frequency. This slice makes every number a Record
-carries available to a condition or a derived value.
+---
 
-- [x] **Resolve the boundary inputs.** `InputSource::RecordQuantity` exists in
-  the AST, parses in the DSL, type-checks in Proof, and is covered by pure kernel
-  tests with hand-supplied values — but the durable runtime never fills it.
-  `evaluate_member` populates boundary values for `Trigger` nodes only, a single
-  bool per trigger saying whether this occurrence matched its Frequency. A
-  Program carrying a `record-quantity` input fails evaluation today with
-  `MissingInput`. Implement the resolver for `RecordQuantity` and `SavedProtein`;
-  leave `Signal`, `SecretMetadata`, and `CapturedFact` to K6, and make an
-  unresolvable source a typed refusal rather than a missing value.
-  **Landed for `RecordQuantity`** in `store::karma::runs::evaluate_member`, with
-  `ProgramRunBlockCode::{RecordQuantityUnavailable, RecordUnitUntypable,
-  InputSourceUnresolved}` as the typed refusals — a deleted Record blocks the
-  run rather than reading as zero, because "the Record is gone" and "the Record
-  holds nothing" are different facts.
+## 1. Time, declared
 
-  **`SavedProtein` landed through a seam**, because `protein` is built on top of
-  `store` and calling upward would be a dependency cycle. Rather than invert the
-  layering, `store` declares the hole —
-  `karma::runs::ExternalInputResolver::saved_protein` — and `engine`, the one
-  layer above both, fills it with `karma_runtime::SavedProteinInputs`. The run
-  path never learns what a Protein is; it only knows something can answer, and
-  with no resolver supplied it blocks by name instead of reading a zero.
+Why: one primitive for every repeating or dated thing in Lince — an appointment,
+a reminder, rent, a backup, a promise window. There was a second schedule type;
+it existed only because a read path couldn't reach the scheduler's timezone
+registry, which is a crate-graph reason, not a real one. Firing on time is
+block 11, after authority, because firing needs permission and a declaration
+does not.
 
-  Two judgement calls inside that resolver. **A view must reduce to exactly one
-  number**: one row holding either a bare number or an object with a single
-  numeric field. Several numeric columns is ambiguous, and guessing which one
-  the author meant is how a rule quietly computes against the wrong column. And
-  **a view that fails to execute is a refusal, not an error** — it blocks that
-  Program by name rather than aborting the processing turn, so one broken saved
-  query cannot stop every other Program from running.
-- [x] Read the quantity **from the exact Fact chain that E0.0 establishes**, not
-  from the `record.quantity` cache. Since E0.0 rebuilds the Ledger exact rather
-  than patching it, every chain is exact by construction and there is no
-  mixed-representation case to refuse. Freeze the value into the replay capsule
-  like every other boundary value, so a run stays replayable and a later Fact
-  cannot silently change what a past run saw. **`store::facts::level` folds the
-  chain anchored on the last checkpoint that carries a level** — retention
-  genuinely deletes archived Facts, so folding the surviving rows would
-  under-report a compacted Record, and compaction's archive anchors are
+- [x] **`Cadence` is the only schedule.** Shape:
+  - `CadenceStep` summing years, months, weeks, days, hours, minutes, seconds,
+    milliseconds — a *sum*, so `1 month + 1 day + 10ms` is one rule.
+  - optional `land_on` weekday set, applied after the step, never folded back
+    into its phase.
+  - `invalid_day` = `clamp | skip | pause`, for a month too short for the
+    anchor's day.
+  - `bound` = `unbounded | count | until`.
+- [x] **A one-off is `count: 1`, not a second type.** "This happens on the 14th"
+  produces its anchor and retires. A promise, a dated reminder, a one-off
+  transfer and a standing order are the same object with different bounds, and
+  nothing downstream needs to know which it holds.
+- [x] **An empty step is legal only with `count: 1`.** Otherwise the rule could
+  reach a second date with no way to get there. A bound of zero is refused.
+- [x] **A count is of occurrences produced, not indices tried.** Under `skip`, a
+  February that yields nothing must not spend one of twelve payments. See
+  `Cadence::ordinal_of`.
+- [x] **`until` is exclusive**, so rules tile end to end without a date landing
+  in both. The bound is measured on the landed instant, not the one before
+  landing.
+- [x] **No second place to say when a rule stops.** The `recurrence` table has no
+  `ends_at` column; the bound inside `cadence_json` is the only answer.
+- [x] **Derivation returns `Derived { dates, truncated }`** — a millisecond-step
+  rule always yields a prefix, and saying so is the contract's job, not the
+  surface's.
+- [x] **Deliberately lost:** several weekdays inside a multi-week cycle is no
+  longer one rule, because landing rolls forward and yields one instant per
+  step. `every 1 day landing on [mon,wed,fri]` covers the common case;
+  "Monday and Wednesday every fortnight" is two rules with two anchors.
+- [x] **Consequence is not part of the schedule.** A schedule saying rent is due
+  does nothing; a rule that pays rent spends authority. Declare / propose /
+  apply is a property of whatever *binds* a schedule to an action.
+- [ ] **Publish-time refusal for one-shot misuse** and the remaining
+  `suggest`/`draft`/`apply` route split (E1) — see block 6.
+---
+
+## 2. Reading the world
+
+Why: until this lands a rule can only compute over its own parameters. This is
+what lets a rule read a Record's quantity, its unit, and its other numbers.
+
+- [x] **Resolve `InputSource::RecordQuantity` and `SavedProtein` inputs (E0.1),
+  in `store::karma::runs::evaluate_member`.** The AST, DSL and Proof already had
+  them; the runtime never filled them — `evaluate_member` populated boundary
+  values for `Trigger` nodes only, a single bool per trigger saying whether the
+  occurrence matched its Frequency — so a program using one failed with
+  `MissingInput`. `Signal`, `SecretMetadata` and `CapturedFact` stay unresolved
+  until block 13 and refuse by name.
+- [x] **A deleted Record blocks the run, it does not read as zero.** "The Record
+  is gone" and "the Record holds nothing" are different facts. Typed refusals:
+  `RecordQuantityUnavailable`, `RecordUnitUntypable`, `InputSourceUnresolved`.
+- [x] **`SavedProtein` resolves through a seam, not a dependency cycle.**
+  `protein` is built on `store`, so `store` declares the hole
+  (`karma::runs::ExternalInputResolver::saved_protein`) and `engine` fills it
+  with `karma_runtime::SavedProteinInputs`. With no resolver supplied it blocks
+  by name.
+- [x] **A saved view must reduce to exactly one number** — one row holding a
+  bare number or an object with a single numeric field. Several numeric columns
+  is ambiguous, and guessing which one the author meant is how a rule computes
+  against the wrong column.
+- [x] **A view that fails to execute is a refusal, not an error.** It blocks its
+  own program by name so one broken saved query cannot stop the processing turn.
+- [x] **Read the quantity from the exact Fact chain, not the `record.quantity`
+  cache.** `store::facts::level` folds anchored on the last checkpoint carrying
+  a level — retention really deletes archived Facts, so folding only surviving
+  rows under-reports a compacted Record. Compaction's archive anchors are
   checkpoints too but carry `{archive, ...}` rather than a level, so they are
-  skipped instead of read as zero. Freezing is automatic: the resolved value
-  goes into `boundary_values`, which is exactly what `capture_evaluation_replay`
-  captures.
-- [~] **A Record's quantity arrives typed by its own unit.** A Record carries
-  `unit_uid`; when it is set, the input resolves to `Quantity { amount, unit }`
-  and the unit becomes part of the static type that Proof checks at every node
-  boundary. When it is absent the input resolves to a plain `Decimal`. A Program
-  must be able to state which of the two it expects and be refused at publish
-  time if the Record disagrees — a rule that silently treats litres as kilograms
-  is worse than a rule that will not compile. **The runtime half landed**
-  (united Records resolve to `Quantity`, unitless to `Decimal`, an untypable
-  unit blocks). **The publish-time refusal did not:** Proof is pure and cannot
-  see a Record's unit, so the check belongs in the store's publish path
-  alongside revision validation, not in `proof.rs`. Without it a unit mismatch
-  surfaces at run time instead of at publish time — later than it should, but
-  still a typed refusal rather than a wrong number.
+  skipped rather than read as zero.
+- [x] **Boundary values are frozen into the replay capsule automatically** — the
+  resolved value goes into `boundary_values`, which is what
+  `capture_evaluation_replay` captures. A later Fact cannot change what a past
+  run saw.
+- [x] **A Record's quantity arrives typed by its own unit.** `unit_uid` set →
+  `Quantity { amount, unit }`; absent → plain `Decimal`; an untypable unit
+  blocks.
+- [ ] **Refuse a unit mismatch at publish time, not at first run (E0.1, open).**
+  Where: the Program create/revise path in `store::karma::programs`, which
+  already validates a revision and can reach Records. What: for every
+  `record-quantity` input, compare the named Record's `unit_uid` against the
+  unit the port contract declares and refuse the publish when they disagree.
+  Why not in Proof: `evaluate_program` and `proof.rs` are pure — no clock, no
+  SQL — and a Record's unit is world state. This turns "a rule that treats
+  litres as kilograms fails on its first run" into "it never publishes".
+- [ ] **Read numeric values inside a namespaced `record_extension` (E0.1),**
+  addressed by namespace and field path, declaring value type and unit. Missing
+  field, wrong JSON type, and unparseable decimal are typed refusals, never a
+  silent zero. This is what lets one rule read a Record's weight, price and
+  count together.
+- [x] **Unit conversion is exact and explicit.** Full spec in
+  `docs/Central: Lingua.md`. What this block needs: a conversion is exact, and
+  asking for one is visible in the program — never an implicit coercion applied
+  to make an expression type-check.
+---
 
-  **Open task — publish-time unit refusal.** Where it goes: the Program
-  create/revise path in `store::karma::programs`, which already validates a
-  revision and can reach Records. What it does: for every `record-quantity`
-  input, resolve the named Record's `unit_uid` and compare it against the unit
-  the Program's port contract declares, refusing the publish when they
-  disagree. Why it cannot live in Proof: `evaluate_program` and `proof.rs` are
-  pure by design — no clock, no SQL — and a Record's unit is world state. Proof
-  keeps checking that a `Quantity` is not used where a `Decimal` is expected;
-  only the store can check that *this* Record's unit is the expected one. Doing
-  this is what turns "a rule that treats litres as kilograms fails on its first
-  run" into "it never publishes".
-- [ ] **Read the other values a Record holds.** Add an input source for a
-  numeric value inside a namespaced `record_extension`, addressed by namespace
-  and field path, declaring both its value type and its unit. Missing field,
-  wrong JSON type, and unparseable exact decimal are typed refusals, never a
-  silent zero. This is what lets one rule read a Record's weight, its price, and
-  its count together.
-- [x] **Convert between units explicitly, and exactly.** Lingua's
-  `concept_conversion` factor was `REAL`; it is now an exact integer numerator
-  and denominator, and conversion is an explicit operation with a declared
-  result scale and rounding rule — never an implicit coercion to make an
-  expression type-check. The full account, including why the float column was
-  removed rather than kept beside the ratio, is in **`docs/Central: Lingua.md`**
-  (moved there 2026-07-29). What E0.1 needed from it is only that a conversion
-  is exact and that asking for one is visible in the program.
+## 3. Arithmetic a real rule can express
 
-**E0.1 exit:** a Program reads one Record's unit-typed quantity, another
-Record's extension value in a different unit of the same dimension, converts
-one to the other explicitly, and compares them; the run replays identically
-from its capsule; a cross-dimension conversion, a missing extension field, and
-a unit mismatch each fail with their own code before anything is proposed.
+Why: before this, exact values could only be added and subtracted — no
+percentage, rate, unit price or split.
 
-##### E0.2 — arithmetic that can actually express a rule
-
-- [x] **Add multiplication and division for exact values.**
-  `evaluate_integer_product` handled `I64` only: `Decimal` and `Quantity`
-  multiply/divide fell through to an invariant error, so exact values could only
-  be added and subtracted. Without this there is no percentage,
-  rate, unit price, or split — and this document's own "shared percentage"
-  example cannot be expressed.
-- [~] Multiplication states its result scale explicitly and division states its
-  rounding rule, because neither is closed over fixed-point decimals: no scale
-  represents `1/3`. An implicit rounding mode is how exactness silently dies, so
-  the rule is named in the AST, frozen in the revision hash, and shown in the
-  Why lens. Half-up, half-even, toward zero, and away from zero are the frozen
-  vocabulary. **The vocabulary and the arithmetic landed early with E0.1**,
-  because unit conversion needs the identical rule and two rounding
-  implementations would be one too many: `Rounding` plus
-  `DecimalValue::{mul_ratio, div_exact}` returning `RoundedDecimal { value,
-  exact }`. Every inexact operation reduces to one rational multiply, and the
-  `exact` flag is how a discarded remainder gets *reported* rather than lost.
-  **Both halves landed 2026-07-25:** the AST expresses them and the rule is in
-  the revision hash.
-- [x] Unit algebra is explicit, not inferred. Multiplying a `Quantity` by a
-  plain `Decimal` keeps the unit — the percentage and rate cases, which is what
-  most rules need. Multiplying two united quantities, or dividing one by another,
-  produces a value whose unit the author must declare, and Proof refuses it
-  otherwise rather than inventing `kg²` or silently dropping a dimension.
-- [x] Division by zero, scale overflow beyond `MAX_DECIMAL_SCALE` (18), and
-  mantissa overflow are typed evaluation failures that keep their existing
-  terminal-failure semantics, never a saturating or wrapped value.
-
-**E0.2 landed 2026-07-25 — what the implementation settled beyond the plan text:**
-
-- **The declaration is one optional field, `ExpressionAst::Binary.precision`,
-  and Proof enforces it as an `iff`.** Present exactly for multiply and divide
-  where either side is exact; absent everywhere else. The forbidding half is not
-  tidiness. `precision` is inside the canonical program, so it is inside the
-  revision hash; a stray one on `And` would behave identically while hashing
-  differently, giving one program two identities and silently orphaning any
-  state keyed on the old hash. `ProofIssueCode::InvalidPrecision` is the new
-  code for all four ways to get it wrong — missing, stray, scale past 18, or a
-  declared unit where the value already has one.
-- **Scale overflow is a publish-time refusal, not an evaluation failure.** The
-  plan grouped it with division by zero, but they belong at different moments:
-  the declared scale is static, so Proof rejects `scale > 18` before the Program
-  can ever run, while a zero divisor depends on the values a run happens to see.
-  Runtime keeps `DivisionByZero` and `ArithmeticOverflow`; no new evaluation
-  error code was needed.
-- **`mul_exact` is a new sibling of `div_exact`, not a call into `mul_ratio`.**
+- [x] **Multiply and divide for `Decimal` and `Quantity` (E0.2).**
+  `evaluate_integer_product` handled `I64` only; everything else fell through to
+  an invariant error.
+- [x] **Multiplication states its result scale, division states its rounding
+  rule.** Neither is closed over fixed-point decimals — no scale represents
+  `1/3`. The rule is named in the AST and frozen in the revision hash, so
+  changing it is a visible revision. Vocabulary: half-up, half-even, toward
+  zero, away from zero. The API is `Rounding` plus
+  `DecimalValue::{mul_ratio, div_exact}` returning
+  `RoundedDecimal { value, exact }` — every inexact operation reduces to one
+  rational multiply, and the `exact` flag is how a discarded remainder gets
+  *reported* rather than lost.
+- [x] **One optional field, `ExpressionAst::Binary.precision`, and Proof
+  enforces it as an `iff`** — present exactly for multiply/divide where either
+  side is exact, absent everywhere else. The forbidding half matters:
+  `precision` is inside the revision hash, so a stray one on `And` behaves
+  identically but hashes differently, giving one program two identities and
+  orphaning state keyed on the old hash. `ProofIssueCode::InvalidPrecision`
+  covers all four ways to get it wrong — missing, stray, scale past 18, declared
+  unit where the value already has one.
+- [x] **Scale overflow is a publish-time refusal; a zero divisor is a runtime
+  failure.** The declared scale is static so Proof rejects `scale > 18` before
+  the program can run; a divisor depends on the values a run sees. Runtime keeps
+  `DivisionByZero` and `ArithmeticOverflow`.
+- [x] **Unit algebra is explicit, never inferred.** `Quantity × Decimal` keeps
+  the unit (the percentage and rate cases). Multiplying two united quantities,
+  or dividing one by another, produces a value whose unit the author must
+  declare; Proof refuses otherwise rather than inventing `kg²` or dropping a
+  dimension. `DeclaredUnit::{Dimensionless, Unit}` — "this ratio has no unit" is
+  a statement the author makes, because `total ÷ budget` is a real, common rule.
+- [x] **There is one dimensioned type, not two.** `Money` sat beside `Quantity`
+  with an identical shape and a narrower algebra. Deleting it removed a second
+  spelling of one idea and made unit conversion expressible: `Quantity ÷
+  Quantity` with a declared result unit is exactly the rate `USD ÷ EUR` used to
+  be refused for wanting.
+- [x] **`mul_exact` is a sibling of `div_exact`, not a call into `mul_ratio`.**
   Routing a product through `mul_ratio` sets the denominator to `10^other.scale`
-  and then re-inflates the numerator by the same power on the way to the target
-  scale — so multiplying two scale-9 values at scale 18 would multiply by
-  `10^18` and divide it straight back out, overflowing `i128` on values that are
-  perfectly representable. `mul_exact` cancels those powers of ten *into the
-  operands* before multiplying, and only by the factors of ten they actually
-  contain: dropping a digit that is not a zero would discard a remainder that
-  still decides the final rounding. The cancellation is exactly
-  ratio-preserving, so quotient, remainder, and every tie comparison are
-  unchanged. **Remaining limit, stated honestly:** two operands with no trailing
-  zeros whose raw mantissa product exceeds `i128` still return `None`, even when
-  the result at the declared scale would fit. That is a conservative refusal —
-  a typed failure, never a wrong answer — and lifting it needs a 256-bit
-  intermediate, which is not worth carrying yet.
-- **There is still exactly one rounding implementation.** The tie-breaking logic
-  moved into a private `round_ratio(numer, denom, scale, rounding)`, and
-  `mul_ratio`, `mul_exact`, and `div_exact` all reduce to it. Two copies would
-  drift precisely at the tie cases nobody tests.
-- **Unit algebra needed a vocabulary for "dimensionless".** The plan said the
-  author must declare the result unit; it did not say what to declare when the
-  dimensions cancel. `DeclaredUnit::{Dimensionless, Unit}` makes "this ratio has
-  no unit" a statement the author makes rather than an absence Proof has to
-  interpret. `total ÷ budget` is a real, common rule and it needs to say so.
-- **There is one dimensioned type, not two.** A `Money` type once sat beside
-  `Quantity` with the identical shape and a narrower algebra of its own — it
-  scaled by a plain decimal and divided by same-currency Money into a ratio, and
-  refused everything else. Deleting it removed a second spelling of one idea and,
-  as a side effect, made unit conversion expressible: `Quantity ÷ Quantity` with
-  a declared result unit is exactly the rate that `USD ÷ EUR` used to be refused
-  for wanting. Whether two units *should* be combined is now the author's
-  declaration to make, which is where that judgement belonged.
-- **`exact_literal` mirrors `infer_exact_product` arm for arm, including
-  order.** `ensure_type` checks the scale on every node output, so if Proof's
-  inferred type and the runtime value's dimension ever disagree the failure
-  surfaces as a `RuntimeTypeMismatch` during evaluation — a publish-time error
-  arriving at the wrong moment and nearly unreadable. The two functions are
-  commented as a pair for that reason.
-- **Rounding is reported per run, not per operation site.**
-  `EvaluationResult.rounding: Vec<RoundingNote>` collects every rounding a run
-  performed, with the node, operator, scale, rule, and result. Empty means the
-  run was exact throughout, which is the distinction `RoundedDecimal::exact`
-  exists to preserve. **Deferred:** the store's run record has no column for
-  these yet, so they satisfy the exit criterion at the kernel but do not yet
-  reach a Why lens a person can read. That is a persistence question, and it
-  belongs with E0.3's write side rather than here.
+  then re-inflates the numerator by the same power, so multiplying two scale-9
+  values at scale 18 multiplies by `10^18` and divides it straight back out,
+  overflowing `i128` on perfectly representable values. `mul_exact` cancels
+  those powers of ten into the operands first, and only by the factors of ten
+  they actually contain — dropping a non-zero digit would discard a remainder
+  that still decides the rounding.
+- [x] **Known limit, conservative on purpose:** two operands with no trailing
+  zeros whose raw mantissa product exceeds `i128` return `None` even when the
+  result at the declared scale would fit. A typed failure, never a wrong answer.
+  Lifting it needs a 256-bit intermediate.
+- [x] **Exactly one rounding implementation** — `round_ratio(numer, denom,
+  scale, rounding)`; `mul_ratio`, `mul_exact` and `div_exact` all reduce to it.
+  Two copies would drift precisely at the tie cases nobody tests.
+- [x] **`exact_literal` mirrors `infer_exact_product` arm for arm, including
+  order**, and they are commented as a pair. `ensure_type` checks scale on every
+  node output, so a disagreement between Proof's inferred type and the runtime
+  value surfaces as a `RuntimeTypeMismatch` mid-evaluation — a publish-time
+  error arriving at the wrong moment and nearly unreadable.
+- [x] **Rounding is reported per run, not per site.**
+  `EvaluationResult.rounding: Vec<RoundingNote>` carries node, operator, scale,
+  rule and result. Empty means the run was exact throughout.
+- [ ] **Persist rounding notes so a Why lens can show them.** The store's run
+  record has no column yet, so they satisfy the kernel exit criterion but reach
+  no reader.
+---
 
-**E0.2 exit:** `quantity(record:@apple) * 0.15` and `total / count` both
-evaluate exactly with their declared scale and rounding; the rounding rule is
-part of the revision hash, so changing it is a visible revision; a zero divisor
-and a scale overflow each fail with their own code; and a rounded division
-proves in test that the discarded remainder is reported, never silently lost.
+## 4. Rules as a typed graph
 
-##### E0.3 — the write side: closing the loop onto Records
+Why: a rule is not a string of conditions. It is a versioned graph whose pure
+computation, candidate, policy and effect stages are separate objects, so
+"recognising a situation", "deciding it matters", "being allowed to act" and
+"acting" can never collapse into one another.
 
-The engine's whole purpose is that a rule reads the world, does arithmetic, and
-changes it. E0.1 and E0.2 open the read and compute halves; this slice opens the
-write half, which is the one thing Karma has never been allowed to do. It is
-K5.3's machinery restricted to the reversible local data capability family, and
-it is pulled ahead of the sand domain work so the engine's central claim is
-proven before a product is built on it.
+Four claims this block keeps apart, because conflating them is the original sin
+the old condition → consequence pair committed:
 
-Pulled forward as a whole, not as an apply-only shortcut. Leases and typed
-idempotency are not polish on top of applying a change; they are what stops a
-restart mid-apply from applying it twice. An `apply` path without them is the
-duplication bug the K5 exit gate names, so the machinery arrives with the
-capability it protects.
+- **A likelihood is not permission.** "Ana will probably buy apples", "the
+  estimate is well supported", "buying is beneficial" and "Lince may send a
+  Transfer" are four different claims, stored and evaluated separately.
+- **A threshold is a routing policy, not a truth.** Crossing it may surface,
+  draft, ask or act only under an explicit policy with hysteresis, budgets and
+  authority. It never converts correlation into a fact.
+- **Automatic promotion is allowed but never magical.** A learned pattern may
+  become an active rule under a narrow grant, from a reviewable template, past
+  Proof, in shadow first if required, still editable, inside the grant.
+- **Rules are never set in stone.** Anyone authorized can edit, pause,
+  supersede, fork or retire any program. Published revisions and past runs are
+  immutable evidence; immutability protects history, not current behavior.
 
-- [ ] **A Record's quantity may be defined by a Program.** `Total cost = Cost1 +
-  Cost2` is the plain case the pillar has to serve, and it gets a first-class
-  answer rather than being left to a person to wire by hand. A Record carries an
-  optional binding to a Program revision and an output, in one of two modes the
-  author picks per Record. **Computed:** the quantity *is* the program's output,
-  resolved exactly on every read, with no Fact ever appended. It cannot drift
-  from its inputs because it is never stored — change Cost1 and Total cost is
-  already correct, with no occurrence, no intent, and no grant involved, because
-  nothing was written. **Materialized:** a Frequency fires, the program runs, and
-  an authorized intent writes the value onto the Record as an ordinary signed
-  Fact, so the number is pinned in history and the Record accrues a real chain
-  you can audit month by month. Both are the same program and the same
-  arithmetic; the only difference is whether the value is remembered.
-- [ ] **The two modes answer different questions, and choosing wrong is the
-  common mistake.** Computed answers "what is my total cost" — always live, no
-  history, free. Materialized answers "what was my total cost each month last
-  year" — a real series, at the price of an occurrence, an intent, and a grant.
-  A rolling balance that must accumulate (savings drawn down monthly) is
-  necessarily materialized, because its next value depends on its previous one. A
-  pure restatement of other Records (total cost) should default to computed.
+The complete loop: `Observation → Fact/evidence → context/features →
+recognition/model/rule → forecast/optimizer → candidate → policy/authority →
+decision or intent → typed Action/effect → receipt/Fact`.
+
+### The pure kernel
+
+- [x] **`nucleus::karma` is I/O-free (K1).** A pure node receives a frozen
+  context and returns a trace plus candidates. No SQLite, Tokio time, processes,
+  network, devices, secrets or global randomness.
+- [x] **`ProgramAst` is the canonical version-tagged revision payload** —
+  purpose, parameters, stable node/output maps, declared outputs. Owner, live
+  quantity, active revision, grants and runtime state belong to the mutable
+  handle or run epoch and must not contaminate the immutable semantic hash.
+- [x] **Nodes keyed by `LocalId` in `BTreeMap`s**, with explicit input bindings,
+  output `PortContract`s, and a **closed** `NodeOperation` enum. Expressions
+  reference only names in that node's binding map — no ambient Record, Protein,
+  clock, randomness, secret or network read. Later families extend the same
+  enum; there is deliberately no generic JSON "operation config" escape hatch.
+- [x] **`PortContract` carries value type, sensitivity/taint class, optional
+  freshness.** Source and destination types must match exactly. A pure
+  derivation cannot declare an output less sensitive than any consumed input.
+  Declassification is its own capability-checked node, never a flag on a wire.
+- [x] **`Proof` is a deterministic value** — revision hash, accepted/rejected,
+  stable topological order, sorted typed issues with JSON pointer paths and node
+  ids. Missing nodes/ports, undeclared expression inputs, type mismatches,
+  invalid references and combinational cycles reject the revision.
+- [x] **A cycle is legal only through an explicit delay/state boundary** that
+  makes the graph acyclic when incoming update edges are cut. The delay contract
+  records initialization, reset, late-event, migration, persistence and
+  simulation-clone behavior.
+- [x] **Text parsing came after the graph, deliberately.** Proving the JSON AST
+  first stops a convenient parser becoming the accidental semantic model. The
+  DSL round-trips through these same types.
+- [x] **`FrozenEvaluationContext` + `EvaluationLimits`.** Exact boundary values
+  by input/trigger node, typed parameter overrides, epoch-start delay state, and
+  deterministic fuel — one node visit and each visited expression consume
+  defined work units, so host speed and thread scheduling cannot change whether
+  a run exhausts its budget.
+- [x] **Delay evaluation is two-phase.** In graph order every delay outputs its
+  epoch-start value; after all combinational nodes finish, the evaluator
+  resolves each delay's update binding and stages it for the next epoch without
+  mutating the current context. Feedback graphs get read-old/write-next
+  semantics independent of map or node order.
+- [x] **Typed deterministic failures with node/path:** rejected Proof, missing
+  frozen input, runtime type mismatch, exact overflow, divide-by-zero, invalid
+  state, fuel exhaustion.
+- [x] **Landed:** `value`/`ast`/`proof` (graph, closed op set, canonical revision
+  hash, taint/reference checks, topological Proof); `evaluate` (read-old/write-
+  next delay state, checked exact arithmetic, lazy typed branches, stable trace
+  order, fuel/depth limits); `calendar`; `dsl` (K1.4); `frequency` (K1.5); the
+  K1.6 gate families; K1.7 replay capsules; K1.8 exact primitives.
+- [x] **The legacy `Expr`/`RuleDef` types are never the new kernel** — they use
+  `f64`, numeric Boolean truthiness, second durations, implicit reads and
+  cycle-tolerant ordering. **Superseded 2026-07-30:** they are not an import
+  source either. Their *capability* is ported by hand onto exact values (see the
+  decision at the top) and then they are deleted.
+
+### Node families and ports
+
+| Family | Role |
+| --- | --- |
+| Trigger | Fact/event, schedule, signal sample, threshold crossing, manual call, sync arrival, decision, workflow wake, effect receipt |
+| Input | Saved/inline Protein, direct record/fact reference, parameter, secret reference metadata, captured Signal |
+| Normalize/feature | Unit conversion, validation, window, aggregate, join, lag, rate, calendar/place feature, missing-data policy, quality weighting |
+| Derive/recognize | Typed arithmetic/logic, stateful threshold with hysteresis, finite state recognizer, pattern model inference, reusable Sense |
+| Project/analyze | Imagination branch, forecast, invariant, query, aggregate, optimizer, ranker, sensitivity/infeasibility |
+| Control | Gate, branch, merge, bounded iteration, delay, debounce, cooldown, rate limit, transaction boundary, assertion |
+| Workflow | Sequence/parallel, wait-until, approval, child program, retry, compensation, cancellation, correlation |
+| Candidate/attention | Recommendation, decision, program revision, plan, report, whisper request, digest item |
+| Intent/effect | Typed Action, Transfer Action, connector call, device/controller intent, notification, command, HTTP request |
+
+- [x] **Ports carry schema, unit/dimension, cardinality, visibility/taint,
+  freshness and uncertainty.** A connection that cannot prove compatibility is
+  invalid; nothing coerces strings at runtime. Missing, stale, denied, invalid
+  and unknown are typed states distinct from numeric zero and Boolean false.
+- [x] **Gate semantics are exact (K1.6).** `threshold` has one ordered scalar
+  input and Boolean `active`/`entered`/`left` outputs, storing only the old
+  `active` bit. `above` enters at `value >= enter`, leaves at `value <= exit`,
+  Proof requiring `exit < enter`; `below` is the mirror with `enter < exit`.
+  Values in the open band preserve state. `entered`/`left` are one-occurrence
+  pulses, so an oscillating measurement inside the band cannot repeatedly fire.
+  Threshold literals must have exactly the input type and it must be an ordered
+  scalar — unit, scale and referenced kind are never coerced.
+- [x] **`debounce`** has one Boolean input and `stable`/`entered`/`left` outputs.
+  A changed input starts a candidate interval at the frozen logical timestamp
+  and becomes stable only after the same value has remained pending for
+  `for-at-least`. An exact-boundary timestamp qualifies; a return to the stable
+  value cancels the pending interval; duration zero promotes immediately.
+- [x] **`cooldown`** accepts a Boolean pulse only if none was accepted before or
+  `now - last_allowed_at >= cooldown`. **False inputs never consume the window.**
+- [x] **`rate-limit`** accepts at most `max` true pulses in the half-open rolling
+  interval `(now - window, now]` — an acceptance exactly one window old has
+  expired. The retained timestamp list is bounded by `max`. Proof requires
+  non-negative debounce/cooldown durations, a strictly positive rate window, and
+  non-zero `max`.
+- [x] **These stateful nodes do NOT break a graph cycle.** Their current input
+  determines their current output; the state update is written only after the
+  occurrence. **Only an explicit `delay` is a read-old/write-next cycle
+  boundary.** Without this rule an apparently stateful threshold or debounce
+  could conceal an instantaneous dependency cycle.
+- [x] **All three temporal controls require
+  `FrozenEvaluationContext.logical_at`** and keep state in `control_state`,
+  separate from `delay_state`. Every state variant stores `last_observed_at` so
+  logical time cannot silently move backwards. Under `late_event: ignore` the
+  occurrence emits no new pulse and leaves state unchanged (`debounce.stable`
+  still reports the old value); under `reject` evaluation returns
+  `non-monotonic-logical-time`; `recompute` and `compensate` return
+  `replay-required`, because a single pure invocation cannot reconstruct the
+  intervening history and the occurrence runner must replay the captured ordered
+  inputs before committing replacement or compensating state. Absent logical
+  time returns `missing-logical-time`. The complete typed state-before and
+  staged-state-after values belong in the trace and replay capsule.
+- [x] **`route-candidate`** takes a Boolean condition, one declared output, an
+  explicit route (`observe|recommend|draft|ask|act`), a template slug, and an
+  ordered map from candidate field names to input bindings. Proof derives the
+  exact output type `datum<candidate(route, template, fields)>` and rejects
+  missing, extra or differently typed fields. False produces a typed *missing*
+  datum; true produces a typed value datum carrying the immutable payload.
+  **Every route is inert here — even `act` means "this candidate asks the later
+  policy/authority/effect pipeline to attempt acting", never "perform an effect
+  now".** Field order is semantic and canonical because both maps are
+  `BTreeMap`s.
+- [x] **The Flow Plane projects these directly:** threshold enter/exit as two
+  points joined by a hysteresis band, temporal controls as annotated ranges,
+  state transitions as edge pulses, candidate routes as terminal inert nodes.
+  **One AST drives execution, Why traces, simulation and the sand — the UI does
+  not invent a second rule model.**
+- [ ] **Resolve `@slug` sugar to uid plus displayed slug in the immutable
+  revision.** Rename never changes meaning; an unresolved reference blocks
+  activation.
+- [ ] **Every stateful node declares** initialization, update event,
+  persistence, reset/migration, late-event behavior, and whether simulation
+  branches clone its state.
+- [ ] **Reusable subprograms with explicit typed parameters and outputs.**
+  Invocation freezes a revision; a template update never silently edits
+  installed programs.
+- [ ] **Keep shell/HTTP/model/device work out of expressions.** A pure
+  content-addressed extension may calculate; an effect node may touch the world;
+  the graph makes the boundary visible.
+- [ ] **Specify every gate's transition behavior**: edge/level trigger,
+  enter/exit thresholds, hysteresis, hold duration, cooldown, once-per-window,
+  reset, unknown/stale input policy. "True on every refresh" must never
+  accidentally mean "repeat an effect forever".
+- [ ] **Separate a durable derived Fact from a virtual derived value.** Virtual
+  values are recomputed through the run; materialization is an explicit node
+  with provenance, retention, unit and correction semantics.
+- [ ] **Make conditions and derived values reusable graph nodes** composed
+  through typed references and explicit gates, so arbitrary chains never return
+  to opaque `rq1`/`kd2` token strings.
+- [ ] **Support parameter records separately from graph revisions.** Tuning a
+  threshold inside its declared range appends evidence without rewriting
+  topology; changing types, inputs, effects, authority requirements or the
+  allowed range requires a new revision.
+
+### The authoring language
+
+The DSL is declarative and formatter-stable. Blocks describe a graph; they do
+not execute top to bottom. Data dependencies define order, workflow edges define
+durable sequencing, `#` begins a comment. The visual graph, typed forms, JSON
+transport and text DSL are **lossless projections of one AST**, not separate
+execution languages. Node ids stay stable across layout and label changes so
+diffs, state and explanations survive editing.
+
+| Family | Words |
+| --- | --- |
+| Metadata | `program owner purpose tags mode` |
+| Parameters | `param state` |
+| Triggers | `on fact`, `on every`, `on at`, `on signal`, `on manual`, `on decision`, `on receipt` |
+| Timing | `every elapsed/calendar`, `anchor`, `resolution`, `max_lateness`, `coalesce_window`, `missed`, `inactive_gap`, `rephase` |
+| Inputs | `input`, `view`, `record`, `signal`, `secret` |
+| Features | `let`, `window`, `sum`, `count`, `avg`, `rate`, `lag`, `join`, `convert` |
+| Recognition | `sense`, `when`, `crosses`, `enters`, `leaves`, `holds` |
+| Learning | `learn`, `predict`, `update`, `validate` |
+| Futures | `project`, `branch`, `assert` |
+| Optimization | `solve`, `require`, `prefer`, `minimize`, `maximize`, `tie_break` |
+| Workflow | `step`, `parallel`, `wait`, `approve`, `retry`, `compensate`, `cancel` |
+| Routing | `observe`, `recommend`, `draft`, `ask`, `act` |
+| Effects | `emit`, `do action`, `do transfer`, `do command`, `do http`, `do device`, `do ui` |
+| Meta-control | `tune`, `revise`, `pause`, `resume`, `run` |
+| Policy | `scope`, `freshness`, `dedupe`, `budget`, `require grant`, `on denied`, `on stale`, `on failure` |
+
+**Mutation verbs make the data-changing boundary visible:**
+
+| Verb | Mutates? |
+| --- | --- |
+| `let`, `sense`, `predict`, `project`, `solve` | No — pure |
+| `emit` | Yes — append-only typed derived Fact |
+| `recommend` | No — inert candidate |
+| `draft` | Draft data only |
+| `ask` | No, until answered |
+| `act` | Yes — through a typed Action, after authorization |
+| `do` | Outside-world attempt plus receipt |
+| `tune` | Program parameter data, effective next occurrence |
+| `revise` | Definition data only; activation is separate |
+| `pause` / `resume` | Activation Fact; never deletes history |
+
+- [x] **No generic `set field` or `eval string`.** Each `act`, `do`, `tune`,
+  `revise` compiles to a typed candidate/Action with exact target, schema,
+  preconditions, grant requirements and preview.
+- [x] **Every declaration has a stable node id.** If omitted, the formatter
+  derives it from the left-hand name and freezes it on first publish. **Moving a
+  visual node, renaming its display label or reformatting text does not change
+  the semantic hash.** Changing an expression, type, dependency, effect, policy
+  requirement or stable id does.
+- [x] **The AST — not the source string — is the canonical revision payload.**
+  Text is compiled before storage: `let stock_low: bool = quantity(record:@apple)
+  < 1kg` becomes a typed compare node whose operands carry resolved
+  `record_uid`, `type`, `unit_uid` and canonical decimal text. The stored DSL is
+  a human-readable projection and the visual editor reads and writes the same
+  AST. **Unknown fields or node kinds fail validation instead of being
+  ignored.**
+- [x] **The expression language has no reflection, dynamic field names,
+  unbounded loops, arbitrary recursion, shell interpolation, network calls or
+  implicit reads.** Bounded `iterate max N until condition` is a graph node with
+  deterministic fuel and a convergence trace.
+- [x] **K1.4 strict text** starts `karma 1;`, carries `schema karma.program.v1;`,
+  spells out tags, capabilities, parameter mutability, node bindings, port
+  sensitivity/freshness, operations, state contracts and outputs. Collections
+  are formatter-sorted because the AST uses ordered maps. Errors carry exact
+  byte/line/column; source, token, string and nesting limits are enforced before
+  storage. This canonical projection is not the amount of text a person types in
+  the sand.
+- [x] **K1.5 Frequency AST is separately versioned** (`karma.frequency.v1`,
+  canonical text starting `karma-frequency 1;`). The revision holds slug,
+  non-empty purpose, tags, named schedule parameters, cadence/anchor, timer
+  service, missed/inactive/rephase/overload policies, and calendar
+  timezone/tzdb/gap/fold data. **It never holds an active flag, consumer list,
+  cursor, next deadline, lane, measured host capacity or wake result** — those
+  are mutable handle and runtime state.
+- [x] **Frequency parameters are deliberately smaller than Program values.** A
+  named parameter is either a non-negative exact millisecond duration with
+  inclusive min/default/max, or a positive `u32` with inclusive bounds. Schedule
+  fields use a typed `literal(...)` or `parameter(local_id)` binding — **no
+  expression evaluation, ambient parameter name, numeric coercion or arbitrary
+  JSON.** Anchors, timezone identity, tzdb identity, weekday sets, day-of-month
+  and policy enums require a **new revision** rather than parameter tuning,
+  because changing them can reinterpret civil identity or authority.
+- [x] **Compilation takes an explicit override map**, rejects unknown
+  names/type mismatches/out-of-range values, fills the rest from revision
+  defaults, and resolves bindings into a concrete `ElapsedSchedule` or
+  `CalendarSchedule`. `CompiledFrequency` carries the revision hash, complete
+  effective parameter map and concrete schedule; interval/timer integer ranges
+  and cross-field timer invariants are validated after resolution. **Store and
+  runtime persist the effective-parameter hash with an activation epoch and
+  never compile from whatever mutable values happen to be visible halfway
+  through a run.**
+- [x] **Weekly weekdays sort Monday through Sunday; monthly invalid-day behavior
+  is explicit.** Both calendar and elapsed schedules carry the same rephase
+  policy, which changes future boundaries and **never rewrites a consumed
+  boundary.** Success requires AST↔text round-trip plus an identical compiled
+  schedule and revision hash for the same explicit parameter map.
+
+### The replay capsule (K1.7)
+
+- [x] **`EvaluationReplayCapsule` captures the complete boundary of one pure
+  evaluation** — this is the first executable layer of the replay contract, not
+  a claim that occurrence streams, models, grants, signatures, effects or Store
+  checkpoints are captured yet. It has its own
+  `karma.evaluation-replay-capsule.v1` schema plus a separately explicit
+  `karma.evaluator.v1` semantic revision, and embeds the immutable `ProgramAst`,
+  the Program revision hash, the complete frozen context, exact limits, the
+  expected `EvaluationResult`, and that result's domain-separated hash.
+  **Embedding the Program makes the capsule portable; the hash stops the
+  embedded definition being silently substituted.**
+- [x] **`SealedEvaluationReplayCapsule` wraps it**, its canonical hash covering
+  every inner byte-equivalent field. Replay checks in this exact order: outer
+  seal → embedded Program revision → stored expected-result hash → ordinary
+  evaluation → exact expected/actual equality and canonical result hash. Each
+  failure has a stable typed code; an evaluator failure stays nested as its
+  original typed error. **There is no bypass that accepts stale inner hashes
+  because a caller resealed the outer wrapper.**
+- [x] **The seal is a content address, not an authenticity signature.** A caller
+  may deliberately recapture fully changed inputs and output — that is a new
+  capsule with a new hash. Ownership and signatures attach later without
+  changing this content verification.
+- [x] **The capsule contains values, not pointers** to live Records or state
+  rows, so it serializes, moves, inspects and replays with **no Store, clock,
+  timezone provider, filesystem, network, randomness, device or secret access.**
+- [ ] **Later phases compose capsules into full occurrence/checkpoint capsules**
+  with ordered Facts, schedules, models, policy/grant snapshots, captured ports
+  and receipts. Persistence may content-address and deduplicate large capsules,
+  but must preserve the same resolved canonical content and verification order.
+- [ ] **Do not build a legacy import path.** Superseded 2026-07-30: the database
+  was deleted, so there is nothing to import. Port the capability by hand and
+  delete `nucleus::rule`. New capability must not be constrained by `rq1`/`kd2`
+  token compatibility.
+
+### The occurrence kernel — one scheduler owns causality
+
+Heartbeats, subscriptions, sync imports, workflow wakes and effect completions
+submit occurrences to it. None of them grows a private automation loop.
+
+- [x] **Per occurrence, in order:** persist/deduplicate and assign the Cell
+  cursor → freeze logical time, visible input cursor, active program/model
+  revisions and triggering principal → select impacted programs from declared
+  dependencies → evaluate pure nodes in stable graph order, recording every
+  substituted value, missing/stale input, branch, model output and assertion →
+  materialize inert candidates, then evaluate objectives, policy, authority,
+  taint, budgets and conflicts → atomically store the run and any permitted
+  intents → let separate workers claim intents, act, append receipts/Facts, and
+  thereby enqueue later occurrences.
+- [x] **Parallel work may improve latency but cannot change commit order or
+  selection.**
+- [ ] **One elected occurrence sequencer per writable Cell.** Multiple processes
+  may execute leased effects; they may not race independent rule agendas against
+  the same Ledger.
+- [ ] **Recover all nonterminal runs, workflows and intents after restart.**
+  Persist debounce, cooldown, last-consumed occurrence, schedule cursor, rate
+  budget, leases and retry state. Boot never treats forgotten memory as new
+  permission to fire.
+- [ ] **Deterministic trigger concurrency policies:** `queue`, `drop`,
+  `coalesce`, `latest`, bounded `parallel`, with a required correlation key.
+  Backpressure is visible as lag or parked work, never silent loss.
+- [ ] **Bound evaluations** by nodes, iterations, fuel, fan-out, candidate count,
+  trace size and declared cost. A violation faults the run, optionally pauses
+  the program, and opens one deduplicated operational decision.
+- [ ] **Cell modes:** `normal`, `stage-effects` (evaluate and queue, dispatch
+  nothing), `observe-only` (derivations continue, no action intents),
+  `emergency-stop` (no new runs or effects except recovery and inspection).
+  Durable, permissioned, visible.
+- [ ] **Overload priority without hiding starvation:** safety/revocation and
+  already-agreed Transfer deadlines first, then explicit user priority, ordinary
+  workflows, learning maintenance, projections, background analysis. Every
+  delayed class exposes queue age and next eligibility.
+- [ ] **Deterministic agenda for simultaneous rules:** dependency order,
+  explicit priority only where necessary, stable tie-breaking, atomic Action
+  boundaries, and a recorded explanation of conflicts.
+- [ ] **Conflicting candidates resolve by declared policy** — reject all,
+  priority, merge with a typed commutative reducer, serialize, or ask. Arrival
+  or thread order never silently chooses a writer, and rejected alternatives
+  stay in the run explanation.
+- [ ] **Proof analysis for** dependency cycles, contradictory writers,
+  unreachable nodes, unsafe external effects, authority escalation, dead ends,
+  non-convergence, fan-out explosion, stale/missing paths, unit/schema mismatch,
+  privacy declassification and likely divergence. The runtime cascade cap is the
+  final guard, not the design tool.
+- [x] **Warnings are advice, never rejections** (cycles, Proof loops).
+  `create-rule`/`update-rule` reload the registry and return warnings in
+  `outcome.warnings`; saving succeeds and the interface must show the warning.
+- [x] **Delivery is reactive:** only rules reading changed records re-evaluate,
+  and cascades stop at 256 evaluations so a runaway loop survives for
+  inspection. A rule without consequences is a named derived value read through
+  `value(@rules.x)`.
+- [ ] **Persist debounce/cooldown and last-consumed occurrence** so restarts
+  cannot double-fire or re-arm one-shot behavior. Debounce is in-memory today
+  and resets on reload.
+
+### Reaction before learning
+
+For one incoming change, Lince uses the definitions active **before that
+change**. Existing behavior reacts first; learning adapts afterwards. This stops
+a newly learned rule reinterpreting the very evidence that created it.
+
+- [x] **Two ordered lanes per cursor.** *Reaction:* freeze active revisions,
+  parameters, grants and checkpoints; evaluate impacted rules/Senses/workflows;
+  commit the run and authorized local intents. Synchronous local Actions may
+  append child Facts whose reaction occurrences also stay ahead of learning;
+  external effects remain durable intents whose receipts are new occurrences.
+  *Learning:* after the bounded reaction closure, admit/reject evidence, update
+  models, detect patterns, create recommendations or revision candidates.
+- [x] **Adaptation is its own later occurrence.** An approved or pre-delegated
+  `tune`, `revise`, `activate`, `pause` or promotion commits with
+  `effective_from_cursor` strictly greater than the event that proposed it. **No
+  definition changes halfway through a run or cascade.** An event at cursor 100
+  is handled by epoch 12 even if its evidence raises a pattern above threshold;
+  epoch 13 starts at cursor 101 or later. `replay from cursor 100 under rev 13`
+  is a new visible occurrence, not retroactive history.
+- [ ] **Prioritize reaction over background learning** so a burst of model
+  maintenance never makes obvious rules feel unresponsive. Bound the reaction
+  closure and expose queue age; runaway cascades fault instead of starving
+  learning forever.
+- [ ] **Learning may compute in parallel from immutable snapshots, but
+  checkpoint commits stay cursor-ordered.** A run records
+  `model_trained_through_cursor` so a person can see when a prediction used
+  lagging state.
+- [ ] **Meta-rules alter named Programs only through `tune`/`revise`/`activate`/
+  `pause`/`resume` under an `karma.manage` grant.** Never by mutating in-memory
+  nodes or schedule rows.
+- [ ] **Changing a schedule requires an explicit rephase policy** —
+  `preserve_anchor` (default), `from_last_intended`, `from_change`,
+  `immediate_if_overdue` — and the run preview shows old and new next
+  occurrences before the parameter Action commits.
+
+### The replay contract
+
+**The guarantee:** given the same replay capsule and ordered captured inputs,
+the same engine emits the same canonical node values, candidates, policy
+decisions, intents, and unsigned Ledger payloads/content hashes. Captured
+signatures and receipts replay as their original bytes; a simulator uses a
+fixture signer rather than production secrets. It does **not** promise that
+rerunning an HTTP request or motor command changes the world the same way.
+
+A capsule contains: starting checkpoint/hash-chain anchor, ordered Fact and
+occurrence stream, program/model/grant revision hashes, engine and schema build,
+Lingua/unit conversion revisions, tzdb version, virtual clock, deterministic
+seed, solver/plugin hashes, captured Signal results, external receipts. It
+replays with no network, filesystem, wall clock, device or secret.
+
+- [ ] **Put clock, scheduling, entropy, uid generation, filesystem, network,
+  process execution, device I/O and model calls behind injected runtime ports.**
+  Pure evaluation cannot call an ambient OS API. Production adapters capture a
+  result; simulation adapters generate or replay one.
+- [ ] **Every accepted local Fact/occurrence gets a monotonically increasing
+  Cell cursor in its commit transaction.** Live behavior follows recorded
+  arrival order. Sync packages may arrive in a different order elsewhere; replay
+  reproduces each Cell's observed order rather than claiming distributed
+  simultaneity.
+- [ ] **Canonicalize maps, sets, strings, units, timestamps, serialization.**
+  Sort unordered query results and graph edges explicitly. Stable ordering is
+  dependency rank → declared priority → program uid → node id → occurrence uid.
+  Thread completion order never breaks a tie.
+- [ ] **No binary floating point in a decision.** Canonical decimal, rational,
+  integer base-unit or specified fixed-point only. Probability scale, rounding
+  mode, overflow, invalid values and unit conversion are part of the type.
+  `NaN`, infinities, locale parsing and platform math must not enter a policy
+  decision.
+- [ ] **Any stochastic algorithm receives a recorded seed and a deterministic
+  stream partition per node.** Any solver declares version, tolerances, variable
+  ordering, timeout in deterministic work units, and a stable tie-break. "First
+  result returned by workers" is not a valid choice rule.
+- [ ] **Content-address pure extensions** (e.g. sandboxed WebAssembly), deny
+  them clock/random/I/O, give them deterministic fuel and memory limits, specify
+  their numeric ABI. Native or remote opaque computation enters as a captured
+  Signal instead.
+- [ ] **Nondeterministic model output is an observation** with model id, request
+  hash, response hash and capture time; replay uses the captured response. A
+  deterministic local model still pins weights, feature schema, runtime,
+  tokenizer, numeric policy and seed.
+- [ ] **Derive run, candidate and intent ids from their semantic occurrence**
+  where practical, and generate any remaining ids/timestamps through the replay
+  runtime so replay does not manufacture different identities.
+- [ ] **Freeze the effective grant at proposal time for explanation, but recheck
+  revocation, budgets, target revision and interlocks when an intent is claimed
+  and again immediately before irreversible dispatch.** A revoked intent
+  deterministically becomes denied/cancelled, never raced.
+- [ ] **Upgrades never reinterpret an old run silently.** Replaying under the old
+  engine is reproduction; replaying under a new one is an explicit differential
+  run whose changed candidates, facts and effects are shown.
+---
+
+## 5. Rule CRUD — storing, versioning and reading rules
+
+Why: a person must be able to write a rule, look at it, change it, turn it off,
+and see why it did what it did — without database access. At the end of this
+block a rule can be authored, validated, stored, diffed, inspected and
+activated, but an active Program still does not run automatically.
+
+### What is durable, and what each object means
+
+Everything durable is a Record plus schema-owned typed sidecar state, and every
+semantic transition appends a Fact. That does not mean forcing an execution
+trace into a record body — it means each object has ordinary uid, origin,
+ownership, visibility, links, activation and provenance behavior.
+
+| Object | Meaning |
+| --- | --- |
+| **Program** | Mutable handle people organize and activate: owner, purpose, active revision, tags, default policy. Its quantity is the on/off knob. |
+| **Program revision** | Immutable content-hashed typed graph plus declared inputs, outputs, parameters, objective, policy requirements, failure/concurrency behavior. Slugs resolve to uids at publish. |
+| **Frequency / revision** | Reusable mutable schedule handle plus immutable cadence/timer/catch-up policy. A cursor exists only while some active Program, Signal poll or workflow references it. |
+| **Trigger occurrence** | One durable reason work exists — Fact cursor, schedule boundary, signal sample, manual run, workflow wake, sync arrival, retry — carrying logical time and dedup identity. |
+| **Run** | One evaluation of one revision against one frozen visible input cursor: node trace, proposals, policy results, resource use, terminal state. |
+| **Evidence set** | The exact Facts/observations plus inclusion and exclusion reasons behind a feature, pattern update, forecast or recommendation. |
+| **Model spec/checkpoint** | Versioned feature schema, deterministic algorithm and parameters, training cursor, learned state, validation metrics, drift state, implementation hash. |
+| **Candidate** | Inert proposed conclusion, plan, revision, recommendation, decision, Action or Transfer change. **A candidate has no authority.** |
+| **Delegation grant** | A principal's signed revocable capability envelope (block 7). |
+| **Action intent** | Authorized durable request awaiting an executor, freezing the exact Action, policy proof, idempotency key, deadline and compensation metadata. |
+| **Attempt/receipt** | Each lease, dispatch, response, timeout, retry, cancellation, external id, captured output hash and result. **A receipt is evidence, not proof that an unobservable real-world claim is true.** |
+| **Workflow instance** | Durable node position, correlation key, child runs, waits, approvals, compensation stack, cancellation state. |
+
+- [ ] **Every object gets a stable uid under the existing families** and is
+  exposed through Protein. Karma objects that are Records keep `r_...`, Facts
+  keep `f_...`; the typed object *kind* distinguishes them, never a new uid
+  alphabet.
+- [ ] **Store the complete revision and grant used by a run, by hash.** Later
+  edits or revocation must never make an old explanation describe new policy.
+- [ ] **Definition status and run status are separate.** Definition:
+  `draft → proven → shadow → active → superseded/retired`. Run:
+  `queued → evaluating → staged/waiting → executing →
+  completed/failed/cancelled/dead-letter`. "Faulted" may pause new occurrences
+  without pretending the quantity was manually changed.
+- [ ] **Garbage collection may compact traces and checkpoints only behind hash
+  anchors and configured retention.** Evidence needed for an active grant,
+  unsettled Transfer, open decision, reproducible run or audit hold stays hot.
+- [ ] **Every program declares** owner, purpose, data scope, authority ceiling,
+  budgets, triggers, failure policy and enabled revision. No default may
+  silently widen visibility or authority.
+- [ ] **Every evaluation gets a durable `karma_run` identity** — revision,
+  triggering occurrence, input cursor, logical clock/seed, node trace,
+  candidates, policy decisions, intents, Actions, resource cost, final status.
+  "Why did this happen?" and "what will retry?" are ordinary reads, not logs on
+  disk.
+- [ ] **Effective program scope is an intersection**: declared input Protein ∩
+  owner's visibility at the run cursor ∩ purpose/declassification policy ∩ the
+  triggering principal's grant. Hidden data must not leak through features,
+  aggregates, model parameters, explanations or effects.
+
+### Identifiers
+
+Three layers: **UID** is canonical on the wire, in Facts, signatures, links and
+stored revisions. **Typed reference** is compact authoring syntax
+(`prog:@apple.restock`) resolved to a uid at publish, storing both uid and
+displayed slug, so a rename cannot change meaning. **Bare `@slug`** is allowed
+only where the expected port type makes the kind unambiguous — ambiguity is a
+compile error, never a best match.
+
+`prog` Program · `rev` revision · `node` node in a revision · `sig` Signal ·
+`freq` Frequency · `sense` recognizer · `view` saved Protein · `model` ·
+`obj` objective · `flow` workflow · `grant` · `trust` scope · `run` · `cand` ·
+`dec` decision · `intent` · `receipt` · `sim`.
+
+- [x] **Slugs are `dot.case`, namespaced by kind**, so `prog:@daily` and
+  `freq:@daily` coexist. Program-local node and parameter ids are lower
+  `snake_case` because they appear as stable DSL fields and diff keys.
+  User-facing heads are free text and may change without changing references.
+
+### Program persistence (K2.1)
+
+- [x] **Handle = `RecordKind::Program` Record + one `karma_program` sidecar**,
+  owning mutable `handle_revision`, lifecycle status, immutable head revision
+  hash, optional active revision hash, optional owner, timestamps.
+  `record.quantity` mirrors activation only (`0`/`1`) for existing Record
+  tooling — it is **not** the Program's semantic state — and changes in the same
+  transaction as the sidecar and evidence Fact.
+- [x] **`karma_program_revision` rows are immutable and content-addressed**,
+  storing canonical AST JSON, canonical DSL, complete Proof JSON/status and
+  creation time. Loading re-deserializes all three, recomputes the hash,
+  reformats the DSL and recomputes Proof; corruption is an error, never an
+  accepted cached definition.
+- [x] **A rejected-Proof revision may be stored as an editable draft head but can
+  never become active.** Revising an active handle changes only its head;
+  activating is a separate expected-revision mutation, so editing cannot
+  silently replace the code an occurrence is using.
+- [x] **Commands take a globally unique bounded `request_id`.**
+  `karma_program_request` stores canonical payload hash, action, expected/result
+  handle revisions, selected definition hash and linked Fact. Exact replays
+  return the prior result and Fact; the same id with a different payload is a
+  conflict. Handle updates are one compare-and-swap statement — a miss returns
+  the current revision without partially inserting anything.
+- [x] **All Karma command families reserve request ids in one immutable global
+  namespace before writing their family-specific journal**, so a cross-family
+  collision rolls back atomically.
+- [x] **Every committed command appends a typed `ProgramMutationEvidence` Fact in
+  the same transaction**, freezing prior/new head and active hashes, request id,
+  action, handle revision and actor. Definition-only mutations use delta zero,
+  first activation `+1`, pause `-1`, switching accepted active revisions zero. A
+  signing callback may attach the Trust signature before commit.
+
+### Frequency persistence (K2.2)
+
+- [x] **Three deliberately separate identities.** Mutable **handle**
+  (`RecordKind::Frequency` Record + `karma_frequency` sidecar + CAS
+  `handle_revision`). Immutable **revision** (canonical `FrequencyAst`, its DSL
+  projection, a default compilation). Immutable **activation epoch** (chosen
+  definition revision, complete effective parameter map including defaults,
+  effective-parameter hash, compiled schedule, previous activation hash,
+  activating handle revision, cause, logical activation time). Cursors and
+  occurrences name the **activation hash**, never the mutable handle.
+- [x] **Why the split: deterministic parameter changes.** Revising an active
+  Frequency changes only its head; the old revision and activation keep
+  governing until an explicit activation. `set-parameters` compiles a complete
+  replacement override map against the active definition and creates a new
+  epoch; `reset-parameters` does the same with defaults. Neither mutates the
+  authored revision or an old epoch.
+- [x] **A semantically identical activation while already active is rejected as a
+  no-op**, so every committed handle revision has observable meaning.
+- [x] **Pausing clears the active revision/epoch but keeps `latest_activation`**,
+  so reactivation creates a new epoch linked across the pause. No epoch is
+  erased; history reconstructs from immutable epochs and Facts.
+- [x] **Six request-idempotent CAS commands:** create, revise, activate,
+  set-parameters, reset-parameters, pause. Each request fingerprint includes
+  action, uid, expected handle revision, selected definition, complete
+  overrides, owner and actor. `karma_frequency_request` retains the canonical
+  original result and Fact, so replay after arbitrary later mutations returns
+  the original snapshot.
+- [x] **Loads independently verify everything.** Definition insertion compiles
+  with defaults before SQL is touched. Repository loads deserialize the AST,
+  parse and reformat the DSL, recompute the revision hash, recompile defaults
+  and compare byte-for-byte. Epoch loads recompile the named revision using the
+  stored effective map as explicit overrides and compare parameter hash and
+  compiled schedule byte-for-byte. This catches database corruption **and
+  compiler drift** at the boundary.
+- [x] **An activation epoch is configuration, not execution.** K2.2 creates no
+  timer, thread, poll loop, cursor or occurrence.
+
+### Cursors and the dispatcher (K2.3)
+
+- [x] **One `karma_schedule_cursor` per active activation hash**, freezing last
+  and next intended boundary, cursor revision, lifecycle (`armed`, `leased`,
+  `paused`, `superseded`, `failed`), lease fencing token and expiry, last
+  occurrence sequence, last error. Elapsed cursors use `ScheduleCursor`;
+  calendar cursors retain requested civil boundary plus resolved
+  instant/discontinuity evidence. Cursor creation, replacement and
+  pause/supersede are driven from the Frequency mutation journal, never inferred
+  by scanning Records.
+- [x] **Claim is fenced.** At a wake the dispatcher pops only entries whose arm
+  window is reachable, then asks the Store to claim each exact
+  `(activation_hash, cursor_revision)`. The claim verifies the Frequency still
+  names that activation, advances `armed → leased`, increments a monotonic
+  fencing token, sets a bounded lease expiry. Stale heap entries, superseded
+  epochs and duplicate workers lose the CAS without an occurrence. After pure
+  advancement, one transaction appends the occurrence and new cursor state and
+  clears the lease. A crashed worker leaves no ambiguous commit: an expired
+  lease is reclaimable with a higher token, and the unique
+  `(activation_hash, sequence)` prevents replayed side effects.
+- [x] **The planner is pure and clockless.** It takes an ordered snapshot of
+  armed entries, host timer capabilities, the active resource grant, exact
+  persisted per-entry demand and exact aggregate capacity, and returns ordered
+  admissions/rejections plus a deadline index whose minimum is the next host
+  timer request. Logical `now` belongs to cursor advancement and diagnostics,
+  not resource arithmetic.
+- [x] **Injected `DeadlineClock`.** The Tokio adapter waits against a monotonic
+  instant, projects elapsed duration onto the wall-clock observation, and
+  reports a typed `ClockDiscontinuity` beyond an explicit tolerance; the
+  director rebuilds once at that boundary. Wall-clock jumps, suspend/resume and
+  restarts are handled by the missed and inactive-gap policies during
+  advancement, **never by assuming a loop ran while the process slept**.
+  Simulation supplies the same port with a manual clock.
+- [x] **Replan only at boot or an explicit directory-change notification.** A
+  normal firing removes one due entry, completes its fenced transaction, and
+  reinserts only the returned next revision into its existing admitted lane — it
+  must not requery or replan unrelated registrations. A contender losing to a
+  live lease records the exact lease expiry as a recovery arm and rebuilds once
+  at that instant; **this is not a retry interval.** A successful mutation
+  publishes a lossless watch revision after commit, so activation, parameter,
+  pause, provider, capability and grant changes cannot be missed between
+  snapshots.
+- [x] **Activation is a control-plane transaction, not a raw Store call.** The
+  Engine prepares the candidate epoch/cursor, plans it together with all
+  currently armed work under one host-capability and grant snapshot, and commits
+  only the admitted result. `reject_activation` leaves no epoch or cursor;
+  `pause_and_ask` may commit an explicitly paused cursor with typed admission
+  evidence; `degrade_within_grant` may commit only the precise bounded
+  degradation the planner returned. A cursor without a matching durable
+  admission record is deliberately unclaimable, and a new candidate cannot evict
+  an incumbent. Direct Store functions stay persistence primitives for recovery
+  and tests, not the human/agent contract.
+- [x] **"Generate higher-frequency Rust checks" is explicitly forbidden.**
+  Runtime data adds and removes heap entries and host timer registrations, not
+  code or permanent loops.
+- [ ] **Multiple dedicated lane arms stay a measured optimization**, behind the
+  same interface, added only where latency/energy measurements justify them. Not
+  part of the semantic exit gate.
+
+### The typed Actions and the read side (K2.4)
+
+`create-karma-program`, `revise-karma-program`, `activate-karma-program`,
+`pause-karma-program`, `create-karma-frequency`, `revise-karma-frequency`,
+`activate-karma-frequency`, `set-karma-frequency-parameters`,
+`reset-karma-frequency-parameters`, `pause-karma-frequency`.
+
+Later blocks add: `validate-karma-definition` (parse/type-check/canonicalize and
+return Proof without storing or executing), `fork-karma-program`,
+`set-karma-parameter` / `reset-karma-parameter`, `retire-karma-program`,
+`run-karma-program` (with `dry_run` forbidding effects), `replay-karma-run`,
+`rebuild-karma-model` / `disable-karma-model`, grant create/narrow/revoke,
+automation-trust scope create/revise/activate, `respond-karma-candidate`,
+`control-karma-workflow`, `control-karma-intent`, `simulate-karma-program`,
+`import-karma-template`. Answering a decision reuses the existing `decide` —
+Karma does not create a second decision action.
+
+- [x] **Wire mannerisms:** kebab-case `action` tag, snake_case fields,
+  engine-derived viewer/principal, `request_id` for replay safety,
+  `expected_revision` for mutable handles.
+- [x] **The authenticated session actor is the sole authorship source.** Payloads
+  carry no second spoofable actor field, and a UI or agent cannot name a more
+  powerful actor.
+- [x] **Activation requires an installed immutable
+  `KarmaDeadlineDirectorConfig`** so host timer capabilities, aggregate
+  grant/capacity, calibration, clock and pinned providers are the exact values
+  admission used. Absence is a typed fail-closed `karma_runtime_unconfigured`.
+- [x] **A committed mutation returns its uid and Fact; an identical replay
+  returns the same object without republishing the Fact**; a stale expected
+  revision returns `karma_stale_handle_revision` carrying the current revision.
+- [x] **`source:"karma"` is one heterogeneous deterministic union**, not a query
+  language per feature. `object_kind` selects `program`, `program_revision`,
+  `frequency`, `frequency_revision`, `frequency_activation`, `schedule_cursor`,
+  `schedule_occurrence`. Common fields: `uid`, `kind`, `program_uid`,
+  `revision_uid`, `owner_uid`, `status`, `quantity`, `at`, `cursor`, `cause`,
+  `visibility`. **Unsupported predicates and includes are errors, not ignored
+  filters.**
+- [x] **Capability booleans mean "structurally submittable", not "will be
+  allowed".** Stable blockers explain states like `program_not_active` or
+  `head_already_active`; Frequency rows state `requires_runtime_admission:true`.
+  The Action boundary recomputes admission regardless. Block 7 adds
+  principal/grant-specific projection without weakening that check.
+- [x] **Filters never infer an Action.** The UI copies a provided typed Action
+  template, adds a new request id, and submits it through the ordinary path.
+- [x] **Remote visibility is deny-by-default** until fine-grained Karma grants
+  exist.
+- [ ] **"Why did this happen?" is one query, not a log hunt** — one run uid with
+  `include: { trace, inputs{facts,exclusions}, model, policy,
+  intents{receipts}, causal_chain }`.
+- [ ] **Predicates and includes per interface:** Program/revision
+  (`program_eq`, `revision_eq`, `owner_eq`, `tag_in`, `status_in`, `active`,
+  `purpose_eq`; include `definition`, `parameters`, `proof`, `diff`,
+  `dependencies`, `capabilities`); Occurrence/run (`trigger_kind_in`,
+  `cursor_gte/lte`, `at_since`, `cause_eq`, `status_in`; include `trace`,
+  `inputs`, `candidates`, `policy`, `intents`, `receipts`, `cost`,
+  `replay_capsule`); Model/evidence (`model_eq`,
+  `trained_through_cursor_gte`, `drift_state_in`; include `spec`, `checkpoint`,
+  `eligible_evidence`, `rejected_evidence`, `metrics`, `recommendations`);
+  Candidate/decision (`candidate_kind_in`, `subject_eq`, `live`,
+  `expires_before`; include `evidence`, `preview`, `alternatives`,
+  `authority_required`, `capabilities`); Grant/intent/receipt (`principal_eq`,
+  `capability_in`, `target_eq`, `status_in`, `deadline_before`; include `scope`,
+  `budget`, `policy_proof`, `attempts`, `receipt`, `compensation`).
+
+### What each event may and may not do
+
+| Event | Appends | Does **not** happen |
+| --- | --- | --- |
+| Definition created/revised | Handle or new immutable revision, links, Proof, annotation Fact | No activation, grant, training or domain effect |
+| Program activated/paused | Active revision pointer and/or quantity Fact, activation occurrence | No deletion of revisions or runs |
+| Frequency activated/tuned, or gains/loses first/last consumer | Revision/parameter pointer, generation/cursor, exact deadline upsert/removal, annotation Fact | No polling loop, no rescheduling or due-check of unrelated Frequencies |
+| Fact/schedule/signal arrives | Trigger occurrence with cursor/time/source | No rule runs before the occurrence is durable |
+| Program evaluates | Run, trace, frozen input and policy references, candidates/intents | Pure nodes do not mutate domain Records |
+| Learner updates | Evidence admission decisions, checkpoint/model Fact, metrics | No direct rule or authority change |
+| Recommendation routes | Candidate or Decision Record and evidence links | No Action until accepted or independently authorized |
+| Internal Action succeeds | Ordinary domain Facts plus intent receipt/provenance | No alternate privileged Karma write path |
+| External effect completes | Attempt/receipt and provenance Fact | A receipt alone does not assert an unobserved outcome |
+| Grant revoked | Revocation Fact, cancellation of preventable intents | Past Facts and effects are not erased |
+
+**Karma migrations are edited in place until one ships.** None of `0026`–`0035`
+has reached a deployment; this licence ends the moment one does.
+---
+
+## 6. Running a program, and writing the result back
+
+Why: everything before this computes. This is where a rule actually changes a
+Record — the one thing Karma had never been allowed to do — and it is built as
+one closed loop: occurrence → frozen epoch → run → candidate → review → intent →
+worker → Fact.
+
+The whole block is restricted to **one capability family, `LocalReversibleData`**:
+local, auditable on the Record's own Fact chain, reversible by an opposite exact
+delta. Every external, social or irreversible effect stays behind the closed
+door until block 15 and later. That restriction, not phase order, is what makes
+writing safe to enable here.
+
+### Occurrence ingress and Cell ordering (K3.1–K3.2)
+
+- [x] **`KarmaOccurrenceEnvelope` is immutable and content-addressed**, freezing
+  `logical_at`, source identity, optional causal parent, and the typed payload.
+  **Its hash excludes Cell sequence and receipt time**, so importing the same
+  evidence twice deduplicates even across threads or a restart. Sources start
+  with `schedule-tick` and `schedule-coalesced`; Fact, Signal, sync, workflow,
+  receipt and manual variants are added later without changing schedule identity.
+- [x] **One transactional Cell sequence counter.** Ingress checks the
+  source-kind/identity uniqueness boundary first: an identical canonical
+  envelope returns the original row; the same source identity with a changed
+  payload is a protocol conflict. Only a genuinely new envelope increments the
+  counter. Rows and assigned sequences are immutable, and the row revalidates
+  every projection plus content hash on load.
+- [x] **The recorded sequence is the authoritative replay order for genuinely
+  concurrent external arrival.** Deterministic internal producers must submit
+  their already-sorted identities in one transaction.
+- [x] **Batch expansion is a durable cursor, not a second timer.** Keyed by the
+  immutable schedule occurrence hash: `individual` batches emit ticks in
+  ordinal order through bounded pages, `coalesced` batches emit one aggregate
+  and never individual ticks. Cursor advancement and generic occurrence
+  insertion share a transaction, so a crash can repeat a page request but cannot
+  skip or duplicate a tick. Every source identity derives from the semantic
+  boundary or aggregate — never a page, wake or arrival metadata.
+- [x] **Expansion is cooperative work.** Two non-zero configured bounds: semantic
+  items per page (wire-capped at 4,096) and source batches per recovery turn. A
+  deadline completion attempts one page immediately; boot performs one recovery
+  turn; the director processes further turns only while a persisted incomplete
+  cursor exists and no deadline is due, yielding between turns. So a five-hour
+  schedule creates no millisecond polling, and a large replay cannot monopolize
+  the director protecting a 3ms deadline. **The durable pending predicate, not a
+  guessed interval, decides whether work exists.**
+
+### Frozen epochs and terminal runs (K3.3–K3.4)
+
+- [x] **One durable `next_cell_sequence`; never select a later occurrence while
+  an earlier one is incomplete.** On first seeing an occurrence, snapshot every
+  active `(program_uid, revision_hash)` in uid order, content-address that
+  immutable selection as a **Program epoch**, and commit it before evaluation.
+  Later activation, revision or pause cannot change which revision the
+  occurrence saw. A page cursor inside the epoch advances atomically with each
+  immutable run; epoch completion advances the Cell cursor. **Empty epochs are
+  valid** and advance without manufacturing a run.
+- [x] **Every epoch member gets exactly one typed terminal run:** `succeeded`,
+  `not-applicable`, `blocked`, `evaluation-failed`. A Program without a matching
+  trigger is durably **not-applicable**, never silently absent. For schedule
+  occurrences, Frequency trigger nodes get frozen boolean pulses after resolving
+  the activation to its immutable Frequency uid; the Program runs when at least
+  one matches and all other triggers receive `false`.
+- [x] **Missing adapters and deterministic evaluator failures are terminal and
+  inspectable for that Program**, and do not poison later members or
+  occurrences.
+- [x] **A successful run stores the sealed pure-evaluation replay capsule**
+  (K1.7): exact AST, frozen context, limits, trace, outputs, fuel, hashes. The
+  run hash excludes persistence time and includes Cell sequence, occurrence,
+  frozen epoch, Program identity/revision and outcome.
+- [x] **Restart proof.** Interrupt after one member of a multi-member epoch,
+  close and reopen the database, change the active Program set, resume: the old
+  occurrence finishes its previously frozen members before the next
+  `cell_sequence` freezes a new epoch, and the next occurrence sees the new
+  active set. Runs order lexicographically by `(cell_sequence, member_ordinal)`,
+  one row per occurrence/revision, identical hashes after reopen.
+- [x] **The negative assertion matters:** a no-effect run appends no child
+  occurrence, Fact, candidate, intent, Action, receipt or transfer, and the
+  proof snapshots those counts around processing. Later phases must add each
+  reaction through an explicit outbox/ingress boundary rather than gaining
+  mutation as an accidental evaluator side effect.
+
+### Durable program state (K4.1)
+
+- [x] **Each frozen epoch member carries the Program's activation handle
+  revision as well as its content revision** — the stable activation-generation
+  token `on-program-activation` reset needs, which cannot be inferred later from
+  the mutable handle.
+- [x] **State is an immutable event chain plus one CAS projection per
+  `(program_uid, node_id)`.** An event records state revision, previous event
+  hash, source run hash, definition revision, activation handle revision,
+  optional reset reason, and either a typed value or an explicit reset
+  tombstone. Event hashes exclude database time.
+- [x] **Run insertion, every state event/projection CAS, the epoch member cursor
+  and the Cell cursor commit in one transaction.** A run can never become
+  visible without its synchronous read-old/write-next state, nor can state
+  advance for a run that is retried.
+- [x] **Migration policy is explicit.** `on-program-activation` resets on
+  activation-generation change; `on-revision-change` resets on definition
+  change; otherwise `migration` decides — `reset` starts from the declared
+  initial state, `require-explicit` produces a terminal blocked run,
+  `compatible-type-only` carries state only when node operation/state kind and
+  exact value type stay compatible. `never` and `manual` preserve state subject
+  to that check.
+- [x] **A reset plus a newly staged value may be one event carrying the reset
+  reason**, so audit history shows evaluation read the initial state. A reset
+  with no staged update stays an explicit tombstone rather than resurrecting old
+  state later.
+- [x] **Only `persistence:program` is supported.** Workflow and model-checkpoint
+  state are terminal blocked outcomes until their runtimes can supply the
+  correct scope key; treating them as Program state would merge independent
+  workflows and models.
+
+### Candidates and review (K4.2–K4.3)
+
+- [x] **After a successful evaluation, scan stable node-trace and port-name
+  order for value-bearing candidate datums.** Each becomes a typed
+  content-addressed proposal keyed by source run, node and output port, carrying
+  occurrence, revision, route, template and exact ordered fields. Missing datums
+  create no row. **A duplicate `(run, node, port)` is an integrity conflict,
+  never last-write-wins.**
+- [x] **Initial lifecycle is always `proposed`, including route `act`.** Route
+  expresses desired downstream handling, not authority.
+- [x] **Review is an event-sourced CAS handle independent of the immutable
+  proposal.** `respond-karma-candidate` requires a globally idempotent request
+  id, candidate hash, expected state revision, and one typed response —
+  `accept`, `dismiss`, `snooze(until)` with a canonical future logical instant.
+  The actor comes from the authenticated session, never the payload.
+- [x] **Each committed response appends an immutable state event, advances the
+  projection by CAS, and appends a zero-delta audit Fact to the owning Program**,
+  all in one transaction.
+- [x] **Review is deliberately reversible.** Later responses may move an
+  accepted, dismissed or snoozed candidate again — no user or agent decision is
+  read-only history — and the event chain retains every change. Repeating the
+  same status is allowed only through exact request replay, avoiding meaningless
+  revisions.
+- [x] **Accepting an `act` route still creates no intent.** Only block 7's grant
+  and budget checks may turn a reviewed candidate into authorized work.
+
+### Rules that define a Record's quantity (E0.3)
+
+- [ ] **A Record may be bound to a Program revision and output, in one of two
+  modes the author picks.** **Computed:** the quantity *is* the program's output,
+  resolved exactly on every read, no Fact ever appended — it cannot drift from
+  its inputs because it is never stored, so changing `Cost1` makes `Total cost`
+  already correct with no occurrence, intent or grant involved.
+  **Materialized:** a Frequency fires, the program runs, and an authorized intent
+  writes the value as an ordinary signed Fact, so the number is pinned in
+  history and the Record accrues an auditable chain.
+- [ ] **The two answer different questions, and choosing wrong is the common
+  mistake.** Computed answers "what is my total cost" — live, no history, free.
+  Materialized answers "what was my total cost each month last year" — a real
+  series, at the price of an occurrence, an intent and a grant. A rolling balance
+  that accumulates (savings drawn down monthly) is **necessarily** materialized,
+  because its next value depends on its previous one. A pure restatement of other
+  Records should default to computed.
 - [ ] **A computed Record refuses conflicting writes.** Its quantity has exactly
-  one author, its binding. A manual Fact, an `Action::AddQuantity`, or another
-  program's intent targeting it is a typed refusal naming the binding, not a
-  silent overwrite that would be erased on the next read. Rebinding or unbinding
-  is an explicit revision, and unbinding freezes the last computed value into one
-  signed Fact so the Record keeps a defined quantity.
+  one author, its binding. A manual Fact, an `AddQuantity`, or another program's
+  intent targeting it is a typed refusal naming the binding — not a silent
+  overwrite erased on the next read. Rebinding or unbinding is an explicit
+  revision, and unbinding freezes the last computed value into one signed Fact so
+  the Record keeps a defined quantity.
 - [ ] **Cycles are refused at Proof time, not discovered at runtime.** Bindings
   form a graph over Records; `Total cost` depending on a Record that depends back
-  on it is rejected when the binding is authored, with the cycle named. Depth and
-  fan-out are bounded by the same fuel the evaluator already meters.
-- [ ] **Execute an authorized intent, for `LocalReversibleData` only.** A worker
-  leases an intent, records a typed attempt, applies the change in one Store
-  transaction with the intent's frozen idempotency key, and writes a receipt.
-  The capability ceiling K5.2 already enforces twice stays exactly where it is:
-  nothing outside this family becomes executable here.
-- [ ] **The targets a rule may change.** A Record's plain quantity; a Record's
-  unit-denominated quantity, where the intent's unit must equal the Record's
-  `unit_uid` or carry an explicit E0.1 conversion, checked again at apply time
-  against the live Record rather than trusted from the proposal; and a numeric
-  value inside a namespaced `record_extension`. Each is a distinct capability
-  with its own grant scope, so authority over a Record's weight is not authority
-  over its price.
-- [ ] Every applied change lands as an ordinary signed Fact on the Record's own
-  chain with an exact delta from E0.0, caused by the intent. Karma gets no
-  private write path: the Ledger stays the single quantity truth, and an
-  automatic change is auditable by exactly the same means as a human one.
+  on it is rejected when authored, with the cycle named. Depth and fan-out are
+  bounded by the same fuel the evaluator already meters.
+
+### Executing an authorized intent (E0.3)
+
+Pulled forward as a whole, not as an apply-only shortcut: leases and typed
+idempotency are not polish on top of applying a change, they are what stops a
+restart mid-apply from applying it twice.
+
+- [ ] **A worker leases an intent, records a typed attempt, applies the change in
+  one Store transaction with the intent's frozen idempotency key, and writes a
+  receipt.** The capability ceiling stays exactly where it is; nothing outside
+  `LocalReversibleData` becomes executable here.
+- [ ] **Three distinct targets, three distinct capabilities.** A Record's plain
+  quantity; a Record's unit-denominated quantity, where the intent's unit must
+  equal `unit_uid` or carry an explicit conversion **rechecked at apply time
+  against the live Record** rather than trusted from the proposal; and a numeric
+  value inside a namespaced `record_extension`. Authority over a Record's weight
+  is not authority over its price.
+- [ ] **Every applied change lands as an ordinary signed Fact on the Record's own
+  chain** with an exact delta, caused by the intent. **Karma gets no private
+  write path** — the Ledger stays the single quantity truth and an automatic
+  change is auditable by exactly the same means as a human one.
 - [ ] **Compensation is real, not nominal.** Reversing an applied intent appends
-  the opposite exact delta caused by the original, matching the existing
-  correction semantics; a metadata write restores its previous frozen value.
-  Reversibility is what makes this family safe to automate first.
+  the opposite exact delta caused by the original; a metadata write restores its
+  previous frozen value. Reversibility is what makes this family safe to
+  automate first.
 - [ ] **A compensated intent keeps its budget consumed.** `holds_reservation()`
-  currently returns false for `Compensated`, which would refund it, and a grant
-  capped at ten intents could then apply-and-compensate forever without ever
-  exhausting. A budget limits how much a delegation may *cause*, not how much of
-  what it caused survives: an applied-then-reversed change touched a real Record
-  and appended two real Facts. So the rule is that a reservation is consumed by
-  having caused an effect, not by the effect persisting — `Compensated` becomes
-  true, while `Failed` and `Cancelled` stay false because nothing happened.
-  Revisit `DeadLetter` here too: it is false today, which is only correct if
-  nothing was ever applied.
-- [ ] Retries are driven by the frozen idempotency key, an uncertain outcome is
-  reconciled against the Record's own chain rather than guessed, and emergency
-  stop plus stage-effects mode prevent every dispatch that is still preventable.
-- [ ] Revocation now has teeth: `cancel_for_grant_tx` selects only `authorized`
-  intents today, which is correct while that is the only reservation-holding
-  state. This slice widens it to every state that holds a reservation, or a
-  revoked grant would leave leased work alive.
+  returns false for `Compensated` today, which refunds it — so a grant capped at
+  ten intents could apply-and-compensate forever without exhausting. A budget
+  limits how much a delegation may *cause*, not how much of what it caused
+  survives: an applied-then-reversed change touched a real Record and appended
+  two real Facts. `Compensated` becomes true; `Failed` and `Cancelled` stay false
+  because nothing happened. Revisit `DeadLetter`, which is false today and only
+  correct if nothing was ever applied.
+- [ ] **Retries are driven by the frozen idempotency key.** An uncertain outcome
+  is reconciled against the Record's own chain rather than guessed. Emergency
+  stop and stage-effects mode prevent every dispatch that is still preventable.
+- [ ] **Revocation gets teeth.** `cancel_for_grant_tx` selects only `authorized`
+  intents today, correct only while that is the sole reservation-holding state.
+  Widen it to every state holding a reservation, or a revoked grant leaves leased
+  work alive.
 
-**E0.3 exit:** through the real socket, a Frequency fires, a Program reads a
-Record's exact quantity, multiplies it by a granted percentage, and the
-authorized intent changes that Record's quantity — with the Fact, the receipt,
-and the policy proof all inspectable. A restart mid-apply applies it exactly
-once. Revoking the grant mid-flight stops it. Compensating it returns the
-Record to its previous exact value. Without a grant, nothing runs at all.
+**Exit:** through the real socket, a Frequency fires, a Program reads a Record's
+exact quantity, multiplies it by a granted percentage, and the authorized intent
+changes that Record's quantity — Fact, receipt and policy proof all inspectable.
+A restart mid-apply applies it exactly once. Revoking the grant mid-flight stops
+it. Compensating returns the Record to its previous exact value. Without a
+grant, nothing runs at all.
+---
 
-##### E0.4 — folding the loop forward: projection over Karma programs
+## 7. Authority — what a rule is allowed to do
 
-**This slice exists because the loop is only half useful if it can only run at
-the speed of real time.** The stated purpose of the pillar is to set rules with
-frequencies and then see how quantities move over a year or five — to answer
-"what happens to my savings" without waiting sixty months to find out. E0.0–E0.3
-build the loop that runs once, on the real clock, against the real Ledger.
-Running it against a virtual clock and a virtual Ledger is a separate slice, and
-it was previously scattered between E1's fixed-occurrence fold and the K10
-Imagination work. Neither covers it: E1 folds *declared recurring amounts*, not
-computed ones, and K10 runs last.
+Why: a program has no identity and no authority of its own. It acts as a named
+person through a **revocable delegation**, and it can never enlarge that
+delegation or pass it on. This block is what stands between "the rule decided to
+do something" and "the rule did it".
 
-- [ ] Project by substituting ports, never by writing a second evaluator.
-  `evaluate_program` is already pure over `(ProgramAst, FrozenEvaluationContext,
-  EvaluationLimits)` — it has no clock and no store. Only two things around it
-  are production-bound: E0.1's store-backed boundary resolver and E0.3's intent
-  applier. Projection replaces the first with a virtual quantity map and the
-  second with a virtual fold. A rule that is wrong in projection is wrong in
-  production, which is the entire value of the property.
-- [ ] Enumerate occurrences ahead of `now` from the same Frequency machinery.
-  `ScheduleSpec`/`ScheduleCursor`/`OccurrenceRange` already compute boundaries
-  arithmetically from a cursor rather than by waiting; projection walks that
-  forward to a horizon instead of to the present. Frozen timezone and tzdb rules
-  apply unchanged, so a projection crossing a DST boundary lands where execution
-  would have landed.
-- [ ] Fold both binding modes from E0.3 in one timeline. A **computed** Record —
-  `Monthly expenses = Rent + Utilities + Groceries` — is re-derived at every
-  projected step from that step's projected inputs, never carried forward as a
-  constant. A **materialized** Record — savings drawn down monthly — is folded
-  occurrence by occurrence. They compose: raising projected rent in month 30
-  changes projected monthly expenses in month 30, which changes the projected
-  draw on savings from month 30 on. A projector that re-derives only at the start
-  produces a plausible curve that is wrong everywhere after the first change.
-- [ ] Fold classified promises alongside program occurrences. "In three months I
-  expect +300 from a sale" is a `promise` — `record_uid`, `delta`, `window_end`,
-  and the already-present `promise.concept_uid`, so a future annotation
-  classifies through the same DAG as a past Fact and lands in the same E0 bucket.
-  `build_snapshot` already folds these, but only in `Agreed`/`Active`, and a
-  solo expectation created today starts at `Proposed` — so this needs a one-step
-  path for an expectation with no counterparty, not a new primitive and not
-  asking someone to agree with themselves.
-- [ ] Return exact points, not floats. The projection carries E0.0 decimals and
-  E0.1 units end to end, labels every point actual or projected, and names each
-  projected point's cause — program revision hash, occurrence identity, and the
-  intent shape it would have staged. A point nobody can trace to a rule and a
-  moment is not a projection, it is a guess.
-- [ ] **Exclusions are reported, never silent.** The legacy fold in
-  `nucleus::imagination` quietly skips rules needing signals or sums, so a
-  timeline can be confidently wrong. This one refuses that: any program that
-  cannot be folded — an unresolvable input, a non-local capability, an external
-  effect, a mixed inexact chain under E0.0's rule — appears in a named exclusion
-  list attached to the result. A partial projection that does not say what it
-  left out is worse than no projection.
-- [ ] Projection writes nothing: no Fact, no intent, no candidate, no cursor
-  advance, no grant consumption. It reads a snapshot and folds. Branching is
-  mutating that snapshot — change a starting quantity, toggle a program, alter a
-  rate — and folding again; comparing two timelines is the compare view. Applying
-  anything a projection suggests is an ordinary reviewed Action.
-- [ ] Bound it. Five years of a monthly Frequency is sixty evaluations per
-  program, which is cheap, but a daily Frequency over the same horizon is not,
-  and a program graph can be large. The horizon, total occurrence count, and
-  total fuel are explicit limits, and exhausting one truncates the timeline with
-  a stated reason rather than hanging or silently stopping early.
-- [ ] Note the regression this prevents: `Engine::project` folds the legacy
-  `registry.rules` today and is what powers `crossings_pass`. Once rules are
-  imported to Karma as planned, that fold's input goes empty and the existing
-  five-year projection quietly goes dark. This slice is what carries the
-  capability across, and `crossings_pass` moves onto it.
+**Authority is actor-neutral.** Humans, local tools and software agents use the
+same typed Actions. Authorship is provenance, not permission.
 
-**E0.4 exit:** a Rent Record and several cost Records feed a derived monthly
-expenses rule; a Frequency-driven program draws that from savings each month;
-projecting five years returns sixty exact points whose final value matches a
-hand-computed decimal exactly. Raising rent and re-folding changes the curve.
-The timeline is identical under a DST-crossing timezone and under a virtual
-clock started at any instant. Nothing is written. And running the same program
-for real across the same window produces the same numbers the projection gave —
-because it is the same code.
+**The effective authority for an intent is an intersection**, and any missing
+term denies or stages it:
 
-##### E0 — classified changes over Records and Facts
+    program requirements ∩ principal delegation ∩ actor permissions ∩
+    visible/purpose-allowed data ∩ applicable Automation Trust scope ∩
+    current domain capability ∩ budgets ∩
+    target revision/preconditions ∩ safety interlocks
 
-> **Architectural correction, 2026-07-26 — Economy is a sand, not a layer.**
-> This slice was built with Economy in its names: a `store::economy` module, an
-> `economy_event` table, a private `Source::Economy` Protein union, and a
-> 655-line `nucleus::karma::economy` in the *kernel*. That was wrong, and the
-> giveaway was that the private Protein source existed only because the generic
-> Fact aggregation was too weak — it summed with `f64`, undoing E0.0's
-> exactness, and could not group by what a change was for. Routing around a
-> weak primitive instead of strengthening it is how a domain silo starts.
->
-> Everything here is now domain-neutral, and the same query answers "what did I
-> spend on food in March", "how much flour did I use", and "how many hours went
-> to this project". The renames:
->
-> | Was | Is | Why it is generic |
-> | --- | --- | --- |
-> | `store::economy` | `store::ledger` | classification + windowed totals + levels |
-> | `store::economy_events` | `store::entries` | a correctable authored change |
-> | `economy_event` / `_revision` | `entry` / `entry_revision` | — |
-> | `0036_economy_classification.sql` | `0036_classification.sql` | — |
-> | `0037_economy_events.sql` | `0037_entries.sql` | — |
-> | `Action::CaptureMovement` | `Action::CaptureEntry` | — |
-> | `Action::ReviseMovement` / `VoidMovement` | `ReviseEntry` / `VoidEntry` | — |
-> | `Source::Economy` | **deleted** | folded into `Source::Fact` aggregation |
-> | `Predicate::ResourceConceptIn` | `Predicate::ClassifiedIn` | the change's own concept |
-> | `nucleus::karma::economy` | **deleted** | 655 lines, unreferenced |
->
-> **The kernel module was deleted outright.** Nothing outside its own test used
-> it, and it encoded exactly what this design rejects: `EconomyDirection = Gain
-> | Loss` (direction is the delta's sign — this plan already said to drop it)
-> and a `tags` field parallel to the concept DAG. Its test went with it.
->
-> **What replaced the private source, in the generic layer:** `GroupBy::Total`
-> and `GroupBy::Classification`; `Predicate::ClassifiedIn` and
-> `Predicate::AtBefore`; exact text sums with gains/losses/net/count; buckets
-> keyed by `(group, unit)` so litres never join kilograms; a named
-> `(unclassified)` bucket; and `concept_in` on the Fact source now reading what
-> a Record *counts as*, not only what it is. The `f64` in both aggregate paths
-> is gone.
->
-> **Economy's own slices (E1's plans, E2's sand) inherit nothing bespoke.** A
-> recurring rule is a Frequency plus a template; a projection is a fold over
-> declared future changes. Neither is finance, and neither should be built in
-> Economy's name.
->
-> **Verified 2026-07-26.** nucleus 141, store 54, protein 4 (+12 ledger),
-> engine 114 (+10 entries) — all green. The build pass caught two real bugs
-> that no amount of reading would have: a migration column still named
-> `event_uid` after the Rust had moved to `entry_uid` (every entry write failed
-> at runtime), and `void-entry` placing its compensating Fact at *now* while
-> `revise-entry` placed its at the original instant. The second was a design
-> inconsistency, not a typo: **voiding means the change never happened, so it
-> is retracted from the period that claimed it and that period nets to zero.**
-> A purchase that really happened and was later refunded is a different thing —
-> a new capture today with the opposite sign — and conflating them would either
-> rewrite a closed month or leave a phantom in it. Five unrelated
-> promise/transfer-auth tests fail pre-existing (see the transfer WIP).
+A recommendation score, model confidence, owner role, template signature or past
+successful run **cannot replace one of these terms.**
 
-**Classification attaches to the Fact, not the Record, and this is derived, not
-chosen.** `record.concept_uid` says what a quantity *is of* — the money Record's
-concept is money. It therefore cannot say what a *movement* was. Buying an ice
-cream is a `-10` Fact on the money Record; the fact that it was a cost, and
-specifically a food cost, is a property of that movement. Anyone later tempted to
-"simplify" this into a Record per purchase should read this paragraph first: that
-design forces every spend to invent a Record, and still cannot answer "what did I
-spend in March" without a hand-maintained sum.
+### Capability families and their default route
 
-**The concept model itself moved to `docs/Central: Lingua.md` on 2026-07-29** —
-the DAG being the tag system rather than a thing beside one, a concept having
-many parents, the `record_concept` join table, the two classification axes
-(`resource_concept_in` picks Records, `concept_in` picks movements), and why
-conversion has no time dimension. All of it landed; none of it is Karma.
+| Family | Default | Examples |
+| --- | --- | --- |
+| Pure read/derive/analyze | evaluate within data scope | Protein, feature, projection, solver, report |
+| Local reversible data | suggest/ask until granted | set/add quantity, link, local metadata, create task |
+| Attention/presentation | budgeted delivery | decision, digest, toast, focus a permitted interface |
+| Program/meta-control | ask; narrow grants allowed | tune parameter, pause program, activate proven revision |
+| External resource | staged; bound adapter grant | HTTP, command, filesystem, network, payment/device controller |
+| Private Transfer preparation | suggest/draft | local draft, projection, rank counterparties |
+| Social publication/negotiation | ask; exact grant allowed | publish OPEN offer, invite, counteroffer, message, visibility |
+| Own social commitment/evidence | explicit high-authority grant | agree own revision, claim own occurrence, confirm own side, settle owned Record |
+| Irreversible/safety-critical | manual or dedicated interlocked grant | door/vehicle/medical/industrial actuation, destructive command |
 
-What this slice needs from it is one sentence: a Fact's concept says what a
-*movement* was, a Record's concepts say what the *thing* is and counts as, and a
-query must state which axis it used.
+The destination does **not** hard-code "a machine may never commit" or
+"automation may do everything". A person may deliberately delegate even
+high-impact actions **on their own behalf** within exact limits; the engine makes
+escalation explicit, narrow, revocable, rechecked and attributable.
 
-**Unit conversion stays out of scope for the totals here.** Sums are
-unit-separated and refuse to combine two units rather than converting — right
-for `kg` beside `L`, and doubly right for two currencies, where a rate that
-moved would rewrite a closed month.
+### The grant (K5.1)
 
-- [ ] Freeze the movement classification and its exact magnitude, resource/unit
-  reference, source, note, and occurrence/capture cause as revision types in
-  `nucleus`. **Drop `EconomyDirection = Gain | Loss` and the separate `tags`
-  field from the earlier draft of this slice.** Direction is the sign of the
-  delta and nothing else: a refunded ice cream is classified `@cost` with a
-  `+10` delta and must *reduce* total costs. A direction enum bucketed
-  independently of the sign gets that backwards, and two classification axes that
-  can disagree is a bug frozen into the vocabulary. This slice is unimplemented,
-  so removing both is free now and expensive later.
-- [x] Add classification as an append-only sidecar keyed on `fact_uid`, not a
-  column on `fact`. `fact` is hash-chained and signed and E0.0 already restricts
-  it to additive change; a `concept_uid` inside the preimage makes every existing
-  Fact permanently unclassifiable, and one outside the preimage is unsigned
-  mutable data masquerading as ledger truth. The repo already has the right shape
-  in `fact_action_intent`. Structure it as the log-plus-projection idiom Karma
-  uses for `karma_intent_event`/`karma_intent_state`, so **a classification is an
-  assertion about a Fact, not part of it**: correcting a mistagged expense is a
-  new assertion with an audit trail, never a compensating Fact over a typo.
-- [ ] **Aggregation is a query over classified Facts, and never over the
-  quantities of cost Records.** `Rent = 1000` is a standing parameter a rule
-  reads; the monthly `-1000` on savings classified `@rent → @cost` is what a
-  total sums. Stating the domain this precisely is what stops the aggregate and
-  E0.3's computed `Total cost` Record from becoming two overlapping numbers on
-  one screen. A computed Record remains useful as a *rule input*; it is not how
-  totals are formed, which is precisely the hand-built sum this design removes.
-- [ ] The query sums signed deltas whose classification descends from a chosen
-  concept, bucketed by `fact.at`, over a *set* of resource Records selected by
-  concept — money lives in checking, cash, and savings at once. Sums stay
-  unit-separated. `fact.at` is occurred-at, not recorded-at, so backdating is
-  ordinary and nothing may assume `at` is monotonic with chain order.
+- [x] **A grant is a Record handle plus an immutable content-hashed revision.**
+  Its principal is always the authenticated Person whose installed key signs the
+  revision — **never an Action payload field.** Creation is disabled; activation
+  is a separate expected-revision Action; revocation clears the active revision
+  immediately. A revoked handle cannot be resurrected, so creating a replacement
+  makes renewed consent explicit.
+- [x] **`DelegationGrantSpec` scopes one named Program**, either an exact
+  revision or whichever is active at the later check, plus a non-empty capability
+  set, an explicit candidate-template scope (`any` or a non-empty exact set), an
+  explicit target scope (`any` or a non-empty typed exact set), purpose, and a
+  `[valid_from, expires_at)` interval.
+- [x] **Target atoms keep their semantic kind** — Record, concept, Person, Organ,
+  place, controller — so a matching string in the wrong namespace cannot
+  authorize an Action.
+- [x] **Delegation is non-transitive.** Grant-management capabilities cannot be
+  delegated through a grant; authorizing grant creation and narrowing stays a
+  separate human/session boundary. A program cannot create, widen, renew or
+  choose the principal of its own grant.
+- [x] **The only revision mutation is `narrow-karma-grant`, and the comparator
+  must prove a subset.** Capabilities and exact sets may only lose members; `any`
+  may become an exact set; an any-active Program revision may become one exact
+  revision; `valid_from` may move later; expiry may move earlier. A different
+  exact revision, a changed Program or principal, a newly added
+  capability/target/template, longer validity, or a mixed narrow-and-widen edit
+  is rejected. **There is deliberately no widen Action.**
+- [x] **A proven narrowing of an active handle swaps head and active in one
+  commit**, so no wider revision stays live between commits. Narrowing a draft
+  moves the head without ever making it live.
+- [x] **Authority evaluation takes a frozen typed request** — principal, Program
+  and revision, candidate template, capability, optional typed target, logical
+  instant — and evaluates **one explicitly named active grant revision.** The
+  engine never unions all matching grants. The result is a structured list of
+  stable denial reasons; absence of a grant or any mismatch is denial. Both
+  candidate policy and the domain Action boundary invoke this same evaluator.
+- [x] **The principal comes from the installed signing key.** The store accepts
+  only a revision whose signature names the principal; the Engine resolves the
+  Person from `trust::Signer` and refuses when no key is installed. An
+  authenticated session bound to a different Person is refused rather than
+  allowed to borrow the Cell's key.
+- [x] **A grant Record's quantity tracks live authority** the way a Program's
+  tracks live activation — the Fact delta follows the transition, so revoking a
+  draft that never authorized anything moves nothing.
+- [x] **Grant Actions reuse `karma:create` / `karma:update`.** No new permission
+  key: the separateness the contract demands already comes from key-derived
+  principals plus the kernel refusing to place `KarmaGrantNarrow`/`Widen` in any
+  spec.
+- [x] **Fixed while landing K5.2:** `karma_grant_revision` keyed rows by content
+  hash alone, so two grants with byte-identical consent collided — breaking the
+  contract's own "a replacement makes renewed consent explicit" path for
+  identical terms. Revisions are now identified by `(grant_uid, revision_hash)`
+  and lookups are scoped by grant.
+
+### Budgets (K5.2)
+
+A budget says how much a delegation may cause before it must be renewed.
+
+- [x] **The budget lives on the grant revision, because it is part of what was
+  consented to.** Optional lifetime intent cap, optional count per fixed-length
+  window, optional total quantity limit with its unit. **Absent means
+  unlimited**, so narrowing treats absent as the widest value: a replacement may
+  lower a limit or add one, never raise or remove one.
+- [x] **Windows are fixed-length and start at `valid_from`**, so which window an
+  instant falls in is a pure function of the revision and replays exactly.
+- [x] **Consumption is counted per grant *handle*, never per revision.** If
+  narrowing reset consumption, narrowing would be a way to refill a spent budget
+  — an escalation disguised as a restriction.
+- [x] **The intent rows are the consumption ledger.** A budget check counts and
+  sums the grant's intents still holding a reservation, inside the same
+  transaction that inserts the new one, so no separate mutable counter can drift
+  from the evidence. Cancelling an intent releases its reservation.
+- [x] **Which states reserve budget is stated once, in the database.** A seeded
+  status table carries `holds_reservation` and every budget query joins it
+  instead of naming statuses — so `leased`, `dispatching` and `uncertain` start
+  counting by being seeded, not by editing five `WHERE` clauses, which is the
+  omission that would let a leased intent's reservation be spent twice. Only
+  statuses a phase can reach are seeded, and a test walks the table against the
+  kernel enum so the two cannot drift.
+- [x] **An unbudgeted grant is omitted from the wire entirely**, which keeps the
+  K5.1 golden authority hash valid and lets revisions stored before budgets
+  existed still verify.
+- [ ] **Reserve on authorization, reconcile on receipt, release on
+  denial/cancellation.** Concurrent runs must not each see the full remaining
+  budget and overspend it.
+
+### The intent (K5.2)
+
+- [x] **An intent freezes what was authorized:** source candidate, exact grant
+  handle and revision, Program and revision, capability, typed target, candidate
+  template, frozen typed Action payload, idempotency key, deadline, and the full
+  policy proof (authority decision plus budget snapshot at reservation time).
+  Content-addressed and immutable.
+- [x] **Amount and target are read from the stored proposal, never supplied by
+  the caller.** A client that could name the amount could understate it and spend
+  a budget it was never given. A proposal carrying two quantity or two reference
+  fields is refused rather than disambiguated by guessing.
+- [x] **There is no `denied` row.** A denial refuses the whole acceptance instead
+  of recording a dead intent.
+- [x] **Lifecycle is an immutable per-intent hash-chained transition log plus one
+  current projection matching its head.** A transition names the durable
+  *request* that caused it rather than a Fact, because one cause legitimately
+  moves many intents — revoking a grant cancels everything it authorized — and
+  the Fact is reachable through the request rather than copied onto each row.
+  Cancellation is written after the causing request row exists, so no transition
+  can cite a cause that was not recorded first.
+- [x] **Accepting a candidate and authorizing its intent are one commit.**
+  `respond-karma-candidate` gains an optional `authorizing_grant_uid`. Accepting
+  an `act` candidate **without** naming a grant keeps the candidate inert.
+  Naming one makes the same transaction re-evaluate the live grant, reserve
+  budget and create the intent — and if the grant denies, the budget is
+  exhausted, or the route is not `act`, **the whole Action fails and nothing
+  changes.** A person asking for authorized work never silently gets an accepted
+  candidate with no authority behind it. Exactly one grant is named, never a
+  union.
+- [x] **Only `LocalReversibleData` templates are mapped, checked twice**, so a
+  later template cannot quietly reach further.
+- [x] **Revocation is deterministic, not raced.** Revoking a grant cancels its
+  still-authorized intents in the same transaction and releases their budget, so
+  no intent outlives the consent that created it. Creating an intent appends its
+  own Fact; cancelling one does not, because the revocation already appends a
+  signed lifecycle Fact naming the grant and every cancelled intent is derivable
+  from it. When a single intent can end on its own, that transition needs its own
+  Fact.
+
+### Attribution and enforcement
+
+- [ ] **Attribute every automatic Action to both the real principal and
+  `program/revision/run/intent`, with `cause=karma`.** The program never becomes
+  a Person, signs as another Person, or obscures which delegation was consumed.
+- [ ] **Enforcement is in the engine and the Action/domain boundary** — never
+  only in the Karma sand, another sand, a connector, or an agent prompt.
+- [ ] **Persist scopes, budgets, recipients, quiet time, thresholds,
+  model/evidence restrictions, forbidden Actions and pattern overrides as typed
+  policy**, not frontend state.
+- [ ] **Revocation and emergency-stop prevent unclaimed work immediately and are
+  rechecked before dispatch.** Already committed local Facts remain; an already
+  dispatched external action gets an honest receipt or uncertain state plus any
+  declared compensation.
+- [ ] **Grants are typed records signed by the delegating Person**, scoping at
+  minimum: principal, program and optionally exact revision/template, capability
+  and Action kinds, target records/concepts/places/controllers,
+  recipients/Organs/proximity, quantity/value and its unit, per-run/day/window
+  rate, valid time/context, evidence quality, allowed visibility, reversibility,
+  approval threshold, expiry.
+
+**Exit:** deny-by-default holds at both the evaluator and the domain Action
+boundary; revocation races and concurrent budgets are safe; restart never
+duplicates an idempotent intent; emergency and stage-effects modes prevent all
+still-preventable dispatch.
+---
+
+## 8. Entries and classification — individual changes a person types
+
+Why: someone needs to record "ice cream, food, -10" and be able to fix it later.
+The number lives on the Ledger; what the change *was for* is a separate
+assertion about that Fact.
+
+**Naming, settled 2026-07-26.** This was built with Economy in its names — a
+`store::economy` module, an `economy_event` table, a private `Source::Economy`
+Protein union, a 655-line `nucleus::karma::economy` in the kernel. The giveaway
+was that the private Protein source existed only because generic Fact
+aggregation was too weak: it summed with `f64`, undoing exactness, and could not
+group by what a change was for. Routing around a weak primitive instead of
+strengthening it is how a domain silo starts. Everything is now domain-neutral,
+and one query answers "what did I spend on food in March", "how much flour did I
+use", and "how many hours went to this project".
+
+| Was | Is |
+| --- | --- |
+| `store::economy` | `store::ledger` |
+| `store::economy_events` | `store::entries` |
+| `economy_event` / `_revision` | `entry` / `entry_revision` |
+| `0036_economy_classification.sql` | `0036_classification.sql` |
+| `0037_economy_events.sql` | `0037_entries.sql` |
+| `Action::CaptureMovement` | `Action::CaptureEntry` |
+| `ReviseMovement` / `VoidMovement` | `ReviseEntry` / `VoidEntry` |
+| `Source::Economy` | deleted — folded into `Source::Fact` aggregation |
+| `Predicate::ResourceConceptIn` | `Predicate::ClassifiedIn` |
+| `nucleus::karma::economy` | deleted, 655 lines, unreferenced |
+
+The kernel module encoded exactly what this design rejects: `EconomyDirection =
+Gain | Loss` (direction is the delta's sign) and a `tags` field parallel to the
+concept DAG.
+
+### Classification
+
+- [x] **Classification attaches to the Fact, not the Record, and it is derived.**
+  `record.concept_uid` says what a quantity *is of* — the flour Record's concept
+  is flour — so it cannot say what a *movement* was. Baking bread is a `-500g`
+  Fact on the flour Record; that the flour went to `@bread` rather than `@cake`
+  is a property of that movement. Anyone tempted to simplify this into a Record
+  per movement: that design forces every use to invent a Record and still cannot
+  answer "how much flour went to bread in March" without a hand-maintained sum.
+- [x] **Append-only sidecar keyed on `fact_uid`, never a column on `fact`.**
+  `fact` is hash-chained and signed; a `concept_uid` inside the preimage makes
+  every existing Fact permanently unclassifiable, and one outside the preimage
+  is unsigned mutable data masquerading as ledger truth. Structured as the
+  log-plus-projection idiom (`karma_intent_event`/`karma_intent_state`), so
+  correcting a mistagged expense is a new assertion with an audit trail, never a
+  compensating Fact over a typo.
+- [x] **Drop `direction` as a field.** Direction is the sign of the delta and
+  nothing else: a refunded ice cream is classified `@cost` with a `+10` delta
+  and must *reduce* total costs. A direction enum bucketed independently of the
+  sign gets that backwards, and two axes that can disagree is a bug frozen into
+  the vocabulary.
+- [x] **Two predicates because there are two axes.** `resource_concept_in`
+  selects the Records whose levels moved; `concept_in` filters what the
+  movements were. "How much flour went to bread" is `@flour` resources and
+  `@bread` movements; a single filter quietly answers a different question. The
+  context
+  row echoes both, so "which axis produced these numbers" is on the wire.
+- [x] **The store surface this landed as:** `add_record_concept`,
+  `remove_record_concept`, `record_concepts`, `records_with_concept` (expands
+  down the DAG and unions both axes, so a Record classified either way appears
+  exactly once), `classify_fact`, `classification_history`, `level_at`,
+  `level_series`, `movement_totals_by_concept`, `archivable_before`,
+  `delete_by_uids`, and `[from, to)` variants of `facts::sum_window` /
+  `sum_pos_window` / `sum_neg_window`. The sidecar shape follows the existing
+  `fact_action_intent` pattern.
+- [ ] **Hash-chain and sign the classification log if it ever becomes evidence.**
+  Today it is append-only with actor and timestamp but unsigned — deliberate,
+  because a classification is an assertion *about* the Ledger rather than Ledger
+  truth.
+
+### Aggregation
+
+- [x] **Generic Fact aggregation, not a private source.** `GroupBy::Total` and
+  `GroupBy::Classification`; `Predicate::ClassifiedIn` and `Predicate::AtBefore`;
+  exact text sums with gains/losses/net/count; buckets keyed by `(group, unit)`
+  so litres never join kilograms; a named `(unclassified)` bucket; `concept_in`
+  on the Fact source reading what a Record *counts as*. No `f64` in either
+  aggregate path.
 - [x] **Windows are arbitrary half-open instants, not trailing durations.**
-  Every existing helper — `facts::sum_window`, `sum_pos_window`, `sum_neg_window`
-  — takes `window_secs` back from `now`, which cannot express "10:23 on 1 Jan
-  2020 until 00:00 on 2 Mar 2025". Add `[from, to)` variants taking two explicit
-  instants. Half-open on purpose: adjacent periods must tile without a Fact
-  landing in both. Positive and negative sums come back separately alongside the
-  net, so inflow and outflow are visible without a second pass.
-- [x] **Normalize `fact.at` to UTC `Z` on write, or range scans are silently
-  wrong.** `at` is TEXT compared lexically, which only orders correctly when
-  every timestamp shares one offset format. A Fact written with a `-03:00` offset
-  sorts into the wrong place and drops out of windows it belongs to. Store
-  normalized UTC and render local at the boundary. Audit existing rows as part of
-  this slice; a wrong answer here looks exactly like a correct one.
-- [x] **Levels come from the chain anchored on the last checkpoint, never from
-  the quantity cache.** "At the end of last month I had 10, now I have 20" is a
-  distinct query from a sum: level at instant `t` is the checkpoint at or before
-  `t` plus every delta after it up to `t`. It cannot fold from zero, because
-  retention genuinely deletes archived Facts — `archivable_before` and
-  `delete_by_uids` compact them into a checkpoint level — so a naive full-chain
-  sum silently under-reports on any compacted Record. `record.quantity` is the
-  cache for *now* only and is never the answer for a past instant.
-- [x] A level *series* is one ordered scan over the window producing a running
-  balance, so the past line of the graph is a single query rather than one call
-  per point. It is computed in occurred-at order, which is what makes a backdated
-  Fact correctly reshape history behind it.
-- [x] Anything whose concept does not descend from the configured root appears in
-  an explicit unclassified bucket, never silently dropped — the same rule E0.4
-  commits to for projection exclusions.
+  Existing helpers took `window_secs` back from now, which cannot express "10:23
+  on 1 Jan 2020 until 00:00 on 2 Mar 2025". Half-open so adjacent periods tile
+  without a Fact landing in both. Positive and negative sums come back
+  separately alongside the net.
+- [x] **Normalize `fact.at` to UTC `Z` on write.** `at` is TEXT compared
+  lexically; a `+00:00` cutoff against a `Z` row compares wrong in a way that
+  looks exactly like a correct answer. Everything goes through `facts::instant`.
+- [x] **`fact.at` is occurred-at, not recorded-at**, so backdating is ordinary
+  and nothing may assume `at` is monotonic with chain order.
+- [x] **Totals read a *set* of Records** selected by concept — flour lives in
+  the pantry, the shelf and the freezer at once.
+- [x] **Unit mixing is separated, not refused.** `movement_totals` rejects a
+  Record set spanning two units, which is right as an invariant and wrong as an
+  answer — "some of it is in kilos and some in bags" is a real situation. Protein
+  groups
+  resolved Records by unit *before* totalling, so each call sums one unit by
+  construction. **"No unit" is one of the separated units**, reported as
+  `unit_uid: null`, not a wildcard merged into whatever else is present.
+- [x] **An unscoped or windowless query is refused**, as is a reversed window
+  and a window bound that fails to parse. Totalling every Record would add hours
+  to kilograms to litres; a total with no window is not an answer; falling
+  through to "no filter" would answer a different window and look correct doing
+  it.
+- [x] **The unclassified bucket is always emitted, even at zero.** One that
+  disappears when empty is indistinguishable from one never computed, and
+  "everything is categorised" is the claim a person needs before trusting a
+  total.
+- [x] **Exact values cross the wire as canonical text, not JSON numbers.** A
+  `-1020.25` becoming an IEEE double at the boundary would undo exactness at the
+  one place it is hardest to notice.
+- [x] **Remote subjects see nothing.** Whole-row visibility grants cannot express
+  "you may see the sum but not its parts", and a partial total is worse than no
+  answer because it looks complete. Revisit when fine-grained grants exist.
+- [ ] **Aggregation is a query over classified Facts, never over the quantities
+  of cost Records.** `Rent = 1000` is a standing parameter a rule reads; the
+  monthly `-1000` classified `@rent → @cost` is what a total sums. Stating this
+  precisely is what stops the aggregate and a computed `Total cost` Record from
+  becoming two overlapping numbers on one screen.
 
-**E0 store layer landed 2026-07-25** in `crates/store/src/economy.rs`:
-`classify_fact` / `fact_concept` / `classification_history` for the assertion
-log and its projection; `movement_totals` and `movement_totals_by_concept` over
-a `MovementWindow { record_uids, from, to, concept_uid }`; and `level_at` /
-`level_series` for the balance questions. Notes on what the implementation
-decided:
+### Capture, correction, void
 
-- **Totals read a *set* of Records**, because money lives in checking, cash and
-  savings at once and a total that can only read one Record cannot answer "how
-  much money do I have". Mixing units is refused rather than summed.
-- **Gains, losses and net come back together** from one scan, so inflow and
-  outflow are visible without a second pass — and because direction is the
-  delta's sign, a refund classified `@cost` correctly *reduces* the cost total.
-- **The concept filter expands down the DAG once**, before the query, so asking
-  for `@cost` reaches every `@food` without the SQL knowing about hierarchy.
-- **`fact.at` normalisation turned out to be a precision trap, not just a
-  format one.** The obvious fix — store a fixed-width UTC millisecond string —
-  would have silently broken `verify_chain_step`, because the hash preimage is
-  rebuilt from the parsed `DateTime` and truncating the stored instant changes
-  what a re-read Fact reconstructs. It is stored at nanosecond precision with a
-  `Z` suffix: fixed width *and* lossless. Every comparison against `at` goes
-  through the same `facts::instant` helper, since a `+00:00` cutoff against a
-  `Z` row compares wrong in a way that looks exactly like a correct answer.
-- **Still open in E0:** the classification log is append-only with an actor and
-  timestamp but is *not* hash-chained or signed, unlike `fact`. That is
-  deliberate — a classification is an assertion *about* the Ledger, not Ledger
-  truth — but if classification ever becomes evidence rather than convenience,
-  it needs the chain. The Economy event/draft sidecars and the schema-owned
-  apply transaction are also not built.
-
-**Capture landed 2026-07-25** as two Actions, which is the product surface E2
-asks for:
-
-- `CaptureMovement { target, amount, concept, note, at }` — "ice cream,
-  `@cost`, -10" in one step. Deliberately **one** action rather than two: a form
-  that first made you choose which total to affect would have reintroduced
-  exactly the bookkeeping this design removes. The amount is exact decimal
-  *text* parsed straight into a decimal, so `-10.50` never becomes a float on
-  its way to a signed Fact — this is the first write path in the system that is
-  exact from the keystroke, and the shape E0.3 should follow when it makes the
-  rest of the Action wire exact. `at` accepts a backdated instant, because
-  `fact.at` is occurred-at.
-- `ClassifyFact { fact, concept, note }` — re-assert what an already-recorded
-  movement was. It never touches the Fact: the money did not move, only our
-  account of what it meant.
-
-Both resolve the concept through the existing DAG resolver, so `@food` classifies
-a movement that a later query for `@cost` will find, with no list to maintain.
-- [x] Add schema-owned sidecars for an Economy event and draft. Applying a
-  draft in one Store transaction creates/revises the event Record, appends the
-  signed Fact to the selected resource Record, links provenance/classification/
-  source, and stores the idempotent Action result. It does not create accounts,
-  categories, postings, or another balance truth. **The event landed
-  2026-07-25** in `0037_economy_events.sql`; the *draft* did not, and is folded
-  into E1 where recurring plans actually need one.
-- [x] Implement create/read/revise/apply/void Actions with `request_id` and
-  `expected_revision`. Revising an applied event compensates its old Fact and
-  appends the replacement; voiding compensates it. A human form, CLI, Fiote, or
-  other software agent uses the same `EconomyEventDraft` contract.
-
-**Movements became editable 2026-07-25.** A captured movement was a signed Fact
-plus a classification assertion, and neither can change — so "I typed 15 instead
-of 150" had nowhere to go. `economy_event` is that place, with
-`capture-movement` (now returning its event uid), `revise-movement`, and
-`void-movement`. What the implementation settled:
-
-- **The event does not store the concept, and that was the load-bearing
-  decision.** `fact_concept` already owns a movement's classification. A second
-  copy on the event would disagree the instant a Fact was re-tagged — the same
-  "two overlapping numbers" failure this design removes at the totals level,
-  one layer down. Readers join through `fact_uid`. This also means `revise`
-  handles amount, instant, and note only: changing *what a movement was* is
-  `classify-fact`, because the money did not move.
-- **The replay guard runs before any Ledger work, and it must.** `append`
-  commits its own transaction, so a replay caught at insert time would already
-  have appended a duplicate compensating Fact — money handed back twice, with
-  an error afterwards that cannot put it back. Each of the three Actions checks
-  `economy_events::replayed` as its first statement and returns the empty
-  outcome. The `request_id` UNIQUE index is the backstop, not the mechanism.
-- **Corrections carry their classification onto both new Facts.** Without that,
-  fixing an amount would silently drop the movement out of its category and
-  leave the category showing the original wrong number. Voiding does the same,
-  so undoing a food expense removes it from food rather than leaving food
-  overstated beside an unclassified credit.
-- **A note-only edit appends nothing** but still bumps the revision and writes
-  an audit row, and the event keeps pointing at the Fact carrying its amount.
-  Blanking `fact_uid` there would orphan the event from its own Ledger entry.
-  "Did the money move" is compared *numerically* — `DecimalValue` equality
-  includes the scale, so re-typing `-15` as `-15.00` would otherwise append a
-  compensating pair that nets to zero.
-- **Voiding leaves `fact_uid` pointing at the compensated Fact**, because that
-  is still the movement the event describes. The compensation is a separate
-  Ledger entry, not a replacement for it.
-- **Generic `compensate` is refused on a Fact owned by an event**, the same
-  guard Transfer settlements already use. Otherwise the money would come back
-  while the event still read `applied`, and the Ledger and the thing describing
-  it would disagree with no way to tell which is right.
-- **Backdating a correction does not rewrite history.** The compensation lands
-  at the *original* instant and the replacement at the new one, so the old
+- [x] **`CaptureEntry { target, amount, concept, note, at }`** — one Action, not
+  two. A form that first made you choose which total to affect reintroduces the
+  bookkeeping this design removes. The amount is exact decimal *text* parsed
+  straight into a decimal, so `-10.50` never becomes a float on the way to a
+  signed Fact. `at` accepts a backdated instant.
+- [x] **`ClassifyFact { fact, concept, note }`** re-asserts what a recorded
+  movement was. It never touches the Fact: nothing moved, only our account of what it meant. Concepts resolve through the DAG, so `@food`
+  classifies a movement a later `@cost` query finds.
+- [x] **`ClassifyRecord` / `UnclassifyRecord`** for a Record's additional
+  concepts. `UnclassifyRecord` refuses to remove the **identity** concept —
+  Transfer matching and sync resolve through it, so removing it would look like
+  a tag edit and behave like a deletion. Both append a zero-delta annotation
+  Fact, which is also what makes live subscriptions refresh.
+- [x] **`entry` is where a typo goes.** A captured movement was a signed Fact
+  plus a classification assertion, neither of which can change, so "I typed 15
+  instead of 150" had nowhere to live. `capture-entry` returns its entry uid;
+  `revise-entry` and `void-entry` edit it.
+- [x] **The entry does not store the concept.** `fact_concept` owns it; a second
+  copy would disagree the instant a Fact was re-tagged. Readers join through
+  `fact_uid`. So `revise` handles amount, instant and note only — changing *what
+  a movement was* is `classify-fact`.
+- [x] **The replay guard runs before any Ledger work.** `append` commits its own
+  transaction, so a replay caught at insert time would already have appended a
+  duplicate compensating Fact — the amount handed back twice, with an error
+  afterwards that cannot put it back. All three Actions check
+  `entries::replayed` as their first statement. The `request_id` UNIQUE index is
+  the backstop, not the mechanism.
+- [x] **Corrections carry their classification onto both new Facts.** Otherwise
+  fixing an amount silently drops the movement out of its category and leaves
+  the category showing the original wrong number. Voiding does the same.
+- [x] **A note-only edit appends nothing** but bumps the revision and writes an
+  audit row, and the entry keeps pointing at the Fact carrying its amount.
+  "Did the amount move" is compared *numerically* — `DecimalValue` equality
+  includes scale, so re-typing `-15` as `-15.00` would otherwise append a
+  compensating pair netting to zero.
+- [x] **Voiding leaves `fact_uid` pointing at the compensated Fact**, because
+  that is still the movement the entry describes. The compensation is a separate
+  Ledger entry, not a replacement.
+- [x] **Voiding retracts from the period that claimed it; a refund is a new
+  capture today.** Voiding means the change never happened, so it nets the
+  original period to zero. A purchase that really happened and was later
+  refunded is a different thing. Conflating them would either rewrite a closed
+  month or leave a phantom in it.
+- [x] **Backdating a correction does not rewrite history.** The compensation
+  lands at the *original* instant and the replacement at the new one, so the old
   month keeps both halves and nets to zero while the new month carries the
   movement. A month total that changed retroactively with no trace would be
   indistinguishable from a bug.
+- [x] **Generic `compensate` is refused on a Fact owned by an entry**, the same
+  guard Transfer settlements use. Otherwise the amount comes back while the entry
+  still reads `applied`.
+- [ ] **Crash atomicity is not met, and this is known.** The engine appends Facts
+  and *then* records the sidecar, following the Transfer-settlement precedent,
+  because only the engine can seal and sign a Fact. A failure between the two
+  leaves a real Fact with no entry — readable as an unmanaged movement, but not
+  atomic. Closing it needs `append` to accept a caller's transaction, which is a
+  change to the write path.
 
-**Honest limitation on "crash rollback":** the engine appends Facts and *then*
-records the sidecar, following the existing Transfer-settlement precedent,
-because only the engine can seal and sign a Fact. A failure between those two
-steps leaves a real Fact with no event — recoverable by reading it as an
-unmanaged movement, but not atomic. Closing that needs `append` to accept a
-caller's transaction, which is a change to the write path rather than to
-Economy, so E0's exit is met for edit/void/stale/replay and **not** for crash
-atomicity.
-- [~] Add the narrow `source:"economy"` Protein union for events, drafts, and
-  overview/profile queries. All sums are exact, unit-separated, visibility-
-  gated, server-bucketed, and drillable to the contributing events/Facts.
-  **The overview half landed 2026-07-25**; events and drafts wait on the
-  sidecars above, which do not exist yet.
+### Recurring entries
 
-**Economy became reachable 2026-07-25.** Everything E0 built in `store` was
-unreachable from outside that crate — the totals worked and nothing could ask
-for them. Two gaps closed:
-
-- **`ClassifyRecord` / `UnclassifyRecord` Actions**, so a Record's *additional*
-  concepts can be said at all. `add_record_concept` had existed since the
-  migration with no caller. `UnclassifyRecord` refuses to remove the Record's
-  **identity** concept: that is what the thing *is*, and Transfer matching and
-  sync resolve through it, so removing it would look like a tag edit and behave
-  like a deletion. Both append a zero-delta annotation Fact, the same
-  Ledger-visible provenance every other metadata edit uses, which is also what
-  makes live subscriptions refresh.
-- **`Source::Economy`**, a Protein union whose rows are *answers*, not records:
-  `economy_context`, then `totals`, `concept_total`, and `unclassified_total`
-  per unit. There is no total object anywhere in the Ledger and that is the
-  point — it is recomputed from the Facts on every read, so it cannot drift
-  from the movements it summarises the way a maintained sum does.
-
-What the implementation settled beyond the plan text:
-
-- **Two concept axes needed two predicates.** `resource_concept_in` selects the
-  Records whose levels moved; `concept_in` filters what the movements were.
-  "What did I spend on food" is `@money` resources and `@food` movements, and a
-  single concept filter would have quietly answered a different question. The
-  context row echoes both, satisfying "the sand must say which it used" as an
-  output requirement rather than an input convention.
-- **Unit mixing is separated, not refused.** `store::economy::movement_totals`
-  rejects a Record set spanning two units, which is right as an invariant but
-  wrong as an answer — "my money is in USD and EUR" is a real situation. The
-  Protein layer groups the resolved Records by unit *before* totalling, so each
-  call sums one unit by construction and the caller gets two totals instead of
-  an error. This is what the plan's "sums stay unit-separated" actually asks
-  for. **"No unit" is itself one of the separated units**, not a wildcard that
-  merges into whatever else is present — a unitless Record totals on its own
-  and reports `unit_uid: null`. Merging it into a neighbouring unit would be
-  asserting a dimension nobody declared.
-- **An unscoped or windowless query is refused.** Totalling every Record in the
-  Cell would add hours to kilograms to money; a total with no window is not an
-  answer. A reversed window is refused too, since it would otherwise return a
-  confident, empty, wrong result. A window bound that fails to parse is an
-  error rather than an absent bound — falling through to "no filter" would
-  answer a different window and look perfectly correct doing it.
-- **The unclassified bucket is always emitted, even at zero.** One that
-  disappears when empty is indistinguishable from one that was never computed,
-  and "everything is categorised" is precisely the claim a person needs to be
-  able to trust before acting on a total.
-- **Remote subjects see nothing.** Same gate as Karma, for a specific reason:
-  whole-row visibility grants cannot express "you may see the sum but not its
-  parts", and a partial total is worse than no answer because it looks like a
-  complete one. Revisit when fine-grained Economy grants exist.
-- **Exact values cross the wire as canonical text**, not JSON numbers. A
-  `-1020.25` that becomes an IEEE double at the boundary would undo E0.0 at the
-  last step, which is the one place it would be hardest to notice.
-
-**E0 exit:** gain/loss by sign, a refund reducing its own category, re-tagging
-with its audit trail, edit, void, stale/replayed Action, crash rollback,
-visibility, unit mismatch, month boundary, unclassified bucket, and
-descendant-concept aggregation tests pass. An arbitrary instant-to-instant
-window returns the same total as the sum of its tiled sub-windows; a level query
-against a compacted Record with archived Facts matches the same Record before
-compaction; and a backdated Fact reshapes the level series behind it. "What did I spend in March" is
-answered with no sum Record in existence. The resource Record's ordinary Fact
-chain remains the only actual quantity truth.
-
-##### E1 — recurring declarations, derived occurrences, and projection
-
-**Landed 2026-07-26 as a domain-neutral primitive, deliberately scoped down.**
-Nothing is named for Economy: the tables are `recurrence` / `recurrence_revision`
-/ `recurrence_skip`, not `eplan`/`eocc`, and a recurring stock count or backup
-review uses them unchanged.
-
-**Occurrences are derived, never materialized.** Due dates are a pure function of
-cadence and anchor (`nucleus::karma::Cadence`), so storing them would create a
-second copy of a derivable fact plus a cursor to keep in sync with it. Only the
-two things that *cannot* be derived are recorded, and only one of them needed a
-table:
-
-- **applied** — an entry whose `request_id` is `<recurrence_uid>:<due_at>`.
+- [x] **Occurrences are derived, never materialized (E1).** Due dates are a pure
+  function of cadence and anchor, so storing them creates a second copy of a
+  derivable fact plus a cursor to keep in sync. Tables are `recurrence` /
+  `recurrence_revision` / `recurrence_skip`.
+- [x] **Only two things cannot be derived, and only one needed a table.**
+  *Applied* is an entry whose `request_id` is `<recurrence_uid>:<due_at>` —
   `entry_revision.request_id` was already UNIQUE, so applying a date twice is
-  impossible with **no new state at all**, and a retry returns the first entry
-  rather than moving the quantity again. This id convention is what collapsed
-  most of the original E1 into nothing.
-- **skipped** — a `recurrence_skip` row, because "declined" and "nobody has
-  looked yet" must not read the same.
-
-Applying routes through the ordinary `capture-entry` path, so a rule-applied
-change is indistinguishable from a hand-typed one in the Ledger afterwards —
-nothing downstream needs to know a rule was involved to read a balance, and the
-result is revisable and voidable like any other entry.
-
-Settled beyond the original plan:
-
-- A date the rule does not produce is **refused**, so "apply" cannot degenerate
-  into a capture wearing a rule's name.
-- Revising a rule keeps its anchor by default; silently re-anchoring to now
-  would shift every future date of a rule whose author only changed its amount.
-- One occurrence may be applied at a different amount (the bill that came in
-  higher) without editing the rule, and the derived occurrence then reports what
-  actually moved rather than the rule's standing figure.
-- Pausing hides the future and keeps the past: a paused rule still explains the
-  entries it already produced.
-- Signed authorship is **not** forwarded from `apply-recurrence-occurrence` into
-  the nested capture — that evidence attested applying an occurrence, not
+  impossible with no new state at all, and a retry returns the first entry
+  rather than moving the quantity again. *Skipped* needs `recurrence_skip`,
+  because "declined" and "nobody has looked yet" must not read the same.
+- [x] **Applying routes through the ordinary `capture-entry` path**, so a
+  rule-applied change is indistinguishable from a hand-typed one afterwards and
+  is revisable and voidable like any other entry.
+- [x] **A date the rule does not produce is refused**, so "apply" cannot
+  degenerate into a capture wearing a rule's name.
+- [x] **Revising a rule keeps its anchor by default.** Silently re-anchoring to
+  now would shift every future date of a rule whose author only changed the
+  amount.
+- [x] **One occurrence may be applied at a different amount** — the bill that
+  came in higher — without editing the rule. The derived occurrence then reports
+  what actually moved rather than the rule's standing figure.
+- [x] **Pausing hides the future and keeps the past.** A paused rule still
+  explains the entries it already produced.
+- [x] **Signed authorship is not forwarded** from `apply-recurrence-occurrence`
+  into the nested capture. That evidence attested applying an occurrence, not
   capturing an entry, and forwarding it would let one signature stand for an
   action shape its signer never saw.
+- [x] **Downtime catch-up needs no worker, because occurrences are derived.**
+  A date nobody answered while the app was closed is not lost state to replay —
+  it is recomputed from the cadence and reads as `due` the moment someone looks.
+  Close the app for a week and the week's dates are waiting.
+- [x] **The inbox window is finite, and now says so.** It looks 60 days back; a
+  rule ignored longer than that loses its oldest dates from the list without
+  being applied *or* skipped. Nothing is corrupted — they stay derivable — but a
+  surface that quietly stops offering them reads as an obligation that resolved
+  itself. **The sand now names its own lookback instead of inheriting Protein's
+  default**, because a list cannot describe a window it did not choose, and says
+  "dates before X are not listed" whenever something past is still unanswered.
+  - This is the third way this list can be a prefix, after a rule that repeats
+    faster than the page can hold and a page showing the first N of M. All three
+    share one line, because they are one question: *is this everything?*
+---
 
-**Superseded 2026-07-28.** This slice used to carry a paragraph arguing that
-`Cadence` and `CalendarSchedule` were two types because a read path cannot reach
-the scheduler's `TimeZoneProvider`. That was a crate-graph argument wearing a
-domain argument's clothes, and it has been retired: `Cadence` is now the only
-schedule, `CalendarSchedule` holds one plus its execution policy, and both call
-one generator. See **“One schedule, two resolutions of it”** below. The DST drift
-that paragraph accepted as an honest limit is gone with it — the generator works
-in wall-clock space, so the zone resolves the instant, or UTC does where there is
-no zone to speak of.
+## 9. Past, present and declared future
 
-**Still open (not built, and not needed by E2):** the `suggest`/`draft`/`apply`
-route split, catch-up after downtime, DST-correct local anchoring, per-occurrence
-overrides as durable objects, and `cancelled` as distinct from `skipped`.
-**The projection landed as `Source::Timeline`** — one classified quantity axis
-through time: settled past, the position now, and the declared future, in a
-single query. It exists as one source rather than three because stitching them
-on the client would require **adding exact decimals in JavaScript**, and the
-running cumulative is precisely the number that must not be computed there.
-Every value leaves as exact decimal text, including the cumulative.
+Why: the point of setting rules with frequencies is to answer "what happens to
+my savings over five years" without waiting sixty months. This is the loop from
+blocks 2–8 run on a virtual clock against a virtual Ledger.
 
-- The future is *declared*, never invented: derived recurrence dates plus
-  outstanding promises. Nothing extrapolates from the past and nothing writes a
+### The timeline query
+
+- [x] **`Source::Timeline` — one classified quantity axis through time**:
+  settled past, the position now, and the declared future in a single query. One
+  source rather than three because stitching them client-side means **adding
+  exact decimals in JavaScript**, and the running cumulative is precisely the
+  number that must not be computed there. Every value leaves as exact decimal
+  text, including the cumulative.
+- [x] **The future is declared, never invented** — derived recurrence dates plus
+  outstanding promises. Nothing extrapolates from the past; nothing writes a
   projected Fact.
-- An applied date is counted once, as history — it is excluded from the expected
-  half, or every rule-driven month would read as twice its cost.
-- The line opens at `opening` (everything the concept did before the window), so
-  a cumulative never restarts at zero and draws a position nobody was ever in.
-- Two units under one concept are two lines, never one sum.
-- Every declared point drills to the rule or promise that produced it, so a
+- [x] **An applied date is counted once, as history**, and excluded from the
+  expected half. Otherwise every rule-driven month reads as twice its cost.
+- [x] **The line opens at `opening`** (everything the concept did before the
+  window), so a cumulative never restarts at zero and draws a position nobody
+  was ever in.
+- [x] **Two units under one concept are two lines, never one sum.**
+- [x] **Every declared point drills to the rule or promise that produced it.** A
   number on a chart is never one nobody can explain.
+- [x] **Points carry their `origin`.** Promise deltas are `REAL` in schema 0001
+  and converted on the way out, so a promise-derived point is only as exact as
+  that column ever was — a reader is never left guessing which kind it holds.
 
-Promise deltas are `REAL` in schema 0001 and are converted on the way out; a
-promise-derived point is only as exact as that column ever was, and points carry
-their `origin` so a reader is never guessing which.
+### Folding programs forward (E0.4)
 
-**E1 exit — met for what was built:** monthly/weekly/daily/quarterly/yearly
-cadences, month-end clamping, leap-day fallback, phase preservation across a
-window that opens mid-period, window tiling, skip/unskip, one-occurrence
-override, pause/resume, rule revision, and replayed create/apply all verified.
-**Not met, because not built:** downtime catch-up. **DST changed shape rather
-than closing:** the 2026-07-28 merge below put both resolutions on one wall-clock
-generator, so a declaration and an execution can no longer disagree about which
-local time a rule meant. But this read path is the provider-free UTC one — there
-is no zone here for DST to apply to. A rule that must land on a local wall clock
-across a transition needs the civil, provider-backed resolution, and wiring this
-path to one is still unbuilt.
+Why separate from the timeline: the timeline folds *declared* amounts. This
+folds *computed* ones — rules whose output depends on other rules.
 
+- [ ] **Project by substituting ports, never by writing a second evaluator.**
+  `evaluate_program` is already pure over `(ProgramAst, FrozenEvaluationContext,
+  EvaluationLimits)` — no clock, no store. Only two things around it are
+  production-bound: the store-backed boundary resolver (block 2) and the intent
+  applier (block 6). Projection replaces the first with a virtual quantity map
+  and the second with a virtual fold. A rule that is wrong in projection is
+  wrong in production, which is the entire value of the property.
+- [ ] **Enumerate future occurrences from the same schedule machinery**, walking
+  the cursor forward to a horizon instead of to the present. Frozen timezone and
+  tzdb rules apply unchanged, so a projection crossing DST lands where execution
+  would have landed.
+- [ ] **Fold both binding modes in one timeline.** A **computed** Record
+  (`Monthly expenses = Rent + Utilities + Groceries`) is re-derived at every
+  projected step from that step's projected inputs, never carried forward as a
+  constant. A **materialized** Record (savings drawn down monthly) is folded
+  occurrence by occurrence. They compose: raising projected rent in month 30
+  changes projected expenses in month 30, which changes the projected draw on
+  savings from month 30 on. A projector that re-derives only at the start
+  produces a plausible curve that is wrong everywhere after the first change.
+- [ ] **Fold classified promises alongside program occurrences.** "In three
+  months I expect +300 from a sale" is a promise — `record_uid`, `delta`,
+  `window_end`, `promise.concept_uid` — so a future annotation classifies
+  through the same DAG as a past Fact. `build_snapshot` already folds these but
+  only in `Agreed`/`Active`, and a solo expectation created today starts at
+  `Proposed`. Needs a one-step path for an expectation with no counterparty —
+  not a new primitive, and not asking someone to agree with themselves.
+- [ ] **Return exact points, not floats**, carrying decimals and units end to
+  end, each labelled actual or projected and naming its cause: program revision
+  hash, occurrence identity, and the intent shape it would have staged.
+- [ ] **Exclusions are reported, never silent.** The legacy fold in
+  `nucleus::imagination` quietly skips rules needing signals or sums, so a
+  timeline can be confidently wrong. Any program that cannot be folded — an
+  unresolvable input, a non-local capability, an external effect — appears in a
+  named exclusion list attached to the result.
+- [ ] **Projection writes nothing:** no Fact, intent, candidate, cursor advance
+  or grant consumption. Branching is mutating the snapshot — change a starting
+  quantity, toggle a program, alter a rate — and folding again. Comparing two
+  timelines is the compare view. Applying anything is an ordinary reviewed
+  Action.
+- [ ] **Bound it.** Five years of a monthly Frequency is sixty evaluations; a
+  daily one over the same horizon is not, and a program graph can be large.
+  Horizon, total occurrence count and total fuel are explicit limits, and
+  exhausting one truncates with a stated reason rather than hanging.
+- [ ] **Carry the legacy capability across before it goes dark.**
+  `Engine::project` folds `registry.rules` today and powers `crossings_pass`.
+  Once rules are imported to Karma that fold's input goes empty and the existing
+  five-year projection silently stops working. `crossings_pass` moves onto this.
 
-### Sands that use this loop
+**Exit:** a Rent Record and several cost Records feed a derived monthly expenses
+rule; a Frequency-driven program draws that from savings each month; projecting
+five years returns sixty exact points whose final value matches a hand-computed
+decimal exactly. Raising rent and re-folding changes the curve. The timeline is
+identical under a DST-crossing timezone and under a virtual clock started at any
+instant. Nothing is written. Running the same program for real across the same
+window produces the same numbers — because it is the same code.
+---
 
-Karma has no Economy chapter, and this section is a pointer rather than one.
+## 10. The Karma sand
 
-**Moved out 2026-07-26 to `docs/Sand: Karma.md`** — the gain/loss examples,
-the Protein and Action usage, the recurring shorthand, the sand information
-architecture, the graph, and the surface's proof gates.
+Why: this is the point of everything above — a person opens a browser and does
+full CRUD over the rules that change their Records, enters individual changes by
+hand, and sees the graph of their Records through past, present and declared
+future. It is the **integration proof** that the loop works, not a new layer.
 
-Economy is a sand. It owns no primitive, and the backend has never heard of
-money: a gain is a positive delta, a cost is a negative one, a category is a
-concept, a recurring cost is a `Cadence` plus an amount, and a budget is a
-query. Verified at extraction — no `Economy*` symbol exists in any backend
-crate.
+**There is no Economy sand and there will not be one.** Economy is what this
+surface looks like when the rules in it are about a balance, exactly as a pantry
+is what it looks like when they are about flour — a preset of Records and
+concepts shipped as data in someone's own Cell. Viewing past/present/future,
+CRUDing rules, and entering individual changes is what the Karma sand does for
+*any* domain. The surface was renamed twice for the same mistake (Finance →
+Economy → Karma): naming it after the first thing people did with it.
 
-What Karma keeps is the general machinery Economy happens to be the first
-consumer of: exact `DecimalValue` deltas, classified Facts, concept DAG
-descent, and the cadence primitive below.
+**A sand is a bundle of HTML and JavaScript that reads through Protein and
+writes through Actions.** Never a layer, never a phase, never something the
+backend has heard of.
 
-#### One schedule, two resolutions of it
+- [x] **Enforced, not asserted.** `crates/web/tests/sand_boundary.rs` fails if
+  `economy`, `money`, `currency` or `finance` appears as a module, type, table,
+  column or literal in `nucleus`, `store`, `engine`, `protein`, `transport` or
+  `lince`. Comments explaining *why* a domain name was rejected are exempt. The
+  list is more than one word because the pressure that produced `store::economy`
+  is the pressure that produced a `Money` type beside an identical `Quantity`.
+- [x] **Every test in nucleus, store, engine, protein and lince-web passes**
+  (500, 2026-07-31). The senses and transfer failures carried as "pre-existing"
+  for weeks were three test setups missing a Person and one assertion comparing
+  a normalised permission list as an ordered vector. Neither was a product
+  defect, and both were cheap once looked at rather than routed around.
+- [x] **Shipped 2026-07-26**, renamed `sand.karma` on 2026-07-28. One-line
+  capture, correction/void/re-tag, recurring rules with a compound cadence and
+  an apply/skip inbox, and a concept timeline spanning settled past, current
+  position and declared future. It reads `Source::Entry`, `Source::Recurrence`
+  and `Source::Timeline` — there is no `source:"economy"`.
+- [ ] **Still open:** monthly dashboards, source profiles, Fiote capture review,
+  and the driven chromium selftest.
 
-There used to be two repeating-time types here, and this section used to argue
-for them. The argument was wrong, and naming why is worth more than quietly
-deleting it: every reason given was a *dependency* reason — a read path cannot
-reach the scheduler's timezone registry, so a second type dodged the import.
-That is a crate graph dictating a domain model. Conceptually there was only ever
-one idea.
+Full surface specification, gates and information architecture:
+**`docs/Sand: Karma.md`**.
 
-**`karma::Cadence` is now the only schedule.** Its shape:
+### The lenses
 
-- a `CadenceStep` summing years, months, weeks, days, hours, minutes, seconds
-  and milliseconds — a *sum*, not a choice, so `1 month + 1 day + 1 second +
-  10 ms` is one rule;
-- an optional `land_on` weekday set applied *after* the step and never folded
-  back into its phase;
-- an `invalid_day` policy of `clamp`, `skip` or `pause` for a month too short
-  for the anchor's day;
-- a `bound` of `unbounded`, `count`, or `until`.
+One sand, several lenses over the same Protein and Actions — not separate tools
+with private state.
 
-**The bound is what makes this one primitive rather than several.** "This
-happens on the 14th" is `count: 1` — the rule produces its anchor and retires.
-A promise, a dated reminder, a one-off transfer and a standing order are the
-same object with different bounds, and nothing downstream has to know which it
-is holding. A count is of occurrences *produced*, not of indices tried, so a
-month skipped for being too short does not silently spend one of the twelve
-payments the author asked for.
-
-The two resolutions:
-
-- **UTC, provider-free** (`Cadence::between`) — what a read path such as
-  `protein` uses to say which instants a declaration expects. Wall-clock and
-  instant coincide, so no timezone artifact is needed.
-- **Civil, provider-backed** (`CalendarSchedule`) — the same `Cadence` plus a
-  timezone, a pinned tzdb revision, gap/fold policy, and the missed/rephase/
-  overload questions that only exist because something will *fire*.
-
-`CalendarSchedule` now carries no time arithmetic of its own; it holds a
-`Cadence` and the execution policy around it. Both paths call one generator
-(`Cadence::civil_at`), which is the point: a rule cannot mean one thing on the
-screen and another in the runtime. Because the generator works in wall-clock
-space, the old "a day is exactly 86,400,000 ms so a declaration drifts across
-DST" limitation is gone — the zone resolves it, or UTC does where there is no
-zone to speak of.
-
-What was traded away, honestly: `weekly(2, [mon, wed], …)` — several weekdays
-inside one multi-week cycle — is no longer one rule, because landing rolls an
-occurrence *forward* to an allowed weekday and so yields one instant per step.
-`every 1 day landing on [mon, wed, fri]` covers the common case exactly;
-"Monday and Wednesday, every fortnight" is two rules with two anchors. With full
-CRUD over rules that is ordinary rather than exotic.
-
-A derivation returns `Derived { dates, truncated }` — a rule stepping in
-milliseconds always yields a prefix, and saying so is part of the contract
-rather than a surface's problem.
-
-**Consequence is not part of the schedule.** A schedule saying rent is due does
-nothing; a rule that pays rent spends authority. That distinction lives as a
-property of whatever *binds* a schedule to an action — declare only, propose for
-review, or apply under a named grant (E1's suggest/draft/apply) — and never as a
-second kind of schedule. Erasing it would either make declarations fire or drag
-the grant machinery behind every declaration.
-
-**There is correspondingly no second place to say when a rule stops.** The
-`recurrence` table has no `ends_at` column beside its `cadence_json`; the bound
-inside the cadence is the only answer. Two columns for one fact is two things to
-keep in sync.
-
-### Low-level crate and module shape
-
-Use one destination subsystem rather than continuing to expand the current
-`karma.rs`, `signals.rs`, `senses.rs`, `effects.rs`, and `imagination.rs` into
-parallel engines. During migration they may call the new modules as adapters;
-after their behavior is covered, delete the duplicate paths.
-
-| Crate | Intended modules and ownership |
+| Lens | Job |
 | --- | --- |
-| `nucleus` | `karma/{ids,value,ast,dsl,schedule,trace,policy,proof,model,workflow,simulation}.rs`: pure types, parsing, math, graph evaluation contracts, no I/O. |
-| `store` | `karma/{programs,schedules,occurrences,runs,models,candidates,grants,trust_scopes,workflows,intents}.rs`: typed repositories and transaction helpers; each table is owned by a Rust row/input type. |
-| `engine` | `karma/{supervisor,sequencer,scheduler,evaluator,learning,policy,proof,workflow,effect_worker,simulation}.rs`: orchestration and the only bridge between pure kernel, Store, and runtime ports. |
-| `protein` | `karma.rs`: union source projection, predicates/includes, visibility/taint-before-aggregate, capability/blocking projection. |
-| `transport` | Reuse the multiplexed protocol; add only typed Karma request/response/error payloads, never a second socket or private sand API. |
-| `lince` | Start one Karma supervisor per writable Cell and own graceful shutdown; it contains no scheduling or rule semantics. |
-| `web` | `sand/karma/{mod,body,style,script}.rs` plus `app/{bridge,state,library,builder,why,learn,imagine,authority,queue,health}.js`; host state stores layout only. |
+| **Library** | Programs/templates, active/paused/faulted state, owner, purpose, next occurrence, latest result |
+| **Builder** | Form/graph/DSL synchronized editor, typed ports, parameters, Proof, revision diff |
+| **Why** | Causal run trace, substituted values, evidence, model output, policy/grant, intent/receipt, resulting Facts |
+| **Learn** | Pattern hypotheses, admitted/rejected evidence, probability/confidence/cadence, drift, thresholds, feedback |
+| **Imagine** | Replay/project/branch/DST, invariants, future timeline, plan comparison, apply-as-Actions preview |
+| **Authority** | Grants plus Trust scopes: concept/stage, People/Organs/proximity selectors, thresholds, budgets, expiry, capability matrix, revoke/narrow |
+| **Queue** | Occurrences, runs, workflows, candidates, decisions, staged/retrying/uncertain/dead intents |
+| **Health** | Sequencer/connector/device/model lag, failures, replay audits, engine mode and emergency controls |
 
-There is no equivalent table for any sand, and the one that used to sit here has
-been deleted rather than moved. It assigned `economy/` modules to `nucleus`,
-`store`, `engine` and `protein` — which is exactly the arrangement the standing
-rule forbids. The Karma sand lives in `crates/web/src/sand/karma/` and nowhere
-else; what it needs from the backend it gets as a general primitive with a
-general name, or it does not get it.
+- [ ] **The Builder starts with ordinary-language templates and forms, not a
+  blank programming screen.** "Recurring task" asks *what, when,
+  missed-occurrence policy, route*. "Inventory threshold" asks *record/concept,
+  unit, threshold/hysteresis, forecast horizon, and suggest/draft/ask/act*.
+  Switching to graph or DSL shows exactly what the form generated.
+- [ ] **Do not put durable policy, schedule math, model updates, authority or
+  effect retry logic in JavaScript.**
+- [ ] **A command palette as operational sugar that never bypasses Actions:**
+  `i new`, `i edit @x`, `i on/off @x`, `i run @x`, `i sim @x +30d`,
+  `i why run:r_…`, `i tune @reminder interval=3d`, `i grant @x` (never "grant
+  all" silently), `i trust @x`, `i revoke grant:@y` (preview affected queued
+  work first), `i queue` / `i learn` / `i health`, `i stop effects`. Every
+  compact command expands to a readable confirmation and diff when it changes
+  authority, social state, external state, an active revision, or more than its
+  declared low-risk local scope.
 
-The engine supervisor owns an injected `RuntimePorts` bundle: wall/virtual
-clock, sleeper/wakeup, deterministic entropy, process, HTTP, filesystem,
-device/UI controllers, and secret resolution. Pure nodes never receive that
-bundle. Production and simulation differ by port implementation, not by
-business logic.
+### The Flow Plane
 
-The supervisor owns a small fixed set of long-lived tasks, not tasks proportional
-to Program/Frequency count:
+Built after the rule-CRUD surface is proven. It is the sand's map view, not a
+second sand: **one control room, not a programming language exam.**
 
-| Task | Responsibility |
-| --- | --- |
-| Deadline director | Own the durable registration mirror, tickless wheel, dynamic sparse/dense lane plan, and one-shot timer set; submit only due occurrence batches |
-| Occurrence sequencer | Persist/deduplicate/order occurrences, freeze epoch, commit run order and reaction closure |
-| Pure evaluator pool | Prefetch immutable context and evaluate graphs in parallel where safe; return deterministic results to sequencer |
-| Learning worker | Consume completed eligible cursors behind reaction priority; commit checkpoints in cursor order |
-| Effect worker pool | Lease intents by adapter/capability, recheck policy, dispatch, store attempts/receipts |
-| Connector supervisor | Own active Signal adapter lifecycles and push captured observations into the occurrence path |
-| Maintenance worker | Coarse repair/checkpoint/retention/replay audit; scheduled through the same deadline director |
+- [ ] **A two-dimensional zoomable map of everything a Cell can observe and
+  everything Karma could cause.** Overview all programs, filter/group by type,
+  owner, scope, state or tag, and zoom from the whole dependency graph into one
+  node's configuration, evidence lineage, model, authority, run history,
+  workflow instances and effect health.
+- [ ] **Enumerate every declared and currently reachable source port** —
+  Records/Facts, saved and inline Protein, parameters, Frequencies, manual
+  occurrences, sync arrivals, decisions, workflow wakes, model/forecast outputs,
+  Signals, APIs, files, processes, devices, microcontrollers. **A source that is
+  configured but unavailable stays visible** with freshness, visibility,
+  capability, connector health and last-evidence state. Absence must not make a
+  dependency disappear from the operator's mental model.
+- [ ] **Enumerate every possible outcome path before it happens** — derived
+  values, emitted Facts, recommendations, drafts, decisions, workflow
+  transitions, meta-control, typed effect/Transfer Actions. **Inactive, denied,
+  staged, budget-exhausted, missing-secret, untrusted-Organ or otherwise blocked
+  paths stay drawn and name the exact gate.** This is how a person audits "all
+  possible effects" without granting them or waiting for a live run.
+- [ ] **Default layout: time left to right, stable causal/resource lanes top to
+  bottom.** A source observation, schedule boundary or state transition is a
+  point; a freshness window, threshold band, hysteresis band, allowed range,
+  schedule tolerance, wait or Trust validity is a range. Crossing, entering or
+  leaving a range visibly routes a token to the next typed node. **Layout is
+  presentation metadata and never changes graph semantics or a revision hash.**
+- [ ] **Five composable views.** *Definition:* the complete static graph
+  including dormant branches. *Live:* latest values, occurrence order, evaluated
+  edges, queue state, receipts. *Why:* walk either direction through exact
+  evidence and authority provenance. *Imagine:* the production kernel on a
+  frozen or branched world, visually separating projected changes from Facts.
+  *Authority:* taint, recipient, grant, Trust scope, budget, expiry, and the
+  first gate that would require escalation. **No overlay computes policy or
+  schedule truth in JavaScript.**
+- [ ] **Editing produces a typed graph-revision draft**, runs validation and
+  Proof, then invokes the ordinary revise Action with an expected revision and
+  idempotency key. Dragging nodes writes only personal layout state. A
+  breakpoint, run-once, simulation, activation, pause, candidate response, grant
+  change, retry or compensation likewise invokes its typed Action — **the canvas
+  never writes Store rows or dispatches an effect directly.**
+- [ ] **Dry-run one node or a whole program** against current or simulated
+  input: animate the evaluated path, show each substituted value, gate and
+  carry, preview writes and external effects, compare active against candidate
+  output, and allow breakpoints before an effect.
+- [ ] **Surface loop/conflict/authority Proof on edit and save.** Compare
+  revisions, publish or roll back by selecting the active revision, pause
+  immediately, inspect queued/running/dead effects, retry safely, compensate
+  reversible Actions.
+- [ ] **Make data scope and authority visible on the graph** — taint paths,
+  hidden/missing inputs, declassifications, grant boundaries, remaining budgets,
+  recipients, values, expiry, and the exact node that first requires escalation.
+  **Activation never bundles an unread permission dialog into a generic
+  "enable".**
+- [ ] **Give learning its own inspectable surface:** hypotheses,
+  eligible/rejected evidence, probability vs confidence, cadence,
+  thresholds/hysteresis, checkpoints, validation/calibration, drift,
+  recommendation feedback, and a "forget/rebuild from allowed evidence"
+  operation.
+- [ ] **Give operations a queue/run surface:** occurrence lag, sequencer status,
+  paused/faulted programs, nonterminal workflows, staged/leased/retrying/
+  uncertain/dead intents, connector and device health, budgets, replay capsule
+  export. **Never require filesystem log access for normal recovery.**
+- [ ] **Make every "why" navigable in both directions:** changed Fact →
+  occurrence → run → node/evidence/model → candidate → grant/policy →
+  intent/receipt → resulting Fact, and a result back to every program that
+  consumed it.
+- [ ] **Global and scoped controls** for normal / stage-effects / observe-only /
+  emergency-stop, pause/resume, cancel, retry, compensate, mute, revoke.
+  Controls show what happens to already queued, leased, dispatched and waiting
+  work **before** confirmation.
+- [ ] **Installable templates are ordinary disabled program graphs:** habit,
+  recurring task, inventory threshold, birthday reminder, recurring Transfer
+  draft/negotiation, call intent, sensor/actuator loop, optimizer, monthly
+  recap, command flow. **Installation grants no data scope, secret, budget,
+  connector, controller or authority** until the person reviews and binds them.
+- [ ] **Store canvas layout and personal display preferences as host state**
+  while program semantics, parameters, scopes, grants and revision selection
+  stay Cell data. Rearranging nodes must not create a semantic revision.
+- [ ] **Large graphs** use server-projected dependency slices, stable node/edge
+  ids, viewport virtualization, semantic zoom and incremental live overlays. The
+  client may cache geometry but retains causal data only to its Protein cursor
+  boundary.
+- [ ] **Split the sand into focused Rust `body/style/script` modules and focused
+  JS modules** for bridge, plane, layout, inspectors, each lens and
+  accessibility. Do not create one monolithic Karma HTML/script.
+- [ ] **All authoring, trace, simulation and emergency controls are keyboard and
+  screen-reader reachable.** Color and animation never carry the only
+  explanation of state, confidence, authority or failure.
 
-A deadline lane is an in-memory timer/index partition, not a Rust thread or
-Tokio task. The fixed deadline director may await many lane timer futures through
-one ready set (or one `epoll`/`timerfd` adapter); only a lane whose one-shot timer
-became ready is returned. Dense lanes may receive a dedicated runtime thread
-only when an explicit platform/resource grant and measured load justify it.
+### Control contract — anything a human can do, an agent can do
 
-Channels are bounded and carry stable uids/small commands, not giant snapshots.
-On receipt a worker reloads authoritative state or uses the frozen immutable
-epoch/context. Backpressure parks durable work; it never drops an occurrence
-because an in-memory channel is full.
+- [ ] **Every control in the sand is also a typed Action, and every durable
+  result is readable through Protein.** That is how a human, CLI, sand, script
+  or authorized agent controls **every** Karma feature without database access
+  or a private backdoor.
+- [ ] **Protein exposes capability booleans and stable blocking reasons** beside
+  each program, revision, candidate, grant, decision, workflow and intent.
+  Interfaces render those capabilities; **they do not duplicate the permission
+  calculation.**
+- [ ] **An agent reads only explicitly granted Protein scopes**, proposes the
+  same inert candidates, and invokes the same Actions as a human tool.
+  Model reasoning may be opaque; the candidate diff, Proof, policy, principal
+  and resulting effects stay exact.
+- [ ] **Editing by an agent never activates by implication.** A grant may
+  separately allow activation of proven revisions matching an exact
+  template/scope and shadow criteria; otherwise activation is a durable human
+  decision.
+- [ ] **A meta-program may tune, pause, resume or select revisions of named
+  programs only under `karma.manage`** with field/range/state limits. It cannot
+  edit its own grant, change owner, bind secrets/connectors, waive Proof,
+  broaden visibility, or suppress its audit trail.
+- [ ] **Export/import uses content-hashed revision/template packages** with
+  schema, Lingua dependencies, extension hashes, license/notices and signatures.
+  Evidence, secrets, grants, model checkpoints and live state are excluded
+  unless independently and explicitly selected.
 
-Active compiled definitions live in an immutable `Arc<CompiledEpoch>` containing
-the revision/parameter/model/grant/Trust hashes and dependency index. Activation
-or tuning commits Store state first, builds the next epoch, then publishes it
-through a `tokio::sync::watch<Arc<CompiledEpoch>>` and enqueues its effective
-occurrence. Runs clone one `Arc`, so no mutex is held across evaluation and no
-mid-run edit is observable.
+**Exit:** through the real socket, the sand renders every source and potential
+effect for the acceptance fixture; a person authors the old condition →
+consequence example as points and ranges, sees a live transition create only its
+permitted candidate, replays it in Imagine, inspects its full Why and Authority
+paths, and revises or pauses it without direct database access. Blocked and
+dormant paths stay inspectable. Keyboard/screen-reader navigation, live updates,
+stale edits, permissions, emergency controls, restart recovery and a large
+virtualized fixture all pass.
+---
 
-SQLite constraints, not process memory, guarantee correctness. Use unique keys
-for source occurrence identity, `(program_revision, occurrence, correlation)`
-run identity, schedule batch identity, Action request replay, candidate dedupe,
-and intent idempotency. Never hold a database transaction while awaiting a
-person, network, process, model, or device; commit intent first and reconcile
-the receipt in a later transaction/occurrence.
+## 11. Time, executing
 
-### Legacy condition → consequence vocabulary mapping
+Why here and not block 1: a declaration needs no permission. *Firing* needs a
+grant, a worker and a run identity, so it comes after authority. Same one
+`Cadence` from block 1 — this adds only what exists because something will fire:
+which zone the wall clock belongs to, what a DST gap or fold means, and what to
+do about a wake-up that was missed.
 
-The old names map to short, readable interface words. Three-to-eight character
-terms are preferred over one-letter codes: a saved program should still be
-understandable six months later. These words are DSL sugar over typed graph
-nodes and Actions; the wire never executes text directly.
+### Civil resolution (the zone half)
 
-| Diary concept | Canonical type / short reference | DSL/interface | Durable data effect |
-| --- | --- | --- | --- |
-| Karma | Program, `prog:@slug` | `program`, `when`, `act` | Creates a Program Record and immutable revision; activation selects one revision. |
-| Condition | Typed expression/recognizer, `node:@prog#rev/name` | `let`, `when`, `sense` | Pure by default; trace records inputs/result. A materialized value is an explicit Fact. |
-| Operator | Gate node | `== != < <= > >=`, `and/or/not`, `crosses`, `enters`, `leaves` | Changes no domain data; records transition state when stateful. |
-| Consequence | Candidate or intent | `recommend`, `draft`, `ask`, `act` | Creates an inert candidate/decision or an authorized intent; only the typed Action changes domain data. |
-| Delivery | Occurrence + Run | `on fact`, `on every`, `on signal`, `run` | Appends occurrence/run/trace and any resulting candidates, intents, receipts, or Facts. |
-| Frequency | Schedule, `freq:@slug` | `every 1d`, `at 08:00`, `after 250ms` | Stores schedule/anchor/cursor. A due boundary creates an occurrence; it does not edit a Record timestamp. |
-| Sum | Aggregate/feature node | `sum`, `count`, `avg`, `rate`, `window` | Pure unless explicitly `emit`ted; the exact input Fact set stays explainable. |
-| Command/query | Signal when reading; effect when acting | `input ... = signal`, `do command`, `do http` | Capture creates observation Facts; execution creates intent, attempts, receipt, then provenance Fact. |
-| Karma category | Program tags/scope | `tags`, `purpose`, `scope` | Metadata revision/annotation only; tags do not confer permission. |
-| Calendar/Graph/Karma Orchestra | Karma Flow Plane + Imagination + optimizer | `sim`, `project`, `solve`, graph editor | Creates simulation/analysis runs and candidates, never real-world state wholesale. |
-| Ask/Agent/Tinkerer | Route policy | `observe`, `suggest`, `draft`, `ask`, `act` | Selects trace-only, recommendation, decision, or authorized intent. |
-| Senses | Recognizer, `sense:@slug` | `sense name = ...` | Emits evidence-backed candidates; cannot write or contact by itself. |
-| Learning/growth | Model, `model:@slug` | `learn ... using ...`, `predict` | Appends model checkpoint/update evidence; cannot mutate a Program directly. |
-| Learned-rule promotion | Program revision candidate | `revise from template`, then `ask` or delegated `act` | Creates a proven/shadowed revision candidate; activation is a later occurrence. |
-| Rule changing rule/Frequency | Meta-control candidate/intent | `tune`, `revise`, `pause`, `resume` | Appends parameter/revision/activation data effective only for later occurrences. |
-| Recommendation | Candidate, `cand:r_...` | `recommend "..."` | Creates/updates one lifecycle-managed recommendation with evidence and preview. |
-| Attention/whisper | Decision/delivery | `ask`, `whisper via ...` | Decision is durable; channel attempts are receipts. Delivery never answers it. |
-| Imagination | Simulation run, `sim:r_...` | `project`, `branch`, `assert`, `sim` | Writes isolated run/trace/bookmarks only; applying uses separately reviewed Actions. |
-| Workflow | Workflow instance, `flow:@slug` | `step`, `parallel`, `wait`, `retry`, `compensate` | Persists node position/waits/intents; domain changes still use Actions. |
-| Optimization | Objective/solve run, `obj:@slug` | `solve`, `require`, `minimize`, `maximize` | Creates ranked plans and explanations; applying a plan is separate. |
-| Authority | Delegation grant, `grant:@slug` | `require grant`, `budget` | Grant/narrow/revoke are signed Actions; no program can enlarge its own grant. |
-| Automation Trust | Local counterparty scope, `trust:@slug` | `trust`, `allow/deny`, `any/all`, `ceiling` | Adds a concept/stage/person/Organ/proximity gate; never changes probability, visibility, or another Person's authority. |
+- [x] **`CalendarSchedule` = one `Cadence` + timezone + pinned tzdb revision +
+  gap/fold/timer/missed/inactive/rephase/overload policy.** It carries no time
+  arithmetic of its own. Both this and the provider-free UTC path call one
+  generator, `Cadence::civil_at`, so a rule cannot mean one thing on screen and
+  another in the runtime.
+- [x] **`TimeZoneProvider` is a pure injected boundary.** It advertises one
+  `TzdbRevision` and resolves `(timezone, CivilDateTime)` to exactly one
+  instant, a gap with its first valid instant after the gap, or a fold with two
+  increasing instants. Resolution fails closed if the provider's version/hash
+  differs from the schedule's. Host timezone, current tzdb package, locale and
+  wall clock are never implicit inputs. Production loads a content-addressed
+  provider; replay loads the revision named by its capsule.
+- [x] **The production artifact is canonical `karma.tzdb-artifact.v1` JSON** —
+  declared release version plus a sorted timezone map; each zone holds
+  contiguous half-open UTC offset segments covering the whole representable
+  timeline, first segment unbounded below, last unbounded above. Bounded to
+  64 MiB, 4,096 zones, 100,000 segments per zone. Rejects offsets beyond 24
+  hours, UTC gaps/overlaps, noncanonical bytes, and any artifact mapping one
+  local instant to more than two UTC instants. Revision digest is the
+  domain-separated hash of the canonical semantic artifact, never a filename or
+  host tzdb version string. Engine checks file size before allocation, detects
+  size change during the read, and accepts only on exact version+digest match.
+- [x] **`GapPolicy` = `skip | shift-forward | pause`; `FoldPolicy` = `first |
+  second | both | pause`.** Every `CalendarBoundary` keeps the requested local
+  time, the actual UTC `intended_at`, and its resolution kind. With `both` the
+  two fold instants are separate stable boundaries for the same civil time; with
+  `shift-forward` the trace shows the UTC instant was shifted. Skipped gaps and
+  invalid month dates are explicit generation outcomes, not missing history.
+- [x] **A deterministic search budget rejects a broken or malicious provider**
+  reporting an unbounded run of gaps.
+- [x] **Demand attestation is conservative.** Derived from exact daily/weekly
+  lower spacing or a 28-day-per-month lower bound, minus the zone's complete
+  offset spread; `fold both` also admits the shortest backward-transition width.
+  May over-reserve, never hides a faster possible occurrence.
+- [ ] **Wire the recurrence read path to a provider** so a rule that must land on
+  a local wall clock across a DST transition can. Today that path is
+  provider-free UTC, where DST does not apply.
 
-### The Karma contract
+### The elapsed lattice
 
-- [ ] Karma reads Cell state through the same record/Ledger semantics
-  that Protein exposes and changes state only through typed Actions. An
-  automatic path is never a privileged write path.
-- [x] Existing rules, signals, frequencies, match rules, and decisions are
-  records; quantity is their activation knob and their changes remain visible
-  in the Ledger.
-- [ ] Make an **Karma program** the ergonomic unit a person manages: a
-  named, versioned record whose linked graph declares triggers, Protein context,
-  computations, policy, and outcomes. Rules, senses, schedules, recommendations,
-  and workflows are program node kinds rather than separate automation silos.
-- [ ] Every program declares an owner, purpose, data scope, authority ceiling,
-  budgets, schedule/event triggers, failure policy, and enabled revision. No
-  defaults may silently widen visibility or authority.
-- [ ] Give each evaluation a durable `karma_run` identity with program
-  revision, triggering occurrence, input cursor, logical clock/seed, node
-  trace, candidates, policy decisions, intents, Actions/effects, resource cost,
-  and final status. “Why did this happen?” and “what will retry?” must be
-  ordinary reads, not logs an operator has to find on disk.
-- [ ] Derive every effect idempotency key from the program revision, triggering
-  occurrence, effect node, and correlation key. Retries may finish an intended
-  action but never repeat it; changed definitions produce a new revision and a
-  new proof boundary.
-- [ ] Separate evaluation from effects. A run first computes a stable proposal;
-  policy then permits, stages, asks, or rejects it; effect workers execute
-  durable intents with leases, retry/backoff, timeout, and dead-letter state.
-  Partial external failure never rolls back or hides committed Ledger Facts.
-- [ ] Define deterministic agenda semantics for simultaneous rules: dependency
-  order, explicit priority only where necessary, stable tie-breaking, atomic
-  Action boundaries, and a recorded explanation of conflicts. An ordinary graph
-  rejects combinational cycles; iteration is legal only inside an explicit
-  bounded/convergent node or across a state/delay boundary.
-- [ ] The effective program scope is the intersection of its declared input
-  Protein, the owner's visibility at the run cursor, purpose/declassification
-  policy, and the triggering principal's grant. Hidden data must not leak
-  through features, aggregates, model parameters, explanations, or effects.
-- [ ] Treat programs as replaceable definitions, never uneditable law. A
-  revision can be cloned, changed, proven, simulated, shadowed, activated,
-  rolled back by reselecting an earlier revision, paused, and retired. Existing
-  run evidence is not rewritten.
-- [ ] Programs may manage other programs or interface controllers only through
-  separately granted typed capabilities. They may pause or tune within a grant;
-  they may never grant themselves new data, authority, secrets, or budget.
+> **Superseded 2026-07-30 — this is not a second type.** `CadenceStep` already
+> carries milliseconds, so a zoneless millisecond schedule is a `Cadence` with a
+> millisecond step. `ElapsedSchedule` is deleted and the arithmetic below moves
+> onto `Cadence`, keeping every property it proves. The bullets stay because
+> each one is a rule the merged generator must still obey.
 
-### Canonical durable model
+- [x] **`ElapsedSchedule`** — `interval_ms >= 1`, an exact anchor, and a
+  `TimerPolicy` where resolution is at least `1ms` and coalescing never exceeds
+  maximum lateness. Boundaries come from integer division from the anchor; it
+  **never adds an interval to observed wake time**. Activation at the anchor
+  first schedules `anchor + interval`; activation before the anchor schedules
+  the anchor.
+- [x] **`ScheduleCursor`** stores the last consumed intended boundary and the
+  exact next one, verifying both lie on the schedule lattice. A cursor cannot
+  adopt a wall-clock instant or a boundary from another revision.
+- [x] **`OccurrenceRange(first, interval, count)`** is the reconstructible
+  semantic batch; `ScheduleAdvance` records due range, emitted range, skipped
+  range, late count/max lateness, next cursor, and whether to pause. Count is
+  never zero; range arithmetic is checked for timestamp/`u64` overflow.
+- [x] **`RationalRate` stores reduced integer numerator/denominator**, so `3ms`
+  is exactly `1000/3` ticks per second and `5h` exactly `1/18000`. Admission
+  never uses a rounded float or an arbitrary fast/slow threshold.
+- [x] **Rephase returns a new immutable schedule plus cursor**, never
+  reinterpreting a consumed occurrence. `preserve_anchor` takes the first
+  new-lattice boundary strictly after the change; `from_last_intended` anchors at
+  the last consumed boundary; `from_change` anchors at the change and first fires
+  one interval later; `immediate_if_overdue` keeps the already-due boundary as
+  the new anchor, otherwise behaving as preserve-anchor.
 
-Everything durable in Karma remains a Record plus schema-owned typed
-sidecar state, and every semantic transition appends a Fact. This does not mean
-forcing an execution trace or sample into a record body. It means each object
-has ordinary uid, origin, ownership, visibility, links, activation, and
-provenance behavior.
+### Missed-occurrence policy
 
-| Object | Durable meaning |
-| --- | --- |
-| **Program** | Mutable handle people organize and activate. It names the owner, purpose, active revision, tags, and default operational policy. Its quantity is the universal on/off knob. |
-| **Program revision** | Immutable, content-hashed typed graph plus declared inputs, outputs, parameters, objective, policy requirements, and failure/concurrency behavior. Slugs are resolved to uids when published. |
-| **Frequency / Frequency revision** | A reusable mutable schedule handle plus immutable cadence/timer/catch-up policy. Quantity and active revision determine eligibility; an operational cursor/deadline exists only while at least one active Program, Signal poll, or workflow consumer references it. |
-| **Trigger occurrence** | One durable reason work exists: Fact cursor, schedule boundary, signal sample, manual run, workflow wake-up, sync arrival, or retry. It carries logical time and deduplication identity. |
-| **Run** | One evaluation of one revision against one frozen visible input cursor. It owns the node trace, proposals, policy results, resource use, and terminal state. |
-| **Evidence set** | The exact Facts/observations and inclusion/exclusion reasons supporting a feature, pattern update, forecast, or recommendation. |
-| **Model specification/checkpoint** | Versioned feature schema, deterministic algorithm and parameters, training cursor, learned state, validation metrics, drift state, and implementation hash. |
-| **Candidate** | Inert proposed conclusion, plan, program revision, recommendation, decision, Action, or Transfer change. A candidate has no authority. |
-| **Delegation grant** | A principal's signed, revocable capability envelope: program/revision, Action kinds, targets, recipients, value/rate limits, time/place/context, evidence requirements, expiry, and escalation rules. |
-| **Action intent** | Authorized durable request awaiting an internal or external executor. It freezes the exact typed Action/effect, policy proof, idempotency key, deadline, and compensation metadata. |
-| **Attempt/receipt** | Each lease, dispatch, response, timeout, retry, cancellation, external identifier, captured output hash, and eventual result. A receipt is evidence, not proof that an unobservable real-world claim is true. |
-| **Workflow instance** | Durable node position, correlation key, child runs, waits, approvals, compensation stack, and cancellation state for long-running behavior. |
-
-- [ ] Give every object a stable uid under the existing identity families and
-  expose it through Protein. Karma objects that are Records retain
-  `r_...`; Facts retain `f_...`; the typed object kind—not a new incompatible
-  uid alphabet—distinguishes program/revision/run/model/candidate/grant/intent/
-  receipt/workflow state.
-- [ ] Store the complete revision and grant used by a run by hash/reference.
-  Later edits or revocation never make an old explanation describe new policy.
-- [ ] Separate definition status
-  `draft → proven → shadow → active → superseded/retired` from run status
-  `queued → evaluating → staged/waiting → executing → completed/failed/`
-  `cancelled/dead-letter`. “Faulted” may automatically pause new occurrences
-  without pretending the program's quantity was manually changed.
-- [ ] Garbage collection may compact traces and model checkpoints only behind
-  hash anchors and configured retention. Evidence needed for an active grant,
-  unsettled Transfer, open decision, reproducible run, or audit hold stays hot.
-
-### Interface types, references, and slugs
-
-There are three identifier layers:
-
-1. **UID** is canonical on the wire, in Facts, signatures, links, and stored
-   graph revisions: `r_...`, `f_...`, `p_...`, `c_...`, and so on.
-2. **Typed reference** is compact authoring syntax: `prog:@apple.restock` or
-   `model:@apple.need`. Publishing resolves it to a uid and stores both uid and
-   displayed slug. A later rename cannot change meaning.
-3. **Bare `@slug`** is allowed only when the expected port type makes the kind
-   unambiguous. Ambiguity is a compile error, never a “best match.”
-
-Recommended short kinds:
-
-| Short kind | Meaning | Example |
-| --- | --- | --- |
-| `prog` | Karma Program | `prog:@apple.restock` |
-| `rev` | Immutable Program revision | `rev:@apple.restock#4` |
-| `node` | Stable node inside a revision | `node:@apple.restock#4/shortage` |
-| `sig` | Signal/source | `sig:@kitchen.scale` |
-| `freq` | Reusable schedule | `freq:@daily` |
-| `sense` | Pure recognizer | `sense:@pantry.shortage` |
-| `view` | Saved Protein | `view:@nearby.apple.offers` |
-| `model` | Learner/model specification | `model:@apple.need` |
-| `obj` | Objective/optimizer specification | `obj:@week.balance` |
-| `flow` | Workflow/subprogram | `flow:@apple.purchase` |
-| `grant` | Delegation grant | `grant:@apple.autobuy` |
-| `trust` | Local automation Trust scope | `trust:@apple.known_sellers` |
-| `run` | Durable program run | `run:r_01...` |
-| `cand` | Candidate/recommendation | `cand:r_01...` |
-| `dec` | Decision | `dec:r_01...` |
-| `intent` | Authorized intent | `intent:r_01...` |
-| `receipt` | Effect attempt/result | `receipt:r_01...` |
-| `sim` | Simulation/DST run | `sim:r_01...` |
-
-User slugs remain `dot.case`, namespaced by kind rather than by awkward global
-uniqueness. `prog:@daily` and `freq:@daily` may coexist. Program-local node and
-parameter ids are lower `snake_case` (`next_window`, `min_confidence`) because
-they appear as stable DSL fields and diff keys. User-facing heads remain free
-text and may change without changing references.
-
-The graph's value types are intentionally small and exact:
-
-| DSL type | Wire/storage meaning | Examples |
-| --- | --- | --- |
-| `bool` | `true`/`false`; never numeric truthiness | `stock_low: bool` |
-| `i64` | Signed integer | counts, sequence, retry number |
-| `dec<S>` | Fixed-scale decimal with explicit rounding/overflow | `dec<4>` likelihood weights |
-| `prob` | Fixed-point `[0,1]` probability | `0.72p` |
-| `conf` | Fixed-point `[0,1]` evidence confidence | `0.65c` |
-| `text` | Canonical Unicode string; never code or an implicit reference | labels, messages, exact source fields |
-| `qty<U>` | Decimal quantity with Lingua unit/dimension | `2.5kg`, `3L`, `12.50 @brl` |
-| `dur` | Signed integer milliseconds | `1ms`, `250ms`, `3d` |
-| `at` | Internal signed UTC milliseconds; canonical wire is RFC3339 with `.sss` | `2026-07-21T08:00:00.125Z` |
-| `civil` | Local calendar value plus timezone/calendar revision | `08:00 America/Sao_Paulo` |
-| `win<T>` | Inclusive/exclusive typed interval | `[now, now + 7d)` |
-| `ref<K>` | UID reference constrained to kind `K` | `ref<record>`, `ref<person>` |
-| `list<T>` / `set<T>` / `map<K,V>` | Deterministically ordered collection | `set<ref<person>>` |
-| `datum<T>` | `value`, `missing`, `stale`, `denied`, or `invalid` | a stale scale reading is not `0kg` |
-| `estimate<T>` | value/range, uncertainty, support, model revision | forecast quantity/window |
-| `candidate<A>` | Inert preview of Action/plan type `A` | `candidate<transfer.draft_local>` |
-| `intent<A>` | Authorized durable execution request | `intent<record.set_quantity>` |
-
-`prob` answers “how likely”; `conf` answers “how supported”; neither converts
-implicitly to `bool`. A gate must compare both deliberately. Units never
-coerce across dimensions, a united quantity never becomes a plain decimal, and
-missing/stale/denied data must be handled before arithmetic.
-
-There is deliberately no `money` type. A currency is an ordinary Unit Record, so
-`12.50 @brl` and `2.5kg` are the same token shape and travel the same algebra;
-converting between two units is a rule that multiplies by a rate, not a kernel
-feature. See “There is one dimensioned type, not two” under E0.2.
-
-#### Millisecond time contract
-
-- [ ] Use signed integer UTC milliseconds as the first canonical schedule/run
-  precision. DSL duration literals accept `ms`, and RFC3339 timestamps preserve
-  exactly three fractional digits on the canonical wire. A monotonically
-  increasing Cell cursor and occurrence uid break ties at the same millisecond.
-- [ ] Millisecond precision is a semantic guarantee, not a promise that a
-  general-purpose operating system wakes in one millisecond. A schedule records
-  `intended_at`, `eligible_at`, `observed_at`, and lateness; a late worker runs
-  the exact missed-occurrence policy rather than changing the intended time.
-- [ ] A reusable schedule stores `anchor`, its cadence, `timezone`,
-  `required_resolution`, `max_lateness`, `coalesce_window`, `missed`, `jitter`,
-  `last_intended_at`, and `next_intended_at`. A civil cadence and a fixed
-  elapsed duration remain different types, because they answer different
-  questions: `every calendar 1d at 08:00` is not `every elapsed 24h` across DST.
-  The civil side is one `Cadence` (below); the elapsed side is a pure
-  millisecond lattice that never consults a zone at all.
-- [ ] Reserve finer-than-millisecond source timestamps as opaque source data if
-  a device provides them; they may order samples inside an adapter, but no core
-  rule depends on platform-specific nanosecond scheduling until the canonical
-  type is deliberately upgraded.
-
-The first pure schedule slice implements elapsed cadence before calendar
-resolution. Its Rust contract is `nucleus::karma::schedule`:
-
-- `ElapsedSchedule` is valid only with `interval_ms >= 1`, an exact anchor, and
-  a `TimerPolicy` where resolution is at least `1ms` and coalescing never
-  exceeds maximum lateness. It calculates boundaries by integer division from
-  the anchor; it never adds an interval to observed wake time. The anchor is
-  the cadence origin, not an implicit activation occurrence: activation at the
-  anchor first schedules `anchor + interval`, and activation before the anchor
-  schedules the anchor.
-- `ScheduleCursor` stores the last consumed intended boundary and exact next
-  boundary. Construction verifies both lie on the schedule lattice. A cursor
-  cannot silently adopt a wall-clock instant or a boundary from another
-  revision.
-- `OccurrenceRange(first, interval, count)` is the reconstructible semantic
-  batch. `ScheduleAdvance` records the full due range, emitted individual or
-  coalesced range, explicit skipped range, late count/maximum lateness, next
-  cursor, and whether the schedule must pause. A count is never zero and range
-  arithmetic is checked for timestamp/`u64` overflow.
-- Missed policy is exact. `skip` emits only the newest due boundary when that
-  boundary remains inside `max_lateness`, recording every older boundary as
+- [x] **Four policies, exactly specified.** `skip` emits only the newest due
+  boundary if it is still inside `max_lateness`, recording every older one as
   skipped; if even the newest is late, all are skipped. `coalesce` emits one
   occurrence carrying the complete range. `replay(max=N)` emits the oldest
-  `min(N,count)` ticks in order and records the remaining suffix as overflow/
-  skipped before advancing. `pause_on_lag` advances nothing when any due tick
-  exceeds maximum lateness; an operator can therefore inspect the unchanged
-  cursor before choosing recovery.
-- `RationalRate` stores reduced integer numerator/denominator. Thus `3ms` is
-  exactly `1000/3` semantic ticks per second and `5h` is exactly `1/18000`;
-  admission never uses a rounded float or an arbitrary fast/slow threshold.
-- Rephase returns a new immutable schedule plus cursor. `preserve_anchor`
-  selects the first new-lattice boundary strictly after the change;
-  `from_last_intended` anchors the new interval at the last consumed boundary;
-  `from_change` anchors at the change and first fires one interval later; and
-  `immediate_if_overdue` preserves the already-due intended boundary as the new
-  anchor/next boundary, otherwise behaving as preserve-anchor. Rephase never
-  reinterprets an already consumed occurrence.
+  `min(N,count)` ticks in order and records the remaining suffix as
+  overflow/skipped. `pause_on_lag` advances nothing when any due tick exceeds
+  max lateness, so an operator can inspect the unchanged cursor before choosing
+  recovery.
+- [x] **`intended_at` is never rewritten by lateness.** A schedule records
+  `intended_at`, `eligible_at`, `observed_at` and lateness; a late worker runs
+  the missed policy rather than moving the intended time.
+- [ ] **External, device and social effects normally forbid unbounded replay.** A
+  missed 1ms computation may be replayable; a missed motor command,
+  notification, or Transfer proposal is not repeated thousands of times without
+  an exact explicit policy.
+- [x] **No-consumer time is not scheduler failure.** A Frequency revision
+  declares `inactive_gap skip_to_next_anchor` (default) or a bounded
+  `replay_by_missed_policy`. On the zero-to-one consumer transition the same
+  transaction computes the next cursor from the anchor and that policy, so
+  reactivation cannot replay months of dormant work.
 
-Civil cadence is a separate `nucleus::karma::calendar` contract. A
-`CalendarSchedule` stores a local civil anchor, one `Cadence`, a validated IANA
-timezone id, exact tzdb version and content hash, DST gap/fold policies,
-timer/missed/inactive/rephase/overload policies, and no host-derived state. It
-carries **no time arithmetic of its own** — the step, the weekday landing, the
-short-month policy and the bound all live in the `Cadence`, which a read path
-derives from without any provider at all. Every rule retains its local clock
-time across UTC offset changes, because the generator works in wall-clock space
-and the zone resolves the instant afterwards. A month too short for the anchor's
-day follows the cadence's `invalid_day` policy — `clamp`, `skip`, or `pause` —
-and never rolls silently into the next month.
+### The tickless deadline fabric
 
-`TimeZoneProvider` is a pure injected lookup boundary. It advertises one
-`TzdbRevision` and resolves `(timezone, CivilDateTime)` to exactly one instant,
-a gap with its first valid instant after the gap, or a fold with two increasing
-instants. Resolution fails closed if the provider's version/hash differs from
-the schedule. The host timezone, current tzdb package, locale, and wall clock
-are never implicit inputs; production loads a content-addressed provider while
-replay loads the revision named by its capsule.
+Why: the naive version turns the shortest active Frequency into a global polling
+interval. A `3ms` sensor must not make the monthly report get checked 333 times
+a second.
 
-The production provider consumes canonical `karma.tzdb-artifact.v1` JSON. Its
-top level contains a declared release version and a sorted timezone map; each
-zone contains contiguous half-open UTC offset segments covering the complete
-representable timeline. The first segment has no lower bound and the final
-segment has no upper bound. Loading is bounded to 64 MiB, 4,096 zones, and
-100,000 segments per zone, rejects offsets beyond 24 hours, UTC gaps/overlaps,
-noncanonical bytes, and any artifact that maps one local instant to more than
-two UTC instants. Its revision digest is the domain-separated hash of the
-canonical semantic artifact, not a filename or host tzdb version string.
-Engine checks file size before allocation, detects size change during the read,
-and accepts the provider only when version and digest equal the pinned
-`TzdbRevision`.
+- [x] **Do not** turn the shortest interval into a poll loop, generate Rust code,
+  busy-loop, or spawn one Tokio task per Frequency. Every timed object owns one
+  calculated `next_due_at`; the runtime arms one-shot timers and receives only
+  registrations that became due. Firing a `3ms` Frequency computes and registers
+  its next `3ms` boundary and does not ask whether the `5h`, daily or monthly
+  ones are ready. There is never a global `check_every = min(active_intervals)`.
+- [x] **Three layers, kept as different Rust types.** `DeadlineKey` (kind,
+  target uid, generation, exact `due_at_ms`, stable priority) is semantic.
+  `ScheduleDemand` (rational rates, resolution, lateness, CPU/fuel/write/effect
+  upper bounds) drives admission. `DeadlineLanePlan` (lane uid, generation,
+  stable-sorted members, reserved rates, next arm) is replaceable host state and
+  **may never appear in a revision hash or Action precondition**.
+- [x] **Bucket width never rounds the runtime arm.** Distance-to-deadline picks
+  an index level, but every entry and lane summary retains the exact minimum
+  `due_at_ms`. Occupancy bitmaps skip empty buckets; there is no periodic sweep.
+  Far registrations are reindexed only when an already-required wake reaches
+  their horizon, and reindexing never creates an earlier wake by itself.
+  Buckets are lookup acceleration, not permission to round semantic time.
+- [x] **Lanes are timer/index partitions, not threads.** The wheel is logically
+  partitioned by lane so a dense path never traverses a sparse lane to compute
+  its own arm. The production adapter may use dormant Tokio `Sleep`, a runtime
+  timer wheel, or `timerfd` behind one poller. A dormant five-hour timer costs
+  bounded metadata, no thread, no repeated CPU.
+- [x] **Lane planning is measured, not named.** Start with one sparse lane. The
+  planner splits out a dense stream when its admitted utilization would consume
+  the sparse lane's capacity or lateness reserve, packing demand in stable order
+  `(required_resolution, utilization desc, target_uid)`, and merges lanes again
+  when demand disappears. No fixed cadence classes, no `1s/1d` cutoff. Lane
+  assignment is operational, recorded for diagnostics, and not part of the
+  semantic hash or replay result.
+- [x] **The ready set is level-triggered by `lane_uid`**, not an unbounded FIFO.
+  Repeated expiry of one dense lane leaves one ready bit plus its latest
+  observed cutoff, so 333 fast wake messages cannot sit ahead of a sparse token.
+- [x] **The director does no graph evaluation.** In one bounded pass it converts
+  each ready cursor into a durable occurrence or arithmetic range batch and
+  hands work to the sequencer.
+- [x] **Runtime wake order is never semantic order.** On ready, snapshot
+  `observed_now`, drain all ready tokens without blocking, ask only those lanes
+  for keys due by that cutoff, and sort by
+  `due_at_ms → deadline_kind_priority → target_uid → generation`.
+  `deadline_kind_priority` is a versioned numeric enum, never map iteration
+  order: `0` authority/trust/grant expiry, `10` promise/invitation/decision
+  expiry, `20` workflow wake, `30` Frequency occurrence, `40` Signal poll, `50`
+  effect lease/retry, `90` maintenance. A deadline created by work at that
+  cursor is appended after the current ordered set with a monotonically
+  increasing sequence and cannot jump backward into an already-processed
+  priority. **Changing this order is a replay-breaking semantic version change**
+  requiring a new simulation epoch, never an incidental refactor.
+- [x] **Generation discards stale keys.** A tune or deactivate atomically
+  increments the target generation, stores the new `next_due_at`, and notifies
+  the directory. Boot loads active indexed rows once and rebuilds the wheel;
+  normal firing never scans every Frequency or every source table.
+- [x] **`karma_deadline` is a materialized index, not new truth.** Columns:
+  `deadline_kind, target_uid, generation, due_at_ms, required_resolution_ms,
+  max_lateness_ms, coalesce_key, stable_priority, active`, unique on
+  `(deadline_kind, target_uid)` plus a due-time index. Creating or changing a
+  promise expiry, decision expiry, Signal poll, workflow wait, effect retry or
+  Frequency updates its registration in the same semantic transaction. The
+  subsystem's typed state stays authoritative. A coarse maintenance deadline may
+  audit/rebuild the index; normal firing does not poll source tables.
+- [x] **`karma_frequency_consumer`** (`frequency_uid, consumer_kind,
+  consumer_uid, consumer_revision_uid, effective_from_cursor`, unique across the
+  tuple) tracks who references a reusable Frequency. Zero-to-one upserts the
+  deadline; one-to-zero removes it and increments generation. Ten consumers
+  share one cursor, one deadline, one occurrence fanned out deterministically.
+  This avoids firing unused Frequencies without recounting consumers every wake.
+- [x] **"Not unnoticed" is exact:** every intended boundary becomes exactly one
+  durable occurrence identity/range or an explicit `skipped/coalesced/paused`
+  record. The deadline row stays active until the same transaction advances its
+  cursor and stores that evidence, so an OS wake followed by a crash cannot
+  consume it.
+- [x] **`must_finish_before_next`** — a Program needing evaluation before its
+  next boundary declares it, and activation then needs a conservative worst-case
+  evaluator reservation, not merely enough timer wakes.
 
-Local resolution subtracts each applicable fixed offset from the civil
-millisecond value and validates the candidate against that segment's UTC
-interval. Zero, one, and two candidates become a typed gap, unique instant, or
-fold. Demand attestation derives a conservative rule-specific minimum: exact
-daily/weekly lower spacing or a 28-day-per-month lower bound, minus the zone's
-complete offset spread; `fold both` also admits the shortest backward-transition
-width. This can over-reserve but never hides a faster possible occurrence. A
-release/build tool may translate IANA source/TZif into this format, but runtime
-semantics depend only on the frozen artifact bytes and are therefore replayable.
+**The runtime port exposes registrations, not a period:**
 
-`GapPolicy` is `skip`, `shift-forward`, or `pause`; `FoldPolicy` is `first`,
-`second`, `both`, or `pause`. Every generated `CalendarBoundary` retains the
-requested local time, actual UTC `intended_at`, and resolution kind. With
-`both`, the two fold instants are separate stable boundaries for the same civil
-time; with `shift-forward`, the trace exposes that the UTC instant was shifted.
-Skipped gaps and invalid month dates remain explicit generation outcomes, not
-missing history. A deterministic search budget rejects a broken/malicious
-provider that reports an unbounded run of gaps.
-
-The recurrence iterator is arithmetic from the civil anchor, and there is one of
-it (`Cadence::civil_at`): calendar months advance by checked absolute month
-index, fixed parts by whole milliseconds, and `land_on` rolls the resulting
-occurrence forward to an allowed weekday without ever folding back into the
-step's phase. It never finds the next time by adding UTC `24h`, never asks the
-provider about dates outside the selected cadence, and never consults every
-schedule on a fast timer. Once resolved, its exact next UTC boundary enters the
-same tickless deadline fabric as an elapsed Frequency.
-
-**Implemented elapsed schedule foundation:** the validated schedule/cursor/
-range/policy/rational-rate types and pure arithmetic above now live in
-`nucleus::karma::schedule`. Golden and boundary tests cover the exact
-`3ms + 5h` behavior, every missed/inactive/rephase policy, wake coalescing
-windows, anchor preservation, Serde rejection, and timestamp/range overflow.
-This is the semantic layer only; it creates no Tokio timer, lane, SQL row, or
-polling loop.
-
-**Implemented calendar schedule foundation:** the corresponding validated
-calendar types now live in `nucleus::karma::calendar`, and the recurrence
-arithmetic they used to own moved into `nucleus::karma::cadence` at the
-2026-07-28 merge — `CalendarRule`, `CalendarRuleAst` and `InvalidMonthDayPolicy`
-are deleted.
-Every boundary carries requested civil time, exact UTC intended time, and its
-unique/gap-shift/fold identity; skipped and paused discontinuities are typed.
-The injected provider is version/hash-pinned and previous-boundary validation
-fails closed. `timezone_artifact` now supplies the bounded canonical production
-provider and Engine's exact-revision file loader. Demand calibration/lane
-planning and durable cursors/director are implemented in K2.3 below.
-
-#### Tickless shrink-to-fit deadline fabric
-
-Do **not** turn the shortest active Frequency into a global polling interval.
-Do **not** generate Rust code, busy-loop, or spawn one Tokio task per Frequency.
-Every timed object instead owns one calculated `next_due_at`; the runtime arms
-one-shot timers and receives only the registrations that became due. Firing a
-`3ms` Frequency calculates and registers its next `3ms` boundary. It does not
-ask whether the `5h`, daily, or monthly Frequencies are ready.
-
-Cadence and wake precision are separate. `every elapsed 5h` describes the
-sequence of intended boundaries; `max_lateness 10ms` describes the requested
-wake service. A five-hour schedule may demand millisecond accuracy at its one
-boundary, while a one-second sampler may explicitly tolerate 100ms coalescing.
-No architecture decision may classify a Frequency as “slow” merely because its
-interval happens to exceed an arbitrary day/second threshold.
-
-The deadline director owns all timed Karma work, not only Frequencies:
-
-`Frequency | promise/invitation/decision expiry | Signal poll | workflow wake |`
-`effect retry/lease timeout | retention/checkpoint maintenance`
-
-Event-driven Fact/sync/push-Signal occurrences bypass the timer fabric and wake
-the sequencer directly. Timed subsystems do not keep private polling loops.
-
-##### Three-layer timer structure
-
-Use three layers, each with a different correctness job:
-
-1. `karma_deadline` is the durable, indexed registration set. It lets
-   restart reconstruct all timers and is the recovery truth for what must wake.
-2. A tickless hierarchical wheel/calendar queue is the in-memory directory.
-   Distance-to-deadline selects an outer/inner index level, but every entry and
-   every lane summary retains the exact minimum `due_at_ms`. Bucket width never
-   rounds the runtime arm. Occupancy bitmaps/next-nonempty metadata skip empty
-   buckets; there is no periodic wheel sweep. Far registrations are reindexed
-   only when an already-required wake reaches their nearer horizon or when they
-   become due; reindexing never creates an unnecessary earlier wake by itself.
-3. A dynamic set of deadline lanes arms one one-shot runtime timer per lane.
-   The central director awaits the ready-lane set; the runtime queues only the
-   lane tokens whose timers expired. It does not linearly poll every lane or
-   every registration.
-
-The wheel is logically partitioned by lane: every `DeadlineKey` belongs to one
-lane index, and reinsert/removal mutates only that lane's buckets and exact-min
-summary. The director owns the lane directory, so a dense path does not acquire
-or traverse a sparse lane merely to calculate its own next arm.
-
-Keep the semantic key, admission demand, and operational plan as different
-Rust types:
-
-    struct DeadlineKey {
-        kind: DeadlineKind,
-        target_uid: DeadlineTargetUid,
-        generation: u64,
-        due_at_ms: TimestampMs,
-        stable_priority: u16,
-    }
-
-    struct ScheduleDemand {
-        semantic_rate: RationalRate,
-        wake_rate_upper: RationalRate,
-        required_resolution_ms: u32,
-        max_lateness_ms: u32,
-        scheduler_cpu_ns_per_second: u64,
-        evaluator_fuel_per_second: u64,
-        writes_per_second_upper: RationalRate,
-        effects_per_second_upper: RationalRate,
-    }
-
-    struct DeadlineLanePlan {
-        lane_uid: LaneUid,             // operational, not domain identity
-        generation: u64,
-        member_keys: Vec<DeadlineKey>, // stable-sorted
-        reserved_wake_rate: RationalRate,
-        reserved_evaluator_fuel: u64,
-        next_arm_at_ms: TimestampMs,
-    }
-
-`DeadlineKey` and schedule cursor determine occurrences. `ScheduleDemand`
-determines admission and lane isolation. `DeadlineLanePlan` is replaceable host
-runtime state and may never appear in a Program revision hash or typed Action
-precondition. `DeadlineTargetUid` is a validated enum/newtype over the existing
-UID families; construction checks that `DeadlineKind::Frequency` names a
-Frequency Record, an expiry names its Promise/Decision family, and so on.
-
-The wheel's powers/radix are an implementation detail derived from the
-platform's base timer resolution and supported horizon, not user-visible
-Frequency classes. Bucket placement depends on distance to the next deadline,
-not the schedule's name or an arbitrary `1s/1d` cutoff. Declared lateness/
-coalescing policy may deliberately move an arm within its allowed window; the
-index itself may not. Buckets are lookup acceleration, not permission to round
-semantic time.
-
-Start with one sparse lane. The deterministic lane planner splits out dense
-streams when their admitted wake/evaluation utilization would consume the
-sparse lane's configured capacity or lateness reserve. It packs demand in the
-stable order `(required_resolution, utilization descending, target_uid)` into
-lanes with explicit wake/evaluation budgets; it merges lanes again when demand
-disappears. Thus the decision is based on measured/calibrated resource demand,
-not “less than N milliseconds.” Lane assignment is operational and may differ
-by Cell; it is recorded for diagnostics but is not part of the schedule's
-semantic hash or replay result.
-
-A lane is timer/index state, not necessarily a task. The production adapter may
-implement the ready set with dormant Tokio `Sleep` futures, a runtime timer
-wheel, or `timerfd` registrations behind one poller. A dormant five-hour timer
-consumes bounded metadata but no five-hour thread and no repeated CPU. An
-explicit best-effort real-time resource grant may give one dense lane a
-dedicated runtime thread or short final spin; ordinary Lince never busy-spins
-or claims hard real-time behavior on a general-purpose OS.
-
-##### Concrete `3ms + 5h` behavior
-
-Suppose `freq:@sensor.fast` has `interval=3ms` and next boundary
-`09:00:00.003`, while `freq:@report` has `interval=5h` and next boundary
-`14:00:00.000`:
-
-    frequency sensor.fast {
-      every elapsed 3ms
-      anchor 2026-07-21T09:00:00.000Z
-      timer {
-        resolution 1ms
-        max_lateness 1ms
-        coalesce_window 0ms
-      }
-      missed replay max 64
-      inactive_gap skip_to_next_anchor
-      overload pause_and_ask
-    }
-
-    frequency report {
-      every elapsed 5h
-      anchor 2026-07-21T09:00:00.000Z
-      timer {
-        resolution 1ms
-        max_lateness 20ms
-        coalesce_window 0ms
-      }
-      missed coalesce
-      inactive_gap skip_to_next_anchor
-    }
-
-Both ask for millisecond-granularity wake service at their own boundaries, but
-only `sensor.fast` creates dense wake demand. Increasing `report`'s
-`max_lateness`/`coalesce_window` could save an isolated OS wake when another
-deadline is nearby; it would still retain `14:00:00.000` as `intended_at`.
-
-1. Admission reserves roughly 333.334 timer firings/second plus the fast
-   Program's evaluation/write cost. The planner normally gives this demand a
-   dense lane. Its first one-shot timer is armed for `09:00:00.003`.
-2. The five-hour registration remains in the sparse lane/outer wheel with an
-   independent exact one-shot wake target. It is not queried from SQL, popped,
-   compared for rule truth, re-armed, or otherwise processed every 3ms.
-3. At each fast wake, the director drains only due keys from that dense lane,
-   persists an occurrence or reconstructible batch, computes the next boundary
-   directly from the anchor/cursor, and re-arms that lane. It never obtains the
-   next boundary by repeatedly adding 3ms to wall-clock wake time.
-4. At `14:00`, the runtime marks the sparse lane ready independently of the
-   dense lane. The director drains all ready lanes, collects every key with
-   `due_at_ms <= observed_now`, and stable-sorts before persistence. The report
-   therefore cannot be starved or hidden by a continuous fast stream.
-5. Pausing `sensor.fast` invalidates its generation and retires/merges its lane.
-   The report's timer remains armed. If it is the only deadline, the process
-   does no Frequency work until that one-shot timer or a schedule-change
-   notification arrives.
-
-If a calibrated host can safely pack both into one lane, the no-scan invariant
-still holds: re-arming the inner `3ms` bucket does not visit the outer `5h`
-bucket or evaluate its key. Lane splitting adds latency/resource isolation;
-the tickless indexed registration—not the existence of two threads—is what
-provides correctness.
-
-This is “shrink to fit”: CPU wake rate follows the deadlines that actually need
-that rate, and timer metadata remains dormant at each other deadline's natural
-horizon. There is never one global `check_every = min(active_intervals)` loop.
-
-The ready set is level-triggered by `lane_uid`, not an unbounded FIFO of wake
-messages. Repeated expiration of one dense lane leaves one ready bit plus its
-latest observed cutoff. The deadline director does no graph evaluation: in one
-bounded pass it converts each ready schedule cursor into a durable occurrence
-or arithmetic range batch, then hands work to the sequencer. This prevents 333
-fast wake messages from sitting ahead of a sparse lane token. If semantic ticks
-must later be expanded individually, that cost belongs to admitted evaluator
-capacity and declared overload behavior; it cannot starve timer registration.
-
-“Not unnoticed” means every intended boundary becomes exactly one durable
-occurrence identity/range or an explicit `skipped/coalesced/paused` record. The
-deadline row remains active until the same transaction advances its cursor and
-stores that evidence; an OS wake followed by a crash cannot consume it. Wake,
-occurrence persistence, graph completion, and external-effect completion are
-separate latency measurements. A Program that requires evaluation before the
-next boundary declares `must_finish_before_next true`; activation then needs a
-conservative worst-case evaluator reservation, not merely enough timer wakes.
-
-Lince cannot promise hard real-time physical actuation from a general-purpose
-host. If a motor/interlock genuinely needs a 3ms closed loop, Karma
-deploys a versioned, bounded controller rule to a capable microcontroller and
-treats configuration/telemetry as typed effects/Signals; the device enforces
-the loop locally. The Cell can still deterministically reason about, simulate,
-authorize, and audit that controller without pretending network/OS latency is
-real-time.
-
-##### Runtime port and deterministic drain
-
-The pure/runtime boundary should expose registrations rather than a polling
-period:
-
-    struct DeadlineArm {
-        lane_uid: LaneUid,
-        lane_generation: u64,
-        wake_at_ms: TimestampMs,
-        required_resolution_ms: u32,
-    }
-
+    struct DeadlineArm { lane_uid, lane_generation, wake_at_ms,
+                         required_resolution_ms }
     trait DeadlinePort {
         fn replace_arm(&self, arm: DeadlineArm);
         fn disarm(&self, lane_uid: LaneUid, generation: u64);
         async fn next_ready(&self) -> DeadlineWake;
     }
-
-    enum DeadlineWake {
-        LaneReady { lane_uid: LaneUid, generation: u64,
-                    observed_at_ms: TimestampMs },
-        DirectoryChanged,
-        ClockDiscontinuity,
-        Shutdown,
-    }
+    enum DeadlineWake { LaneReady { lane_uid, generation, observed_at_ms },
+                        DirectoryChanged, ClockDiscontinuity, Shutdown }
 
 Production converts stored UTC targets to a monotonic one-shot sleep and emits
-`ClockDiscontinuity` when wall-clock mapping changes; calendar schedules are
-then recalculated from their frozen timezone/tzdb rules. Simulation registers
-the same arms and advances virtual time directly to the next one. Schedule math
-remains pure in `nucleus::karma::schedule`.
+`ClockDiscontinuity` when wall-clock mapping changes, after which calendar
+schedules recalculate from their frozen tzdb rules. Simulation registers the
+same arms and advances virtual time to the next one. Schedule math stays pure.
 
-Runtime wake order is never semantic order. When one or more lane tokens are
-ready, the director snapshots `observed_now`, drains all ready tokens without
-blocking, asks only those lanes for keys due by that cutoff, and sorts them by:
+### Dense occurrence batching
 
-`due_at_ms → deadline_kind_priority → target_uid → generation`
+Why: a `1ms` Frequency is up to 1,000 semantic ticks per second. One schedule row
+and full trace per no-op tick makes storage overhead the feature.
 
-`deadline_kind_priority` is a versioned numeric enum, not map/hash iteration
-order. At the same intended millisecond, process: `0` authority/trust/grant
-expiry, `10` promise/invitation/decision expiry, `20` workflow wake, `30`
-Frequency occurrence, `40` Signal poll, `50` effect lease/retry, then `90`
-maintenance. A deadline created by work at that cursor is appended after the
-current ordered set and receives a monotonically increasing occurrence
-sequence; it cannot jump backward into an already processed priority. Changing
-this order is a replay-breaking semantic version change and requires a new
-simulation epoch, never an incidental refactor.
+- [x] **`OccurrenceBatch`** = `activation_hash, batch_sequence, emission
+  (individual|coalesced), first_schedule_ordinal, range.{first, interval_ms,
+  count}`.
+- [x] **Tick identity is derived, not allocated:** `(activation_hash,
+  schedule_ordinal, intended_at)`. The activation hash commits the Frequency
+  uid, immutable revision, effective parameter map, activation generation/cause
+  and schedule. The ordinal is relative to the frozen anchor, **not** to a host
+  wake batch, so two different wake segmentations reproduce the same identities.
+- [x] **Bounded pages of at most 4,096 ticks**, processed in ordinal order, with
+  the page cursor as durable sequencer state rather than an unbounded range
+  allocation.
+- [x] **Batching is storage representation, not coalescing semantics.** A
+  Program asking for every tick still gets every tick unless its declared
+  missed/overload policy says otherwise. A coalesced batch exposes exactly one
+  aggregate occurrence and cannot be expanded through the individual-tick API.
+- [x] **Any tick producing a candidate, intent, Fact, failure, bookmark, state
+  transition or sampled trace keeps its individual run.** Consecutive no-op ticks
+  may share a compact trace summary because the batch reconstructs them exactly.
+- [x] **The durable row stores the complete canonical envelope**, not a loose
+  advance fragment. SQL columns project cadence, emission kind, first/last
+  boundary, covered boundary count and semantic count; reload recomputes and
+  compares every projection and the content hash. Five overdue 3ms boundaries
+  occupy one row and remain exactly reconstructible as five identities.
+- [x] **An on-time tick is never speculatively grouped with a future boundary** —
+  future work may still be paused or revised before it becomes due.
 
-`DeadlineKey` contains only stable ids, exact deadline, kind, and generation.
-The full typed specification/state stays in the Store/cache. A tune/deactivate
-atomically increments the target generation, stores the new `next_due_at`, and
-notifies the directory. A stale key/arm is discarded by generation. Boot loads
-active indexed rows once and rebuilds the operational wheel/lanes; normal
-firing never scans every Frequency or every source table.
+### Admission — you cannot activate what the Cell cannot serve
 
-Persist the cross-subsystem index in `karma_deadline` with
-`deadline_kind, target_uid, generation, due_at_ms, required_resolution_ms,`
-`max_lateness_ms, coalesce_key, stable_priority, active` and a unique
-`(deadline_kind, target_uid)` plus due-time index. Creating/changing a promise
-expiry, decision expiry, Signal poll, workflow wait, effect retry, or Frequency
-updates its deadline registration in the same semantic transaction. The
-deadline row is a materialized scheduling index, not new domain truth; the
-subsystem's typed state remains authoritative. Operational lane/bucket ids are
-not persisted as semantics and are rebuilt for the current host. A coarse
-maintenance deadline may audit/rebuild the index, but normal firing does not
-poll source tables.
+- [x] **Publishing computes a conservative fixed-point `ScheduleDemand`:**
+  semantic ticks/s, timer wakes/s, scheduler CPU ns/s, node evaluations/s,
+  writes/s, effects/s, trace bytes/s. Exact rational internally; the displayed
+  decimal is never used for admission. Ticks and wakes differ only where an
+  explicit reconstructible batch or coalescing window permits it, and batching
+  never lowers the semantic estimate unless the Program declares coalesced
+  semantics.
+- [x] **Admission uses the safe upper bound.** Conditional gates may lower the
+  *displayed* estimate; only a compiler-proven tighter bound lowers the admitted
+  one. A calendar rule derives its rate from the **shortest possible** interval
+  over the declared tzdb horizon, not the average. An unbounded or unprovable
+  rule is rejected until the owner supplies an enforceable rate cap. Missing
+  provider attestation is `calendar_rate_unproven`, never an average fallback.
+- [x] **Stable capacity failure order** — semantic ticks → timer wakes →
+  scheduler CPU → evaluator fuel → writes → effects → trace bytes — so the same
+  snapshot always explains the same first denial.
+- [x] **Every durable cursor stores the demand snapshot admitted with its
+  activation**, and loading recomputes it from the frozen schedule, workload,
+  calibration and attestation before trusting the projection.
+- [x] **Gates are demand-based, never interval bands.** Baseline: fits ordinary
+  budgets. **Dense** (`karma.schedule.dense`): projected utilization exceeds the
+  ordinary budget or needs lane isolation. **Precision**
+  (`karma.schedule.precision`): requested resolution/lateness finer than the
+  Cell's measured normal timer service, regardless of cadence. **Effect-heavy**:
+  upper-bound materialization/external-effect rate exceeds its capability
+  budget. A `3ms` no-op recognizer and a five-hour workflow with ten thousand
+  effects hit different gates for different reasons. `1ms` is not a magic branch.
+- [x] **Hard aggregate Cell ceilings independent of individual grants.**
+  Activation is rejected or held shadow-only if the sum of active upper bounds
+  exceeds them. Runtime meters actual lateness, evaluations, CPU/fuel, writes,
+  effects and trace bytes; on overrun the predeclared policy is `coalesce`,
+  `drop_with_evidence`, `stage_effects` or `pause_and_ask` — never silently
+  changing the interval or omitting ticks.
+- [ ] **Protein exposes the operational picture:** lane count/kind, membership
+  and reason, each lane's next arm, wheel/overflow occupancy,
+  requested/effective resolution and lateness, estimated vs actual
+  wake/semantic/evaluation/write/effect rates, lateness percentiles,
+  batch/skipped/coalesced counts, budget use, pending split/merge.
+- [ ] **The sand warns at authoring and proves at activation**, offering shadow
+  load testing with effects disabled. A person choosing `1ms` sees 1,000
+  ticks/second and 86,400,000 ticks/day plus retention and effect implications
+  before granting it.
+- [ ] **A paused dense lane is disarmed and retired/merged without touching
+  sparse arms.** A Cell with only a `5h` Frequency does no Frequency work between
+  activation and its exact next one-shot deadline.
 
-The schedule sidecar is owned by a Rust type and uses typed columns/joins rather
-than an opaque behavior blob. At minimum it stores:
+**Honest limit:** Lince cannot promise hard real-time actuation from a
+general-purpose host. If a motor or interlock genuinely needs a 3ms closed loop,
+Karma deploys a versioned bounded controller to a capable microcontroller and
+treats configuration and telemetry as typed effects and Signals; the device
+enforces the loop locally. The Cell can still reason about, simulate, authorize
+and audit that controller without pretending network and OS latency are
+real-time. Ordinary Lince never busy-spins; an explicit best-effort real-time
+grant may give one dense lane a dedicated thread or short final spin.
 
-`record_uid, active_revision_uid, parameter_revision, generation,`
-`schedule_kind, anchor_ms, interval_ms/calendar_rule, timezone, tzdb_version,`
-`required_resolution_ms, max_lateness_ms, coalesce_window_ms, missed_policy,`
-`max_replay, inactive_gap_policy,`
-`rephase_policy, last_intended_at_ms, next_intended_at_ms, failure_policy`
+**Exit:** a Cell with `3ms`, `5h` and monthly Frequencies arms each from its own
+next deadline. The `3ms` path never scans or re-arms the others; sparse
+deadlines still fire while the dense stream runs. Adding or removing dense
+demand creates and retires only its runtime lane. Restart, catch-up,
+same-millisecond cursor order, generation invalidation and schedule batching all
+replay exactly under DST.
+---
 
-Index active rows by `(next_intended_at_ms, record_uid)`. Validate
-`interval_ms >= 1`; fixed interval and calendar rule are mutually exclusive.
-`coalesce_window_ms` may delay a runtime wake only within the declared
-`max_lateness_ms`; it never changes `intended_at` or merges semantic occurrences.
-Persist resolved active references in `karma_frequency_consumer` with
-`frequency_uid, consumer_kind, consumer_uid, consumer_revision_uid,`
-`effective_from_cursor`, unique across that tuple. Program, Signal, workflow,
-and Frequency activation transactions update those rows; the transition from
-zero to one active consumer upserts the deadline and one to zero removes it/
-increments generation. This avoids firing unused reusable Frequencies without
-recomputing consumer counts on every wake.
+## 12. External, device and interface effects
 
-No-consumer time is not silently treated as scheduler failure. The Frequency
-revision declares `inactive_gap skip_to_next_anchor` (default) or an explicit
-bounded `inactive_gap replay_by_missed_policy`. On the zero-to-one consumer
-transition the same transaction calculates the next cursor from the anchor and
-that policy, so reactivation cannot unexpectedly replay months of dormant work.
-The transaction that advances `last/next_intended_at` also inserts/deduplicates
-the durable occurrence/batch, so a crash cannot lose a tick after advancing the
-cursor or fire it twice after restart.
+Why: block 6 opened the write path for one safe family — local, reversible,
+auditable. This opens the rest: commands, HTTP, devices, and controlling an
+interface. Same intent/receipt state machine, plus adapter-specific schema and
+safety. **Add each adapter family only after its capability,
+idempotency/uncertainty, secret redaction, simulation fixture and manual
+reconciliation behavior are specified.** "Generic command" is not a substitute
+for a typed device or UI controller.
 
-##### Dense occurrence batching
+- [x] **Already shipped as rule consequences:** `set_quantity`, `add_quantity`,
+  `emit_promise`, `run_command`, `run_query`, `run_action`, `set_visibility`,
+  `activate`/`deactivate` (including another rule), `ask`, and budgeted
+  `notify`. Effects run outside evaluation from a durable queue and append
+  zero-delta provenance Facts.
+- [ ] **All effects use durable typed intents** carrying target, exact payload,
+  schema/revision, nonce/idempotency key, principal/grant, preconditions,
+  deadline, lease, retry class, expected receipt, capture/redaction, and
+  compensation/uncertainty behavior. **"Run this string somewhere" is not a safe
+  destination contract.**
+- [ ] **Commands declare** executable identity/hash, typed arguments (no
+  implicit shell unless explicitly granted), environment allowlist, secret
+  handles, working-directory/filesystem roots, stdin/stdout schemas, timeout,
+  process/CPU/memory limits, and network capability. **Shell interpolation is
+  visible high-risk behavior, not sugar.**
+- [ ] **HTTP/connectors declare** method, host/path policy, request/response
+  schema, auth secret handle, redirect/DNS policy, body limits, timeout/retry
+  semantics, rate/budget, idempotency support, and redacted capture. **A retry
+  is automatic only when the operation is proven idempotent or carries a remote
+  idempotency key.**
+- [ ] **Device/actuator controllers expose** typed commands and state, physical
+  bounds, interlocks, heartbeat/failsafe, manual override, acknowledgement vs
+  observed outcome, and safe shutdown. Opening a call room, watering a garden
+  and moving a motor are **distinct registered capabilities**, never arbitrary
+  bytes sent to a sand or device.
+- [ ] **A microcontroller is just HTTP — do not build a microcontroller
+  subsystem** (your note, 2026-07-29, replacing an earlier device-specific
+  design). Outbound, calling a board is an ordinary `do http` effect; we cannot
+  tell whether the endpoint is a microcontroller or a web service, and we do not
+  need to. Inbound, a board holding a valid key makes an ordinary authenticated
+  request that writes the value it carries onto a Record's quantity, body or
+  extension. What that needs is: an inbound route that accepts a value for a
+  named Record under a key, the same typed-write path everything else uses, and
+  ordinary rate/quarantine limits. Firmware revisions, monotonic device
+  sequence, clock-quality declarations, offline buffering and a bespoke adapter
+  contract are **not** part of this — a device that wants those can send them as
+  ordinary fields.
+- [ ] **Interface control goes through registered host/controller Actions** such
+  as `ui.present`, `ui.navigate`, `ui.focus`, `ui.layout.apply`, or a typed
+  domain controller. **Programs cannot execute arbitrary DOM/JavaScript, forge
+  user input, hide permission or audit controls, dismiss a decision as the
+  person, or mutate board chrome through the Ledger.**
+- [ ] **Distinguish durable desired interface state** (a record/policy another
+  device can reproduce) **from ephemeral presentation intent** (focus this
+  record now). Each device binding may accept, adapt or deny presentation under
+  local accessibility, safety, interruption and foreground-control policy.
+- [ ] **Simulation replaces every external, device and interface adapter** with a
+  deterministic model or scripted fixture, recording the hypothetical intent and
+  receipt and never performing the production effect.
+- [ ] **Decision and notification plumbing, registered UI and controllers,
+  commands, HTTP, devices, then social effects — in that order.** The block 7
+  exit gate applies again in full to each family.
+---
 
-A `1ms` Frequency represents up to 1,000 semantic ticks per second. Writing one
-schedule row and full trace envelope for every no-op tick would turn storage
-overhead into the feature. The scheduler may therefore persist a deterministic
-`OccurrenceBatch`:
+## 13. Signals — turning the outside world into evidence
 
-    activation_hash
-    batch_sequence
-    emission                  # individual | coalesced
-    first_schedule_ordinal
-    range.first
-    range.interval_ms
-    range.count
+Why: everything so far reads Records. This is the boundary that turns
+nondeterministic outside input — a scale, a camera, an HTTP endpoint, a
+microcontroller, a model — into typed, ordered, replayable evidence. Adapters
+capture; pure nodes validate and normalize; Programs consume only the captured
+envelope. **No connector may call rule evaluation or domain storage directly.**
 
-Each semantic tick has a derived identity from
-`(activation_hash, schedule_ordinal, intended_at)`. The activation hash already
-commits the Frequency uid, immutable definition revision, complete effective
-parameter map, activation generation/cause, and schedule. The ordinal is
-relative to that schedule's frozen anchor, not to a host-wake batch, so two
-different wake segmentations reproduce the same tick identity. The evaluator
-processes ticks in ordinal order through bounded pages of at most 4,096 ticks;
-the page cursor will be durable sequencer state rather than an allocation of an
-unbounded range. A coalesced batch exposes exactly one aggregate occurrence and
-cannot be expanded through the individual-tick API. Any tick that produces a candidate, intent, Fact,
-failure, bookmark, state transition, or sampled full trace keeps its individual
-run/evidence. Consecutive no-op ticks may share a compact trace summary because
-the batch reconstructs them exactly. Batching is a storage representation, not
-coalescing semantics: a Program asking for every tick still receives every tick
-unless its declared missed/overload policy says otherwise.
+Nothing before this block needs it, which is why it comes after the first
+product.
 
-The durable occurrence row stores the complete canonical occurrence envelope,
-not merely a loosely typed advance fragment. SQL columns project cadence,
-emission kind, first/last intended boundary, covered boundary count, and
-semantic occurrence count; Store reload recomputes and compares every
-projection and the content hash. The same fenced transaction advances the
-cursor and inserts this immutable batch. Five overdue 3ms boundaries therefore
-occupy one row while remaining exactly reconstructible as five identities. An
-on-time tick is never speculatively grouped with a future boundary: future work
-may still be paused or revised before it becomes due.
+- [x] **`create-signal`** represents command/http/sensor/query sources on a
+  schedule. Samples land as Facts and cascade like any other change.
+- [x] **`create-frequency`** supports day-of-week and catch-up behavior.
+  Frequencies are reusable clocks, not record timestamp columns.
+- [ ] **Every capture and integration source is an off-switchable Signal
+  record** carrying adapter/revision, schema, freshness, last success/error,
+  health, consent/visibility/purpose scope, sampling cost, rate limit and
+  retention. Phone, scale, camera, microphone, filesystem, database, HTTP,
+  webhook, message bus, local model, remote model and command inputs all obey
+  this contract.
+- [ ] **One observation envelope:** `source_uid, source_revision,
+  source_sequence, schema_uid, value, unit, effective_at, observed_at,
+  received_at, place, quality, uncertainty, actor/signature, capture_hash`.
+  **Source time and Cell receipt time are never conflated.** A duplicate
+  sequence or hash is idempotent; a correction references the prior observation
+  instead of rewriting it.
+- [ ] **Separate raw capture from normalized evidence.** Preserve the signed raw
+  value per retention, then derive calibrated units, validation, quality and
+  semantic concept through versioned pure nodes — so a changed calibration can
+  re-derive history without pretending the sensor originally emitted the
+  corrected value.
+- [ ] **Push, polling and streaming use one adapter contract**, declaring
+  identity/key, schema, calibration, expected cadence, maximum age and safe
+  backpressure. Malformed or out-of-range samples land in quarantine with a
+  visible reason.
+- [ ] **A microcontroller is not a special case — it is HTTP** (your note,
+  2026-07-29). An inbound authenticated request carrying a value for a named
+  Record is the whole contract; there is no device-specific adapter family, no
+  firmware/sequence/clock-quality declaration, and no offline-buffer protocol.
+  A board that wants to send those sends them as ordinary fields. Outbound is
+  `do http` (block 12).
+- [ ] **Deactivating a Signal stops new acquisition and downstream triggers; it
+  does not erase previous observations.** Revoking camera, microphone, location
+  or health consent also prevents new *use* by runs, not merely new sampling.
+- [ ] **AI enters only as a visible captured model Signal or an ordinary
+  candidate author.** No ambient reader, no hidden prompt-side data, no
+  privileged writer. Prompt inputs obey Protein visibility and purpose scope;
+  secrets and unrelated context do not enter the trace.
+- [ ] **Replace ambiguous catch-up with the explicit missed policy** from block
+  11 (`skip`, `coalesce`, bounded `replay`), exposing start/end, timezone,
+  weekdays, calendar interval, jitter, and whether calendar alignment happens
+  before or after interval addition. **Jitter derives from the
+  schedule/occurrence seed, never ambient randomness.**
+- [ ] **Event-time nodes declare their late-data watermark and correction
+  behavior:** ignore for live action but include in later analysis, recompute an
+  open window, compensate a reversible result, or ask. Historical evidence never
+  silently causes a present-tense actuator or social effect.
+- [ ] **Context is always a saved or inline Protein plus named derived values**,
+  never an ambient database capability. The run records the exact visible input
+  set, why each row was included or excluded, and the freshness and quality
+  used, so a recommendation can explain missing, denied, invalid or stale data.
+- [ ] **Source health is data, not logs:** last scheduled/attempted/successful
+  sample, lag, consecutive errors, clock drift, dropped/quarantined count,
+  adapter version, next retry. Health can feed an operational Sense without
+  recursively treating its own alarm as healthy input.
+- [ ] **Connectors reference secrets by opaque capability-bound handle.** Program
+  exports, traces, errors, notifications and synced records never serialize
+  secret values. A simulator receives a fixture, not the production secret.
 
-If the worker wakes late, pure schedule math computes how many intended ticks
-exist between `last_intended_at` and `now`. Then the declared policy applies:
+**Exit:** HTTP plus one buffered microcontroller source survive duplicate, late,
+malformed, stale, disconnect, reboot and secret-redaction tests; turning off a
+Signal stops acquisition and use without deleting history.
+---
 
-- `skip`: record skipped count/range and advance;
-- `coalesce`: emit one occurrence containing missed count/range;
-- `replay(max=N)`: emit up to `N` semantic ticks in order and record overflow;
-- `pause_on_lag`: fault/pause before pretending late real-world actions are
-  timely.
+## 14. Learning and recommendations
 
-External/device/social effects should normally forbid unbounded replay. A
-missed 1ms computation may be replayable; a missed motor command, notification,
-or Transfer proposal is not repeated thousands of times without an exact
-explicit policy.
+Why: this is the lower-priority adaptation lane, not the rule runtime. It admits
+only explicitly eligible evidence, updates versioned checkpoints, and proposes
+probabilities and patterns. **Routing, Trust and authority decide what those
+outputs may become.** It runs late on purpose: reaction-before-learning means
+inference may never precede a working deterministic path, and the first real
+product provides the first real evidence.
 
-##### Cost model and admission
+Start with the transparent recurrence model before any advanced learner, so
+every later algorithm inherits the same evidence and rebuild contract.
 
-Publishing a definition calculates a conservative fixed-point `ScheduleDemand`
-from each active Frequency's rate, wake requirements, and dependency fan-out:
+### Keeping the quantities apart
 
-    semantic_ticks_per_second = sum(1000 / interval_ms)
-    timer_wakes_per_second = sum(after explicitly allowed timer coalescing)
-    scheduler_cpu_ns_per_second = sum(wake_rate * calibrated_fire_cost_ns)
-    node_evaluations_per_second = sum(rate * impacted_node_count)
-    estimated_writes_per_second = sum(rate * materializing_path_count)
-    estimated_effects_per_second = sum(rate * effect_path_upper_bound)
-    estimated_trace_bytes_per_second = rate * trace_policy_estimate
-
-These are exact rational/fixed-point calculations internally; the displayed
-decimal is not used for admission. `semantic_ticks_per_second` and
-`timer_wakes_per_second` differ only when an explicit reconstructible batch or
-wake-coalescing window permits it. Batching never lowers the semantic work
-estimate unless the Program itself declares coalesced semantics.
-
-Conditional gates may lower the displayed expected estimate, but admission uses
-the safe upper bound unless the compiler can prove a tighter bound. For a
-calendar rule, derive `rate` from its shortest possible interval over the
-declared timezone/tzdb horizon, not its average interval; an unbounded or
-unprovable rule is rejected until the owner supplies an enforceable rate cap.
-The Karma sand shows both estimates, plus CPU/storage budget, retention growth,
-lateness target, platform resolution, proposed lane plan, and whether the
-Program contains external effects.
-
-The low-level contract is `ScheduleWorkloadUpperBounds` (fuel, writes, effects,
-and trace bytes per semantic tick), `SchedulerCalibration` (measured CPU
-nanoseconds per wake), `ScheduleDemand` (exact reduced rational rates), and
-`ScheduleDemandCapacity` (the Cell-wide hard ceilings). Calendar providers must
-also return a conservative minimum-interval attestation bound to their pinned
-tzdb artifact and the complete calendar schedule. Absence of that attestation
-is `calendar_rate_unproven`, never an average-rate fallback. Every durable
-cursor stores the canonical demand snapshot admitted with its activation;
-loading recomputes it from the frozen schedule, workload, calibration, and
-provider attestation before trusting the projection. Stable capacity failure
-order is semantic ticks → timer wakes → scheduler CPU → evaluator fuel →
-writes → effects → trace bytes, so the same snapshot always explains the same
-first denial.
-
-Resource gates are based on demand/capacity, never fixed interval bands:
-
-| Gate | When it applies | Required authority/policy |
-| --- | --- | --- |
-| Baseline scheduling | Demand fits the Program's ordinary wake/evaluation/write budgets and Cell reserve | ordinary Program execution grant |
-| Dense scheduling | Projected wake or scheduler/evaluator utilization exceeds the ordinary budget or requires lane isolation to meet existing lateness reserves | `karma.schedule.dense`, explicit rate/fuel/write budgets, activation load proof |
-| Precision scheduling | Requested resolution/lateness is finer than the Cell's measured normal timer service, regardless of cadence | `karma.schedule.precision`, supported platform adapter, explicit best-effort downgrade or rejection |
-| Effect-heavy scheduling | Upper-bound materialization/external-effect rate exceeds its ordinary capability budget | exact Action/effect grant, rate/value limits, idempotency and overload policy |
-
-A `3ms` no-op recognizer and a five-hour workflow with ten thousand effects can
-therefore hit different gates for different reasons. A `1ms` Frequency will
-normally need dense plus precision authority, but `1ms` is not itself a magic
-branch in the scheduler. The same demand formula applies to `2ms`, `37ms`,
-`5h`, calendar schedules, and any later precision the canonical time type can
-represent.
-
-The Cell also has hard aggregate ceilings independent of individual grants.
-Activation is rejected (or can remain shadow-only) if the sum of active upper
-bounds exceeds them. Runtime meters actual wake lateness, evaluations, CPU/fuel,
-writes, effects, and trace bytes. On overrun the predeclared policy is one of
-`coalesce`, `drop_with_evidence`, `stage_effects`, or `pause_and_ask`; it never
-silently changes the interval or omits ticks.
-
-- [ ] Protein exposes lane count/kind, lane membership/reason, each lane's next
-  arm, wheel/overflow occupancy, requested/effective resolution and lateness,
-  estimated/actual wake/semantic/evaluation/write/effect rates, lateness
-  percentiles, batch/skipped/coalesced counts, budget use, and pending
-  split/merge. This is operational metadata, not a new scheduling truth.
-- [ ] The Karma sand warns at authoring, proves at activation, and offers shadow load
-  testing with effects disabled. A person choosing `1ms` sees the expected
-  86,400,000 ticks/day and retention/effect implications before granting it.
-- [ ] When dense demand pauses, its lane is disarmed and retired/merged without
-  changing sparse arms. A Cell with only a `5h` Frequency performs no Frequency
-  work between activation and its exact next one-shot deadline.
-
-#### Mutation verbs
-
-The DSL makes data-changing boundaries visually obvious:
-
-| Verb | Meaning | Direct domain mutation? |
-| --- | --- | --- |
-| `let`, `sense`, `predict`, `project`, `solve` | Pure computation | No |
-| `emit` | Materialize a typed derived observation/Fact | Yes, append-only and explicit |
-| `recommend` | Create/update an inert candidate | No domain mutation |
-| `draft` | Create an inert typed Action/Transfer/program draft | Draft data only |
-| `ask` | Create a durable decision with Action previews | No until answered |
-| `act` | Request a typed domain Action under a grant | Yes, through Action after authorization |
-| `do` | Request an external/device/UI effect | Outside-world attempt plus receipt |
-| `tune` | Change a declared parameter of another/named Program | Program parameter data; effective next occurrence |
-| `revise` | Propose a new immutable graph revision | Definition data only; activation is separate |
-| `pause` / `resume` | Change activation of a named Program | Program activation Fact; never deletes history |
-
-There is no generic `set field` or `eval string`. Each `act`, `do`, `tune`, or
-`revise` compiles to a typed candidate/Action with exact target, schema,
-preconditions, grant requirements, and preview.
-
-### Determinism — the replay contract
-
-The guarantee is precise: **given the same replay capsule and ordered captured
-inputs, the same engine must emit the same canonical node values, candidates,
-policy decisions, Action intents, and unsigned Ledger payloads/content hashes.**
-Captured signatures and receipts replay as their original bytes; a simulator
-uses a fixture signer rather than requiring production secrets. This is the
-useful meaning of deterministic “to the atom.” It does not promise that
-rerunning an HTTP request or motor command changes the outside world in the same
-way.
-
-A replay capsule contains the starting checkpoint/hash-chain anchor, ordered
-Fact and occurrence stream, program/model/grant revision hashes, engine/schema
-build, Lingua/unit conversion revisions, timezone database version, virtual
-clock, deterministic seed, solver/plugin hashes, captured Signal results, and
-external receipts. It is exportable, inspectable, and sufficient to replay
-without network, filesystem, wall clock, devices, or secrets.
-
-- [ ] Put clock, scheduling, entropy, uid generation, filesystem, network,
-  process execution, device I/O, and model calls behind injected runtime ports.
-  Pure evaluation cannot call an ambient OS API. Production adapters capture a
-  result; simulation adapters generate or replay one.
-- [ ] Assign every accepted local Fact/occurrence a monotonically increasing
-  Cell cursor in its commit transaction. Live behavior follows recorded arrival
-  order. Sync packages may arrive in a different order on another Cell; replay
-  reproduces each Cell's observed order rather than falsely claiming distributed
-  simultaneity.
-- [ ] Canonicalize maps, sets, strings, units, timestamps, and serialization.
-  Sort unordered query results and graph edges explicitly. Stable ordering is
-  dependency rank, declared priority, program uid, node id, then occurrence uid;
-  CPU thread completion order never breaks a tie.
-- [ ] Replace decision-critical binary floating point with canonical decimal,
-  rational, integer base-unit, or specified fixed-point arithmetic. Probability
-  scales, rounding mode, overflow, invalid values, and unit conversion are part
-  of the type. `NaN`, infinities, locale parsing, and platform math must not
-  enter a policy decision.
-- [ ] Any stochastic algorithm receives a recorded seed and deterministic
-  stream partition per node. Any solver declares its version, tolerances,
-  variable ordering, timeout measured in deterministic work units, and stable
-  tie-break. “First result returned by workers” is not a valid choice rule.
-- [ ] Calendar evaluation freezes timezone and calendar-rule versions. A
-  schedule records both the intended civil occurrence and resolved UTC instant,
-  including daylight-saving gaps/folds and leap behavior.
-- [ ] Content-address pure extensions (for example sandboxed WebAssembly), deny
-  them clock/random/I/O, give them deterministic fuel and memory limits, and
-  specify their numeric ABI. Native or remote opaque computation enters as a
-  captured Signal instead.
-- [ ] Treat nondeterministic AI/model output as an observation with model id,
-  request hash, response hash, and capture time. Replay uses the captured
-  response. A deterministic local model still pins weights, feature schema,
-  runtime, tokenizer, numeric policy, and seed.
-- [ ] Derive run, candidate, and intent ids from their semantic occurrence
-  where practical. Generate any remaining ids/timestamps through the replay
-  runtime so a replay does not manufacture different identities.
-- [ ] Freeze the effective grant at proposal time for explanation, but recheck
-  current revocation, budgets, target revision, and safety interlocks when an
-  intent is claimed and immediately before irreversible dispatch. A revoked
-  intent deterministically becomes denied/cancelled, not raced.
-- [ ] Upgrades never reinterpret an old run silently. Replaying under the old
-  engine is reproduction; replaying under a new engine is an explicit
-  differential run whose changed candidates, facts, and effects are shown.
-
-### The always-on occurrence kernel
-
-One scheduler owns causality. Heartbeats, subscriptions, sync imports, workflow
-wakes, and effect completions submit occurrences to it; they do not each grow a
-private automation loop.
-
-For each occurrence the engine:
-
-1. persists/deduplicates it and assigns the Cell cursor;
-2. freezes logical time, visible input cursor, active program/model revisions,
-   and the triggering principal;
-3. selects impacted programs from declared dependencies;
-4. evaluates pure nodes in stable graph order, recording every substituted
-   value, missing/stale input, branch, model output, and assertion;
-5. materializes inert candidates, then evaluates objectives, policy, authority,
-   taint/declassification, budgets, and conflicts;
-6. atomically stores the run result and any permitted durable intents; and
-7. lets separate workers claim intents, perform typed Actions/effects, append
-   receipts/Facts, and thereby enqueue later occurrences.
-
-This makes a run-to-completion agenda deterministic while still allowing
-parallel prefetch and pure computation. Parallel work may improve latency but
-cannot change commit order or selection.
-
-#### Reaction-before-learning law
-
-For one incoming change, Lince uses the definitions that were active **before
-that change**. Existing behavior reacts first; learning and meta-rules adapt the
-system afterward. This resolves the Human Note without allowing a newly learned
-rule to reinterpret the very evidence that created it.
-
-The sequencer maintains two ordered lanes per cursor:
-
-1. **Reaction lane:** freeze the active Program revisions, parameters, grants,
-   and model checkpoints; evaluate impacted rules/Senses/workflows; commit the
-   run and authorized local Action intents. Synchronous local domain Actions may
-   append child Facts, whose reaction occurrences also stay ahead of learning.
-   External effects remain durable intents and their later receipts are new
-   occurrences.
-2. **Learning lane:** after the bounded reaction closure for that cursor,
-   admit/reject eligible evidence, update models, detect patterns, and create
-   recommendations or Program-revision/parameter candidates. Generated Facts
-   and Actions are excluded as training evidence unless an independent outcome
-   policy explicitly admits a later observation.
-3. **Adaptation occurrence:** an approved or pre-delegated `tune`, `revise`,
-   `activate`, `pause`, or generated-rule promotion commits as its own later
-   occurrence. Its `effective_from_cursor` is strictly greater than the event
-   that proposed it. No definition changes halfway through a run or cascade.
-
-Thus an event at cursor 100 is handled by epoch 12 even if its evidence raises a
-pattern above the activation threshold. If learning creates/activates epoch 13,
-epoch 13 starts at cursor 101 or later. An explicit `replay from cursor 100
-under rev 13` may compare or intentionally create a new compensating plan, but
-it is a new visible occurrence—not retroactive history.
-
-- [ ] Prioritize the reaction lane over background learning so a burst of model
-  maintenance never makes obvious existing rules feel unresponsive. Bound the
-  reaction closure and expose queue age; runaway cascades fault instead of
-  starving all learning forever.
-- [ ] Learning may compute in parallel from immutable snapshots, but checkpoint
-  commits remain cursor-ordered. A run records `model_trained_through_cursor` so
-  a person can see when a prediction was based on lagging learning state.
-- [ ] Meta-rules may alter named Programs only through `tune`, `revise`,
-  `activate`, `pause`, or `resume` and an `karma.manage` grant. They may
-  not mutate in-memory nodes or schedule rows invisibly.
-- [ ] Changing a schedule requires an explicit rephase policy:
-  `preserve_anchor` (default), `from_last_intended`, `from_change`, or
-  `immediate_if_overdue`. The run preview shows old/new next occurrences before
-  the parameter Action commits.
-
-- [ ] Run one elected occurrence sequencer per writable Cell. Multiple service
-  processes may execute leased effects, but they may not race independent rule
-  agendas against the same Ledger.
-- [ ] Recover all nonterminal runs, workflows, and intents after restart.
-  Persist debounce, cooldown, last-consumed occurrence, schedule cursor, rate
-  budget, leases, and retry state; boot never treats forgotten memory as new
-  permission to fire.
-- [ ] Support deterministic trigger concurrency policies:
-  `queue`, `drop`, `coalesce`, `latest`, and bounded `parallel`, with a
-  required correlation key. Backpressure is visible as lag/parked work rather
-  than silent loss.
-- [ ] Bound evaluations by nodes, iterations, deterministic fuel, fan-out,
-  candidate count, trace size, and declared cost. A budget violation faults the
-  run, optionally pauses the program, and opens one deduplicated operational
-  decision.
-- [ ] Provide Cell modes: `normal`, `stage-effects` (evaluate and queue but
-  dispatch nothing), `observe-only` (models/derivations continue, no action
-  intents), and `emergency-stop` (no new runs/effects except recovery and
-  inspection). Mode changes are durable, permissioned, and visible.
-- [ ] Define overload priority without hiding starvation: safety/revocation and
-  already-agreed Transfer deadlines first, then explicit user priority,
-  ordinary workflows, learning maintenance, projections, and background
-  analysis. Every delayed class exposes queue age and next eligibility.
-
-### Program graph and authoring language
-
-The canonical definition is one typed, versioned graph AST. The Karma sand's visual
-graph, typed forms, JSON transport, and an expert textual DSL are lossless
-projections of that AST; they are not separate execution languages. Node ids
-remain stable across layout and label changes so diffs, state, and explanations
-survive editing.
-
-| Node family | Pure/durable role |
+| Quantity | Question |
 | --- | --- |
-| Trigger | Fact/event, schedule, signal sample, threshold crossing, manual call, sync arrival, decision, workflow wake, or effect receipt. |
-| Input | Saved/inline Protein, direct record/fact reference, parameter, secret reference metadata, or captured Signal. |
-| Normalize/feature | Unit conversion, validation, window, aggregate, join, lag, rate, calendar/place feature, missing-data policy, and quality weighting. |
-| Derive/recognize | Typed arithmetic/logic, stateful threshold with hysteresis, finite state recognizer, pattern model inference, or reusable Sense. |
-| Project/analyze | Imagination branch, forecast, invariant, query, aggregate, optimizer, ranker, or sensitivity/infeasibility analysis. |
-| Control | Gate, branch, merge, explicit bounded iteration, delay, debounce, cooldown, rate limit, transaction boundary, and assertion. |
-| Workflow | Sequence/parallel, wait-until, approval, child program, retry, compensation, cancellation, and correlation. |
-| Candidate/attention | Recommendation, decision, program revision, plan, report, whisper request, or digest item. |
-| Intent/effect | Typed Action, Transfer Action, connector call, device/controller intent, notification, command, or HTTP request. |
+| Recurrence probability | How likely is this event/action within this context and horizon? |
+| Estimate confidence | How much eligible evidence supports that probability, and how wide is its uncertainty? |
+| Counterparty evidence | What visible signed outcomes exist for this Person, concept, window and role? |
+| Expected utility/cost | Under this person's stated objective, how good is a candidate, compared with what? |
+| Authority eligibility | Does a current grant allow the proposed Action now? |
 
-Ports carry schema, unit/dimension, cardinality, visibility/taint, freshness, and
-uncertainty. A connection that cannot prove compatibility is invalid; it does
-not coerce strings at runtime. Missing, stale, denied, invalid, and unknown are
-typed states distinct from numeric zero and Boolean false.
+The shipped `confidence(@p)` (see `docs/Central: Senses.md`) is a useful
+ingredient whose name is too broad for this.
 
-- [ ] Resolve authoring-time `@slug` sugar to uid plus displayed slug in the
-  immutable revision. Rename never changes meaning; an unresolved reference
-  blocks activation.
-- [ ] Make every stateful node declare initialization, update event,
-  persistence, reset/migration, late-event behavior, and whether simulation
-  branches clone its state.
-- [ ] Allow reusable subprograms with explicit typed parameters and outputs.
-  Invocation freezes a revision; a template update never silently edits
-  installed programs.
-- [ ] Keep arbitrary shell/HTTP/model/device work out of expressions. A pure,
-  content-addressed extension may calculate; an effect node may interact with
-  the world; the graph makes the boundary visible.
-- [ ] Compile legacy rule expressions to the graph as an import path only.
-  New capability must not be constrained by `rq1`/`kd2` token compatibility.
+### Evidence
 
-#### DSL shape and short node vocabulary
+- [ ] **Define a pattern hypothesis** by event schema, principal/household,
+  concept hierarchy, direction and quantity band, counterpart role, place
+  region, calendar/cadence bucket, prerequisite context, horizon and feature
+  revision. **Similarity and generalization are explicit** — the learner never
+  silently widens from "green apples from this store" to all food or all people.
+- [ ] **Separate opportunity/exposure from positive, negative and censored
+  evidence.** An observed purchase can be positive; a deliberately skipped
+  eligible opportunity can be negative; **"there is no Fact" is unknown** unless
+  the program proves the opportunity was observable. Outages, hidden data and
+  periods before a source existed are censored, not failure.
+- [ ] **Learn only from evidence a versioned policy admits:** human-authored
+  Facts, independently sensed outcomes, signed or mutually confirmed
+  occurrences, deliberately labeled feedback. **A recommendation, generated
+  draft, program-created task, model text or automated Action never becomes
+  positive evidence merely because the system produced it.** A later
+  independently observed outcome may train the model on its own merit.
+- [ ] **Keep local `recurrence_likelihood` separate from counterparty
+  evidence**, keyed only by locally visible, purpose-permitted context. Purchase
+  need, consumption cadence, seller reliability, price forecast and Transfer
+  agreement likelihood are different models a program may compose.
 
-The DSL is declarative and formatter-stable. Blocks describe a graph; they do
-not execute top-to-bottom like a shell script. Data dependencies define order,
-while workflow edges define durable sequencing. `#` begins a comment.
+### The first model
 
-| Family | Preferred words | Meaning |
+- [ ] **A deterministic decayed Beta/cadence model, not a vague "growth
+  factor".** For eligible evidence `i`:
+
+      weight_i = decay(age_i, configured_half_life, decay_version)
+      alpha    = prior_alpha + sum(weight_i * positive_i)
+      beta     = prior_beta  + sum(weight_i * negative_i)
+      recurrence_probability = alpha / (alpha + beta)
+
+  `decay` is a specified fixed-point lookup so it replays identically. Each new
+  event changes the posterior less as evidence accumulates; old evidence loses
+  influence by half-life. **Confidence is reported separately from probability**
+  using effective sample weight and a versioned credible interval. Cadence uses
+  deterministic eligible-time buckets or a discrete time-to-event hazard, so
+  "usually Saturday morning" and "about every eight days" coexist without
+  confusing frequency with certainty.
+- [ ] **Store as typed policy, not frontend state:** prior, evidence
+  query/policy, positive/negative definitions, half-life, cadence/timezone,
+  feature buckets, minimum effective sample weight, probability and confidence
+  thresholds, enter/exit hysteresis, mute/snooze, drift policy, model version.
+- [ ] **Persist each update** with prior checkpoint hash, admitted and rejected
+  evidence ids and reasons, logical evaluation time, resulting sufficient
+  statistics, metrics and new checkpoint hash. **Checkpoints are caches:
+  replaying eligible evidence is the truth and must reconstruct them.**
+- [ ] **Avoid combinatorial context mining** by declaring candidate feature
+  templates and resource/privacy budgets. New pattern discovery emits a
+  hypothesis with multiple-testing information; it does not create a million
+  invisible rules or search sensitive attributes by default.
+- [ ] **Split evidence into deterministic train/validation horizons.** Report
+  calibration, false-positive/negative cost, support, drift and baseline
+  comparison before a learned policy graduates from watching to suggestion or
+  autonomy.
+- [ ] **Model lifecycle:** `cold → learning → calibrated → drifting →
+  stale/disabled`. Insufficient, stale, shifted or contradictory data lowers
+  confidence and autonomy. Threshold crossings use hysteresis and minimum
+  duration so values near the line do not chatter.
+- [ ] **A registry of deterministic learner types:** decayed count/Beta,
+  cadence/hazard, moving quantile, seasonal baseline, anomaly/change detector,
+  regression/classification, later seeded advanced models. Each publishes its
+  feature contract, limitations, update rule, metrics, memory/fuel bounds and
+  explanation strategy.
+- [ ] **A learner never mutates a program graph or its own feature/evidence
+  scope.** It emits parameters or a revision candidate. Automatic promotion
+  requires a pre-authorized template and scope, Proof, validation, optional
+  shadow duration, rollback condition, and a grant that explicitly includes
+  activation.
+- [ ] **Refine counterparty evidence by concept/role/window** and show kept,
+  broken, disputed, late, partial, missing and verification counts directly. Any
+  smoothed estimate is local decision support, **not a global reputation score,
+  identity label, or fact about a person's character.**
+
+### The recommendation contract
+
+A recommendation is a durable, inert interface between inference and choice.
+Build this lifecycle **before** whispers or automatic drafts, so Attention never
+becomes the only place a candidate exists.
+
+- [ ] **One lifecycle-managed recommendation per `(pattern/objective, subject,
+  horizon, candidate-kind)`**, deduplicated and updated in place as evidence
+  changes. It carries claim, evidence, model revisions, probability,
+  confidence/uncertainty, expected benefit/cost, alternatives, freshness,
+  required authority, expiry, and an exact preview/diff.
+- [ ] **States:** `open, accepted, accepted-edited, dismissed, snoozed, muted,
+  obsolete, expired`. New evidence may update an open item but **cannot
+  resurrect a muted pattern or replace a person's edited choice.**
+- [ ] **Routes are policy, and a high score never skips one:**
+  `observe-only → log`, `suggest → recommendation`, `draft → inert candidate`,
+  `ask → durable decision`, `act → authorized intent`. Probability/confidence
+  thresholds and authority checks are required at every transition.
+- [ ] **Feedback is typed and contextual:** correct, incorrect, wrong
+  time/place/quantity/person, already done, not useful, too frequent, accepted
+  unchanged, accepted edited, snoozed, mute. It may update delivery and pattern
+  models under their evidence policy while preserving the original
+  recommendation and response.
+- [ ] **Detect action/recommendation loops.** If accepting a suggestion creates
+  the only evidence that makes it more likely, mark the path endogenous and
+  exclude or separately measure it. Compare against a no-intervention baseline
+  where feasible.
+- [ ] **Explanations at several depths:** one sentence, substituted values,
+  evidence timeline, model card/uncertainty, objective/alternatives, policy
+  decision, and counterfactual ("without Tuesday's consumption Fact, this would
+  stay below the suggestion threshold").
+- [ ] **A human, agent, imported template or model may author the same inert
+  candidate format.** Authorship is provenance, not permission; none bypass
+  visibility, evidence display, Proof, budgets or the principal's grant.
+
+**Exit:** the apple example moves from cold evidence to one explained
+suggestion or draft with no self-training, no duplicate recommendation, correct
+decay and rebuild, and no authority derived from probability. The recurrence
+reference model separately proves prior behavior, diminishing update influence,
+half-life decay, cadence, hysteresis, confidence/support separation,
+negative/censored evidence, feedback, deduplication, drift, rebuild, and
+exclusion of endogenous self-training.
+---
+
+## 15. Attention — asking a person without pestering them
+
+Why: Attention schedules human interruption **after** a candidate or decision
+already exists. It ranks and delivers. It does not recompute the decision, gain
+authority, or hide parked work. Build the inbox and digest truth first, device
+channels afterwards, with one cross-device acknowledgement identity.
+
+- [x] **The Decision Queue is `source: decision, live: true`, and `decide` is the
+  answer.** Deterministic feeders cover broken promises (`expiry`), rule `ask`
+  consequences (`ask`), Senses matches (`draft`), and projected crossings
+  (`crossing`, one-week horizon, deduped per record).
+- [x] **`decide { decision, answer }` closes a decision through the Ledger.**
+  When the chosen option carries an Action, deciding executes it, for one-tap
+  flows such as "yes → set quantity".
+- [x] **Decisions with `expires_at` auto-close as `expired`**, and each sweep
+  deduplicates by `(subject, kind)` — one unresolved situation asks once.
+- [x] **The daily notification budget is hard**
+  (`configuration.attention_budget_per_day`, default 12). Excess notification
+  effects finish as `parked:digest`: **deferred, not lost.**
+- [ ] **A decision is durable work requiring a choice; a whisper is its calm,
+  context-aware delivery.** Whispers never become a second queue and never
+  execute Actions — they link to a decision, recommendation, run or changed fact
+  and disappear without losing the underlying item.
+- [ ] **A decision freezes** the question, subject, evidence/run, options and
+  exact Action previews, required principal, default/no-answer behavior,
+  deadline, reversibility and current-revision preconditions. **Answering after
+  the world changed either revalidates or returns a stale decision; it never
+  executes an obsolete preview.**
+- [ ] **Rank by explicit user priority, urgency/window, confidence, safety,
+  reversibility, cost of delay, interruption cost and recent delivery load.**
+  The formula and tie-break are inspectable. Low-value items collect into
+  summaries. **Urgency does not manufacture authority.**
+- [ ] **Route through device records** to inbox, digest, desktop toast, mobile
+  push, sound or text, with per-program/per-source channel controls, quiet
+  hours, location/context eligibility, accessible presentation, and "show why
+  now".
+- [ ] **Delivery has an idempotent whisper uid and per-channel
+  attempts/receipts.** Opening, acknowledging, dismissing or answering on one
+  device converges on the durable item and suppresses redundant channels per
+  policy.
+- [ ] **Escalation is explicit:** retry a channel, change channel, notify another
+  delegated recipient, or expire. **No program infers permission to contact a
+  family member or employer merely because the primary person did not answer.**
+- [ ] **Attention policy reserves capacity for safety and expiring
+  commitments**, caps every source and program, supports "never interrupt for
+  this", and shows which items were parked by budget. Digest generation
+  summarizes links; it does not replace or mutate the underlying decisions.
+- [ ] **Feedback is a first-class result** (`accepted`, `edited`, `dismissed`,
+  `snoozed`, `muted`, `wrong-context`) used to tune local delivery and pattern
+  policy without rewriting historical evidence.
+- [ ] **No coercive ranking, synthetic urgency, dark patterns, or hiding the "do
+  nothing / mute / pause" option.** Explanations and controls stay available.
+  Accessibility and quiet-time constraints are hard policy.
+---
+
+## 16. Automation Trust and driving Transfer
+
+Why: up to here everything Karma does is local. This is the first block where
+automation touches another person, and it needs a gate the grant cannot express.
+A grant says *"this Program may perform these Action kinds for me within these
+budgets"*. A Trust scope says *"these counterparties, Organs and proximities are
+acceptable for this concept and stage, at these evidence thresholds"*. **The
+effective result is their intersection, never their union.**
+
+**Probability is evidence about what may be needed. It is not trust in a seller
+and not authority to transact.**
+
+The gates stay separate and conjunctive:
+
+    visible offer ∩ recurrence probability/confidence ∩ objective/terms ∩
+    Automation Trust scope ∩ principal grant/budgets ∩
+    Transfer domain revision/agreement/occurrence readiness
+
+Raising probability cannot compensate for an untrusted Organ; allowlisting an
+Organ cannot compensate for insufficient evidence or grant; a grant cannot make
+an invisible or stale offer visible or current. A failure in any gate denies or
+routes to Attention **with its own reason**.
+
+Existing contact state remains the coarse first gate: `blocked` always denies
+import, discovery, suggestion delivery and automation; `known` merely permits
+ordinary interaction and never implies automation. Automation Trust is finer,
+local, concept-specific and unpublished by default. It is **not** a reputation
+level and cannot grant authority to the counterparty.
+
+### Tiers, not a boolean
+
+| Tier | Highest behavior the scope will consider | Still required |
 | --- | --- | --- |
-| Metadata | `program owner purpose tags mode` | Identity and intent |
-| Parameters | `param state` | Typed configurable or durable node state |
-| Triggers | `on fact`, `on every`, `on at`, `on signal`, `on manual`, `on decision`, `on receipt` | Create occurrences |
-| Timing | `every elapsed/calendar`, `anchor`, `resolution`, `max_lateness`, `coalesce_window`, `missed`, `inactive_gap`, `rephase` | Separate intended cadence from runtime wake service/catch-up |
-| Inputs | `input`, `view`, `record`, `signal`, `secret` | Declare exact data dependencies |
-| Features | `let`, `window`, `sum`, `count`, `avg`, `rate`, `lag`, `join`, `convert` | Pure preparation |
-| Recognition | `sense`, `when`, `crosses`, `enters`, `leaves`, `holds` | Detect a situation/transition |
-| Learning | `learn`, `predict`, `update`, `validate` | Versioned model operations |
-| Futures | `project`, `branch`, `assert` | Imagination/proof |
-| Optimization | `solve`, `require`, `prefer`, `minimize`, `maximize`, `tie_break` | Explicit objectives/constraints |
-| Workflow | `step`, `parallel`, `wait`, `approve`, `retry`, `compensate`, `cancel` | Durable orchestration |
-| Routing | `observe`, `recommend`, `draft`, `ask`, `act` | Autonomy ladder |
-| Effects | `emit`, `do action`, `do transfer`, `do command`, `do http`, `do device`, `do ui` | Explicit mutation boundary |
-| Meta-control | `tune`, `revise`, `pause`, `resume`, `run` | Manage named Karma objects |
-| Policy | `scope`, `freshness`, `dedupe`, `budget`, `require grant`, `on denied`, `on stale`, `on failure` | Guard behavior |
+| `observe` | Read/compare visible evidence | visibility/purpose |
+| `suggest` | Show a recommendation involving the counterparty | recommendation policy |
+| `draft` | Create a private local Transfer draft | `transfer.draft_local` |
+| `propose` | Publish/address/send a proposal | `transfer.publish/propose` |
+| `negotiate` | Claim/counter/revise inside terms | `transfer.negotiate_own` |
+| `commit` | Agree/activate the principal's own side | exact high-authority agreement/activation grant |
+| `settle` | Claim/confirm own occurrence, settle owned Record | independent evidence, confirmation/settlement grants, domain readiness |
 
-The expression language supports typed literals, references, arithmetic,
-comparison, Boolean operations, `if`/`match`, collection reducers, and pure
-registered functions. It does not support reflection, dynamic field names,
-unbounded loops, arbitrary recursion, shell interpolation, network calls, or
-implicit reads. Explicit bounded `iterate max N until condition` is a graph node
-with deterministic fuel and convergence trace.
+- [ ] **Higher tiers include willingness for lower stages but confer none of
+  their capabilities.** The effective stage is the minimum of Trust ceiling,
+  grant capability ceiling, current policy route, and Transfer domain
+  capability.
 
-A compact grammar sketch:
+### The scope and its selector
 
-    definition   := program | frequency | signal | model | objective | trust
-                  | grant_template
-    program      := "program" slug "{" declaration* "}"
-    frequency    := "frequency" slug "{" frequency_decl* "}"
-    frequency_decl := param | cadence | anchor | timer_policy | missed_policy
-                    | inactive_gap_policy | rephase_policy | overload_policy
-    cadence      := "every" ("elapsed" duration | "calendar" calendar_rule)
-    timer_policy := "timer" "{" ("resolution" duration)
-                    ("max_lateness" duration) ("coalesce_window" duration) "}"
-    declaration  := metadata | param | trigger | input | derive | model
-                  | objective | route | workflow | policy
-    trigger      := "on" trigger_kind trigger_policy*
-    derive       := ("let" | "sense") local_id ":" type? "=" expression
-    route        := "when" expression "{" outcome* "}"
-    outcome      := recommend | draft | ask | act | emit | tune | revise
-                  | pause | resume | external_effect
-    reference    := kind ":@" dot_slug | "@" dot_slug
-    duration     := integer ("ms" | "s" | "m" | "h" | "d" | "w")
+- [ ] **`AutomationTrustScopeRevision` is immutable** and contains: owner person,
+  optional program/revision, purpose, concept + include-descendants, direction
+  (`buy|sell|give|receive|any`), stage ceiling, counterparty selector, per-stage
+  probability/confidence, allowed units, quantity and value ranges, allowed
+  places/windows/weekdays, rate and aggregate budgets, required counterparty
+  evidence, `valid_from` / `expires_at`.
+- [ ] **The selector AST is explicit — there is no ambiguous "list plus
+  proximity".**
 
-##### K1.4 canonical Program DSL
-
-The first parser/formatter slice deliberately covers every variant in the
-current `ProgramAst` rather than pretending that later model/effect/workflow
-nodes already exist. Its strict text starts with `karma 1;`, carries
-`schema karma.program.v1;`, and spells out tags, capabilities, parameter
-mutability, node bindings, port sensitivity/freshness, operations, state
-contracts, and program outputs. Collections are formatter-sorted because the
-AST uses ordered maps/sets. This form is a canonical projection, not the final
-amount of text a person must type in the Karma sand.
-
-Current node operations use these lossless forms:
-
-    op trigger(manual, event);
-    op input(record-quantity(ref(record, r_..., apple.stock)), value);
-    op derive {
-      low = binary(less, input(stock), input(threshold));
-    }
-    op delay(next, previous, i64(0),
-      state(program, never, ignore, reset, clone));
-
-Types and literals are explicit constructor expressions. Examples are
-`decimal(3)`, `quantity(3, uid(unit, c_...))`, `datum(i64)`,
-`decimal(3, "12.340")`, `prob("0.720000000")`, and
-`datum(i64, missing)`. Published references always format as
-`ref(kind, uid, display_slug_or_none)`; shorthand `@slug` is resolved before
-canonical formatting and therefore cannot make a stored revision depend on a
-future rename. Expressions use explicit `literal`, `input`, `unary`, `binary`,
-and `if` constructors in this slice, avoiding precedence ambiguity. K1.5 adds
-the separate Frequency definition grammar over elapsed/calendar schedule ASTs.
-
-The lexer accepts Unicode only inside JSON-escaped strings; semantic tokens are
-ASCII. `#` comments and insignificant whitespace are accepted but removed by
-formatting. Parsing is deterministically bounded by source bytes, token count,
-string bytes, and nesting depth. Errors contain a stable kind plus byte offset,
-line, and column; unknown declarations, constructors, enum values, duplicate
-ids, trailing input, and over-limit input fail instead of being ignored. The
-only success criterion is:
-
-`parse(format(ast)) == ast` and `format(parse(text)) == format(ast)`.
-
-Ergonomic infix expressions, omitted ids/types, and short resolved-reference
-syntax are a later normalization layer that must produce this same AST before
-Proof or storage. The canonical parser never guesses a type, resolves a slug,
-or accesses Records, Store, timezone, clock, locale, or network.
-
-**K1.4 implementation status:** complete. `format_program` and `parse_program`
-are pure functions in `nucleus::karma::dsl`; the formatter output itself is an
-exact golden fixture and all current AST families round-trip losslessly. K1.5
-applies the same boundary discipline to Frequency definitions rather than
-combining two independently versioned AST families in one parser function.
-
-##### K1.5 canonical Frequency AST and DSL
-
-A Frequency has its own immutable `karma.frequency.v1` revision and hash. The
-revision contains slug, non-empty purpose, tags, named schedule parameters,
-cadence/anchor, timer service, missed/inactive/rephase/overload policies, and
-calendar timezone/tzdb/gap/fold data where applicable. It never contains an
-active flag, consumer list, current cursor, next deadline, lane, measured host
-capacity, or wake result; those are mutable handle/runtime state.
-
-Frequency parameters are deliberately smaller than Program values. A named
-parameter is either a non-negative exact millisecond duration with inclusive
-minimum/default/maximum, or a positive `u32` integer with inclusive bounds.
-Schedule fields use a typed `literal(...)` or `parameter(local_id)` binding;
-there is no expression evaluation, ambient parameter name, numeric coercion,
-or arbitrary JSON. Anchors, timezone identity, tzdb identity, weekday sets,
-day-of-month, and policy enums require a new revision rather than parameter
-tuning because changing them can reinterpret civil identity or authority.
-
-Compilation accepts an explicit map of overrides, rejects unknown names/type
-mismatches/out-of-range values, fills every other value from the revision
-default, and resolves bindings into a concrete `ElapsedSchedule` or
-`CalendarSchedule`. The result carries the Frequency revision hash, complete
-effective parameter map, and concrete schedule. It validates interval/timer
-integer ranges and cross-field timer invariants after resolution. Store/runtime
-code must persist the effective parameter hash with an activation epoch; it
-must never compile from whatever mutable values happen to be visible halfway
-through a run.
-
-The strict canonical form begins `karma-frequency 1;` and formats, for example:
-
-    frequency sensor.fast {
-      schema karma.frequency.v1;
-      purpose "Sample the local sensor";
-      tags [sensor];
-      param interval: duration default duration(3)
-        range [duration(1), duration(1000)];
-      every elapsed parameter(interval);
-      anchor timestamp("2026-07-21T09:00:00.000Z");
-      timer {
-        resolution duration(1);
-        max-lateness duration(1);
-        coalesce-window duration(0);
+      enum SelectorExpr {
+          Any(Vec<SelectorExpr>), All(Vec<SelectorExpr>), Not(Box<SelectorExpr>),
+          PersonIn(Set<PersonUid>), OriginOrganIn(Set<OrganUid>),
+          ViaOrganIn(Set<OrganUid>), ProximityAtMost(u32),
       }
-      missed replay(64);
-      inactive-gap skip-to-next-anchor;
-      rephase preserve-anchor;
-      overload pause-and-ask;
-    }
-
-Calendar form replaces elapsed cadence/UTC anchor with a `daily`, `weekly`, or
-`monthly` rule, canonical civil anchor, timezone, pinned tzdb version/hash, and
-gap/fold policies. Weekly weekdays are sorted Monday through Sunday. Monthly
-invalid-day behavior is explicit. Both calendar and elapsed schedules carry
-the same rephase policy; rephase changes future boundaries and never rewrites a
-consumed civil/UTC boundary. Parsing uses K1.4's bounded lexer/error contract,
-and success requires AST/text round-trip plus identical compiled schedule and
-revision hash for the same explicit parameter map.
-
-**K1.5 implementation status:** complete. `FrequencyAst::compile` produces a
-`CompiledFrequency` containing the immutable revision hash, effective-parameter
-hash/map, and concrete schedule. `format_frequency`/`parse_frequency` are pure,
-bounded, lossless projections sharing the K1.4 lexer/error contract. Frequency
-wire types have their own golden fixture; calendar's golden fixture was
-deliberately updated when rephase became part of its complete contract.
-
-##### K1.6 deterministic gates, temporal controls, and candidate routing
-
-K1.6 adds the stateful decision vocabulary needed to turn exact values into a
-stable flow without granting the pure graph an effect channel. These nodes are
-ordinary combinational graph nodes: their current input determines their
-current output and their state update is written only after the occurrence.
-They therefore do **not** break a graph cycle. Only an explicit `delay` is a
-read-old/write-next cycle boundary. This distinction prevents an apparently
-stateful threshold or debounce from concealing an instantaneous dependency
-cycle.
-
-`threshold` has one ordered scalar input and Boolean `active`, `entered`, and
-`left` outputs. It stores only the old `active` bit. An `above` threshold enters
-when `value >= enter` and leaves when `value <= exit`, with Proof requiring
-`exit < enter`. A `below` threshold enters when `value <= enter` and leaves when
-`value >= exit`, with Proof requiring `enter < exit`. Values in the open band
-preserve the old state. `entered` and `left` are one-occurrence pulses, so an
-oscillating measurement inside the band cannot repeatedly fire. Threshold
-literals must have exactly the input type and that type must be an ordered
-scalar; unit, scale, and referenced kind are never coerced.
-
-`debounce` has one Boolean input and `stable`, `entered`, and `left` Boolean
-outputs. A changed input starts a candidate interval at the frozen logical
-timestamp. It becomes stable only after the same value has continuously
-remained pending for `for-at-least`; an exact-boundary timestamp qualifies, a
-return to the stable value cancels the pending interval, and duration zero
-promotes immediately. `cooldown` accepts a Boolean pulse only if no pulse was
-previously accepted or `now - last_allowed_at >= cooldown`; false inputs never
-consume the window. `rate-limit` similarly accepts at most `max` true pulses in
-the half-open rolling interval `(now - window, now]`. An acceptance exactly one
-window old has expired. The retained timestamp list is bounded by `max`, and
-Proof requires non-negative debounce/cooldown durations, a strictly positive
-rate window, and non-zero `max`.
-
-All three temporal controls require `FrozenEvaluationContext.logical_at` and
-keep their state in `control_state`, separate from `delay_state`. Every state
-variant stores `last_observed_at` so logical time cannot silently move
-backwards. Under `late_event: ignore`, the occurrence emits no new pulse or
-acceptance and leaves state unchanged (`debounce.stable` still reports the old
-stable value). Under `reject`, evaluation returns `non-monotonic-logical-time`.
-`recompute` and `compensate` return `replay-required`: a single pure invocation
-cannot reconstruct the intervening history, and the future K3 occurrence
-runner must replay the captured ordered inputs before committing replacement
-or compensating state. Absence of logical time returns `missing-logical-time`.
-The complete typed state-before and staged-state-after values belong in the
-trace and replay capsule.
-
-`route-candidate` has a Boolean condition, one declared output, an explicit
-route (`observe`, `recommend`, `draft`, `ask`, or `act`), a template slug, and
-an ordered map from candidate field names to input bindings. Proof derives the
-exact output type `datum<candidate(route, template, fields)>` and rejects
-missing, extra, or differently typed fields. False produces a typed missing
-datum. True produces a typed value datum containing the immutable candidate
-payload. Every route is inert in K1.6: even `act` means “this candidate asks the
-later policy/authority/effect pipeline to attempt acting”, never “perform an
-effect now”. Candidate identity, persistence, deduplication, grants, intent
-creation, and Actions remain K2/K5 concerns.
-
-The canonical Program DSL uses these lossless forms:
-
-    op threshold(value, active, entered, left, above,
-      i64(10), i64(8), false,
-      state(program, never, ignore, reset, clone));
-    op debounce(input, stable, entered, left, duration(250), false,
-      state(program, never, reject, reset, clone));
-    op cooldown(input, allowed, duration(5000),
-      state(program, never, reject, reset, clone));
-    op rate-limit(input, allowed, 3, duration(60000),
-      state(program, never, reject, reset, clone));
-    op route-candidate(condition, proposal, recommend, buy.apple,
-      {amount = amount, seller = seller});
-
-Candidate port types and literals use
-`candidate(recommend, buy.apple, {amount: quantity(3, uid(unit, ...))})`
-and
-`candidate(recommend, buy.apple, {amount = quantity(...), seller = ref(...)})`.
-The field order is semantic and canonical because both maps use `BTreeMap`.
-The Flow Plane projects threshold enter/exit values as two points joined by a
-hysteresis band, temporal controls as annotated ranges, state transitions as
-edge pulses, and candidate routes as terminal inert nodes. Thus the same AST
-drives execution, Why traces, simulation, and the later 2D Karma sand; the UI
-does not invent a second rule model.
-
-**K1.6 implementation gate:** golden wire fixtures must cover every new enum,
-state, type, literal, operation, error, and DSL constructor. Sequence tests
-must prove exact-boundary threshold/debounce/cooldown/rate behavior, late-event
-policy, read-old/write-next staging, candidate inertness, graph-cycle rules,
-and byte-identical results for identical frozen contexts.
-
-**K1.6 implementation status:** complete. `NodeOperation` and the canonical
-Program DSL now include all five families. Proof rejects reversed/equal
-hysteresis bands, wrong scalar/unit/port types, invalid durations/windows,
-candidate schema drift, and cycles hidden behind a control node. Evaluation
-validates persisted control-state invariants, uses only `logical_at`, stages
-updates, and emits inert typed candidate data. Exact-boundary, late-event,
-corrupt-state, deterministic-result, DSL round-trip, and wire-golden tests are
-part of the Nucleus suite.
-
-##### K1.7 portable pure-evaluation replay capsule
-
-K1.7 captures the complete boundary of one **pure Program evaluation**. This is
-the first executable layer of the larger replay contract, not a claim that K1
-already captures occurrence streams, models, grants, signatures, effects, or
-Store checkpoints. `EvaluationReplayCapsule` has its own
-`karma.evaluation-replay-capsule.v1` schema and a separately explicit
-`karma.evaluator.v1` semantic revision. It embeds the immutable `ProgramAst`,
-the Program revision hash, complete `FrozenEvaluationContext`, exact
-`EvaluationLimits`, the expected `EvaluationResult`, and that result's
-domain-separated canonical hash. Embedding the Program makes the capsule
-portable; the hash prevents the embedded definition from being silently
-substituted.
-
-The capsule is wrapped by `SealedEvaluationReplayCapsule`, whose canonical hash
-covers every inner byte-equivalent field. Capture evaluates once through the
-ordinary proven evaluator, records that exact result, and seals the capsule.
-Replay performs checks in this order: outer seal, embedded Program revision,
-stored expected-result hash, ordinary evaluation, then exact expected/actual
-result equality and canonical result hash. Each failure has a stable typed
-code; an evaluator failure remains nested as its original typed error. There is
-no bypass that accepts stale inner hashes merely because a caller resealed the
-outer wrapper. This seal is a content address, not an authenticity signature:
-a caller may deliberately recapture fully changed inputs and output, but that
-is a new capsule with a new hash. K2 associates ownership/signatures without
-changing this content verification.
-
-This first capsule intentionally contains values rather than pointers to live
-Records or state rows. It can be serialized, moved, inspected, and replayed
-with no Store, clock, timezone provider, filesystem, network, randomness,
-device, or secret access. K2 persistence may content-address/deduplicate large
-capsules, and K3/K10 will compose them into full occurrence/checkpoint capsules
-with ordered Facts, schedules, models, policy/grant snapshots, captured ports,
-and receipts. That storage optimization must preserve the same resolved
-canonical content and verification order.
-
-**K1.7 exit gate:** repeated replay and serde round-trip reproduce an exactly
-equal `EvaluationResult`; mutation of the outer envelope, Program, frozen
-context, or stored expected result fails at the corresponding typed boundary;
-the schema, evaluator revision, error vocabulary, and a complete sealed capsule
-have golden hashes.
-
-**K1.7 implementation status:** complete. Capture and replay share the ordinary
-Proof/evaluator path, embed the full pure boundary and expected trace, and use
-domain-separated hashes for Program revision, evaluation result, and sealed
-capsule. Tests cover repeated replay, serialization, outer mutation, resealed
-context divergence, Program substitution, stale expected results, and nested
-typed evaluator failure.
-
-##### K1.8 exact delta and aggregation primitives
-
-**Superseded in part, 2026-07-26.** The requirement is kept and generalized; the
-`Economy*` type names below are not. They were never built and must not be:
-naming a backend primitive after one sand is the arrangement the standing rule
-forbids. Read `EconomyMagnitude` as an exact `DecimalValue` with a unit,
-`EconomySignedDelta` as a signed `DecimalValue`, and `EconomyFlowTotals` as the
-general per-unit fold in `store::ledger`.
-
-One design change went further than a rename. The spec below carries a
-`direction` field and a `signed_delta(direction)` conversion, so that a client
-states "gain" or "loss" separately from an amount. That is now gone entirely:
-**direction is the sign of the delta and nothing else.** A field that can
-disagree with the sign beside it is a field that will, and a refund stops being
-a special case — it is the same concept with a positive amount. The invariant
-the spec wanted, "clients never submit a signed delta capable of contradicting
-direction", is achieved by having nothing to contradict.
-
-K1.8 freezes the pure value contract that persistence and Actions must use.
-`EconomyMagnitude` is an exact `DecimalValue` plus a `unit` reference; its
-constructor and deserializer require a strictly positive mantissa and a real
-`ReferenceKind::Unit`. Zero, negative magnitude, a client sign, float, currency
-conversion, and an untyped unit string cannot enter the draft. Calling
-`signed_delta(direction)` is the only conversion to `EconomySignedDelta`:
-`gain` preserves the positive amount and `loss` checked-negates it. Thus clients
-never submit a signed delta capable of contradicting direction.
-
-`EconomyEventDraft` is an immutable `economy.event-draft.v1` value revision. It
-contains one resource Record reference, direction, magnitude, normalized UTC
-`occurred_at`, optional source, ordered tags, optional note, capture origin, and
-optional cause. A source is either a Record reference or a bounded canonical
-human label. A tag is a Record or Lingua Concept reference. A cause explicitly
-names `occurrence`, `capture`, `program`, or `fact` and Proof-like validation
-requires the corresponding Record/Program/Fact reference kind. Capture origin
-is `manual`, `typed`, `voice`, `photo`, or `agent`; it is provenance, never
-authority. Labels reject leading/trailing whitespace, controls, empty text, and
-oversize bytes; notes are bounded and reject unsafe controls while retaining
-intentional newlines/tabs. There is no implicit Unicode, locale, source, tag,
-resource, unit, or timezone guess.
-
-The draft constructor and deserializer run the same validation, and
-`revision_hash()` domain-separates its canonical content. Mutable draft handles,
-numeric expected revisions, principals, and idempotent request ids belong to K2
-Store/Action rows; they are not smuggled into this immutable value. Likewise,
-the draft has no event uid, applied Fact, correction chain, or quantity effect.
-
-`EconomyFlowTotals` is the pure server-side fold primitive for one explicitly
-selected scale/unit. It retains positive `gains`, positive `losses`, signed
-`net = gains - losses`, and exact gain/loss/event counts. Adding an event
-requires the exact same scale and unit and uses checked `i128` arithmetic.
-Different resource units/scales are separate accumulator keys and a mismatch is
-an error, never conversion or summation. Deserialization rechecks the algebraic
-and count invariants, so a cached/transported projection cannot claim totals
-that disagree with its components. Visibility filtering and civil-month
-bucketing must happen before this fold in E0's query layer.
-
-**K1.8 exit gate:** constructor and hostile-serde tests reject zero/negative
-magnitudes, wrong reference kinds, malformed metadata, unit/scale mixing,
-overflow, false total algebra, and count drift. Gain/loss signed deltas, draft
-hashes, correction-ready metadata, exact totals, serde round-trips, and complete
-wire vocabulary have golden fixtures. This completes K1; K2 may persist and
-authorize these values but may not redefine their arithmetic.
-
-**K1.8 implementation status:** complete, under general names. The previous
-entry here claimed these values were "exported from `nucleus::karma::economy`";
-that module has never existed and the claim was wrong. What exists and is
-tested:
-
-- `nucleus::DecimalValue` with `parse_inferred`, `aligned_add` and canonical
-  `to_string()` — exactness end to end, never a float on the wire.
-- `store::exact` and `store::ledger` — the per-unit fold. Different units are
-  separate accumulator keys and a mismatch is an error, never a conversion or a
-  silent summation.
-- `store::entries` — a change with its classification, revision and originating
-  Fact, correctable and voidable.
-- `nucleus::karma::Cadence` — the repeating-date primitive, domain-neutral.
-
-Visibility filtering and bucketing still happen before the fold, in `protein`.
-The unit-mixing invariant is not theoretical: a review pass found `opening` and
-`current` summed across all units while the buckets beneath them were per-unit,
-so the largest number on a screen could add kilograms to a currency. Every test
-passed, because no fixture had set a unit. It is now per-unit, and a multi-unit
-concept reports a **null** scalar rather than inventing one.
-
-##### K2.1 durable Program handles and revisions
-
-The first K2 slice persists Programs before introducing automatic execution.
-A Program handle is a `RecordKind::Program` Record plus one `karma_program`
-sidecar. The handle owns mutable `handle_revision`, lifecycle status, immutable
-head revision hash, optional active revision hash, optional owner-person
-identity, and timestamps. `record.quantity` mirrors activation only (`0` or
-`1`) for existing Record tooling; it is not the Program's semantic state and is
-changed in the same transaction as the sidecar and evidence Fact.
-
-`karma_program_revision` rows are immutable and content-addressed. Each stores
-the canonical AST JSON, canonical Program DSL, complete Proof JSON/status, and
-creation time. Loading re-deserializes all three, recomputes the Program hash,
-reformats the DSL, and recomputes Proof; corruption is an error rather than an
-accepted cached definition. Rejected Proof revisions may be stored as editable
-draft heads but can never become active. Revising an active handle changes only
-its head; activation of that new accepted revision is a separate expected-
-revision mutation, so editing cannot silently replace the code currently used
-by an occurrence.
-
-Create, revise, activate, and pause repository commands take a globally unique
-bounded `request_id`. `karma_program_request` stores a canonical payload hash,
-action, expected/result handle revisions, selected definition hash, and linked
-Fact. Exact replays return the prior result/Fact. Reuse of the same request id
-with different payload is a conflict. Handle updates use one compare-and-swap
-SQL statement; a miss returns the current revision without partially inserting
-an immutable revision, request, Fact, or Record change.
-
-Every committed command appends a typed `ProgramMutationEvidence` Fact in the
-same SQLite transaction. Definition-only mutations use delta zero; first
-activation uses `+1`, pause uses `-1`, and switching accepted active revisions
-uses zero. The Fact freezes prior/new head and active hashes, request id, action,
-handle revision, and actor; a signing callback may attach the current Trust
-signature before commit. The request row links that Fact, making idempotent
-results reconstructable after restart. Owner is optional in K2.1 and means
-local/private by default; sharing and grants are added by later K2 slices.
-
-**K2.1 exit gate:** migration from every prior schema succeeds; create/revise/
-activate/pause survive reopen; rejected revisions store but cannot activate;
-canonical rows reconstruct exactly; stale compare-and-swap and request replay
-are deterministic; request collision, slug collision, cross-Program revision
-activation, corrupt rows, and transaction failure leave no partial mutation;
-Fact chain, Record activation, sidecar, and request result agree.
-
-**K2.1 implementation status:** complete. Programs now use immutable canonical
-revisions behind revisioned Record handles. Create, revise, activate, and pause
-are atomic, compare-and-swap guarded, request-idempotent commands with durable
-original result snapshots and signed optional `ProgramMutationEvidence` Facts.
-Repository loads independently verify AST, DSL, Proof, hashes, ownership, and
-activation invariants; reopen, corruption, rejected-proof, stale-write,
-cross-handle, request-collision, and activation accounting tests freeze the
-behavior. All Karma command families reserve request ids in the same immutable
-global namespace before writing their family-specific result journal, so a
-cross-family collision rolls back atomically. The complete mutation vocabulary
-has a Nucleus golden fixture.
-
-##### K2.2 durable Frequency handles, revisions, and activation epochs
-
-A Frequency uses three deliberately separate durable identities. Its mutable
-handle is a `RecordKind::Frequency` Record with a `karma_frequency` sidecar and
-compare-and-swap `handle_revision`. A `karma_frequency_revision` is the
-immutable, content-addressed authored schedule: canonical `FrequencyAst`, its
-canonical DSL projection, and a default compilation. A
-`karma_frequency_activation` is an immutable runtime epoch: it freezes the
-chosen definition revision, complete effective parameter map (defaults
-included), effective-parameter hash, compiled schedule, previous activation
-hash, activating handle revision, cause, and logical activation time. Later
-cursor and occurrence rows must name the activation hash, never merely the
-mutable Frequency handle.
-
-This split is required for deterministic parameter changes. Revising an active
-Frequency changes only its head; the old revision and activation continue to
-govern scheduling until an explicit activation. `set-parameters` compiles a
-complete replacement override map against the currently active definition and
-creates a new activation epoch. `reset-parameters` does the same with the
-definition defaults. Neither command mutates the authored revision or an old
-epoch. Activating a different revision also creates an epoch. A semantically
-identical activation while already active is rejected as a no-op so every
-committed handle revision has observable meaning. Pausing clears the handle's
-active revision/epoch but retains its `latest_activation` chain pointer;
-reactivation creates a new epoch linked across the pause. No old epoch is
-erased, and history is reconstructed from immutable epochs and Facts.
-
-The Store owns six request-idempotent compare-and-swap commands: `create`,
-`revise`, `activate`, `set-parameters`, `reset-parameters`, and `pause`.
-`activate` accepts a revision hash and a complete override map; parameter
-commands require an active epoch and retain its definition revision. Every
-request fingerprint includes action, Frequency uid, expected handle revision,
-selected definition, complete overrides, owner, and actor as applicable.
-`karma_frequency_request` retains the canonical original handle result and
-linked evidence Fact, so replay after arbitrary later mutations returns the
-original snapshot. A stale command writes no revision, epoch, request, Fact, or
-Record change.
-
-Definition insertion compiles with defaults before SQL is touched. Repository
-loads independently deserialize the AST, parse and reformat the DSL, recompute
-the revision hash, recompile the defaults, and compare the stored default
-compilation byte-for-byte. Epoch loads recompile the named revision using the
-stored effective map as explicit overrides and compare the parameter hash and
-compiled schedule byte-for-byte. This detects database corruption and compiler
-drift at the boundary. Calendar compilations retain the exact timezone
-provider, version, and digest already embedded in the AST; later activation
-admission must additionally prove that artifact is locally available before it
-may arm a cursor.
-
-Each committed command appends a typed `FrequencyMutationEvidence` Fact in the
-same transaction. It freezes previous/new head, active definition, activation,
-effective-parameter hashes, handle revisions, action, request, actor, and
-logical activation time. Definition-only changes use Record/Fact delta zero;
-first activation uses `+1`, switching definitions or parameters uses zero, and
-pause uses `-1`. `record.quantity` remains only the existing activation mirror.
-An activation epoch is configuration, not execution: K2.2 creates no timer,
-thread, poll loop, cursor, or occurrence.
-
-The later shrink-to-fit scheduler consumes active epoch rows through a change
-feed keyed by activation hash and required timer resolution. A 3ms epoch can
-therefore arm a high-resolution scheduling shard while an unrelated five-hour
-epoch remains represented only by its own exact next deadline in a coarse
-shard or operating-system timer. There is no global minimum interval, fixed
-day/hour threshold, generated Rust loop, or scan of all Frequencies at the
-fastest cadence. K2.2's immutable epoch boundary is what makes that dynamic
-resource allocation safe to implement in K2.3.
-
-**K2.2 exit gate:** all six commands survive reopen and replay exact original
-results; definition and epoch canonical forms independently reconstruct;
-revision activation, parameter replacement/reset, active-head divergence, and
-pause preserve immutable history; stale writes, request collisions, cross-
-Frequency revisions, no-op epochs, invalid overrides, corrupt DSL/AST/default
-compilation/epoch compilation, and transaction failures leave no partial
-state; Record quantity, handle, epoch chain, request, and Fact evidence agree.
-
-**K2.2 implementation status:** complete. Frequency Records now expose durable
-revisioned handles; authored definitions and effective activation epochs are
-separate immutable content-addressed objects. Create, revise, activate,
-set/reset parameters, and pause are atomic CAS/idempotent commands with exact
-request-result replay and typed evidence Facts. Epoch payloads self-validate
-their full effective parameter map/hash, and Store loads additionally recompile
-the named definition. Program and Frequency commands share the global Karma
-request-id namespace. Active edits, no-ops, invalid overrides, pause/reactivate
-chain continuity, stale writes, cross-handle revisions, corruption, reopen,
-Record quantity, and wire vocabulary are covered by deterministic tests. No
-scheduler work happens in K2.2.
-
-##### K2.3 durable cursors and a shrink-to-fit deadline dispatcher
-
-K2.3 turns active Frequency epochs into exact cursor state without introducing
-a global tick. One `karma_schedule_cursor` row exists per active activation
-hash. It freezes the last intended boundary, next intended boundary, cursor
-revision, lifecycle (`armed`, `leased`, `paused`, `superseded`, or `failed`),
-lease fencing token/expiry, last occurrence sequence, and last error. Elapsed
-cursors use the already-proven `ScheduleCursor`; calendar cursors retain their
-requested civil boundary plus resolved instant/discontinuity evidence. Cursor
-creation, replacement on a new activation, and pause/supersede are driven from
-the Frequency mutation journal, not inferred by scanning all Records.
-
-The in-process dispatcher is a deadline index, not a cadence loop. Its primary
-key is `(next_wake_at, required_resolution_ms, activation_hash, cursor_revision)`.
-An indexed min-heap provides the next host wake. Secondary resolution lanes are
-created only for armed work and contain handles into that heap; they are
-admission/accounting domains, never independent polling threads. A lane's
-resolution is the minimum explicitly requested resolution among its members,
-but each member retains its own absolute wake deadline. Adding a 3ms cadence
-therefore arms its next exact boundary in a 1ms-capable lane; a five-hour
-cadence retains one absolute five-hour deadline and is not visited on the 3ms
-wake. Removing the last high-resolution member destroys that lane and releases
-its host timer/resource grant.
-
-There are no hard-coded daily, hourly, or millisecond buckets. Lane selection
-uses an ordered set of resolutions actually present plus host capabilities and
-Trust resource grants. The planner may coalesce only inside each occurrence's
-explicit `[intended_at, intended_at + coalesce_window]`; it must never round a
-deadline merely to fit a lane. If the platform timer cannot satisfy
-`required_resolution` and `max_lateness`, activation admission follows the
-Frequency's `OverloadPolicy`: reject, pause-and-ask, or use only a degradation
-already bounded by an active grant. “Generate higher-frequency Rust checks” is
-explicitly forbidden: runtime data adds/removes heap entries and host timer
-registrations, not code or permanent loops.
-
-At a host wake the dispatcher pops only entries whose arm window is reachable,
-then asks the Store to claim each exact `(activation_hash, cursor_revision)`.
-The claim transaction verifies the Frequency still names that activation,
-advances `armed -> leased`, increments a monotonically increasing fencing
-token, and sets a bounded lease expiry. Stale heap entries, superseded epochs,
-and duplicate workers lose the compare-and-swap without an occurrence. After
-pure schedule advancement, one transaction appends the occurrence intent and
-new cursor state, then clears the lease. A crashed worker leaves no ambiguous
-commit: an expired lease can be reclaimed with a higher fencing token, while a
-committed occurrence's unique `(activation_hash, sequence)` prevents replayed
-side effects.
-
-The planner is pure and clockless. It accepts an ordered snapshot of armed
-entries, host timer capabilities, the active resource grant, exact persisted
-per-entry demand, and exact aggregate capacity; it returns ordered
-admissions/rejections and a deadline index whose minimum is the next host-timer
-request. Logical `now` belongs to cursor advancement and persisted admission
-diagnostics, not resource arithmetic. The async runner uses an injected
-`DeadlineClock`: its production Tokio adapter waits against a monotonic instant,
-projects that elapsed duration onto the wall-clock observation, and reports a
-typed `ClockDiscontinuity` if the two differ beyond an explicit tolerance.
-The director rebuilds once at that boundary. Wall-clock jumps, suspend/resume,
-and restarts are therefore handled by the Frequency's missed and inactive-gap
-policies during advancement, never by assuming a loop ran while the process
-slept. Deterministic simulation supplies the same port with a manual clock and
-advances directly to the next deadline without real sleeping.
-
-The runtime builds that plan only at boot or after an explicit directory-change
-notification. A normal firing removes one due entry, completes its fenced Store
-transaction, and reinserts only the returned next revision into its existing
-admitted lane. It must not requery or replan unrelated registrations. If a
-claim is already leased by another worker, the contender records the exact
-lease expiry as an operational recovery arm; at that one instant it fences the
-expired lease and rebuilds once. This is not a retry interval. A successful
-mutation publishes a lossless watch revision after commit, so activation,
-parameter, pause, provider, capability, and grant changes cannot be missed
-between directory snapshots.
-
-Frequency activation is a control-plane transaction, not a raw Store call from
-an interface. The Engine prepares the exact candidate epoch/cursor, plans the
-candidate together with all currently armed work under one host-capability and
-resource-grant snapshot, then commits only the admitted result. A
-`reject_activation` failure leaves no active epoch or cursor. `pause_and_ask`
-may commit an explicitly paused cursor with typed admission evidence;
-`degrade_within_grant` may commit only the precise bounded degradation returned
-by the planner. The same Engine boundary publishes the mutation Fact,
-materializes/supersedes the cursor, and increments the directory-change
-revision. Direct Store functions remain persistence primitives for recovery and
-tests, not the human/agent Action contract.
-
-**K2.3 exit gate:** pure planning proves that 3ms and five-hour entries retain
-independent deadlines and that dispatcher work is proportional to due/changed
-entries, not fastest cadence times all schedules. Heap insertion/removal,
-coalescing, host capability admission, stale entries, lease fencing/expiry,
-restart, pause, activation replacement, duplicate workers, missed policies,
-overflow, and occurrence uniqueness are deterministic. A restart integration
-test must reopen SQLite, rebuild the heap from one indexed armed-cursor query,
-and produce the same next wake and occurrence sequence without scanning on any
-periodic tick.
-
-**K2.3 implementation status:** complete; the durable tickless kernel, exact
-resource admission, clock boundary, and Engine control path are complete.
-Nucleus has a pure dynamically-laned deadline planner, lazy-fenced min-heap,
-elapsed and pinned-provider calendar advancement, content-addressed occurrence
-envelopes, and reduced-rational `ScheduleDemand`. Demand separately reserves
-semantic ticks, timer wakes, calibrated scheduler CPU, evaluator fuel, writes,
-effects, and trace bytes per second; arithmetic overflow fails closed. Calendar
-demand requires the pinned provider artifact to attest a conservative minimum
-interval for the complete rule, rather than guessing from labels such as daily
-or monthly.
-
-Store persists exact elapsed/calendar cursors, their canonical demand,
-admitted lane resolution/degradation/time, typed calendar or admission pauses,
-indexed armed deadlines, fenced expiring leases, and immutable occurrence
-advances. A cursor without a matching durable admission record is deliberately
-unclaimable. Admitted activation/retuning installs and supersedes its cursor in
-the same transaction; `reject_activation` rolls the whole command back,
-`pause_and_ask` stores a typed paused cursor, a new candidate cannot evict an
-incumbent, and pause atomically supersedes its active cursor.
-
-The one Cell-wide Engine director admits elapsed and every registered tzdb
-revision under one grant, rebuilds only at boot, a lossless change wake, lease
-recovery, or a typed clock discontinuity, rearms only the completed cursor during
-normal operation, and uses persisted lease expiry as an exact crash-recovery
-wake. Its `DeadlineClock` port has a Tokio monotonic/wall mapping and supports
-manual deterministic clocks. Tests cover the 3ms/five-hour exact rational sum,
-independent virtual-time firing at precisely 3ms, a dormant five-hour wait,
-typed discontinuity wakes, runtime dense/sparse no-reread invariant, lane
-destruction, stale heap entries, activation replacement, automatic live wake,
-atomic admission rejection/pause, calendar completion, early/duplicate claims,
-abandoned-lease restart recovery, stale-worker loss, unique sequences, and exact
-Store reopen reconstruction.
-
-The production timezone provider now loads a bounded canonical transition
-artifact only at its exact content address, resolves gaps/folds without host
-state, and supplies conservative schedule-specific rate attestation. Multiple
-dedicated lane arms remain a measured host-backend optimization: the current
-one exact minimum one-shot still visits only due heap entries and never scans
-sparse schedules at a dense cadence. Dedicated arms must stay behind the same
-interface and may be added only where latency/energy measurements justify them;
-they are not part of the semantic K2.3 exit gate.
-
-##### K2.4 typed Karma Actions and Protein projection
-
-K2.4 exposes the K2 repository through the same human/agent boundary used by
-the rest of Lince. The typed Action vocabulary is
-`create-karma-program`, `revise-karma-program`, `activate-karma-program`,
-`pause-karma-program`, `create-karma-frequency`, `revise-karma-frequency`,
-`activate-karma-frequency`, `set-karma-frequency-parameters`,
-`reset-karma-frequency-parameters`, and `pause-karma-frequency`. Create carries
-the complete typed AST and optional owner; revise carries the uid, expected
-handle revision, and replacement AST; activation carries the selected content
-hash and expected handle revision; parameter Actions carry the expected active
-revision hash and complete override map. Every payload carries a required
-idempotent `request_id`. The authenticated Action/session actor is the sole
-authorship source and is passed into mutation evidence; payloads do not carry a
-second spoofable actor field.
-
-Program Actions call the same CAS/idempotency Store commands proven by K2.1.
-Frequency Actions call the K2.2/K2.3 Engine control plane, never legacy
-`store::freqs`. Activation and retuning require an installed immutable
-`KarmaDeadlineDirectorConfig` snapshot so host timer capabilities, aggregate
-grant/capacity, workload calibration, clock, and pinned timezone providers are
-the exact values used by atomic admission. Absence of runtime configuration is
-a typed fail-closed error. A committed mutation returns its object uid and Fact;
-an identical request replay returns the same object without republishing the
-Fact, and a stale expected revision becomes `karma_stale_handle_revision` with
-the current revision in the safe message.
-
-The read half is `source:"karma"`, a heterogeneous, deterministic Protein
-union. Rows use `object_kind` for `program`, `program_revision`, `frequency`,
-`frequency_revision`, `frequency_activation`, `schedule_cursor`, and
-`schedule_occurrence`. Immutable rows expose canonical AST/DSL/hash or
-epoch/batch data, and cursor rows expose exact demand, admission diagnostics,
-lease state, and next intended boundary. In K2.4, handle capability booleans
-mean only that the durable object state makes an Action structurally
-submittable; stable blockers explain states such as `program_not_active` or
-`head_already_active`, and Frequency rows explicitly state
-`requires_runtime_admission:true`. They do not predict admission or grant
-authority. The Action boundary recomputes runtime admission, and K5 will add
-principal/grant-specific capability projection without weakening that check.
-Filters never infer an Action: the UI copies a provided typed Action template,
-adds a new request id, and submits it through the ordinary Action path. K2.4 is
-complete only when Protein can reconstruct every durable K2 object and causal
-hash link, unsupported predicates fail with stable codes, and remote visibility
-is deny-by-default until K5's fine-grained Karma grants exist.
-
-**K2.4 implementation status:** the Program/Frequency mutation and read slices
-are complete. All ten typed Actions route through Engine to the CAS/idempotent
-K2 repositories; Frequency activation/retuning additionally crosses K2.3
-admission and cannot create a legacy `frequency` row. Identical request replay
-does not republish evidence, stale handles return
-`karma_stale_handle_revision`, and missing runtime configuration returns
-`karma_runtime_unconfigured`. `source:"karma"` locally projects all seven
-object families in stable order, emits action templates and durable blockers,
-supports recursive `all`/`any`/`not` plus kind/uid/slug/status filters and
-bounded ordering/limit, rejects unrelated predicates/includes/aggregates with
-stable codes, and returns no rows to remote subjects. Integration tests traverse
-Action → admitted cursor → occurrence batch → Protein without touching the
-legacy timer table.
-
-##### K3.1 generic occurrence ingress and Cell ordering
-
-K3 begins by separating a semantic occurrence from the order in which one Cell
-accepted it. `KarmaOccurrenceEnvelope` is immutable and content-addressed. Its
-source union starts with `schedule-tick` (one segmentation-independent
-`SemanticScheduleTick`) and `schedule-coalesced` (one explicit aggregate over
-an `OccurrenceBatch`); later variants add Fact, Signal, sync, workflow, receipt,
-and manual evidence without changing schedule identity. The envelope freezes
-`logical_at`, source identity, optional causal parent occurrence, and the typed
-source payload. Its hash excludes Cell sequence and receipt time: importing the
-same evidence twice therefore deduplicates even if it arrives through different
-threads or after restart.
-
-Store owns one transactional Cell sequence counter. Ingress first checks the
-source-kind/source-identity uniqueness boundary; an identical canonical
-envelope returns the original row, while the same source identity with changed
-payload is a protocol conflict. Only a genuinely new envelope increments the
-counter and receives the next positive `cell_sequence`. The row projects source
-kind, source identity, logical instant, and parent hash from canonical JSON and
-revalidates every projection plus content hash on load. Rows and assigned
-sequences are immutable. This recorded sequence is the authoritative replay
-order for genuinely concurrent external arrival; deterministic internal
-producers must submit their already-sorted identities in one transaction.
-
-Schedule occurrence batches are not themselves silently treated as Program
-runs. K3.2 adds a durable expansion cursor keyed by the immutable schedule
-occurrence hash. `individual` batches emit their semantic ticks in schedule
-ordinal order through bounded pages; `coalesced` batches emit one aggregate
-occurrence and never individual ticks. Advancement of that expansion cursor and
-generic occurrence insertion share a transaction. A crash can repeat the page
-request but cannot skip or duplicate a tick. Elapsed and calendar sources have
-separate typed tick and coalesced payloads; every source identity is derived
-from the semantic boundary or aggregate, never its page, wake, or arrival
-metadata.
-
-Expansion is cooperative work, not another polling timer. Runtime configuration
-sets two non-zero bounds: semantic items per page (hard-capped by the wire
-protocol at 4096) and source batches per recovery turn. A deadline completion
-attempts one page immediately. Boot/rebuild performs one recovery turn, and the
-director processes further turns only while a persisted incomplete cursor
-exists and no deadline is currently due, yielding between turns. Consequently
-a five-hour schedule does not create millisecond polling, while a large replay
-cannot monopolize the same director that protects a three-millisecond deadline.
-The durable pending predicate, rather than a guessed wall-clock interval,
-decides whether expansion work exists.
-
-The occurrence sequencer then
-leases strictly by `cell_sequence`; Program selection freezes the active
-revision set before evaluation, records one run per `(occurrence, program
-revision)`, and completes reaction work before any learning occurrence.
-
-**K3.1 implementation status:** complete. Canonical occurrence wire/hash tests
-and SQLite insert/replay/collision/reopen tests protect the immutable Cell
-sequence contract. It performs no Program evaluation or Action.
-
-**K3.2 implementation status:** complete. Durable cursor and atomic
-elapsed/calendar expansion, paged individual and single aggregate behavior,
-always-on cooperative recovery, and restart proof are implemented. Deadline
-work is prioritized without polling, while expansion and Program turns share
-background progress fairly.
-
-##### K3.3 frozen Program epochs and no-effect runs
-
-The occurrence processor owns a single durable `next_cell_sequence`; it never
-selects a later occurrence while an earlier one is incomplete. On first seeing
-an occurrence it opens a short transaction, snapshots every active
-`(program_uid, revision_hash)` in UID order, content-addresses that immutable
-selection as a Program epoch, and commits it before evaluation. Later Program
-activation, revision, or pause therefore cannot change which revision the
-occurrence saw. A page cursor within the epoch advances atomically with each
-immutable run, and epoch completion advances the Cell occurrence cursor. Empty
-epochs are valid and advance without manufacturing a run.
-
-Every epoch member receives exactly one typed terminal run: `succeeded`,
-`not-applicable`, `blocked`, or `evaluation-failed`. For schedule occurrences,
-Frequency trigger nodes receive frozen boolean pulses after resolving the
-activation to its immutable Frequency UID; the Program runs when at least one
-such trigger matches, while all other trigger nodes receive `false`. A Program
-without a matching trigger is durably not-applicable rather than silently
-absent. Until durable Program state lands, any delay/control-state operation is
-blocked before evaluation so a state transition can never be calculated and
-then discarded. Missing adapters and deterministic evaluator failures are
-terminal, inspectable results for that Program and do not poison later members
-or occurrences.
-
-A successful K3.3 run stores the sealed pure-evaluation replay capsule already
-defined in K1.7, including the exact Program AST, frozen context, limits, trace,
-outputs, fuel and hashes. The run hash excludes persistence time and includes
-the Cell sequence, occurrence, frozen epoch, Program identity/revision and
-outcome. No candidate is authorized, no state update is applied, and no effect
-or Action is executed in this phase. Runtime turns bound both occurrences and
-Program members; durable demand drives continuation without a heartbeat.
-
-**K3.3 implementation status:** complete for the no-effect slice. Typed epoch
-and run wires, migration, store processor, Frequency trigger projection,
-stateful fail-closed gate, replay capsules, Protein rows, and cooperative
-director turns are implemented. Tests freeze two revisions, activate a third
-mid-epoch, and obtain exactly one replayable success plus one explicit
-not-applicable terminal run.
-
-##### K3.4 restart and ordering proof
-
-The release proof interrupts processing after one member of a multi-member
-epoch, closes the database, reopens it, changes the current active Program set,
-and resumes. The old occurrence must finish its previously frozen members
-before the next `cell_sequence` can freeze a new epoch; the next occurrence must
-see the new active set. Persisted runs must order lexicographically by
-`(cell_sequence, member_ordinal)`, keep one row per occurrence/revision, and
-retain identical hashes after reopen and replay verification. Evaluation
-failure and not-applicable are terminal for ordering purposes, while storage or
-integrity failure stops advancement.
-
-Because K3 has no reaction producer yet, a no-effect run must not append a
-child occurrence, Fact, candidate, intent, Action, receipt, or transfer. The
-proof snapshots those counts around processing. This negative assertion is
-important: later K4/K5 phases must add each reaction through an explicit
-outbox/ingress boundary rather than gaining mutation as an accidental evaluator
-side effect.
-
-**K3.4 implementation status:** complete. The file-backed release proof resumes
-a partially processed epoch, preserves the old revision set, gives the next
-occurrence the newly active set, verifies strict Cell/member order and stable
-run hashes after a second reopen, and proves Fact/occurrence/intent/transfer
-counts do not change. A deterministic division-by-zero run is terminal and the
-following Cell sequence still completes.
-
-##### K4.1 durable synchronous Program state
-
-K4 first removes K3's stateful fail-closed gate; it does not start with
-candidates or effects. Each frozen Program epoch member includes the Program's
-activation handle revision as well as its content revision. This is the stable
-activation-generation token needed by `on-program-activation` reset policy and
-cannot be inferred later from the mutable handle.
-
-Program-persistent delay/control state uses an immutable event chain plus one
-CAS projection per `(program_uid, node_id)`. An event records state revision,
-previous event hash, source run hash, definition revision, activation handle
-revision, optional reset reason, and either a typed delay/control value or an
-explicit reset tombstone. The current projection repeats and revalidates those
-fields for efficient context assembly. Event hashes exclude database time.
-Run insertion, every state event/projection CAS, the epoch member cursor, and
-the Cell processing cursor commit in one transaction. A run can therefore
-never become visible without its synchronous read-old/write-next state, nor can
-state advance for a run that is retried.
-
-Before evaluation, the runner compares each current node state with its frozen
-member. `on-program-activation` resets on activation-generation change;
-`on-revision-change` resets on definition change. Otherwise revision changes
-follow `migration`: `reset` starts from the node's declared initial state,
-`require-explicit` produces a terminal blocked run, and
-`compatible-type-only` carries state only when the node operation/state kind
-and exact value type remain compatible. `never` and `manual` preserve state
-subject to that migration check. Reset and a newly staged value may be recorded
-in one event carrying the reset reason, so audit history shows that evaluation
-read the initial state. A reset with no staged update remains an explicit
-tombstone rather than resurrecting old state later.
-
-This slice supports `persistence:program`. Workflow and model-checkpoint state
-remain terminal blocked outcomes until their owning runtimes can supply the
-correct scope key; silently treating them as Program state would merge
-independent workflows/models. Late-event `ignore`/`reject`/replay-required
-semantics remain those of the pure evaluator because the durable context now
-supplies its exact previous state and logical timestamp.
-
-**K4.1 implementation status:** complete for Program persistence. Cooldown state
-is proven across three occurrences and a database reopen, including exact
-boundary acceptance and a three-event hash chain. A new activation generation
-resets the window and records `program-activation` on the state event. Run,
-state events/projections, epoch cursor, and Cell cursor are one transaction;
-other persistence scopes block explicitly.
-
-##### K4.2 inert candidate materialization
-
-After a successful evaluation, the runner scans stable node-trace order and
-port-name order for value-bearing candidate datums. Each becomes a typed,
-content-addressed proposal keyed by source run, node and output port, carrying
-the occurrence, Program revision, route, template and exact ordered fields.
-Missing candidate datums create no row. Duplicate `(run,node,port)` production
-is an integrity conflict, never last-write-wins.
-
-Candidate insertion shares the run/state transaction. Its initial lifecycle is
-always `proposed`, including route `act`: route expresses desired downstream
-handling, not authority. K4.2 has no candidate mutation, decision, grant,
-intent, Action, or effect worker. Protein exposes the immutable proposal so the
-Karma sand can render the first real terminal flow node; K4.3 adds reviewed
-human/agent controls and K5 decides whether any accepted proposal may become an
-intent.
-
-**K4.2 implementation status:** complete. Trace scanning materializes
-value-bearing candidate datums in stable node/port order. An `act`-routed test
-produces one `proposed` row sharing the run transaction and proves that Facts,
-signed intents, transfers, and child occurrences remain unchanged.
-
-##### K4.3 candidate review control
-
-Candidate review is an event-sourced CAS handle independent from the immutable
-proposal. `respond-karma-candidate` requires a globally idempotent request id,
-candidate hash, expected state revision, and one typed response: `accept`,
-`dismiss`, or `snooze(until)`. The actor is always taken from the authenticated
-Engine session, never trusted from the payload. Snooze must name a canonical
-future logical instant. Reusing a request id with different content conflicts;
-stale state returns the current revision without appending anything.
-
-Each committed response appends an immutable candidate-state event, advances
-the small current projection by CAS, and appends a zero-delta audit Fact to the
-owning Program in the same transaction. Review is deliberately reversible:
-later responses may move an accepted, dismissed, or snoozed candidate again,
-because no user/agent decision is treated as read-only history; the event chain
-retains every change. Repeating the same status is allowed only through exact
-request replay, avoiding meaningless new revisions.
-
-Protein candidate rows expose current state revision, status, snooze instant,
-actor/event provenance, capability booleans, blockers, and complete Action
-templates. Accepting an `act` route still creates no intent. K5 alone may
-translate a reviewed candidate into separately authorized work after grant and
-budget checks.
-
-**K4.3 implementation status:** complete for accept/dismiss/snooze review.
-Candidate state and immutable response events, global request replay, stale CAS,
-reversible transitions, typed actor validation and attribution, owning-Program
-audit Facts, typed Engine Action, and Protein capabilities/templates are
-implemented. Tests accept, dismiss, and snooze the same `act` proposal, prove
-exact replay publishes no second Fact, prove a stale response appends nothing,
-and keep occurrence/intent/transfer counts unchanged. No candidate-to-intent
-path exists before K5.
-
-##### K5.1 signed delegation-grant boundary
-
-The first K5 slice establishes authority as durable data without yet creating
-an intent or executing an effect. A delegation grant is a Record handle with an
-immutable, content-hashed revision. Its principal is always the authenticated
-Person whose installed key signs the revision; it is not accepted as an Action
-payload field. Creation is disabled, activation is a separate expected-revision
-Action, and revocation clears the active revision immediately. A revoked handle
-cannot be resurrected; creating a replacement makes renewed consent explicit.
-
-`DelegationGrantSpec` scopes one named Program, either its exact revision or
-whichever revision is active at the later authority check. It contains a
-non-empty capability set, an explicit candidate-template scope (`any` or a
-non-empty exact set), an explicit target scope (`any` or a non-empty typed exact
-set), purpose, and a `[valid_from, expires_at)` interval. Target atoms retain
-their semantic kind—Record, concept, Person, Organ, place, or controller—so a
-matching string in the wrong namespace cannot authorize an Action. Grant
-management capabilities cannot themselves be delegated through these grants;
-human/session authorization for grant creation and narrowing remains a
-separate boundary and delegation is therefore non-transitive in K5.1.
-
-The only revision mutation in this slice is `narrow-karma-grant`. The pure
-comparator must prove the replacement is a subset: capabilities and exact sets
-may only lose members, `any` may become an exact set, an any-active Program
-revision may become one exact revision, `valid_from` may move later, and expiry
-may move earlier. A different exact Program revision, changed Program or
-principal, newly added capability/target/template, longer validity, or mixed
-narrow-and-widen edit is rejected. If the handle is active, a proven narrowing
-becomes active atomically; no old wider revision remains live between commits.
-
-Authority evaluation receives a frozen typed request containing principal,
-Program and revision, candidate template, capability, optional typed target,
-and logical instant. It evaluates one explicitly named active grant revision;
-the engine never unions all matching grants. The result is a structured list of
-stable denial reasons (missing/inactive/revoked, not-yet-valid/expired,
-principal/Program/revision/template/capability/target mismatch). Absence of a
-grant or any mismatch is denial. Both candidate policy and the eventual domain
-Action boundary will invoke this same evaluator; K5.1 exposes it and its proof,
-but deliberately has no candidate-to-intent bridge.
-
-Persistence uses `karma_grant`, `karma_grant_revision`, and globally
-idempotent request rows. The revision row stores the principal key id and
-detached signature over the revision hash; the lifecycle Fact is signed by the
-same Person in the same transaction. Handles use CAS revisions, immutable
-revision rows reject update/delete, and request replay must reproduce the exact
-stored handle and Fact. Protein exposes grant handles and revisions, current
-signature provenance, capabilities/blockers, and ready-to-fill narrow,
-activate, and revoke Action templates. Budget limits, reservations, Automation
-Trust, intents, and workers remain later K5/K8 layers and cannot be inferred
-from the presence of an active K5.1 grant.
-
-**K5.1 implementation status:** complete. The pure authority kernel, the
-append-only `karma_grant` persistence, the typed Engine Actions, and the Protein
-projection are implemented and tested.
-
-Three decisions were settled while landing it. First, the principal is derived
-from the installed signing key, never from a payload: the store only accepts a
-revision whose signature names the principal, so the Engine resolves the Person
-from `trust::Signer` and refuses when no key is installed. An authenticated
-session bound to a different Person is refused rather than allowed to borrow the
-Cell's key. Second, a grant Record's quantity tracks *live* authority the way a
-Program's quantity tracks live activation: the Fact delta follows the
-transition, so revoking a draft that never authorized anything moves nothing.
-Third, grant Actions are gated on the existing `karma:create` and `karma:update`
-permissions; no new permission key was added, because the separateness the
-contract demands already comes from key-derived principals plus the kernel's
-refusal to place `KarmaGrantNarrow`/`KarmaGrantWiden` in any spec.
-
-Tests prove the create → activate → narrow → revoke lifecycle with authority
-read back from storage at every step, that narrowing an active grant swaps head
-and active in one commit while narrowing a draft moves the head without ever
-making it live, that a revoked handle can be neither narrowed nor
-reactivated, that exact replay publishes no second Fact, that a stale
-expectation writes nothing and returns the shared
-`karma_stale_handle_revision` conflict, that revision and request rows reject
-update and delete, that an unsigned or wrongly signed mutation is refused, and
-that every authority dimension denies on its own alongside
-missing/inactive/revoked. One test asserts the whole lifecycle leaves the
-candidate, occurrence, run, and transfer tables untouched: authority exists and
-still causes nothing. Protein exposes `grant` and `grant_revision` rows with
-signature provenance, capabilities/blockers, ready-to-fill narrow/activate/
-revoke templates, and an explicit `authorizes_effects: false`. There is
-deliberately no widen Action, no candidate-to-intent bridge, and no worker.
-
-Two conditions found while landing this slice, both pre-existing and left
-untouched: `promise_lifecycle_through_actions` fails on the transfer WIP's
-"trusted local transfer action requires an acting Person" check, and the debug
-build of the Action dispatcher needs more than the default 2 MiB test stack,
-now raised in `.cargo/config.toml`.
-
-##### K5.2 budgeted authority and inert durable intents
-
-The second K5 slice makes authority *finite* and gives accepted work somewhere to
-live, while still executing nothing. A grant gains a budget; accepting a reviewed
-`act` candidate becomes the one way an intent is born; and an intent is a durable,
-authorized, frozen request that no worker may yet claim.
-
-A budget belongs to the grant revision, because a budget is part of what was
-consented to. `GrantBudget` carries an optional lifetime intent cap, an optional
-`per_window` count over a fixed duration, and an optional total quantity limit
-with its unit. Absent means unlimited, so the narrowing comparator treats `None`
-as the widest value: a replacement may lower any limit or add one where none
-existed, and may never raise or remove one. Windows are tumbling and anchored at
-`valid_from`, so the window a given instant falls in is a pure function of the
-revision and replays exactly.
-
-Consumption is counted per grant *handle*, never per revision. If narrowing
-reset consumption, narrowing would become a way to refill a spent budget —
-an escalation disguised as a restriction. The intent rows are themselves the
-consumption ledger: a budget check counts and sums the grant's intents that
-still hold their reservation, inside the same transaction that inserts the new
-one, so no separate mutable counter can drift from the evidence. Cancelling an
-intent releases its reservation.
-
-An intent freezes what was authorized: the source candidate, the exact grant
-handle and revision that permitted it, the Program and Program revision, the
-capability, the typed target, the candidate template, the frozen typed Action
-payload, an idempotency key, a deadline, and the full policy proof (the
-authority decision plus the budget snapshot at reservation time). It is
-content-addressed and immutable. Its status in this slice is only `authorized`
-or `cancelled`; there is no `denied` row, because a denial refuses the whole
-acceptance instead of recording a dead intent, and there is no lease, attempt,
-receipt, or executed state, because nothing may run yet.
-
-The intent's lifecycle is stored the way Program state and candidate review
-already are: one immutable, per-intent hash-chained transition log plus one
-current projection that must match its head. A transition names the durable
-request that caused it rather than a Fact, because one cause legitimately moves
-many intents — revoking a grant cancels everything it authorized — and the Fact
-for that cause is reachable through the request rather than copied onto each
-row. Cancellation is therefore written after the causing request row exists, so
-no transition can cite a cause that was not recorded first.
-
-Which states reserve budget is a fact the database states once. A seeded status
-table carries `holds_reservation` and every budget query joins it instead of
-naming statuses, so E0.3's `leased`, `dispatching`, and `uncertain` begin
-counting against a budget by being seeded rather than by an edit to five `WHERE`
-clauses — the omission that would otherwise let a leased intent's reservation be
-spent twice. Only the statuses a phase can actually reach are seeded, so a state
-this slice must not produce cannot be written at all, and a test walks the table
-against the kernel enum so the two can never drift.
-
-Accepting a candidate and authorizing its intent are one commit. The
-`respond-karma-candidate` Action gains an optional `authorizing_grant_uid`.
-Accepting an `act` candidate without naming a grant keeps K4.3 behavior exactly:
-the candidate is accepted and no intent exists. Naming a grant makes the same
-transaction re-evaluate the live grant, reserve budget, and create the intent —
-and if the grant denies, the budget is exhausted, or the candidate is not an
-`act` route, the whole Action fails and nothing changes. A person asking for
-authorized work never silently gets an accepted candidate with no authority
-behind it. Exactly one grant is named, never a union of matching grants.
-
-Revocation is deterministic rather than raced. Revoking a grant cancels its
-still-authorized intents in the same transaction and releases their budget, so
-no intent can outlive the consent that created it. Creating an intent appends
-its own Fact; cancelling one does not, because the revocation that caused it
-already appends a signed lifecycle Fact naming the grant, and every intent it
-cancelled is derivable from that. When E0.3 lets a single intent end on its own,
-that transition needs its own Fact.
-
-**K5.2 implementation status:** complete for budgets, the authorization kernel,
-persistence, the accept-time bridge, and revocation cancellation. Leases,
-attempts, receipts, retries, compensation, emergency stop, and any execution at
-all move to **E0.3**, which builds that machinery for the reversible-local-data
-family so the engine's read → compute → write loop closes before the sand
-product is built on it; everything outside that family stays under K5.3.
-
-Decisions settled while landing it. The intent's amount and target are read from
-the stored proposal, never supplied by the caller — a client that could name the
-amount could understate it and spend a budget it was never given — and a
-proposal carrying two quantity or two reference fields is refused rather than
-disambiguated by guessing. `IntentStatus` was already frozen in `state.rs` with
-the full lifecycle, so K5.2 reuses it and writes only `authorized` and
-`cancelled`; `holds_reservation` states the accounting rule once over the whole
-vocabulary, so E0.3's execution states inherit it. K5.2 maps only templates whose
-capability is in the `LocalReversibleData` family, checked twice, so a later
-template cannot quietly reach further. An unbudgeted grant is omitted from the
-wire entirely, which keeps K5.1's golden authority hash and lets revisions
-stored before budgets existed still verify.
-
-Tests prove that accepting without a grant stays inert exactly as K4.3 left it;
-that naming a grant authorizes one intent, reserves its budget, freezes the
-proof, and lands the intent's own Fact in the same commit; that an exhausted cap
-refuses the whole acceptance and leaves the candidate `proposed`; that revoking
-a grant cancels its intents and releases their budget; that a replayed
-acceptance reports the same intent rather than minting a second, while the same
-request id against a different grant is refused; and that a draft grant or one
-scoped to another template authorizes nothing. The kernel separately proves
-budget narrowing in every dimension, deterministic tumbling windows, each budget
-denial on its own, and that a denied decision can never be hashed into an
-intent.
-
-One K5.1 bug surfaced and was fixed here: `karma_grant_revision` keyed rows by
-content hash alone, so two grants carrying byte-identical consent collided — and
-the contract's own "creating a replacement makes renewed consent explicit" path
-was therefore broken for identical terms. The revision hash identifies consent
-*content*; the stored revision is now identified by `(grant_uid, revision_hash)`,
-and revision lookups are scoped by grant.
-
-**Karma migrations are edited in place until one ships.** None of 0026–0035 has
-ever been committed, so the right schema is written directly rather than stacked
-behind corrective migrations that would exist only to fix mistakes no released
-database ever saw. The cost is that a local database built from an earlier run
-of this branch must be deleted rather than migrated; fresh and in-memory
-databases are unaffected. This standing licence ends the moment a Karma
-migration reaches a real deployment.
-
-Every declaration has a stable node id. If omitted, the formatter derives it
-from the left-hand name and freezes it on first publish. Moving a visual node,
-renaming its display label, or reformatting text does not change the semantic
-hash. Changing an expression, type, dependency, effect, policy requirement, or
-stable id does.
-
-The text is compiled before storage. For example:
-
-    let stock_low: bool = quantity(record:@apple) < 1kg
-
-becomes a typed AST similar to:
-
-    {
-      "id": "stock_low",
-      "kind": "compare",
-      "op": "lt",
-      "left": {
-        "kind": "record_quantity",
-        "record_uid": "r_apple...",
-        "type": "qty",
-        "unit_uid": "c_kilogram..."
-      },
-      "right": {
-        "kind": "literal",
-        "type": "qty",
-        "unit_uid": "c_kilogram...",
-        "decimal": "1.000"
+
+  `any { organ list; proximity <= 2 }` means either; `all { … }` means both.
+  Empty `any` is false; empty `all` is true only inside a scope that also names
+  a positive selector; **a scope with no positive counterparty selector cannot
+  activate above `suggest`.**
+- [ ] **An explicit deny list is evaluated first and always vetoes.** Then the
+  exact Trust revision the Program or grant references is evaluated. **Lince
+  does not merge every matching allow rule and guess precedence** — multiple
+  scopes require an explicit `any/all` composition in the Program policy. This
+  keeps "why was this seller allowed?" mechanically answerable.
+- [ ] **Transfer parties remain People.** An Organ selector says which Cell
+  identity may originate or carry the relationship; it does not trust every
+  Person inside that Organ or sign for them. A Person selector may narrow the
+  party inside allowed Organs. For relayed discovery, `origin_organ` is the
+  record's preserved lineage and `via_organ` the delivery contact; a policy may
+  require either or both. **Proximity is the evaluating Cell's local contact
+  value, never a remote self-asserted number**, and no rule automatically
+  broadens its maximum.
+- [ ] **Persistence:** a Record (`kind=automation_trust_scope`, quantity is
+  activation) plus `automation_trust_scope_revision` (owner/program/purpose/
+  concept/direction/stage/threshold/limits/validity + content hash),
+  `automation_trust_selector_node` (normalized `any/all/not/atom` tree, stable
+  node order), and `automation_trust_selector_member` (Person/Organ sets with
+  `allow|deny` and `origin|via|person` roles). Integer fixed-point columns for
+  probability/confidence; canonical quantity/value/unit fields.
+- [ ] **Create/revise derives the principal, validates every referenced
+  Person/Organ/concept, canonicalizes the selector, appends an immutable
+  revision and Fact, and never activates a widened revision by implication.**
+  Narrowing may be immediate; widening needs the same explicit authority and
+  preview as a new Transfer grant.
+- [ ] **Extend `source:"karma"` with `object_kind="trust_scope"`** and predicates
+  `concept_in`, `program_eq`, `stage_ceiling_gte`, `person_eq`,
+  `origin_organ_eq`, `via_organ_eq`, `max_proximity_lte`, `active`,
+  `expires_before`; includes expose the normalized selector, thresholds/limits,
+  referencing Programs and grants, current capabilities, and recent allow/deny
+  traces.
+- [ ] **Policy evaluation returns a structured proof, never just `false`** — a
+  per-dimension pass/fail list (concept, direction, probability, confidence,
+  deny selector, positive selector, stage ceiling, quantity/value/window, grant
+  reservation, transfer domain revision). The exact Trust and grant revisions
+  are frozen into the candidate explanation and **rechecked live before intent
+  dispatch**; a later block, expiry, proximity change, Trust revision, offer
+  revision or budget use deterministically denies or stales the intent.
+
+### Driving Transfer, stage by stage
+
+Every Transfer mutation stays the typed, revision-safe, idempotent domain Action
+in `docs/Central: Transfer.md`. **Karma never edits Transfer tables, invents
+signatures, bypasses agreement or occurrence gates, or keeps a second Transfer
+state machine.** It may control every legitimate stage of a principal's own side
+when that exact capability is delegated.
+
+| Stage | Capability and non-negotiable gate |
+| --- | --- |
+| Observe/project/match | `transfer.read/project`; visibility applies before matching, scoring, aggregation and explanation |
+| Private local draft | `transfer.draft_local`; Trust at `draft`; freezes source evidence and expected value/window but contacts nobody |
+| Publish OPEN / address people | `transfer.publish/propose`; Trust at `propose` plus separate recipient, audience, concept, value, rate and expiry grant. **Publication is a social effect, not "just a draft"** |
+| Claim an OPEN promise / counteroffer | `transfer.negotiate_own`; Trust at `negotiate`, exact current revision, allowed counterparties/terms, stale-write rejection, signed principal attribution |
+| Revise terms | `transfer.revise_own`; only fields and ranges in the grant. Normal domain semantics invalidate agreement — **Karma cannot preserve stale consent** |
+| Review/agree own side | `transfer.agree_own`; Trust ceiling `commit` plus explicit high-authority delegation naming agreement policy, counterparty/cohort, concept/value bounds, window, evidence and expiry. **It can never sign another party's level** |
+| Activate/reserve own contribution | `transfer.activate_own`; current-revision agreement and availability/reservation policy must already permit it. Budget reservation is atomic |
+| Claim delivery/receipt/occurrence | `transfer.claim_occurrence_own`; Trust ceiling `settle`, only the principal's statement, tied to qualifying independent evidence or an explicitly allowed manual source. **A program's own intent is not proof it happened** |
+| Confirm own side | `transfer.confirm_own`; current occurrence, confirmation policy, evidence source/quality, principal grant. **It never confirms what the counterparty must attest** |
+| Settle an owned Record | `transfer.settle_local`; only after domain readiness, expected revision, idempotency, local ownership, application formula and quantity/value budgets pass. Settlement still creates ordinary signed Facts |
+| Withdraw/cancel/dispute/correct | Separate `transfer.withdraw_own` / `cancel_own` / `dispute_own` / `correct_own`; terminal evidence is never rewritten |
+| Expand visibility/proximity | `transfer.declassify`; never implied by propose or agree. Exact fields/audience and privacy budget reviewed independently |
+| Remainder/successor/dependency | `transfer.draft_local` by default; later gates apply and cannot inherit authority accidentally |
+
+- [ ] **Encode these as capability families, not one `transfer:automatic`
+  boolean.** Grants can allow drafts but forbid publication, allow a weekly
+  purchase from named sellers but forbid new recipients, or allow settlement
+  only from a bound scale or scanner confirmation.
+- [ ] **Freeze the proposed canonical revision and preview at policy time**, then
+  send `expected_revision` and an idempotency key through the normal Action. A
+  stale counteroffer, changed price, recipient, unit, window, location,
+  visibility, agreement or evidence returns to policy and Attention.
+- [ ] **Never use locally inferred counterparty probability as their consent.**
+  Each Person or their explicitly delegated program acts only for their own
+  identity. Cross-Cell automation composes through signed proposals and
+  responses, not shared hidden authority.
+- [ ] **Autonomy is chosen per step** — "always ask before publishing",
+  "auto-counter within 5% and these sellers", "auto-agree this exact recurring
+  revision", "settle after both signed scanner receipts". A human can override,
+  pause, narrow or revoke at any time.
+- [ ] **Keep payment execution separate from Transfer settlement.** A payment
+  connector is another high-authority external effect with its own receipt and
+  reconciliation; a successful payment receipt may be evidence for a Transfer
+  policy but **does not silently settle Records.**
+- [x] **Transfer automation fails closed against the old activation path**, and
+  current manual revision, agreement, occurrence, confirmation and settlement
+  gates remain authoritative until the capability system exists.
+
+**Exit:** exact allow/deny precedence and list/proximity boolean selectors work
+for relayed and origin Organs; a `0.99p` apple need cannot draft or propose
+outside `trust:@apple.known_sellers`; allowlisted Organs and proximity arms
+behave exactly as declared; Trust or grant revocation before dispatch prevents
+the effect; **no Organ scope acts as consent for a Person**; and every Transfer
+stage is proven both denied-by-default and permitted inside an exact expiring
+scope.
+---
+
+## 17. Workflows and optimization
+
+Why: some work is multi-step and long-running (wait for approval, retry, then
+compensate), and some work is a search over a person's own goals. Both are built
+on the occurrence and intent machinery already proven, and neither gets a second
+implementation of domain behavior.
+
+### Durable workflows
+
+- [ ] **Add workflow nodes:** state machine, sequence/parallel, wait-until,
+  branch, approval, retry, compensation, child-program invocation. **A workflow
+  coordinates typed Actions; it does not reimplement domain behavior.**
+- [ ] **Every workflow declares** a concurrency policy (`queue`, `drop`,
+  `coalesce`, `latest`, or bounded parallel), correlation key, timeout,
+  cancellation semantics, and parent/child ownership. Long-running work resumes
+  from durable node state after boot.
+- [ ] **Cancellation is cooperative and observable.** It prevents unclaimed
+  intents, requests cancellation from claimed adapters, waits or times out per
+  policy, and runs only declared compensations. **It does not claim an
+  irreversible external effect was undone.**
+- [ ] **Transaction boundaries are narrow.** Compatible local Actions may commit
+  atomically through one domain Action; external or social multi-step work is a
+  saga with receipts and compensation. **A workflow cannot hold a database
+  transaction while waiting for a person, network or device.**
+
+### Optimization
+
+Analysis is pure Karma: it can inspect, aggregate, forecast, search and compare
+**without receiving action authority.** Execution stays a separate policy
+decision.
+
+- [ ] **An objective specification** names owner, purpose, decision variables,
+  units/domains, hard constraints, soft penalties, objective order
+  (lexicographic, weighted, Pareto or satisfice), planning horizon, uncertainty
+  treatment and tie-break. **Missing objectives never default to "maximize
+  activity", quantity or engagement.**
+- [ ] **Deterministic solver adapters** for linear/simplex, mixed-integer,
+  constraint/scheduling, min-cost flow/matching, routing and simulation-based
+  search, added as needs justify them. One typed solver contract, so an adapter
+  can be replaced without changing program or effect semantics.
+- [ ] **Translate Records, Facts, Links, Promises, availability, time windows,
+  places, units, skills, budgets and user constraints into solver variables
+  through explicit feature nodes.** The mapping and every approximation appear
+  in the run, not in a sand.
+- [ ] **Return a plan set, not one answer** — objective values, binding
+  constraints, slack, sensitivity range, assumptions, uncertainty, excluded
+  alternatives, and a deterministic infeasibility explanation or the smallest
+  known conflicting constraint set.
+- [ ] **Distinguish forecast from plan from schedule.** A forecast estimates what
+  may happen under stated assumptions; a plan selects intended actions under
+  objectives; **a schedule reserves time or resources only when a separate typed
+  Action says so.**
+- [ ] **Support robust/scenario planning** over captured distributions and
+  Imagination branches. A plan states which uncertainty it tolerates and which
+  future observation should trigger replanning; it never hides a point estimate
+  behind an exact-looking answer.
+- [ ] **Reoptimization preserves stability** through explicit change penalties
+  and frozen commitments. It may not churn a person's day or revise an agreed
+  Transfer merely because a marginally better solution appeared.
+- [ ] **Multi-person optimization uses only shared, visible constraints and
+  objectives.** It produces a proposal each party can inspect; it cannot infer a
+  hidden preference, expose another person's private constraint, or treat one
+  Cell's optimum as agreement.
+- [ ] **Analysis is callable through Protein and Actions** and reusable by
+  humans, agents, programs and sands: validate, solve, explain, compare, cancel,
+  pin a result as a candidate. **Solvers never get an implicit effect channel.**
+
+**Exit:** waits, retries, cancellation and compensation survive reboot; the
+weekly scheduler explains alternatives and infeasibility; applying a plan
+invokes only separately approved current Actions.
+---
+
+## 18. Imagination, replay and simulation testing
+
+Why: Imagination is not a forked rule engine. It supplies a snapshot, virtual
+ports and an event/fault script to **the same** scheduler, evaluator and policy
+code, then stores isolated traces and comparisons. Build replay first,
+projection and branching second, generated fault testing last.
+
+**This runs last, and that is the acknowledged cost of shipping a product
+first.** Determinism is designed in and covered block by block — replay
+capsules, frozen epochs, injected clocks, restart and ordering proofs all exist.
+What does not arrive until here is the adversarial machinery that tries to break
+it. Accepted deliberately: a product that exists is worth more than a proof
+about a product that does not.
+
+### Four products, one kernel
+
+- [ ] **Replay** reproduces a past run from captured inputs. **Projection** folds
+  one stated future. **Scenario/planning** compares deliberate branches and
+  uncertainty. **DST** generates event and fault schedules searching for
+  invariant violations. The UI and test runner differ; **the execution semantics
+  do not.**
+- [x] **`Engine::project(now, until)` folds promises and rules on a virtual clock
+  with Signals frozen; `Engine::snapshot(now)` creates mutable input for
+  toggle/clear/re-fold/diff**, so branching futures already exist as an internal
+  call. **Legacy scope:** it folds `registry.rules` and `f64` quantities and
+  silently skips rules needing signals or sums. Block 9 rebuilds this over Karma
+  programs with exact decimals and reported exclusions; this stays checked only
+  until the rule import lands, at which point its input goes empty.
+- [ ] **Expose project/snapshot through a typed transport verb** so a sand can
+  scrub and branch a future — change starting quantities, toggle a program,
+  clear a promise, alter time, re-fold, compare timelines — without touching the
+  real Ledger. Ships against block 9's projector, not the legacy fold.
+- [ ] **Simulation runs on an isolated snapshot with a virtual clock and mocked
+  signals/effects.** Its seed, inputs, event script, stopping/bookmark
+  conditions, replay capsule and engine version make every run reproducible.
+  **"Apply" means separately reviewing ordinary typed Actions** — never
+  committing simulated state wholesale or reusing simulated receipts as real
+  evidence.
+- [ ] **Simulation replaces every external, device and interface adapter with a
+  deterministic model or scripted fixture**, recording the hypothetical intent
+  and receipt. It never performs the production effect.
+
+### Asking questions of a future
+
+- [ ] **People define invariants and questions:** can this state be reached, do
+  these programs conflict, will a quantity cross a boundary, does the graph
+  settle, can an effect repeat, what changes if this promise disappears? Proof
+  results link to the exact revisions and counterexample trace.
+- [ ] **Proof has three honest result classes:** proved within a stated
+  finite/symbolic domain, no counterexample found under stated exploration, or
+  counterexample found. **Timeouts and unsupported nodes are "unknown", never a
+  green check.**
+- [ ] **Program authors declare** assumptions, controllable variables,
+  distributions/ranges, invariants, bookmarks, stopping conditions, maximum
+  logical time/events/fuel, and effect fixtures. An unconstrained scenario
+  cannot accidentally read production secrets or call production adapters.
+- [ ] **Build calendar/time-budget and graph/state-space projections from the
+  same simulator** — time on one axis, quantities/ranges on another,
+  rule-active regions, consequence arrows, dependency/supply-chain paths,
+  uncertainty bands, real-vs-projected values.
+- [ ] **A continuous forecast is a cache** linked to its starting cursor,
+  assumptions, revisions and generation time. New evidence marks it stale and
+  queues recomputation; **it is never mistaken for a promised or settled Fact.**
+
+### Fault generation and shrinking
+
+- [ ] **Deterministic generated scenarios and fault injection** for time jumps,
+  DST gaps/folds, restart/crash at every durable boundary, delayed/failed/
+  duplicate/uncertain effects, duplicate Facts, stale decisions, grant
+  revocation races, exhausted budgets, reordered sync arrival, partitions,
+  corrupt/quarantined inputs, missing/stale Signals, device disconnect and model
+  drift. This is both product Imagination **and** the test architecture for the
+  autonomous runtime.
+- [ ] **Drive generated runs from a named workload distribution** over programs,
+  Records, Transfers, people, time, signals, actions, faults and operator
+  choices. Record the root seed **and a split seed per generator/node** so
+  failures replay when generation is parallelized.
+- [ ] **Deterministic shrinking of a failing trace** that preserves the violated
+  invariant, emitting a portable replay capsule plus a readable causal
+  counterexample. **A seed without the engine/program/model hashes and captured
+  fixtures is not a complete reproduction.**
+- [ ] **Small independent reference models for foundational invariants** where
+  practical: Ledger/quantity conservation and compensation, schedule occurrence,
+  grant/budget consumption, exactly-once intent identity, workflow state,
+  Transfer readiness. Differentially compare production kernel, reference fold
+  and upgrade versions.
+- [ ] **Simulate multiple Cells** with independent occurrence cursors, clocks,
+  visibility, grants, outboxes, partitions and delivery schedules. Assertions
+  distinguish per-Cell deterministic replay from convergence properties that
+  should hold after all permitted messages arrive.
+- [ ] **Shadow mode runs a candidate revision beside the active one** against
+  live captured evidence, blocks all effects, and compares candidates, intents,
+  resource cost, false alarms and policy outcomes. **Promotion criteria and
+  rollback triggers are stored before the shadow begins.**
+
+**Exit:** seeded failures replay and shrink; sampled production capsules
+hash-match; multi-Cell convergence and revocation/dispatch crash boundaries are
+covered; unsupported and timeout Proof results stay `unknown`, never green.
+---
+
+## 19. Runtime operations
+
+Why: an always-on engine needs operability as part of its data model. Queue lag,
+scheduler mode and cost, program/model/connector health, denials, uncertain
+effects, replay audits and recovery controls must be readable and actionable
+**without shell access**. Build health projections alongside each block rather
+than adding metrics after autonomy ships.
+
+- [ ] **Publish engine health through Protein:** mode, active build/schema,
+  leader/sequencer lease, last cursor, deadline lane plans/arms/earliest
+  deadline, active/estimated/actual semantic and wake rates and budget, queue
+  depth and oldest age by class, runs per state, effect worker health, schedule
+  lag, model backlog, storage pressure, last successful checkpoint/replay audit.
+- [ ] **Type failures** as invalid definition/input, missing/stale/denied data,
+  Proof rejection, policy/authority denial, conflict/stale revision, budget/fuel
+  exhaustion, adapter unavailable, retryable/terminal/uncertain effect,
+  invariant violation, or engine fault. **Retry policy follows type, not string
+  matching.**
+- [ ] **An unexpected invariant violation enters stage-effects or emergency-stop**
+  per configured severity, preserves the replay capsule, stops related dispatch,
+  and opens one high-priority operational decision. **It never catches an error
+  and silently continues acting.**
+- [ ] **Separate user pause, policy denial, program fault, connector outage and
+  global stop**, so recovery cannot confuse "operator said no" with "try again".
+  Resume shows the occurrences and intents that will become eligible.
+- [ ] **Enforce CPU/fuel, memory, trace, storage, I/O, network, notification,
+  Action, value and candidate/fan-out quotas** per run/program/principal/Cell.
+  Maintenance and safety controls retain reserved capacity under overload.
+- [ ] **Trace and evidence retention is purpose- and sensitivity-aware.**
+  Redaction produces a new view, not a modified Fact; secret values and
+  unnecessary raw personal data never enter general traces in the first place.
+- [ ] **Periodically replay sampled completed runs from their capsules and
+  compare hashes.** A mismatch is a determinism incident with an
+  engine/revision diff, **not an ignorable test flake.**
+
+### Cross-cutting proof gates
+
+The architecture is not complete when the happy path works.
+
+- [ ] A replay capsule produces byte-identical canonical runs, candidates,
+  policy decisions, intents, unsigned Fact payloads/content hashes and captured
+  signature/receipt bytes across repeated runs and different host thread
+  schedules.
+- [ ] Crashes at every persistence/lease/dispatch/receipt boundary lose no
+  accepted occurrence, repeat no intended idempotent effect, resume workflows,
+  and expose uncertain non-idempotent effects for reconciliation.
+- [ ] Duplicate Facts, samples, sync packages, occurrences, decisions, Action
+  requests and effect receipts are idempotent; recorded alternate arrival order
+  is replayable and convergence assertions hold where specified.
+- [ ] Simultaneous conflicting writers resolve by declared deterministic policy
+  and preserve rejected alternatives and explanation; **no thread race selects
+  one.**
+- [ ] Revoking or narrowing a grant while runs are evaluating, staged, leased or
+  about to dispatch prevents every still-preventable effect. Budget reservation
+  is atomic under concurrent runs.
+- [ ] Visibility and purpose taint apply before input, feature, aggregate, model
+  update, explanation, recommendation, optimizer, notification and external
+  effect. Small-cohort and differencing tests reveal nothing outside policy.
+- [ ] Decimal/fixed-point quantities, probabilities, decay, conversions,
+  schedules/timezones, solvers, seeded algorithms and pure extensions replay
+  identically on supported platforms.
+- [ ] DSL → canonical AST → visual graph → DSL round-trips without semantic
+  drift. Layout and display-label changes preserve the revision hash; type,
+  node, dependency, expression, policy or effect changes produce a new hash.
+- [ ] Millisecond boundaries preserve exact `intended_at` and stable cursor
+  ordering when Facts and timers share a millisecond. Late wake-up follows
+  skip/coalesce/replay policy and never rewrites intended time.
+- [ ] With simultaneous `3ms`, `5h`, daily and monthly Frequencies, tracing
+  proves a fast wake reads, drains and re-arms only its due dense lane. Sparse
+  registrations receive no SQL query, due-check, heap pop or timer re-arm from
+  the `3ms` path, yet still produce their occurrence at the exact intended
+  boundary. With only `5h`, the director performs no Frequency work between
+  activation and its one-shot wake.
+- [ ] Lane assignment contains no fixed cadence classes. Deterministic
+  demand/capacity tests split, pack and merge the same schedules in stable uid
+  order; changing host capacity may change only the recorded operational lane
+  plan, never semantic occurrence ids or results.
+- [ ] One reusable Frequency referenced by ten active consumers has one cursor
+  and deadline and fans one occurrence out deterministically. Removing the last
+  consumer disarms it; adding the first follows the exact `inactive_gap` policy
+  and never surprises the owner with implicit dormant-history replay.
+- [ ] A `1ms` Frequency is denied unless its computed demand fits aggregate Cell
+  capacity, Program wake/evaluation/write/effect budgets, required
+  dense/precision capabilities, and a declared overload policy.
+- [ ] Dense `OccurrenceBatch` replay yields the same semantic tick ids, state
+  transitions, candidates, intents and Facts as individual scheduling;
+  compacting no-op traces never coalesces requested semantics.
+- [ ] For each evidence cursor, all already-active reaction work precedes its
+  learning update. A threshold-crossing model update or meta-rule creates a
+  later occurrence and cannot change the revision, parameter or checkpoint used
+  to process its own evidence.
+- [ ] A meta-rule changes `freq:@recovery.reminder_tick` from `1d` to `3d` only
+  through a range-scoped grant and parameter Action. All four rephase policies
+  produce their specified next boundary, survive restart, and replay.
+- [ ] A learned pattern can remain observed, create one explained suggestion,
+  create an editable draft, or promote a template revision only per its
+  route/grant/shadow policy. **No probability value manufactures authority.**
+- [ ] Every Transfer lifecycle capability is tested both denied-by-default and
+  permitted inside an exact delegation. Automation signs only its principal's
+  side, respects current revision and domain gates, never treats prediction as
+  consent or evidence, and cannot widen visibility through another capability.
+- [ ] Automation Trust selectors prove exact Person, origin Organ, via Organ,
+  proximity, `any/all/not`, deny-first, concept/direction, stage ceiling,
+  threshold, limit, expiry and blocked-contact behavior, with the full
+  structured allow/deny proof available through Protein.
+- [ ] Commands, HTTP, models, UI controllers and microcontrollers prove schema,
+  secret redaction, capability scoping, timeouts, retry/idempotency, receipts,
+  uncertainty, interlocks, simulation substitution and manual override.
+- [ ] Human UI, CLI and software agent perform the same authorized program,
+  simulation, candidate, decision, grant, workflow and intent operations through
+  Actions and Protein; **none has a hidden database or effect path.**
+- [ ] Emergency-stop, observe-only and stage-effects survive reboot;
+  queue/workflow/effect disposition is explained before resume, and normal
+  inspection works without filesystem logs.
+
+### Vertical workflows that prove the pieces compose
+
+Each is a product surface built on the blocks above, with no new core.
+
+- [ ] **Economy** (a preset, through the Karma sand): individual and recurring
+  resource gains/losses, correction/void, due-occurrence resolution, exact
+  monthly gain/loss/net, tag/source profile, actual/expected resource graph, and
+  entry/Fact drill-down. Typed, voice and photo capture later produce the same
+  inert entry draft without a privileged Fiote path.
+- [ ] **Todo / knowledge base:** a habit re-arms daily and completing it posts a
+  causal Fact; missing a day is negative evidence only if the opportunity policy
+  says completion was observable.
+- [ ] **Recurring tasks:** a monthly schedule fires exactly once under normal
+  time and obeys its catch-up policy after downtime and DST transitions.
+- [ ] **Adaptive Frequency:** a recovery rule tunes another reusable Frequency
+  from daily to every three days after seven stable observations, then restores
+  it when stability leaves — with no same-occurrence or mid-cascade definition
+  change possible.
+- [ ] **n8n-style command flow:** a signal → rule/workflow → leased effect graph
+  built visually, dry-run, executed, inspected and safely retried.
+- [ ] **CRM / people:** a birthday whisper arrives at the chosen moment and an
+  interaction report is one aggregate Protein.
+- [ ] **Calendar / time budgeting:** the projected week renders and moving a
+  promise recomputes it without storing a duplicate calendar truth.
+- [ ] **Health / IoT:** a scale posts weight Facts, a streak program reacts, and
+  the source off-switch stops new sampling, use and effects; calibration, clock
+  drift, malformed data, offline buffering and actuator interlock are visible.
+- [ ] **Apple / pantry recurrence:** confirmed family consumption grows a decayed
+  cadence model; projected shortage plus visible nearby OPEN offers yields one
+  explained ranked recommendation around the learned window. A matching Trust
+  scope plus grant may create a local draft; publishing, agreement and
+  settlement each require their own ceiling and capability.
+- [ ] **Delegated recurring Transfer:** a person grants one named apple program
+  value/quantity/seller/window limits bound to a Trust scope for proposal, own
+  agreement, evidence-qualified confirmation and local settlement. It runs end
+  to end, while an unlisted/distant/blocked Organ, changed seller/price/revision,
+  exhausted budget, missing evidence, or Trust/grant revocation returns to
+  Attention **without partial authority.**
+- [ ] **Neighborhood matching:** a scoped match rule and visibility grant produce
+  a draft in Attention after polling, without widening proximity.
+- [ ] **Shared family pattern:** two People publish permitted pantry evidence and
+  a signed percentage with exact denominator and window; the consuming Cell uses
+  it without exposing hidden members or importing anyone's authority.
+- [ ] **Chat / calls:** "when Transfer Y reaches agreed, ask controller X to open
+  the room" as a typed single-claim intent.
+- [ ] **Interface policy:** a program may present or focus a relevant Record on
+  one bound device inside attention and accessibility policy, but cannot click
+  agreement, forge input, hide warnings, or take over an unbound sand.
+- [ ] **Games / THE Game:** Records provide state and a Karma program provides
+  the inspectable rulebook, with no special game automation core.
+- [ ] **Garden/farm and inventory/production:** watering and threshold programs
+  derive work and Needs, ingest moisture and controller receipts, honor physical
+  interlocks; projections distinguish actual/available/planned, and settlement
+  remains the only quantity truth.
+- [ ] **Operations research:** a week scheduler combines tasks, promises, travel,
+  energy preferences, protected time and hard commitments, returns multiple
+  plans with constraint/slack and infeasibility explanation, and applies only
+  the separately approved schedule Actions.
+- [ ] **Monthly recap:** a program selects the month's Facts, drafts the recap,
+  and links its evidence **without training on its own output.**
+---
+
+## 20. Shared and collective Karma
+
+Why: a person may choose to expose records, evidence, percentages, model
+summaries or programs. **Collective Karma is composition of explicitly published
+evidence — not a central brain and not a loophole around Protein visibility.**
+
+- [ ] **Publish one of four typed products:** visible raw evidence; a signed
+  aggregate; a model/forecast card with stated inputs; or a program template.
+  Each carries owner/origin, purpose/terms, audience, visibility, time window,
+  concept/unit scope, method/revision, freshness, lineage/hash, signature, and
+  revocation/expiry.
+- [ ] **A percentage always includes numerator, denominator, eligibility/cohort
+  definition, excluded/missing count, time window, unit/concept, method, and
+  signature/verification coverage.** "80% of people do X" without those fields
+  is invalid input, not Karma.
+- [ ] **Apply visibility before aggregation and track input taint through derived
+  outputs.** An output cannot be published more broadly than its inputs unless
+  an explicit declassification policy proves an allowed aggregate. Small
+  cohorts, repeated queries, joins and differencing attacks obey
+  minimum-group/query budgets or optional deterministic privacy mechanisms.
+- [ ] **A Cell may combine local evidence with permitted remote raw facts or
+  signed aggregates** using declared weighting, provenance, freshness and trust
+  policy. **Remote claims remain inputs with uncertainty; they do not become
+  local Facts about an unseen person merely because they are signed.**
+- [ ] **Sharing a live rule means sharing a content-hashed definition or
+  template** — never its secrets, private inputs, model checkpoint, grant or
+  authority. Installation creates an inactive local revision whose references,
+  data scope, budgets and effects must be rebound and proven.
+- [ ] **Family and team cooperative patterns work only over scopes each
+  participant granted.** A household need can use Ana's and her mother's visible
+  pantry evidence, while explanations and outgoing Transfers reveal no more than
+  their grants permit.
+- [ ] **Revocation stops future export and use and cancels eligible queued work;
+  it cannot erase signed data already shared.** Retention and redistribution
+  terms stay visible, and downstream models mark revoked or unavailable
+  provenance rather than laundering it.
+- [ ] **Prove:** recurrence saturation/decay, cadence, confidence separation,
+  deduplication, negative/censored evidence, feedback, opt-out, drift, no
+  self-training, no private leak, no reputation laundering, and no unauthorized
+  automatic commitment.
+---
+
+## Appendix A — where the code goes
+
+| Crate | Modules and ownership |
+| --- | --- |
+| `nucleus` | `karma/{ids,value,ast,dsl,schedule,trace,policy,proof,model,workflow,simulation}.rs` — pure types, parsing, math, graph evaluation contracts, no I/O |
+| `store` | `karma/{programs,schedules,occurrences,runs,models,candidates,grants,trust_scopes,workflows,intents}.rs` — typed repositories and transaction helpers; each table owned by a Rust row/input type |
+| `engine` | `karma/{supervisor,sequencer,scheduler,evaluator,learning,policy,proof,workflow,effect_worker,simulation}.rs` — orchestration, and the only bridge between pure kernel, Store and runtime ports |
+| `protein` | `karma.rs` — union source projection, predicates/includes, visibility/taint-before-aggregate, capability/blocking projection |
+| `transport` | Reuse the multiplexed protocol; add only typed Karma payloads. **Never a second socket or a private sand API** |
+| `lince` | Start one Karma supervisor per writable Cell and own graceful shutdown. Contains no scheduling or rule semantics |
+| `web` | `sand/karma/{mod,body,style,script}.rs` plus `app/{bridge,state,library,builder,why,learn,imagine,authority,queue,health}.js`; host state stores layout only |
+
+**There is no equivalent table for any sand, and the one that used to sit here
+was deleted rather than moved** — it assigned `economy/` modules to `nucleus`,
+`store`, `engine` and `protein`, which is exactly what the standing rule
+forbids. The Karma sand lives in `crates/web/src/sand/karma/` and nowhere else;
+what it needs from the backend it gets as a general primitive with a general
+name, or it does not get it.
+
+- [ ] **Use one destination subsystem** rather than expanding `karma.rs`,
+  `signals.rs`, `senses.rs`, `effects.rs` and `imagination.rs` into parallel
+  engines. During migration they may call the new modules as adapters; after
+  their behavior is covered, delete the duplicate paths.
+- [ ] **The supervisor owns an injected `RuntimePorts` bundle** — wall/virtual
+  clock, sleeper/wakeup, deterministic entropy, process, HTTP, filesystem,
+  device/UI controllers, secret resolution. **Pure nodes never receive it.**
+  Production and simulation differ by port implementation, not business logic.
+- [ ] **A small fixed set of long-lived tasks, not tasks proportional to
+  Program/Frequency count:** deadline director (durable registration mirror,
+  tickless wheel, lane plan, one-shot timers; submits only due batches);
+  occurrence sequencer (persist/deduplicate/order, freeze epoch, commit run
+  order and reaction closure); pure evaluator pool (prefetch immutable context,
+  evaluate in parallel where safe, return deterministic results); learning
+  worker (consume completed eligible cursors behind reaction priority, commit
+  checkpoints in cursor order); effect worker pool (lease by adapter/capability,
+  recheck policy, dispatch, store attempts/receipts); connector supervisor (own
+  Signal adapter lifecycles, push captured observations into the occurrence
+  path); maintenance worker (repair/checkpoint/retention/replay audit, scheduled
+  through the same director).
+- [ ] **Channels are bounded and carry stable uids and small commands, not giant
+  snapshots.** On receipt a worker reloads authoritative state or uses the
+  frozen immutable epoch. **Backpressure parks durable work; it never drops an
+  occurrence because an in-memory channel is full.**
+- [ ] **Active compiled definitions live in an immutable `Arc<CompiledEpoch>`**
+  holding revision/parameter/model/grant/Trust hashes and the dependency index.
+  Activation commits Store state first, builds the next epoch, publishes it
+  through `tokio::sync::watch`, and enqueues its effective occurrence. Runs
+  clone one `Arc`, so no mutex is held across evaluation and **no mid-run edit
+  is observable.**
+- [ ] **SQLite constraints, not process memory, guarantee correctness.** Unique
+  keys for source occurrence identity, `(program_revision, occurrence,
+  correlation)` run identity, schedule batch identity, Action request replay,
+  candidate dedupe, and intent idempotency. **Never hold a database transaction
+  while awaiting a person, network, process, model or device** — commit the
+  intent first and reconcile the receipt in a later transaction.
+
+**Where the kernel types actually live:** `nucleus::karma::cadence` (`Cadence`,
+`Cadence::between`, `Cadence::civil_at`, `Cadence::ordinal_of`),
+`nucleus::karma::calendar` (`CivilDateTime`, `CivilTime`, `CalendarSchedule`,
+`TimeZoneProvider`, `GapPolicy`, `FoldPolicy`), `nucleus::karma::schedule`
+(`ElapsedSchedule`, `ScheduleCursor`, `OccurrenceRange`, `ScheduleSpec`,
+`RationalRate`, `ScheduleDemand`, `ScheduleWorkloadUpperBounds`,
+`SchedulerCalibration`, `ScheduleDemandCapacity`, `OverloadPolicy`),
+`nucleus::karma::frequency` (`FrequencyAst::compile`, `CompiledFrequency`),
+`nucleus::karma::dsl` (`format_program`, `parse_program`, `format_frequency`,
+`parse_frequency`), `nucleus::karma::state` (`IntentStatus`),
+`nucleus::karma::timezone_artifact`, plus `evaluate.rs`, `value.rs`
+(`ValueType`, `LiteralValue`), `proof.rs` and `store::exact`. Durable tables:
+`karma_program`/`_revision`/`_request`, `karma_frequency`/`_revision`/
+`_activation`/`_request`, `karma_frequency_consumer`, `karma_schedule_cursor`,
+`karma_deadline`, `karma_grant`/`_revision`, `karma_intent_event`/`_state`.
+Evidence Fact types: `ProgramMutationEvidence`, `FrequencyMutationEvidence`.
+
+**Known pre-existing failures, not caused by this work:**
+`promise_lifecycle_through_actions` fails on the transfer WIP's "trusted local
+transfer action requires an acting Person" check, and the debug build of the
+Action dispatcher needs more than the default 2 MiB test stack (raised in
+`.cargo/config.toml`).
+
+## Appendix B — the old vocabulary, mapped
+
+The condition → consequence pair the diary used is **too small as a destination
+abstraction**: it conflates recognition, inference, authority and execution. It
+remains useful shipped machinery and becomes a **legacy importer** into the
+typed graph — not a second engine. These words are DSL sugar over typed nodes
+and Actions; the wire never executes text.
+
+| Diary concept | Canonical type | DSL | Durable effect |
+| --- | --- | --- | --- |
+| Karma | Program, `prog:@slug` | `program`, `when`, `act` | Program Record + immutable revision; activation selects one |
+| Condition | Typed expression/recognizer | `let`, `when`, `sense` | Pure by default; a materialized value is an explicit Fact |
+| Operator | Gate node | `== != < <= > >=`, `and/or/not`, `crosses`, `enters`, `leaves` | No domain change; records transition state when stateful |
+| Consequence | Candidate or intent | `recommend`, `draft`, `ask`, `act` | Inert candidate/decision or an authorized intent |
+| Delivery | Occurrence + Run | `on fact`, `on every`, `on signal`, `run` | Occurrence/run/trace plus resulting candidates, intents, receipts, Facts |
+| Frequency | Schedule, `freq:@slug` | `every 1d`, `at 08:00`, `after 250ms` | Stores schedule/anchor/cursor; a due boundary creates an occurrence and does **not** edit a Record timestamp |
+| Sum | Aggregate/feature node | `sum`, `count`, `avg`, `rate`, `window` | Pure unless explicitly `emit`ted; the exact input Fact set stays explainable |
+| Command/query | Signal when reading, effect when acting | `input … = signal`, `do command`, `do http` | Capture creates observation Facts; execution creates intent → attempts → receipt → provenance Fact |
+| Karma category | Program tags/scope | `tags`, `purpose`, `scope` | Metadata only; **tags do not confer permission** |
+| Calendar/Graph/Orchestra | Flow Plane + Imagination + optimizer | `sim`, `project`, `solve` | Simulation/analysis runs and candidates, never real-world state wholesale |
+| Ask/Agent/Tinkerer | Route policy | `observe`, `suggest`, `draft`, `ask`, `act` | Selects trace-only, recommendation, decision, or authorized intent |
+| Senses | Recognizer, `sense:@slug` | `sense name = …` | Evidence-backed candidates; cannot write or contact by itself |
+| Learning/growth | Model, `model:@slug` | `learn … using …`, `predict` | Model checkpoint/update evidence; cannot mutate a Program |
+| Learned-rule promotion | Revision candidate | `revise from template`, then `ask` or delegated `act` | Proven/shadowed revision candidate; activation is a later occurrence |
+| Rule changing rule | Meta-control candidate/intent | `tune`, `revise`, `pause`, `resume` | Parameter/revision/activation data effective only for later occurrences |
+| Recommendation | Candidate, `cand:r_…` | `recommend "…"` | One lifecycle-managed recommendation with evidence and preview |
+| Attention/whisper | Decision/delivery | `ask`, `whisper via …` | Decision is durable; channel attempts are receipts. **Delivery never answers it** |
+| Imagination | Simulation run, `sim:r_…` | `project`, `branch`, `assert`, `sim` | Isolated run/trace/bookmarks only; applying uses separately reviewed Actions |
+| Workflow | Workflow instance, `flow:@slug` | `step`, `parallel`, `wait`, `retry`, `compensate` | Node position/waits/intents; domain changes still use Actions |
+| Optimization | Objective/solve run, `obj:@slug` | `solve`, `require`, `minimize`, `maximize` | Ranked plans and explanations; applying a plan is separate |
+| Authority | Delegation grant, `grant:@slug` | `require grant`, `budget` | Signed grant/narrow/revoke; **no program enlarges its own grant** |
+| Automation Trust | Local scope, `trust:@slug` | `trust`, `allow/deny`, `any/all`, `ceiling` | Concept/stage/person/Organ/proximity gate; never changes probability, visibility or another Person's authority |
+
+## Appendix C — worked examples
+
+These are **interface specifications**, not promises that the current parser
+accepts them.
+
+**A daily habit re-arms itself.** A calendar Frequency at a parameterized local
+time; when the task's quantity is zero, an authorized `record.set_quantity`
+intent sets it to `-1`. If it is already negative the run records `false` and
+changes nothing. Completing the task later sets it to zero through the ordinary
+user Action — **the program never owns a private "completed" boolean.**
+
+    program habit.meditate {
+      owner person:@ana
+      param reminder_time: civil = 07:00 America/Sao_Paulo
+      on every calendar 1d at reminder_time missed coalesce id daily_tick
+      input task: ref<record> = record:@meditate
+      when quantity(task) == 0 {
+        act record.set_quantity { record: task, quantity: -1 }
+        require grant:@habit.local_records
       }
     }
 
-The AST—not the source string—is the canonical revision payload. The stored DSL
-is its human-readable projection, and the visual editor reads/writes the same
-AST. Unknown fields or node kinds fail validation instead of being ignored.
+**A rule changes another rule's schedule.** `grant:@recovery.manage_reminder`
+permits only `karma.manage.parameter` on one Frequency, one parameter, range
+`[1d, 3d]` — no edits, activation, data scope or effects.
 
-An expert textual projection for the apple example could look like this:
+    frequency recovery.reminder_tick {
+      param interval: dur = 1d range [1ms, 30d]
+      every elapsed interval
+        anchor 2026-07-21T09:00:00.000Z
+        rephase preserve_anchor
+        missed coalesce
+      timer { resolution 1ms  max_lateness 30s  coalesce_window 5s }
+    }
+
+    program recovery.adapt_frequency {
+      on fact(record_eq: record:@recovery.score) queue id score_changed
+      input scores: list<fact> = facts(record:@recovery.score, window: 14d)
+      sense stable: bool = all(scores.last(7d), value >= 8)
+      when enters(stable) {
+        tune freq:@recovery.reminder_tick param interval = 3d
+          rephase preserve_anchor
+        require grant:@recovery.manage_reminder
+      }
+      when leaves(stable) { tune … interval = 1d … }
+    }
+
+The ordering that matters: a score Fact at cursor 200 is evaluated with
+parameter revision 7 (`1d`); the meta-rule produces a tune intent;
+`set-karma-parameter` commits at cursor **201** as revision 8 (`3d`) and
+recomputes the next boundary from the original anchor; learning for cursor 200
+runs after its reaction work and changes neither run retroactively; later
+occurrences use revision 8, and any occurrence already ordered before cursor 201
+uses revision 7. Cursors establish deterministic order when a score Fact and a
+timer boundary share a millisecond.
+
+**Learning cannot judge its own evidence.** `model:@apple.need` sits at
+checkpoint 12 with `0.69p`. A confirmed consumption Fact arrives at cursor 500:
+the reaction lane runs the restock program against **checkpoint 12**, so the
+`0.72p` suggestion gate stays false. After the reaction closure the learning
+lane admits the Fact and creates checkpoint 13 at `0.74p`. Crossing the route
+threshold creates a pattern-threshold occurrence at a **later** cursor, which
+evaluates against checkpoint 13 and creates one recommendation. If the higher
+draft threshold and grant later pass, the candidate is a local Transfer draft —
+publishing, inviting, agreeing, confirming and settling still need their own
+capabilities. "Replay cursor 500 under checkpoint 13" is offered as simulation;
+applying any difference is a new Action.
+
+**A sensor waters a garden.** Each packet appends a raw observation Fact on the
+Signal Record; calibration creates a derived value in the run. The `holds` node
+persists transition state. On entering true, policy checks device, bed,
+duration/rate budget, freshness and interlocks before creating an intent. **The
+controller acknowledgement is a receipt: it proves the command was
+acknowledged, not that water physically flowed.** A later moisture observation
+or flow sensor may independently prove the outcome and train a model.
+
+    program garden.water_bed_1 {
+      on signal sig:@garden.soil_moisture coalesce by bed_id every 500ms
+      input moisture: datum<qty<percent>> = signal sig:@garden.soil_moisture
+      sense dry: bool = moisture < 22% holds 10m
+      when enters(dry) {
+        do device:@garden.controller water { valve: "bed-1", duration: 20s }
+        require grant:@garden.water_bed_1
+        on stale ask "Soil sensor is stale; watering was not started"
+      }
+    }
+
+**The full apple restock program, and the Trust scope that bounds it.** The
+first branch explains and suggests; the second may create an editable local
+draft **only if** the seller matches the named Trust scope and that exact grant
+exists. Publishing, addressing the seller, agreeing, confirming and settling are
+different ceilings and capabilities needing their own nodes and grants. **No
+model or LLM is necessary** — the recurrence model, inventory projection, offer
+query and optimizer are all deterministic. `offers` is the visibility-gated
+Protein view over local and permitted discovery-cache OPEN Contributions from
+other Cells; source freshness, signature status, proximity ceiling, unit, window
+and missing route data stay **visible inputs**, never hidden ranking behavior.
 
     program household.apple.restock revision 4 {
       owner person:@ana
-      purpose "Keep the family pantry supplied with apples"
       mode active
-
       on fact(concept_in: @apple) coalesce by household every 5m
       on schedule @hourly
 
       input pantry: datum<qty<kg>> = view:@family.apple.inventory freshness 2h
-      input outcomes: list<fact> = view:@family.apple.confirmed_consumption window 180d
+      input outcomes: list<fact> =
+        view:@family.apple.confirmed_consumption window 180d
       input offers: list<transfer> = protein {
-        source: transfer,
-        open: true,
-        concept_in: @apple,
+        source: transfer, open: true, concept_in: @apple,
         near: { place: @home, max: 5km }
       }
 
       learn need: model<recurrence> = recurrence.beta_cadence {
-        evidence: outcomes,
-        prior: beta(1, 1),
-        half_life: 90d,
-        cadence: weekly(local_tz),
-        min_effective_samples: 5
+        evidence: outcomes, prior: beta(1, 1), half_life: 90d,
+        cadence: weekly(local_tz), min_effective_samples: 5
       }
 
-      let shortage: bool = project.quantity(pantry, at: need.next_window.end) < 0kg
+      let shortage: bool =
+        project.quantity(pantry, at: need.next_window.end) < 0kg
       solve seller: estimate<ref<transfer>> from offers lexicographic {
         require compatible_unit && window_overlap && route_eta <= 25m
         minimize expected_total_cost
@@ -3966,10 +3777,11 @@ An expert textual projection for the apple example could look like this:
       }
 
       when shortage && need.probability >= 0.72p && need.confidence >= 0.65c {
-        recommend "Apples are likely needed this week" dedupe need.pattern_window
-        preview transfer.draft_local from seller quantity need.expected_quantity
+        recommend "Apples are likely needed this week"
+          dedupe need.pattern_window
+        preview transfer.draft_local from seller
+          quantity need.expected_quantity
       }
-
       when shortage && need.probability >= 0.90p && need.confidence >= 0.85c {
         draft transfer.draft_local from seller quantity need.expected_quantity
         require trust:@apple.known_sellers at draft
@@ -3977,1700 +3789,84 @@ An expert textual projection for the apple example could look like this:
       }
     }
 
-The first branch explains and suggests. The second may create an editable local
-draft only if the seller matches the named concept/counterparty Trust scope and
-that exact Program grant exists. Publishing the proposal, addressing the seller,
-agreeing, confirming, or settling are different Trust ceilings/capabilities and
-would need explicit nodes and grants. No model or LLM is necessary: the
-recurrence model, inventory projection, offer query, and optimizer are
-deterministic.
-Here `offers` is the visibility-gated Protein view over local and permitted
-discovery-cache OPEN Contributions from other Cells; source freshness,
-signature status, proximity ceiling, unit, window, and missing route data remain
-visible inputs rather than hidden ranking behavior.
-
-### Protein and Action interface
-
-Karma adds one discriminated Protein source rather than one unrelated
-query language per feature:
-
-    {
-      "source": "karma",
-      "where": [
-        { "object_kind_in": ["program", "run", "candidate"] },
-        { "program_eq": "r_program..." },
-        { "status_in": ["active", "queued", "open"] }
-      ],
-      "order": [
-        { "field": "at", "direction": "desc" },
-        { "field": "uid", "direction": "asc" }
-      ],
-      "include": {
-        "definition": true,
-        "capabilities": true,
-        "latest_run": true
-      }
-    }
-
-`object_kind` selects the typed union. Stable common fields are `uid`, `kind`,
-`program_uid`, `revision_uid`, `owner_uid`, `status`, `quantity`, `at`,
-`cursor`, `cause`, and `visibility`; kind-specific data lives under a typed
-field matching the discriminator. Unsupported predicates/includes are errors,
-not ignored filters.
-
-Recommended predicates and includes:
-
-| Interface | Fields |
-| --- | --- |
-| Program/revision | `object_kind_in`, `program_eq`, `revision_eq`, `owner_eq`, `tag_in`, `status_in`, `active`, `purpose_eq`; include `definition`, `parameters`, `proof`, `diff`, `dependencies`, `capabilities` |
-| Occurrence/run | `trigger_kind_in`, `cursor_gte/lte`, `at_since`, `cause_eq`, `status_in`; include `trace`, `inputs`, `candidates`, `policy`, `intents`, `receipts`, `cost`, `replay_capsule` |
-| Model/evidence | `model_eq`, `trained_through_cursor_gte`, `drift_state_in`; include `spec`, `checkpoint`, `eligible_evidence`, `rejected_evidence`, `metrics`, `recommendations` |
-| Candidate/decision | `candidate_kind_in`, `subject_eq`, `live`, `expires_before`; include `evidence`, `preview`, `alternatives`, `authority_required`, `capabilities` |
-| Grant/intent/receipt | `principal_eq`, `capability_in`, `target_eq`, `status_in`, `deadline_before`; include `scope`, `budget`, `policy_proof`, `attempts`, `receipt`, `compensation` |
-
-“Why did this happen?” is one query, not a log hunt:
-
-    {
-      "source": "karma",
-      "where": [
-        { "object_kind_in": ["run"] },
-        { "uid_eq": "r_run..." }
-      ],
-      "include": {
-        "trace": true,
-        "inputs": { "facts": true, "exclusions": true },
-        "model": true,
-        "policy": true,
-        "intents": { "receipts": true },
-        "causal_chain": true
-      }
-    }
-
-All mutations keep the existing wire mannerism: kebab-case `action` tag,
-snake_case fields, engine-derived viewer/principal, `request_id` for replay
-safety, and `expected_revision` for mutable handles.
-
-| Typed Action | Main effect |
-| --- | --- |
-| `validate-karma-definition` | Parse/type-check/canonicalize DSL or AST and return Proof without storing or executing it. |
-| `create-karma-program` | Create disabled Program Record plus immutable revision 1 and Proof result. |
-| `fork-karma-program` | Create a disabled local Program/revision from a named revision/template, preserving lineage but no grant/live state. |
-| `revise-karma-program` | Compile/validate AST and append a new immutable revision; does not activate it. |
-| `activate-karma-revision` | Select a proven revision, set/keep Program active, and enqueue an activation occurrence. |
-| `create-karma-frequency` / `revise-karma-frequency` | Create a disabled Frequency handle plus immutable schedule revision, or append a later revision; neither arms a timer. |
-| `activate-karma-frequency-revision` | Prove/admit one revision, select it, advance generation, and arm its exact next deadline only when an active Program/Signal/workflow consumer exists. |
-| `set-karma-parameter` | Append one typed Program/Frequency/model parameter version inside its declared range; effective next occurrence. |
-| `reset-karma-parameter` | Return a parameter to its revision-declared default as another parameter version. |
-| `deactivate` / `activate` | Pause/resume the Program's universal quantity knob through the existing Fact path. |
-| `retire-karma-program` | Deactivate and mark the mutable Program handle retired; revisions/runs remain readable and it may be forked. |
-| `run-karma-program` | Enqueue a manual occurrence against current or named revision; `dry_run` forbids effects. |
-| `replay-karma-run` | Reproduce or differentially replay one run from its capsule without production effects. |
-| `rebuild-karma-model` / `disable-karma-model` | Deterministically rebuild allowed evidence or stop inference/updates while retaining checkpoints. |
-| `create-karma-grant` / `narrow-karma-grant` / `revoke-karma-grant` | Change signed delegation data; programs cannot call the widening form for themselves. |
-| `create-automation-trust-scope` / `revise-automation-trust-scope` / `activate-automation-trust-revision` | Create/revise/select a local concept/stage/counterparty scope; creation is disabled and widening never activates by implication. |
-| `respond-karma-candidate` | Accept/edit/dismiss/snooze/mute a candidate; accepting revalidates and invokes its typed preview Action. |
-| existing `decide` | Answer one current decision option with stale-world revalidation; Karma does not create a second decision action. |
-| `control-karma-workflow` | Cancel/resume/retry/skip only transitions allowed by the Workflow definition and current capability. |
-| `control-karma-intent` | Stage/cancel/retry/reconcile/compensate an intent according to capability and current state. |
-| `simulate-karma-program` | Create an isolated replay/projection/scenario/DST run; never applies results wholesale. |
-| `import-karma-template` | Validate dependencies/licenses/signature and create an inert local Program/revision with no data binding or grant. |
-
-Creating a program:
-
-    {
-      "action": "create-karma-program",
-      "request_id": "create-apple-restock-1",
-      "slug": "household.apple.restock",
-      "head": "Apple restock",
-      "purpose": "Keep the family pantry supplied with apples",
-      "dsl": "program household.apple.restock { ... }"
-    }
-
-The engine parses the DSL, resolves typed refs, validates types/units/graph,
-canonicalizes the AST, calculates its hash, and atomically creates:
-
-- a Program Record (`kind=karma_program`, quantity `0`);
-- revision 1 (`kind=karma_revision`) containing canonical AST/hash;
-- `revision-of` and `owned-by` links;
-- a Proof result linked to the revision; and
-- one annotation Fact caused by the authenticated actor/request.
-
-The owner/principal is derived from the authenticated session or a separately
-verified delegation; the payload cannot impersonate an `owner_uid`. No schedule
-is armed, model trained, grant created, or effect allowed merely by creation.
-
-Activating it:
-
-    {
-      "action": "activate-karma-revision",
-      "request_id": "activate-apple-restock-4",
-      "program_uid": "r_program...",
-      "revision_uid": "r_revision_4...",
-      "expected_program_revision": 3
-    }
-
-The transaction re-runs Proof against current schemas/capabilities, selects
-revision 4, advances the Program handle revision, moves quantity from `0` to
-`1` if needed, appends activation/quantity Facts, and enqueues one activation
-occurrence. Missing grants do not necessarily block activation: the Program can
-run in observe/suggest mode while gated effect nodes report `authority_missing`.
-
-Creating the dense example Frequency is also an inert, typed definition:
-
-    {
-      "action": "create-karma-frequency",
-      "request_id": "create-sensor-fast-1",
-      "slug": "sensor.fast",
-      "cadence": {
-        "kind": "elapsed",
-        "interval_ms": 3,
-        "anchor": "2026-07-21T09:00:00.000Z"
-      },
-      "timer_policy": {
-        "required_resolution_ms": 1,
-        "max_lateness_ms": 1,
-        "coalesce_window_ms": 0
-      },
-      "missed_policy": { "kind": "replay", "max": 64 },
-      "inactive_gap_policy": "skip_to_next_anchor",
-      "overload_policy": "pause_and_ask"
-    }
-
-Creation atomically appends a Frequency Record at quantity `0`, immutable
-revision 1, Proof/load estimate, and annotation Fact. It creates no
-`karma_deadline` row and no runtime timer. Activating the revision first
-checks dense/precision capacity and selects it. The dependency registry then
-arms exactly one deadline registration if at least one active Program, Signal
-poll, or workflow consumes the Frequency; ten consumers referencing it still
-share one schedule occurrence. When the last consumer pauses, the transaction
-invalidates/removes the registration and notifies the director without
-disabling or deleting the reusable Frequency definition.
-
-Tuning a declared parameter:
-
-    {
-      "action": "set-karma-parameter",
-      "request_id": "slow-reminder-after-recovery-1",
-      "target_kind": "frequency",
-      "target_uid": "r_reminder_tick...",
-      "parameter": "interval",
-      "value": { "type": "dur", "milliseconds": 259200000 },
-      "rephase": "preserve_anchor",
-      "expected_parameter_revision": 7,
-      "cause_run_uid": "r_run..."
-    }
-
-This appends parameter revision 8 on the target and an annotation Fact, recalculates
-`next_intended_at` from the declared rephase policy, and enqueues a
-parameter-changed occurrence. The run that requested the tune finishes under
-parameter revision 7; no current occurrence is reinterpreted.
-
-A narrow grant is similarly explicit:
-
-    {
-      "action": "create-karma-grant",
-      "request_id": "grant-apple-local-drafts-1",
-      "slug": "apple.local_drafts",
-      "program_uid": "r_program...",
-      "capabilities": ["transfer.draft_local"],
-      "trust_scope_uid": "r_apple_known_sellers...",
-      "concept_uids": ["c_apple..."],
-      "quantity_limit": { "value": "5.000", "unit_uid": "c_kilogram..." },
-      "per_window": { "count": 1, "duration_ms": 604800000 },
-      "expires_at": "2026-12-31T23:59:59.999Z"
-    }
-
-It binds the grant to the authenticated principal, then creates a signed Grant
-Record and Fact. It does not activate the Program or retroactively authorize
-existing candidates. At intent claim time the engine rechecks the live grant
-and atomically reserves its count/quantity budget.
-
-Accepting one recommendation is also revision-safe:
-
-    {
-      "action": "respond-karma-candidate",
-      "request_id": "accept-apple-draft-1",
-      "candidate_uid": "r_candidate...",
-      "expected_candidate_revision": 2,
-      "response": "accepted",
-      "edited_preview": null
-    }
-
-The engine freezes the response Fact, re-runs current visibility, target
-revision, policy, grant, budget, and Action validation, then closes the
-candidate and creates/executes only the preview's typed intent. If the offer,
-price, window, seller, evidence, grant, or budget changed, the candidate becomes
-`stale` with a new diff; “accepted” does not force an obsolete Action through.
-
-#### Data-transition rules
-
-| Event | Data appended/changed | What does **not** happen |
-| --- | --- | --- |
-| Definition created/revised | Program handle or new immutable revision, links, Proof, annotation Fact | No activation, grant, model training, or domain effect |
-| Program activated/paused | Active revision pointer and/or quantity Fact, activation occurrence | No deletion of revisions/runs |
-| Frequency activated/tuned or gains/loses its first/last consumer | Revision/parameter pointer, generation/cursor, exact deadline upsert/removal, annotation Fact | No polling loop/task, no rescheduling or due-check of unrelated Frequencies |
-| Fact/schedule/signal arrives | Trigger occurrence with cursor/time/source | No rule runs before the occurrence is durable |
-| Program evaluates | Run, trace, frozen input/effective-policy references, candidates/intents | Pure nodes do not mutate domain Records |
-| Learner updates | Evidence admission decisions, checkpoint/model Fact, metrics | No direct rule/authority change |
-| Recommendation routes | Candidate or Decision Record and evidence links | No Action until accepted or independently authorized |
-| Internal Action succeeds | Ordinary domain Facts plus intent receipt/provenance | No alternate privileged Karma write path |
-| External effect completes | Attempt/receipt and provenance Fact; qualifying observation may arrive separately | Receipt alone does not assert an unobserved physical/social outcome |
-| Grant revoked | Revocation Fact, cancellation/denial of preventable intents | Past Facts/effects are not erased |
-
-### Human-facing Karma interfaces
-
-Karma is one sand with several lenses over the same Protein/Actions:
-
-| Lens | Primary job |
-| --- | --- |
-| **Library** | Programs/templates, active/paused/faulted state, owner, purpose, next occurrence, latest result |
-| **Builder** | Form/graph/DSL synchronized editor, typed ports, parameters, Proof, revision diff |
-| **Why** | Causal run trace, substituted values, evidence, model output, policy/grant, intent/receipt, resulting Facts |
-| **Learn** | Pattern hypotheses, admitted/rejected evidence, probability/confidence/cadence, drift, thresholds, feedback |
-| **Imagine** | Replay/project/branch/DST, invariants, future timeline, plan comparison, apply-as-Actions preview |
-| **Authority** | Grants plus Automation Trust scopes: concept/stage, People/Organs/proximity selectors, thresholds, budgets, expiry, capability matrix, revoke/narrow controls |
-| **Queue** | Occurrences, runs, workflows, candidates, decisions, staged/retrying/uncertain/dead intents |
-| **Health** | Sequencer/connector/device/model lag, failures, replay audits, engine mode/emergency controls |
-
-The Builder begins with ordinary-language templates and forms, not a blank
-programming screen. A “Recurring task” form asks *what, when, missed-occurrence
-policy, and route*. An “Inventory threshold” form asks *record/concept, unit,
-threshold/hysteresis, forecast horizon, and suggest/draft/ask/act*. Switching to
-graph or DSL shows exactly what the form generated.
-
-The command palette provides short operational sugar; it never bypasses Actions:
-
-| Command | Action/query |
-| --- | --- |
-| `i new` | Open template/form and eventually `create-karma-program` |
-| `i edit @apple.restock` | Open Builder on active revision |
-| `i on @apple.restock` / `i off @apple.restock` | Activate/resume or pause with preview |
-| `i run @apple.restock` | Enqueue manual run |
-| `i sim @apple.restock +30d` | Create 30-day projection |
-| `i why run:r_...` | Query full causal chain |
-| `i tune @reminder interval=3d` | Preview typed parameter Action |
-| `i grant @apple.restock` | Open capability-scoped grant editor; never “grant all” silently |
-| `i trust @apple.restock` | Open concept/counterparty Trust selector and show matching offers/stage ceilings |
-| `i revoke grant:@apple.autobuy` | Preview affected queued work then revoke |
-| `i queue` / `i learn` / `i health` | Open corresponding Protein lens |
-| `i stop effects` | Enter `stage-effects` after showing disposition |
-
-Every compact command expands to a readable confirmation/diff when it changes
-authority, social state, external state, an active revision, or more than its
-declared low-risk local scope.
-
-### Concrete program and data-change examples
-
-These examples are interface specifications, not promises that the current
-Karma parser already accepts them.
-
-#### Preset rule — re-arm a daily task
-
-    program habit.meditate {
-      owner person:@ana
-      purpose "Make meditation a daily Need until completed"
-      param reminder_time: civil = 07:00 America/Sao_Paulo
-
-      on every calendar 1d at reminder_time missed coalesce id daily_tick
-      input task: ref<record> = record:@meditate
-
-      when quantity(task) == 0 {
-        act record.set_quantity {
-          record: task,
-          quantity: -1
-        }
-        require grant:@habit.local_records
-      }
-    }
-
-If the task is already negative, the run records `false` and changes nothing.
-If it is zero, the due schedule creates an occurrence; the run creates an
-authorized `record.set_quantity` intent; the normal Action appends the quantity
-Fact and changes the cached Record quantity to `-1`. Completing the task later
-sets it to zero through the ordinary user Action. The program never owns a
-private “completed” Boolean.
-
-#### Meta-rule — change one day to three days
-
-    frequency recovery.reminder_tick {
-      param interval: dur = 1d range [1ms, 30d]
-
-      every elapsed interval
-        anchor 2026-07-21T09:00:00.000Z
-        rephase preserve_anchor
-        missed coalesce
-
-      timer {
-        resolution 1ms
-        max_lateness 30s
-        coalesce_window 5s
-      }
-    }
-
-    program recovery.reminder {
-      owner person:@ana
-      purpose "Ask for a recovery check at the current interval"
-
-      on frequency freq:@recovery.reminder_tick id reminder_tick
-
-      ask "How is recovery today?" dedupe reminder_tick.intended_at
-    }
-
-    program recovery.adapt_frequency {
-      owner person:@ana
-      purpose "Ask less often after recovery has remained stable"
-
-      on fact(record_eq: record:@recovery.score) queue id score_changed
-      input scores: list<fact> = facts(record:@recovery.score, window: 14d)
-      sense stable: bool = all(scores.last(7d), value >= 8)
-
-      when enters(stable) {
-        tune freq:@recovery.reminder_tick param interval = 3d
-          rephase preserve_anchor
-        require grant:@recovery.manage_reminder
-      }
-
-      when leaves(stable) {
-        tune freq:@recovery.reminder_tick param interval = 1d
-          rephase preserve_anchor
-        require grant:@recovery.manage_reminder
-      }
-    }
-
-`grant:@recovery.manage_reminder` permits only
-`karma.manage.parameter` on Frequency `recovery.reminder_tick`, parameter
-`interval`, range `[1d, 3d]`; it grants no edits, activation, data scope, or
-effects.
-
-Suppose a score Fact arrives at cursor 200 and makes `stable` enter true:
-
-1. cursor 200 is evaluated with the Frequency's parameter revision 7 (`1d`);
-2. the meta-rule produces an authorized tune intent;
-3. `set-karma-parameter` commits cursor 201, parameter revision 8
-   (`3d`), and recomputes the next intended boundary from the original anchor;
-4. learning for cursor 200 runs after its existing reaction work and cannot
-   change either run retroactively; and
-5. later schedule occurrences use revision 8. Any schedule occurrence already
-   ordered before cursor 201 uses revision 7.
-
-The timestamps have millisecond precision; the cursors establish deterministic
-order when the score and a timer boundary share the same millisecond.
-
-#### Learned apple recurrence — old rules first, learning second
-
-Assume `model:@apple.need` is at checkpoint 12 with probability `0.69p`. A
-mutually confirmed apple-consumption Fact arrives at cursor 500:
-
-1. the reaction lane runs `prog:@household.apple.restock` against checkpoint
-   12. It may update inventory/projected shortage, but the `0.72p` suggestion
-   gate remains false;
-2. after the reaction closure, the learning lane admits the consumption Fact
-   and creates checkpoint 13 with probability `0.74p` and its new confidence;
-3. crossing the route threshold creates a pattern-threshold occurrence at a
-   later cursor, which evaluates the Program against checkpoint 13 and creates
-   one recommendation; and
-4. if the higher draft threshold and grant later pass, the candidate is a local
-   Transfer draft. Publishing, inviting, agreeing, confirming, and settling
-   still require their independent capabilities.
-
-The one consumption event is not handled under a rule it created. If Ana wants
-to compare the alternate behavior, the Karma sand offers “replay cursor 500 under
-checkpoint 13” as simulation; applying any difference is a new Action.
-
-#### Microcontroller Signal and actuator
-H: on the whole microcontroller part, if microcontrollers can be calleable as http and send http requests, we just need the rules/commands to be able to receive requests and put the value they received on a record quantity (or body, extension...). I believe that would be all, no need to do microcontroller specific stuff, just have like an open port for a record/records or give the microcontroller a valid key to make requests and thats it, we dont even know the http request coming in is from microcontroller, if we call an endpoint, we can be calling a microcontroller. Way simpler than what you have probably cooked out, please simplify this part.
-
-    signal garden.soil_moisture {
-      adapter mqtt:@garden.controller
-      schema qty<percent>
-      source_clock device
-      sequence monotonic
-      freshness 5m
-      calibration @soil.sensor.v2
-      quarantine outside [0%, 100%]
-    }
-
-    program garden.water_bed_1 {
-      owner person:@ana
-      purpose "Water bed 1 when verified moisture remains low"
-
-      on signal sig:@garden.soil_moisture coalesce by bed_id every 500ms
-      input moisture: datum<qty<percent>> = signal sig:@garden.soil_moisture
-      sense dry: bool = moisture < 22% holds 10m
-
-      when enters(dry) {
-        do device:@garden.controller water {
-          valve: "bed-1",
-          duration: 20s
-        }
-        require grant:@garden.water_bed_1
-        on stale ask "Soil sensor is stale; watering was not started"
-      }
-    }
-
-Each packet appends a raw observation Fact on the Signal Record. Calibration
-creates a derived value in the run (or an explicit derived Fact if configured).
-The `holds` node persists transition state. When it enters true, policy checks
-the device, bed, duration/rate budget, freshness, and interlocks before creating
-an intent. The controller acknowledgement becomes a receipt; it proves the
-command was acknowledged, not that water physically flowed. A later moisture
-observation or flow sensor may independently prove outcome and train a model.
-
-#### Shared percentage without importing authority
-
-    program household.apple.peer_context {
-      owner person:@ana
-      purpose "Use opted-in family cadence as weak planning context"
-
-      input family_rate: datum<aggregate<prob>> = published @family.apple.weekly {
-        require signed
-        require denominator >= 5
-        freshness 14d
-      }
-
-      let peer_prior: prob = family_rate.value
-      learn need = recurrence.beta_cadence {
-        local_evidence: view:@family.apple.confirmed_consumption,
-        external_prior: peer_prior weight 0.20,
-        never_train_remote: true
-      }
-
-      recommend "Family apple demand usually rises around this week"
-        when need.probability >= 0.72p && need.confidence >= 0.65c
-    }
-
-The imported product records numerator, denominator, cohort/window/method,
-signature coverage, visibility, and freshness. It can influence a declared
-prior but cannot install the publisher's rule, reveal hidden members, grant
-Transfer authority, or become a Fact that Ana herself needs apples.
-
-#### Interface control without arbitrary sand control
-
-    program transfer.open_call_room {
-      owner person:@ana
-      purpose "Offer the call room when this Transfer becomes agreed"
-
-      on fact(transfer_eq: transfer:@band.rehearsal) id transfer_changed
-      when enters(transfer_state(transfer:@band.rehearsal) == agreed) {
-        do ui:@ana.phone present {
-          surface: "call-room",
-          subject: transfer:@band.rehearsal,
-          mode: "offer"
-        }
-        require grant:@ui.call_offer
-      }
-    }
-
-This creates a presentation intent and device receipt. It may show/focus an
-“Open room” control, but cannot click agreement, answer a Decision, execute
-arbitrary JavaScript, hide warnings, or claim Ana joined. Opening the room is a
-separate bound controller Action; joining/attendance is later evidence.
-
-#### Explicit optimization and applying a plan
-
-    program week.balance {
-      owner person:@ana
-      purpose "Propose a feasible week with protected sleep and commitments"
-
-      on every calendar 1d at 18:00 America/Sao_Paulo
-      input work = view:@week.open_work
-      input promises = view:@week.agreed_promises
-      input travel = view:@week.travel_estimates freshness 6h
-
-      solve plan: list<schedule_plan> {
-        require sleep >= 8h each_day
-        require all(promises.windows)
-        require no_overlap
-        minimize overdue_penalty
-        minimize schedule_change_from_current
-        prefer deep_work in [09:00, 12:00]
-        tie_break task.uid
-        return 3
-      }
-
-      ask "Choose a proposed week" options plan
-        preview action:@calendar.apply_plan
-    }
-
-The solver run stores variables, constraints, objective values, alternatives,
-slack/infeasibility, and deterministic tie-break. It creates a Decision with
-three exact Action previews. Nothing reserves time until Ana selects an option
-and the current world/revision revalidates.
-
-### Perception — signals, schedules, and context
-
-Perception is the boundary that turns nondeterministic outside input into typed,
-ordered, replayable evidence. Implement it after the adaptive scheduler and
-occurrence kernel: adapters capture; pure nodes validate/normalize; Programs
-consume only the captured envelope. No connector gets to call rule evaluation
-or domain storage directly.
-
-- [x] `create-signal` represents command/http/sensor/query sources on a
-  schedule. Samples land as Facts and cascade like any other change.
-- [x] `create-frequency` supports day-of-week and catch-up behavior. Frequencies
-  are reusable clocks, not record timestamp columns.
-- [ ] Make every capture and integration source visible as an off-switchable
-  Signal record with adapter/revision, schema, freshness, last success/error,
-  health, consent/visibility/purpose scope, sampling cost, rate limit, and
-  retention. Phone, scale, camera, microphone, filesystem, database, HTTP,
-  webhook, message bus, local model, remote model, and command inputs all obey
-  this contract.
-- [ ] Use one observation envelope:
-  `source_uid, source_revision, source_sequence, schema_uid, value, unit,`
-  `effective_at, observed_at, received_at, place, quality, uncertainty,`
-  `actor/signature, capture_hash`. Source time and Cell receipt time are never
-  conflated. Duplicate sequence/hash is idempotent; a correction references the
-  prior observation instead of rewriting it.
-- [ ] Separate raw capture from normalized evidence. Preserve the signed/raw
-  value according to retention, then derive calibrated units, validation,
-  quality, and semantic concept through versioned pure nodes. A changed
-  calibration can re-derive history without pretending the sensor originally
-  emitted the corrected value.
-- [ ] Make push, polling, streaming, and interrupt-driven microcontrollers use
-  the same adapter contract. Devices declare identity/key, firmware/schema
-  revision, monotonic sequence, clock quality, calibration, expected cadence,
-  offline buffering, maximum age, and safe backpressure. Malformed or
-  out-of-range samples land in quarantine with a visible reason.
-- [ ] A Signal's activation stops new acquisition and downstream trigger
-  creation; it does not erase previous observations. Revoking camera,
-  microphone, location, health, or other sensitive consent also prevents new
-  use by runs, not merely new sampling.
-- [ ] AI enters only through a visible captured model Signal or as an ordinary
-  candidate author. It never has an ambient reader, hidden prompt-side data, or
-  privileged writer. Prompt/request inputs obey Protein visibility and purpose
-  scope; secrets and unrelated context do not enter the trace.
-- [ ] Replace ambiguous frequency catch-up with an explicit missed-occurrence
-  policy: `skip`, `coalesce` (one run carrying the missed count), or bounded
-  `replay`; expose start/end, timezone, weekdays, calendar interval, jitter, and
-  whether calendar alignment happens before or after interval addition. Jitter
-  is derived from the schedule/occurrence seed, never ambient randomness.
-- [ ] Let event-time nodes declare their late-data watermark and correction
-  behavior: ignore for live action but include in later analysis, recompute an
-  open window, compensate a reversible result, or ask. Historical evidence does
-  not silently cause a present-tense actuator or social effect.
-- [ ] Context is always a saved or inline Protein plus named derived values, not
-  an ambient database capability. The run records the exact visible input set
-  and why each row was included/excluded, plus freshness and quality used, so a
-  recommendation can explain missing, denied, invalid, or stale data.
-- [ ] A **Sense** is a pure, named recognizer that emits evidence-backed
-  candidates and cannot write state or contact another Cell by itself. It is a
-  Program node kind here; the recognizer itself is specified in
-  **`docs/Central: Senses.md`** (moved there 2026-07-29).
-- [ ] Define source health as data, not just logs: last scheduled/attempted/
-  successful sample, lag, consecutive errors, clock drift, dropped/quarantined
-  count, adapter version, and next retry. Health can feed an operational Sense
-  without recursively treating its own alarm as healthy input.
-- [ ] Connectors reference secrets by opaque capability-bound handle. Program
-  exports, traces, errors, notifications, and synced records never serialize
-  secret values. A simulator receives a fixture, not the production secret.
-
-### Deliberation — rules, derived values, and workflows
-
-Deliberation is the deterministic preset-behavior layer: it evaluates the graph
-that was active at the occurrence epoch and produces traces/candidates/intents.
-Build pure expressions and stateful gates first, then meta-control, then durable
-workflow nodes; never implement workflow/domain behavior in a parallel action
-path.
-
-- [x] A deterministic rule (the subsystem historically called Karma) is a
-  record with condition/gate/carry/debounce sidecar and consequences.
-  Conditions support full math over live tokens: `@x`,
-  `quantity()`, `sum[_pos/_neg](x, window)`, `freq()`, `signal()`, `value()`,
-  `promise_state()`, `confidence()`, `projected()`, `hours_since_fact()`,
-  `distance()`, and `demand()` (`route_eta` parses and errors cleanly pending
-  OSM data).
-- [x] Delivery is reactive: only rules reading changed records re-evaluate;
-  cascades stop at 256 evaluations so a runaway loop survives for inspection.
-  `debounce` temporarily holds a fired rule (currently in memory and reset on
-  reload). A rule without consequences is a named derived value read through
-  `value(@rules.x)`.
-- [x] `create-rule`/`update-rule` reload the registry and return Proof-loop
-  warnings in `outcome.warnings`; saving succeeds and the interface must show
-  the warning.
-- [ ] Persist debounce/cooldown and last-consumed occurrence so restarts cannot
-  double-fire or accidentally re-arm one-shot behavior.
-- [ ] Make conditions and derived values reusable graph nodes. Composition uses
-  typed references and explicit Boolean/math gates, allowing arbitrary chains
-  without returning to opaque `rq1`/`kd2` token strings.
-- [ ] Specify every gate's transition behavior: edge/level trigger, enter/exit
-  thresholds, hysteresis, hold duration, cooldown, once-per-window, reset, and
-  unknown/stale input policy. “True on every refresh” must never accidentally
-  mean “repeat an effect forever.”
-- [ ] Separate a durable derived Fact from a virtual derived value. Virtual
-  values are recomputed/read through the run; materialization is an explicit
-  node with provenance, retention, unit, and correction semantics.
-- [ ] Add durable workflow nodes for multi-step orchestration: state machine,
-  sequence/parallel, wait-until, branch, approval, retry, compensation, and
-  child-program invocation. Workflows coordinate typed Actions; they do not
-  create a second implementation of domain behavior.
-- [ ] Give a workflow an explicit concurrency policy (`queue`, `drop`,
-  `coalesce`, `latest`, or bounded parallel), correlation key, timeout,
-  cancellation semantics, and parent/child ownership. Long-running work resumes
-  from its durable node state after boot.
-- [ ] Make cancellation cooperative and observable. It prevents unclaimed
-  intents, requests cancellation from claimed adapters, waits or times out
-  according to policy, and runs only declared compensations. It does not claim
-  an irreversible external effect was undone.
-- [ ] Define transaction boundaries narrowly: compatible local Actions may
-  commit atomically through one domain Action; external or social multi-step
-  work is a saga with receipts and compensation. A workflow cannot hold a
-  database transaction while waiting for a person, network, or device.
-- [ ] Add Proof analysis for dependency cycles, contradictory writers,
-  unreachable nodes, unsafe external effects, authority escalation, dead ends,
-  non-convergence, fan-out explosion, stale/missing paths, unit/schema mismatch,
-  privacy declassification, and likely divergence. The runtime cascade cap
-  remains the final guard, not the design tool.
-- [ ] Conflicting candidates are resolved by declared policy—reject all,
-  priority, merge with a typed commutative reducer, serialize, or ask. Arrival
-  or thread order never silently chooses a writer. The rejected alternatives
-  remain in the run explanation.
-- [ ] Support parameter records separately from graph revisions when safe.
-  Tuning a threshold within its declared typed range appends evidence without
-  rewriting topology; changing types, inputs, effects, authority requirements,
-  or allowed range requires a new program revision.
-
-### Analysis, forecasting, and optimization
-
-Analysis is pure Karma: it can inspect, aggregate, forecast, search, and
-compare without receiving action authority. Optimization turns explicit goals
-and constraints into ranked plan candidates. Execution is still a separate
-policy decision.
-
-- [ ] Define an **objective specification** with owner, purpose, decision
-  variables, units/domains, hard constraints, soft penalties, objective order
-  (lexicographic, weighted, Pareto, or satisfice), planning horizon,
-  uncertainty treatment, and tie-break. Missing objectives never default to
-  “maximize activity,” money, quantity, or engagement.
-- [ ] Provide deterministic adapters for linear/simplex, mixed-integer,
-  constraint/scheduling, min-cost flow/matching, routing, and simulation-based
-  search as needs justify them. Each adapter uses the same typed solver contract
-  and can be replaced without changing program/effect semantics.
-- [ ] Translate Records, Facts, Links, Promises, availability, time windows,
-  places, units, skills, budgets, and user constraints into solver variables
-  through explicit feature nodes. The mapping and every approximation appear
-  in the run, rather than living in a sand.
-- [ ] Return a plan set—not only one answer—with objective values, binding
-  constraints, slack, sensitivity/range, assumptions, uncertainty, excluded
-  alternatives, and deterministic infeasibility explanation or smallest known
-  conflicting constraint set.
-- [ ] Distinguish forecasts from plans. A forecast estimates what may happen
-  under stated assumptions; a plan selects intended actions under objectives;
-  a schedule reserves time/resources only when a separate typed Action says so.
-- [ ] Support robust/scenario planning over captured distributions and
-  Imagination branches. A plan states which uncertainty it tolerates and which
-  future observation should trigger replanning; it never hides a point estimate
-  behind an exact-looking answer.
-- [ ] Reoptimization preserves stability by explicit change penalties and
-  frozen commitments. It may not churn a person's day or revise an agreed
-  Transfer merely because a marginally better solution appeared.
-- [ ] Multi-person optimization uses only shared/visible constraints and
-  objectives. It produces a proposal each party can inspect; it cannot infer a
-  hidden preference, expose another person's private constraint, or treat one
-  Cell's optimum as agreement.
-- [ ] Make analysis callable through Protein/Actions and reusable by humans,
-  agents, programs, and sands: validate, solve, explain, compare, cancel, and
-  pin a result as a candidate. Solvers never get an implicit effect channel.
-
-### Recommendations and learning
-
-Learning is the lower-priority adaptation lane, not the rule runtime. It admits
-only explicitly eligible evidence, updates versioned checkpoints, and proposes
-probabilities/patterns; routing, Trust, and authority decide what those outputs
-may become. Begin with the transparent recurrence model before adding advanced
-learners so every later algorithm inherits the same evidence/rebuild contract.
-
-- [x] What already learns from evidence — match rules, the `senses_pass`
-  discovery join, and the deterministic `confidence(@p)` / `demand(@concept)`
-  functions — is specified in **`docs/Central: Senses.md`** (moved there
-  2026-07-29). None of it is a global reputation score.
-
-The shipped `confidence(@p)` is a useful ingredient but its name is too broad
-for the destination. Karma keeps at least these quantities distinct:
-
-| Quantity | Question |
-| --- | --- |
-| Recurrence probability | How likely is this event/action within this context and horizon? |
-| Estimate confidence | How much eligible evidence supports that probability and how wide is its uncertainty? |
-| Counterparty evidence | What visible signed outcomes exist for this Person, concept, window, and role? |
-| Expected utility/cost | Under this person's stated objective, how good is a candidate and compared with what? |
-| Authority eligibility | Does a current grant allow the proposed Action now? |
-
-- [ ] Define a **pattern hypothesis** by event schema, principal/household,
-  concept hierarchy, direction and quantity band, counterpart role, place
-  region, calendar/cadence bucket, prerequisite context, horizon, and feature
-  revision. Similarity/generalization is explicit; the learner never silently
-  widens from “green apples from this store” to all food or all people.
-- [ ] Separate an **opportunity/exposure** from positive, negative, and censored
-  evidence. An observed purchase/meal/completion can be positive; a deliberately
-  skipped eligible opportunity can be negative; “there is no Fact” is unknown
-  unless the program proves the opportunity was observable. Outages, hidden
-  data, and periods before a source existed are censored, not failure.
-- [ ] Learn only from evidence admitted by a versioned evidence policy:
-  human-authored Facts, independently sensed outcomes, signed/mutually confirmed
-  occurrences, and deliberately labeled feedback. A recommendation, generated
-  draft, program-created task, model/agent text, or automated Action never
-  becomes positive evidence merely because the system produced it. A later
-  independently observed outcome may train the model on its own merit.
-- [ ] Define local `recurrence_likelihood` separately from counterparty
-  evidence, keyed only by locally visible/purpose-permitted context. Keep
-  purchase need, consumption cadence, seller reliability, price forecast, and
-  Transfer agreement likelihood as different models that a program may compose.
-
-The first transparent recurrence model should be a deterministic decayed
-Beta/cadence model, not a vague “growth factor.” For eligible evidence `i`:
-
-    weight_i = decay(age_i, configured_half_life, decay_version)
-    alpha = prior_alpha + sum(weight_i * positive_i)
-    beta  = prior_beta  + sum(weight_i * negative_i)
-    recurrence_probability = alpha / (alpha + beta)
-
-`decay` is a specified fixed-point lookup/algorithm so it replays identically.
-Each new event changes the posterior less as supported evidence accumulates;
-old evidence loses influence according to the half-life. Confidence is reported
-separately from probability using effective sample weight and a versioned
-credible/uncertainty interval. Cadence uses deterministic eligible-time buckets
-or a discrete time-to-event hazard, so “usually Saturday morning” and “about
-every eight days” can coexist without confusing frequency with certainty.
-
-- [ ] Store prior, evidence query/policy, positive/negative definitions,
-  half-life, cadence/timezone, feature buckets, minimum effective sample weight,
-  probability and confidence thresholds, enter/exit hysteresis, mute/snooze,
-  drift policy, and model version as typed policy—not frontend state.
-- [ ] Persist each model update with prior checkpoint hash, admitted/rejected
-  evidence ids and reasons, logical evaluation time, resulting sufficient
-  statistics, metrics, and new checkpoint hash. Checkpoints are caches:
-  replaying eligible evidence is the truth and must reconstruct them.
-- [ ] Avoid combinatorial context mining by declaring candidate feature
-  templates and resource/privacy budgets. New pattern discovery emits a
-  hypothesis with multiple-testing/validation information; it does not create a
-  million invisible rules or search sensitive attributes by default.
-- [ ] Split evidence into deterministic train/validation horizons or
-  forward-chaining windows. Report calibration, false-positive/negative cost,
-  support, drift, and baseline comparison before a learned policy can graduate
-  from watching to suggestion or autonomy.
-- [ ] Model lifecycle is
-  `cold → learning → calibrated → drifting → stale/disabled`. Insufficient,
-  stale, shifted, or contradictory data lowers confidence and autonomy. A
-  threshold crossing uses hysteresis/minimum duration so values near the line
-  do not chatter.
-- [ ] Offer a registry of deterministic learner types: decayed count/Beta,
-  cadence/hazard, moving quantile, seasonal baseline, anomaly/change detector,
-  regression/classification, and later deterministic seeded advanced models.
-  Every type publishes its feature contract, limitations, update rule, metrics,
-  memory/fuel bounds, and explanation strategy.
-- [ ] Never let a learner mutate a program graph or its own feature/evidence
-  scope directly. It emits parameters or a program-revision candidate. Automatic
-  promotion requires a pre-authorized template and scope, Proof, validation,
-  optional shadow duration, rollback condition, and a grant that explicitly
-  includes activation.
-- [ ] Refine counterparty evidence by concept/role/window and show kept, broken,
-  disputed, late, partial, missing, and verification counts directly. Any
-  smoothed estimate is local decision support, not a global reputation score,
-  identity label, or fact about a person's character.
-
-### Recommendation contract
-
-A recommendation is a durable, inert interface between inference and choice.
-It must be deduplicated, updateable as evidence changes, and independently
-revalidated when accepted. Implement this lifecycle before whispers or
-automatic drafts so Attention never becomes the only place a candidate exists.
-
-- [ ] Emit one lifecycle-managed recommendation per
-  `(pattern/objective, subject, horizon, candidate-kind)`, with deduplication
-  and update-in-place evidence. It carries claim, evidence, model revisions,
-  probability, confidence/uncertainty, expected benefit/cost, alternatives,
-  freshness, required authority, expiry, and an exact preview/diff.
-- [ ] Recommendation states are `open, accepted, accepted-edited, dismissed,
-  snoozed, muted, obsolete, expired`. New evidence may update an open item but
-  cannot resurrect a muted pattern or replace a person's edited choice.
-- [ ] Routes are policy:
-  `observe-only → log`,
-  `suggest → recommendation`,
-  `draft → inert Action/Transfer/program candidate`,
-  `ask → durable decision`, and
-  `act → authorized intent`.
-  Probability/confidence thresholds and authority checks are required at every
-  transition; a high score does not skip a route.
-- [ ] Feedback is typed and contextual: correct, incorrect, wrong time/place/
-  quantity/person, already done, not useful, too frequent, accepted unchanged,
-  accepted edited, snoozed, or mute. It may update delivery/pattern models under
-  their evidence policy while preserving the original recommendation and
-  response.
-- [ ] Detect action/recommendation loops: if accepting a suggestion creates the
-  only evidence that makes it more likely, mark the path endogenous and exclude
-  or separately measure it. Compare against a no-intervention baseline where
-  feasible.
-- [ ] Support explanations at several depths: one sentence, substituted values,
-  evidence timeline, model card/uncertainty, objective/alternatives, policy
-  decision, and counterfactual (“without Tuesday's consumption Fact, this would
-  remain below the suggestion threshold”).
-- [ ] A human, software agent, imported template, or model may author the same
-  inert candidate format. Authorship is provenance, not permission; none bypass
-  visibility, evidence display, Proof, budgets, or the principal's grant.
-
-### Shared and collective Karma
-
-A person may choose to expose records, evidence, percentages, model summaries,
-or programs. Collective Karma is composition of explicitly published
-evidence—not a central brain and not a loophole around Protein visibility.
-
-- [ ] Publish one of four typed products: visible raw evidence; a signed
-  aggregate; a model/forecast card with stated inputs; or a Karma
-  program template. Each carries owner/origin, purpose/terms, audience,
-  visibility, time window, concept/unit scope, method/revision, freshness,
-  lineage/hash, signature, and revocation/expiry.
-- [ ] A percentage always includes numerator, denominator, eligibility/cohort
-  definition, excluded/missing count, time window, unit/concept, method, and
-  signature/verification coverage. “80% of people do X” without those fields is
-  invalid input, not Karma.
-- [ ] Apply visibility before aggregation and track input taint through derived
-  outputs. An output cannot be published more broadly than its inputs unless an
-  explicit declassification policy proves an allowed aggregate. Small cohorts,
-  repeated queries, joins, and differencing attacks obey minimum-group/query
-  budgets or optional deterministic privacy mechanisms.
-- [ ] Allow a Cell to combine local evidence with permitted remote raw facts or
-  signed aggregates using declared weighting, provenance, freshness, and trust
-  policy. Remote claims remain inputs with uncertainty; they do not become local
-  Facts about an unseen person merely because they are signed.
-- [ ] Sharing a live rule/program means sharing a content-hashed definition or
-  template, never its secrets, private inputs, model checkpoint, grant, or
-  authority. Installation creates an inactive local revision whose references,
-  data scope, budgets, and effects must be rebound and proven.
-- [ ] Support family/team cooperative patterns only over scopes each
-  participant granted. A household need can use Ana's and her mother's visible
-  pantry evidence, while explanations and outgoing Transfers reveal no more
-  than their grants permit.
-- [ ] Revocation stops future export/use and cancels eligible queued work; it
-  cannot erase signed data already shared. Retention and redistribution terms
-  remain visible, and downstream models mark revoked/unavailable provenance
-  rather than laundering it.
-- [ ] Prove recurrence saturation/decay, cadence, confidence separation,
-  deduplication, negative/censored evidence, feedback, opt-out, drift,
-  no self-training, no private leak, no reputation laundering, and no
-  unauthorized automatic commitment.
-
-### Attention and whispers — the interruption contract
-
-Attention schedules human interruption after a candidate/decision already
-exists. It ranks and delivers; it does not recompute the decision, gain
-authority, or hide parked work. Implement inbox/digest truth first and device
-channels afterward, with one cross-device acknowledgement identity.
-
-- [x] `source: decision, live: true` is the Decision Queue and `decide` is the
-  answer. Deterministic feeders cover broken promises (`expiry`), rule `ask`
-  consequences (`ask`), Senses matches (`draft`), and projected crossings
-  (`crossing`, a one-week horizon, deduped per record).
-- [x] `decide { decision, answer }` closes a decision through the Ledger. When
-  the chosen option carries an Action, deciding executes it for one-tap flows
-  such as “yes → set quantity.”
-- [x] Decisions with `expires_at` auto-close as `expired`; each sweep deduplicates
-  by `(subject, kind)`, so one unresolved situation asks once.
-- [x] The daily notification budget (`configuration.attention_budget_per_day`,
-  default 12) is hard. Excess notification effects finish as `parked:digest`;
-  they are deferred, not lost.
-- [ ] A **decision** is durable work requiring a choice; a **whisper** is its
-  calm, context-aware delivery. Whispers never become a second queue and never
-  execute Actions: they link to a decision, recommendation, run, or changed
-  fact and disappear without losing the underlying item.
-- [ ] A decision freezes the question, subject, evidence/run, options and exact
-  Action previews, required principal, default/no-answer behavior, deadline,
-  reversibility, and current-revision preconditions. Answering after the world
-  changed either revalidates or returns a stale decision; it never executes an
-  obsolete preview.
-- [ ] Rank attention by explicit user priority, urgency/window, confidence,
-  safety, reversibility, cost of delay, interruption cost, and recent delivery
-  load. The formula and tie-break are inspectable. Low-value items collect into
-  summaries; urgency does not manufacture authority.
-- [ ] Route through device records to inbox, digest, desktop toast, mobile push,
-  sound, or text; support per-program/per-source channel controls, quiet hours,
-  location/context eligibility, accessible presentation, and “show why now.”
-- [ ] Delivery has an idempotent whisper uid and per-channel attempts/receipts.
-  Opening, acknowledging, dismissing, or answering on one device converges on
-  the durable item and suppresses redundant channels according to policy.
-- [ ] Escalation is explicit: retry a channel, change channel, notify another
-  delegated recipient, or expire. No program infers permission to contact a
-  family member/employer merely because the primary person did not answer.
-- [ ] Attention policy reserves capacity for safety and expiring commitments,
-  caps every source/program, supports “never interrupt for this,” and shows
-  which items were parked by budget. Digest generation summarizes links; it
-  does not replace or mutate the underlying decisions.
-- [ ] Feedback is a first-class result (`accepted`, `edited`, `dismissed`,
-  `snoozed`, `muted`, `wrong-context`) used to tune local delivery and pattern
-  policy without rewriting historical evidence.
-- [ ] Explanations and controls remain available without coercive ranking,
-  synthetic urgency, dark patterns, or hiding the “do nothing/mute/pause”
-  option. Accessibility and quiet-time constraints are hard policy.
-
-### Effects, authority, and social safety
-
-Effects are the only bridge from a pure run/candidate to mutation or the outside
-world. Policy first creates an authorized durable intent; a worker later claims
-and executes it through the normal typed Action/adapter. Implementing any
-automatic write before grants, budget reservation, revocation recheck, and
-idempotent intent identity would create a second privileged system.
-
-- [x] Rule consequences include `set_quantity`, `add_quantity`, `emit_promise`,
-  `run_command`, `run_query`, `run_action`, `set_visibility`,
-  `activate`/`deactivate` (including another rule), `ask`, and budgeted `notify`.
-  Effects run outside evaluation from a durable queue and append zero-delta
-  provenance Facts.
-- [x] Transfer automation fails closed against the old activation path; current
-  manual revision, agreement, occurrence, confirmation, and settlement gates
-  remain authoritative.
-
-The old fail-closed behavior remains correct until the capability system exists.
-The destination, however, does not hard-code “a machine may never commit” or
-“automation may do everything.” A person can deliberately delegate even
-high-impact actions on **their own** behalf within exact limits. The engine
-preserves that freedom while making escalation explicit, narrow, revocable,
-rechecked, and attributable.
-
-| Capability family | Default route | Examples |
-| --- | --- | --- |
-| Pure read/derive/analyze | evaluate within data scope | Protein, feature, projection, solver, report |
-| Local reversible data | suggest/ask until granted | set/add quantity, link, local metadata, create task |
-| Attention/presentation | budgeted delivery | decision, digest, toast, focus a permitted interface |
-| Program/meta-control | ask; narrow grants allowed | tune parameter, pause program, activate proven revision |
-| External resource | staged; bound adapter grant | HTTP, command, filesystem, network, payment/device controller |
-| Private Transfer preparation | suggest/draft | local draft, projection, rank possible counterparties |
-| Social publication/negotiation | ask; exact grant allowed | publish OPEN offer, invite, counteroffer, message, visibility |
-| Own social commitment/evidence | explicit high-authority grant | agree own revision, claim own occurrence, confirm own side, settle owned Record |
-| Irreversible/safety-critical | manual or dedicated interlocked grant | door/vehicle/medical/industrial actuation, destructive command |
-
-The effective authority for an intent is the intersection of:
-
-`program requirements ∩ principal delegation ∩ actor permissions ∩`
-`visible/purpose-allowed data ∩ applicable Automation Trust scope ∩`
-`current domain capability ∩ budgets ∩`
-`target revision/preconditions ∩ safety interlocks`
-
-Any missing term denies or stages the intent. A recommendation score, model
-confidence, owner role, template signature, or past successful run cannot
-replace one of these terms.
-
-Grant and Automation Trust overlap intentionally as defense in depth but answer
-different questions. The grant says “this Program may perform these Action
-kinds for me within these budgets”; the Trust scope says “these counterparties/
-Organs/proximities are acceptable for this concept and stage at these evidence
-thresholds.” The effective result is their intersection, never their union.
-
-- [ ] Make grants typed records signed by the delegating Person. At minimum they
-  scope principal, program and optionally exact revision/template, capability
-  and Action kinds, target records/concepts/places/controllers, recipients/
-  Organs/proximity, quantity/value and its unit, per-run/day/window rate, valid
-  time/context, evidence quality, allowed visibility, reversibility, approval
-  threshold, and expiry.
-- [ ] A program cannot create, widen, renew, transfer, or choose the principal
-  of its own grant. Grant management is a separately permissioned typed Action.
-  Delegation is non-transitive unless the original grant names an exact
-  subdelegation, which is itself visible and revocable.
-- [ ] Persist scopes, budgets, recipients, quiet time, thresholds, model/
-  evidence restrictions, forbidden Actions, and pattern overrides as typed
-  policy. Enforcement is in the engine and Action/domain boundary, never only
-  in the Karma sand, another sand, connector, or agent prompt.
-- [ ] Attribute every automatic Action to both the real principal and
-  `program/revision/run/intent`, with `cause=karma`. The program never
-  becomes a Person, signs as another Person, or obscures which delegation was
-  consumed.
-- [ ] Reserve budget when an intent is authorized, reconcile it on receipt, and
-  release it on denial/cancellation according to typed policy. Concurrent runs
-  cannot each see the full remaining budget and overspend it.
-- [ ] Revocation and emergency-stop prevent unclaimed work immediately and are
-  rechecked before dispatch. Already committed local Facts remain; an already
-  dispatched external action gets an honest receipt/uncertain state and any
-  declared compensation.
-
-### Scoped automation Trust — who may enter an automatic Transfer
-
-Probability is evidence about what may be needed; it is not trust in a seller
-and not authority to transact. Add a local **Automation Trust scope** between
-recommendation policy and a Transfer intent. It answers:
-
-> For this principal, Program/purpose, concept/direction, and Transfer stage,
-> which People and origin/delivery Organs may participate, at what proximity,
-> thresholds, terms, and limits?
-
-The existing contact state remains the coarse first gate: `blocked` always
-denies import, discovery, suggestion delivery, and automation; `known` merely
-permits ordinary interaction and never implies automation. Automation Trust is
-finer, local, concept-specific, and unpublished by default. It is not a global
-reputation level and cannot grant authority to the counterparty.
-
-Keep these gates separate and conjunctive:
-
-`visible offer ∩ recurrence probability/confidence ∩ objective/terms ∩`
-`Automation Trust scope ∩ principal Program grant/budgets ∩ Transfer domain`
-`revision/agreement/occurrence readiness`
-
-A failure in any gate denies or routes to Attention with its own reason. Raising
-probability cannot compensate for an untrusted Organ; putting an Organ on an
-allowlist cannot compensate for insufficient evidence or grant; and a grant
-cannot make an invisible or stale offer visible/current.
-
-#### Automation tiers
-
-Use a stage ceiling rather than one `trusted=true` Boolean:
-
-| Tier | Highest behavior the Trust scope is willing to consider | Still required |
-| --- | --- | --- |
-| `observe` | Read/compare visible evidence | visibility/purpose |
-| `suggest` | Show recommendation involving the counterparty | recommendation policy |
-| `draft` | Create a private local Transfer draft | `transfer.draft_local` grant |
-| `propose` | Publish/address/send proposal | `transfer.publish/propose` grant |
-| `negotiate` | Claim/counter/revise inside terms | `transfer.negotiate_own` grant |
-| `commit` | Agree/activate the principal's own side | exact high-authority agreement/activation grant |
-| `settle` | Claim/confirm own occurrence and settle owned Record | independent evidence, confirmation/settlement grants, domain readiness |
-
-Higher tiers include willingness for lower stages but confer none of their
-capabilities. The effective stage is the minimum of Trust ceiling, grant
-capability ceiling, current policy route, and Transfer domain capability.
-
-#### Typed scope and selector
-
-An immutable `AutomationTrustScopeRevision` contains:
-
-    owner_person_uid
-    optional_program_uid / optional_program_revision_uid
-    purpose
-    concept_uid + include_descendants
-    direction: buy | sell | give | receive | any
-    stage_ceiling: AutomationTier
-    counterparty_selector: SelectorExpr
-    per_stage_probability_confidence
-    allowed_units / quantity_range / value_range
-    allowed_places / windows / weekdays
-    rate_and_aggregate_budgets
-    required_counterparty_evidence
-    valid_from / expires_at
-
-The selector AST is deliberately explicit:
-
-    enum SelectorExpr {
-        Any(Vec<SelectorExpr>),
-        All(Vec<SelectorExpr>),
-        Not(Box<SelectorExpr>),
-        PersonIn(Set<PersonUid>),
-        OriginOrganIn(Set<OrganUid>),
-        ViaOrganIn(Set<OrganUid>),
-        ProximityAtMost(u32),
-    }
-
-There is no ambiguous “list plus proximity” behavior. `any { organ list;
-proximity <= 2 }` means either condition; `all { organ list; proximity <= 2 }`
-means both. Empty `any` is false, empty `all` is true only inside a scope that
-also names a positive selector, and a Trust scope with no positive counterparty
-selector cannot activate above `suggest`.
-
-An explicit deny list is evaluated before the positive expression and always
-vetoes it. Then the exact Trust revision referenced by the Program/grant is
-evaluated; Lince does not merge every matching allow rule from the database and
-guess precedence. Multiple scopes require an explicit `any/all` composition in
-the Program policy. This keeps “why was this seller allowed?” mechanically
-answerable.
-
-Transfer parties remain People. An Organ selector says which Cell identity may
-originate or carry the automated relationship; it does not trust every Person
-inside that Organ or sign for them. A Person selector may narrow the party
-inside allowed Organs. For relayed discovery, `origin_organ` is the record's
-preserved lineage and `via_organ` is the delivery contact; a policy can require
-either or both. Proximity is the evaluating Cell's local contact value, never a
-remote self-asserted number, and no rule automatically broadens its maximum.
-
-#### DSL example — probability plus allowed Organs/proximity
-
     trust apple.known_sellers {
       owner person:@ana
-      purpose "Allow bounded apple restock automation"
       concept exact concept:@apple
       direction buy
-
       deny {
         origin_organ in [organ:@blocked.market]
         person in [person:@seller.with.dispute]
       }
-
       counterparty any {
         origin_organ in [organ:@family.coop, organ:@neighborhood.market]
-        all {
-          proximity <= 2
-          via_organ in [organ:@trusted.relay]
-        }
+        all { proximity <= 2; via_organ in [organ:@trusted.relay] }
       }
-
       stage suggest require probability >= 0.70p confidence >= 0.60c
       stage draft   require probability >= 0.85p confidence >= 0.75c
       stage propose require probability >= 0.92p confidence >= 0.85c
       ceiling propose
-
       quantity in [0.5kg, 5kg]
-      value <= 50 @brl per 7d
+      value <= 50  per 7d
       window local [07:00, 20:00]
       expires 2026-12-31T23:59:59.999Z
     }
 
-    program household.apple.restock {
-      # ...evidence, projection, and offer ranking from the earlier example...
+**How that resolves.** An OPEN apple offer from `organ:@random.shop` at
+proximity 4 cannot be drafted or proposed even at `0.99p`. From the family
+co-op, the first `any` arm matches. Through the trusted relay at proximity 2,
+the second `all` arm matches. **The blocked market is denied even when another
+arm would allow it.** The creation Action is typed, not a free-form policy
+string: `create-automation-trust-scope` carries `request_id`, slug, purpose,
+program uid, concept uid, `include_descendants`, direction, `stage_ceiling`, a
+structured `selector` with separate `deny` and `allow` trees (`any`/`all`/
+`origin_organ_in`/`via_organ_in`/`proximity_at_most`), per-stage
+probability/confidence thresholds as fixed-point strings, `max_quantity` and
+`max_value` with `unit_uid` and `window_ms`, and `expires_at`.
 
-      when shortage && need.probability >= 0.85p
-                    && need.confidence >= 0.75c {
-        draft transfer.draft_local from seller
-        require trust:@apple.known_sellers at draft
-        require grant:@apple.local_drafts
-      }
+**Someone else's statistic is a prior, not a fact about you.** The imported
+product records numerator, denominator, cohort/window/method, signature
+coverage, visibility and freshness. It can influence a declared prior but cannot
+install the publisher's rule, reveal hidden members, grant Transfer authority,
+or become a Fact that Ana herself needs apples.
 
-      when shortage && need.probability >= 0.92p
-                    && need.confidence >= 0.85c {
-        act transfer.publish_proposal from seller
-        require trust:@apple.known_sellers at propose
-        require grant:@apple.proposals
-      }
+    input family_rate: datum<aggregate<prob>> = published @family.apple.weekly {
+      require signed  require denominator >= 5  freshness 14d
+    }
+    learn need = recurrence.beta_cadence {
+      local_evidence: view:@family.apple.confirmed_consumption,
+      external_prior: family_rate.value weight 0.20,
+      never_train_remote: true
     }
 
-If an OPEN apple offer comes from `organ:@random.shop` at proximity 4, a `0.99p`
-need still cannot draft/propose it. If it comes from the family co-op, the first
-`any` arm matches. If it comes through the trusted relay at proximity 2, the
-second `all` arm matches. The blocked market is denied even if another arm would
-allow it.
+**A program may offer a screen, not drive it.** This creates a presentation
+intent and a device receipt. It may show or focus an "Open room" control, but
+cannot click agreement, answer a Decision, execute arbitrary JavaScript, hide
+warnings, or claim Ana joined. Opening the room is a separate bound controller
+Action; attendance is later evidence.
 
-The corresponding creation Action is typed rather than a free-form policy
-string:
-
-    {
-      "action": "create-automation-trust-scope",
-      "request_id": "create-apple-known-sellers-1",
-      "slug": "apple.known_sellers",
-      "purpose": "Allow bounded apple restock automation",
-      "program_uid": "r_apple_restock...",
-      "concept_uid": "c_apple...",
-      "include_descendants": false,
-      "direction": "buy",
-      "stage_ceiling": "propose",
-      "selector": {
-        "deny": {
-          "origin_organ_uids": ["r_blocked_market..."],
-          "person_uids": ["r_disputed_seller..."]
-        },
-        "allow": {
-          "op": "any",
-          "items": [
-            {
-              "op": "origin_organ_in",
-              "organ_uids": ["r_family_coop...", "r_neighborhood_market..."]
-            },
-            {
-              "op": "all",
-              "items": [
-                { "op": "proximity_at_most", "value": 2 },
-                { "op": "via_organ_in", "organ_uids": ["r_trusted_relay..."] }
-              ]
-            }
-          ]
-        }
-      },
-      "stage_thresholds": {
-        "draft": { "probability": "0.8500", "confidence": "0.7500" },
-        "propose": { "probability": "0.9200", "confidence": "0.8500" }
-      },
-      "max_quantity": { "decimal": "5.000", "unit_uid": "c_kilogram..." },
-      "max_value": { "decimal": "50.00", "unit_uid": "c_brl...", "window_ms": 604800000 },
-      "expires_at": "2026-12-31T23:59:59.999Z"
+    when enters(transfer_state(transfer:@band.rehearsal) == agreed) {
+      do ui:@ana.phone present {
+        surface: "call-room", subject: transfer:@band.rehearsal, mode: "offer"
+      }
+      require grant:@ui.call_offer
     }
 
-Creation derives the principal and creates a disabled scope handle plus revision
-1 and Proof. A separate `activate-automation-trust-revision` selects it after
-showing which active Programs/grants could begin matching. Later revisions keep
-the same handle, never edit revision 1, and take effect only from a later
-occurrence cursor.
+**A solver proposes, a person chooses.** The run stores variables, constraints,
+objective values, alternatives, slack/infeasibility and the deterministic
+tie-break, then creates a Decision with three exact Action previews. **Nothing
+reserves time until Ana selects an option and the current world revalidates.**
 
-#### Persistence, Actions, Protein, and evaluation
-
-Store each Trust scope as a Record (`kind=automation_trust_scope`, quantity is
-activation) with immutable revision sidecars and typed selector member tables.
-Use integer fixed-point columns for probability/confidence and canonical
-quantity/value/unit fields. Suggested sidecars are:
-
-- `automation_trust_scope_revision` for owner/program/purpose/concept/direction/
-  stage/threshold/limits/validity and content hash;
-- `automation_trust_selector_node` for normalized `any/all/not/atom` tree and
-  stable node order; and
-- `automation_trust_selector_member` for Person/Organ sets with
-  `allow|deny` and `origin|via|person` roles.
-
-The create/revise Action derives the principal, validates every referenced
-Person/Organ/concept, canonicalizes the selector, appends a new immutable
-revision and Fact, and never activates a widened revision by implication.
-Activation uses the normal Program-like revision selection plus quantity knob.
-Narrowing may be immediate; widening requires the same explicit authority and
-preview as a new Transfer grant.
-
-Extend `source:"karma"` with `object_kind="trust_scope"`, predicates
-`concept_in`, `program_eq`, `stage_ceiling_gte`, `person_eq`,
-`origin_organ_eq`, `via_organ_eq`, `max_proximity_lte`, `active`, and
-`expires_before`; includes expose normalized selector, thresholds/limits,
-referencing Programs/grants, current capabilities, and recent allow/deny traces.
-
-Policy evaluation returns a structured proof, never just `false`:
-
-    concept: pass exact @apple
-    direction: pass buy
-    probability: pass 0.93p >= 0.92p
-    confidence: pass 0.87c >= 0.85c
-    deny_selector: pass no deny matched
-    positive_selector: pass origin_organ @family.coop
-    stage_ceiling: pass propose
-    quantity/value/window: pass
-    grant: pass @apple.proposals, 1/1 weekly reservation
-    transfer_domain: pass expected revision 8
-
-The exact Trust/grant revisions are frozen into the candidate explanation and
-rechecked live before intent dispatch. A later block, expiry, proximity change,
-Trust revision, offer revision, or budget use deterministically denies/stales
-the intent.
-
-### Karma controlling Transfer
-
-Every Transfer mutation remains the typed, revision-safe, idempotent domain
-Action described in `docs/Central: Transfer.md`. Karma never edits Transfer
-tables, invents signatures, bypasses agreement/occurrence gates, or maintains a
-second Transfer state machine. It may control every legitimate stage of a
-principal's side when that exact capability has been delegated:
-
-| Stage | Capability and non-negotiable gate |
-| --- | --- |
-| Observe/project/match | `transfer.read/project`; visibility applies before matching, scoring, aggregate, and explanation. |
-| Create a private local draft | `transfer.draft_local`; matching Trust scope at `draft`, then freezes source evidence and expected value/window but contacts nobody. |
-| Publish OPEN/address people | `transfer.publish/propose`; matching Trust scope at `propose` plus separate recipient, audience, concept, value, rate, and expiry grant. Publication is a social effect, not “just a draft.” |
-| Claim an OPEN promise/counteroffer | `transfer.negotiate_own`; matching Trust scope at `negotiate`, exact current revision, allowed counterparties/terms, stale-write rejection, and signed principal attribution. |
-| Revise terms | `transfer.revise_own`; only fields and ranges in grant. Normal domain semantics invalidate agreement; Karma cannot preserve stale consent. |
-| Review/agree own side | `transfer.agree_own`; Trust ceiling `commit` plus explicit high-authority delegation naming agreement policy, counterparty/cohort, concept/value bounds, window, evidence, and grant expiry. It can never sign another party's level. |
-| Activate/reserve own contribution | `transfer.activate_own`; current revision agreement and availability/reservation policy must already permit it. Budget reservation is atomic. |
-| Claim delivery/receipt/occurrence | `transfer.claim_occurrence_own`; Trust ceiling `settle`, only the principal's statement, tied to qualifying independent evidence or an explicitly allowed manual/external source. A program's own intent is not proof it happened. |
-| Confirm own side | `transfer.confirm_own`; current occurrence, confirmation policy, evidence source/quality, and principal grant. It never confirms what the counterparty must attest. |
-| Settle an owned Record | `transfer.settle_local`; only after domain readiness, expected revision, idempotency, local ownership, application formula, and quantity/value budgets pass. Settlement still creates the ordinary signed Facts. |
-| Withdraw/cancel/dispute/correct | Separate `transfer.withdraw_own/cancel_own/dispute_own/correct_own`; terminal evidence is never rewritten. Compensation or reversing/successor Transfer remains explicit. |
-| Expand visibility/proximity | `transfer.declassify`; never implied by propose/agree. Exact fields/audience and privacy budget are reviewed independently. |
-| Create remainder/successor/dependency | `transfer.draft_local` by default; publication/agreement follows the same later gates and cannot inherit authority accidentally. |
-
-- [ ] Encode these as capability families rather than one
-  `transfer:automatic` Boolean. Grants can allow drafts but forbid publication,
-  allow a weekly purchase from named sellers but forbid new recipients, or
-  allow settlement only from a bound scale/scanner confirmation.
-- [ ] Freeze the proposed canonical Transfer revision and preview at policy
-  time, then send `expected_revision` and request/idempotency key through the
-  normal Action. A stale counteroffer, changed price, recipient, unit, window,
-  location, visibility, agreement, or evidence returns to policy/attention.
-- [ ] Never use locally inferred counterparty probability as their consent.
-  Each Person or their explicitly delegated program acts only for their own
-  identity. Cross-Cell automation composes through signed proposals and
-  responses, not shared hidden authority.
-- [ ] Let policies choose autonomy per step:
-  “always ask before publishing,” “auto-counter within 5% and these sellers,”
-  “auto-agree this exact recurring revision,” or “settle after both signed
-  scanner receipts.” A human can override, pause, narrow, or revoke at any time.
-- [ ] Keep financial/payment execution separate from Transfer settlement. A
-  payment connector is another high-authority external effect with its own
-  receipt and reconciliation; a successful payment receipt may be evidence for
-  a Transfer policy but does not silently settle Records.
-
-### External, device, and interface effects
-
-External effects extend the same intent/receipt state machine with adapter-
-specific schemas and safety. Add each adapter family only after its capability,
-idempotency/uncertainty, secret redaction, simulation fixture, and manual
-reconciliation behavior are specified; “generic command” is not a substitute
-for a typed device or UI controller.
-
-- [ ] All effects use durable typed action intents with target, exact payload,
-  schema/revision, nonce/idempotency key, principal/grant, preconditions,
-  deadline, lease, retry class, expected receipt, capture/redaction, and
-  compensation/uncertainty behavior. “Run this string somewhere” is not a safe
-  destination contract.
-- [ ] Commands declare executable identity/hash, typed arguments (no implicit
-  shell unless explicitly granted), environment allowlist, secret handles,
-  working-directory/filesystem roots, stdin/stdout schemas, timeout, process/
-  CPU/memory limits, and network capability. Shell interpolation is visible
-  high-risk behavior, not sugar.
-- [ ] HTTP/connectors declare method, host/path policy, request/response schema,
-  auth secret handle, redirect/DNS policy, body limits, timeout/retry semantics,
-  rate/budget, idempotency support, and redacted capture. A retry is automatic
-  only when the adapter's operation is proven idempotent or carries a remote
-  idempotency key.
-- [ ] Device/actuator controllers expose typed commands and state, physical
-  bounds, interlocks, heartbeat/failsafe, manual override, acknowledgement vs
-  observed outcome, and safe shutdown. Opening a call room, watering a garden,
-  or moving a motor are distinct registered capabilities, never arbitrary bytes
-  sent to a sand or microcontroller.
-- [ ] Interface control goes through registered host/controller Actions such as
-  `ui.present`, `ui.navigate`, `ui.focus`, `ui.layout.apply`, or a typed
-  domain controller. Programs cannot execute arbitrary DOM/JavaScript, forge
-  user input, hide permission/audit controls, dismiss a decision as the person,
-  or mutate board chrome through the Ledger.
-- [ ] Distinguish durable desired interface state (a record/policy another
-  device can reproduce) from ephemeral presentation intent (focus this record
-  now). Each device binding can accept, adapt, or deny presentation under local
-  accessibility, safety, interruption, and foreground-control policy.
-- [ ] Simulation replaces every external/device/interface adapter with a
-  deterministic model or scripted fixture. It records the hypothetical intent
-  and receipt; it never performs the production effect.
-
-### Imagination, simulation, and proof before action
-
-Imagination is not a forked rule engine. It supplies a snapshot, virtual ports,
-and event/fault script to the same scheduler/evaluator/policy code, then stores
-isolated traces and comparisons. Implement replay first, projection/branching
-second, and generated DST/model checking after the replay capsule is sufficient.
-
-- [x] `Engine::project(now, until)` folds promises and rules on a virtual clock
-  with Signals frozen. `Engine::snapshot(now)` creates mutable input for
-  toggle/clear/re-fold/diff, so branching futures already exist as an internal
-  engine call. **Legacy scope:** it folds the legacy `registry.rules` and f64
-  quantities, and silently skips rules needing signals or sums. E0.4 rebuilds
-  this over Karma programs with exact decimals and reported exclusions; this
-  entry stays checked only until the rule import lands, at which point its input
-  goes empty.
-- [ ] Expose project/snapshot through a typed transport verb so a sand can scrub
-  and branch a future: change starting quantities, toggle a program, clear a
-  promise, alter time, re-fold, and compare timelines without touching the real
-  Ledger. Ships against E0.4's projector, not the legacy fold.
-- [ ] Simulation operates on an isolated snapshot with a virtual clock and
-  mocked signals/effects. Its seed, inputs, event script, stopping/bookmark
-  conditions, replay capsule, and engine version make every run reproducible;
-  “apply” means separately reviewing ordinary typed Actions, never committing a
-  simulated state wholesale or reusing simulated receipts as real evidence.
-- [ ] Distinguish four products built on one kernel:
-  **replay** reproduces a past run from captured inputs;
-  **projection** folds one stated future;
-  **scenario/planning** compares deliberate branches and uncertainty; and
-  **DST** generates event/fault schedules to search for invariant violations.
-  The UI and test runner differ, but the execution semantics do not.
-- [ ] Let people define invariants and questions: can this state be reached,
-  do these programs conflict, will a quantity cross a boundary, does the graph
-  settle, can an effect repeat, and what changes if this promise disappears?
-  Proof results link to the exact program revisions and counterexample trace.
-- [ ] Add deterministic generated scenarios and fault injection for time jumps,
-  DST gaps/folds, restart/crash at every durable boundary, delayed/failed/
-  duplicate/uncertain effects, duplicate Facts, stale decisions, grant
-  revocation races, exhausted budgets, reordered sync arrival, partitions,
-  corrupt/quarantined inputs, missing/stale Signals, device disconnect, and
-  model drift. This is both product Imagination and the test architecture for
-  the autonomous runtime.
-- [ ] Drive generated runs from a named workload distribution over programs,
-  Records, Transfers, people, time, signals, actions, faults, and operator
-  choices. Record the root seed and split seed per generator/node so failures
-  replay when generation is parallelized.
-- [ ] Add deterministic shrinking/minimization of a failing trace while
-  preserving the violated invariant, and emit a portable replay capsule plus a
-  readable causal counterexample. A seed without the engine/program/model
-  hashes and captured fixtures is not a complete reproduction.
-- [ ] Maintain small independent reference models for foundational invariants
-  where practical: Ledger/quantity conservation and compensation, schedule
-  occurrence, grant/budget consumption, exactly-once intent identity, workflow
-  state, and Transfer readiness. Differentially compare production kernel,
-  reference fold, and upgrade versions.
-- [ ] Let program authors declare assumptions, controllable variables,
-  distributions/ranges, invariants, bookmarks, stopping conditions, maximum
-  logical time/events/fuel, and effect fixtures. An unconstrained scenario
-  cannot accidentally read production secrets or call production adapters.
-- [ ] Simulate multiple Cells with independent occurrence cursors, clocks,
-  visibility, grants, outboxes, partitions, and delivery schedules. Assertions
-  distinguish per-Cell deterministic replay from convergence properties that
-  should hold after all permitted messages arrive.
-- [ ] Proof has three honest result classes: proved within a stated finite/
-  symbolic domain, no counterexample found under stated exploration, or
-  counterexample found. Timeouts and unsupported nodes are “unknown,” never a
-  green check.
-- [ ] Build calendar/time-budget and graph/state-space projections from the same
-  simulator: time on one axis, quantities/ranges on another, rule-active regions,
-  consequence arrows, dependency/supply-chain paths, uncertainty bands, and
-  real-vs-projected values.
-- [ ] Shadow mode runs a candidate revision beside the active one against live
-  captured evidence, blocks all effects, and compares candidates/intents,
-  resource cost, false alarms, and policy outcomes. Promotion criteria and
-  rollback triggers are stored before the shadow begins.
-- [ ] A continuous forecast is a cache linked to its starting cursor,
-  assumptions, revisions, and generated time. New evidence marks it stale and
-  queues recomputation; it is never mistaken for a promised or settled Fact.
-
-### Karma Flow Plane — one control room, not a programming language exam
-
-The Karma sand is the second vertical workflow and a projection of the contracts
-above. Forms, Flow Plane, DSL, Why, Learn, Imagine, Authority, Queue, and Health are
-lenses over the same Program/Protein/Action model. Do not put durable policy,
-schedule math, model updates, authority, or effect retry logic in JavaScript.
-
-- [ ] Build the Karma Flow Plane on the shared canvas: overview all programs,
-  filter/group by type, owner, scope, state, or tag, and zoom from the whole
-  dependency graph into one node's configuration, evidence lineage, model,
-  authority, run history, workflow instances, and effect health.
-- [ ] The primary authoring path is names, concepts, selectors, typed ports,
-  forms, and connections. Raw condition syntax remains an inspectable expert
-  escape hatch, never required for ordinary habits, schedules, recommendations,
-  or workflows.
-- [ ] Render conditions/senses as inputs inside a program boundary and outcomes
-  outside it, with directional connections, freely rearrangeable circle/line/
-  graph layouts, reusable subgraphs, and supply-chain links across permitted
-  Organs. Preserve licenses/notices for any vendored graph/physics library.
-- [ ] Dry-run one node or whole program against current or simulated input,
-  animate the evaluated path, show each substituted value/gate/carry, preview
-  writes and external effects, compare active/candidate output, and allow
-  breakpoints before an effect.
-- [ ] Surface loop/conflict/authority Proof on edit and save; compare revisions,
-  publish/rollback by selecting the active revision, pause immediately, inspect
-  queued/running/dead effects, retry safely, and compensate reversible Actions.
-- [ ] Make data scope and authority visible on the graph: taint paths, hidden/
-  missing inputs, declassifications, grant boundaries, remaining budgets,
-  recipients, values, expiry, and the exact node that first requires escalation.
-  Activation never bundles an unread permission dialog into a generic “enable.”
-- [ ] Give learning its own inspectable surface: hypotheses, eligible/rejected
-  evidence, probability vs confidence, cadence, thresholds/hysteresis, model
-  checkpoints, validation/calibration, drift, recommendation feedback, and a
-  “forget/rebuild from allowed evidence” operation.
-- [ ] Give operations a queue/run surface: occurrence lag, sequencer status,
-  paused/faulted programs, nonterminal workflows, staged/leased/retrying/
-  uncertain/dead intents, connector/device health, budgets, and replay capsule
-  export. Never require filesystem log access for normal recovery.
-- [ ] Make every “why” navigable in both directions: changed Fact → occurrence
-  → run → node/evidence/model → candidate → grant/policy → intent/receipt →
-  resulting Fact, and a result back to every program that consumed it.
-- [ ] Provide global and scoped controls for normal/stage-effects/observe-only/
-  emergency-stop, pause/resume, cancel, retry, compensate, mute, and revoke.
-  Controls show what happens to already queued, leased, dispatched, and waiting
-  work before confirmation.
-- [ ] Provide installable templates as ordinary disabled program graphs: habit,
-  recurring task, inventory threshold, birthday reminder, recurring Transfer
-  draft/negotiation, call intent, sensor/actuator loop, optimizer, monthly recap,
-  and command flow. Installation grants no data scope, secret, budget, connector,
-  controller, or authority until the person reviews and binds them.
-- [ ] Store canvas layout and personal display preferences as host state while
-  program semantics, parameters, scopes, grants, and revision selection remain
-  Cell data. Rearranging nodes must not create a new semantic revision.
-- [ ] All authoring, trace, simulation, and emergency controls are keyboard and
-  screen-reader reachable. Color/animation never carries the only explanation
-  of state, confidence, authority, or failure.
-
-### Control contract for humans and software agents
-
-Every control available in the Karma sand is also a typed Action, and every durable
-result is readable through Protein. This is how a human, CLI, sand, script, or
-authorized software agent can control **every** Karma feature without
-receiving database access or a private backdoor.
-
-- [ ] Provide typed Actions for program create/fork/revise/validate/prove,
-  parameter tune/reset, simulate/shadow/compare, activate/select-revision,
-  pause/resume/retire, run-once/replay, model rebuild/disable, recommendation
-  feedback, candidate approve/reject/edit, decision answer, grant create/narrow/
-  revoke, workflow cancel, and intent stage/cancel/retry/compensate.
-- [ ] Every mutating Action carries viewer/principal derived by the engine,
-  expected revision where applicable, request/idempotency key, reason, and
-  cause/provenance. A UI or agent cannot name a more powerful actor in its
-  payload.
-- [ ] Protein exposes capability booleans and stable blocking reasons beside
-  each program, revision, candidate, grant, decision, workflow, and intent.
-  Interfaces render those capabilities; they do not duplicate the permission
-  calculation.
-- [ ] A software agent reads only explicitly granted Protein scopes, proposes
-  the same inert graph/Action candidates, and invokes the same Actions as a
-  human tool. Model/agent reasoning may be opaque, but the candidate diff,
-  engine Proof, policy, principal, and resulting effects remain exact.
-- [ ] Editing by an agent never activates by implication. A grant may
-  separately allow activation of proven revisions matching an exact template/
-  scope and shadow criteria; otherwise activation is a durable human decision.
-- [ ] A meta-program may tune, pause, resume, or select revisions of named
-  programs only under `karma.manage` with field/range/state limits. It
-  cannot edit its own grant, change owner, bind secrets/connectors, waive Proof,
-  broaden visibility, or suppress its audit trail.
-- [ ] Export/import uses content-hashed revision/template packages with schema,
-  Lingua dependencies, extension hashes, license/notices, and signatures.
-  Evidence, secrets, grants, model checkpoints, and live state are excluded
-  unless independently and explicitly selected.
-
-### Runtime operations and failure semantics
-
-An always-on autonomous engine needs operability as part of its data model.
-Queue lag, scheduler mode/cost, Program/model/connector health, denials,
-uncertain effects, replay audits, and recovery controls must be readable and
-actionable without shell access. Implement health projections alongside each
-phase rather than adding metrics after autonomy ships.
-
-- [ ] Publish engine health through Protein: mode, active build/schema, leader/
-  sequencer lease, last cursor, deadline lane plans/arms/earliest deadline,
-  active/estimated/actual semantic and wake rates and budget, queue depth/oldest
-  age by class, runs per state, effect worker health, schedule lag, model
-  backlog, storage pressure, and last successful checkpoint/replay audit.
-- [ ] Type failures as invalid definition/input, missing/stale/denied data,
-  Proof rejection, policy/authority denial, conflict/stale revision, budget/
-  fuel exhaustion, adapter unavailable, retryable/terminal/uncertain effect,
-  invariant violation, or engine fault. Retry policy follows type, not string
-  matching.
-- [ ] An unexpected invariant violation enters stage-effects or emergency-stop
-  according to configured severity, preserves the replay capsule, stops related
-  dispatch, and opens one high-priority operational decision. It never catches
-  an error and silently continues acting.
-- [ ] Separate user pause, policy denial, program fault, connector outage, and
-  global stop so recovery cannot confuse “operator said no” with “try again.”
-  Resume shows the occurrences/intents that will become eligible.
-- [ ] Enforce CPU/fuel, memory, trace, storage, I/O, network, notification,
-  Action, value, and candidate/fan-out quotas per run/program/principal/Cell.
-  Maintenance and safety controls retain reserved capacity under overload.
-- [ ] Make trace/evidence retention purpose- and sensitivity-aware. Redaction
-  produces a new view, not a modified Fact; secret values and unnecessary raw
-  personal data never enter general traces in the first place.
-- [ ] Periodically replay sampled completed runs from their capsules and compare
-  hashes. A mismatch is a determinism incident with engine/revision diff, not an
-  ignorable test flake.
-
-
-### Karma acceptance and proof gates
-
-The architecture is not complete when the happy-path UI works. These are
-cross-cutting engine exit gates:
-
-- [ ] A replay capsule produces byte-identical canonical runs, candidates,
-  policy decisions, intents, unsigned Fact payloads/content hashes, and captured
-  signature/receipt bytes across repeated runs and different host thread
-  schedules.
-- [ ] DST crashes at every persistence/lease/dispatch/receipt boundary; restart
-  loses no accepted occurrence, repeats no intended idempotent effect, resumes
-  workflows, and exposes uncertain non-idempotent effects for reconciliation.
-- [ ] Duplicate Facts, samples, sync packages, occurrences, decisions, Action
-  requests, and effect receipts are idempotent; recorded alternate arrival
-  order is replayable and convergence assertions hold where specified.
-- [ ] Simultaneous conflicting writers resolve by declared deterministic policy
-  and preserve rejected alternatives/explanation; no thread race selects one.
-- [ ] Revoking/narrowing a grant while runs are evaluating, staged, leased, or
-  about to dispatch prevents every still-preventable effect. Budget reservation
-  is atomic under concurrent runs.
-- [ ] Visibility/purpose taint applies before input, feature, aggregate, model
-  update, explanation, recommendation, optimizer, notification, and external
-  effect. Small-cohort/differencing tests reveal nothing outside policy.
-- [ ] Decimal/fixed-point quantities, probabilities, decay, conversions,
-  schedules/timezones, solvers, seeded algorithms, and pure extensions replay
-  identically on supported platforms.
-- [ ] DSL → canonical AST → visual graph → DSL round-trips without semantic
-  drift. Layout/display-label changes preserve the revision hash; type, node,
-  dependency, expression, policy, or effect changes produce a new hash.
-- [ ] Millisecond schedule boundaries preserve exact `intended_at` and stable
-  cursor ordering when Facts/timers share a millisecond. Late wake-up follows
-  skip/coalesce/replay policy and never rewrites intended time.
-- [ ] With simultaneous `3ms`, `5h`, daily, and monthly Frequencies, tracing
-  proves that a fast wake reads/drains/re-arms only its due dense lane. Sparse
-  registrations receive no SQL query, due-check, heap pop, or timer re-arm from
-  the `3ms` path, yet still produce their occurrence at the exact intended
-  boundary. With only `5h`, the director performs no Frequency work between
-  activation and its one-shot wake.
-- [ ] Lane assignment contains no fixed cadence classes. Deterministic demand/
-  capacity tests split, pack, and merge the same schedules in stable uid order;
-  changing host capacity may change only the recorded operational lane plan,
-  never semantic occurrence ids/results.
-- [ ] One reusable Frequency referenced by ten active consumers has one cursor/
-  deadline and fans one occurrence out deterministically. Removing the last
-  consumer disarms it; adding the first follows the exact `inactive_gap` policy
-  and never surprises the owner with implicit dormant-history replay.
-- [ ] A `1ms` Frequency is denied unless its computed demand fits aggregate Cell
-  capacity, Program wake/evaluation/write/effect budgets, required dense/
-  precision capabilities, and a declared overload policy. The Karma sand displays
-  1,000 ticks/second and 86,400,000 ticks/day plus estimated retention before
-  activation.
-- [ ] Dense `OccurrenceBatch` replay yields the same semantic tick ids,
-  state transitions, candidates, intents, and Facts as individual scheduling;
-  compacting no-op traces never coalesces requested semantics.
-- [ ] For each evidence cursor, all already-active reaction work precedes its
-  learning update. A threshold-crossing model update or meta-rule creates a
-  later occurrence and cannot change the revision/parameter/checkpoint used to
-  process its own evidence.
-- [ ] A meta-rule changes `freq:@recovery.reminder_tick` from `1d` to `3d`
-  only through a range-scoped grant and parameter Action. All four rephase
-  policies produce their specified next boundary, survive restart, and replay.
-- [ ] The recurrence reference model proves prior behavior, diminishing update
-  influence, half-life decay, cadence, hysteresis, confidence/support,
-  negative/censored evidence, drift, rebuild, feedback, deduplication, and
-  exclusion of endogenous self-training.
-- [ ] A learned pattern can remain observed, create one explained suggestion,
-  create an editable draft, or promote a template revision only according to
-  its route/grant/shadow policy. No probability value manufactures authority.
-- [ ] Every Transfer lifecycle capability is tested both denied-by-default and
-  permitted inside an exact delegation. Automation signs only its principal's
-  side, respects current revision/domain gates, never treats prediction as
-  consent/evidence, and cannot widen visibility through another capability.
-- [ ] Automation Trust selectors prove exact Person, origin Organ, via Organ,
-  proximity, `any/all/not`, deny-first, concept/direction, stage ceiling,
-  threshold, limit, expiry, and blocked-contact behavior. The full structured
-  allow/deny proof is available through Protein.
-- [ ] A `0.99p` apple need cannot draft/propose an offer outside
-  `trust:@apple.known_sellers`; allowlisted Organs and proximity arms behave
-  exactly as declared; Trust/grant revocation before dispatch prevents the
-  effect; and no Organ scope acts as consent for a Person.
-- [ ] Commands, HTTP, models, UI controllers, and microcontrollers prove schema,
-  secret redaction, capability scoping, timeouts, retry/idempotency, receipts,
-  uncertainty, interlocks, simulation substitution, and manual override.
-- [ ] Human UI, CLI, and software agent can perform the same authorized program,
-  simulation, candidate, decision, grant, workflow, and intent operations
-  through Actions/Protein; none has a hidden database or effect path.
-- [ ] Emergency-stop, observe-only, and stage-effects survive reboot; queue/
-  workflow/effect disposition is explained before resume and normal inspection
-  works without filesystem logs.
-
-Vertical workflows prove that the pieces compose:
-
-- [ ] Economy — a preset of Records and concepts, not a sand — is the first
-  vertical proof after K0–K10: individual and recurring resource gains/losses,
-  correction/void, due-occurrence resolution, exact monthly gain/loss/net,
-  tag/source profile, actual/expected resource graph, and entry/Fact drill-down
-  all run through the real **Karma sand**. Typed, voice, and photo capture later
-  produce the same inert entry draft without a privileged Fiote path.
-- [ ] Todo/knowledge base: a habit re-arms daily and completing it posts a
-  causal Fact; missing a day is negative evidence only if the opportunity policy
-  says completion was observable.
-- [ ] Recurring tasks: a monthly schedule fires exactly once under normal time
-  and obeys its chosen catch-up policy after downtime and daylight-saving
-  transitions.
-- [ ] Adaptive Frequency: a recovery rule tunes another reusable Frequency from
-  daily to every three days after seven stable observations, then restores it
-  when stability leaves; no same-occurrence or mid-cascade definition change is
-  possible.
-- [ ] n8n-style command flow: a signal → rule/workflow → leased effect graph is
-  built visually, dry-run, executed, inspected, and safely retried.
-- [ ] CRM/people: a birthday whisper arrives at the chosen moment and an
-  interaction report is one aggregate Protein.
-- [ ] Calendar/time budgeting: the projected week renders and moving a promise
-  recomputes it without storing a duplicate calendar truth.
-- [ ] Health/IoT: a scale posts weight Facts, a streak program reacts, and the
-  source off-switch stops new sampling/use/effects; calibration, clock drift,
-  malformed data, offline buffering, and actuator interlock are visible.
-- [ ] Apple/pantry recurrence: confirmed family consumption grows a decayed
-  cadence model; projected shortage plus visible nearby OPEN offers yields one
-  explained ranked recommendation around the learned window. A matching
-  concept/counterparty Trust scope plus grant may create a local draft;
-  publishing/agreement/settlement each require their own Trust ceiling and
-  capability.
-- [ ] Delegated recurring Transfer: a person explicitly grants one named apple
-  program value/quantity/seller/window limits and binds the grant to a Trust
-  scope for proposal, own agreement, evidence-qualified confirmation, and local
-  settlement. It runs end-to-end, while an unlisted/distant/blocked Organ,
-  changed seller/price/revision, exhausted budget, missing evidence, or
-  Trust/grant revocation returns to Attention without partial authority.
-- [ ] Neighborhood matching: a scoped match rule and visibility grant produce a
-  draft in Attention after polling, without widening proximity.
-- [ ] Shared family pattern: two People publish permitted pantry evidence and a
-  signed percentage/aggregate with exact denominator and window; the consuming
-  Cell uses it without exposing hidden members or importing anyone's authority.
-- [ ] Chat/calls: “when Transfer Y reaches agreed, ask controller X to open the
-  room” uses a typed, single-claim action intent.
-- [ ] Interface policy: a program may present/focus a relevant Record on one
-  bound device inside attention/accessibility policy, but cannot click agreement,
-  forge input, hide warnings, or take over an unbound sand.
-- [ ] Games/THE Game: records provide state and a Karma program provides
-  the inspectable rulebook without a special game automation core.
-- [ ] Garden/farm and inventory/production: watering and threshold programs
-  derive work/Needs, ingest moisture/controller receipts, honor physical
-  interlocks, projections distinguish actual/available/planned, and settlement
-  remains the only quantity truth.
-- [ ] Operations research: a week scheduler combines tasks, promises, travel,
-  energy preferences, protected time, and hard commitments; it returns multiple
-  plans, constraint/slack and infeasibility explanation, and applies only the
-  separately approved schedule Actions.
-- [ ] Monthly recap: a program selects the month's Facts, drafts the recap, and
-  links its evidence without training on its own output.
+    solve plan: list<schedule_plan> {
+      require sleep >= 8h each_day
+      require all(promises.windows)
+      require no_overlap
+      minimize overdue_penalty
+      minimize schedule_change_from_current
+      prefer deep_work in [09:00, 12:00]
+      tie_break task.uid
+      return 3
+    }
+    ask "Choose a proposed week" options plan preview action:@calendar.apply_plan
 
 ---
 
@@ -5678,10 +3874,14 @@ Vertical workflows prove that the pieces compose:
 
 This file was the one living document, so everything landed in it. The sections
 below were whole, self-contained features that only shared a file with Karma;
-they now have their own. The Karma pillar above is still a mixed block —
-Perception, Deliberation, Attention, Imagination, Effects and the Ledger slices
-are interleaved on purpose for now, because untangling them means deciding what
-the engine's core actually is, and that decision has not been made yet.
+they now have their own.
+
+The Karma pillar above **was** a mixed block — Perception, Deliberation,
+Attention, Imagination, Effects and the Ledger slices interleaved, filed by the
+phase they were written in rather than by what they build. It was reorganized on
+2026-07-29 into the ordered blocks above: every statement is a task, blocks are
+in build order, and each is meant to be built once. The old `K*` and `E*` phase
+labels survive as parenthetical tags so commit history stays findable.
 
 | Moved to | What it holds |
 | --- | --- |

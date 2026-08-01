@@ -314,6 +314,10 @@ const widgetConfigStreamsField = document.getElementById(
 const widgetConfigStreamsEnabled = document.getElementById(
   "widget-config-streams-enabled",
 );
+const widgetConfigSandField = document.getElementById("widget-config-sand-field");
+const widgetConfigRecordIdleVisible = document.getElementById(
+  "widget-config-record-idle-visible",
+);
 const widgetConfigAbiListen = document.getElementById(
   "widget-config-abi-listen",
 );
@@ -877,46 +881,60 @@ function renderCardToolbarContent(card) {
   ].join("");
 }
 
+function placeFloatingControl(anchorRect, floatingWidth, floatingHeight) {
+  const canvasRect = boardCanvas.getBoundingClientRect();
+  const gap = 6;
+  const fitsAbove = anchorRect.top - canvasRect.top >= floatingHeight + gap;
+  const fitsBelow = anchorRect.bottom + floatingHeight + gap <= canvasRect.bottom;
+
+  let left, top;
+  if (fitsAbove) {
+    left = Math.max(canvasRect.left, Math.min(anchorRect.left + anchorRect.width / 2 - floatingWidth / 2, canvasRect.right - floatingWidth));
+    top = anchorRect.top - floatingHeight - gap;
+    return { left, top, placement: "above", gap };
+  } else if (fitsBelow) {
+    left = Math.max(canvasRect.left, Math.min(anchorRect.left + anchorRect.width / 2 - floatingWidth / 2, canvasRect.right - floatingWidth));
+    top = anchorRect.bottom + gap;
+    return { left, top, placement: "below", gap };
+  }
+
+  // When a card's top is outside the camera, keep its Sand controls at the
+  // lower visible edge instead of sending them sideways with the hidden head.
+  if (anchorRect.top < canvasRect.top) {
+    left = Math.max(canvasRect.left, Math.min(anchorRect.left + anchorRect.width / 2 - floatingWidth / 2, canvasRect.right - floatingWidth));
+    top = Math.min(canvasRect.bottom - floatingHeight - gap, anchorRect.bottom + gap);
+    top = Math.max(canvasRect.top, top);
+    return { left, top, placement: "below", gap };
+  }
+
+  const spaceRight = canvasRect.right - anchorRect.right;
+  const spaceLeft = anchorRect.left - canvasRect.left;
+  if (spaceRight >= floatingWidth + gap || spaceRight >= spaceLeft) {
+    left = Math.min(canvasRect.right - floatingWidth, anchorRect.right + gap);
+    return { left, top: Math.max(canvasRect.top, Math.min(anchorRect.top, canvasRect.bottom - floatingHeight)), placement: "right", gap };
+  }
+  left = Math.max(canvasRect.left, anchorRect.left - floatingWidth - gap);
+  return { left, top: Math.max(canvasRect.top, Math.min(anchorRect.top, canvasRect.bottom - floatingHeight)), placement: "left", gap };
+}
+
 function positionCardControlsToolbar(cardId) {
   const node = cardNodes.get(cardId);
   if (!node) return;
 
   const cardRect = node.getBoundingClientRect();
-  const canvasRect = boardCanvas.getBoundingClientRect();
   const toolbarRect = cardControlsToolbar.getBoundingClientRect();
   const toolbarH = toolbarRect.height || 44;
   const toolbarW = toolbarRect.width || 180;
-  const gap = 6;
-
-  const fitsAbove = cardRect.top - canvasRect.top >= toolbarH + gap;
-  const fitsBelow = cardRect.bottom + toolbarH + gap <= canvasRect.bottom;
-
-  let left, top;
-  if (fitsAbove) {
-    left = Math.max(canvasRect.left, Math.min(cardRect.left + cardRect.width / 2 - toolbarW / 2, canvasRect.right - toolbarW));
-    top = cardRect.top - toolbarH - gap;
-    cardControlsToolbar.dataset.placement = "above";
-  } else if (fitsBelow) {
-    left = Math.max(canvasRect.left, Math.min(cardRect.left + cardRect.width / 2 - toolbarW / 2, canvasRect.right - toolbarW));
-    top = cardRect.bottom + gap;
-    cardControlsToolbar.dataset.placement = "below";
-  } else {
-    const spaceRight = canvasRect.right - cardRect.right;
-    const spaceLeft = cardRect.left - canvasRect.left;
-    if (spaceRight >= toolbarW + gap || spaceRight >= spaceLeft) {
-      left = cardRect.right + gap;
-      cardControlsToolbar.dataset.placement = "right";
-    } else {
-      left = cardRect.left - toolbarW - gap;
-      cardControlsToolbar.dataset.placement = "left";
-    }
-    top = Math.max(canvasRect.top, Math.min(cardRect.top, canvasRect.bottom - toolbarH));
-  }
+  const { left, top, placement, gap } = placeFloatingControl(
+    cardRect,
+    toolbarW,
+    toolbarH,
+  );
 
   cardControlsToolbar.style.left = `${left}px`;
   cardControlsToolbar.style.top = `${top}px`;
 
-  const placement = cardControlsToolbar.dataset.placement;
+  cardControlsToolbar.dataset.placement = placement;
   const toolbarRight = left + toolbarW;
   const toolbarBottom = top + toolbarH;
   let bl, bt, bw, bh;
@@ -1981,7 +1999,6 @@ function renderTextBody(card) {
         ${escapeHtml(card.text)}
       </p>
       <div class="text-widget__meta">
-        <span>snap grid</span>
         <span>workspace card</span>
       </div>
     </div>
@@ -2405,7 +2422,7 @@ function createPackageRenderSignature(card) {
   return `${gate.state}:${gate.server?.id || ""}:${gate.message || ""}:${card.title || ""}`;
 }
 
-const RECORD_ICON_SIZE = 56;
+const RECORD_ICON_SIZE = 40;
 
 function syncCardNode(node, card) {
   const isWorkspaceShell = card.system === true && card.packageName === "lince-shell-workspaces.html";
@@ -2414,15 +2431,38 @@ function syncCardNode(node, card) {
   const isRecordPin =
     card.pinned === true && !card.system && card.packageName === "record.html";
   const recordExpanded = isRecordPin && Boolean(card.widgetState?.recordExpanded);
+  const recordIdleHidden =
+    isRecordPin &&
+    !recordExpanded &&
+    card.widgetState?.recordIdleVisible === false &&
+    !editMode;
   const workspacePopoverWidth = 260;
-  const expandedWidth = isRecordPin && !recordExpanded ? RECORD_ICON_SIZE : card.width;
-  const wantedExpandedHeight =
-    isRecordPin && !recordExpanded
-      ? RECORD_ICON_SIZE
-      : isWorkspaceShell && workspacePopoverOpen
-        ? 350
-        : card.height;
   const canvasRect = boardCanvas.getBoundingClientRect();
+  const isEditPanelOpen = isEditShell && editMode;
+  const editAnchorRect = isEditPanelOpen
+    ? editToggle.getBoundingClientRect()
+    : null;
+  const expandedWidth = isEditPanelOpen
+    ? card.width
+    : isEditShell
+      ? 0
+      : recordIdleHidden
+        ? 0
+      : isRecordPin && !recordExpanded
+        ? RECORD_ICON_SIZE
+        : card.width;
+  const wantedExpandedHeight =
+    isEditPanelOpen
+      ? Math.min(card.height, Math.max(0, canvasRect.height - 36))
+      : isEditShell
+        ? 0
+        : recordIdleHidden
+          ? 0
+        : isRecordPin && !recordExpanded
+          ? RECORD_ICON_SIZE
+          : isWorkspaceShell && workspacePopoverOpen
+            ? 350
+            : card.height;
   // System cards are positioned by layoutShellPins (uses window.visualViewport).
   // Re-clamping with getBoundingClientRect diverges from that source and causes
   // visible shifts on recenter. Skip the clamp for system cards entirely.
@@ -2434,17 +2474,25 @@ function syncCardNode(node, card) {
     : shouldClampPinned
       ? Math.max(card.height, Math.min(wantedExpandedHeight, canvasRect.height - card.y))
       : wantedExpandedHeight;
-  const anchoredX =
-    (isShellPopoverOpen && !isWorkspaceShell && card.pinned === true) || isRecordPin
+  const editPanelPosition =
+    isEditPanelOpen && editAnchorRect
+      ? placeFloatingControl(editAnchorRect, expandedWidth, wantedExpandedHeight)
+      : null;
+  const anchoredX = editPanelPosition
+    ? editPanelPosition.left - canvasRect.left
+    : (isShellPopoverOpen && !isWorkspaceShell && card.pinned === true) || isRecordPin
       ? card.x + card.width - expandedWidth
       : card.x;
-  const anchoredY = isRecordPin ? card.y + card.height - expandedHeight : card.y;
+  const anchoredY = editPanelPosition
+    ? editPanelPosition.top - canvasRect.top
+    : card.y;
   const adjustedX =
     shouldClampPinned
       ? Math.max(0, Math.min(anchoredX, canvasRect.width - expandedWidth))
       : anchoredX;
-  const adjustedY =
-    shouldClampPinned
+  const adjustedY = isEditShell && !isEditPanelOpen
+    ? canvasRect.height
+    : shouldClampPinned
       ? Math.max(0, Math.min(anchoredY, canvasRect.height - expandedHeight))
       : anchoredY;
 
@@ -2513,14 +2561,9 @@ function syncCardNode(node, card) {
       frameNode.style.height = `${expandedHeight}px`;
       frameNode.style.transform = `translateX(-${Math.max(0, workspacePopoverWidth - card.width)}px)`;
     } else if (isEditShell && editMode) {
-      const popoverWidth = 268;
-      const popoverHeight = Math.max(
-        card.height,
-        Math.min(460, window.innerHeight - card.y - 8),
-      );
-      frameNode.style.width = `${popoverWidth}px`;
-      frameNode.style.height = `${popoverHeight}px`;
-      frameNode.style.transform = `translateX(-${Math.max(0, popoverWidth - card.width)}px)`;
+      frameNode.style.width = `${expandedWidth}px`;
+      frameNode.style.height = `${expandedHeight}px`;
+      frameNode.style.transform = "";
     } else {
       frameNode.style.width = "";
       frameNode.style.height = "";
@@ -4382,6 +4425,13 @@ async function openWidgetConfigModal(cardId) {
   if (widgetConfigStreamsEnabled) {
     widgetConfigStreamsEnabled.checked = card.streamsEnabled !== false;
   }
+  const isRecordSand = card.packageName === "record.html";
+  if (widgetConfigSandField) {
+    widgetConfigSandField.hidden = !isRecordSand;
+  }
+  if (widgetConfigRecordIdleVisible) {
+    widgetConfigRecordIdleVisible.checked = card.widgetState?.recordIdleVisible !== false;
+  }
   if (widgetConfigAbiListen) {
     widgetConfigAbiListen.value = (card.abiListen || []).join(", ");
   }
@@ -4496,6 +4546,7 @@ function saveWidgetConfig(cardId, nextServerId) {
   const nextWatchEnabled = widgetConfigWatchEnabled
     ? widgetConfigWatchEnabled.checked
     : null;
+  const nextRecordIdleVisible = widgetConfigRecordIdleVisible?.checked;
   store.updateCard(
     cardId,
     (card) => ({
@@ -4507,14 +4558,19 @@ function saveWidgetConfig(cardId, nextServerId) {
         ? (nextStreamsEnabled ?? card.streamsEnabled !== false)
         : card.streamsEnabled !== false,
       abiListen: nextAbiListen ?? card.abiListen ?? [],
-      widgetState: cardSupportsPackagePreview(card)
-        ? applyJsonMergePatch(card.widgetState, {
-            packagePreview: {
-              watchCompiledHtml:
-                nextWatchEnabled ?? isPackagePreviewWatchEnabled(card),
-            },
-          })
-        : card.widgetState,
+      widgetState: applyJsonMergePatch(card.widgetState, {
+        ...(cardSupportsPackagePreview(card)
+          ? {
+              packagePreview: {
+                watchCompiledHtml:
+                  nextWatchEnabled ?? isPackagePreviewWatchEnabled(card),
+              },
+            }
+          : {}),
+        ...(card.packageName === "record.html"
+          ? { recordIdleVisible: nextRecordIdleVisible !== false }
+          : {}),
+      }),
     }),
     { persist: true },
   );

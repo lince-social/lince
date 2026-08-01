@@ -169,13 +169,17 @@ async fn typed_frequency_action_requires_runtime_and_never_uses_legacy_frequency
         .unwrap()
         .unwrap();
     assert_eq!(cursor.admitted_resolution_ms, NonZeroU32::new(1));
-    let legacy_rows: i64 =
-        store::sqlx::query_scalar("SELECT COUNT(*) FROM frequency WHERE record_uid = ?")
-            .bind(&frequency_uid)
-            .fetch_one(&engine.store.pool)
-            .await
-            .unwrap();
-    assert_eq!(legacy_rows, 0);
+    // The legacy `frequency` table is gone, not merely unused. A schedule is
+    // part of the rule that repeats on it, so there is no second place for one
+    // to live and no way for the two to disagree.
+    let legacy_tables: i64 = store::sqlx::query_scalar(
+        "SELECT COUNT(*) FROM sqlite_master
+          WHERE type = 'table' AND name IN ('frequency', 'rule', 'rule_consequence')",
+    )
+    .fetch_one(&engine.store.pool)
+    .await
+    .unwrap();
+    assert_eq!(legacy_tables, 0, "no rule or schedule table may survive");
 
     let lease = match store::karma::schedules::claim_due(
         &engine.store.pool,

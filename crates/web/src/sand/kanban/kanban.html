@@ -4,6 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kanban</title>
+  <link rel="stylesheet" href="/board/lynx-ui.css" />
+  <script src="/board/lynx-ui.js"></script>
   <script src="/board/frame.js"></script>
   <script src="/board/editor.js"></script>
   <style>
@@ -21,45 +23,37 @@
        edits, column moves, AND bulk delete of selected cards (confirmed via
        an in-sand modal) — head/metadata/assignees edits are still
        the pinned Record sand's job, so the old full edit sheet stays gone. */
-    :root { color-scheme: dark; --bg: #0e1116; --panel: #151a21; --panel2: #1b222b; --line: #2b3440; --text: #e6edf3; --muted: #8b949e; --accent: #7aa2f7; --good: #3fb950; --warn: #d29922; }
+    :root { color-scheme: dark; --bg: #121214; --panel: #121214; --panel2: #121214; --line: #141416; --text: #f8fafc; --muted: color-mix(in srgb, #f8fafc 62%, #121214); --accent: #6366f1; --good: var(--muted); --warn: var(--muted); --border: #141416; --surface: #121214; --surface-hover: #141416; --control-border: #f8fafc; --hot-border: #fb7185; --font-body: Lato, system-ui, sans-serif; --font-title: Aleo, Georgia, serif; --font-mono: "SFMono-Regular", Consolas, monospace; --hairline: .5px; --lynx-shadow-x: 2px; --lynx-shadow-y: 2px; --lynx-shadow-blur: 6px; --lynx-shadow-color: rgb(0 0 0 / 16%); }
     * { box-sizing: border-box; }
     /* the sand's own boundary (2026-07-18): a 1px border so the whole widget
        reads as delimited even when the host page happens to share --bg —
        header and columns otherwise have nothing marking where the sand ends. */
-    body { margin: 0; height: 100vh; overflow: hidden; background: var(--bg); color: var(--text); font: 13px/1.4 system-ui, -apple-system, sans-serif; border: 1px solid var(--line); }
+    body { margin: 0; height: 100vh; overflow: hidden; background: var(--bg); color: var(--text); font: 14px/1.3 var(--font-body); border: 0; }
     /* glued to the wall (2026-07-18): the sand's own edges carry no padding —
        the header's divider line and each column's own internal padding are
        the only whitespace left. */
-    main { height: 100%; display: grid; grid-template-rows: auto 1fr; gap: 0; padding: 0; }
+    main { position: relative; height: 100%; display: grid; grid-template-rows: 1fr; gap: 0; padding: 0; }
     input, select, button, textarea { font: inherit; }
-    input, select, textarea { border: 1px solid var(--line); border-radius: 2px; background: #0d1117; color: var(--text); padding: 7px 9px; }
+    input, select, textarea { border: 1px solid var(--control-border); border-radius: 2px; background: var(--bg); color: var(--text); padding: 3px 5px; }
     textarea { min-height: 90px; resize: vertical; }
-    button { border: 1px solid var(--line); border-radius: 2px; background: var(--panel2); color: var(--text); padding: 6px 10px; cursor: pointer; }
-    button:hover { border-color: #3c4857; }
-    button.accent { border-color: #35507e; background: #1c2c4a; }
+    button { border: 1px solid var(--control-border); border-radius: 2px; background: var(--panel2); color: var(--text); padding: 3px 5px; cursor: pointer; }
+    button:hover { background: var(--surface-hover); }
+    button.accent { border-color: var(--accent); background: var(--accent); color: #f8fafc; }
     button:disabled { opacity: .4; cursor: default; }
-    /* header (revised 2026-07-18): no boxed panel — a single 2rem line with
-       a bottom divider is the ONLY line separating it from the board below.
-       Nothing inside carries its own padding — only `gap` separates pieces,
-       and `justify-content` (not a spacer element) splits left from right,
-       so every control ends up the same height. */
-    .panel { padding: .5rem; background: var(--panel); border-bottom: 1px solid var(--line); }
-    .topbar { height: 2rem; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .topbar-left, .topbar-right { height: 100%; display: flex; align-items: center; gap: 8px; }
-    .topbar button, .topbar .modes button { height: 2rem; padding: 0; box-sizing: border-box;
-      display: inline-flex; align-items: center; justify-content: center; }
-    /* the "+" is the only topbar control meant to read as a square icon */
-    #open-create { width: 2rem; }
-    h1 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
-    #status-label { font-size: 11px; color: var(--muted); }
-    .dot { width: 7px; height: 7px; border-radius: 50%; background: #f85149; display: inline-block; }
-    .dot.live { background: var(--good); }
-    .dot.busy { background: var(--warn); animation: pulse 1s ease-in-out infinite; }
+    /* Sand controls stay out of the working surface until its lower-right
+       corner is hovered. The corner itself carries the transport state. */
+    .sand-tools { position: absolute; right: 0; bottom: 0; z-index: 35; width: 14px; height: 14px; }
+    .sand-tools__row { position: absolute; right: 0; bottom: 0; display: none; align-items: center; gap: 0; padding: 2px; border: var(--hairline) solid var(--border); background: var(--bg); }
+    .sand-tools:hover .sand-tools__row, .sand-tools:focus-within .sand-tools__row { display: flex; }
+    .sand-tools:hover > .page-corner, .sand-tools:focus-within > .page-corner { display: none; }
+    .page-corner { position: absolute; right: 0; bottom: 0; width: 10px; height: 10px; background: var(--connection-color, #fb7185); clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+    .page-corner.live { --connection-color: #4ade80; }
+    .page-corner.busy { animation: pulse 1s ease-in-out infinite; }
     @keyframes pulse { 50% { opacity: .35; } }
-    .modes { height: 100%; display: inline-flex; border: 1px solid var(--line); border-radius: 2px; overflow: hidden; }
-    .modes button { border: 0; border-radius: 0; font-size: 13px; line-height: 1; color: var(--muted); background: var(--panel2); min-width: 2rem; }
-    .modes button + button { border-left: 1px solid var(--line); }
-    .modes button.on { color: var(--text); background: #26303c; }
+    .modes { display: inline-flex; border: var(--hairline) solid var(--control-border); border-radius: 2px; overflow: hidden; }
+    .modes button { min-height: var(--control-height, 25px); border: 0; border-radius: 0; font-size: 13px; line-height: 1; color: var(--muted); background: var(--panel2); min-width: 25px; }
+    .modes button + button { border-left: var(--hairline) solid var(--border); }
+    .modes button.on { color: var(--text); background: var(--surface-hover); }
     /* K8: bulk actions float as a pill anchored to the bottom of the sand
        (position:fixed is relative to the iframe's own viewport, so it never
        leaves the kanban sand) — every control in the row is the same height. */
@@ -81,15 +75,21 @@
        name (.col-head). */
     .col { position: relative; flex: 0 0 auto; min-height: 0; display: grid; grid-template-rows: auto 1fr; }
     .col.is-collapsed { width: 34px !important; }
-    .col-head { display: flex; align-items: center; gap: 6px; padding: 8px 9px; border-bottom: 1px solid var(--line); }
+    .col-head { display: flex; align-items: center; gap: 4px; padding: 5px; border-bottom: 0; box-shadow: var(--lynx-shadow-x) var(--lynx-shadow-y) var(--lynx-shadow-blur) var(--lynx-shadow-color); }
     .col.is-collapsed .col-head { flex-direction: column; border-bottom: 0; padding: 9px 4px; }
     .col.is-collapsed .col-head h2 { writing-mode: vertical-rl; }
-    .col h2 { margin: 0; font-size: 12px; flex: 1; }
+    .col-title { display: inline-flex; align-items: center; gap: 3px; min-width: 0; }
+    .col h2 { margin: 0; font-size: 12px; }
     .count { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 11px; }
+    .col-add, .col-controls { display: none; }
+    .col-head:hover .col-add, .col-head:focus-within .col-add, .col-head:hover .col-controls, .col-head:focus-within .col-controls { display: inline-flex; }
+    .col-controls { align-items: center; gap: 3px; margin-left: auto; }
+    .col-add { width: 15px; min-width: 15px; min-height: 15px; padding: 0; border: 0; color: var(--muted); background: transparent; line-height: 1; }
+    .col-add:hover { color: var(--text); background: var(--surface-hover); }
     .lane-toggle { border: 0; background: none; color: var(--muted); padding: 0 3px; font-size: 11px; }
     .lane-toggle:hover { color: var(--text); }
     .lane-handle { position: absolute; top: 0; right: -4px; width: 8px; height: 100%; cursor: col-resize; }
-    .cards { min-height: 80px; overflow: auto; padding: 8px; }
+    .cards { min-height: 80px; overflow: auto; padding: 0; }
     .col.is-collapsed .cards { display: none; }
     /* WebKitGTK (the desktop shell) renders classic, always-reserved
        scrollbars — an opaque gray track shows even when there's nothing to
@@ -100,13 +100,14 @@
     .cards::-webkit-scrollbar-track { background: transparent; }
     .cards::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }
     .cards.dragover { outline: 2px solid rgba(122,162,247,.5); outline-offset: -4px; }
-    .card { position: relative; border: 1px solid var(--line); border-radius: 2px; background: #11161d; padding: 9px; margin-bottom: 8px; cursor: grab; }
+    .card { position: relative; border: 0; border-radius: 0; background: var(--bg); padding: 5px; margin-bottom: 0; cursor: grab; box-shadow: var(--lynx-shadow-x) var(--lynx-shadow-y) var(--lynx-shadow-blur) var(--lynx-shadow-color); }
+    .card:hover { background: var(--surface-hover); }
     .card:active { cursor: grabbing; }
     .card.selected { outline: 2px solid var(--accent); outline-offset: 1px; }
     .card-top { display: flex; align-items: baseline; gap: 6px; }
     .card-title { font-weight: 650; word-break: break-word; flex: 1; }
     .parent-ctx { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
-    .assignee-chip { border: 1px solid var(--line); border-radius: 2px; background: var(--panel2);
+    .assignee-chip { border: var(--hairline) solid currentColor; border-radius: 2px; background: transparent;
                      color: var(--accent); font-size: 10px; padding: 0 6px; }
     /* compact and full share the SAME font-size/line-height (2026-07-18):
        compact's only distinguishing behavior is the JS line-window
@@ -130,10 +131,10 @@
     /* card-actions overlays the top-right corner on hover only (2026-07-18):
        the checkbox and the three per-card mode icons sit side by side in one
        row, above the title/body content (z-index), so they never overlap it. */
-    .card-actions { position: absolute; top: 5px; right: 5px; display: none; align-items: center; gap: 4px; z-index: 5; background: #11161d; }
+    .card-actions { position: absolute; top: 0; right: 0; display: none; align-items: center; gap: 4px; z-index: 5; background: var(--bg); }
     .card:hover .card-actions, .card:focus-within .card-actions, .card.selected .card-actions { display: inline-flex; }
-    .card-actions input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer; }
-    .col-head input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; }
+    .card-actions .lynx-check, .col-head .lynx-check { gap: 0; }
+    .card-actions .lynx-check input, .col-head .lynx-check input { cursor: pointer; }
     .mode-cycle { border: 0; background: none; color: var(--muted); font-size: 10px; padding: 1px 4px; cursor: pointer; border-radius: 2px; }
     .mode-cycle:hover { color: var(--text); background: var(--panel2); }
     .mode-cycle.overridden { color: var(--accent); }
@@ -143,7 +144,7 @@
     .sheet-overlay { position: fixed; inset: 0; display: none; z-index: 30; }
     .sheet-overlay.open { display: block; }
     .sheet-backdrop { position: absolute; inset: 0; border: 0; border-radius: 0; background: rgba(4,8,14,.6); cursor: default; }
-    .sheet-panel { position: absolute; top: 0; right: 0; height: 100%; width: min(430px, 92vw); overflow: auto; background: var(--panel); border-left: 1px solid var(--line); padding: 14px; display: grid; gap: 12px; align-content: start; }
+    .sheet-panel { position: absolute; top: 0; right: 0; height: 100%; width: min(430px, 92vw); overflow: auto; background: var(--panel); border-left: 1px solid #a7b4c2; padding: 6px; display: grid; gap: 6px; align-content: start; }
     /* the bulk-delete confirmation is a small centered dialog, not a right-side drawer */
     #sheet-confirm .sheet-panel { position: absolute; top: 50%; left: 50%; right: auto; height: auto;
       width: min(360px, 90vw); transform: translate(-50%, -50%); border-left: none;
@@ -169,34 +170,27 @@
   </style>
 </head>
 <body>
-  <main>
-    <div class="panel">
-      <div class="topbar">
-        <div class="topbar-left">
-          <h1>Kanban</h1>
-          <span id="status-label"></span>
-          <span id="dot" class="dot"></span>
-        </div>
-        <div class="topbar-right">
-          <span id="all-modes" class="modes" title="Body view for every card (per-column and per-card buttons override)">
-            <button type="button" data-mode="head" title="Head — title only">▁</button>
-            <button type="button" data-mode="compact" title="Compact — condensed body">▄</button>
-            <button type="button" data-mode="full" title="Full — entire body">█</button>
-          </span>
-          <button id="open-columns" type="button" title="Configure columns and presets">Columns</button>
-          <button id="open-create" type="button" class="accent" title="New task">+</button>
-        </div>
+  <main class="kanban-sand">
+    <section id="columns" class="board" aria-label="Kanban columns"></section>
+    <div class="sand-tools" data-lynx-tooltip-boundary>
+      <span id="connection-corner" class="page-corner" role="status" aria-label="Reconnecting" data-lynx-tooltip="Reconnecting"></span>
+      <div class="sand-tools__row">
+        <span id="all-modes" class="modes" title="Body view for every card (per-column and per-card buttons override)">
+          <button type="button" data-mode="head" data-lynx-tooltip="Title only">▁</button>
+          <button type="button" data-mode="compact" data-lynx-tooltip="Compact body">▄</button>
+          <button type="button" data-mode="full" data-lynx-tooltip="Full body">█</button>
+        </span>
+        <button id="open-columns" class="lynx-button" type="button" data-lynx-tooltip="Configure columns and presets">Columns</button>
       </div>
     </div>
-    <section id="columns" class="board" aria-label="Kanban columns"></section>
   </main>
 
   <div id="bulk-bar" class="bulkbar" hidden>
     <span id="bulk-count"></span>
-    <select id="bulk-lane" title="Bulk-move the selected cards into this column"></select>
-    <button id="bulk-move" type="button" title="Move selected cards here">→</button>
-    <button id="bulk-delete" type="button" class="danger" title="Delete selected cards">⌫</button>
-    <button id="bulk-clear" type="button" title="Clear selection">✕</button>
+    <select id="bulk-lane" class="lynx-select" title="Bulk-move the selected cards into this column"></select>
+    <button id="bulk-move" class="lynx-button" type="button" data-lynx-tooltip="Move selected cards here">→</button>
+    <button id="bulk-delete" class="lynx-button danger" type="button" data-lynx-tooltip="Delete selected cards">⌫</button>
+    <button id="bulk-clear" class="lynx-button" type="button" data-lynx-tooltip="Clear selection">✕</button>
   </div>
 
   <div class="sheet-overlay" id="sheet-columns">
@@ -207,9 +201,9 @@
       <div id="columns-list" class="field-block"></div>
       <div class="sheet-actions start">
         <button id="column-add" type="button">+ Add column</button>
-        <label class="hint" style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="hide-empty" /> Hide empty columns</label>
-        <label class="hint" style="display:flex;align-items:center;gap:5px" title="Board option: the old showParentContext"><input type="checkbox" id="show-parent" /> Parent above titles</label>
-        <label class="hint" style="display:flex;align-items:center;gap:5px" title="Tints each column's whole background with its color, instead of no color at all"><input type="checkbox" id="color-columns" /> Color columns</label>
+        <label class="lynx-check hint"><input type="checkbox" id="hide-empty" /> Hide empty columns</label>
+        <label class="lynx-check hint" title="Board option: the old showParentContext"><input type="checkbox" id="show-parent" /> Parent above titles</label>
+        <label class="lynx-check hint" title="Tints each column's whole background with its color, instead of no color at all"><input type="checkbox" id="color-columns" /> Color columns</label>
       </div>
       <div class="sheet-actions">
         <button id="columns-reset" type="button" title="Back to the default Backlog/Next/WIP/Review/Done">Reset</button>
@@ -374,13 +368,16 @@
       render();
     }
 
-    // ---- act with an "update in flight" dot state (K4's cuter ball) ----------
+    // ---- transport state in the focused Sand corner --------------------------
     let liveNow = false;
     let pendingActs = 0;
     function syncDot() {
-      $("dot").classList.toggle("busy", pendingActs > 0);
-      $("dot").classList.toggle("live", liveNow && pendingActs === 0);
-      $("status-label").textContent = pendingActs > 0 ? "Saving…" : liveNow ? "" : "Reconnecting";
+      const corner = $("connection-corner");
+      const state = !liveNow ? "Reconnecting" : pendingActs > 0 ? "Saving…" : "Connected";
+      corner.classList.toggle("busy", pendingActs > 0);
+      corner.classList.toggle("live", liveNow);
+      corner.setAttribute("aria-label", state);
+      corner.dataset.lynxTooltip = state;
     }
     function act(action) {
       pendingActs++; syncDot();
@@ -492,29 +489,24 @@
       ui.cardModes = {};
       persistUi();
     });
-    function modeCycleButton(kind, key, current) {
+    function modeCycleButton(kind, key, current, inherited) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = current ? "mode-cycle overridden" : "mode-cycle";
       btn.dataset[kind] = key;
-      // unset = inherits the column/board default; a distinct dot (not one of
-      // the three body icons) so it doesn't misrepresent what a click does
-      btn.textContent = current ? MODE_ICON[current] : "∘";
+      const displayed = current || inherited;
+      btn.textContent = MODE_ICON[displayed];
       btn.title = (kind === "columnMode"
         ? "Body view for this column (overrides the board default)"
         : "Body view for this card (overrides column and board)")
-        + (current ? ` — now ${current}` : " — inherited, click to override");
+        + ` — now ${displayed}${current ? "" : " (inherited)"}`;
       return btn;
     }
 
     // ---- creation: delegated to the pinned Record sand -------------------------
-    // "New task" does not open a kanban sheet; it asks the board's pinned
-    // Record sand to enter CREATION MODE (same fields it shows on a get, but
-    // writable and empty). Board-wide, like recordClicked.
-    $("open-create").addEventListener("click", () => {
-      const firstValueLane = lanes.find((l) => l.value !== undefined);
-      H.emit("recordCreate", { record: { kind: "plain", quantity: firstValueLane ? firstValueLane.value : 0 } });
-    });
+    function createInLane(lane) {
+      H.emit("recordCreate", { record: { kind: "plain", quantity: lane.value ?? 0 } });
+    }
 
     // ---- sheets ---------------------------------------------------------------
     function openSheet(id) { $(id).classList.add("open"); }
@@ -682,6 +674,7 @@
         const { lines, start, end, truncated } = visibleBodyLines(row, mode);
         el.textContent = lines.slice(start, end).join("\n") + (truncated ? "\n..." : "");
       }
+      for (const checkbox of el.querySelectorAll('input[type="checkbox"]')) checkbox.classList.add("lynx-check__input");
       el.addEventListener("click", (event) => {
         if (event.ctrlKey || event.metaKey) return; // bubbles to card multi-select
         if (event.target.closest("input,button,img")) return; // toggles/chips/images keep their jobs
@@ -785,6 +778,8 @@
         color.value = HEX_COLOR_RE.test(lane.color || "") ? lane.color : "#6e7681";
         color.title = "Column color (used when \"Color columns\" is on)";
         color.addEventListener("input", () => { lane.color = color.value; });
+        const hideLabel = document.createElement("label");
+        hideLabel.className = "lynx-check";
         const hide = document.createElement("input");
         hide.type = "checkbox";
         hide.checked = Boolean(lane.hidden);
@@ -792,7 +787,8 @@
         hide.addEventListener("change", () => { lane.hidden = hide.checked; });
         const del = iconButton("✕", "Delete column");
         del.addEventListener("click", () => { draftLanes.splice(at, 1); renderColumnsSheet(); });
-        rowEl.append(up, down, label, value, color, hide, del);
+        hideLabel.append(hide);
+        rowEl.append(up, down, label, value, color, hideLabel, del);
         list.appendChild(rowEl);
       });
     }
@@ -963,6 +959,8 @@
         head.className = "col-head";
         // K8: select the whole column at once (in addition to ctrl-click / the
         // per-card checkbox) — indeterminate when only some cards are picked.
+        const selectAllLabel = document.createElement("label");
+        selectAllLabel.className = "lynx-check";
         const selectAll = document.createElement("input");
         selectAll.type = "checkbox";
         selectAll.title = "Select all cards in this column";
@@ -976,11 +974,20 @@
           else laneUids.forEach((uid) => selected.delete(uid));
           render();
         });
+        const titleGroup = document.createElement("div");
+        titleGroup.className = "col-title";
         const title = document.createElement("h2");
         title.textContent = lane.label;
         const count = document.createElement("span");
         count.className = "count";
         count.textContent = String(laneRows.length);
+        const add = document.createElement("button");
+        add.type = "button";
+        add.className = "col-add";
+        add.textContent = "+";
+        add.title = `New record in ${lane.label}`;
+        add.addEventListener("click", (event) => { event.stopPropagation(); createInLane(lane); });
+        titleGroup.append(title, count, add);
         const toggle = document.createElement("button");
         toggle.type = "button";
         toggle.className = "lane-toggle";
@@ -991,14 +998,16 @@
           ui.lanes[lane.key] = { ...laneUi, collapsed: !laneUi.collapsed, width: clampWidth(laneUi.width) };
           persistUi();
         });
-        const colMode = modeCycleButton("columnMode", lane.key, ui.columnModes[lane.key]);
+        const colMode = modeCycleButton("columnMode", lane.key, ui.columnModes[lane.key], ui.defaultBodyMode);
         colMode.addEventListener("click", () => {
-          const next = nextMode(ui.columnModes[lane.key]);
-          if (next) ui.columnModes[lane.key] = next;
-          else delete ui.columnModes[lane.key];
+          ui.columnModes[lane.key] = nextMode(ui.columnModes[lane.key] || ui.defaultBodyMode);
           persistUi();
         });
-        head.append(selectAll, title, count, colMode, toggle);
+        selectAllLabel.append(selectAll);
+        const controls = document.createElement("div");
+        controls.className = "col-controls";
+        controls.append(colMode, toggle, selectAllLabel);
+        head.append(titleGroup, controls);
         const list = document.createElement("div");
         list.className = "cards";
         list.dataset.lane = lane.key;
@@ -1126,6 +1135,8 @@
         });
         actions.appendChild(modeBtn);
       }
+      const selLabel = document.createElement("label");
+      selLabel.className = "lynx-check";
       const sel = document.createElement("input");
       sel.type = "checkbox";
       sel.dataset.selectRecord = row.uid;
@@ -1133,7 +1144,8 @@
       sel.title = "Select for bulk-move (or Ctrl-click the card)";
       sel.addEventListener("click", (event) => event.stopPropagation());
       sel.addEventListener("change", () => toggleSelect(row.uid));
-      actions.append(sel);
+      selLabel.append(sel);
+      actions.append(selLabel);
       el.appendChild(actions);
       return el;
     }

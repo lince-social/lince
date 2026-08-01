@@ -4,11 +4,27 @@
 
 use engine::Engine;
 use engine::actions::Action;
-use nucleus::{ConsequenceKind, PromiseState, RecordKind};
+use nucleus::{PromiseState, RecordKind};
+
 use protein::{FactsInclude, Include, Order, Predicate, Protein, Source};
 
 async fn engine() -> Engine {
-    Engine::open_memory().await.expect("engine opens")
+    let engine = Engine::open_memory().await.expect("engine opens");
+    // An open promise is an offer somebody makes, so publishing one needs a
+    // Person to make it.
+    store::records::create(
+        &engine.store.pool,
+        store::records::NewRecord {
+            slug: Some("me"),
+            kind: RecordKind::Person,
+            head: "me",
+            body: "",
+            quantity: store::exact::one(),
+        },
+    )
+    .await
+    .expect("a local Person");
+    engine
 }
 
 async fn create(e: &Engine, slug: &str, quantity: f64) -> String {
@@ -165,24 +181,25 @@ async fn concept_dag_filter_and_provenance_include() {
 async fn decision_queue_protein_and_decide_action() {
     let e = engine().await;
     let apples = create(&e, "apples.stock", 2.0).await;
-    store::rules::create(
-        &e.store.pool,
-        store::rules::NewRule {
-            slug: "rules.reorder-ask",
-            head: "Ask before reorder",
-            condition: "@apples.stock",
-            gate: "<3",
-            carry: "one",
-            consequences: vec![(
-                ConsequenceKind::Ask,
-                None,
-                Some(serde_json::json!({ "question": "send reorder proposal?" })),
-            )],
+    e.act(
+        Action::CreateRecurrence {
+            target: apples.clone(),
+            consequences: vec![nucleus::karma::Consequence::Ask {
+                question: Some("send reorder proposal?".into()),
+                options: Vec::new(),
+            }],
+            condition: Some("@apples.stock".into()),
+            gate: Some("<3".into()),
+            carry: Some("one".into()),
+            note: None,
+            cadence: nucleus::karma::Cadence::every_days(1),
+            anchor_at: Some((chrono::Utc::now() - chrono::TimeDelta::minutes(1)).to_rfc3339()),
+            request_id: Some(nucleus::new_uid("req")),
         },
+        None,
     )
     .await
     .unwrap();
-    e.reload_rules().await.unwrap();
     e.append_user(&apples, -1.0).await.unwrap(); // fires the ask
 
     let queue = protein::execute(&e.store, &protein::decision_queue())
@@ -219,7 +236,7 @@ async fn promise_lifecycle_through_actions() {
                 record: "@apples.stock".into(),
                 delta: 5.0,
                 window_end: Some("2026-07-10T18:00:00Z".into()),
-                party: None,
+                party: Some("me".to_string()),
                 open: true, // a published Need: unfilled party slot
             },
             None,

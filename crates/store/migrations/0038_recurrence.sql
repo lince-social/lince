@@ -19,16 +19,37 @@
 -- each one by looking for those two signals.
 CREATE TABLE recurrence (
     uid             TEXT PRIMARY KEY,
-    -- The resource whose level is expected to move.
+    -- The Record this rule is about. One rule, one target: letting each
+    -- consequence name its own would make "what does this rule touch?"
+    -- unanswerable without evaluating it, which is the question a person
+    -- scanning a list of rules is actually asking.
     record_uid      TEXT NOT NULL REFERENCES record(uid),
-    -- Exact, never a float: the same pair the Ledger stores. See 0001.
-    -- The sign carries direction, so a recurring income and a recurring cost
-    -- are one shape and a refund is not a special case.
-    amount_mantissa TEXT NOT NULL,
-    amount_scale    INTEGER NOT NULL,
-    -- What the expected change counts as. Resolved through the concept DAG on
-    -- read, exactly like `fact_concept`, so `@rent` answers a query for `@cost`.
-    concept_uid     TEXT REFERENCES concept(uid),
+    -- A serialized `nucleus::karma::Consequences`: the ordered, non-empty list
+    -- of typed changes this rule makes when one of its dates is applied.
+    --
+    -- This replaced a single exact `amount` plus a `concept_uid`. That pair was
+    -- the first caller's shape leaking into the model: it could only ever say
+    -- "add this number", so it could not say "this task is due again" or "move
+    -- this card from @wip to @done". Every variant reduces to a typed Action a
+    -- person could have performed by hand, which is what keeps a rule-applied
+    -- change auditable by exactly the same means as a manual one.
+    --
+    -- A list rather than one, because the useful cases are pairs: removing
+    -- @wip and adding @done is one intention and must be one rule, or a reader
+    -- has to know that two rules are secretly joined.
+    consequences_json TEXT NOT NULL CHECK (json_valid(consequences_json)),
+    -- The *if* half of "when, if, then". NULL means unconditional: the date
+    -- arriving is the whole reason to act.
+    --
+    -- `condition_src` is the text a person wrote; `gate` decides whether the
+    -- number it computes means "fire"; `carry` decides what number the
+    -- consequences receive. Gate and carry are separate because "fire when
+    -- stock drops below three" and "then order one" are two decisions, and a
+    -- pipeline that fuses them can only hand over the number it happened to
+    -- test.
+    condition_src   TEXT,
+    gate            TEXT,
+    carry           TEXT,
     note            TEXT,
     -- A serialized `nucleus::karma::Cadence`: the step, the weekday landing, the
     -- short-month policy, and the bound. One column because the shapes differ per
@@ -53,7 +74,6 @@ CREATE TABLE recurrence (
     updated_at      TEXT NOT NULL
 );
 CREATE INDEX idx_recurrence_record ON recurrence(record_uid, state);
-CREATE INDEX idx_recurrence_concept ON recurrence(concept_uid);
 
 -- Every change to a rule, append-only. `request_id` is UNIQUE, which is what
 -- makes create/revise/pause idempotent under retry.
@@ -68,9 +88,19 @@ CREATE TABLE recurrence_revision (
     revision        INTEGER NOT NULL,
     -- 'created' | 'revised' | 'paused' | 'resumed'
     kind            TEXT NOT NULL,
-    amount_mantissa TEXT NOT NULL,
-    amount_scale    INTEGER NOT NULL,
-    concept_uid     TEXT REFERENCES concept(uid),
+    consequences_json TEXT NOT NULL CHECK (json_valid(consequences_json)),
+    -- The *if* half of "when, if, then". NULL means unconditional: the date
+    -- arriving is the whole reason to act.
+    --
+    -- `condition_src` is the text a person wrote; `gate` decides whether the
+    -- number it computes means "fire"; `carry` decides what number the
+    -- consequences receive. Gate and carry are separate because "fire when
+    -- stock drops below three" and "then order one" are two decisions, and a
+    -- pipeline that fuses them can only hand over the number it happened to
+    -- test.
+    condition_src   TEXT,
+    gate            TEXT,
+    carry           TEXT,
     note            TEXT,
     cadence_json    TEXT NOT NULL CHECK (json_valid(cadence_json)),
     anchor_at       TEXT NOT NULL,

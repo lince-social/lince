@@ -8,7 +8,9 @@
       "Bash(git ls-tree *)",
       "Bash(env)",
       "Bash(bash scripts/other/*)",
-      "Bash(git mv *)"
+      "Bash(git mv *)",
+      "Bash(ps -eo pid,etime,pcpu,comm,args --sort=-pcpu)",
+      "Bash(rm -f /home/user/.claude/projects/-home-user-git-lince-social-lince/memory/feedback-never-react-after-turn-ends.md)"
     ]
   }
 }

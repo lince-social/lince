@@ -42,6 +42,18 @@ pub async fn editor_js() -> Response {
     )))
 }
 
+pub async fn lynx_ui_css() -> Response {
+    asset_response(css(include_bytes!(
+        "../../../static/presentation/board/lynx-ui.css"
+    )))
+}
+
+pub async fn lynx_ui_js() -> Response {
+    asset_response(js(include_bytes!(
+        "../../../static/presentation/board/lynx-ui.js"
+    )))
+}
+
 /// Vendored d3 v7 for the relations force graph, served at the absolute
 /// `/board/vendor/d3.v7.min.js`. This MUST be an always-registered route like
 /// frame.js/editor.js: when `static_dir` exists on disk, `/static/*` goes to
@@ -76,6 +88,12 @@ fn embedded_asset(path: &str) -> Option<EmbeddedAsset> {
         ))),
         "presentation/board/LynxDS-components.js" => Some(js(include_bytes!(
             "../../../static/presentation/board/LynxDS-components.js"
+        ))),
+        "presentation/board/lynx-ui.css" => Some(css(include_bytes!(
+            "../../../static/presentation/board/lynx-ui.css"
+        ))),
+        "presentation/board/lynx-ui.js" => Some(js(include_bytes!(
+            "../../../static/presentation/board/lynx-ui.js"
         ))),
         "presentation/board/main.js" => Some(js(include_bytes!(
             "../../../static/presentation/board/main.js"

@@ -279,40 +279,21 @@ async fn imagination_projects_the_scrubbable_future() {
     let e = support::engine().await;
     let apples = plain(&e, "apples.stock", 8.0).await;
 
-    // a daily rule eats one apple
-    store::freqs::create(
-        &e.store.pool,
-        store::freqs::NewFrequency {
-            slug: "freq.daily",
-            head: "Daily",
-            seconds: 0,
-            days: 1,
-            months: 0,
-            day_of_week: None,
-            next_at: at("2026-07-05T06:00:00Z"),
-            catch_up: false,
-        },
+    // A daily rule eats one apple. One object: the schedule it repeats on is
+    // part of the rule, so there is no timer row to keep in step with it.
+    support::declare_rule(
+        &e,
+        &apples,
+        nucleus::karma::Cadence::every_days(1),
+        "2026-07-05T06:00:00Z",
+        None,
+        None,
+        None,
+        vec![nucleus::karma::Consequence::AddQuantity {
+            delta: Some(nucleus::DecimalValue::parse_inferred("-1").unwrap()),
+        }],
     )
-    .await
-    .unwrap();
-    store::rules::create(
-        &e.store.pool,
-        store::rules::NewRule {
-            slug: "rules.eat",
-            head: "Eat",
-            condition: "-1 * freq(@freq.daily)",
-            gate: "!=0",
-            carry: "value",
-            consequences: vec![(
-                nucleus::ConsequenceKind::AddQuantity,
-                Some("@apples.stock".into()),
-                None,
-            )],
-        },
-    )
-    .await
-    .unwrap();
-    e.reload_rules().await.unwrap();
+    .await;
 
     // project 5 days out: 8 - 5 = 3, and the run-out is foreseeable
     let now = at("2026-07-05T00:00:00Z");

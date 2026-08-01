@@ -84,15 +84,120 @@ pub(super) fn body() -> Markup {
                             span { "Resource" }
                             select id="rule-record" required {}
                         }
-                        label class="field" {
-                            span { "Amount" }
-                            input id="rule-amount" type="text" inputmode="decimal"
-                                placeholder="-1200" autocomplete="off" required;
+                        // The *if* half. Empty means unconditional — the date
+                        // arriving is the whole reason to act, which is what
+                        // every rule was before conditions existed.
+                        fieldset class="thenGroup" {
+                            legend { "Only if" }
+                            label class="field" {
+                                span { "This reading" }
+                                input id="rule-condition" type="text" autocomplete="off"
+                                    placeholder="-1 * freq(@payday)";
+                            }
+                            // A schedule is a term in the arithmetic, not a
+                            // second kind of trigger. `freq(@x)` is how often
+                            // the rule on `@x` came round since this rule last
+                            // looked — zero on every other day — so multiplying
+                            // by it is what makes a rule that is checked daily
+                            // act weekly, using only the threshold below.
+                            p class="hint" id="rule-condition-hint" {
+                                "Readings: "
+                                code { "@record" } ", "
+                                code { "freq(@rule)" } ", "
+                                code { "value(@rule)" } ", "
+                                code { "sum(@record, 30d)" } " — "
+                                code { "sum_pos" } "/" code { "sum_neg" } " split the directions."
+                            }
+                            label class="field" id="rule-gate-field" hidden {
+                                span { "Passes" }
+                                select id="rule-gate" {
+                                    option value="!=0" selected { "is not zero" }
+                                    option value="always" { "always (any value)" }
+                                    option value="<" { "is less than…" }
+                                    option value="<=" { "is at most…" }
+                                    option value=">" { "is more than…" }
+                                    option value=">=" { "is at least…" }
+                                    option value="==" { "equals…" }
+                                }
+                            }
+                            label class="field" id="rule-gate-value-field" hidden {
+                                span { "That number" }
+                                input id="rule-gate-value" type="text" inputmode="decimal"
+                                    placeholder="3" autocomplete="off";
+                            }
+                            // What to test and what to write are two decisions.
+                            // Fusing them would only ever let a consequence
+                            // receive the number the gate happened to check.
+                            label class="field" id="rule-carry-field" hidden {
+                                span { "And the amount is" }
+                                select id="rule-carry" {
+                                    option value="value" selected { "the reading itself" }
+                                    option value="one" { "one" }
+                                    option value="const" { "a fixed number…" }
+                                }
+                            }
+                            label class="field" id="rule-carry-value-field" hidden {
+                                span { "That fixed number" }
+                                input id="rule-carry-value" type="text" inputmode="decimal"
+                                    placeholder="-1" autocomplete="off";
+                            }
+                            p class="hint" {
+                                "Leave the reading empty for a rule the date alone justifies. "
+                                "A reading is an expression over records: "
+                                "@slug, sum(@slug, 30d), arithmetic and comparisons."
+                            }
                         }
-                        label class="field" {
-                            span { "For" }
-                            input id="rule-concept" type="text" list="concept-options"
-                                placeholder="@rent" autocomplete="off";
+
+                        // What the rule does when one of its dates is applied.
+                        // Two independent halves — a number and a concept —
+                        // because the useful rules are pairs: "add 1 and mark
+                        // it @done" is one intention, and splitting it across
+                        // two rules hides that they are joined.
+                        fieldset class="thenGroup" {
+                            legend { "Then" }
+                            label class="field" {
+                                span { "To the number" }
+                                select id="rule-number-action" {
+                                    option value="capture-entry" selected { "Capture an amount" }
+                                    option value="add-quantity" { "Add to the quantity" }
+                                    option value="set-quantity" { "Set the quantity to" }
+                                    option value="none" { "Nothing" }
+                                }
+                            }
+                            label class="field" id="rule-amount-field" {
+                                span { "Amount" }
+                                input id="rule-amount" type="text" inputmode="decimal"
+                                    placeholder="-1200" autocomplete="off";
+                            }
+                            // Only a capture files its amount under a concept.
+                            // Setting or adding a quantity moves the Record's
+                            // own number, which no concept qualifies.
+                            label class="field" id="rule-concept-field" {
+                                span { "For" }
+                                input id="rule-concept" type="text" list="concept-options"
+                                    placeholder="@rent" autocomplete="off";
+                            }
+
+                            label class="field" {
+                                span { "To the concepts" }
+                                select id="rule-concept-action" {
+                                    option value="none" selected { "Nothing" }
+                                    option value="add" { "Add one" }
+                                    option value="remove" { "Remove one" }
+                                    option value="move" { "Move from one to another" }
+                                    option value="set" { "Replace all with one" }
+                                }
+                            }
+                            label class="field" id="rule-concept-from-field" hidden {
+                                span { "From" }
+                                input id="rule-concept-from" type="text" list="concept-options"
+                                    placeholder="@wip" autocomplete="off";
+                            }
+                            label class="field" id="rule-concept-to-field" hidden {
+                                span { "Concept" }
+                                input id="rule-concept-to" type="text" list="concept-options"
+                                    placeholder="@done" autocomplete="off";
+                            }
                         }
                         label class="field" {
                             span { "Preset" }
@@ -210,7 +315,9 @@ pub(super) fn body() -> Markup {
                             input id="rule-note" type="text" placeholder="rent" autocomplete="off";
                         }
                         div class="formActions" {
-                            button type="submit" class="primaryButton" { "Declare rule" }
+                            button id="recurrence-submit" type="submit" class="primaryButton" {
+                                "Declare rule"
+                            }
                             button type="button" id="cancel-recurrence" class="ghostButton" { "Cancel" }
                         }
                         p class="hint" {

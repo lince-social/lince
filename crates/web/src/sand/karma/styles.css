@@ -174,7 +174,8 @@ body {
    to milliseconds stays readable at any width instead of wrapping into an
    order nobody can follow. */
 .stepGrid,
-.weekdayGrid {
+.weekdayGrid,
+.thenGroup {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 8px 10px 10px;
@@ -182,8 +183,17 @@ body {
   min-width: 0;
 }
 
+/* The consequences stack one per line rather than sharing a row: each is a
+   separate sentence about what the rule does, and a grid would suggest the
+   number and the concept halves are alternatives to each other. */
+.thenGroup {
+  display: grid;
+  gap: 8px;
+}
+
 .stepGrid legend,
-.weekdayGrid legend {
+.weekdayGrid legend,
+.thenGroup legend {
   font-size: 0.68rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;

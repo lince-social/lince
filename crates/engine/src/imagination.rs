@@ -4,19 +4,21 @@
 
 use chrono::{DateTime, Utc};
 use nucleus::PromiseState;
-use nucleus::imagination::{ProjFrequency, ProjPromise, Snapshot, Timeline};
+use nucleus::imagination::{ProjMove, ProjPromise, ProjRule, Snapshot, Timeline};
 use store::Store;
 use store::sqlx::Row;
 
 use crate::Engine;
 use crate::error::EngineError;
-use crate::karma::Registry;
 
 /// Build the projection snapshot: quantity levels, slug map, agreed/active
-/// promises with windows, enabled frequencies, active rules.
+/// promises with windows, and every active rule with its own cadence.
+///
+/// There is no separate frequency list any more. A rule carries the schedule
+/// it repeats on, so "what fires when" is one question with one answer here and
+/// in the heartbeat.
 pub async fn build_snapshot(
     store: &Store,
-    registry: &Registry,
     now: DateTime<Utc>,
 ) -> Result<Snapshot, EngineError> {
     let mut quantities = std::collections::HashMap::new();
@@ -46,28 +48,72 @@ pub async fn build_snapshot(
         });
     }
 
-    let frequencies = store::freqs::all_enabled(&store.pool)
-        .await?
-        .into_iter()
-        .map(|f| ProjFrequency {
-            record_uid: f.record_uid,
-            spec: f.spec,
-        })
-        .collect();
-
-    let rules = registry
-        .rules
-        .iter()
-        .filter(|r| r.active)
-        .map(|r| r.def.clone())
-        .collect();
+    // Every active rule, with the schedule it repeats on. A paused rule offers
+    // no future, which is what pausing means.
+    let mut slug_of: std::collections::HashMap<String, String> = Default::default();
+    for (slug, uid) in &slugs {
+        slug_of.insert(uid.clone(), slug.clone());
+    }
+    let mut rules = Vec::new();
+    for rule in store::recurrence::all(&store.pool).await? {
+        if rule.is_paused() {
+            continue;
+        }
+        let Ok(anchor) = crate::actions::parse_instant_field(&rule.anchor_at) else {
+            continue;
+        };
+        // What the rule does to a number, in the only two shapes a timeline can
+        // fold: a movement, and an assignment. A rule that only touches
+        // concepts contributes no point, which is honest — nothing moved.
+        let movement = rule
+            .consequences
+            .iter()
+            .find_map(|consequence| match consequence {
+                nucleus::karma::Consequence::CaptureEntry { amount, .. } => {
+                    Some((ProjMove::Add, amount.to_f64()))
+                }
+                nucleus::karma::Consequence::AddQuantity { delta } => Some((
+                    ProjMove::Add,
+                    delta.map(|value| value.to_f64()).unwrap_or(0.0),
+                )),
+                nucleus::karma::Consequence::SetQuantity { value } => Some((
+                    ProjMove::Set,
+                    value.map(|value| value.to_f64()).unwrap_or(0.0),
+                )),
+                _ => None,
+            });
+        let condition = match rule.condition.as_ref() {
+            None => None,
+            Some(stored) => {
+                // A stored condition that no longer parses simply does not
+                // project; it is refused at write time, so this is the
+                // belt-and-braces case rather than the expected one.
+                match nucleus::imagination::proj_condition(
+                    &stored.source,
+                    stored.gate.clone(),
+                    stored.carry.clone(),
+                ) {
+                    Ok(parsed) => Some(parsed),
+                    Err(_) => continue,
+                }
+            }
+        };
+        rules.push(ProjRule {
+            uid: rule.uid.clone(),
+            slug: slug_of.get(&rule.record_uid).cloned(),
+            record_uid: rule.record_uid.clone(),
+            cadence: rule.cadence.clone(),
+            anchor,
+            condition,
+            movement,
+        });
+    }
 
     Ok(Snapshot {
         now,
         quantities,
         slugs,
         promises,
-        frequencies,
         rules,
     })
 }
@@ -148,8 +194,7 @@ impl Engine {
         now: DateTime<Utc>,
         until: DateTime<Utc>,
     ) -> Result<Timeline, EngineError> {
-        let registry = self.registry_snapshot().await;
-        let snapshot = build_snapshot(&self.store, &registry, now).await?;
+        let snapshot = build_snapshot(&self.store, now).await?;
         Ok(nucleus::imagination::project(&snapshot, until))
     }
 
@@ -158,8 +203,7 @@ impl Engine {
     /// `nucleus::imagination::project` — diffing two timelines is the compare
     /// view.
     pub async fn snapshot(&self, now: DateTime<Utc>) -> Result<Snapshot, EngineError> {
-        let registry = self.registry_snapshot().await;
-        build_snapshot(&self.store, &registry, now).await
+        build_snapshot(&self.store, now).await
     }
 
     /// The Imagination heartbeat arm (blueprint XII.1 → XIII, decision 4):

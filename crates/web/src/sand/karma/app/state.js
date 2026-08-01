@@ -15,6 +15,9 @@ export const state = {
   entries: [],
   rules: [],
   occurrences: [],
+  /// How far back the inbox asked for dates. Kept so the list can say where it
+  /// stops instead of ending without explanation.
+  occurrenceSince: null,
   timeline: null,
   live: false,
   notice: null,
@@ -130,12 +133,28 @@ export function subscribeAll() {
   subscribeTimeline();
 }
 
+/**
+ * How far back the inbox looks for dates nobody answered.
+ *
+ * The sand names this rather than inheriting Protein's default, because a list
+ * that simply ends cannot say so. A date older than this is not lost — it is
+ * still derived from the cadence on demand — but it stops being offered, and an
+ * unexplained gap reads as an obligation that resolved itself.
+ */
+const INBOX_LOOKBACK_DAYS = 60;
+
 export function subscribeRecurrence() {
   unsubscribeRecurrence?.();
-  unsubscribeRecurrence = subscribe("recurrence", { source: "recurrence" }, (rows) => {
-    state.rules = rows.filter((row) => row?.kind === "recurrence");
-    state.occurrences = rows.filter((row) => row?.kind === "occurrence");
-  });
+  const since = new Date(Date.now() - INBOX_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
+  state.occurrenceSince = since.toISOString();
+  unsubscribeRecurrence = subscribe(
+    "recurrence",
+    { source: "recurrence", where: [{ at_since: state.occurrenceSince }] },
+    (rows) => {
+      state.rules = rows.filter((row) => row?.kind === "recurrence");
+      state.occurrences = rows.filter((row) => row?.kind === "occurrence");
+    },
+  );
 }
 
 /** Re-open the entry query when the category filter changes. */

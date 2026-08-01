@@ -1,0 +1,23 @@
+:root[data-style="catppuccin-macchiato"] {
+  --native-color-scheme: dark;
+  --canvas: #1e2030;
+  --surface: #24273a;
+  --surface-hover: #363a4f;
+  --surface-active: #494d64;
+  --ink: #cad3f5;
+  --muted: #b8c0e0;
+  --faint: #939ab7;
+  --border: #5b6078;
+  --gray: #5b6078;
+  --accent: #c6a0f6;
+  --accent-supporting: #b7bdf8;
+  --accent-ink: #181926;
+  --focus: #b7bdf8;
+  --danger: #ed8796;
+  --warning: #eed49f;
+  --success: #a6da95;
+  --info: #8aadf4;
+  --tooltip: #cad3f5;
+  --tooltip-ink: #181926;
+  --scrim: color-mix(in srgb, #181926 72%, transparent);
+}

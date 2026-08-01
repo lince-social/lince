@@ -10,7 +10,7 @@
 //! because that is legible; the same query answers "how much flour is
 //! committed" unchanged.
 
-use chrono::{Duration, Utc};
+use chrono::{Duration, Months, Utc};
 use engine::Engine;
 use engine::actions::Action;
 use nucleus::RecordKind;
@@ -129,13 +129,16 @@ async fn the_past_is_bucketed_and_carries_a_running_position() {
     let now = Utc::now();
     let (since, before) = window();
 
-    for offset in [90_i64, 60, 30] {
+    // Whole calendar months back, not 90/60/30 days: day offsets collapse into
+    // two buckets whenever the run date makes two of them land in one month,
+    // which turns a real assertion into a calendar lottery.
+    for offset in [3_u32, 2, 1] {
         capture(
             &e,
             &checking,
             "-1200",
             &rent,
-            &(now - Duration::days(offset)).to_rfc3339(),
+            &(now - Months::new(offset)).to_rfc3339(),
         )
         .await;
     }
@@ -203,8 +206,10 @@ async fn the_future_is_declared_by_recurring_rules() {
     e.act(
         Action::CreateRecurrence {
             target: checking.clone(),
-            amount: "-1200".to_string(),
-            concept: Some(rent.clone()),
+            consequences: vec![nucleus::karma::Consequence::CaptureEntry { amount: nucleus::DecimalValue::parse_inferred("-1200").unwrap(), concept: Some(rent.clone()) }],
+condition: None,
+gate: None,
+carry: None,
             note: Some("rent".to_string()),
             cadence: Cadence::every_months(1),
             anchor_at: Some((now - Duration::days(2)).to_rfc3339()),
@@ -255,8 +260,10 @@ async fn an_applied_date_is_counted_once_as_history_not_twice() {
         .act(
             Action::CreateRecurrence {
                 target: checking.clone(),
-                amount: "-1200".to_string(),
-                concept: Some(rent.clone()),
+                consequences: vec![nucleus::karma::Consequence::CaptureEntry { amount: nucleus::DecimalValue::parse_inferred("-1200").unwrap(), concept: Some(rent.clone()) }],
+condition: None,
+gate: None,
+carry: None,
                 note: None,
                 cadence: Cadence::every_days(1),
                 anchor_at: Some(due.to_rfc3339()),
@@ -313,8 +320,10 @@ async fn a_skipped_date_is_not_expected() {
         .act(
             Action::CreateRecurrence {
                 target: checking.clone(),
-                amount: "-40".to_string(),
-                concept: Some(rent.clone()),
+                consequences: vec![nucleus::karma::Consequence::CaptureEntry { amount: nucleus::DecimalValue::parse_inferred("-40").unwrap(), concept: Some(rent.clone()) }],
+condition: None,
+gate: None,
+carry: None,
                 note: None,
                 cadence: Cadence::every_days(1),
                 anchor_at: Some(due.to_rfc3339()),
@@ -361,8 +370,10 @@ async fn a_paused_rule_stops_declaring_a_future() {
         .act(
             Action::CreateRecurrence {
                 target: checking.clone(),
-                amount: "-1200".to_string(),
-                concept: Some(rent.clone()),
+                consequences: vec![nucleus::karma::Consequence::CaptureEntry { amount: nucleus::DecimalValue::parse_inferred("-1200").unwrap(), concept: Some(rent.clone()) }],
+condition: None,
+gate: None,
+carry: None,
                 note: None,
                 cadence: Cadence::every_days(7),
                 anchor_at: Some((now - Duration::days(1)).to_rfc3339()),
@@ -423,8 +434,10 @@ async fn the_concept_dag_is_respected_on_both_halves_of_the_line() {
     e.act(
         Action::CreateRecurrence {
             target: checking.clone(),
-            amount: "-1200".to_string(),
-            concept: Some(rent),
+            consequences: vec![nucleus::karma::Consequence::CaptureEntry { amount: nucleus::DecimalValue::parse_inferred("-1200").unwrap(), concept: Some(rent) }],
+condition: None,
+gate: None,
+carry: None,
             note: None,
             cadence: Cadence::every_days(7),
             anchor_at: Some((now - Duration::days(1)).to_rfc3339()),

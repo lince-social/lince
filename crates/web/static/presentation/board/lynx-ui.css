@@ -1,0 +1,345 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+:where(.lynx-ui) {
+  color: var(--primary-ink, var(--ink));
+  font: var(--text-size, 14px) / var(--line-height, 1.3) var(--font-body, var(--font-ui, sans-serif));
+}
+
+:where(.lynx-ui h1, .lynx-ui h2, .lynx-ui h3, .lynx-ui h4, .lynx-ui h5, .lynx-ui h6, .lynx-title) {
+  font-family: var(--font-title, var(--font-body, var(--font-ui, serif)));
+}
+
+:where(.lynx-ui button, .lynx-ui input, .lynx-ui textarea, .lynx-ui select) {
+  color: inherit;
+  font: inherit;
+}
+
+:where(.lynx-ui button, .lynx-ui input, .lynx-ui textarea, .lynx-ui select):focus-visible {
+  position: relative;
+  z-index: 5;
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.lynx-icon {
+  display: block;
+  width: var(--icon-size, 15px);
+  height: var(--icon-size, 15px);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lynx-shadow,
+:where(.lynx-button) {
+  box-shadow: var(--lynx-shadow-x, 2px) var(--lynx-shadow-y, 2px) var(--lynx-shadow-blur, 6px) var(--lynx-shadow-color, rgb(0 0 0 / 12%));
+}
+
+.lynx-shadow--light {
+  box-shadow:
+    var(--lynx-shadow-x, 2px) var(--lynx-shadow-y, 2px) var(--lynx-shadow-blur, 6px) var(--lynx-shadow-color, rgb(0 0 0 / 12%)),
+    var(--lynx-shadow-light-x, -1px) var(--lynx-shadow-light-y, -1px) var(--lynx-shadow-light-blur, 4px) var(--lynx-shadow-light-color, rgb(255 255 255 / 8%));
+}
+
+.lynx-button {
+  position: relative;
+  display: inline-flex;
+  min-height: var(--control-height, 25px);
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1, 2px);
+  padding: var(--control-padding-y, 3px) var(--control-padding-x, 5px);
+  border: var(--hairline, .5px) solid var(--gray, var(--border));
+  border-radius: var(--radius-control, 2px);
+  color: var(--primary-ink, var(--ink));
+  background: var(--primary-background, var(--surface));
+  cursor: pointer;
+}
+
+.lynx-button:hover,
+.lynx-button[aria-pressed="true"] {
+  color: var(--accent);
+  background: var(--secondary-background, var(--surface-hover));
+}
+
+.lynx-button--primary {
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  background: var(--accent);
+}
+
+.lynx-button--danger { color: var(--danger); }
+.lynx-button:disabled { color: var(--secondary-ink, var(--muted)); cursor: not-allowed; opacity: .65; }
+
+.lynx-icon-button {
+  width: var(--control-height, 25px);
+  min-width: var(--control-height, 25px);
+  padding: 0;
+  border-color: transparent;
+  color: var(--secondary-ink, var(--muted));
+  background: transparent;
+}
+
+.lynx-icon-button.lynx-button--primary,
+.lynx-icon-button.lynx-button--primary:hover {
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  background: var(--accent);
+}
+
+.lynx-button-group,
+.lynx-toolbar,
+.lynx-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1, 2px);
+}
+
+.lynx-button-group { gap: 0; }
+.lynx-button-group > .lynx-button { border-radius: 0; }
+.lynx-button-group > .lynx-button:first-child { border-radius: var(--radius-control, 2px) 0 0 var(--radius-control, 2px); }
+.lynx-button-group > .lynx-button:last-child { border-radius: 0 var(--radius-control, 2px) var(--radius-control, 2px) 0; }
+.lynx-button-group > .lynx-button:only-child { border-radius: var(--radius-control, 2px); }
+.lynx-button-group > .lynx-button + .lynx-button { border-left-width: 0; }
+.lynx-toolbar { justify-content: space-between; padding: var(--space-1, 2px) var(--space-2, 4px); }
+
+.lynx-field,
+.lynx-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 2px);
+}
+
+.lynx-label { color: var(--primary-ink, var(--ink)); font-weight: 600; }
+.lynx-help { color: var(--secondary-ink, var(--muted)); font-size: .92em; }
+.lynx-error { color: var(--danger); font-size: .92em; }
+.lynx-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.lynx-input,
+.lynx-textarea,
+select.lynx-select,
+.lynx-select > [data-lynx-dropdown-button] {
+  width: 100%;
+  min-height: var(--control-height, 25px);
+  padding: var(--control-padding-y, 3px) var(--control-padding-x, 5px);
+  border: var(--hairline, .5px) solid var(--control-border, var(--border));
+  border-radius: var(--radius-control, 2px);
+  color: var(--primary-ink, var(--ink));
+  background: var(--input-background, var(--primary-background, var(--surface)));
+  box-shadow: none;
+}
+
+select.lynx-select {
+  appearance: none;
+  padding-right: calc(var(--control-padding-x, 5px) + 17px);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m4 6 4 4 4-4' fill='none' stroke='%23A7B4C2' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--control-padding-x, 5px) center;
+  background-size: 14px;
+}
+
+.lynx-textarea { min-height: 48px; resize: vertical; }
+.lynx-dropdown > [data-lynx-dropdown-button] {
+  border-color: var(--control-border, var(--border));
+  background: var(--input-background, var(--primary-background, var(--surface)));
+  box-shadow: none;
+}
+.lynx-input::placeholder, .lynx-textarea::placeholder { color: var(--secondary-ink, var(--faint)); }
+.lynx-input[aria-invalid="true"], .lynx-textarea[aria-invalid="true"], select.lynx-select[aria-invalid="true"], .lynx-select[aria-invalid="true"] > [data-lynx-dropdown-button] { border-color: var(--hot-border, var(--danger)); }
+.lynx-input-wrap { position: relative; }
+.lynx-input-wrap > :where(.lynx-input, .lynx-textarea)[aria-invalid="true"] { padding-right: calc(var(--control-padding-x, 5px) + 18px); }
+.lynx-error-indicator {
+  position: absolute;
+  top: 50%;
+  right: var(--control-padding-x, 5px);
+  display: grid;
+  width: 14px;
+  height: 14px;
+  place-items: center;
+  color: var(--danger);
+  cursor: help;
+  transform: translateY(-50%);
+}
+.lynx-error-indicator .lynx-icon { width: 14px; height: 14px; }
+.lynx-error-indicator::after { border-color: var(--danger); color: var(--danger); background: var(--tooltip); }
+
+.lynx-check,
+.lynx-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2, 4px);
+}
+
+.lynx-check input,
+input.lynx-check__input {
+  width: 11px;
+  height: 11px;
+  margin: 0;
+  appearance: none;
+  border: var(--hairline, .5px) solid var(--control-border, var(--border));
+  border-radius: var(--radius-control, 2px);
+  background: var(--primary-background, var(--surface));
+}
+.lynx-check input:checked,
+input.lynx-check__input:checked { border-color: var(--accent); background: var(--accent); }
+.lynx-radio input {
+  width: 11px;
+  height: 11px;
+  margin: 0;
+  appearance: none;
+  border: var(--hairline, .5px) solid var(--gray, var(--border));
+  border-radius: 50%;
+  background: transparent;
+}
+.lynx-radio input:checked { border-color: var(--accent); background: var(--accent); }
+.lynx-radio input:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+
+.lynx-box,
+.lynx-panel {
+  border: 0;
+  background: var(--raised-background, var(--surface));
+}
+
+.lynx-box { padding: var(--space-2, 4px); }
+.lynx-panel > :where(header, footer) { padding: var(--space-1, 2px) var(--space-2, 4px); }
+.lynx-panel > :where(header, footer):first-child { border-bottom: 0; }
+.lynx-panel > footer:last-child { border-top: 0; border-bottom: 0; }
+.lynx-panel > .lynx-panel__body { padding: var(--space-2, 4px); }
+
+.lynx-grid { display: grid; gap: var(--space-2, 4px); }
+.lynx-divider { height: var(--hairline, .5px); margin: var(--space-2, 4px) 0; border: 0; background: var(--border); }
+
+.lynx-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1, 2px);
+  width: fit-content;
+  padding: 1px var(--space-1, 2px);
+  border: var(--hairline, .5px) solid currentColor;
+  font-size: .9em;
+}
+.lynx-status {
+  border: var(--hairline, .5px) solid currentColor;
+  border-radius: var(--radius-status, 2px);
+  color: var(--status-color, var(--primary-ink, var(--ink)));
+  background: transparent;
+}
+.lynx-status .lynx-icon { width: .95em; height: .95em; }
+
+.lynx-callout {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-2, 4px);
+  padding: var(--space-2, 4px);
+  border: var(--hairline, .5px) solid var(--info);
+  color: var(--primary-ink, var(--ink));
+  background: var(--secondary-background, var(--surface-hover));
+}
+
+.lynx-empty { padding: var(--space-3, 6px); color: var(--secondary-ink, var(--muted)); text-align: center; }
+
+.lynx-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.lynx-table :where(th, td) { padding: var(--space-1, 2px) var(--space-2, 4px); border-bottom: 0; text-align: left; }
+.lynx-table thead th, .lynx-table tbody tr:not(:last-child) td { border-bottom: 0; }
+.lynx-table th { color: var(--secondary-ink, var(--muted)); font-weight: 600; }
+.lynx-list { margin: 0; padding: 0; list-style: none; }
+.lynx-list > li { padding: var(--space-2, 4px); }
+.lynx-list > li:not(:last-child) { border-bottom: 0; }
+
+.lynx-dropdown { position: relative; display: inline-block; }
+.lynx-select { position: relative; display: block; width: 100%; }
+.lynx-select > [data-lynx-dropdown-button] { justify-content: space-between; }
+.lynx-select > .lynx-menu { top: 100%; right: 0; left: 0; }
+.lynx-dropdown > [data-lynx-dropdown-button]::after,
+.lynx-disclosure > summary::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 5px;
+  height: 5px;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  transform: rotate(45deg) translateY(-1px);
+}
+.lynx-dropdown > [data-lynx-dropdown-button] > .lynx-icon { display: none; }
+.lynx-menu {
+  position: absolute;
+  z-index: 30;
+  min-width: 130px;
+  padding: var(--space-1, 2px);
+  border: var(--hairline, .5px) solid var(--border);
+  color: var(--primary-ink, var(--ink));
+  background: var(--raised-background, var(--surface));
+}
+.lynx-menu[hidden] { display: none; }
+.lynx-menu .lynx-button { width: 100%; justify-content: flex-start; border-color: transparent; }
+
+[data-lynx-tooltip]::after {
+  content: attr(data-lynx-tooltip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + var(--space-2, 4px));
+  z-index: 100;
+  display: none;
+  width: max-content;
+  max-width: 180px;
+  padding: var(--space-1, 2px) var(--space-2, 4px);
+  border: var(--hairline, .5px) solid var(--tooltip-ink);
+  color: var(--tooltip-ink);
+  background: var(--tooltip);
+  font-size: 12px;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+[data-lynx-tooltip]:hover::after, [data-lynx-tooltip]:focus-visible::after { display: block; }
+[data-lynx-tooltip-align="left"]::after { right: auto; left: 0; transform: none; }
+[data-lynx-tooltip-align="right"]::after { right: 0; left: auto; transform: none; }
+
+.lynx-dialog {
+  width: min(680px, calc(100vw - 16px));
+  max-height: calc(100vh - 16px);
+  padding: 0;
+  overflow: auto;
+  border: var(--hairline, .5px) solid var(--modal-border, var(--border));
+  border-radius: var(--radius-panel, 0);
+  color: var(--primary-ink, var(--ink));
+  background: var(--raised-background, var(--surface));
+}
+.lynx-dialog::backdrop { background: var(--scrim); }
+.lynx-dialog__head { position: sticky; top: 0; z-index: 2; background: inherit; border-bottom: var(--hairline, .5px) solid var(--border); }
+
+.lynx-tabs { display: flex; border-bottom: var(--hairline, .5px) solid var(--border); }
+.lynx-tab { border: 0; border-right: var(--hairline, .5px) solid var(--border); background: transparent; }
+.lynx-tab[aria-selected="true"] { color: var(--accent); background: var(--secondary-background, var(--surface-hover)); }
+.lynx-tab-panel { padding: var(--space-3, 6px); }
+.lynx-tab-panel[hidden] { display: none; }
+
+.lynx-disclosure > summary { display: flex; align-items: center; gap: var(--space-2, 4px); padding: var(--space-2, 4px); list-style: none; cursor: pointer; }
+.lynx-disclosure > summary::-webkit-details-marker { display: none; }
+.lynx-disclosure > :not(summary) { margin: 0; padding: 0 var(--space-2, 4px) var(--space-2, 4px); }
+
+:root[data-lynx-inspect="true"] [data-lynx-component] {
+  outline: 1px dashed var(--accent) !important;
+  outline-offset: -1px;
+}
+
+.lynx-inspector-tooltip {
+  position: fixed;
+  z-index: 1000;
+  padding: var(--space-1, 2px) var(--space-2, 4px);
+  border: var(--hairline, .5px) solid var(--tooltip-ink);
+  color: var(--tooltip-ink);
+  background: var(--tooltip);
+  font: 12px/1.25 var(--font-body, var(--font-ui, sans-serif));
+  pointer-events: none;
+}

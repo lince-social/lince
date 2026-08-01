@@ -193,12 +193,17 @@ mod tests {
         assert!(assets.contains(&"app/inspection/proof-drawer.js"));
         assert!(assets.contains(&"app/inspection/shared.js"));
         assert!(assets.contains(&"app/inspection/timeline.js"));
+        // The builder normalises permission order, so compare as a set. Written
+        // as a literal list, this asserted the order the sand happened to
+        // declare them in, which is not a property the sand controls.
+        let mut permissions = package.manifest.permissions.clone();
+        permissions.sort();
         assert_eq!(
-            package.manifest.permissions,
+            permissions,
             vec![
+                "act".to_string(),
                 "bridge_state".to_string(),
                 "protein_subscribe".to_string(),
-                "act".to_string(),
             ]
         );
     }

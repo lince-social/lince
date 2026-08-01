@@ -6,7 +6,23 @@ use engine::senses::{MatchRule, RemoteOpen};
 use nucleus::RecordKind;
 
 async fn engine() -> Engine {
-    Engine::open_memory().await.unwrap()
+    let engine = Engine::open_memory().await.unwrap();
+    // Publishing an open promise is an offer somebody makes, so it needs a
+    // Person to make it. Without one the action is refused — correctly — and
+    // every test here fails on the setup rather than on what it means to test.
+    store::records::create(
+        &engine.store.pool,
+        store::records::NewRecord {
+            slug: Some("me"),
+            kind: RecordKind::Person,
+            head: "me",
+            body: "",
+            quantity: store::exact::one(),
+        },
+    )
+    .await
+    .expect("a local Person");
+    engine
 }
 
 async fn concept(e: &Engine, name: &str, parents: Vec<String>) -> String {
@@ -55,7 +71,7 @@ async fn open_need(e: &Engine, slug: &str, concept_name: &str, delta: f64) -> St
             record: rec,
             delta,
             window_end: Some("2026-07-10T00:00:00Z".into()),
-            party: None,
+            party: Some("me".to_string()),
             open: true,
         },
         None,

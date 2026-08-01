@@ -14,7 +14,6 @@ pub mod action_intent;
 pub mod error;
 pub mod expr;
 pub mod fact;
-pub mod frequency;
 pub mod graph;
 pub mod id;
 pub mod imagination;
@@ -22,18 +21,16 @@ pub mod karma;
 pub mod place;
 pub mod promise;
 pub mod record;
-pub mod rule;
 pub mod transfer;
 pub mod transfer_delivery;
 
 pub use error::NucleusError;
 pub use expr::{Expr, MapResolver, Resolver, TokenKey, Value};
 pub use fact::{Cause, CauseKind, Fact, NewFact};
-pub use frequency::{FrequencySpec, parse_duration};
 pub use id::{new_uid, ulid_from, valid_slug};
 // The Ledger's exact quantity type is the kernel's exact quantity type — one
 // representation from Karma evaluation through to the Fact chain (E0.0).
+pub use expr::parse_duration;
 pub use karma::DecimalValue;
 pub use promise::PromiseState;
 pub use record::RecordKind;
-pub use rule::{Carry, ConsequenceKind, ConsequenceSpec, Firing, Gate, RuleDef};

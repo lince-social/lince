@@ -3,7 +3,10 @@
 
 use chrono::{DateTime, Utc};
 use engine::Engine;
-use nucleus::{ConsequenceKind, PromiseState, RecordKind};
+use nucleus::{PromiseState, RecordKind};
+use nucleus::karma::{Cadence, Consequence};
+
+mod support;
 use store::misc::NewPromise;
 use store::records::NewRecord;
 
@@ -11,20 +14,30 @@ async fn engine() -> Engine {
     Engine::open_memory().await.expect("engine opens")
 }
 
+/// A Record seeded through the Ledger, not around it.
+///
+/// Writing a starting level straight into the cache used to be harmless
+/// because rules read the cache. They read the Fact chain now — the Ledger is
+/// the truth and the cache is derived from it — so a fixture that skipped the
+/// chain would set up a world the rule cannot see.
 async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
-    store::records::create(
+    let uid = store::records::create(
         &e.store.pool,
         NewRecord {
             slug: Some(slug),
             kind: RecordKind::Plain,
             head: slug,
             body: "",
-            quantity: store::exact::from_f64(quantity),
+            quantity: store::exact::zero(),
         },
     )
     .await
     .expect("record")
-    .uid
+    .uid;
+    if quantity != 0.0 {
+        e.append_user(&uid, quantity).await.expect("a starting level");
+    }
+    uid
 }
 
 fn at(s: &str) -> DateTime<Utc> {
@@ -120,37 +133,49 @@ async fn notify_budget_parks_overflow_in_the_digest() {
     store::config::set_attention_budget(&e.store.pool, 1)
         .await
         .unwrap();
-    store::rules::create(
-        &e.store.pool,
-        store::rules::NewRule {
-            slug: "rules.pinger",
-            head: "Pinger",
-            condition: "@x",
-            gate: "!=0",
-            carry: "one",
-            consequences: vec![(
-                ConsequenceKind::Notify,
-                None,
-                Some(serde_json::json!({ "message": "ping" })),
-            )],
-        },
+    support::declare_rule(
+        &e,
+        &x,
+        Cadence::every_days(1),
+        "2026-01-01T00:00:00Z",
+        Some("@x"),
+        Some("!=0"),
+        Some("one"),
+        vec![Consequence::Notify {
+            message: Some("ping".into()),
+        }],
     )
-    .await
-    .unwrap();
-    e.reload_rules().await.unwrap();
+    .await;
 
-    e.append_user(&x, 1.0).await.unwrap();
-    let first = e.run_due_effects().await.unwrap();
-    assert_eq!(first.len(), 1);
-    assert!(!first[0].result.starts_with("parked"), "within budget");
+    // A second rule watching the same Record. Two rules rather than one rule
+    // fired twice, because a rule may now act only once per period — which is
+    // the debounce, and is not what this test is about.
+    support::declare_rule(
+        &e,
+        &x,
+        Cadence::every_days(1),
+        "2026-01-01T00:00:00Z",
+        Some("@x"),
+        Some("!=0"),
+        Some("one"),
+        vec![Consequence::Notify {
+            message: Some("pong".into()),
+        }],
+    )
+    .await;
 
+    // One change, two rules, two notifications — and a budget of one.
     e.append_user(&x, 1.0).await.unwrap();
-    let second = e.run_due_effects().await.unwrap();
-    assert_eq!(second.len(), 1);
+    let delivered = e.run_due_effects().await.unwrap();
+    assert_eq!(delivered.len(), 2, "both rules queued a notification");
     assert!(
-        second[0].result.starts_with("parked:digest"),
-        "over budget: parked, not delivered ({})",
-        second[0].result
+        !delivered[0].result.starts_with("parked"),
+        "the first is within budget"
+    );
+    assert!(
+        delivered[1].result.starts_with("parked:digest"),
+        "the second is over budget: parked, not delivered ({})",
+        delivered[1].result
     );
 }
 

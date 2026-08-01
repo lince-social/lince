@@ -1587,7 +1587,7 @@ async fn derive_record_availability(
 /// Resolve a projection instant: `"+7d"` relative to now, or absolute RFC3339.
 fn resolve_at(value: &str) -> Option<String> {
     if let Some(rest) = value.strip_prefix('+') {
-        let secs = nucleus::frequency::parse_duration(rest)?;
+        let secs = nucleus::parse_duration(rest)?;
         return Some((chrono::Utc::now() + chrono::TimeDelta::seconds(secs)).to_rfc3339());
     }
     chrono::DateTime::parse_from_rfc3339(value)
@@ -2091,7 +2091,7 @@ async fn execute_decisions(store: &Store, protein: &Protein) -> Result<Vec<Value
 /// Resolve an `at_since` value: a trailing duration (`"30d"`) against now, or
 /// an absolute RFC3339 instant passed through.
 fn resolve_since(value: &str) -> Option<String> {
-    if let Some(secs) = nucleus::frequency::parse_duration(value) {
+    if let Some(secs) = nucleus::parse_duration(value) {
         return Some((chrono::Utc::now() - chrono::TimeDelta::seconds(secs)).to_rfc3339());
     }
     chrono::DateTime::parse_from_rfc3339(value)
@@ -2497,12 +2497,22 @@ async fn execute_recurrence(
             "kind": "recurrence",
             "uid": rule.uid,
             "record": rule.record_uid,
-            "amount": rule.amount.to_string(),
+            // What the rule does, in full. `amount` and `concept` remain
+            // beside it as the *summary* a list view reads, because scanning
+            // rules should not mean parsing a consequence tree — but they are
+            // derived from `consequences`, never a second place to edit.
+            "consequences": rule.consequences,
+            "amount": rule.consequences.declared_delta().map(|a| a.to_string()),
             // A rule stepping in milliseconds produces more dates than any
             // window can hold. Saying so is the difference between a list a
             // person can trust and a page that merely looks complete.
             "truncated": derived.truncated,
-            "concept": rule.concept_uid,
+            "concept": rule.consequences.capture_concept(),
+            // The *if* half, as the three fields the form asked for. Null when
+            // the rule is unconditional, which is most of them.
+            "condition": rule.condition.as_ref().map(|c| c.source.clone()),
+            "gate": rule.condition.as_ref().map(|c| c.gate.as_text()),
+            "carry": rule.condition.as_ref().map(|c| c.carry.as_text()),
             "note": rule.note,
             "cadence": rule.cadence,
             "anchor_at": rule.anchor_at,
@@ -2519,9 +2529,12 @@ async fn execute_recurrence(
                 "record": rule.record_uid,
                 "due_at": occurrence.due_at.to_rfc3339(),
                 "state": occurrence.state.as_str(),
-                "amount": occurrence.amount.to_string(),
+                // Absent for a rule that only changes concepts: nothing about a
+                // quantity is expected to move, and a zero there would read as
+                // an expectation of no change rather than of no amount.
+                "amount": occurrence.amount.map(|a| a.to_string()),
                 "entry": occurrence.entry_uid,
-                "concept": rule.concept_uid,
+                "concept": rule.consequences.capture_concept(),
                 "note": rule.note,
             }));
         }
@@ -2679,8 +2692,8 @@ async fn execute_timeline(
 
     for rule in store::recurrence::all(&store.pool).await? {
         if !rule
-            .concept_uid
-            .as_deref()
+            .consequences
+            .capture_concept()
             .is_some_and(|c| family.contains(c))
         {
             continue;
@@ -2709,18 +2722,24 @@ async fn execute_timeline(
             ) {
                 continue;
             }
+            // A rule that only changes concepts expects no quantity to move, so
+            // it contributes no point. Folding a zero here would draw a
+            // deliberate "no change" onto the line, which is a different claim.
+            let Some(amount) = occurrence.amount else {
+                continue;
+            };
             let bucket = timeline_bucket(occurrence.due_at, by);
             expected
                 .entry((bucket.clone(), unit.clone()))
                 .or_default()
-                .add(occurrence.amount)?;
+                .add(amount)?;
             contributors.push(json!({
                 "kind": "timeline_source",
                 "bucket": bucket,
                 "origin": "recurrence",
                 "uid": rule.uid,
                 "record": rule.record_uid,
-                "amount": occurrence.amount.to_string(),
+                "amount": amount.to_string(),
                 "at": occurrence.due_at.to_rfc3339(),
                 "state": occurrence.state.as_str(),
                 "note": rule.note,
@@ -3231,7 +3250,10 @@ fn evaluate_occurrence_application_formula(
 
     fn validate(expr: &Expr) -> Result<(), nucleus::NucleusError> {
         match expr {
-            Expr::Num(value) if value.is_finite() => Ok(()),
+            // The literal is kept as its source text so an exact evaluator can
+            // read it without going through a double. A lexed number is always
+            // finite, so parsing back is the whole check.
+            Expr::Num(text) if text.parse::<f64>().is_ok_and(f64::is_finite) => Ok(()),
             Expr::Fn(name, args) if name == "incoming" && args.is_empty() => Ok(()),
             Expr::Unary(UnOp::Neg, value) => validate(value),
             Expr::Bin(

@@ -3,7 +3,10 @@
 
 use chrono::{DateTime, Utc};
 use engine::Engine;
-use nucleus::{CauseKind, ConsequenceKind, RecordKind};
+use nucleus::{CauseKind, RecordKind};
+use nucleus::karma::{Cadence, Consequence};
+
+mod support;
 use store::records::NewRecord;
 
 async fn engine() -> Engine {
@@ -121,30 +124,26 @@ async fn signals_sample_the_world_and_cascade() {
     )
     .await
     .unwrap();
-    store::rules::create(
-        &e.store.pool,
-        store::rules::NewRule {
-            slug: "rules.many-books",
-            head: "Many books",
-            condition: "signal(@signals.books-count) > 40",
-            gate: "!=0",
-            carry: "one",
-            consequences: vec![(
-                ConsequenceKind::SetQuantity,
-                Some("@alerts.many-books".into()),
-                None,
-            )],
-        },
+    support::declare_rule(
+        &e,
+        "@alerts.many-books",
+        Cadence::every_days(1),
+        "2026-01-01T00:00:00Z",
+        Some("signal(@signals.books-count) > 40"),
+        Some("!=0"),
+        Some("one"),
+        vec![Consequence::SetQuantity {
+            value: Some(nucleus::DecimalValue::parse_inferred("1").unwrap()),
+        }],
     )
-    .await
-    .unwrap();
-    e.reload_rules().await.unwrap();
+    .await;
 
     let now = at("2026-07-05T10:00:00Z");
     let facts = e.sample_due_signals(now).await.unwrap();
-    // the sample fact (cause=signal) plus the rule firing (cause=rule)
+    // The sample lands as a Signal fact, and the rule reading it reacts on the
+    // same pass. The rule's own change is an ordinary entry — what records
+    // that a rule made it is the occurrence it spent, not a second cause kind.
     assert!(facts.iter().any(|f| f.cause.kind == CauseKind::Signal));
-    assert!(facts.iter().any(|f| f.cause.kind == CauseKind::Rule));
     assert_eq!(
         store::records::quantity(&e.store.pool, &alert)
             .await

@@ -9,7 +9,10 @@
 
 use chrono::{DateTime, Utc};
 use engine::Engine;
-use nucleus::{Cause, ConsequenceKind, NewFact, RecordKind};
+use nucleus::{Cause, NewFact, RecordKind};
+use nucleus::karma::{Cadence, Consequence};
+
+mod support;
 use store::records::NewRecord;
 use store::sqlx::Row;
 
@@ -33,59 +36,42 @@ async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
     .uid
 }
 
-/// The scripted week: a daily habit (Frequency + rule), a stock with a
-/// threshold rule (cascade), and user edits — all on the virtual clock.
+/// The scripted week: a daily habit, a stock with a threshold rule, and user
+/// edits — all on the virtual clock. Both are the same kind of object; one
+/// acts because a date arrived, the other because a level moved.
 async fn run_script(e: &Engine) {
     plain(e, "apples.stock", 8.0).await;
     plain(e, "exercise", 0.0).await;
     plain(e, "alerts.low-apples", 0.0).await;
 
-    store::freqs::create(
-        &e.store.pool,
-        store::freqs::NewFrequency {
-            slug: "freq.daily-7am",
-            head: "Daily 7am",
-            seconds: 0,
-            days: 1,
-            months: 0,
-            day_of_week: None,
-            next_at: at("2026-07-05T07:00:00Z"),
-            catch_up: false,
-        },
+    // The habit: every day at 07:00, this is a Need again.
+    support::declare_rule(
+        e,
+        "@exercise",
+        Cadence::every_days(1),
+        "2026-07-05T07:00:00Z",
+        None,
+        None,
+        None,
+        vec![Consequence::SetQuantity {
+            value: Some(nucleus::DecimalValue::parse_inferred("-1").unwrap()),
+        }],
     )
-    .await
-    .unwrap();
-    store::rules::create(
-        &e.store.pool,
-        store::rules::NewRule {
-            slug: "rules.daily-exercise",
-            head: "Daily exercise",
-            condition: "-1 * freq(@freq.daily-7am)",
-            gate: "!=0",
-            carry: "value",
-            consequences: vec![(ConsequenceKind::SetQuantity, Some("@exercise".into()), None)],
-        },
+    .await;
+    // The alert: looked at daily, but it is the level dropping that fires it.
+    support::declare_rule(
+        e,
+        "@alerts.low-apples",
+        Cadence::every_days(1),
+        "2026-07-05T07:00:00Z",
+        Some("@apples.stock"),
+        Some("<3"),
+        Some("one"),
+        vec![Consequence::SetQuantity {
+            value: Some(nucleus::DecimalValue::parse_inferred("1").unwrap()),
+        }],
     )
-    .await
-    .unwrap();
-    store::rules::create(
-        &e.store.pool,
-        store::rules::NewRule {
-            slug: "rules.low-apples",
-            head: "Low apples",
-            condition: "@apples.stock",
-            gate: "<3",
-            carry: "one",
-            consequences: vec![(
-                ConsequenceKind::SetQuantity,
-                Some("@alerts.low-apples".into()),
-                None,
-            )],
-        },
-    )
-    .await
-    .unwrap();
-    e.reload_rules().await.unwrap();
+    .await;
 
     e.heartbeat(at("2026-07-05T10:00:00Z")).await.unwrap(); // daily fires
     user_delta(e, "apples.stock", -3.0, at("2026-07-05T12:00:00Z")).await; // 8 -> 5

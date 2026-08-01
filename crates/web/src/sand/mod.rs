@@ -8,6 +8,7 @@ mod freedoom;
 #[path = "kanban/mod.rs"]
 mod kanban;
 mod lince_logo_led;
+pub mod lynx_ui;
 mod organ;
 #[allow(dead_code)]
 mod organ_management;
@@ -97,23 +98,7 @@ impl OfficialWidgetBuilder {
 // Only current frame.js sands are wired for construction, plus `shell` (the
 // board's own chrome). Legacy sources may remain under `sand/`, but stay
 // unwired until rebuilt on the current bridge and explicitly added here.
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 23] = [
-    OfficialWidgetBuilder::Html {
-        feature_flag: shell::FEATURE_FLAG,
-        source_builder: shell::logo_source,
-    },
-    OfficialWidgetBuilder::Html {
-        feature_flag: shell::FEATURE_FLAG,
-        source_builder: shell::operation_source,
-    },
-    OfficialWidgetBuilder::Html {
-        feature_flag: shell::FEATURE_FLAG,
-        source_builder: shell::workspaces_source,
-    },
-    OfficialWidgetBuilder::Html {
-        feature_flag: shell::FEATURE_FLAG,
-        source_builder: shell::notifications_source,
-    },
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 19] = [
     OfficialWidgetBuilder::Html {
         feature_flag: shell::FEATURE_FLAG,
         source_builder: shell::edit_source,

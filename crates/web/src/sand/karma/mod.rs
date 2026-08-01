@@ -18,11 +18,25 @@
 //! balance, any projection. Every number on screen arrives already computed from
 //! Protein, because the moment JavaScript adds two amounts, exactness is gone.
 //!
-//! The honest limit today: a declared rule does not fire itself. Authorized
-//! intents are durable but inert until the effect worker exists, so applying an
-//! occurrence is a human pressing apply. The surface is built so that when the
-//! worker lands, nothing here has to change shape — only the consequence a rule
-//! is allowed to carry.
+//! A declared rule fires itself. The heartbeat applies every date that falls
+//! due, through the same Action the apply button sends — so the inbox is where
+//! a person *can* answer a date early or differently, not where they must go for
+//! anything to happen at all. Declaring the rule is the authorization.
+//!
+//! A rule can also carry consequences that reach outward — propose a promise,
+//! ask a question, notify, run a command, a saved query or a typed Action.
+//! None of those *run* when the rule fires: each is committed as an obligation,
+//! a question, or a queued effect, and a separate worker carries it out and can
+//! still refuse. A rule therefore never acquires a private path to the outside
+//! world, and there is somewhere left to check a grant.
+//!
+//! The honest limits today: delivery resolution is the heartbeat period, so a
+//! cadence written in milliseconds is declared exactly and delivered on the
+//! tick. Transfer automation is deliberately absent rather than merely
+//! unfinished — a rule cannot advance an agreement, because Transfer/Karma is
+//! parked and shipping it quietly would be shipping parked behaviour. And this
+//! form authors the *when*, the *if* and the Record-shaped *then*; the outward
+//! consequences are storable and firable but not yet drawable here.
 
 mod body;
 
@@ -173,6 +187,91 @@ mod tests {
     }
 
     #[test]
+    fn a_rule_can_be_changed_after_it_is_declared() {
+        // Create, read and delete were reachable while revise was an Action the
+        // sand never called — so the only way to fix a wrong figure was to
+        // delete the rule and lose its identity. The form does both jobs.
+        let html = package().html_document();
+        assert!(html.contains("recurrence-submit"), "the submit label switches");
+        assert!(
+            super::APP_RECURRENCE_JS.contains("revise-recurrence"),
+            "revising must be reachable"
+        );
+        assert!(
+            super::APP_RECURRENCE_JS.contains("expected_revision"),
+            "a revise quotes the revision back, or a stale form wins by being slow"
+        );
+    }
+
+    #[test]
+    fn a_declined_date_is_visible_and_can_be_taken_back() {
+        // Skipping is the main way to opt out now that the heartbeat applies
+        // due dates on its own. A list that hides skips undoes the reason
+        // skipping exists — that "decided against" and "nobody has looked yet"
+        // must not read the same — and leaves the decision unreachable.
+        assert!(
+            super::APP_RECURRENCE_JS.contains("unskip-recurrence-occurrence"),
+            "a skip must be reversible from the surface that made it"
+        );
+        assert!(
+            super::APP_RECURRENCE_JS.contains(r#"o.state === "skipped""#),
+            "declined dates must be listed, not filtered away"
+        );
+    }
+
+    #[test]
+    fn a_schedule_is_offered_as_a_term_in_the_arithmetic() {
+        // The unification, where a person can see it. If the form never names
+        // `freq(...)`, then a rule referencing another rule's rhythm exists
+        // only in tests, and "check daily, act monthly" stays unsayable.
+        let html = package().html_document();
+        assert!(html.contains("freq(@rule)"), "a rhythm must be a readable term");
+        assert!(html.contains("value(@rule)"), "so must another rule's number");
+        assert!(
+            html.contains("sum_pos"),
+            "and the two flow directions, which a net cannot answer"
+        );
+    }
+
+    #[test]
+    fn a_rule_can_be_told_to_look_before_it_acts() {
+        // "When, if, then." Without the *if*, a rule can only ever mean "every
+        // Tuesday, unconditionally" — and the useful ones are conditional:
+        // every day, but only when stock is low.
+        let html = package().html_document();
+        assert!(html.contains("rule-condition"), "the reading to test");
+        assert!(html.contains("rule-gate"), "whether it means fire");
+        // Gate and carry are separate controls because what to test and what
+        // to write are two decisions.
+        assert!(html.contains("rule-carry"), "what the consequence receives");
+        assert!(
+            super::APP_RECURRENCE_JS.contains("const:"),
+            "a fixed carry must be expressible"
+        );
+    }
+
+    #[test]
+    fn every_consequence_a_rule_can_carry_is_authorable() {
+        // The backend has stored a list of typed consequences for a while, but
+        // a form that only writes `capture-entry` means the rest exist solely
+        // in tests. Each kind needs a control, or the feature is unreachable.
+        let html = package().html_document();
+        for kind in ["capture-entry", "add-quantity", "set-quantity"] {
+            assert!(html.contains(kind), "the {kind} consequence needs a control");
+        }
+        assert!(html.contains("rule-concept-action"), "concept consequences");
+        for action in [r#"value="add""#, r#"value="remove""#, r#"value="move""#] {
+            assert!(html.contains(action), "concept action {action}");
+        }
+        // A rule that does nothing to the number is how a pure reclassification
+        // is said. Without it, moving a card would have to invent an amount.
+        assert!(
+            html.contains(r#"value="none""#),
+            "a rule must be able to leave the number alone"
+        );
+    }
+
+    #[test]
     fn the_weekday_landing_and_short_month_choice_are_offered() {
         // The two adjustments that turn a step into a rule a person actually
         // means: "then move to a Friday", and what a 31st means in February.
@@ -222,6 +321,17 @@ mod tests {
         // list that stops without saying so reads as an obligation fully met.
         let html = package().html_document();
         assert!(html.contains("occurrence-more"), "room to report a prefix");
+        // The quietest way to be a prefix: the inbox only asked back so far.
+        // The sand names its own lookback so it can say where the list stops
+        // instead of inheriting a default it cannot describe.
+        assert!(
+            super::APP_STATE_JS.contains("at_since"),
+            "the inbox must choose the window it can explain"
+        );
+        assert!(
+            super::APP_RECURRENCE_JS.contains("are not listed"),
+            "and say where that window stops"
+        );
     }
 
     #[test]

@@ -131,13 +131,24 @@ pub enum Action {
     /// often, and what it counts as; the dates it implies are derived on read,
     /// and each becomes real only when applied.
     CreateRecurrence {
-        /// The resource Record whose level is expected to move.
+        /// The Record this rule is about.
         target: String,
-        /// Exact decimal text, sign carrying direction — same as
-        /// [`Action::CaptureEntry`], so a recurring income and a recurring cost
-        /// are one shape.
-        amount: String,
-        concept: Option<String>,
+        /// What the rule does when one of its dates is applied. Ordered and
+        /// non-empty; every item reduces to a typed Action a person could have
+        /// performed by hand, so a rule gets no private write path.
+        consequences: Vec<nucleus::karma::Consequence>,
+        /// The *if* half of "when, if, then". Absent means unconditional: the
+        /// date arriving is the whole reason to act.
+        ///
+        /// `condition` is an expression over Record readings, `gate` decides
+        /// whether the number it computes means "fire", and `carry` decides
+        /// what number the consequences receive.
+        #[serde(default)]
+        condition: Option<String>,
+        #[serde(default)]
+        gate: Option<String>,
+        #[serde(default)]
+        carry: Option<String>,
         #[serde(default)]
         note: Option<String>,
         cadence: nucleus::karma::Cadence,
@@ -156,8 +167,19 @@ pub enum Action {
         recurrence: String,
         expected_revision: i64,
         request_id: String,
-        amount: String,
-        concept: Option<String>,
+        consequences: Vec<nucleus::karma::Consequence>,
+        /// The *if* half of "when, if, then". Absent means unconditional: the
+        /// date arriving is the whole reason to act.
+        ///
+        /// `condition` is an expression over Record readings, `gate` decides
+        /// whether the number it computes means "fire", and `carry` decides
+        /// what number the consequences receive.
+        #[serde(default)]
+        condition: Option<String>,
+        #[serde(default)]
+        gate: Option<String>,
+        #[serde(default)]
+        carry: Option<String>,
         #[serde(default)]
         note: Option<String>,
         cadence: nucleus::karma::Cadence,
@@ -172,6 +194,13 @@ pub enum Action {
         request_id: String,
         paused: bool,
     },
+    /// Remove a rule for good, with its revision log and its skips.
+    ///
+    /// Distinct from pausing, which stops the future while keeping the rule on
+    /// the list. Dates this rule already applied are ordinary entries and stay:
+    /// the rule proposed them, it never owned them. What a delete removes is the
+    /// rule's future, which is all a rule ever holds.
+    DeleteRecurrence { recurrence: String },
     /// Turn one expected date into a real change.
     ///
     /// This is an ordinary capture whose idempotency key names the rule and the
@@ -808,56 +837,12 @@ pub enum Action {
         frequency_uid: String,
         expected_handle_revision: u64,
     },
-    /// Karma CRUD (blueprint VII.2): rules are records; the registry reloads
-    /// and Proof warnings come back on the outcome.
-    CreateRule {
-        slug: String,
-        head: String,
-        condition: String,
-        #[serde(default = "default_gate")]
-        gate: String,
-        #[serde(default = "default_carry")]
-        carry: String,
-        #[serde(default)]
-        debounce: Option<String>,
-        #[serde(default)]
-        consequences: Vec<ConsequenceInput>,
-    },
-    UpdateRule {
-        rule: String,
-        #[serde(default)]
-        condition: Option<String>,
-        #[serde(default)]
-        gate: Option<String>,
-        #[serde(default)]
-        carry: Option<String>,
-        /// `Some(None)` clears the debounce; absent leaves it untouched.
-        #[serde(default, with = "double_option")]
-        debounce: Option<Option<String>>,
-        #[serde(default)]
-        consequences: Option<Vec<ConsequenceInput>>,
-    },
     CreateSignal {
         slug: String,
         head: String,
         source_kind: String,
         source: String,
         schedule: String,
-    },
-    CreateFrequency {
-        slug: String,
-        head: String,
-        #[serde(default)]
-        seconds: i64,
-        #[serde(default)]
-        days: i64,
-        #[serde(default)]
-        months: i64,
-        #[serde(default)]
-        day_of_week: Option<u8>,
-        next_at: String,
-        #[serde(default)]
-        catch_up: bool,
     },
     /// Senses match rule (blueprint X.1): a record; `activate`/`deactivate`
     /// work on it like on any rule.
@@ -1108,16 +1093,6 @@ pub struct TransferPlaceInput {
     pub address: Option<String>,
 }
 
-/// One consequence in the rule-CRUD wire form.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ConsequenceInput {
-    pub kind: String,
-    #[serde(default)]
-    pub target: Option<String>,
-    #[serde(default)]
-    pub params: Option<serde_json::Value>,
-}
-
 /// One adoptable concept in a package (blueprint III.2).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConceptSeed {
@@ -1129,10 +1104,6 @@ pub struct ConceptSeed {
     pub parents: Vec<String>,
 }
 
-fn default_gate() -> String {
-    "!=0".into()
-}
-
 fn default_proximity() -> u32 {
     1
 }
@@ -1141,30 +1112,6 @@ fn default_auto() -> String {
     "draft_only".into()
 }
 
-fn default_carry() -> String {
-    "value".into()
-}
-
-/// `Option<Option<T>>` through JSON: absent = untouched, `null` = clear.
-mod double_option {
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
-    pub fn serialize<S: Serializer, T: Serialize>(
-        value: &Option<Option<T>>,
-        serializer: S,
-    ) -> Result<S::Ok, S::Error> {
-        match value {
-            Some(inner) => inner.serialize(serializer),
-            None => serializer.serialize_none(),
-        }
-    }
-
-    pub fn deserialize<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
-        deserializer: D,
-    ) -> Result<Option<Option<T>>, D::Error> {
-        Ok(Some(Option::<T>::deserialize(deserializer)?))
-    }
-}
 
 fn default_agreement() -> String {
     "individual".into()
@@ -1216,7 +1163,7 @@ fn validate_transfer_application_formula(formula: &str) -> Result<String, Engine
     fn validate_node(expr: &nucleus::expr::Expr) -> Result<(), EngineError> {
         use nucleus::expr::{BinOp, Expr, UnOp};
         match expr {
-            Expr::Num(value) if value.is_finite() => Ok(()),
+            Expr::Num(text) if text.parse::<f64>().is_ok_and(f64::is_finite) => Ok(()),
             Expr::Fn(name, args) if name == "incoming" && args.is_empty() => Ok(()),
             Expr::Unary(UnOp::Neg, value) => validate_node(value),
             Expr::Bin(
@@ -1378,20 +1325,90 @@ fn normalize_transfer_invitation_expiry(
 
 /// Exact from the keystroke: typed text becomes a decimal without ever being a
 /// float, so `-10.50` survives as `-10.50`.
-fn parse_exact_amount(amount: &str) -> Result<nucleus::DecimalValue, EngineError> {
-    nucleus::DecimalValue::parse_inferred(amount.trim()).map_err(|_| EngineError::Conflict {
-        code: "entry_amount_invalid",
-        message: format!("`{amount}` is not an exact decimal amount"),
-    })
-}
 
-fn parse_instant_field(text: &str) -> Result<DateTime<Utc>, EngineError> {
+pub(crate) fn parse_instant_field(text: &str) -> Result<DateTime<Utc>, EngineError> {
     chrono::DateTime::parse_from_rfc3339(text)
         .map(|value| value.with_timezone(&Utc))
         .map_err(|_| EngineError::Conflict {
             code: "entry_at_invalid",
             message: format!("`{text}` is not an RFC3339 instant"),
         })
+}
+
+/// Every reading a rule's condition took, gathered before evaluation.
+///
+/// Gathered rather than looked up lazily because the kernel's evaluator is
+/// synchronous and the database is not. Reading first also means the whole
+/// condition sees one consistent moment, instead of each term seeing whatever
+/// the world looked like when its own query happened to land.
+struct GatheredReadings {
+    values: std::collections::HashMap<String, nucleus::DecimalValue>,
+}
+
+impl nucleus::karma::ExactResolver for GatheredReadings {
+    fn lookup(
+        &mut self,
+        func: &str,
+        slug: &str,
+        window_secs: Option<i64>,
+    ) -> Result<nucleus::DecimalValue, nucleus::karma::ConditionError> {
+        self.values
+            .get(&reading_key(func, slug, window_secs))
+            .copied()
+            .ok_or_else(|| nucleus::karma::ConditionError::UnknownReference(slug.to_string()))
+    }
+}
+
+/// How deep one rule may read another rule's arithmetic before the chain is
+/// called a circle. Four is far past any honest spreadsheet.
+const VALUE_DEPTH_CAP: usize = 4;
+
+fn reading_key(func: &str, slug: &str, window_secs: Option<i64>) -> String {
+    match window_secs {
+        Some(secs) => format!("{func}:{slug}:{secs}"),
+        None => format!("{func}:{slug}"),
+    }
+}
+
+/// Turn the three optional condition fields into a stored condition.
+///
+/// Refused here rather than at fire time, for the same reason a cadence is: a
+/// rule whose condition cannot be read is not a rule that fires cautiously, it
+/// is a rule nobody can predict. Finding that out on a Tuesday at 3am, inside a
+/// heartbeat with no one watching, is the worst place to learn it.
+///
+/// Gate and carry default to the pair that reproduces the oldest behaviour:
+/// fire on any non-zero number, and hand that number over unchanged.
+fn parse_rule_condition(
+    condition: Option<String>,
+    gate: Option<String>,
+    carry: Option<String>,
+) -> Result<Option<store::recurrence::RuleCondition>, EngineError> {
+    let Some(source) = condition
+        .map(|c| c.trim().to_string())
+        .filter(|c| !c.is_empty())
+    else {
+        // A gate without a condition has nothing to gate. Silently dropping it
+        // would make the rule fire always, which is the opposite of what
+        // someone writing a gate wants.
+        if gate.is_some() || carry.is_some() {
+            return Err(EngineError::Consequence(
+                "a gate or carry needs a condition to act on".into(),
+            ));
+        }
+        return Ok(None);
+    };
+    nucleus::karma::Condition::parse(&source)
+        .map_err(|e| EngineError::Consequence(format!("that condition cannot be read: {e}")))?;
+    let gate = nucleus::karma::Gate::parse(gate.as_deref().unwrap_or("!=0"))
+        .map_err(|e| EngineError::Consequence(format!("that gate cannot be read: {e}")))?;
+    let carry = nucleus::karma::Carry::parse(carry.as_deref().unwrap_or("value"))
+        .map_err(|e| EngineError::Consequence(format!("that carry cannot be read: {e}")))?;
+    Ok(Some(store::recurrence::RuleCondition {
+        source,
+        gate,
+        carry,
+    }))
 }
 
 fn parse_optional_instant(text: Option<&str>) -> Result<Option<DateTime<Utc>>, EngineError> {
@@ -1633,6 +1650,37 @@ impl Engine {
         now: DateTime<Utc>,
         verified_authorship: Option<VerifiedActionAuthorship>,
     ) -> Result<ActionOutcome, EngineError> {
+        // Applying an occurrence is one firing, wherever it came from — the
+        // heartbeat, a reaction, or a person pressing apply in the inbox.
+        //
+        // While it runs, the entry that marks the date done is not committed
+        // yet. So a rule reacting to the facts this firing commits would look
+        // at its own date, find it unspent, and apply it a second time. The
+        // guard has to sit on the *apply*, not on any one caller: a manual
+        // apply reaches exactly the same code by a different road.
+        //
+        // Chains are not lost, only deferred to where they are safe: the
+        // reaction that started this follows them through its own queue, and
+        // `fire_due_rules` follows them after the fact.
+        if matches!(action, Action::ApplyRecurrenceOccurrence { .. }) && !crate::already_firing() {
+            return Box::pin(crate::as_one_firing(self.act_at_inner(
+                action,
+                actor,
+                now,
+                verified_authorship,
+            )))
+            .await;
+        }
+        Box::pin(self.act_at_inner(action, actor, now, verified_authorship)).await
+    }
+
+    async fn act_at_inner(
+        &self,
+        action: Action,
+        actor: Option<String>,
+        now: DateTime<Utc>,
+        verified_authorship: Option<VerifiedActionAuthorship>,
+    ) -> Result<ActionOutcome, EngineError> {
         for transfer_uid in self.canonical_transfer_action_targets(&action).await? {
             self.require_transfer_origin_authority(&transfer_uid)
                 .await?;
@@ -1785,8 +1833,10 @@ impl Engine {
             }
             Action::CreateRecurrence {
                 target,
-                amount,
-                concept,
+                consequences,
+                condition,
+                gate,
+                carry,
                 note,
                 cadence,
                 anchor_at,
@@ -1797,15 +1847,15 @@ impl Engine {
                     .filter(|id| !id.is_empty())
                     .unwrap_or_else(|| nucleus::new_uid("req"));
                 let uid = self.resolve(&target).await?;
-                let declared = parse_exact_amount(&amount)?;
-                let concept_uid = self.resolve_concept_opt(concept).await?;
+                let declared = self.resolve_consequences(consequences).await?;
+                let declared_condition = parse_rule_condition(condition, gate, carry)?;
                 let anchor = parse_optional_instant(anchor_at.as_deref())?.unwrap_or(now);
                 let commit = store::recurrence::create(
                     &self.store.pool,
                     store::recurrence::NewRecurrence {
                         record_uid: &uid,
-                        amount: declared,
-                        concept_uid: concept_uid.as_deref(),
+                        consequences: declared,
+                        condition: declared_condition,
                         note: note.as_deref(),
                         cadence,
                         anchor_at: anchor,
@@ -1825,8 +1875,10 @@ impl Engine {
                 recurrence,
                 expected_revision,
                 request_id,
-                amount,
-                concept,
+                consequences,
+                condition,
+                gate,
+                carry,
                 note,
                 cadence,
                 anchor_at,
@@ -1834,11 +1886,11 @@ impl Engine {
                 let current = store::recurrence::get(&self.store.pool, &recurrence)
                     .await?
                     .ok_or_else(|| EngineError::UnknownRecord(recurrence.clone()))?;
-                let declared = parse_exact_amount(&amount)?;
-                let concept_uid = self.resolve_concept_opt(concept).await?;
+                let declared = self.resolve_consequences(consequences).await?;
+                let declared_condition = parse_rule_condition(condition, gate, carry)?;
                 // Keeping the anchor by default matters: silently re-anchoring
                 // to "now" on an edit would shift every future date of a rule
-                // whose author only meant to change its amount.
+                // whose author only meant to change what it does.
                 let anchor = match parse_optional_instant(anchor_at.as_deref())? {
                     Some(value) => value,
                     None => parse_instant_field(&current.anchor_at)?,
@@ -1848,8 +1900,8 @@ impl Engine {
                     store::recurrence::ReviseRecurrence {
                         recurrence_uid: &recurrence,
                         expected_revision,
-                        amount: declared,
-                        concept_uid: concept_uid.as_deref(),
+                        consequences: declared,
+                        condition: declared_condition,
                         note: note.as_deref(),
                         cadence,
                         anchor_at: anchor,
@@ -1863,6 +1915,13 @@ impl Engine {
                     code: "recurrence_revision_stale",
                     message: error.to_string(),
                 })?;
+            }
+            Action::DeleteRecurrence { recurrence } => {
+                let uid = store::recurrence::get(&self.store.pool, &recurrence)
+                    .await?
+                    .map(|rule| rule.uid)
+                    .ok_or_else(|| EngineError::UnknownRecord(recurrence.clone()))?;
+                store::recurrence::delete(&self.store.pool, &uid).await?;
             }
             Action::SetRecurrencePaused {
                 recurrence,
@@ -1919,9 +1978,69 @@ impl Engine {
                         message: format!("`{due_at}` is not a date this rule produces"),
                     });
                 }
+                // Applying twice must do nothing the second time. The entry
+                // carrying this date's request id is the only record that it
+                // ran, and for a capture-only rule the UNIQUE index alone would
+                // have been enough. It is not enough once a rule can add a
+                // quantity or toggle a concept: those would run again before
+                // the capture was refused. So the guard moves to the front and
+                // covers every consequence.
+                if let Some(existing) =
+                    store::recurrence::applied(&self.store.pool, &rule.uid, due).await?
+                {
+                    outcome.created = Some(existing);
+                    return Ok(outcome);
+                }
+
+                // The *if* half. A date arriving is only half a reason to act:
+                // the condition is asked now, against the world as it stands,
+                // which is what lets "every day, but only when stock is low"
+                // mean what it says.
+                //
+                // A blocked gate is not an error and not a skip. The rule
+                // looked and decided not to act, so the date is simply left
+                // unapplied — it will be asked again next beat, because the
+                // answer can change without the rule changing.
+                let carried = match rule.condition.as_ref() {
+                    None => None,
+                    Some(condition) => {
+                        match self
+                            .evaluate_rule_condition(&rule, condition, due, now)
+                            .await?
+                        {
+                            None => return Ok(outcome),
+                            Some(value) => Some(value),
+                        }
+                    }
+                };
+
+                // One entry per applied date, always — it is what marks the
+                // occurrence done. A rule that captures uses its declared
+                // amount; a rule that only changes concepts writes a zero
+                // delta, which is the same annotation shape every metadata edit
+                // in Lince already uses and is what makes live subscriptions
+                // refresh.
+                let capture_concept = rule.consequences.capture_concept().map(str::to_string);
                 let declared = match amount.as_deref() {
                     Some(text) => text.trim().to_string(),
-                    None => rule.amount.to_string(),
+                    // What the condition carried, when there is one. This is
+                    // the whole point of a carry: `-1 * freq(@daily)` puts -1
+                    // into the Record, rather than the rule having to hardcode
+                    // a number it could have computed.
+                    // The number the condition carried — but only for a rule
+                    // that genuinely captures. The marker entry exists for
+                    // every applied date, so letting a carry into it
+                    // unconditionally would move an `add-quantity` rule's
+                    // figure twice: once through this entry and once through
+                    // the consequence itself. A rule that does not capture
+                    // marks its date with a zero.
+                    None => match rule.consequences.capture_amount() {
+                        None => "0".to_string(),
+                        Some(declared) => match carried {
+                            Some(value) => value.to_string(),
+                            None => declared.to_string(),
+                        },
+                    },
                 };
                 // Applying is an ordinary capture. Reusing the same path is
                 // what keeps a rule-applied change indistinguishable from a
@@ -1930,7 +2049,7 @@ impl Engine {
                 let capture = Action::CaptureEntry {
                     target: rule.record_uid.clone(),
                     amount: declared,
-                    concept: rule.concept_uid.clone(),
+                    concept: capture_concept,
                     note: note.or_else(|| rule.note.clone()),
                     at: Some(due.to_rfc3339()),
                     request_id: Some(store::recurrence::occurrence_request_id(
@@ -1948,6 +2067,71 @@ impl Engine {
                         .await?;
                 outcome.facts = applied.facts;
                 outcome.created = applied.created;
+
+                // The rest of the rule, in the order its author wrote it. The
+                // capture above already covered `CaptureEntry`.
+                for consequence in rule.consequences.iter() {
+                    let next = match consequence {
+                        nucleus::karma::Consequence::CaptureEntry { .. } => continue,
+                        // A written number wins; without one, the consequence
+                        // receives what the condition computed. A rule with
+                        // neither has no figure at all and does nothing,
+                        // rather than silently assigning zero.
+                        nucleus::karma::Consequence::SetQuantity { value } => {
+                            let Some(figure) = value.or(carried) else {
+                                continue;
+                            };
+                            Action::SetQuantity {
+                                target: rule.record_uid.clone(),
+                                value: figure.to_f64(),
+                            }
+                        }
+                        nucleus::karma::Consequence::AddQuantity { delta } => {
+                            let Some(figure) = delta.or(carried) else {
+                                continue;
+                            };
+                            Action::AddQuantity {
+                                target: rule.record_uid.clone(),
+                                delta: figure.to_f64(),
+                            }
+                        }
+                        nucleus::karma::Consequence::SetConcept { concept } => {
+                            Action::SetConcept {
+                                target: rule.record_uid.clone(),
+                                concept: Some(concept.clone()),
+                            }
+                        }
+                        nucleus::karma::Consequence::AddConcept { concept } => {
+                            Action::ClassifyRecord {
+                                target: rule.record_uid.clone(),
+                                concept: concept.clone(),
+                            }
+                        }
+                        nucleus::karma::Consequence::RemoveConcept { concept } => {
+                            Action::UnclassifyRecord {
+                                target: rule.record_uid.clone(),
+                                concept: concept.clone(),
+                            }
+                        }
+                        // Everything that leaves the Cell, asks a person, or
+                        // binds a second party. None of it runs here: it is
+                        // committed as an obligation, a question or a queued
+                        // effect, so the worker that carries it out can still
+                        // refuse. That separation is what keeps a rule from
+                        // acquiring a private way to reach the outside world.
+                        outward => {
+                            self.commit_outward_consequence(
+                                &rule, outward, carried.as_ref(), now,
+                            )
+                            .await?;
+                            continue;
+                        }
+                    };
+                    let ran =
+                        Box::pin(self.act_at_with_authorship(next, actor.clone(), now, None))
+                            .await?;
+                    outcome.facts.extend(ran.facts);
+                }
             }
             Action::SkipRecurrenceOccurrence {
                 recurrence,
@@ -6030,60 +6214,6 @@ impl Engine {
                     }
                 }
             }
-            Action::CreateRule {
-                slug,
-                head,
-                condition,
-                gate,
-                carry,
-                debounce,
-                consequences,
-            } => {
-                let consequences = parse_consequences(consequences)?;
-                let uid = store::rules::create(
-                    &self.store.pool,
-                    store::rules::NewRule {
-                        slug: &slug,
-                        head: &head,
-                        condition: &condition,
-                        gate: &gate,
-                        carry: &carry,
-                        consequences,
-                    },
-                )
-                .await?;
-                if let Some(debounce) = &debounce {
-                    store::rules::set_debounce(&self.store.pool, &uid, Some(debounce)).await?;
-                }
-                for warning in self.reload_rules().await? {
-                    outcome.warnings.push(warning.message);
-                }
-                outcome.created = Some(uid);
-            }
-            Action::UpdateRule {
-                rule,
-                condition,
-                gate,
-                carry,
-                debounce,
-                consequences,
-            } => {
-                let rule = self.resolve(&rule).await?;
-                let consequences = consequences.map(parse_consequences).transpose()?;
-                store::rules::update(
-                    &self.store.pool,
-                    &rule,
-                    condition.as_deref(),
-                    gate.as_deref(),
-                    carry.as_deref(),
-                    debounce.as_ref().map(|d| d.as_deref()),
-                    consequences,
-                )
-                .await?;
-                for warning in self.reload_rules().await? {
-                    outcome.warnings.push(warning.message);
-                }
-            }
             Action::CreateSignal {
                 slug,
                 head,
@@ -6100,36 +6230,6 @@ impl Engine {
                             source_kind: &source_kind,
                             source: &source,
                             schedule: &schedule,
-                        },
-                    )
-                    .await?,
-                );
-            }
-            Action::CreateFrequency {
-                slug,
-                head,
-                seconds,
-                days,
-                months,
-                day_of_week,
-                next_at,
-                catch_up,
-            } => {
-                let next_at = chrono::DateTime::parse_from_rfc3339(&next_at)
-                    .map_err(|e| EngineError::Consequence(format!("bad next_at: {e}")))?
-                    .with_timezone(&Utc);
-                outcome.created = Some(
-                    store::freqs::create(
-                        &self.store.pool,
-                        store::freqs::NewFrequency {
-                            slug: &slug,
-                            head: &head,
-                            seconds,
-                            days,
-                            months,
-                            day_of_week,
-                            next_at,
-                            catch_up,
                         },
                     )
                     .await?,
@@ -8237,6 +8337,494 @@ impl Engine {
             .concept_uid)
     }
 
+    /// Resolve a rule's consequences and prove the list is legal.
+    ///
+    /// Concept tokens arrive as whatever the author typed and leave as uids, so
+    /// a later rename cannot change what a rule does. Validation happens here
+    /// rather than at the store boundary because "a rule with nothing to do"
+    /// and "the same consequence twice" are authoring mistakes, and the person
+    /// who can still fix them is the one submitting this Action.
+    async fn resolve_consequences(
+        &self,
+        declared: Vec<nucleus::karma::Consequence>,
+    ) -> Result<nucleus::karma::Consequences, EngineError> {
+        use nucleus::karma::Consequence;
+        let mut resolved = Vec::with_capacity(declared.len());
+        for consequence in declared {
+            resolved.push(match consequence {
+                Consequence::CaptureEntry { amount, concept } => Consequence::CaptureEntry {
+                    amount,
+                    concept: self.resolve_concept_opt(concept).await?,
+                },
+                Consequence::SetConcept { concept } => Consequence::SetConcept {
+                    concept: self.resolve_concept(&concept).await?,
+                },
+                Consequence::AddConcept { concept } => Consequence::AddConcept {
+                    concept: self.resolve_concept(&concept).await?,
+                },
+                Consequence::RemoveConcept { concept } => Consequence::RemoveConcept {
+                    concept: self.resolve_concept(&concept).await?,
+                },
+                other => other,
+            });
+        }
+        nucleus::karma::Consequences::new(resolved).map_err(|error| EngineError::Conflict {
+            code: "recurrence_consequences_invalid",
+            message: error.to_string(),
+        })
+    }
+
+    /// Ask a rule's condition, against the world as it stands now.
+    ///
+    /// Returns what the carry hands to the consequences, or `None` when the
+    /// gate blocked — which is a decision, not a failure.
+    async fn evaluate_rule_condition(
+        &self,
+        rule: &store::recurrence::Recurrence,
+        condition: &store::recurrence::RuleCondition,
+        at: DateTime<Utc>,
+        now: DateTime<Utc>,
+    ) -> Result<Option<nucleus::DecimalValue>, EngineError> {
+        self.ask_condition(rule, condition, at, now, 0).await
+    }
+
+    async fn ask_condition(
+        &self,
+        rule: &store::recurrence::Recurrence,
+        condition: &store::recurrence::RuleCondition,
+        at: DateTime<Utc>,
+        now: DateTime<Utc>,
+        depth: usize,
+    ) -> Result<Option<nucleus::DecimalValue>, EngineError> {
+        let parsed = nucleus::karma::Condition::parse(&condition.source).map_err(|e| {
+            EngineError::Conflict {
+                code: "rule_condition_invalid",
+                message: e.to_string(),
+            }
+        })?;
+
+        // The stretch of time this evaluation speaks for. Every rhythm a
+        // condition reads is counted over the same window, gathered here with
+        // every other reading, so one evaluation sees one consistent moment and
+        // the answer cannot depend on the order the tokens happen to be listed
+        // in.
+        let since = self.rule_reading_since(rule, at)?;
+
+        let mut values = std::collections::HashMap::new();
+        for token in parsed.reads() {
+            let value = self
+                .read_for_condition(&token.func, &token.slug, token.dur_secs, since, at, now, depth)
+                .await?;
+            values.insert(reading_key(&token.func, &token.slug, token.dur_secs), value);
+        }
+
+        let mut readings = GatheredReadings { values };
+        nucleus::karma::decide(&parsed, &condition.gate, &condition.carry, &mut readings).map_err(
+            |e| EngineError::Conflict {
+                code: "rule_condition_unreadable",
+                message: e.to_string(),
+            },
+        )
+    }
+
+    /// One reading a condition asked for.
+    ///
+    /// The vocabulary lives in the kernel; which table answers it lives here.
+    /// An unknown reading is refused rather than defaulted to zero, because a
+    /// zero would let a typo read as "the stock is empty" and fire a rule for
+    /// the most alarming possible reason.
+    async fn read_for_condition(
+        &self,
+        func: &str,
+        slug: &str,
+        window_secs: Option<i64>,
+        since: DateTime<Utc>,
+        at: DateTime<Utc>,
+        now: DateTime<Utc>,
+        depth: usize,
+    ) -> Result<nucleus::DecimalValue, EngineError> {
+        let zero = nucleus::DecimalValue::from_mantissa(0, 0)
+            .expect("scale zero is always constructible");
+        match func {
+            "quantity" | "signal" => {
+                let uid = self.resolve(slug).await?;
+                Ok(store::facts::level(&self.store.pool, &uid).await?)
+            }
+            // A rhythm, read as a number: how many times the rule on that
+            // Record came round in the stretch this evaluation speaks for.
+            //
+            // This is what makes a schedule part of the arithmetic instead of a
+            // separate kind of object. `-1 * freq(@rent)` is worth -1 on a rent
+            // date and exactly zero on every other, so the ordinary `!=0` gate
+            // turns a daily check into a monthly act — no second trigger
+            // mechanism, no second table, and any threshold already spellable
+            // works on it unchanged.
+            "freq" => {
+                let uid = self.resolve(slug).await?;
+                self.rhythm_count(&uid, since, at).await
+            }
+            // Another rule's arithmetic, read as a number — its gate ignored,
+            // its consequences not run. This is what makes a rule usable as a
+            // named cell: one rule computes "how much is left this month" and
+            // several others read it, instead of each restating the formula and
+            // drifting apart the first time one is edited.
+            "value" => {
+                let uid = self.resolve(slug).await?;
+                Box::pin(self.derived_value(&uid, at, now, depth)).await
+            }
+            "sum" | "sum_pos" | "sum_neg" => {
+                let uid = self.resolve(slug).await?;
+                let seconds = window_secs.ok_or_else(|| EngineError::Conflict {
+                    code: "rule_condition_invalid",
+                    message: format!("{func}(@{slug}) needs a period, like 30d"),
+                })?;
+                Ok(match func {
+                    "sum_pos" => {
+                        store::facts::sum_pos_window(&self.store.pool, &uid, seconds, now).await?
+                    }
+                    "sum_neg" => {
+                        store::facts::sum_neg_window(&self.store.pool, &uid, seconds, now).await?
+                    }
+                    _ => store::facts::sum_window(&self.store.pool, &uid, seconds, now).await?,
+                })
+            }
+            // Where a promise stands, as an ordinal a comparison can use.
+            "promise_state" => inexact(
+                store::misc::promise_state(&self.store.pool, slug)
+                    .await?
+                    .map(nucleus::PromiseState::ordinal)
+                    .unwrap_or(0.0),
+            ),
+            // How long since anything happened on a Record. A Record nothing
+            // has ever touched reads as an enormous number rather than zero:
+            // "never" is the opposite of "just now", and zero would say the
+            // opposite of the truth to every `>` a person writes.
+            "hours_since_fact" => {
+                let uid = self.resolve(slug).await?;
+                inexact(
+                    store::facts::hours_since_last(&self.store.pool, &uid, now)
+                        .await?
+                        .unwrap_or(1.0e9),
+                )
+            }
+            // How reliably a party has kept what they promised.
+            "confidence" => inexact(crate::imagination::confidence(&self.store, slug).await?),
+            // A concept's share of activity in this hour of the day.
+            "demand" => inexact(crate::imagination::demand(&self.store, slug, now).await?),
+            // Where a Record's level is heading, folded forward.
+            "projected" => {
+                let seconds = window_secs.ok_or_else(|| EngineError::Conflict {
+                    code: "rule_condition_invalid",
+                    message: format!("projected(@{slug}) needs a horizon, like 7d"),
+                })?;
+                let uid = self.resolve(slug).await?;
+                let snapshot = crate::imagination::build_snapshot(&self.store, now).await?;
+                let timeline = nucleus::imagination::project(
+                    &snapshot,
+                    now + chrono::TimeDelta::seconds(seconds),
+                );
+                inexact(timeline.projected(&uid).unwrap_or(0.0))
+            }
+            // How far apart two Records' places are.
+            "distance" => {
+                let mut places = Vec::new();
+                for token in slug.split('|') {
+                    let uid = self.resolve(token).await?;
+                    let place = store::places::of_record(&self.store.pool, &uid)
+                        .await?
+                        .ok_or_else(|| EngineError::Conflict {
+                            code: "rule_condition_invalid",
+                            message: format!("`{token}` has no place"),
+                        })?;
+                    places.push(place);
+                }
+                if places.len() != 2 {
+                    return Err(EngineError::Conflict {
+                        code: "rule_condition_invalid",
+                        message: "distance() needs exactly two @records".into(),
+                    });
+                }
+                inexact(nucleus::place::distance(places[0], places[1]))
+            }
+            other => Err(EngineError::Conflict {
+                code: "rule_condition_unknown_reading",
+                message: format!(
+                    "`{other}()` is not something a rule can read yet; available: \
+                     quantity, signal, freq, value, sum, sum_pos, sum_neg, promise_state, \
+                     hours_since_fact, confidence, demand, projected, distance"
+                ),
+            })
+            .map(|_: ()| zero),
+        }
+    }
+
+    /// Commit one outward consequence.
+    ///
+    /// "Commit", not "run". Each of these lands as a durable row — an
+    /// obligation, a question, or a queued effect — and a separate worker
+    /// carries it out afterwards. Two reasons, and both are load-bearing. A
+    /// rule that shelled out mid-evaluation could change the world and then
+    /// have its own transaction rolled back. And a rule that reached the
+    /// network from inside the evaluation would have no place left to check a
+    /// grant, because by then it has already happened.
+    ///
+    /// The number the condition carried travels with each one, so an outward
+    /// consequence can be as computed as an inward one.
+    async fn commit_outward_consequence(
+        &self,
+        rule: &store::recurrence::Recurrence,
+        consequence: &nucleus::karma::Consequence,
+        carried: Option<&nucleus::DecimalValue>,
+        now: DateTime<Utc>,
+    ) -> Result<(), EngineError> {
+        let carried_number = carried.map(|value| value.to_f64()).unwrap_or(0.0);
+        match consequence {
+            nucleus::karma::Consequence::EmitPromise {
+                delta,
+                window_end,
+                party,
+            } => {
+                // A promise the rule did not put a number on takes the one the
+                // condition computed — the same fallback a capture makes.
+                let delta = delta
+                    .as_ref()
+                    .map(|value| value.to_f64())
+                    .unwrap_or(carried_number);
+                store::misc::insert_promise(
+                    &self.store.pool,
+                    store::misc::NewPromise {
+                        record_uid: Some(rule.record_uid.clone()),
+                        delta,
+                        window_end: window_end.clone(),
+                        party_uid: party.clone(),
+                        state: Some(nucleus::PromiseState::Proposed),
+                        rule_uid: Some(rule.uid.clone()),
+                        ..Default::default()
+                    },
+                )
+                .await?;
+            }
+            nucleus::karma::Consequence::Ask { question, options } => {
+                let question = question
+                    .clone()
+                    .unwrap_or_else(|| format!("{}?", rule.note.as_deref().unwrap_or("this rule")));
+                // Yes or no is what almost every asked question is, so an
+                // unspecified list means that rather than an empty prompt.
+                let offered = if options.is_empty() {
+                    vec!["yes".to_string(), "no".to_string()]
+                } else {
+                    options.clone()
+                };
+                let offered = serde_json::Value::Array(
+                    offered
+                        .into_iter()
+                        .map(|label| serde_json::json!({ "label": label }))
+                        .collect(),
+                );
+                store::misc::create_decision(
+                    &self.store.pool,
+                    &rule.uid,
+                    "ask",
+                    &question,
+                    &offered,
+                )
+                .await?;
+            }
+            nucleus::karma::Consequence::Notify { message } => {
+                let message = message
+                    .clone()
+                    .unwrap_or_else(|| match rule.note.as_deref() {
+                        Some(note) => note.to_string(),
+                        None => "a rule fired".to_string(),
+                    });
+                self.queue_rule_effect(
+                    rule,
+                    "notify",
+                    serde_json::json!({ "message": message, "carried": carried_number }),
+                )
+                .await?;
+            }
+            nucleus::karma::Consequence::RunCommand { command } => {
+                self.queue_rule_effect(
+                    rule,
+                    "command",
+                    serde_json::json!({ "command": command, "carried": carried_number }),
+                )
+                .await?;
+            }
+            nucleus::karma::Consequence::RunQuery { query, params } => {
+                self.queue_rule_effect(
+                    rule,
+                    "query",
+                    serde_json::json!({
+                        "target": query,
+                        "params": parse_effect_payload(params.as_deref(), "run-query")?,
+                        "carried": carried_number,
+                    }),
+                )
+                .await?;
+            }
+            nucleus::karma::Consequence::RunAction { action } => {
+                self.queue_rule_effect(
+                    rule,
+                    "action",
+                    serde_json::json!({
+                        "action": parse_effect_payload(Some(action), "run-action")?,
+                        "carried": carried_number,
+                    }),
+                )
+                .await?;
+            }
+            nucleus::karma::Consequence::SetVisibility {
+                subject_kind,
+                subject,
+            } => {
+                store::visibility::grant(
+                    &self.store.pool,
+                    subject_kind,
+                    subject.as_deref(),
+                    &rule.record_uid,
+                )
+                .await?;
+            }
+            // The inward variants are Actions and were handled by the caller.
+            _ => {}
+        }
+        let _ = now;
+        Ok(())
+    }
+
+    async fn queue_rule_effect(
+        &self,
+        rule: &store::recurrence::Recurrence,
+        kind: &str,
+        payload: serde_json::Value,
+    ) -> Result<(), EngineError> {
+        store::misc::queue_effect(&self.store.pool, kind, &payload, Some(&rule.uid)).await?;
+        Ok(())
+    }
+
+    /// The number the rule on this Record computes, gate ignored.
+    ///
+    /// Reading a rule's arithmetic is not the same as letting it act, so the
+    /// gate is deliberately skipped and no consequence runs. Depth is capped
+    /// because a cell that reads itself — directly or around a ring of three —
+    /// is a mistake a person can make in one keystroke, and the honest answer
+    /// is a refusal rather than a heartbeat that never returns.
+    async fn derived_value(
+        &self,
+        record_uid: &str,
+        at: DateTime<Utc>,
+        now: DateTime<Utc>,
+        depth: usize,
+    ) -> Result<nucleus::DecimalValue, EngineError> {
+        if depth >= VALUE_DEPTH_CAP {
+            return Err(EngineError::Conflict {
+                code: "rule_condition_cyclic",
+                message: "these rules read each other in a circle".into(),
+            });
+        }
+        let rule = store::recurrence::for_record(&self.store.pool, record_uid)
+            .await?
+            .into_iter()
+            .find(|rule| rule.condition.is_some() && !rule.is_paused())
+            .ok_or_else(|| EngineError::Conflict {
+                code: "rule_condition_unknown_reading",
+                message: format!("`{record_uid}` has no rule with a value to read"),
+            })?;
+        let condition = rule.condition.clone().expect("filtered on Some");
+        // Always/value: the raw number, before any decision about whether it
+        // means act. Those two belong to the rule that *owns* the condition.
+        let asked = store::recurrence::RuleCondition {
+            source: condition.source,
+            gate: nucleus::karma::Gate::Always,
+            carry: nucleus::karma::Carry::Value,
+        };
+        self.ask_condition(&rule, &asked, at, now, depth + 1)
+            .await?
+            .ok_or_else(|| EngineError::Conflict {
+                code: "rule_condition_unreadable",
+                message: "an always-gate cannot block".into(),
+            })
+    }
+
+    /// The opening edge of the stretch one evaluation speaks for.
+    ///
+    /// A rule that runs daily answers for one day; a rule that runs monthly
+    /// answers for one month. So the window is the gap back to the rule's own
+    /// previous instant — which makes consecutive evaluations tile the timeline
+    /// exactly. Nothing a rule reads over time can be counted twice, and a Cell
+    /// that slept still sees every rhythm it missed, because the missed dates
+    /// are applied in order and each one carries its own window.
+    ///
+    /// Before a rule's first instant there is nothing to have missed, so the
+    /// window opens at the anchor.
+    fn rule_reading_since(
+        &self,
+        rule: &store::recurrence::Recurrence,
+        at: DateTime<Utc>,
+    ) -> Result<DateTime<Utc>, EngineError> {
+        let anchor = parse_instant_field(&rule.anchor_at)?;
+        let previous = rule
+            .cadence
+            .preceding(anchor, at)
+            .map_err(|error| EngineError::Conflict {
+                code: "recurrence_cadence_invalid",
+                message: error.to_string(),
+            })?;
+        Ok(previous.unwrap_or(anchor))
+    }
+
+    /// How many times the rule declared on `record_uid` came round in
+    /// `(since, at]`.
+    ///
+    /// Half-open at the near edge and closed at the far one, so the instant a
+    /// window ends on belongs to that window and to no other. A Record with no
+    /// rule on it is worth zero rather than an error: "that rhythm did not
+    /// happen" is a true answer, and it is the one that lets a condition be
+    /// written before the schedule it will eventually watch.
+    async fn rhythm_count(
+        &self,
+        record_uid: &str,
+        since: DateTime<Utc>,
+        at: DateTime<Utc>,
+    ) -> Result<nucleus::DecimalValue, EngineError> {
+        let tick = chrono::Duration::milliseconds(1);
+        let mut total: i128 = 0;
+        for rule in store::recurrence::for_record(&self.store.pool, record_uid).await? {
+            // A paused rhythm is silent. Counting its dates would have a rule
+            // keep acting on a schedule its author stopped.
+            if rule.is_paused() {
+                continue;
+            }
+            let anchor = parse_instant_field(&rule.anchor_at)?;
+            let (Some(from), Some(to)) = (
+                since.checked_add_signed(tick),
+                at.checked_add_signed(tick),
+            ) else {
+                continue;
+            };
+            let derived = rule
+                .cadence
+                .between(anchor, from, to)
+                .map_err(|error| EngineError::Conflict {
+                    code: "recurrence_cadence_invalid",
+                    message: error.to_string(),
+                })?;
+            total = total.saturating_add(derived.len() as i128);
+        }
+        nucleus::DecimalValue::from_mantissa(0, total).map_err(|_| EngineError::Conflict {
+            code: "rule_condition_unreadable",
+            message: "that rhythm produced more dates than a number can hold".into(),
+        })
+    }
+
+    async fn resolve_concept(&self, token: &str) -> Result<String, EngineError> {
+        store::concepts::resolve(&self.store.pool, token.trim())
+            .await?
+            .ok_or_else(|| EngineError::UnknownRecord(token.to_string()))
+    }
+
     async fn resolve_concept_opt(
         &self,
         token: Option<String>,
@@ -8299,28 +8887,6 @@ impl Engine {
     }
 }
 
-/// Parse rule-CRUD consequence wire rows into typed specs.
-fn parse_consequences(
-    inputs: Vec<ConsequenceInput>,
-) -> Result<
-    Vec<(
-        nucleus::ConsequenceKind,
-        Option<String>,
-        Option<serde_json::Value>,
-    )>,
-    EngineError,
-> {
-    inputs
-        .into_iter()
-        .map(|c| {
-            let kind = nucleus::ConsequenceKind::parse(&c.kind).ok_or_else(|| {
-                EngineError::Consequence(format!("unknown consequence kind `{}`", c.kind))
-            })?;
-            Ok((kind, c.target, c.params))
-        })
-        .collect()
-}
-
 /// Order-like link kinds (blueprint IV): `@precedes`, `@before`, `@order`, or
 /// any descendant of those concepts. Only these get cycle warnings on save.
 async fn is_order_like(
@@ -8374,4 +8940,38 @@ fn message_head(body: &str) -> String {
     } else {
         out
     }
+}
+
+/// Read an opaque JSON payload a rule stored for an outward consequence.
+///
+/// Kept as text on the rule so the consequence type stays comparable and does
+/// not drag a whole JSON document into every equality check. It is parsed at
+/// the moment it is queued rather than when it runs, so a malformed payload is
+/// a visible failure of the rule that wrote it and not a mystery in a worker
+/// log hours later.
+fn parse_effect_payload(
+    text: Option<&str>,
+    kind: &'static str,
+) -> Result<serde_json::Value, EngineError> {
+    let Some(text) = text.map(str::trim).filter(|text| !text.is_empty()) else {
+        return Ok(serde_json::Value::Null);
+    };
+    serde_json::from_str(text).map_err(|error| EngineError::Conflict {
+        code: "rule_consequence_payload_invalid",
+        message: format!("`{kind}` payload is not readable JSON: {error}"),
+    })
+}
+
+/// Bring a reading that is natively a float into the exact world.
+///
+/// Only for the readings that are *measurements* — a distance, a ratio, a
+/// count of hours. Those are approximate at the source, and pretending
+/// otherwise by carrying them as exact decimals from the start would dress a
+/// GPS reading up as an accounting figure. Everything the Ledger owns —
+/// levels, sums, captured amounts — never passes through here.
+fn inexact(value: f64) -> Result<nucleus::DecimalValue, EngineError> {
+    nucleus::DecimalValue::from_f64_lossy(value).map_err(|_| EngineError::Conflict {
+        code: "rule_condition_unreadable",
+        message: "that reading is not a number a rule can use".into(),
+    })
 }

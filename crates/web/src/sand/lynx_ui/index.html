@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en" data-mode="dark" data-style="lynx">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LynxUI — Lynx</title>
+  <script>
+    try {
+      const parameters = new URLSearchParams(location.search);
+      const requested = parameters.get("mode");
+      const requestedStyle = parameters.get("style");
+      document.documentElement.dataset.mode = requested === "light" || requested === "dark"
+        ? requested
+        : "dark";
+      document.documentElement.dataset.style = requestedStyle === "lynx" || requestedStyle === "catppuccin-macchiato"
+        ? requestedStyle
+        : "lynx";
+    } catch (_) {}
+  </script>
+  <link rel="stylesheet" href="lynx-ui.css">
+  <link rel="stylesheet" href="demo.css">
+  <link rel="stylesheet" href="styles/catppuccin-macchiato.css">
+</head>
+<body class="lynx-ui">
+  <script src="lynx-ui.js"></script>
+  <script src="demo.js"></script>
+</body>
+</html>

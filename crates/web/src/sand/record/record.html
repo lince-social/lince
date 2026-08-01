@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Record</title>
+  <link rel="stylesheet" href="/board/lynx-ui.css" />
   <script src="/board/frame.js"></script>
   <script src="/board/editor.js"></script>
   <style>
@@ -17,54 +18,48 @@
        references) and both kinds of removal (Zero = deactivate, Delete =
        HARD delete-record) all live here. Reusable: any sand that emits
        recordClicked drives it. */
-    :root { color-scheme: dark; }
+    :root { color-scheme: dark; --bg: #121214; --surface-hover: #141416; --line: #141416; --text: #f8fafc; --muted: color-mix(in srgb, #f8fafc 62%, #121214); --faint: color-mix(in srgb, #f8fafc 38%, #121214); --accent: #6366f1; --control-border: #f8fafc; --hot-border: #fb7185; --font-body: Lato, system-ui, sans-serif; --font-title: Aleo, Georgia, serif; --font-mono: "SFMono-Regular", Consolas, monospace; --hairline: .5px; --lynx-shadow-x: 2px; --lynx-shadow-y: 2px; --lynx-shadow-blur: 6px; --lynx-shadow-color: rgb(0 0 0 / 16%); }
     * { box-sizing: border-box; }
     body { margin: 0; height: 100vh; overflow: hidden;
-           font: 13px/1.45 system-ui, -apple-system, sans-serif;
-           background: #0d1117; color: #c9d1d9; padding: .75rem; }
-    /* Icon mode is pinned to a RECORD_ICON_SIZE (56px) frame in main.js — the
-       usual .75rem padding alone overflows that box, which is what forced a
-       scrollbar in a view that's supposed to be just a glyph. */
+           font: 14px/1.3 var(--font-body);
+           background: var(--bg); color: var(--text); padding: 5px; }
+    /* Icon mode shares the compact 40px shell-control frame. */
     body.collapsed { padding: 0; }
-    .head { display: flex; align-items: center; gap: .5rem; margin-bottom: .6rem; }
+    .head { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
     .head h1 { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em;
-               color: #6e7681; margin: 0; flex: 1; }
-    .dot { width: 7px; height: 7px; border-radius: 50%; background: #f85149; }
-    .dot.live { background: #3fb950; }
-    .dot.busy { background: #d29922; animation: pulse 1s ease-in-out infinite; }
+               color: var(--muted); margin: 0; flex: 1; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+    .dot.live { background: var(--text); }
+    .dot.busy { background: var(--muted); animation: pulse 1s ease-in-out infinite; }
     @keyframes pulse { 50% { opacity: .35; } }
-    .rec { border: 1px solid #21262d; border-radius: 8px; margin-bottom: .55rem; overflow: hidden; }
+    .rec { border: 0; border-radius: 0; margin-bottom: 4px; overflow: hidden; }
     .rec > .t { display: flex; align-items: center; gap: .5rem;
-                padding: .45rem .6rem; background: #161b22; }
-    .rec > .t .name { font-weight: 600; color: #e6edf3; flex: 1; word-break: break-word; }
-    .rec > .t .q { font-variant-numeric: tabular-nums; color: #8b949e; }
-    .tbtn { width: auto; border: 1px solid #21262d; border-radius: 6px;
-            background: #0d1117; font-size: .68rem; padding: .1rem .45rem; cursor: pointer; }
-    #btn-zero { color: #d29922; }
-    #btn-zero:hover { border-color: #d29922; }
-    #btn-delete { color: #f85149; }
-    #btn-delete:hover { border-color: #f85149; }
-    .fields { padding: .45rem .6rem; display: grid; gap: .35rem; }
-    .frow { display: flex; gap: .5rem; align-items: baseline; font-size: .78rem; }
-    .frow .k { color: #6e7681; min-width: 4.2rem; text-transform: uppercase; font-size: .68rem; letter-spacing: .05em; }
-    .frow .v { color: #c9d1d9; white-space: pre-wrap; word-break: break-word; flex: 1; }
+                padding: 5px; background: var(--bg); box-shadow: var(--lynx-shadow-x) var(--lynx-shadow-y) var(--lynx-shadow-blur) var(--lynx-shadow-color); }
+    .rec > .t .name { font-weight: 600; color: var(--text); flex: 1; word-break: break-word; }
+    .rec > .t .q { font-variant-numeric: tabular-nums; color: var(--muted); }
+    .tbtn { width: auto; border: 1px solid var(--control-border); border-radius: 2px;
+            background: var(--bg); font-size: .75rem; padding: 2px 5px; cursor: pointer; }
+    #btn-zero, #btn-delete { color: var(--text); }
+    .fields { padding: 5px; display: grid; gap: 4px; }
+    .frow { display: flex; gap: 4px; align-items: baseline; font-size: .85rem; }
+    .frow .k { color: var(--muted); min-width: 4.2rem; text-transform: uppercase; font-size: .68rem; letter-spacing: .05em; }
+    .frow .v { color: var(--text); white-space: pre-wrap; word-break: break-word; flex: 1; }
     .frow.edit { align-items: center; }
-    details { border-top: 1px solid #161b22; }
-    details > summary { cursor: pointer; list-style: none; padding: .4rem .6rem;
-                        font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: #6e7681; }
+    details { border-top: 0; }
+    details > summary { cursor: pointer; list-style: none; padding: 4px 5px;
+                        font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
     details > summary::before { content: "▸ "; }
     details[open] > summary::before { content: "▾ "; }
-    .sec { padding: 0 .6rem .55rem; display: grid; gap: .4rem; }
-    .chips { display: flex; flex-wrap: wrap; gap: .35rem; }
-    .chip { display: inline-flex; align-items: center; gap: .3rem; border: 1px solid #21262d;
-            border-radius: 999px; padding: .1rem .55rem; font-size: .75rem; background: #161b22; }
-    .chip button { border: 0; background: none; color: #8b949e; padding: 0; cursor: pointer; font-size: .8rem; }
-    .chip button:hover { color: #f85149; }
+    .sec { padding: 0 5px 5px; display: grid; gap: 4px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+    .chip { display: inline-flex; align-items: center; gap: 3px; border: var(--hairline) solid currentColor;
+            border-radius: 2px; padding: 2px 5px; font-size: .75rem; background: transparent; }
+    .chip button { border: 0; background: none; color: var(--muted); padding: 0; cursor: pointer; font-size: .8rem; }
     .chip.nav { cursor: pointer; }
-    .chip.nav:hover { border-color: #1f4b8e; }
-    .chip.active { border-color: #1f4b8e; background: #12233c; color: #7aa2f7; }
-    .chip.newthread { border-style: dashed; color: #6e7681; cursor: pointer; }
-    .chip.newthread:hover { border-color: #1f4b8e; color: #7aa2f7; }
+    .chip.nav:hover { border-color: var(--accent); }
+    .chip.active { border-color: var(--accent); background: transparent; color: var(--accent); }
+    .chip.newthread { border-style: dashed; color: var(--muted); cursor: pointer; }
+    .chip.newthread:hover { border-color: var(--accent); color: var(--accent); }
     /* `.inline`'s `display:flex` otherwise beats the `hidden` attribute (same
        author-origin cascade tie the kanban board's `.bulkbar[hidden]` already
        works around) — this needs to win by specificity, not rely on order. */
@@ -73,84 +68,83 @@
     .inline input, .inline select { flex: 1; min-width: 0; }
     .inline button { flex: 0 0 auto; }
     .subrow { display: flex; gap: .4rem; align-items: center; font-size: .78rem; }
-    .subrow .lbl { color: #6e7681; min-width: 4.2rem; font-size: .68rem; text-transform: uppercase; letter-spacing: .05em; }
+    .subrow .lbl { color: var(--muted); min-width: 4.2rem; font-size: .68rem; text-transform: uppercase; letter-spacing: .05em; }
     .subrow input { flex: 1; min-width: 0; }
     .loglist { display: grid; gap: .25rem; }
-    .logrow { display: flex; gap: .5rem; align-items: baseline; font-size: .75rem; color: #8b949e; }
+    .logrow { display: flex; gap: 4px; align-items: baseline; font-size: .75rem; color: var(--muted); }
     .logrow .span { flex: 1; }
-    .logrow.open .span { color: #3fb950; }
-    .logrow button { border: 0; background: none; color: #8b949e; cursor: pointer; padding: 0 .2rem; }
-    .logrow button:hover { color: #f85149; }
-    .total { font-size: .72rem; color: #6e7681; }
-    .msg { border-top: 1px solid #161b22; padding: .35rem 0; font-size: .78rem; }
-    .msg-meta { font-size: .68rem; color: #6e7681; margin-bottom: .15rem;
+    .logrow.open .span { color: var(--text); }
+    .logrow button { border: 0; background: none; color: var(--muted); cursor: pointer; padding: 0 2px; }
+    .logrow button:hover { color: var(--text); }
+    .total { font-size: .72rem; color: var(--muted); }
+    .msg { border-top: 0; padding: 4px 0; font-size: .78rem; }
+    .msg-meta { font-size: .68rem; color: var(--muted); margin-bottom: 2px;
       display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
-    .msg-delete { border: 0; background: none; color: #6e7681; padding: 0;
+    .msg-delete { border: 0; background: none; color: var(--muted); padding: 0;
       cursor: pointer; font-size: .68rem; }
-    .msg-delete:hover { color: #f85149; }
+    .msg-delete:hover { color: var(--text); }
     .msg .body { white-space: pre-wrap; word-break: break-word; }
     .msg img { max-width: 100%; border-radius: 6px; margin-top: .25rem; display: block; }
-    .msg .ref { display: inline-block; border: 1px solid #1f4b8e; border-radius: 999px;
-                background: #12233c; color: #7aa2f7; padding: 0 .45rem; font-size: .72rem;
+    .msg .ref { display: inline-block; border: var(--hairline) solid var(--accent); border-radius: 2px;
+                background: transparent; color: var(--accent); padding: 0 5px; font-size: .72rem;
                 cursor: pointer; }
     ul { list-style: none; margin: 0; padding: .25rem .6rem .5rem; }
-    li { display: flex; gap: .5rem; align-items: baseline; padding: .2rem 0;
-         border-top: 1px solid #161b22; font-size: .78rem; }
-    li:first-child { border-top: 0; }
+    li { display: flex; gap: 4px; align-items: baseline; padding: 2px 0;
+         border-top: 0; font-size: .78rem; }
     .delta { font-variant-numeric: tabular-nums; min-width: 3.2rem; }
-    .delta.pos { color: #3fb950; } .delta.neg { color: #f85149; } .delta.zero { color: #6e7681; }
-    .cause { color: #8b949e; flex: 1; }
-    .when { color: #6e7681; }
-    .none { color: #6e7681; padding: .2rem 0; font-size: .78rem; }
+    .delta.pos, .delta.neg, .delta.zero { color: var(--muted); }
+    .cause { color: var(--muted); flex: 1; }
+    .when { color: var(--muted); }
+    .none { color: var(--muted); padding: 2px 0; font-size: .78rem; }
     /* Default idle state: pinned bottom-right, collapsed to just this glyph
        until a recordClicked/recordCreate ABI event expands the card. */
     body.collapsed .head { display: none; }
-    .iconview { color: #6e7681; font-size: 1.6rem; }
+    .iconview { color: var(--text); font-size: 12px; }
     .iconview:not([hidden]) {
       display: flex; align-items: center; justify-content: center; height: 100%;
     }
     /* Creation mode: the SAME fields the display shows on a get, writable and
        empty. Entered via the group's `recordCreate` event ("New task"). */
-    #create { display: none; border: 1px solid #21262d; border-radius: 8px; overflow: hidden; }
+    #create { display: none; border: 0; border-radius: 0; overflow: hidden; }
     #create.open { display: block; }
-    #create .t { padding: .45rem .6rem; background: #161b22; font-weight: 600; color: #e6edf3; }
+    #create .t { padding: 5px; background: var(--bg); font-weight: 600; color: var(--text); }
     #create .fields { border-bottom: 0; }
     input, textarea, select, button { font: inherit; }
-    input, textarea, select { width: 100%; border: 1px solid #21262d; border-radius: 6px;
-                              background: #0d1117; color: #e6edf3; padding: .35rem .5rem; }
+    input, textarea, select { width: 100%; border: 1px solid var(--control-border); border-radius: 2px;
+                              background: var(--bg); color: var(--text); padding: 3px 5px; }
     textarea { min-height: 70px; resize: vertical; }
     .actions { display: flex; gap: .5rem; justify-content: flex-end; padding: .45rem .6rem .6rem; }
-    button { border: 1px solid #21262d; border-radius: 6px; background: #161b22;
-             color: #e6edf3; padding: .3rem .7rem; cursor: pointer; }
-    button:hover { border-color: #30363d; }
+    button { border: 1px solid var(--control-border); border-radius: 2px; background: var(--bg);
+             color: var(--text); padding: 3px 5px; cursor: pointer; }
+    button:hover { background: var(--surface-hover); }
     button:disabled { opacity: .4; cursor: default; }
-    button.accent { border-color: #1f4b8e; background: #12233c; }
-    .err { color: #f85149; font-size: .75rem; padding: 0 .6rem .4rem; }
-    .hint { color: #6e7681; font-size: .72rem; }
+    button.accent { border-color: var(--accent); background: var(--accent); color: #f8fafc; }
+    .err { color: var(--hot-border); font-size: .75rem; padding: 0 5px 4px; }
+    .hint { color: var(--muted); font-size: .72rem; }
     /* rendered body preview (K6): same blocks the board card renderer shows */
-    .preview { white-space: pre-wrap; word-break: break-word; border: 1px dashed #21262d;
-               border-radius: 6px; padding: .4rem .55rem; font-size: .78rem; color: #c9d1d9; }
+    .preview { white-space: pre-wrap; word-break: break-word; border: var(--hairline) dashed var(--muted);
+               border-radius: 2px; padding: 4px 5px; font-size: .78rem; color: var(--text); }
   </style>
 </head>
-<body>
+<body class="lynx-ui">
   <div class="head">
     <h1 id="title">Record</h1>
     <span id="dot" class="dot" title="red = reconnecting · amber = update in flight · green = live"></span>
-    <button id="btn-collapse" type="button" class="tbtn" title="Hide (Esc)">✕</button>
+    <button id="btn-collapse" type="button" class="lynx-button tbtn" title="Hide (Esc)">✕</button>
   </div>
 
   <div id="create">
     <div class="t">New record</div>
     <div class="fields">
-      <div class="frow edit"><span class="k">Head</span><input id="c-head" type="text" autocomplete="off" /></div>
-      <div class="frow edit"><span class="k">Slug</span><input id="c-slug" type="text" autocomplete="off" placeholder="optional.dot.case" /></div>
-      <div class="frow edit"><span class="k">Quantity</span><input id="c-quantity" type="number" step="1" /></div>
-      <div class="frow edit"><span class="k">Body</span><textarea id="c-body"></textarea></div>
+      <div class="frow edit"><span class="k">Head</span><input id="c-head" class="lynx-input" type="text" autocomplete="off" /></div>
+      <div class="frow edit"><span class="k">Slug</span><input id="c-slug" class="lynx-input" type="text" autocomplete="off" placeholder="optional.dot.case" /></div>
+      <div class="frow edit"><span class="k">Quantity</span><input id="c-quantity" class="lynx-input" type="number" step="1" /></div>
+      <div class="frow edit"><span class="k">Body</span><textarea id="c-body" class="lynx-textarea"></textarea></div>
     </div>
     <div id="c-error" class="err" hidden></div>
     <div class="actions">
-      <button id="c-cancel" type="button">Cancel</button>
-      <button id="c-submit" type="button" class="accent">Create</button>
+      <button id="c-cancel" type="button" class="lynx-button">Cancel</button>
+      <button id="c-submit" type="button" class="lynx-button lynx-button--primary accent">Create</button>
     </div>
   </div>
 
@@ -158,88 +152,88 @@
     <div class="t">
       <span class="name" id="f-name"></span>
       <span class="q" id="f-qty"></span>
-      <button id="btn-zero" type="button" class="tbtn" title="Zero the quantity (deactivate) — the record stays">Zero</button>
-      <button id="btn-delete" type="button" class="tbtn" title="HARD delete — the record disappears everywhere; its Ledger history stays">Delete</button>
+      <button id="btn-zero" type="button" class="lynx-button tbtn" title="Zero the quantity (deactivate) — the record stays">Zero</button>
+      <button id="btn-delete" type="button" class="lynx-button tbtn" title="HARD delete — the record disappears everywhere; its Ledger history stays">Delete</button>
     </div>
 
     <div class="fields">
-      <div class="frow edit"><span class="k">Head</span><input id="f-head" type="text" autocomplete="off" /></div>
-      <div class="frow edit"><span class="k">Slug</span><input id="f-slug" type="text" autocomplete="off" placeholder="dot.case" /></div>
-      <div class="frow edit"><span class="k">Quantity</span><input id="f-quantity" type="number" step="1" /></div>
-      <div class="frow edit"><span class="k">Body</span><textarea id="f-body"></textarea></div>
+      <div class="frow edit"><span class="k">Head</span><input id="f-head" class="lynx-input" type="text" autocomplete="off" /></div>
+      <div class="frow edit"><span class="k">Slug</span><input id="f-slug" class="lynx-input" type="text" autocomplete="off" placeholder="dot.case" /></div>
+      <div class="frow edit"><span class="k">Quantity</span><input id="f-quantity" class="lynx-input" type="number" step="1" /></div>
+      <div class="frow edit"><span class="k">Body</span><textarea id="f-body" class="lynx-textarea"></textarea></div>
       <div id="f-preview" class="preview" hidden></div>
       <div class="actions" style="padding:0">
         <span id="f-error" class="err" style="padding:0; margin-right:auto" hidden></span>
-        <button id="f-save" type="button" class="accent" disabled>Save</button>
+        <button id="f-save" type="button" class="lynx-button lynx-button--primary accent" disabled>Save</button>
       </div>
     </div>
 
-    <details id="sec-work" open>
+    <details id="sec-work" class="lynx-disclosure" open>
       <summary>Work</summary>
       <div class="sec">
-        <div class="subrow"><span class="lbl">Start</span><input id="w-start" type="date" /></div>
-        <div class="subrow"><span class="lbl">Due</span><input id="w-due" type="date" /></div>
-        <div class="subrow"><span class="lbl">Estimate</span><input id="w-estimate" type="number" min="0" step="5" placeholder="minutes" /></div>
+        <div class="subrow"><span class="lbl">Start</span><input id="w-start" class="lynx-input" type="date" /></div>
+        <div class="subrow"><span class="lbl">Due</span><input id="w-due" class="lynx-input" type="date" /></div>
+        <div class="subrow"><span class="lbl">Estimate</span><input id="w-estimate" class="lynx-input" type="number" min="0" step="5" placeholder="minutes" /></div>
         <div class="inline">
-          <button id="w-play" type="button" class="accent">▶ Play</button>
-          <button id="w-pause" type="button">⏸ Pause</button>
+          <button id="w-play" type="button" class="lynx-button lynx-button--primary accent">▶ Play</button>
+          <button id="w-pause" type="button" class="lynx-button">⏸ Pause</button>
           <span id="w-total" class="total"></span>
         </div>
         <div id="worklog-list" class="loglist"></div>
       </div>
     </details>
 
-    <details id="sec-people" open>
+    <details id="sec-people" class="lynx-disclosure" open>
       <summary>Assignees</summary>
       <div class="sec">
         <div id="assignee-list" class="chips"></div>
         <div class="inline">
-          <select id="a-pick"></select>
-          <button id="a-add" type="button">Assign</button>
+          <select id="a-pick" class="lynx-select"></select>
+          <button id="a-add" type="button" class="lynx-button">Assign</button>
         </div>
       </div>
     </details>
 
-    <details id="sec-links" open>
+    <details id="sec-links" class="lynx-disclosure" open>
       <summary>Links</summary>
       <div class="sec">
         <div id="links-list" class="loglist"></div>
         <div class="inline">
-          <input id="l-kind" type="text" list="l-kind-suggestions" placeholder="kind (e.g. before)" autocomplete="off" />
+          <input id="l-kind" class="lynx-input" type="text" list="l-kind-suggestions" placeholder="kind (e.g. before)" autocomplete="off" />
           <datalist id="l-kind-suggestions"></datalist>
-          <input id="l-target" type="text" list="l-target-suggestions" placeholder="target slug or uid" autocomplete="off" />
+          <input id="l-target" class="lynx-input" type="text" list="l-target-suggestions" placeholder="target slug or uid" autocomplete="off" />
           <datalist id="l-target-suggestions"></datalist>
-          <button id="l-add" type="button" title="This record links to the target (A → B)">Link</button>
+          <button id="l-add" type="button" class="lynx-button" title="This record links to the target (A → B)">Link</button>
         </div>
         <div class="hint">A → B means A links to B. Click a record to open it; ✕ removes the link.</div>
       </div>
     </details>
 
-    <details id="sec-comments" open>
+    <details id="sec-comments" class="lynx-disclosure" open>
       <summary>Threads</summary>
       <div class="sec">
-        <input id="thread-search" type="text" placeholder="Search threads…" autocomplete="off" />
+        <input id="thread-search" class="lynx-input" type="text" placeholder="Search threads…" autocomplete="off" />
         <div id="thread-tabs" class="chips"></div>
         <div id="thread-new" class="inline" hidden>
-          <input id="th-name" type="text" placeholder="Thread name" autocomplete="off" />
-          <button id="th-create" type="button" class="accent">Create</button>
-          <button id="th-cancel" type="button">Cancel</button>
+          <input id="th-name" class="lynx-input" type="text" placeholder="Thread name" autocomplete="off" />
+          <button id="th-create" type="button" class="lynx-button lynx-button--primary accent">Create</button>
+          <button id="th-cancel" type="button" class="lynx-button">Cancel</button>
         </div>
         <div id="comments-list"></div>
         <div class="inline">
-          <textarea id="cm-body" placeholder="Message… (@slug references a record; image URLs render)" style="min-height:44px"></textarea>
-          <button id="cm-post" type="button" class="accent">Post</button>
+          <textarea id="cm-body" class="lynx-textarea" placeholder="Message… (@slug references a record; image URLs render)" style="min-height:44px"></textarea>
+          <button id="cm-post" type="button" class="lynx-button lynx-button--primary accent">Post</button>
         </div>
       </div>
     </details>
 
-    <details id="sec-facts" open>
+    <details id="sec-facts" class="lynx-disclosure" open>
       <summary>History</summary>
       <ul id="facts-list"></ul>
     </details>
   </div>
 
-  <div id="icon" class="iconview" hidden>◉</div>
+  <div id="icon" class="iconview" hidden>●</div>
 
   <script>
     // The blueprint's W-provenance standard (VII.1) grown into the expanded

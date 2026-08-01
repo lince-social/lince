@@ -712,6 +712,115 @@ impl Cadence {
             .unwrap_or(DateTime::<Utc>::MAX_UTC);
         Ok(self.between(anchor, after, horizon)?.dates.into_iter().next())
     }
+
+    /// The last instant this rule produced strictly *before* `before`.
+    ///
+    /// This is what turns one rule's rhythm into a readable number inside
+    /// another rule's arithmetic. `freq(@x)` means "how many times did x come
+    /// round since I last looked", and "since I last looked" is the previous
+    /// instant *this* rule produced — so the windows a rule reads over tile the
+    /// timeline exactly, with no instant counted twice and none skipped.
+    ///
+    /// It cannot be written as a backwards [`Self::between`]: a lookback wide
+    /// enough for a yearly step truncates a millisecond one, and a truncated
+    /// scan returns a *prefix*, whose last element is the wrong answer. Walking
+    /// from the index floor is exact for both, and costs the same.
+    pub fn preceding(
+        &self,
+        anchor: DateTime<Utc>,
+        before: DateTime<Utc>,
+    ) -> Result<Option<DateTime<Utc>>, CadenceError> {
+        self.validate()?;
+        if before <= anchor {
+            return Ok(None);
+        }
+        let months = self.every.calendar_months().unwrap_or(0);
+        let fixed = self.every.fixed_milliseconds().unwrap_or(0);
+        let anchor_naive = anchor.naive_utc();
+        let before_naive = before.naive_utc();
+
+        // Landing rolls an instant forward by up to a week while keeping its
+        // time of day, so a late-Saturday base and an early-Sunday one can swap
+        // order once landed. The last index below the cut is therefore not
+        // always the latest instant below it — so candidates are compared, not
+        // taken on sight, and the search keeps going a week past its first hit.
+        let mut best: Option<NaiveDateTime> = None;
+        let consider = |candidate: NaiveDateTime, best: &mut Option<NaiveDateTime>| {
+            if candidate < before_naive {
+                *best = Some(best.map_or(candidate, |held: NaiveDateTime| held.max(candidate)));
+            }
+        };
+
+        // Once a short month can swallow a candidate, the occurrence number and
+        // the candidate index part company, and `retired_by` counts occurrences
+        // — so a counted rule of that shape has to be walked from the start.
+        // Every other rule starts at the index floor and walks *back*, which is
+        // what keeps a millisecond step from being a walk from the anchor.
+        if self.count_limit().is_some() && self.can_skip_a_candidate() {
+            let mut index: u64 = 0;
+            let mut steps = 0usize;
+            while steps < MAX_SCAN_STEPS {
+                steps += 1;
+                if self.retired_by(anchor_naive, index) {
+                    break;
+                }
+                let Some(base) = self.naive_at(anchor_naive, index, months, fixed) else {
+                    if self.calendar_exhausted(anchor_naive, index, months) {
+                        break;
+                    }
+                    index += 1;
+                    continue;
+                };
+                let landed = self.land_naive(base);
+                if self.past_bound(landed) {
+                    break;
+                }
+                if base >= before_naive {
+                    break;
+                }
+                index += 1;
+                if base >= anchor_naive {
+                    consider(landed, &mut best);
+                }
+            }
+            return Ok(best.map(|at| Utc.from_utc_datetime(&at)));
+        }
+
+        // The floor is measured on the base instant and never overshoots, so
+        // the answer is at this index or below it — including when the base
+        // lands exactly on the cut, which is excluded and hands the answer to
+        // the index beneath.
+        let mut index = self.index_floor(anchor_naive, before_naive, months, fixed);
+        let slack = if self.land_on.is_some() { 8 } else { 0 };
+        let mut past_first_hit = 0usize;
+        let mut steps = 0usize;
+        loop {
+            steps += 1;
+            if steps >= MAX_SCAN_STEPS {
+                break;
+            }
+            if !self.retired_by(anchor_naive, index)
+                && let Some(base) = self.naive_at(anchor_naive, index, months, fixed)
+                && base >= anchor_naive
+            {
+                let landed = self.land_naive(base);
+                if !self.past_bound(landed) {
+                    consider(landed, &mut best);
+                }
+            }
+            if best.is_some() {
+                past_first_hit += 1;
+                if past_first_hit > slack {
+                    break;
+                }
+            }
+            if index == 0 {
+                break;
+            }
+            index -= 1;
+        }
+        Ok(best.map(|at| Utc.from_utc_datetime(&at)))
+    }
 }
 
 /// The instants a rule produces in a window, and whether the answer is whole.

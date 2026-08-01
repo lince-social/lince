@@ -98,8 +98,9 @@ export function normalizeWorld(rawWorld) {
 
 export function defaultCamera(world = DEFAULT_WORLD) {
   return {
-    x: -Math.max(0, finiteNumber(world.width, DEFAULT_WORLD.width) / 2 - 800),
-    y: -Math.max(0, finiteNumber(world.height, DEFAULT_WORLD.height) / 2 - 500),
+    // Seed workspace: centered at 100% for a 1920×1080 canvas.
+    x: -Math.max(0, finiteNumber(world.width, DEFAULT_WORLD.width) / 2 - 960),
+    y: -Math.max(0, finiteNumber(world.height, DEFAULT_WORLD.height) / 2 - 540),
     scale: 1,
   };
 }
@@ -243,22 +244,22 @@ export function clampCard(card, config) {
     };
   }
   const width = clamp(
-    snapValue(finiteNumber(card.width, DEFAULT_CARD_SIZE.width), world.snap),
+    finiteNumber(card.width, DEFAULT_CARD_SIZE.width),
     MIN_CARD_SIZE.width,
     world.width,
   );
   const height = clamp(
-    snapValue(finiteNumber(card.height, DEFAULT_CARD_SIZE.height), world.snap),
+    finiteNumber(card.height, DEFAULT_CARD_SIZE.height),
     MIN_CARD_SIZE.height,
     world.height,
   );
   const x = clamp(
-    snapValue(finiteNumber(card.x, world.width / 2 - width / 2), world.snap),
+    finiteNumber(card.x, world.width / 2 - width / 2),
     0,
     Math.max(0, world.width - width),
   );
   const y = clamp(
-    snapValue(finiteNumber(card.y, world.height / 2 - height / 2), world.snap),
+    finiteNumber(card.y, world.height / 2 - height / 2),
     0,
     Math.max(0, world.height - height),
   );

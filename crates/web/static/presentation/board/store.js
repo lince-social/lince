@@ -69,15 +69,45 @@ function cloneShellCards(workspaces) {
     .map(cloneCard);
 }
 
-function ensureShellPins(workspaces, config) {
-  const shellCards = cloneShellCards(workspaces);
+function ensureShellPins(workspaces, config, seedCards = []) {
+  const retiredShellIds = new Set([
+    "shell-logo",
+    "shell-operation",
+    "shell-workspaces",
+    "shell-notifications",
+    "shell-zoom",
+  ]);
+  const normalizedWorkspaces = workspaces.map((workspace) => ({
+    ...workspace,
+    cards: workspace.cards
+      .filter(
+        (card) =>
+          !(card.pinned === true && card.system === true && retiredShellIds.has(card.id)),
+      )
+      .map((card) =>
+        card.id === "shell-record"
+          ? { ...card, pinned: true, x: 99_999, y: 0 }
+          : card,
+      ),
+  }));
+  const shellCards = cloneShellCards(normalizedWorkspaces);
+  const seededEditCard = seedCards.find((card) => card?.id === "shell-edit");
+  if (
+    seededEditCard &&
+    !shellCards.some((card) => card.id === seededEditCard.id)
+  ) {
+    shellCards.push(cloneCard(seededEditCard));
+  }
   if (!shellCards.length) {
-    return workspaces;
+    return normalizedWorkspaces;
   }
 
-  return workspaces.map((workspace) => {
+  return normalizedWorkspaces.map((workspace) => {
+    const currentCards = workspace.cards.filter(
+      (card) => !(card.pinned === true && card.system === true && retiredShellIds.has(card.id)),
+    );
     const existingIds = new Set(
-      workspace.cards
+      currentCards
         .filter((card) => card.pinned === true && card.system === true)
         .map((card) => card.id),
     );
@@ -85,92 +115,21 @@ function ensureShellPins(workspaces, config) {
       (card) => !existingIds.has(card.id),
     );
 
-    if (!missingShellCards.length) {
+    if (!missingShellCards.length && currentCards.length === workspace.cards.length) {
       return workspace;
     }
 
     return {
       ...workspace,
       cards: layoutShellPins(
-        normalizeLayout([...workspace.cards, ...missingShellCards], config),
+        normalizeLayout([...currentCards, ...missingShellCards], config),
       ),
     };
   });
 }
 
 function layoutShellPins(cards) {
-  const viewportWidth =
-    window.visualViewport?.width || document.documentElement.clientWidth || window.innerWidth || 1360;
-  const viewportHeight =
-    window.visualViewport?.height || document.documentElement.clientHeight || window.innerHeight || 760;
-  const gap = 10;
-  const padding = 20;
-  const top = 16;
-  const editWidth = 40;
-  const notificationsWidth = 40;
-  const workspaceWidth = 72;
-  const minimumOperationWidth = 260;
-  const preferredOperationWidth = 420;
-  const brandWidth = 112;
-  const reservedRight = editWidth + notificationsWidth + workspaceWidth + gap * 3 + padding;
-  const availableOperationWidth =
-    viewportWidth - padding - brandWidth - gap - reservedRight;
-  const operationWidth = Math.max(
-    minimumOperationWidth,
-    Math.min(preferredOperationWidth, availableOperationWidth),
-  );
-  const editX = Math.max(padding, viewportWidth - padding - editWidth);
-  const notificationsX = editX - gap - notificationsWidth;
-  const workspaceX = notificationsX - gap - workspaceWidth;
-  const operationX = workspaceX - gap - operationWidth;
-
-  const layoutById = {
-    "shell-logo": {
-      x: padding,
-      y: 28,
-      width: brandWidth,
-      height: 32,
-    },
-    "shell-operation": {
-      x: Math.max(padding + brandWidth + gap, operationX),
-      y: top,
-      width: operationWidth,
-      height: 40,
-    },
-    "shell-workspaces": {
-      x: workspaceX,
-      y: top,
-      width: workspaceWidth,
-      height: 40,
-    },
-    "shell-notifications": {
-      x: notificationsX,
-      y: top,
-      width: notificationsWidth,
-      height: 40,
-    },
-    "shell-edit": {
-      x: editX,
-      y: top,
-      width: editWidth,
-      height: 40,
-    },
-    "shell-zoom": {
-      x: padding,
-      y: Math.max(80, viewportHeight - 72),
-      width: 242,
-      height: 52,
-    },
-  };
-
-  return cards.map((card) =>
-    card?.system === true && layoutById[card.id]
-      ? {
-          ...card,
-          ...layoutById[card.id],
-        }
-      : card,
-  );
+  return cards;
 }
 
 function nextEntityId(prefix) {
@@ -250,7 +209,7 @@ function loadState(initialBoardState, seedCards, config) {
   if (!workspaces.length) {
     return fallback;
   }
-  workspaces = ensureShellPins(workspaces, config);
+  workspaces = ensureShellPins(workspaces, config, seedCards);
 
   const activeWorkspaceId = workspaces.some(
     (workspace) => workspace.id === parsed.activeWorkspaceId,

@@ -4,12 +4,29 @@
 use chrono::{DateTime, Utc};
 use engine::Engine;
 use engine::actions::Action;
-use nucleus::{Cause, ConsequenceKind, NewFact, PromiseState, RecordKind};
+use nucleus::{Cause, NewFact, PromiseState, RecordKind};
+use nucleus::karma::{Cadence, Consequence};
+
+mod support;
 use store::records::NewRecord;
 use store::senses::RemoteOpenRow;
 
 async fn engine() -> Engine {
-    Engine::open_memory().await.expect("engine opens")
+    let engine = Engine::open_memory().await.expect("engine opens");
+    // An OPEN promise is an offer somebody published, and the database says so.
+    store::records::create(
+        &engine.store.pool,
+        store::records::NewRecord {
+            slug: Some("me"),
+            kind: nucleus::RecordKind::Person,
+            head: "me",
+            body: "",
+            quantity: store::exact::one(),
+        },
+    )
+    .await
+    .expect("a local Person");
+    engine
 }
 
 async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
@@ -68,20 +85,20 @@ async fn demand_token_samples_the_hourly_histogram() {
         .unwrap();
     }
 
-    store::rules::create(
-        &e.store.pool,
-        store::rules::NewRule {
-            slug: "rules.demand-mirror",
-            head: "Demand mirror",
-            condition: "demand(@food) * (@apples.stock >= 0)",
-            gate: "always",
-            carry: "value",
-            consequences: vec![(ConsequenceKind::SetQuantity, Some("@mirror".into()), None)],
-        },
+    support::declare_rule(
+        &e,
+        "@mirror",
+        Cadence::every_days(1),
+        "2026-01-01T00:00:00Z",
+        Some("demand(@food) * (@apples.stock >= 0)"),
+        Some("always"),
+        Some("value"),
+        vec![Consequence::CaptureEntry {
+            amount: nucleus::DecimalValue::parse_inferred("0").unwrap(),
+            concept: None,
+        }],
     )
-    .await
-    .unwrap();
-    e.reload_rules().await.unwrap();
+    .await;
 
     // trigger an evaluation at 08:30 — demand(@food) = 3/5 of facts so far...
     // careful: this append itself lands at 08:30 and counts (4 of 6 at 08).
@@ -124,6 +141,7 @@ async fn senses_heartbeat_arm_drafts_decisions_once() {
         store::misc::NewPromise {
             record_uid: Some(apples.clone()),
             delta: -3.0,
+            party_uid: Some("me".to_string()),
             state: Some(PromiseState::Open),
             ..Default::default()
         },

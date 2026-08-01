@@ -251,21 +251,21 @@ pub fn default_world() -> BoardWorld {
 
 pub fn default_camera() -> BoardCamera {
     BoardCamera {
-        x: -4_200.0,
-        y: -4_500.0,
+        // The seed workspace is composed for a 1920×1080 camera at 100%.
+        // Its tutorial card is 1536×864 and centered in the world.
+        x: -4_040.0,
+        y: -4_460.0,
         scale: 1.0,
     }
 }
 
 pub const RECORD_PIN_ID: &str = "shell-record";
 
-/// Screen coordinate parked far past any real viewport so the pinned-card
-/// clamp in `syncCardNode` (main.js) always flushes this card to the
-/// bottom-right corner, regardless of window size, in both its icon and
-/// full-panel sizes.
-const PINNED_CORNER: f64 = 99_999.0;
+/// Screen coordinate parked past any real viewport so the pinned-card clamp
+/// in `syncCardNode` (main.js) keeps this card against the right edge.
+const PINNED_RIGHT: f64 = 99_999.0;
 
-/// The Record sand, seeded pinned at the bottom-right corner. Starts
+/// The Record sand, seeded pinned at the top-right corner. Starts
 /// collapsed to an icon (`widgetState.recordExpanded` is absent/false) and
 /// expands in place when it receives a `recordClicked`/`recordCreate` ABI
 /// event; see `syncCardNode` in main.js for the icon<->full geometry.
@@ -274,8 +274,8 @@ pub fn record_pin_card() -> BoardCard {
         RECORD_PIN_ID,
         "Record",
         "record.html",
-        PINNED_CORNER,
-        PINNED_CORNER,
+        PINNED_RIGHT,
+        0.0,
         340.0,
         520.0,
     );
@@ -285,90 +285,30 @@ pub fn record_pin_card() -> BoardCard {
 }
 
 fn seed_workspace_cards(include_seed_cards: bool) -> Vec<BoardCard> {
-    let mut cards = vec![
-        shell_card(
-            "shell-logo",
-            "Logo",
-            "lince-shell-logo.html",
-            24.0,
-            20.0,
-            112.0,
-            32.0,
-            90,
-        ),
-        shell_card(
-            "shell-operation",
-            "Operation",
-            "lince-shell-operation.html",
-            920.0,
-            14.0,
-            420.0,
-            40.0,
-            91,
-        ),
-        shell_card(
-            "shell-workspaces",
-            "Workspaces",
-            "lince-shell-workspaces.html",
-            1360.0,
-            14.0,
-            72.0,
-            40.0,
-            92,
-        ),
-        shell_card(
-            "shell-notifications",
-            "Notifications",
-            "lince-shell-notifications.html",
-            1452.0,
-            14.0,
-            40.0,
-            40.0,
-            93,
-        ),
-        shell_card(
-            "shell-edit",
-            "Edit",
-            "lince-shell-edit.html",
-            1512.0,
-            14.0,
-            40.0,
-            40.0,
-            94,
-        ),
-        shell_card(
-            "shell-zoom",
-            "Zoom",
-            "lince-shell-zoom.html",
-            20.0,
-            700.0,
-            328.0,
-            52.0,
-            95,
-        ),
-    ];
+    let mut cards = vec![shell_card(
+        "shell-edit",
+        "Edit",
+        "lince-shell-edit.html",
+        0.0,
+        0.0,
+        280.0,
+        620.0,
+        92,
+    )];
 
     cards.push(record_pin_card());
 
     if include_seed_cards {
-        cards.push(package_card(
-            "seed-ai",
-            "AI",
-            "lince-shell-ai.html",
-            4_240.0,
-            4_460.0,
-            460.0,
-            280.0,
-        ));
-        cards.push(package_card(
+        let tutorial = package_card(
             "seed-tutorial",
             "Tutorial",
             "lince-shell-tutorial.html",
-            4_760.0,
-            4_460.0,
-            760.0,
-            520.0,
-        ));
+            4_232.0,
+            4_568.0,
+            1_536.0,
+            864.0,
+        );
+        cards.push(tutorial);
     }
 
     cards

@@ -24,11 +24,11 @@
 
 use chrono::{DateTime, Utc};
 use nucleus::DecimalValue;
-use nucleus::karma::Cadence;
+use nucleus::karma::{Cadence, Carry, Consequences, Gate};
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
-use crate::exact::{decimal_columns, read_decimal};
+use crate::exact::read_decimal;
 use crate::facts::instant;
 
 fn protocol(message: &str) -> StoreError {
@@ -53,8 +53,12 @@ pub fn occurrence_request_id(recurrence_uid: &str, due_at: DateTime<Utc>) -> Str
 pub struct Recurrence {
     pub uid: String,
     pub record_uid: String,
-    pub amount: DecimalValue,
-    pub concept_uid: Option<String>,
+    /// What this rule does when one of its dates is applied. Ordered,
+    /// non-empty, and every item reduces to a typed Action.
+    pub consequences: Consequences,
+    /// The *if* half. `None` is unconditional: the date arriving is the whole
+    /// reason to act, which is what every rule was before conditions existed.
+    pub condition: Option<RuleCondition>,
     pub note: Option<String>,
     pub cadence: Cadence,
     pub anchor_at: String,
@@ -63,6 +67,15 @@ pub struct Recurrence {
     pub actor_uid: Option<String>,
     pub created_at: String,
     pub updated_at: String,
+}
+
+/// A rule's condition as it is stored: the text a person wrote, plus the two
+/// decisions that turn the number it computes into an action.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RuleCondition {
+    pub source: String,
+    pub gate: Gate,
+    pub carry: Carry,
 }
 
 impl Recurrence {
@@ -104,10 +117,14 @@ pub struct Occurrence {
     pub state: OccurrenceState,
     /// The entry that applied it, when it was applied.
     pub entry_uid: Option<String>,
-    /// The amount the rule declares for this date. Read from the rule as it
-    /// stands now; an already-applied date reports what the entry actually
-    /// carried instead, since that is what moved.
-    pub amount: DecimalValue,
+    /// The amount the rule declares for this date, when it declares one. Read
+    /// from the rule as it stands now; an already-applied date reports what the
+    /// entry actually carried instead, since that is what moved.
+    ///
+    /// `None` for a rule whose consequences only change concepts. That is not a
+    /// gap: nothing about a quantity moved, so a quantity timeline correctly
+    /// has no point to draw for it.
+    pub amount: Option<DecimalValue>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -128,15 +145,57 @@ impl RecurrenceCommit {
     }
 }
 
+/// The three condition columns, read as one thing or not at all.
+///
+/// A stored gate or carry that no longer parses is a protocol error rather than
+/// a silent `None`: dropping the condition would turn a rule that fires
+/// *sometimes* into one that fires *always*, which is the most dangerous
+/// possible way to misread a row.
+fn read_condition(row: &sqlx::sqlite::SqliteRow) -> Result<Option<RuleCondition>, StoreError> {
+    let Some(source) = row.get::<Option<String>, _>("condition_src") else {
+        return Ok(None);
+    };
+    let gate = row
+        .get::<Option<String>, _>("gate")
+        .ok_or_else(|| protocol("rule has a condition but no gate"))?;
+    let carry = row
+        .get::<Option<String>, _>("carry")
+        .ok_or_else(|| protocol("rule has a condition but no carry"))?;
+    Ok(Some(RuleCondition {
+        source,
+        gate: Gate::parse(&gate).map_err(|_| protocol("rule has an unreadable gate"))?,
+        carry: Carry::parse(&carry).map_err(|_| protocol("rule has an unreadable carry"))?,
+    }))
+}
+
+/// Split a condition into the three columns that store it. All three are NULL
+/// together or set together — a half-written condition is not a state a rule
+/// may be in.
+fn condition_columns(
+    condition: Option<&RuleCondition>,
+) -> (Option<String>, Option<String>, Option<String>) {
+    match condition {
+        Some(c) => (
+            Some(c.source.clone()),
+            Some(c.gate.as_text()),
+            Some(c.carry.as_text()),
+        ),
+        None => (None, None, None),
+    }
+}
+
 fn map_recurrence(row: &sqlx::sqlite::SqliteRow) -> Result<Recurrence, StoreError> {
     let cadence_json: String = row.get("cadence_json");
     let cadence: Cadence = serde_json::from_str(&cadence_json)
         .map_err(|_| protocol("recurrence has an unreadable cadence"))?;
+    let consequences_json: String = row.get("consequences_json");
+    let consequences: Consequences = serde_json::from_str(&consequences_json)
+        .map_err(|_| protocol("recurrence has unreadable consequences"))?;
     Ok(Recurrence {
         uid: row.get("uid"),
         record_uid: row.get("record_uid"),
-        amount: read_decimal(row, "amount")?,
-        concept_uid: row.get("concept_uid"),
+        consequences,
+        condition: read_condition(row)?,
         note: row.get("note"),
         cadence,
         anchor_at: row.get("anchor_at"),
@@ -194,8 +253,9 @@ pub async fn replayed(
 
 pub struct NewRecurrence<'a> {
     pub record_uid: &'a str,
-    pub amount: DecimalValue,
-    pub concept_uid: Option<&'a str>,
+    pub consequences: Consequences,
+    /// The *if* half, or `None` for a rule the date alone justifies.
+    pub condition: Option<RuleCondition>,
     pub note: Option<&'a str>,
     pub cadence: Cadence,
     pub anchor_at: DateTime<Utc>,
@@ -222,23 +282,26 @@ pub async fn create(
     let uid = nucleus::new_uid("rec");
     let at = instant(now);
     let anchor_at = instant(input.anchor_at);
-    let (mantissa, scale) = decimal_columns(input.amount);
     let cadence_json = serde_json::to_string(&input.cadence)
         .map_err(|_| protocol("cadence could not be written"))?;
+    let consequences_json = serde_json::to_string(&input.consequences)
+        .map_err(|_| protocol("consequences could not be written"))?;
+    let (condition_src, gate, carry) = condition_columns(input.condition.as_ref());
 
     let mut tx = pool.begin().await?;
     sqlx::query(
         "INSERT INTO recurrence
-           (uid, record_uid, amount_mantissa, amount_scale, concept_uid, note,
+           (uid, record_uid, consequences_json, condition_src, gate, carry, note,
             cadence_json, anchor_at, state, revision, actor_uid,
             created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)",
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)",
     )
     .bind(&uid)
     .bind(input.record_uid)
-    .bind(&mantissa)
-    .bind(scale)
-    .bind(input.concept_uid)
+    .bind(&consequences_json)
+    .bind(&condition_src)
+    .bind(&gate)
+    .bind(&carry)
     .bind(input.note)
     .bind(&cadence_json)
     .bind(&anchor_at)
@@ -254,9 +317,10 @@ pub async fn create(
             recurrence_uid: &uid,
             revision: 1,
             kind: "created",
-            mantissa: &mantissa,
-            scale,
-            concept_uid: input.concept_uid,
+            consequences_json: &consequences_json,
+            condition_src: condition_src.as_deref(),
+            gate: gate.as_deref(),
+            carry: carry.as_deref(),
             note: input.note,
             cadence_json: &cadence_json,
             anchor_at: &anchor_at,
@@ -278,8 +342,9 @@ pub async fn create(
 pub struct ReviseRecurrence<'a> {
     pub recurrence_uid: &'a str,
     pub expected_revision: i64,
-    pub amount: DecimalValue,
-    pub concept_uid: Option<&'a str>,
+    pub consequences: Consequences,
+    /// The *if* half, or `None` for a rule the date alone justifies.
+    pub condition: Option<RuleCondition>,
     pub note: Option<&'a str>,
     pub cadence: Cadence,
     pub anchor_at: DateTime<Utc>,
@@ -317,21 +382,21 @@ pub async fn revise(
     let revision = current.revision + 1;
     let at = instant(now);
     let anchor_at = instant(input.anchor_at);
-    let (mantissa, scale) = decimal_columns(input.amount);
     let cadence_json = serde_json::to_string(&input.cadence)
         .map_err(|_| protocol("cadence could not be written"))?;
+    let consequences_json = serde_json::to_string(&input.consequences)
+        .map_err(|_| protocol("consequences could not be written"))?;
+    let (condition_src, gate, carry) = condition_columns(input.condition.as_ref());
 
     let mut tx = pool.begin().await?;
     sqlx::query(
         "UPDATE recurrence
-            SET amount_mantissa = ?, amount_scale = ?, concept_uid = ?, note = ?,
+            SET consequences_json = ?, note = ?,
                 cadence_json = ?, anchor_at = ?, revision = ?,
                 updated_at = ?
           WHERE uid = ? AND revision = ?",
     )
-    .bind(&mantissa)
-    .bind(scale)
-    .bind(input.concept_uid)
+    .bind(&consequences_json)
     .bind(input.note)
     .bind(&cadence_json)
     .bind(&anchor_at)
@@ -347,9 +412,10 @@ pub async fn revise(
             recurrence_uid: input.recurrence_uid,
             revision,
             kind: "revised",
-            mantissa: &mantissa,
-            scale,
-            concept_uid: input.concept_uid,
+            consequences_json: &consequences_json,
+            condition_src: condition_src.as_deref(),
+            gate: gate.as_deref(),
+            carry: carry.as_deref(),
             note: input.note,
             cadence_json: &cadence_json,
             anchor_at: &anchor_at,
@@ -401,9 +467,14 @@ pub async fn set_state(
 
     let revision = current.revision + 1;
     let at = instant(now);
-    let (mantissa, scale) = decimal_columns(current.amount);
     let cadence_json = serde_json::to_string(&current.cadence)
         .map_err(|_| protocol("cadence could not be written"))?;
+    let consequences_json = serde_json::to_string(&current.consequences)
+        .map_err(|_| protocol("consequences could not be written"))?;
+    // Pausing changes only the state, so the revision records the condition
+    // exactly as it stands. A log that dropped it here would read as a rule
+    // that lost its condition on the day it was paused.
+    let (condition_src, gate, carry) = condition_columns(current.condition.as_ref());
 
     let mut tx = pool.begin().await?;
     sqlx::query(
@@ -423,9 +494,10 @@ pub async fn set_state(
             recurrence_uid,
             revision,
             kind: if paused { "paused" } else { "resumed" },
-            mantissa: &mantissa,
-            scale,
-            concept_uid: current.concept_uid.as_deref(),
+            consequences_json: &consequences_json,
+            condition_src: condition_src.as_deref(),
+            gate: gate.as_deref(),
+            carry: carry.as_deref(),
             note: current.note.as_deref(),
             cadence_json: &cadence_json,
             anchor_at: &current.anchor_at,
@@ -522,14 +594,18 @@ pub async fn occurrences(
         }
         let key = instant(due_at);
         let applied = applied_entry(pool, &rule.uid, due_at).await?;
+        // An applied date reports what actually moved; every other state
+        // reports what the rule currently declares, which is `None` when the
+        // rule only changes concepts.
+        let declared = rule.consequences.declared_delta().copied();
         let (state, amount) = if let Some((_, amount)) = applied.as_ref() {
-            (OccurrenceState::Applied, *amount)
+            (OccurrenceState::Applied, Some(*amount))
         } else if skipped.contains(&key) {
-            (OccurrenceState::Skipped, rule.amount)
+            (OccurrenceState::Skipped, declared)
         } else if due_at <= now {
-            (OccurrenceState::Due, rule.amount)
+            (OccurrenceState::Due, declared)
         } else {
-            (OccurrenceState::Planned, rule.amount)
+            (OccurrenceState::Planned, declared)
         };
         out.push(Occurrence {
             recurrence_uid: rule.uid.clone(),
@@ -589,6 +665,24 @@ async fn skipped_dates(
 }
 
 /// The entry that applied one date, found by the request id that names it.
+/// The entry that already applied this date, if one exists.
+///
+/// This is the only "has it been applied?" signal there is, and it is why every
+/// apply must write exactly one entry carrying
+/// [`occurrence_request_id`] — including a rule whose consequences move no
+/// quantity at all. Without that, a concept-only rule would leave no trace of
+/// having run, show as due forever, and re-apply every time somebody pressed
+/// the button.
+pub async fn applied(
+    pool: &SqlitePool,
+    recurrence_uid: &str,
+    due_at: DateTime<Utc>,
+) -> Result<Option<String>, StoreError> {
+    Ok(applied_entry(pool, recurrence_uid, due_at)
+        .await?
+        .map(|(uid, _)| uid))
+}
+
 async fn applied_entry(
     pool: &SqlitePool,
     recurrence_uid: &str,
@@ -620,9 +714,10 @@ struct RevisionRow<'a> {
     recurrence_uid: &'a str,
     revision: i64,
     kind: &'a str,
-    mantissa: &'a str,
-    scale: i64,
-    concept_uid: Option<&'a str>,
+    consequences_json: &'a str,
+    condition_src: Option<&'a str>,
+    gate: Option<&'a str>,
+    carry: Option<&'a str>,
     note: Option<&'a str>,
     cadence_json: &'a str,
     anchor_at: &'a str,
@@ -638,18 +733,20 @@ async fn insert_revision(
 ) -> Result<(), StoreError> {
     sqlx::query(
         "INSERT INTO recurrence_revision
-           (uid, recurrence_uid, revision, kind, amount_mantissa, amount_scale,
-            concept_uid, note, cadence_json, anchor_at, state,
+           (uid, recurrence_uid, revision, kind, consequences_json,
+            condition_src, gate, carry,
+            note, cadence_json, anchor_at, state,
             request_id, actor_uid, at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind(nucleus::new_uid("recr"))
     .bind(row.recurrence_uid)
     .bind(row.revision)
     .bind(row.kind)
-    .bind(row.mantissa)
-    .bind(row.scale)
-    .bind(row.concept_uid)
+    .bind(row.consequences_json)
+    .bind(row.condition_src)
+    .bind(row.gate)
+    .bind(row.carry)
     .bind(row.note)
     .bind(row.cadence_json)
     .bind(row.anchor_at)
@@ -660,4 +757,38 @@ async fn insert_revision(
     .execute(&mut **tx)
     .await?;
     Ok(())
+}
+
+/// Remove a rule and its own history entirely.
+///
+/// Pausing was the only way to stop a rule, which meant a finished one sat in
+/// the list forever wearing a badge. Retiring it as a third state would have the
+/// same problem one word further along, so this is a real delete.
+///
+/// **What it does not touch: the Ledger.** Dates this rule already applied are
+/// ordinary entries and ordinary Facts. They were never owned by the rule — the
+/// rule only proposed them — so they survive, exactly as a hand-typed entry
+/// would if you deleted the note that reminded you to type it. What disappears
+/// is the rule's *future*, which is the only thing a rule ever really held.
+///
+/// The revision log and the skips go with it, because both are statements about
+/// a rule that no longer exists.
+pub async fn delete(pool: &SqlitePool, uid: &str) -> Result<bool, StoreError> {
+    let mut tx = pool.begin().await?;
+    // Children first: both name the rule by foreign key.
+    sqlx::query("DELETE FROM recurrence_skip WHERE recurrence_uid = ?")
+        .bind(uid)
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("DELETE FROM recurrence_revision WHERE recurrence_uid = ?")
+        .bind(uid)
+        .execute(&mut *tx)
+        .await?;
+    let gone = sqlx::query("DELETE FROM recurrence WHERE uid = ?")
+        .bind(uid)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
+    tx.commit().await?;
+    Ok(gone > 0)
 }

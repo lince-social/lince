@@ -10,6 +10,8 @@ pub mod calendar;
 pub mod calendar_runtime;
 pub mod canonical;
 pub mod capability;
+pub mod condition;
+pub mod consequence;
 pub mod dispatcher;
 pub mod dsl;
 pub mod durable;
@@ -60,6 +62,8 @@ pub use calendar_runtime::{
 };
 pub use canonical::{CanonicalHash, canonical_hash, canonical_json_bytes};
 pub use capability::{Capability, CapabilityFamily, CapabilitySet};
+pub use condition::{Carry, Condition, ConditionError, ExactResolver, Gate, decide};
+pub use consequence::{Consequence, Consequences};
 pub use dispatcher::{
     ArmedDeadline, DeadlineAdmission, DeadlineEntry, DeadlineIndex, DeadlinePlan,
     DeadlinePlanError, DeadlineRejectionReason, DemandResource, DemandedDeadline,

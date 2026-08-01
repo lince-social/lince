@@ -23,7 +23,9 @@ use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
-    Num(f64),
+    /// The literal exactly as written. Kept as text, not as `f64`, so an exact
+    /// evaluator can read `0.1` as one tenth rather than as the nearest double.
+    Num(String),
     Dur(i64), // seconds
     Ref(String),
     Fn(String, Vec<Expr>),
@@ -165,7 +167,7 @@ impl Expr {
 
     fn eval_value(&self, r: &mut dyn Resolver) -> Result<Value, NucleusError> {
         Ok(match self {
-            Expr::Num(n) => Value::Num(*n),
+            Expr::Num(text) => Value::Num(text.parse().unwrap_or(0.0)),
             Expr::Dur(s) => Value::Dur(*s),
             Expr::Ref(slug) => r.call("quantity", &[Value::Ref(slug.clone())])?,
             Expr::Fn(name, args) => {
@@ -274,7 +276,7 @@ impl Resolver for MapResolver {
 
 #[derive(Debug, Clone, PartialEq)]
 enum Tok {
-    Num(f64),
+    Num(String),
     Dur(i64),
     Ref(String),
     Ident(String),
@@ -433,7 +435,7 @@ fn lex(src: &str) -> Result<Vec<Tok>, NucleusError> {
                     out.push(Tok::Dur((n * mult as f64) as i64));
                     i = j + 1;
                 } else {
-                    out.push(Tok::Num(n));
+                    out.push(Tok::Num(num_str));
                     i = j;
                 }
             }
@@ -563,7 +565,7 @@ impl Parser {
 
     fn parse_primary(&mut self) -> Result<Expr, NucleusError> {
         match self.bump() {
-            Some(Tok::Num(n)) => Ok(Expr::Num(n)),
+            Some(Tok::Num(text)) => Ok(Expr::Num(text)),
             Some(Tok::Dur(s)) => Ok(Expr::Dur(s)),
             Some(Tok::Ref(r)) => Ok(Expr::Ref(r)),
             Some(Tok::LParen) => {
@@ -695,5 +697,49 @@ mod tests {
         let e = Expr::parse("@ghost").unwrap();
         let mut r = MapResolver::default();
         assert!(matches!(e.eval(&mut r), Err(NucleusError::UnknownToken(_))));
+    }
+}
+
+/// Parse a duration literal (`90s`, `5m`, `2h`, `30d`) into seconds.
+///
+/// One grammar, one parser. The same literal appears in `sum(@x, 30d)`, in a
+/// signal's sampling period, and in a saved query's window, and those three
+/// agreeing is not a coincidence to be maintained by hand — it is this
+/// function. It lives beside the lexer that produces the token rather than in
+/// a schedule module, because a duration is a *length*, and a schedule is a
+/// rule for producing instants; conflating the two is what used to make
+/// "frequency" mean two different things.
+pub fn parse_duration(text: &str) -> Option<i64> {
+    let text = text.trim();
+    let (number, unit) = text.split_at(text.len().checked_sub(1)?);
+    let count: f64 = number.parse().ok()?;
+    let seconds = match unit {
+        "s" => 1,
+        "m" => 60,
+        "h" => 3600,
+        "d" => 86400,
+        _ => return None,
+    };
+    Some((count * seconds as f64) as i64)
+}
+
+#[cfg(test)]
+mod duration_tests {
+    use super::parse_duration;
+
+    #[test]
+    fn the_four_units_read_as_seconds() {
+        assert_eq!(parse_duration("90s"), Some(90));
+        assert_eq!(parse_duration("5m"), Some(300));
+        assert_eq!(parse_duration("2h"), Some(7_200));
+        assert_eq!(parse_duration("30d"), Some(2_592_000));
+    }
+
+    #[test]
+    fn anything_that_is_not_a_duration_is_refused_rather_than_guessed() {
+        assert_eq!(parse_duration(""), None);
+        assert_eq!(parse_duration("30"), None);
+        assert_eq!(parse_duration("30w"), None, "weeks are not in this grammar");
+        assert_eq!(parse_duration("d"), None);
     }
 }

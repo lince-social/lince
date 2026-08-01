@@ -340,3 +340,41 @@ pub async fn settle_from_preview(
         .created
         .expect("settlement slice uid")
 }
+
+/// Declare a rule the way every surface does: through the Action.
+///
+/// One helper, because there is one rule object now. What used to need a
+/// `rule` row, a `rule_consequence` row and sometimes a `frequency` row —
+/// three inserts that had to agree — is a single declaration carrying when it
+/// repeats, what it reads and what it does.
+#[allow(dead_code)]
+pub async fn declare_rule(
+    engine: &Engine,
+    target: &str,
+    cadence: nucleus::karma::Cadence,
+    anchor_at: &str,
+    condition: Option<&str>,
+    gate: Option<&str>,
+    carry: Option<&str>,
+    consequences: Vec<nucleus::karma::Consequence>,
+) -> String {
+    engine
+        .act(
+            engine::actions::Action::CreateRecurrence {
+                target: target.to_string(),
+                consequences,
+                condition: condition.map(str::to_string),
+                gate: gate.map(str::to_string),
+                carry: carry.map(str::to_string),
+                note: None,
+                cadence,
+                anchor_at: Some(anchor_at.to_string()),
+                request_id: Some(nucleus::new_uid("req")),
+            },
+            None,
+        )
+        .await
+        .expect("a rule is declared")
+        .created
+        .expect("a rule uid")
+}

@@ -6,9 +6,40 @@ run = "./scripts/other/release.sh"
 [tasks.test]
 run = """
 systemctl --user stop lince.service
-mprocs --names lince,test \
+mprocs --names lince,test,lynxui-web,lynxui-package \
     "cargo watch -x run" \
-    "cargo watch -x 'run -- --port 6176 --data-dir /home/user/.config/test_lince'"
+    "cargo watch -x 'run -- --port 6176 --data-dir /home/user/.config/test_lince'" \
+    "mise run lynxui-serve" \
+    "mise run lynxui-watch"
+"""
+
+[tasks.lynxui]
+description = "Run the LynxUI Gallery at http://127.0.0.1:6175 and hot-swap its Sand package"
+run = """
+mprocs --names web,package \
+    "mise run lynxui-serve" \
+    "mise run lynxui-watch"
+"""
+
+[tasks.lynxui-build]
+description = "Compile the development LynxUI Gallery Sand once"
+run = "cargo run -p lince-web --example render_lynx_ui_gallery"
+
+[tasks.lynxui-serve]
+description = "Serve the live-reloading LynxUI Gallery at http://127.0.0.1:6175"
+run = """
+rustc --edition 2024 -D warnings scripts/other/serve_lynxui.rs -o /tmp/lince-lynxui-server
+exec /tmp/lince-lynxui-server
+"""
+
+[tasks.lynxui-watch]
+description = "Compile and hot-swap the LynxUI Gallery when its HTML, CSS, JS, or Rust package changes"
+run = """
+cargo watch \
+    -w crates/web/src/sand/lynx_ui \
+    -w crates/web/static/presentation/board/lynx-ui.css \
+    -w crates/web/static/presentation/board/lynx-ui.js \
+    -x 'run -p lince-web --example render_lynx_ui_gallery'
 """
 
 [tasks.test-all]

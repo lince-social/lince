@@ -4,7 +4,7 @@
 
 use chrono::{DateTime, Utc};
 use nucleus::DecimalValue;
-use nucleus::karma::Cadence;
+use nucleus::karma::{Cadence, Consequences};
 use store::Store;
 use store::recurrence::{
     NewRecurrence, Occurrence, ReviseRecurrence, create, occurrences,
@@ -57,8 +57,8 @@ async fn monthly_rent(store: &Store, record_uid: &str, request: &str) -> String 
         &store.pool,
         NewRecurrence {
             record_uid,
-            amount: amount("-1200"),
-            concept_uid: None,
+            consequences: Consequences::capture(amount("-1200"), None),
+            condition: None,
             note: Some("rent"),
             cadence: Cadence::every_months(1),
             anchor_at: at("2026-01-01T00:00:00Z"),
@@ -84,8 +84,8 @@ async fn a_retried_create_returns_the_first_rule_rather_than_a_second_one() {
         &store.pool,
         NewRecurrence {
             record_uid: &record_uid,
-            amount: amount("-1200"),
-            concept_uid: None,
+            consequences: Consequences::capture(amount("-1200"), None),
+            condition: None,
             note: Some("rent"),
             cadence: Cadence::every_months(1),
             anchor_at: at("2026-01-01T00:00:00Z"),
@@ -130,7 +130,7 @@ async fn dates_are_derived_and_split_into_past_due_and_still_planned() {
         vec!["due", "due", "due", "planned", "planned"]
     );
     assert_eq!(found.len(), 5);
-    assert!(found.iter().all(|item| item.amount == amount("-1200")));
+    assert!(found.iter().all(|item| item.amount == Some(amount("-1200"))));
 }
 
 #[tokio::test]
@@ -216,8 +216,8 @@ async fn revising_a_rule_changes_what_is_expected_without_touching_what_ran() {
         ReviseRecurrence {
             recurrence_uid: &uid,
             expected_revision: 1,
-            amount: amount("-1300"),
-            concept_uid: None,
+            consequences: Consequences::capture(amount("-1300"), None),
+            condition: None,
             note: Some("rent went up"),
             cadence: Cadence::every_months(1),
             anchor_at: at("2026-01-01T00:00:00Z"),
@@ -229,7 +229,7 @@ async fn revising_a_rule_changes_what_is_expected_without_touching_what_ran() {
     .await
     .unwrap();
     assert_eq!(revised.rule().revision, 2);
-    assert_eq!(revised.rule().amount, amount("-1300"));
+    assert_eq!(revised.rule().consequences.declared_delta().copied(), Some(amount("-1300")));
 
     // A stale edit is refused rather than silently overwriting a newer one.
     let stale = revise(
@@ -237,8 +237,8 @@ async fn revising_a_rule_changes_what_is_expected_without_touching_what_ran() {
         ReviseRecurrence {
             recurrence_uid: &uid,
             expected_revision: 1,
-            amount: amount("-9999"),
-            concept_uid: None,
+            consequences: Consequences::capture(amount("-9999"), None),
+            condition: None,
             note: None,
             cadence: Cadence::every_months(1),
             anchor_at: at("2026-01-01T00:00:00Z"),
@@ -302,8 +302,8 @@ async fn a_rule_stops_producing_dates_at_its_own_end() {
         &store.pool,
         NewRecurrence {
             record_uid: &record_uid,
-            amount: amount("-50"),
-            concept_uid: None,
+            consequences: Consequences::capture(amount("-50"), None),
+            condition: None,
             note: Some("gym"),
             // The close is part of the rule now, not a column beside it.
             cadence: Cadence::every_months(1)
@@ -344,8 +344,8 @@ async fn a_cadence_that_never_advances_is_refused_at_the_boundary() {
         &store.pool,
         NewRecurrence {
             record_uid: &record_uid,
-            amount: amount("-10"),
-            concept_uid: None,
+            consequences: Consequences::capture(amount("-10"), None),
+            condition: None,
             note: None,
             cadence: Cadence::every_days(0),
             anchor_at: at("2026-01-01T00:00:00Z"),
@@ -369,8 +369,8 @@ async fn a_rule_survives_a_reopen_with_its_cadence_intact() {
         &store.pool,
         NewRecurrence {
             record_uid: &record_uid,
-            amount: amount("-12.50"),
-            concept_uid: None,
+            consequences: Consequences::capture(amount("-12.50"), None),
+            condition: None,
             note: Some("streaming"),
             cadence: Cadence::every_weeks(2),
             anchor_at: at("2026-01-05T09:30:00Z"),
@@ -393,7 +393,7 @@ async fn a_rule_survives_a_reopen_with_its_cadence_intact() {
         .unwrap();
     assert_eq!(rule.cadence, Cadence::every_weeks(2));
     // Exactness survives the round trip: a subscription is 12.50, not 12.5.
-    assert_eq!(rule.amount, amount("-12.50"));
+    assert_eq!(rule.consequences.declared_delta().copied(), Some(amount("-12.50")));
     assert_eq!(rule.note.as_deref(), Some("streaming"));
 }
 

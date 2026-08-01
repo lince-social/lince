@@ -2,27 +2,40 @@
 
 use chrono::{DateTime, TimeDelta, Utc};
 use engine::Engine;
-use nucleus::{Cause, CauseKind, ConsequenceKind, NewFact, RecordKind};
+use nucleus::karma::{Cadence, Consequence};
+use nucleus::{NewFact, RecordKind};
+
+mod support;
 use store::records::NewRecord;
 
 async fn engine() -> Engine {
     Engine::open_memory().await.expect("engine opens")
 }
 
+/// A Record seeded through the Ledger, not around it.
+///
+/// Writing a starting level straight into the cache used to be harmless
+/// because rules read the cache. They read the Fact chain now — the Ledger is
+/// the truth and the cache is derived from it — so a fixture that skipped the
+/// chain would set up a world the rule cannot see.
 async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
-    store::records::create(
+    let uid = store::records::create(
         &e.store.pool,
         NewRecord {
             slug: Some(slug),
             kind: RecordKind::Plain,
             head: slug,
             body: "",
-            quantity: store::exact::from_f64(quantity),
+            quantity: store::exact::zero(),
         },
     )
     .await
     .expect("record")
-    .uid
+    .uid;
+    if quantity != 0.0 {
+        e.append_user(&uid, quantity).await.expect("a starting level");
+    }
+    uid
 }
 
 fn at(s: &str) -> DateTime<Utc> {
@@ -84,310 +97,358 @@ impl IntoNew for nucleus::Fact {
     }
 }
 
+/// A rule that reads something, in the one shape rules have.
+///
+/// Anchored just before the moment under test, so exactly one date is due:
+/// these are tests about what a rule decides, not about how many dates a
+/// sixty-day catch-up window contains.
+async fn watching(
+    e: &Engine,
+    target: &str,
+    condition: &str,
+    gate: &str,
+    carry: &str,
+    consequences: Vec<Consequence>,
+) -> String {
+    let anchor = (Utc::now() - TimeDelta::minutes(1)).to_rfc3339();
+    support::declare_rule(
+        e,
+        target,
+        Cadence::every_days(1),
+        &anchor,
+        Some(condition),
+        Some(gate),
+        Some(carry),
+        consequences,
+    )
+    .await
+}
+
+fn dec(text: &str) -> nucleus::DecimalValue {
+    nucleus::DecimalValue::parse_inferred(text).expect("an exact number")
+}
+
+async fn level(e: &Engine, uid: &str) -> f64 {
+    store::facts::level(&e.store.pool, uid)
+        .await
+        .unwrap()
+        .to_f64()
+}
+
 #[tokio::test]
-async fn rule_fires_on_change_with_provenance() {
+async fn a_rule_fires_the_moment_the_world_changes_and_says_why() {
+    // The reactive half. A rule watching a level must act when the level moves,
+    // not on the next beat — "when stock drops below three" has to mean the
+    // moment it drops. And the Fact it writes has to name the rule, or an
+    // automatic change is a change nobody can account for.
     let e = engine().await;
     let apples = plain(&e, "apples.stock", 8.0).await;
     let alert = plain(&e, "alerts.low-apples", 0.0).await;
 
-    // when apples drop below 3, set the alert record to 1 (carry=one)
-    store::rules::create(
-        &e.store.pool,
-        store::rules::NewRule {
-            slug: "rules.low-apples",
-            head: "Low apples",
-            condition: "@apples.stock",
-            gate: "<3",
-            carry: "one",
-            consequences: vec![(
-                ConsequenceKind::SetQuantity,
-                Some("@alerts.low-apples".into()),
-                None,
-            )],
-        },
+    let declared = watching(
+        &e,
+        &alert,
+        "@apples.stock",
+        "<3",
+        "one",
+        vec![Consequence::SetQuantity { value: Some(dec("1")) }],
     )
-    .await
-    .unwrap();
-    e.reload_rules().await.unwrap();
+    .await;
 
-    // 8 -> 5: gate blocks
+    // Still plenty: the gate blocks and nothing moves.
     e.append_user(&apples, -3.0).await.unwrap();
-    assert_eq!(
-        store::records::quantity(&e.store.pool, &alert)
-            .await
-            .unwrap()
-            .map(|q| q.to_f64()),
-        Some(0.0)
-    );
+    assert_eq!(level(&e, &alert).await, 0.0, "a blocked gate must not act");
 
-    // 5 -> 2: fires, alert = 1, cause = rule:<uid>
-    let facts = e.append_user(&apples, -3.0).await.unwrap();
-    assert_eq!(
-        store::records::quantity(&e.store.pool, &alert)
-            .await
-            .unwrap()
-            .map(|q| q.to_f64()),
-        Some(1.0)
-    );
-    let rule_fact = facts
-        .iter()
-        .find(|f| f.record_uid == alert)
-        .expect("cascade fact");
-    assert_eq!(rule_fact.cause.kind, CauseKind::Rule);
-    assert!(
-        rule_fact.cause.uid.is_some(),
-        "automation always answers why"
-    );
-}
+    // Down to 2, and the alert raises itself with no beat in between.
+    e.append_user(&apples, -3.0).await.unwrap();
+    assert_eq!(level(&e, &alert).await, 1.0, "the change itself must fire it");
 
-#[tokio::test]
-async fn derived_value_rules_are_spreadsheet_cells() {
-    let e = engine().await;
-    plain(&e, "x", 4.0).await;
-    let y = plain(&e, "y", 0.0).await;
-
-    // zero consequences = named derived value (blueprint VI.3)
-    store::rules::create(
-        &e.store.pool,
-        store::rules::NewRule {
-            slug: "rules.double-x",
-            head: "x * 2",
-            condition: "@x * 2",
-            gate: "always",
-            carry: "value",
-            consequences: vec![],
-        },
-    )
-    .await
-    .unwrap();
-    // consumer references it via value()
-    store::rules::create(
-        &e.store.pool,
-        store::rules::NewRule {
-            slug: "rules.apply",
-            head: "y = double-x + 1",
-            condition: "value(@rules.double-x) + 1",
-            gate: "always",
-            carry: "value",
-            consequences: vec![(ConsequenceKind::SetQuantity, Some("@y".into()), None)],
-        },
-    )
-    .await
-    .unwrap();
-    e.reload_rules().await.unwrap();
-
-    let x_uid = store::records::resolve(&e.store.pool, "x")
+    // The change is an ordinary entry — deliberately, so a balance reads the
+    // same whether a person or a rule moved it. What makes it accountable is
+    // that the date it answered is now spent: the rule can say which of its
+    // occurrences produced this, and cannot produce it twice.
+    let rule = store::recurrence::get(&e.store.pool, &declared)
         .await
         .unwrap()
-        .unwrap()
-        .uid;
-    e.append_user(&x_uid, 1.0).await.unwrap(); // x: 4 -> 5
-    assert_eq!(
-        store::records::quantity(&e.store.pool, &y).await.unwrap().map(|q| q.to_f64()),
-        Some(11.0),
-        "y = (5 * 2) + 1"
-    );
-}
-
-#[tokio::test]
-async fn frequency_tick_drives_the_daily_habit() {
-    let e = engine().await;
-    let exercise = plain(&e, "exercise", 0.0).await;
-    store::freqs::create(
+        .expect("the rule is stored");
+    let dates = store::recurrence::occurrences(
         &e.store.pool,
-        store::freqs::NewFrequency {
-            slug: "freq.daily-7am",
-            head: "Daily 7am",
-            seconds: 0,
-            days: 1,
-            months: 0,
-            day_of_week: None,
-            next_at: at("2026-07-05T07:00:00Z"),
-            catch_up: false,
-        },
+        &rule,
+        Utc::now() - TimeDelta::days(1),
+        Utc::now() + TimeDelta::days(1),
+        Utc::now(),
     )
     .await
     .unwrap();
-    // the LINCE.md classic: -1 * freq, '=' (!=0), consequence sets the Need
-    store::rules::create(
-        &e.store.pool,
-        store::rules::NewRule {
-            slug: "rules.daily-exercise",
-            head: "Daily exercise",
-            condition: "-1 * freq(@freq.daily-7am)",
-            gate: "!=0",
-            carry: "value",
-            consequences: vec![(ConsequenceKind::SetQuantity, Some("@exercise".into()), None)],
-        },
-    )
-    .await
-    .unwrap();
-    e.reload_rules().await.unwrap();
-
-    let now = at("2026-07-05T10:00:00Z");
-    let facts = e.tick(now).await.unwrap();
-    assert!(!facts.is_empty());
-    assert_eq!(
-        store::records::quantity(&e.store.pool, &exercise)
-            .await
-            .unwrap()
-            .map(|q| q.to_f64()),
-        Some(-1.0),
-        "exercise became a Need"
-    );
-
-    // next tick same day: frequency advanced past now, nothing fires
-    let facts = e.tick(now + TimeDelta::minutes(5)).await.unwrap();
-    assert!(facts.is_empty());
-}
-
-#[tokio::test]
-async fn rules_emit_promises_previewable_automation() {
-    let e = engine().await;
-    let apples = plain(&e, "apples.stock", 8.0).await;
-
-    store::rules::create(
-        &e.store.pool,
-        store::rules::NewRule {
-            slug: "rules.reorder",
-            head: "Reorder apples",
-            condition: "@apples.stock",
-            gate: "<3",
-            carry: "one",
-            consequences: vec![(
-                ConsequenceKind::EmitPromise,
-                Some("@apples.stock".into()),
-                Some(serde_json::json!({ "delta": 5.0 })),
-            )],
-        },
-    )
-    .await
-    .unwrap();
-    e.reload_rules().await.unwrap();
-
-    e.append_user(&apples, -6.0).await.unwrap(); // 8 -> 2, fires
-    let promises = store::misc::promises_for_record(&e.store.pool, &apples)
-        .await
-        .unwrap();
-    assert_eq!(promises.len(), 1);
-    assert_eq!(promises[0].delta, 5.0);
-    assert_eq!(promises[0].state, nucleus::PromiseState::Proposed);
     assert!(
-        promises[0].rule_uid.is_some(),
-        "automation-born promises name their rule"
+        dates
+            .iter()
+            .any(|date| date.state == store::recurrence::OccurrenceState::Applied),
+        "the date the rule answered must be recorded as spent"
     );
 }
 
 #[tokio::test]
-async fn ask_consequence_enqueues_a_decision() {
+async fn a_rule_acts_at_most_once_per_period_however_often_it_is_poked() {
+    // What used to be a `debounce` column. It is the cadence now: a rule may
+    // act on its dates, and a date is spent once. So the thing that decides how
+    // often a rule may fire is the same thing that decides when it fires,
+    // declared in one place instead of two that could disagree.
     let e = engine().await;
-    let apples = plain(&e, "apples.stock", 2.0).await;
-    store::rules::create(
-        &e.store.pool,
-        store::rules::NewRule {
-            slug: "rules.reorder-ask",
-            head: "Ask before reorder",
-            condition: "@apples.stock",
-            gate: "<3",
-            carry: "one",
-            consequences: vec![(
-                ConsequenceKind::Ask,
-                None,
-                Some(serde_json::json!({ "question": "send reorder proposal?" })),
-            )],
+    let apples = plain(&e, "apples.stock", 10.0).await;
+    let counter = plain(&e, "counter", 0.0).await;
+
+    watching(
+        &e,
+        &counter,
+        "@apples.stock",
+        ">0",
+        "one",
+        vec![Consequence::AddQuantity { delta: Some(dec("1")) }],
+    )
+    .await;
+
+    for _ in 0..5 {
+        e.append_user(&apples, -1.0).await.unwrap();
+    }
+    assert_eq!(
+        level(&e, &counter).await,
+        1.0,
+        "five pokes inside one day are one act"
+    );
+}
+
+#[tokio::test]
+async fn a_rule_can_be_read_as_a_named_cell() {
+    // `value(@x)`: one rule computes a number and others read it, instead of
+    // each restating the formula and drifting apart at the first edit. The
+    // gate of the rule being read is deliberately ignored — reading what a
+    // rule computes is not the same as letting it act.
+    let e = engine().await;
+    let _income = plain(&e, "income", 100.0).await;
+    let budget = plain(&e, "budget", 0.0).await;
+    let mirror = plain(&e, "mirror", 0.0).await;
+
+    // A cell: half of income. Its own gate would block, and that must not
+    // stop another rule from reading the number.
+    watching(
+        &e,
+        &budget,
+        "@income / 2",
+        "<0",
+        "value",
+        vec![Consequence::SetQuantity { value: Some(dec("0")) }],
+    )
+    .await;
+    watching(
+        &e,
+        &mirror,
+        "value(@budget)",
+        "always",
+        "value",
+        vec![Consequence::CaptureEntry {
+            amount: dec("0"),
+            concept: None,
+        }],
+    )
+    .await;
+
+    e.fire_due_rules(Utc::now()).await.unwrap();
+    assert_eq!(
+        level(&e, &mirror).await,
+        50.0,
+        "the cell's arithmetic must be readable even when its own gate blocks"
+    );
+}
+
+#[tokio::test]
+async fn the_two_flow_directions_can_be_read_apart() {
+    // `sum_pos` and `sum_neg` over a window. What came in and what went out are
+    // different questions, and a rule that could only see the net would answer
+    // neither.
+    let e = engine().await;
+    let account = plain(&e, "account", 0.0).await;
+    let inflow = plain(&e, "inflow", 0.0).await;
+
+    e.append_user(&account, 100.0).await.unwrap();
+    e.append_user(&account, -30.0).await.unwrap();
+    e.append_user(&account, 50.0).await.unwrap();
+
+    watching(
+        &e,
+        &inflow,
+        "sum_pos(@account, 30d)",
+        "always",
+        "value",
+        vec![Consequence::CaptureEntry {
+            amount: dec("0"),
+            concept: None,
+        }],
+    )
+    .await;
+
+    e.fire_due_rules(Utc::now()).await.unwrap();
+    assert_eq!(
+        level(&e, &inflow).await,
+        150.0,
+        "only what came in, not the net of 120"
+    );
+}
+
+#[tokio::test]
+async fn a_paused_rule_stops_acting_and_stops_being_read() {
+    // Pausing means "stop acting for me", and it has to be complete: a paused
+    // rule must not fire, and must not have its rhythm counted by somebody
+    // else's arithmetic either.
+    let e = engine().await;
+    let apples = plain(&e, "apples.stock", 10.0).await;
+    let counter = plain(&e, "counter", 0.0).await;
+
+    let rule = watching(
+        &e,
+        &counter,
+        "@apples.stock",
+        ">0",
+        "one",
+        vec![Consequence::AddQuantity { delta: Some(dec("1")) }],
+    )
+    .await;
+
+    e.act(
+        engine::actions::Action::SetRecurrencePaused {
+            recurrence: rule,
+            expected_revision: 1,
+            request_id: nucleus::new_uid("req"),
+            paused: true,
         },
+        None,
     )
     .await
     .unwrap();
-    e.reload_rules().await.unwrap();
 
     e.append_user(&apples, -1.0).await.unwrap();
-    let open = store::misc::open_decisions(&e.store.pool).await.unwrap();
-    assert_eq!(open.len(), 1);
-    assert_eq!(open[0].2, "send reorder proposal?");
+    e.fire_due_rules(Utc::now()).await.unwrap();
+    assert_eq!(level(&e, &counter).await, 0.0, "a paused rule acts for nobody");
+}
+
+// ------------------------------------------------------- outward consequences
+
+#[tokio::test]
+async fn a_rule_can_propose_an_obligation_instead_of_moving_a_number() {
+    // A promise is the honest shape for "this is expected": it projects, it can
+    // be kept or broken, and nothing has moved until it is kept.
+    let e = engine().await;
+    let rent = plain(&e, "rent", 0.0).await;
+
+    support::declare_rule(
+        &e,
+        &rent,
+        Cadence::every_days(1),
+        "2026-03-01T07:00:00Z",
+        None,
+        None,
+        None,
+        vec![Consequence::EmitPromise {
+            delta: Some(dec("-1200")),
+            window_end: Some("2026-04-01T00:00:00Z".into()),
+            party: None,
+        }],
+    )
+    .await;
+
+    e.fire_due_rules(at("2026-03-01T08:00:00Z")).await.unwrap();
+    let promises = store::misc::list_promises(&e.store.pool).await.unwrap();
+    assert!(
+        promises.iter().any(|p| p.delta == -1200.0),
+        "the rule must have proposed the obligation"
+    );
+    assert_eq!(
+        level(&e, &rent).await,
+        0.0,
+        "and must not have moved the number yet"
+    );
 }
 
 #[tokio::test]
-async fn proof_warns_on_loops_and_cascade_cap_survives_them() {
+async fn a_rule_can_ask_instead_of_deciding() {
+    // The one consequence that deliberately does not decide. Automation that
+    // can ask is what lets a rule handle the cases it should not settle alone.
     let e = engine().await;
-    let a = plain(&e, "a", 0.0).await;
-    plain(&e, "b", 0.0).await;
+    let stock = plain(&e, "stock", 0.0).await;
 
-    // A: when a changes, b += 1 ; B: when b changes, a += 1 — a deliberate loop
-    store::rules::create(
-        &e.store.pool,
-        store::rules::NewRule {
-            slug: "rules.a-to-b",
-            head: "a->b",
-            condition: "@a",
-            gate: "always",
-            carry: "one",
-            consequences: vec![(ConsequenceKind::AddQuantity, Some("@b".into()), None)],
-        },
+    support::declare_rule(
+        &e,
+        &stock,
+        Cadence::every_days(1),
+        "2026-03-01T07:00:00Z",
+        None,
+        None,
+        None,
+        vec![Consequence::Ask {
+            question: Some("Reorder?".into()),
+            options: vec!["yes".into(), "later".into()],
+        }],
     )
-    .await
-    .unwrap();
-    store::rules::create(
-        &e.store.pool,
-        store::rules::NewRule {
-            slug: "rules.b-to-a",
-            head: "b->a",
-            condition: "@b",
-            gate: "always",
-            carry: "one",
-            consequences: vec![(ConsequenceKind::AddQuantity, Some("@a".into()), None)],
-        },
-    )
-    .await
-    .unwrap();
+    .await;
 
-    // Proof: the loop is announced at load (blueprint VI.4)
-    let warnings = e.reload_rules().await.unwrap();
+    e.fire_due_rules(at("2026-03-01T08:00:00Z")).await.unwrap();
+    let decisions = store::misc::list_decisions(&e.store.pool).await.unwrap();
     assert!(
-        warnings.iter().any(|w| w.message.contains("loop")),
-        "Proof names the loop: {warnings:?}"
+        decisions.iter().any(|d| d.question == "Reorder?"),
+        "the question must be waiting in the queue"
     );
-
-    // and the delivery cap keeps the engine alive through it
-    let facts = e
-        .append(NewFact::quantity_f64(&a, 1.0, Cause::user_edit()), Utc::now())
-        .await
-        .unwrap();
-    assert!(!facts.is_empty());
-    assert!(facts.len() <= 300, "cascade is capped, not infinite");
 }
 
 #[tokio::test]
-async fn effects_run_outside_evaluation_with_provenance() {
+async fn what_leaves_the_cell_is_queued_rather_than_run_mid_evaluation() {
+    // A rule that shelled out inside its own evaluation could change the world
+    // and then have its transaction rolled back, and would leave nowhere to
+    // check a grant. So it commits an effect and a separate worker carries it.
     let e = engine().await;
-    let trigger = plain(&e, "trigger", 0.0).await;
-    let rule_uid = store::rules::create(
-        &e.store.pool,
-        store::rules::NewRule {
-            slug: "rules.echo",
-            head: "Echo",
-            condition: "@trigger",
-            gate: "!=0",
-            carry: "value",
-            consequences: vec![(ConsequenceKind::RunCommand, Some("echo lince".into()), None)],
-        },
+    let watched = plain(&e, "watched", 0.0).await;
+
+    support::declare_rule(
+        &e,
+        &watched,
+        Cadence::every_days(1),
+        "2026-03-01T07:00:00Z",
+        None,
+        None,
+        None,
+        vec![Consequence::RunCommand {
+            command: "echo hello".into(),
+        }],
     )
-    .await
-    .unwrap();
-    e.reload_rules().await.unwrap();
+    .await;
 
-    e.append_user(&trigger, 1.0).await.unwrap();
-    let outcomes = e.run_due_effects().await.unwrap();
-    assert_eq!(outcomes.len(), 1);
-    assert!(outcomes[0].ok);
-    assert_eq!(outcomes[0].result, "lince");
-
-    // result logged as a zero-delta provenance fact on the rule record
-    let log = store::facts::for_record(&e.store.pool, &rule_uid, 5)
-        .await
-        .unwrap();
+    e.fire_due_rules(at("2026-03-01T08:00:00Z")).await.unwrap();
+    let queued = store::misc::due_effects(&e.store.pool).await.unwrap();
     assert!(
-        log.iter()
-            .any(|f| f.delta == store::exact::from_f64(0.0) && f.cause.kind == CauseKind::Action)
+        queued.iter().any(|effect| effect.kind == "command"),
+        "the command must be queued, not already run"
     );
+}
+
+#[tokio::test]
+async fn an_outward_payload_that_is_not_readable_is_refused_where_it_is_written() {
+    // Not at 3am inside a heartbeat with nobody watching.
+    let e = engine().await;
+    let watched = plain(&e, "watched", 0.0).await;
+    let refused = e
+        .act(
+            engine::actions::Action::CreateRecurrence {
+                target: watched,
+                consequences: vec![Consequence::RunCommand { command: "  ".into() }],
+                condition: None,
+                gate: None,
+                carry: None,
+                note: None,
+                cadence: Cadence::every_days(1),
+                anchor_at: None,
+                request_id: Some(nucleus::new_uid("req")),
+            },
+            None,
+        )
+        .await;
+    assert!(refused.is_err(), "a consequence with nothing to run must not store");
 }

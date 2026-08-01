@@ -28,6 +28,34 @@
   safety); slugs are optional `dot.case` local sugar, uids are identity —
   Actions accept either.
 
+### Decided 2026-07-31 — worklogs stay properties, and become typed
+
+Worklogs were considered for the Ledger, as time-concept delta facts. **They
+stay record properties.** A worklog is an attribute of a task, not a movement of
+a resource, and forcing it onto the Ledger would need a separate accumulator
+Record per tracked thing — because a task's quantity already means its Need
+level and cannot also mean hours. Rules do not read worklogs and do not need to.
+
+What changes is *how* they are stored, because "some ideas are first-class
+citizens" and this is one of them:
+
+- [ ] **The `work` namespace becomes a typed, validated extension, not
+  freestyle `fds`.** Same table, same single-row read — so nothing gets slower
+  and nothing migrates — but the shape (`start`, `due`, `estimate_min`,
+  `logs: [{start, end}]`) is a real type checked at the Action boundary rather
+  than whatever JSON a client happened to send. The extension stays the escape
+  hatch for one-off workflows; a namespace that several surfaces depend on has
+  outgrown being an escape hatch.
+- [ ] **`version` on `record_extension` starts meaning something.** The column
+  exists and is always 1. A typed namespace is what makes it usable: a reader
+  can refuse a shape it does not understand instead of silently seeing missing
+  fields as absent values.
+- [ ] **Editing a worklog is an operation, not a blob replacement.** Today the
+  client splices the array and re-uploads the whole object, so a correction
+  erases what it corrected and concurrent edits lose each other. Per-field
+  merge is in `docs/Central: Sync and Organs.md` — the same problem as
+  concurrent body editing, one nesting level up.
+
 
 | Columns  | User Input | Actual Record | Data Type       |
 |----------|------------|----------------|-----------------|

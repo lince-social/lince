@@ -518,3 +518,72 @@ fn membership_recognises_exactly_what_the_generator_produces() {
     let not_ours = nucleus::karma::CivilDateTime::parse_canonical("2026-01-03T08:00:00.000").unwrap();
     assert!(!cadence.produces_civil(anchor, not_ours));
 }
+
+#[test]
+fn the_instant_before_a_cut_is_the_one_a_rule_last_produced() {
+    // `preceding` is what gives a rule the window it reads over: the gap back
+    // to its own previous instant. Getting it wrong by one step makes every
+    // rhythm a rule counts either double or vanish.
+    let cadence = Cadence::every_days(7);
+    let anchor = at("2026-03-02T00:00:00Z");
+
+    // Strictly before: an instant the rule produces is not its own predecessor.
+    assert_eq!(
+        cadence.preceding(anchor, at("2026-03-09T00:00:00Z")).unwrap(),
+        Some(at("2026-03-02T00:00:00Z")),
+        "a cut landing exactly on an occurrence belongs to the one beneath it"
+    );
+    assert_eq!(
+        cadence.preceding(anchor, at("2026-03-09T00:00:01Z")).unwrap(),
+        Some(at("2026-03-09T00:00:00Z"))
+    );
+    // Before the anchor there is nothing to have missed.
+    assert_eq!(cadence.preceding(anchor, anchor).unwrap(), None);
+    assert_eq!(
+        cadence.preceding(anchor, at("2026-01-01T00:00:00Z")).unwrap(),
+        None
+    );
+}
+
+#[test]
+fn looking_back_over_a_fast_rule_does_not_walk_from_the_anchor() {
+    // The reason this is not a backwards `between`: a lookback wide enough for
+    // a yearly step truncates a millisecond one, and the last element of a
+    // truncated prefix is the wrong answer by millions of steps. Ten
+    // milliseconds, a year on from the anchor, has to be exact and immediate.
+    let cadence = Cadence::every(CadenceStep {
+        milliseconds: 10,
+        ..CadenceStep::default()
+    });
+    let anchor = at("2026-01-01T00:00:00Z");
+    assert_eq!(
+        cadence.preceding(anchor, at("2027-01-01T00:00:00.005Z")).unwrap(),
+        Some(at("2027-01-01T00:00:00Z"))
+    );
+}
+
+#[test]
+fn looking_back_respects_the_calendar_and_the_bound() {
+    // A monthly rule anchored on the 31st, clamping: the instant before March
+    // is February's clamped end, not the 31st of a month that has none.
+    let cadence = Cadence::every(CadenceStep {
+        months: 1,
+        ..CadenceStep::default()
+    });
+    let anchor = at("2026-01-31T09:00:00Z");
+    assert_eq!(
+        cadence.preceding(anchor, at("2026-03-31T09:00:00Z")).unwrap(),
+        Some(at("2026-02-28T09:00:00Z")),
+        "the clamped instant is the one the rule actually produced"
+    );
+
+    // A retired rule has a last instant and then nothing later.
+    let mut counted = Cadence::every_days(1);
+    counted.bound = nucleus::karma::CadenceBound::Count { occurrences: 3 };
+    let anchor = at("2026-01-01T00:00:00Z");
+    assert_eq!(
+        counted.preceding(anchor, at("2026-06-01T00:00:00Z")).unwrap(),
+        Some(at("2026-01-03T00:00:00Z")),
+        "looking back from long after a bound finds the last instant, not none"
+    );
+}

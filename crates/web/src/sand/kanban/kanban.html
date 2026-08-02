@@ -38,6 +38,11 @@
     textarea { min-height: 90px; resize: vertical; }
     button { border: 1px solid var(--control-border); border-radius: 2px; background: var(--panel2); color: var(--text); padding: 3px 5px; cursor: pointer; }
     button:hover { background: var(--surface-hover); }
+    /* Lynx tooltips ([data-lynx-tooltip]::after, in lynx-ui.css) anchor to
+       the nearest positioned ancestor — give every tooltip target its own
+       positioning context so it anchors to itself, not some large parent.
+       .page-corner is already position:absolute for layout; leave it be. */
+    [data-lynx-tooltip]:not(.page-corner) { position: relative; }
     button.accent { border-color: var(--accent); background: var(--accent); color: #f8fafc; }
     button:disabled { opacity: .4; cursor: default; }
     /* Sand controls stay out of the working surface until its lower-right
@@ -76,18 +81,40 @@
     .col { position: relative; flex: 0 0 auto; min-height: 0; display: grid; grid-template-rows: auto 1fr; }
     .col.is-collapsed { width: 34px !important; }
     .col-head { display: flex; align-items: center; gap: 4px; padding: 5px; border-bottom: 0; box-shadow: var(--lynx-shadow-x) var(--lynx-shadow-y) var(--lynx-shadow-blur) var(--lynx-shadow-color); }
-    .col.is-collapsed .col-head { flex-direction: column; border-bottom: 0; padding: 9px 4px; }
+    .col.is-collapsed .col-head { flex-direction: column; justify-content: flex-start; gap: 7px; border-bottom: 0; padding: 9px 4px; }
     .col.is-collapsed .col-head h2 { writing-mode: vertical-rl; }
+    .col.is-collapsed .col-title { flex-direction: column; gap: 4px; }
+    .col.is-collapsed .lane-toggle { padding: 0; }
     .col-title { display: inline-flex; align-items: center; gap: 3px; min-width: 0; }
     .col h2 { margin: 0; font-size: 12px; }
-    .count { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 11px; }
+    /* an invisible, borderless box: no border/background of its own — just
+       padding so the count doesn't sit jammed against the column name. */
+    .count { position: relative; display: inline-flex; align-items: center; justify-content: center;
+             min-width: 14px; padding: 1px 5px; margin-left: 2px; border: 0; border-radius: 8px;
+             color: var(--muted); font-variant-numeric: tabular-nums; font-size: 11px; }
     .col-add, .col-controls { display: none; }
     .col-head:hover .col-add, .col-head:focus-within .col-add, .col-head:hover .col-controls, .col-head:focus-within .col-controls { display: inline-flex; }
     .col-controls { align-items: center; gap: 3px; margin-left: auto; }
-    .col-add { width: 15px; min-width: 15px; min-height: 15px; padding: 0; border: 0; color: var(--muted); background: transparent; line-height: 1; }
-    .col-add:hover { color: var(--text); background: var(--surface-hover); }
-    .lane-toggle { border: 0; background: none; color: var(--muted); padding: 0 3px; font-size: 11px; }
+    .col-add.lynx-icon-button { position: relative; width: 15px; min-width: 15px; height: 15px; min-height: 15px; --icon-size: 11px; border: 0; box-shadow: none; }
+    .lane-toggle { position: relative; display: inline-flex; align-items: center; justify-content: center;
+                   width: 15px; min-height: 15px; border: 0; background: none; color: var(--muted); padding: 0; }
     .lane-toggle:hover { color: var(--text); }
+    /* the same chevron the Lynx UI dropdown/disclosure controls use (see
+       .lynx-dropdown > [data-lynx-dropdown-button]::after in lynx-ui.css),
+       just reused here instead of the old glyph text so the collapse
+       control reads as the same control family. ::before, not ::after —
+       this button also carries data-lynx-tooltip, and lynx-ui.css's
+       [data-lynx-tooltip]::after IS the tooltip bubble on this same
+       element; sharing ::after with it fights over `display`/`content`
+       and the chevron loses (stays display:none until hover). */
+    .lane-toggle::before {
+      content: "";
+      width: 5px; height: 5px;
+      border-right: 1px solid currentColor;
+      border-bottom: 1px solid currentColor;
+      transform: rotate(45deg) translateY(-1px);
+    }
+    .lane-toggle[data-collapsed="true"]::before { transform: rotate(-45deg) translateX(-1px); }
     .lane-handle { position: absolute; top: 0; right: -4px; width: 8px; height: 100%; cursor: col-resize; }
     .cards { min-height: 80px; overflow: auto; padding: 0; }
     .col.is-collapsed .cards { display: none; }
@@ -105,9 +132,9 @@
     .card:active { cursor: grabbing; }
     .card.selected { outline: 2px solid var(--accent); outline-offset: 1px; }
     .card-top { display: flex; align-items: baseline; gap: 6px; }
-    .card-title { font-weight: 650; word-break: break-word; flex: 1; }
+    .card-title { position: relative; font-weight: 650; word-break: break-word; flex: 1; }
     .parent-ctx { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
-    .assignee-chip { border: var(--hairline) solid currentColor; border-radius: 2px; background: transparent;
+    .assignee-chip { position: relative; border: var(--hairline) solid currentColor; border-radius: 2px; background: transparent;
                      color: var(--accent); font-size: 10px; padding: 0 6px; }
     /* compact and full share the SAME font-size/line-height (2026-07-18):
        compact's only distinguishing behavior is the JS line-window
@@ -133,17 +160,18 @@
        row, above the title/body content (z-index), so they never overlap it. */
     .card-actions { position: absolute; top: 0; right: 0; display: none; align-items: center; gap: 4px; z-index: 5; background: var(--bg); }
     .card:hover .card-actions, .card:focus-within .card-actions, .card.selected .card-actions { display: inline-flex; }
-    .card-actions .lynx-check, .col-head .lynx-check { gap: 0; }
+    .card-actions .lynx-check, .col-head .lynx-check { position: relative; gap: 0; }
     .card-actions .lynx-check input, .col-head .lynx-check input { cursor: pointer; }
-    .mode-cycle { border: 0; background: none; color: var(--muted); font-size: 10px; padding: 1px 4px; cursor: pointer; border-radius: 2px; }
+    .mode-cycle { position: relative; border: 0; background: none; color: var(--muted); font-size: 10px; padding: 1px 4px; cursor: pointer; border-radius: 2px; }
     .mode-cycle:hover { color: var(--text); background: var(--panel2); }
     .mode-cycle.overridden { color: var(--accent); }
-    .mode-mini { border: 0; background: none; color: var(--muted); font-size: 10px; padding: 1px 3px; cursor: pointer; border-radius: 2px; line-height: 1; }
+    .mode-mini { position: relative; border: 0; background: none; color: var(--muted); font-size: 10px; padding: 1px 3px; cursor: pointer; border-radius: 2px; line-height: 1; }
     .mode-mini:hover { color: var(--text); background: var(--panel2); }
     .mode-mini.on { color: var(--accent); }
     .sheet-overlay { position: fixed; inset: 0; display: none; z-index: 30; }
     .sheet-overlay.open { display: block; }
-    .sheet-backdrop { position: absolute; inset: 0; border: 0; border-radius: 0; background: rgba(4,8,14,.6); cursor: default; }
+    .sheet-backdrop { position: absolute; inset: 0; border: 0; border-radius: 0; background: transparent; cursor: default; }
+    .sheet-backdrop:hover, .sheet-backdrop:focus-visible { background: transparent; }
     .sheet-panel { position: absolute; top: 0; right: 0; height: 100%; width: min(430px, 92vw); overflow: auto; background: var(--panel); border-left: 1px solid #a7b4c2; padding: 6px; display: grid; gap: 6px; align-content: start; }
     /* the bulk-delete confirmation is a small centered dialog, not a right-side drawer */
     #sheet-confirm .sheet-panel { position: absolute; top: 50%; left: 50%; right: auto; height: auto;
@@ -175,7 +203,7 @@
     <div class="sand-tools" data-lynx-tooltip-boundary>
       <span id="connection-corner" class="page-corner" role="status" aria-label="Reconnecting" data-lynx-tooltip="Reconnecting"></span>
       <div class="sand-tools__row">
-        <span id="all-modes" class="modes" title="Body view for every card (per-column and per-card buttons override)">
+        <span id="all-modes" class="modes" data-lynx-tooltip="Body view for every card (per-column and per-card buttons override)">
           <button type="button" data-mode="head" data-lynx-tooltip="Title only">▁</button>
           <button type="button" data-mode="compact" data-lynx-tooltip="Compact body">▄</button>
           <button type="button" data-mode="full" data-lynx-tooltip="Full body">█</button>
@@ -187,7 +215,7 @@
 
   <div id="bulk-bar" class="bulkbar" hidden>
     <span id="bulk-count"></span>
-    <select id="bulk-lane" class="lynx-select" title="Bulk-move the selected cards into this column"></select>
+    <select id="bulk-lane" class="lynx-select" data-lynx-tooltip="Bulk-move the selected cards into this column"></select>
     <button id="bulk-move" class="lynx-button" type="button" data-lynx-tooltip="Move selected cards here">→</button>
     <button id="bulk-delete" class="lynx-button danger" type="button" data-lynx-tooltip="Delete selected cards">⌫</button>
     <button id="bulk-clear" class="lynx-button" type="button" data-lynx-tooltip="Clear selection">✕</button>
@@ -197,16 +225,16 @@
     <button class="sheet-backdrop" type="button" data-close="sheet-columns"></button>
     <div class="sheet-panel">
       <div class="sheet-head"><h2>Columns</h2><button type="button" data-close="sheet-columns">Close</button></div>
-      <p class="sheet-sub" title="Done is quantity 1 — you only need to know if you want to change it.">Columns bucket cards by <b>quantity</b>: a value (<code>1</code>), a range (<code>3..10</code> — moving a card in writes the range's first value), or a concept (<code>@food</code> — moving writes <code>set-concept</code>). Done is quantity 1; you only need to know that if you want to change it. The checkbox hides a column.</p>
+      <p class="sheet-sub" data-lynx-tooltip="Done is quantity 1 — you only need to know if you want to change it.">Columns bucket cards by <b>quantity</b>: a value (<code>1</code>), a range (<code>3..10</code> — moving a card in writes the range's first value), or a concept (<code>@food</code> — moving writes <code>set-identity</code>). Done is quantity 1; you only need to know that if you want to change it. The checkbox hides a column.</p>
       <div id="columns-list" class="field-block"></div>
       <div class="sheet-actions start">
         <button id="column-add" type="button">+ Add column</button>
         <label class="lynx-check hint"><input type="checkbox" id="hide-empty" /> Hide empty columns</label>
-        <label class="lynx-check hint" title="Board option: the old showParentContext"><input type="checkbox" id="show-parent" /> Parent above titles</label>
-        <label class="lynx-check hint" title="Tints each column's whole background with its color, instead of no color at all"><input type="checkbox" id="color-columns" /> Color columns</label>
+        <label class="lynx-check hint" data-lynx-tooltip="Board option: the old showParentContext"><input type="checkbox" id="show-parent" /> Parent above titles</label>
+        <label class="lynx-check hint" data-lynx-tooltip="Tints each column's whole background with its color, instead of no color at all"><input type="checkbox" id="color-columns" /> Color columns</label>
       </div>
       <div class="sheet-actions">
-        <button id="columns-reset" type="button" title="Back to the default Backlog/Next/WIP/Review/Done">Reset</button>
+        <button id="columns-reset" type="button" data-lynx-tooltip="Back to the default Backlog/Next/WIP/Review/Done">Reset</button>
         <button id="columns-save" type="button" class="accent">Save columns</button>
       </div>
       <div class="field-block">
@@ -214,7 +242,7 @@
         <div id="preset-list" class="field-block"></div>
         <div class="sheet-actions start">
           <input id="preset-name" type="text" placeholder="Preset name" />
-          <button id="preset-save" type="button" title="Saves the board's current columns as a sand-configuration record (kind sand, extension kanban.columns) — visible to every kanban on this cell">Save current as preset</button>
+          <button id="preset-save" type="button" data-lynx-tooltip="Saves the board's current columns as a sand-configuration record (kind sand, extension kanban.columns) — visible to every kanban on this cell">Save current as preset</button>
         </div>
       </div>
     </div>
@@ -241,7 +269,7 @@
     // A column is {key,label} plus HOW it buckets: a quantity `value` (with an
     // optional `to` making it a RANGE — moving a card in writes the
     // representative `value`), or a `concept` name/uid (moving writes
-    // `set-concept`). cardState.kanban.lanesDef overrides the defaults; the
+    // `set-identity`). cardState.kanban.lanesDef overrides the defaults; the
     // Columns sheet edits it; presets swap it in one tap.
     const DEFAULT_LANES = [
       { key: "backlog", label: "Backlog", value: 0, color: "#6e7681" },
@@ -314,7 +342,7 @@
     const uiStorageKey = `lince-kanban-ui:${H.instanceId || "preview"}`;
     let ui = defaultUi();
     function defaultUi() {
-      return { defaultBodyMode: "full", columnModes: {}, cardModes: {}, lanes: {}, lanesDef: null, hideEmpty: false, showParent: false, columnColor: false };
+      return { defaultBodyMode: "full", columnModes: {}, cardModes: {}, lanes: {}, lanesDef: null, hideEmpty: false, showParent: false, columnColor: true };
     }
     const isBodyMode = (v) => BODY_MODES.includes(v);
     function normalizeUi(raw) {
@@ -496,7 +524,7 @@
       btn.dataset[kind] = key;
       const displayed = current || inherited;
       btn.textContent = MODE_ICON[displayed];
-      btn.title = (kind === "columnMode"
+      btn.dataset.lynxTooltip = (kind === "columnMode"
         ? "Body view for this column (overrides the board default)"
         : "Body view for this card (overrides column and board)")
         + ` — now ${displayed}${current ? "" : " (inherited)"}`;
@@ -725,7 +753,7 @@
       btn.type = "button";
       btn.className = "icon-btn";
       btn.textContent = text;
-      btn.title = title;
+      btn.dataset.lynxTooltip = title;
       return btn;
     }
     function snapshotDraft() {
@@ -763,7 +791,7 @@
         value.type = "text";
         value.className = "col-value";
         value.value = laneValueText(lane);
-        value.title = "A quantity (1), a range (3..10), or a concept (@food)";
+        value.dataset.lynxTooltip = "A quantity (1), a range (3..10), or a concept (@food)";
         value.addEventListener("input", () => {
           const parsed = parseLaneValue(value.value);
           value.classList.toggle("col-err", !parsed);
@@ -776,14 +804,14 @@
         color.type = "color";
         color.className = "col-color";
         color.value = HEX_COLOR_RE.test(lane.color || "") ? lane.color : "#6e7681";
-        color.title = "Column color (used when \"Color columns\" is on)";
+        color.dataset.lynxTooltip = "Column color (used when \"Color columns\" is on)";
         color.addEventListener("input", () => { lane.color = color.value; });
         const hideLabel = document.createElement("label");
         hideLabel.className = "lynx-check";
+        hideLabel.dataset.lynxTooltip = "Hide this column";
         const hide = document.createElement("input");
         hide.type = "checkbox";
         hide.checked = Boolean(lane.hidden);
-        hide.title = "Hide this column";
         hide.addEventListener("change", () => { lane.hidden = hide.checked; });
         const del = iconButton("✕", "Delete column");
         del.addEventListener("click", () => { draftLanes.splice(at, 1); renderColumnsSheet(); });
@@ -959,21 +987,6 @@
         head.className = "col-head";
         // K8: select the whole column at once (in addition to ctrl-click / the
         // per-card checkbox) — indeterminate when only some cards are picked.
-        const selectAllLabel = document.createElement("label");
-        selectAllLabel.className = "lynx-check";
-        const selectAll = document.createElement("input");
-        selectAll.type = "checkbox";
-        selectAll.title = "Select all cards in this column";
-        const laneUids = laneRows.map((r) => r.uid);
-        const laneSelCount = laneUids.filter((uid) => selected.has(uid)).length;
-        selectAll.checked = laneUids.length > 0 && laneSelCount === laneUids.length;
-        selectAll.indeterminate = laneSelCount > 0 && laneSelCount < laneUids.length;
-        selectAll.addEventListener("click", (event) => event.stopPropagation());
-        selectAll.addEventListener("change", () => {
-          if (selectAll.checked) laneUids.forEach((uid) => selected.add(uid));
-          else laneUids.forEach((uid) => selected.delete(uid));
-          render();
-        });
         const titleGroup = document.createElement("div");
         titleGroup.className = "col-title";
         const title = document.createElement("h2");
@@ -981,33 +994,58 @@
         const count = document.createElement("span");
         count.className = "count";
         count.textContent = String(laneRows.length);
-        const add = document.createElement("button");
-        add.type = "button";
-        add.className = "col-add";
-        add.textContent = "+";
-        add.title = `New record in ${lane.label}`;
-        add.addEventListener("click", (event) => { event.stopPropagation(); createInLane(lane); });
-        titleGroup.append(title, count, add);
+        titleGroup.append(title, count);
         const toggle = document.createElement("button");
         toggle.type = "button";
         toggle.className = "lane-toggle";
         toggle.dataset.laneToggle = lane.key;
-        toggle.textContent = laneUi.collapsed ? "▸" : "▾";
-        toggle.title = laneUi.collapsed ? "Expand column" : "Collapse column";
+        toggle.dataset.collapsed = String(Boolean(laneUi.collapsed));
+        toggle.dataset.lynxTooltip = laneUi.collapsed ? "Expand column" : "Collapse column";
         toggle.addEventListener("click", () => {
           ui.lanes[lane.key] = { ...laneUi, collapsed: !laneUi.collapsed, width: clampWidth(laneUi.width) };
           persistUi();
         });
-        const colMode = modeCycleButton("columnMode", lane.key, ui.columnModes[lane.key], ui.defaultBodyMode);
-        colMode.addEventListener("click", () => {
-          ui.columnModes[lane.key] = nextMode(ui.columnModes[lane.key] || ui.defaultBodyMode);
-          persistUi();
-        });
-        selectAllLabel.append(selectAll);
-        const controls = document.createElement("div");
-        controls.className = "col-controls";
-        controls.append(colMode, toggle, selectAllLabel);
-        head.append(titleGroup, controls);
+        if (laneUi.collapsed) {
+          // A collapsed lane is intentionally just its identity, card count,
+          // and the control that restores it. Keeping this distinct from the
+          // normal header prevents hidden hover controls from stacking in the
+          // narrow column.
+          head.append(titleGroup, toggle);
+        } else {
+          const add = document.createElement("button");
+          add.type = "button";
+          add.className = "col-add lynx-button lynx-icon-button";
+          add.innerHTML = window.LynxUI ? LynxUI.icon("plus") : "+";
+          add.dataset.lynxTooltip = `New record in ${lane.label}`;
+          add.addEventListener("click", (event) => { event.stopPropagation(); createInLane(lane); });
+          titleGroup.append(add);
+
+          const selectAllLabel = document.createElement("label");
+          selectAllLabel.className = "lynx-check";
+          selectAllLabel.dataset.lynxTooltip = "Select all cards in this column";
+          const selectAll = document.createElement("input");
+          selectAll.type = "checkbox";
+          const laneUids = laneRows.map((r) => r.uid);
+          const laneSelCount = laneUids.filter((uid) => selected.has(uid)).length;
+          selectAll.checked = laneUids.length > 0 && laneSelCount === laneUids.length;
+          selectAll.indeterminate = laneSelCount > 0 && laneSelCount < laneUids.length;
+          selectAll.addEventListener("click", (event) => event.stopPropagation());
+          selectAll.addEventListener("change", () => {
+            if (selectAll.checked) laneUids.forEach((uid) => selected.add(uid));
+            else laneUids.forEach((uid) => selected.delete(uid));
+            render();
+          });
+          const colMode = modeCycleButton("columnMode", lane.key, ui.columnModes[lane.key], ui.defaultBodyMode);
+          colMode.addEventListener("click", () => {
+            ui.columnModes[lane.key] = nextMode(ui.columnModes[lane.key] || ui.defaultBodyMode);
+            persistUi();
+          });
+          selectAllLabel.append(selectAll);
+          const controls = document.createElement("div");
+          controls.className = "col-controls";
+          controls.append(colMode, toggle, selectAllLabel);
+          head.append(titleGroup, controls);
+        }
         const list = document.createElement("div");
         list.className = "cards";
         list.dataset.lane = lane.key;
@@ -1037,7 +1075,8 @@
           window.addEventListener("pointermove", onMove);
           window.addEventListener("pointerup", onUp);
         });
-        col.append(head, list, handle);
+        col.append(head, list);
+        if (!laneUi.collapsed) col.appendChild(handle);
         columnsEl.appendChild(col);
       }
       for (const btn of $("all-modes").querySelectorAll("button")) {
@@ -1079,7 +1118,7 @@
       const title = document.createElement("div");
       title.className = "card-title";
       title.textContent = row.head || row.slug || row.uid;
-      title.title = "Open in Record";
+      title.dataset.lynxTooltip = "Open in Record";
       title.addEventListener("click", (event) => {
         if (event.ctrlKey || event.metaKey) return; // let the card handle select
         event.stopPropagation();
@@ -1095,7 +1134,7 @@
         badge = document.createElement("span");
         badge.className = "assignee-chip";
         badge.textContent = personNames[assigneeLink.other] || String(assigneeLink.other).slice(0, 8);
-        badge.title = "Assignee (edit in Record)";
+        badge.dataset.lynxTooltip = "Assignee (edit in Record)";
       }
       top.append(title, ...(badge ? [badge] : []));
       el.appendChild(top);
@@ -1126,7 +1165,7 @@
         modeBtn.className = activeCardMode === m ? "mode-mini on" : "mode-mini";
         modeBtn.dataset.cardMode = m;
         modeBtn.textContent = MODE_ICON[m];
-        modeBtn.title = `Body view for this card: ${m}${activeCardMode === m ? " (click to clear override)" : ""}`;
+        modeBtn.dataset.lynxTooltip = `Body view for this card: ${m}${activeCardMode === m ? " (click to clear override)" : ""}`;
         modeBtn.addEventListener("click", (event) => {
           event.stopPropagation();
           if (ui.cardModes[row.uid] === m) delete ui.cardModes[row.uid];
@@ -1137,11 +1176,11 @@
       }
       const selLabel = document.createElement("label");
       selLabel.className = "lynx-check";
+      selLabel.dataset.lynxTooltip = "Select for bulk-move (or Ctrl-click the card)";
       const sel = document.createElement("input");
       sel.type = "checkbox";
       sel.dataset.selectRecord = row.uid;
       sel.checked = selected.has(row.uid);
-      sel.title = "Select for bulk-move (or Ctrl-click the card)";
       sel.addEventListener("click", (event) => event.stopPropagation());
       sel.addEventListener("change", () => toggleSelect(row.uid));
       selLabel.append(sel);
@@ -1153,7 +1192,7 @@
     // Optimistic move (old optimisticMoveCard/rollbackBoard, over rows instead
     // of server HTML): apply locally, write the typed Action, roll back on
     // reject. A value/range column writes its representative `value` through
-    // `set-quantity`; a concept column writes `set-concept`.
+    // `set-quantity`; a concept column writes `set-identity`.
     function move(uid, laneKey) {
       const row = rows.find((r) => r.uid === uid);
       const lane = laneByKey(laneKey);
@@ -1163,7 +1202,7 @@
         const previous = row.concept;
         row.concept = conceptUidFor(lane.concept);
         render();
-        act({ action: "set-concept", target: uid, concept: lane.concept }).catch((err) => {
+        act({ action: "set-identity", subject: uid, predicate: lane.concept }).catch((err) => {
           console.warn(err);
           row.concept = previous;
           render();

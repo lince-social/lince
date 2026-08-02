@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 
 use crate::{
-    StoreError, concepts, links,
+    StoreError, assertions, concepts,
     records::{self, NewRecord, RecordRow},
 };
 
@@ -212,7 +212,19 @@ pub async fn tag(
     tag_uid: &str,
 ) -> Result<(), StoreError> {
     let kind = concepts::ensure(pool, KIND_TAGGED).await?;
-    links::add(pool, conversation_uid, &kind, tag_uid, None).await?;
+    assertions::assert(
+        pool,
+        assertions::NewAssertion {
+            subject_uid: conversation_uid,
+            predicate_uid: &kind,
+            object_uid: Some(tag_uid),
+            role: assertions::AssertionRole::Ordinary,
+            quantity: None,
+            unit_uid: None,
+            asserted_by: None,
+        },
+    )
+    .await?;
     Ok(())
 }
 
@@ -224,7 +236,19 @@ pub async fn add_participant(
     person_uid: &str,
 ) -> Result<(), StoreError> {
     let kind = concepts::ensure(pool, KIND_PARTICIPANT).await?;
-    links::add(pool, conversation_uid, &kind, person_uid, None).await?;
+    assertions::assert(
+        pool,
+        assertions::NewAssertion {
+            subject_uid: conversation_uid,
+            predicate_uid: &kind,
+            object_uid: Some(person_uid),
+            role: assertions::AssertionRole::Ordinary,
+            quantity: None,
+            unit_uid: None,
+            asserted_by: None,
+        },
+    )
+    .await?;
     Ok(())
 }
 
@@ -234,7 +258,7 @@ pub async fn participants(
     conversation_uid: &str,
 ) -> Result<Vec<RecordRow>, StoreError> {
     match concepts::resolve(pool, KIND_PARTICIPANT).await? {
-        Some(kind) => links::records_from(pool, conversation_uid, &kind).await,
+        Some(kind) => assertions::objects_from_subject(pool, conversation_uid, &kind).await,
         None => Ok(Vec::new()),
     }
 }
@@ -259,12 +283,12 @@ pub async fn conversations_by_tag(
     let message_in = concepts::resolve(pool, "message-in").await?;
 
     let mut out = Vec::new();
-    for conv in links::records_to(pool, &tagged, tag_uid).await? {
+    for conv in assertions::subjects_pointing_to(pool, &tagged, tag_uid).await? {
         if !conv.quantity.is_positive() {
             continue; // deactivated conversation drops out of the list
         }
         let participants = match &participant {
-            Some(kind) => links::records_from(pool, &conv.uid, kind).await?,
+            Some(kind) => assertions::objects_from_subject(pool, &conv.uid, kind).await?,
             None => Vec::new(),
         };
         let last_message =
@@ -304,11 +328,11 @@ async fn newest_message(
         return Ok(None);
     };
     let mut best: Option<(String, MessagePreview)> = None;
-    for thread in links::records_to(pool, thread_of, conversation_uid).await? {
+    for thread in assertions::subjects_pointing_to(pool, thread_of, conversation_uid).await? {
         if thread.kind != RecordKind::Thread.as_str() || !thread.quantity.is_positive() {
             continue;
         }
-        for message in links::records_to(pool, message_in, &thread.uid).await? {
+        for message in assertions::subjects_pointing_to(pool, message_in, &thread.uid).await? {
             if message.kind != RecordKind::Message.as_str() || !message.quantity.is_positive() {
                 continue;
             }
@@ -367,7 +391,19 @@ pub async fn open_session(
     records::set_extension(pool, &session.uid, SESSION_NAMESPACE, &fds).await?;
 
     let kind = concepts::ensure(pool, KIND_CALL_SESSION_OF).await?;
-    links::add(pool, &session.uid, &kind, conversation_uid, None).await?;
+    assertions::assert(
+        pool,
+        assertions::NewAssertion {
+            subject_uid: &session.uid,
+            predicate_uid: &kind,
+            object_uid: Some(conversation_uid),
+            role: assertions::AssertionRole::Ordinary,
+            quantity: None,
+            unit_uid: None,
+            asserted_by: None,
+        },
+    )
+    .await?;
 
     let mut ext = get_ext(pool, conversation_uid).await?.unwrap_or_default();
     ext.room.state = "active".to_string();
@@ -410,7 +446,7 @@ pub async fn sessions_of(
     conversation_uid: &str,
 ) -> Result<Vec<RecordRow>, StoreError> {
     match concepts::resolve(pool, KIND_CALL_SESSION_OF).await? {
-        Some(kind) => links::records_to(pool, &kind, conversation_uid).await,
+        Some(kind) => assertions::subjects_pointing_to(pool, &kind, conversation_uid).await,
         None => Ok(Vec::new()),
     }
 }

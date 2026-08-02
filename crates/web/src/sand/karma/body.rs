@@ -3,18 +3,298 @@ use maud::{Markup, html};
 pub(super) fn body() -> Markup {
     html! {
         main class="karmaApp" {
-            header class="toolbar" {
-                div class="titleBlock" {
-                    div class="eyebrow" { "Rules" }
-                    h1 { "Karma" }
-                }
-                div class="toolbarTools" {
-                    span id="live-dot" class="liveDot" data-live="false" role="status"
-                        aria-label="Connection status" title="Connection status" {}
+            // ------------------------------------------------------- main view
+            //
+            // A static deck: one card per record any rule touches, whether
+            // named in the condition's own reading or as the target the
+            // consequence writes to. Cards never move on their own — the
+            // camera does, panned and zoomed by d3-zoom over a plain canvas.
+            // There is deliberately no force simulation: nothing here needs
+            // to settle, because nothing here is connected to anything else.
+            div class="canvasView" {
+                canvas id="karma-canvas" aria-label="Records a rule touches" {}
+                p id="canvas-empty" class="empty canvasEmpty" hidden {
+                    "No rule touches a record yet."
                 }
             }
 
             p id="notice" class="notice" role="status" hidden {}
+
+            // Controls stay out of the working surface until the lower-right
+            // corner is hovered, same as the kanban sand — the corner itself
+            // carries the connection state, and hovering swaps it for the row
+            // it was hiding.
+            div class="sand-tools" {
+                span id="live-dot" class="page-corner" data-live="false" role="status"
+                    aria-label="Connection status" title="Connection status" {}
+                div class="sand-tools__row" {
+                    button id="open-rules-panel" type="button" class="primaryButton" {
+                        "+ Rule"
+                    }
+                }
+            }
+
+            // -------------------------------------------------------- panel
+            //
+            // Every rule-authoring and history control this sand has ever
+            // had, unchanged — just no longer the first thing the sand shows.
+            // The canvas is the sand's face; this is where a person goes to
+            // change what it's showing.
+            aside id="rules-panel" class="sidePanel" hidden {
+                div class="sidePanelHead" {
+                    h2 { "Rules" }
+                    button id="close-rules-panel" type="button" class="ghostButton" {
+                        "Close"
+                    }
+                }
+                div class="sidePanelBody" {
+
+            // ----------------------------------------------------- rule builder
+            //
+            // A rule is three parts, so it is authored as three parts: what it
+            // reads, when that reading counts, and what it then does. The
+            // cadence grid that used to sit in the middle of this is gone — a
+            // schedule is a `freq(@x)` block inside the condition now, declared
+            // once in Frequencies below and reused by every rule that wants it.
+            section class="panel builderPanel" aria-labelledby="builder-heading" {
+                h2 id="builder-heading" { "New rule" }
+
+                form id="rule-builder-form" class="stackForm" {
+                    // ------------------------------------------------ condition
+                    //
+                    // A plain input, not a contenteditable: the caret is the
+                    // whole interaction here — blocks land where it sits — and
+                    // `selectionStart` answers that exactly, where a rich
+                    // editor's caret has to be reconstructed from a selection
+                    // range every time the text is re-rendered. The blocks are
+                    // drawn as chips beneath instead, a view of the same source
+                    // rather than a second copy of it.
+                    div class="builderStep" {
+                        div class="builderStepHead" {
+                            h3 { "Condition" }
+                            button id="condition-bank-toggle" type="button"
+                                class="ghostButton" { "Reuse…" }
+                        }
+                        div class="smartInputWrap" {
+                            input id="condition-input" type="text" class="smartInput"
+                                role="combobox" aria-autocomplete="list"
+                                aria-expanded="false" aria-controls="condition-suggest"
+                                autocomplete="off" spellcheck="false"
+                                placeholder="-1 * freq(@daily) + @apple";
+                            ul id="condition-suggest" class="suggestList"
+                                role="listbox" aria-label="Blocks" hidden {}
+                        }
+                        div id="condition-chips" class="chipStrip" {}
+                        p id="condition-error" class="fieldError" role="alert" hidden {}
+                        p class="hint" {
+                            "Type " code { "@" } " for any block, or "
+                            code { "record(" } " / " code { "freq(" } " to narrow it. "
+                            code { "Tab" } " takes the first match."
+                        }
+                        ul id="condition-bank" class="bankList" hidden {}
+                        p id="condition-bank-empty" class="empty" hidden {
+                            "No other rule has a condition to borrow yet."
+                        }
+                    }
+
+                    // ------------------------------------------------ threshold
+                    div class="builderStep" {
+                        h3 { "Threshold" }
+                        label class="field" {
+                            span { "Passes when the reading" }
+                            select id="builder-gate" {
+                                option value="!=0" selected { "is not zero" }
+                                option value="always" { "is anything" }
+                                option value="<" { "is less than…" }
+                                option value="<=" { "is at most…" }
+                                option value=">" { "is more than…" }
+                                option value=">=" { "is at least…" }
+                                option value="==" { "equals…" }
+                            }
+                        }
+                        label class="field" id="builder-gate-value-field" hidden {
+                            span { "That number" }
+                            input id="builder-gate-value" type="text"
+                                inputmode="decimal" placeholder="3" autocomplete="off";
+                        }
+                    }
+
+                    // ---------------------------------------------- consequence
+                    div class="builderStep" {
+                        div class="builderStepHead" {
+                            h3 { "Consequence" }
+                            button id="consequence-bank-toggle" type="button"
+                                class="ghostButton" { "Reuse…" }
+                        }
+                        label class="field" {
+                            span { "To" }
+                            select id="builder-target" required {}
+                        }
+                        label class="field" {
+                            span { "Do" }
+                            select id="builder-consequence" {
+                                option value="capture-entry" selected { "Capture an amount" }
+                                option value="add-quantity" { "Add to the quantity" }
+                                option value="set-quantity" { "Set the quantity to" }
+                                option value="add-concept" { "Add a concept" }
+                                option value="remove-concept" { "Remove a concept" }
+                                option value="run-command" { "Run a shell command" }
+                            }
+                        }
+                        // Empty means "whatever the condition carried", which is
+                        // the whole point of the carry — a rule that computes a
+                        // figure should not have to restate it as a constant.
+                        label class="field" id="builder-amount-field" {
+                            span { "Amount" }
+                            input id="builder-amount" type="text" inputmode="decimal"
+                                placeholder="what the condition carried" autocomplete="off";
+                        }
+                        label class="field" id="builder-concept-field" hidden {
+                            span { "Concept" }
+                            input id="builder-concept" type="text" list="concept-options"
+                                placeholder="@done" autocomplete="off";
+                        }
+                        label class="field" id="builder-command-field" hidden {
+                            span { "Command" }
+                            input id="builder-command" type="text"
+                                placeholder="notify-send 'rent due'" autocomplete="off";
+                        }
+                        ul id="consequence-bank" class="bankList" hidden {}
+                        p id="consequence-bank-empty" class="empty" hidden {
+                            "No other rule has a consequence to borrow yet."
+                        }
+                    }
+
+                    // -------------------------------------------- record picker
+                    //
+                    // Searchable by head or slug, because a person remembers one
+                    // or the other and should not have to know which the system
+                    // filed it under. Clicking drops the block at the caret.
+                    div class="builderStep" {
+                        h3 { "Records" }
+                        label class="field" {
+                            span class="visuallyHidden" { "Find a record" }
+                            input id="record-search" type="search"
+                                placeholder="find by head or slug" autocomplete="off";
+                        }
+                        ul id="record-results" class="recordResults" {}
+                        p id="record-results-empty" class="empty" hidden {
+                            "Nothing here by that name."
+                        }
+                    }
+
+                    div class="formActions" {
+                        button id="builder-submit" type="submit" class="primaryButton" {
+                            "Create rule"
+                        }
+                        button id="builder-reset" type="button" class="ghostButton" {
+                            "Clear"
+                        }
+                    }
+                }
+            }
+
+            // -------------------------------------------------------- frequency
+            //
+            // Declared once, read by any condition. A Frequency is a slug and a
+            // step and nothing else — the same `Cadence` the engine already
+            // computes dates from, which is why the same object can fire a rule
+            // and draw a calendar without a second description of "when".
+            section class="panel frequencyPanel" aria-labelledby="frequency-heading" {
+                div class="panelHead" {
+                    h2 id="frequency-heading" { "Frequencies" }
+                    button id="toggle-frequency-form" type="button" class="ghostButton" {
+                        "+ New frequency"
+                    }
+                }
+
+                form id="frequency-form" class="stackForm" hidden {
+                    label class="field" {
+                        span { "Called" }
+                        input id="frequency-slug" type="text" placeholder="daily"
+                            autocomplete="off" required;
+                    }
+                    label class="field" {
+                        span { "Preset" }
+                        select id="frequency-preset" {
+                            option value="daily" selected { "Every day" }
+                            option value="weekly" { "Every week" }
+                            option value="fortnightly" { "Every two weeks" }
+                            option value="monthly" { "Every month" }
+                            option value="yearly" { "Every year" }
+                            option value="custom" { "Custom…" }
+                        }
+                    }
+                    fieldset class="stepGrid" {
+                        legend { "Every" }
+                        label class="stepUnit" {
+                            span { "Years" }
+                            input id="freq-years" type="number" min="0" value="0"
+                                aria-label="Years between beats";
+                        }
+                        label class="stepUnit" {
+                            span { "Months" }
+                            input id="freq-months" type="number" min="0" value="0"
+                                aria-label="Months between beats";
+                        }
+                        label class="stepUnit" {
+                            span { "Weeks" }
+                            input id="freq-weeks" type="number" min="0" value="0"
+                                aria-label="Weeks between beats";
+                        }
+                        label class="stepUnit" {
+                            span { "Days" }
+                            input id="freq-days" type="number" min="0" value="1"
+                                aria-label="Days between beats";
+                        }
+                        label class="stepUnit" {
+                            span { "Hours" }
+                            input id="freq-hours" type="number" min="0" value="0"
+                                aria-label="Hours between beats";
+                        }
+                        label class="stepUnit" {
+                            span { "Minutes" }
+                            input id="freq-minutes" type="number" min="0" value="0"
+                                aria-label="Minutes between beats";
+                        }
+                        label class="stepUnit" {
+                            span { "Seconds" }
+                            input id="freq-seconds" type="number" min="0" value="0"
+                                aria-label="Seconds between beats";
+                        }
+                        label class="stepUnit" {
+                            span { "Millis" }
+                            input id="freq-milliseconds" type="number" min="0" value="0"
+                                aria-label="Milliseconds between beats";
+                        }
+                    }
+                    label class="field" {
+                        span { "Starting" }
+                        input id="frequency-anchor" type="datetime-local" step="0.001";
+                    }
+                    div class="formActions" {
+                        button id="frequency-submit" type="submit" class="primaryButton" {
+                            "Create frequency"
+                        }
+                        button id="cancel-frequency" type="button" class="ghostButton" {
+                            "Cancel"
+                        }
+                    }
+                    p id="frequency-preview" class="hint" aria-live="polite" {}
+                }
+
+                ul id="frequency-list" class="ruleList" {}
+                p id="frequency-empty" class="empty" hidden {
+                    "No frequencies yet."
+                }
+            }
+
+            // ------------------------------------------------------------- slop
+            //
+            // Everything below is the pre-rewrite surface, kept working while
+            // the parts above take over. It is labelled honestly rather than
+            // quietly left to look like a peer of the sections above it.
+            div class="slopDivider" role="separator" { span { "slop down here" } }
 
             // ---------------------------------------------------------- capture
             //
@@ -397,6 +677,8 @@ pub(super) fn body() -> Markup {
                 ul id="contributor-list" class="contributorList" {}
                 p id="contributor-empty" class="empty" hidden {
                     "Nothing is declared ahead for this concept."
+                }
+            }
                 }
             }
         }

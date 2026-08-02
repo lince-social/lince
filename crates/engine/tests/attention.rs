@@ -3,8 +3,8 @@
 
 use chrono::{DateTime, Utc};
 use engine::Engine;
-use nucleus::{PromiseState, RecordKind};
 use nucleus::karma::{Cadence, Consequence};
+use nucleus::{PromiseState, RecordKind};
 
 mod support;
 use store::misc::NewPromise;
@@ -35,7 +35,9 @@ async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
     .expect("record")
     .uid;
     if quantity != 0.0 {
-        e.append_user(&uid, quantity).await.expect("a starting level");
+        e.append_user(&uid, quantity)
+            .await
+            .expect("a starting level");
     }
     uid
 }
@@ -114,7 +116,8 @@ async fn expired_decisions_close_through_the_ledger() {
     assert_eq!(
         store::records::quantity(&e.store.pool, &decision)
             .await
-            .unwrap().map(|q| q.to_f64()),
+            .unwrap()
+            .map(|q| q.to_f64()),
         Some(0.0),
         "expired decision closed"
     );
@@ -223,14 +226,16 @@ async fn deciding_executes_the_chosen_options_action() {
     assert_eq!(
         store::records::quantity(&e.store.pool, &counter)
             .await
-            .unwrap().map(|q| q.to_f64()),
+            .unwrap()
+            .map(|q| q.to_f64()),
         Some(7.0),
         "the chosen option's Action ran"
     );
     assert_eq!(
         store::records::quantity(&e.store.pool, &decision)
             .await
-            .unwrap().map(|q| q.to_f64()),
+            .unwrap()
+            .map(|q| q.to_f64()),
         Some(0.0),
         "and the decision closed"
     );

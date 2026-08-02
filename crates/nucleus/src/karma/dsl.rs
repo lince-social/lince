@@ -9,12 +9,11 @@ use std::{
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use super::{
-    BinaryOperator, CadenceAst, CadenceBound, CadenceStepAst, CandidateRoute, CanonicalHash, Capability, CapabilitySet,
-    CivilDateTime, CivilWeekday, Confidence, DatumState,
+    BinaryOperator, CadenceAst, CadenceBound, CadenceStepAst, CandidateRoute, CanonicalHash,
+    Capability, CapabilitySet, CivilDateTime, CivilWeekday, Confidence, DatumState,
     DecimalPrecision, DecimalValue, DeclaredUnit, DurationBinding, DurationMs, ExpressionAst,
-    FoldPolicy, FrequencyAst,
-    FrequencyCadenceAst, FrequencyParameterDefinition, FrequencySchema, FrequencyTimerAst,
-    GapPolicy, InactiveGapPolicy, InputBinding, InputSource, InvalidDay,
+    FoldPolicy, FrequencyAst, FrequencyCadenceAst, FrequencyParameterDefinition, FrequencySchema,
+    FrequencyTimerAst, GapPolicy, InactiveGapPolicy, InputBinding, InputSource, InvalidDay,
     KarmaBoundaryError, LateEventPolicy, LiteralValue, LocalId, MissedPolicy, NodeAst,
     NodeOperation, OutputRef, OverloadPolicy, ParameterDefinition, PortContract,
     PositiveIntegerBinding, Probability, ProgramAst, ProgramSchema, ReferenceKind, RephasePolicy,
@@ -249,12 +248,8 @@ pub fn format_frequency(frequency: &FrequencyAst) -> String {
             gap,
             fold,
         } => {
-            writeln!(
-                &mut output,
-                "  every {};",
-                format_cadence_ast(cadence)
-            )
-            .expect("String write");
+            writeln!(&mut output, "  every {};", format_cadence_ast(cadence))
+                .expect("String write");
             writeln!(
                 &mut output,
                 "  anchor civil({});",
@@ -380,8 +375,14 @@ fn format_cadence_ast(cadence: &CadenceAst) -> String {
         write_joined(&mut days, weekdays.iter().map(|day| enum_atom(&day)));
         output.push_str(&format!(", land([{days}])"));
     }
-    output.push_str(&format!(", invalid-day({})", enum_atom(&cadence.invalid_day)));
-    output.push_str(&format!(", bound({})", format_cadence_bound(&cadence.bound)));
+    output.push_str(&format!(
+        ", invalid-day({})",
+        enum_atom(&cadence.invalid_day)
+    ));
+    output.push_str(&format!(
+        ", bound({})",
+        format_cadence_bound(&cadence.bound)
+    ));
     output.push(')');
     output
 }
@@ -1274,7 +1275,9 @@ impl<'source> Parser<'source> {
             "elapsed" => self
                 .parse_duration_binding()
                 .map(ParsedFrequencyCadence::Elapsed),
-            "calendar" => self.parse_cadence_ast().map(ParsedFrequencyCadence::Calendar),
+            "calendar" => self
+                .parse_cadence_ast()
+                .map(ParsedFrequencyCadence::Calendar),
             value => Err(self.unexpected(format!("unknown Frequency cadence {value:?}"))),
         }
     }

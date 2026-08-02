@@ -28,11 +28,12 @@ async fn plain(e: &Engine, slug: &str) -> String {
 }
 
 fn add_link(from: &str, kind: &str, to: &str) -> Action {
-    Action::AddLink {
-        from: from.into(),
-        kind: kind.into(),
-        to: to.into(),
+    Action::AssertRecord {
+        subject: from.into(),
+        predicate: kind.into(),
+        object: Some(to.into()),
         quantity: None,
+        unit: None,
     }
 }
 

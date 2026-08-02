@@ -42,7 +42,7 @@ async fn record(e: &Engine, slug: &str, concept: &str, unit: Option<&str>) -> St
         .await
         .unwrap()
         .expect("concept exists");
-    store::records::set_concept(&e.store.pool, &uid, Some(&concept_uid))
+    store::assertions::set_identity(&e.store.pool, &uid, Some(&concept_uid), None)
         .await
         .unwrap();
     if let Some(unit) = unit {
@@ -218,9 +218,12 @@ async fn concept_in_reads_what_a_record_counts_as_not_only_what_it_is() {
     record(&e, "rainy-day", "savings-pot", None).await;
     // Its identity is a savings pot; it also counts as a balance.
     e.act(
-        Action::ClassifyRecord {
-            target: "rainy-day".into(),
-            concept: "balance".into(),
+        Action::AssertRecord {
+            subject: "rainy-day".into(),
+            predicate: "balance".into(),
+            object: None,
+            quantity: None,
+            unit: None,
         },
         None,
     )
@@ -283,7 +286,9 @@ async fn the_same_query_answers_a_question_that_has_nothing_to_do_with_a_balance
     store::concepts::create(&e.store.pool, "stock", &[])
         .await
         .unwrap();
-    store::concepts::create(&e.store.pool, "kg", &[]).await.unwrap();
+    store::concepts::create(&e.store.pool, "kg", &[])
+        .await
+        .unwrap();
     record(&e, "flour", "stock", Some("kg")).await;
 
     capture(&e, "flour", "-2.5", "baking", "2026-03-02T10:00:00Z").await;
@@ -314,7 +319,9 @@ async fn records_of_different_units_are_separated_rather_than_added() {
     store::concepts::create(&e.store.pool, "used", &[])
         .await
         .unwrap();
-    store::concepts::create(&e.store.pool, "kg", &[]).await.unwrap();
+    store::concepts::create(&e.store.pool, "kg", &[])
+        .await
+        .unwrap();
     store::concepts::create(&e.store.pool, "litre", &[])
         .await
         .unwrap();

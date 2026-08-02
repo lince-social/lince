@@ -389,15 +389,9 @@ async fn privileged_user(engine: &Engine, person_uid: &str, username: &str) -> i
             .await
             .unwrap();
     }
-    let user_id = store::auth::create_user(
-        &engine.store.pool,
-        username,
-        username,
-        "hash",
-        role_id,
-    )
-    .await
-    .unwrap();
+    let user_id = store::auth::create_user(&engine.store.pool, username, username, "hash", role_id)
+        .await
+        .unwrap();
     store::auth::set_user_person(&engine.store.pool, user_id, person_uid)
         .await
         .unwrap();

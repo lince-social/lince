@@ -2,10 +2,10 @@ use std::collections::BTreeMap;
 
 use nucleus::karma::{
     CandidateStatus, CanonicalHash, Capability, CapabilityFamily, CapabilitySet, Confidence,
-    DatumState, DefinitionStatus, DurationMs, EngineMode, FailureCode, FailurePath,
-    FixedDecimal, IntentStatus, KarmaActionKind, KarmaFailure, KarmaObjectKind, LocalId,
-    Probability, ReferenceKind, ResolvedReference, RetryDisposition, RunStatus, Slug, TimestampMs,
-    TypedUid, WorkflowStatus, canonical_hash, canonical_json_bytes,
+    DatumState, DefinitionStatus, DurationMs, EngineMode, FailureCode, FailurePath, FixedDecimal,
+    IntentStatus, KarmaActionKind, KarmaFailure, KarmaObjectKind, LocalId, Probability,
+    ReferenceKind, ResolvedReference, RetryDisposition, RunStatus, Slug, TimestampMs, TypedUid,
+    WorkflowStatus, canonical_hash, canonical_json_bytes,
 };
 use serde::Serialize;
 use serde_json::json;
@@ -51,9 +51,7 @@ fn complete_k0_fixture_has_stable_canonical_hash() {
         "object fields are lexicographically ordered: {encoded}"
     );
     assert!(
-        encoded.contains(&format!(
-            "\"confidence\":\"0.650000000\""
-        )),
+        encoded.contains(&format!("\"confidence\":\"0.650000000\"")),
         "exact atoms use canonical strings: {encoded}"
     );
     assert!(
@@ -252,7 +250,7 @@ fn golden_fixture() -> GoldenFixture {
             CapabilityFamily::IrreversibleSafetyCritical,
         ],
         confidence: Confidence::from_parts_per_billion(650_000_000).unwrap(),
-            datum_states: vec![
+        datum_states: vec![
             DatumState::Value,
             DatumState::Missing,
             DatumState::Stale,

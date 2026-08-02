@@ -12,6 +12,34 @@ use std::collections::{BTreeMap, HashSet};
 use crate::Engine;
 use crate::error::EngineError;
 
+fn default_lingua_visibility() -> String {
+    "private".into()
+}
+
+fn validate_saved_protein_shape(ast: &serde_json::Value) -> Result<(), EngineError> {
+    let Some(predicates) = ast.get("where") else {
+        return Ok(());
+    };
+    let Some(predicates) = predicates.as_array() else {
+        return Err(EngineError::Consequence(
+            "invalid Protein: `where` must be an array".into(),
+        ));
+    };
+    if predicates.is_empty() {
+        return Ok(());
+    }
+    let root = predicates
+        .first()
+        .and_then(serde_json::Value::as_object)
+        .filter(|root| predicates.len() == 1 && root.len() == 1);
+    if !root.is_some_and(|root| root.contains_key("all") || root.contains_key("any")) {
+        return Err(EngineError::Consequence(
+            "invalid Protein: saved filters must have one root `all` or `any` group".into(),
+        ));
+    }
+    Ok(())
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "kebab-case")]
 pub enum Action {
@@ -104,25 +132,33 @@ pub enum Action {
         #[serde(default)]
         note: Option<String>,
     },
-    /// Add one of the concepts a Record *counts as*, alongside the identity
-    /// concept it already carries. A toothbrush is a toothbrush, and also a
-    /// cost and a health item; this is how the second and third get said.
+    /// Declare a named beat, read by any condition as `freq(@slug)`.
     ///
-    /// Distinct from [`Action::ClassifyFact`] on purpose, and the distinction is
-    /// the one every aggregation rests on: a Record's concepts are a standing truth about
-    /// what the thing is, while a Fact's concept says what one change was.
-    /// Buying the toothbrush is a `-10` classified `@hygiene-purchase`; the
-    /// toothbrush being `@health` is separate and outlives the purchase.
-    ClassifyRecord {
-        target: String,
-        concept: String,
+    /// Writes no Fact and moves nothing. A Frequency is a slug and a step; the
+    /// beats it implies are derived from that step and its anchor on demand,
+    /// which is why the one declaration serves both firing a rule and drawing a
+    /// calendar without a second description of "when".
+    ///
+    /// Declared apart from any rule on purpose. A schedule written inline is a
+    /// schedule only one rule can use, which is what made every previous
+    /// cadence un-reusable.
+    CreateFrequency {
+        /// What a condition calls it: the `daily` in `freq(@daily)`.
+        slug: String,
+        /// What a person calls it. Defaults to the slug.
+        #[serde(default)]
+        head: Option<String>,
+        /// The compound step this beat advances by.
+        every: nucleus::karma::CadenceStep,
+        /// Sets the beat's phase and time of day. Defaults to now.
+        #[serde(default)]
+        anchor_at: Option<String>,
+        #[serde(default)]
+        request_id: Option<String>,
     },
-    /// Withdraw one of those additional concepts. It cannot remove the Record's
-    /// identity concept — that is what the thing *is*, and Transfer matching and
-    /// sync resolve through it.
-    UnclassifyRecord {
-        target: String,
-        concept: String,
+    /// Forget a named beat. Refused while a rule still reads it.
+    DeleteFrequency {
+        frequency: String,
     },
     /// Declare that a change is expected to repeat: a rent, a salary, a weekly
     /// count.
@@ -200,7 +236,9 @@ pub enum Action {
     /// the list. Dates this rule already applied are ordinary entries and stay:
     /// the rule proposed them, it never owned them. What a delete removes is the
     /// rule's future, which is all a rule ever holds.
-    DeleteRecurrence { recurrence: String },
+    DeleteRecurrence {
+        recurrence: String,
+    },
     /// Turn one expected date into a real change.
     ///
     /// This is an ordinary capture whose idempotency key names the rule and the
@@ -258,11 +296,6 @@ pub enum Action {
     SetSlug {
         target: String,
         slug: Option<String>,
-    },
-    /// Classify a record under a Lingua concept (name or uid; `None` clears).
-    SetConcept {
-        target: String,
-        concept: Option<String>,
     },
     /// Set a record's unit-of-measure concept (name or uid; `None` clears).
     SetUnit {
@@ -322,24 +355,73 @@ pub enum Action {
         #[serde(default)]
         open: bool,
     },
+    CreateLingua {
+        name: String,
+        #[serde(default = "default_lingua_visibility")]
+        visibility: String,
+    },
+    RenameLingua {
+        lingua: String,
+        name: String,
+    },
+    DeleteLingua {
+        lingua: String,
+    },
     CreateConcept {
+        lingua: String,
         name: String,
         #[serde(default)]
         parents: Vec<String>,
     },
-    AddLink {
-        from: String,
-        kind: String, // Lingua concept name/uid
-        to: String,
-        quantity: Option<f64>,
+    RenameConcept {
+        concept: String,
+        name: String,
     },
-    RemoveLink {
-        from: String,
-        kind: String,
-        to: String,
+    DeleteConcept {
+        concept: String,
     },
-    RelinkOrder {
-        kind: String,
+    AdoptConcept {
+        lingua: String,
+        concept: String,
+    },
+    RemoveConceptFromLingua {
+        lingua: String,
+        concept: String,
+    },
+    AddConceptParent {
+        concept: String,
+        parent: String,
+    },
+    RemoveConceptParent {
+        concept: String,
+        parent: String,
+    },
+    AssertRecord {
+        subject: String,
+        predicate: String,
+        #[serde(default)]
+        object: Option<String>,
+        #[serde(default)]
+        quantity: Option<String>,
+        #[serde(default)]
+        unit: Option<String>,
+    },
+    RetractAssertion {
+        assertion: String,
+    },
+    RetractRecord {
+        subject: String,
+        predicate: String,
+        #[serde(default)]
+        object: Option<String>,
+    },
+    SetIdentity {
+        subject: String,
+        #[serde(default)]
+        predicate: Option<String>,
+    },
+    SetAssertionOrder {
+        predicate: String,
         ordered: Vec<String>,
         #[serde(default)]
         reverse: bool,
@@ -1112,7 +1194,6 @@ fn default_auto() -> String {
     "draft_only".into()
 }
 
-
 fn default_agreement() -> String {
     "individual".into()
 }
@@ -1831,6 +1912,52 @@ impl Engine {
                     outcome.created = Some(commit.entry().uid.clone());
                 }
             }
+            Action::CreateFrequency {
+                slug,
+                head,
+                every,
+                anchor_at,
+                request_id,
+            } => {
+                let request_id = request_id
+                    .map(|id| id.trim().to_string())
+                    .filter(|id| !id.is_empty())
+                    .unwrap_or_else(|| nucleus::new_uid("req"));
+                let anchor = parse_optional_instant(anchor_at.as_deref())?.unwrap_or(now);
+                let head = head.unwrap_or_default();
+                let frequency = store::frequency::create(
+                    &self.store.pool,
+                    store::frequency::NewFrequency {
+                        slug: &slug,
+                        head: &head,
+                        every,
+                        anchor_at: anchor,
+                        request_id: &request_id,
+                        actor_uid: actor.as_deref(),
+                    },
+                    now,
+                )
+                .await
+                .map_err(|error| EngineError::Conflict {
+                    code: "frequency_invalid",
+                    message: error.to_string(),
+                })?;
+                outcome.created = Some(frequency.uid);
+            }
+            Action::DeleteFrequency { frequency } => {
+                let found = store::frequency::resolve(&self.store.pool, &frequency)
+                    .await?
+                    .ok_or_else(|| EngineError::Conflict {
+                        code: "frequency_unknown",
+                        message: format!("nothing here is called {frequency}"),
+                    })?;
+                store::frequency::delete(&self.store.pool, &found.uid)
+                    .await
+                    .map_err(|error| EngineError::Conflict {
+                        code: "frequency_in_use",
+                        message: error.to_string(),
+                    })?;
+            }
             Action::CreateRecurrence {
                 target,
                 consequences,
@@ -2052,9 +2179,7 @@ impl Engine {
                     concept: capture_concept,
                     note: note.or_else(|| rule.note.clone()),
                     at: Some(due.to_rfc3339()),
-                    request_id: Some(store::recurrence::occurrence_request_id(
-                        &rule.uid, due,
-                    )),
+                    request_id: Some(store::recurrence::occurrence_request_id(&rule.uid, due)),
                 };
                 // Deliberately `None`: any signed authorship on this action
                 // attested *applying an occurrence*, not capturing an entry.
@@ -2096,21 +2221,25 @@ impl Engine {
                             }
                         }
                         nucleus::karma::Consequence::SetConcept { concept } => {
-                            Action::SetConcept {
-                                target: rule.record_uid.clone(),
-                                concept: Some(concept.clone()),
+                            Action::SetIdentity {
+                                subject: rule.record_uid.clone(),
+                                predicate: Some(concept.clone()),
                             }
                         }
                         nucleus::karma::Consequence::AddConcept { concept } => {
-                            Action::ClassifyRecord {
-                                target: rule.record_uid.clone(),
-                                concept: concept.clone(),
+                            Action::AssertRecord {
+                                subject: rule.record_uid.clone(),
+                                predicate: concept.clone(),
+                                object: None,
+                                quantity: None,
+                                unit: None,
                             }
                         }
                         nucleus::karma::Consequence::RemoveConcept { concept } => {
-                            Action::UnclassifyRecord {
-                                target: rule.record_uid.clone(),
-                                concept: concept.clone(),
+                            Action::RetractRecord {
+                                subject: rule.record_uid.clone(),
+                                predicate: concept.clone(),
+                                object: None,
                             }
                         }
                         // Everything that leaves the Cell, asks a person, or
@@ -2120,16 +2249,13 @@ impl Engine {
                         // refuse. That separation is what keeps a rule from
                         // acquiring a private way to reach the outside world.
                         outward => {
-                            self.commit_outward_consequence(
-                                &rule, outward, carried.as_ref(), now,
-                            )
-                            .await?;
+                            self.commit_outward_consequence(&rule, outward, carried.as_ref(), now)
+                                .await?;
                             continue;
                         }
                     };
-                    let ran =
-                        Box::pin(self.act_at_with_authorship(next, actor.clone(), now, None))
-                            .await?;
+                    let ran = Box::pin(self.act_at_with_authorship(next, actor.clone(), now, None))
+                        .await?;
                     outcome.facts.extend(ran.facts);
                 }
             }
@@ -2220,12 +2346,14 @@ impl Engine {
                 let moved =
                     amount_changed || store::facts::instant(occurred_at) != current.occurred_at;
                 let (compensated, replacement) = if moved {
-                    let old_fact_uid = current.fact_uid.clone().ok_or_else(|| {
-                        EngineError::Conflict {
-                            code: "entry_fact_missing",
-                            message: "this entry has no Fact to correct".to_string(),
-                        }
-                    })?;
+                    let old_fact_uid =
+                        current
+                            .fact_uid
+                            .clone()
+                            .ok_or_else(|| EngineError::Conflict {
+                                code: "entry_fact_missing",
+                                message: "this entry has no Fact to correct".to_string(),
+                            })?;
                     let old_fact = store::facts::get(&self.store.pool, &old_fact_uid)
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(old_fact_uid.clone()))?;
@@ -2416,77 +2544,6 @@ impl Engine {
                 )
                 .await?;
             }
-            Action::ClassifyRecord { target, concept } => {
-                let uid = self.resolve(&target).await?;
-                let concept_uid = self
-                    .resolve_concept_opt(Some(concept))
-                    .await?
-                    .ok_or_else(|| EngineError::Conflict {
-                        code: "record_concept_required",
-                        message: "classifying a Record needs a concept".to_string(),
-                    })?;
-                // Symmetric with `UnclassifyRecord`: the identity concept is
-                // already carried in its own column, so adding it here would
-                // store a shadow row that unclassifying could then "remove",
-                // reading as though the Record's identity had changed when
-                // nothing did.
-                if self.record_identity_concept(&uid).await? == Some(concept_uid.clone()) {
-                    return Err(EngineError::Conflict {
-                        code: "record_identity_concept_already_carried",
-                        message: "that is already the Record's identity concept".to_string(),
-                    });
-                }
-                store::ledger::add_record_concept(
-                    &self.store.pool,
-                    &uid,
-                    &concept_uid,
-                    actor.as_deref(),
-                )
-                .await?;
-                // A zero-delta Fact so the change is Ledger-visible provenance
-                // and live subscriptions refresh — the same shape every other
-                // metadata edit uses.
-                outcome.facts = self
-                    .annotate(
-                        uid,
-                        actor,
-                        serde_json::json!({ "record_concept": { "added": concept_uid } }),
-                        now,
-                    )
-                    .await?;
-            }
-            Action::UnclassifyRecord { target, concept } => {
-                let uid = self.resolve(&target).await?;
-                let concept_uid = self
-                    .resolve_concept_opt(Some(concept))
-                    .await?
-                    .ok_or_else(|| EngineError::Conflict {
-                        code: "record_concept_required",
-                        message: "unclassifying a Record needs a concept".to_string(),
-                    })?;
-                // The identity concept is what the thing IS, and Transfer
-                // matching and sync resolve through it. Removing it here would
-                // look like a tag edit and behave like a deletion.
-                if self.record_identity_concept(&uid).await? == Some(concept_uid.clone()) {
-                    return Err(EngineError::Conflict {
-                        code: "record_identity_concept_immutable",
-                        message: "that is the Record's identity concept; change it with set-concept"
-                            .to_string(),
-                    });
-                }
-                if store::ledger::remove_record_concept(&self.store.pool, &uid, &concept_uid)
-                    .await?
-                {
-                    outcome.facts = self
-                        .annotate(
-                            uid,
-                            actor,
-                            serde_json::json!({ "record_concept": { "removed": concept_uid } }),
-                            now,
-                        )
-                        .await?;
-                }
-            }
             Action::AddQuantity { target, delta } => {
                 let uid = self.resolve(&target).await?;
                 self.reject_direct_transfer_record_mutation(&uid).await?;
@@ -2550,19 +2607,6 @@ impl Engine {
                     .annotate(uid, actor, serde_json::json!({ "slug": slug }), now)
                     .await?;
             }
-            Action::SetConcept { target, concept } => {
-                let uid = self.resolve(&target).await?;
-                let concept_uid = self.resolve_concept_opt(concept).await?;
-                store::records::set_concept(&self.store.pool, &uid, concept_uid.as_deref()).await?;
-                outcome.facts = self
-                    .annotate(
-                        uid,
-                        actor,
-                        serde_json::json!({ "concept": concept_uid }),
-                        now,
-                    )
-                    .await?;
-            }
             Action::SetUnit { target, unit } => {
                 let uid = self.resolve(&target).await?;
                 let unit_uid = self.resolve_concept_opt(unit).await?;
@@ -2621,8 +2665,7 @@ impl Engine {
                 {
                     return Err(EngineError::Conflict {
                         code: "entry_void_required",
-                        message: "this Fact belongs to an Entry; use void-entry"
-                            .into(),
+                        message: "this Fact belongs to an Entry; use void-entry".into(),
                     });
                 }
                 // Zero-delta facts (metadata/annotation) carry no quantity to
@@ -2647,7 +2690,35 @@ impl Engine {
                         .await?;
                 }
             }
-            Action::CreateConcept { name, parents } => {
+            Action::CreateLingua { name, visibility } => {
+                outcome.created =
+                    Some(store::linguas::create(&self.store.pool, &name, None, &visibility).await?);
+            }
+            Action::RenameLingua { lingua, name } => {
+                let lingua_uid = store::linguas::resolve(&self.store.pool, &lingua)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(lingua))?;
+                store::linguas::rename(&self.store.pool, &lingua_uid, &name).await?;
+            }
+            Action::DeleteLingua { lingua } => {
+                let lingua_uid = store::linguas::resolve(&self.store.pool, &lingua)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(lingua))?;
+                if lingua_uid == store::linguas::LOCAL_UID {
+                    return Err(EngineError::Consequence(
+                        "the local Lingua is the ontology's permanent private home".into(),
+                    ));
+                }
+                store::linguas::delete(&self.store.pool, &lingua_uid).await?;
+            }
+            Action::CreateConcept {
+                lingua,
+                name,
+                parents,
+            } => {
+                let lingua_uid = store::linguas::resolve(&self.store.pool, &lingua)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(lingua))?;
                 let mut parent_uids = Vec::new();
                 for p in &parents {
                     parent_uids.push(
@@ -2657,30 +2728,102 @@ impl Engine {
                     );
                 }
                 let refs: Vec<&str> = parent_uids.iter().map(String::as_str).collect();
-                outcome.created =
-                    Some(store::concepts::create(&self.store.pool, &name, &refs).await?);
-            }
-            Action::AddLink {
-                from,
-                kind,
-                to,
-                quantity,
-            } => {
-                let from = self.resolve(&from).await?;
-                let to = self.resolve(&to).await?;
-                // Ensure like the thread kinds do (2026-07-17): sands link with
-                // vocabulary kinds (`assigned-to`, `part-of`, `resource-of`)
-                // that need no ceremony before first use.
-                let kind_uid = store::concepts::ensure(&self.store.pool, &kind).await?;
                 outcome.created = Some(
-                    store::links::add(&self.store.pool, &from, &kind_uid, &to, quantity).await?,
+                    store::concepts::create_in(&self.store.pool, &lingua_uid, &name, &refs).await?,
                 );
-                // Cycle warning on save (blueprint IV.2): only for order-like
-                // kinds — a loop in @needs is a recipe error the user must see,
-                // but only ordering kinds make "before" cycles meaningless.
-                if is_order_like(&self.store.pool, &kind_uid).await? {
-                    for cycle in kind_cycles(&self.store.pool, &kind_uid).await? {
-                        if cycle.contains(&from) || cycle.contains(&to) {
+            }
+            Action::RenameConcept { concept, name } => {
+                let concept_uid = store::concepts::resolve(&self.store.pool, &concept)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(concept))?;
+                store::concepts::rename(&self.store.pool, &concept_uid, &name).await?;
+            }
+            Action::DeleteConcept { concept } => {
+                let concept_uid = store::concepts::resolve(&self.store.pool, &concept)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(concept))?;
+                store::concepts::delete(&self.store.pool, &concept_uid).await?;
+            }
+            Action::AdoptConcept { lingua, concept } => {
+                let lingua_uid = store::linguas::resolve(&self.store.pool, &lingua)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(lingua))?;
+                let concept_uid = store::concepts::resolve(&self.store.pool, &concept)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(concept))?;
+                store::linguas::adopt(&self.store.pool, &lingua_uid, &concept_uid).await?;
+            }
+            Action::RemoveConceptFromLingua { lingua, concept } => {
+                let lingua_uid = store::linguas::resolve(&self.store.pool, &lingua)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(lingua))?;
+                let concept_uid = store::concepts::resolve(&self.store.pool, &concept)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(concept))?;
+                store::linguas::remove_concept(&self.store.pool, &lingua_uid, &concept_uid).await?;
+            }
+            Action::AddConceptParent { concept, parent } => {
+                let concept_uid = store::concepts::resolve(&self.store.pool, &concept)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(concept))?;
+                let parent_uid = store::concepts::resolve(&self.store.pool, &parent)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(parent))?;
+                store::concepts::add_parent(&self.store.pool, &concept_uid, &parent_uid).await?;
+            }
+            Action::RemoveConceptParent { concept, parent } => {
+                let concept_uid = store::concepts::resolve(&self.store.pool, &concept)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(concept))?;
+                let parent_uid = store::concepts::resolve(&self.store.pool, &parent)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(parent))?;
+                store::concepts::remove_parent(&self.store.pool, &concept_uid, &parent_uid).await?;
+            }
+            Action::AssertRecord {
+                subject,
+                predicate,
+                object,
+                quantity,
+                unit,
+            } => {
+                let subject_uid = self.resolve(&subject).await?;
+                let object_uid = match object {
+                    Some(object) => Some(self.resolve(&object).await?),
+                    None => None,
+                };
+                let predicate_uid = store::concepts::resolve(&self.store.pool, &predicate)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(predicate))?;
+                let unit_uid = self.resolve_concept_opt(unit).await?;
+                let quantity = quantity
+                    .map(|value| {
+                        nucleus::DecimalValue::parse_inferred(&value)
+                            .map_err(|error| EngineError::Consequence(error.to_string()))
+                    })
+                    .transpose()?;
+                outcome.created = Some(
+                    store::assertions::assert(
+                        &self.store.pool,
+                        store::assertions::NewAssertion {
+                            subject_uid: &subject_uid,
+                            predicate_uid: &predicate_uid,
+                            object_uid: object_uid.as_deref(),
+                            role: store::assertions::AssertionRole::Ordinary,
+                            quantity,
+                            unit_uid: unit_uid.as_deref(),
+                            asserted_by: actor.as_deref(),
+                        },
+                    )
+                    .await?,
+                );
+                if object_uid.is_some() && is_order_like(&self.store.pool, &predicate_uid).await? {
+                    for cycle in kind_cycles(&self.store.pool, &predicate_uid).await? {
+                        if cycle.contains(&subject_uid)
+                            || object_uid
+                                .as_ref()
+                                .is_some_and(|object| cycle.contains(object))
+                        {
                             outcome.warnings.push(format!(
                                 "these {} records form a loop: {}",
                                 cycle.len(),
@@ -2689,49 +2832,94 @@ impl Engine {
                         }
                     }
                 }
+                let mut targets = vec![subject_uid];
+                targets.extend(object_uid);
                 outcome.facts = self
                     .annotate_many(
-                        vec![from.clone(), to.clone()],
+                        targets,
                         actor,
-                        serde_json::json!({
-                            "action": "add-link",
-                            "kind": kind,
-                            "from": from,
-                            "to": to,
-                        }),
+                        serde_json::json!({ "assertion": outcome.created }),
                         now,
                     )
                     .await?;
             }
-            Action::RemoveLink { from, kind, to } => {
-                let from = self.resolve(&from).await?;
-                let to = self.resolve(&to).await?;
-                let kind_uid = store::concepts::resolve(&self.store.pool, &kind)
+            Action::RetractAssertion { assertion } => {
+                let row = store::assertions::get(&self.store.pool, &assertion)
                     .await?
-                    .ok_or_else(|| EngineError::UnknownRecord(kind))?;
-                store::links::remove(&self.store.pool, &from, &kind_uid, &to).await?;
+                    .ok_or_else(|| EngineError::UnknownRecord(assertion.clone()))?;
+                store::assertions::retract(&self.store.pool, &assertion, actor.as_deref()).await?;
+                let mut targets = vec![row.subject_uid];
+                targets.extend(row.object_uid);
                 outcome.facts = self
                     .annotate_many(
-                        vec![from.clone(), to.clone()],
+                        targets,
                         actor,
-                        serde_json::json!({
-                            "action": "remove-link",
-                            "kind": kind_uid,
-                            "from": from,
-                            "to": to,
-                        }),
+                        serde_json::json!({ "assertion_retracted": assertion }),
                         now,
                     )
                     .await?;
             }
-            Action::RelinkOrder {
-                kind,
+            Action::RetractRecord {
+                subject,
+                predicate,
+                object,
+            } => {
+                let subject_uid = self.resolve(&subject).await?;
+                let object_uid = match object {
+                    Some(object) => Some(self.resolve(&object).await?),
+                    None => None,
+                };
+                let predicate_uid = store::concepts::resolve(&self.store.pool, &predicate)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(predicate))?;
+                store::assertions::retract_tuple(
+                    &self.store.pool,
+                    &subject_uid,
+                    &predicate_uid,
+                    object_uid.as_deref(),
+                    actor.as_deref(),
+                )
+                .await?;
+                let mut targets = vec![subject_uid];
+                targets.extend(object_uid);
+                outcome.facts = self
+                    .annotate_many(
+                        targets,
+                        actor,
+                        serde_json::json!({ "assertion_retracted": {
+                            "predicate": predicate_uid
+                        }}),
+                        now,
+                    )
+                    .await?;
+            }
+            Action::SetIdentity { subject, predicate } => {
+                let subject_uid = self.resolve(&subject).await?;
+                let predicate_uid = self.resolve_concept_opt(predicate).await?;
+                outcome.created = store::assertions::set_identity(
+                    &self.store.pool,
+                    &subject_uid,
+                    predicate_uid.as_deref(),
+                    actor.as_deref(),
+                )
+                .await?;
+                outcome.facts = self
+                    .annotate(
+                        subject_uid,
+                        actor,
+                        serde_json::json!({ "identity": predicate_uid }),
+                        now,
+                    )
+                    .await?;
+            }
+            Action::SetAssertionOrder {
+                predicate,
                 ordered,
                 reverse,
             } => {
-                let kind_uid = store::concepts::resolve(&self.store.pool, &kind)
+                let kind_uid = store::concepts::resolve(&self.store.pool, &predicate)
                     .await?
-                    .ok_or_else(|| EngineError::UnknownRecord(kind.clone()))?;
+                    .ok_or_else(|| EngineError::UnknownRecord(predicate.clone()))?;
                 let mut resolved = Vec::new();
                 for token in ordered {
                     let uid = self.resolve(&token).await?;
@@ -2741,26 +2929,43 @@ impl Engine {
                 }
                 if resolved.len() < 2 {
                     return Err(EngineError::Consequence(
-                        "relink-order needs at least two records".into(),
+                        "set-assertion-order needs at least two records".into(),
                     ));
                 }
-                store::links::remove_kind_within_set(&self.store.pool, &kind_uid, &resolved)
-                    .await?;
+                store::assertions::retract_predicate_within_set(
+                    &self.store.pool,
+                    &kind_uid,
+                    &resolved,
+                    actor.as_deref(),
+                )
+                .await?;
                 for pair in resolved.windows(2) {
                     let (from, to) = if reverse {
                         (&pair[1], &pair[0])
                     } else {
                         (&pair[0], &pair[1])
                     };
-                    store::links::add(&self.store.pool, from, &kind_uid, to, None).await?;
+                    store::assertions::assert(
+                        &self.store.pool,
+                        store::assertions::NewAssertion {
+                            subject_uid: from,
+                            predicate_uid: &kind_uid,
+                            object_uid: Some(to),
+                            role: store::assertions::AssertionRole::Ordinary,
+                            quantity: None,
+                            unit_uid: None,
+                            asserted_by: actor.as_deref(),
+                        },
+                    )
+                    .await?;
                 }
                 outcome.facts = self
                     .annotate_many(
                         resolved.clone(),
                         actor,
                         serde_json::json!({
-                            "action": "relink-order",
-                            "kind": kind,
+                            "action": "set-assertion-order",
+                            "predicate": predicate,
                             "ordered": resolved,
                             "reverse": reverse,
                         }),
@@ -2795,13 +3000,28 @@ impl Engine {
                 )
                 .await?;
                 let thread_of = store::concepts::ensure(&self.store.pool, "thread-of").await?;
-                store::links::add(&self.store.pool, &thread.uid, &thread_of, &target_uid, None)
-                    .await?;
+                store::assertions::assert(
+                    &self.store.pool,
+                    store::assertions::NewAssertion {
+                        subject_uid: &thread.uid,
+                        predicate_uid: &thread_of,
+                        object_uid: Some(&target_uid),
+                        role: store::assertions::AssertionRole::Ordinary,
+                        quantity: None,
+                        unit_uid: None,
+                        asserted_by: actor.as_deref(),
+                    },
+                )
+                .await?;
                 outcome.facts = self
                     .append(
                         NewFact {
                             actor_uid: actor.clone(),
-                            ..NewFact::quantity(thread.uid.clone(), store::exact::one(), Cause::user_edit())
+                            ..NewFact::quantity(
+                                thread.uid.clone(),
+                                store::exact::one(),
+                                Cause::user_edit(),
+                            )
                         },
                         now,
                     )
@@ -2865,24 +3085,34 @@ impl Engine {
                 )
                 .await?;
                 let message_in = store::concepts::ensure(&self.store.pool, "message-in").await?;
-                store::links::add(
+                store::assertions::assert(
                     &self.store.pool,
-                    &message.uid,
-                    &message_in,
-                    &thread_uid,
-                    None,
+                    store::assertions::NewAssertion {
+                        subject_uid: &message.uid,
+                        predicate_uid: &message_in,
+                        object_uid: Some(&thread_uid),
+                        role: store::assertions::AssertionRole::Ordinary,
+                        quantity: None,
+                        unit_uid: None,
+                        asserted_by: actor.as_deref(),
+                    },
                 )
                 .await?;
                 if !references.is_empty() {
                     let references_kind =
                         store::concepts::ensure(&self.store.pool, "references").await?;
                     for reference in &references {
-                        store::links::add(
+                        store::assertions::assert(
                             &self.store.pool,
-                            &message.uid,
-                            &references_kind,
-                            reference,
-                            None,
+                            store::assertions::NewAssertion {
+                                subject_uid: &message.uid,
+                                predicate_uid: &references_kind,
+                                object_uid: Some(reference),
+                                role: store::assertions::AssertionRole::Ordinary,
+                                quantity: None,
+                                unit_uid: None,
+                                asserted_by: actor.as_deref(),
+                            },
                         )
                         .await?;
                     }
@@ -2898,23 +3128,41 @@ impl Engine {
                             parent_row.kind
                         )));
                     }
-                    let parent_threads =
-                        store::links::records_from(&self.store.pool, &parent_uid, &message_in)
-                            .await?;
+                    let parent_threads = store::assertions::objects_from_subject(
+                        &self.store.pool,
+                        &parent_uid,
+                        &message_in,
+                    )
+                    .await?;
                     if !parent_threads.iter().any(|row| row.uid == thread_uid) {
                         return Err(EngineError::Consequence(
                             "reply parent is not in the target thread".into(),
                         ));
                     }
                     let reply_to = store::concepts::ensure(&self.store.pool, "reply-to").await?;
-                    store::links::add(&self.store.pool, &message.uid, &reply_to, &parent_uid, None)
-                        .await?;
+                    store::assertions::assert(
+                        &self.store.pool,
+                        store::assertions::NewAssertion {
+                            subject_uid: &message.uid,
+                            predicate_uid: &reply_to,
+                            object_uid: Some(&parent_uid),
+                            role: store::assertions::AssertionRole::Ordinary,
+                            quantity: None,
+                            unit_uid: None,
+                            asserted_by: actor.as_deref(),
+                        },
+                    )
+                    .await?;
                 }
                 outcome.facts = self
                     .append(
                         NewFact {
                             actor_uid: actor.clone(),
-                            ..NewFact::quantity(message.uid.clone(), store::exact::one(), Cause::user_edit())
+                            ..NewFact::quantity(
+                                message.uid.clone(),
+                                store::exact::one(),
+                                Cause::user_edit(),
+                            )
                         },
                         now,
                     )
@@ -3172,7 +3420,11 @@ impl Engine {
                     .append(
                         NewFact {
                             actor_uid: actor,
-                            ..NewFact::quantity(transfer.clone(), store::exact::one(), Cause::user_edit())
+                            ..NewFact::quantity(
+                                transfer.clone(),
+                                store::exact::one(),
+                                Cause::user_edit(),
+                            )
                         },
                         now,
                     )
@@ -3388,7 +3640,7 @@ impl Engine {
                     let concept_uid = store::records::get(&self.store.pool, &record_uid)
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(record_uid.clone()))?
-                        .concept_uid;
+                        .identity_predicate_uid;
                     let person_uid = if input.open {
                         if let Some(token) = input.party.as_deref() {
                             let submitted = self.resolve(token.trim()).await?;
@@ -4328,7 +4580,7 @@ impl Engine {
                 let concept_uid = store::records::get(&self.store.pool, &resolved_record_uid)
                     .await?
                     .ok_or_else(|| EngineError::UnknownRecord(resolved_record_uid.clone()))?
-                    .concept_uid;
+                    .identity_predicate_uid;
                 let record_uid = Some(resolved_record_uid);
                 let unit_uid = self.resolve_concept_opt(terms.unit).await?;
                 let replay_window_end = terms.window_end.clone();
@@ -5873,6 +6125,14 @@ impl Engine {
                 );
             }
             Action::SaveProtein { slug, head, ast } => {
+                validate_saved_protein_shape(&ast)?;
+                let parsed: protein::Protein =
+                    serde_json::from_value(ast.clone()).map_err(|error| {
+                        EngineError::Consequence(format!("invalid Protein: {error}"))
+                    })?;
+                protein::validate(&parsed).map_err(|error| {
+                    EngineError::Consequence(format!("invalid Protein: {error}"))
+                })?;
                 // Upsert by slug so a saved Protein is full CRUD: saving the same
                 // name again updates the title + AST (and reactivates it if it
                 // had been deactivated/"deleted"), rather than colliding on the
@@ -7255,7 +7515,10 @@ impl Engine {
             return Ok(None);
         };
         let mut transfers = Vec::new();
-        for target in store::links::records_from(&self.store.pool, thread_uid, &thread_of).await? {
+        for target in
+            store::assertions::objects_from_subject(&self.store.pool, thread_uid, &thread_of)
+                .await?
+        {
             if store::transfers::get(&self.store.pool, &target.uid)
                 .await?
                 .is_some()
@@ -7847,7 +8110,7 @@ impl Engine {
             let concept_uid = store::records::get(&self.store.pool, &resolved_record_uid)
                 .await?
                 .ok_or_else(|| EngineError::UnknownRecord(resolved_record_uid.clone()))?
-                .concept_uid;
+                .identity_predicate_uid;
             let record_uid = Some(resolved_record_uid);
             let existing_promise = input
                 .uid
@@ -8325,18 +8588,6 @@ impl Engine {
         ))
     }
 
-    /// Resolve an optional concept token (name or uid) to a uid. `None` and the
-    /// empty string both mean "clear" and resolve to `None`.
-    /// The concept a Record *is*, as opposed to the ones it counts as. Kept in
-    /// `record.concept_uid` rather than the join table because Transfer
-    /// matching and sync resolve through it.
-    async fn record_identity_concept(&self, uid: &str) -> Result<Option<String>, EngineError> {
-        Ok(store::records::get(&self.store.pool, uid)
-            .await?
-            .ok_or_else(|| EngineError::UnknownRecord(uid.to_string()))?
-            .concept_uid)
-    }
-
     /// Resolve a rule's consequences and prove the list is legal.
     ///
     /// Concept tokens arrive as whatever the author typed and leave as uids, so
@@ -8413,7 +8664,15 @@ impl Engine {
         let mut values = std::collections::HashMap::new();
         for token in parsed.reads() {
             let value = self
-                .read_for_condition(&token.func, &token.slug, token.dur_secs, since, at, now, depth)
+                .read_for_condition(
+                    &token.func,
+                    &token.slug,
+                    token.dur_secs,
+                    since,
+                    at,
+                    now,
+                    depth,
+                )
                 .await?;
             values.insert(reading_key(&token.func, &token.slug, token.dur_secs), value);
         }
@@ -8443,8 +8702,8 @@ impl Engine {
         now: DateTime<Utc>,
         depth: usize,
     ) -> Result<nucleus::DecimalValue, EngineError> {
-        let zero = nucleus::DecimalValue::from_mantissa(0, 0)
-            .expect("scale zero is always constructible");
+        let zero =
+            nucleus::DecimalValue::from_mantissa(0, 0).expect("scale zero is always constructible");
         match func {
             "quantity" | "signal" => {
                 let uid = self.resolve(slug).await?;
@@ -8460,6 +8719,39 @@ impl Engine {
             // mechanism, no second table, and any threshold already spellable
             // works on it unchanged.
             "freq" => {
+                // A declared Frequency answers first. It is the whole object —
+                // a slug and a step — and its beats come from the same pure
+                // `Cadence` that draws a calendar, so nothing is stored and
+                // nothing has to be kept in sync with the step.
+                if let Some(frequency) = store::frequency::resolve(&self.store.pool, slug).await? {
+                    let anchor = frequency.anchor()?;
+                    // `(since, at]` — half-open at the near edge, closed at the
+                    // far one, so the instant a window ends on belongs to that
+                    // window and to no other. Same edges as the rhythm this
+                    // replaces, or a rule would double-count on the boundary.
+                    let tick = chrono::Duration::milliseconds(1);
+                    let (Some(from), Some(to)) =
+                        (since.checked_add_signed(tick), at.checked_add_signed(tick))
+                    else {
+                        return Ok(zero);
+                    };
+                    let beats = frequency
+                        .cadence()
+                        .between(anchor, from, to)
+                        .map_err(|error| EngineError::Conflict {
+                            code: "frequency_cadence_invalid",
+                            message: error.to_string(),
+                        })?;
+                    return nucleus::DecimalValue::from_mantissa(0, beats.len() as i128).map_err(
+                        |_| EngineError::Conflict {
+                            code: "rule_condition_unreadable",
+                            message: format!("freq(@{slug}) counted more beats than fit"),
+                        },
+                    );
+                }
+                // Falling back to a rhythm carried by a rule on that Record,
+                // which is what a frequency was before it had a table of its
+                // own. Rules written the old way keep working.
                 let uid = self.resolve(slug).await?;
                 self.rhythm_count(&uid, since, at).await
             }
@@ -8765,13 +9057,13 @@ impl Engine {
         at: DateTime<Utc>,
     ) -> Result<DateTime<Utc>, EngineError> {
         let anchor = parse_instant_field(&rule.anchor_at)?;
-        let previous = rule
-            .cadence
-            .preceding(anchor, at)
-            .map_err(|error| EngineError::Conflict {
-                code: "recurrence_cadence_invalid",
-                message: error.to_string(),
-            })?;
+        let previous =
+            rule.cadence
+                .preceding(anchor, at)
+                .map_err(|error| EngineError::Conflict {
+                    code: "recurrence_cadence_invalid",
+                    message: error.to_string(),
+                })?;
         Ok(previous.unwrap_or(anchor))
     }
 
@@ -8798,19 +9090,18 @@ impl Engine {
                 continue;
             }
             let anchor = parse_instant_field(&rule.anchor_at)?;
-            let (Some(from), Some(to)) = (
-                since.checked_add_signed(tick),
-                at.checked_add_signed(tick),
-            ) else {
+            let (Some(from), Some(to)) =
+                (since.checked_add_signed(tick), at.checked_add_signed(tick))
+            else {
                 continue;
             };
-            let derived = rule
-                .cadence
-                .between(anchor, from, to)
-                .map_err(|error| EngineError::Conflict {
-                    code: "recurrence_cadence_invalid",
-                    message: error.to_string(),
-                })?;
+            let derived =
+                rule.cadence
+                    .between(anchor, from, to)
+                    .map_err(|error| EngineError::Conflict {
+                        code: "recurrence_cadence_invalid",
+                        message: error.to_string(),
+                    })?;
             total = total.saturating_add(derived.len() as i128);
         }
         nucleus::DecimalValue::from_mantissa(0, total).map_err(|_| EngineError::Conflict {
@@ -8910,7 +9201,7 @@ async fn kind_cycles(
     pool: &store::sqlx::SqlitePool,
     kind_uid: &str,
 ) -> Result<Vec<Vec<String>>, EngineError> {
-    let edges = store::links::edges_of_kind(pool, kind_uid).await?;
+    let edges = store::assertions::edges_of_predicate(pool, kind_uid).await?;
     let mut nodes: Vec<String> = Vec::new();
     let mut tuples: Vec<(String, String)> = Vec::with_capacity(edges.len());
     for edge in &edges {

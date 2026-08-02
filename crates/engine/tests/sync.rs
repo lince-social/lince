@@ -37,6 +37,28 @@ async fn a_signed_package_crosses_cells_and_stays_verifiable() {
     let apples = plain(&ana, "ana.apples", 0.0).await;
     ana.append_user(&apples, 12.0).await.unwrap(); // grew 12 apples
     ana.append_user(&apples, -2.0).await.unwrap(); // ate 2 -> 10
+    ana.act(
+        Action::CreateConcept {
+            lingua: store::linguas::LOCAL_UID.into(),
+            name: "food".into(),
+            parents: Vec::new(),
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    ana.act(
+        Action::AssertRecord {
+            subject: apples.clone(),
+            predicate: "food".into(),
+            object: None,
+            quantity: None,
+            unit: None,
+        },
+        None,
+    )
+    .await
+    .unwrap();
 
     ana.act(
         Action::GrantVisibility {
@@ -54,6 +76,7 @@ async fn a_signed_package_crosses_cells_and_stays_verifiable() {
         .await
         .unwrap();
     assert_eq!(package.records.len(), 1);
+    assert_eq!(package.assertions.len(), 1);
     assert!(package.facts.len() >= 2);
 
     // Bruno's Cell has Ana's public key and imports the package
@@ -80,7 +103,8 @@ async fn a_signed_package_crosses_cells_and_stays_verifiable() {
     assert_eq!(
         store::records::quantity(&bruno.store.pool, &apples)
             .await
-            .unwrap().map(|q| q.to_f64()),
+            .unwrap()
+            .map(|q| q.to_f64()),
         Some(10.0)
     );
     // authorship survived replication: the facts still name Ana
@@ -89,6 +113,13 @@ async fn a_signed_package_crosses_cells_and_stays_verifiable() {
             .iter()
             .all(|f| f.actor_uid.as_deref() == Some("ana"))
     );
+    assert_eq!(
+        store::assertions::concepts_for_record(&bruno.store.pool, &apples)
+            .await
+            .unwrap()
+            .len(),
+        1
+    );
 
     // idempotent: re-importing changes nothing (replay safety)
     let again = bruno.import_package(&package).await.unwrap();
@@ -96,7 +127,8 @@ async fn a_signed_package_crosses_cells_and_stays_verifiable() {
     assert_eq!(
         store::records::quantity(&bruno.store.pool, &apples)
             .await
-            .unwrap().map(|q| q.to_f64()),
+            .unwrap()
+            .map(|q| q.to_f64()),
         Some(10.0)
     );
 }

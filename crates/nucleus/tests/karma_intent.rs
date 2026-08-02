@@ -6,8 +6,7 @@ use nucleus::karma::{
     GrantProgramRevisionScope, GrantQuantityLimit, GrantRevisionChange, GrantTarget,
     GrantTargetScope, GrantTemplateScope, GrantWindowLimit, IntentAmount, IntentAuthorization,
     IntentStatus, K5_2_INTENT_STATES, KarmaIntent, KarmaIntentSchema, ReferenceKind, Slug,
-    TimestampMs,
-    TypedUid, authorize_intent,
+    TimestampMs, TypedUid, authorize_intent,
 };
 
 const PERSON_UID: &str = "p_01ARZ3NDEKTSV4RRFFQ69G5FAV";
@@ -407,7 +406,10 @@ fn only_intents_that_could_still_act_hold_their_reservation() {
         K5_2_INTENT_STATES,
         [IntentStatus::Authorized, IntentStatus::Cancelled]
     );
-    assert_eq!(IntentStatus::parse("authorized"), Some(IntentStatus::Authorized));
+    assert_eq!(
+        IntentStatus::parse("authorized"),
+        Some(IntentStatus::Authorized)
+    );
     assert_eq!(IntentStatus::Cancelled.as_str(), "cancelled");
 }
 

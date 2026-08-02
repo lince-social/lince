@@ -17,13 +17,11 @@ CREATE TABLE record (
     -- CACHE of the fold over this record's fact chain. Single writer: engine append().
     quantity_mantissa TEXT NOT NULL DEFAULT '0',
     quantity_scale    INTEGER NOT NULL DEFAULT 0,
-    concept_uid TEXT REFERENCES concept(uid),
     unit_uid    TEXT REFERENCES concept(uid),
     place_uid   TEXT REFERENCES place(uid),
     created_at  TEXT NOT NULL,
     updated_at  TEXT NOT NULL
 );
-CREATE INDEX idx_record_concept ON record(concept_uid);
 CREATE INDEX idx_record_kind ON record(kind);
 
 CREATE TABLE fact (
@@ -52,6 +50,20 @@ CREATE TABLE concept (
     instinct       TEXT,
     created_at     TEXT NOT NULL
 );
+CREATE TABLE lingua (
+    uid          TEXT PRIMARY KEY,
+    name         TEXT NOT NULL,
+    owner_organ  TEXT,
+    visibility   TEXT NOT NULL DEFAULT 'private'
+                 CHECK (visibility IN ('private', 'shared', 'public')),
+    created_at   TEXT NOT NULL
+);
+CREATE TABLE lingua_concept (
+    lingua_uid  TEXT NOT NULL REFERENCES lingua(uid),
+    concept_uid TEXT NOT NULL REFERENCES concept(uid),
+    adopted_at  TEXT NOT NULL,
+    PRIMARY KEY (lingua_uid, concept_uid)
+);
 CREATE TABLE concept_name (
     concept_uid TEXT NOT NULL REFERENCES concept(uid),
     lang        TEXT NOT NULL,
@@ -70,17 +82,37 @@ CREATE TABLE concept_equivalence (
     UNIQUE(a_uid, b_uid)
 );
 
-CREATE TABLE link (
-    uid        TEXT PRIMARY KEY,
-    from_uid   TEXT NOT NULL REFERENCES record(uid),
-    kind_uid   TEXT NOT NULL REFERENCES concept(uid),
-    to_uid     TEXT NOT NULL REFERENCES record(uid),
-    quantity   REAL,
-    created_at TEXT NOT NULL,
-    UNIQUE(from_uid, kind_uid, to_uid)          -- identity is the TRIPLE
+CREATE TABLE record_assertion (
+    uid               TEXT PRIMARY KEY,
+    subject_uid       TEXT NOT NULL REFERENCES record(uid),
+    predicate_uid     TEXT NOT NULL REFERENCES concept(uid),
+    object_uid        TEXT REFERENCES record(uid),
+    role              TEXT NOT NULL DEFAULT 'ordinary'
+                      CHECK (role IN ('ordinary', 'identity')),
+    quantity_mantissa TEXT,
+    quantity_scale    INTEGER,
+    unit_uid          TEXT REFERENCES concept(uid),
+    asserted_by       TEXT,
+    created_at        TEXT NOT NULL,
+    retracted_at      TEXT,
+    retracted_by      TEXT,
+    CHECK ((quantity_mantissa IS NULL) = (quantity_scale IS NULL)),
+    CHECK (role != 'identity' OR
+           (object_uid IS NULL AND quantity_mantissa IS NULL AND unit_uid IS NULL))
 );
-CREATE INDEX idx_link_from ON link(from_uid, kind_uid);
-CREATE INDEX idx_link_to ON link(to_uid, kind_uid);
+CREATE UNIQUE INDEX idx_assertion_unary_active
+    ON record_assertion(subject_uid, predicate_uid)
+    WHERE object_uid IS NULL AND retracted_at IS NULL;
+CREATE UNIQUE INDEX idx_assertion_binary_active
+    ON record_assertion(subject_uid, predicate_uid, object_uid)
+    WHERE object_uid IS NOT NULL AND retracted_at IS NULL;
+CREATE UNIQUE INDEX idx_assertion_identity_active
+    ON record_assertion(subject_uid)
+    WHERE role = 'identity' AND retracted_at IS NULL;
+CREATE INDEX idx_assertion_subject
+    ON record_assertion(subject_uid, predicate_uid, retracted_at);
+CREATE INDEX idx_assertion_object
+    ON record_assertion(object_uid, predicate_uid, retracted_at);
 
 CREATE TABLE promise (
     uid          TEXT PRIMARY KEY,

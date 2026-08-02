@@ -278,6 +278,11 @@ cat > "$WORK/harness.html" <<'HTML'
     const backlogCol = doc().querySelector('.cards[data-lane="backlog"]');
     results.lane_collapsed = !backlogCol || backlogCol.closest(".col").classList.contains("is-collapsed");
     results.collapse_persisted = patches.some((p) => p.patch?.kanban?.lanes?.backlog?.collapsed === true);
+    const collapsedHead = backlogCol?.closest(".col")?.querySelector(".col-head");
+    results.collapsed_header_is_minimal = Boolean(collapsedHead)
+      && collapsedHead.querySelectorAll("h2, .count, [data-lane-toggle]").length === 3
+      && !collapsedHead.querySelector(".mode-cycle, input, .col-add")
+      && !backlogCol?.closest(".col")?.querySelector(".lane-handle");
 
     // 8. Data-panel swap to a saved Protein -> subscribe_saved.
     metaStore.cardState = Object.assign({}, metaStore.cardState, { savedProtein: "views.stock" });
@@ -329,6 +334,7 @@ check delete_removes_card  "the deleted card did not disappear from the board"
 check no_protein_chrome   "view/filter/search chrome is still in the sand (base-UI duty)"
 check lane_collapsed      "lane toggle did not collapse the column"
 check collapse_persisted  "lane collapse was not persisted via patch-card-state"
+check collapsed_header_is_minimal "collapsed lane still contains controls other than its name, count, and expand button"
 check saved_swap          "cardState savedProtein did not re-subscribe via subscribe_saved"
 
 [ "$fail" -eq 0 ] && echo "PASS: old-kanban UX on Protein/Actions (recordCreate delegation, checkbox toggles, optimistic move, lanes, saved swap, bulk delete; no full edit surface)" || exit 1

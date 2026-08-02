@@ -4,9 +4,8 @@ use {
 };
 
 use super::shared::{
-    app_shell_signals, asset_version_token, board_style, chevron_down_icon, eye_icon,
-    render_card, render_lince_logo, render_topbar_brand, safe_json_for_html, server_status_icon,
-    sparkles_icon,
+    app_shell_signals, asset_version_token, board_style, chevron_down_icon, eye_icon, render_card,
+    render_lince_logo, render_topbar_brand, safe_json_for_html, server_status_icon, sparkles_icon,
 };
 
 pub fn render_app(bootstrap: &AppBootstrap) -> String {
@@ -308,7 +307,7 @@ fn render_board_base_controls() -> Markup {
                 (render_board_zoom_controls())
                 button
                     id="edit-toggle"
-                    class="board-base-tools__button"
+                    class="lynx-button lynx-icon-button board-base-tools__button"
                     type="button"
                     data-lynx-tooltip="Alternar modo de edicao"
                     aria-label="Alternar modo de edicao"
@@ -328,11 +327,11 @@ fn render_board_base_controls() -> Markup {
 fn render_board_zoom_controls() -> Markup {
     html! {
         div id="board-zoom-controls" class="board-zoom-controls panzoom-exclude" aria-label="Controles de zoom do canvas" {
-            button id="board-zoom-out" class="board-zoom-button" type="button" aria-label="Diminuir zoom" data-lynx-tooltip="Diminuir zoom" { "−" }
-            button id="board-zoom-indicator" class="board-zoom-indicator" type="button" aria-label="Voltar zoom para 100%" data-lynx-tooltip="Voltar zoom para 100%" { "100%" }
-            button id="board-zoom-in" class="board-zoom-button" type="button" aria-label="Aumentar zoom" data-lynx-tooltip="Aumentar zoom" { "+" }
-            button id="board-recenter" class="board-zoom-button board-zoom-button--wide" type="button" aria-label="Recentralizar canvas" data-lynx-tooltip="Recentralizar canvas" { "⌖" }
-            button id="board-reorganize" class="board-zoom-button board-zoom-button--wide" type="button" aria-label="Reorganizar componentes no centro" data-lynx-tooltip="Reorganizar componentes" { "◎" }
+            button id="board-zoom-out" class="lynx-button board-zoom-button" type="button" aria-label="Diminuir zoom" data-lynx-tooltip="Diminuir zoom" { "−" }
+            button id="board-zoom-indicator" class="lynx-button board-zoom-indicator" type="button" aria-label="Voltar zoom para 100%" data-lynx-tooltip="Voltar zoom para 100%" { "100%" }
+            button id="board-zoom-in" class="lynx-button board-zoom-button" type="button" aria-label="Aumentar zoom" data-lynx-tooltip="Aumentar zoom" { "+" }
+            button id="board-recenter" class="lynx-button board-zoom-button board-zoom-button--wide" type="button" aria-label="Recentralizar canvas" data-lynx-tooltip="Recentralizar canvas" { "⌖" }
+            button id="board-reorganize" class="lynx-button board-zoom-button board-zoom-button--wide" type="button" aria-label="Reorganizar componentes" data-lynx-tooltip="Reorganizar componentes" { "◎" }
         }
     }
 }
@@ -616,14 +615,29 @@ fn render_local_packages_modal_backdrop() -> Markup {
                         span class="lynx-visually-hidden" { "Buscar" }
                         input id="local-packages-search" class="lynx-input" type="search" autocomplete="off" spellcheck="false" placeholder="Nome, arquivo, autor ou permissao";
                     }
-                    div class="catalog-origin-toggle-group" aria-label="Filtrar origem dos sand" {
-                        button id="package-origin-local-toggle" class="lynx-button catalog-origin-toggle is-active" type="button" aria-pressed="true" {
-                            span class="catalog-origin-toggle__mark" { "◎" }
-                            span { "Local" }
+                    div class="sand-store__toggles" {
+                        div class="catalog-origin-toggle-group" aria-label="Filtrar origem dos sand" {
+                            button id="package-origin-local-toggle" class="lynx-button catalog-origin-toggle is-active" type="button" aria-pressed="true" {
+                                span class="catalog-origin-toggle__mark" { "◎" }
+                                span { "Local" }
+                            }
+                            button id="package-origin-dna-toggle" class="lynx-button catalog-origin-toggle is-active" type="button" aria-pressed="true" {
+                                span class="catalog-origin-toggle__mark" { "◌" }
+                                span { "DNA" }
+                            }
                         }
-                        button id="package-origin-dna-toggle" class="lynx-button catalog-origin-toggle is-active" type="button" aria-pressed="true" {
-                            span class="catalog-origin-toggle__mark" { "◌" }
-                            span { "DNA" }
+                        div class="sand-store__view-toggle lynx-button-group" role="group" aria-label="Alternar visualizacao dos sand" {
+                            button id="sand-store-view-grid" class="lynx-button lynx-icon-button is-active" type="button" aria-pressed="true" aria-label="Visualizacao em grid" data-lynx-tooltip="Visualizacao em grid" {
+                                svg class="lynx-icon" viewBox="-1 -1 18 18" aria-hidden="true" {
+                                    rect x="2" y="2" width="12" height="12" {}
+                                    path d="M6 2v12M6 6h8" {}
+                                }
+                            }
+                            button id="sand-store-view-list" class="lynx-button lynx-icon-button" type="button" aria-pressed="false" aria-label="Visualizacao em lista" data-lynx-tooltip="Visualizacao em lista" {
+                                svg class="lynx-icon" viewBox="-1 -1 18 18" aria-hidden="true" {
+                                    path d="M2 4h12M2 8h12M2 12h12" {}
+                                }
+                            }
                         }
                     }
                 }

@@ -10,7 +10,16 @@
       "Bash(bash scripts/other/*)",
       "Bash(git mv *)",
       "Bash(ps -eo pid,etime,pcpu,comm,args --sort=-pcpu)",
-      "Bash(rm -f /home/user/.claude/projects/-home-user-git-lince-social-lince/memory/feedback-never-react-after-turn-ends.md)"
+      "Bash(rm -f /home/user/.claude/projects/-home-user-git-lince-social-lince/memory/feedback-never-react-after-turn-ends.md)",
+      "Bash(rg -n 'set-identity|set_identity|\"assert\"|assert\\\\b' crates/web/src/sand/record/*.html crates/web/static/presentation/board/editor.js)",
+      "Bash(rg -rn 'set-identity|retract-assertion|\"assert\"' crates/web/src/sand/ crates/web/static/)",
+      "Bash(mkdir -p chapters)",
+      "Bash(sed -n '147,323p' instinct.html)",
+      "Bash(sed -n '325,449p' instinct.html)",
+      "Bash(sed -n '451,517p' instinct.html)",
+      "Bash(sed -n '519,593p' instinct.html)",
+      "Bash(cargo test *)"
     ]
-  }
+  },
+  "outputStyle": "default"
 }

@@ -28,6 +28,7 @@ async fn engine() -> Engine {
 async fn concept(e: &Engine, name: &str, parents: Vec<String>) -> String {
     e.act(
         Action::CreateConcept {
+            lingua: "g_local".into(),
             name: name.into(),
             parents,
         },
@@ -60,10 +61,7 @@ async fn open_need(e: &Engine, slug: &str, concept_name: &str, delta: f64) -> St
         .await
         .unwrap()
         .unwrap();
-    store::sqlx::query("UPDATE record SET concept_uid = ? WHERE uid = ?")
-        .bind(&cuid)
-        .bind(&rec)
-        .execute(&e.store.pool)
+    store::assertions::set_identity(&e.store.pool, &rec, Some(&cuid), None)
         .await
         .unwrap();
     e.act(

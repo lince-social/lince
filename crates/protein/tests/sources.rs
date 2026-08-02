@@ -91,7 +91,7 @@ async fn fact_source_filters_and_aggregates_the_ledger() {
         .unwrap();
     let apples = plain(&e, "apples.stock", 0.0).await;
     let hammer = plain(&e, "hammer", 0.0).await;
-    store::records::set_concept(&e.store.pool, &apples, Some(&food))
+    store::assertions::set_identity(&e.store.pool, &apples, Some(&food), None)
         .await
         .unwrap();
 
@@ -530,11 +530,12 @@ async fn link_depth_expands_the_tree() {
         .unwrap();
     for (from, to) in [("a", "b"), ("b", "c")] {
         e.act(
-            Action::AddLink {
-                from: from.into(),
-                kind: "needs".into(),
-                to: to.into(),
+            Action::AssertRecord {
+                subject: from.into(),
+                predicate: "needs".into(),
+                object: Some(to.into()),
                 quantity: None,
+                unit: None,
             },
             None,
         )
@@ -546,7 +547,6 @@ async fn link_depth_expands_the_tree() {
     q.filter = vec![Predicate::SlugEq("a".into())];
     q.include = Include {
         links: Some(LinksInclude {
-            kind: None,
             kinds: vec!["needs".into()],
             direction: protein::LinkDirection::Out,
             depth: 0, // default: direct links only

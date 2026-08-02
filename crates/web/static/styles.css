@@ -11,6 +11,8 @@
     --primary-ink: #f8fafc;
     --secondary-ink: color-mix(in srgb, #f8fafc 62%, #121214);
     --gray: #a7b4c2;
+    --tooltip: var(--primary-background);
+    --tooltip-ink: #f8fafc;
     --accent: #6366f1;
     --focus: #6366f1;
     --space-4: 8px;
@@ -1541,10 +1543,10 @@ body.auth-pending .startup-auth-card {
     min-height: 28px;
     place-items: center;
     padding: 0;
-    border: 0;
+    border: var(--hairline, 0.5px) solid var(--gray);
     border-radius: 2px;
-    background: transparent;
-    color: var(--text-muted);
+    background: var(--primary-background);
+    color: var(--primary-ink);
 }
 
 .board-base-tools__button:hover,
@@ -2458,6 +2460,56 @@ body.auth-pending .startup-auth-card {
     gap: 6px;
 }
 
+.protein-filter-group {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+}
+
+.protein-filter-group .protein-filter-group {
+    margin-left: 10px;
+    padding: 6px;
+    background: var(--raised-background, rgba(255, 255, 255, 0.025));
+    border-radius: 2px;
+}
+
+.protein-filter-group__head,
+.protein-filter-group__actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.protein-filter-group__head > select {
+    width: auto;
+    min-width: 62px;
+}
+
+.protein-filter-group__actions {
+    margin-left: auto;
+}
+
+.protein-filter-group__body {
+    display: grid;
+    gap: 6px;
+}
+
+.protein-condition {
+    flex-wrap: nowrap;
+}
+
+.protein-condition > select,
+.protein-condition > input {
+    min-width: 78px;
+}
+
+.protein-match-count {
+    color: var(--text-soft);
+    font-variant-numeric: tabular-nums;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
 .protein-row {
     display: flex;
     flex-wrap: wrap;
@@ -2923,16 +2975,27 @@ body.auth-pending .startup-auth-card {
 .sand-store__search { min-width: 0; }
 .sand-store__search .lynx-input { height: var(--control-height, 25px); }
 
+.sand-store__toggles { display: flex; align-items: center; gap: var(--space-2, 4px); }
 .sand-store .catalog-origin-toggle-group { margin: 0; gap: 0; flex-wrap: nowrap; }
 .sand-store .catalog-origin-toggle { min-height: var(--control-height, 25px); padding: 0 var(--space-2, 4px); border-color: transparent; background: transparent; color: var(--secondary-ink); }
 .sand-store .catalog-origin-toggle:hover,
 .sand-store .catalog-origin-toggle.is-active { border-color: var(--gray); background: var(--secondary-background); color: var(--primary-ink); }
+.sand-store__view-toggle .lynx-icon-button.is-active { color: var(--primary-ink); background: var(--secondary-background); }
 
 .sand-store__results { min-height: 0; overflow: auto; padding: var(--space-3, 6px); background: var(--primary-background); }
 .sand-store .local-package-list { gap: var(--space-4, 8px); min-height: 0; }
-.sand-store .local-package-card { min-height: 88px; gap: var(--space-2, 4px); padding: var(--space-2, 4px); border: 0; border-radius: 2px; background: var(--raised-background); color: var(--primary-ink); box-shadow: none; }
+.sand-store .local-package-card { min-height: 88px; gap: var(--space-2, 4px); padding: var(--space-2, 4px); border: 0; border-radius: 2px; background: var(--raised-background); color: var(--primary-ink); box-shadow: var(--lynx-shadow-x, 2px) var(--lynx-shadow-y, 2px) var(--lynx-shadow-blur, 6px) var(--lynx-shadow-color, rgb(0 0 0 / 16%)); }
 .sand-store .local-package-card:hover,
-.sand-store .local-package-card.is-selected { background: var(--secondary-background); box-shadow: none; transform: none; }
+.sand-store .local-package-card.is-selected { background: var(--secondary-background); transform: none; }
+
+.sand-store .local-package-list--list { grid-template-columns: 1fr; }
+.sand-store .local-package-list--list .local-package-card__description {
+    display: block;
+    overflow: visible;
+    white-space: pre-wrap;
+    -webkit-line-clamp: unset;
+    -webkit-box-orient: unset;
+}
 .sand-store .local-package-card__icon { width: 32px; height: 32px; border-radius: 2px; background: var(--primary-background); color: var(--primary-ink); font-size: 1rem; }
 .sand-store .local-package-card__body { gap: var(--space-1, 2px); }
 .sand-store .local-package-card__title { color: var(--primary-ink); }

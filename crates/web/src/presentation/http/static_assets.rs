@@ -72,6 +72,28 @@ pub async fn d3_license() -> Response {
     )))
 }
 
+/// Vendored mermaid v11 for the Instinct sand's diagrams, served at the
+/// absolute `/board/vendor/mermaid.min.js`. Same reason as d3 above: this MUST
+/// stay an always-registered route, because when `static_dir` exists on disk
+/// `/static/*` is handled by ServeDir alone and anything under
+/// `/static/vendored/` 404s. The license travels beside it (AGENTS.md rule).
+///
+/// This is the UMD `dist/mermaid.min.js` on purpose — a single self-contained
+/// bundle with NO dynamic imports, which assigns `globalThis.mermaid`. The
+/// `.esm.mjs` builds code-split into ~1000 chunk files and cannot be served
+/// from one embedded route.
+pub async fn mermaid_js() -> Response {
+    asset_response(js(include_bytes!(
+        "../../../src/sand/instinct/mermaid.min.js"
+    )))
+}
+
+pub async fn mermaid_license() -> Response {
+    asset_response(text(include_bytes!(
+        "../../../src/sand/instinct/LICENSE.txt"
+    )))
+}
+
 fn embedded_asset(path: &str) -> Option<EmbeddedAsset> {
     match path {
         "styles.css" => Some(css(include_bytes!("../../../static/styles.css"))),

@@ -7,13 +7,13 @@ use nucleus::DecimalValue;
 use nucleus::karma::{Cadence, Consequences};
 use store::Store;
 use store::recurrence::{
-    NewRecurrence, Occurrence, ReviseRecurrence, create, occurrences,
-    occurrence_request_id, revise, set_state, skip, unskip,
+    NewRecurrence, Occurrence, ReviseRecurrence, create, occurrence_request_id, occurrences,
+    revise, set_state, skip, unskip,
 };
 
 async fn store() -> Store {
-    let path = std::env::temp_dir()
-        .join(format!("lince-recurrence-{}.db", nucleus::new_uid("test")));
+    let path =
+        std::env::temp_dir().join(format!("lince-recurrence-{}.db", nucleus::new_uid("test")));
     Store::open(&format!("sqlite://{}", path.display()))
         .await
         .unwrap()
@@ -97,7 +97,10 @@ async fn a_retried_create_returns_the_first_rule_rather_than_a_second_one() {
     .await
     .unwrap();
 
-    assert!(again.was_replayed(), "a retry must not create a second rule");
+    assert!(
+        again.was_replayed(),
+        "a retry must not create a second rule"
+    );
     assert_eq!(again.rule().uid, first);
     assert_eq!(store::recurrence::all(&store.pool).await.unwrap().len(), 1);
 }
@@ -107,7 +110,10 @@ async fn dates_are_derived_and_split_into_past_due_and_still_planned() {
     let store = store().await;
     let record_uid = record(&store).await;
     let uid = monthly_rent(&store, &record_uid, "req-1").await;
-    let rule = store::recurrence::get(&store.pool, &uid).await.unwrap().unwrap();
+    let rule = store::recurrence::get(&store.pool, &uid)
+        .await
+        .unwrap()
+        .unwrap();
 
     let found = occurrences(
         &store.pool,
@@ -130,7 +136,11 @@ async fn dates_are_derived_and_split_into_past_due_and_still_planned() {
         vec!["due", "due", "due", "planned", "planned"]
     );
     assert_eq!(found.len(), 5);
-    assert!(found.iter().all(|item| item.amount == Some(amount("-1200"))));
+    assert!(
+        found
+            .iter()
+            .all(|item| item.amount == Some(amount("-1200")))
+    );
 }
 
 #[tokio::test]
@@ -138,7 +148,10 @@ async fn a_skip_is_remembered_and_can_be_taken_back() {
     let store = store().await;
     let record_uid = record(&store).await;
     let uid = monthly_rent(&store, &record_uid, "req-1").await;
-    let rule = store::recurrence::get(&store.pool, &uid).await.unwrap().unwrap();
+    let rule = store::recurrence::get(&store.pool, &uid)
+        .await
+        .unwrap()
+        .unwrap();
 
     skip(
         &store.pool,
@@ -176,7 +189,9 @@ async fn a_skip_is_remembered_and_can_be_taken_back() {
         vec!["due", "skipped", "due"]
     );
 
-    unskip(&store.pool, &uid, at("2026-02-01T00:00:00Z")).await.unwrap();
+    unskip(&store.pool, &uid, at("2026-02-01T00:00:00Z"))
+        .await
+        .unwrap();
     let after = occurrences(
         &store.pool,
         &rule,
@@ -202,7 +217,10 @@ async fn the_occurrence_key_names_one_rule_and_one_date() {
     let c = occurrence_request_id("rec_a", at("2026-03-01T00:00:00Z"));
     assert_ne!(a, b);
     assert_ne!(a, c);
-    assert_eq!(a, occurrence_request_id("rec_a", at("2026-02-01T00:00:00Z")));
+    assert_eq!(
+        a,
+        occurrence_request_id("rec_a", at("2026-02-01T00:00:00Z"))
+    );
 }
 
 #[tokio::test]
@@ -229,7 +247,10 @@ async fn revising_a_rule_changes_what_is_expected_without_touching_what_ran() {
     .await
     .unwrap();
     assert_eq!(revised.rule().revision, 2);
-    assert_eq!(revised.rule().consequences.declared_delta().copied(), Some(amount("-1300")));
+    assert_eq!(
+        revised.rule().consequences.declared_delta().copied(),
+        Some(amount("-1300"))
+    );
 
     // A stale edit is refused rather than silently overwriting a newer one.
     let stale = revise(
@@ -257,10 +278,21 @@ async fn pausing_hides_the_future_but_keeps_the_past() {
     let record_uid = record(&store).await;
     let uid = monthly_rent(&store, &record_uid, "req-1").await;
 
-    set_state(&store.pool, &uid, 1, true, "req-pause", None, at("2026-03-15T00:00:00Z"))
+    set_state(
+        &store.pool,
+        &uid,
+        1,
+        true,
+        "req-pause",
+        None,
+        at("2026-03-15T00:00:00Z"),
+    )
+    .await
+    .unwrap();
+    let rule = store::recurrence::get(&store.pool, &uid)
         .await
+        .unwrap()
         .unwrap();
-    let rule = store::recurrence::get(&store.pool, &uid).await.unwrap().unwrap();
     assert!(rule.is_paused());
 
     let found = occurrences(
@@ -275,12 +307,27 @@ async fn pausing_hides_the_future_but_keeps_the_past() {
     // Jan, Feb and Mar already happened and are still explained by this rule;
     // April and May are no longer offered.
     assert_eq!(found.len(), 3);
-    assert!(found.iter().all(|item| item.due_at <= at("2026-03-15T00:00:00Z")));
+    assert!(
+        found
+            .iter()
+            .all(|item| item.due_at <= at("2026-03-15T00:00:00Z"))
+    );
 
-    set_state(&store.pool, &uid, 2, false, "req-resume", None, at("2026-03-16T00:00:00Z"))
+    set_state(
+        &store.pool,
+        &uid,
+        2,
+        false,
+        "req-resume",
+        None,
+        at("2026-03-16T00:00:00Z"),
+    )
+    .await
+    .unwrap();
+    let resumed = store::recurrence::get(&store.pool, &uid)
         .await
+        .unwrap()
         .unwrap();
-    let resumed = store::recurrence::get(&store.pool, &uid).await.unwrap().unwrap();
     assert!(!resumed.is_paused());
     let after = occurrences(
         &store.pool,
@@ -306,8 +353,9 @@ async fn a_rule_stops_producing_dates_at_its_own_end() {
             condition: None,
             note: Some("gym"),
             // The close is part of the rule now, not a column beside it.
-            cadence: Cadence::every_months(1)
-                .until(nucleus::karma::CivilDateTime::parse_canonical("2026-04-01T00:00:00.000").unwrap()),
+            cadence: Cadence::every_months(1).until(
+                nucleus::karma::CivilDateTime::parse_canonical("2026-04-01T00:00:00.000").unwrap(),
+            ),
             anchor_at: at("2026-01-01T00:00:00Z"),
             request_id: "req-1",
             actor_uid: None,
@@ -319,7 +367,10 @@ async fn a_rule_stops_producing_dates_at_its_own_end() {
     .rule()
     .uid
     .clone();
-    let rule = store::recurrence::get(&store.pool, &uid).await.unwrap().unwrap();
+    let rule = store::recurrence::get(&store.pool, &uid)
+        .await
+        .unwrap()
+        .unwrap();
 
     let found = occurrences(
         &store.pool,
@@ -333,7 +384,11 @@ async fn a_rule_stops_producing_dates_at_its_own_end() {
     // The end is exclusive like every other window here, so April's own 1st is
     // not produced.
     assert_eq!(found.len(), 3);
-    assert!(found.iter().all(|item| item.due_at < at("2026-04-01T00:00:00Z")));
+    assert!(
+        found
+            .iter()
+            .all(|item| item.due_at < at("2026-04-01T00:00:00Z"))
+    );
 }
 
 #[tokio::test]
@@ -355,13 +410,16 @@ async fn a_cadence_that_never_advances_is_refused_at_the_boundary() {
         at("2026-01-01T00:00:00Z"),
     )
     .await;
-    assert!(refused.is_err(), "a rule that cannot advance must not be stored");
+    assert!(
+        refused.is_err(),
+        "a rule that cannot advance must not be stored"
+    );
 }
 
 #[tokio::test]
 async fn a_rule_survives_a_reopen_with_its_cadence_intact() {
-    let path = std::env::temp_dir()
-        .join(format!("lince-recurrence-{}.db", nucleus::new_uid("test")));
+    let path =
+        std::env::temp_dir().join(format!("lince-recurrence-{}.db", nucleus::new_uid("test")));
     let url = format!("sqlite://{}", path.display());
     let store = Store::open(&url).await.unwrap();
     let record_uid = record(&store).await;
@@ -393,7 +451,9 @@ async fn a_rule_survives_a_reopen_with_its_cadence_intact() {
         .unwrap();
     assert_eq!(rule.cadence, Cadence::every_weeks(2));
     // Exactness survives the round trip: a subscription is 12.50, not 12.5.
-    assert_eq!(rule.consequences.declared_delta().copied(), Some(amount("-12.50")));
+    assert_eq!(
+        rule.consequences.declared_delta().copied(),
+        Some(amount("-12.50"))
+    );
     assert_eq!(rule.note.as_deref(), Some("streaming"));
 }
-

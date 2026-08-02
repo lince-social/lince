@@ -187,7 +187,8 @@ async fn the_line_starts_where_the_concept_already_stood() {
         .await
         .unwrap();
     assert_eq!(
-        context(&rows)["opening"], "-5000",
+        context(&rows)["opening"],
+        "-5000",
         "what happened before the window is the line's starting height"
     );
     let points = rows_of(&rows, "timeline_point");
@@ -206,10 +207,13 @@ async fn the_future_is_declared_by_recurring_rules() {
     e.act(
         Action::CreateRecurrence {
             target: checking.clone(),
-            consequences: vec![nucleus::karma::Consequence::CaptureEntry { amount: nucleus::DecimalValue::parse_inferred("-1200").unwrap(), concept: Some(rent.clone()) }],
-condition: None,
-gate: None,
-carry: None,
+            consequences: vec![nucleus::karma::Consequence::CaptureEntry {
+                amount: nucleus::DecimalValue::parse_inferred("-1200").unwrap(),
+                concept: Some(rent.clone()),
+            }],
+            condition: None,
+            gate: None,
+            carry: None,
             note: Some("rent".to_string()),
             cadence: Cadence::every_months(1),
             anchor_at: Some((now - Duration::days(2)).to_rfc3339()),
@@ -260,10 +264,13 @@ async fn an_applied_date_is_counted_once_as_history_not_twice() {
         .act(
             Action::CreateRecurrence {
                 target: checking.clone(),
-                consequences: vec![nucleus::karma::Consequence::CaptureEntry { amount: nucleus::DecimalValue::parse_inferred("-1200").unwrap(), concept: Some(rent.clone()) }],
-condition: None,
-gate: None,
-carry: None,
+                consequences: vec![nucleus::karma::Consequence::CaptureEntry {
+                    amount: nucleus::DecimalValue::parse_inferred("-1200").unwrap(),
+                    concept: Some(rent.clone()),
+                }],
+                condition: None,
+                gate: None,
+                carry: None,
                 note: None,
                 cadence: Cadence::every_days(1),
                 anchor_at: Some(due.to_rfc3339()),
@@ -320,10 +327,13 @@ async fn a_skipped_date_is_not_expected() {
         .act(
             Action::CreateRecurrence {
                 target: checking.clone(),
-                consequences: vec![nucleus::karma::Consequence::CaptureEntry { amount: nucleus::DecimalValue::parse_inferred("-40").unwrap(), concept: Some(rent.clone()) }],
-condition: None,
-gate: None,
-carry: None,
+                consequences: vec![nucleus::karma::Consequence::CaptureEntry {
+                    amount: nucleus::DecimalValue::parse_inferred("-40").unwrap(),
+                    concept: Some(rent.clone()),
+                }],
+                condition: None,
+                gate: None,
+                carry: None,
                 note: None,
                 cadence: Cadence::every_days(1),
                 anchor_at: Some(due.to_rfc3339()),
@@ -370,10 +380,13 @@ async fn a_paused_rule_stops_declaring_a_future() {
         .act(
             Action::CreateRecurrence {
                 target: checking.clone(),
-                consequences: vec![nucleus::karma::Consequence::CaptureEntry { amount: nucleus::DecimalValue::parse_inferred("-1200").unwrap(), concept: Some(rent.clone()) }],
-condition: None,
-gate: None,
-carry: None,
+                consequences: vec![nucleus::karma::Consequence::CaptureEntry {
+                    amount: nucleus::DecimalValue::parse_inferred("-1200").unwrap(),
+                    concept: Some(rent.clone()),
+                }],
+                condition: None,
+                gate: None,
+                carry: None,
                 note: None,
                 cadence: Cadence::every_days(7),
                 anchor_at: Some((now - Duration::days(1)).to_rfc3339()),
@@ -434,10 +447,13 @@ async fn the_concept_dag_is_respected_on_both_halves_of_the_line() {
     e.act(
         Action::CreateRecurrence {
             target: checking.clone(),
-            consequences: vec![nucleus::karma::Consequence::CaptureEntry { amount: nucleus::DecimalValue::parse_inferred("-1200").unwrap(), concept: Some(rent) }],
-condition: None,
-gate: None,
-carry: None,
+            consequences: vec![nucleus::karma::Consequence::CaptureEntry {
+                amount: nucleus::DecimalValue::parse_inferred("-1200").unwrap(),
+                concept: Some(rent),
+            }],
+            condition: None,
+            gate: None,
+            carry: None,
             note: None,
             cadence: Cadence::every_days(7),
             anchor_at: Some((now - Duration::days(1)).to_rfc3339()),
@@ -518,8 +534,22 @@ async fn two_units_under_one_concept_never_contaminate_each_other() {
         .unwrap();
 
     let now = Utc::now();
-    capture(&e, &jar, "-3", &stock, &(now - Duration::days(5)).to_rfc3339()).await;
-    capture(&e, &till, "-100", &stock, &(now - Duration::days(5)).to_rfc3339()).await;
+    capture(
+        &e,
+        &jar,
+        "-3",
+        &stock,
+        &(now - Duration::days(5)).to_rfc3339(),
+    )
+    .await;
+    capture(
+        &e,
+        &till,
+        "-100",
+        &stock,
+        &(now - Duration::days(5)).to_rfc3339(),
+    )
+    .await;
 
     let (since, before) = window();
     let rows = protein::execute(&e.store, &timeline(&stock, since, before))
@@ -540,8 +570,11 @@ async fn two_units_under_one_concept_never_contaminate_each_other() {
     // Each line is seeded from its own unit's history, not the other's.
     let points = rows_of(&rows, "timeline_point");
     let kg_points: Vec<&Value> = points.iter().copied().filter(|p| p["unit"] == kg).collect();
-    let coin_points: Vec<&Value> =
-        points.iter().copied().filter(|p| p["unit"] == coin).collect();
+    let coin_points: Vec<&Value> = points
+        .iter()
+        .copied()
+        .filter(|p| p["unit"] == coin)
+        .collect();
     assert_eq!(kg_points.last().unwrap()["cumulative"], "-3");
     assert_eq!(coin_points.last().unwrap()["cumulative"], "-100");
 }

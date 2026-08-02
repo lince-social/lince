@@ -31,25 +31,27 @@ use crate::facts::instant;
 
 // ------------------------------------------------------- a Record's concepts
 
-/// Add a concept a Record *counts as*. Its identity concept
-/// (`record.concept_uid`) is untouched: a toothbrush stays a toothbrush while
-/// also counting as a cost and a health item.
+/// Add a concept a Record *counts as*. Its identity assertion is untouched: a
+/// toothbrush stays a toothbrush while also counting as a cost and a health
+/// item.
 pub async fn add_record_concept(
     pool: &SqlitePool,
     record_uid: &str,
     concept_uid: &str,
     actor_uid: Option<&str>,
 ) -> Result<(), StoreError> {
-    sqlx::query(
-        "INSERT INTO record_concept (record_uid, concept_uid, at, actor_uid)
-         VALUES (?, ?, ?, ?)
-         ON CONFLICT(record_uid, concept_uid) DO NOTHING",
+    crate::assertions::assert(
+        pool,
+        crate::assertions::NewAssertion {
+            subject_uid: record_uid,
+            predicate_uid: concept_uid,
+            object_uid: None,
+            role: crate::assertions::AssertionRole::Ordinary,
+            quantity: None,
+            unit_uid: None,
+            asserted_by: actor_uid,
+        },
     )
-    .bind(record_uid)
-    .bind(concept_uid)
-    .bind(instant(Utc::now()))
-    .bind(actor_uid)
-    .execute(pool)
     .await?;
     Ok(())
 }
@@ -59,13 +61,7 @@ pub async fn remove_record_concept(
     record_uid: &str,
     concept_uid: &str,
 ) -> Result<bool, StoreError> {
-    let result =
-        sqlx::query("DELETE FROM record_concept WHERE record_uid = ? AND concept_uid = ?")
-            .bind(record_uid)
-            .bind(concept_uid)
-            .execute(pool)
-            .await?;
-    Ok(result.rows_affected() > 0)
+    crate::assertions::retract_tuple(pool, record_uid, concept_uid, None, None).await
 }
 
 /// Every concept a Record carries: its identity concept first, then the ones it
@@ -75,23 +71,10 @@ pub async fn record_concepts(
     pool: &SqlitePool,
     record_uid: &str,
 ) -> Result<Vec<String>, StoreError> {
-    let mut out = Vec::new();
-    if let Some(record) = crate::records::get(pool, record_uid).await? {
-        if let Some(identity) = record.concept_uid {
-            out.push(identity);
-        }
-    }
-    let rows = sqlx::query(
-        "SELECT concept_uid FROM record_concept WHERE record_uid = ? ORDER BY at, concept_uid",
-    )
-    .bind(record_uid)
-    .fetch_all(pool)
-    .await?;
-    for row in rows {
-        let concept: String = row.get("concept_uid");
-        if !out.contains(&concept) {
-            out.push(concept);
-        }
+    let mut out = crate::assertions::concepts_for_record(pool, record_uid).await?;
+    if let Some(identity) = crate::assertions::identity_concept(pool, record_uid).await? {
+        out.retain(|concept| concept != &identity);
+        out.insert(0, identity);
     }
     Ok(out)
 }
@@ -107,14 +90,15 @@ pub async fn all_record_concepts(
 ) -> Result<BTreeMap<String, Vec<String>>, StoreError> {
     let mut out: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let rows = sqlx::query(
-        "SELECT record_uid, concept_uid FROM record_concept ORDER BY record_uid, at, concept_uid",
+        "SELECT subject_uid, predicate_uid FROM record_assertion
+          WHERE retracted_at IS NULL ORDER BY subject_uid, created_at, predicate_uid",
     )
     .fetch_all(pool)
     .await?;
     for row in rows {
-        out.entry(row.get("record_uid"))
+        out.entry(row.get("subject_uid"))
             .or_default()
-            .push(row.get("concept_uid"));
+            .push(row.get("predicate_uid"));
     }
     Ok(out)
 }
@@ -135,18 +119,14 @@ pub async fn records_with_concept(
     }
     let placeholders = placeholders(concepts.len());
     let sql = format!(
-        "SELECT uid FROM record
-          WHERE deleted_at IS NULL AND concept_uid IN ({placeholders})
-         UNION
-         SELECT rc.record_uid AS uid FROM record_concept rc
-           JOIN record r ON r.uid = rc.record_uid
-          WHERE r.deleted_at IS NULL AND rc.concept_uid IN ({placeholders})"
+        "SELECT DISTINCT a.subject_uid AS uid FROM record_assertion a
+           JOIN record r ON r.uid = a.subject_uid
+          WHERE r.deleted_at IS NULL AND a.retracted_at IS NULL
+            AND a.predicate_uid IN ({placeholders})"
     );
     let mut query = sqlx::query(&sql);
-    for _ in 0..2 {
-        for concept in &concepts {
-            query = query.bind(concept.clone());
-        }
+    for concept in &concepts {
+        query = query.bind(concept.clone());
     }
     Ok(query
         .fetch_all(pool)
@@ -205,10 +185,7 @@ pub async fn classify_fact(
 }
 
 /// The concept currently asserted for a change, if any.
-pub async fn fact_concept(
-    pool: &SqlitePool,
-    fact_uid: &str,
-) -> Result<Option<String>, StoreError> {
+pub async fn fact_concept(pool: &SqlitePool, fact_uid: &str) -> Result<Option<String>, StoreError> {
     Ok(
         sqlx::query("SELECT concept_uid FROM fact_concept WHERE fact_uid = ?")
             .bind(fact_uid)
@@ -221,9 +198,7 @@ pub async fn fact_concept(
 /// Every current classification in one query, for the same reason as
 /// [`all_record_concepts`]: a scan that asks per Fact turns one pass into `N`
 /// round trips. Only classified Facts appear; an absent key means unclassified.
-pub async fn all_fact_concepts(
-    pool: &SqlitePool,
-) -> Result<BTreeMap<String, String>, StoreError> {
+pub async fn all_fact_concepts(pool: &SqlitePool) -> Result<BTreeMap<String, String>, StoreError> {
     let rows = sqlx::query("SELECT fact_uid, concept_uid FROM fact_concept")
         .fetch_all(pool)
         .await?;
@@ -361,11 +336,7 @@ pub async fn totals_by_concept(
     let mut out = ClassifiedTotals::default();
     for (delta, concept) in rows {
         match concept {
-            Some(concept) => out
-                .by_concept
-                .entry(concept)
-                .or_default()
-                .add(delta)?,
+            Some(concept) => out.by_concept.entry(concept).or_default().add(delta)?,
             None => out.unclassified.add(delta)?,
         }
     }
@@ -431,10 +402,7 @@ async fn window_rows(
 /// deliberately out of scope here: `concept_conversion` has no time dimension,
 /// so converting a 2020 change at today's rate would silently rewrite history.
 /// A conversion that has to be time-aware is a rule, not a property of a sum.
-async fn require_shared_unit(
-    pool: &SqlitePool,
-    record_uids: &[String],
-) -> Result<(), StoreError> {
+async fn require_shared_unit(pool: &SqlitePool, record_uids: &[String]) -> Result<(), StoreError> {
     let mut units: HashSet<Option<String>> = HashSet::new();
     for uid in record_uids {
         if let Some(record) = crate::records::get(pool, uid).await? {

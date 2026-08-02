@@ -2423,7 +2423,13 @@ where
     .bind(&now_string)
     .execute(&mut *tx)
     .await?;
-    crate::records::bump_quantity(&mut tx, &input.transfer_uid, crate::exact::zero(), &now_string).await?;
+    crate::records::bump_quantity(
+        &mut tx,
+        &input.transfer_uid,
+        crate::exact::zero(),
+        &now_string,
+    )
+    .await?;
     tx.commit().await?;
 
     Ok(RevisionCommit::Committed {
@@ -3528,7 +3534,8 @@ where
         &sign,
     )
     .await?;
-    crate::records::bump_quantity(&mut tx, &pending.transfer_uid, crate::exact::zero(), &at).await?;
+    crate::records::bump_quantity(&mut tx, &pending.transfer_uid, crate::exact::zero(), &at)
+        .await?;
     let invitation = map_invitation(
         sqlx::query("SELECT * FROM transfer_invitation WHERE uid = ?")
             .bind(&pending.uid)
@@ -3636,7 +3643,8 @@ where
         &sign,
     )
     .await?;
-    crate::records::bump_quantity(&mut tx, &pending.transfer_uid, crate::exact::zero(), &at).await?;
+    crate::records::bump_quantity(&mut tx, &pending.transfer_uid, crate::exact::zero(), &at)
+        .await?;
     let invitation = map_invitation(
         sqlx::query("SELECT * FROM transfer_invitation WHERE uid = ?")
             .bind(&pending.uid)
@@ -3872,7 +3880,8 @@ where
         &sign,
     )
     .await?;
-    crate::records::bump_quantity(&mut tx, &pending.transfer_uid, crate::exact::zero(), &at).await?;
+    crate::records::bump_quantity(&mut tx, &pending.transfer_uid, crate::exact::zero(), &at)
+        .await?;
     let invitation = map_invitation(
         sqlx::query("SELECT * FROM transfer_invitation WHERE uid = ?")
             .bind(&pending.uid)
@@ -6371,7 +6380,8 @@ where
         .bind(&fact.uid)
         .execute(&mut *tx)
         .await?;
-        crate::records::bump_quantity(&mut tx, &item.transfer_uid, crate::exact::zero(), &at).await?;
+        crate::records::bump_quantity(&mut tx, &item.transfer_uid, crate::exact::zero(), &at)
+            .await?;
         previous_hash = fact.hash.clone();
         facts.push(fact);
     }
@@ -7419,7 +7429,13 @@ where
             .execute(&mut *tx)
             .await?;
     }
-    crate::records::bump_quantity(&mut tx, &input.local_record_uid, crate::exact::from_f64(input.local_delta), &at).await?;
+    crate::records::bump_quantity(
+        &mut tx,
+        &input.local_record_uid,
+        crate::exact::from_f64(input.local_delta),
+        &at,
+    )
+    .await?;
     crate::records::bump_quantity(&mut tx, &transfer_uid, crate::exact::zero(), &at).await?;
     tx.commit().await?;
 
@@ -7659,8 +7675,13 @@ where
     .bind(&at)
     .execute(&mut *tx)
     .await?;
-    crate::records::bump_quantity(&mut tx, &slice.local_record_uid, crate::exact::from_f64(-slice.local_delta), &at)
-        .await?;
+    crate::records::bump_quantity(
+        &mut tx,
+        &slice.local_record_uid,
+        crate::exact::from_f64(-slice.local_delta),
+        &at,
+    )
+    .await?;
     tx.commit().await?;
 
     let outcome = occurrence_settlement_compensation_outcome_for_request(pool, request_id)

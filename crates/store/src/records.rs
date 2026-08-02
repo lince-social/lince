@@ -19,7 +19,7 @@ pub struct RecordRow {
     /// The cache of this record's fact fold — exact, so it can never disagree
     /// with its chain by a rounding step (blueprint E0.0).
     pub quantity: DecimalValue,
-    pub concept_uid: Option<String>,
+    pub identity_predicate_uid: Option<String>,
     pub unit_uid: Option<String>,
     pub place_uid: Option<String>,
     /// The organ (a `kind='organ'` record) this record originated from —
@@ -28,6 +28,8 @@ pub struct RecordRow {
     /// `organ_in`) and lets Sync/File Sync select WHAT travels where by
     /// pointing at a Protein instead of a hardcoded rule.
     pub organ_uid: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 impl RecordRow {
@@ -51,10 +53,12 @@ fn map_row(r: sqlx::sqlite::SqliteRow) -> Result<RecordRow, StoreError> {
         head: r.get("head"),
         body: r.get("body"),
         quantity: read_decimal(&r, "quantity")?,
-        concept_uid: r.get("concept_uid"),
+        identity_predicate_uid: r.get("identity_predicate_uid"),
         unit_uid: r.get("unit_uid"),
         place_uid: r.get("place_uid"),
         organ_uid: r.get("organ_uid"),
+        created_at: r.get("created_at"),
+        updated_at: r.get("updated_at"),
     })
 }
 
@@ -108,23 +112,36 @@ pub async fn create(pool: &SqlitePool, new: NewRecord<'_>) -> Result<RecordRow, 
 }
 
 pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<RecordRow>, StoreError> {
-    sqlx::query("SELECT * FROM record WHERE uid = ? AND deleted_at IS NULL")
-        .bind(uid)
-        .fetch_optional(pool)
-        .await?
-        .map(map_row)
-        .transpose()
+    sqlx::query(
+        "SELECT r.*,
+                (SELECT predicate_uid FROM record_assertion a
+                  WHERE a.subject_uid = r.uid AND a.role = 'identity'
+                    AND a.retracted_at IS NULL) AS identity_predicate_uid
+           FROM record r WHERE r.uid = ? AND r.deleted_at IS NULL",
+    )
+    .bind(uid)
+    .fetch_optional(pool)
+    .await?
+    .map(map_row)
+    .transpose()
 }
 
 /// Resolve `@token`: slug first, uid fallback.
 pub async fn resolve(pool: &SqlitePool, token: &str) -> Result<Option<RecordRow>, StoreError> {
-    sqlx::query("SELECT * FROM record WHERE (slug = ? OR uid = ?) AND deleted_at IS NULL LIMIT 1")
-        .bind(token)
-        .bind(token)
-        .fetch_optional(pool)
-        .await?
-        .map(map_row)
-        .transpose()
+    sqlx::query(
+        "SELECT r.*,
+                (SELECT predicate_uid FROM record_assertion a
+                  WHERE a.subject_uid = r.uid AND a.role = 'identity'
+                    AND a.retracted_at IS NULL) AS identity_predicate_uid
+           FROM record r
+          WHERE (r.slug = ? OR r.uid = ?) AND r.deleted_at IS NULL LIMIT 1",
+    )
+    .bind(token)
+    .bind(token)
+    .fetch_optional(pool)
+    .await?
+    .map(map_row)
+    .transpose()
 }
 
 pub async fn quantity(pool: &SqlitePool, uid: &str) -> Result<Option<DecimalValue>, StoreError> {
@@ -173,9 +190,15 @@ pub async fn mark_deleted(pool: &SqlitePool, uid: &str) -> Result<bool, StoreErr
 /// Every record, oldest first — the Protein `source: record` base set.
 pub async fn list_all(pool: &SqlitePool) -> Result<Vec<RecordRow>, StoreError> {
     map_rows(
-        sqlx::query("SELECT * FROM record WHERE deleted_at IS NULL ORDER BY created_at, uid")
-            .fetch_all(pool)
-            .await?,
+        sqlx::query(
+            "SELECT r.*,
+                    (SELECT predicate_uid FROM record_assertion a
+                      WHERE a.subject_uid = r.uid AND a.role = 'identity'
+                        AND a.retracted_at IS NULL) AS identity_predicate_uid
+               FROM record r WHERE r.deleted_at IS NULL ORDER BY r.created_at, r.uid",
+        )
+        .fetch_all(pool)
+        .await?,
     )
 }
 
@@ -187,9 +210,14 @@ pub async fn active_needs(pool: &SqlitePool) -> Result<Vec<RecordRow>, StoreErro
     // text test — there is no numeric column left to compare against 0.
     map_rows(
         sqlx::query(
-            "SELECT * FROM record
-             WHERE quantity_mantissa LIKE '-%' AND kind = 'plain' AND deleted_at IS NULL
-             ORDER BY created_at, uid",
+            "SELECT r.*,
+                    (SELECT predicate_uid FROM record_assertion a
+                      WHERE a.subject_uid = r.uid AND a.role = 'identity'
+                        AND a.retracted_at IS NULL) AS identity_predicate_uid
+               FROM record r
+              WHERE r.quantity_mantissa LIKE '-%' AND r.kind = 'plain'
+                AND r.deleted_at IS NULL
+              ORDER BY r.created_at, r.uid",
         )
         .fetch_all(pool)
         .await?,
@@ -244,6 +272,33 @@ pub async fn get_extension(
     )
 }
 
+/// Load one extension namespace for every live Record in one query.
+/// Protein uses this when a predicate refers to structured Record metadata;
+/// keeping it batched avoids one database read per candidate Record.
+pub async fn all_extensions(
+    pool: &SqlitePool,
+    namespace: &str,
+) -> Result<std::collections::HashMap<String, serde_json::Value>, StoreError> {
+    let rows = sqlx::query(
+        "SELECT e.record_uid, e.fds
+           FROM record_extension e
+           JOIN record r ON r.uid = e.record_uid
+          WHERE e.namespace = ? AND r.deleted_at IS NULL",
+    )
+    .bind(namespace)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows
+        .into_iter()
+        .filter_map(|row| {
+            let uid = row.get::<String, _>("record_uid");
+            serde_json::from_str(&row.get::<String, _>("fds"))
+                .ok()
+                .map(|value| (uid, value))
+        })
+        .collect())
+}
+
 /// Edit a record's text (head/title and/or body). Not the quantity cache, so a
 /// plain `UPDATE` is allowed; provenance/live-refresh is the engine's job via an
 /// annotation fact. `None` leaves a field untouched.
@@ -284,25 +339,6 @@ pub async fn set_slug(pool: &SqlitePool, uid: &str, slug: Option<&str>) -> Resul
     let now = Utc::now().to_rfc3339();
     let res = sqlx::query("UPDATE record SET slug = ?, updated_at = ? WHERE uid = ?")
         .bind(slug)
-        .bind(&now)
-        .bind(uid)
-        .execute(pool)
-        .await?;
-    if res.rows_affected() == 0 {
-        return Err(sqlx::Error::RowNotFound);
-    }
-    Ok(())
-}
-
-/// Set (or clear, with `None`) the record's Lingua concept classification.
-pub async fn set_concept(
-    pool: &SqlitePool,
-    uid: &str,
-    concept_uid: Option<&str>,
-) -> Result<(), StoreError> {
-    let now = Utc::now().to_rfc3339();
-    let res = sqlx::query("UPDATE record SET concept_uid = ?, updated_at = ? WHERE uid = ?")
-        .bind(concept_uid)
         .bind(&now)
         .bind(uid)
         .execute(pool)

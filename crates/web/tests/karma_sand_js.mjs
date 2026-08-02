@@ -23,6 +23,18 @@ const {
   conditionLabel,
 } = await import("../src/sand/karma/app/recurrence.js");
 const { state } = await import("../src/sand/karma/app/state.js");
+const { touchedRecordUids, layoutStack, cardsFor, CARD_HEIGHT, CARD_GAP } = await import(
+  "../src/sand/karma/app/canvas.js"
+);
+const {
+  activeQuery,
+  applyCompletion,
+  blocksIn,
+  catalogFrom,
+  completionFor,
+  insertAtCaret,
+  rankBlocks,
+} = await import("../src/sand/karma/app/blocks.js");
 
 let failures = 0;
 function check(name, actual, expected) {
@@ -340,6 +352,180 @@ check(
     state.conceptNames,
   ),
   "removes @wip and adds @done",
+);
+
+// ------------------------------------------------ the main-view card deck
+
+// A record earns a card by being the target a consequence writes to (its own
+// `record`) — with no condition at all, the plain unconditional case.
+check(
+  "an unconditional rule's own target is touched",
+  touchedRecordUids(
+    [{ uid: "r_rent", slug: "rent" }],
+    [{ record: "r_rent", condition: "" }],
+  ),
+  ["r_rent"],
+);
+
+// A record can also earn its card purely by being read inside another rule's
+// condition — `freq(@x)`, `value(@x)` and a bare `@x` all name it the same way.
+check(
+  "a record named only in a condition's reading is touched too",
+  touchedRecordUids(
+    [
+      { uid: "r_checking", slug: "checking" },
+      { uid: "r_payday", slug: "payday" },
+    ],
+    [{ record: "r_checking", condition: "-1 * freq(@payday)" }],
+  ),
+  ["r_checking", "r_payday"].sort(),
+);
+
+// The same record named twice — once as a target, once as a reading in a
+// second rule — appears once, not twice.
+check(
+  "a record touched by two rules gets one card, not two",
+  touchedRecordUids(
+    [{ uid: "r_apples", slug: "apples.stock" }],
+    [
+      { record: "r_apples", condition: "" },
+      { record: "r_other", condition: "@apples.stock < 3" },
+    ],
+  ).includes("r_apples"),
+  true,
+);
+
+// A token nothing resolves to (a typo, or a record since deleted) is simply
+// not a card — it is never invented out of the condition text.
+check(
+  "an unresolved reading names no card",
+  touchedRecordUids([], [{ record: null, condition: "@ghost" }]),
+  [],
+);
+
+check(
+  "cards stack one below the other, centered, never side by side",
+  layoutStack([{ uid: "a" }, { uid: "b" }]).map((card) => [card.x < 0, card.y]),
+  [
+    [true, 0],
+    [true, CARD_HEIGHT + CARD_GAP],
+  ],
+);
+
+check(
+  "the deck is the touched records, resolved and laid out",
+  cardsFor(
+    [{ uid: "r_rent", slug: "rent", head: "Rent" }],
+    [{ record: "r_rent", condition: "" }],
+  ).map((card) => card.record.slug),
+  ["rent"],
+);
+
+// --------------------------------------------------- blocks and autocomplete
+
+const CATALOG = catalogFrom(
+  [
+    { uid: "r1", slug: "apple", head: "Apple", quantity: -1 },
+    { uid: "r2", slug: "pear", head: "Pear", quantity: 0 },
+    { uid: "r3", slug: "pineapple", head: "Pineapple", quantity: 3 },
+  ],
+  [{ uid: "f1", slug: "daily", head: "Daily" }],
+);
+
+check("a record block spells as a bare slug", completionFor("record", "apple"), "@apple");
+check(
+  "a frequency block spells as the whole reading, paren and all",
+  completionFor("frequency", "daily"),
+  "freq(@daily)",
+);
+
+check(
+  "typing @ opens the catalog with no kind narrowed",
+  (() => {
+    const q = activeQuery("-1 * @app", 9);
+    return [q.start, q.end, q.kind, q.query];
+  })(),
+  [5, 9, null, "app"],
+);
+
+check(
+  "record( is an opener the editor absorbs, not a function in the grammar",
+  (() => {
+    const q = activeQuery("record(app", 10);
+    return [q.start, q.kind, q.query];
+  })(),
+  [0, "record", "app"],
+);
+
+check(
+  "freq(@dai widens back onto freq( so accepting closes the paren",
+  (() => {
+    const q = activeQuery("freq(@dai", 9);
+    return [q.start, q.kind, q.query];
+  })(),
+  [0, "frequency", "dai"],
+);
+
+check(
+  "nothing is being typed when the caret sits after an operator",
+  activeQuery("@apple + ", 9),
+  null,
+);
+
+check(
+  "a block is findable by slug or by head, prefix before substring",
+  rankBlocks(CATALOG, "record", "app").map((block) => block.slug),
+  ["apple", "pineapple"],
+);
+
+check(
+  "narrowing to a kind hides the others",
+  rankBlocks(CATALOG, "frequency", "").map((block) => block.slug),
+  ["daily"],
+);
+
+check(
+  "accepting freq(dai replaces the whole opener and closes the paren",
+  (() => {
+    const source = "-1 * freq(dai";
+    const next = applyCompletion(source, activeQuery(source, 13), "frequency", "daily");
+    return [next.text, next.caret];
+  })(),
+  ["-1 * freq(@daily)", 17],
+);
+
+check(
+  "accepting mid-formula keeps what came after the caret",
+  (() => {
+    const source = "@app + @pear";
+    const next = applyCompletion(source, activeQuery(source, 4), "record", "apple");
+    return [next.text, next.caret];
+  })(),
+  ["@apple + @pear", 6],
+);
+
+check(
+  "clicking a record drops it at the caret and eats nothing",
+  (() => {
+    const next = insertAtCaret("-1 * ", 5, "record", "apple");
+    return [next.text, next.caret];
+  })(),
+  ["-1 * @apple", 11],
+);
+
+check(
+  "the chip strip names every block, frequency and record alike",
+  blocksIn("-1 * freq(@daily) + @apple", CATALOG).map((b) => [b.kind, b.slug]),
+  [
+    ["frequency", "daily"],
+    ["record", "apple"],
+  ],
+);
+
+check(
+  "a slug nothing answers to is reported, not quietly dropped",
+  blocksIn("@ghost", CATALOG).map((b) => b.kind),
+  ["unknown"],
 );
 
 if (failures > 0) {

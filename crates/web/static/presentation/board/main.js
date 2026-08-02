@@ -210,6 +210,12 @@ const packageOriginLocalToggle = document.getElementById(
 const packageOriginDnaToggle = document.getElementById(
   "package-origin-dna-toggle",
 );
+const sandStoreViewGridToggle = document.getElementById(
+  "sand-store-view-grid",
+);
+const sandStoreViewListToggle = document.getElementById(
+  "sand-store-view-list",
+);
 const localPackageList = document.getElementById("local-package-list");
 const dnaPackagesModalBackdrop = document.getElementById(
   "dna-packages-modal-backdrop",
@@ -422,6 +428,8 @@ if (
   !localPackagesSearch ||
   !packageOriginLocalToggle ||
   !packageOriginDnaToggle ||
+  !sandStoreViewGridToggle ||
+  !sandStoreViewListToggle ||
   !localPackageList ||
   !dnaPackagesModalBackdrop ||
   !dnaPackagesCloseButton ||
@@ -726,6 +734,8 @@ let packageOriginFilters = {
   local: true,
   dna: true,
 };
+let sandStoreView = "grid";
+const SAND_STORE_LIST_DESCRIPTION_LIMIT = 2000;
 let serverProfiles = Array.isArray(bootstrap?.servers) ? bootstrap.servers : [];
 let pendingServerLogin = null;
 let notificationsTimer = null;
@@ -2439,6 +2449,10 @@ function syncCardNode(node, card) {
   const workspacePopoverWidth = 260;
   const canvasRect = boardCanvas.getBoundingClientRect();
   const isEditPanelOpen = isEditShell && editMode;
+  const editPopoverHeight = Math.min(
+    Math.max(0, canvasRect.height - 36),
+    104 + store.getSnapshot().workspaces.length * 27,
+  );
   const editAnchorRect = isEditPanelOpen
     ? editToggle.getBoundingClientRect()
     : null;
@@ -2453,7 +2467,7 @@ function syncCardNode(node, card) {
         : card.width;
   const wantedExpandedHeight =
     isEditPanelOpen
-      ? Math.min(card.height, Math.max(0, canvasRect.height - 36))
+      ? editPopoverHeight
       : isEditShell
         ? 0
         : recordIdleHidden
@@ -3104,6 +3118,23 @@ function syncPackageOriginToggles() {
   );
 }
 
+function syncSandStoreViewToggle() {
+  const isList = sandStoreView === "list";
+  sandStoreViewGridToggle.classList.toggle("is-active", !isList);
+  sandStoreViewGridToggle.setAttribute("aria-pressed", String(!isList));
+  sandStoreViewListToggle.classList.toggle("is-active", isList);
+  sandStoreViewListToggle.setAttribute("aria-pressed", String(isList));
+  localPackageList.classList.toggle("local-package-list--list", isList);
+}
+
+function setSandStoreView(view) {
+  if (sandStoreView === view) {
+    return;
+  }
+  sandStoreView = view;
+  renderLocalPackageList();
+}
+
 function summarizeLocalPackages(localResults, dnaResults) {
   const localVisibleCount = localResults.length;
   const dnaVisibleCount = dnaResults.length;
@@ -3158,6 +3189,14 @@ function summarizeLocalPackages(localResults, dnaResults) {
   } publicados nos organs conectados.`;
 }
 
+function truncateSandDescription(text) {
+  const value = String(text || "");
+  if (sandStoreView !== "list" || value.length <= SAND_STORE_LIST_DESCRIPTION_LIMIT) {
+    return value;
+  }
+  return `${value.slice(0, SAND_STORE_LIST_DESCRIPTION_LIMIT).trimEnd()}…`;
+}
+
 function renderLocalPackageCard(pkg) {
   const width = Number(pkg.initialWidth ?? pkg.initial_width) || 3;
   const height = Number(pkg.initialHeight ?? pkg.initial_height) || 2;
@@ -3178,7 +3217,7 @@ function renderLocalPackageCard(pkg) {
           <span class="local-package-card__size">${escapeHtml(`${width} x ${height}`)}</span>
         </span>
         <span class="local-package-card__description">${escapeHtml(
-          pkg.description || "Widget local instalado no sistema.",
+          truncateSandDescription(pkg.description || "Widget local instalado no sistema."),
         )}</span>
         <span class="local-package-card__meta">${escapeHtml(
           `${pkg.filename} · ${pkg.author || "Lince Labs"}`,
@@ -3224,7 +3263,7 @@ function renderDnaPackageCard(pkg) {
           <span class="local-package-card__size">${escapeHtml(pkg.packageFormat || "html")}</span>
         </span>
         <span class="local-package-card__description">${escapeHtml(
-          pkg.body || "Sand publicado por um organ acessivel.",
+          truncateSandDescription(pkg.body || "Sand publicado por um organ acessivel."),
         )}</span>
         <span class="local-package-card__meta">${escapeHtml(
           `${pkg.originName} · ${pkg.slug} · ${pkg.version || "0.1.0"} · ${pkg.packageFormat}`,
@@ -3254,6 +3293,7 @@ function renderDnaPackageCard(pkg) {
 
 function renderLocalPackageList() {
   syncPackageOriginToggles();
+  syncSandStoreViewToggle();
   const query = normalizedPackageSearch();
   const filteredPackages = packageOriginFilters.local
     ? installedPackages.filter((pkg) => matchesPackageQuery(pkg, query))
@@ -5208,6 +5248,11 @@ async function importWorkspaceFile(file) {
 }
 
 function resolvePreviewSize(preview, fallback = null) {
+  // Kanban is a working surface, not a compact utility card. Match the
+  // tutorial's deliberately composed canvas dimensions exactly on add.
+  if (String(preview?.filename || fallback?.filename || "") === "kanban.html") {
+    return { width: 1536, height: 864 };
+  }
   const width = Math.max(
     1,
     Number(preview?.initial_width ?? preview?.initialWidth) ||
@@ -6010,6 +6055,14 @@ packageOriginLocalToggle.addEventListener("click", () => {
   renderLocalPackageList();
 });
 
+sandStoreViewGridToggle.addEventListener("click", () => {
+  setSandStoreView("grid");
+});
+
+sandStoreViewListToggle.addEventListener("click", () => {
+  setSandStoreView("list");
+});
+
 packageOriginDnaToggle.addEventListener("click", () => {
   packageOriginFilters = {
     ...packageOriginFilters,
@@ -6358,6 +6411,26 @@ document.addEventListener("keydown", (event) => {
   }
 
   if (isTypingTarget(event.target)) {
+    return;
+  }
+
+  if (
+    event.ctrlKey &&
+    !event.altKey &&
+    (event.key === "+" || event.key === "=" || event.code === "NumpadAdd")
+  ) {
+    event.preventDefault();
+    boardViewport.zoomBy(1.22);
+    return;
+  }
+
+  if (
+    event.ctrlKey &&
+    !event.altKey &&
+    (event.key === "-" || event.code === "NumpadSubtract")
+  ) {
+    event.preventDefault();
+    boardViewport.zoomBy(0.82);
     return;
   }
 

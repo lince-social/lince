@@ -119,10 +119,7 @@ pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<Entry>, StoreErr
 
 /// The entry that currently owns a Fact, if any. This is how the write path
 /// tells "x/// entry that should be revised or voided instead".
-pub async fn for_fact(
-    pool: &SqlitePool,
-    fact_uid: &str,
-) -> Result<Option<Entry>, StoreError> {
+pub async fn for_fact(pool: &SqlitePool, fact_uid: &str) -> Result<Option<Entry>, StoreError> {
     let row = sqlx::query("SELECT * FROM entry WHERE fact_uid = ? LIMIT 1")
         .bind(fact_uid)
         .fetch_optional(pool)
@@ -134,23 +131,19 @@ pub async fn for_fact(
 /// Ledger has no delete, and a surface that hid them would make a correction
 /// look like a disappearance.
 pub async fn list_all(pool: &SqlitePool, limit: i64) -> Result<Vec<Entry>, StoreError> {
-    let rows = sqlx::query("SELECT * FROM entry ORDER BY occurred_at DESC, created_at DESC LIMIT ?")
-        .bind(limit)
-        .fetch_all(pool)
-        .await?;
+    let rows =
+        sqlx::query("SELECT * FROM entry ORDER BY occurred_at DESC, created_at DESC LIMIT ?")
+            .bind(limit)
+            .fetch_all(pool)
+            .await?;
     rows.iter().map(map_entry).collect()
 }
 
-pub async fn history(
-    pool: &SqlitePool,
-    entry_uid: &str,
-) -> Result<Vec<EntryRevision>, StoreError> {
-    let rows = sqlx::query(
-        "SELECT * FROM entry_revision WHERE entry_uid = ? ORDER BY revision",
-    )
-    .bind(entry_uid)
-    .fetch_all(pool)
-    .await?;
+pub async fn history(pool: &SqlitePool, entry_uid: &str) -> Result<Vec<EntryRevision>, StoreError> {
+    let rows = sqlx::query("SELECT * FROM entry_revision WHERE entry_uid = ? ORDER BY revision")
+        .bind(entry_uid)
+        .fetch_all(pool)
+        .await?;
     rows.iter()
         .map(|row| {
             Ok(EntryRevision {
@@ -177,10 +170,7 @@ pub async fn history(
 /// appends Facts outside this module's transaction, so a replay detected only
 /// at insert time would already have appended a duplicate compensating Fact —
 /// the quantity moved twice, and the error afterwards would not put it back.
-pub async fn replayed(
-    pool: &SqlitePool,
-    request_id: &str,
-) -> Result<Option<Entry>, StoreError> {
+pub async fn replayed(pool: &SqlitePool, request_id: &str) -> Result<Option<Entry>, StoreError> {
     let row = sqlx::query(
         "SELECT e.* FROM entry_revision r
            JOIN entry e ON e.uid = r.entry_uid

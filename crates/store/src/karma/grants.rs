@@ -96,7 +96,8 @@ where
 {
     validate_request_id(&input.request_id)?;
     let principal = person(&input.actor_person_uid)?;
-    let revision = DelegationGrantRevision::new(principal.clone(), input.grant).map_err(boundary)?;
+    let revision =
+        DelegationGrantRevision::new(principal.clone(), input.grant).map_err(boundary)?;
     let revision_hash = revision.revision_hash().map_err(boundary)?;
     let fingerprint = request_hash(&RequestFingerprint {
         action: GrantMutationAction::Create,
@@ -224,7 +225,10 @@ where
     let previous = get_revision_in_tx(&mut tx, &input.grant_uid, &current.head_revision_hash)
         .await?
         .ok_or(sqlx::Error::RowNotFound)?;
-    if previous.revision.compare_replacement(&replacement).map_err(boundary)?
+    if previous
+        .revision
+        .compare_replacement(&replacement)
+        .map_err(boundary)?
         != GrantRevisionChange::Narrowing
     {
         return Err(protocol(
@@ -354,25 +358,22 @@ pub async fn get_revision(
     grant_uid: &str,
     revision_hash: &CanonicalHash,
 ) -> Result<Option<GrantRevisionRow>, StoreError> {
-    let row = sqlx::query(
-        "SELECT * FROM karma_grant_revision WHERE grant_uid = ? AND revision_hash = ?",
-    )
-        .bind(grant_uid)
-        .bind(revision_hash.as_str())
-        .fetch_optional(pool)
-        .await?;
+    let row =
+        sqlx::query("SELECT * FROM karma_grant_revision WHERE grant_uid = ? AND revision_hash = ?")
+            .bind(grant_uid)
+            .bind(revision_hash.as_str())
+            .fetch_optional(pool)
+            .await?;
     row.map(map_revision).transpose()
 }
 
 pub async fn list_revisions(pool: &SqlitePool) -> Result<Vec<GrantRevisionRow>, StoreError> {
-    sqlx::query(
-        "SELECT * FROM karma_grant_revision ORDER BY grant_uid, created_at, revision_hash",
-    )
-    .fetch_all(pool)
-    .await?
-    .into_iter()
-    .map(map_revision)
-    .collect()
+    sqlx::query("SELECT * FROM karma_grant_revision ORDER BY grant_uid, created_at, revision_hash")
+        .fetch_all(pool)
+        .await?
+        .into_iter()
+        .map(map_revision)
+        .collect()
 }
 
 pub async fn evaluate_active(
@@ -475,7 +476,9 @@ where
     }
     if let Some(revision_hash) = &selected_revision {
         if &current.head_revision_hash != revision_hash {
-            return Err(protocol("only the current grant head revision may be activated"));
+            return Err(protocol(
+                "only the current grant head revision may be activated",
+            ));
         }
         if current.active_revision_hash.as_ref() == Some(revision_hash) {
             return Err(protocol("Karma grant revision is already active"));
@@ -623,12 +626,11 @@ async fn validate_program_scope(
     revision: &DelegationGrantRevision,
 ) -> Result<(), StoreError> {
     let program_uid = revision.spec.program_uid.as_str();
-    let exists: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM karma_program WHERE record_uid = ?)",
-    )
-    .bind(program_uid)
-    .fetch_one(&mut **tx)
-    .await?;
+    let exists: bool =
+        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM karma_program WHERE record_uid = ?)")
+            .bind(program_uid)
+            .fetch_one(&mut **tx)
+            .await?;
     if !exists {
         return Err(protocol("Karma grant Program does not exist"));
     }
@@ -754,8 +756,7 @@ async fn replay_request(
     let handle: GrantHandleRow = serde_json::from_str(&result_json).map_err(json_protocol)?;
     if canonical_string(&handle)? != result_json
         || handle.record_uid != row.get::<String, _>("grant_uid")
-        || sql_revision(handle.handle_revision)?
-            != row.get::<i64, _>("result_handle_revision")
+        || sql_revision(handle.handle_revision)? != row.get::<i64, _>("result_handle_revision")
     {
         return Err(protocol("stored Karma Grant request result is invalid"));
     }
@@ -801,13 +802,12 @@ pub(crate) async fn get_revision_in_tx(
     grant_uid: &str,
     revision_hash: &CanonicalHash,
 ) -> Result<Option<GrantRevisionRow>, StoreError> {
-    let row = sqlx::query(
-        "SELECT * FROM karma_grant_revision WHERE grant_uid = ? AND revision_hash = ?",
-    )
-    .bind(grant_uid)
-    .bind(revision_hash.as_str())
-    .fetch_optional(&mut **tx)
-    .await?;
+    let row =
+        sqlx::query("SELECT * FROM karma_grant_revision WHERE grant_uid = ? AND revision_hash = ?")
+            .bind(grant_uid)
+            .bind(revision_hash.as_str())
+            .fetch_optional(&mut **tx)
+            .await?;
     row.map(map_revision).transpose()
 }
 
@@ -852,8 +852,7 @@ fn map_revision(row: sqlx::sqlite::SqliteRow) -> Result<GrantRevisionRow, StoreE
     revision.validate().map_err(boundary)?;
     if canonical_string(&revision)? != revision_json
         || revision.revision_hash().map_err(boundary)? != revision_hash
-        || revision.principal_person_uid.as_str()
-            != row.get::<String, _>("principal_person_uid")
+        || revision.principal_person_uid.as_str() != row.get::<String, _>("principal_person_uid")
     {
         return Err(protocol("stored Karma Grant revision is invalid"));
     }
@@ -896,8 +895,8 @@ fn require_signature<F>(
 where
     F: Fn(&str) -> Option<DelegationSignature> + Send + Sync,
 {
-    let signature = sign(hash)
-        .ok_or_else(|| protocol("Karma Grant mutation requires the principal signer"))?;
+    let signature =
+        sign(hash).ok_or_else(|| protocol("Karma Grant mutation requires the principal signer"))?;
     signature.validate_for(principal).map_err(boundary)?;
     Ok(signature)
 }

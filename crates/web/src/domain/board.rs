@@ -299,16 +299,18 @@ fn seed_workspace_cards(include_seed_cards: bool) -> Vec<BoardCard> {
     cards.push(record_pin_card());
 
     if include_seed_cards {
-        let tutorial = package_card(
-            "seed-tutorial",
-            "Tutorial",
-            "lince-shell-tutorial.html",
+        // Was the flat "Tutorial" sand (`lince-shell-tutorial.html`) until it
+        // was rebuilt as the chaptered Instinct package (2026-08-01).
+        let instinct = package_card(
+            "seed-instinct",
+            "Instinct",
+            "instinct.html",
             4_232.0,
             4_568.0,
             1_536.0,
             864.0,
         );
-        cards.push(tutorial);
+        cards.push(instinct);
     }
 
     cards

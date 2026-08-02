@@ -3,10 +3,10 @@ use std::{collections::BTreeMap, fmt, num::NonZeroU32};
 use serde::{Deserialize, Serialize};
 
 use super::{
-    Cadence, CadenceBound, CadenceStep, CalendarSchedule, CanonicalHash, CivilDateTime,
-    DurationMs, ElapsedSchedule, FailurePath, FoldPolicy, GapPolicy, InactiveGapPolicy, InvalidDay,
-    LocalId, MissedPolicy, OverloadPolicy, RephasePolicy, Slug, TimeZoneId, TimerPolicy,
-    TimestampMs, TzdbRevision, WeekdaySet, canonical_hash,
+    Cadence, CadenceBound, CadenceStep, CalendarSchedule, CanonicalHash, CivilDateTime, DurationMs,
+    ElapsedSchedule, FailurePath, FoldPolicy, GapPolicy, InactiveGapPolicy, InvalidDay, LocalId,
+    MissedPolicy, OverloadPolicy, RephasePolicy, Slug, TimeZoneId, TimerPolicy, TimestampMs,
+    TzdbRevision, WeekdaySet, canonical_hash,
 };
 
 pub const FREQUENCY_REVISION_HASH_DOMAIN: &str = "karma.frequency-revision.v1";
@@ -425,10 +425,7 @@ impl FrequencyAst {
             FrequencyCadenceAst::Calendar { cadence, .. } => {
                 for (name, binding) in cadence.every.components() {
                     if let Some(binding) = binding {
-                        self.validate_positive_binding(
-                            binding,
-                            &format!("/cadence/every/{name}"),
-                        )?;
+                        self.validate_positive_binding(binding, &format!("/cadence/every/{name}"))?;
                     }
                 }
             }
@@ -537,7 +534,11 @@ impl FrequencyAst {
         for (slot, (name, binding)) in resolved.iter_mut().zip(cadence.every.components()) {
             if let Some(binding) = binding {
                 *slot = self
-                    .resolve_positive_integer(binding, parameters, &format!("/cadence/every/{name}"))?
+                    .resolve_positive_integer(
+                        binding,
+                        parameters,
+                        &format!("/cadence/every/{name}"),
+                    )?
                     .get();
             }
         }

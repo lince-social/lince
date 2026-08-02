@@ -3,9 +3,9 @@ use std::{collections::BTreeMap, num::NonZeroU64};
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 
 use super::{
-    Cadence, CalendarSchedule, CivilDateTime, FoldPolicy, KarmaBoundaryError,
-    LocalTimeResolution, TimeZoneId, TimeZoneProvider, TimestampMs, TzdbRevision, TzdbVersion,
-    canonical_hash, canonical_json_bytes,
+    Cadence, CalendarSchedule, CivilDateTime, FoldPolicy, KarmaBoundaryError, LocalTimeResolution,
+    TimeZoneId, TimeZoneProvider, TimestampMs, TzdbRevision, TzdbVersion, canonical_hash,
+    canonical_json_bytes,
 };
 
 pub const TZDB_ARTIFACT_HASH_DOMAIN: &str = "karma.tzdb-artifact.v1";
@@ -475,8 +475,7 @@ impl TimeZoneProvider for ArtifactTimeZoneProvider {
 /// nought to six days, so it can pull two neighbours at most six days closer
 /// together — never more, because the roll is bounded by the week it starts in.
 fn minimum_local_interval_ms(cadence: &Cadence) -> Result<u64, KarmaBoundaryError> {
-    let overflow =
-        || KarmaBoundaryError::invalid_definition("calendar cadence overflowed");
+    let overflow = || KarmaBoundaryError::invalid_definition("calendar cadence overflowed");
     let months = u64::from(cadence.every.calendar_months().ok_or_else(overflow)?);
     let fixed = u64::try_from(cadence.every.fixed_milliseconds().ok_or_else(overflow)?)
         .map_err(|_| KarmaBoundaryError::invalid_definition("cadence step is negative"))?;

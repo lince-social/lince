@@ -146,11 +146,18 @@ async fn expiry_breaks_commitments_and_withdraws_lapsed_offers() {
     );
 
     // One zero-delta annotation fact per transition, quantity cache untouched.
-    assert_eq!(facts.iter().filter(|f| f.delta == store::exact::from_f64(0.0)).count(), 3);
+    assert_eq!(
+        facts
+            .iter()
+            .filter(|f| f.delta == store::exact::from_f64(0.0))
+            .count(),
+        3
+    );
     assert_eq!(
         store::records::quantity(&e.store.pool, &apples)
             .await
-            .unwrap().map(|q| q.to_f64()),
+            .unwrap()
+            .map(|q| q.to_f64()),
         Some(0.0)
     );
 

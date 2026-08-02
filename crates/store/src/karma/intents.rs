@@ -96,15 +96,13 @@ pub async fn history(
     pool: &SqlitePool,
     intent_hash: &CanonicalHash,
 ) -> Result<Vec<KarmaIntentEventRow>, StoreError> {
-    sqlx::query(
-        "SELECT * FROM karma_intent_event WHERE intent_hash = ? ORDER BY state_revision",
-    )
-    .bind(intent_hash.as_str())
-    .fetch_all(pool)
-    .await?
-    .into_iter()
-    .map(map_event)
-    .collect()
+    sqlx::query("SELECT * FROM karma_intent_event WHERE intent_hash = ? ORDER BY state_revision")
+        .bind(intent_hash.as_str())
+        .fetch_all(pool)
+        .await?
+        .into_iter()
+        .map(map_event)
+        .collect()
 }
 
 pub async fn get_for_candidate(

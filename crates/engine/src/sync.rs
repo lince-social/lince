@@ -6,6 +6,7 @@
 use chrono::Utc;
 use nucleus::{Cause, CauseKind, Fact, NewFact};
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use store::Store;
 
 use crate::Engine;
@@ -17,7 +18,7 @@ pub struct RecordSeed {
     pub slug: Option<String>,
     pub kind: String,
     pub head: String,
-    pub concept_uid: Option<String>,
+    pub identity_predicate_uid: Option<String>,
     pub unit_uid: Option<String>,
     /// True origin organ, carried through relaying (blueprint: Protein-driven
     /// Sync). `#[serde(default)]` so packages from an older peer still import.
@@ -36,11 +37,25 @@ pub struct ConceptSeed {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AssertionSeed {
+    pub uid: String,
+    pub subject_uid: String,
+    pub predicate_uid: String,
+    pub object_uid: Option<String>,
+    pub quantity: Option<String>,
+    pub unit_uid: Option<String>,
+    pub asserted_by: Option<String>,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Package {
     pub from_organ: String,
     #[serde(default)]
     pub concepts: Vec<ConceptSeed>,
     pub records: Vec<RecordSeed>,
+    #[serde(default)]
+    pub assertions: Vec<AssertionSeed>,
     pub facts: Vec<Fact>,
 }
 
@@ -61,7 +76,10 @@ impl Engine {
             if !visible.contains(&r.uid) {
                 continue;
             }
-            for c in [&r.concept_uid, &r.unit_uid].into_iter().flatten() {
+            for c in [&r.identity_predicate_uid, &r.unit_uid]
+                .into_iter()
+                .flatten()
+            {
                 for ancestor in store::concepts::ancestors_including(&self.store.pool, c).await? {
                     if !concept_uids.contains(&ancestor) {
                         concept_uids.push(ancestor);
@@ -78,13 +96,15 @@ impl Engine {
                 slug: r.slug,
                 kind: r.kind,
                 head: r.head,
-                concept_uid: r.concept_uid,
+                identity_predicate_uid: r.identity_predicate_uid,
                 unit_uid: r.unit_uid,
                 organ_uid,
             });
             facts.extend(store::facts::for_record(&self.store.pool, &r.uid, 10_000).await?);
         }
         facts.sort_by(|a, b| a.at.cmp(&b.at));
+        let selected: HashSet<&str> = records.iter().map(|record| record.uid.as_str()).collect();
+        let assertions = export_assertions(&self.store, &selected, &mut concept_uids).await?;
         let all = store::concepts::list_all(&self.store.pool).await?;
         let concepts = concept_uids
             .into_iter()
@@ -100,6 +120,7 @@ impl Engine {
             from_organ: from_organ.to_string(),
             concepts,
             records,
+            assertions,
             facts,
         })
     }
@@ -119,7 +140,10 @@ impl Engine {
         let mut facts = Vec::new();
         let mut concept_uids: Vec<String> = Vec::new();
         for r in matched {
-            for c in [&r.concept_uid, &r.unit_uid].into_iter().flatten() {
+            for c in [&r.identity_predicate_uid, &r.unit_uid]
+                .into_iter()
+                .flatten()
+            {
                 for ancestor in store::concepts::ancestors_including(&self.store.pool, c).await? {
                     if !concept_uids.contains(&ancestor) {
                         concept_uids.push(ancestor);
@@ -132,13 +156,15 @@ impl Engine {
                 slug: r.slug,
                 kind: r.kind,
                 head: r.head,
-                concept_uid: r.concept_uid,
+                identity_predicate_uid: r.identity_predicate_uid,
                 unit_uid: r.unit_uid,
                 organ_uid,
             });
             facts.extend(store::facts::for_record(&self.store.pool, &r.uid, 10_000).await?);
         }
         facts.sort_by(|a, b| a.at.cmp(&b.at));
+        let selected: HashSet<&str> = records.iter().map(|record| record.uid.as_str()).collect();
+        let assertions = export_assertions(&self.store, &selected, &mut concept_uids).await?;
         let all = store::concepts::list_all(&self.store.pool).await?;
         let concepts = concept_uids
             .into_iter()
@@ -154,6 +180,7 @@ impl Engine {
             from_organ: from_organ.to_string(),
             concepts,
             records,
+            assertions,
             facts,
         })
     }
@@ -217,6 +244,27 @@ impl Engine {
         }
         for seed in &package.records {
             ensure_record(&self.store, seed, &package.from_organ).await?;
+        }
+        for assertion in &package.assertions {
+            store::assertions::import_active(
+                &self.store.pool,
+                store::assertions::ImportedAssertion {
+                    uid: &assertion.uid,
+                    subject_uid: &assertion.subject_uid,
+                    predicate_uid: &assertion.predicate_uid,
+                    object_uid: assertion.object_uid.as_deref(),
+                    quantity: assertion
+                        .quantity
+                        .as_deref()
+                        .map(nucleus::DecimalValue::parse_inferred)
+                        .transpose()
+                        .map_err(|error| EngineError::Consequence(error.to_string()))?,
+                    unit_uid: assertion.unit_uid.as_deref(),
+                    asserted_by: assertion.asserted_by.as_deref(),
+                    created_at: &assertion.created_at,
+                },
+            )
+            .await?;
         }
         let mut applied = Vec::new();
         for fact in &package.facts {
@@ -290,6 +338,45 @@ impl Engine {
         }
         Ok(applied)
     }
+}
+
+async fn export_assertions(
+    store: &Store,
+    selected: &HashSet<&str>,
+    concept_uids: &mut Vec<String>,
+) -> Result<Vec<AssertionSeed>, EngineError> {
+    let mut out = Vec::new();
+    for assertion in store::assertions::list_active(&store.pool).await? {
+        if assertion.role == "identity"
+            || !selected.contains(assertion.subject_uid.as_str())
+            || assertion
+                .object_uid
+                .as_deref()
+                .is_some_and(|object| !selected.contains(object))
+        {
+            continue;
+        }
+        let spoken_concepts =
+            std::iter::once(assertion.predicate_uid.as_str()).chain(assertion.unit_uid.as_deref());
+        for concept in spoken_concepts {
+            for ancestor in store::concepts::ancestors_including(&store.pool, concept).await? {
+                if !concept_uids.contains(&ancestor) {
+                    concept_uids.push(ancestor);
+                }
+            }
+        }
+        out.push(AssertionSeed {
+            uid: assertion.uid,
+            subject_uid: assertion.subject_uid,
+            predicate_uid: assertion.predicate_uid,
+            object_uid: assertion.object_uid,
+            quantity: assertion.quantity.map(|quantity| quantity.to_string()),
+            unit_uid: assertion.unit_uid,
+            asserted_by: assertion.asserted_by,
+            created_at: assertion.created_at,
+        });
+    }
+    Ok(out)
 }
 
 /// The introduction handshake (blueprint XV.2/XI.1): who I am, where I live,
@@ -430,7 +517,9 @@ impl Engine {
             let record = store::records::get(&self.store.pool, record_uid).await?;
             out.push(OpenPromiseExport {
                 promise_uid: p.uid.clone(),
-                concept: record.as_ref().and_then(|r| r.concept_uid.clone()),
+                concept: record
+                    .as_ref()
+                    .and_then(|r| r.identity_predicate_uid.clone()),
                 unit: record.as_ref().and_then(|r| r.unit_uid.clone()),
                 delta: p.delta,
                 window_start: None,
@@ -502,19 +591,25 @@ async fn ensure_record(
         .or_else(|| Some(fallback_organ.to_string()));
     let now = Utc::now().to_rfc3339();
     store::sqlx::query(
-        "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale, concept_uid, unit_uid, organ_uid, created_at, updated_at)
-         VALUES (?, ?, ?, ?, '', '0', 0, ?, ?, ?, ?, ?)",
+        "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale, unit_uid, organ_uid, created_at, updated_at)
+         VALUES (?, ?, ?, ?, '', '0', 0, ?, ?, ?, ?)",
     )
     .bind(&seed.uid)
     .bind(if slug_taken { None } else { seed.slug.clone() })
     .bind(&seed.kind)
     .bind(&seed.head)
-    .bind(&seed.concept_uid)
     .bind(&seed.unit_uid)
     .bind(&organ_uid)
     .bind(&now)
     .bind(&now)
     .execute(&store.pool)
+    .await?;
+    store::assertions::set_identity(
+        &store.pool,
+        &seed.uid,
+        seed.identity_predicate_uid.as_deref(),
+        None,
+    )
     .await?;
     Ok(())
 }

@@ -82,12 +82,17 @@ impl Engine {
             let group_of = store::concepts::ensure(&self.store.pool, comm::KIND_GROUP_OF).await?;
             for group in groups {
                 let group_uid = self.comm_resolve(group).await?;
-                store::links::add(
+                store::assertions::assert(
                     &self.store.pool,
-                    &conversation.uid,
-                    &group_of,
-                    &group_uid,
-                    None,
+                    store::assertions::NewAssertion {
+                        subject_uid: &conversation.uid,
+                        predicate_uid: &group_of,
+                        object_uid: Some(&group_uid),
+                        role: store::assertions::AssertionRole::Ordinary,
+                        quantity: None,
+                        unit_uid: None,
+                        asserted_by: actor.as_deref(),
+                    },
                 )
                 .await?;
             }
@@ -109,7 +114,11 @@ impl Engine {
             .append(
                 NewFact {
                     actor_uid: actor.clone(),
-                    ..NewFact::quantity(conversation.uid.clone(), store::exact::one(), Cause::user_edit())
+                    ..NewFact::quantity(
+                        conversation.uid.clone(),
+                        store::exact::one(),
+                        Cause::user_edit(),
+                    )
                 },
                 now,
             )
@@ -375,12 +384,19 @@ impl Engine {
         {
             if let Some(member_of) = store::concepts::resolve(&self.store.pool, "member-of").await?
             {
-                for group in
-                    store::links::records_from(&self.store.pool, conversation_uid, &group_of)
-                        .await?
+                for group in store::assertions::objects_from_subject(
+                    &self.store.pool,
+                    conversation_uid,
+                    &group_of,
+                )
+                .await?
                 {
-                    let members =
-                        store::links::records_to(&self.store.pool, &member_of, &group.uid).await?;
+                    let members = store::assertions::subjects_pointing_to(
+                        &self.store.pool,
+                        &member_of,
+                        &group.uid,
+                    )
+                    .await?;
                     if members.iter().any(|m| m.uid == person_uid) {
                         return Ok(());
                     }

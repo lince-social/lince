@@ -1,0 +1,91 @@
+      <!-- =============================== 3. LINKS ========================== -->
+      <article class="chapter" data-chapter="Links">
+        <p class="chapter__eyebrow">Chapter 3 — Structure</p>
+        <h1>Links</h1>
+        <p>
+          One record is a fact about the world. Records get useful when they point at each other. A
+          <strong>link</strong> is a labelled arrow from one record to another, and the label — the
+          <strong>kind</strong> — is what carries the meaning.
+        </p>
+        <div class="figure">
+          <div class="figure__frame">
+<pre class="mermaid">graph LR
+  A["Task: write the spec"] -- assigned-to --> B["Person: Ana"]
+  A -- part-of --> C["Project A"]
+  A -- references --> D["Note: last meeting"]</pre>
+          </div>
+          <p class="figure__caption">Three links out of one record, each meaning something different.</p>
+        </div>
+        <p>
+          A record can have <strong>as many links as you like</strong>, which makes them the right
+          tool for membership, ownership, dependency and grouping. Nothing about a link is special
+          storage: it is one <em>statement</em> about a record, of the same sort you will meet in
+          the next chapter. Here the statement happens to name a second record.
+        </p>
+        <div class="chapter__note">
+          <p>
+            The kind is not a loose string — <strong>a link kind is a concept</strong>, the same
+            kind of word as <code>@task</code> or <code>@apple</code>. That is why one autocomplete
+            can offer them together, and why this chapter and the next are really about one
+            mechanism rather than two.
+          </p>
+        </div>
+
+        <h2>Making one</h2>
+        <p>
+          Open a record in the <strong>Record</strong> sand and use its <strong>Links</strong>
+          section: type a kind, type a target, press <strong>Link</strong>. The <strong>Relations</strong>
+          sand does the same thing graphically — shift-drag from one node to another to link them,
+          and click an edge to select it, then press <strong>Delete</strong> (or the ✕ in its
+          toolbar) to unlink. Ctrl+Z undoes either.
+        </p>
+        <p>
+          Link kinds need no setup. The first time you use <code>tag</code>, the word is created for
+          you. That is why the autocomplete in the Data panel only offers kinds you have already
+          used at least once.
+        </p>
+
+        <h2>Reading them back</h2>
+        <p>
+          In a Protein the filter is called <strong>Relation</strong> — the Data panel's word for
+          the same thing the Record sand calls a link. It takes a <strong>kind</strong>, a
+          <strong>direction</strong> and a target.
+        </p>
+        <ul>
+          <li><strong>outgoing</strong> — this record points at the target. "Tasks tagged Project A".</li>
+          <li><strong>incoming</strong> — the target points at this record. Ask <em>Project A</em> which tasks name it.</li>
+          <li><strong>either direction</strong> — you care that they are connected, not who pointed first.</li>
+        </ul>
+        <p>
+          Direction matters because a link is always stored one way, subject → object. Incoming is
+          not a second link you have to maintain; it is the same arrow read from the other end.
+        </p>
+        <p>
+          <strong>Assignee</strong> is the same filter with the kind <code>assigned-to</code> filled
+          in for you, and a person picker instead of a free-text box. Turning on the
+          <strong>links</strong> include makes the links themselves travel with the rows, which is
+          how a kanban card can show who a task belongs to without a second query.
+        </p>
+
+        <h2>Order is a link too</h2>
+        <p>
+          Some kinds describe sequence rather than membership — <code>needs</code>,
+          <code>before</code>, <code>part-of</code>. Sort a Protein by <strong>graph order</strong>
+          on such a kind and you get a dependency chain instead of a list:
+        </p>
+        <div class="figure">
+          <div class="figure__frame">
+<pre class="mermaid">graph LR
+  A["Buy flour"] -- needs --> B["Bake the bread"]
+  B -- needs --> C["Make the sandwich"]</pre>
+          </div>
+          <p class="figure__caption">Read it as "bake needs buy". Graph order turns this into the sequence to actually work through.</p>
+        </div>
+        <p>
+          Because ordering kinds imply a direction, Lince checks them for loops. If you link things
+          into a cycle — A needs B needs C needs A — the save still happens, but you get a warning
+          naming the records in the loop. A cycle in an ordering kind is almost always a mistake in
+          how you described the work, and you are the only one who can tell.
+        </p>
+      </article>
+

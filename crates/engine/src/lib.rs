@@ -232,12 +232,11 @@ impl Engine {
         // Only a rule with an *if* can be reactive: an unconditional rule reads
         // nothing, so no change can concern it, and its dates are the whole of
         // what it responds to.
-        let watchers: Vec<store::recurrence::Recurrence> =
-            store::recurrence::all(&self.store.pool)
-                .await?
-                .into_iter()
-                .filter(|rule| rule.condition.is_some() && !rule.is_paused())
-                .collect();
+        let watchers: Vec<store::recurrence::Recurrence> = store::recurrence::all(&self.store.pool)
+            .await?
+            .into_iter()
+            .filter(|rule| rule.condition.is_some() && !rule.is_paused())
+            .collect();
         if watchers.is_empty() {
             return Ok(committed);
         }
@@ -264,20 +263,19 @@ impl Engine {
                 let Ok(Some(due)) = rule.cadence.preceding(anchor, edge) else {
                     continue;
                 };
-                let outcome = Box::pin(self
-                    .act_at(
-                        Action::ApplyRecurrenceOccurrence {
-                            recurrence: rule.uid.clone(),
-                            due_at: due.to_rfc3339(),
-                            amount: None,
-                            note: None,
-                        },
-                        // Nobody pressed this either. The declaration is the
-                        // authority, exactly as it is for a date falling due.
-                        None,
-                        now,
-                    ))
-                    .await;
+                let outcome = Box::pin(self.act_at(
+                    Action::ApplyRecurrenceOccurrence {
+                        recurrence: rule.uid.clone(),
+                        due_at: due.to_rfc3339(),
+                        amount: None,
+                        note: None,
+                    },
+                    // Nobody pressed this either. The declaration is the
+                    // authority, exactly as it is for a date falling due.
+                    None,
+                    now,
+                ))
+                .await;
                 // One rule that cannot run must not stop the others, and must
                 // not roll back the change that woke it.
                 let Ok(outcome) = outcome else { continue };

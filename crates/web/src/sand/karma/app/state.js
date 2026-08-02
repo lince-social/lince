@@ -14,6 +14,11 @@ export const state = {
   conceptNames: new Map(),
   entries: [],
   rules: [],
+  // Declared beats, read by `freq(@slug)` in a condition. Stays empty until the
+  // Frequency table exists: the section says so rather than dressing up
+  // rules-that-are-secretly-schedules as frequencies, which is the confusion
+  // the rewrite is getting rid of.
+  frequencies: [],
   occurrences: [],
   /// How far back the inbox asked for dates. Kept so the list can say where it
   /// stops instead of ending without explanation.
@@ -59,6 +64,8 @@ export function hasHost() {
 // them append a Fact to force a refresh would be the wrong fix — it would put a
 // phantom change in the Ledger — so the surface re-reads instead.
 const SILENT_ACTIONS = new Set([
+  "create-frequency",
+  "delete-frequency",
   "create-recurrence",
   "revise-recurrence",
   "set-recurrence-paused",
@@ -94,6 +101,7 @@ export async function act(action) {
 /** Re-open the reads a Factless change would not have invalidated. */
 function refreshSilent() {
   subscribeRecurrence();
+  subscribeFrequencies();
   subscribeEntries();
   subscribeTimeline();
 }
@@ -114,6 +122,20 @@ function subscribe(subId, protein, apply) {
 let unsubscribeTimeline = null;
 let unsubscribeEntries = null;
 let unsubscribeRecurrence = null;
+let unsubscribeFrequencies = null;
+
+/**
+ * The declared beats a condition can read.
+ *
+ * Small and shared by design: the completion list needs all of them, so there
+ * is nothing to filter and no window to ask for.
+ */
+export function subscribeFrequencies() {
+  unsubscribeFrequencies?.();
+  unsubscribeFrequencies = subscribe("frequencies", { source: "frequency" }, (rows) => {
+    state.frequencies = rows.filter((row) => row?.slug);
+  });
+}
 
 export function subscribeAll() {
   subscribe("records", { source: "record", limit: 500 }, (rows) => {
@@ -129,6 +151,7 @@ export function subscribeAll() {
   });
 
   subscribeRecurrence();
+  subscribeFrequencies();
   subscribeEntries();
   subscribeTimeline();
 }

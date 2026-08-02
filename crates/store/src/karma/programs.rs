@@ -541,14 +541,16 @@ where
             current_handle_revision: actual,
         });
     }
-    let delta = crate::exact::integer(match (
-        current.active_revision_hash.is_some(),
-        selected_revision.is_some(),
-    ) {
-        (false, true) => 1,
-        (true, false) => -1,
-        _ => 0,
-    });
+    let delta = crate::exact::integer(
+        match (
+            current.active_revision_hash.is_some(),
+            selected_revision.is_some(),
+        ) {
+            (false, true) => 1,
+            (true, false) => -1,
+            _ => 0,
+        },
+    );
     let evidence = ProgramMutationEvidence {
         schema: ProgramMutationEvidenceSchema::V1,
         action,

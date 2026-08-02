@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use super::{
     BinaryOperator, CanonicalHash, DatumState, DecimalPrecision, DecimalValue, DeclaredUnit,
     DurationMs, ExpressionAst, FailurePath, InputSource, LateEventPolicy, LiteralValue, LocalId,
-    NodeOperation, OutputRef, ProgramAst, ProofStatus, RoundedDecimal, Rounding, ThresholdDirection,
-    TimestampMs, UnaryOperator, ValueType, prove_program,
+    NodeOperation, OutputRef, ProgramAst, ProofStatus, RoundedDecimal, Rounding,
+    ThresholdDirection, TimestampMs, UnaryOperator, ValueType, prove_program,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -1315,7 +1315,8 @@ fn evaluate_exact_product(
     path: &str,
     meter: &FuelMeter,
 ) -> Result<LiteralValue, EvaluationError> {
-    let (Some(left_amount), Some(right_amount)) = (exact_amount(&left), exact_amount(&right)) else {
+    let (Some(left_amount), Some(right_amount)) = (exact_amount(&left), exact_amount(&right))
+    else {
         return invariant_expression(node, path, meter);
     };
     // Unreachable for any accepted Program: `evaluate_program` proves first, and
@@ -1450,9 +1451,7 @@ fn semantic_cmp(left: &LiteralValue, right: &LiteralValue) -> Option<Ordering> {
         (
             LiteralValue::Quantity { amount: left, .. },
             LiteralValue::Quantity { amount: right, .. },
-        ) => {
-            Some(left.cmp(right))
-        }
+        ) => Some(left.cmp(right)),
         (LiteralValue::Reference { value: left }, LiteralValue::Reference { value: right }) => {
             Some(left.target.cmp(&right.target))
         }

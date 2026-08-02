@@ -12,8 +12,8 @@
     reads ride ONE live Protein (record source + links include — kinds and
     direction are sand chrome below; FILTERING is the card's Data panel via
     cardState.savedProtein/.protein, tolerant-ignore if a custom Protein
-    lacks the links include), writes are typed Actions (add-link /
-    remove-link). The old record/create sidepanels are GONE by decision:
+    lacks the assertions include), writes are typed Actions (assert-record /
+    retract-record). The old record/create sidepanels are GONE by decision:
     left-click emits a board-wide `recordClicked` for the pinned
     Record, "New record" emits `recordCreate`. UI prefs (physics, kinds,
     direction, depth, panel width, trail mode prefs) are host state under
@@ -22,32 +22,13 @@
     NO link kinds — the user sets both. Keybinds (sand focused): Delete
     unlinks the selected edge, Ctrl/Cmd+Z undoes the last link add/remove.
 
-    TRAIL MODE (ported from the retired trail sand): pick a root + an
-    order-like link kind and the sand lays that root's link tree out as an
-    ordered path (left -> right topo layers, physics off). The selected node
-    gets Done/Undo buttons riding the old promotion cascade (completing
-    requires all parents done; a completed parent promotes its road-ahead
-    children to next; undoing cascades descendants back). STATUS PRESETS
-    (kanban column presets style) map step status to quantity values/ranges
-    or @concepts and drive node colors in BOTH modes; writes follow the
-    bucket kind (set-quantity / set-concept), so a concept preset and a
-    kanban concept column share one status vocabulary. User presets are
-    kind:"sand" records with the extension namespace `relations.trail`
-    ({steps:[...]}), shared live by every relations group on the cell;
-    delete = deactivate.
-
-    NODE GRAVITY (tree weight): an extra physics variable — nodes get a
-    weight from their depth in the trail root's tree (root heaviest, lighter
-    each hop out; nodes outside the tree weigh like leaves) and weight maps
-    to BUOYANCY: a constant vertical acceleration, heavy one way, light the
-    other. Nodes keep falling until their link tethers them, so links hang
-    vertically and the tree settles like a mobile. The center forces stay on
-    (cohesion); charge/link soften so siblings can fall past each other.
-    Works in graph mode and trail mode (layers keep x, buoyancy + the center
-    spring own y instead of pinned rows).
+    TRAIL MODE follows one directed Protein link-order rule from its earliest
+    root and focuses the first reachable record with the selected quantity
+    sign. The trail is rendered in Protein result order; -1, 0 and 1 update
+    that focused record without opening the Record sand.
   -->
   <style>
-    :root { color-scheme: dark; --bg: #0d1117; --panel: #161b22; --line: #2a333d; --text: #e6edf3; --muted: #8b949e; --accent: #78d7ff; --good: #7ef0c6; --warn: #f2bb78; --bad: #f85149; }
+    :root { color-scheme: dark; --basebg: #0d1117; --bg: var(--basebg); --panel: #161b22; --line: #2a333d; --text: #e6edf3; --muted: #8b949e; --accent: #78d7ff; --good: #7ef0c6; --warn: #f2bb78; --bad: #f85149; }
     * { box-sizing: border-box; }
     /* `hidden` must beat every display rule below (.panel/.empty/.edgeChip
        set flex/grid, which would otherwise show "hidden" overlays — the
@@ -57,20 +38,22 @@
     main { position: relative; height: 100%; }
     canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: none; }
     canvas.is-dragging { cursor: grabbing; }
-    .hud { position: absolute; display: flex; align-items: center; gap: 8px; z-index: 3; }
-    .hud--topleft { top: 10px; left: 12px; }
-    .hud--topright { top: 10px; right: 12px; }
-    h1 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bad); flex: none; }
-    .dot.live { background: var(--good); }
-    .dot.pending { background: var(--warn); animation: pulse 1s ease-in-out infinite; }
+    /* The working surface stays clear. Sand controls expand from the small
+       connection triangle in the lower-right corner. */
+    .sand-tools { position: absolute; right: 0; bottom: 0; z-index: 5; width: 14px; height: 14px; }
+    .sand-tools__row { position: absolute; right: 0; bottom: 0; display: none; align-items: center; gap: 5px; padding: 4px; border: 1px solid var(--line); border-radius: 7px 0 0 0; background: rgba(13,17,23,.96); white-space: nowrap; }
+    .sand-tools:hover .sand-tools__row, .sand-tools:focus-within .sand-tools__row { display: flex; }
+    .sand-tools:hover > .page-corner, .sand-tools:focus-within > .page-corner { display: none; }
+    .page-corner { position: absolute; right: 0; bottom: 0; width: 10px; height: 10px; background: var(--bad); clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+    .page-corner.live { background: var(--good); }
+    .page-corner.pending { background: var(--warn); animation: pulse 1s ease-in-out infinite; }
     @keyframes pulse { 50% { opacity: .35; } }
     .pill { border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; font-size: 11px; color: var(--muted); background: rgba(13,17,23,.82); }
     button, select, input { font: inherit; border: 1px solid var(--line); border-radius: 7px; background: #11161d; color: var(--text); padding: 6px 9px; }
     button { background: rgba(31,38,48,.92); cursor: pointer; }
     button:hover { border-color: #3c4857; }
     button.primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
-    .status { position: absolute; top: 44px; left: 12px; z-index: 3; max-width: 60%; padding: 6px 10px; border-radius: 7px; border: 1px solid var(--line); background: rgba(13,17,23,.92); font-size: 12px; color: var(--muted); }
+    .status { position: absolute; top: 12px; left: 12px; z-index: 3; max-width: 60%; padding: 6px 10px; border-radius: 7px; border: 1px solid var(--line); background: rgba(13,17,23,.92); font-size: 12px; color: var(--muted); }
     .status[data-tone="error"] { color: var(--bad); border-color: rgba(248,81,73,.5); }
     .status[data-tone="warn"] { color: var(--warn); border-color: rgba(242,187,120,.5); }
     .status[data-tone="ok"] { color: var(--good); }
@@ -121,13 +104,6 @@
       </div>
     </div>
 
-    <header class="hud hud--topleft">
-      <span id="dot" class="dot"></span>
-      <h1>Relations</h1>
-      <span id="row-pill" class="pill">0 nodes</span>
-      <span id="link-pill" class="pill">0 links</span>
-    </header>
-
     <div id="status" class="status" hidden></div>
 
     <div id="edge-chip" class="edgeChip" hidden>
@@ -137,16 +113,22 @@
 
     <div id="trail-chip" class="trailChip" hidden>
       <span id="trail-chip-label"></span>
-      <button id="trail-done" type="button" title="Mark done — all parents must be done first; road-ahead children become next automatically">Done</button>
-      <button id="trail-undo" type="button" title="Back to road ahead — descendants cascade back">Undo</button>
+      <button id="trail-set-negative" type="button" title="Set quantity to -1">−1</button>
+      <button id="trail-set-zero" type="button" title="Set quantity to 0">0</button>
+      <button id="trail-set-positive" type="button" title="Set quantity to 1">1</button>
     </div>
 
-    <div class="hud hud--topright">
-      <button id="zoom-out" type="button" aria-label="Zoom out">−</button>
-      <button id="zoom-fit" type="button" title="Fit to nodes">Fit</button>
-      <button id="zoom-in" type="button" aria-label="Zoom in">+</button>
-      <button id="create-open" type="button" class="primary">New record</button>
-      <button id="panel-toggle" type="button" title="Graph controls">⚙</button>
+    <div class="sand-tools" data-lynx-tooltip-boundary>
+      <span id="dot" class="page-corner" role="status" aria-label="Disconnected" data-lynx-tooltip="Disconnected"></span>
+      <div class="sand-tools__row">
+        <span id="row-pill" class="pill">0 nodes</span>
+        <span id="link-pill" class="pill">0 links</span>
+        <button id="zoom-out" type="button" aria-label="Zoom out" title="Zoom out">−</button>
+        <button id="zoom-fit" type="button" title="Fit to nodes">Fit</button>
+        <button id="zoom-in" type="button" aria-label="Zoom in" title="Zoom in">+</button>
+        <button id="create-open" type="button" class="primary">New record</button>
+        <button id="panel-toggle" type="button" title="Graph controls">⚙</button>
+      </div>
     </div>
 
     <aside id="controls-panel" class="panel" hidden>
@@ -179,30 +161,16 @@
 
         <section class="section">
           <div class="sectionLabel">Trail</div>
-          <p class="muted">Trail mode lays one root's link tree out as an ordered path (physics off). Select a node there to mark it Done/Undo — next steps are set automatically. The tree needs depth: raise Tree depth above if it looks cut.</p>
+          <p class="muted">Protein is the trail order. Choose one of its directed link-order rules to show the reachable path from its earliest root.</p>
           <label class="sliderRow" for="mode-select"><span>Mode</span></label>
           <select id="mode-select">
             <option value="graph">Graph</option>
-            <option value="trail">Trail</option>
+            <option value="focus">Trail</option>
           </select>
-          <label class="sliderRow" for="trail-root-select"><span>Root</span></label>
-          <select id="trail-root-select"></select>
-          <div class="row">
-            <button id="trail-root-selected" type="button">Use selected node as root</button>
-          </div>
-          <label class="sliderRow" for="trail-kind-select"><span>Trail order kind</span></label>
+          <label class="sliderRow" for="trail-kind-select"><span>Protein link order</span></label>
           <select id="trail-kind-select"></select>
-          <label class="sliderRow" for="trail-preset-select"><span>Status preset</span></label>
-          <select id="trail-preset-select"></select>
-          <div id="trail-steps" class="chipList"></div>
-          <p class="muted">A preset buckets steps by quantity (a value <code>1</code> or range <code>3..10</code>) or concept (<code>@done</code>) — writes follow the bucket: <code>set-quantity</code> or <code>set-concept</code>, shared with kanban columns.</p>
-          <div class="row">
-            <input id="trail-preset-name" type="text" autocomplete="off" placeholder="Preset name" />
-            <button id="trail-preset-save" type="button" title="Saves the active preset's steps as a sand-configuration record (kind sand, extension relations.trail) — visible to every relations group on this cell">Save</button>
-          </div>
-          <div class="row">
-            <button id="trail-preset-delete" type="button" title="Delete the active user preset (deactivates the record)">Delete active preset</button>
-          </div>
+          <label class="sliderRow" for="focus-sign-select"><span>Trail quantity</span></label>
+          <select id="focus-sign-select"><option value="negative">negative</option><option value="zero">zero</option><option value="positive">positive</option></select>
         </section>
 
         <section class="section">
@@ -218,19 +186,6 @@
           <div class="row">
             <button id="reset-physics" type="button">Reset physics</button>
           </div>
-        </section>
-
-        <section class="section">
-          <div class="sectionLabel">Node gravity</div>
-          <p class="muted">Weighs nodes by depth in the Trail root's tree: the root sinks (or floats) and each hop out gets lighter — records outside the tree weigh like leaves. Lighter nodes keep falling until their link tethers them, so the tree hangs like a mobile. Center forces stay on; charge/link soften. Uses the root and order kind from the Trail section.</p>
-          <label class="sliderRow" for="gravity-direction"><span>Direction</span></label>
-          <select id="gravity-direction">
-            <option value="off">Off</option>
-            <option value="down">Root sinks (leaves up)</option>
-            <option value="up">Root floats (leaves down)</option>
-          </select>
-          <label class="sliderRow" for="gravity-strength"><span>Strength</span><span id="gravity-strength-value">0.50</span></label>
-          <input id="gravity-strength" class="slider" type="range" min="0" max="1" step="0.05" value="0.5" />
         </section>
 
         <section class="section">
@@ -267,25 +222,14 @@
     const linkKindSelect = document.getElementById("link-kind-select");
     const trailChip = document.getElementById("trail-chip");
     const trailChipLabel = document.getElementById("trail-chip-label");
-    const trailDoneButton = document.getElementById("trail-done");
-    const trailUndoButton = document.getElementById("trail-undo");
+    const trailSetNegativeButton = document.getElementById("trail-set-negative");
+    const trailSetZeroButton = document.getElementById("trail-set-zero");
+    const trailSetPositiveButton = document.getElementById("trail-set-positive");
     const modeSelect = document.getElementById("mode-select");
-    const trailRootSelect = document.getElementById("trail-root-select");
-    const trailRootSelectedButton = document.getElementById("trail-root-selected");
     const trailKindSelect = document.getElementById("trail-kind-select");
-    const trailPresetSelect = document.getElementById("trail-preset-select");
-    const trailSteps = document.getElementById("trail-steps");
-    const trailPresetName = document.getElementById("trail-preset-name");
-    const trailPresetSave = document.getElementById("trail-preset-save");
-    const trailPresetDelete = document.getElementById("trail-preset-delete");
-    const gravityDirectionSelect = document.getElementById("gravity-direction");
-    const gravityStrengthInput = document.getElementById("gravity-strength");
-    const gravityStrengthValue = document.getElementById("gravity-strength-value");
-
+    const focusSignSelect = document.getElementById("focus-sign-select");
     const CARD_STATE_KEY = "relations";
     const DEFAULT_PHYSICS = { charge: -220, linkDistance: 110, collisionRadius: 24, centerForce: 0.04 };
-    // Node gravity: off | root sinks (tree settles root-down) | root floats.
-    const DEFAULT_GRAVITY = { direction: "off", strength: 0.5 };
     // Fresh cards start with NO link kinds (2026-07-18): nothing is
     // pre-configured — the user picks the kinds (and the Data panel Protein)
     // themselves.
@@ -296,35 +240,6 @@
     const INITIAL_TICKS = 140;
     const LABEL_START_SCALE = 0.75;
     const LABEL_FULL_SCALE = 1.75;
-
-    // Trail presets (kanban column presets style): ordered steps, first =
-    // road ahead, second = next (the auto-promotion target), last = done.
-    // A step buckets by quantity value/range (writes set-quantity, a range
-    // writes its first value) or by concept (writes set-concept) — the same
-    // rule as kanban columns, so `@done` here and a kanban @done column are
-    // ONE shared status vocabulary across sands.
-    const TRAIL_PRESET_NAMESPACE = "relations.trail";
-    const BUILTIN_TRAIL_PRESETS = [
-      {
-        id: "builtin:classic",
-        name: "Classic trail",
-        steps: [
-          { key: "road", label: "Road ahead", value: 0 },
-          { key: "next", label: "Next", value: -1 },
-          { key: "past", label: "Past", value: 1 },
-        ],
-      },
-      {
-        id: "builtin:concepts",
-        name: "Concept trail (@todo → @done)",
-        steps: [
-          { key: "todo", label: "To do", concept: "todo" },
-          { key: "next", label: "Next", concept: "next" },
-          { key: "wip", label: "WIP", concept: "wip" },
-          { key: "done", label: "Done", concept: "done" },
-        ],
-      },
-    ];
 
     const state = {
       rows: [],
@@ -337,22 +252,26 @@
       pendingEdges: [],
       pendingActions: 0,
       physics: { ...DEFAULT_PHYSICS },
-      gravity: { ...DEFAULT_GRAVITY },
       kinds: [...DEFAULT_KINDS],
       direction: "both",
       depth: 0,
       linkKind: DEFAULT_KINDS[0] || "",
       panelWidth: PANEL_DEFAULT_WIDTH,
-      // Trail mode (ported trail sand): root + order kind + status preset.
+      // Protein-driven trail: the selected rule provides kind and direction;
+      // the root is derived from the ordered Protein result.
       mode: "graph",
       trailRoot: null,
-      trailKind: DEFAULT_KINDS[0] || "",
-      trailPreset: BUILTIN_TRAIL_PRESETS[0].id,
+      trailKind: "",
+      trailHigher: "from",
+      trailRules: [],
+      focusSign: "negative",
+      focusId: null,
       trailTree: null, // {ids:Set, parents:Map, children:Map, layers:Map} | null
-      presetRecords: [],
+      proteinAst: null,
       conceptNames: {},
       driverKey: null,
       unsubscribe: null,
+      definitionUnsubscribe: null,
       selectedId: null,
       selectedEdgeId: null,
       undoStack: [], // link add/remove history for Ctrl+Z (session-local)
@@ -365,6 +284,11 @@
       simulation: null,
       needsRedraw: false,
       physicsPersistTimer: null,
+      // Card-state messages can arrive after a newer local interaction. Keep
+      // a tiny per-sand revision so an old Trail preference cannot put the
+      // mode selector back after the user has switched to Graph.
+      uiRevision: 0,
+      pendingUiRevision: null,
       statusTimer: null,
       resizeObserver: null,
     };
@@ -439,33 +363,28 @@
       };
     }
 
-    function normalizeGravity(raw) {
-      const next = asObject(raw);
-      return {
-        direction: ["off", "down", "up"].includes(next.direction) ? next.direction : DEFAULT_GRAVITY.direction,
-        strength: clampNumber(next.strength, 0, 1, DEFAULT_GRAVITY.strength),
-      };
-    }
-
     function currentUiPrefs() {
       return {
+        uiRevision: state.uiRevision,
         physics: { ...state.physics },
-        gravity: { ...state.gravity },
         kinds: [...state.kinds],
         direction: state.direction,
         depth: state.depth,
         linkKind: state.linkKind,
         panelWidth: state.panelWidth,
         mode: state.mode,
-        trailRoot: state.trailRoot,
         trailKind: state.trailKind,
-        trailPreset: state.trailPreset,
+        trailHigher: state.trailHigher,
+        focusSign: state.focusSign,
       };
     }
 
     function persistUiPrefs() {
-      writeLocalUi(currentUiPrefs());
-      H.patchCardState({ [CARD_STATE_KEY]: currentUiPrefs() });
+      state.uiRevision += 1;
+      state.pendingUiRevision = state.uiRevision;
+      const prefs = currentUiPrefs();
+      writeLocalUi(prefs);
+      H.patchCardState({ [CARD_STATE_KEY]: prefs });
     }
 
     function persistPhysicsSoon() {
@@ -482,8 +401,22 @@
       const scoped = asObject(asObject(cardState)[CARD_STATE_KEY]);
       const source = Object.keys(scoped).length ? scoped : asObject(readLocalUi());
       if (!Object.keys(source).length) return;
+      const sourceRevision = Math.max(0, Number(source.uiRevision) || 0);
+      if (sourceRevision < state.uiRevision) {
+        // The host is echoing an older snapshot. This can arrive after a
+        // localStorage fallback has already acknowledged our current write,
+        // so compare against the durable local revision as well as pending
+        // delivery.
+        return;
+      }
+      state.uiRevision = Math.max(state.uiRevision, sourceRevision);
+      if (
+        state.pendingUiRevision !== null
+        && sourceRevision >= state.pendingUiRevision
+      ) {
+        state.pendingUiRevision = null;
+      }
       state.physics = normalizePhysics(source.physics || state.physics);
-      if (source.gravity !== undefined) state.gravity = normalizeGravity(source.gravity);
       const kinds = uniqueStrings(source.kinds);
       if (kinds.length || Array.isArray(source.kinds)) state.kinds = kinds;
       if (["both", "out", "in"].includes(source.direction)) state.direction = source.direction;
@@ -492,10 +425,10 @@
       // a hand-seeded cardState) must NOT clobber session state with defaults.
       if (source.linkKind !== undefined) state.linkKind = String(source.linkKind || state.kinds[0] || "");
       state.panelWidth = clampNumber(source.panelWidth, PANEL_DEFAULT_WIDTH, 4000, state.panelWidth);
-      if (source.mode === "trail" || source.mode === "graph") state.mode = source.mode;
-      if (source.trailRoot !== undefined) state.trailRoot = source.trailRoot ? String(source.trailRoot) : null;
+      if (["graph", "focus"].includes(source.mode)) state.mode = source.mode;
       if (source.trailKind !== undefined) state.trailKind = String(source.trailKind || state.kinds[0] || "");
-      if (source.trailPreset !== undefined) state.trailPreset = String(source.trailPreset || BUILTIN_TRAIL_PRESETS[0].id);
+      if (source.trailHigher === "to" || source.trailHigher === "from") state.trailHigher = source.trailHigher;
+      if (["negative", "zero", "positive"].includes(source.focusSign)) state.focusSign = source.focusSign;
       applyPanelWidth();
       applyMode();
       renderControls();
@@ -525,30 +458,99 @@
     // A brand new relations card subscribes to NOTHING until the user opens
     // the Data panel (edit mode) and picks a Protein — the empty state below
     // says so explicitly instead of just looking like an empty graph.
-    function resubscribe() {
+    function resubscribe(force = false) {
       const driver = pickDriver(H.getCardState());
       const key = driver.kind === "saved"
         ? `saved:${driver.name}`
         : driver.kind === "inline"
           ? `inline:${JSON.stringify(driver.protein)}`
           : "none";
-      if (key === state.driverKey) return;
+      if (!force && key === state.driverKey) return;
       state.driverKey = key;
       if (typeof state.unsubscribe === "function") state.unsubscribe();
+      if (typeof state.definitionUnsubscribe === "function") state.definitionUnsubscribe();
       state.unsubscribe = null;
+      state.definitionUnsubscribe = null;
       state.noProtein = driver.kind === "none";
       if (driver.kind === "none") {
+        setTrailRules(null);
         onRows({ rows: [] });
         return;
       }
-      // A custom (saved/inline) Protein replaces the default wholesale — if it
-      // lacks the links include the graph draws nodes without edges
-      // (tolerant-ignore, same rule as kanban badges).
-      if (driver.kind === "saved") {
-        state.unsubscribe = H.subscribeSaved("graph", driver.name, onRows);
-      } else {
-        state.unsubscribe = H.subscribeProtein("graph", driver.protein, onRows);
+      if (driver.kind === "inline") {
+        setTrailRules(driver.protein);
+        subscribeGraph(driver.protein);
+        return;
       }
+      // Saved Proteins keep their AST in this extension. Reading it lets this
+      // sand derive the same directed order rule and add its edge kind to the
+      // graph include; `subscribeSaved` alone only exposes output rows.
+      state.definitionUnsubscribe = H.subscribeProtein("trail-definition", {
+        source: "record",
+        where: [{ all: [{ kind_eq: "protein" }, { any: [{ slug_eq: driver.name }, { uid_eq: driver.name }] }] }],
+        include: { extension: { namespace: "lince.protein" } },
+        limit: 1,
+      }, ({ rows }) => {
+        const ast = rows?.[0]?.extension;
+        if (!ast || typeof ast !== "object") {
+          setTrailRules(null);
+          onRows({ rows: [] });
+          return;
+        }
+        setTrailRules(ast);
+        subscribeGraph(ast);
+      });
+    }
+
+    function linkRuleKey(rule) { return `${rule.kind}|${rule.higher}`; }
+
+    function setTrailRules(ast) {
+      state.proteinAst = ast && typeof ast === "object" ? ast : null;
+      state.trailRules = Array.isArray(ast?.order)
+        ? ast.order.flatMap((item) => {
+            const rule = item?.link;
+            return rule?.kind ? [{ kind: String(rule.kind), higher: rule.higher === "to" ? "to" : "from" }] : [];
+          })
+        : [];
+      const chosen = state.trailRules.find((rule) => rule.kind === state.trailKind && rule.higher === state.trailHigher)
+        || state.trailRules[0] || null;
+      state.trailKind = chosen?.kind || "";
+      state.trailHigher = chosen?.higher || "from";
+      renderTrailControls();
+    }
+
+    function activeTrailRule() {
+      return state.trailRules.find((rule) => rule.kind === state.trailKind && rule.higher === state.trailHigher) || null;
+    }
+
+    function subscribeGraph(ast) {
+      if (typeof state.unsubscribe === "function") state.unsubscribe();
+      const protein = JSON.parse(JSON.stringify(ast));
+      protein.include = protein.include || {};
+      const rule = activeTrailRule();
+      // A graph must subscribe to the kinds it can create as well as the
+      // Protein's directed trail rule. Otherwise an optimistic new edge
+      // vanishes as soon as its Action is acknowledged, because its live
+      // snapshot never included that kind.
+      const requestedKinds = uniqueStrings([
+        ...state.kinds,
+        ...(rule?.kind ? [rule.kind] : []),
+      ]);
+      if (requestedKinds.length) {
+        const links = protein.include.links || {};
+        const configuredKinds = Array.isArray(links.kinds) ? links.kinds.filter(Boolean) : [];
+        const kinds = configuredKinds.includes("*")
+          ? ["*"]
+          : uniqueStrings([...configuredKinds, ...requestedKinds]);
+        protein.include.links = {
+          ...links,
+          kinds,
+          // Both endpoints must be present to draw a directed edge.
+          direction: "both",
+          depth: Math.max(Number(links.depth) || 0, state.depth),
+        };
+      }
+      state.unsubscribe = H.subscribeProtein("graph", protein, onRows);
     }
 
     // --- status + chrome -------------------------------------------------------
@@ -572,15 +574,21 @@
       }
     }
 
-    // Three-state dot (K4): green live, amber while an Action awaits its ack,
+    // The lower-right corner is both the compact control affordance and the
+    // connection state: green live, amber while an Action awaits its ack,
     // red disconnected.
     function renderDot() {
       dot.classList.toggle("live", state.live && !state.pendingActions);
       dot.classList.toggle("pending", state.live && state.pendingActions > 0);
+      const label = state.live
+        ? (state.pendingActions ? "Synchronizing" : "Connected")
+        : "Disconnected";
+      dot.setAttribute("aria-label", label);
+      dot.dataset.lynxTooltip = label;
     }
 
     function renderCounters() {
-      if (state.mode === "trail") {
+      if (state.mode === "focus") {
         rowPill.textContent = `${state.trailTree ? state.trailTree.ids.size : 0} steps`;
         linkPill.textContent = state.trailRoot ? `root: ${(state.nodes.find((node) => node.id === state.trailRoot) || {}).head || "?"}` : "no root";
       } else {
@@ -616,7 +624,7 @@
           if (!state.kinds.includes(state.linkKind)) state.linkKind = state.kinds[0] || "";
           persistUiPrefs();
           renderControls();
-          resubscribe();
+          resubscribe(true);
         });
         chip.append(label, remove);
         kindList.appendChild(chip);
@@ -640,28 +648,7 @@
       linkKindSelect.value = state.linkKind;
       renderTrailControls();
       renderPhysicsControls();
-      renderGravityControls();
       renderKindSuggestions();
-    }
-
-    function renderGravityControls() {
-      gravityDirectionSelect.value = state.gravity.direction;
-      gravityStrengthInput.value = String(state.gravity.strength);
-      gravityStrengthValue.textContent = state.gravity.strength.toFixed(2);
-    }
-
-    // Gravity settings changed: re-derive forces (and the trail pins) in
-    // whichever mode is active, then reheat so the tree settles visibly.
-    function applyGravityChange() {
-      persistUiPrefs();
-      renderGravityControls();
-      if (state.mode === "trail") {
-        applyMode(); // re-pins or simulates per gravityActive()
-      } else if (state.nodes.length) {
-        applySimulationForces();
-        nudgeSimulation(0.3);
-      }
-      requestDraw();
     }
 
     function renderKindSuggestions() {
@@ -888,7 +875,7 @@
       reconcileGraph(graph);
       renderTrailControls();
       ensureCanvasSize();
-      if (state.mode === "trail") {
+      if (state.mode === "focus") {
         applyMode(); // rebuilds the tree, re-pins the layered layout, draws
         if (!hadNodes && state.nodes.length) fitViewportToNodes();
       } else {
@@ -922,10 +909,8 @@
 
     function applySimulationForces() {
       if (!d3 || !state.nodes.length) return;
-      // Classic trail mode pins the layered layout — no simulation at all.
-      // Trail + node gravity is the one trail case that DOES simulate.
-      const trailGravity = state.mode === "trail" && gravityActive() && state.trailTree;
-      if (state.mode === "trail" && !trailGravity) return;
+      // Trail is the focused Protein sequence and deliberately stays pinned.
+      if (state.mode === "focus") return;
       if (!state.simulation) {
         state.simulation = d3.forceSimulation(state.nodes);
         state.simulation.alphaDecay(0.08);
@@ -937,47 +922,7 @@
       const linkForce = state.simulation.force("link") || d3.forceLink().id((node) => node.id);
       linkForce.id((node) => node.id);
 
-      if (trailGravity) {
-        // Simulate the tree nodes only: x anchored to the topo layer, y =
-        // center spring + buoyancy — each generation hangs below its parent.
-        const tree = state.trailTree;
-        const treeNodes = state.nodes.filter((node) => tree.ids.has(node.id));
-        const treeLinks = state.links.filter((link) =>
-          link.kind === state.trailKind && tree.ids.has(link.sourceId) && tree.ids.has(link.targetId));
-        state.simulation.nodes(treeNodes);
-        linkForce.links(treeLinks).distance(state.physics.linkDistance * 0.7).strength(0.3);
-        state.simulation
-          .force("link", linkForce)
-          .force("charge", d3.forceManyBody().strength(state.physics.charge * 0.25))
-          .force("collide", d3.forceCollide()
-            .radius((node) => Math.max(state.physics.collisionRadius, nodeRadius(node) + 6))
-            .iterations(2))
-          .force("x", d3.forceX((node) => (tree.layers.get(node.id) || 0) * 180).strength(0.7))
-          .force("y", d3.forceY(0).strength(state.physics.centerForce))
-          .force("gravity", buoyancyForce(tree));
-        return;
-      }
-
       state.simulation.nodes(state.nodes);
-
-      const gravityTree = computeGravityTree();
-      if (gravityTree) {
-        // Center forces STAY (the graph keeps its usual cohesion) and
-        // buoyancy rides on top as a constant acceleration; charge and link
-        // soften so siblings fall past each other and links tether instead
-        // of holding nodes sideways.
-        linkForce.links(state.links).distance(state.physics.linkDistance).strength(0.25);
-        state.simulation
-          .force("link", linkForce)
-          .force("charge", d3.forceManyBody().strength(state.physics.charge * 0.25))
-          .force("collide", d3.forceCollide()
-            .radius((node) => Math.max(state.physics.collisionRadius, nodeRadius(node) + 6))
-            .iterations(2))
-          .force("x", d3.forceX(0).strength(state.physics.centerForce))
-          .force("y", d3.forceY(0).strength(state.physics.centerForce))
-          .force("gravity", buoyancyForce(gravityTree));
-        return;
-      }
 
       linkForce
         .links(state.links)
@@ -994,8 +939,7 @@
             .iterations(2),
         )
         .force("x", d3.forceX(0).strength(state.physics.centerForce))
-        .force("y", d3.forceY(0).strength(state.physics.centerForce))
-        .force("gravity", null);
+        .force("y", d3.forceY(0).strength(state.physics.centerForce));
     }
 
     function nudgeSimulation(alpha) {
@@ -1094,6 +1038,41 @@
       ctx.restore();
     }
 
+    function roundedRect(x, y, width, height, radius) {
+      const r = Math.min(radius, width / 2, height / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + width, y, x + width, y + height, r);
+      ctx.arcTo(x + width, y + height, x, y + height, r);
+      ctx.arcTo(x, y + height, x, y, r);
+      ctx.arcTo(x, y, x + width, y, r);
+      ctx.closePath();
+    }
+
+    // Canvas equivalent of LynxUI's borderless badge: it is only as large as
+    // the link kind needs, with the sand's base background masking the line.
+    function drawLinkLabel(text, x, y, alpha) {
+      const scale = state.viewport.scale;
+      const fontSize = 11 / scale;
+      const padding = 2 / scale;
+      const font = `${fontSize}px ${getComputedStyle(document.body).fontFamily}`;
+      ctx.save();
+      ctx.font = font;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const metrics = ctx.measureText(text);
+      const textHeight = (metrics.actualBoundingBoxAscent || fontSize * 0.72)
+        + (metrics.actualBoundingBoxDescent || fontSize * 0.28);
+      const width = metrics.width + padding * 2;
+      const height = textHeight + padding * 2;
+      roundedRect(x - width / 2, y - height / 2, width, height, 2 / scale);
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--basebg").trim() || "#0d1117";
+      ctx.fill();
+      ctx.fillStyle = `rgba(139, 148, 158, ${alpha})`;
+      ctx.fillText(text, x, y);
+      ctx.restore();
+    }
+
     function drawDirectedLink(link, highlight, offsetIndex) {
       const source = link.source;
       const target = link.target;
@@ -1137,13 +1116,49 @@
       );
       if (labelAlpha > 0.02 || highlight) {
         const alpha = highlight ? 0.9 : labelAlpha * 0.8;
-        ctx.fillStyle = `rgba(139, 148, 158, ${alpha})`;
-        ctx.font = `${11 / state.viewport.scale}px ${getComputedStyle(document.body).fontFamily}`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(link.kind, (startX + endX) / 2 + px, (startY + endY) / 2 + py - 6 / state.viewport.scale);
-        ctx.textAlign = "start";
+        drawLinkLabel(
+          link.kind,
+          (startX + endX) / 2 + px,
+          (startY + endY) / 2 + py - 6 / state.viewport.scale,
+          alpha,
+        );
       }
+    }
+
+    function drawLinkPreview(drag) {
+      const source = drag.source;
+      const pointer = { x: drag.worldX, y: drag.worldY };
+      const target = state.nodes.find((node) =>
+        node.id !== source.id && nodeVisible(node) && isPointInsideNode(node, pointer),
+      );
+      const destination = target || pointer;
+      const dx = destination.x - source.x;
+      const dy = destination.y - source.y;
+      const distance = Math.hypot(dx, dy);
+      if (distance < 0.01) return;
+
+      const ux = dx / distance;
+      const uy = dy / distance;
+      const sourceRadius = nodeRadius(source) + 3 / state.viewport.scale;
+      // Keep the arrowhead outside the destination node, so it remains
+      // visible instead of disappearing below the node's later paint pass.
+      const targetInset = target ? nodeRadius(target) + 8 / state.viewport.scale : 0;
+      if (distance <= sourceRadius + targetInset) return;
+      const start = { x: source.x + ux * sourceRadius, y: source.y + uy * sourceRadius };
+      const end = {
+        x: destination.x - ux * targetInset,
+        y: destination.y - uy * targetInset,
+      };
+      const color = "rgba(242, 187, 120, 0.86)";
+      ctx.beginPath();
+      ctx.setLineDash([5 / state.viewport.scale, 5 / state.viewport.scale]);
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2 / state.viewport.scale;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      drawArrow(start, end, color);
     }
 
     function nodeFill(node) {
@@ -1153,10 +1168,7 @@
 
     function nodeStroke(node) {
       if (node.id === state.selectedId) return "#78d7ff";
-      // Preset-driven colors in BOTH modes (under the classic built-in this is
-      // exactly the old quantity-sign coloring: 0 dim blue, -1 orange, 1 green).
-      const preset = activePreset();
-      return stepColor(preset, stepIndexForNode(node, preset));
+      return node.quantity < 0 ? "#f2bb78" : node.quantity > 0 ? "#7ef0c6" : "rgba(120, 215, 255, 0.4)";
     }
 
     function drawNodeLabel(node, radius) {
@@ -1198,16 +1210,9 @@
         drawDirectedLink(link, highlight, index);
       }
 
-      // The in-progress Shift+drag link line.
+      // Shift-drag always points from its pressed node toward its destination.
       if (state.linkDrag && state.linkDrag.source) {
-        ctx.beginPath();
-        ctx.setLineDash([5 / state.viewport.scale, 5 / state.viewport.scale]);
-        ctx.moveTo(state.linkDrag.source.x, state.linkDrag.source.y);
-        ctx.lineTo(state.linkDrag.worldX, state.linkDrag.worldY);
-        ctx.strokeStyle = "rgba(242, 187, 120, 0.7)";
-        ctx.lineWidth = 2 / state.viewport.scale;
-        ctx.stroke();
-        ctx.setLineDash([]);
+        drawLinkPreview(state.linkDrag);
       }
 
       for (const node of state.nodes) {
@@ -1229,7 +1234,7 @@
           ctx.stroke();
         }
 
-        if (state.mode === "trail" && node.id === state.trailRoot) {
+        if (state.mode === "focus" && node.id === state.trailRoot) {
           ctx.beginPath();
           ctx.arc(node.x, node.y, radius + 9 / state.viewport.scale, 0, Math.PI * 2);
           ctx.strokeStyle = "rgba(126, 240, 198, 0.5)";
@@ -1258,7 +1263,7 @@
 
     function findNodeAtPoint(screenX, screenY) {
       const point = screenToWorld(screenX, screenY);
-      if (state.mode !== "trail" && state.simulation && typeof state.simulation.find === "function") {
+      if (state.mode === "graph" && state.simulation && typeof state.simulation.find === "function") {
         const searchRadius = Math.max(
           ...state.nodes.map((node) => nodeHitRadius(node)),
           24 / state.viewport.scale,
@@ -1369,22 +1374,24 @@
       return (Number(node.quantity) || 0) > 0 ? preset.steps.length - 1 : 0;
     }
 
-    // A root's tree: forward reachability along one link kind, with
-    // longest-path topo layers. Used by trail mode (layout + cascade) and by
-    // node gravity (depth → weight) in BOTH modes.
-    function computeTree(rootId, kind) {
-      if (!rootId || !kind) return null;
+    // A Protein link-order item supplies BOTH the link kind and traversal
+    // direction. `higher` is earlier in the Protein result, therefore it is
+    // the forward direction from root to later trail records.
+    function computeTree(rootId, rule = activeTrailRule()) {
+      if (!rootId || !rule?.kind) return null;
       const byId = new Map(state.nodes.map((node) => [node.id, node]));
       if (!byId.has(rootId)) return null;
       const children = new Map();
       const parents = new Map();
       for (const edge of state.edges) {
-        if (edge.kind !== kind) continue;
+        if (edge.kind !== rule.kind) continue;
         if (!byId.has(edge.sourceId) || !byId.has(edge.targetId)) continue;
-        if (!children.has(edge.sourceId)) children.set(edge.sourceId, []);
-        children.get(edge.sourceId).push(edge.targetId);
-        if (!parents.has(edge.targetId)) parents.set(edge.targetId, []);
-        parents.get(edge.targetId).push(edge.sourceId);
+        const from = rule.higher === "to" ? edge.targetId : edge.sourceId;
+        const to = rule.higher === "to" ? edge.sourceId : edge.targetId;
+        if (!children.has(from)) children.set(from, []);
+        children.get(from).push(to);
+        if (!parents.has(to)) parents.set(to, []);
+        parents.get(to).push(from);
       }
       const ids = new Set([rootId]);
       const queue = [rootId];
@@ -1414,94 +1421,51 @@
       return { ids, parents, children, layers };
     }
 
-    function computeTrailTree() {
-      if (state.mode !== "trail" || !state.trailRoot) return null;
-      return computeTree(state.trailRoot, state.trailKind);
-    }
-
-    // --- node gravity: tree depth -> weight -> vertical pull ---------------------
-
-    function gravityActive() {
-      return state.gravity.direction !== "off" && state.gravity.strength > 0;
-    }
-
-    // The trail root/kind define the gravity tree in both modes; without a
-    // root there is nothing to weigh and gravity does nothing.
-    function computeGravityTree() {
-      if (!gravityActive() || !state.trailRoot) return null;
-      return computeTree(state.trailRoot, state.trailKind);
-    }
-
-    // Weight 1 = root, fading to 0 at the deepest layer; nodes outside the
-    // tree weigh like leaf nodes (0).
-    function nodeGravityWeight(node, tree) {
-      if (!tree || !tree.ids.has(node.id)) return 0;
-      let maxDepth = 0;
-      for (const depth of tree.layers.values()) maxDepth = Math.max(maxDepth, depth);
-      const depth = tree.layers.get(node.id) || 0;
-      return maxDepth ? 1 - depth / maxDepth : 1;
-    }
-
-    // Buoyancy, not a target line: a constant per-tick vertical acceleration
-    // from weight — heavy goes one way, light the other. A node never
-    // "arrives"; it keeps falling until its link tethers it, so links align
-    // vertically and the tree hangs like a mobile. Unlinked nodes weigh like
-    // leaves and sink/float past everything.
-    const BUOYANCY_ACCEL = 1.2;
-    function nodeBuoyancy(node, tree) {
-      const centered = nodeGravityWeight(node, tree) - 0.5;
-      const sign = state.gravity.direction === "down" ? 1 : -1;
-      return centered * BUOYANCY_ACCEL * state.gravity.strength * sign;
-    }
-
-    function buoyancyForce(tree) {
-      // Constant acceleration — NOT scaled by alpha, so the pull stays just
-      // as strong while the simulation cools (an alpha-scaled pull fades to
-      // nothing and feels like gravity switched off).
-      function force() {
-        const nodes = state.simulation ? state.simulation.nodes() : [];
-        for (const node of nodes) node.vy += nodeBuoyancy(node, tree);
+    function deriveTrailRoot(rule = activeTrailRule()) {
+      if (!rule || !state.nodes.length) return null;
+      const ids = new Set(state.nodes.map((node) => node.id));
+      const incoming = new Set();
+      for (const edge of state.edges) {
+        if (edge.kind !== rule.kind || !ids.has(edge.sourceId) || !ids.has(edge.targetId)) continue;
+        incoming.add(rule.higher === "to" ? edge.sourceId : edge.targetId);
       }
-      return force;
+      return state.nodes.find((node) => !incoming.has(node.id))?.id || state.nodes[0].id;
+    }
+
+    function computeTrailTree() {
+      const rule = activeTrailRule();
+      state.trailRoot = deriveTrailRoot(rule);
+      return computeTree(state.trailRoot, rule);
     }
 
     function layoutTrail() {
       const tree = state.trailTree;
       if (!tree) return;
-      // With node gravity on, the layered grid is only the STARTING position:
-      // x stays anchored to the layer (forceX), y belongs to the simulation.
-      const pinned = !gravityActive();
+      // Trail is deliberately a Protein sequence, not a local topology sort.
+      // The graph only chooses which records are reachable; their display
+      // order remains the exact already-ordered Protein result.
+      const pinned = true;
       const byId = new Map(state.nodes.map((node) => [node.id, node]));
-      const byLayer = new Map();
-      for (const id of tree.ids) {
-        const layer = tree.layers.get(id) || 0;
-        if (!byLayer.has(layer)) byLayer.set(layer, []);
-        byLayer.get(layer).push(id);
-      }
-      for (const [layer, ids] of byLayer) {
-        ids.sort((left, right) =>
-          (byId.get(left)?.head || "").toLowerCase().localeCompare((byId.get(right)?.head || "").toLowerCase())
-          || left.localeCompare(right));
-        for (let index = 0; index < ids.length; index += 1) {
-          const node = byId.get(ids[index]);
-          if (!node) continue;
-          node.x = layer * 180;
-          node.y = (index - (ids.length - 1) / 2) * 110;
-          node.vx = 0;
-          node.vy = 0;
-          node.fx = pinned ? node.x : null; // pinned: physics is off in classic trail mode
-          node.fy = pinned ? node.y : null;
-        }
+      const ids = state.nodes.filter((node) => tree.ids.has(node.id)).map((node) => node.id);
+      for (let index = 0; index < ids.length; index += 1) {
+        const node = byId.get(ids[index]);
+        if (!node) continue;
+        node.x = index * 180;
+        node.y = 0;
+        node.vx = 0;
+        node.vy = 0;
+        node.fx = pinned ? node.x : null;
+        node.fy = pinned ? node.y : null;
       }
     }
 
     function nodeVisible(node) {
-      if (state.mode !== "trail") return true;
+      if (state.mode !== "focus") return true;
       return !!state.trailTree && state.trailTree.ids.has(node.id);
     }
 
     function linkVisible(link) {
-      if (state.mode !== "trail") return true;
+      if (state.mode !== "focus") return true;
       return link.kind === state.trailKind && nodeVisible(link.source) && nodeVisible(link.target);
     }
 
@@ -1509,16 +1473,11 @@
     // layout with the simulation frozen — or unpin and reheat it in graph
     // mode. Called by setMode, applyUiPrefs, and after every snapshot.
     function applyMode() {
-      if (state.mode === "trail") {
+      if (state.mode === "focus") {
         state.trailTree = computeTrailTree();
         layoutTrail();
         state.selectedEdgeId = null;
-        if (gravityActive() && state.trailTree) {
-          applySimulationForces();
-          nudgeSimulation(0.3);
-        } else if (state.simulation) {
-          state.simulation.stop();
-        }
+        if (state.simulation) state.simulation.stop();
       } else {
         state.trailTree = null;
         for (const node of state.nodes) {
@@ -1537,10 +1496,11 @@
       renderTrailChip();
       renderEmptyState();
       requestDraw();
+      if (state.mode === "focus") focusTrail();
     }
 
     function setMode(mode) {
-      if (mode !== "trail" && mode !== "graph") return;
+      if (!["focus", "graph"].includes(mode)) return;
       state.mode = mode;
       applyMode();
       persistUiPrefs();
@@ -1555,7 +1515,7 @@
     function computeTrailChanges(targetId, intent) {
       const tree = state.trailTree;
       if (!tree || !tree.ids.has(targetId)) {
-        return { changes: [], error: "No trail tree — switch to trail mode and pick a root first." };
+        return { changes: [], error: "No trail tree — select Trail mode and a Protein link order." };
       }
       const preset = activePreset();
       const last = preset.steps.length - 1;
@@ -1610,7 +1570,7 @@
     }
 
     // Done/Undo: compute the cascade, apply it optimistically, then write one
-    // Action per changed node IN ORDER (set-quantity / set-concept by bucket
+    // Action per changed node IN ORDER (set-quantity / set-identity by bucket
     // kind — the kanban column rule). Any reject rolls the whole batch back.
     function trailSetStatus(node, intent) {
       const { changes, error } = computeTrailChanges(node.id, intent);
@@ -1639,7 +1599,7 @@
         for (const change of changes) {
           const step = preset.steps[change.stepIndex];
           const result = await (step.concept
-            ? H.act({ action: "set-concept", target: change.id, concept: step.concept })
+            ? H.act({ action: "set-identity", subject: change.id, predicate: step.concept })
             : H.act({ action: "set-quantity", target: change.id, value: step.value }));
           warnings.push(...(Array.isArray(result?.warnings) ? result.warnings : []));
         }
@@ -1702,16 +1662,66 @@
     }
 
     function renderTrailChip() {
-      const node = state.mode === "trail" && state.selectedId
+      const node = state.mode === "focus" && state.selectedId
         ? state.nodes.find((candidate) => candidate.id === state.selectedId && nodeVisible(candidate))
         : null;
       trailChip.hidden = !node;
       if (!node) return;
-      const preset = activePreset();
-      const index = stepIndexForNode(node, preset);
-      trailChipLabel.textContent = `${node.head} — ${preset.steps[index].label}`;
-      trailDoneButton.disabled = index === preset.steps.length - 1;
-      trailUndoButton.disabled = index === 0;
+      trailChipLabel.textContent = `${node.head} — ${node.quantity < 0 ? "negative" : node.quantity > 0 ? "positive" : "zero"}`;
+    }
+
+    function quantityMatchesFocus(node) {
+      return state.focusSign === "negative" ? node.quantity < 0
+        : state.focusSign === "positive" ? node.quantity > 0
+          : node.quantity === 0;
+    }
+
+    function focusTrail() {
+      if (state.mode !== "focus" || !state.trailTree) return;
+      const target = state.nodes.find((node) => state.trailTree.ids.has(node.id) && quantityMatchesFocus(node));
+      if (!target) {
+        state.focusId = null;
+        state.selectedId = null;
+        renderTrailChip();
+        renderStatus("No trail match", "warn", `No ${state.focusSign} record is reachable in this trail.`);
+        return;
+      }
+      const focusChanged = state.focusId !== target.id;
+      state.focusId = target.id;
+      // Trail is an internal Relation selection. Emitting `recordClicked`
+      // here would reopen the Record sand every time a Trail setting or live
+      // snapshot is applied; opening a record remains an explicit node click.
+      selectNode(target, { emitRecordClick: false });
+      if (focusChanged) {
+        // Follow an advancing Trail record instead of merely zooming around
+        // its previous screen position. Keep a close user zoom, otherwise
+        // give the focused task a readable default scale.
+        const scale = clampNumber(Math.max(state.viewport.scale, 1.8), MIN_ZOOM, MAX_ZOOM, 1.8);
+        const width = state.width || canvas.clientWidth;
+        const height = state.height || canvas.clientHeight;
+        state.viewport.scale = scale;
+        state.viewport.x = width / 2 - target.x * scale;
+        state.viewport.y = height / 2 - target.y * scale;
+        state.viewport.initialized = true;
+        renderZoomPill();
+        requestDraw();
+      }
+    }
+
+    function setFocusedQuantity(value) {
+      const node = state.nodes.find((candidate) => candidate.id === state.selectedId && nodeVisible(candidate));
+      if (!node) return;
+      const previous = node.quantity;
+      node.quantity = value;
+      renderTrailChip();
+      requestDraw();
+      if (state.mode === "focus") focusTrail();
+      trackPending(H.act({ action: "set-quantity", target: node.id, value }), () => {
+        node.quantity = previous;
+        renderTrailChip();
+        if (state.mode === "focus") focusTrail();
+        requestDraw();
+      }, "Quantity updated");
     }
 
     function renderEmptyState() {
@@ -1723,10 +1733,10 @@
         emptyState.hidden = false;
         return;
       }
-      if (state.mode === "trail") {
+      if (state.mode === "focus") {
         if (!state.trailRoot) {
-          title.textContent = "No trail root";
-          copy.textContent = "Pick a root in Graph controls → Trail.";
+          title.textContent = "No directed Protein order";
+          copy.textContent = "Add a directed link order in this card's Protein.";
           emptyState.hidden = false;
           return;
         }
@@ -1745,61 +1755,26 @@
 
     function renderTrailControls() {
       modeSelect.value = state.mode;
-      const byHead = state.nodes.slice().sort((left, right) =>
-        left.head.toLowerCase().localeCompare(right.head.toLowerCase()) || left.id.localeCompare(right.id));
-      trailRootSelect.innerHTML = "";
-      const placeholder = document.createElement("option");
-      placeholder.value = "";
-      placeholder.textContent = state.nodes.length ? "Pick a root…" : "No records yet";
-      trailRootSelect.appendChild(placeholder);
-      for (const node of byHead) {
-        const option = document.createElement("option");
-        option.value = node.id;
-        option.textContent = node.head;
-        trailRootSelect.appendChild(option);
-      }
-      trailRootSelect.value = state.trailRoot && byHead.some((node) => node.id === state.trailRoot) ? state.trailRoot : "";
       trailKindSelect.innerHTML = "";
-      if (!state.kinds.length) {
+      if (!state.trailRules.length) {
         const option = document.createElement("option");
         option.value = "";
-        option.textContent = "add a kind first";
+        option.textContent = "Add a directed link order in Protein";
         trailKindSelect.appendChild(option);
       }
-      for (const kind of state.kinds) {
+      for (const rule of state.trailRules) {
         const option = document.createElement("option");
-        option.value = kind;
-        option.textContent = kind;
+        option.value = linkRuleKey(rule);
+        option.textContent = `${rule.higher === "from" ? "A" : "B"} higher — @${rule.kind}`;
         trailKindSelect.appendChild(option);
       }
-      trailKindSelect.value = state.trailKind;
-      trailPresetSelect.innerHTML = "";
-      for (const preset of allPresets()) {
-        const option = document.createElement("option");
-        option.value = preset.id;
-        option.textContent = preset.record ? preset.name : `${preset.name} (built-in)`;
-        trailPresetSelect.appendChild(option);
-      }
-      const preset = activePreset();
-      trailPresetSelect.value = preset.id;
-      trailSteps.innerHTML = "";
-      preset.steps.forEach((step, index) => {
-        const chip = document.createElement("span");
-        chip.className = "chip";
-        const dotEl = document.createElement("span");
-        dotEl.className = "stepDot";
-        dotEl.style.background = stepColor(preset, index);
-        const label = document.createElement("span");
-        label.textContent = `${step.label} ${stepSpecText(step)}`;
-        chip.append(dotEl, label);
-        trailSteps.appendChild(chip);
-      });
-      trailPresetDelete.disabled = !preset.record;
+      trailKindSelect.value = activeTrailRule() ? linkRuleKey(activeTrailRule()) : "";
+      focusSignSelect.value = state.focusSign;
     }
 
     // --- selection + group events -------------------------------------------------
 
-    function selectNode(node) {
+    function selectNode(node, { emitRecordClick = true } = {}) {
       state.selectedEdgeId = null;
       if (!node) {
         state.selectedId = null;
@@ -1812,11 +1787,12 @@
       renderEdgeChip();
       renderTrailChip();
       requestDraw();
-      // The board-wide event: the pinned Record sand focuses the record.
-      // This REPLACES the old sidepanel.
-      H.emit("recordClicked", {
-        record: { uid: node.id, head: node.head, slug: node.slug, body: node.body, quantity: node.quantity },
-      });
+      if (emitRecordClick) {
+        // The board-wide event: the pinned Record sand focuses the record.
+        H.emit("recordClicked", {
+          record: { uid: node.id, head: node.head, slug: node.slug, body: node.body, quantity: node.quantity },
+        });
+      }
     }
 
     function selectEdge(edge) {
@@ -1873,7 +1849,7 @@
       nudgeSimulation(0.12);
       requestDraw();
       trackPending(
-        H.act({ action: "add-link", from: fromNode.id, kind, to: toNode.id }),
+        H.act({ action: "assert-record", subject: fromNode.id, predicate: kind, object: toNode.id }),
         () => {
           state.pendingEdges = state.pendingEdges.filter((edge) => edge.id !== pending.id);
           refreshLinks();
@@ -1938,7 +1914,7 @@
       renderEdgeChip();
       requestDraw();
       trackPending(
-        H.act({ action: "remove-link", from: removed.sourceId, kind: removed.kind, to: removed.targetId }),
+        H.act({ action: "retract-record", subject: removed.sourceId, predicate: removed.kind, object: removed.targetId }),
         () => {
           state.edges.push(removed);
           refreshLinks();
@@ -1996,12 +1972,12 @@
           grabOffsetX: world.x - node.x,
           grabOffsetY: world.y - node.y,
           moved: false,
-          // Trail mode pins the layered layout: nodes are click-only there.
-          clickOnly: state.mode === "trail",
+          // Trail mode pins the Protein sequence: nodes are click-only here.
+          clickOnly: state.mode === "focus",
         };
         capturePointer(event);
         canvas.classList.add("is-dragging");
-        if (state.mode === "trail") return;
+        if (state.mode === "focus") return;
         node.fx = node.x;
         node.fy = node.y;
         if (state.simulation) state.simulation.alphaTarget(0.2).restart();
@@ -2091,7 +2067,7 @@
         if (edge) selectEdge(edge);
         else selectNode(null);
       }
-      if (state.mode !== "trail" && state.simulation) {
+      if (state.mode === "graph" && state.simulation) {
         state.simulation.alpha(Math.max(state.simulation.alpha(), 0.16)).alphaTarget(0).restart();
       }
       state.pointer = null;
@@ -2149,6 +2125,16 @@
         const typing = target instanceof HTMLElement
           && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT" || target.isContentEditable);
         if (typing) return;
+        if (event.altKey && !event.ctrlKey && !event.metaKey) {
+          const quantity = ({ a: 1, x: -1, z: 0 })[event.key.toLowerCase()];
+          if (quantity !== undefined) {
+            event.preventDefault();
+            // This listener lives in the Relation iframe, so the shortcuts
+            // apply only while this sand has focus and work in Graph or Trail.
+            setFocusedQuantity(quantity);
+            return;
+          }
+        }
         if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === "z") {
           event.preventDefault();
           undoLinkChange();
@@ -2170,13 +2156,13 @@
       directionSelect.addEventListener("change", () => {
         state.direction = directionSelect.value;
         persistUiPrefs();
-        resubscribe();
+        resubscribe(true);
       });
       depthInput.addEventListener("input", () => {
         state.depth = clampNumber(depthInput.value, 0, 4, 0);
         depthValue.textContent = String(state.depth);
         persistUiPrefs();
-        resubscribe();
+        resubscribe(true);
       });
       linkKindSelect.addEventListener("change", () => {
         state.linkKind = linkKindSelect.value;
@@ -2184,46 +2170,24 @@
       });
 
       modeSelect.addEventListener("change", () => setMode(modeSelect.value));
-      trailRootSelect.addEventListener("change", () => {
-        state.trailRoot = trailRootSelect.value || null;
-        applyMode();
-        persistUiPrefs();
-        if (state.mode === "trail" && state.nodes.length) fitViewportToNodes();
-      });
-      trailRootSelectedButton.addEventListener("click", () => {
-        if (!state.selectedId) {
-          renderStatus("No selection", "warn", "Click a node first, then use it as the trail root.");
-          return;
-        }
-        state.trailRoot = state.selectedId;
-        applyMode();
-        persistUiPrefs();
-        renderControls();
-        if (state.mode === "trail" && state.nodes.length) fitViewportToNodes();
-      });
       trailKindSelect.addEventListener("change", () => {
-        state.trailKind = trailKindSelect.value;
+        const rule = state.trailRules.find((candidate) => linkRuleKey(candidate) === trailKindSelect.value);
+        if (!rule) return;
+        state.trailKind = rule.kind;
+        state.trailHigher = rule.higher;
         applyMode();
         persistUiPrefs();
-        if (state.mode === "trail" && state.nodes.length) fitViewportToNodes();
+        subscribeGraph(state.proteinAst);
+        if (state.mode === "focus" && state.nodes.length) fitViewportToNodes();
       });
-      trailPresetSelect.addEventListener("change", () => {
-        state.trailPreset = trailPresetSelect.value;
+      focusSignSelect.addEventListener("change", () => {
+        state.focusSign = focusSignSelect.value;
         persistUiPrefs();
-        renderControls();
-        renderTrailChip();
-        requestDraw();
+        if (state.mode === "focus") focusTrail();
       });
-      trailPresetSave.addEventListener("click", saveActivePreset);
-      trailPresetDelete.addEventListener("click", deleteActivePreset);
-      trailDoneButton.addEventListener("click", () => {
-        const node = state.nodes.find((candidate) => candidate.id === state.selectedId);
-        if (node) trailSetStatus(node, "done");
-      });
-      trailUndoButton.addEventListener("click", () => {
-        const node = state.nodes.find((candidate) => candidate.id === state.selectedId);
-        if (node) trailSetStatus(node, "undone");
-      });
+      trailSetNegativeButton.addEventListener("click", () => setFocusedQuantity(-1));
+      trailSetZeroButton.addEventListener("click", () => setFocusedQuantity(0));
+      trailSetPositiveButton.addEventListener("click", () => setFocusedQuantity(1));
 
       for (const [id, key] of [
         ["physics-charge", "charge"],
@@ -2250,15 +2214,6 @@
         requestDraw();
       });
 
-      gravityDirectionSelect.addEventListener("change", () => {
-        state.gravity.direction = gravityDirectionSelect.value;
-        applyGravityChange();
-      });
-      gravityStrengthInput.addEventListener("input", () => {
-        state.gravity.strength = clampNumber(gravityStrengthInput.value, 0, 1, DEFAULT_GRAVITY.strength);
-        applyGravityChange();
-      });
-
       canvas.addEventListener("wheel", (event) => {
         event.preventDefault();
         const rect = canvas.getBoundingClientRect();
@@ -2281,7 +2236,7 @@
       kindInput.value = "";
       persistUiPrefs();
       renderControls();
-      resubscribe();
+      resubscribe(true);
     }
 
     function resizeCanvas() {
@@ -2320,30 +2275,6 @@
       });
       resubscribe(); // preview/selftest: no bridge-state push ever comes
 
-      // Side subscriptions (kanban pattern): trail preset records (kind sand +
-      // the relations.trail extension) and concept names (rows carry concept
-      // UIDs; presets carry NAMES — resolve for display and bucket matching).
-      H.subscribeProtein("trail-presets", {
-        source: "record",
-        where: [{ kind_eq: "sand" }, { quantity_gt: 0 }],
-        include: { extension: { namespace: TRAIL_PRESET_NAMESPACE } },
-      }, ({ rows: incoming }) => {
-        state.presetRecords = (Array.isArray(incoming) ? incoming : [])
-          .filter((row) => row?.extension && Array.isArray(row.extension.steps));
-        renderTrailControls();
-        renderTrailChip();
-        requestDraw();
-      });
-      H.subscribeProtein("trail-concepts", { source: "concept" }, ({ rows: incoming }) => {
-        state.conceptNames = {};
-        for (const concept of Array.isArray(incoming) ? incoming : []) {
-          if (concept && concept.uid) state.conceptNames[concept.uid] = concept.name;
-        }
-        renderTrailControls();
-        renderTrailChip();
-        renderKindSuggestions();
-        requestDraw();
-      });
       state.resizeObserver = new ResizeObserver(resizeCanvas);
       state.resizeObserver.observe(app);
       resizeCanvas();
@@ -2361,15 +2292,11 @@
       findEdgeAtPoint,
       setMode,
       applyMode,
-      activePreset,
-      computeTrailChanges,
-      stepIndexForNode,
       nodeVisible,
       computeTree,
-      gravityActive,
-      nodeGravityWeight,
-      nodeBuoyancy,
-      applyGravityChange,
+      activeTrailRule,
+      focusTrail,
+      setFocusedQuantity,
     };
   })();
   </script>

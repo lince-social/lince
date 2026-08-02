@@ -29,7 +29,14 @@ use std::path::{Path, PathBuf};
 
 /// Every crate that is not the web surface. A sand may name itself; nothing
 /// underneath it may.
-const BACKEND_CRATES: [&str; 6] = ["nucleus", "store", "engine", "protein", "transport", "lince"];
+const BACKEND_CRATES: [&str; 6] = [
+    "nucleus",
+    "store",
+    "engine",
+    "protein",
+    "transport",
+    "lince",
+];
 
 /// Words that name a *use* of the primitives rather than a primitive.
 ///

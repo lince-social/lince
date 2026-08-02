@@ -198,7 +198,10 @@ async fn saved_protein_subscription() {
             Action::SaveProtein {
                 slug: "views.needs".into(),
                 head: "Needs".into(),
-                ast: serde_json::json!({ "source": "record", "where": [ { "quantity_lt": 0.0 } ] }),
+                ast: serde_json::json!({
+                    "source": "record",
+                    "where": [{ "all": [{ "quantity_lt": 0.0 }] }]
+                }),
             },
             None,
         )

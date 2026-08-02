@@ -3,8 +3,8 @@
 
 use chrono::{DateTime, Utc};
 use engine::Engine;
-use nucleus::{CauseKind, RecordKind};
 use nucleus::karma::{Cadence, Consequence};
+use nucleus::{CauseKind, RecordKind};
 
 mod support;
 use store::records::NewRecord;
@@ -48,30 +48,62 @@ async fn same_pair_carries_many_link_kinds() {
         .await
         .unwrap();
 
-    // identity is the TRIPLE: both links between the same two records coexist
-    store::links::add(&e.store.pool, &small, &before, &big, None)
-        .await
-        .unwrap();
-    store::links::add(&e.store.pool, &small, &part_of, &big, Some(0.2))
-        .await
-        .unwrap();
+    // Both predicates between the same two Records coexist.
+    let first = store::assertions::assert(
+        &e.store.pool,
+        store::assertions::NewAssertion {
+            subject_uid: &small,
+            predicate_uid: &before,
+            object_uid: Some(&big),
+            role: store::assertions::AssertionRole::Ordinary,
+            quantity: None,
+            unit_uid: None,
+            asserted_by: None,
+        },
+    )
+    .await
+    .unwrap();
+    store::assertions::assert(
+        &e.store.pool,
+        store::assertions::NewAssertion {
+            subject_uid: &small,
+            predicate_uid: &part_of,
+            object_uid: Some(&big),
+            role: store::assertions::AssertionRole::Ordinary,
+            quantity: Some(store::exact::from_f64(0.2)),
+            unit_uid: None,
+            asserted_by: None,
+        },
+    )
+    .await
+    .unwrap();
 
-    // but duplicating the exact same triple fails
-    assert!(
-        store::links::add(&e.store.pool, &small, &before, &big, None)
-            .await
-            .is_err()
-    );
+    // Reasserting the same current statement is idempotent.
+    let repeated = store::assertions::assert(
+        &e.store.pool,
+        store::assertions::NewAssertion {
+            subject_uid: &small,
+            predicate_uid: &before,
+            object_uid: Some(&big),
+            role: store::assertions::AssertionRole::Ordinary,
+            quantity: None,
+            unit_uid: None,
+            asserted_by: None,
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!(repeated, first);
 
     // each kind is its own graph
     assert_eq!(
-        store::links::edges_of_kind(&e.store.pool, &before)
+        store::assertions::edges_of_predicate(&e.store.pool, &before)
             .await
             .unwrap()
             .len(),
         1
     );
-    let part = store::links::edges_of_kind(&e.store.pool, &part_of)
+    let part = store::assertions::edges_of_predicate(&e.store.pool, &part_of)
         .await
         .unwrap();
     assert_eq!(part[0].quantity, Some(0.2));
@@ -147,7 +179,8 @@ async fn signals_sample_the_world_and_cascade() {
     assert_eq!(
         store::records::quantity(&e.store.pool, &alert)
             .await
-            .unwrap().map(|q| q.to_f64()),
+            .unwrap()
+            .map(|q| q.to_f64()),
         Some(1.0)
     );
 
@@ -188,7 +221,8 @@ async fn checkpoints_anchor_without_cascading() {
     assert_eq!(
         store::records::quantity(&e.store.pool, &apples)
             .await
-            .unwrap().map(|q| q.to_f64()),
+            .unwrap()
+            .map(|q| q.to_f64()),
         Some(5.0),
         "checkpoint changes nothing"
     );

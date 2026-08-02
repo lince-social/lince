@@ -20,6 +20,8 @@ const STYLE: &str = r#"
   --raised-background:var(--primary-background);
   --primary-ink:#f8fafc;
   --secondary-ink:#a7b4c2;
+  --tooltip:#202126;
+  --tooltip-ink:#f8fafc;
   --gray:#a7b4c2;
   --accent:#6366f1;
   --focus:#6366f1;
@@ -57,14 +59,23 @@ button{cursor:pointer}
 .floating-tag{display:inline-flex;align-items:center;gap:10px;min-height:40px;padding:0 14px;border:1px solid rgba(255,255,255,.08);border-radius:2px;background:rgba(13,15,19,.86);box-shadow:0 20px 46px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.04);backdrop-filter:blur(20px);color:var(--text-soft)}
 .floating-tag__label{font-size:.78rem}.density-slider{width:118px}.density-control__value{min-width:28px;color:var(--text-strong);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.79rem;text-align:right}
 .board-zoom-controls{display:inline-flex;align-items:center;gap:2px;width:max-content;height:max-content;padding:2px}.board-zoom-button{flex:0 0 auto}
-.editPopover{gap:var(--space-2,4px);padding:var(--space-2,4px);border:0;background:var(--raised-background);box-shadow:var(--lynx-shadow-x,2px) var(--lynx-shadow-y,2px) var(--lynx-shadow-blur,6px) var(--lynx-shadow-color,rgb(0 0 0 / 16%));backdrop-filter:none}
+.editPopover{position:fixed;top:0;right:0;bottom:auto;width:fit-content;min-width:0;max-width:calc(100vw - var(--space-4,10px));height:fit-content;max-height:calc(100vh - var(--space-4,10px));gap:0;padding:var(--space-2,4px);overflow:visible;border:var(--hairline,.5px) solid var(--gray);background:var(--raised-background);box-shadow:var(--lynx-shadow-x,2px) var(--lynx-shadow-y,2px) var(--lynx-shadow-blur,6px) var(--lynx-shadow-color,rgb(0 0 0 / 16%));backdrop-filter:none}
+.editPopover.isOpen{display:inline-flex;flex-direction:column;align-items:flex-start;align-content:flex-start}
 .editPopover .add-card-popover__action,.editPopover .workspace-popover__action{justify-content:flex-start;width:fit-content;min-height:var(--control-height,25px);padding:var(--control-padding-y,3px) var(--control-padding-x,5px);border:var(--hairline,.5px) solid var(--gray);border-radius:var(--radius-control,2px);background:var(--primary-background);color:var(--primary-ink);font-size:inherit}
 .editPopover .add-card-popover__action:hover,.editPopover .workspace-popover__action:hover{border-color:var(--gray);background:var(--secondary-background);color:var(--primary-ink)}
 .editPopover .add-card-popover__icon{width:14px;height:14px;color:var(--secondary-ink)}
-.editPopover .edit-popover__label{padding:var(--space-2,4px) 0 0;color:var(--secondary-ink);font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase}
-.editPopover .workspace-popover__footer{justify-items:start;gap:var(--space-1,2px)}
+.editPopover .edit-popover__section{display:flex;flex-direction:column;gap:var(--space-1,2px)}.editPopover .edit-popover__section+.edit-popover__section{margin-top:var(--space-4,10px)}
+.editPopover .edit-popover__label{color:var(--secondary-ink);font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase}
+.editPopover .edit-popover__row,.editPopover .workspace-popover__footer{display:flex;align-items:center;justify-content:flex-start;gap:var(--space-1,2px)}
+.editPopover .edit-popover__row .lynx-button,.editPopover .workspace-popover__footer .lynx-button{width:var(--control-height,25px);min-width:var(--control-height,25px);padding:0;justify-content:center}
+.editPopover .workspace-list{width:fit-content;gap:var(--space-1,2px)}.editPopover .workspace-item{grid-template-columns:fit-content(12rem) var(--control-height,25px) var(--control-height,25px);gap:var(--space-1,2px)}
+.editPopover .workspace-item__switch{min-height:var(--control-height,25px);padding:0;border-radius:var(--radius-control,2px);font-size:inherit;font-weight:400}.editPopover .workspace-item__name{width:fit-content;min-width:8ch;max-width:12rem;field-sizing:content;min-height:var(--control-height,25px);padding:var(--control-padding-y,3px) var(--control-padding-x,5px);border-color:var(--gray);border-radius:var(--radius-control,2px);background:var(--primary-background);color:var(--primary-ink)}
+.editPopover .workspace-item__edit,.editPopover .workspace-item__delete{display:inline-flex;width:var(--control-height,25px);min-height:var(--control-height,25px);padding:0;border-radius:var(--radius-control,2px)}
+.editPopover #notifications-toggle{position:relative}.editPopover #notifications-count{position:absolute;inset:0;place-items:center;padding:0;border-radius:inherit;background:#e8b45b;color:#191b1f}
 .editPopover .floating-tag{min-height:var(--control-height,25px);padding:var(--control-padding-y,3px) var(--control-padding-x,5px);border:0;border-radius:0;background:var(--secondary-background);box-shadow:none;color:var(--primary-ink);backdrop-filter:none}
-.tutorial,.aiPanel{display:block;width:100%;height:100%;padding:18px;border:1px solid var(--border);border-radius:4px;background:#171a1f;color:var(--text-strong)}.tutorial{overflow:auto;padding:24px}.tutorial__eyebrow{margin:0 0 8px;color:var(--text-muted);font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase}.tutorial h1,.aiPanel h1{font-size:18px;margin:0 0 8px}.tutorial h1{font-size:24px;line-height:1.12;margin-bottom:10px}.tutorial h2{margin:24px 0 8px;color:var(--text-strong);font-size:15px}.tutorial p,.aiPanel p{font-size:14px;line-height:1.45;margin:0;color:var(--text-soft)}.tutorial p{max-width:68ch;margin-bottom:10px}.tutorial ul{display:grid;gap:8px;margin:10px 0 0;padding:0;list-style:none}.tutorial li{position:relative;padding-left:18px;color:var(--text-soft);font-size:13px;line-height:1.42}.tutorial li::before{content:"";position:absolute;left:0;top:.62em;width:6px;height:6px;border-radius:2px;background:var(--text-muted)}.tutorial strong{color:var(--text-strong);font-weight:700}.tutorial__grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:12px}.tutorial__note{margin-top:18px;padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:4px;background:rgba(255,255,255,.03)}.tutorial__note p{margin:0}.aiPanel button{margin-top:14px;height:36px;border-radius:2px;border:1px solid var(--border);background:rgba(18,20,24,.75);color:var(--text-soft);padding:0 14px}
+/* The long-form tutorial styles moved out with the sand itself: the Tutorial
+   sand is now the standalone `sand/instinct` package, which owns its own CSS. */
+.aiPanel{display:block;width:100%;height:100%;padding:18px;border:1px solid var(--border);border-radius:4px;background:#171a1f;color:var(--text-strong)}.aiPanel h1{font-size:18px;margin:0 0 8px}.aiPanel p{font-size:14px;line-height:1.45;margin:0;color:var(--text-soft)}.aiPanel button{margin-top:14px;height:36px;border-radius:2px;border:1px solid var(--border);background:rgba(18,20,24,.75);color:var(--text-soft);padding:0 14px}
 "#;
 
 fn manifest(title: &str, description: &str) -> PackageManifest {
@@ -193,32 +204,39 @@ pub(crate) fn edit_source() -> SandWidgetSource {
                         path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V20.3h-3v-.08A1.7 1.7 0 0 0 10.68 18.66a1.7 1.7 0 0 0-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 0 0 7.02 15a1.7 1.7 0 0 0-1.56-1.03h-.08v-3h.08A1.7 1.7 0 0 0 7.02 9.94a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.12-2.12.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.03-1.56v-.08h3v.08a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06L19.8 8l-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.56 1.03h.08v3h-.08A1.7 1.7 0 0 0 19.4 15Z" {}
                     }
                 }
-                div id="popover" class="editPopover lynx-panel" {
-                    div class="edit-popover__label" { "Edit sand" }
-                    button class="lynx-button add-card-popover__action" data-action="edit.self" {
-                        span class="add-card-popover__icon" { "✎" }
-                        span { "Edit self" }
-                    }
-                    button class="lynx-button add-card-popover__action" data-action="card.add" {
-                        span class="add-card-popover__icon" { "+" }
-                        span { "Add card" }
-                    }
-                    button class="lynx-button add-card-popover__action" data-action="card.import" {
-                        span class="add-card-popover__icon" { "↥" }
-                        span { "Importar" }
-                    }
-                    div class="edit-popover__label" { "Workspace" }
-                    div class="workspace-popover__footer lynx-stack" {
-                        button id="notifications-toggle" class="lynx-button workspace-popover__action" type="button" {
-                            span { "Notifications" }
-                            span id="notifications-count" hidden { "0" }
+                div id="popover" class="editPopover lynx-box" data-lynx-tooltip-boundary {
+                    div class="edit-popover__section" {
+                        div class="edit-popover__label" { "Edit sand" }
+                        div class="edit-popover__row" {
+                            button class="lynx-button lynx-icon-button add-card-popover__action" data-action="edit.self" aria-label="Edit this sand" data-lynx-tooltip="Edit this sand" {
+                                svg class="lynx-icon" viewBox="0 0 16 16" aria-hidden="true" { path d="M9.8 3.1 12.9 6.2M11.3 1.9a1.45 1.45 0 0 1 2.1 2.1L5.7 11.7 3 12.4l.7-2.7 7.6-7.8Z" {} }
+                            }
+                            button class="lynx-button lynx-icon-button add-card-popover__action" data-action="card.add" aria-label="Add card" data-lynx-tooltip="Add card" {
+                                svg class="lynx-icon" viewBox="0 0 16 16" aria-hidden="true" { path d="M8 3v10M3 8h10" {} }
+                            }
+                            button class="lynx-button lynx-icon-button add-card-popover__action" data-action="card.import" aria-label="Import card" data-lynx-tooltip="Import card" {
+                                svg class="lynx-icon" viewBox="0 0 16 16" aria-hidden="true" { path d="M8 12V3M4.5 6.5 8 3l3.5 3.5M3 13h10" {} }
+                            }
                         }
                     }
-                    div id="workspace-list" class="workspace-list lynx-stack" {}
-                    div class="workspace-popover__footer lynx-stack" {
-                        button class="lynx-button workspace-popover__action" data-workspace-action="add" { "+ Nova area" }
-                        button class="lynx-button workspace-popover__action" data-workspace-action="import" { "Importar area" }
-                        button class="lynx-button workspace-popover__action" data-workspace-action="export" { "Exportar area" }
+                    div class="edit-popover__section" {
+                        div class="edit-popover__label" { "Workspace" }
+                        div id="workspace-list" class="workspace-list" {}
+                        div class="workspace-popover__footer" {
+                            button id="notifications-toggle" class="lynx-button lynx-icon-button workspace-popover__action" type="button" aria-label="Notifications" data-lynx-tooltip="Notifications" {
+                                svg class="lynx-icon" viewBox="0 0 16 16" aria-hidden="true" { path d="M12 6.5a4 4 0 0 0-8 0c0 4-1.5 4.5-1.5 4.5h11S12 10.5 12 6.5ZM6.5 13h3" {} }
+                                span id="notifications-count" hidden { "0" }
+                            }
+                            button class="lynx-button lynx-icon-button workspace-popover__action" data-workspace-action="add" aria-label="New area" data-lynx-tooltip="New area" {
+                                svg class="lynx-icon" viewBox="0 0 16 16" aria-hidden="true" { path d="M8 3v10M3 8h10" {} }
+                            }
+                            button class="lynx-button lynx-icon-button workspace-popover__action" data-workspace-action="import" aria-label="Import area" data-lynx-tooltip="Import area" {
+                                svg class="lynx-icon" viewBox="0 0 16 16" aria-hidden="true" { path d="M8 12V3M4.5 6.5 8 3l3.5 3.5M3 13h10" {} }
+                            }
+                            button class="lynx-button lynx-icon-button workspace-popover__action" data-workspace-action="export" aria-label="Export area" data-lynx-tooltip="Export area" {
+                                svg class="lynx-icon" viewBox="0 0 16 16" aria-hidden="true" { path d="M8 3v9M4.5 6.5 8 3l3.5 3.5M3 13h10" {} }
+                            }
+                        }
                     }
                 }
             }
@@ -229,7 +247,7 @@ const edit=document.getElementById("edit");const popover=document.getElementById
 const workspaceList=document.getElementById("workspace-list");const notificationsToggle=document.getElementById("notifications-toggle");const notificationsCount=document.getElementById("notifications-count");
 window.LynxDS?.tooltip(edit,"Edit mode");
 withHost((host)=>host.subscribe(({meta})=>{const shell=meta.shell||{};const editing=shell.editMode===true;selfEditLocked=editing&&String(shell.selfEditCardId||"")===String(meta.instanceId||"");edit.classList.toggle("is-active",editing);window.LynxDS?.setPopoverOpen(popover,editing);popover.classList.toggle("isSelfEditLocked",selfEditLocked);popover.setAttribute("aria-disabled",String(selfEditLocked));if(density&&shell.density)density.value=String(shell.density);if(densityValue&&shell.gridSnap)densityValue.textContent=String(shell.gridSnap);}));
-function renderWorkspaceMenu(workspace){const ds=window.LynxDS;const items=Array.isArray(workspace?.items)?workspace.items:[];workspaceList.replaceChildren(...items.map((item)=>{const row=document.createElement("div");row.className=`workspace-item${item.active?" is-active":""}`;const switchButton=document.createElement("div");switchButton.className=`workspace-item__switch${item.active?" is-active":""}`;switchButton.dataset.workspaceAction="switch";switchButton.dataset.workspaceId=String(item.id||"");switchButton.setAttribute("role","button");switchButton.tabIndex=0;const input=document.createElement("input");input.className="workspace-item__name";input.dataset.workspaceNameInput="";input.dataset.workspaceId=String(item.id||"");input.value=String(item.name||item.label||"");input.autocomplete="off";input.spellcheck=false;input.readOnly=true;input.tabIndex=-1;input.setAttribute("aria-label",`Nome de ${item.name||item.label||"area"}`);switchButton.append(input);const editButton=ds.iconButton({className:"workspace-item__edit",icon:"edit",label:`Renomear ${item.name||item.label||"area"}`,dataset:{workspaceAction:"rename",workspaceId:String(item.id||"")}});const deleteButton=ds.iconButton({className:"workspace-item__delete",icon:"delete",label:`Apagar ${item.name||item.label||"area"}`,disabled:item.canDelete===false,dataset:{workspaceAction:"delete",workspaceId:String(item.id||"")}});row.append(switchButton,editButton,deleteButton);return row;}));}
+function renderWorkspaceMenu(workspace){const ds=window.LynxDS;const items=Array.isArray(workspace?.items)?workspace.items:[];workspaceList.replaceChildren(...items.map((item)=>{const name=String(item.name||item.label||"area");const row=document.createElement("div");row.className=`workspace-item${item.active?" is-active":""}`;const switchButton=document.createElement("div");switchButton.className=`lynx-button workspace-item__switch${item.active?" is-active":""}`;switchButton.dataset.workspaceAction="switch";switchButton.dataset.workspaceId=String(item.id||"");switchButton.setAttribute("role","button");switchButton.tabIndex=0;const input=document.createElement("input");input.className="lynx-input workspace-item__name";input.dataset.workspaceNameInput="";input.dataset.workspaceId=String(item.id||"");input.value=name;input.autocomplete="off";input.spellcheck=false;input.readOnly=true;input.tabIndex=-1;input.setAttribute("aria-label",`Workspace name: ${name}`);switchButton.append(input);const editLabel=`Rename ${name}`;const editButton=ds.iconButton({className:"lynx-button lynx-icon-button workspace-item__edit",icon:"edit",label:editLabel,dataset:{workspaceAction:"rename",workspaceId:String(item.id||"")}});editButton.dataset.lynxTooltip=editLabel;const deleteLabel=`Delete ${name}`;const deleteButton=ds.iconButton({className:"lynx-button lynx-icon-button workspace-item__delete",icon:"delete",label:deleteLabel,disabled:item.canDelete===false,dataset:{workspaceAction:"delete",workspaceId:String(item.id||"")}});deleteButton.dataset.lynxTooltip=deleteLabel;row.append(switchButton,editButton,deleteButton);return row;}));}
 withHost((host)=>host.subscribe(({meta})=>{const shell=meta.shell||{};const notificationCount=Number(shell.notifications?.count||0);notificationsCount.hidden=notificationCount<=0;notificationsCount.textContent=String(notificationCount);renderWorkspaceMenu(shell.workspace||{});}));
 function finishWorkspaceName(input,options={}){if(!input)return;if(options.cancel===true){input.value=input.dataset.originalValue||input.defaultValue||"";}else{const nextName=String(input.value||"").trim();const originalName=String(input.dataset.originalValue||input.defaultValue||"").trim();if(!nextName){input.value=originalName;}else if(nextName!==originalName){withHost((host)=>host.shell("workspace.rename",{workspaceId:input.dataset.workspaceId||"",name:nextName}));}}input.readOnly=true;input.tabIndex=-1;input.closest(".workspace-item")?.classList.remove("is-renaming");}
 function focusWorkspaceName(workspaceId){for(const activeInput of workspaceList.querySelectorAll("[data-workspace-name-input]:not([readonly])")){if(activeInput.dataset.workspaceId!==workspaceId)finishWorkspaceName(activeInput);}const input=Array.from(workspaceList.querySelectorAll("[data-workspace-name-input]")).find((entry)=>entry.dataset.workspaceId===workspaceId);if(input){input.readOnly=false;input.tabIndex=0;input.dataset.originalValue=input.value;input.closest(".workspace-item")?.classList.add("is-renaming");input.focus();input.select();}}
@@ -276,88 +294,5 @@ pub(crate) fn ai_source() -> SandWidgetSource {
         "Seed AI entry point.",
         html! { section class="aiPanel" { h1 { "AI" } p { "Open the local AI builder to draft and install new sand widgets." } button id="open-ai" { "Open AI" } } },
         r#"function withHost(fn){let tries=0;const tick=()=>{if(window.LinceWidgetHost){fn(window.LinceWidgetHost);return;}if(++tries<80)setTimeout(tick,25);};tick();}document.getElementById("open-ai")?.addEventListener("click",()=>withHost((host)=>host.shell("navigation.ai",{})));"#,
-    )
-}
-
-pub(crate) fn tutorial_source() -> SandWidgetSource {
-    source(
-        "lince-shell-tutorial.html",
-        "Tutorial",
-        "Seed workspace tutorial.",
-        html! {
-            section class="tutorial" {
-                p class="tutorial__eyebrow" { "Welcome to the frontend" }
-                h1 { "This screen is a workspace made of sand." }
-                p {
-                    "The frontend is the part of Lince you can touch: a large canvas, a few pinned controls, and many small tools called "
-                    strong { "sands" }
-                    ". A sand can be a note, table, calendar, terminal, document viewer, transfer panel, or anything else that fits in a widget."
-                }
-                p {
-                    "You can move sands around, resize them, pin the important ones, remove what is noise, and open the catalog to add more. Pinned sand stays near the screen, while regular sand lives in the zoomable world."
-                }
-                div class="tutorial__grid" {
-                    div {
-                        h2 { "How the sand system feels" }
-                        ul {
-                            li { strong { "Add" } " opens the sand catalog so you can choose the tool you need." }
-                            li { strong { "Edit mode" } " lets you move, resize, configure, pin, or remove sands." }
-                            li { strong { "Configure" } " connects a sand to views, servers, preview behavior, or host features when that sand supports it." }
-                            li { strong { "Pinned sands" } " become your control surface: useful for navigation, status, and tools you always want nearby." }
-                        }
-                    }
-                    div {
-                        h2 { "What the frontend is for" }
-                        ul {
-                            li { "It turns backend records, rules, and transfers into things you can see and act on." }
-                            li { "It keeps different workflows side by side instead of forcing everything into one page." }
-                            li { "It lets each sand stay focused, while the workspace holds the whole situation." }
-                            li { "It is meant to feel practical: arrange the work the way your mind already maps it." }
-                        }
-                    }
-                }
-                h2 { "The Lince idea" }
-                p {
-                    "Lince models the world with "
-                    strong { "Records" }
-                    ". A Record has a head and body for human meaning, and a "
-                    strong { "quantity" }
-                    " for state. A lot of Lince work is about changing quantities in a clear, inspectable way."
-                }
-                p {
-                    "That sounds simple on purpose. A number can mean stock, debt, need, budget, progress, votes, time, responsibility, or any other measurable state. Instead of hiding behavior behind fixed app buttons, Lince pushes you toward rules made from data."
-                }
-                h2 { "Karma is automation over records" }
-                p {
-                    strong { "Karma" }
-                    " combines record quantities, commands, frequencies, and Rust-side condition logic into equations. When a condition crosses its threshold, a consequence happens."
-                }
-                ul {
-                    li { strong { "Condition" } " is the math or logic being evaluated." }
-                    li { strong { "Frequency" } " works like a built-in cron signal, often returning zero until the scheduled moment arrives." }
-                    li { strong { "Threshold" } " decides whether the value is meaningful enough to pass through." }
-                    li { strong { "Consequence" } " can change another record quantity, call shell or SQL commands, activate transfers, or synchronize record trees between organs." }
-                }
-                p {
-                    "The docs give a monthly example: a frequency returns 1 only at the scheduled time, then multiplies by one record's quantity and copies that amount into another record. Most of the month the equation is zero, so nothing happens. On the right day, the state moves."
-                }
-                h2 { "Organs and Transfers" }
-                p {
-                    "A Lince node is an "
-                    strong { "Organ" }
-                    ". You might have a personal organ, a family organ, a work organ, or a project organ. A person can have users in many organs and access them through login."
-                }
-                p {
-                    strong { "Transfer" }
-                    " is how organs coordinate needs and contributions. It can represent a one-way donation, or a trade where one need is met by an item or service and another need is met in return. The same idea can cover a marketplace purchase, a shared project, or planning a party."
-                }
-                div class="tutorial__note" {
-                    p {
-                        "In short: the frontend gives you a humane workspace of sands. Lince underneath gives those sands a theory of records, quantities, automation, organs, and transfers. The canvas is where those ideas become usable."
-                    }
-                }
-            }
-        },
-        "",
     )
 }

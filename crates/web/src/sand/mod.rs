@@ -2,13 +2,17 @@ mod archive;
 #[path = "communication/mod.rs"]
 mod communication;
 mod document_viewer;
-#[path = "karma/mod.rs"]
-mod karma;
 mod freedoom;
+#[path = "instinct/mod.rs"]
+mod instinct;
 #[path = "kanban/mod.rs"]
 mod kanban;
+#[path = "karma/mod.rs"]
+mod karma;
 mod lince_logo_led;
 pub mod lynx_ui;
+#[path = "ontology/mod.rs"]
+mod ontology;
 mod organ;
 #[allow(dead_code)]
 mod organ_management;
@@ -98,7 +102,7 @@ impl OfficialWidgetBuilder {
 // Only current frame.js sands are wired for construction, plus `shell` (the
 // board's own chrome). Legacy sources may remain under `sand/`, but stay
 // unwired until rebuilt on the current bridge and explicitly added here.
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 19] = [
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 20] = [
     OfficialWidgetBuilder::Html {
         feature_flag: shell::FEATURE_FLAG,
         source_builder: shell::edit_source,
@@ -111,9 +115,11 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 19] = [
         feature_flag: shell::FEATURE_FLAG,
         source_builder: shell::ai_source,
     },
-    OfficialWidgetBuilder::Html {
-        feature_flag: shell::FEATURE_FLAG,
-        source_builder: shell::tutorial_source,
+    // The old flat `shell::tutorial_source` sand, rebuilt as a chaptered
+    // package so it can carry mermaid diagrams (2026-08-01).
+    OfficialWidgetBuilder::Package {
+        feature_flag: instinct::FEATURE_FLAG,
+        package_builder: instinct::package,
     },
     OfficialWidgetBuilder::Package {
         feature_flag: document_viewer::FEATURE_FLAG,
@@ -138,6 +144,10 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 19] = [
     OfficialWidgetBuilder::Package {
         feature_flag: relations::FEATURE_FLAG,
         package_builder: relations::package,
+    },
+    OfficialWidgetBuilder::Package {
+        feature_flag: ontology::FEATURE_FLAG,
+        package_builder: ontology::package,
     },
     OfficialWidgetBuilder::Package {
         feature_flag: record::FEATURE_FLAG,

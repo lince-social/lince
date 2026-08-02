@@ -9,9 +9,9 @@ use chrono::{DateTime, Utc};
 use engine::Engine;
 use engine::actions::Action;
 use nucleus::RecordKind;
+use nucleus::karma::Consequence;
 use nucleus::karma::{Cadence, CadenceStep, CivilWeekday, WeekdaySet};
 use store::records::NewRecord;
-use nucleus::karma::Consequence;
 use store::recurrence::{OccurrenceState, occurrence_request_id};
 
 /// The one-consequence shape every rule had before a rule could do more than
@@ -154,7 +154,10 @@ async fn applying_an_occurrence_writes_an_ordinary_entry() {
         .unwrap();
     assert_eq!(classification.as_deref(), Some(rent.as_str()));
     // Occurred-at is the due date, not the moment somebody clicked.
-    assert_eq!(entry.occurred_at, store::facts::instant(at("2026-02-01T00:00:00Z")));
+    assert_eq!(
+        entry.occurred_at,
+        store::facts::instant(at("2026-02-01T00:00:00Z"))
+    );
 }
 
 #[tokio::test]
@@ -269,7 +272,11 @@ async fn one_occurrence_can_come_in_higher_than_the_standing_rule() {
         .unwrap()
         .unwrap();
     assert_eq!(
-        still.consequences.declared_delta().expect("a capture rule declares an amount").to_string(),
+        still
+            .consequences
+            .declared_delta()
+            .expect("a capture rule declares an amount")
+            .to_string(),
         "-1200",
         "one month's override must not edit the rule"
     );
@@ -312,7 +319,13 @@ async fn an_applied_date_reports_what_it_actually_carried() {
         .expect("February is a date this rule produces");
     assert_eq!(february.state, OccurrenceState::Applied);
     // What moved is what is reported — not the rule's standing figure.
-    assert_eq!(february.amount.expect("a capture occurrence carries an amount").to_string(), "-1350");
+    assert_eq!(
+        february
+            .amount
+            .expect("a capture occurrence carries an amount")
+            .to_string(),
+        "-1350"
+    );
     assert!(february.entry_uid.is_some());
 }
 
@@ -370,7 +383,11 @@ async fn skipping_a_date_records_a_decision_rather_than_a_silence() {
     )
     .await
     .unwrap();
-    assert!(after.iter().all(|item| item.state != OccurrenceState::Skipped));
+    assert!(
+        after
+            .iter()
+            .all(|item| item.state != OccurrenceState::Skipped)
+    );
 }
 
 #[tokio::test]
@@ -415,7 +432,14 @@ async fn revising_a_rule_leaves_what_already_ran_alone() {
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(stored.consequences.declared_delta().expect("a capture rule declares an amount").to_string(), "-1300");
+    assert_eq!(
+        stored
+            .consequences
+            .declared_delta()
+            .expect("a capture rule declares an amount")
+            .to_string(),
+        "-1300"
+    );
     assert_eq!(stored.revision, 2);
     // The anchor was not silently reset, so future dates keep their phase.
     assert_eq!(
@@ -666,7 +690,10 @@ async fn a_date_the_landing_rule_moved_past_is_not_applicable() {
             None,
         )
         .await;
-    assert!(refused.is_err(), "an unlanded base date is not an occurrence");
+    assert!(
+        refused.is_err(),
+        "an unlanded base date is not an occurrence"
+    );
 }
 
 #[tokio::test]
@@ -1119,7 +1146,11 @@ async fn a_skipped_date_is_not_applied_by_the_wheel() {
 
     // The 1st and 3rd are owed; the 2nd was declined.
     e.fire_due_rules(at("2026-03-03T08:00:00Z")).await.unwrap();
-    assert_eq!(level(&e, &task).await, "-2", "the declined date must not run");
+    assert_eq!(
+        level(&e, &task).await,
+        "-2",
+        "the declined date must not run"
+    );
 
     // Taking the decision back makes it owed again.
     e.act(
@@ -1179,9 +1210,12 @@ async fn moving_a_card_between_columns_is_one_rule() {
     let e = engine().await;
     let (task, wip, done) = board(&e).await;
     e.act(
-        Action::ClassifyRecord {
-            target: task.clone(),
-            concept: wip.clone(),
+        Action::AssertRecord {
+            subject: task.clone(),
+            predicate: wip.clone(),
+            object: None,
+            quantity: None,
+            unit: None,
         },
         None,
     )
@@ -1453,7 +1487,11 @@ async fn a_rhythm_a_sleeping_cell_missed_is_counted_once_per_date() {
 
     // And waking again changes nothing: every date it owed is spent.
     e.fire_due_rules(at("2026-03-22T18:00:00Z")).await.unwrap();
-    assert_eq!(level(&e, &habit).await, "-3", "a second wake must add nothing");
+    assert_eq!(
+        level(&e, &habit).await,
+        "-3",
+        "a second wake must add nothing"
+    );
 }
 
 #[tokio::test]
@@ -1594,7 +1632,11 @@ async fn a_rule_can_set_a_record_to_a_figure_its_own_arithmetic_worked_out() {
 
     // Monday: the reading is -1, so the Record is set to -1.
     e.fire_due_rules(at("2026-03-02T12:00:00Z")).await.unwrap();
-    assert_eq!(level(&e, &habit).await, "-1", "the payday must set the level");
+    assert_eq!(
+        level(&e, &habit).await,
+        "-1",
+        "the payday must set the level"
+    );
 
     // The person answers it: back to zero.
     e.act(
@@ -1611,7 +1653,11 @@ async fn a_rule_can_set_a_record_to_a_figure_its_own_arithmetic_worked_out() {
     // The rest of the week the reading is zero, so nothing touches it — which
     // is the difference between a habit and a nag.
     e.fire_due_rules(at("2026-03-06T12:00:00Z")).await.unwrap();
-    assert_eq!(level(&e, &habit).await, "0", "a day with no payday must be quiet");
+    assert_eq!(
+        level(&e, &habit).await,
+        "0",
+        "a day with no payday must be quiet"
+    );
 
     // Next Monday it re-arms itself, with nobody pressing anything.
     e.fire_due_rules(at("2026-03-09T12:00:00Z")).await.unwrap();

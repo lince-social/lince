@@ -1,0 +1,73 @@
+      <!-- ========================= 5. CELLS & ORGANS ======================= -->
+      <article class="chapter" data-chapter="Cells &amp; Organs">
+        <p class="chapter__eyebrow">Chapter 5 — People</p>
+        <h1>Cells &amp; Organs</h1>
+        <p>
+          Everything so far happened in one place: your <strong>Cell</strong>. A Cell is your own
+          Lince — your records, on your machine, answering to you.
+        </p>
+        <div class="figure">
+          <div class="figure__frame">
+<pre class="mermaid">graph LR
+  A["Cell"]</pre>
+          </div>
+        </div>
+        <p>
+          Other people have their own. No Cell is inside any other, and none of them is the "main"
+          one:
+        </p>
+        <div class="figure">
+          <div class="figure__frame">
+<pre class="mermaid">graph LR
+  A["Cell"]
+  B["Cell"]
+  C["Cell"]
+  D["Cell"]</pre>
+          </div>
+        </div>
+        <p>
+          When several Cells want to hold something in common — a household budget, a team backlog, a
+          shared shopping list — they form an <strong>Organ</strong>.
+        </p>
+        <div class="figure">
+          <div class="figure__frame">
+<pre class="mermaid">graph TD
+  O["Organ"]
+  A["Cell"] --> O
+  B["Cell"] --> O
+  C["Cell"] --> O
+  D["Cell"] --> O</pre>
+          </div>
+          <p class="figure__caption">An Organ is a shared context, not a server that owns the members.</p>
+        </div>
+        <p>
+          You belong to as many Organs as you have contexts, and they do not blur into each other.
+          Work does not see your hobby; your family does not see your work backlog.
+        </p>
+        <div class="figure">
+          <div class="figure__frame">
+<pre class="mermaid">graph TD
+  B["Work"] --> A["Your Cell"]
+  C["Hobby"] --> A
+  D["Family"] --> A
+  E["Friends"] --> A</pre>
+          </div>
+        </div>
+        <p>
+          Lince as a whole is just all of it — Cells and Organs, with no centre:
+        </p>
+        <div class="figure">
+          <div class="figure__frame">
+<pre class="mermaid">graph TD
+  A["Organ"] --> O["Lince"]
+  B["Cell"] --> O
+  C["Organ"] --> O
+  D["Cell"] --> O</pre>
+          </div>
+        </div>
+        <p>
+          This is why the frontend keeps <strong>areas</strong> (in the workspace menu) separate from
+          each other, and why a Protein can filter by organ. The boundary is real, and it is the same
+          boundary the next chapter has to cross.
+        </p>
+      </article>

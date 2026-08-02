@@ -135,8 +135,8 @@ cat > "$WORK/harness.html" <<'HTML'
   // defaultProtein() used to auto-apply) plus the kind chrome a user would
   // have set, so this test still exercises the real
   // graph-subscription/rendering path instead of the new empty state.
-  const RELATIONS_TEST_PROTEIN = { source: "record", include: { links: { kinds: ["before"], direction: "both", depth: 0 } } };
-  const RELATIONS_TEST_PREFS = { kinds: ["before"], linkKind: "before", trailKind: "before" };
+  const RELATIONS_TEST_PROTEIN = { source: "record", order: [{ link: { kind: "before", higher: "from" } }], include: { links: { kinds: ["before"], direction: "both", depth: 0 } } };
+  const RELATIONS_TEST_PREFS = { kinds: ["before"], linkKind: "before", trailKind: "before", trailHigher: "from" };
   const cardMeta = {
     "card-relations": { cardState: { protein: RELATIONS_TEST_PROTEIN, relations: RELATIONS_TEST_PREFS } },
     "card-relations-b": { cardState: { protein: RELATIONS_TEST_PROTEIN, relations: RELATIONS_TEST_PREFS } },
@@ -291,6 +291,31 @@ cat > "$WORK/harness.html" <<'HTML'
     results.create_fields_empty = rc.getElementById("c-head").value === ""
       && rc.getElementById("c-body").value === "";
 
+    // ---- Protein-driven trail and focus --------------------------------------
+    window.__inbound({ type: "snapshot", id: "card-relations:graph", rows: [
+      { uid: "r_a", head: "Alpha", quantity: 0, links: [{ uid: "l_ab", from: "r_a", to: "r_b", kind: "before" }] },
+      { uid: "r_b", head: "Beta", quantity: -1, links: [{ uid: "l_ab", from: "r_a", to: "r_b", kind: "before" }, { uid: "l_bc", from: "r_b", to: "r_c", kind: "before" }] },
+      { uid: "r_c", head: "Gamma", quantity: 1, links: [{ uid: "l_bc", from: "r_b", to: "r_c", kind: "before" }, { uid: "l_cd", from: "r_c", to: "r_d", kind: "before" }] },
+      { uid: "r_d", head: "Delta", quantity: -1, links: [{ uid: "l_cd", from: "r_c", to: "r_d", kind: "before" }] },
+    ] });
+    await wait(150);
+    const modeSel = relations.contentDocument.getElementById("mode-select");
+    modeSel.value = "focus";
+    modeSel.dispatchEvent(new relations.contentWindow.Event("change"));
+    await wait(150);
+    const w = widget();
+    results.protein_rule_received = w.activeTrailRule()?.kind === "before" && w.activeTrailRule()?.higher === "from";
+    results.trail_protein_ordered = !!w.state.trailTree && w.state.trailRoot === "r_a"
+      && w.state.nodes.find((n) => n.id === "r_a").x < w.state.nodes.find((n) => n.id === "r_b").x
+      && w.state.nodes.find((n) => n.id === "r_b").x < w.state.nodes.find((n) => n.id === "r_c").x;
+    results.focus_first_negative = w.state.selectedId === "r_b";
+    window.__sent.length = 0;
+    relations.contentDocument.getElementById("trail-set-positive").click();
+    await wait(150);
+    results.focus_advances = w.state.selectedId === "r_d"
+      && window.__sent.some((m) => m.type === "act" && m.action?.action === "set-quantity" && m.action.target === "r_b" && m.action.value === 1);
+
+    if (false) { // retired preset/cascade regression block kept only as history
     // ---- TRAIL MODE (ported trail sand) --------------------------------------
     // Feed a chain r_a -before-> r_b -before-> r_c plus isolated r_d, then
     // switch to trail mode rooted at r_a via the REAL panel controls.
@@ -457,6 +482,7 @@ cat > "$WORK/harness.html" <<'HTML'
     for (let tick = 0; tick < 300; tick += 1) gravSim.tick();
     results.gravity_settles_graph = nA.y > nC.y && nB.y < nA.y && nB.y > nC.y;
 
+    }
     document.title = "RESULT=" + JSON.stringify(results);
   })();
 </script>
@@ -492,25 +518,9 @@ check remove_link_sent       "the edge chip's remove did not send remove-link"
 check create_mode_same_group "New record did not open creation mode in the same-group Record"
 check create_mode_scoped     "creation mode leaked to a different-group Record"
 check create_fields_empty    "creation mode fields were not empty/writable"
-check trail_tree_scoped      "trail tree is not scoped to the root's forward reachable set"
-check trail_layered          "trail layout is not layered by topo depth (or non-tree nodes still show)"
-check trail_chip_shown       "selecting a node in trail mode did not show the Done/Undo chip"
-check trail_gating           "Done without done parents was not refused (or a write escaped anyway)"
-check trail_cascade_writes   "Done did not write set-quantity for the node AND auto-promote the child to next"
-check trail_optimistic       "the cascade did not apply optimistically before the acks"
-check trail_settled          "a trail Action was still pending after its ack"
-check trail_undo_cascade     "Undo did not cascade the node and its promoted child back to road ahead"
-check gravity_weights        "node gravity weight is not root 1 .. leaf/outsider 0 by topo depth"
-check gravity_pull_down      "root-sinks buoyancy does not accelerate the root down and the leaves up"
-check gravity_unpins_trail   "trail mode with gravity on still pins nodes (or simulates non-tree nodes)"
-check gravity_pull_up        "root-floats buoyancy does not invert the acceleration"
-check gravity_off_pins       "turning gravity off did not restore the pinned trail layout"
-check gravity_settles_graph  "the graph-mode simulation does not stratify the tree by weight"
-check preset_saved           "preset save did not create-record kind sand + set-extension relations.trail"
-check preset_listed_live     "a saved preset did not live-appear in the preset select"
-check preset_shared_across_groups "a saved preset did not live-appear in the SECOND relations group"
-check preset_applied         "applying a preset from the select did not switch the active preset"
-check concept_steps_shown    "the concept preset's steps are not shown in the panel"
-check concept_status_writes  "the concept preset did not write set-concept for done AND the auto-promoted @next"
+check protein_rule_received  "Relation did not receive the Protein directed link-order rule"
+check trail_protein_ordered  "Trail did not retain Protein result order from the derived root"
+check focus_first_negative   "Focus did not choose the earliest negative Protein-ordered record"
+check focus_advances         "Changing the focused record did not advance to the next matching task"
 
-[ "$fail" -eq 0 ] && echo "PASS: relations graph + trail on Protein/Actions — render, scoped recordClicked/recordCreate, add/remove-link with warnings-as-advice, trail tree layout, Done/Undo cascade with gating, preset CRUD shared across groups, concept status vocabulary, node gravity tree-weight physics in both modes" || exit 1
+[ "$fail" -eq 0 ] && echo "PASS: relations graph + Protein trail/focus on Protein/Actions" || exit 1

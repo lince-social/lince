@@ -27,7 +27,10 @@ fn dates(
     from: DateTime<Utc>,
     to: DateTime<Utc>,
 ) -> Vec<DateTime<Utc>> {
-    cadence.between(anchor, from, to).expect("a valid rule").dates
+    cadence
+        .between(anchor, from, to)
+        .expect("a valid rule")
+        .dates
 }
 
 #[test]
@@ -132,7 +135,10 @@ fn a_skipped_month_does_not_end_the_series() {
     let cadence = Cadence::every_months(1).with_invalid_day(InvalidDay::Skip);
     let anchor = day(2026, 1, 31);
     let out = dates(&cadence, anchor, anchor, day(2027, 1, 1));
-    assert!(out.contains(&day(2026, 12, 31)), "December is still reached");
+    assert!(
+        out.contains(&day(2026, 12, 31)),
+        "December is still reached"
+    );
 }
 
 #[test]
@@ -447,9 +453,8 @@ fn a_count_is_of_occurrences_produced_not_of_candidates_examined() {
 fn a_closing_date_is_exclusive_so_rules_can_be_laid_end_to_end() {
     // Half-open like every other window here. A rule ending on the 1st and its
     // replacement starting on the 1st must not both claim that day.
-    let cadence = Cadence::every_months(1).until(
-        nucleus::karma::CivilDateTime::parse_canonical("2026-04-01T00:00:00.000").unwrap(),
-    );
+    let cadence = Cadence::every_months(1)
+        .until(nucleus::karma::CivilDateTime::parse_canonical("2026-04-01T00:00:00.000").unwrap());
     assert_eq!(
         dates(&cadence, day(2026, 1, 1), day(2026, 1, 1), day(2027, 1, 1)),
         vec![day(2026, 1, 1), day(2026, 2, 1), day(2026, 3, 1)]
@@ -461,9 +466,9 @@ fn a_bound_is_measured_on_the_landed_instant_not_the_one_before_landing() {
     // Landing is what the person sees and what gets applied, so it is what the
     // close has to be compared against. Comparing the pre-landing instant would
     // let a rule produce a date past its own end.
-    let cadence = Cadence::every_weeks(1).landing_on(fridays()).until(
-        nucleus::karma::CivilDateTime::parse_canonical("2026-01-09T00:00:00.000").unwrap(),
-    );
+    let cadence = Cadence::every_weeks(1)
+        .landing_on(fridays())
+        .until(nucleus::karma::CivilDateTime::parse_canonical("2026-01-09T00:00:00.000").unwrap());
     // Anchored on a Thursday: each occurrence lands on the following Friday.
     let produced = dates(&cadence, day(2026, 1, 1), day(2026, 1, 1), day(2027, 1, 1));
     assert_eq!(produced, vec![day(2026, 1, 2)]);
@@ -515,7 +520,8 @@ fn membership_recognises_exactly_what_the_generator_produces() {
             "index {index} produced {produced}, which the rule then disowned"
         );
     }
-    let not_ours = nucleus::karma::CivilDateTime::parse_canonical("2026-01-03T08:00:00.000").unwrap();
+    let not_ours =
+        nucleus::karma::CivilDateTime::parse_canonical("2026-01-03T08:00:00.000").unwrap();
     assert!(!cadence.produces_civil(anchor, not_ours));
 }
 
@@ -529,18 +535,24 @@ fn the_instant_before_a_cut_is_the_one_a_rule_last_produced() {
 
     // Strictly before: an instant the rule produces is not its own predecessor.
     assert_eq!(
-        cadence.preceding(anchor, at("2026-03-09T00:00:00Z")).unwrap(),
+        cadence
+            .preceding(anchor, at("2026-03-09T00:00:00Z"))
+            .unwrap(),
         Some(at("2026-03-02T00:00:00Z")),
         "a cut landing exactly on an occurrence belongs to the one beneath it"
     );
     assert_eq!(
-        cadence.preceding(anchor, at("2026-03-09T00:00:01Z")).unwrap(),
+        cadence
+            .preceding(anchor, at("2026-03-09T00:00:01Z"))
+            .unwrap(),
         Some(at("2026-03-09T00:00:00Z"))
     );
     // Before the anchor there is nothing to have missed.
     assert_eq!(cadence.preceding(anchor, anchor).unwrap(), None);
     assert_eq!(
-        cadence.preceding(anchor, at("2026-01-01T00:00:00Z")).unwrap(),
+        cadence
+            .preceding(anchor, at("2026-01-01T00:00:00Z"))
+            .unwrap(),
         None
     );
 }
@@ -557,7 +569,9 @@ fn looking_back_over_a_fast_rule_does_not_walk_from_the_anchor() {
     });
     let anchor = at("2026-01-01T00:00:00Z");
     assert_eq!(
-        cadence.preceding(anchor, at("2027-01-01T00:00:00.005Z")).unwrap(),
+        cadence
+            .preceding(anchor, at("2027-01-01T00:00:00.005Z"))
+            .unwrap(),
         Some(at("2027-01-01T00:00:00Z"))
     );
 }
@@ -572,7 +586,9 @@ fn looking_back_respects_the_calendar_and_the_bound() {
     });
     let anchor = at("2026-01-31T09:00:00Z");
     assert_eq!(
-        cadence.preceding(anchor, at("2026-03-31T09:00:00Z")).unwrap(),
+        cadence
+            .preceding(anchor, at("2026-03-31T09:00:00Z"))
+            .unwrap(),
         Some(at("2026-02-28T09:00:00Z")),
         "the clamped instant is the one the rule actually produced"
     );
@@ -582,7 +598,9 @@ fn looking_back_respects_the_calendar_and_the_bound() {
     counted.bound = nucleus::karma::CadenceBound::Count { occurrences: 3 };
     let anchor = at("2026-01-01T00:00:00Z");
     assert_eq!(
-        counted.preceding(anchor, at("2026-06-01T00:00:00Z")).unwrap(),
+        counted
+            .preceding(anchor, at("2026-06-01T00:00:00Z"))
+            .unwrap(),
         Some(at("2026-01-03T00:00:00Z")),
         "looking back from long after a bound finds the last instant, not none"
     );

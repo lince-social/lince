@@ -2,9 +2,8 @@ use std::collections::BTreeMap;
 
 use nucleus::karma::{
     Cadence, CadenceBound, CalendarAdvance, CalendarBoundary, CalendarBoundaryKind,
-    CalendarDiscontinuity,
-    CalendarSchedule, CanonicalHash, CivilDateTime, CivilTime, CivilWeekday, DayOfMonth,
-    FoldPolicy, GapPolicy, InactiveGapPolicy, InvalidDay, KarmaBoundaryError,
+    CalendarDiscontinuity, CalendarSchedule, CanonicalHash, CivilDateTime, CivilTime, CivilWeekday,
+    DayOfMonth, FoldPolicy, GapPolicy, InactiveGapPolicy, InvalidDay, KarmaBoundaryError,
     LocalTimeResolution, MissedPolicy, OverloadPolicy, RephasePolicy, TimeZoneId, TimeZoneProvider,
     TimerPolicy, TimestampMs, TzdbRevision, TzdbVersion, WeekdaySet, canonical_hash,
 };
@@ -577,11 +576,7 @@ fn calendar_wire_vocabulary_has_a_golden_hash() {
             FoldPolicy::Both,
             FoldPolicy::Pause,
         ],
-        [
-            InvalidDay::Skip,
-            InvalidDay::Clamp,
-            InvalidDay::Pause,
-        ],
+        [InvalidDay::Skip, InvalidDay::Clamp, InvalidDay::Pause],
         weekdays,
         rules,
         resolutions,

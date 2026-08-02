@@ -81,8 +81,9 @@ const MS_PER_DAY: i64 = 86_400_000;
 
 /// What a step means when the calendar part lands on a day the month does not
 /// have — the "31st of February" question.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-#[derive(Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize,
+)]
 #[serde(rename_all = "kebab-case")]
 pub enum InvalidDay {
     /// Pull back to the month's last day. A rule anchored on the 31st means the
@@ -102,8 +103,9 @@ pub enum InvalidDay {
 ///
 /// Every field is a count, not a duration, because months are not a fixed
 /// length and must survive to the calendar arithmetic intact.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-#[derive(Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize,
+)]
 #[serde(default)]
 pub struct CadenceStep {
     pub years: u32,
@@ -155,8 +157,9 @@ impl CadenceStep {
 /// dated reminder and a one-off transfer are all `Count(1)`: the rule produces
 /// its anchor and retires. There is no separate one-shot type, and nothing
 /// downstream has to special-case one.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-#[derive(Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize,
+)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
 pub enum CadenceBound {
     /// Repeats until something outside the schedule stops it.
@@ -309,8 +312,7 @@ impl Cadence {
     /// Whether a calendar step can produce nothing for a given index, which is
     /// the only reason an occurrence count can drift from a candidate index.
     fn can_skip_a_candidate(&self) -> bool {
-        self.invalid_day != InvalidDay::Clamp
-            && self.every.calendar_months().unwrap_or(0) > 0
+        self.invalid_day != InvalidDay::Clamp && self.every.calendar_months().unwrap_or(0) > 0
     }
 
     // ---------------------------------------------------------------- generator
@@ -498,7 +500,13 @@ impl Cadence {
 
     /// A cheap lower bound on the index that could reach `target`. Never
     /// overshoots, so a caller may always scan upward from it.
-    fn index_floor(&self, anchor: NaiveDateTime, target: NaiveDateTime, months: u32, fixed: i64) -> u64 {
+    fn index_floor(
+        &self,
+        anchor: NaiveDateTime,
+        target: NaiveDateTime,
+        months: u32,
+        fixed: i64,
+    ) -> u64 {
         if target <= anchor {
             return 0;
         }
@@ -710,7 +718,11 @@ impl Cadence {
         let horizon = after
             .checked_add_signed(Duration::milliseconds(span))
             .unwrap_or(DateTime::<Utc>::MAX_UTC);
-        Ok(self.between(anchor, after, horizon)?.dates.into_iter().next())
+        Ok(self
+            .between(anchor, after, horizon)?
+            .dates
+            .into_iter()
+            .next())
     }
 
     /// The last instant this rule produced strictly *before* `before`.

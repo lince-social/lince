@@ -4,9 +4,38 @@
 use chrono::Utc;
 use nucleus::DecimalValue;
 use nucleus::graph::Edge;
-use sqlx::{Row, SqlitePool};
+use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 
 use crate::StoreError;
+use crate::sync_ops::OpKind;
+
+/// The `set` op payload for one assertion row: everything an importer needs to
+/// recreate it under the same uid (Ontology §11 — assert/retract per tuple,
+/// later HLC wins).
+fn assertion_op_value(
+    subject_uid: &str,
+    predicate_uid: &str,
+    object_uid: Option<&str>,
+    role: &str,
+    quantity: Option<DecimalValue>,
+    unit_uid: Option<&str>,
+    asserted_by: Option<&str>,
+    created_at: &str,
+) -> String {
+    let quantity = quantity.map(crate::exact::decimal_columns);
+    serde_json::json!({
+        "subject_uid": subject_uid,
+        "predicate_uid": predicate_uid,
+        "object_uid": object_uid,
+        "role": role,
+        "quantity_mantissa": quantity.as_ref().map(|pair| pair.0.as_str()),
+        "quantity_scale": quantity.as_ref().map(|pair| pair.1),
+        "unit_uid": unit_uid,
+        "asserted_by": asserted_by,
+        "created_at": created_at,
+    })
+    .to_string()
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AssertionRole {
@@ -130,6 +159,7 @@ pub async fn assert(pool: &SqlitePool, new: NewAssertion<'_>) -> Result<String, 
         return Ok(existing.get("uid"));
     }
     let uid = nucleus::new_uid("a");
+    let now = Utc::now().to_rfc3339();
     let quantity = new.quantity.map(crate::exact::decimal_columns);
     sqlx::query(
         "INSERT INTO record_assertion
@@ -146,8 +176,26 @@ pub async fn assert(pool: &SqlitePool, new: NewAssertion<'_>) -> Result<String, 
     .bind(quantity.as_ref().map(|pair| pair.1))
     .bind(new.unit_uid)
     .bind(new.asserted_by)
-    .bind(Utc::now().to_rfc3339())
+    .bind(&now)
     .execute(pool)
+    .await?;
+    crate::sync_ops::log_local(
+        pool,
+        "record_assertion",
+        &uid,
+        "",
+        OpKind::Set,
+        Some(assertion_op_value(
+            new.subject_uid,
+            new.predicate_uid,
+            new.object_uid,
+            new.role.as_str(),
+            new.quantity,
+            new.unit_uid,
+            new.asserted_by,
+            &now,
+        )),
+    )
     .await?;
     Ok(uid)
 }
@@ -177,7 +225,7 @@ pub async fn retract(
     uid: &str,
     actor_uid: Option<&str>,
 ) -> Result<bool, StoreError> {
-    Ok(sqlx::query(
+    let retracted = sqlx::query(
         "UPDATE record_assertion SET retracted_at = ?, retracted_by = ?
           WHERE uid = ? AND retracted_at IS NULL",
     )
@@ -187,7 +235,12 @@ pub async fn retract(
     .execute(pool)
     .await?
     .rows_affected()
-        > 0)
+        > 0;
+    if retracted {
+        crate::sync_ops::log_local(pool, "record_assertion", uid, "", OpKind::Tombstone, None)
+            .await?;
+    }
+    Ok(retracted)
 }
 
 pub async fn set_identity(
@@ -198,6 +251,18 @@ pub async fn set_identity(
 ) -> Result<Option<String>, StoreError> {
     let mut transaction = pool.begin().await?;
     let now = Utc::now().to_rfc3339();
+    let displaced: Vec<String> = sqlx::query(
+        "SELECT uid FROM record_assertion
+          WHERE subject_uid = ? AND role = 'identity' AND retracted_at IS NULL
+            AND predicate_uid IS NOT ?",
+    )
+    .bind(subject_uid)
+    .bind(predicate_uid)
+    .fetch_all(&mut *transaction)
+    .await?
+    .into_iter()
+    .map(|row| row.get("uid"))
+    .collect();
     sqlx::query(
         "UPDATE record_assertion SET retracted_at = ?, retracted_by = ?
           WHERE subject_uid = ? AND role = 'identity' AND retracted_at IS NULL
@@ -209,6 +274,17 @@ pub async fn set_identity(
     .bind(predicate_uid)
     .execute(&mut *transaction)
     .await?;
+    for uid in &displaced {
+        crate::sync_ops::log_local_tx(
+            &mut transaction,
+            "record_assertion",
+            uid,
+            "",
+            OpKind::Tombstone,
+            None,
+        )
+        .await?;
+    }
     let Some(predicate_uid) = predicate_uid else {
         transaction.commit().await?;
         return Ok(None);
@@ -229,6 +305,24 @@ pub async fn set_identity(
                 .bind(&uid)
                 .execute(&mut *transaction)
                 .await?;
+            crate::sync_ops::log_local_tx(
+                &mut transaction,
+                "record_assertion",
+                &uid,
+                "",
+                OpKind::Set,
+                Some(assertion_op_value(
+                    subject_uid,
+                    predicate_uid,
+                    None,
+                    "identity",
+                    None,
+                    None,
+                    actor_uid,
+                    &now,
+                )),
+            )
+            .await?;
         }
         transaction.commit().await?;
         return Ok(Some(uid));
@@ -245,6 +339,24 @@ pub async fn set_identity(
     .bind(actor_uid)
     .bind(&now)
     .execute(&mut *transaction)
+    .await?;
+    crate::sync_ops::log_local_tx(
+        &mut transaction,
+        "record_assertion",
+        &uid,
+        "",
+        OpKind::Set,
+        Some(assertion_op_value(
+            subject_uid,
+            predicate_uid,
+            None,
+            "identity",
+            None,
+            None,
+            actor_uid,
+            &now,
+        )),
+    )
     .await?;
     transaction.commit().await?;
     Ok(Some(uid))
@@ -404,6 +516,187 @@ pub async fn retract_tuple(
         return Ok(false);
     };
     retract(pool, &row.get::<String, _>("uid"), actor_uid).await
+}
+
+/// Replace selected ordinary unary assertions as part of a caller-owned
+/// transaction. This deliberately cannot touch identity or binary assertions:
+/// Kanban state is a set of ordinary tags, never a Record's primary identity.
+pub async fn transition_unary(
+    tx: &mut Transaction<'_, Sqlite>,
+    subject_uid: &str,
+    retract_predicates: &[String],
+    assert_predicates: &[String],
+    actor_uid: Option<&str>,
+) -> Result<(), StoreError> {
+    let now = Utc::now().to_rfc3339();
+    for predicate_uid in retract_predicates {
+        let displaced: Vec<String> = sqlx::query(
+            "SELECT uid FROM record_assertion
+              WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS NULL
+                AND role = 'ordinary' AND retracted_at IS NULL",
+        )
+        .bind(subject_uid)
+        .bind(predicate_uid)
+        .fetch_all(&mut **tx)
+        .await?
+        .into_iter()
+        .map(|row| row.get("uid"))
+        .collect();
+        sqlx::query(
+            "UPDATE record_assertion SET retracted_at = ?, retracted_by = ?
+              WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS NULL
+                AND role = 'ordinary' AND retracted_at IS NULL",
+        )
+        .bind(&now)
+        .bind(actor_uid)
+        .bind(subject_uid)
+        .bind(predicate_uid)
+        .execute(&mut **tx)
+        .await?;
+        for uid in &displaced {
+            crate::sync_ops::log_local_tx(tx, "record_assertion", uid, "", OpKind::Tombstone, None)
+                .await?;
+        }
+    }
+    for predicate_uid in assert_predicates {
+        let existing = sqlx::query(
+            "SELECT 1 FROM record_assertion
+              WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS NULL
+                AND role = 'ordinary' AND retracted_at IS NULL",
+        )
+        .bind(subject_uid)
+        .bind(predicate_uid)
+        .fetch_optional(&mut **tx)
+        .await?;
+        if existing.is_some() {
+            continue;
+        }
+        let uid = nucleus::new_uid("a");
+        sqlx::query(
+            "INSERT INTO record_assertion
+               (uid, subject_uid, predicate_uid, object_uid, role, asserted_by, created_at)
+             VALUES (?, ?, ?, NULL, 'ordinary', ?, ?)",
+        )
+        .bind(&uid)
+        .bind(subject_uid)
+        .bind(predicate_uid)
+        .bind(actor_uid)
+        .bind(&now)
+        .execute(&mut **tx)
+        .await?;
+        crate::sync_ops::log_local_tx(
+            tx,
+            "record_assertion",
+            &uid,
+            "",
+            OpKind::Set,
+            Some(assertion_op_value(
+                subject_uid,
+                predicate_uid,
+                None,
+                "ordinary",
+                None,
+                None,
+                actor_uid,
+                &now,
+            )),
+        )
+        .await?;
+    }
+    Ok(())
+}
+
+/// Atomically turn a unary assertion `A @task` into the binary `A @task
+/// [object]`: retract the unary tuple (if present) and assert the binary one
+/// under the same predicate, in one transaction. A convenience wrapper over
+/// retract+assert — no new storage model.
+pub async fn refine(
+    pool: &SqlitePool,
+    subject_uid: &str,
+    predicate_uid: &str,
+    object_uid: &str,
+    actor_uid: Option<&str>,
+) -> Result<String, StoreError> {
+    let mut transaction = pool.begin().await?;
+    let now = Utc::now().to_rfc3339();
+    if let Some(row) = sqlx::query(
+        "SELECT uid FROM record_assertion
+          WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS NULL
+            AND retracted_at IS NULL",
+    )
+    .bind(subject_uid)
+    .bind(predicate_uid)
+    .fetch_optional(&mut *transaction)
+    .await?
+    {
+        let unary_uid: String = row.get("uid");
+        sqlx::query(
+            "UPDATE record_assertion SET retracted_at = ?, retracted_by = ?
+              WHERE uid = ?",
+        )
+        .bind(&now)
+        .bind(actor_uid)
+        .bind(&unary_uid)
+        .execute(&mut *transaction)
+        .await?;
+        crate::sync_ops::log_local_tx(
+            &mut transaction,
+            "record_assertion",
+            &unary_uid,
+            "",
+            OpKind::Tombstone,
+            None,
+        )
+        .await?;
+    }
+    let existing = sqlx::query(
+        "SELECT uid FROM record_assertion
+          WHERE subject_uid = ? AND predicate_uid = ? AND object_uid = ?
+            AND retracted_at IS NULL",
+    )
+    .bind(subject_uid)
+    .bind(predicate_uid)
+    .bind(object_uid)
+    .fetch_optional(&mut *transaction)
+    .await?;
+    if let Some(existing) = existing {
+        transaction.commit().await?;
+        return Ok(existing.get("uid"));
+    }
+    let uid = nucleus::new_uid("a");
+    sqlx::query(
+        "INSERT INTO record_assertion
+           (uid, subject_uid, predicate_uid, object_uid, role, asserted_by, created_at)
+         VALUES (?, ?, ?, ?, 'ordinary', ?, ?)",
+    )
+    .bind(&uid)
+    .bind(subject_uid)
+    .bind(predicate_uid)
+    .bind(object_uid)
+    .bind(actor_uid)
+    .bind(&now)
+    .execute(&mut *transaction)
+    .await?;
+    crate::sync_ops::log_local_tx(
+        &mut transaction,
+        "record_assertion",
+        &uid,
+        "",
+        OpKind::Set,
+        Some(assertion_op_value(
+            subject_uid,
+            predicate_uid,
+            Some(object_uid),
+            "ordinary",
+            None,
+            None,
+            actor_uid,
+            &now,
+        )),
+    )
+    .await?;
+    transaction.commit().await?;
+    Ok(uid)
 }
 
 pub async fn retract_predicate_within_set(

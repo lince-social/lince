@@ -3,7 +3,7 @@
 //! each fact off the engine's `fact_bus`, forwarding every returned
 //! `ServerMessage` to the client. No socket is needed to test it.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use engine::action_intent::ActionIntentSession;
@@ -25,6 +25,9 @@ pub struct Session {
     /// Active subscriptions: subscription id -> the Protein to re-run.
     subscriptions: HashMap<String, Protein>,
     joined_rooms: Vec<String>,
+    /// Records this connection collab-edits: a committed fact touching one of
+    /// them pushes a fresh `CollabChange` snapshot (Ontology §11 "Collab").
+    collab_records: HashSet<String>,
     action_intent: Option<ActionIntentSession>,
     action_intent_initialization_error: Option<(String, Option<String>)>,
     action_intent_initialized: bool,
@@ -44,6 +47,7 @@ impl Session {
             connection_id: connection_id.into(),
             subscriptions: HashMap::new(),
             joined_rooms: Vec::new(),
+            collab_records: HashSet::new(),
             action_intent: None,
             action_intent_initialization_error: None,
             action_intent_initialized: false,
@@ -182,6 +186,55 @@ impl Session {
                     });
                 }
                 vec![] // presence is fire-and-forget; senders don't echo to self
+            }
+            ClientMessage::CollabJoin { id, record_uid } => {
+                match self.engine.collab_snapshot(&record_uid).await {
+                    Ok(snapshot_base64) => {
+                        self.collab_records.insert(record_uid.clone());
+                        vec![ServerMessage::CollabState {
+                            id,
+                            record_uid,
+                            snapshot_base64,
+                        }]
+                    }
+                    Err(e) => {
+                        let code = e.code().map(str::to_string);
+                        vec![ServerMessage::Error {
+                            id,
+                            message: e.to_string(),
+                            code,
+                        }]
+                    }
+                }
+            }
+            ClientMessage::CollabLeave { record_uid } => {
+                self.collab_records.remove(&record_uid);
+                vec![]
+            }
+            ClientMessage::CollabUpdate {
+                id,
+                record_uid,
+                update_base64,
+            } => {
+                // Success answers nothing here: the merge commits a refresh
+                // fact, and `on_fact` echoes the merged doc back as a
+                // `CollabChange` to every joined session (including this one —
+                // Loro dedupes by version vector, so the echo is harmless).
+                match self
+                    .engine
+                    .apply_client_crdt_update(&record_uid, &update_base64)
+                    .await
+                {
+                    Ok(()) => vec![],
+                    Err(e) => {
+                        let code = e.code().map(str::to_string);
+                        vec![ServerMessage::Error {
+                            id,
+                            message: e.to_string(),
+                            code,
+                        }]
+                    }
+                }
             }
             ClientMessage::TerminalOpen { id, .. }
             | ClientMessage::TerminalInput { id, .. }
@@ -357,6 +410,18 @@ impl Session {
     /// re-send, correct if not yet minimal.
     pub async fn on_fact(&self, fact: &Fact) -> Vec<ServerMessage> {
         let mut out = Vec::new();
+        // Live collab: any fact touching a joined record means its record-doc
+        // may have changed (this client's own update, a sibling session, or a
+        // peer Organ's sync import — all commit a refresh fact). Push the
+        // merged doc; client-side Loro imports dedupe by version vector.
+        if self.collab_records.contains(&fact.record_uid) {
+            if let Ok(snapshot_base64) = self.engine.collab_snapshot(&fact.record_uid).await {
+                out.push(ServerMessage::CollabChange {
+                    record_uid: fact.record_uid.clone(),
+                    snapshot_base64,
+                });
+            }
+        }
         let signer_actor = self.available_signer_actor().await;
         for (id, protein) in &self.subscriptions {
             if !protein::affects(protein, fact) {

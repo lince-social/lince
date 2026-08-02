@@ -572,6 +572,115 @@ async fn binary_assertion_actions_annotate_affected_records() {
 }
 
 #[tokio::test]
+async fn refine_turns_unary_assertion_into_binary_under_same_predicate() {
+    let e = engine().await;
+    let a = plain(&e, "refine-a").await;
+    let project = plain(&e, "refine-project").await;
+    e.act(
+        Action::CreateConcept {
+            lingua: "g_local".into(),
+            name: "task".into(),
+            parents: vec![],
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    e.act(
+        Action::AssertRecord {
+            subject: a.clone(),
+            predicate: "task".into(),
+            object: None,
+            quantity: None,
+            unit: None,
+        },
+        None,
+    )
+    .await
+    .unwrap();
+
+    let out = e
+        .act(
+            Action::RefineAssertion {
+                subject: a.clone(),
+                predicate: "task".into(),
+                object: project.clone(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    assert_eq!(out.facts.len(), 2);
+
+    let active = store::assertions::list_active(&e.store.pool)
+        .await
+        .unwrap();
+    let task_predicate = store::concepts::resolve(&e.store.pool, "task")
+        .await
+        .unwrap()
+        .unwrap();
+    let matching: Vec<_> = active
+        .iter()
+        .filter(|row| row.subject_uid == a && row.predicate_uid == task_predicate)
+        .collect();
+    assert_eq!(matching.len(), 1, "old unary tuple must be retracted");
+    assert_eq!(matching[0].object_uid.as_deref(), Some(project.as_str()));
+}
+
+#[tokio::test]
+async fn refine_is_idempotent_when_called_twice() {
+    let e = engine().await;
+    let a = plain(&e, "refine-idem-a").await;
+    let project = plain(&e, "refine-idem-project").await;
+    e.act(
+        Action::CreateConcept {
+            lingua: "g_local".into(),
+            name: "task".into(),
+            parents: vec![],
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    e.act(
+        Action::AssertRecord {
+            subject: a.clone(),
+            predicate: "task".into(),
+            object: None,
+            quantity: None,
+            unit: None,
+        },
+        None,
+    )
+    .await
+    .unwrap();
+
+    let first = e
+        .act(
+            Action::RefineAssertion {
+                subject: a.clone(),
+                predicate: "task".into(),
+                object: project.clone(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let second = e
+        .act(
+            Action::RefineAssertion {
+                subject: a.clone(),
+                predicate: "task".into(),
+                object: project.clone(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    assert_eq!(first.created, second.created);
+}
+
+#[tokio::test]
 async fn assertion_order_rewrites_adjacent_relationships() {
     let e = engine().await;
     let a = plain(&e, "order-a").await;

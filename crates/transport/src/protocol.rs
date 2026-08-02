@@ -66,6 +66,28 @@ pub enum ClientMessage {
         room: String,
         payload: Value,
     },
+    /// Join a record's live collab doc (Ontology §11 "Collab"): the reply is a
+    /// `CollabState` snapshot of the record-doc; afterwards every change to the
+    /// doc (another client here, or a peer Organ syncing in) is pushed as a
+    /// `CollabChange`. Collab frames are a host capability like terminals —
+    /// the write is attributed to the ORGAN in the op log, not a Person.
+    CollabJoin {
+        id: String,
+        record_uid: String,
+    },
+    CollabLeave {
+        record_uid: String,
+    },
+    /// A client-side Loro update (base64 update bytes since the client's last
+    /// send). The engine merges it into the record-doc, logs ONE cumulative
+    /// crdt op for peer sync, and materializes head/body back to SQLite.
+    /// Success is signaled by the resulting `CollabChange` echo; only failures
+    /// answer directly (an `Error` frame carrying `id`).
+    CollabUpdate {
+        id: String,
+        record_uid: String,
+        update_base64: String,
+    },
     /// Open an ephemeral PTY owned by this transport connection. Terminal I/O
     /// is an explicit host capability, never Protein data or a Ledger write.
     TerminalOpen {
@@ -143,6 +165,20 @@ pub enum ServerMessage {
         message: String,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         code: Option<String>,
+    },
+    /// Reply to `CollabJoin`: the record-doc's full snapshot (base64 Loro
+    /// snapshot bytes) — import it into a fresh client doc.
+    CollabState {
+        id: String,
+        record_uid: String,
+        snapshot_base64: String,
+    },
+    /// The record-doc changed (any writer: this client, a sibling session, or
+    /// a peer Organ syncing in). Carries the full snapshot; Loro imports are
+    /// idempotent by version vector, so over-delivery is harmless.
+    CollabChange {
+        record_uid: String,
+        snapshot_base64: String,
     },
     /// A message from another session in a joined room.
     LaneEvent {

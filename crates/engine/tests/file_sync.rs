@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use engine::Engine;
 use engine::actions::Action;
-use engine::file_sync::{FileSyncState, spawn_configured_watchers};
+use engine::file_sync::{FileSyncState, spawn_configured_watchers, spawn_supervisor};
 use nucleus::RecordKind;
 
 async fn cell_with_local_organ() -> (Engine, String) {
@@ -256,4 +256,74 @@ async fn boot_wiring_spawns_a_watch_loop_only_for_organs_enabled_in_their_extens
     for handle in handles {
         handle.abort();
     }
+}
+
+#[tokio::test]
+async fn supervisor_starts_and_stops_watch_loops_live_without_reboot() {
+    let (e, organ) = cell_with_local_organ().await;
+    let e = Arc::new(e);
+    let dir = tmp_dir();
+
+    let _supervisor = spawn_supervisor(e.clone());
+
+    // Not configured yet: the seed pass finds nothing to spawn.
+    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+    assert!(std::fs::read_dir(&dir).unwrap().next().is_none());
+
+    let uid = plain(&e, "Live", "content").await;
+
+    // Enabling via a live SetExtension action (no reboot) must start the
+    // watch loop and mirror the existing record to disk.
+    e.act(
+        Action::SetExtension {
+            target: organ.clone(),
+            namespace: "lince.file_sync".to_string(),
+            fds: serde_json::json!({ "enabled": true, "path": dir.to_string_lossy() }),
+        },
+        None,
+    )
+    .await
+    .unwrap();
+
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    loop {
+        if dir.join("Live.md").exists() {
+            break;
+        }
+        assert!(
+            std::time::Instant::now() < deadline,
+            "watch loop never started"
+        );
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    }
+    assert_eq!(
+        std::fs::read_to_string(dir.join("Live.md")).unwrap(),
+        "content"
+    );
+
+    // Disabling live must stop the watch loop: a disk edit afterward must
+    // NOT flow back into the record.
+    e.act(
+        Action::SetExtension {
+            target: organ.clone(),
+            namespace: "lince.file_sync".to_string(),
+            fds: serde_json::json!({ "enabled": false, "path": dir.to_string_lossy() }),
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+
+    std::fs::write(dir.join("Live.md"), "changed after disable").unwrap();
+    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+
+    let row = store::records::get(&e.store.pool, &uid)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        row.body, "content",
+        "disabled watch loop must not apply disk edits"
+    );
 }

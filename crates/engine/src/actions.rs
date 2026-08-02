@@ -57,6 +57,18 @@ pub enum Action {
         target: String,
         value: f64,
     },
+    /// Atomically change ordinary unary state assertions and, optionally, a
+    /// Record quantity. This is the Kanban move primitive: it never changes a
+    /// Record identity, and its Fact plus assertion edits share one commit.
+    TransitionRecord {
+        subject: String,
+        #[serde(default)]
+        retract: Vec<String>,
+        #[serde(default)]
+        assert: Vec<String>,
+        #[serde(default)]
+        quantity: Option<f64>,
+    },
     AddQuantity {
         target: String,
         delta: f64,
@@ -308,6 +320,18 @@ pub enum Action {
         namespace: String,
         fds: serde_json::Value,
     },
+    /// Set a contact's trust level (blueprint XV): `unknown` | `known` |
+    /// `blocked`. Blocking is just this with `trust: "blocked"` — no
+    /// separate action.
+    SetContactTrust {
+        target: String,
+        trust: String,
+    },
+    /// Set a contact's local proximity ranking (never exported, blueprint XV).
+    SetContactProximity {
+        target: String,
+        proximity: u32,
+    },
     /// Undo a prior fact by appending its inverse (compensation, blueprint II.3):
     /// an append-only Ledger never deletes, so undo is a new fact with the
     /// opposite delta, caused by the original. Metadata/annotation facts
@@ -408,6 +432,13 @@ pub enum Action {
     },
     RetractAssertion {
         assertion: String,
+    },
+    /// Atomically turn a unary assertion `A @task` into the binary `A @task
+    /// [object]` under the same predicate — retract+assert as one step.
+    RefineAssertion {
+        subject: String,
+        predicate: String,
+        object: String,
     },
     RetractRecord {
         subject: String,
@@ -1825,6 +1856,76 @@ impl Engine {
                         .await?;
                 }
             }
+            Action::TransitionRecord {
+                subject,
+                retract,
+                assert,
+                quantity,
+            } => {
+                let subject_uid = self.resolve(&subject).await?;
+                self.reject_direct_transfer_record_mutation(&subject_uid)
+                    .await?;
+                let mut retract_uids = Vec::new();
+                for concept in retract {
+                    let uid = store::concepts::resolve(&self.store.pool, &concept)
+                        .await?
+                        .ok_or_else(|| EngineError::UnknownRecord(concept))?;
+                    if !retract_uids.contains(&uid) {
+                        retract_uids.push(uid);
+                    }
+                }
+                let mut assert_uids = Vec::new();
+                for concept in assert {
+                    let uid = store::concepts::resolve(&self.store.pool, &concept)
+                        .await?
+                        .ok_or_else(|| EngineError::UnknownRecord(concept))?;
+                    if !assert_uids.contains(&uid) {
+                        assert_uids.push(uid);
+                    }
+                }
+                // A destination tag wins if configuration accidentally lists it
+                // on both sides; otherwise this transition would retract state
+                // it has just established.
+                retract_uids.retain(|uid| !assert_uids.contains(uid));
+
+                let signer = self.signer.lock().await.clone();
+                let mut tx = self.store.pool.begin().await?;
+                store::assertions::transition_unary(
+                    &mut tx,
+                    &subject_uid,
+                    &retract_uids,
+                    &assert_uids,
+                    actor.as_deref(),
+                )
+                .await?;
+                let fact = if let Some(value) = quantity {
+                    let current = store::records::quantity_in_transaction(&mut tx, &subject_uid)
+                        .await?
+                        .ok_or_else(|| EngineError::UnknownRecord(subject_uid.clone()))?;
+                    let target = store::exact::from_f64(value);
+                    if target == current {
+                        None
+                    } else {
+                        crate::append::append_one_in_transaction(
+                            &mut tx,
+                            NewFact::quantity(
+                                subject_uid.clone(),
+                                store::exact::difference(target, current)?,
+                                Cause::user_edit(),
+                            ),
+                            now,
+                            signer.as_ref(),
+                        )
+                        .await?
+                    }
+                } else {
+                    None
+                };
+                tx.commit().await?;
+                if let Some(fact) = fact {
+                    outcome.facts = self.observe_committed_fact(fact, now).await?;
+                }
+            }
             Action::CaptureEntry {
                 target,
                 amount,
@@ -2587,7 +2688,9 @@ impl Engine {
             Action::EditRecordText { target, head, body } => {
                 let uid = self.resolve(&target).await?;
                 self.reject_direct_transfer_record_mutation(&uid).await?;
-                store::records::set_text(&self.store.pool, &uid, head.as_deref(), body.as_deref())
+                // Through the record-doc (collab): converges with concurrent
+                // remote edits and logs ONE cumulative crdt op.
+                self.write_record_text(&uid, head.as_deref(), body.as_deref())
                     .await?;
                 outcome.facts = self
                     .annotate(
@@ -2627,6 +2730,35 @@ impl Engine {
                         uid,
                         actor,
                         serde_json::json!({ "extension": namespace }),
+                        now,
+                    )
+                    .await?;
+            }
+            Action::SetContactTrust { target, trust } => {
+                let uid = self.resolve(&target).await?;
+                if !matches!(trust.as_str(), "unknown" | "known" | "blocked") {
+                    return Err(EngineError::Consequence(format!(
+                        "invalid trust `{trust}`: must be unknown, known, or blocked"
+                    )));
+                }
+                store::organs::set_trust(&self.store.pool, &uid, &trust).await?;
+                outcome.facts = self
+                    .annotate(
+                        uid,
+                        actor,
+                        serde_json::json!({ "contact_trust": trust }),
+                        now,
+                    )
+                    .await?;
+            }
+            Action::SetContactProximity { target, proximity } => {
+                let uid = self.resolve(&target).await?;
+                store::organs::set_proximity(&self.store.pool, &uid, proximity).await?;
+                outcome.facts = self
+                    .annotate(
+                        uid,
+                        actor,
+                        serde_json::json!({ "contact_proximity": proximity }),
                         now,
                     )
                     .await?;
@@ -2855,6 +2987,35 @@ impl Engine {
                         targets,
                         actor,
                         serde_json::json!({ "assertion_retracted": assertion }),
+                        now,
+                    )
+                    .await?;
+            }
+            Action::RefineAssertion {
+                subject,
+                predicate,
+                object,
+            } => {
+                let subject_uid = self.resolve(&subject).await?;
+                let object_uid = self.resolve(&object).await?;
+                let predicate_uid = store::concepts::resolve(&self.store.pool, &predicate)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(predicate))?;
+                outcome.created = Some(
+                    store::assertions::refine(
+                        &self.store.pool,
+                        &subject_uid,
+                        &predicate_uid,
+                        &object_uid,
+                        actor.as_deref(),
+                    )
+                    .await?,
+                );
+                outcome.facts = self
+                    .annotate_many(
+                        vec![subject_uid, object_uid],
+                        actor,
+                        serde_json::json!({ "assertion_refined": outcome.created }),
                         now,
                     )
                     .await?;
@@ -6148,13 +6309,8 @@ impl Engine {
                                 existing.kind
                             )));
                         }
-                        store::records::set_text(
-                            &self.store.pool,
-                            &existing.uid,
-                            Some(&head),
-                            Some(&body),
-                        )
-                        .await?;
+                        self.write_record_text(&existing.uid, Some(&head), Some(&body))
+                            .await?;
                         if existing.quantity.is_zero() {
                             Box::pin(self.act(
                                 Action::SetQuantity {

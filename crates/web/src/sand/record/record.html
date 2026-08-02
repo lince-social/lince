@@ -292,6 +292,7 @@
     // ---- state ----------------------------------------------------------------
     let unsubscribe = null;
     let creating = false;
+    let createSeed = {};
     let row = null;           // the focused record's latest protein row
     let fieldsDirty = false;  // user is typing: live updates must not clobber
     let workDirty = false;
@@ -359,6 +360,7 @@
     function focusRecord(uid) {
       expand();
       if (typeof unsubscribe === "function") unsubscribe();
+      void startCollab(String(uid)); // live body: bind the shared Loro doc
       fieldsDirty = false;
       workDirty = false;
       workLogEdit = null;
@@ -392,6 +394,7 @@
     function openCreate(seed) {
       expand();
       creating = true;
+      createSeed = seed && typeof seed === "object" ? seed : {};
       $("title").textContent = "New record";
       $("focus").hidden = true;
       $("c-error").hidden = true;
@@ -405,6 +408,7 @@
     }
     function closeCreate() {
       creating = false;
+      createSeed = {};
       $("title").textContent = "Record";
       $("create").classList.remove("open");
     }
@@ -426,6 +430,16 @@
           head, body, quantity,
         });
         const created = outcome && outcome.created;
+        // Callers such as Kanban may seed ordinary unary assertions for a new
+        // Record. These are deliberately tags, never its primary identity.
+        const assertions = Array.isArray(createSeed.assertions) ? createSeed.assertions : [];
+        if (created) {
+          for (const predicate of assertions) {
+            if (typeof predicate === "string" && predicate.trim()) {
+              await act({ action: "assert-record", subject: created, predicate });
+            }
+          }
+        }
         if (slug && created) {
           await act({ action: "set-slug", target: created, slug });
         }
@@ -452,6 +466,7 @@
     function goIdle() {
       if (typeof unsubscribe === "function") unsubscribe();
       unsubscribe = null;
+      stopCollab();
       row = null;
       creating = false;
       fieldsDirty = false;
@@ -507,7 +522,11 @@
         $("f-head").value = row.head || "";
         $("f-slug").value = row.slug || "";
         $("f-quantity").value = String(row.quantity ?? 0);
-        $("f-body").value = row.body || "";
+        // With a live collab doc bound, the doc owns the body — a protein row
+        // (possibly staler than the doc) must not clobber in-flight merges.
+        if (!(collab && collab.doc && collab.uid === row.uid)) {
+          $("f-body").value = row.body || "";
+        }
         $("f-save").disabled = true;
         $("f-error").hidden = true;
       }
@@ -551,6 +570,158 @@
       }
     });
 
+    // ---- live collab body (Ontology §11 "Collab") ------------------------------
+    // The body textarea binds to the record's shared Loro doc: local keystrokes
+    // become CRDT ops streamed over the one WebSocket; changes from anyone
+    // else — a sibling sand, another browser, a peer Organ in live sync —
+    // arrive as doc snapshots and merge instead of clobbering. Loro loads
+    // lazily; if the wasm is unavailable the sand degrades to Save-button
+    // editing exactly as before.
+    let loroLoad = null;
+    function loadLoro() {
+      if (!loroLoad) {
+        loroLoad = import("/board/vendor/loro-index.js")
+          .then(async (mod) => { await mod.default(); return mod; })
+          .catch((err) => { console.warn("[record] loro unavailable", err); return null; });
+      }
+      return loroLoad;
+    }
+    function b64encode(bytes) {
+      let binary = "";
+      for (let i = 0; i < bytes.length; i += 0x8000) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      }
+      return btoa(binary);
+    }
+    function b64decode(value) {
+      const binary = atob(String(value || ""));
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+      return bytes;
+    }
+
+    // var, not let: goIdle() runs during initial evaluation, before this
+    // section — var hoists to undefined instead of a TDZ throw.
+    var collab = null; // { uid, doc, shadow, leave, sentVersion, sendTimer }
+
+    async function startCollab(uid) {
+      stopCollab();
+      const state = { uid, doc: null, shadow: null, leave: null, sentVersion: null, sendTimer: 0 };
+      collab = state;
+      const mod = await loadLoro();
+      if (!mod || collab !== state) return;
+      state.doc = new mod.LoroDoc();
+      state.leave = H.collabJoin(uid, (snapshotB64) => {
+        if (collab !== state || !state.doc || !snapshotB64) return;
+        try { state.doc.import(b64decode(snapshotB64)); }
+        catch (err) { console.warn("[record] collab import", err); return; }
+        reflectCollab(state);
+      });
+    }
+    function stopCollab() {
+      const state = collab;
+      if (!state) return; // also covers the pre-evaluation goIdle() call
+      collab = null;
+      if (state.sendTimer) { clearTimeout(state.sendTimer); state.sendTimer = 0; flushCollabSend(state); }
+      if (typeof state.leave === "function") state.leave();
+    }
+
+    // Fold the textarea's unsynced local typing (shadow -> value, single-region
+    // diff) into the doc as real insert/delete ops. Between two keystrokes the
+    // doc equals the shadow, so offsets are exact; when a remote merge just
+    // landed they are clamped — approximate for one frame, converged after.
+    function collabFold(state) {
+      const area = $("f-body");
+      const next = area.value;
+      const prev = state.shadow == null ? "" : state.shadow;
+      if (next === prev || !state.doc) return;
+      const text = state.doc.getText("body");
+      let start = 0;
+      const maxStart = Math.min(prev.length, next.length);
+      while (start < maxStart && prev[start] === next[start]) start++;
+      let endPrev = prev.length;
+      let endNext = next.length;
+      while (endPrev > start && endNext > start && prev[endPrev - 1] === next[endNext - 1]) { endPrev--; endNext--; }
+      const docLen = text.length;
+      const at = Math.min(start, docLen);
+      const del = Math.min(endPrev - start, docLen - at);
+      try {
+        if (del > 0) text.delete(at, del);
+        if (endNext > start) text.insert(at, next.slice(start, endNext));
+        state.doc.commit();
+      } catch (err) { console.warn("[record] collab fold", err); }
+      state.shadow = next;
+    }
+
+    // A snapshot arrived (join reply or a change by someone else): fold any
+    // in-flight local typing first so it is never clobbered, then reflect the
+    // merged doc into the textarea, caret preserved.
+    function reflectCollab(state) {
+      const area = $("f-body");
+      const docBody = state.doc.getText("body").toString();
+      if (state.shadow == null) {
+        // Join snapshot: the server doc is the truth (it was seeded from the
+        // record's materialized text). Baseline the send cursor here so we
+        // never echo the whole history back.
+        state.shadow = docBody;
+        state.sentVersion = state.doc.version();
+        if (area.value !== docBody) setAreaPreservingCaret(area, docBody);
+        if (row) row.body = docBody;
+        renderBodyPreview();
+        return;
+      }
+      if (area.value !== state.shadow) collabFold(state);
+      const merged = state.doc.getText("body").toString();
+      state.shadow = merged;
+      if (area.value !== merged) setAreaPreservingCaret(area, merged);
+      if (row) row.body = merged;
+      renderBodyPreview();
+      scheduleCollabSend(state); // the fold may have produced new local ops
+    }
+
+    function scheduleCollabSend(state) {
+      if (state.sendTimer) return;
+      state.sendTimer = setTimeout(() => {
+        state.sendTimer = 0;
+        if (collab === state) flushCollabSend(state);
+      }, 200);
+    }
+    function flushCollabSend(state) {
+      if (!state.doc) return;
+      try {
+        const update = state.doc.export(
+          state.sentVersion
+            ? { mode: "update", from: state.sentVersion }
+            : { mode: "update" },
+        );
+        state.sentVersion = state.doc.version();
+        if (update && update.length) H.collabUpdate(state.uid, b64encode(update));
+      } catch (err) { console.warn("[record] collab send", err); }
+    }
+
+    function setAreaPreservingCaret(area, next) {
+      const prev = area.value;
+      const focused = document.activeElement === area;
+      const selStart = area.selectionStart;
+      const selEnd = area.selectionEnd;
+      area.value = next;
+      if (!focused) return;
+      let start = 0;
+      const maxStart = Math.min(prev.length, next.length);
+      while (start < maxStart && prev[start] === next[start]) start++;
+      const delta = next.length - prev.length;
+      const adjust = (pos) =>
+        pos <= start ? pos : Math.max(start, Math.min(next.length, pos + delta));
+      area.setSelectionRange(adjust(selStart), adjust(selEnd));
+    }
+
+    $("f-body").addEventListener("input", () => {
+      if (collab && collab.doc) {
+        collabFold(collab);
+        scheduleCollabSend(collab);
+      }
+    });
+
     // ---- K6: the slash-block editor + rendered body preview --------------------
     const editorNames = () => Object.entries(names)
       .map(([uid, n]) => ({ uid, slug: n.slug, head: n.head }));
@@ -585,6 +756,12 @@
       lines[lineAt] = `${m[1]}- [${m[2] === " " ? "x" : " "}] ${m[3]}`;
       const nextBody = lines.join("\n");
       area.value = nextBody;
+      // Programmatic value writes fire no `input` event — fold into the
+      // shared doc here so the checkbox flip also streams to collaborators.
+      if (collab && collab.doc) {
+        collabFold(collab);
+        scheduleCollabSend(collab);
+      }
       if (!fieldsDirty && row) {
         row.body = nextBody;
         renderBodyPreview();

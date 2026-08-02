@@ -15,6 +15,7 @@ pub mod error;
 pub mod expr;
 pub mod fact;
 pub mod graph;
+pub mod hlc;
 pub mod id;
 pub mod imagination;
 pub mod karma;

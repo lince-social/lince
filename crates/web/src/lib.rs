@@ -56,6 +56,8 @@ struct CellApiState {
     lanes: Arc<LaneHub>,
     listening_port: u16,
     local_auth_required: bool,
+    /// Organs currently announcing on this LAN (Ontology §11 "Peers").
+    nearby: crate::presentation::http::lan_discovery::NearbyPeers,
     packages: PackageCatalogStore,
     store: Store,
 }
@@ -600,16 +602,189 @@ pub async fn serve_cell_api_only(
             .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))
     }
 
+    /// Serialize a peer-facing JSON body and sign it with the Organ key, so
+    /// the caller can verify WHO answered (Ontology §11 "Peers" — both
+    /// directions prove possession before anything is trusted).
+    async fn signed_peer_json(
+        state: &CellApiState,
+        body: serde_json::Value,
+    ) -> Result<Response, (StatusCode, String)> {
+        let bytes = serde_json::to_vec(&body)
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+        let mut response = Response::new(Body::from(bytes.clone()));
+        response.headers_mut().insert(
+            header::CONTENT_TYPE,
+            HeaderValue::from_static("application/json"),
+        );
+        if let Some(signed) =
+            crate::presentation::http::peer_auth::response_headers(&state.engine, &bytes).await
+        {
+            for (name, value) in signed {
+                let value = HeaderValue::from_str(&value)
+                    .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+                response
+                    .headers_mut()
+                    .insert(HeaderName::from_static(name), value);
+            }
+        }
+        Ok(response)
+    }
+
     async fn organ_inbox(
         State(state): State<CellApiState>,
-        Json(package): Json<engine::sync::Package>,
+        uri: axum::extract::OriginalUri,
+        headers: HeaderMap,
+        body: axum::body::Bytes,
     ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        let path_and_query = uri
+            .path_and_query()
+            .map(|value| value.as_str())
+            .unwrap_or("/organ/inbox");
+        let proven = crate::presentation::http::peer_auth::verify_signed_request(
+            &state.engine,
+            "POST",
+            path_and_query,
+            &headers,
+            &body,
+        )
+        .await?;
+        let batch: engine::sync::OpBatch = serde_json::from_slice(&body)
+            .map_err(|error| (StatusCode::BAD_REQUEST, error.to_string()))?;
+        // The batch must belong to the organ that proved the key.
+        if batch.from_organ != proven {
+            return Err((StatusCode::FORBIDDEN, "batch/signer mismatch".into()));
+        }
         let applied = state
             .engine
-            .import_package(&package)
+            .import_op_batch(&batch)
             .await
             .map_err(|error| (StatusCode::FORBIDDEN, error.to_string()))?;
-        Ok(Json(serde_json::json!({ "applied": applied.len() })))
+        signed_peer_json(&state, serde_json::json!({ "applied": applied })).await
+    }
+
+    /// The catch-up feed (Ontology §11): ops past the caller's checkpoint —
+    /// one indexed rowid-range query; an empty answer means converged.
+    /// Served only to a caller that proves a stored key (challenge gate).
+    async fn organ_ops(
+        State(state): State<CellApiState>,
+        uri: axum::extract::OriginalUri,
+        headers: HeaderMap,
+        axum::extract::Query(params): axum::extract::Query<
+            std::collections::HashMap<String, String>,
+        >,
+    ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        let path_and_query = uri
+            .path_and_query()
+            .map(|value| value.as_str())
+            .unwrap_or("/organ/ops");
+        crate::presentation::http::peer_auth::verify_signed_request(
+            &state.engine,
+            "GET",
+            path_and_query,
+            &headers,
+            b"",
+        )
+        .await?;
+        let after = params
+            .get("after")
+            .and_then(|value| value.parse::<i64>().ok())
+            .unwrap_or(0);
+        let limit = params
+            .get("limit")
+            .and_then(|value| value.parse::<i64>().ok())
+            .unwrap_or(500)
+            .clamp(1, 2000);
+        let from_organ = store::organs::local(&state.store.pool)
+            .await
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?
+            .map(|organ| organ.uid)
+            .unwrap_or_default();
+        let (ops, head) = state
+            .engine
+            .ops_after(after, limit)
+            .await
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+        signed_peer_json(
+            &state,
+            serde_json::json!({
+                "from_organ": from_organ,
+                "ops": ops,
+                "head": head,
+            }),
+        )
+        .await
+    }
+
+    /// Organs currently announcing on this LAN — the Organ sand's "nearby"
+    /// list. Names are untrusted labels; `known` says whether the announced
+    /// organ uid already has a contact row.
+    async fn organ_nearby(
+        State(state): State<CellApiState>,
+        headers: HeaderMap,
+    ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        authenticate_headers(&state, &headers).await?;
+        let mut peers = Vec::new();
+        for (fp, peer) in state.nearby.current() {
+            let known = store::organs::contact(&state.store.pool, &peer.organ_uid)
+                .await
+                .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?
+                .is_some();
+            peers.push(serde_json::json!({
+                "fp": fp,
+                "organ_uid": peer.organ_uid,
+                "name": peer.name,
+                "addr": peer.addr,
+                "port": peer.port,
+                "known": known,
+            }));
+        }
+        Ok(Json(serde_json::json!({ "peers": peers })))
+    }
+
+    #[derive(Deserialize)]
+    struct PairRequest {
+        addr: String,
+        port: u16,
+    }
+
+    /// Pair with a nearby organ: fetch its introduction, adopt it as a
+    /// contact, and return the verification code BOTH humans should see (the
+    /// Signal safety-number pattern — derived from both organs' keys, never
+    /// transmitted; a mismatch means someone substituted keys on the wire).
+    async fn organ_pair(
+        State(state): State<CellApiState>,
+        headers: HeaderMap,
+        Json(request): Json<PairRequest>,
+    ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        authenticate_headers(&state, &headers).await?;
+        let url = format!("http://{}:{}/organ/introduction", request.addr, request.port);
+        let intro: engine::sync::Introduction = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(10))
+            .build()
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?
+            .get(&url)
+            .send()
+            .await
+            .map_err(|error| (StatusCode::BAD_GATEWAY, error.to_string()))?
+            .json()
+            .await
+            .map_err(|error| (StatusCode::BAD_GATEWAY, error.to_string()))?;
+        state
+            .engine
+            .adopt_introduction(&intro, 1)
+            .await
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+        let code = state
+            .engine
+            .pairing_code(&intro.organ_uid)
+            .await
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?
+            .unwrap_or_default();
+        Ok(Json(serde_json::json!({
+            "organ_uid": intro.organ_uid,
+            "head": intro.head,
+            "code": code,
+        })))
     }
 
     async fn organ_open_promises(
@@ -707,12 +882,11 @@ pub async fn serve_cell_api_only(
         .set_organ_signer(organ_signer)
         .await
         .map_err(IoError::other)?;
-    // Simplest v1: read each organ's `lince.file_sync` config once at boot and
-    // spawn its watch loop if enabled. A toggle from the Organ sand takes
-    // effect on the next boot; no live start/stop supervisor yet.
-    engine::file_sync::spawn_configured_watchers(engine.clone())
-        .await
-        .map_err(IoError::other)?;
+    // Seeds every enabled organ's File Sync watch loop at boot, then keeps
+    // them in sync with the `lince.file_sync` extension via the fact bus —
+    // toggling File Sync from the Organ sand takes effect immediately, no
+    // reboot required.
+    let _file_sync_supervisor = engine::file_sync::spawn_supervisor(engine.clone());
     // The organism's heartbeat. Without this the Cell has a pulse it never
     // takes: promises never expire on their own, timers never fire, and a rule
     // declaring "every week, set this back to -1" waits for someone to press
@@ -731,6 +905,7 @@ pub async fn serve_cell_api_only(
         lanes: Arc::new(LaneHub::new()),
         listening_port: local_addr.port(),
         local_auth_required,
+        nearby: crate::presentation::http::lan_discovery::NearbyPeers::default(),
         packages,
         store: cell_store,
     };
@@ -755,6 +930,22 @@ pub async fn serve_cell_api_only(
         .route(
             "/board/vendor/mermaid.LICENSE.txt",
             get(static_assets::mermaid_license),
+        )
+        .route(
+            "/board/vendor/loro-index.js",
+            get(static_assets::loro_index_js),
+        )
+        .route(
+            "/board/vendor/loro_wasm.js",
+            get(static_assets::loro_wasm_js),
+        )
+        .route(
+            "/board/vendor/loro_wasm_bg.wasm",
+            get(static_assets::loro_wasm_bg),
+        )
+        .route(
+            "/board/vendor/loro.LICENSE.txt",
+            get(static_assets::loro_license),
         )
         .route("/api/auth/login", post(login))
         .route("/auth/login", post(login))
@@ -784,6 +975,9 @@ pub async fn serve_cell_api_only(
         .route("/host/media/{name}", get(get_media))
         .route("/organ/introduction", get(organ_introduction))
         .route("/organ/inbox", post(organ_inbox))
+        .route("/organ/ops", get(organ_ops))
+        .route("/organ/nearby", get(organ_nearby))
+        .route("/organ/pair", post(organ_pair))
         .route("/organ/open-promises", get(organ_open_promises))
         .route(
             "/organ/transfers/envelopes",
@@ -845,6 +1039,12 @@ pub async fn serve_cell_api_only(
         let _ = sender.send(local_addr);
     }
     crate::presentation::http::transfer_delivery::spawn_worker(state.clone());
+    // Organ sync (Ontology §11): reactive deltas + catch-up reconciliation
+    // against every synced contact, woken by the fact bus.
+    crate::presentation::http::sync_runner::spawn_runner(state.clone());
+    // LAN discovery (Ontology §11 "Peers"): announce + listen on the fixed
+    // multicast group; best-effort, gated by `lince.discovery` on the organ.
+    crate::presentation::http::lan_discovery::spawn(state.clone());
     status(format!("Cell API listening at http://{local_addr}"));
     axum::serve(listener, app).await.map_err(IoError::other)
 }

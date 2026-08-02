@@ -9,8 +9,8 @@ systemctl --user stop lince.service
 mprocs --names lince,test,lynxui-web,lynxui-package \
     "cargo watch -x run" \
     "cargo watch -x 'run -- --port 6176 --data-dir /home/user/.config/test_lince'" \
-    "mise run lynxui-serve" \
-    "mise run lynxui-watch"
+    # "mise run lynxui-serve" \
+    # "mise run lynxui-watch"
 """
 
 [tasks.lynxui]

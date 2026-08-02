@@ -10,6 +10,7 @@ pub mod action_intent;
 pub mod actions;
 pub mod append;
 pub mod checkpoint;
+pub mod collab;
 #[allow(dead_code)]
 pub mod communication;
 pub mod effects;
@@ -21,6 +22,7 @@ pub mod karma_control;
 pub mod karma_grants;
 pub mod karma_runtime;
 pub mod karma_timezone;
+pub mod peers;
 pub mod senses;
 pub mod signals;
 pub mod sync;
@@ -100,10 +102,17 @@ pub struct Engine {
     pub(crate) organ_signer: Mutex<Option<trust::Signer>>,
     karma_deadline_changed: watch::Sender<u64>,
     karma_runtime_config: RwLock<Option<karma_runtime::KarmaDeadlineDirectorConfig>>,
+    /// Open Loro record-docs (LRU, lazy) — see `collab`.
+    pub(crate) collab_docs: std::sync::Mutex<collab::DocRegistry>,
 }
 
 impl Engine {
     pub async fn new(store: Store) -> Result<Engine, EngineError> {
+        // Seed the Cell's HLC past everything already stamped, so nothing
+        // written after a restart can compare below an existing op.
+        if let Some(max) = store::sync_ops::max_hlc(&store.pool).await? {
+            nucleus::hlc::observe(max);
+        }
         let (bus, _) = broadcast::channel(1024);
         let (karma_deadline_changed, _) = watch::channel(0);
         let engine = Engine {
@@ -113,6 +122,7 @@ impl Engine {
             organ_signer: Mutex::new(None),
             karma_deadline_changed,
             karma_runtime_config: RwLock::new(None),
+            collab_docs: std::sync::Mutex::new(collab::DocRegistry::default()),
         };
         Ok(engine)
     }

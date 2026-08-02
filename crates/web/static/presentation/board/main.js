@@ -21,6 +21,7 @@ const GROUP_ARCHIVE_EXTENSION = ".group.sand";
 const DEFAULT_DROP_MESSAGE =
   "Solte um widget .html, .sand ou .lince, ou um .workspace.sand para instalar no backend local.";
 const WIDGET_SPACE_PAN = "lince:widget-space-pan";
+const WIDGET_CONTENT_SIZE = "lince:widget-content-size";
 
 function stripPackageExtension(filename) {
   const value = String(filename || "");
@@ -751,6 +752,7 @@ let lastAppliedCameraWorkspaceId = null;
 let lastCameraWorkspaceId = null;
 let lastCameraValue = null;
 let spacePanMode = false;
+const shellContentSizes = new Map();
 
 boardViewport = createBoardViewport({
   viewportElement: boardCanvas,
@@ -811,6 +813,33 @@ function handleWidgetSpacePanMessage(event) {
   }
 
   setSpacePanMode(data.payload?.enabled === true);
+}
+
+function handleWidgetContentSizeMessage(event) {
+  const data = event.data;
+  if (!data || typeof data !== "object" || data.type !== WIDGET_CONTENT_SIZE) {
+    return;
+  }
+
+  const instanceId = String(data.instanceId || "");
+  const frame = getPackageFrameNode(instanceId);
+  if (!frame || frame.contentWindow !== event.source) {
+    return;
+  }
+
+  const width = Math.ceil(Number(data.payload?.width) || 0);
+  const height = Math.ceil(Number(data.payload?.height) || 0);
+  if (width < 1 || height < 1) {
+    return;
+  }
+
+  const previous = shellContentSizes.get(instanceId);
+  if (previous?.width === width && previous?.height === height) {
+    return;
+  }
+
+  shellContentSizes.set(instanceId, { width, height });
+  renderCards(store.getCards());
 }
 
 function flushCameraState() {
@@ -2449,15 +2478,20 @@ function syncCardNode(node, card) {
   const workspacePopoverWidth = 260;
   const canvasRect = boardCanvas.getBoundingClientRect();
   const isEditPanelOpen = isEditShell && editMode;
+  const editPopoverSize = shellContentSizes.get(card.id);
+  const editPopoverWidth = Math.min(
+    canvasRect.width,
+    editPopoverSize?.width || card.width,
+  );
   const editPopoverHeight = Math.min(
-    Math.max(0, canvasRect.height - 36),
-    104 + store.getSnapshot().workspaces.length * 27,
+    Math.max(0, canvasRect.height - 12),
+    editPopoverSize?.height || 104 + store.getSnapshot().workspaces.length * 27,
   );
   const editAnchorRect = isEditPanelOpen
     ? editToggle.getBoundingClientRect()
     : null;
   const expandedWidth = isEditPanelOpen
-    ? card.width
+    ? editPopoverWidth
     : isEditShell
       ? 0
       : recordIdleHidden
@@ -6494,6 +6528,7 @@ document.addEventListener("keyup", (event) => {
 });
 
 window.addEventListener("message", handleWidgetSpacePanMessage);
+window.addEventListener("message", handleWidgetContentSizeMessage);
 window.addEventListener("resize", () => {
   positionCanvasControls();
   scheduleShellPinRelayout();
